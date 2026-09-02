@@ -17,11 +17,19 @@ namespace BarPromenade.Tests.EditMode
             "Assets/MountainRoad/Cafe/Models/MountainRoadCafe3D.json";
         private const string ModelPath =
             "Assets/MountainRoad/Cafe/Models/MountainRoadCafe3D.fbx";
-        private const int ExpectedMeshCount = 48;
-        private const int ExpectedTriangleCount = 4568;
-        private const int ExpectedAnchorCount = 41;
-        private const int ExpectedPropCount = 5;
+        private const int ExpectedMeshCount = 59;
+        private const int ExpectedTriangleCount = 5682;
+        private const int ExpectedAnchorCount = 45;
+        private const int ExpectedPropCount = 6;
         private const int ExpectedColliderDescriptorCount = 17;
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int BaseColorId =
+            Shader.PropertyToID("_BaseColor");
+        private static readonly int SmoothnessId =
+            Shader.PropertyToID("_Smoothness");
+        private static readonly int MetallicId =
+            Shader.PropertyToID("_Metallic");
 
         private static readonly string[] ExpectedTextureSheets =
         {
@@ -79,6 +87,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.overlap_count, Is.Zero,
                 "Broad coplanar overlaps reintroduce visible flicker.");
             AssertDoorHeaderClosesFacade(manifest);
+            AssertPassiveKitchenManifest(manifest);
             Assert.That(manifest.stool_count, Is.EqualTo(7));
             Assert.That(manifest.cup_assembly_count, Is.EqualTo(2));
             Assert.That(manifest.colliders, Is.False);
@@ -86,6 +95,130 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.cameras, Is.False);
             Assert.That(manifest.materials, Is.False);
             Assert.That(manifest.animation_count, Is.Zero);
+        }
+
+        private static void AssertPassiveKitchenManifest(
+            CafeManifest manifest)
+        {
+            var expectedParts = new[]
+            {
+                new { Name = "Cafe_KitchenCabinetFronts", Role = "kitchen_cabinet_front" },
+                new { Name = "Cafe_KitchenHandles", Role = "kitchen_cabinet_handle" },
+                new { Name = "Cafe_KitchenBacksplash", Role = "kitchen_backsplash" },
+                new { Name = "Cafe_Stove", Role = "stove" },
+                new { Name = "Cafe_FryingPan", Role = "frying_pan" },
+                new { Name = "Cafe_CuttingBoard", Role = "cutting_board" },
+                new { Name = "Cafe_StoveTaskFixture", Role = "stove_task_fixture" },
+                new { Name = "Cafe_StoveTaskLens", Role = "stove_task_lens" },
+                new { Name = "Cafe_RefrigeratorBody", Role = "refrigerator_body" },
+                new { Name = "Cafe_RefrigeratorCavity", Role = "refrigerator_cavity" },
+                new { Name = "Cafe_RefrigeratorShelves", Role = "refrigerator_shelf" },
+                new { Name = "Cafe_FridgeDoor", Role = "fridge_door" },
+            };
+            foreach (var expected in expectedParts)
+            {
+                CafePart part = manifest.parts.Single(candidate =>
+                    candidate.name == expected.Name);
+                Assert.That(part.role, Is.EqualTo(expected.Role), expected.Name);
+            }
+
+            foreach (string name in new[]
+                     {
+                         "Cafe_RefrigeratorBody",
+                         "Cafe_RefrigeratorCavity",
+                         "Cafe_RefrigeratorShelves",
+                         "Cafe_FridgeDoor",
+                     })
+            {
+                CafePart part = manifest.parts.Single(candidate =>
+                    candidate.name == name);
+                Assert.That(part.sheet, Is.EqualTo("CafePropsDetail"), name);
+                Assert.That(part.base_surface, Is.EqualTo("PaleEnamel"), name);
+                Assert.That(
+                    part.uv_strategy,
+                    Is.EqualTo(
+                        "single_inset_appliance_patch_without_pattern_edges"),
+                    name);
+            }
+            foreach (string name in new[] { "Cafe_Stove", "Cafe_FryingPan" })
+            {
+                CafePart part = manifest.parts.Single(candidate =>
+                    candidate.name == name);
+                Assert.That(part.sheet, Is.EqualTo("CafeMetalDetail"), name);
+                Assert.That(part.base_surface, Is.EqualTo("PaleEnamel"), name);
+                Assert.That(
+                    part.uv_strategy,
+                    Is.EqualTo(
+                        "single_inset_appliance_patch_without_pattern_edges"),
+                    name);
+            }
+            CafePart taskLens = manifest.parts.Single(part =>
+                part.name == "Cafe_StoveTaskLens");
+            Assert.That(taskLens.role, Is.EqualTo("stove_task_lens"));
+            Assert.That(taskLens.sheet, Is.EqualTo("CafePropsDetail"));
+            Assert.That(taskLens.emissive, Is.True);
+            Assert.That(taskLens.shadows, Is.False);
+
+            CafeKitchenContract kitchen = manifest.kitchen_contract;
+            Assert.That(kitchen, Is.Not.Null);
+            Assert.That(
+                kitchen.visible_rear_lining_z_m,
+                Is.EqualTo(5.2725f).Within(0.0001f));
+            Assert.That(
+                kitchen.worktop_wall_gap_m,
+                Is.EqualTo(0.003f).Within(0.0001f));
+            Assert.That(
+                kitchen.cabinet_wall_gap_m,
+                Is.EqualTo(0.020f).Within(0.0001f));
+            Assert.That(
+                kitchen.rear_door_clearance_m,
+                Is.EqualTo(0.08f).Within(0.0001f));
+            CafePart rearDoor = manifest.parts.Single(part =>
+                part.name == "Cafe_RearDoor");
+            foreach (var surface in new[]
+                     {
+                         new { Name = "Cafe_ServiceCabinet", Gap = 0.020f },
+                         new { Name = "Cafe_ServiceWorktop", Gap = 0.003f },
+                         new { Name = "Cafe_KitchenBacksplash", Gap = 0.003f },
+                         new { Name = "Cafe_RefrigeratorBody", Gap = 0.003f },
+                     })
+            {
+                CafePart part = manifest.parts.Single(candidate =>
+                    candidate.name == surface.Name);
+                Assert.That(
+                    kitchen.visible_rear_lining_z_m - part.bounds_max[1],
+                    Is.EqualTo(surface.Gap).Within(0.001f),
+                    surface.Name);
+                if (surface.Name != "Cafe_RefrigeratorBody")
+                {
+                    Assert.That(
+                        rearDoor.bounds_min[0] - part.bounds_max[0],
+                        Is.GreaterThanOrEqualTo(0.08f),
+                        $"{surface.Name} must stop before the rear door.");
+                }
+            }
+
+            CafeDynamicProp door = manifest.dynamic_props.Single(prop =>
+                prop.name == "FridgeDoor");
+            Assert.That(door.role, Is.EqualTo("fridge_door"));
+            Assert.That(door.owner, Is.EqualTo("FridgeDoor"));
+            Assert.That(door.root_name, Is.EqualTo("PROP_FridgeDoor"));
+            Assert.That(door.lift_root_name, Is.Empty);
+            Assert.That(door.liquid_part, Is.Empty);
+            Assert.That(
+                door.part_names,
+                Is.EqualTo(new[] { "Cafe_FridgeDoor" }));
+
+            string[] anchorNames = manifest.anchors
+                .Select(anchor => anchor.name)
+                .ToArray();
+            Assert.That(
+                anchorNames,
+                Does.Contain("FridgeDoorPivot")
+                    .And.Contain("Grip.FridgeDoor")
+                    .And.Contain("CuttingBoardDock")
+                    .And.Contain("StovePanDock")
+                    .And.Contain("Light.ColdService"));
         }
 
         private static void AssertDoorHeaderClosesFacade(
@@ -248,8 +381,249 @@ namespace BarPromenade.Tests.EditMode
                 "counter plane at 1.02 m.");
 
             AssertCupBindings(registry, manifest);
+            AssertPassiveKitchenBindings(registry);
             registry.ApplyAppearance();
             AssertSharedTransparentGlass(registry);
+            AssertApplianceAppearance(registry);
+        }
+
+        private static void AssertApplianceAppearance(
+            MountainRoadCafeAssetRegistry registry)
+        {
+            AssertSurface(
+                RequirePart(registry, "Cafe_RefrigeratorBody").Renderer,
+                "MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail",
+                new Color(0.68f, 0.69f, 0.54f, 1f),
+                0.45f,
+                0.05f);
+            AssertSurface(
+                RequirePart(registry, "Cafe_RefrigeratorCavity").Renderer,
+                "MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail",
+                new Color(0.78f, 0.81f, 0.70f, 1f),
+                0.38f,
+                0.02f);
+            AssertSurface(
+                RequirePart(registry, "Cafe_RefrigeratorShelves").Renderer,
+                "MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail",
+                new Color(0.62f, 0.72f, 0.70f, 1f),
+                0.34f,
+                0.12f);
+            AssertSurface(
+                RequirePart(registry, "Cafe_FridgeDoor").Renderer,
+                "MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail",
+                new Color(0.68f, 0.69f, 0.54f, 1f),
+                0.45f,
+                0.05f);
+            AssertSurface(
+                RequirePart(registry, "Cafe_Stove").Renderer,
+                "MountainRoad/Cafe/Textures/MountainRoadCafeMetalDetail",
+                new Color(0.88f, 0.91f, 0.86f, 1f),
+                0.36f,
+                0.16f);
+            AssertSurface(
+                RequirePart(registry, "Cafe_FryingPan").Renderer,
+                "MountainRoad/Cafe/Textures/MountainRoadCafeMetalDetail",
+                new Color(0.56f, 0.59f, 0.56f, 1f),
+                0.30f,
+                0.35f);
+            AssertColdTaskLens(
+                RequirePart(registry, "Cafe_StoveTaskLens"));
+        }
+
+        private static void AssertColdTaskLens(
+            MountainRoadCafePartBinding lens)
+        {
+            Assert.That(lens.Emissive, Is.True);
+            Assert.That(lens.CastsShadows, Is.False);
+            Assert.That(
+                lens.Renderer.sharedMaterial,
+                Is.SameAs(CityNightResources.EmissiveMaterial));
+            var properties = new MaterialPropertyBlock();
+            lens.Renderer.GetPropertyBlock(properties);
+            Assert.That(
+                properties.GetTexture(BaseMapId),
+                Is.EqualTo(Texture2D.whiteTexture));
+            AssertColorNear(
+                properties.GetColor(BaseColorId),
+                new Color(0.72f, 2.20f, 1.85f, 1f),
+                lens.SourceName);
+        }
+
+        private static void AssertSurface(
+            Renderer renderer,
+            string texturePath,
+            Color expectedColor,
+            float expectedSmoothness,
+            float expectedMetallic)
+        {
+            Texture2D expectedTexture = Resources.Load<Texture2D>(texturePath);
+            Assert.That(expectedTexture, Is.Not.Null, texturePath);
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            Assert.That(
+                properties.GetTexture(BaseMapId),
+                Is.EqualTo(expectedTexture),
+                renderer.name);
+            AssertColorNear(
+                properties.GetColor(BaseColorId),
+                expectedColor,
+                renderer.name);
+            Assert.That(
+                properties.GetFloat(SmoothnessId),
+                Is.EqualTo(expectedSmoothness).Within(0.001f),
+                renderer.name);
+            Assert.That(
+                properties.GetFloat(MetallicId),
+                Is.EqualTo(expectedMetallic).Within(0.001f),
+                renderer.name);
+        }
+
+        private static void AssertColorNear(
+            Color actual,
+            Color expected,
+            string context)
+        {
+            Assert.That(
+                actual.r,
+                Is.EqualTo(expected.r).Within(0.0001f),
+                context);
+            Assert.That(
+                actual.g,
+                Is.EqualTo(expected.g).Within(0.0001f),
+                context);
+            Assert.That(
+                actual.b,
+                Is.EqualTo(expected.b).Within(0.0001f),
+                context);
+            Assert.That(
+                actual.a,
+                Is.EqualTo(expected.a).Within(0.0001f),
+                context);
+        }
+
+        private static void AssertPassiveKitchenBindings(
+            MountainRoadCafeAssetRegistry registry)
+        {
+            Assert.That(
+                registry.TryGetProp(
+                    "FridgeDoor",
+                    out MountainRoadCafeDynamicPropBinding fridgeDoor),
+                Is.True);
+            Assert.That(fridgeDoor.Role, Is.EqualTo("fridge_door"));
+            Assert.That(fridgeDoor.Owner, Is.EqualTo("FridgeDoor"));
+            Assert.That(fridgeDoor.PropRoot, Is.Not.Null);
+            Assert.That(fridgeDoor.LiftRoot, Is.Null);
+            Assert.That(fridgeDoor.GripAnchor, Is.Not.Null);
+            Assert.That(fridgeDoor.PourTarget, Is.Null);
+            Assert.That(fridgeDoor.LiquidTransform, Is.Null);
+            Assert.That(fridgeDoor.LiquidRenderer, Is.Null);
+            Assert.That(fridgeDoor.Renderers.Count, Is.EqualTo(1));
+            Assert.That(
+                fridgeDoor.Renderers[0].name,
+                Is.EqualTo("Cafe_FridgeDoor"));
+            Assert.That(
+                fridgeDoor.GripAnchor.IsChildOf(fridgeDoor.PropRoot),
+                Is.True,
+                "The handle contact must follow the hinge root.");
+            Assert.That(
+                registry.TryGetAnchor(
+                    "FridgeDoorPivot",
+                    out Transform fridgeDoorPivot),
+                Is.True);
+            Assert.That(
+                Vector3.Distance(
+                    fridgeDoor.PropRoot.position,
+                    fridgeDoorPivot.position),
+                Is.LessThan(0.002f));
+
+            Renderer fridgeBody = RequirePart(
+                registry,
+                "Cafe_RefrigeratorBody").Renderer;
+            Renderer fridgeLeaf = fridgeDoor.Renderers[0];
+            Assert.That(
+                fridgeLeaf.bounds.min.x,
+                Is.EqualTo(fridgeDoor.PropRoot.position.x).Within(0.03f),
+                "The refrigerator leaf root must sit on its hinge edge.");
+            Assert.That(
+                fridgeLeaf.bounds.max.z,
+                Is.EqualTo(fridgeBody.bounds.min.z).Within(0.01f),
+                "The closed refrigerator leaf must meet the body.");
+
+            Quaternion closedRotation = fridgeDoor.PropRoot.localRotation;
+            Vector3 closedGrip = fridgeDoor.GripAnchor.position;
+            Vector3 hinge = fridgeDoor.PropRoot.position;
+            fridgeDoor.PropRoot.Rotate(0f, 90f, 0f, Space.Self);
+            Assert.That(fridgeDoor.PropRoot.position, Is.EqualTo(hinge));
+            Assert.That(
+                Vector3.Distance(closedGrip, fridgeDoor.GripAnchor.position),
+                Is.GreaterThan(0.50f),
+                "The separate leaf must be able to swing around its hinge.");
+            fridgeDoor.PropRoot.localRotation = closedRotation;
+
+            Renderer stove = RequirePart(registry, "Cafe_Stove").Renderer;
+            Renderer pan = RequirePart(registry, "Cafe_FryingPan").Renderer;
+            Renderer board = RequirePart(registry, "Cafe_CuttingBoard").Renderer;
+            Renderer fixture = RequirePart(
+                registry,
+                "Cafe_StoveTaskFixture").Renderer;
+            Renderer lens = RequirePart(
+                registry,
+                "Cafe_StoveTaskLens").Renderer;
+            Assert.That(
+                registry.TryGetAnchor(
+                    "CuttingBoardDock",
+                    out Transform boardDock),
+                Is.True);
+            Assert.That(
+                Vector3.Distance(
+                    boardDock.position,
+                    board.bounds.ClosestPoint(boardDock.position)),
+                Is.LessThan(0.01f));
+            Assert.That(
+                registry.TryGetAnchor(
+                    "StovePanDock",
+                    out Transform panDock),
+                Is.True);
+            Assert.That(
+                Vector3.Distance(
+                    panDock.position,
+                    pan.bounds.ClosestPoint(panDock.position)),
+                Is.LessThan(0.01f));
+            Assert.That(
+                registry.TryGetAnchor(
+                    "Light.ColdService",
+                    out Transform taskLight),
+                Is.True);
+            Assert.That(
+                Vector3.Distance(
+                    taskLight.position,
+                    lens.bounds.ClosestPoint(taskLight.position)),
+                Is.LessThan(0.01f),
+                "The cold service light must originate inside the task lens.");
+            Assert.That(
+                fixture.bounds.min.y,
+                Is.GreaterThan(stove.bounds.max.y + 0.90f));
+            Assert.That(
+                HorizontalDistance(fixture.bounds.center, stove.bounds.center),
+                Is.LessThan(0.04f),
+                "The visible task fixture must stay directly above the stove.");
+        }
+
+        private static MountainRoadCafePartBinding RequirePart(
+            MountainRoadCafeAssetRegistry registry,
+            string sourceName)
+        {
+            MountainRoadCafePartBinding part = registry.Parts.Single(candidate =>
+                candidate.SourceName == sourceName);
+            Assert.That(part.Renderer, Is.Not.Null, sourceName);
+            return part;
+        }
+
+        private static float HorizontalDistance(Vector3 first, Vector3 second)
+        {
+            return Vector2.Distance(
+                new Vector2(first.x, first.z),
+                new Vector2(second.x, second.z));
         }
 
         private static void AssertCupBindings(
@@ -381,11 +755,21 @@ namespace BarPromenade.Tests.EditMode
             public int overlap_count;
             public int stool_count;
             public int cup_assembly_count;
+            public CafeKitchenContract kitchen_contract;
             public CafeTexture[] textures;
             public CafePart[] parts;
             public CafeAnchor[] anchors;
             public CafeDynamicProp[] dynamic_props;
             public CafeCollider[] collider_descriptors;
+        }
+
+        [Serializable]
+        private sealed class CafeKitchenContract
+        {
+            public float visible_rear_lining_z_m;
+            public float worktop_wall_gap_m;
+            public float cabinet_wall_gap_m;
+            public float rear_door_clearance_m;
         }
 
         [Serializable]
@@ -403,6 +787,10 @@ namespace BarPromenade.Tests.EditMode
             public string role;
             public string group;
             public string sheet;
+            public string base_surface;
+            public string uv_strategy;
+            public bool emissive;
+            public bool shadows;
             public float[] bounds_min;
             public float[] bounds_max;
         }
@@ -417,6 +805,12 @@ namespace BarPromenade.Tests.EditMode
         private sealed class CafeDynamicProp
         {
             public string name;
+            public string root_name;
+            public string lift_root_name;
+            public string role;
+            public string owner;
+            public string[] part_names;
+            public string liquid_part;
             public float empty_local_y;
             public float full_local_y;
         }

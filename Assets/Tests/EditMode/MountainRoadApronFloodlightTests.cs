@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -23,14 +24,30 @@ namespace BarPromenade.Tests.EditMode
         /// Matched to the island lamp's DELIVERED light rather than its
         /// wattage, because the two stand at very different distances: the
         /// island's `45` over a `3.7 m` slant arrives as about `3.3`, and from
-        /// this post's `9.8 m` the same arrival needs `300`. The `200` day end
-        /// is §20's two-thirds floor exactly, which is also the shape the
-        /// island gets from `CityNightSiteLightRegistry` lifting its authored
-        /// `15` floor to `night * 2/3`.
+        /// this post's `9.3 m` the same arrival needs about `300` BEFORE the
+        /// range fade is counted.
+        ///
+        /// It has to be counted. URP scales a light by
+        /// `saturate(1 - (d²/r²)²)²` toward its range, and when the pool was
+        /// widened on 2026-09-02 the range went with it - `14 m` to `20 m` -
+        /// which lifted that factor at the car from `0.65` to `0.91`. So the
+        /// wattage came DOWN to `210` to leave the car exactly as lit as it
+        /// was: the user asked for a bigger area, explicitly not a brighter
+        /// one. The `140` day end is §20's two-thirds floor exactly, which is
+        /// also the shape the island gets from `CityNightSiteLightRegistry`
+        /// lifting its authored `15` floor to `night * 2/3`.
         /// </summary>
-        private const float ExpectedDayIntensity = 200f;
+        private const float ExpectedDayIntensity = 140f;
 
-        private const float ExpectedNightIntensity = 300f;
+        private const float ExpectedNightIntensity = 210f;
+
+        /// <summary>
+        /// How much ground round the car has to be inside the beam, as a full
+        /// ring rather than a reach in one direction: the fixture this
+        /// replaced covered barely `2.5 m` of it, and "больше область" is
+        /// the entire point of the change.
+        /// </summary>
+        private const float LitRingRadius = 3f;
 
         [Test]
         [Category("MountainRoad")]
@@ -90,6 +107,63 @@ namespace BarPromenade.Tests.EditMode
                     new Vector3(apron.Center.x, 0f, apron.Center.z)),
                 Is.LessThan(1.2f),
                 "The beam misses the spot the car actually stops on.");
+
+            // The pool itself, which is what the user asked to grow on
+            // 2026-09-02 - "не ярче, а больше область". Ground, and a
+            // whole ring of it, because a beam can always be made to reach
+            // further in one direction by aiming further away.
+            for (int step = 0; step < 36; step++)
+            {
+                float radians = step * Mathf.PI / 18f;
+                Vector3 onTheRing = new Vector3(
+                    apron.Center.x + (Mathf.Sin(radians) * LitRingRadius),
+                    apron.Center.y,
+                    apron.Center.z + (Mathf.Cos(radians) * LitRingRadius));
+                float reach = Vector3.Distance(flood.Position, onTheRing);
+                Assert.That(
+                    reach,
+                    Is.LessThan(flood.Range),
+                    $"Ground {LitRingRadius:0.0} m from the car falls " +
+                    "outside the lamp's range sphere, which is what used to " +
+                    "cut this pool short.");
+                Assert.That(
+                    Vector3.Angle(
+                        flood.Direction,
+                        onTheRing - flood.Position),
+                    Is.LessThan(flood.SpotAngle * 0.5f),
+                    $"Ground {LitRingRadius:0.0} m from the car falls " +
+                    "outside the cone.");
+            }
+
+            // And the ceiling on widening it any further, which is the rake
+            // rather than a taste: the axis sits about `26` below horizontal,
+            // so a half-angle past that puts the top of the beam over the
+            // horizon and lights the mountain instead of the yard.
+            float pitchDegrees = Vector3.Angle(
+                flood.Direction,
+                new Vector3(flood.Direction.x, 0f, flood.Direction.z));
+            Assert.That(
+                flood.SpotAngle * 0.5f,
+                Is.LessThan(pitchDegrees),
+                $"The cone's top edge climbs {pitchDegrees:0.0} deg of rake " +
+                "and is aimed above the horizon.");
+
+            // The three dark bands of the summit survive the widening, and
+            // they survive it by GEOMETRY rather than by wattage: the terrace
+            // and the black brink are behind the post, so the beam points
+            // away from them. See the art bible, 10f.
+            float closestDarkBandAngle = plan.Terminal.Site.Parts
+                .Where(part =>
+                    part.Group == MountainRoadSiteGroup.Terrace ||
+                    part.Group == MountainRoadSiteGroup.Brink)
+                .Min(part => Vector3.Angle(
+                    flood.Direction,
+                    part.Center - flood.Position));
+            Assert.That(
+                closestDarkBandAngle,
+                Is.GreaterThan(flood.SpotAngle * 0.5f + 3f),
+                "The floodlight reaches the terrace or the black brink " +
+                $"(nearest part {closestDarkBandAngle:0.0} deg off the beam).");
         }
 
         [Test]

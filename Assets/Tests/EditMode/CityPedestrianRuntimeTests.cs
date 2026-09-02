@@ -37,10 +37,10 @@ namespace BarPromenade.Tests.EditMode
         //     had: an idle and a walk each, and a seated loop for all but
         //     the Helmet Lamp hopper, who never declared one.  4*2 + 3 = 11
         //   - The Pipeback Roller is staged and has never roamed.       2
-        //   - The seven promoted residents each keep the PLACED pair
-        //     their own presentation plays - the babushka's carpet
-        //     beating, the mourner's graveside rite - on top of the
-        //     street pair counted through the catalog.            7*2 = 14
+        //   - The SIX promoted residents still on the street each keep the
+        //     PLACED pair their own presentation plays - the babushka's
+        //     carpet beating, the mourner's graveside rite - on top of the
+        //     street pair counted through the catalog.            6*2 = 12
         //   - The two park players add the shout they throw at each
         //     other.                                                    2
         //   - The Ferryman carries FIVE, because he is the only design
@@ -48,8 +48,16 @@ namespace BarPromenade.Tests.EditMode
         //     wait on his bonnet, the drop off it, the trudge round the
         //     car that this is finally for, the transition in through his
         //     own door, and the driving loop it arrives at.             5
+        //   - The Lake Fisherman came off the street on 2026-09-02, so his
+        //     four - the placed pair he leans on the мостки with and the
+        //     street pair he no longer walks - now count here. They stay
+        //     authored and bound: nothing plays them, and stripping them
+        //     would move the animation manifest's signature for nothing. 4
+        //   - The Chair Carrier followed him the same day, taking his idle,
+        //     his walk and the seated loop that used to be counted through
+        //     the catalog's own ride tally.                             3
         private const int NonRoamingLocomotionClipCount =
-            11 + 2 + 14 + 2 + 5;
+            11 + 2 + 12 + 2 + 5 + 4 + 3;
 
         /// <summary>
         /// The library's two clips that are not loops, both the
@@ -419,12 +427,6 @@ namespace BarPromenade.Tests.EditMode
             "MournerWalk",
             "MournerStreetIdle",
             "MournerStreetWalk")]
-        [TestCase(
-            CityPedestrianResources.FishermanDesignId,
-            "FishermanLean",
-            "FishermanTrudge",
-            "FishermanStreetIdle",
-            "FishermanStreetWalk")]
         [TestCase(
             CityPedestrianResources.ChessPlayerDesignId,
             "ChessBrood",
@@ -842,14 +844,12 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     new[]
                     {
-                        CityPedestrianResources.ChairCarrierDesignId,
                         CityPedestrianResources.BabushkaDesignId,
                         CityPedestrianResources.WeighAttendantDesignId,
                         CityPedestrianResources.WatchmanDesignId,
                         CityPedestrianResources.ChessPlayerDesignId,
                         CityPedestrianResources.CheckersPlayerDesignId,
-                        CityPedestrianResources.MournerDesignId,
-                        CityPedestrianResources.FishermanDesignId
+                        CityPedestrianResources.MournerDesignId
                     }),
                 "The stable catalog order is part of the deterministic " +
                 "spawn contract.");
@@ -861,13 +861,18 @@ namespace BarPromenade.Tests.EditMode
                 "The street pool must be part of the resolvable catalog.");
             Assert.That(
                 CityPedestrianResources.AllArchetypes.Count,
-                Is.EqualTo(archetypes.Count + 4),
-                "Four designs resolve without roaming: the Lampshade " +
-                "Walker, the Kettle Hat walker, the Long-Arm Walker and " +
-                "the Helmet Lamp hopper. They were taken off the street on " +
-                "2026-09-02 and deliberately kept in the project - the " +
-                "courtyard vignettes cast three of them by name, and the " +
-                "mother's teapot is built out of the fourth.");
+                Is.EqualTo(archetypes.Count + 5),
+                "Five designs resolve without roaming: the Lampshade " +
+                "Walker, the Kettle Hat walker, the Long-Arm Walker, the " +
+                "Helmet Lamp hopper and the Chair Carrier. The first four " +
+                "came off the street on 2026-09-02 and the Chair Carrier " +
+                "followed them the same day, when the user ruled that a man " +
+                "who carries a chair everywhere is not an ordinary man. " +
+                "They are deliberately kept in the project: the mother's " +
+                "teapot is built out of the Kettle Hat walker, and a design " +
+                "withdrawn from the street is not a design deleted from " +
+                "the world. The courtyard vignettes no longer cast any of " +
+                "them - that was the other half of the same change.");
 
             GameObject[] prefabs = CityPedestrianResources.LoadPrefabs();
             Assert.That(prefabs.Length, Is.EqualTo(archetypes.Count));
@@ -1753,11 +1758,23 @@ namespace BarPromenade.Tests.EditMode
                         .DaytimeDistantSimulationInnerDistance + 1f);
                 Physics.SyncTransforms();
                 director.Advance(1f);
+                // Against the CATALOG's own band rather than the planner's
+                // `1.0`-`1.3`, which is the speed a walker is planned at
+                // before its design overrides it. The two agreed only by
+                // accident: the Chair Carrier led the catalog and his
+                // `1.18`-`1.30` sat inside the planner band, so when he came
+                // off the street on 2026-09-02 the babushka led it instead
+                // and walked her authored `0.78`-`0.90` straight through this
+                // assertion. What the test is actually for is the difference
+                // between an AUTHORED gait and the distant-simulation
+                // fast-forward, so it asks the designs.
+                float slowest = CityPedestrianResources.Archetypes.Min(
+                    archetype => archetype.MinimumMovementSpeed);
+                float fastest = CityPedestrianResources.Archetypes.Max(
+                    archetype => archetype.MaximumMovementSpeed);
                 Assert.That(
                     actor.LastDisplacement.magnitude,
-                    Is.InRange(
-                        CityPedestrianPlanner.MinimumSpeed - 0.01f,
-                        CityPedestrianPlanner.MaximumSpeed + 0.01f),
+                    Is.InRange(slowest - 0.01f, fastest + 0.01f),
                     "A walker near the renderable range must use its authored " +
                     "walking speed.");
 
@@ -1771,9 +1788,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(director.IsNightSpawnMode, Is.True);
                 Assert.That(
                     actor.LastDisplacement.magnitude,
-                    Is.InRange(
-                        CityPedestrianPlanner.MinimumSpeed - 0.01f,
-                        CityPedestrianPlanner.MaximumSpeed + 0.01f),
+                    Is.InRange(slowest - 0.01f, fastest + 0.01f),
                     "Night walkers must retain their sparse authored pace.");
             }
             finally

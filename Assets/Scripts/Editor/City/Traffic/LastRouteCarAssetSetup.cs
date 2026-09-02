@@ -553,6 +553,16 @@ namespace BarPromenade.EditorTools
                 // here would strip the keyword and the dial could never
                 // light at all.
                 case LastRouteCarMaterialSlot.RadioDial: return 1.6f;
+                // And the same arrangement for the cabin's own lit
+                // surfaces, for the same reason: non-zero here or the
+                // keyword is stripped and no property block could ever
+                // light them. Lower than the dial because these three burn
+                // all the time and the dial is an accent that comes on -
+                // `0.45 x #F2CE9E` puts the green channel at `0.364`,
+                // under both grades' bloom thresholds (`0.72` on the
+                // mountain, `0.60` in the city), so the lens and the dials
+                // glow without smearing a first-person frame.
+                case LastRouteCarMaterialSlot.CabinLamp: return 0.45f;
                 default: return 0f;
             }
         }
@@ -624,13 +634,24 @@ namespace BarPromenade.EditorTools
                 case LastRouteCarMaterialSlot.Glass: return Hex("#2A4245A0");
                 case LastRouteCarMaterialSlot.CrackedGlass: return Hex("#9AA29ECC");
                 case LastRouteCarMaterialSlot.BrokenGlass: return Hex("#171917FF");
-                case LastRouteCarMaterialSlot.Interior: return Hex("#1E1E1BFF");
+                // Lifted 2026-09-02 with the cabin lighting, and for the
+                // reason the Ferryman's own coat was lifted: at `#1E1E1B`
+                // the effective linear diffuse is `0.0067`, and on a
+                // surface that dark no lamp the cabin can hold makes any
+                // difference at all. Doubling the albedo is what turns the
+                // glovebox's pool from a smudge into a lit drawer; raising
+                // the LAMP instead would have cost the windscreen.
+                case LastRouteCarMaterialSlot.Interior: return Hex("#2D2D28FF");
                 case LastRouteCarMaterialSlot.Seat: return Hex("#3A3125FF");
-                case LastRouteCarMaterialSlot.Dashboard: return Hex("#1A1A18FF");
+                // The same lift, for the same reason, on the surface the
+                // user actually named: `#1A1A18` reads about `17/255` under
+                // the new plafond and `#272724` about `32`.
+                case LastRouteCarMaterialSlot.Dashboard: return Hex("#272724FF");
                 case LastRouteCarMaterialSlot.Headlight: return Hex("#FFF6D2FF");
                 case LastRouteCarMaterialSlot.TailLight: return Hex("#7A1310FF");
                 case LastRouteCarMaterialSlot.Plate: return Hex("#8E8E82FF");
                 case LastRouteCarMaterialSlot.RadioDial: return Hex("#E9A24CFF");
+                case LastRouteCarMaterialSlot.CabinLamp: return Hex("#F2CE9EFF");
                 default:
                     throw new ArgumentOutOfRangeException(nameof(slot));
             }
@@ -648,6 +669,7 @@ namespace BarPromenade.EditorTools
                 case LastRouteCarMaterialSlot.Rubber: return 0.08f;
                 case LastRouteCarMaterialSlot.Seat: return 0.12f;
                 case LastRouteCarMaterialSlot.RadioDial: return 0.40f;
+                case LastRouteCarMaterialSlot.CabinLamp: return 0.34f;
                 default: return 0.26f;
             }
         }

@@ -80,14 +80,26 @@ namespace BarPromenade.Tests.EditMode
                     CityCourtyardResidentPlan.IsAllowedDesignId(
                         resident.DesignId),
                     Is.True);
+                // THE GUARD THIS PLACE NEEDED AND NEVER HAD. Until
+                // 2026-09-02 the whitelist above admitted the Lampshade
+                // Walker, the Long-Arm Walker and the Chair Carrier, so this
+                // assertion ratified a cast of strange bodies rather than
+                // catching it: the one place a player meets a figure with no
+                // face was a residential yard a metre from the pavement, at
+                // every seed, and only the user walking the city found it.
+                //
+                // `NpcDesignAppearanceCatalog` was written for exactly this
+                // question and nothing had ever asked it. The runtime still
+                // does not consult it - model selection stays explicit at
+                // each site, which the architecture notes require - but a
+                // TEST may, and this is the one that should.
                 Assert.That(
-                    resident.DesignId,
-                    Is.Not.EqualTo(
-                        CityPedestrianResources.HelmetLampDesignId));
-                Assert.That(
-                    resident.DesignId,
-                    Is.Not.EqualTo(
-                        CityPedestrianResources.KettleHatDesignId));
+                    NpcDesignAppearanceCatalog.IsBizarre(resident.DesignId),
+                    Is.False,
+                    $"Courtyard resident '{resident.DesignId}' is a strange " +
+                    "body. The strangeness in this game belongs to the hero " +
+                    "and is dated by the story bible's registry; an " +
+                    "ordinary residential yard is not one of its places.");
                 Assert.That(resident.Facing.y, Is.EqualTo(0f));
                 Assert.That(
                     resident.Facing.magnitude,

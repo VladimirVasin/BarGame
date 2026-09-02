@@ -276,10 +276,15 @@ namespace BarPromenade.Tests.EditMode
             // band applies to every seated clip a design owns.
             Assert.That(
                 riders,
-                Is.EqualTo(3),
-                "Three of the eight street designs ride: the Chair Carrier, " +
-                "the Weigh Attendant and the Cemetery Watchman. The other " +
-                "five walk to the stop and watch the bus go.");
+                Is.EqualTo(2),
+                "Two of the six street designs ride: the Weigh Attendant " +
+                "and the Cemetery Watchman. The other four walk to the stop " +
+                "and watch the bus go. It was three of eight until " +
+                "2026-09-02, when the fisherman and the Chair Carrier both " +
+                "came off the street - the fisherman because he is a story " +
+                "figure and the Chair Carrier because the user ruled him " +
+                "strange. The Chair Carrier still DECLARES his ride; " +
+                "nothing on the street asks him for it any more.");
             Assert.That(
                 CityPedestrianResources.TryGetArchetype(
                     CityPedestrianResources.HelmetLampDesignId,

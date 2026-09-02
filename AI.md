@@ -189,10 +189,15 @@ becoming a second vista. Natural debris gathers into five unequal roadside
 chapters with deliberate gaps around those structural beats and a shared
 conservative footprint clearance against all existing roadside furniture.
 The cafe's visible shell, interior and furniture now come from one
-deterministic fixed-metre Blender set: `48` semantic meshes / `4,568`
-triangles, `41` anchors and five dynamic prop assemblies. The terminal plan
-still owns its five-sided footprint, open `1.6 m` door, shelter, map landmark,
-three causal appliance voices and exactly `17` logical colliders. Seven stools
+deterministic fixed-metre Blender set: `59` semantic meshes / `5,682`
+triangles, `45` anchors and six dynamic prop assemblies. Its rear service line
+now carries an extended cabinet with a cutting-board dock, a compact stove and
+pan, and a refrigerator cavity with two shelves plus a separate hinge-ready
+door and grip. That door has no runtime driver, Animator or Rigidbody, and
+neither the attendant nor the player uses any of the new kitchen equipment.
+The terminal plan still owns its five-sided footprint, open `1.6 m` door,
+shelter, map landmark, three causal appliance voices and exactly `17` logical
+colliders. Seven stools
 follow the long counter and return with their seat tops at `0.8175 m`: the
 sleeping lone visitor and the pair occupy three with real seat contact, four
 stay empty, and the hero keeps the designated middle main-row seat.
@@ -213,9 +218,10 @@ the hero. Only inside the physical cafe, PairMan and PairWoman follow the fixed
 localized text cycle `Man01 -> Woman01 -> ... -> Man10 -> Woman10 -> loop`, with
 ten keys per role present in both Russian and English. A pending turn waits
 without being consumed or skipped while either patron is in Drink or the
-woman's cigarette lift/smoke window; the man's idle tapping may continue under
-his line. The active speaker turns head and neck toward the partner and uses one
-over-head text bubble. A PairMan -> PairWoman exchange completes only when both
+woman's cigarette lift/drag and `SOCKET_Mouth` exhale window; the man's idle
+tapping may continue under his line. The active speaker turns head and neck
+toward the partner and uses one over-head text bubble. A PairMan -> PairWoman
+exchange completes only when both
 lines have been fully displayed. After every third completed exchange
 (`3/6/9...`, continuously across the ten-pair pool wrap), and only after both
 mutual looks have returned to idle, the strongly drunk lone patron
@@ -225,11 +231,13 @@ sleep. The pair gives him no look, answer or reaction gesture; its pending
 order is unchanged, so Woman03 is followed by Man04 and Woman10 by Man01.
 Neither conversation has voice or other added audio.
 The cigarette's filter is held at the woman's fingers and reaches her mouth;
-the ember points away from both hand and face. The same two visible practicals
+the ember points away from both hand and face. Its glow remains separate from
+the phase-locked world-space mouth plume. The same two visible practicals
 and one shadowless technical sulphur wash now share the counter more evenly:
-the warm key reaches the sleeping husband, while the cold practical and wash
-keep all four figures readable without reaching the terrace, parapet or dark
-brink. Six colour-neutral semantic
+the warm key reaches the sleeping husband, while the existing cold practical
+starts inside the visible task fixture over the stove and, together with the
+wash, keeps all four figures readable without reaching the terrace, parapet
+or dark brink. No additional Light was added. Six colour-neutral semantic
 detail sheets split exterior, interior, counter, metal, props and glass without
 adding a new hue, readable text, `PHILLIES`, `5¢`, logo, price, menu or copied
 city background; authored UV regions and a zero-overlap validator prevent
@@ -380,13 +388,17 @@ the bar, the supermarket and the player home retain their original low-rise
 heights. Every ordinary lot now instantiates one fixed-metre Blender prototype
 for its district. Each prototype is split into seven semantic surfaces:
 primary/secondary facade, plinth, roof, metal, window frame and window glass.
-Generator `2.0.0` exports `28` meshes / `3,642` triangles across the four
+Generator `2.1.0` exports `28` meshes / `4,218` triangles across the four
 wrappers. Six opaque surfaces use one of `24` deterministic district sheets through
 side-atlas, full-face or physically scaled UVs; glass preserves pane-local atlas
 detail plus deterministic row-balanced warm/dark state through the shared UV2
 slot shader. The generator rejects competing exterior coplanar faces and broad
 opaque layers closer than `0.03 m`; the terrain foundation sits `0.08 m` inside
-the visible footprint. The single
+the visible footprint. Residential alone owns eight semantic balcony slots:
+two at each of four facade levels, each pairing a `2.5 x 1.2 m` deck and its
+NPC dock one-to-one with a person-height glazed apartment door and adjacent
+window. The legacy decoration descriptor remains stable but emits no second
+balcony stack. The single
 Residential bar separately uses the
 complete fixed-metre `bar_exterior_v2`: a two-storey late-Victorian urban pub
 with old brick/render, pitched slate roof, unequal chimneys, a lower service
@@ -427,8 +439,12 @@ Exactly one pane stays lit: the upper street window immediately left of the
 balcony; every other pane is dark. Unity aligns the passive asset through the
 unchanged door anchor and still owns logical collision, walkway, mailbox,
 entrance lamp, number `7`, beacon, trigger and transition. Home reconstructs
-the same facade surfaces, authored window positions and recessed entry around
-the real walkable balcony instead of drawing a second generic shell.
+the same facade materials, authored window positions and recessed entry around
+the real walkable balcony instead of drawing a second generic shell. Its
+bounded fixed-camera reconstruction deliberately omits the street model's
+narrow front eave fascia: at balcony height that strip crossed the shot as a
+foreground beam. The pitched roof edge remains, so the shelter and silhouette
+do not change.
 Up to four ordinary Residential frontages receive deterministic shallow
 courtyard pockets no more than `1.05 m` deep. Their six authored variants are
 a Nardi table, bicycle repair, a balcony basket and pulley, chair repair, a
@@ -440,6 +456,20 @@ Selected active pockets may borrow generic colliderless residents, but the
 balcony-basket and quiet variants stay unoccupied. The residential courtyard
 resident pass is capped at five actors and adds no speech, interaction, light,
 sound or story state; fringe Yards receive none.
+Every ordinary Residential building also contributes one deterministic
+balcony-smoker candidate. A per-session local director rolls appearance
+opportunities around the moving player, uses the fog-readable lowest balcony
+row, prefers docks `12-22 m` across the street and ahead of travel, keeps at
+most two active and at
+most one per building, and releases a resident after the player leaves the
+area; the player home is never a candidate. It selects from the current roaming
+archetypes, reuses the literal
+Hero V2 `SmokeLoop` through a hidden native Hero rig and transfers its `31`
+canonical local bone channels to the selected pedestrian. It also reuses the
+already authored cigarette/ember geometry and mouth-exhale plume. Home keeps a
+separate bounded deterministic selection on fully reconstructed nearby
+prototypes and gates it with the Balcony shot. These actors add no collision,
+interaction, speech, sound, light or story state.
 The broad passive City misc layer now resolves through the deterministic
 `city_misc_citywide_v4` Blender library at generator version `4.9.0`: `82`
 semantic kinds, `122` assemblies, `259` role meshes and `46,542` triangles

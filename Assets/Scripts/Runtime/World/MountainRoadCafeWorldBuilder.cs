@@ -204,17 +204,14 @@ namespace BarPromenade
             Transform wash = RequireAnchor(model, "Light.ExteriorWash");
 
             // The fixtures are authored data; these are the points their
-            // cones have to serve. The old almost-vertical aims left every
-            // seated figure outside an inner cone, and put the sleeping
-            // patron just five degrees inside the warm light's OUTER edge.
-            // Aim the warm practical at the exact sleeping-head contact
-            // frame, and let the shadowless service light cover the complete
-            // four-person counter composition. Its longer range keeps the
-            // dark-clothed seated figures out of the steep end-of-range fade;
-            // the rear wash is reduced so the white attendant no longer
-            // dominates the same shot. The warm key is shadowless because the
-            // sleeper's folded forearms otherwise occlude almost his complete
-            // face in the authored contact pose.
+            // cones have to serve. The warm practical reads the sleeping-head
+            // contact frame. The cold practical physically sits above the
+            // stove, so its angular bisector must cover both the task surface
+            // straight below and the complete four-person counter tableau.
+            // This keeps one causal visible source instead of adding a fourth
+            // Light or leaving a glowing fixture whose beam points elsewhere.
+            // Both interior keys stay shadowless: the sleeper's folded arms
+            // otherwise occlude almost his complete face in the contact pose.
             Vector3 lonePatronReadingPoint =
                 plan.Center -
                 plan.Right * 1.50f -
@@ -225,6 +222,9 @@ namespace BarPromenade
                 plan.Right * 0.76f -
                 plan.Forward * 1.68f +
                 Vector3.up * 1.25f;
+            Vector3 coldDirection = (
+                Vector3.down +
+                (castFillPoint - cold.position).normalized).normalized;
 
             // The invisible sulphur wash now fills the same counter band as
             // well as the apron. Its slight forward bias is deliberate: a
@@ -252,12 +252,12 @@ namespace BarPromenade
                     "Cold Service Light",
                     parent,
                     cold.position,
-                    (castFillPoint - cold.position).normalized,
+                    coldDirection,
                     new Color(0.46f, 0.77f, 0.71f),
-                    48f,
+                    53f,
                     14f,
-                    96f,
-                    68f,
+                    110f,
+                    100f,
                     false),
                 CreateSpotLight(
                     "Sulphur Facade Wash",

@@ -681,64 +681,60 @@ namespace BarPromenade.Tests.PlayMode
             SetCastAlwaysAnimate(root.World.Cafe.NpcRoot);
             yield return null;
 
-            MountainRoadCafeCastPresentation woman =
-                root.World.Cafe.NpcRoot.GetComponentsInChildren<
-                        MountainRoadCafeCastPresentation>(true)
-                    .Single(candidate => candidate.Role ==
-                        MountainRoadCafeCastRole.PairWoman);
-            MountainRoadCafeCigaretteEffect effect =
-                woman.GetComponent<MountainRoadCafeCigaretteEffect>();
+            MountainRoadCafeCastPresentation woman = root.World.Cafe.NpcRoot
+                .GetComponentsInChildren<MountainRoadCafeCastPresentation>(true)
+                .Single(candidate => candidate.Role == MountainRoadCafeCastRole.PairWoman);
+            MountainRoadCafeCigaretteEffect effect = woman.GetComponent<
+                MountainRoadCafeCigaretteEffect>();
             Assert.That(effect, Is.Not.Null);
             Assert.That(effect.IsInitialized, Is.True);
-            Assert.That(effect.CigaretteAnchor, Is.Not.Null);
-            Assert.That(effect.CigaretteRenderer, Is.Not.Null);
-            Assert.That(effect.EmberRenderer, Is.Not.Null);
-            Assert.That(effect.CigaretteAnchor.name,
-                Is.EqualTo(
-                    MountainRoadCafeCigaretteEffect.CigaretteAnchorName));
-            Assert.That(effect.CigaretteRenderer.name,
-                Is.EqualTo(
-                    MountainRoadCafeCigaretteEffect.CigaretteRendererName));
-            Assert.That(effect.EmberRenderer.name,
-                Is.EqualTo(
-                    MountainRoadCafeCigaretteEffect.EmberRendererName));
+            Assert.That(effect.CigaretteAnchor?.name, Is.EqualTo(MountainRoadCafeCigaretteEffect.CigaretteAnchorName));
+            Assert.That(effect.MouthAnchor?.name, Is.EqualTo(MountainRoadCafeCigaretteEffect.MouthAnchorName));
+            Assert.That(effect.CigaretteRenderer?.name, Is.EqualTo(MountainRoadCafeCigaretteEffect.CigaretteRendererName));
+            Assert.That(effect.EmberRenderer?.name, Is.EqualTo(MountainRoadCafeCigaretteEffect.EmberRendererName));
             Assert.That(effect.Plume, Is.Not.Null);
-            Assert.That(effect.Plume.main.maxParticles,
-                Is.EqualTo(
-                    MountainRoadCafeCigaretteEffect.PlumeMaximumParticles));
+            Assert.That(effect.Plume.main.maxParticles, Is.EqualTo(MountainRoadCafeCigaretteEffect.PlumeMaximumParticles));
+            Assert.That(effect.Plume.main.simulationSpace, Is.EqualTo(ParticleSystemSimulationSpace.World));
             Assert.That(effect.Plume.lights.enabled, Is.False);
-            Assert.That(
-                root.World.Cafe.NpcRoot.GetComponentsInChildren<Light>(true),
-                Is.Empty,
-                "The silent cafe cast must not add a cigarette Light.");
-            Assert.That(
-                root.World.Cafe.NpcRoot.GetComponentsInChildren<AudioSource>(
-                    true),
-                Is.Empty,
-                "The silent cafe cast must not add smoking audio.");
-
-            AssertPhaseEnvelope(
-                MountainRoadCafeCigaretteEffect.EmberAmountAt,
-                0.25f,
-                0.29f,
-                0.34f,
-                0.43f,
-                0.50f,
-                "ember");
-            AssertPhaseEnvelope(
-                MountainRoadCafeCigaretteEffect.PlumeAmountAt,
-                0.31f,
-                0.36f,
-                0.45f,
-                0.59f,
-                0.68f,
-                "plume");
-            Assert.That(effect.EmberAmount,
-                Is.EqualTo(MountainRoadCafeCigaretteEffect.EmberAmountAt(
-                    effect.DefaultIdlePhase)).Within(0.0001f));
-            Assert.That(effect.PlumeRate,
-                Is.EqualTo(MountainRoadCafeCigaretteEffect.PlumeRateAt(
-                    effect.DefaultIdlePhase)).Within(0.0001f));
+            Assert.That(root.World.Cafe.NpcRoot.GetComponentsInChildren<Light>(true), Is.Empty, "Cigarette Light.");
+            Assert.That(root.World.Cafe.NpcRoot.GetComponentsInChildren<AudioSource>(true), Is.Empty, "Smoking audio.");
+            AssertPhaseEnvelope(MountainRoadCafeCigaretteEffect.EmberAmountAt,
+                0.25f, 0.29f, 0.34f, 0.43f, 0.50f, "ember");
+            AssertPhaseEnvelope(MountainRoadCafeCigaretteEffect.PlumeAmountAt,
+                0.49f, 0.525f, MountainRoadCafeCigaretteEffect.AuthoredExhaleNormalized,
+                0.645f, 0.68f, "mouth exhale");
+            Assert.That(MountainRoadCafeCigaretteEffect.PlumeRiseStartNormalized,
+                Is.GreaterThanOrEqualTo(MountainRoadCafeCigaretteEffect.EmberFallEndNormalized),
+                "The mouth exhale must not begin during the cigarette drag.");
+            Assert.That(effect.EmberAmount, Is.EqualTo(MountainRoadCafeCigaretteEffect.EmberAmountAt(effect.DefaultIdlePhase)).Within(0.0001f));
+            Assert.That(effect.PlumeRate, Is.EqualTo(MountainRoadCafeCigaretteEffect.PlumeRateAt(effect.DefaultIdlePhase)).Within(0.0001f));
+            bool sawLiveExhale = false;
+            int maximumFrames = Mathf.CeilToInt((woman.Registry.IdleClip.length + 1f) / PinnedFrameSeconds);
+            for (int frame = 0; frame < maximumFrames; frame++)
+            {
+                float phase = effect.DefaultIdlePhase;
+                if (phase >= MountainRoadCafeCigaretteEffect.PlumeRiseStartNormalized &&
+                    phase < MountainRoadCafeCigaretteEffect.PlumeFallEndNormalized &&
+                    effect.PlumeRate > 0f &&
+                    effect.Plume.particleCount > 0)
+                {
+                    sawLiveExhale = true;
+                    break;
+                }
+                yield return null;
+            }
+            Assert.That(sawLiveExhale, Is.True, "The live idle crossed its exhale pose without visible smoke.");
+            Vector3 mouthOutward = effect.MouthAnchor.up.normalized;
+            Vector3 expectedOrigin = effect.MouthAnchor.position + mouthOutward * MountainRoadCafeCigaretteEffect.MouthForwardOffset;
+            Assert.That(Vector3.Distance(effect.Plume.transform.position, expectedOrigin),
+                Is.LessThanOrEqualTo(0.001f), "Smoke must start beyond the lips.");
+            Assert.That(Vector3.Dot(effect.Plume.transform.forward, mouthOutward),
+                Is.GreaterThanOrEqualTo(0.999f), "Smoke must face out of the mouth.");
+            var liveParticles = new ParticleSystem.Particle[MountainRoadCafeCigaretteEffect.PlumeMaximumParticles];
+            int liveCount = effect.Plume.GetParticles(liveParticles);
+            Assert.That(effect.Plume.isPlaying && liveCount > 0, Is.True);
+            Assert.That(liveParticles.Take(liveCount).Average(particle => Vector3.Dot(particle.velocity, mouthOutward)),
+                Is.GreaterThan(0.05f), "Exhaled smoke does not travel out from the mouth.");
         }
 
         [UnityTest]
@@ -964,6 +960,16 @@ namespace BarPromenade.Tests.PlayMode
                     center + right * 2.40f - forward * 0.68f +
                     Vector3.up * 1.04f,
                     48f);
+                CaptureContactFrame(
+                    camera,
+                    target,
+                    pixels,
+                    Path.Combine(folder, "04-kitchen-wall-and-appliances.png"),
+                    center - right * 0.25f + forward * 1.15f +
+                    Vector3.up * 2.60f,
+                    center - right * 0.65f + forward * 4.78f +
+                    Vector3.up * 1.05f,
+                    58f);
 
                 MountainRoadCafeCastController cast = root.World.Cafe.Cast;
                 Assert.That(

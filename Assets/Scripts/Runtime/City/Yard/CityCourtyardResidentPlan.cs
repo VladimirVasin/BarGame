@@ -184,19 +184,42 @@ namespace BarPromenade
             return new CityCourtyardResidentPlan(layout.Seed, selected);
         }
 
+        /// <summary>
+        /// Who may stand in a courtyard, recast whole on 2026-09-02.
+        ///
+        /// It used to be the Lampshade, the Long-Arm and the Chair Carrier,
+        /// and that was never a casting decision - it was the roaming pool of
+        /// the day, frozen into a literal. When the strange walkers came off
+        /// the street the courtyards kept them, so the one place a player
+        /// meets a faceless figure or a man with forearms to his ankles
+        /// became a residential yard, a metre from the pavement, at every
+        /// seed. The user found all three by walking the city.
+        ///
+        /// The three now named are the only ordinary designs that own a
+        /// WORKING LOOP of their own, which is what makes them worth placing:
+        /// `WatchmanWatch`, `WeigherCheck` and `BabushkaSmoke` are six, six
+        /// and four seconds of authored business against the one-and-a-half
+        /// second pavement breath these pockets used to play.
+        ///
+        /// Still a hard-coded literal list, deliberately, and NOT a read of
+        /// `NpcDesignAppearanceCatalog`: that table records verdicts and the
+        /// architecture notes state plainly that the runtime does not consult
+        /// it - model selection stays explicit at each site. What the catalog
+        /// buys is a TEST that no site contradicts it.
+        /// </summary>
         public static bool IsAllowedDesignId(string designId)
         {
             return string.Equals(
                        designId,
-                       CityPedestrianResources.LampshadeDesignId,
+                       CityPedestrianResources.WatchmanDesignId,
                        StringComparison.Ordinal) ||
                    string.Equals(
                        designId,
-                       CityPedestrianResources.LongArmDesignId,
+                       CityPedestrianResources.WeighAttendantDesignId,
                        StringComparison.Ordinal) ||
                    string.Equals(
                        designId,
-                       CityPedestrianResources.ChairCarrierDesignId,
+                       CityPedestrianResources.BabushkaDesignId,
                        StringComparison.Ordinal);
         }
 
@@ -269,7 +292,15 @@ namespace BarPromenade
                                 pocket.StableId,
                                 "nardi-a",
                                 CityCourtyardResidentActivity.NardiPlayer,
-                                CityPedestrianResources.LampshadeDesignId,
+                                // Forced rather than chosen: a seated role
+                                // needs both a declared seated ride and a
+                                // wired sit clip, and among ordinary designs
+                                // only the watchman and the weigher have
+                                // both. The park's two board players have
+                                // neither - `sitClip` is null on both
+                                // prefabs - which is why the obvious cast
+                                // for a board game is impossible.
+                                CityPedestrianResources.WatchmanDesignId,
                                 first,
                                 target - first,
                                 true,
@@ -280,7 +311,7 @@ namespace BarPromenade
                                 pocket.StableId,
                                 "nardi-b",
                                 CityCourtyardResidentActivity.NardiPlayer,
-                                CityPedestrianResources.LongArmDesignId,
+                                CityPedestrianResources.WeighAttendantDesignId,
                                 second,
                                 target - second,
                                 true,
@@ -298,7 +329,15 @@ namespace BarPromenade
                         BicycleTargetLocal,
                         "bicycle-repair",
                         CityCourtyardResidentActivity.BicycleRepair,
-                        CityPedestrianResources.LongArmDesignId,
+                        // A grandmother standing over an upturned bicycle,
+                        // smoking and talking with her free arm. Her own
+                        // `BabushkaSmoke` is four seconds of exactly that -
+                        // "emphatic left-arm talk, one drag per lap" - and
+                        // read over a bicycle it becomes commentary on
+                        // somebody else's repair. Her carpet beater is hidden
+                        // for this role and the cigarette stays; see the
+                        // factory.
+                        CityPedestrianResources.BabushkaDesignId,
                         null,
                         1);
                 case ChairRepairVariant:
@@ -311,7 +350,16 @@ namespace BarPromenade
                         ChairTargetLocal,
                         "chair-repair",
                         CityCourtyardResidentActivity.ChairRepair,
-                        CityPedestrianResources.ChairCarrierDesignId,
+                        // The watchman, and the point is that HIS HANDS ARE
+                        // EMPTY. The Chair Carrier stood here until
+                        // 2026-09-02 and put three chairs in one three-metre
+                        // frame - the one on his shoulders, the one being
+                        // mended and the bench - which is the fault the user
+                        // photographed. `WatchmanWatch` is hands clasped
+                        // behind the back, a disapproving head shake and one
+                        // smug chin jut: a man who has put the plane down and
+                        // does not like what he made.
+                        CityPedestrianResources.WatchmanDesignId,
                         null,
                         2);
                 case SweepingVariant:
@@ -324,7 +372,17 @@ namespace BarPromenade
                         SweepingTargetLocal,
                         "sweeping",
                         CityCourtyardResidentActivity.Sweeping,
-                        CityPedestrianResources.LampshadeDesignId,
+                        // `WeigherCheck` is "look up at the dial, lean in to
+                        // the linkage, crouch to chalk the deck edge" - a
+                        // woman bending to the ground and straightening, which
+                        // over a broom reads as sweeping. NOTE this pocket
+                        // exists only on seeds whose optional variant
+                        // resolves to it, and the shipping seed resolves to
+                        // chair repair instead; leaving one active variant
+                        // uncast is exactly how the old cast survived so
+                        // long, so it is cast anyway and covered by a
+                        // synthetic pocket in EditMode.
+                        CityPedestrianResources.WeighAttendantDesignId,
                         null,
                         3);
                 default:

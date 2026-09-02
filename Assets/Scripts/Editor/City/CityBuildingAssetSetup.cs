@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/Buildings";
 
         private const string CatalogRootName = "ROOT_CityBuildings3D";
-        private const string ExpectedGeneratorVersion = "2.0.0";
+        private const string ExpectedGeneratorVersion = "2.1.0";
         private const float ContractTolerance = 0.003f;
         private const float BoundsTolerance = 0.02f;
 
@@ -316,6 +316,7 @@ namespace BarPromenade.Editor
                         prototype.roof_attachment_bounds_max_source),
                     BuildFacadeAttachments(prototype),
                     BuildWindowSlots(prototype),
+                    BuildBalconySlots(prototype),
                     prototype.frontage_width_m,
                     prototype.depth_m,
                     prototype.height_m,
@@ -410,11 +411,29 @@ namespace BarPromenade.Editor
                     slot.side,
                     slot.floor,
                     slot.bay,
+                    ParseOpeningKind(slot.opening_kind),
                     ConvertSourceVectorToUnity(slot.center_source),
                     Vector2FromArray(
                         slot.size_m,
                         slot.slot_id + " window size"),
                     slot.uv2_slot_id))
+                .ToArray();
+        }
+
+        private static CityBuildingBalconySlot[] BuildBalconySlots(
+            BuildingPrototype prototype)
+        {
+            return prototype.balcony_slots
+                .Select(slot => new CityBuildingBalconySlot(
+                    slot.stable_id,
+                    slot.floor,
+                    slot.side,
+                    slot.door_slot_id,
+                    ConvertSourceBoundsToUnity(
+                        slot.deck_bounds_min_source,
+                        slot.deck_bounds_max_source),
+                    ConvertSourceVectorToUnity(slot.npc_dock_source),
+                    ConvertSourceVectorToUnity(slot.outward_source)))
                 .ToArray();
         }
 
@@ -768,11 +787,15 @@ namespace BarPromenade.Editor
             Bounds roof = BoundsFromArrays(
                 prototype.roof_attachment_bounds_min_source,
                 prototype.roof_attachment_bounds_max_source);
+            Bounds sourceBounds = BoundsFromArrays(
+                prototype.bounds_min_source,
+                prototype.bounds_max_source);
             if (roof.size.x <= 0f || roof.size.y <= 0f ||
                 prototype.facade_attachment_bounds == null ||
                 prototype.facade_attachment_bounds.Length == 0 ||
                 prototype.window_slots == null ||
-                prototype.window_slots.Length == 0)
+                prototype.window_slots.Length == 0 ||
+                prototype.balcony_slots == null)
             {
                 throw new InvalidOperationException(
                     $"City building '{prototype.stable_id}' attachment " +
@@ -799,14 +822,18 @@ namespace BarPromenade.Editor
 
             var slotIds = new HashSet<int>();
             var uv2Ids = new HashSet<int>();
+            var slotsById = new Dictionary<int, BuildingWindowSlot>();
+            var declaredDoorIds = new HashSet<int>();
             foreach (BuildingWindowSlot slot in prototype.window_slots)
             {
                 Vector2 size = Vector2FromArray(
                     slot?.size_m,
                     prototype.stable_id + " window size");
+                CityBuildingOpeningKind openingKind = ParseOpeningKind(
+                    slot?.opening_kind);
                 if (slot == null ||
                     slot.slot_id <= 0 ||
-                    string.IsNullOrWhiteSpace(slot.side) ||
+                    !IsKnownSide(slot.side) ||
                     slot.floor < 0 || slot.bay < 0 ||
                     size.x <= 0f || size.y <= 0f ||
                     slot.uv2_slot_id <= 0 ||
@@ -824,6 +851,156 @@ namespace BarPromenade.Editor
                 Vector3FromArray(
                     slot.center_source,
                     slot.slot_id + " source center");
+                slotsById.Add(slot.slot_id, slot);
+                if (openingKind == CityBuildingOpeningKind.BalconyDoor)
+                {
+                    declaredDoorIds.Add(slot.slot_id);
+                }
+            }
+
+            var balconyIds = new HashSet<string>(StringComparer.Ordinal);
+            var referencedDoorIds = new HashSet<int>();
+            var balconiesPerFloor = new Dictionary<int, int>();
+            foreach (BuildingBalconySlot balcony in prototype.balcony_slots)
+            {
+                if (balcony == null)
+                {
+                    throw new InvalidOperationException(
+                        $"City building '{prototype.stable_id}' has a null " +
+                        "balcony slot.");
+                }
+
+                Bounds deck = BoundsFromArrays(
+                    balcony.deck_bounds_min_source,
+                    balcony.deck_bounds_max_source);
+                Vector3 dock = Vector3FromArray(
+                    balcony.npc_dock_source,
+                    balcony.stable_id + " NPC dock");
+                Vector3 outward = Vector3FromArray(
+                    balcony.outward_source,
+                    balcony.stable_id + " outward");
+                if (!slotsById.TryGetValue(
+                        balcony.door_slot_id,
+                        out BuildingWindowSlot door))
+                {
+                    throw new InvalidOperationException(
+                        $"City building '{prototype.stable_id}' balcony " +
+                        $"'{balcony.stable_id}' references a missing door.");
+                }
+
+                Vector3 doorCenter = Vector3FromArray(
+                    door.center_source,
+                    door.slot_id + " door center");
+                Vector2 doorSize = Vector2FromArray(
+                    door.size_m,
+                    door.slot_id + " door size");
+                if (string.IsNullOrWhiteSpace(balcony.stable_id) ||
+                    !balconyIds.Add(balcony.stable_id) ||
+                    balcony.floor <= 0 ||
+                    !IsKnownSide(balcony.side) ||
+                    deck.size.x <= 0f || deck.size.y <= 0f ||
+                    deck.size.z <= 0f ||
+                    !ContainsWithTolerance(sourceBounds, deck.min) ||
+                    !ContainsWithTolerance(sourceBounds, deck.max) ||
+                    !ContainsWithTolerance(deck, dock) ||
+                    Mathf.Abs(dock.z - deck.max.z) > ContractTolerance ||
+                    Vector3.Distance(
+                        outward,
+                        ExpectedSourceOutward(balcony.side)) >
+                        ContractTolerance ||
+                    !referencedDoorIds.Add(balcony.door_slot_id) ||
+                    ParseOpeningKind(door.opening_kind) !=
+                        CityBuildingOpeningKind.BalconyDoor ||
+                    door.floor != balcony.floor ||
+                    !string.Equals(
+                        door.side,
+                        balcony.side,
+                        StringComparison.Ordinal) ||
+                    Mathf.Abs(
+                        doorCenter.z - doorSize.y * 0.5f - deck.max.z) >
+                        ContractTolerance ||
+                    doorCenter.x < deck.min.x - ContractTolerance ||
+                    doorCenter.x > deck.max.x + ContractTolerance ||
+                    doorCenter.y < deck.min.y - ContractTolerance ||
+                    doorCenter.y > deck.max.y + ContractTolerance)
+                {
+                    throw new InvalidOperationException(
+                        $"City building '{prototype.stable_id}' has invalid " +
+                        "balcony-slot metadata.");
+                }
+
+                balconiesPerFloor.TryGetValue(
+                    balcony.floor,
+                    out int floorCount);
+                balconiesPerFloor[balcony.floor] = floorCount + 1;
+            }
+
+            if (!referencedDoorIds.SetEquals(declaredDoorIds))
+            {
+                throw new InvalidOperationException(
+                    $"City building '{prototype.stable_id}' balcony doors " +
+                    "are not paired one-to-one.");
+            }
+
+            if (string.Equals(
+                    prototype.district,
+                    "Residential",
+                    StringComparison.Ordinal))
+            {
+                if (prototype.balcony_slots.Length != 8)
+                {
+                    throw new InvalidOperationException(
+                        $"City building '{prototype.stable_id}' needs eight " +
+                        "balcony slots.");
+                }
+
+                float[] expectedLevels = { 7f, 12f, 17f, 22f };
+                for (int floor = 1; floor <= expectedLevels.Length; floor++)
+                {
+                    if (!balconiesPerFloor.TryGetValue(
+                            floor,
+                            out int floorCount) ||
+                        floorCount != 2)
+                    {
+                        throw new InvalidOperationException(
+                            $"City building '{prototype.stable_id}' floor " +
+                            $"{floor} needs two balconies.");
+                    }
+
+                    foreach (BuildingBalconySlot balcony in
+                             prototype.balcony_slots)
+                    {
+                        if (balcony.floor != floor)
+                        {
+                            continue;
+                        }
+
+                        Bounds deck = BoundsFromArrays(
+                            balcony.deck_bounds_min_source,
+                            balcony.deck_bounds_max_source);
+                        if (!string.Equals(
+                                balcony.side,
+                                "Front",
+                                StringComparison.Ordinal) ||
+                            Mathf.Abs(deck.max.z - expectedLevels[floor - 1]) >
+                                ContractTolerance ||
+                            Mathf.Abs(deck.size.x - 2.5f) >
+                                ContractTolerance ||
+                            Mathf.Abs(deck.size.y - 1.2f) >
+                                ContractTolerance)
+                        {
+                            throw new InvalidOperationException(
+                                $"City building '{prototype.stable_id}' " +
+                                "residential balcony layout drifted.");
+                        }
+                    }
+                }
+            }
+            else if (prototype.balcony_slots.Length != 0)
+            {
+                throw new InvalidOperationException(
+                    $"City building '{prototype.stable_id}' cannot have " +
+                    "balconies.");
             }
         }
 
@@ -1336,6 +1513,42 @@ namespace BarPromenade.Editor
             return district;
         }
 
+        private static bool IsKnownSide(string side)
+        {
+            return string.Equals(side, "Front", StringComparison.Ordinal) ||
+                string.Equals(side, "Rear", StringComparison.Ordinal) ||
+                string.Equals(side, "Left", StringComparison.Ordinal) ||
+                string.Equals(side, "Right", StringComparison.Ordinal);
+        }
+
+        private static Vector3 ExpectedSourceOutward(string side)
+        {
+            switch (side)
+            {
+                case "Front":
+                    return Vector3.up;
+                case "Rear":
+                    return Vector3.down;
+                case "Left":
+                    return Vector3.left;
+                case "Right":
+                    return Vector3.right;
+                default:
+                    return Vector3.zero;
+            }
+        }
+
+        private static bool ContainsWithTolerance(
+            Bounds bounds,
+            Vector3 point)
+        {
+            Vector3 minimum = bounds.min - Vector3.one * ContractTolerance;
+            Vector3 maximum = bounds.max + Vector3.one * ContractTolerance;
+            return point.x >= minimum.x && point.x <= maximum.x &&
+                point.y >= minimum.y && point.y <= maximum.y &&
+                point.z >= minimum.z && point.z <= maximum.z;
+        }
+
         private static CityBuildingMeshRole ParseRole(string value)
         {
             if (!Enum.TryParse(
@@ -1348,6 +1561,21 @@ namespace BarPromenade.Editor
             }
 
             return role;
+        }
+
+        private static CityBuildingOpeningKind ParseOpeningKind(string value)
+        {
+            if (!Enum.TryParse(
+                    value,
+                    false,
+                    out CityBuildingOpeningKind kind) ||
+                !Enum.IsDefined(typeof(CityBuildingOpeningKind), kind))
+            {
+                throw new InvalidOperationException(
+                    $"Unknown City building opening kind '{value}'.");
+            }
+
+            return kind;
         }
 
         private static bool HasExpectedUvContract(
@@ -1549,6 +1777,7 @@ namespace BarPromenade.Editor
             public float[] roof_attachment_bounds_max_source;
             public BuildingFacadeAttachment[] facade_attachment_bounds;
             public BuildingWindowSlot[] window_slots;
+            public BuildingBalconySlot[] balcony_slots;
             public BuildingPart[] parts;
         }
 
@@ -1576,9 +1805,23 @@ namespace BarPromenade.Editor
             public string side;
             public int floor;
             public int bay;
+            public string opening_kind;
             public float[] center_source;
             public float[] size_m;
             public int uv2_slot_id;
+        }
+
+        [Serializable]
+        private sealed class BuildingBalconySlot
+        {
+            public string stable_id;
+            public int floor;
+            public string side;
+            public int door_slot_id;
+            public float[] deck_bounds_min_source;
+            public float[] deck_bounds_max_source;
+            public float[] npc_dock_source;
+            public float[] outward_source;
         }
 
         [Serializable]

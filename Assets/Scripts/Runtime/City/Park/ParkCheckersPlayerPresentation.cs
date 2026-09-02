@@ -112,6 +112,13 @@ namespace BarPromenade
         public Transform SpeechAnchor =>
             registry != null ? registry.HeadAnchor : null;
 
+        /// <summary>Which voice writes his letters. Read off the
+        /// registry rather than named here, so renaming the design can
+        /// never leave him quietly speaking in somebody else's
+        /// tone.</summary>
+        public string SpeechDesignId =>
+            registry != null ? registry.DesignId : string.Empty;
+
         public void Initialize(
             CityPedestrianAssetRegistry assetRegistry,
             ParkCheckersPlayerStance stance)

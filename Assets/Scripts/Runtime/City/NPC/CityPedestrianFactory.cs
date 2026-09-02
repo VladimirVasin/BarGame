@@ -307,6 +307,12 @@ namespace BarPromenade
                     registry.gameObject.name =
                         $"Pedestrian Model {index + 1:00} " +
                         $"({registry.DesignId})";
+
+                    // An anonymous body must not carry another role's prop.
+                    // Outside the catalog-composition branch on purpose: a
+                    // headless composition run mints the same pooled bodies
+                    // and would otherwise keep the beater.
+                    CityPedestrianHeldProps.ApplyRoamingRules(registry);
                     CityPedestrianPresentation presentation =
                         registry.GetComponent<
                             CityPedestrianPresentation>();

@@ -27,6 +27,11 @@ namespace BarPromenade
         public void Initialize(InteractionPromptView view)
         {
             promptView = view;
+            // The panel needs the hero for one thing only: a line
+            // somebody is saying to him stops when he walks away from
+            // the man saying it. Every scene root gets that for free
+            // here rather than having to remember it.
+            promptView?.SetListener(transform);
             if (promptAction == null)
             {
                 promptAction = TryInteractActive;
@@ -67,6 +72,38 @@ namespace BarPromenade
                    promptView.ShowFormattedFeedback(
                        localizationKey,
                        durationSeconds,
+                       arguments);
+        }
+
+        /// <summary>
+        /// A line somebody actually said to him, rather than a
+        /// description of what he is looking at. It types out in that
+        /// man's own tone; the two calls above stay whole and silent,
+        /// which is what separates a locked door from an answer.
+        /// </summary>
+        public bool ShowSpokenFeedback(
+            string localizationKey,
+            float durationSeconds,
+            in NpcSpeaker speaker)
+        {
+            return promptView != null &&
+                   promptView.ShowSpokenFeedback(
+                       localizationKey,
+                       durationSeconds,
+                       speaker);
+        }
+
+        public bool ShowFormattedSpokenFeedback(
+            string localizationKey,
+            float durationSeconds,
+            in NpcSpeaker speaker,
+            params object[] arguments)
+        {
+            return promptView != null &&
+                   promptView.ShowFormattedSpokenFeedback(
+                       localizationKey,
+                       durationSeconds,
+                       speaker,
                        arguments);
         }
 

@@ -298,16 +298,30 @@ namespace BarPromenade
         public const string MournerDesignId = "cemetery_mourner_v1";
         public const string MournerPrefabResourcePath =
             "Pedestrians/CemeteryMourner3D";
+        /// <summary>
+        /// The man on the мостки. He is a STORY figure and nothing else -
+        /// taken off the street 2026-09-02 on the user's instruction
+        /// ("рыбак - сюжетный персонаж, удали его из пула
+        /// случайных NPC"), which is also what the rest of the catalog
+        /// already implied: a shouldered rod rising `1.9 m` above his pelvis
+        /// is why he could never board the bus either.
+        ///
+        /// He carries NO prefab path here on purpose. `SeacoastFishermanProvider`
+        /// binds his prefab by guid out of `Assets/Pedestrians/Staged/`, where
+        /// `CityPedestrianAssetSetup.ValidateDescriptorScope` requires every
+        /// non-roaming staged design to keep it - a design absent from this
+        /// catalog whose prefab sat in `Resources` would fail the asset build.
+        /// </summary>
         public const string FishermanDesignId = "lake_fisherman_v1";
-        public const string FishermanPrefabResourcePath =
-            "Pedestrians/LakeFisherman3D";
 
         // The legacy single-prefab entry point. It used to resolve to the
-        // Lampshade Walker, which no longer roams - a caller asking for "a
-        // pedestrian" with no further qualification must get one that is
-        // actually on the street.
+        // Lampshade Walker and then to the Chair Carrier, and each in turn
+        // stopped roaming - a caller asking for "a pedestrian" with no
+        // further qualification must get one that is actually on the street,
+        // so it now names the babushka, who is the most ordinary body in the
+        // catalog and the least likely to be withdrawn from it.
         public const string PrefabResourcePath =
-            ChairCarrierPrefabResourcePath;
+            BabushkaPrefabResourcePath;
 
         // Headroom values below are the measured maxima the deterministic
         // generator reports for each design's own authored seated clip, and
@@ -384,9 +398,16 @@ namespace BarPromenade
         // stop, and the bus passes them by.
 
         /// <summary>
-        /// The designs that ROAM. Ordinary people only, since 2026-09-02:
-        /// the four strange walkers were taken off the street and seven
-        /// ordinary residents took their places.
+        /// The designs that ROAM. Ordinary people only, and SIX of them
+        /// since 2026-09-02: the four strange walkers came off the street
+        /// first, then the user took two more off by hand - the fisherman
+        /// because he is a story figure, and the Chair Carrier because a man
+        /// carrying a chair everywhere is not an ordinary man however
+        /// ordinary his body is.
+        ///
+        /// A thinner street was the accepted price, decided in the same
+        /// breath: the population profile was deliberately NOT raised to
+        /// compensate.
         ///
         /// This is no longer the whole catalog. Anything that merely needs to
         /// RESOLVE a design - the courtyard vignettes, the mother's teapot -
@@ -395,16 +416,6 @@ namespace BarPromenade
         /// </summary>
         private static readonly CityPedestrianArchetype[] OrderedArchetypes =
         {
-            new CityPedestrianArchetype(
-                ChairCarrierDesignId,
-                ChairCarrierPrefabResourcePath,
-                1.18f,
-                1.30f,
-                0.98f,
-                1.06f,
-                CityPedestrianArchetype.UnlimitedPoolInstances,
-                0f,
-                ChairCarrierSeatedRide),
             new CityPedestrianArchetype(
                 BabushkaDesignId,
                 BabushkaPrefabResourcePath,
@@ -453,27 +464,41 @@ namespace BarPromenade
                 0.94f,
                 0.90f,
                 0.98f),
-            new CityPedestrianArchetype(
-                FishermanDesignId,
-                FishermanPrefabResourcePath,
-                1.00f,
-                1.14f,
-                0.96f,
-                1.04f),
         };
 
         /// <summary>
         /// Designs that exist, resolve and may be placed by hand, but never
         /// enter the roaming pool.
         ///
-        /// They are not dead weight and must not be deleted: the courtyard
-        /// vignettes cast the Lampshade, Long-Arm and Chair Carrier by name,
-        /// and `MothersHouseKettleProp` instantiates the Kettle Hat walker
-        /// whole in order to borrow its ten kettle renderers for the
-        /// mother's teapot.
+        /// They are not dead weight and must not be deleted, though what
+        /// defends them changed on 2026-09-02: the courtyard vignettes used
+        /// to cast the Lampshade, Long-Arm and Chair Carrier by name and no
+        /// longer do, so what is left is `MothersHouseKettleProp`, which
+        /// instantiates the Kettle Hat walker whole in order to borrow its
+        /// ten kettle renderers for the mother's teapot - delete him and the
+        /// teapot goes with him - and the plain fact that a design withdrawn
+        /// from the street is not a design deleted from the world.
         /// </summary>
         private static readonly CityPedestrianArchetype[] NonRoamingArchetypes =
         {
+            // A man walking the whole city with an upside-down cafe chair on
+            // his shoulders, ruled STRANGE by the user on 2026-09-02
+            // ("стулоносец не нормальный") against the catalog's own
+            // body-versus-prop rule, which had filed him as the one ordinary
+            // man in the pool. The verdict moved with him - see
+            // `NpcDesignAppearanceCatalog`. He keeps his seated ride and his
+            // unlimited instances so that nothing about him changes except
+            // that nobody meets him.
+            new CityPedestrianArchetype(
+                ChairCarrierDesignId,
+                ChairCarrierPrefabResourcePath,
+                1.18f,
+                1.30f,
+                0.98f,
+                1.06f,
+                CityPedestrianArchetype.UnlimitedPoolInstances,
+                0f,
+                ChairCarrierSeatedRide),
             new CityPedestrianArchetype(
                 LampshadeDesignId,
                 LampshadePrefabResourcePath,

@@ -103,7 +103,7 @@ namespace BarPromenade.Editor
         public const string CemeteryWatchmanProviderPath =
             "Assets/Resources/City/CemeteryWatchmanProvider.asset";
         public const string LakeFishermanPrefabPath =
-            "Assets/Resources/Pedestrians/LakeFisherman3D.prefab";
+            "Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab";
         public const string SeacoastFishermanProviderPath =
             "Assets/Resources/City/SeacoastFishermanProvider.asset";
         public const string ParkChessPlayerPrefabPath =

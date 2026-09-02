@@ -164,6 +164,12 @@ namespace BarPromenade
                     Quaternion.Euler(0f, anchor.YawDegrees, 0f);
                 registry.ApplyPaletteVariant(anchor.VisualVariant);
 
+                // The bar mints its own pooled bodies rather than going
+                // through CityPedestrianFactory, so the street's prop rule
+                // has to be applied here too - miss it and the bar fills
+                // with grandmothers holding carpet beaters.
+                CityPedestrianHeldProps.ApplyRoamingRules(registry);
+
                 CityPedestrianPresentation presentation =
                     registry.GetComponent<CityPedestrianPresentation>();
                 if (presentation == null)

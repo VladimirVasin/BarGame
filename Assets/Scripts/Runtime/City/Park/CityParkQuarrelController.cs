@@ -40,6 +40,16 @@ namespace BarPromenade
         /// fixed `48 m` far clip, so the shout is always thrown by
         /// somebody the player can actually see.
         /// </summary>
+        /// <remarks>
+        /// This is the quarrel's OWN number and is deliberately not
+        /// <see cref="NpcEarshotProfile.ShoutFaintRadiusMeters"/>. The
+        /// two were briefly the same constant, which meant widening how
+        /// far a line could be read also moved the moment the two men
+        /// start going at each other — a different question with a
+        /// different answer. The profile is now wider than this gate on
+        /// both ends, so they stop arguing before their words begin to
+        /// fade out rather than the other way round.
+        /// </remarks>
         public const float AudibleRadiusMeters = 22f;
 
         /// <summary>
@@ -55,16 +65,8 @@ namespace BarPromenade
         /// two of them reads them at full strength from either side of
         /// the tables rather than having to stand on one man's feet.
         /// </summary>
-        public const float SolidRadiusMeters = 8f;
-
-        /// <summary>
-        /// And how faint they are at the far edge of earshot. Low enough
-        /// that from across the park the quarrel reads as something
-        /// going on over there rather than as something being said to
-        /// the player, and high enough to still be legible if he cares
-        /// to squint at it — which is the whole invitation to walk over.
-        /// </summary>
-        public const float FaintOpacity = 0.35f;
+        public const float SolidRadiusMeters =
+            NpcEarshotProfile.ShoutSolidRadiusMeters;
 
         /// <summary>
         /// The frame of the authored shout at which the arm is fully out
@@ -175,12 +177,34 @@ namespace BarPromenade
                 chess.transform.position,
                 checkers.transform.position,
                 0.5f);
+            // Declared once, here, rather than handed over with every
+            // line: an anchor, a voice and an earshot belong to the man,
+            // and only the words belong to the moment. The board game
+            // speaks through the same two declarations.
+            bubbleView.DeclareSpeaker(
+                chess,
+                chess.SpeechAnchor,
+                chess.SpeechDesignId,
+                NpcEarshotProfile.Shout);
+            bubbleView.DeclareSpeaker(
+                checkers,
+                checkers.SpeechAnchor,
+                checkers.SpeechDesignId,
+                NpcEarshotProfile.Shout);
             return controller;
         }
 
         /// <summary>
         /// Which radius applies right now. Entering takes the close one,
         /// leaving the wide one.
+        ///
+        /// This is about whether the two of them are arguing at all, and
+        /// it stays here. How solid a line is once thrown is a property
+        /// of the line and now lives on
+        /// <see cref="NpcEarshotProfile.Shout"/> with every other
+        /// speaker's — the old per-view opacity could only ever describe
+        /// one distance, which worked solely because these two sit at
+        /// the same table.
         /// </summary>
         public static bool IsWithinEarshot(
             float distanceMeters,
@@ -190,27 +214,6 @@ namespace BarPromenade
                 ? SilenceRadiusMeters
                 : AudibleRadiusMeters;
             return distanceMeters <= radius;
-        }
-
-        /// <summary>
-        /// How solid the bubbles are drawn from this far off: faint out
-        /// at the edge of earshot, solid once he has walked up, and
-        /// smoothed across the gap so the words firm up as he closes
-        /// rather than snapping on at one particular step.
-        /// </summary>
-        public static float ResolveBubbleOpacity(float distanceMeters)
-        {
-            if (float.IsNaN(distanceMeters))
-            {
-                return FaintOpacity;
-            }
-
-            float approach = Mathf.InverseLerp(
-                AudibleRadiusMeters,
-                SolidRadiusMeters,
-                distanceMeters);
-            approach = approach * approach * (3f - 2f * approach);
-            return Mathf.Lerp(FaintOpacity, 1f, approach);
         }
 
         private void Update()
@@ -239,14 +242,11 @@ namespace BarPromenade
                 timeline.Reset();
             }
 
-            // Every frame, not once per line: he is walking while they
-            // are shouting, and a line that fixed its opacity when it
-            // opened would stay faint all the way up to the tables.
-            if (bubbles != null)
-            {
-                bubbles.SetOpacity(ResolveBubbleOpacity(distance));
-            }
-
+            // The fade is no longer pushed from here. He is walking
+            // while they are shouting, so the words still firm up as he
+            // closes — but each bubble now measures its own speaker's
+            // own distance every frame, which is the only way two men
+            // standing apart can read differently.
             timeline.Advance(Time.deltaTime);
             if (timeline.ConsumeTauntCue(out ParkQuarrelSpeaker speaker))
             {
@@ -291,7 +291,6 @@ namespace BarPromenade
                 OwnerOf(ParkQuarrelTimeline.Opposite(pendingSpeaker)));
             bubbles.Show(
                 OwnerOf(pendingSpeaker),
-                anchor,
                 LocalizationService.Get(pendingLineKey));
             hasPendingLine = false;
         }
@@ -344,10 +343,13 @@ namespace BarPromenade
             isEngaged = false;
             hasPendingLine = false;
             timeline?.Reset();
+            // Only these two. The view is shared, and a quarrel that
+            // ended because the hero walked off has no business closing
+            // somebody else's line on the way out.
             if (bubbles != null)
             {
-                bubbles.DismissAll();
-                bubbles.SetOpacity(NpcSpeechBubbleView.SolidOpacity);
+                bubbles.Dismiss(OwnerOf(ParkQuarrelSpeaker.Chess));
+                bubbles.Dismiss(OwnerOf(ParkQuarrelSpeaker.Checkers));
             }
 
             if (chessPlayer != null)

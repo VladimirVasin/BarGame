@@ -56,6 +56,7 @@ namespace BarPromenade
         private string confirmationKey;
         private uint quipState;
         private int lastLineIndex = -1;
+        private NpcSpeaker speaker = NpcSpeaker.None;
         private bool isInitialized;
         private bool ownsExecution;
         private LastRouteFerrymanPresentation presentation;
@@ -134,10 +135,25 @@ namespace BarPromenade
         private InventoryTargetInteractionDefinition BuildDefinition(
             string talkResponseKey)
         {
+            // His line is the one thing here somebody says out loud, so
+            // it carries him with it: the shared menu controller serves
+            // the stairwell cat too, and that line is the hero's own
+            // thought rather than the cat talking.
             return InventoryTargetInteractionDefinition.WithoutRequirement(
                 talkResponseKey,
                 confirmationKey,
-                ResponseDurationSeconds);
+                ResponseDurationSeconds,
+                speaker);
+        }
+
+        /// <summary>
+        /// Who he is when he answers: which head the sound comes from,
+        /// what tone he writes in, and how far it carries. Without it
+        /// his answer is whole, instant and silent, as it was before.
+        /// </summary>
+        public void AttachSpeaker(in NpcSpeaker value)
+        {
+            speaker = value;
         }
 
         public bool CanInteract(PlayerInteractor interactor)

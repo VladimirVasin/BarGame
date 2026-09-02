@@ -586,6 +586,11 @@ ARCHETYPES = {
         (800, 1600),
         sit_clip="ChairCarrierSit", seated_clearance_m=(0.88, 0.97),
         signature_anatomy=("carried_chair",),
+        # OFF THE STREET, 2026-09-02, by the user: «стулоносец не нормальный».
+        # He keeps his seated ride and his clips; nobody meets him. The
+        # manifest field is not decoration - `CityPedestrianAssetSetup`
+        # throws when it disagrees with the runtime catalog.
+        pool_eligible=False,
     ),
     "kettle_hat": ArchetypeSpec(
         "kettle_hat", "kettle_hat_walker_v1", "Kettle Hat Walker", 305521,
@@ -747,10 +752,15 @@ ARCHETYPES = {
         "LakeFisherman3D.blend", "LakeFisherman3D",
         "LakeFisherman3D.png", "FishermanLean", "FishermanTrudge",
         (900, 2000),
+        # The street pair stays authored and bound: he had them when he
+        # roamed, nothing plays them now, and stripping them would move the
+        # animation manifest signature for no gain.
         ambient_idle_clip="FishermanStreetIdle",
         ambient_walk_clip="FishermanStreetWalk",
         staged=True,
-        pool_eligible=True,
+        # OFF THE STREET, 2026-09-02, by the user: he is a story figure and
+        # belongs on his own мостки, not in the crowd.
+        pool_eligible=False,
     ),
     # The park chess player. One staged model for the permanent post at
     # the west park chess set: an old man alone at one of the two tables

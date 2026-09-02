@@ -7,6 +7,31 @@ using UnityEngine.Playables;
 namespace BarPromenade
 {
     /// <summary>
+    /// Which of a design's two clip pairs a body plays.
+    ///
+    /// Every promoted resident carries TWO: the working loop it was authored
+    /// for - the watchman's `WatchmanWatch`, the weigher's `WeigherCheck`,
+    /// the babushka's `BabushkaSmoke` - and a shared citizen gait so that an
+    /// anonymous copy of it on the promenade reads as a passer-by rather than
+    /// as that person doing their job in the middle of the street.
+    ///
+    /// Until 2026-09-02 the graph only ever built the roaming pair, so a
+    /// figure POSED at a courtyard dock played a one-and-a-half-second
+    /// pavement breath for ever. That is what the user was looking at when he
+    /// asked for «осмысленную и активную idle анимацию»: the meaningful
+    /// animation already existed, one field away, and nothing selected it.
+    /// </summary>
+    public enum CityPedestrianClipSource
+    {
+        /// <summary>The shared citizen gait: anyone on the street.</summary>
+        Roaming = 0,
+
+        /// <summary>The design's own working loop: a body standing where it
+        /// belongs, doing what it is for.</summary>
+        Placed = 1
+    }
+
+    /// <summary>
     /// Lightweight, manually advanced Idle/Walk/Sit presentation for a pooled
     /// city pedestrian. Route motion remains entirely code-owned.
     /// </summary>
@@ -24,6 +49,10 @@ namespace BarPromenade
         private Transform seatAnchor;
         private CityPedestrianSeatedRide seatedRide;
         private CityPedestrianAssetRegistry registry;
+        private CityPedestrianClipSource clipSource =
+            CityPedestrianClipSource.Roaming;
+        private AnimationClip activeIdleClip;
+        private AnimationClip activeWalkClip;
         private Vector3 modelBaseLocalPosition;
         private float animationSpeed = 0.91f;
         private float targetWalkWeight;
@@ -61,6 +90,20 @@ namespace BarPromenade
         public void Initialize(
             CityPedestrianAssetRegistry assetRegistry)
         {
+            Initialize(assetRegistry, CityPedestrianClipSource.Roaming);
+        }
+
+        /// <summary>
+        /// The same, choosing which pair of clips the body lives on. Every
+        /// caller that does not say gets <see cref="CityPedestrianClipSource.
+        /// Roaming"/>, which is what the thirteen pooled walkers, the bar
+        /// patrons, the bus passengers and the balcony smokers all want.
+        /// </summary>
+        public void Initialize(
+            CityPedestrianAssetRegistry assetRegistry,
+            CityPedestrianClipSource source)
+        {
+            clipSource = source;
             if (IsInitialized)
             {
                 throw new InvalidOperationException(
@@ -116,8 +159,8 @@ namespace BarPromenade
                 : 0f;
             idlePlayable.SetSpeed(1d);
             walkPlayable.SetSpeed(animationSpeed);
-            idlePlayable.SetTime(phase * registry.IdleClip.length);
-            walkPlayable.SetTime(phase * registry.WalkClip.length);
+            idlePlayable.SetTime(phase * activeIdleClip.length);
+            walkPlayable.SetTime(phase * activeWalkClip.length);
             EvaluateGraph(0f);
         }
 
@@ -274,16 +317,31 @@ namespace BarPromenade
             locomotionMixer = AnimationMixerPlayable.Create(
                 graph,
                 hasSitPlayable ? 3 : 2);
-            // The ROAMING pair, which is the ambient one where a design
-            // declares it and the ordinary slots otherwise. A promoted
-            // resident walks the street on the shared citizen gait while its
-            // placed copy goes on beating a carpet or holding a gate.
+            // Which pair this body lives on. ROAMING is the ambient one
+            // where a design declares it and the ordinary slots otherwise: a
+            // promoted resident walks the street on the shared citizen gait
+            // while its PLACED copy goes on beating a carpet or holding a
+            // gate.
+            //
+            // Cached, and not only for speed: `ConfigureCycle` seeds the
+            // phase off a clip length, and it used to read `registry.IdleClip`
+            // while the playable had been built from `RoamingIdleClip`. For
+            // the babushka that pushed a `phase x 4.0 s` seek into a `2.0 s`
+            // clip - it wrapped instead of erroring, quietly aliasing the
+            // phase spread the director asks for so that bodies meant to be
+            // out of step were not.
+            activeIdleClip = clipSource == CityPedestrianClipSource.Placed
+                ? registry.IdleClip
+                : registry.RoamingIdleClip;
+            activeWalkClip = clipSource == CityPedestrianClipSource.Placed
+                ? registry.WalkClip
+                : registry.RoamingWalkClip;
             idlePlayable = AnimationClipPlayable.Create(
                 graph,
-                registry.RoamingIdleClip);
+                activeIdleClip);
             walkPlayable = AnimationClipPlayable.Create(
                 graph,
-                registry.RoamingWalkClip);
+                activeWalkClip);
             idlePlayable.SetApplyFootIK(false);
             idlePlayable.SetApplyPlayableIK(false);
             walkPlayable.SetApplyFootIK(false);

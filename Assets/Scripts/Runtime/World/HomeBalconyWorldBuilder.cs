@@ -335,20 +335,12 @@ namespace BarPromenade
                 false);
             roof.transform.localRotation =
                 Quaternion.Euler(0f, 0f, -12f);
-            CreateExteriorSurfaceBox(
-                "Player Home Front Eave Fascia",
-                parent,
-                new Vector3(
-                    outerEave + 0.045f,
-                    FrontEaveHeight - 0.11f,
-                    0f),
-                new Vector3(
-                    0.09f,
-                    0.18f,
-                    facadeDepth + 0.42f),
-                PlayerHomeExteriorSurfaceKind.PaintedWood,
-                SurfaceProjection.BoxZY,
-                false);
+
+            // The street model keeps a narrow fascia at the roof edge, but
+            // rebuilding it in Home puts a long foreground beam directly
+            // across the fixed balcony shot. The roof slab already closes
+            // the silhouette, so the bounded reconstruction omits the
+            // camera-obstructing duplicate.
         }
 
         private static void BuildLowerFacadeWindows(

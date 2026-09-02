@@ -192,27 +192,37 @@ namespace BarPromenade
                     TriggerSpan,
                     TriggerHeight,
                     TriggerReach);
+                // One tone and one head either way — whether he is
+                // offering the road or only answering. The source lives
+                // on the speech service: the passive-presentation guard
+                // below rejects an AudioSource inside this instance.
+                NpcSpeaker speaker = NpcSpeaker.FromRegistry(
+                    presentation,
+                    registry,
+                    NpcEarshotProfile.Conversation);
                 if (targetInteraction != null)
                 {
-                    trigger
-                        .AddComponent<LastRouteFerrymanInteraction>()
-                        .Initialize(
-                            stance.Position,
-                            presentation,
-                            targetInteraction,
-                            voice.LineKeys,
-                            voice.ConfirmationPromptKey,
-                            voice.QuipStream);
+                    var menu = trigger
+                        .AddComponent<LastRouteFerrymanInteraction>();
+                    menu.Initialize(
+                        stance.Position,
+                        presentation,
+                        targetInteraction,
+                        voice.LineKeys,
+                        voice.ConfirmationPromptKey,
+                        voice.QuipStream);
+                    menu.AttachSpeaker(speaker);
                 }
                 else
                 {
-                    trigger
-                        .AddComponent<LastRouteFerrymanTalkInteraction>()
-                        .Initialize(
-                            stance.Position,
-                            presentation,
-                            voice.LineKeys,
-                            voice.QuipStream);
+                    var talk = trigger
+                        .AddComponent<LastRouteFerrymanTalkInteraction>();
+                    talk.Initialize(
+                        stance.Position,
+                        presentation,
+                        voice.LineKeys,
+                        voice.QuipStream);
+                    talk.AttachSpeaker(speaker);
                 }
             }
 

@@ -24,7 +24,23 @@ namespace BarPromenade
         Plate,
         // Appended LAST on purpose: the bindings serialize this enum as an
         // int, and a member slipped in above would repaint the prefab.
-        RadioDial
+        RadioDial,
+
+        /// <summary>
+        /// Every lit surface inside the cabin: the plafond lens over the
+        /// seats, the bulb in the glovebox and the two instrument faces.
+        ///
+        /// One slot for all three, because the authored value only fixes
+        /// the colour and keeps Unity's emission keyword alive - the
+        /// runtime writes each renderer's actual level through its own
+        /// property block, exactly as the radio dial is already driven.
+        ///
+        /// The faces used to sit on <see cref="Plate"/>, and that was the
+        /// trap: the number plate hanging off the nose of the car is on
+        /// the same slot, so lighting the dials there would have set the
+        /// plate glowing in the dark.
+        /// </summary>
+        CabinLamp
     }
 
     [Serializable]

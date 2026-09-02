@@ -159,6 +159,28 @@ RADIO_KNOB_Z = 0.893
 SPEEDO_CENTER = (0.385, -0.995, 1.02)
 FUEL_GAUGE_X = 0.495
 
+# The plafond over the front seats, and the bulb in the glovebox. Both are
+# drawn because this world's light has visible causes: the summit's every
+# fixture carries its own halo, the bus's cabin lamps are pendant bulbs you
+# can see, and a cone arriving from nothing is the one thing the art bible
+# does not allow.
+#
+# The plafond hangs on the centreline, between the two heads rather than
+# over either of them - a seated crown reaches z 1.51-1.62 but only over
+# x -0.70..-0.18 and 0.18..0.70, so the middle of the roof is the one place
+# a lamp can hang without being worn as a hat. It is FORWARD of the mirror
+# (y -0.895..-0.865) and clear of the header rail (y -0.95..-0.81) by five
+# centimetres, and its housing bites 3 cm up into the roof slab so no lit
+# face is ever coplanar with the headlining - the seam rule the car's own
+# headlights and the bus's cabin strip both paid for.
+CABIN_LAMP_Y = -0.720
+CABIN_LAMP_HOUSING = ((0.0, CABIN_LAMP_Y, 1.565), (0.170, 0.110, 0.050))
+CABIN_LAMP_LENS = ((0.0, CABIN_LAMP_Y, 1.5295), (0.120, 0.076, 0.041))
+# And the bulb, in the roof of the compartment just inside the opening, so
+# that dropping the lid shows the lamp itself and not only its pool. That
+# is what was asked for; a real glovebox hides its bulb behind the lip.
+GLOVEBOX_BULB = ((-0.460, -0.960, 0.984), (0.048, 0.032, 0.044))
+
 DOOR_HINGE_Y = -1.17    # the A-pillar base; the door opens forward of it
 DOOR_HINGE_Z = 0.73
 DOOR_LEAF_LENGTH = 1.51
@@ -315,6 +337,15 @@ MATERIALS: dict[str, tuple[tuple[float, float, float, float], float, float, floa
     # material keeps its emission keyword and the runtime writes the colour
     # black until the radio is switched on.
     "RadioDial": ((0.93, 0.62, 0.22, 1.0), 0.0, 0.55, 1.2),
+    # The cabin's own lit surfaces: the plafond lens over the seats, the
+    # glovebox bulb and the two instrument faces. ONE slot for all three,
+    # because the authored value only fixes the colour and keeps Unity's
+    # emission keyword alive - the runtime writes each renderer's actual
+    # level through its own property block. The faces used to sit on
+    # `Plate`, which is ALSO the number plate hanging off the nose of the
+    # car: lighting the dials on that slot would have set the plate
+    # glowing in the dark.
+    "CabinLamp": ((0.949, 0.808, 0.620, 1.0), 0.0, 0.34, 1.05),
     "Headlight": ((0.98, 0.94, 0.78, 1.0), 0.02, 0.18, 9.0),
     "TailLight": ((0.55, 0.020, 0.012, 1.0), 0.0, 0.30, 2.4),
     "Plate": ((0.60, 0.60, 0.55, 1.0), 0.05, 0.62, 0.0),
@@ -1502,6 +1533,32 @@ class LastRouteCarBuilder:
             "Interior",
         )
 
+        # The plafond: a dark bezel bitten into the headlining with a
+        # frosted lens hanging proud of it. Two parts rather than one so
+        # the housing can stay unlit trim while the lens is the thing that
+        # glows - the same division the headlight rim and lens already use.
+        self._dash_boxes(
+            "GEO_CabinLampHousing",
+            (CABIN_LAMP_HOUSING,),
+            "cabin_lamp_housing",
+            "Trim",
+        )
+        self._dash_boxes(
+            "GEO_CabinLampLens",
+            (CABIN_LAMP_LENS,),
+            "cabin_lamp_lens",
+            "CabinLamp",
+        )
+        # The glovebox bulb. NOT parented to PIVOT_GloveboxLid: that pivot
+        # is asserted to own exactly the lid and its catch, and a bulb
+        # riding the leaf would swing out of the box it is meant to light.
+        self._dash_boxes(
+            "GEO_GloveboxBulb",
+            (GLOVEBOX_BULB,),
+            "glovebox_bulb",
+            "CabinLamp",
+        )
+
         # The lid, authored in its hinge's space: the hinge is the origin,
         # the leaf stands up from it flush with the face and laps the
         # aperture by a centimetre each side, and the catch rides it.
@@ -1613,7 +1670,12 @@ class LastRouteCarBuilder:
             segments=4,
         )
         self._dash_accumulator("GEO_InstrumentBezels", bezels, "instrument_bezels", "Chrome")
-        self._dash_accumulator("GEO_InstrumentFaces", faces, "instrument_faces", "Plate")
+        # NOT `Plate`. That slot is shared with GEO_NumberPlate hanging off
+        # the nose of the car, so a lit dial there is a glowing number
+        # plate. See MATERIALS["CabinLamp"].
+        self._dash_accumulator(
+            "GEO_InstrumentFaces", faces, "instrument_faces", "CabinLamp"
+        )
         speedo = self.add_pivot(
             "PIVOT_SpeedoNeedle",
             "speedo_needle",
@@ -2017,6 +2079,8 @@ REQUIRED_MESH_ROLES = (
     "radio_bezel", "radio_dial", "radio_knob", "radio_needle",
     # ... and the furniture he only looks at.
     "instrument_bezels", "instrument_faces", "speedo_needle",
+    # ... and the three things in here that light up.
+    "cabin_lamp_housing", "cabin_lamp_lens", "glovebox_bulb",
     "dash_vents", "ashtray", "dash_lip", "transmission_tunnel",
     "gear_lever", "lever_knobs", "pedal_plates", "pedal_stems",
     "column_stalk", "ignition_key", "sun_visor", "mirror_stalk",

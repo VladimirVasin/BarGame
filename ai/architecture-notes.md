@@ -6,6 +6,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 - **Accepted:** Unity `6000.5.10f1` with URP `17.5.0`.
 - **Accepted:** New Input System is enabled.
+- **Corrected — balcony smokers are a local population, not a city-load
+  tableau:** a production-seed walk exposed the failure of selecting one or two
+  fixed Residential buildings for the whole map: the only actor could live in
+  a district the player never crossed. Every ordinary Residential building now
+  publishes one deterministic candidate dock, while a per-session director
+  rolls only front-facing candidates from the fog-readable lowest balcony row
+  within `22 m` of the moving hero, prefers the `12-22 m` cross-street band
+  ahead of the current travel direction, bounds an empty eligible area to one
+  missed opportunity, keeps at most two
+  active and releases them beyond `36 m` or after the hero leaves the facade
+  side.
+  Presentation remains passive and unchanged; Home retains a separate bounded
+  deterministic composition because its exterior view is a modal reconstruction,
+  not the live City runtime.
 - **Accepted:** Domain reload is disabled on entering play mode
   (`m_EnterPlayModeOptions: 1`); scene reload is kept, being cheap and safe.
   This makes every mutable static field in `Assets/Scripts/Runtime` survive
@@ -1530,6 +1544,84 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The panel is sized once from the whole line and only the drawn substring
   grows, because `GUIStyle.CalcHeight` on a growing string steps the box a
   row taller mid-word.
+- **Accepted 2026-09-02 by direct user decision — every spoken line types out,
+  and every letter it writes ticks:** the game had two ways of saying a thing.
+  The park quarrel and the mountain cafe typed into a bubble over the speaker's
+  head; the watchman, the fisherman and the Ferryman answered whole and
+  instantly in the prompt panel. Both are now one mechanism —
+  `SpeechDelivery` owns the typing at `34` characters a second and emits one
+  keystroke per newly revealed letter, and both views embed it. The user chose
+  to KEEP the two channels (see the note below, which stands): an answer to the
+  hero stays at the bottom of the screen, and only what he overhears hangs over
+  a head. What is unified is how a character speaks, not where.
+  **This lifts a prohibition, so it is a §6 registry amendment, not a
+  refactor.** The story bible's two mountain-cafe rows said «Реплики не
+  озвучиваются и не добавляют AudioSource» and «Муж не получает … голоса,
+  AudioSource»; §17 said the same in prose; this paragraph said NPC voice audio
+  was deliberately absent. All four are rewritten around one distinction: a
+  blip is the sound of a letter being WRITTEN, not a voice. There are no
+  phonemes, no words, no intonation and no recording anywhere in
+  `NpcSpeechBlipSynthesis` — one triangle, its inharmonic partial, a little
+  grit, `45 ms`, quantized to 127 steps like everything else in the village
+  one-shot family. What the eight authored profiles in `NpcVoiceCatalog` carry
+  is a fundamental and a timbre, which is how two men shouting at each other
+  every ten seconds are told apart by ear rather than only by which head the
+  panel sits over.
+  The literal half of the old prohibition is also kept rather than argued away:
+  **no staged prefab gains an `AudioSource`.** `CemeteryWatchmanFactory`,
+  `SeacoastFishermanFactory` and `LastRouteFerrymanFactory` each throw if their
+  imported model contains one, and those guards are untouched — the sources
+  live on the `NpcSpeechVoice` service host and are moved to the speaker's
+  position for the length of a line. They are also not `RetroAudioService`'s:
+  that pool enforces a per-effect cooldown and a voice cap of one to three, and
+  has no per-play pitch, so a keystroke every `90 ms` at a pitch chosen by the
+  letter would have been mostly swallowed. A lease is held for a whole line, so
+  a keystroke can never steal the voice out from under the line still typing.
+- **Accepted — the reveal is stepped once a frame, in `Update`, and the fade is
+  a property of the bubble rather than of the view:** the count used to be
+  recomputed inside `OnGUI`, which fires several times a frame for layout and
+  repaint — fine while nothing depended on the step, and two or three
+  keystrokes per letter the moment something did. `SpeechDelivery.Step` is now
+  called once from `Update` and `OnGUI` only reads what it produced.
+  The opacity moved for a harder reason: `NpcSpeechBubbleView` carried ONE
+  `Opacity` for everything on screen, set from outside by
+  `CityParkQuarrelController` every frame. That was only ever correct because
+  the two speakers it served sit at the same table — two men at different
+  distances were not expressible at all. Each bubble now measures its own
+  anchor against the listener through `NpcEarshotProfile`, which also owns the
+  hard cull the request asked for: past the radius a line is ABSENT, not faint.
+  Three presets — `Shout` `11/26/30`, `Conversation` `5/13`, `Room` `8/18` —
+  and the third has a measured floor rather than a chosen value: nothing under
+  the mountain cafe's own footprint diagonal (`14.0 m`, from the `9.8 x 10 m`
+  in `MountainRoadTerminalPlanner.CreateCafe`) can satisfy the §6 registry's
+  «внутри физического объёма кафе». **Recompute that floor if the footprint
+  moves.** `CityParkQuarrelController` keeps `IsWithinEarshot` and its
+  hysteresis: whether the two of them are arguing at all is behaviour, and it
+  is not the same question as how solid a line is.
+- **Accepted 2026-09-03 — the earshot radii are wider than the first build's,
+  and the rolloff starts at the solid radius rather than at the speaker's
+  elbow:** the user's report was that the sound cut off too close. Two separate
+  causes, and the second was the real one.
+  The radii were simply tight (`Shout` `8/22/25`, `Conversation` `3/7`,
+  `Room` `4/14`); they are now `11/26/30`, `5/13` and `8/18`. Seven metres is
+  four or five paces, so an answer went from full strength to gone in the time
+  it takes to turn round, which read as the line being cut rather than left
+  behind.
+  Underneath that, `NpcSpeechVoice` set every source's `minDistance` to a flat
+  `1.2 m`, so Unity's linear rolloff began a stride from the man and ran
+  **against** the fade curve rather than with it. The two attenuations
+  multiplied: at `Conversation`'s old faint radius the rolloff reached exactly
+  zero, so the last third of the fade — the part meant to read as «over
+  there» — was silent. `Blip` now raises `minDistance` to the speaker's own
+  SOLID radius, so a keystroke holds full strength for exactly as long as his
+  words are drawn solid and only then starts falling. **This is the fact to
+  re-derive if a profile's radii ever change**, because the two curves have to
+  keep their shared shape.
+  `CityParkQuarrelController.AudibleRadiusMeters` and `SilenceRadiusMeters`
+  were briefly aliases of the `Shout` constants; they are the quarrel's own
+  `22`/`25` again. Widening how far a line can be READ must not move the moment
+  two men start shouting, and the profile is now deliberately wider than the
+  gate on both ends, so they fall silent before their words begin to fade.
 - **Accepted — a line nobody said to the hero is drawn over the speaker, not
   in the prompt panel:** `InteractionPromptView` is the hero's own channel —
   what he can do, and what he was just told when he asked. A quarrel he is
@@ -1613,6 +1705,45 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Cemetery Watchman, the Lake Fisherman and the two Park players. With the
   Chair Carrier, who was already ordinary and already roaming, the street pool
   is eight.
+
+- **Accepted — Two more designs taken off the street the same day
+  (2026-09-02), and the courtyards recast:** the entry above left two things
+  standing that the user found by walking the city. The Lake Fisherman roamed
+  although he is a story figure with a permanent post on the мостки, and the
+  Chair Carrier roamed although a man who carries a chair everywhere is not an
+  ordinary man — the user ruled him `bizarre` against the catalog's own
+  body-versus-prop line, which still holds for the two Park players. The
+  street pool is SIX, and the population profile was deliberately not raised
+  to compensate: a thinner street was the accepted price.
+
+  The courtyard vignettes were the other half. `CityCourtyardResidentPlan`
+  hard-coded the roaming pool OF THE DAY IT WAS WRITTEN — the Lampshade
+  Walker, the Long-Arm Walker and the Chair Carrier — so when the strange
+  walkers came off the street the courtyards kept them, and the one place a
+  player meets a figure with no face became a residential yard a metre from
+  the pavement, at every seed. That was never a story beat: the story bible's
+  §6 registry has no row for any of them and none for the pockets. They are
+  recast to the three ordinary designs that own a working loop of their own —
+  the Cemetery Watchman, the Weigh Attendant and the Yard Babushka.
+
+  Three things fell out of it that are worth naming:
+
+  - **`CityPedestrianClipSource`.** Every promoted resident carries two clip
+    pairs: its own working loop and a shared citizen gait. The graph only ever
+    built the roaming one, so a body POSED at a dock played a pavement breath
+    for ever while its six seconds of authored business sat one field away.
+    A placed body now asks for `IdleClip`; everything else still gets
+    `RoamingIdleClip` by default.
+  - **A phase-seeding bug went with it.** `ConfigureCycle` seeded from
+    `registry.IdleClip.length` while the playable had been built from
+    `RoamingIdleClip` — for the babushka a `phase x 4.0 s` seek into a `2.0 s`
+    clip. It wrapped rather than threw, quietly collapsing the phase spread
+    the director asks for.
+  - **`NpcDesignAppearanceCatalog` is finally consulted — by a test.** The
+    runtime still does not read it and the rule above still holds; but
+    `CityCourtyardResidentTests` now asserts that no courtyard resident is
+    `bizarre`. Nothing had ever asked the table the question it was written
+    for, which is why the leftover survived three weeks of green suites.
 
   Four consequences worth naming, because each one is a rule that used to hold
   and no longer does:
@@ -2040,8 +2171,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the hero's stool gives a bounded eye-level first-person view of the counter;
   the owner hides head geometry for the seated interval and restores the exact
   prior camera mode, pose, FOV and cinematic-motion state on exit or teardown.
-  The pair's conversation is text-only; NPC voice audio and free ambience are
-  deliberately absent, and the hero is never a service target or addressee.
+  The pair's conversation types out and ticks with the game-wide writing blip
+  (see the accepted decision below); voice acting, phonemes and free ambience
+  are deliberately absent, and the hero is never a service target or addressee.
   The
   right landmark is a `230 m` cableway: eight colliderless cabins traverse one
   continuous loop over nine supports, while the far turn stands beyond the
@@ -2064,12 +2196,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted and implemented — The terminal cafe is a bounded Blender
   migration, not a rewrite of the whole terminal:** the cafe's visible
   runtime-primitive shell, interior and furniture were replaced by one
-  fixed-metre deterministic Blender-authored set and measured manifest (`48`
-  meshes / `4,568` triangles / `41` anchors / five dynamic props). The terminal
+  fixed-metre deterministic Blender-authored set and measured manifest (`59`
+  meshes / `5,682` triangles / `45` anchors / six dynamic props). The terminal
   plan continues to own the five-sided
   footprint, `4.4 m` height, `2.8 m` chamfer, open `1.6 m` door, walkability,
   logical collision, shelter, map landmark, semantic/audio anchors and
   lighting; imported geometry brings no collider, Light, camera or material.
+  Generator `1.1.0` extends the rear service wall through that same bounded
+  asset contract: an extended cabinet and cutting-board dock, a compact stove
+  with its pan dock, and a refrigerator cavity with two shelves. The sixth
+  dynamic prop is the separate hinge-ready `FridgeDoor`, with authored
+  `FridgeDoorPivot` and child `Grip.FridgeDoor`. It remains closed and has no
+  runtime driver, Animator, Rigidbody or attendant/player interaction; the
+  existing closed-fridge and service-cabinet boxes remain two of the same
+  `17` plan-owned logical colliders.
   The counter has seven `0.8175 m`-high stools: the sleeping lone visitor and
   visually grouped pair occupy three with grounded seat contact, four remain
   empty, and the existing hero seat stays on one of those empty positions. The
@@ -2077,12 +2217,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   keep the existing bounded tableau notice, but it creates no order, item,
   service, dialogue with the hero or new gameplay transaction.
   The two visible practicals plus one shadowless technical sulphur spill proxy
-  with no third visible fixture remain the complete cafe-light contract. The
-  warm key aims at the sleeping contact pose without self-shadowing the folded
-  arms across the face; the longer cold key holds the dark-clothed seated line
-  before its range fade, while the reduced common wash keeps the pale attendant
-  from owning the whole shot. The proxy reaches only the threshold and near
-  apron, never the terrace or brink.
+  with no third visible fixture remain the complete three-Light cafe contract.
+  The warm key aims at the sleeping contact pose without self-shadowing the
+  folded arms across the face. The existing `Light.ColdService` now starts
+  inside the visible task fixture over the stove and still holds the
+  dark-clothed seated line before its range fade, while the reduced common wash
+  keeps the pale attendant from owning the whole shot. The proxy reaches only
+  the threshold and near apron, never the terrace or brink.
 
   **Accepted exception — role-staggered cafe drinking:** on `2026-09-01` the
   user explicitly replaced the earlier synchronized-pair beat. The pair stays
@@ -2124,6 +2265,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and plume envelopes; it owns no independent timer, Light or AudioSource.
   The man's contacts likewise own no impact sound. This is an implementation
   of the existing silent-cafe contract, not a new story exception.
+
+  **Accepted correction — 2026-09-02, explicit user request — the cafe smoke
+  is a mouth exhale, not ember smoke:** the existing phase-owned plume now
+  follows the live `SOCKET_Mouth` and emits only after the drag, across the
+  authored exhale window. The cigarette ember remains a separate
+  drag-synchronized visual. Both effects still read `DefaultClipNormalizedTime`
+  and add no autonomous timer, Light or AudioSource. This supersedes only the
+  plume origin in the prior cafe-smoking contract.
 
   **Accepted architecture exception — 2026-09-02, explicit user request —
   private adult banter for the mountain-cafe pair:** this supersedes only the
@@ -2367,8 +2516,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   one `WindowGlass` part is emissive: the upper street pane immediately left
   of the balcony when viewed from outside; every other pane is dark. The Home
   scene keeps its existing physical deck/guards/camera/smoking contract and
-  rebuilds the same surfaces, exact visible window positions and recessed
+  rebuilds the same materials, exact visible window positions and recessed
   entry around it, so City and Home no longer draw competing balcony shells.
+  **Accepted camera-specific omission, 2026-09-02:** the bounded Home view does
+  not rebuild the authored model's narrow `Front Eave Fascia`. At Home-local
+  `y = 2.19 m` it crossed both the fixed balcony and smoking shots as a long
+  foreground beam. The City asset retains its street-scale fascia, while Home
+  retains the pitched roof slab; collision, shelter and the exterior
+  silhouette contract are unchanged.
 - **Accepted — Ordinary buildings use semantic fixed-metre district prototypes:**
   design `city_buildings_prototypes_v2` supersedes v1 as one deterministic,
   fixed-metre Blender source with four district grammars: Old Town's

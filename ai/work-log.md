@@ -6,6 +6,625 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-03 — The mountain cafe kitchen closed its false rear aisle
+
+The visible rear lining is at local `Z=5.2725`, while the first kitchen pass
+ended `0.8775–0.9825 m` in front of it. Generator `1.1.2` now derives the whole
+service run from that lining: the worktop, backsplash and refrigerator stop
+`3 mm` before it, the cabinet keeps only a `20 mm` construction recess, and the
+right edge retains at least `80 mm` clearance before the rear service door.
+The stove, pan, board, urns, service pot, appliance anchors, cold task fixture
+and matching plan-owned colliders moved with their supports. Counts remain
+`59` meshes / `5,682` triangles / `45` anchors / six dynamic props / `17`
+collider descriptors.
+
+The refrigerator body, door, cavity and shelves now sample a clean part of the
+existing props sheet and use role-specific muted enamel parameters derived from
+the hero's home refrigerator. The stove and pan sample inset regions inside a
+single metal panel, outside the shared sheet's grid and screws, with their own
+metal parameters. No seventh texture sheet, runtime interaction, animation,
+Rigidbody or attendant behaviour was added; the fridge door remains closed.
+
+The first task fixture pass moved the `Light.ColdService` anchor but left its
+beam aimed at the old counter target, placing the stove about `82°` off-axis;
+its ordinary non-emissive lens could not appear lit either. The lens now uses
+the shared cold HDR emissive material, while the same runtime Light follows the
+angular bisector between straight down and the counter fill target. Its
+`110° / 100°` outer/inner cone and intensity `53` put the stove, pan and all
+four counter figures inside their authored coverage without adding a fourth
+Light.
+
+Python compilation, Blender validate-only and full deterministic generation
+completed green with signature
+`a332d2a6f5b052e047d25927455985e13c8e61b376c9a76bac0b3a8c6b579176`.
+The focused collider, imported-model and summit-lighting EditMode contracts
+passed, including actual texture/tint/smoothness/metallic property blocks,
+emissive-lens binding and task/cast cone coverage. The explicit graphical
+`CaptureCafeContactFrames` PlayMode check passed `1/1`; its dedicated kitchen
+frame was reviewed for wall contact, appliance surfaces, a visibly burning
+lens and a real light pool across the stove and pan. Complete suites and a
+player build were intentionally not run.
+
+## 2026-09-03 — The keystrokes carry further, and start falling later
+
+The user's report was that the sound cuts off too close. Two causes, and the
+radii were the smaller one.
+
+They were tight and are now wider: `Shout` `8/22/25` to `11/26/30`,
+`Conversation` `3/7` to `5/13`, `Room` `4/14` to `8/18`. Seven metres is four
+or five paces, so an answer went from full strength to gone in the time it
+takes to turn round.
+
+The real cause was underneath. `NpcSpeechVoice` gave every source a flat
+`minDistance` of `1.2 m`, so Unity's linear rolloff started a stride from the
+speaker and ran AGAINST the fade curve instead of with it. The two attenuations
+multiplied, and at `Conversation`'s old faint radius the rolloff reached
+exactly zero — the last third of the fade, the part that is supposed to read as
+«over there», was silent. `Blip` now raises `minDistance` to that speaker's own
+solid radius, so a keystroke holds full strength for as long as his words are
+drawn solid and only then falls, in step with them.
+
+`CityParkQuarrelController.AudibleRadiusMeters` and `SilenceRadiusMeters` were
+aliases of the `Shout` constants, which meant widening how far a line can be
+read would also have moved the moment the two men start arguing. They are the
+quarrel's own `22`/`25` again, and the profile is now wider than the gate on
+both ends, so they fall silent before their words begin to fade.
+
+`ParkQuarrelTests`, `InteractionPromptViewTests`, `NpcSpeechVoiceTests` and
+`MountainRoadCafeConversationTests` passed `55/55` in `2.67 s`, with three
+quarrel assertions retargeted off the engage gate onto the profile's own radii
+and one added that the whole band the two of them argue across stays legible.
+Complete suites, PlayMode and a player build were intentionally not run.
+
+## 2026-09-02 — The mountain cafe gained a passive kitchen line
+
+`build-mountain-road-cafe-3d-model.py` `1.1.0` now emits `59` meshes / `5,682`
+triangles / `45` anchors / six dynamic props while retaining six semantic
+detail sheets and `17` plan-owned collider descriptors. The rear service wall
+gained an extended cabinet and `CuttingBoardDock`, a compact stove and pan at
+`StovePanDock`, and a refrigerator cavity with two shelves. Its separate
+`FridgeDoor` is rooted at `FridgeDoorPivot` and carries child
+`Grip.FridgeDoor`, so the authored asset is ready for a future hinge motion.
+It currently stays closed: there is no runtime driver, Animator, Rigidbody or
+attendant/player interaction, and the existing cafe service timeline was not
+extended.
+
+The existing `Light.ColdService` anchor moved inside the visible task fixture
+over the stove. It adds a visible cause rather than another source: the cafe
+still owns exactly three runtime Lights and three short-range appliance voices.
+Blender validate-only and the full deterministic generation completed green,
+and the generated kitchen was reviewed in its closed pose plus a temporary
+`90`-degree door pose that exposed the cavity and shelves. The focused cafe
+model/collision EditMode selection passed `2/2`. The first headless PlayMode
+capture crashed on RenderTexture creation and is not counted; the graphical
+rerun of `CaptureCafeContactFrames` passed `1/1`. Complete test suites and a
+player build were intentionally not run.
+
+## 2026-09-02 — One typewriter, one keystroke, two channels
+
+The game said things two ways. `NpcSpeechBubbleView` typed at `34` characters a
+second over a speaker's head for the park quarrel, the board games and the
+mountain cafe; the watchman, the fisherman and the Ferryman answered whole and
+instantly through `InteractionPromptView`. Nothing anywhere made a sound.
+
+The typing is now one piece — `SpeechDelivery` — that both views embed, and the
+user's ruling was to KEEP the two channels: an answer to the hero stays at the
+bottom of the screen, and only what he overhears hangs over a head. The reveal
+moved out of `OnGUI`, which fires several times a frame, into a single
+`Update` step, because a per-letter event recomputed at draw time would tick
+two or three times per letter.
+
+Three things that were not visible before the work started:
+
+- **The fade could not describe two speakers.** The view carried ONE `Opacity`,
+  pushed in from `CityParkQuarrelController` every frame. It was correct only
+  because the two men it served sit at the same table. Each bubble now measures
+  its own anchor through `NpcEarshotProfile`, which also owns the hard cull the
+  request asked for — past the radius a line is absent, not faint.
+- **The `Room` radius is a measurement.** `Conversation`'s `7 m` does not cover
+  the mountain cafe: the footprint from `MountainRoadTerminalPlanner.CreateCafe`
+  is `9.8 x 10 m`, diagonal `14.0 m`, and the §6 registry requires the pair to
+  read from anywhere inside their own room. `Room` is that diagonal.
+- **The Ferryman's line never went through `ShowFeedback`.** It is packed into
+  `InventoryTargetInteractionDefinition.TalkResponseKey` and displayed when the
+  shared menu closes — a controller the stairwell cat also uses. The speaker
+  therefore rides on the DEFINITION, so the cat's line stays narration: whole,
+  instant and silent, bit-identical to before.
+
+The vocalizer is `NpcSpeechVoice`, built on the `CemeteryRavenVoice` pattern
+rather than `RetroAudioService`: that pool's per-effect cooldown and cap of one
+to three voices would have swallowed a keystroke every `90 ms`, and it has no
+per-play pitch. Sources live on a service host, never on an actor — all three
+staged factories throw on an `AudioSource` inside their model, and those guards
+are untouched. Eight authored profiles, one `45 ms` clip each (`~32 KB` for the
+whole game), with the letter's own semitone applied as source pitch.
+
+This lifts a prohibition rather than refactoring around one, so the story
+bible's two mountain-cafe §6 rows, its §17 prose, the art bible's §10f sound
+paragraph and the accepted decision in `architecture-notes.md` were all
+amended, by direct user decision, around one distinction: a blip is the sound
+of a letter being written, not a voice.
+
+`ParkQuarrelTests`, `InteractionPromptViewTests` and the new
+`NpcSpeechVoiceTests` passed `39/39` in `0.53 s`; `MountainRoadCafeConversation`,
+`CemeteryWatchman`, `SeacoastFisherman`, both Ferryman fixtures,
+`InventoryTargetInteractionController` and `StairwellCatInteraction` passed
+`67/67` in `2.47 s`. Complete suites, PlayMode and a player build were
+intentionally not run; `RetroSfxLibraryTests` and `RetroAudioServicePlayModeTests`
+are untouched by construction, because nothing here enters that table or pool.
+
+## 2026-09-02 — The grave plaque stays sharp while it is written
+
+The plaque close-up already aimed the camera at the board, but the cinematic
+depth-of-field tier kept measuring its focus distance to the ordinary grave-work
+interest. While the hero was writing, that point was the head of the borrowed
+stone; when he returned to read a finished plaque, it was the centre of the
+former pit. At the `0.92 m` plaque view distance, the priority-10 Bokeh volume
+therefore made the brass and its world-space letters visibly soft.
+
+`CemeteryGraveWorkController.GetCameraInterest` now returns the actual board
+position throughout both inscription and reading, so all three existing
+`CinematicDepthOfField` updates track the same point the camera shows. The
+focused regression
+`CemeteryGraveWorkTests.ThePlaqueShotFocusesOnTheBoardItShows` passed `1/1` in
+`0.421 s`. Complete suites, a player build and a new scene capture were
+intentionally not run; the existing cemetery capture does not enter the modal
+plaque interaction.
+
+## 2026-09-02 — The Home balcony lost its camera-crossing eave beam
+
+The reported beam was the bounded Home reconstruction's
+`Player Home Front Eave Fascia`, not the door header or balcony rail. Its
+`0.09 x 0.18 m` section ran across the entire facade at Home-local
+`y = 2.19 m`, directly in front of both the fixed Balcony shot and the tighter
+smoking camera. `HomeBalconyWorldBuilder` now omits that one street-scale
+fascia while retaining the pitched roof slab, physical deck, door and guards.
+The authored City exterior remains unchanged because its fascia reads at
+street scale and does not cross the Home camera.
+
+The focused
+`PlayerHomeLayoutTests.HomeBalconyFacade_UsesAuthoredLayoutAndKeepsAnchors`
+regression now requires the fascia to be absent and passed `1/1` in `0.478 s`.
+An opt-in scene capture attempt crashed inside Unity's particle billboard
+renderer while drawing City, before Home loaded, so it produced no new balcony
+frame and was not counted as verification. Complete suites and a player build
+were intentionally not run.
+
+## 2026-09-02 — Balcony smokers now follow the player's district
+
+A real production-seed walk disproved the original sparse composition. The
+runtime did create its actor, but it selected exactly one fixed balcony for the
+whole city: Residential cell `(8,9)`, fourth floor, about `141 m` from the
+start while City's far clip is `48 m`. Even after reaching that block, the
+fourth-floor figure sat in the strongest fog and at the edge of the player's
+available upward camera pitch. The absence was therefore a population and
+readability defect, not failed rendering or animation.
+
+Every one of the default layout's `29` ordinary Residential buildings now
+publishes one deterministic candidate on its lowest authored balcony row. A
+new `CityBalconySmokerDirector` follows the live player and rolls a per-session
+appearance only for front-facing candidates `5-22 m` away, preferring the
+fog-readable `12-22 m` cross-street band and candidates ahead of recent travel.
+The first resident has a `68%` ordinary opportunity and is forced after at most
+one eligible miss, so even a running traversal of a full `26 m` frontage cannot
+remain empty. At most two are active, never more than one per building; a
+resident is destroyed beyond `36 m` or after the player leaves the facade side.
+The player home remains excluded.
+
+The dynamic layer instantiates only its active figures. Their presentation is
+otherwise unchanged: any of the eight eligible roaming archetypes samples the
+literal Hero V2 `SmokeLoop`, carries the authored cigarette and ember, and
+emits the already-proven mouth plume on exhale. Home retains its separate
+bounded deterministic exterior-shot composition.
+
+Verification in fast mode:
+
+- production-layout analysis found `29/29` frontage segments with a valid
+  player-side window; their dock-to-street distances are `11.5-19.8 m`, their
+  worst front-facing dot is about `0.39` against a `0.05` floor, and their
+  maximum 3D view distance is about `21 m`;
+- focused EditMode fixture `CityBalconySmokerTests` passed `9/9` in `1.395 s`,
+  including candidate coverage, lower-row readability, bounded local spawn,
+  ahead-of-travel preference, factory presentation and distance release;
+- `git diff --check` passed; direct line counts keep every touched C# file
+  below the `1,500`-line ceiling (largest: `CityGameRoot.cs`, `1,473` lines);
+- complete EditMode/PlayMode suites, a player build and a new visual capture
+  were intentionally not run.
+
+## 2026-09-02 — Smoking smoke now follows the exhale
+
+The shared balcony-smoker presentation still samples the literal Hero V2
+`SmokeLoop`, but its focused visual regression now proves the resulting plume
+instead of merely finding a configured particle system. It waits for the
+authored automatic burst, requires live particles at the animated mouth and
+measures their average velocity outward from the facade. The review capture
+then ages a separate manual burst by `0.32 s`, so the smoke is visible rather
+than photographed at the transparent first instant. The regenerated context
+and close frames show the resident grounded on the paired apartment balcony,
+with a readable puff at the mouth.
+
+The mountain-cafe woman's old cigarette-tip plume is now a distinct mouth
+exhale. `MountainRoadCafeCigaretteEffect` follows her live `SOCKET_Mouth`,
+starts the world-space plume only after the ember's drag window has ended and
+keeps both effects locked to `DefaultClipNormalizedTime`. The ember remains on
+the cigarette; neither path adds a timer, Light or AudioSource. The cafe
+regression waits through a complete live idle if necessary and requires a
+non-zero emission rate, real particles, lip-adjacent origin and velocity out
+through the mouth in the authored exhale window.
+
+Verification in fast mode:
+
+- `ResidentialPrototype_ShowsDoorDeckRailsAndSmokingResident` passed `1/1` in
+  `1.730 s`; both regenerated `1280 x 720` frames were inspected at original
+  resolution;
+- the combined cafe selection
+  `PairWoman_CigaretteIsSilentAndPhaseLocked;CaptureCafeContactFrames` passed
+  `2/2` in `30.989 s`; the four refreshed cafe contact frames were inspected;
+- `git diff --check` passed, and every touched C# file remains below the
+  repository's `1,500`-line ceiling;
+- complete EditMode/PlayMode suites and a player build were intentionally not
+  run.
+
+## 2026-09-02 — Residential balconies gained apartments and a varied smoking cast
+
+The Residential building prototype now owns eight semantic balcony slots: two
+at each of four facade levels. Every slot binds one `2.5 x 1.2 m` deck and NPC
+dock to one person-height glazed apartment door, its adjacent window,
+threshold, front rail and side returns. Door, glass, frame and facade keep
+separate authored UVs, and the old `ResidentialBalconies` decoration descriptor
+is a compatibility no-op, so it cannot stamp an unrelated second stack over
+the imported facade. Generator `2.1.0` produced `28` meshes / `4,218`
+triangles with signature
+`93aefc4a5c910897dafaa45e7b4ab259232369284cc91b2457fca07443cadff5`;
+the Residential wrapper itself has `54` openings, eight balcony slots and
+`1,806` triangles.
+
+`CityBalconySmokerPlan` deterministically places one actor whenever eligible
+Residential lots exist and admits a second on a seeded `38%` minority. It
+allows at most one per building, rejects the player home before selection, and
+chooses across every current roaming design: chair carrier, yard babushka,
+weigh attendant, cemetery watchman, chess and checkers players, mourner and
+fisherman. Role props that conflict with smoking are hidden. The babushka keeps
+her authored cigarette and ember; every other body receives clones of those
+same Blender-authored skinned meshes rebound to its canonical hand rig.
+
+Unity cannot bind the Hero FBX's Generic animation curves directly to a
+separately imported pedestrian hierarchy merely because both Animators point
+to the same Avatar. The first visual proof exposed the resulting A-pose. The
+final presentation therefore samples the literal production `SmokeLoop` on a
+hidden render-disabled Hero V2 driver and transfers all `31` canonical local
+bone channels, including mouth and cigarette sockets, onto the selected
+pedestrian after each manual graph evaluation. The hero's authored frame holds
+also schedule the existing mouth-plume burst; no replacement animation, IK or
+runtime-made geometry was introduced. The result remains passive and owns no
+collider, rigid body, interaction, sound, light, camera or story state.
+
+City creates the plan after ordinary courtyard life. Home transforms that same
+selection into its local exterior space, keeps only full nearby prototypes and
+gates the actors with the existing Balcony-shot atmosphere. Both roots destroy
+their manual graphs before removing the runtime presentation.
+
+Verification in fast mode:
+
+- the deterministic source validator passed with the counts and signature
+  above, and the full Blender export regenerated the `.blend`, preview, FBX and
+  manifest;
+- Unity asset setup imported and rebuilt all four prototype prefabs and ended
+  with `CITY BUILDING UNITY ASSET BUILD OK`;
+- the explicit focused PlayMode capture
+  `ResidentialPrototype_ShowsDoorDeckRailsAndSmokingResident` passed `1/1` in
+  `1.277 s`. It checks the door/deck/rail/dock contract, automatic plume,
+  cigarette/ember and exact hidden-driver pose parity for all eight eligible
+  roaming archetypes;
+- both generated frames were inspected at original resolution: the facade has
+  aligned doors, thresholds and rails without visible surface slipping, and
+  the resident is grounded on the deck in a readable inhale pose.
+
+Complete EditMode/PlayMode suites and a player build were intentionally not run.
+
+## 2026-09-02 — The courtyards are recast, and the strangeness leaves the street for good
+
+The user walked the city, photographed three courtyard vignettes and asked for
+four things: the fisherman out of the random pool, the babushka's props off her
+roaming copy, the strange figures in the vignettes recast as ordinary people
+with a meaningful active idle, and a sweep for any other strange body left
+standing about. A fifth arrived when he read the first answer: **the Chair
+Carrier is not ordinary either.**
+
+**THE VIGNETTES WERE NEVER A DECISION.** `CityCourtyardResidentPlan` hard-codes
+three design ids, and they are exactly the roaming pool of the day the pockets
+were written. When the four strange walkers came off the street on 2026-09-02
+the courtyards kept them, so the one place a player meets a figure with no face
+became a residential yard, a metre from the pavement, at every seed — while the
+art bible went on describing the pockets as taking «редких бесколлайдерных
+жителей из общего городского набора», which by then meant eight ordinary
+people. The story bible's §6 registry has no row for any of them and none for
+the pockets, so nothing dated was deleted by recasting: this was residue, and
+the only reason it survived was that the ONE test touching the courtyard cast
+asserted the whitelist — it ratified the leftover instead of catching it.
+
+**THE CORE OF THE ANIMATION ASK COST ONE ENUM AND NO BLENDER RUN.** Every
+promoted resident carries TWO clip pairs: the working loop it was authored for
+and a shared citizen gait, so an anonymous copy on the promenade does not do its
+job in the middle of the street. `CityPedestrianPresentation.BuildGraph` only
+ever built the ROAMING pair, and `CityCourtyardResidentPresentation` advances
+with `moving:false` — so a body posed at a dock played a one-and-a-half-second
+pavement breath for ever, while `WatchmanWatch` (6.0 s, hands behind the back, a
+disapproving head shake and one smug chin jut), `WeigherCheck` (6.0 s, look up
+at the dial, lean in to the linkage, crouch to chalk the deck edge) and
+`BabushkaSmoke` (4.0 s, emphatic left-arm talk, one drag per lap) sat one field
+away. `CityPedestrianClipSource.Placed` selects them. Three of the four live
+roles became active for nothing.
+
+**A REAL BUG RODE IN ON THE SAME SEAM.** `ConfigureCycle` seeded the phase from
+`registry.IdleClip.length` while the playable had been built from
+`RoamingIdleClip` — for the babushka a `phase x 4.0 s` seek into a `2.0 s` clip.
+It wrapped instead of throwing, quietly collapsing the phase spread the director
+asks for. It matters here: the two new loops are both exactly 6.0 s and must not
+land in step.
+
+**THE SEATED PAIR IS THE HONEST SHORTFALL.** `WatchmanSit` and `WeigherSit` are
+one breath each, so the flag buys them nothing, and the cast is FORCED rather
+than chosen: a seated courtyard role needs a declared seated ride AND a wired
+sit clip, and among ordinary designs only the watchman and the weigher have
+both. The obvious cast for a board game is impossible — both park players ship
+`sitClip: {fileID: 0}`, and their `perch_seat_height_m` of `0.53-0.55` against a
+stool drawn at `0.42` would bury their soles in the pavement. They got
+`CityCourtyardResidentLook`, a late additive neck/head turn copied in shape from
+`MountainRoadCafeConversationLook`, over a pure absolute-time model
+(`CityCourtyardNardiExchange`) whose single contract is that the two men are
+never both looking away at once. **Their heads move; their arms do not reach the
+board** — the counters are baked into a batched chunk mesh — and that is stated
+rather than hidden.
+
+**THE CHAIR CARRIER, AND WHY THE RULE SURVIVED HIM.** The appearance catalog
+files strangeness by BODY: a strange thing worn or carried leaves a design
+ordinary, which is why he was the one design in the pool with no anomaly at all.
+The user overruled the verdict, not the rule — a chair is not worn and not put
+down, and a man who carries one through the whole city is strange whatever his
+proportions. The same rule still reads correctly for the two park players, who
+wear a game piece where a hat would be; that was put to the user explicitly and
+he confined the change to the Chair Carrier, and accepted a thinner street
+rather than raise the population profile.
+
+**THE SWEEP FOUND NOTHING ELSE.** Five independent search angles — by design id,
+by placement site, by scene and prefab asset, by borrow-for-parts, and by the
+bibles — agree that the courtyards were the only unauthorised placement. The
+six-armed bartender (§6 levels 0 and 2) and the stairwell cat (§10, §6 level 3)
+stay and are not standing figures: both are animated and one is interactive. The
+mother's teapot is a legitimate borrow, though worth knowing that the Kettle
+Hat's body is only `enabled = false` — a live hierarchy whose invisibility rests
+on one bool.
+
+Two documents were already false before this session and are corrected with it:
+the art bible and the architecture notes both justified KEEPING the Lampshade
+and the Long-Arm by the courtyard casting this change removes, which would have
+left the next reader four designs with no defence — and deleting the Kettle Hat
+takes the mother's teapot with it.
+
+Verification:
+
+- `BarPromenade.Runtime` and `.EditModeTests` compile, 0 errors.
+- EditMode `CityPedestrian.*`, `CityCourtyard.*`, `NpcDesignAppearanceTests`,
+  `DryingYardBabushkaTests`, `CityBusStopWaitPlannerTests`, `BarPatron.*`,
+  `MountainRoadCafe.*` — **106 passed, 0 failed**.
+- Nine failures on the first run were all predicted arithmetic and are fixed at
+  the source rather than by widening: the clip-count identity
+  (`53 == 8*2 + 3 + 34` becomes `53 == 6*2 + 2 + 39`, the constant re-derived
+  term by term), the catalog order, the bus rider count, and the promoted-
+  resident case list. ONE was not arithmetic and is worth the note: two
+  assertions checked a walker's pace against `CityPedestrianPlanner`'s
+  `1.0`-`1.3` band, which agreed with reality only by accident — the Chair
+  Carrier led the catalog and his `1.18`-`1.30` sat inside it. He left, the
+  babushka led it, and her authored `0.78`-`0.90` failed a test that was
+  measuring the wrong thing. Both now ask the catalog for its own band, which
+  is what "authored walking speed" meant all along.
+- A GUARD THAT DID NOT EXIST: `CityCourtyardResidentTests` now asserts
+  `NpcDesignAppearanceCatalog.IsBizarre` is false for every courtyard resident.
+  The catalog was written for exactly this question and its own header still
+  reads "RUNTIME DOES NOT READ THIS YET"; the runtime still does not, but a
+  test does now. Nothing had ever asked it, which is why a green suite could
+  ship a faceless figure into a residential yard.
+- Not run: the complete EditMode and PlayMode suites, any player build, and no
+  visual capture of a recast pocket — the shipping seed resolves its optional
+  variant to chair repair, so the sweeping pocket cannot be photographed in the
+  running game and is covered by a synthetic pocket in EditMode instead.
+- A neighbouring agent is working in this same checkout; its changes are
+  interleaved in the working tree and one of its Unity runs aborted one of mine.
+
+ANSWERED BY THE USER, same day, and it reframes the whole session: «странность
+будет нарастать по мере увеличения дней, но сейчас я пытаюсь собрать условный
+День 1, который ещё сохраняет "нормальный" облик города». So none of the above
+was a loss of baseline. **The ordinary street is the deliberate floor of a
+ladder**, and the strange designs kept resolvable-but-unplaced are the rungs
+above it. Every withdrawal in this session should be read that way, and the
+architecture is already the right shape for it: nothing was deleted, the cast
+sites are explicit, and `NpcDesignAppearanceCatalog` finally has one consumer.
+
+That leaves ONE thing genuinely undecided, and it is bigger than §12:
+
+- **THE SCALE IS KEYED TO ACTS, NOT DAYS.** §6 reads «Единый уровень,
+  привязанный к актам», and its table puts level `0` at the prologue village
+  («Ничего странного нет вообще») and level `1` at «Город как сейчас.
+  Странность есть, и её не обсуждают». The city carries a separate `1`-`7` day
+  index that the F9 window can set directly. Nothing maps one onto the other.
+  Until that mapping is decided, "Day 1 is ordinary" and §6's level 1 are two
+  different claims about the same city.
+- And §6's own preamble already argues with its table: «Уровень `0` — город
+  ровно такой, какой он сейчас, включая всех странных прохожих и бармена:
+  герой уже пьёт четвёртый месяц, и игра начинается не с трезвого человека.»
+  That sentence says the baseline city HAS the strange walkers. The direction
+  above says Day 1 does not. One of them has to move, and which one is a story
+  decision - it touches the thesis that the game does not open on a sober man.
+- §12 «Шахтёр-попрыгун» is downstream of that and should NOT be rewritten
+  first. Its present tense stops being false the moment the hopper has a level
+  to appear at; rewriting it now would record a withdrawal that is really a
+  postponement.
+
+## 2026-09-02 — The car finally lights its own cabin
+
+The user rode up through the forest and reported the obvious: "при поездке по
+лесу ты едешь просто в черноте". He was right and the reason was structural: the
+car carried three lights and ALL THREE pointed out of it - two beams and a
+spill, sized to throw twenty metres of road - so the cabin they burned from was
+the one place on the whole journey nothing lit at all. The ride is first person.
+He spends two minutes looking at it.
+
+Three fixtures now, each with geometry drawn for it, because light in this world
+has visible causes: a plafond under the roof between the two heads, a bulb in
+the glovebox, and the two instrument faces lit by their own emission.
+
+**The windscreen is the whole design, and none of the three competing designs
+solved it.** `GEO_Glass` is built with `add_double_quad`, so there is a real
+INWARD-facing pane a hand's breadth in front of the sitters, and `Glass` has its
+ShadowCaster pass disabled - shadows would not contain a cabin lamp, they would
+let it out at the bonnet and the windscreen looks straight at the bonnet. A
+plafond pointed straight down puts that pane about `58°` off its axis, inside any
+cone wide enough to reach the driver, and lays a milky veil over the entire
+ride. The answer is to tilt the axis BACK at the seats: the pane goes to `81°`
+and the bonnet to `85°`, both outside the `70°` outer half-angle, both receiving
+exactly `0.000`, while the driver's face sits at `58°` and the dash between `41°`
+and `56°` inside it. `CabinLamp_KeepsTheWindscreenAndTheBonnetOutOfItsCone` is
+the only thing standing between that and a later "simplification" to
+`Vector3.down`.
+
+**The panel is lit by EMISSION, not by the lamp, and that is not a shortcut.**
+The instrument faces stand vertical facing the sitter, which is the one
+orientation no lamp a cabin can hold lights well; reaching a readable level with
+the plafond alone would take about four times the intensity and blow the
+driver's face out. Emissive surfaces also put nothing on the windscreen, which
+is the only lever in here that buys legibility for free.
+
+**The trap that made a new material slot necessary.** `GEO_InstrumentFaces` was
+authored on the `Plate` slot - and so is `GEO_NumberPlate`, hanging off the nose
+of the car. Lighting the dials would have set the number plate glowing in the
+dark, on a wreck whose entire design is that nothing on it works. One new slot,
+`CabinLamp`, appended LAST because the bindings serialize the enum as an int and
+a member slipped in above repaints the prefab.
+`PanelFaces_AreLitAndTheNumberPlateIsNot` is the only test in the repository
+that reads a binding's material slot, and it exists for this.
+
+**Range does two jobs.** The emitter stands `1.505 m` above the plane the wheels
+touch and URP's fade is `saturate(1 - (d²/r²)²)²`, exactly zero at the range - so
+`1.10 m` makes a pool of cabin light on the road arithmetically impossible, with
+`0.40 m` of margin against the suspension's own heave. It is also what keeps the
+dash at `85`-`88%` of its inverse-square value; the obvious "safer" `0.85` would
+have starved the very surface he asked to be able to read.
+
+**The gate is OCCUPANCY, not the lamp mode.** The lit lens and the dials burn at
+every hour on every car - §20's fixture rule, and what makes a parked car read as
+a car somebody is waiting in - while the realtime pool exists only when the
+cabin has somebody in it: the hero on the seat OR the Ferryman behind the wheel.
+The second half is deliberate: it lights the man at the moment the player first
+meets him, sitting in a car he has just been invited into. Gating on
+`LastRouteCarLamps` instead would have been the silent failure - the CITY
+departure builds its car on the default halos-only mode, so a lamp-mode gate
+would have fixed the mountain and left the ride OUT of the city exactly as black
+as he found it. `CityIslandCar_StillCarriesNoLightOfItsOwn` passes verbatim.
+
+**And the interior albedos were doubled**, `#1A1A18` to `#272724` and `#1E1E1B`
+to `#2D2D28`. At `0.005` effective linear diffuse no lamp makes any difference -
+the same lesson, and the same fix, as the Ferryman's own coat. Raising the LAMP
+instead would have cost the windscreen; raising the paint costs nothing.
+
+Verification:
+
+- Blender rebuild passed every validator: `66` meshes, `2916/4200` triangles,
+  seated headroom unchanged at `1.040 m`. Prefab and materials rebuilt through
+  `LastRouteCarAssetSetup.BuildOrThrow` - note the namespace is
+  `BarPromenade.EditorTools`, not `.Editor`, and an `-executeMethod` naming the
+  wrong one exits `0` having done nothing.
+- `BarPromenade.Runtime`, `.Editor` and `.PlayModeTests` compile, 0 errors.
+- EditMode `LastRouteCar.*` — **87 passed, 0 failed**, including nine new
+  assertions in `LastRouteCarCabinLightTests` and the untouched island
+  light-budget test.
+- The acceptance frames, which are the only thing that can actually answer this
+  request: `Capture_TheCabinFromThePassengerSeat` (`[Explicit]`) shot the
+  driver, the open glovebox and the view ahead from the seat's own evaluated
+  eye. The Ferryman is legible with his cap-brim shadow intact, the dash reads,
+  the glovebox has a warm pool with its bulb visible in it, and the windscreen
+  is clean. Every assertion in the suite would pass over a cabin at RGB `2,2,2`;
+  the photograph is what settles the brightness.
+- Not run, deliberately: the complete EditMode and PlayMode suites, and any
+  player build. NOTE that a neighbouring agent is working in this same checkout
+  (city buildings, a balcony smoker) and its changes are interleaved in the
+  working tree - the car's files are disjoint from them, but the tree is not
+  clean and a full-suite claim from here would not mean what it says.
+
+## 2026-09-02 — The way home can be skipped too, and the apron's pool trebles
+
+Two user instructions about the mountain terminal, unrelated to each other
+except in standing on the same twelve metres of asphalt.
+
+**The skip belongs to both halves of a journey now, not only to arrivals.**
+`F10` has been able to cut the climb short since 26 August, and that day's log
+says it "skips either descent or climb". It did not, and the user is the one who
+found out: `CanSkipRide` opened with `leg == Leg.Arriving`. The comment under it
+explained why — a departure ends by fading out and asking for the other world,
+so jumping the car to the end of its road would race the thing that is watching
+for the end of it. The reasoning is sound; the conclusion was too strong. What
+does not survive it is the JUMP, not the offer. So the two kinds of leg give the
+road up by two different means, and each is that leg's own ordinary ending
+brought forward rather than a second one written for the skip:
+
+- an ARRIVAL still moves the DISTANCE and nothing else, and the screen comes
+  back up on the place it stopped at;
+- a DEPARTURE moves nothing at all. Its road already ends in a scene load, and
+  `Update` asks for that load the moment the screen is fully black — which is
+  exactly the state the skip has just brought about. The car keeps driving under
+  the black for the frame or two the handover takes, and the screen does NOT
+  come back, because the next thing behind it is the other world.
+
+One more guard came with it: the tunnel's own `1.4 s` fade-out is no longer
+re-issued over a skip fade that is already running at `0.6 s`. Both write the
+same `rate`, and the slower one arriving second would make the game hesitate for
+a player who has just asked it to hurry.
+
+Armed on BOTH departures rather than only the descent the user asked about. The
+city's and the mountain's are one code path, and gating one of them would be an
+asymmetry with nothing behind it; the ride out of the city was equally
+unskippable and equally long.
+
+**The apron floodlight covers three and a half times the ground at the same
+brightness.** The instruction was exact — "не ярче, а больше область" — and the
+interesting part is that RANGE was the binding constraint, not the cone. The
+beam's axis meets the ground `12.2 m` down the beam and the old `14 m` range cut
+it off `1.8 m` later, so the lit ground was the car and a stride past it: about
+`41 m²`, roughly `7.5 m` across. At `20 m` and `48°` it is about `152 m²` and
+`15 m` across.
+
+**And the wattage came DOWN, which looks backwards and is the arithmetic being
+honest.** URP fades a light toward its range as `saturate(1 - (d²/r²)²)²`, so
+the old `14 m` was quietly eating a third of everything that reached the car at
+`9.3 m`: the `300` the fixture was authored at arrived as `2.2`, not the `3.1`
+its own comment had worked out. Opening the range hands that third back, so
+holding the car exactly as lit as the player has actually been seeing it means
+`210` night and `140` day — still §20's two-thirds floor exactly. Nothing on the
+car changes; the ground around it is the whole of the gain.
+
+`48°` is close to this rake's ceiling and the test now says so: the axis sits
+`26°` below horizontal, so a half-angle past that would put the top of the beam
+over the horizon and light the mountain instead of the yard. The three dark
+bands of the summit survive untouched, and they survive by geometry rather than
+by wattage — the terrace, the parapet and the black brink all stand BEHIND the
+post, `96°` to `125°` off a beam that points away from them.
+
+Verification:
+
+- `BarPromenade.EditModeTests` and `BarPromenade.PlayModeTests` compile through
+  the Unity-bundled SDK with 0 errors.
+- `MountainRoadApronFloodlightTests` — 2 passed, 0 failed, against the new
+  intensity pair, a full `3 m` ring of lit ground round the car, the rake
+  ceiling and the terrace/brink dark band.
+- `LastRouteCarRidePlayModeTests.Skip_*` — 2 passed, 0 failed: the arrival's
+  existing jump, unchanged, and the new departing skip, which drives the car
+  out of the terminal, cuts the ride short, and proves the car is never jumped
+  and the screen never comes back. The travel service is pinned busy at the
+  black on purpose — without it the handover would load the City over the test
+  run.
+- Not run, deliberately: the complete EditMode and PlayMode suites, and any
+  player build.
+
 ## 2026-09-02 — The cashier is normal; the Watcher is kept offstage
 
 By explicit user decision, the supermarket's active cashier changed from the

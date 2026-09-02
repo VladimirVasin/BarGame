@@ -117,6 +117,7 @@ namespace BarPromenade
             AddObstacleCollider(root.gameObject, registry);
             InstallMechanisms(root, registry);
             InstallHeadlights(root, registry, lamps);
+            InstallCabinLighting(root, registry);
             InstallPassengerSeat(root, registry, plan, player, camera);
 
             GameLog.Info(
@@ -300,6 +301,39 @@ namespace BarPromenade
             root.gameObject
                 .AddComponent<LastRouteCarHeadlights>()
                 .Initialize(root, carrier, centre, lateral, halfDepth, lamps);
+        }
+
+        /// <summary>
+        /// The light inside the car, which is a separate thing from the
+        /// light it throws on the road and is installed separately for a
+        /// reason: <see cref="InstallHeadlights"/> returns early on a car
+        /// whose headlight renderer never bound, and folding the cabin lamp
+        /// into it would take the interior silently with it.
+        ///
+        /// It takes NO <see cref="LastRouteCarLamps"/> mode, and that is the
+        /// whole of why the fix reaches every leg of the journey. The gate
+        /// is OCCUPANCY: the city departure builds its car on the default
+        /// halos-only mode, so a lamp-mode gate would have lit the mountain
+        /// and left the ride OUT of the city exactly as black as it was
+        /// found.
+        /// </summary>
+        private static void InstallCabinLighting(
+            Transform root,
+            LastRouteCarAssetRegistry registry)
+        {
+            LastRouteCarSuspension suspension =
+                root.GetComponent<LastRouteCarSuspension>();
+            Transform carrier =
+                suspension != null && suspension.SprungBody != null
+                    ? suspension.SprungBody
+                    : root;
+            root.gameObject
+                .AddComponent<LastRouteCarCabinLight>()
+                .Initialize(
+                    root,
+                    carrier,
+                    registry,
+                    root.GetComponent<LastRouteCarDashboard>());
         }
 
         /// <summary>

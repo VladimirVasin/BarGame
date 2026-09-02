@@ -2,7 +2,7 @@
 """Pure deterministic geometry recipes for the City building prototype catalog.
 
 The module deliberately has no Blender dependency.  It owns the fixed-metre
-source geometry and semantic window metadata consumed by
+source geometry and semantic opening/balcony metadata consumed by
 ``build-city-buildings-3d-model.py``.  Source coordinates are Blender metres:
 X is right, +Y is the authored frontage direction and Z is up.
 """
@@ -54,6 +54,19 @@ class WindowSlot:
     bay: int
     center_source: Vec3
     size_m: Vec2
+    opening_kind: str = "Window"
+
+
+@dataclass(frozen=True)
+class BalconySlot:
+    stable_id: str
+    floor: int
+    side: str
+    door_slot_id: int
+    deck_bounds_min_source: Vec3
+    deck_bounds_max_source: Vec3
+    npc_dock_source: Vec3
+    outward_source: Vec3
 
 
 @dataclass(frozen=True)
@@ -87,6 +100,7 @@ class PrototypeSpec:
     facade_attachment_bounds: tuple[FacadeAttachmentBounds, ...]
     window_slots: tuple[WindowSlot, ...]
     parts: tuple[PartSpec, ...]
+    balcony_slots: tuple[BalconySlot, ...] = ()
 
 
 def empty() -> Geometry:
@@ -372,6 +386,7 @@ def slots_for_grid(
     size_m: Vec2,
     floor_offset: int = 0,
     bay_offset: int = 0,
+    opening_kind: str = "Window",
 ) -> tuple[WindowSlot, ...]:
     slots: list[WindowSlot] = []
     next_id = start_id
@@ -381,7 +396,7 @@ def slots_for_grid(
                       if side in {"Front", "Rear"}
                       else (fixed_coordinate, horizontal, height))
             slots.append(WindowSlot(
-                next_id, side, floor, bay, center, size_m))
+                next_id, side, floor, bay, center, size_m, opening_kind))
             next_id += 1
     return tuple(slots)
 
@@ -559,13 +574,22 @@ def residential_prototype() -> PrototypeSpec:
         box((4.35, 3.62, 0.65),
             (2.8 - facade_edge_clearance * 2.0, 0.25, 1.3)),
     ))
+    balcony_deck_levels = (7.0, 12.0, 17.0, 22.0)
+    balcony_centers = (-4.35, 4.35)
+    balcony_width = 2.5
+    balcony_depth = 1.2
+    balcony_thickness = 0.18
+    balcony_center_y = 4.15
     secondary_parts: list[Geometry] = [
         box((0.0, -0.02, 2.8), (3.8, 0.28, 0.22)),
     ]
-    for side_x in (-4.35, 4.35):
-        for z in (7.0, 12.0, 17.0, 22.0):
+    for side_x in balcony_centers:
+        for deck_level in balcony_deck_levels:
             secondary_parts.append(
-                box((side_x, 3.68, z), (2.5, 0.75, 0.18)))
+                box(
+                    (side_x, balcony_center_y,
+                     deck_level - balcony_thickness * 0.5),
+                    (balcony_width, balcony_depth, balcony_thickness)))
     facade_secondary = merge(secondary_parts)
     roof = merge((
         box((0.0, -3.65, 30.15), (width, 4.2, 0.30)),
@@ -584,21 +608,86 @@ def residential_prototype() -> PrototypeSpec:
         cylinder_z((4.35, -4.1), 30.0, 35.0, 0.16, 8),
         box((0.0, -5.25, 34.0), (5.0, 0.12, 0.12)),
     ]
-    for side_x in (-4.35, 4.35):
-        for z in (7.55, 12.55, 17.55, 22.55):
-            for offset in (-1.0, 0.0, 1.0):
-                metal_parts.append(box((side_x + offset, 3.95, z),
-                                       (0.06, 0.06, 1.0)))
-            # Recess the rail faces 5 mm behind the posts.  The solids still
-            # interlock, but their front/back planes no longer compete.
-            metal_parts.append(box((side_x, 3.95, z + 0.48),
-                                   (2.2, 0.05, 0.06)))
-    metal = merge(metal_parts)
+    rail_front_y = balcony_center_y + balcony_depth * 0.5 - 0.04
+    rail_back_y = 3.72
+    rail_side_x = balcony_width * 0.5 - 0.04
+    rail_height = 1.02
+    for side_x in balcony_centers:
+        for deck_level in balcony_deck_levels:
+            rail_center_z = deck_level + rail_height * 0.5
+            for offset_x in (-rail_side_x, 0.0, rail_side_x):
+                metal_parts.append(box(
+                    (side_x + offset_x, rail_front_y, rail_center_z),
+                    (0.06, 0.06, rail_height)))
+            for offset_x in (-rail_side_x, rail_side_x):
+                metal_parts.append(box(
+                    (side_x + offset_x, rail_back_y, rail_center_z),
+                    (0.06, 0.06, rail_height)))
+            metal_parts.append(box(
+                (side_x, rail_front_y, deck_level + rail_height - 0.06),
+                (balcony_width - 0.08, 0.05, 0.06)))
+            for offset_x in (-rail_side_x, rail_side_x):
+                metal_parts.append(box(
+                    (side_x + offset_x,
+                     (rail_back_y + rail_front_y) * 0.5,
+                     deck_level + rail_height - 0.07),
+                    (0.05, rail_front_y - rail_back_y, 0.05)))
 
     slots: list[WindowSlot] = []
     slots.extend(slots_for_grid(
         1, "Front", 3.65, (-4.85, -3.85, 3.85, 4.85),
-        (3.8, 8.4, 13.0, 17.6, 22.2), (0.72, 1.55)))
+        (3.8,), (0.72, 1.55)))
+    balcony_slots: list[BalconySlot] = []
+    for floor, deck_level in enumerate(balcony_deck_levels, start=1):
+        opening_top = deck_level + 2.20
+        for side_name, side_x, door_x, window_x, door_bay, window_bay in (
+            ("left", -4.35, -4.85, -3.85, 0, 1),
+            ("right", 4.35, 4.85, 3.85, 3, 2),
+        ):
+            door_slot_id = len(slots) + 1
+            slots.append(WindowSlot(
+                door_slot_id,
+                "Front",
+                floor,
+                door_bay,
+                (door_x, 3.65, deck_level + 1.10),
+                (0.82, 2.20),
+                "BalconyDoor"))
+            slots.append(WindowSlot(
+                len(slots) + 1,
+                "Front",
+                floor,
+                window_bay,
+                (window_x, 3.65, opening_top - 1.55 * 0.5),
+                (0.72, 1.55)))
+
+            deck_min = (
+                side_x - balcony_width * 0.5,
+                balcony_center_y - balcony_depth * 0.5,
+                deck_level - balcony_thickness)
+            deck_max = (
+                side_x + balcony_width * 0.5,
+                balcony_center_y + balcony_depth * 0.5,
+                deck_level)
+            balcony_slots.append(BalconySlot(
+                f"residential-front-{side_name}-floor-{floor:02d}",
+                floor,
+                "Front",
+                door_slot_id,
+                deck_min,
+                deck_max,
+                (side_x, balcony_center_y + 0.08, deck_level),
+                (0.0, 1.0, 0.0)))
+
+            handle_x = door_x + (-0.25 if side_name == "left" else 0.25)
+            metal_parts.append(box(
+                (door_x, 3.73, deck_level + 0.04),
+                (0.92, 0.14, 0.08)))
+            metal_parts.append(box(
+                (handle_x, 3.70, deck_level + 1.02),
+                (0.06, 0.12, 0.18)))
+
+    metal = merge(metal_parts)
     slots.extend(slots_for_grid(
         len(slots) + 1, "Rear", -half_d,
         (-4.6, -2.3, 0.0, 2.3, 4.6),
@@ -620,7 +709,8 @@ def residential_prototype() -> PrototypeSpec:
         stable_id, "Residential", "SetbackCourtyard", width, depth, height,
         (0.0, half_d, 0.0), (-5.35, -5.35, 26.0),
         (5.35, 3.4, height), facade_bounds(width, depth, height),
-        tuple(slots), parts_for(stable_id, role_geometry, 1.8))
+        tuple(slots), parts_for(stable_id, role_geometry, 1.8),
+        tuple(balcony_slots))
 
 
 def industrial_prototype() -> PrototypeSpec:

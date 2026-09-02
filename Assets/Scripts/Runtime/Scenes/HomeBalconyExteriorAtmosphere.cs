@@ -80,6 +80,11 @@ namespace BarPromenade
         }
         public CityNightAtmosphere ExteriorLighting { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
+        public CityBalconySmokerRuntime BalconySmokers
+        {
+            get;
+            private set;
+        }
         public Volume CityPostProcessVolume { get; private set; }
         public ExteriorCloudField Clouds { get; private set; }
         public VolumeProfile RuntimeCityProfile => runtimeCityProfile;
@@ -180,6 +185,26 @@ namespace BarPromenade
             SetPedestriansActive(IsBalconyVisibilityActive);
         }
 
+        public void BindBalconySmokers(
+            CityBalconySmokerRuntime balconySmokers)
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException(
+                    "Initialize the Home balcony exterior atmosphere first.");
+            }
+
+            if (BalconySmokers != null)
+            {
+                throw new InvalidOperationException(
+                    "The Home balcony smokers are already bound.");
+            }
+
+            BalconySmokers = balconySmokers ??
+                throw new ArgumentNullException(nameof(balconySmokers));
+            SetBalconySmokersVisible(IsBalconyVisibilityActive);
+        }
+
         public void ApplyExteriorLighting(
             DayNightVisualSample sample,
             bool updateEnvironment = false)
@@ -278,12 +303,14 @@ namespace BarPromenade
         private void OnDisable()
         {
             SetPedestriansActive(false);
+            SetBalconySmokersVisible(false);
             RestoreHomeVisibility();
         }
 
         private void OnDestroy()
         {
             SetPedestriansActive(false);
+            SetBalconySmokersVisible(false);
             RestoreHomeVisibility();
             DestroyCityPostProcessProfile();
             IsInitialized = false;
@@ -504,10 +531,12 @@ namespace BarPromenade
                 CityPostProcessVolume.weight = 1f;
                 IsBalconyVisibilityActive = true;
                 SetPedestriansActive(true);
+                SetBalconySmokersVisible(true);
                 return;
             }
 
             SetPedestriansActive(false);
+            SetBalconySmokersVisible(false);
             FogField.FogRenderer.enabled = false;
             RainField.RainRenderer.enabled = false;
             Clouds.SetVisible(false);
@@ -526,6 +555,11 @@ namespace BarPromenade
             {
                 Pedestrians.enabled = active;
             }
+        }
+
+        private void SetBalconySmokersVisible(bool visible)
+        {
+            BalconySmokers?.SetVisible(visible);
         }
 
         private void RestoreHomeVisibility()

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -660,6 +661,58 @@ namespace BarPromenade.Tests.EditMode
                     new Vector3(forward.x, 0f, forward.z).normalized,
                     work),
                 Is.GreaterThan(0.9f));
+        }
+
+        [Test]
+        public void ThePlaqueShotFocusesOnTheBoardItShows()
+        {
+            CemeteryGravediggingPlan plan = CreatePlan();
+            var host = new GameObject("Plaque Focus Test");
+            spawned.Add(host);
+            CemeteryGraveWorkController controller =
+                host.AddComponent<CemeteryGraveWorkController>();
+            var plaque = new GameObject("Plaque");
+            plaque.transform.SetParent(host.transform, false);
+            plaque.transform.position =
+                CityCemeteryPlaqueWorldBuilder.GetNominalSeat(plan);
+
+            BindingFlags instancePrivate =
+                BindingFlags.Instance | BindingFlags.NonPublic;
+            FieldInfo plaqueField = typeof(CemeteryGraveWorkController)
+                .GetField("sessionPlaque", instancePrivate);
+            FieldInfo inscribingField =
+                typeof(CemeteryGraveWorkController)
+                    .GetField("inscribing", instancePrivate);
+            MethodInfo interestMethod =
+                typeof(CemeteryGraveWorkController)
+                    .GetMethod("GetCameraInterest", instancePrivate);
+            Assert.That(plaqueField, Is.Not.Null);
+            Assert.That(inscribingField, Is.Not.Null);
+            Assert.That(interestMethod, Is.Not.Null);
+
+            plaqueField.SetValue(controller, plaque);
+            inscribingField.SetValue(controller, true);
+            Vector3 focus = (Vector3)interestMethod.Invoke(
+                controller,
+                null);
+
+            Assert.That(
+                focus,
+                Is.EqualTo(plaque.transform.position),
+                "The close-up and its Bokeh plane must name the " +
+                "same point on the plaque.");
+            CemeteryGraveWorkStance.EvaluatePlaqueCamera(
+                plan,
+                focus,
+                out Vector3 cameraPosition,
+                out _);
+            Assert.That(
+                Vector3.Distance(cameraPosition, focus),
+                Is.EqualTo(
+                    CemeteryGraveWorkStance.PlaqueViewDistanceMeters)
+                    .Within(0.0001f),
+                "The board must stay sharp at the settled plaque " +
+                "view distance.");
         }
 
         [Test]

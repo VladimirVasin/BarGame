@@ -54,7 +54,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/Materials/CityNoirEmission.mat";
         private const string ExpectedDesignId =
             "mountain_road_cafe_nighthawks_v1";
-        private const int ExpectedMeshCount = 48;
+        private const int ExpectedMeshCount = 59;
         private const int ExpectedStoolCount = 7;
         private const int ExpectedCupCount = 2;
         private const int ExpectedColliderCount = 17;
@@ -84,6 +84,10 @@ namespace BarPromenade.Editor
             "CounterStart",
             "CounterCorner",
             "CounterEnd",
+            "FridgeDoorPivot",
+            "Grip.FridgeDoor",
+            "CuttingBoardDock",
+            "StovePanDock",
             "HeroSeat",
             "Cast.Lone",
             "Cast.PairMan",
@@ -541,6 +545,29 @@ namespace BarPromenade.Editor
                 }
             }
 
+            if (!registry.TryGetProp(
+                    "FridgeDoor",
+                    out MountainRoadCafeDynamicPropBinding fridgeDoor) ||
+                fridgeDoor.PropRoot == null ||
+                fridgeDoor.GripAnchor == null ||
+                !fridgeDoor.GripAnchor.IsChildOf(fridgeDoor.PropRoot) ||
+                fridgeDoor.LiftRoot != null ||
+                fridgeDoor.PourTarget != null ||
+                fridgeDoor.LiquidTransform != null ||
+                fridgeDoor.LiquidRenderer != null ||
+                fridgeDoor.Renderers.Count != 1 ||
+                fridgeDoor.Renderers[0] == null ||
+                !registry.TryGetAnchor(
+                    "FridgeDoorPivot",
+                    out Transform fridgeDoorPivot) ||
+                Vector3.Distance(
+                    fridgeDoor.PropRoot.position,
+                    fridgeDoorPivot.position) > MeasureTolerance)
+            {
+                problems.Add(
+                    "fridge door lacks its passive hinge/grip binding");
+            }
+
             foreach (MountainRoadCafePartBinding part in registry.Parts)
             {
                 if (part == null || part.Renderer == null)
@@ -615,6 +642,8 @@ namespace BarPromenade.Editor
             AssertNear(manifest.door_opening_m.width, 1.6f, "door width");
             AssertNear(manifest.door_opening_m.height, 2.28f, "door height");
             ValidateManifestNames(manifest);
+            ValidateApplianceSurfaces(manifest);
+            ValidateTaskLightSurface(manifest);
             ValidateTextureFiles(manifest);
             ValidateDynamicProps(manifest);
             ValidateColliderDescriptors(manifest);
@@ -682,6 +711,69 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static void ValidateApplianceSurfaces(CafeManifest manifest)
+        {
+            var expectedSheets = new Dictionary<string, string>(
+                StringComparer.Ordinal)
+            {
+                { "stove", "CafeMetalDetail" },
+                { "frying_pan", "CafeMetalDetail" },
+                { "refrigerator_body", "CafePropsDetail" },
+                { "refrigerator_cavity", "CafePropsDetail" },
+                { "refrigerator_shelf", "CafePropsDetail" },
+                { "fridge_door", "CafePropsDetail" },
+            };
+            foreach (KeyValuePair<string, string> expected in expectedSheets)
+            {
+                CafePart[] matches = manifest.parts
+                    .Where(part => string.Equals(
+                        part.role,
+                        expected.Key,
+                        StringComparison.Ordinal))
+                    .ToArray();
+                if (matches.Length != 1 ||
+                    !string.Equals(
+                        matches[0].sheet,
+                        expected.Value,
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        matches[0].base_surface,
+                        "PaleEnamel",
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        matches[0].uv_strategy,
+                        "single_inset_appliance_patch_without_pattern_edges",
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"Cafe appliance surface contract failed for " +
+                        $"'{expected.Key}'.");
+                }
+            }
+        }
+
+        private static void ValidateTaskLightSurface(CafeManifest manifest)
+        {
+            CafePart[] matches = manifest.parts
+                .Where(part => string.Equals(
+                    part.role,
+                    "stove_task_lens",
+                    StringComparison.Ordinal))
+                .ToArray();
+            if (matches.Length != 1 ||
+                !string.Equals(
+                    matches[0].sheet,
+                    "CafePropsDetail",
+                    StringComparison.Ordinal) ||
+                !matches[0].emissive ||
+                matches[0].shadows)
+            {
+                throw new InvalidOperationException(
+                    "Cafe stove task lens is not a shadowless emissive " +
+                    "surface.");
+            }
+        }
+
         private static void ValidateDynamicProps(CafeManifest manifest)
         {
             var propNames = new HashSet<string>(
@@ -690,7 +782,7 @@ namespace BarPromenade.Editor
             foreach (string required in new[]
             {
                 "Cup.PairMan", "Cup.PairWoman",
-                "PourStream", "ServicePot", "ServiceTowel"
+                "PourStream", "ServicePot", "ServiceTowel", "FridgeDoor"
             })
             {
                 if (!propNames.Contains(required))
@@ -703,11 +795,31 @@ namespace BarPromenade.Editor
             foreach (CafeDynamicProp prop in manifest.dynamic_props)
             {
                 bool cup = prop.name.StartsWith("Cup.", StringComparison.Ordinal);
+                bool fridgeDoor = string.Equals(
+                    prop.name,
+                    "FridgeDoor",
+                    StringComparison.Ordinal);
                 if (string.IsNullOrWhiteSpace(prop.root_name) ||
                     prop.part_names == null || prop.part_names.Length == 0 ||
                     (cup && (string.IsNullOrWhiteSpace(prop.lift_root_name) ||
                              string.IsNullOrWhiteSpace(prop.liquid_part) ||
-                             !(prop.empty_local_y < prop.full_local_y))))
+                             !(prop.empty_local_y < prop.full_local_y))) ||
+                    (fridgeDoor &&
+                     (!string.Equals(
+                          prop.owner,
+                          "FridgeDoor",
+                          StringComparison.Ordinal) ||
+                      !string.Equals(
+                          prop.root_name,
+                          "PROP_FridgeDoor",
+                          StringComparison.Ordinal) ||
+                      prop.part_names.Length != 1 ||
+                      !string.Equals(
+                          prop.part_names[0],
+                          "Cafe_FridgeDoor",
+                          StringComparison.Ordinal) ||
+                      !string.IsNullOrEmpty(prop.lift_root_name) ||
+                      !string.IsNullOrEmpty(prop.liquid_part))))
                 {
                     throw new InvalidOperationException(
                         $"Cafe dynamic prop '{prop.name}' is malformed.");
@@ -1242,6 +1354,7 @@ namespace BarPromenade.Editor
             public string group;
             public string sheet;
             public string base_surface;
+            public string uv_strategy;
             public bool emissive;
             public bool shadows;
             public bool initially_visible;

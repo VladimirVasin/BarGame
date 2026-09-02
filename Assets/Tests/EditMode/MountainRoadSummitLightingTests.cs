@@ -118,6 +118,28 @@ namespace BarPromenade.Tests.EditMode
                     light.name == "Sulphur Counter Light");
                 Light cold = cafeLights.Single(light =>
                     light.name == "Cold Service Light");
+                Assert.That(cold.enabled, Is.True);
+                Assert.That(
+                    cold.spotAngle,
+                    Is.EqualTo(110f).Within(0.001f));
+                Assert.That(
+                    cold.innerSpotAngle,
+                    Is.EqualTo(100f).Within(0.001f));
+                Assert.That(
+                    Vector3.Dot(cold.transform.forward, Vector3.down),
+                    Is.GreaterThan(0.70f),
+                    "The stove practical still points across the room " +
+                    "instead of down onto its task surface.");
+                Assert.That(
+                    world.Cafe.Model.TryGetAnchor(
+                        "StovePanDock",
+                        out Transform stovePanDock),
+                    Is.True);
+                Assert.That(
+                    IsInsideInnerCone(cold, stovePanDock.position),
+                    Is.True,
+                    "The visible cold practical does not light the stove " +
+                    "and frying pan below it.");
                 Assert.That(
                     warm.shadows,
                     Is.EqualTo(LightShadows.None),

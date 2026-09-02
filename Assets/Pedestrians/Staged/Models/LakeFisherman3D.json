@@ -25,7 +25,7 @@
     2000
   ],
   "staged": true,
-  "pool_eligible": true,
+  "pool_eligible": false,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [

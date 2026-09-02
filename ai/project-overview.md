@@ -126,7 +126,10 @@ The vertical slice contains:
   bespoke four-role cast: its attendant stays silent, the drinking couple share
   a private localized text conversation, and the lone patron intermittently
   wakes to call his wife home without a response. Four deliberate stools remain
-  empty and rare deterministic gesture beats continue. The right
+  empty and rare deterministic gesture beats continue. Behind them, a passive
+  kitchen run carries a hinge-ready closed refrigerator, a stove and pan, an
+  extended cabinet and a cutting-board station; neither the cast nor the player
+  uses it yet. The right
   side owns an operating `230 m` cableway with nine supports and eight cabins,
   with every cable height rebased from the raised terminal rather than old
   absolute world heights. At the normal `2.6 m/s`
@@ -1042,9 +1045,23 @@ The vertical slice contains:
   and drying lines; because those proxies enter the shared static-collision
   plan before wind dressing, laundry moves or is omitted instead of intersecting
   a pocket. Selected active pockets may receive generic, colliderless
-  residents, capped at five; balcony and quiet compositions remain unoccupied,
+  residents, capped at five; balcony-basket and quiet pocket compositions remain unoccupied,
   and fringe Yards receive no residents. They add no text, interaction, light,
   audio or story reaction;
+- every ordinary Residential building contributes one deterministic passive
+  balcony-smoker candidate, while a per-session director rolls local
+  appearances around the moving player on the fog-readable lowest balcony row,
+  prefers docks `12-22 m` across the street and ahead of travel, keeps at most
+  two active and one
+  per building, and releases them by distance; the player home is never
+  eligible. Each candidate varies the current roaming
+  archetype, samples the literal Hero V2 `SmokeLoop` with its authored holds on
+  a hidden native driver, transfers all `31` canonical local bone channels,
+  and reuses the existing Blender cigarette/ember meshes plus its mouth-exhale
+  plume on the shared rig. Home instead keeps its bounded deterministic
+  selection only where complete prototypes fit the reconstructed half-space,
+  and enables those actors only for the Balcony shot.
+  They have no collision, interaction, speech, sound, light or story state;
 - one deterministic `city_misc_citywide_v4` mesh library at generator version
   `4.9.0` supplies the passive visuals for the broad City misc pass: `82`
   semantic kinds resolve to `122` assemblies, `259` role meshes and
@@ -1177,10 +1194,13 @@ The vertical slice contains:
   prefabs expose `28` passive semantic meshes — `FacadePrimary`,
   `FacadeSecondary`, `Plinth`, `Roof`, `Metal`, `WindowFrame` and
   `WindowGlass` per district — plus front/roof/facade attachment
-  metadata and `194` addressable window slots through one Resources provider.
+  metadata and `194` addressable opening slots through one Resources provider.
+  Residential owns eight additional semantic balcony records: two on each of
+  four facade levels, each pairing a `2.5 x 1.2 m` deck and resident dock with
+  exactly one person-height glazed door and its adjacent apartment window.
   Every ordinary lot selects its district wrapper, keeps authored metre scale
   and aligns the wrapper's `+Z` front anchor to the generated door. Generator
-  `2.0.0` gives the two facade roles a four-side, non-repeating height atlas,
+  `2.1.0` exports `4,218` triangles and gives the two facade roles a four-side, non-repeating height atlas,
   every authored plinth face its own complete non-repeating `0..1` projection,
   roof/metal/frame physically scaled repeat UVs and every glass face its own
   `0..1` pane UV. Unity binds
@@ -1246,7 +1266,9 @@ The vertical slice contains:
   emissive, and every other pane is dark. City aligns `exterior_door` to the
   unchanged lot door and retains the walkway, mailbox, lamp, number `7`,
   beacon, trigger and transition. Home reconstructs the same materials, exact
-  visible window positions, recessed entry and outward physical balcony;
+  visible window positions, recessed entry and outward physical balcony, but
+  omits the narrow street-only front eave fascia that crossed its fixed camera
+  as a foreground beam; the pitched roof edge remains;
   the old City misc shell remains compatibility-only;
 - deterministic ochre guard rails, batched into `48 m` spatial chunks, only
   where a street faces water, unmapped space or the active map boundary, plus
@@ -1462,8 +1484,14 @@ The vertical slice contains:
   plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
   enterable without a scene load. Its lone patron, neighbouring couple and
   attendant are four dedicated staged models rather than pedestrian-pool
-  substitutes. Its deterministic fixed-metre Blender set contains `48` meshes /
-  `4,568` triangles, `41` semantic anchors and five dynamic prop assemblies.
+  substitutes. Its deterministic fixed-metre Blender set contains `59` meshes /
+  `5,682` triangles, `45` semantic anchors and six dynamic prop assemblies.
+  The rear service wall now reads as one kitchen run: an extended cabinet and
+  worktop with `CuttingBoardDock`, a compact stove and pan at `StovePanDock`,
+  and a refrigerator cavity with two shelves. `FridgeDoor` is the sixth
+  dynamic prop, rooted at the authored `FridgeDoorPivot` with child
+  `Grip.FridgeDoor`; it ships closed and has no runtime driver, Animator,
+  Rigidbody or attendant/player interaction.
   Seven stools follow the main counter and return with their seat tops at
   `0.8175 m`: three are occupied with real butt contact and four remain empty.
   The hero may take the middle main-row gap; its dock remains in the aisle while
@@ -1509,18 +1537,22 @@ The vertical slice contains:
   the man makes
   three uneven left-hand taps with no impact sound and may continue tapping
   beneath his text, while the woman takes one cigarette drag and settles into a
-  restrained exhale. The authored ember and
-  its smoke envelope read the same live normalized idle phase and own no
-  separate timer, Light or AudioSource. The bubbles likewise add no voice or
+  restrained exhale. The authored ember glow follows the drag; a separate
+  world-space plume follows `SOCKET_Mouth` through the exhale window. Both read
+  the same live normalized idle phase and own no separate timer, Light or
+  AudioSource. The bubbles likewise add no voice or
   other AudioSource. Her fingers hold the filter rather than the ember; the
   filter still reaches the mouth and the burning tip points clear of hand and
   face. The
   plan continues to own entry,
   shelter, anchors, lighting and exactly `17` logical colliders. The existing
   two visible practicals and one shadowless technical wash are redistributed,
-  not multiplied: the warm key reaches the sleeping husband, while the cold
-  practical and wash keep all four figures readable and still miss the terrace,
-  parapet and black brink. Six neutral semantic
+  not multiplied: the warm key reaches the sleeping husband, while
+  `Light.ColdService` now starts inside the visible task fixture over the stove
+  with a cold emissive lens. Its widened bisector cone contains the stove and
+  pan task surface as well as all four figures, where it works with the wash to
+  keep the tableau readable. These remain the cafe's three runtime Lights and
+  still miss the terrace, parapet and black brink. Six neutral semantic
   detail sheets partition exterior, interior, counter, metal, props and glass;
   authored UV regions and a zero-overlap validator prevent repeated samples,
   stretching and flicker without a new base hue, readable brand, `PHILLIES`,

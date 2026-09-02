@@ -86,9 +86,17 @@ namespace BarPromenade
                 // figure with no face, and that is a fact about the body.
                 ["lampshade_walker_v1"] = NpcDesignAppearance.Bizarre,
 
-                // The one design in the pool with no bodily anomaly at all:
-                // an ordinary man carrying an upside-down cafe chair.
-                ["chair_carrier_v1"] = NpcDesignAppearance.Normal,
+                // OVERRULED BY THE USER, 2026-09-02: «стулоносец не
+                // нормальный». By the rule above he was the one design in
+                // the pool with no bodily anomaly at all - an ordinary man
+                // carrying an upside-down cafe chair - and the rule still
+                // reads that way for the two park players, who wear a game
+                // piece where a hat would be and stay ordinary. The
+                // difference the user drew is that a chair is not worn and
+                // not put down: a man who carries one through the whole city
+                // is strange whatever his proportions are. He came off the
+                // street in the same breath.
+                ["chair_carrier_v1"] = NpcDesignAppearance.Bizarre,
 
                 // The face is visible under the kettle and the kettle is a
                 // hat — but the body is `10.9` heads tall with a shoulder

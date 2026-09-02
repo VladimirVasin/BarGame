@@ -91,18 +91,32 @@ namespace BarPromenade
         /// It therefore leaves the documented `1.65`-`16` band, deliberately.
         /// That band exists so nobody imports a city number for a WASH over
         /// the yard — `38` once did and blew it out — and it is still right
-        /// for one. This is a `34°` cone on a single car, and the first night
+        /// for one. This is a beam on a single car, and the first night
         /// photograph of this pad is what showed the band could not do the
         /// job at all: fixtures at `13`-`17` over `4`-`5.5 m` deliver `0.5` to
         /// `0.8`, the same order as the moon and ambient they are supposed to
         /// be seen against.
         ///
-        /// The `2/3` day floor is §20's and is met exactly at `200`/`300`,
+        /// **The wattage came DOWN when the pool grew**, which looks backwards
+        /// and is the arithmetic being honest. The user asked on 2026-09-02
+        /// for a bigger lit area at the same brightness — "не ярче, а больше
+        /// область" — and the pool was bounded by the light's RANGE, not
+        /// by its cone (see
+        /// <c>MountainRoadTerminalSitePlanner.CreateApronFloodlight</c>). URP
+        /// fades a light toward its range as
+        /// `saturate(1 - (d²/r²)²)²`, so the old `14 m` range was quietly
+        /// eating a THIRD of what reached the car at `9.3 m`: `300` arrived as
+        /// `2.2`, not the `3.1` the paragraph above worked out. Opening the
+        /// range to `20 m` hands that third back, so holding the arrival where
+        /// the player has actually been seeing it means `210`, not `300`.
+        /// Nothing on the car changes; the ground around it is what gains.
+        ///
+        /// The `2/3` day floor is §20's and is met exactly at `140`/`210`,
         /// which is also the island's own effective ladder shape: it authors
         /// `45` night over a `15` day floor and `CityNightSiteLightRegistry`
         /// lifts that floor to `night * 2/3` before it lerps.
         /// </summary>
-        private const float ApronFloodDayIntensity = 200f;
+        private const float ApronFloodDayIntensity = 140f;
 
         private const float ApronFloodNightBoost = 0.5f;
 
@@ -112,8 +126,13 @@ namespace BarPromenade
         private static readonly Color ApronFloodColor =
             new Color(1.00f, 0.87f, 0.66f);
 
-        /// <summary>Half the outer cone, as the island holds it.</summary>
-        private const float ApronFloodInnerSpotAngle = 16f;
+        /// <summary>
+        /// A shade under half the outer cone, as the island holds it. It rides
+        /// the outer angle up: what the widening is for is a bigger pool at
+        /// the same brightness, and a core left at `16°` inside a `48°` beam
+        /// would spend the extra width entirely on falloff.
+        /// </summary>
+        private const float ApronFloodInnerSpotAngle = 22f;
 
         /// <summary>
         /// The island's halo is `0.52` / `1.55`, sized for a lamp you stand

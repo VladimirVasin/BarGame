@@ -117,6 +117,16 @@ namespace BarPromenade
             var interaction = trigger
                 .AddComponent<CemeteryWatchmanInteraction>();
             interaction.Initialize(stance.Position, citySeed);
+            // His own tone and his own head, so the answer types out
+            // over there rather than arriving from nowhere. The source
+            // itself lives on the speech service, never inside this
+            // instance — the passive-presentation guard below rejects
+            // an AudioSource in the model, and it is right to.
+            interaction.AttachSpeaker(
+                NpcSpeaker.FromRegistry(
+                    presentation,
+                    registry,
+                    NpcEarshotProfile.Conversation));
             presentation.Talk = interaction;
 
             GameLog.Info(

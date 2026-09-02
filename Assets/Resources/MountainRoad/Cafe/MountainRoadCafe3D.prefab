@@ -112,6 +112,11 @@ MonoBehaviour:
     authoredForward: {x: 0, y: 0, z: 1}
     authoredUp: {x: 0, y: 1, z: 0}
     anchor: {fileID: 3589420121511799050}
+  - anchorName: CuttingBoardDock
+    role: cutting_board_dock
+    authoredForward: {x: 0, y: 0, z: -1}
+    authoredUp: {x: 0, y: 1, z: 0}
+    anchor: {fileID: 1214530052261680942}
   - anchorName: DoorApproach
     role: door_approach
     authoredForward: {x: 0, y: 0, z: 1}
@@ -122,11 +127,21 @@ MonoBehaviour:
     authoredForward: {x: 0, y: 0, z: -1}
     authoredUp: {x: 0, y: 1, z: 0}
     anchor: {fileID: 8381021840406965589}
+  - anchorName: FridgeDoorPivot
+    role: fridge_door_pivot
+    authoredForward: {x: 0, y: 0, z: -1}
+    authoredUp: {x: 0, y: 1, z: 0}
+    anchor: {fileID: 3135354143882602671}
   - anchorName: GlassCorner
     role: glass_corner
     authoredForward: {x: 0.707107, y: 0, z: -0.707107}
     authoredUp: {x: 0, y: 1, z: 0}
     anchor: {fileID: 6437120262767669342}
+  - anchorName: Grip.FridgeDoor
+    role: fridge_door_grip
+    authoredForward: {x: 0, y: 0, z: -1}
+    authoredUp: {x: 0, y: 1, z: 0}
+    anchor: {fileID: 4907198341301812130}
   - anchorName: Grip.PairMan
     role: cup_grip
     authoredForward: {x: 1, y: 0, z: 0}
@@ -237,6 +252,11 @@ MonoBehaviour:
     authoredForward: {x: -0.9894, y: 0, z: 0.1455}
     authoredUp: {x: 0, y: 1, z: 0}
     anchor: {fileID: 7223209436568277168}
+  - anchorName: StovePanDock
+    role: stove_pan_dock
+    authoredForward: {x: 0, y: 0, z: -1}
+    authoredUp: {x: 0, y: 1, z: 0}
+    anchor: {fileID: 1853975989597685982}
   - anchorName: WipePatch.00
     role: wipe_patch
     authoredForward: {x: 0, y: 0, z: 1}
@@ -307,6 +327,15 @@ MonoBehaviour:
     castsShadows: 1
     initiallyVisible: 1
     renderer: {fileID: 1755737275758052685}
+  - sourceName: Cafe_CuttingBoard
+    role: cutting_board
+    group: props
+    sheet: CafeCounterDetail
+    baseSurface: Timber
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 6041139303197789853}
   - sourceName: Cafe_DeepFascia
     role: facade_fascia
     group: frontage
@@ -343,6 +372,24 @@ MonoBehaviour:
     castsShadows: 1
     initiallyVisible: 1
     renderer: {fileID: 4298762578059391723}
+  - sourceName: Cafe_FridgeDoor
+    role: fridge_door
+    group: dynamic_prop
+    sheet: CafePropsDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 6480213002895395020}
+  - sourceName: Cafe_FryingPan
+    role: frying_pan
+    group: props
+    sheet: CafeMetalDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 8410441111785647313}
   - sourceName: Cafe_Glass_00
     role: glass
     group: glazing
@@ -469,6 +516,33 @@ MonoBehaviour:
     castsShadows: 1
     initiallyVisible: 1
     renderer: {fileID: 5324150949182282761}
+  - sourceName: Cafe_KitchenBacksplash
+    role: kitchen_backsplash
+    group: service
+    sheet: CafeInteriorDetail
+    baseSurface: InteriorPaint
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 4475266648734601257}
+  - sourceName: Cafe_KitchenCabinetFronts
+    role: kitchen_cabinet_front
+    group: service
+    sheet: CafeCounterDetail
+    baseSurface: Timber
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 3144110781227446059}
+  - sourceName: Cafe_KitchenHandles
+    role: kitchen_cabinet_handle
+    group: service
+    sheet: CafeMetalDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 3221963818028896990}
   - sourceName: Cafe_LuminousBand
     role: practical_emission
     group: lighting
@@ -523,15 +597,33 @@ MonoBehaviour:
     castsShadows: 1
     initiallyVisible: 1
     renderer: {fileID: 6483314259675995855}
-  - sourceName: Cafe_Refrigerator
-    role: refrigerator
+  - sourceName: Cafe_RefrigeratorBody
+    role: refrigerator_body
     group: appliance
-    sheet: CafeMetalDetail
+    sheet: CafePropsDetail
     baseSurface: PaleEnamel
     emissive: 0
     castsShadows: 1
     initiallyVisible: 1
-    renderer: {fileID: 8369779855649839693}
+    renderer: {fileID: 5124057707422406545}
+  - sourceName: Cafe_RefrigeratorCavity
+    role: refrigerator_cavity
+    group: appliance
+    sheet: CafePropsDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 8213688881197013508}
+  - sourceName: Cafe_RefrigeratorShelves
+    role: refrigerator_shelf
+    group: appliance
+    sheet: CafePropsDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 6509660156597020854}
   - sourceName: Cafe_Roof
     role: roof
     group: shell
@@ -577,6 +669,33 @@ MonoBehaviour:
     castsShadows: 1
     initiallyVisible: 1
     renderer: {fileID: 8279311127269623726}
+  - sourceName: Cafe_Stove
+    role: stove
+    group: appliance
+    sheet: CafeMetalDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 8392593455584322781}
+  - sourceName: Cafe_StoveTaskFixture
+    role: stove_task_fixture
+    group: lighting
+    sheet: CafeMetalDetail
+    baseSurface: PaleEnamel
+    emissive: 0
+    castsShadows: 1
+    initiallyVisible: 1
+    renderer: {fileID: 6282987862179029928}
+  - sourceName: Cafe_StoveTaskLens
+    role: stove_task_lens
+    group: lighting
+    sheet: CafePropsDetail
+    baseSurface: PaleEnamel
+    emissive: 1
+    castsShadows: 0
+    initiallyVisible: 1
+    renderer: {fileID: 6096279548146234131}
   - sourceName: Cafe_UrnSightGlass
     role: urn_sight_glass
     group: appliance
@@ -716,6 +835,19 @@ MonoBehaviour:
     - {fileID: 4476170536600213934}
     emptyLocalPosition: {x: 0, y: 0.00000023841858, z: -0.021999717}
     fullLocalPosition: {x: 0, y: 0, z: -0.10099995}
+  - propName: FridgeDoor
+    role: fridge_door
+    owner: FridgeDoor
+    propRoot: {fileID: 6593054849185322898}
+    liftRoot: {fileID: 0}
+    gripAnchor: {fileID: 4907198341301812130}
+    pourTarget: {fileID: 0}
+    liquidTransform: {fileID: 0}
+    liquidRenderer: {fileID: 0}
+    renderers:
+    - {fileID: 6480213002895395020}
+    emptyLocalPosition: {x: 0, y: 0, z: 0}
+    fullLocalPosition: {x: 0, y: 0, z: 0}
   - propName: PourStream
     role: pour_stream
     owner: Attendant
@@ -815,14 +947,14 @@ MonoBehaviour:
     height: 0
   - stableId: service-cabinet
     shape: 0
-    center: {x: 2.15, y: 0.43, z: 3.9}
-    size: {x: 3.65, y: 0.86, z: 0.78}
+    center: {x: 0.19, y: 0.43, z: 4.8625}
+    size: {x: 5.68, y: 0.86, z: 0.78}
     yawDegrees: 0
     radius: 0
     height: 0
   - stableId: fridge
     shape: 0
-    center: {x: -3.82, y: 0.98, z: 4.72}
+    center: {x: -3.82, y: 0.98, z: 4.9095}
     size: {x: 1.12, y: 1.96, z: 0.72}
     yawDegrees: 0
     radius: 0
@@ -883,10 +1015,10 @@ MonoBehaviour:
     width: 9.8
     depth: 10
     height: 4.4
-  sourceTriangleCount: 4568
-  sourceGeneratorVersion: 1.0.4
+  sourceTriangleCount: 5682
+  sourceGeneratorVersion: 1.1.2
   designId: mountain_road_cafe_nighthawks_v1
-  buildSignature: 1966441a1d02776c0efcd0d02c981252083780cec0189c85a2775733550d1696
+  buildSignature: a332d2a6f5b052e047d25927455985e13c8e61b376c9a76bac0b3a8c6b579176
 --- !u!1001 &4379707433798876487
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -948,6 +1080,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -8076246119921954396, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -8038521052680278119, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1059,11 +1195,15 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
-    - target: {fileID: -3971973815943911670, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+    - target: {fileID: -3981283239021569638, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -3800255866181601729, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -3658266293789071549, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1087,7 +1227,23 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -1703049744688607660, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1703049744688607660, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1703049744688607660, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7099587ab09c75d4284cccb7fc96843f, type: 2}
     - target: {fileID: -1679859340681629805, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -1443842828781379857, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1104,6 +1260,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -653371049500221924, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -298477949341144362, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1139,6 +1299,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 206197989193198958, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 535820041501855660, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1164,6 +1328,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 1427043298849036465, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 1686027054114509420, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1223,6 +1391,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 5219736932387066262, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 5558933496958081886, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1267,11 +1439,23 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 7289515598240462219, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 7390738873149724145, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 7700229693243862946, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7700229693243862946, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8003363300093555674, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1361,6 +1545,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -5996424885649426629, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1214530052261680942 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6044613478698702231, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &1238075514763570860 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3308280585787495403, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
@@ -1409,6 +1598,11 @@ MeshRenderer:
 --- !u!23 &1794732638193597469 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2607570335224824154, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1853975989597685982 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -6521918275047459431, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &1854586784633449108 stripped
@@ -1479,6 +1673,21 @@ Transform:
 --- !u!4 &2995754575836854195 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1537089075490163444, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3135354143882602671 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -7546665940187621912, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3144110781227446059 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1686027054114509420, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3221963818028896990 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -8038521052680278119, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &3330446577224060010 stripped
@@ -1561,6 +1770,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 72901488071809338, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &4475266648734601257 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 206197989193198958, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &4476170536600213934 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 205289644082341097, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
@@ -1589,6 +1803,16 @@ MeshRenderer:
 --- !u!4 &4859104395488668894 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -24531173189611111, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4907198341301812130 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -513966364590471451, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5124057707422406545 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -298477949341144362, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &5324150949182282761 stripped
@@ -1631,14 +1855,29 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -1367345888410591921, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &6041139303197789853 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8003363300093555674, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &6082155692325901012 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -1679859340681629805, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &6096279548146234131 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -1703049744688607660, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &6204674609817522917 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 7700229693243862946, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &6282987862179029928 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -1443842828781379857, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &6371061670875538970 stripped
@@ -1661,14 +1900,29 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7319165725439184153, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &6480213002895395020 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7289515598240462219, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &6483314259675995855 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -1927959224729574520, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &6509660156597020854 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7390738873149724145, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6541065232489940673 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -1873127353819808890, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6593054849185322898 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7473975099165747925, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &6710732950572960798 stripped
@@ -1741,6 +1995,11 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5558933496958081886, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &8213688881197013508 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -3658266293789071549, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &8279311127269623726 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5630024199203486441, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
@@ -1751,14 +2010,19 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5632184165079730906, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
---- !u!23 &8369779855649839693 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -3971973815943911670, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
-  m_PrefabInstance: {fileID: 4379707433798876487}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8381021840406965589 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5226574982494507026, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8392593455584322781 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -3981283239021569638, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
+  m_PrefabInstance: {fileID: 4379707433798876487}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8410441111785647313 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5219736932387066262, guid: aea0bb92e64f4d14b9fdb66b03a3b010, type: 3}
   m_PrefabInstance: {fileID: 4379707433798876487}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &8415124904587572925 stripped

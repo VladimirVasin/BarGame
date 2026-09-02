@@ -44,9 +44,23 @@ namespace BarPromenade
             "cemetery.gravedigging.declined";
         public const string PaidFeedbackKey =
             "cemetery.gravedigging.paid";
+        /// <summary>
+        /// The floor his answers stay up for. It is a floor rather than
+        /// the duration itself: his longest quip runs to sixty
+        /// characters in Russian and sixty-seven in English, which is
+        /// two seconds of typing, and three would leave almost nothing
+        /// to read it in. <see cref="ResolveResponseSeconds"/> gives a
+        /// long line the room it needs and a short one this.
+        /// </summary>
         public const float ResponseDurationSeconds = 3.0f;
 
+        /// <summary>How long a fully typed line is left standing.
+        /// Matches the two and a half seconds a forty-eight character
+        /// line keeps in the overhead bubble.</summary>
+        public const float ReadingTailSeconds = 2.0f;
+
         private Vector3 standPosition;
+        private NpcSpeaker speaker = NpcSpeaker.None;
         private uint quipState;
         private int lastLineIndex = -1;
         private bool isInitialized;
@@ -74,6 +88,17 @@ namespace BarPromenade
             quipState = CemeteryWatchmanQuips.CreateState(citySeed);
             lastLineIndex = -1;
             isInitialized = true;
+        }
+
+        /// <summary>
+        /// Who he is when he opens his mouth: which head the sound
+        /// comes from, what tone he writes in, and how far his answer
+        /// carries. Without it he still answers — whole, instantly and
+        /// silently, exactly as he did before.
+        /// </summary>
+        public void AttachSpeaker(in NpcSpeaker value)
+        {
+            speaker = value;
         }
 
         /// <summary>
@@ -119,9 +144,10 @@ namespace BarPromenade
                 gravedigging != null ? gravedigging.CollectWages() : 0;
             if (wage > 0)
             {
-                interactor.ShowFormattedFeedback(
+                interactor.ShowFormattedSpokenFeedback(
                     PaidFeedbackKey,
-                    ResponseDurationSeconds,
+                    ResolveResponseSeconds(PaidFeedbackKey),
+                    speaker,
                     wage);
                 return;
             }
@@ -136,9 +162,25 @@ namespace BarPromenade
             lastLineIndex = CemeteryWatchmanQuips.NextIndex(
                 ref quipState,
                 lastLineIndex);
-            interactor.ShowFeedback(
-                CemeteryWatchmanQuips.LineKeys[lastLineIndex],
-                ResponseDurationSeconds);
+            string lineKey =
+                CemeteryWatchmanQuips.LineKeys[lastLineIndex];
+            interactor.ShowSpokenFeedback(
+                lineKey,
+                ResolveResponseSeconds(lineKey),
+                speaker);
+        }
+
+        /// <summary>
+        /// How long one of his answers stays up: the time it takes to
+        /// type plus a tail to read it in, never less than the floor.
+        /// </summary>
+        public static float ResolveResponseSeconds(string key)
+        {
+            return Mathf.Max(
+                ResponseDurationSeconds,
+                SpeechDelivery.ResolveSpokenDuration(
+                    LocalizationService.Get(key),
+                    ReadingTailSeconds));
         }
 
         /// <summary>
@@ -183,9 +225,10 @@ namespace BarPromenade
 
             PlayerInteractor listener = offerListener;
             CloseOffer();
-            listener?.ShowFeedback(
+            listener?.ShowSpokenFeedback(
                 DeclinedFeedbackKey,
-                ResponseDurationSeconds);
+                ResolveResponseSeconds(DeclinedFeedbackKey),
+                speaker);
             return true;
         }
 
@@ -196,9 +239,10 @@ namespace BarPromenade
             CloseOffer();
             if (accepted)
             {
-                interactor.ShowFeedback(
+                interactor.ShowSpokenFeedback(
                     AcceptedFeedbackKey,
-                    ResponseDurationSeconds);
+                    ResolveResponseSeconds(AcceptedFeedbackKey),
+                    speaker);
             }
         }
 

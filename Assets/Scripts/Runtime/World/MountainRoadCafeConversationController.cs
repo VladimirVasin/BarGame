@@ -34,7 +34,6 @@ namespace BarPromenade
         private MountainRoadCafeCastPresentation lonePatron;
         private MountainRoadCafeCastPresentation pairMan;
         private MountainRoadCafeCastPresentation pairWoman;
-        private Transform lonePatronSpeechAnchor;
         private MountainRoadCafeConversationLook manLook;
         private MountainRoadCafeConversationLook womanLook;
         private MountainRoadCafeConversationTimeline timeline;
@@ -139,7 +138,29 @@ namespace BarPromenade
             try
             {
                 var bubbleView = host.AddComponent<NpcSpeechBubbleView>();
-                bubbleView.Initialize(camera);
+                bubbleView.Initialize(camera, playerTransform);
+                // The cafe cast carries no design id at runtime — the
+                // roles are fixed by MountainRoadCafeCastRole — so the
+                // three voices are named here. `Room` rather than the
+                // ordinary conversation radius because the story
+                // bible's §6 registry requires the pair to be readable
+                // «внутри физического объёма кафе», and this room's
+                // diagonal is fourteen metres.
+                bubbleView.DeclareSpeaker(
+                    man,
+                    manHead,
+                    NpcVoiceCatalog.CafeManDesignId,
+                    NpcEarshotProfile.Room);
+                bubbleView.DeclareSpeaker(
+                    woman,
+                    womanHead,
+                    NpcVoiceCatalog.CafeWomanDesignId,
+                    NpcEarshotProfile.Room);
+                bubbleView.DeclareSpeaker(
+                    lone,
+                    loneHead,
+                    NpcVoiceCatalog.CafeHusbandDesignId,
+                    NpcEarshotProfile.Room);
                 MountainRoadCafeConversationLook configuredManLook =
                     GetOrAddLook(manRoot.gameObject);
                 configuredManLook.Initialize(man, womanHead);
@@ -156,7 +177,6 @@ namespace BarPromenade
                 controller.lonePatron = lone;
                 controller.pairMan = man;
                 controller.pairWoman = woman;
-                controller.lonePatronSpeechAnchor = loneHead;
                 controller.manLook = configuredManLook;
                 controller.womanLook = configuredWomanLook;
                 controller.timeline =
@@ -399,7 +419,6 @@ namespace BarPromenade
             bubbles.Dismiss(OwnerOf(other));
             bubbles.Show(
                 OwnerOf(speaker),
-                LookOf(speaker).SpeechAnchor,
                 LocalizationService.Get(key));
 
             activeSpeaker = speaker;
@@ -488,7 +507,6 @@ namespace BarPromenade
                     lonePatronSchedule.ConsumeLonePatronLineKey();
                 bubbles.Show(
                     lonePatron,
-                    lonePatronSpeechAnchor,
                     LocalizationService.Get(LastLonePatronLineKey));
                 hasShownLonePatronLine = true;
             }

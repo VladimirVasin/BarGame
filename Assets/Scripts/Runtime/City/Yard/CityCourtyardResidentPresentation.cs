@@ -76,7 +76,13 @@ namespace BarPromenade
                     CityPedestrianPresentation>();
             }
 
-            pedestrian.Initialize(registry);
+            // The whole of the courtyard's "active idle": these bodies are
+            // POSED where they belong, so they play the loop they were
+            // authored for rather than the pavement breath every anonymous
+            // walker shares. See CityPedestrianClipSource.
+            pedestrian.Initialize(
+                registry,
+                CityPedestrianClipSource.Placed);
             pedestrian.ConfigureCycle(
                 Mathf.Lerp(
                     archetype.MinimumAnimationSpeed,

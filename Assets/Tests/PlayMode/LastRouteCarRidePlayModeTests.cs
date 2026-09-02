@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
@@ -36,6 +38,15 @@ namespace BarPromenade.Tests.PlayMode
         /// <summary>The test road: long enough to reach cruise, brake and
         /// stop inside a few seconds of pinned frames.</summary>
         private const float RoadLength = 70f;
+
+        /// <summary>
+        /// And the departing road, which is long because nothing is meant to
+        /// reach the end of it. The screen going under is timed in UNSCALED
+        /// seconds while the car is driven by the pinned clock, so under batch
+        /// pacing a `0.6 s` fade is hundreds of frames and the car covers tens
+        /// of metres of honest road inside it. Seventy would run out.
+        /// </summary>
+        private const float DepartureRoadLength = 400f;
 
         private const int MaximumSteps = 3000;
 
@@ -465,6 +476,380 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Object.DestroyImmediate(scene);
             }
+        }
+
+        /// <summary>
+        /// The way OUT can be cut short too, and it is cut short differently.
+        ///
+        /// The road out ends in a scene load rather than in a place, so there
+        /// is nothing to jump the car to: the skip only brings the black
+        /// forward, and the handover the controller was already waiting to
+        /// make happens under it. Which means the two things this has to
+        /// prove are both negatives - the car is never teleported, and the
+        /// screen never comes back up - and they are exactly the two an
+        /// arrival does the opposite way round.
+        ///
+        /// The travel service is pinned busy the instant the screen is fully
+        /// black, one frame before the controller can read it. That is not
+        /// scaffolding for its own sake: without it the request goes through,
+        /// `LoadSceneMode.Single` takes the whole test run with it, and every
+        /// fixture after this one runs in the City.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Skip_OnTheWayOutBringsTheBlackForwardAndKeepsIt()
+        {
+            Harness harness = BuildHarness(out GameObject scene, true);
+            try
+            {
+                yield return null;
+                Assert.That(
+                    harness.Driver.IsDriving,
+                    Is.False,
+                    "A departure waits to be sat in; it does not pull away " +
+                    "on its own.");
+                Assert.That(
+                    harness.Ride.CanSkipRide,
+                    Is.False,
+                    "There is no ride to skip until there is a ride.");
+
+                yield return BoardTheCar(harness);
+
+                Assert.That(
+                    harness.Ride.IsRiding,
+                    Is.True,
+                    "Sitting down is what starts the way out.");
+                Assert.That(harness.Driver.IsDriving, Is.True);
+                Assert.That(
+                    harness.Ride.CanSkipRide,
+                    Is.True,
+                    "A departure that is under way is one that can be cut " +
+                    "short - which is the whole of this test.");
+
+                // A few metres of real road first, so the skip is taken from
+                // somewhere rather than from the starting line.
+                int steps = 0;
+                while (harness.Driver.Distance < 5f && steps < MaximumSteps)
+                {
+                    yield return null;
+                    steps++;
+                }
+
+                Vector3 carBefore = harness.CarRoot.position;
+                Assert.That(harness.Ride.TrySkipRide(), Is.True);
+                Assert.That(
+                    harness.Ride.IsSkipping,
+                    Is.True,
+                    "The skip was over before it began. It is meant to ask " +
+                    "for the screen, not to hand the world over the moment " +
+                    "the key goes down.");
+
+                // One frame, because the key only sets the fade a target -
+                // the black itself is written by the fade view, which runs
+                // after this controller.
+                yield return null;
+                Assert.That(
+                    harness.Ride.Fade.IsClear,
+                    Is.False,
+                    "The skip has to take the screen down with it.");
+
+                // Sampled at the top of each turn, exactly as the arrival's
+                // own skip test is: the frame the fade completes is the last
+                // frame before the controller reads it.
+                //
+                // What is measured is the longest SINGLE frame rather than the
+                // total, and the difference is the whole distinction between
+                // the two legs. The car goes on driving honest road under the
+                // black - it must, the black is what the handover waits for -
+                // so the total is meaningless, while an arrival's skip covers
+                // its whole remaining road in one frame.
+                Vector3 previously = harness.CarRoot.position;
+                float longestStep = 0f;
+                steps = 0;
+                while (!harness.Ride.Fade.IsFullyBlack && steps < MaximumSteps)
+                {
+                    Assert.That(
+                        harness.Driver.HasArrived,
+                        Is.False,
+                        "The car ran out of road, so nothing below is being " +
+                        "measured against a skip that was still pending.");
+                    yield return null;
+                    steps++;
+                    longestStep = Mathf.Max(
+                        longestStep,
+                        Vector3.Distance(harness.CarRoot.position, previously));
+                    previously = harness.CarRoot.position;
+                }
+
+                Assert.That(
+                    harness.Ride.Fade.IsFullyBlack,
+                    Is.True,
+                    $"The screen never went under in {steps} frames.");
+                SetAreaTraveling(true);
+
+                Assert.That(
+                    longestStep,
+                    Is.LessThan(1f),
+                    $"The car moved {longestStep:0.00} m in a single frame " +
+                    "under the black. A departure has nowhere to jump to - " +
+                    "the road ends in another world - so it drives the rest " +
+                    "of the way it has.");
+                Assert.That(
+                    Vector3.Distance(harness.CarRoot.position, carBefore),
+                    Is.GreaterThan(0.5f),
+                    "It stopped dead instead of driving on under the black.");
+
+                // And the black is kept. This is the half that separates the
+                // two legs: an arrival brings the screen back up onto the
+                // place it stopped at, and a departure must not, because the
+                // only thing behind it is a tunnel wall.
+                // Half a second of it, which is well inside the `0.8 s` the
+                // fade would take to come back: one frame of an arrival's
+                // fade-in already leaves `IsFullyBlack` behind.
+                for (int frame = 0; frame < 30; frame++)
+                {
+                    yield return null;
+                    Assert.That(
+                        harness.Ride.Fade.IsFullyBlack,
+                        Is.True,
+                        $"The screen came back up {frame} frames after the " +
+                        "skip, onto a road the hero has already left.");
+                }
+
+                Assert.That(
+                    harness.Ride.CanSkipRide,
+                    Is.False,
+                    "And it cannot be taken twice.");
+            }
+            finally
+            {
+                SetAreaTraveling(false);
+                Object.DestroyImmediate(scene);
+            }
+        }
+
+        /// <summary>
+        /// The whole boarding beat, as the island plays it: the man says yes
+        /// and climbs behind his own wheel, and only then is the seat beside
+        /// him a real offer.
+        /// </summary>
+        private static IEnumerator BoardTheCar(Harness harness)
+        {
+            Assert.That(harness.Ferryman.TryBeginBoarding(), Is.True);
+            int steps = 0;
+            while (!harness.Ferryman.IsDriving && steps < MaximumSteps)
+            {
+                yield return null;
+                steps++;
+            }
+
+            Assert.That(
+                harness.Ferryman.IsDriving,
+                Is.True,
+                $"He never got behind the wheel in {steps} frames.");
+
+            // On the dock and facing the door, so neither height nor gaze is
+            // the thing refusing him - see LastRouteCarSeatPlan.
+            harness.Player.Motor.Teleport(harness.Seat.Plan.EntryRootPosition);
+            harness.Player.GameObject.transform.rotation =
+                harness.Seat.Plan.EntryRotation;
+            yield return null;
+
+            Assert.That(
+                harness.Seat.CanInteract(harness.Player.Interactor),
+                Is.True,
+                "The passenger seat refused the hero standing on its own " +
+                "dock.");
+            harness.Seat.Interact(harness.Player.Interactor);
+            steps = 0;
+            while (!harness.Seat.IsSeated && steps < MaximumSteps)
+            {
+                yield return null;
+                steps++;
+            }
+
+            Assert.That(
+                harness.Seat.IsSeated,
+                Is.True,
+                $"He never settled into the seat in {steps} frames.");
+        }
+
+        /// <summary>
+        /// Where the capture lands. The scratchpad rather than `Captures/`:
+        /// this is evidence for one decision, not an asset.
+        /// </summary>
+        private const string CabinCaptureRoot =
+            @"C:\Users\tushk\AppData\Local\Temp\claude\c--Users-tushk----------------\046796ae-d87b-4b66-8b05-5b9537f1113a\scratchpad\cabin";
+
+        private const int CabinCaptureWidth = 960;
+        private const int CabinCaptureHeight = 540;
+
+        /// <summary>
+        /// The four frames that actually answer the request this feature was
+        /// built for: a dim light in the cabin, enough to make out the driver
+        /// and the dashboard.
+        ///
+        /// Art is accepted by LOOKING. Every assertion in the cabin-light
+        /// suite can pass over a cabin at RGB 2,2,2 - `AreaCaptureFixture`'s
+        /// own blank check samples a 24x24 grid and would pass it too - so
+        /// the brightness of this lamp is settled by a photograph and by
+        /// nothing else. `AreaCaptureFixture` cannot take it either: it
+        /// invents its own camera poses and hides the hero, so it literally
+        /// cannot see the only shot that exists during a ride.
+        ///
+        /// Four mechanics here are each a recorded burn rather than
+        /// ceremony:
+        ///  - the Ferryman's `Animator` is forced to `AlwaysAnimate`, or
+        ///    batch mode writes no bones and he photographs in bind pose;
+        ///  - the camera is posed and rendered in the SAME frame, because
+        ///    the seat owns the camera and rewrites it every frame;
+        ///  - the pair is `RenderTexture(w, h, 24)` (sRGB by default here)
+        ///    read into a NON-linear `RGB24` texture; the mismatched pair
+        ///    reads about ten times too dark, which is how this car's own
+        ///    `BeamIntensity` comment records being misled;
+        ///  - and it declines rather than fails with no graphics device.
+        /// </summary>
+        [UnityTest]
+        [Explicit("Capture, not a test. Writes cabin frames to the scratchpad.")]
+        public IEnumerator Capture_TheCabinFromThePassengerSeat()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                Assert.Ignore("No graphics device; the cabin cannot be seen.");
+            }
+
+            Harness harness = BuildHarness(out GameObject scene);
+            var target = new RenderTexture(
+                CabinCaptureWidth,
+                CabinCaptureHeight,
+                24);
+            var buffer = new Texture2D(
+                CabinCaptureWidth,
+                CabinCaptureHeight,
+                TextureFormat.RGB24,
+                false);
+            try
+            {
+                Directory.CreateDirectory(CabinCaptureRoot);
+                foreach (Animator animator in
+                         harness.Ferryman
+                             .GetComponentsInChildren<Animator>(true))
+                {
+                    animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                }
+
+                yield return null;
+                yield return null;
+                Assert.That(harness.Seat.IsSeated, Is.True);
+
+                var cabin = harness.CarRoot
+                    .GetComponent<LastRouteCarCabinLight>();
+                Assert.That(
+                    cabin,
+                    Is.Not.Null,
+                    "The car has no cabin lighting, so there is nothing to " +
+                    "photograph. Rebuild the prefab.");
+
+                var dashboard = harness.CarRoot
+                    .GetComponent<LastRouteCarDashboard>();
+                Camera camera = scene.GetComponentInChildren<Camera>(true);
+                Assert.That(camera, Is.Not.Null, "No camera in the harness.");
+                camera.targetTexture = target;
+                camera.fieldOfView = LastRouteCarSeatViewPlan.FieldOfView;
+
+                // A few metres of road first, so the frame is a moving car
+                // rather than a diorama.
+                int steps = 0;
+                while (harness.Driver.Distance < 6f && steps < MaximumSteps)
+                {
+                    yield return null;
+                    steps++;
+                }
+
+                var shots =
+                    new (string Name, float Yaw, float Pitch, bool Box)[]
+                    {
+                        ("01-ahead", 0f, 6f, false),
+                        ("02-driver", -98f, 2f, false),
+                        ("03-glovebox", -18f, 41f, true),
+                        ("04-panel", -30f, 26f, false)
+                    };
+
+                for (int index = 0; index < shots.Length; index++)
+                {
+                    if (dashboard != null)
+                    {
+                        dashboard.SetGloveboxOpenness(
+                            shots[index].Box ? 1f : 0f);
+                    }
+
+                    // Let the lamp answer the lid before the shutter opens.
+                    yield return null;
+                    yield return null;
+
+                    PoseSeatCamera(
+                        harness,
+                        camera,
+                        shots[index].Yaw,
+                        shots[index].Pitch);
+                    camera.Render();
+                    RenderTexture previousActive = RenderTexture.active;
+                    RenderTexture.active = target;
+                    buffer.ReadPixels(
+                        new Rect(
+                            0f,
+                            0f,
+                            CabinCaptureWidth,
+                            CabinCaptureHeight),
+                        0,
+                        0);
+                    buffer.Apply();
+                    RenderTexture.active = previousActive;
+                    File.WriteAllBytes(
+                        Path.Combine(
+                            CabinCaptureRoot,
+                            shots[index].Name + ".png"),
+                        buffer.EncodeToPNG());
+                    Debug.Log(
+                        "cabin capture: " + shots[index].Name + ".png written");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(scene);
+                Object.DestroyImmediate(buffer);
+                target.Release();
+                Object.DestroyImmediate(target);
+            }
+        }
+
+        /// <summary>
+        /// The seat's own shot, evaluated rather than guessed: the same plan
+        /// the ride uses, from the same anchor, at a yaw and pitch a player
+        /// could actually hold.
+        /// </summary>
+        private static void PoseSeatCamera(
+            Harness harness,
+            Camera camera,
+            float yawDegrees,
+            float pitchDegrees)
+        {
+            Vector3 facing = Vector3.ProjectOnPlane(
+                harness.Car.SteeringWheelPivot.position -
+                harness.Car.DriverSeatAnchor.position,
+                Vector3.up);
+            if (facing.sqrMagnitude < 0.000001f)
+            {
+                facing = harness.CarRoot.forward;
+            }
+
+            LastRouteCarSeatViewPlan.EvaluateCamera(
+                harness.Car.PassengerSeatAnchor.position,
+                facing.normalized,
+                yawDegrees,
+                pitchDegrees,
+                out Vector3 position,
+                out Quaternion rotation);
+            camera.transform.SetPositionAndRotation(position, rotation);
         }
 
         /// <summary>
@@ -917,6 +1302,19 @@ namespace BarPromenade.Tests.PlayMode
         /// </summary>
         private static Harness BuildHarness(out GameObject scene)
         {
+            return BuildHarness(out scene, false);
+        }
+
+        /// <summary>
+        /// The same car and the same road, armed as the leg the caller wants.
+        /// A DEPARTING harness is the way out rather than the way in: nobody
+        /// is in the car, the Ferryman is on his bonnet, and nothing moves
+        /// until the hero has been walked through the whole boarding beat.
+        /// </summary>
+        private static Harness BuildHarness(
+            out GameObject scene,
+            bool departing)
+        {
             scene = new GameObject("Last Route Ride Test");
             Transform parent = scene.transform;
             CreateGround(parent);
@@ -970,14 +1368,21 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(ferryman, Is.Not.Null, "The Ferryman failed to spawn.");
             seat.AttachFerryman(ferryman);
 
+            float roadLength = departing ? DepartureRoadLength : RoadLength;
             var road = new List<Vector3>();
-            for (float distance = 0f; distance <= RoadLength; distance += 1f)
+            for (float distance = 0f; distance <= roadLength; distance += 1f)
             {
                 road.Add(new Vector3(0f, 0f, distance));
             }
 
-            LastRouteRideController ride =
-                LastRouteRideController.CreateForMountainArrival(
+            LastRouteRideController ride = departing
+                ? LastRouteRideController.CreateForMountainDeparture(
+                    parent,
+                    seat,
+                    driver,
+                    ferryman,
+                    () => new LastRouteCarDrivePath(road))
+                : LastRouteRideController.CreateForMountainArrival(
                     parent,
                     seat,
                     driver,

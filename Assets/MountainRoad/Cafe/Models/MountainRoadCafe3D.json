@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-mountain-road-cafe-3d-model.py",
-  "generator_version": "1.0.4",
+  "generator_version": "1.1.2",
   "blender_version": "5.0.1",
   "design_id": "mountain_road_cafe_nighthawks_v1",
   "display_name": "Bar Promenade Mountain Road Nighthawks Cafe",
@@ -63,12 +63,28 @@
   "cameras": false,
   "materials": false,
   "animation_count": 0,
+  "kitchen_contract": {
+    "fridge_door_dynamic_prop": "FridgeDoor",
+    "fridge_door_runtime_driver": false,
+    "fridge_door_pivot_anchor": "FridgeDoorPivot",
+    "fridge_door_grip_anchor": "Grip.FridgeDoor",
+    "cutting_board_dock_anchor": "CuttingBoardDock",
+    "stove_pan_dock_anchor": "StovePanDock",
+    "cold_service_light_anchor": "Light.ColdService",
+    "runtime_light_count_delta": 0,
+    "visible_rear_lining_z_m": 5.2725,
+    "worktop_wall_gap_m": 0.003,
+    "cabinet_wall_gap_m": 0.02,
+    "rear_door_clearance_m": 0.08
+  },
   "surface_contract": {
     "opaque_detail_min_clearance_m": 0.003,
     "glass_layers_per_pane": 1,
     "liquid_wall_clearance_m": 0.0015,
     "liquid_rim_clearance_m": 0.002,
     "detail_atlases_add_no_new_palette_family": true,
+    "appliance_reference": "home_refrigerator_enamel_parameters",
+    "appliance_pattern_edges_sampled": false,
     "broad_coplanar_overlap_count": 0,
     "allowed_buried_seam_contact_count": 33,
     "broad_overlap_min_area_m2": 0.002
@@ -92,8 +108,8 @@
     5.56,
     4.4
   ],
-  "mesh_count": 48,
-  "triangle_count": 4568,
+  "mesh_count": 59,
+  "triangle_count": 5682,
   "overlap_count": 0,
   "allowed_seam_contact_count": 33,
   "textures": [
@@ -283,12 +299,12 @@
       "id": "service-cabinet",
       "shape": "box",
       "center": [
-        2.15,
+        0.19,
         0.43,
-        3.9
+        4.862500000000001
       ],
       "size": [
-        3.65,
+        5.68,
         0.86,
         0.78
       ],
@@ -300,7 +316,7 @@
       "center": [
         -3.82,
         0.98,
-        4.72
+        4.9094999999999995
       ],
       "size": [
         1.12,
@@ -400,13 +416,13 @@
       "role": "audio_boiler",
       "local_position": [
         2.15,
-        3.84,
+        4.7595,
         1.55
       ],
       "unity_local_position": [
         2.15,
         1.55,
-        3.84
+        4.7595
       ],
       "unity_local_forward": [
         0.0,
@@ -448,13 +464,13 @@
       "role": "audio_fridge",
       "local_position": [
         -3.82,
-        4.72,
+        4.9095,
         1.0
       ],
       "unity_local_position": [
         -3.82,
         1.0,
-        4.72
+        4.9095
       ],
       "unity_local_forward": [
         0.0,
@@ -708,6 +724,30 @@
       ]
     },
     {
+      "name": "CuttingBoardDock",
+      "role": "cutting_board_dock",
+      "local_position": [
+        -0.38,
+        4.7995,
+        0.989
+      ],
+      "unity_local_position": [
+        -0.38,
+        0.989,
+        4.7995
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
       "name": "DoorApproach",
       "role": "door_approach",
       "local_position": [
@@ -756,6 +796,30 @@
       ]
     },
     {
+      "name": "FridgeDoorPivot",
+      "role": "fridge_door_pivot",
+      "local_position": [
+        -4.32,
+        4.5095,
+        0.0
+      ],
+      "unity_local_position": [
+        -4.32,
+        0.0,
+        4.5095
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
       "name": "GlassCorner",
       "role": "glass_corner",
       "local_position": [
@@ -772,6 +836,30 @@
         0.707107,
         0.0,
         -0.707107
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Grip.FridgeDoor",
+      "role": "fridge_door_grip",
+      "local_position": [
+        0.88,
+        -0.13,
+        1.08
+      ],
+      "unity_local_position": [
+        0.88,
+        1.08,
+        -0.13
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        -1.0
       ],
       "unity_local_up": [
         0.0,
@@ -879,14 +967,14 @@
       "name": "Light.ColdService",
       "role": "light_cold_service",
       "local_position": [
-        1.7,
-        3.3,
-        3.35
+        -1.9,
+        4.7995,
+        2.23
       ],
       "unity_local_position": [
-        1.7,
-        3.35,
-        3.3
+        -1.9,
+        2.23,
+        4.7995
       ],
       "unity_local_forward": [
         0.0,
@@ -976,13 +1064,13 @@
       "role": "pot_dock",
       "local_position": [
         2.55,
-        3.72,
+        4.6395,
         1.02
       ],
       "unity_local_position": [
         2.55,
         1.02,
-        3.72
+        4.6395
       ],
       "unity_local_forward": [
         0.0,
@@ -1308,6 +1396,30 @@
       ]
     },
     {
+      "name": "StovePanDock",
+      "role": "stove_pan_dock",
+      "local_position": [
+        -2.18,
+        4.7995,
+        1.01
+      ],
+      "unity_local_position": [
+        -2.18,
+        1.01,
+        4.7995
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
       "name": "WipePatch.00",
       "role": "wipe_patch",
       "local_position": [
@@ -1410,6 +1522,19 @@
       "liquid_part": "Cup_PairWoman_Liquid",
       "empty_local_y": 0.022,
       "full_local_y": 0.101
+    },
+    {
+      "name": "FridgeDoor",
+      "root_name": "PROP_FridgeDoor",
+      "lift_root_name": "",
+      "role": "fridge_door",
+      "owner": "FridgeDoor",
+      "part_names": [
+        "Cafe_FridgeDoor"
+      ],
+      "liquid_part": "",
+      "empty_local_y": 0.0,
+      "full_local_y": 0.0
     },
     {
       "name": "PourStream",
@@ -2339,13 +2464,13 @@
       "vertices": 16,
       "triangles": 28,
       "bounds_min": [
-        0.325,
-        3.51,
+        -2.65,
+        4.4725,
         0.0
       ],
       "bounds_max": [
-        3.975,
-        4.29,
+        3.03,
+        5.2525,
         0.86
       ]
     },
@@ -2367,42 +2492,350 @@
       "vertices": 16,
       "triangles": 28,
       "bounds_min": [
-        0.24,
-        3.45,
+        -2.72,
+        4.3695,
         0.85
       ],
       "bounds_max": [
-        4.06,
-        4.35,
+        3.1,
+        5.2695,
         0.95
       ]
     },
     {
-      "name": "Cafe_Refrigerator",
-      "role": "refrigerator",
-      "group": "appliance",
-      "sheet": "CafeMetalDetail",
-      "base_surface": "PaleEnamel",
+      "name": "Cafe_KitchenCabinetFronts",
+      "role": "kitchen_cabinet_front",
+      "group": "service",
+      "sheet": "CafeCounterDetail",
+      "base_surface": "Timber",
       "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
       "uv_transform": {
-        "quarter_turns": 3,
-        "offset_u": 5.891493,
-        "offset_v": 3.163592
+        "quarter_turns": 2,
+        "offset_u": 4.056657,
+        "offset_v": 2.642878
       },
       "emissive": false,
       "shadows": true,
       "initially_visible": true,
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -2.55,
+        4.4325,
+        0.095
+      ],
+      "bounds_max": [
+        2.93,
+        4.4695,
+        0.775
+      ]
+    },
+    {
+      "name": "Cafe_KitchenHandles",
+      "role": "kitchen_cabinet_handle",
+      "group": "service",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 5.921401,
+        "offset_v": 2.658045
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -2.17,
+        4.3835,
+        0.6625
+      ],
+      "bounds_max": [
+        2.51,
+        4.4295,
+        0.6975
+      ]
+    },
+    {
+      "name": "Cafe_KitchenBacksplash",
+      "role": "kitchen_backsplash",
+      "group": "service",
+      "sheet": "CafeInteriorDetail",
+      "base_surface": "InteriorPaint",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 3.652476,
+        "offset_v": 1.780682
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -2.64,
+        5.2275,
+        0.953
+      ],
+      "bounds_max": [
+        3.1,
+        5.2695,
+        1.393
+      ]
+    },
+    {
+      "name": "Cafe_Stove",
+      "role": "stove",
+      "group": "appliance",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "single_inset_appliance_patch_without_pattern_edges",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 1.3467,
+        "offset_v": 4.95581
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 96,
+      "triangles": 172,
+      "bounds_min": [
+        -2.5,
+        4.412,
+        0.953
+      ],
+      "bounds_max": [
+        -1.3,
+        5.1295,
+        1.01
+      ]
+    },
+    {
+      "name": "Cafe_FryingPan",
+      "role": "frying_pan",
+      "group": "props",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "single_inset_appliance_patch_without_pattern_edges",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 0.139605,
+        "offset_v": 6.105974
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 80,
+      "triangles": 170,
+      "bounds_min": [
+        -2.760406,
+        4.219094,
+        1.01
+      ],
+      "bounds_max": [
+        -1.91,
+        5.0695,
+        1.097
+      ]
+    },
+    {
+      "name": "Cafe_CuttingBoard",
+      "role": "cutting_board",
+      "group": "props",
+      "sheet": "CafeCounterDetail",
+      "base_surface": "Timber",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 6.263096,
+        "offset_v": 0.200595
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -0.74,
+        4.5595,
+        0.953
+      ],
+      "bounds_max": [
+        -0.02,
+        5.0395,
+        0.989
+      ]
+    },
+    {
+      "name": "Cafe_StoveTaskFixture",
+      "role": "stove_task_fixture",
+      "group": "lighting",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 1.106691,
+        "offset_v": 1.009918
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 56,
+      "triangles": 100,
+      "bounds_min": [
+        -2.59,
+        4.4295,
+        2.25
+      ],
+      "bounds_max": [
+        -1.21,
+        5.1695,
+        4.18
+      ]
+    },
+    {
+      "name": "Cafe_StoveTaskLens",
+      "role": "stove_task_lens",
+      "group": "lighting",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 5.895552,
+        "offset_v": 1.750027
+      },
+      "emissive": true,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -2.41,
+        4.5695,
+        2.21
+      ],
+      "bounds_max": [
+        -1.39,
+        5.0295,
+        2.25
+      ]
+    },
+    {
+      "name": "Cafe_RefrigeratorBody",
+      "role": "refrigerator_body",
+      "group": "appliance",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "single_inset_appliance_patch_without_pattern_edges",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 1.248646,
+        "offset_v": 3.991073
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 80,
+      "triangles": 140,
       "bounds_min": [
         -4.38,
-        4.2625,
+        4.5495,
         0.0
       ],
       "bounds_max": [
         -3.26,
-        5.08,
+        5.2695,
         1.96
+      ]
+    },
+    {
+      "name": "Cafe_RefrigeratorCavity",
+      "role": "refrigerator_cavity",
+      "group": "appliance",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "single_inset_appliance_patch_without_pattern_edges",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 5.559091,
+        "offset_v": 1.175479
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -4.27,
+        5.2055,
+        0.13
+      ],
+      "bounds_max": [
+        -3.37,
+        5.2235,
+        1.83
+      ]
+    },
+    {
+      "name": "Cafe_RefrigeratorShelves",
+      "role": "refrigerator_shelf",
+      "group": "appliance",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "single_inset_appliance_patch_without_pattern_edges",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 2.634333,
+        "offset_v": 0.310826
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -4.24,
+        4.6095,
+        0.6375
+      ],
+      "bounds_max": [
+        -3.4,
+        5.1695,
+        1.2625
+      ]
+    },
+    {
+      "name": "Cafe_FridgeDoor",
+      "role": "fridge_door",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "single_inset_appliance_patch_without_pattern_edges",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 1.31722,
+        "offset_v": 5.542535
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -4.32,
+        4.3795,
+        0.05
+      ],
+      "bounds_max": [
+        -3.32,
+        4.5495,
+        1.91
       ]
     },
     {
@@ -2452,12 +2885,12 @@
       "triangles": 496,
       "bounds_min": [
         1.24,
-        3.355,
+        4.2745,
         0.95
       ],
       "bounds_max": [
         3.06,
-        4.142228,
+        5.061728,
         2.305
       ]
     },
@@ -2480,12 +2913,12 @@
       "triangles": 72,
       "bounds_min": [
         1.325,
-        3.466713,
+        4.386213,
         1.26
       ],
       "bounds_max": [
         2.595,
-        3.533287,
+        4.452787,
         1.94
       ]
     },
@@ -2704,12 +3137,12 @@
       "triangles": 216,
       "bounds_min": [
         2.4,
-        3.573761,
+        4.493261,
         1.02
       ],
       "bounds_max": [
         2.89,
-        3.866239,
+        4.785739,
         1.334766
       ]
     },
@@ -2732,12 +3165,12 @@
       "triangles": 52,
       "bounds_min": [
         2.425,
-        3.598134,
+        4.517634,
         1.32
       ],
       "bounds_max": [
         2.675,
-        3.841866,
+        4.761366,
         1.37
       ]
     },
@@ -2798,5 +3231,5 @@
       ]
     }
   ],
-  "build_signature": "1966441a1d02776c0efcd0d02c981252083780cec0189c85a2775733550d1696"
+  "build_signature": "a332d2a6f5b052e047d25927455985e13c8e61b376c9a76bac0b3a8c6b579176"
 }

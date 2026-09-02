@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -73,6 +74,7 @@ namespace BarPromenade.Tests.EditMode
                 }
 
                 AssertPublishedDescriptorOrder(result);
+                AssertExpandedKitchenRun(plan, result);
                 AssertStoolPositions(plan, result);
             }
             finally
@@ -124,6 +126,42 @@ namespace BarPromenade.Tests.EditMode
                         Is.InstanceOf<CapsuleCollider>());
                 }
             }
+        }
+
+        private static void AssertExpandedKitchenRun(
+            MountainRoadCafePlan plan,
+            MountainRoadCafeCollisionWorldResult result)
+        {
+            BoxCollider serviceCabinet = result.Colliders
+                .Single(collider => collider.name == "service-cabinet")
+                as BoxCollider;
+            Assert.That(serviceCabinet, Is.Not.Null);
+            Assert.That(
+                serviceCabinet.size,
+                Is.EqualTo(new Vector3(5.68f, 0.86f, 0.78f)));
+
+            Vector3 offset = serviceCabinet.transform.position - plan.Center;
+            Assert.That(
+                Vector3.Dot(offset, plan.Right),
+                Is.EqualTo(0.19f).Within(0.0001f));
+            Assert.That(
+                offset.y,
+                Is.EqualTo(0.43f).Within(0.0001f));
+            Assert.That(
+                Vector3.Dot(offset, plan.Forward),
+                Is.EqualTo(4.8625f).Within(0.0001f));
+
+            BoxCollider fridge = result.Colliders
+                .Single(collider => collider.name == "fridge")
+                as BoxCollider;
+            Assert.That(fridge, Is.Not.Null);
+            Vector3 fridgeOffset = fridge.transform.position - plan.Center;
+            Assert.That(
+                Vector3.Dot(fridgeOffset, plan.Right),
+                Is.EqualTo(-3.82f).Within(0.0001f));
+            Assert.That(
+                Vector3.Dot(fridgeOffset, plan.Forward),
+                Is.EqualTo(4.9095f).Within(0.0001f));
         }
 
         private static void AssertStoolPositions(

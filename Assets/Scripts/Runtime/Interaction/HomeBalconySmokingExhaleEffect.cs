@@ -38,6 +38,8 @@ namespace BarPromenade
 
         public bool IsInitialized { get; private set; }
         public bool IsEmissionCycleActive { get; private set; }
+        public bool IsManualBurstMode { get; private set; }
+        public int ManualBurstCount { get; private set; }
         public Transform MouthAnchor => mouthAnchor;
         public ParticleSystem Particles => particles;
         public ParticleSystemRenderer SmokeRenderer => smokeRenderer;
@@ -49,6 +51,8 @@ namespace BarPromenade
             PlayerAnimatedInteractionDefinition definition)
         {
             IsInitialized = false;
+            IsManualBurstMode = false;
+            ManualBurstCount = 0;
             mouthAnchor = mouth != null
                 ? mouth
                 : throw new ArgumentNullException(nameof(mouth));
@@ -86,10 +90,65 @@ namespace BarPromenade
                 return false;
             }
 
+            if (IsManualBurstMode)
+            {
+                ConfigureParticleSystem();
+                IsManualBurstMode = false;
+            }
+
             StopAndClear();
             FollowMouth();
             particles.Play(true);
             IsEmissionCycleActive = true;
+            return true;
+        }
+
+        /// <summary>
+        /// Removes the self-timed looping burst so an external manual
+        /// animation graph can trigger the same plume exactly when its
+        /// authored exhale frame is crossed.
+        /// </summary>
+        public bool EnableManualBurstMode()
+        {
+            if (!IsInitialized || particles == null)
+            {
+                return false;
+            }
+
+            StopAndClear();
+            ParticleSystem.MainModule main = particles.main;
+            main.loop = false;
+            ParticleSystem.EmissionModule emission = particles.emission;
+            emission.rateOverTime = 0f;
+            emission.rateOverDistance = 0f;
+            emission.SetBursts(Array.Empty<ParticleSystem.Burst>());
+            IsManualBurstMode = true;
+            return true;
+        }
+
+        /// <summary>
+        /// Emits one bounded plume without introducing an autonomous clock.
+        /// Calls made while uninitialised, disabled or in looping mode are
+        /// rejected rather than queued for a later duplicate emission.
+        /// </summary>
+        public bool EmitManualBurst()
+        {
+            if (!IsInitialized ||
+                !IsManualBurstMode ||
+                !isActiveAndEnabled ||
+                particles == null)
+            {
+                return false;
+            }
+
+            FollowMouth();
+            if (!particles.isPlaying)
+            {
+                particles.Play(true);
+            }
+
+            particles.Emit(BurstParticleCount);
+            ManualBurstCount++;
             return true;
         }
 

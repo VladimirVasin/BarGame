@@ -24,7 +24,12 @@ namespace BarPromenade
         /// they are meant to sit.</summary>
         public const float ResponseDurationSeconds = 3.4f;
 
+        /// <summary>How long a fully typed line is left standing — the
+        /// same tail every spoken answer in the game keeps.</summary>
+        public const float ReadingTailSeconds = 2.0f;
+
         private Vector3 standPosition;
+        private NpcSpeaker speaker = NpcSpeaker.None;
         private string[] repertoire;
         private LastRouteFerrymanPresentation presentation;
         private uint quipState;
@@ -59,6 +64,15 @@ namespace BarPromenade
             isInitialized = repertoire != null && repertoire.Length > 0;
         }
 
+        /// <summary>
+        /// Who he is when he answers. Without it he answers whole,
+        /// instantly and silently, as he did before.
+        /// </summary>
+        public void AttachSpeaker(in NpcSpeaker value)
+        {
+            speaker = value;
+        }
+
         public bool CanInteract(PlayerInteractor interactor)
         {
             return isInitialized &&
@@ -81,9 +95,24 @@ namespace BarPromenade
                 ref quipState,
                 lastLineIndex,
                 repertoire);
-            interactor.ShowFeedback(
-                repertoire[lastLineIndex],
-                ResponseDurationSeconds);
+            string lineKey = repertoire[lastLineIndex];
+            interactor.ShowSpokenFeedback(
+                lineKey,
+                ResolveResponseSeconds(lineKey),
+                speaker);
+        }
+
+        /// <summary>
+        /// The time it takes to type plus a tail to read it in, never
+        /// less than the floor above.
+        /// </summary>
+        public static float ResolveResponseSeconds(string key)
+        {
+            return Mathf.Max(
+                ResponseDurationSeconds,
+                SpeechDelivery.ResolveSpokenDuration(
+                    LocalizationService.Get(key),
+                    ReadingTailSeconds));
         }
 
         /// <summary>

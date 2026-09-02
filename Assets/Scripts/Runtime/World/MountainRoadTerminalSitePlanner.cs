@@ -1301,6 +1301,23 @@ namespace BarPromenade
         /// The aim is computed, not authored: head to a point
         /// <see cref="ApronFloodlightAimHeight"/> above the apron centre, so
         /// moving either the post or the apron keeps the beam on the car.
+        ///
+        /// Widened 2026-09-02 on the user's instruction - "не ярче, а больше
+        /// область". Both numbers below moved and neither of them is the
+        /// wattage, which is the whole point of the change: what arrives on
+        /// the car is held where it was (see
+        /// <c>MountainRoadAtmosphere.ApronFloodDayIntensity</c>) and what
+        /// grows is the ground the beam covers.
+        ///
+        /// RANGE was the binding constraint, not the cone. The axis meets the
+        /// ground `12.2 m` down the beam and `14` cut it off `1.8 m` later, so
+        /// the pool ended a stride past the car's far side; `20` lets it run
+        /// out to about nineteen metres of pad. The cone then opens to `48°`
+        /// because a wider beam over the same rake is the only way to widen
+        /// the pool ACROSS the pad - `5.7 m` becomes `8.3 m` at the car - and
+        /// `48` is close to this rake's ceiling: the axis sits `26°` below
+        /// horizontal, so a half-angle past `26` would put the top of the
+        /// beam above the horizon and light the mountain instead of the yard.
         /// </summary>
         private static MountainRoadSitePracticalDescriptor
             CreateApronFloodlight(
@@ -1325,8 +1342,8 @@ namespace BarPromenade
                 "site-apron-flood-shade",
                 head,
                 aim - head,
-                14f,
-                34f);
+                20f,
+                48f);
         }
 
         private static MountainRoadSitePracticalDescriptor CreateYardLamp(

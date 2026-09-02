@@ -59,6 +59,11 @@ namespace BarPromenade
             DryingYardBabushkas { get; private set; }
         public IReadOnlyList<CityCourtyardResidentPresentation>
             CourtyardResidents { get; private set; }
+        public CityBalconySmokerDirector BalconySmokers
+        {
+            get;
+            private set;
+        }
         public CityArchShelterPresentation ArchShelterPresentation
         {
             get;
@@ -619,6 +624,16 @@ namespace BarPromenade
                 CityCourtyardResidentPlan.Create(
                     Layout,
                     World.DecorationPlan));
+            // Passive residents make authored Residential balconies read as
+            // real apartments. Every ordinary building contributes one
+            // deterministic candidate dock; a small per-session population
+            // appears and disappears around the moving hero, outside the
+            // roaming pedestrian pool and never on the hero's own building.
+            BalconySmokers = CityBalconySmokerDirector.Create(
+                transform,
+                Layout.Seed,
+                CityBalconySmokerPlan.CreateCandidates(Layout),
+                Player.GameObject.transform);
             if (World.ArchShelterPlan.IsEnabled)
             {
                 ArchShelterPresentation = World.ArchShelter.Root
@@ -1051,7 +1066,9 @@ namespace BarPromenade
             // Raised here rather than with the two men because it needs
             // the camera, which does not exist until this far down.
             SpeechBubbles = ui.AddComponent<NpcSpeechBubbleView>();
-            SpeechBubbles.Initialize(camera);
+            SpeechBubbles.Initialize(
+                camera,
+                Player.GameObject.transform);
             // Every act of the gravedigger's job is now a piece of
             // work rather than a press. Raised here rather than beside
             // the jobs themselves because it takes the camera down onto
@@ -1435,16 +1452,21 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
-            if (CourtyardResidents == null)
+            if (BalconySmokers != null)
             {
-                return;
+                BalconySmokers.Shutdown();
             }
 
-            for (int index = 0;
-                 index < CourtyardResidents.Count;
-                 index++)
+            BalconySmokers = null;
+
+            if (CourtyardResidents != null)
             {
-                CourtyardResidents[index]?.Shutdown();
+                for (int index = 0;
+                     index < CourtyardResidents.Count;
+                     index++)
+                {
+                    CourtyardResidents[index]?.Shutdown();
+                }
             }
 
             CourtyardResidents = null;

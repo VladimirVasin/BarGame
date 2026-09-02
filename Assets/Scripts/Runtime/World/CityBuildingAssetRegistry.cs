@@ -15,6 +15,12 @@ namespace BarPromenade
         WindowGlass = 6
     }
 
+    public enum CityBuildingOpeningKind
+    {
+        Window = 0,
+        BalconyDoor = 1
+    }
+
     [Serializable]
     public sealed class CityBuildingPartBinding
     {
@@ -74,6 +80,7 @@ namespace BarPromenade
         [SerializeField] private string side = string.Empty;
         [SerializeField] private int floor;
         [SerializeField] private int bay;
+        [SerializeField] private CityBuildingOpeningKind openingKind;
         [SerializeField] private Vector3 localCenter;
         [SerializeField] private Vector2 sizeMeters;
         [SerializeField] private int uv2SlotId;
@@ -83,6 +90,7 @@ namespace BarPromenade
             string configuredSide,
             int configuredFloor,
             int configuredBay,
+            CityBuildingOpeningKind configuredOpeningKind,
             Vector3 configuredLocalCenter,
             Vector2 configuredSizeMeters,
             int configuredUv2SlotId)
@@ -91,6 +99,7 @@ namespace BarPromenade
             side = configuredSide ?? string.Empty;
             floor = configuredFloor;
             bay = configuredBay;
+            openingKind = configuredOpeningKind;
             localCenter = configuredLocalCenter;
             sizeMeters = configuredSizeMeters;
             uv2SlotId = configuredUv2SlotId;
@@ -100,9 +109,48 @@ namespace BarPromenade
         public string Side => side;
         public int Floor => floor;
         public int Bay => bay;
+        public CityBuildingOpeningKind OpeningKind => openingKind;
         public Vector3 LocalCenter => localCenter;
         public Vector2 SizeMeters => sizeMeters;
         public int Uv2SlotId => uv2SlotId;
+    }
+
+    [Serializable]
+    public sealed class CityBuildingBalconySlot
+    {
+        [SerializeField] private string stableId = string.Empty;
+        [SerializeField] private int floor;
+        [SerializeField] private string side = string.Empty;
+        [SerializeField] private int doorSlotId;
+        [SerializeField] private Bounds localDeckBounds;
+        [SerializeField] private Vector3 localNpcDock;
+        [SerializeField] private Vector3 localOutward;
+
+        public CityBuildingBalconySlot(
+            string configuredStableId,
+            int configuredFloor,
+            string configuredSide,
+            int configuredDoorSlotId,
+            Bounds configuredLocalDeckBounds,
+            Vector3 configuredLocalNpcDock,
+            Vector3 configuredLocalOutward)
+        {
+            stableId = configuredStableId ?? string.Empty;
+            floor = configuredFloor;
+            side = configuredSide ?? string.Empty;
+            doorSlotId = configuredDoorSlotId;
+            localDeckBounds = configuredLocalDeckBounds;
+            localNpcDock = configuredLocalNpcDock;
+            localOutward = configuredLocalOutward;
+        }
+
+        public string StableId => stableId;
+        public int Floor => floor;
+        public string Side => side;
+        public int DoorSlotId => doorSlotId;
+        public Bounds LocalDeckBounds => localDeckBounds;
+        public Vector3 LocalNpcDock => localNpcDock;
+        public Vector3 LocalOutward => localOutward;
     }
 
     /// <summary>
@@ -143,6 +191,8 @@ namespace BarPromenade
                 Array.Empty<CityBuildingFacadeAttachment>();
         [SerializeField] private CityBuildingWindowSlot[] windowSlots =
             Array.Empty<CityBuildingWindowSlot>();
+        [SerializeField] private CityBuildingBalconySlot[] balconySlots =
+            Array.Empty<CityBuildingBalconySlot>();
         [SerializeField] private float frontageWidth;
         [SerializeField] private float depth;
         [SerializeField] private float height;
@@ -164,6 +214,8 @@ namespace BarPromenade
             FacadeAttachments => facadeAttachments;
         public IReadOnlyList<CityBuildingWindowSlot> WindowSlots =>
             windowSlots;
+        public IReadOnlyList<CityBuildingBalconySlot> BalconySlots =>
+            balconySlots;
         public float FrontageWidth => frontageWidth;
         public float Depth => depth;
         public float Height => height;
@@ -213,6 +265,7 @@ namespace BarPromenade
             Bounds configuredRoofAttachmentBounds,
             CityBuildingFacadeAttachment[] configuredFacadeAttachments,
             CityBuildingWindowSlot[] configuredWindowSlots,
+            CityBuildingBalconySlot[] configuredBalconySlots,
             float configuredFrontageWidth,
             float configuredDepth,
             float configuredHeight,
@@ -235,6 +288,8 @@ namespace BarPromenade
                 Array.Empty<CityBuildingFacadeAttachment>();
             windowSlots = configuredWindowSlots ??
                 Array.Empty<CityBuildingWindowSlot>();
+            balconySlots = configuredBalconySlots ??
+                Array.Empty<CityBuildingBalconySlot>();
             frontageWidth = configuredFrontageWidth;
             depth = configuredDepth;
             height = configuredHeight;
@@ -389,7 +444,8 @@ namespace BarPromenade
                 facadeAttachments == null ||
                 facadeAttachments.Length == 0 ||
                 windowSlots == null ||
-                windowSlots.Length == 0)
+                windowSlots.Length == 0 ||
+                balconySlots == null)
             {
                 throw new InvalidOperationException(
                     $"City building '{stableId}' attachment metadata is " +
@@ -413,16 +469,23 @@ namespace BarPromenade
 
             var slotIds = new HashSet<int>();
             var uv2Ids = new HashSet<int>();
+            var slotsById = new Dictionary<int, CityBuildingWindowSlot>();
+            var declaredDoorIds = new HashSet<int>();
             for (int index = 0; index < windowSlots.Length; index++)
             {
                 CityBuildingWindowSlot slot = windowSlots[index];
                 if (slot == null ||
                     slot.SlotId <= 0 ||
-                    string.IsNullOrWhiteSpace(slot.Side) ||
+                    !IsKnownSide(slot.Side) ||
                     slot.Floor < 0 ||
                     slot.Bay < 0 ||
+                    !Enum.IsDefined(
+                        typeof(CityBuildingOpeningKind),
+                        slot.OpeningKind) ||
+                    !IsFinite(slot.LocalCenter) ||
                     slot.SizeMeters.x <= 0f ||
                     slot.SizeMeters.y <= 0f ||
+                    !IsFinite(slot.SizeMeters) ||
                     slot.Uv2SlotId <= 0 ||
                     slot.Uv2SlotId > MaximumWindowSlotId ||
                     slot.Uv2SlotId != slot.SlotId ||
@@ -433,7 +496,216 @@ namespace BarPromenade
                         $"City building '{stableId}' window-slot metadata " +
                         "is invalid.");
                 }
+
+                slotsById.Add(slot.SlotId, slot);
+                if (slot.OpeningKind ==
+                    CityBuildingOpeningKind.BalconyDoor)
+                {
+                    declaredDoorIds.Add(slot.SlotId);
+                }
             }
+
+            var balconyIds = new HashSet<string>(StringComparer.Ordinal);
+            var referencedDoorIds = new HashSet<int>();
+            var balconiesPerFloor = new Dictionary<int, int>();
+            for (int index = 0; index < balconySlots.Length; index++)
+            {
+                CityBuildingBalconySlot balcony = balconySlots[index];
+                if (balcony == null)
+                {
+                    throw new InvalidOperationException(
+                        $"City building '{stableId}' balcony-slot metadata " +
+                        "is invalid.");
+                }
+
+                if (!slotsById.TryGetValue(
+                        balcony.DoorSlotId,
+                        out CityBuildingWindowSlot door))
+                {
+                    throw new InvalidOperationException(
+                        $"City building '{stableId}' balcony " +
+                        $"'{balcony.StableId}' references a missing door.");
+                }
+
+                if (string.IsNullOrWhiteSpace(balcony.StableId) ||
+                    !balconyIds.Add(balcony.StableId) ||
+                    balcony.Floor <= 0 ||
+                    !IsKnownSide(balcony.Side) ||
+                    !IsFinite(balcony.LocalDeckBounds) ||
+                    balcony.LocalDeckBounds.size.x <= 0f ||
+                    balcony.LocalDeckBounds.size.y <= 0f ||
+                    balcony.LocalDeckBounds.size.z <= 0f ||
+                    !ContainsWithTolerance(
+                        localBounds,
+                        balcony.LocalDeckBounds.min) ||
+                    !ContainsWithTolerance(
+                        localBounds,
+                        balcony.LocalDeckBounds.max) ||
+                    !IsFinite(balcony.LocalNpcDock) ||
+                    !ContainsWithTolerance(
+                        balcony.LocalDeckBounds,
+                        balcony.LocalNpcDock) ||
+                    Mathf.Abs(
+                        balcony.LocalNpcDock.y -
+                        balcony.LocalDeckBounds.max.y) > 0.0001f ||
+                    !IsFinite(balcony.LocalOutward) ||
+                    Mathf.Abs(balcony.LocalOutward.magnitude - 1f) >
+                        0.0001f ||
+                    Vector3.Dot(
+                        balcony.LocalOutward,
+                        ExpectedOutward(balcony.Side)) < 0.9999f ||
+                    !referencedDoorIds.Add(balcony.DoorSlotId) ||
+                    door.OpeningKind !=
+                        CityBuildingOpeningKind.BalconyDoor ||
+                    door.Floor != balcony.Floor ||
+                    !string.Equals(
+                        door.Side,
+                        balcony.Side,
+                        StringComparison.Ordinal) ||
+                    Mathf.Abs(
+                        door.LocalCenter.y - door.SizeMeters.y * 0.5f -
+                        balcony.LocalDeckBounds.max.y) > 0.0001f ||
+                    door.LocalCenter.x <
+                        balcony.LocalDeckBounds.min.x - 0.0001f ||
+                    door.LocalCenter.x >
+                        balcony.LocalDeckBounds.max.x + 0.0001f ||
+                    door.LocalCenter.z <
+                        balcony.LocalDeckBounds.min.z - 0.0001f ||
+                    door.LocalCenter.z >
+                        balcony.LocalDeckBounds.max.z + 0.0001f)
+                {
+                    throw new InvalidOperationException(
+                        $"City building '{stableId}' balcony-slot metadata " +
+                        "is invalid.");
+                }
+
+                balconiesPerFloor.TryGetValue(
+                    balcony.Floor,
+                    out int floorCount);
+                balconiesPerFloor[balcony.Floor] = floorCount + 1;
+            }
+
+            if (!referencedDoorIds.SetEquals(declaredDoorIds))
+            {
+                throw new InvalidOperationException(
+                    $"City building '{stableId}' balcony doors are not " +
+                    "paired one-to-one.");
+            }
+
+            if (district == CityDistrictKind.Residential)
+            {
+                if (balconySlots.Length != 8)
+                {
+                    throw new InvalidOperationException(
+                        $"City building '{stableId}' needs eight balcony " +
+                        "slots.");
+                }
+
+                float[] expectedLevels = { 7f, 12f, 17f, 22f };
+                for (int floor = 1; floor <= expectedLevels.Length; floor++)
+                {
+                    if (!balconiesPerFloor.TryGetValue(
+                            floor,
+                            out int floorCount) ||
+                        floorCount != 2)
+                    {
+                        throw new InvalidOperationException(
+                            $"City building '{stableId}' floor {floor} " +
+                            "needs two balconies.");
+                    }
+
+                    for (int index = 0; index < balconySlots.Length; index++)
+                    {
+                        CityBuildingBalconySlot balcony = balconySlots[index];
+                        if (balcony.Floor != floor)
+                        {
+                            continue;
+                        }
+
+                        if (!string.Equals(
+                                balcony.Side,
+                                "Front",
+                                StringComparison.Ordinal) ||
+                            Mathf.Abs(
+                                balcony.LocalDeckBounds.max.y -
+                                expectedLevels[floor - 1]) > 0.0001f ||
+                            Mathf.Abs(
+                                balcony.LocalDeckBounds.size.x - 2.5f) >
+                                0.0001f ||
+                            Mathf.Abs(
+                                balcony.LocalDeckBounds.size.z - 1.2f) >
+                                0.0001f)
+                        {
+                            throw new InvalidOperationException(
+                                $"City building '{stableId}' residential " +
+                                "balcony layout drifted.");
+                        }
+                    }
+                }
+            }
+            else if (balconySlots.Length != 0)
+            {
+                throw new InvalidOperationException(
+                    $"City building '{stableId}' cannot have balconies.");
+            }
+        }
+
+        private static bool IsKnownSide(string side)
+        {
+            return string.Equals(side, "Front", StringComparison.Ordinal) ||
+                string.Equals(side, "Rear", StringComparison.Ordinal) ||
+                string.Equals(side, "Left", StringComparison.Ordinal) ||
+                string.Equals(side, "Right", StringComparison.Ordinal);
+        }
+
+        private static Vector3 ExpectedOutward(string side)
+        {
+            switch (side)
+            {
+                case "Front":
+                    return Vector3.forward;
+                case "Rear":
+                    return Vector3.back;
+                case "Left":
+                    return Vector3.left;
+                case "Right":
+                    return Vector3.right;
+                default:
+                    return Vector3.zero;
+            }
+        }
+
+        private static bool ContainsWithTolerance(
+            Bounds bounds,
+            Vector3 point)
+        {
+            const float tolerance = 0.0001f;
+            Vector3 minimum = bounds.min - Vector3.one * tolerance;
+            Vector3 maximum = bounds.max + Vector3.one * tolerance;
+            return point.x >= minimum.x && point.x <= maximum.x &&
+                point.y >= minimum.y && point.y <= maximum.y &&
+                point.z >= minimum.z && point.z <= maximum.z;
+        }
+
+        private static bool IsFinite(Vector2 value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y);
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return IsFinite(value.x) && IsFinite(value.y) &&
+                IsFinite(value.z);
+        }
+
+        private static bool IsFinite(Bounds value)
+        {
+            return IsFinite(value.center) && IsFinite(value.size);
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         private void ValidatePassiveHierarchy()

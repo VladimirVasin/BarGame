@@ -55,7 +55,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo(CityBuildingAssetProvider.ExpectedDesignId));
-            Assert.That(manifest.generator_version, Is.EqualTo("2.0.0"));
+            Assert.That(manifest.generator_version, Is.EqualTo("2.1.0"));
             Assert.That(manifest.fbx_asset_path, Is.EqualTo(ModelPath));
             Assert.That(manifest.unit_factor, Is.EqualTo(1f));
             Assert.That(manifest.unity_axes, Is.Not.Null);
@@ -328,6 +328,46 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     registry.WindowSlots.Count,
                     Is.EqualTo(prototype.window_slots.Length));
+                Assert.That(
+                    registry.BalconySlots.Count,
+                    Is.EqualTo(prototype.balcony_slots.Length));
+                for (int slotIndex = 0;
+                     slotIndex < prototype.window_slots.Length;
+                     slotIndex++)
+                {
+                    Assert.That(
+                        registry.WindowSlots[slotIndex].OpeningKind.ToString(),
+                        Is.EqualTo(
+                            prototype.window_slots[slotIndex].opening_kind));
+                }
+                for (int slotIndex = 0;
+                     slotIndex < prototype.balcony_slots.Length;
+                     slotIndex++)
+                {
+                    ContractBalconySlot sourceSlot =
+                        prototype.balcony_slots[slotIndex];
+                    CityBuildingBalconySlot runtimeSlot =
+                        registry.BalconySlots[slotIndex];
+                    Assert.That(
+                        runtimeSlot.StableId,
+                        Is.EqualTo(sourceSlot.stable_id));
+                    Assert.That(
+                        runtimeSlot.DoorSlotId,
+                        Is.EqualTo(sourceSlot.door_slot_id));
+                    AssertBoundsNear(
+                        runtimeSlot.LocalDeckBounds,
+                        ConvertSourceBoundsToUnity(
+                            sourceSlot.deck_bounds_min_source,
+                            sourceSlot.deck_bounds_max_source));
+                    AssertVectorNear(
+                        runtimeSlot.LocalNpcDock,
+                        ConvertSourceVectorToUnity(
+                            sourceSlot.npc_dock_source));
+                    AssertVectorNear(
+                        runtimeSlot.LocalOutward,
+                        ConvertSourceVectorToUnity(
+                            sourceSlot.outward_source));
+                }
                 AssertVectorNear(
                     registry.LocalBounds.size,
                     BoundsFromArrays(
@@ -489,6 +529,7 @@ namespace BarPromenade.Tests.EditMode
                 prototype.facade_attachment_bounds,
                 Is.Not.Empty);
             Assert.That(prototype.window_slots, Is.Not.Empty);
+            Assert.That(prototype.balcony_slots, Is.Not.Null);
             Assert.That(
                 prototype.facade_attachment_bounds
                     .Select(attachment => attachment.side)
@@ -501,6 +542,97 @@ namespace BarPromenade.Tests.EditMode
                     .Distinct()
                     .Count(),
                 Is.EqualTo(prototype.window_slots.Length));
+
+            var slotsById = prototype.window_slots.ToDictionary(
+                slot => slot.slot_id);
+            int[] declaredDoors = prototype.window_slots
+                .Where(slot => string.Equals(
+                    slot.opening_kind,
+                    CityBuildingOpeningKind.BalconyDoor.ToString(),
+                    StringComparison.Ordinal))
+                .Select(slot => slot.slot_id)
+                .ToArray();
+            Assert.That(
+                prototype.window_slots.All(slot =>
+                    string.Equals(
+                        slot.opening_kind,
+                        CityBuildingOpeningKind.Window.ToString(),
+                        StringComparison.Ordinal) ||
+                    string.Equals(
+                        slot.opening_kind,
+                        CityBuildingOpeningKind.BalconyDoor.ToString(),
+                        StringComparison.Ordinal)),
+                Is.True);
+            Assert.That(
+                prototype.balcony_slots.Select(slot => slot.stable_id),
+                Is.Unique);
+            Assert.That(
+                prototype.balcony_slots.Select(slot => slot.door_slot_id),
+                Is.EquivalentTo(declaredDoors));
+
+            foreach (ContractBalconySlot balcony in prototype.balcony_slots)
+            {
+                Assert.That(
+                    slotsById.TryGetValue(
+                        balcony.door_slot_id,
+                        out ContractWindowSlot door),
+                    Is.True);
+                Assert.That(
+                    door.opening_kind,
+                    Is.EqualTo(
+                        CityBuildingOpeningKind.BalconyDoor.ToString()));
+                Assert.That(door.side, Is.EqualTo(balcony.side));
+                Assert.That(door.floor, Is.EqualTo(balcony.floor));
+                Bounds deck = BoundsFromArrays(
+                    balcony.deck_bounds_min_source,
+                    balcony.deck_bounds_max_source);
+                Vector3 dock = Vector3FromArray(balcony.npc_dock_source);
+                Vector3 doorCenter = Vector3FromArray(door.center_source);
+                Assert.That(deck.Contains(dock), Is.True);
+                Assert.That(dock.z, Is.EqualTo(deck.max.z).Within(.0001f));
+                Assert.That(
+                    doorCenter.z - door.size_m[1] * .5f,
+                    Is.EqualTo(deck.max.z).Within(.0001f));
+                AssertVectorNear(
+                    Vector3FromArray(balcony.outward_source),
+                    Vector3.up);
+            }
+
+            bool residential = string.Equals(
+                prototype.district,
+                CityDistrictKind.Residential.ToString(),
+                StringComparison.Ordinal);
+            Assert.That(
+                prototype.balcony_slots.Length,
+                Is.EqualTo(residential ? 8 : 0));
+            if (residential)
+            {
+                float[] levels = { 7f, 12f, 17f, 22f };
+                for (int floor = 1; floor <= levels.Length; floor++)
+                {
+                    ContractBalconySlot[] floorSlots =
+                        prototype.balcony_slots
+                            .Where(slot => slot.floor == floor)
+                            .ToArray();
+                    Assert.That(floorSlots, Has.Length.EqualTo(2));
+                    foreach (ContractBalconySlot balcony in floorSlots)
+                    {
+                        Bounds deck = BoundsFromArrays(
+                            balcony.deck_bounds_min_source,
+                            balcony.deck_bounds_max_source);
+                        Assert.That(balcony.side, Is.EqualTo("Front"));
+                        Assert.That(
+                            deck.max.z,
+                            Is.EqualTo(levels[floor - 1]).Within(.0001f));
+                        Assert.That(
+                            deck.size.x,
+                            Is.EqualTo(2.5f).Within(.0001f));
+                        Assert.That(
+                            deck.size.y,
+                            Is.EqualTo(1.2f).Within(.0001f));
+                    }
+                }
+            }
             Assert.That(
                 prototype.window_slots
                     .Select(slot => slot.uv2_slot_id)
@@ -770,6 +902,7 @@ namespace BarPromenade.Tests.EditMode
             public float[] roof_attachment_bounds_max_source;
             public ContractFacadeAttachment[] facade_attachment_bounds;
             public ContractWindowSlot[] window_slots;
+            public ContractBalconySlot[] balcony_slots;
             public ContractPart[] parts;
         }
 
@@ -792,7 +925,26 @@ namespace BarPromenade.Tests.EditMode
         private sealed class ContractWindowSlot
         {
             public int slot_id;
+            public string side;
+            public int floor;
+            public int bay;
+            public string opening_kind;
+            public float[] center_source;
+            public float[] size_m;
             public int uv2_slot_id;
+        }
+
+        [Serializable]
+        private sealed class ContractBalconySlot
+        {
+            public string stable_id;
+            public int floor;
+            public string side;
+            public int door_slot_id;
+            public float[] deck_bounds_min_source;
+            public float[] deck_bounds_max_source;
+            public float[] npc_dock_source;
+            public float[] outward_source;
         }
 
         [Serializable]

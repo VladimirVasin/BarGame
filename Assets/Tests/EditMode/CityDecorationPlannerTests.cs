@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -687,6 +688,32 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(expected[kind]),
                     kind.ToString());
             }
+        }
+
+        [Test]
+        public void ResidentialBalconyCore_EmitsNoLegacyStack()
+        {
+            CityDecorationPlan plan = CreatePlan(
+                GameSessionState.DefaultCitySeed,
+                out CityLayout layout,
+                out _,
+                out _);
+            CityDecorationDescriptor descriptor = plan.Descriptors
+                .First(candidate => candidate.Kind ==
+                    CityDecorationKind.ResidentialBalconies);
+            var legacyParts = new List<Bounds>();
+
+            CityDecorationWorldBuilder.AppendPartBounds(
+                layout,
+                descriptor,
+                legacyParts);
+
+            Assert.That(
+                legacyParts,
+                Is.Empty,
+                "The fixed Residential prototype owns balcony slabs and " +
+                "rails; the compatibility decoration must not add a second " +
+                "floor rhythm.");
         }
 
         [Test]

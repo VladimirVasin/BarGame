@@ -16,6 +16,11 @@ namespace BarPromenade
         public const string YesLocalizationKey = "common.yes";
         public const string NoLocalizationKey = "common.no";
 
+        /// <summary>How long a spoken answer is left standing once it
+        /// has finished typing — the same tail every other spoken line
+        /// in the game keeps.</summary>
+        public const float SpokenReadingTailSeconds = 2.0f;
+
         private static InventoryTargetInteractionController
             activeController;
 
@@ -277,7 +282,9 @@ namespace BarPromenade
                 case InventoryTargetInteractionAction.None:
                     return;
                 case InventoryTargetInteractionAction.ShowTalkFeedback:
-                    CloseWithFeedback(definition.TalkResponseKey);
+                    CloseWithFeedback(
+                        definition.TalkResponseKey,
+                        definition.Speaker);
                     return;
                 case InventoryTargetInteractionAction
                     .ShowMissingRequirementFeedback:
@@ -379,11 +386,44 @@ namespace BarPromenade
 
         private void CloseWithFeedback(string feedbackKey)
         {
+            CloseWithFeedback(feedbackKey, NpcSpeaker.None);
+        }
+
+        /// <summary>
+        /// The talk answer is the one line here that somebody actually
+        /// says, so it is the one that carries a speaker. Everything
+        /// else this panel closes with — what the hero has not got in
+        /// his pockets, what he just used — is his own channel, and
+        /// stays whole, instant and silent.
+        /// </summary>
+        private void CloseWithFeedback(
+            string feedbackKey,
+            in NpcSpeaker speaker)
+        {
             PlayerInteractor feedbackTarget = sourceInteractor;
             float feedbackDuration =
                 definition.FeedbackDurationSeconds;
+            NpcSpeaker closingSpeaker = speaker;
             CloseInternal();
-            feedbackTarget?.ShowFeedback(
+            if (feedbackTarget == null)
+            {
+                return;
+            }
+
+            if (closingSpeaker.IsValid)
+            {
+                feedbackTarget.ShowSpokenFeedback(
+                    feedbackKey,
+                    Mathf.Max(
+                        feedbackDuration,
+                        SpeechDelivery.ResolveSpokenDuration(
+                            LocalizationService.Get(feedbackKey),
+                            SpokenReadingTailSeconds)),
+                    closingSpeaker);
+                return;
+            }
+
+            feedbackTarget.ShowFeedback(
                 feedbackKey,
                 feedbackDuration);
         }

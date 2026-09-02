@@ -54,10 +54,22 @@ namespace BarPromenade
             new Color(0.86f, 0.90f, 0.82f, 1f);
         private static readonly Color PropsTint =
             new Color(0.95f, 0.93f, 0.82f, 1f);
+        private static readonly Color FridgeEnamelTint =
+            new Color(0.68f, 0.69f, 0.54f, 1f);
+        private static readonly Color FridgeInteriorTint =
+            new Color(0.78f, 0.81f, 0.70f, 1f);
+        private static readonly Color FridgeShelfTint =
+            new Color(0.62f, 0.72f, 0.70f, 1f);
+        private static readonly Color StoveEnamelTint =
+            new Color(0.88f, 0.91f, 0.86f, 1f);
+        private static readonly Color PanMetalTint =
+            new Color(0.56f, 0.59f, 0.56f, 1f);
         private static readonly Color GlassTint =
             new Color(0.44f, 0.68f, 0.61f, 0.42f);
         private static readonly Color WarmEmission =
             new Color(2.75f, 1.75f, 0.52f, 1f);
+        private static readonly Color ColdTaskEmission =
+            new Color(0.72f, 2.20f, 1.85f, 1f);
         private static readonly Color CoffeeTint =
             new Color(0.105f, 0.045f, 0.018f, 1f);
 
@@ -111,6 +123,20 @@ namespace BarPromenade
                 return;
             }
 
+            if (string.Equals(
+                    binding.Role,
+                    "stove_task_lens",
+                    StringComparison.Ordinal))
+            {
+                ApplyEmission(binding.Renderer, ColdTaskEmission);
+                return;
+            }
+
+            if (TryApplyApplianceSurface(binding))
+            {
+                return;
+            }
+
             if (!TryResolveSheet(binding.Sheet, out MountainRoadCafeSurfaceKind kind))
             {
                 throw new InvalidOperationException(
@@ -119,6 +145,57 @@ namespace BarPromenade
             }
 
             Apply(binding.Renderer, kind);
+        }
+
+        private static bool TryApplyApplianceSurface(
+            MountainRoadCafePartBinding binding)
+        {
+            switch (binding.Role)
+            {
+                case "refrigerator_body":
+                case "fridge_door":
+                    ApplyLit(
+                        binding.Renderer,
+                        GetProps(),
+                        FridgeEnamelTint,
+                        0.45f,
+                        0.05f);
+                    return true;
+                case "refrigerator_cavity":
+                    ApplyLit(
+                        binding.Renderer,
+                        GetProps(),
+                        FridgeInteriorTint,
+                        0.38f,
+                        0.02f);
+                    return true;
+                case "refrigerator_shelf":
+                    ApplyLit(
+                        binding.Renderer,
+                        GetProps(),
+                        FridgeShelfTint,
+                        0.34f,
+                        0.12f);
+                    return true;
+                case "stove":
+                    ApplyLit(
+                        binding.Renderer,
+                        GetMetal(),
+                        StoveEnamelTint,
+                        0.36f,
+                        0.16f);
+                    return true;
+                case "frying_pan":
+                    ApplyLit(
+                        binding.Renderer,
+                        GetMetal(),
+                        PanMetalTint,
+                        0.30f,
+                        0.35f);
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public static void Apply(
@@ -206,14 +283,21 @@ namespace BarPromenade
 
         private static void ApplyEmission(Renderer renderer)
         {
+            ApplyEmission(renderer, WarmEmission);
+        }
+
+        private static void ApplyEmission(
+            Renderer renderer,
+            Color emission)
+        {
             renderer.sharedMaterial = CityNightResources.EmissiveMaterial;
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
             properties.SetTexture(BaseMapId, Texture2D.whiteTexture);
-            properties.SetColor(BaseColorId, WarmEmission);
-            properties.SetColor(ColorId, WarmEmission);
+            properties.SetColor(BaseColorId, emission);
+            properties.SetColor(ColorId, emission);
             renderer.SetPropertyBlock(properties);
-            CityNightGlowRegistry.Register(renderer, WarmEmission);
+            CityNightGlowRegistry.Register(renderer, emission);
         }
 
         private static Texture2D GetExterior()

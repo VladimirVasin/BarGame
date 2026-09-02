@@ -283,14 +283,14 @@ namespace BarPromenade
             AddBox(
                 "service-cabinet",
                 parent,
-                Local(plan, 2.15f, 0.43f, 3.90f),
+                Local(plan, 0.19f, 0.43f, 4.8625f),
                 FrameRotation(plan),
-                new Vector3(3.65f, ServiceHeight, 0.78f),
+                new Vector3(5.68f, ServiceHeight, 0.78f),
                 colliders);
             AddBox(
                 "fridge",
                 parent,
-                Local(plan, -3.82f, 0.98f, 4.72f),
+                Local(plan, -3.82f, 0.98f, 4.9095f),
                 FrameRotation(plan),
                 new Vector3(1.12f, 1.96f, 0.72f),
                 colliders);

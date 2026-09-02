@@ -18,18 +18,37 @@ namespace BarPromenade
     /// The panel is measured once from the whole line and only the
     /// drawn substring grows, so the typing does not make the box jump
     /// a row taller halfway through a word.
+    ///
+    /// A SPEAKER IS DECLARED ONCE. Where a line, its anchor and its
+    /// fade used to arrive together on every <see cref="Show"/>, the
+    /// anchor, the voice and the earshot now belong to the man and the
+    /// text alone belongs to the moment. That is what makes the fade
+    /// per bubble: the view used to carry ONE opacity for everything on
+    /// screen, which was only ever correct because the two speakers it
+    /// served sit at the same table.
+    ///
+    /// The typing and the keystroke both come from <see
+    /// cref="SpeechDelivery"/>, stepped in `Update` — once a frame,
+    /// where `OnGUI` fires several times for layout and repaint and
+    /// would tick a letter two or three times over.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class NpcSpeechBubbleView : MonoBehaviour
     {
-        /// <summary>One line per speaker. Two is what the park quarrel
-        /// needs and the whole game has never needed more at once.</summary>
-        public const int Capacity = 2;
+        /// <summary>
+        /// Lines on screen at once. Two was sized for the park quarrel,
+        /// where one man answers the other and never over him. Four is
+        /// one more than the worst authored case — the cafe's three, if
+        /// a lost frame ever left the pair's line up under the
+        /// husband's — and the City's single view now serves five
+        /// declared speakers.
+        /// </summary>
+        public const int Capacity = 4;
 
-        /// <summary>Typing speed. Fast enough that a 46-character line
-        /// is complete in under a second and a half, which leaves most
-        /// of the four seconds it is up for actually reading it.</summary>
-        public const float CharactersPerSecond = 34f;
+        /// <summary>Declared speakers one view can hold. A declaration
+        /// is a struct, so the ceiling costs nothing; eight covers both
+        /// roots with room over.</summary>
+        public const int SpeakerCapacity = 8;
 
         /// <summary>
         /// How long a line stays up before it takes itself down. Nobody
@@ -37,14 +56,12 @@ namespace BarPromenade
         /// that was said stops being on screen whether or not anybody
         /// answers it. Four seconds is the whole of a 48-character line
         /// typed out plus a little over two and a half to read it in.
+        ///
+        /// This stays on the bubble rather than moving to the shared
+        /// typewriter: it is the BUBBLE's own life, and the mountain
+        /// cafe schedules its conversation against it.
         /// </summary>
         public const float VisibleSeconds = 4f;
-
-        /// <summary>
-        /// How solid a line is drawn when it is not being faded — the
-        /// value <see cref="Opacity"/> starts at and returns to.
-        /// </summary>
-        public const float SolidOpacity = 1f;
 
         public const float MinimumPanelWidth = 70f;
         public const float MaximumPanelWidth = 180f;
@@ -63,27 +80,34 @@ namespace BarPromenade
 
         private struct Bubble
         {
-            public Object Owner;
-            public Transform Anchor;
-            public string Text;
-            public float StartedAt;
+            /// <summary>Index into <see cref="speakers"/>, or `-1` when
+            /// the slot is free.</summary>
+            public int Speaker;
+
+            public SpeechDelivery Line;
+
+            /// <summary>This bubble's own fade, from its own anchor's
+            /// own distance.</summary>
+            public float Opacity;
+
+            public bool IsCulled;
+
+            /// <summary>The voice held for the length of this line, or
+            /// `-1`.</summary>
+            public int VoiceLease;
         }
 
+        private readonly NpcSpeaker[] speakers =
+            new NpcSpeaker[SpeakerCapacity];
         private readonly Bubble[] bubbles = new Bubble[Capacity];
         private Camera worldCamera;
+        private Transform listener;
         private GUIStyle labelStyle;
+        private bool slotsPrepared;
 
         // Reused for measurement: a fresh GUIContent per bubble per
         // IMGUI event is steady garbage for lines that change rarely.
         private readonly GUIContent measureContent = new GUIContent();
-
-        /// <summary>
-        /// How solid the lines are drawn right now. Owned by whoever is
-        /// running the scene rather than by the panel: distance from the
-        /// hero is what fades a line here, and the panel has no idea
-        /// where the hero is standing.
-        /// </summary>
-        public float Opacity { get; private set; } = SolidOpacity;
 
         public bool HasRenderedLayout { get; private set; }
         public int LastRenderedBubbleCount { get; private set; }
@@ -92,53 +116,119 @@ namespace BarPromenade
             string.Empty;
         public string LastRenderedRevealedText { get; private set; } =
             string.Empty;
+        public float LastRenderedOpacity { get; private set; }
 
+        /// <summary>Without a listener nothing fades and nothing is
+        /// culled — the EditMode path, where there is no hero to stand
+        /// anywhere.</summary>
         public void Initialize(Camera camera)
         {
-            worldCamera = camera;
+            Initialize(camera, null);
         }
 
-        /// <summary>
-        /// Sets how solid the lines are drawn. A caller that stops
-        /// calling this leaves the last value standing, so anybody who
-        /// fades a line is expected to keep doing it every frame.
-        /// </summary>
-        public void SetOpacity(float opacity)
+        public void Initialize(Camera camera, Transform hero)
         {
-            Opacity = float.IsNaN(opacity)
-                ? SolidOpacity
-                : Mathf.Clamp01(opacity);
+            worldCamera = camera;
+            listener = hero;
+            PrepareSlots();
+        }
+
+        public void SetListener(Transform hero)
+        {
+            listener = hero;
         }
 
         /// <summary>
-        /// Opens or replaces the line belonging to one speaker. The
-        /// owner is a reference rather than an index so two speakers can
-        /// never end up sharing a slot.
+        /// Registers who a speaker is: where his lines hang, what he
+        /// sounds like, and how far away they carry. Re-declaring the
+        /// same owner replaces his entry, so a presentation that is
+        /// rebuilt does not leak a slot.
         /// </summary>
-        public bool Show(
+        public bool DeclareSpeaker(
             Object owner,
             Transform anchor,
-            string text)
+            string designId,
+            in NpcEarshotProfile earshot)
         {
-            return ShowAt(owner, anchor, text, Time.unscaledTime);
+            return DeclareSpeaker(
+                new NpcSpeaker(owner, anchor, designId, earshot));
+        }
+
+        public bool DeclareSpeaker(in NpcSpeaker speaker)
+        {
+            if (speaker.Owner == null)
+            {
+                return false;
+            }
+
+            PrepareSlots();
+            int existing = FindSpeaker(speaker.Owner);
+            if (existing >= 0)
+            {
+                speakers[existing] = speaker;
+                return true;
+            }
+
+            for (int index = 0; index < speakers.Length; index++)
+            {
+                if (speakers[index].Owner == null)
+                {
+                    speakers[index] = speaker;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool WithdrawSpeaker(Object owner)
+        {
+            int index = FindSpeaker(owner);
+            if (index < 0)
+            {
+                return false;
+            }
+
+            CloseBubblesOf(index);
+            speakers[index] = NpcSpeaker.None;
+            return true;
+        }
+
+        public bool IsDeclared(Object owner)
+        {
+            return FindSpeaker(owner) >= 0;
+        }
+
+        /// <summary>
+        /// Opens or replaces the line belonging to one speaker. He must
+        /// have been declared: a line from nobody has no head to hang
+        /// over and no voice to say it in.
+        /// </summary>
+        public bool Show(Object owner, string text)
+        {
+            return ShowAt(owner, text, Time.unscaledTime);
         }
 
         public bool ShowAt(
             Object owner,
-            Transform anchor,
             string text,
             float unscaledTime)
         {
-            if (owner == null ||
-                anchor == null ||
-                string.IsNullOrWhiteSpace(text) ||
+            if (string.IsNullOrWhiteSpace(text) ||
                 float.IsNaN(unscaledTime) ||
                 float.IsInfinity(unscaledTime))
             {
                 return false;
             }
 
-            int slot = FindSlot(owner);
+            int speaker = FindSpeaker(owner);
+            if (speaker < 0)
+            {
+                return false;
+            }
+
+            PrepareSlots();
+            int slot = FindSlotOf(speaker);
             if (slot < 0)
             {
                 slot = FindFreeSlot();
@@ -146,37 +236,118 @@ namespace BarPromenade
 
             if (slot < 0)
             {
-                slot = FindOldestSlot(unscaledTime);
+                slot = FindCulledSlot();
             }
 
+            if (slot < 0)
+            {
+                slot = FindOldestSlot();
+            }
+
+            ReleaseVoice(ref bubbles[slot]);
+            // Faded on the frame it opens, not on the next one. The
+            // quarrel opens its lines from LateUpdate, after this
+            // view's own Update has already run, so a bubble that
+            // trusted the stepper for its first opacity would flash a
+            // solid empty frame across the whole park.
+            float opacity = ResolveOpacityOf(speaker);
             bubbles[slot] = new Bubble
             {
-                Owner = owner,
-                Anchor = anchor,
-                Text = text,
-                StartedAt = unscaledTime
+                Speaker = speaker,
+                Line = SpeechDelivery.Spoken(text, unscaledTime),
+                Opacity = opacity,
+                IsCulled = opacity <= 0f,
+                VoiceLease = -1
             };
             return true;
+        }
+
+        private float ResolveOpacityOf(int speaker)
+        {
+            if (listener == null)
+            {
+                return 1f;
+            }
+
+            NpcSpeaker declared = speakers[speaker];
+            return declared.Earshot.ResolveOpacity(
+                declared.ResolveDistance(listener, Vector3.zero));
         }
 
         /// <summary>Closes one speaker's line, if it has one open.</summary>
         public bool Dismiss(Object owner)
         {
-            int slot = FindSlot(owner);
+            int speaker = FindSpeaker(owner);
+            if (speaker < 0)
+            {
+                return false;
+            }
+
+            int slot = FindSlotOf(speaker);
             if (slot < 0)
             {
                 return false;
             }
 
-            bubbles[slot] = default;
+            CloseSlot(ref bubbles[slot]);
             return true;
         }
 
+        public void DismissAll()
+        {
+            PrepareSlots();
+            for (int index = 0; index < bubbles.Length; index++)
+            {
+                CloseSlot(ref bubbles[index]);
+            }
+        }
+
+        public bool IsShowing(Object owner)
+        {
+            int speaker = FindSpeaker(owner);
+            return speaker >= 0 && FindSlotOf(speaker) >= 0;
+        }
+
+        /// <summary>How solid this speaker's line is right now, or zero
+        /// when he has none. Exposed for the tests that prove two men
+        /// at different distances fade differently.</summary>
+        public float OpacityOf(Object owner)
+        {
+            int speaker = FindSpeaker(owner);
+            if (speaker < 0)
+            {
+                return 0f;
+            }
+
+            int slot = FindSlotOf(speaker);
+            return slot < 0 ? 0f : bubbles[slot].Opacity;
+        }
+
+        public string RevealedTextOf(Object owner)
+        {
+            int speaker = FindSpeaker(owner);
+            if (speaker < 0)
+            {
+                return string.Empty;
+            }
+
+            int slot = FindSlotOf(speaker);
+            return slot < 0
+                ? string.Empty
+                : bubbles[slot].Line.RevealedText;
+        }
+
         /// <summary>
-        /// Takes down every line that has been up its four seconds.
-        /// Split out of the frame loop and given the clock explicitly so
-        /// the life of a bubble can be proved in EditMode, where nothing
-        /// is ever drawn.
+        /// One frame of every open line: expiry, its own fade from its
+        /// own anchor, and one step of typing with the keystroke that
+        /// comes with it.
+        ///
+        /// Split out of the frame loop and given the clock explicitly
+        /// so the whole life of a bubble can be proved in EditMode,
+        /// where nothing is ever drawn. A missing camera, listener or
+        /// voice service is the ordinary path there, not an error:
+        /// without a listener nothing fades, without the service
+        /// nothing ticks, and no branch throws.
         /// </summary>
         public void AdvanceTo(float unscaledTime)
         {
@@ -185,57 +356,13 @@ namespace BarPromenade
                 return;
             }
 
+            PrepareSlots();
+            SweepDeadSpeakers();
+
             for (int index = 0; index < bubbles.Length; index++)
             {
-                if (bubbles[index].Owner == null)
-                {
-                    continue;
-                }
-
-                if (unscaledTime - bubbles[index].StartedAt >
-                    VisibleSeconds)
-                {
-                    bubbles[index] = default;
-                }
+                AdvanceBubble(ref bubbles[index], unscaledTime);
             }
-        }
-
-        public void DismissAll()
-        {
-            for (int index = 0; index < bubbles.Length; index++)
-            {
-                bubbles[index] = default;
-            }
-        }
-
-        public bool IsShowing(Object owner)
-        {
-            return FindSlot(owner) >= 0;
-        }
-
-        /// <summary>
-        /// How much of a line has been typed by now. Saturates at the
-        /// whole line and never runs backwards.
-        /// </summary>
-        public static int ResolveRevealedCharacters(
-            string text,
-            float elapsedSeconds)
-        {
-            if (string.IsNullOrEmpty(text) ||
-                elapsedSeconds <= 0f ||
-                float.IsNaN(elapsedSeconds))
-            {
-                return 0;
-            }
-
-            if (float.IsInfinity(elapsedSeconds))
-            {
-                return text.Length;
-            }
-
-            int revealed = Mathf.FloorToInt(
-                elapsedSeconds * CharactersPerSecond);
-            return Mathf.Clamp(revealed, 0, text.Length);
         }
 
         /// <summary>
@@ -271,6 +398,117 @@ namespace BarPromenade
             return RetroUiTheme.SnapRect(rect);
         }
 
+        private void AdvanceBubble(
+            ref Bubble bubble,
+            float unscaledTime)
+        {
+            if (bubble.Speaker < 0)
+            {
+                return;
+            }
+
+            if (unscaledTime - bubble.Line.StartedAt > VisibleSeconds)
+            {
+                CloseSlot(ref bubble);
+                return;
+            }
+
+            NpcSpeaker speaker = speakers[bubble.Speaker];
+            float distance = listener != null
+                ? speaker.ResolveDistance(listener, Vector3.zero)
+                : 0f;
+            bubble.Opacity = listener != null
+                ? speaker.Earshot.ResolveOpacity(distance)
+                : 1f;
+            bubble.IsCulled = bubble.Opacity <= 0f;
+            if (bubble.IsCulled)
+            {
+                ReleaseVoice(ref bubble);
+            }
+
+            if (!bubble.Line.Step(unscaledTime, out char blip) ||
+                bubble.IsCulled)
+            {
+                return;
+            }
+
+            EnsureVoice(ref bubble);
+            if (bubble.VoiceLease < 0)
+            {
+                return;
+            }
+
+            NpcSpeechVoice.Blip(
+                bubble.VoiceLease,
+                speaker.VoiceOrdinal,
+                blip,
+                bubble.Line.BlipOrdinal,
+                speaker.ResolvePosition(Vector3.zero),
+                bubble.Opacity,
+                speaker.Earshot);
+        }
+
+        private void EnsureVoice(ref Bubble bubble)
+        {
+            if (bubble.VoiceLease < 0)
+            {
+                bubble.VoiceLease = NpcSpeechVoice.Lease();
+            }
+        }
+
+        private static void ReleaseVoice(ref Bubble bubble)
+        {
+            if (bubble.VoiceLease < 0)
+            {
+                return;
+            }
+
+            NpcSpeechVoice.Release(bubble.VoiceLease);
+            bubble.VoiceLease = -1;
+        }
+
+        private static void CloseSlot(ref Bubble bubble)
+        {
+            ReleaseVoice(ref bubble);
+            bubble.Speaker = -1;
+            bubble.Line = default;
+            bubble.Opacity = 0f;
+            bubble.IsCulled = false;
+        }
+
+        private void CloseBubblesOf(int speaker)
+        {
+            PrepareSlots();
+            for (int index = 0; index < bubbles.Length; index++)
+            {
+                if (bubbles[index].Speaker == speaker)
+                {
+                    CloseSlot(ref bubbles[index]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// A speaker whose presentation has been destroyed takes his
+        /// line with him. Without this a torn-down scene leaves a slot
+        /// pointing at a dead anchor and the bubble hangs at the world
+        /// origin.
+        /// </summary>
+        private void SweepDeadSpeakers()
+        {
+            for (int index = 0; index < speakers.Length; index++)
+            {
+                if (speakers[index].Owner == null ||
+                    speakers[index].Anchor != null)
+                {
+                    continue;
+                }
+
+                CloseBubblesOf(index);
+                speakers[index] = NpcSpeaker.None;
+            }
+        }
+
         private void Update()
         {
             AdvanceTo(Time.unscaledTime);
@@ -285,7 +523,6 @@ namespace BarPromenade
                 return;
             }
 
-            float unscaledTime = Time.unscaledTime;
             EnsureStyles();
             // Above the intoxication HUD, below the interaction prompt,
             // the city map and the pause menu: it never covers anything
@@ -300,7 +537,7 @@ namespace BarPromenade
             {
                 for (int index = 0; index < bubbles.Length; index++)
                 {
-                    DrawBubble(index, canvas, unscaledTime);
+                    DrawBubble(index, canvas);
                 }
             }
             finally
@@ -314,27 +551,25 @@ namespace BarPromenade
             DismissAll();
         }
 
-        private void DrawBubble(
-            int index,
-            RetroUiCanvas canvas,
-            float unscaledTime)
+        private void DrawBubble(int index, RetroUiCanvas canvas)
         {
             Bubble bubble = bubbles[index];
-            if (bubble.Owner == null ||
-                bubble.Anchor == null ||
-                string.IsNullOrEmpty(bubble.Text))
+            if (bubble.Speaker < 0 ||
+                bubble.IsCulled ||
+                bubble.Opacity <= 0f ||
+                !bubble.Line.HasText)
             {
                 return;
             }
 
-            float elapsed = unscaledTime - bubble.StartedAt;
-            if (elapsed > VisibleSeconds)
+            NpcSpeaker speaker = speakers[bubble.Speaker];
+            if (speaker.Anchor == null)
             {
                 return;
             }
 
             Vector3 screenPoint = worldCamera.WorldToScreenPoint(
-                bubble.Anchor.position +
+                speaker.Anchor.position +
                 Vector3.up * AnchorClearanceMeters);
             if (screenPoint.z <= 0f)
             {
@@ -345,14 +580,12 @@ namespace BarPromenade
                 new Vector2(
                     screenPoint.x,
                     Screen.height - screenPoint.y));
-            Vector2 panelSize = CalculatePanelSize(bubble.Text);
+            Vector2 panelSize = CalculatePanelSize(bubble.Line.Text);
             Rect panel = ResolvePanelRect(logicalAnchor, panelSize);
-            int revealed = ResolveRevealedCharacters(
-                bubble.Text,
-                elapsed);
-            string drawn = revealed >= bubble.Text.Length
-                ? bubble.Text
-                : bubble.Text.Substring(0, revealed);
+            // Read, never recomputed: the reveal was stepped in Update
+            // this frame, and stepping it again here would be a second
+            // clock disagreeing with the one that made the sound.
+            string drawn = bubble.Line.RevealedText;
 
             RetroUiTheme.DrawPanel(
                 panel,
@@ -361,14 +594,14 @@ namespace BarPromenade
                 false,
                 0f,
                 1f,
-                Opacity);
-            DrawTail(panel, logicalAnchor.x, Opacity);
+                bubble.Opacity);
+            DrawTail(panel, logicalAnchor.x, bubble.Opacity);
 
             // The text is faded by the global tint rather than by a
-            // second style, so the one cached style keeps serving both
-            // speakers at whatever distance each of them is standing.
+            // second style, so the one cached style keeps serving every
+            // speaker at whatever distance each of them is standing.
             Color previousGuiColor = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, Opacity);
+            GUI.color = new Color(1f, 1f, 1f, bubble.Opacity);
             GUI.Label(
                 new Rect(
                     panel.x + HorizontalTextInset,
@@ -382,8 +615,9 @@ namespace BarPromenade
             HasRenderedLayout = true;
             LastRenderedBubbleCount++;
             LastRenderedPanelRect = panel;
-            LastRenderedText = bubble.Text;
+            LastRenderedText = bubble.Line.Text;
             LastRenderedRevealedText = drawn;
+            LastRenderedOpacity = bubble.Opacity;
         }
 
         /// <summary>
@@ -461,16 +695,47 @@ namespace BarPromenade
             RetroUiTheme.FillRect(block, fill);
         }
 
-        private int FindSlot(Object owner)
+        /// <summary>A zeroed slot array means slot 0 is «speaker 0»,
+        /// which is a real speaker. Every entry starts at `-1`.</summary>
+        private void PrepareSlots()
+        {
+            if (slotsPrepared)
+            {
+                return;
+            }
+
+            slotsPrepared = true;
+            for (int index = 0; index < bubbles.Length; index++)
+            {
+                bubbles[index].Speaker = -1;
+                bubbles[index].VoiceLease = -1;
+            }
+        }
+
+        private int FindSpeaker(Object owner)
         {
             if (owner == null)
             {
                 return -1;
             }
 
+            for (int index = 0; index < speakers.Length; index++)
+            {
+                if (speakers[index].Owner == owner)
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private int FindSlotOf(int speaker)
+        {
+            PrepareSlots();
             for (int index = 0; index < bubbles.Length; index++)
             {
-                if (bubbles[index].Owner == owner)
+                if (bubbles[index].Speaker == speaker)
                 {
                     return index;
                 }
@@ -483,7 +748,7 @@ namespace BarPromenade
         {
             for (int index = 0; index < bubbles.Length; index++)
             {
-                if (bubbles[index].Owner == null)
+                if (bubbles[index].Speaker < 0)
                 {
                     return index;
                 }
@@ -492,16 +757,43 @@ namespace BarPromenade
             return -1;
         }
 
-        private int FindOldestSlot(float unscaledTime)
+        /// <summary>A line nobody can see or hear costs the player
+        /// nothing to lose, so it is evicted before a visible one.
+        /// </summary>
+        private int FindCulledSlot()
         {
-            int oldest = 0;
-            float oldestAge = float.NegativeInfinity;
             for (int index = 0; index < bubbles.Length; index++)
             {
-                float age = unscaledTime - bubbles[index].StartedAt;
-                if (age > oldestAge)
+                if (bubbles[index].Speaker >= 0 &&
+                    bubbles[index].IsCulled)
                 {
-                    oldestAge = age;
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// Oldest among OCCUPIED slots only. An empty slot has a start
+        /// time of zero, which makes it look older than anything that
+        /// was ever said — harmless while a free slot is always taken
+        /// first, and a trap the moment eviction order matters.
+        /// </summary>
+        private int FindOldestSlot()
+        {
+            int oldest = 0;
+            float oldestStart = float.PositiveInfinity;
+            for (int index = 0; index < bubbles.Length; index++)
+            {
+                if (bubbles[index].Speaker < 0)
+                {
+                    continue;
+                }
+
+                if (bubbles[index].Line.StartedAt < oldestStart)
+                {
+                    oldestStart = bubbles[index].Line.StartedAt;
                     oldest = index;
                 }
             }

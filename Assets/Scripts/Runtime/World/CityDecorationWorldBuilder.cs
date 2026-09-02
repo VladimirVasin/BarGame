@@ -290,9 +290,14 @@ namespace BarPromenade
                 case CityDecorationKind.OldTownClockTower:
                     miscKind = CityMiscKind.OldTownClockTower;
                     return true;
+                // Compatibility-only descriptor. Residential balcony slabs,
+                // rails, doors and resident docks now belong to the fixed
+                // building prototype. Importing the old City Misc stack here
+                // would put a second, differently spaced balcony system over
+                // that facade.
                 case CityDecorationKind.ResidentialBalconies:
-                    miscKind = CityMiscKind.ResidentialBalconies;
-                    return true;
+                    miscKind = default;
+                    return false;
                 case CityDecorationKind.ResidentialLaundryAndAntenna:
                     miscKind = CityMiscKind.ResidentialLaundryAndAntenna;
                     return true;
@@ -754,7 +759,10 @@ namespace BarPromenade
                     BuildClockTower(context, parts);
                     break;
                 case CityDecorationKind.ResidentialBalconies:
-                    BuildBalconies(context, parts);
+                    // The numeric kind remains stable for existing plans, but
+                    // it no longer emits structure. See the imported-kind
+                    // guard above: the Residential prototype is the sole
+                    // owner of balcony geometry and semantic slots.
                     break;
                 case CityDecorationKind.ResidentialLaundryAndAntenna:
                     BuildLaundry(context, parts);
@@ -990,29 +998,6 @@ namespace BarPromenade
             Add(parts, c, BatchStyle.Residential,
                 xSide * offset, 4.36f, zSide * offset,
                 size.x, size.y, size.z);
-        }
-
-        private static void BuildBalconies(
-            RecipeContext c,
-            ICollection<DecorationPart> parts)
-        {
-            float width = Mathf.Clamp(c.Width * 0.50f, 2.8f, 4.8f);
-            int count = Mathf.Clamp(
-                Mathf.FloorToInt((c.Height - 0.8f) / 2.25f),
-                2,
-                3);
-            for (int floor = 0; floor < count; floor++)
-            {
-                float y = 1.75f + floor * 2.15f;
-                Add(parts, c, c.Primary, 0f, y, 0.54f,
-                    width, 0.16f, 1.08f);
-                Add(parts, c, BatchStyle.Street, 0f, y + 0.58f, 1.02f,
-                    width, 0.12f, 0.10f);
-                Add(parts, c, BatchStyle.Street, -width * 0.48f,
-                    y + 0.58f, 0.55f, 0.10f, 1.05f, 0.92f);
-                Add(parts, c, BatchStyle.Street, width * 0.48f,
-                    y + 0.58f, 0.55f, 0.10f, 1.05f, 0.92f);
-            }
         }
 
         private static void BuildLaundry(

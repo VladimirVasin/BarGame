@@ -143,18 +143,24 @@ namespace BarPromenade
         public LastRouteRideFadeView Fade => fade;
 
         /// <summary>
-        /// True while the ride can be cut short: an ARRIVING leg, actually
+        /// True while the ride can be cut short: a leg that is actually
         /// driving, with road left to cover, and not already being cut short.
         ///
-        /// Only arriving legs, and the reason is not politeness. A departure
-        /// ends by fading out and asking for the other world, so its last
-        /// stretch of road is already the handover; jumping the car to the end
-        /// of it would race the thing that is watching for the end of it.
+        /// Both kinds, and they are cut short by two different means for one
+        /// reason. A departure ends by fading out and asking for the other
+        /// world, so its last stretch of road IS the handover and there is
+        /// nothing to jump the car to - taking it early is simply asking for
+        /// the black sooner. An arrival ends at a place in this world, so the
+        /// car has to be put there. See <see cref="ApplySkip"/>.
+        ///
+        /// A departure that has already asked for the other world is past the
+        /// offer: the screen is under, the request is in, and there is nothing
+        /// left on this side of it to skip.
         /// </summary>
         public bool CanSkipRide =>
-            leg == Leg.Arriving &&
             IsRiding &&
             !skipRequested &&
+            !travelRequested &&
             driver != null &&
             driver.IsDriving &&
             driver.Model != null &&
@@ -167,11 +173,11 @@ namespace BarPromenade
         /// <summary>
         /// Asks for the rest of the ride to be given up.
         ///
-        /// It does not move anything. The screen goes under first and the car
-        /// is put at the end of its road from inside the black, because the
-        /// jump is hundreds of metres in a single frame and there is no
-        /// framing in which that is not a glitch: the world would visibly
-        /// change shape around a car that did not turn.
+        /// It does not move anything. The screen goes under first and only
+        /// then is the rest of the leg given up from inside the black, because
+        /// on an arrival the jump is hundreds of metres in a single frame and
+        /// there is no framing in which that is not a glitch: the world would
+        /// visibly change shape around a car that did not turn.
         /// </summary>
         public bool TrySkipRide()
         {
@@ -198,18 +204,33 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The jump itself, from under a screen that is already fully black.
+        /// Giving the road up, from under a screen that is already fully
+        /// black. What that means depends on which kind of leg this is, and
+        /// in both cases it is the leg's own ordinary ending brought forward
+        /// rather than a second one written for the skip.
         ///
-        /// It moves the DISTANCE and nothing else, so what follows is the
-        /// ordinary arrival rather than a second one written for the skip:
-        /// the driver writes the pose, raises `Moved` - which is what carries
-        /// the hero - runs out of road and raises `Arrived`. Everything
-        /// world-space that would go stale is re-solved there already,
-        /// because a car that drives the whole way has the same problem.
+        /// On an ARRIVAL it moves the DISTANCE and nothing else: the driver
+        /// writes the pose, raises `Moved` - which is what carries the hero -
+        /// runs out of road and raises `Arrived`. Everything world-space that
+        /// would go stale is re-solved there already, because a car that
+        /// drives the whole way has the same problem. Then the screen comes
+        /// back, because the place it arrives at is in this world.
+        ///
+        /// On a DEPARTURE it does nothing at all, and that is the point. The
+        /// end of that road is a scene load, and `Update` asks for it the
+        /// moment the screen is fully black - which is exactly the state the
+        /// skip has just brought about. The car is left driving under the
+        /// black for the frame or two the request takes, and the screen does
+        /// NOT come back: the next thing behind it is the other world.
         /// </summary>
         private void ApplySkip()
         {
             skipApplied = true;
+            if (leg == Leg.Departing)
+            {
+                GameLog.Info("lastroute", "ride_skipped");
+                return;
+            }
 
             // The car may have finished the road on its own while the screen
             // was going down, in which case there is nothing to move and the
@@ -686,7 +707,12 @@ namespace BarPromenade
                 return;
             }
 
-            if (driver.Model != null &&
+            // Not while a skip is taking the same screen down: that fade is
+            // already running at the skip's own brisker rate, and the tunnel's
+            // `1.4 s` re-issued over the top of it would slow the black down
+            // for a player who has just asked the game to hurry.
+            if (!skipRequested &&
+                driver.Model != null &&
                 driver.Model.Remaining <= FadeLeadMeters)
             {
                 fade.FadeOut();

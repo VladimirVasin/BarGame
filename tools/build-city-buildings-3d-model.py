@@ -54,7 +54,7 @@ from city_building_coplanarity import (  # noqa: E402
 )
 
 
-GENERATOR_VERSION = "2.0.0"
+GENERATOR_VERSION = "2.1.0"
 DESIGN_ID = "city_buildings_prototypes_v2"
 DISPLAY_NAME = "City Buildings 3D Prototype Catalog"
 FBX_ASSET_PATH = "Assets/City/Models/CityBuildings3D.fbx"
@@ -70,6 +70,7 @@ PRESENTATION_COLLECTION_NAME = "PRESENTATION_CityBuildings3D"
 MAX_TRIANGLES_PER_PROTOTYPE = 3500
 BOUNDS_EPSILON = 1e-5
 FACADE_OVERHANG_M = 0.07
+ATTACHMENT_EPSILON = 1e-5
 UV2_DIVISOR = 256.0
 UV2_LAYER_NAME = "UV2_SlotId"
 UV2_SCHEME = "u_centered_uint8"
@@ -548,6 +549,115 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
         if len(slot_contracts) != len(set(slot_contracts)):
             problems.append(
                 f"{prototype.stable_id} repeats a side/floor/bay window slot")
+        opening_kinds = {"Window", "BalconyDoor"}
+        for slot in prototype.window_slots:
+            if slot.opening_kind not in opening_kinds:
+                problems.append(
+                    f"{prototype.stable_id} window slot {slot.slot_id} has "
+                    f"unknown opening kind {slot.opening_kind!r}")
+
+        window_by_id = {slot.slot_id: slot
+                        for slot in prototype.window_slots}
+        balcony_ids: set[str] = set()
+        referenced_door_ids: list[int] = []
+        expected_outward = {
+            "Front": (0.0, 1.0, 0.0),
+            "Rear": (0.0, -1.0, 0.0),
+            "Left": (-1.0, 0.0, 0.0),
+            "Right": (1.0, 0.0, 0.0),
+        }
+        for balcony in prototype.balcony_slots:
+            label = f"{prototype.stable_id} balcony {balcony.stable_id!r}"
+            if not balcony.stable_id or not balcony.stable_id.strip() or \
+                    balcony.stable_id in balcony_ids:
+                problems.append(f"{label} has an invalid or duplicate stable ID")
+            else:
+                balcony_ids.add(balcony.stable_id)
+            if balcony.floor <= 0 or balcony.side not in expected_outward:
+                problems.append(f"{label} has an invalid floor or side")
+
+            deck_low = balcony.deck_bounds_min_source
+            deck_high = balcony.deck_bounds_max_source
+            dock = balcony.npc_dock_source
+            outward = balcony.outward_source
+            vectors = (deck_low, deck_high, dock, outward)
+            if any(len(value) != 3 or
+                   any(not math.isfinite(component) for component in value)
+                   for value in vectors):
+                problems.append(f"{label} contains non-finite vector metadata")
+                continue
+            if any(deck_low[axis] >= deck_high[axis]
+                   for axis in range(3)):
+                problems.append(f"{label} deck bounds are invalid")
+                continue
+            if any(deck_low[axis] < low[axis] - ATTACHMENT_EPSILON or
+                   deck_high[axis] > high[axis] + ATTACHMENT_EPSILON
+                   for axis in range(3)):
+                problems.append(f"{label} deck escapes the authored prototype")
+            if any(dock[axis] < deck_low[axis] - ATTACHMENT_EPSILON or
+                   dock[axis] > deck_high[axis] + ATTACHMENT_EPSILON
+                   for axis in range(3)) or \
+                    abs(dock[2] - deck_high[2]) > ATTACHMENT_EPSILON:
+                problems.append(
+                    f"{label} NPC dock must sit inside the deck top")
+            side_outward = expected_outward.get(balcony.side)
+            if side_outward is None or \
+                    abs(vector_length(outward) - 1.0) > ATTACHMENT_EPSILON or \
+                    any(abs(outward[axis] - side_outward[axis]) >
+                        ATTACHMENT_EPSILON for axis in range(3)):
+                problems.append(f"{label} outward vector disagrees with its side")
+
+            door = window_by_id.get(balcony.door_slot_id)
+            referenced_door_ids.append(balcony.door_slot_id)
+            if door is None or door.opening_kind != "BalconyDoor" or \
+                    door.floor != balcony.floor or door.side != balcony.side:
+                problems.append(f"{label} does not reference its matching door")
+                continue
+            if abs(
+                    door.center_source[2] - door.size_m[1] * 0.5 -
+                    deck_high[2]) > ATTACHMENT_EPSILON:
+                problems.append(f"{label} door threshold misses the deck top")
+            if not (deck_low[0] - ATTACHMENT_EPSILON <=
+                    door.center_source[0] <=
+                    deck_high[0] + ATTACHMENT_EPSILON and
+                    deck_low[1] - ATTACHMENT_EPSILON <=
+                    door.center_source[1] <=
+                    deck_high[1] + ATTACHMENT_EPSILON):
+                problems.append(f"{label} door is outside the deck footprint")
+
+        declared_doors = {
+            slot.slot_id for slot in prototype.window_slots
+            if slot.opening_kind == "BalconyDoor"
+        }
+        if len(referenced_door_ids) != len(set(referenced_door_ids)) or \
+                set(referenced_door_ids) != declared_doors:
+            problems.append(
+                f"{prototype.stable_id} balcony doors are not paired one-to-one")
+        if prototype.district == "Residential":
+            expected_balcony_levels = {1: 7.0, 2: 12.0, 3: 17.0, 4: 22.0}
+            if len(prototype.balcony_slots) != 8:
+                problems.append(
+                    f"{prototype.stable_id} must have eight balcony slots")
+            for floor, deck_level in expected_balcony_levels.items():
+                floor_balconies = [item for item in prototype.balcony_slots
+                                   if item.floor == floor]
+                if len(floor_balconies) != 2 or any(
+                        item.side != "Front" or
+                        abs(item.deck_bounds_max_source[2] - deck_level) >
+                        ATTACHMENT_EPSILON or
+                        abs(item.deck_bounds_max_source[0] -
+                            item.deck_bounds_min_source[0] - 2.5) >
+                        ATTACHMENT_EPSILON or
+                        abs(item.deck_bounds_max_source[1] -
+                            item.deck_bounds_min_source[1] - 1.2) >
+                        ATTACHMENT_EPSILON
+                        for item in floor_balconies):
+                    problems.append(
+                        f"{prototype.stable_id} floor {floor} balcony layout "
+                        "differs from the residential contract")
+        elif prototype.balcony_slots:
+            problems.append(
+                f"{prototype.stable_id} non-residential prototype has balconies")
         declared_slots = set(slot_ids)
         for part in prototype.parts:
             used = set(part.geometry.face_slot_ids)
@@ -611,11 +721,26 @@ def prototype_signature_record(prototype: PrototypeSpec) -> dict:
             "side": slot.side,
             "floor": slot.floor,
             "bay": slot.bay,
+            "opening_kind": slot.opening_kind,
             "center_source": [stable(value)
                               for value in slot.center_source],
             "size_m": [stable(value) for value in slot.size_m],
             "uv2_slot_id": slot.slot_id,
         } for slot in prototype.window_slots],
+        "balcony_slots": [{
+            "stable_id": slot.stable_id,
+            "floor": slot.floor,
+            "side": slot.side,
+            "door_slot_id": slot.door_slot_id,
+            "deck_bounds_min_source": [
+                stable(value) for value in slot.deck_bounds_min_source],
+            "deck_bounds_max_source": [
+                stable(value) for value in slot.deck_bounds_max_source],
+            "npc_dock_source": [
+                stable(value) for value in slot.npc_dock_source],
+            "outward_source": [
+                stable(value) for value in slot.outward_source],
+        } for slot in prototype.balcony_slots],
         "parts": [{
             "object_name": part.object_name,
             "role": part.role,
@@ -734,11 +859,26 @@ def manifest_for(
                 "side": slot.side,
                 "floor": slot.floor,
                 "bay": slot.bay,
+                "opening_kind": slot.opening_kind,
                 "center_source": [stable(value)
                                   for value in slot.center_source],
                 "size_m": [stable(value) for value in slot.size_m],
                 "uv2_slot_id": slot.slot_id,
             } for slot in prototype.window_slots],
+            "balcony_slots": [{
+                "stable_id": slot.stable_id,
+                "floor": slot.floor,
+                "side": slot.side,
+                "door_slot_id": slot.door_slot_id,
+                "deck_bounds_min_source": [
+                    stable(value) for value in slot.deck_bounds_min_source],
+                "deck_bounds_max_source": [
+                    stable(value) for value in slot.deck_bounds_max_source],
+                "npc_dock_source": [
+                    stable(value) for value in slot.npc_dock_source],
+                "outward_source": [
+                    stable(value) for value in slot.outward_source],
+            } for slot in prototype.balcony_slots],
             "parts": parts,
         })
     mesh_count = sum(len(prototype.parts) for prototype in prototypes)
@@ -1213,7 +1353,8 @@ def print_report(
         print(
             f"  {prototype.stable_id}: {prototype_triangle_count(prototype)}/"
             f"{MAX_TRIANGLES_PER_PROTOTYPE} triangles, "
-            f"{len(prototype.window_slots)} window slots, "
+            f"{len(prototype.window_slots)} opening slots, "
+            f"{len(prototype.balcony_slots)} balcony slots, "
             f"{prototype.frontage_width_m}x{prototype.depth_m}x"
             f"{prototype.height_m} m")
     print(f"  Meshes: {sum(len(prototype.parts) for prototype in prototypes)}")

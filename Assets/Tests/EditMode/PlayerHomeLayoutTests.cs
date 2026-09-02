@@ -271,7 +271,6 @@ namespace BarPromenade.Tests.EditMode
                 {
                     "Player Home Brick Plinth",
                     "Player Home Front Roof Eave",
-                    "Player Home Front Eave Fascia",
                     "Player Home Recessed Entrance Door"
                 };
                 for (int index = 0;
@@ -283,6 +282,12 @@ namespace BarPromenade.Tests.EditMode
                         Is.Not.Null,
                         authoredFacadeParts[index]);
                 }
+
+                Assert.That(
+                    balcony.Find("Player Home Front Eave Fascia"),
+                    Is.Null,
+                    "The bounded Home balcony shot must not rebuild the " +
+                    "street facade fascia as a foreground beam.");
 
                 Renderer[] authoredFacadeGlass = balcony
                     .GetComponentsInChildren<Renderer>(true)

@@ -46,7 +46,7 @@ import interior_kit as kit  # noqa: E402
 import bar_parts as bp  # noqa: E402
 
 
-GENERATOR_VERSION = "1.0.4"
+GENERATOR_VERSION = "1.1.2"
 DESIGN_ID = "mountain_road_cafe_nighthawks_v1"
 DISPLAY_NAME = "Bar Promenade Mountain Road Nighthawks Cafe"
 
@@ -95,6 +95,59 @@ CUP_STATIONS = {
 STOOL_SEAT_TOP_Y = 0.8175
 LIQUID_EMPTY_LOCAL_Y = 0.022
 LIQUID_FULL_LOCAL_Y = 0.101
+
+# The rear service run finishes 3 mm before the visible inner lining. This is
+# enough to avoid z-fighting without reading as a second aisle behind the
+# furniture. It stops before the existing rear door on the right.
+REAR_LINING_CENTER_Z = 5.29
+REAR_LINING_DEPTH = 0.035
+KITCHEN_WALL_GAP = 0.003
+KITCHEN_CABINET_WALL_GAP = 0.020
+REAR_LINING_FRONT_Z = REAR_LINING_CENTER_Z - REAR_LINING_DEPTH * 0.5
+KITCHEN_BACK_Z = REAR_LINING_FRONT_Z - KITCHEN_WALL_GAP
+SERVICE_CABINET_SIZE = (5.68, 0.86, 0.78)
+SERVICE_CABINET_CENTER = (
+    0.19,
+    0.43,
+    REAR_LINING_FRONT_Z - KITCHEN_CABINET_WALL_GAP -
+    SERVICE_CABINET_SIZE[2] * 0.5,
+)
+SERVICE_WORKTOP_SIZE = (5.82, 0.10, 0.90)
+SERVICE_WORKTOP_CENTER = (
+    0.19, 0.90, KITCHEN_BACK_Z - SERVICE_WORKTOP_SIZE[2] * 0.5)
+SERVICE_CABINET_FRONT_Z = (
+    SERVICE_CABINET_CENTER[2] - SERVICE_CABINET_SIZE[2] * 0.5)
+WORKTOP_TOP_Y = 0.95
+
+STOVE_CENTER = (-1.90, SERVICE_WORKTOP_CENTER[2] - 0.02)
+KITCHEN_EQUIPMENT_Z_SHIFT = STOVE_CENTER[1] - 3.88
+STOVE_SIZE = (1.20, 0.66)
+STOVE_PLATE_LOW_Y = WORKTOP_TOP_Y + OPAQUE_DETAIL_CLEARANCE
+STOVE_PLATE_HIGH_Y = STOVE_PLATE_LOW_Y + 0.040
+STOVE_BURNER_TOP_Y = STOVE_PLATE_HIGH_Y + 0.017
+PAN_CENTER = (-2.18, STOVE_CENTER[1])
+PAN_BOTTOM_Y = STOVE_BURNER_TOP_Y
+CUTTING_BOARD_CENTER = (-0.38, STOVE_CENTER[1])
+CUTTING_BOARD_SIZE = (0.72, 0.48)
+CUTTING_BOARD_LOW_Y = WORKTOP_TOP_Y + OPAQUE_DETAIL_CLEARANCE
+CUTTING_BOARD_HIGH_Y = CUTTING_BOARD_LOW_Y + 0.036
+
+FRIDGE_SIZE = (1.12, 1.96, 0.72)
+FRIDGE_CENTER = (
+    -3.82, 0.98, KITCHEN_BACK_Z - FRIDGE_SIZE[2] * 0.5)
+FRIDGE_Z_SHIFT = FRIDGE_CENTER[2] - 4.72
+FRIDGE_DOOR_WIDTH = 1.0
+FRIDGE_DOOR_HEIGHT = 1.86
+FRIDGE_DOOR_DEPTH = 0.08
+FRIDGE_DOOR_PIVOT = (
+    -4.32,
+    0.0,
+    FRIDGE_CENTER[2] - FRIDGE_SIZE[2] * 0.5 - FRIDGE_DOOR_DEPTH * 0.5,
+)
+FRIDGE_GRIP_LOCAL = (0.88, 1.08, -0.13)
+
+STOVE_TASK_FIXTURE_CENTER = (STOVE_CENTER[0], 2.35, STOVE_CENTER[1])
+STOVE_TASK_LENS_CENTER = (STOVE_CENTER[0], 2.23, STOVE_CENTER[1])
 
 DEFAULT_BLEND = (
     ROOT / "ArtSource" / "MountainRoad" / "Cafe" / "Blender" /
@@ -159,6 +212,22 @@ PREVIEW_COLORS = {
 }
 
 ALLOWED_SHEETS = frozenset(SHEET_PITCH)
+APPLIANCE_ENAMEL_ROLES = frozenset({
+    "stove",
+    "frying_pan",
+    "refrigerator_body",
+    "refrigerator_cavity",
+    "refrigerator_shelf",
+    "fridge_door",
+})
+APPLIANCE_SURFACE_SHEETS = {
+    "stove": "CafeMetalDetail",
+    "frying_pan": "CafeMetalDetail",
+    "refrigerator_body": "CafePropsDetail",
+    "refrigerator_cavity": "CafePropsDetail",
+    "refrigerator_shelf": "CafePropsDetail",
+    "fridge_door": "CafePropsDetail",
+}
 
 
 @dataclass
@@ -606,17 +675,62 @@ def uv_transform_for(name: str) -> tuple[int, float, float]:
     return quarter_turns, offset_u, offset_v
 
 
+def uses_appliance_panel_patch(part: Part) -> bool:
+    return part.sheet == APPLIANCE_SURFACE_SHEETS.get(part.role)
+
+
+def appliance_panel_region(part: Part) -> tuple[float, float, float, float]:
+    """Choose a clean inset patch without sampling a band, grid or screw."""
+    if part.sheet == "CafePropsDetail":
+        return 0.05, 0.05, 0.90, 0.25
+    digest = hashlib.sha256(
+        ("appliance:" + part.name).encode("utf-8")
+    ).digest()
+    cell_u = (digest[0] & 3) * 0.25
+    cell_v = (digest[1] & 3) * 0.25
+    return cell_u + 0.055, cell_v + 0.055, 0.175, 0.175
+
+
 def assign_uv(mesh: "bpy.types.Mesh", part: Part) -> None:
     layer = mesh.uv_layers.new(name="UVMap")
     low, high = kit.bounds(part.local_geometry)
     pitch = SHEET_PITCH[part.sheet]
     tiled = part.sheet not in {"CafePropsDetail", "CafeGlassDetail", "CafeWarmEmission", "CafeCoffee"}
+    appliance_patch = uses_appliance_panel_patch(part)
     quarter_turns, offset_u, offset_v = uv_transform_for(part.name)
+    appliance_u, appliance_v, appliance_span_u, appliance_span_v = (
+        appliance_panel_region(part)
+    )
     for polygon in mesh.polygons:
         axis = max(range(3), key=lambda index: abs(polygon.normal[index]))
         for loop_index in polygon.loop_indices:
             point = mesh.vertices[mesh.loops[loop_index].vertex_index].co
-            if tiled:
+            if appliance_patch:
+                spans = (
+                    max(1e-5, high[0] - low[0]),
+                    max(1e-5, high[1] - low[1]),
+                    max(1e-5, high[2] - low[2]),
+                )
+                if axis == 0:
+                    normalized = (
+                        (point.y - low[1]) / spans[1],
+                        (point.z - low[2]) / spans[2],
+                    )
+                elif axis == 1:
+                    normalized = (
+                        (point.x - low[0]) / spans[0],
+                        (point.z - low[2]) / spans[2],
+                    )
+                else:
+                    normalized = (
+                        (point.x - low[0]) / spans[0],
+                        (point.y - low[1]) / spans[1],
+                    )
+                uv = (
+                    appliance_u + normalized[0] * appliance_span_u,
+                    appliance_v + normalized[1] * appliance_span_v,
+                )
+            elif tiled:
                 if axis == 0:
                     uv = (point.y / pitch, point.z / pitch)
                 elif axis == 1:
@@ -929,7 +1043,11 @@ def build_interior(asset: AssetBuild) -> None:
         "Cafe_InteriorLining",
         merge([
             bp.u_box((-5.17, 2.10, 0.40), (0.035, 3.18, 9.10), 0.004),
-            bp.u_box((-0.35, 2.10, 5.29), (9.15, 3.18, 0.035), 0.004),
+            bp.u_box(
+                (-0.35, 2.10, REAR_LINING_CENTER_Z),
+                (9.15, 3.18, REAR_LINING_DEPTH),
+                0.004,
+            ),
         ]),
         "interior_wall",
         "CafeInteriorDetail",
@@ -981,20 +1099,260 @@ def build_interior(asset: AssetBuild) -> None:
     add_part(asset, "Cafe_StoolSeats", merge(stool_seats), "stool_seat",
              "CafeCounterDetail", group="furniture")
 
-    # Rear service wall: cabinet, worktop, refrigerator and ochre door.
-    add_part(asset, "Cafe_ServiceCabinet",
-             bp.u_box((2.15, 0.43, 3.90), (3.65, 0.86, 0.78), 0.018),
-             "service_cabinet", "CafeMetalDetail", group="service")
-    add_part(asset, "Cafe_ServiceWorktop",
-             bp.u_box((2.15, 0.90, 3.90), (3.82, 0.10, 0.90), 0.018),
-             "service_worktop", "CafeCounterDetail", group="service")
-    fridge = merge([
-        bp.u_box((-3.82, 0.98, 4.72), (1.12, 1.96, 0.72), 0.024),
-        bp.u_box((-3.82, 1.01, 4.335), (1.01, 1.80, 0.035), 0.004),
-        bp.u_box((-3.38, 1.12, 4.30), (0.055, 1.26, 0.075), 0.004),
-    ])
-    add_part(asset, "Cafe_Refrigerator", fridge, "refrigerator",
+    # Rear service wall: one grounded kitchen run. Its back edge meets the
+    # lining with only a z-fighting clearance, while the right end stops before
+    # the existing rear door. Separate fronts, handles and a shallow backsplash
+    # make the run read as cabinetry instead of one anonymous metal box.
+    add_part(
+        asset,
+        "Cafe_ServiceCabinet",
+        bp.u_box(SERVICE_CABINET_CENTER, SERVICE_CABINET_SIZE, 0.018),
+        "service_cabinet",
+        "CafeMetalDetail",
+        group="service",
+    )
+    add_part(
+        asset,
+        "Cafe_ServiceWorktop",
+        bp.u_box(SERVICE_WORKTOP_CENTER, SERVICE_WORKTOP_SIZE, 0.018),
+        "service_worktop",
+        "CafeCounterDetail",
+        group="service",
+    )
+    cabinet_fronts: list[kit.Geometry] = []
+    cabinet_handles: list[kit.Geometry] = []
+    for low_x, high_x in (
+        (-2.55, -1.55),
+        (-1.45, -0.45),
+        (-0.35, 0.65),
+        (0.75, 1.75),
+        (1.85, 2.93),
+    ):
+        center_x = (low_x + high_x) * 0.5
+        cabinet_fronts.append(bp.u_box(
+            (center_x, 0.435, SERVICE_CABINET_FRONT_Z - 0.0215),
+            (high_x - low_x, 0.68, 0.037),
+            0.012,
+        ))
+        cabinet_handles.append(bp.u_box(
+            (center_x, 0.68, SERVICE_CABINET_FRONT_Z - 0.066),
+            (0.24, 0.035, 0.046),
+            0.007,
+        ))
+    add_part(
+        asset,
+        "Cafe_KitchenCabinetFronts",
+        merge(cabinet_fronts),
+        "kitchen_cabinet_front",
+        "CafeCounterDetail",
+        group="service",
+    )
+    add_part(
+        asset,
+        "Cafe_KitchenHandles",
+        merge(cabinet_handles),
+        "kitchen_cabinet_handle",
+        "CafeMetalDetail",
+        group="service",
+    )
+    add_part(
+        asset,
+        "Cafe_KitchenBacksplash",
+        bp.u_box(
+            (0.23, 1.173, KITCHEN_BACK_Z - 0.021),
+            (5.74, 0.44, 0.042),
+            0.008,
+        ),
+        "kitchen_backsplash",
+        "CafeInteriorDetail",
+        group="service",
+    )
+
+    # A compact two-ring plate, an old shallow frying pan and a passive board
+    # occupy distinct, measured zones. Nothing here has an interaction or an
+    # animation; the authored docks only preserve future contact geometry.
+    stove_parts: list[kit.Geometry] = [
+        bp.u_box(
+            (
+                STOVE_CENTER[0],
+                (STOVE_PLATE_LOW_Y + STOVE_PLATE_HIGH_Y) * 0.5,
+                STOVE_CENTER[1],
+            ),
+            (STOVE_SIZE[0], STOVE_PLATE_HIGH_Y - STOVE_PLATE_LOW_Y,
+             STOVE_SIZE[1]),
+            0.012,
+        ),
+    ]
+    burner_half_height = (STOVE_BURNER_TOP_Y - STOVE_PLATE_HIGH_Y) * 0.5
+    for burner_x in (STOVE_CENTER[0] - 0.28, STOVE_CENTER[0] + 0.28):
+        stove_parts.append(bp.u_cylinder(
+            (
+                burner_x,
+                STOVE_PLATE_HIGH_Y + burner_half_height,
+                STOVE_CENTER[1],
+            ),
+            (0.38, burner_half_height, 0.38),
+            12,
+        ))
+    for knob_x in (STOVE_CENTER[0] - 0.24, STOVE_CENTER[0] + 0.24):
+        stove_parts.append(bp.u_box(
+            (knob_x, STOVE_PLATE_LOW_Y + 0.018, STOVE_CENTER[1] - 0.365),
+            (0.13, 0.035, 0.045),
+            0.006,
+        ))
+    add_part(asset, "Cafe_Stove", merge(stove_parts), "stove",
              "CafeMetalDetail", group="appliance")
+
+    pan_bowl = translate_geometry(
+        hollow_cup(
+            height=0.075,
+            bottom_radius=0.20,
+            top_radius=0.27,
+            thickness=0.035,
+            sides=16,
+        ),
+        (PAN_CENTER[0], PAN_BOTTOM_Y, PAN_CENTER[1]),
+    )
+    pan_handle = segment_box(
+        (PAN_CENTER[0] - 0.18, PAN_CENTER[1] - 0.18),
+        (PAN_CENTER[0] - 0.55, PAN_CENTER[1] - 0.55),
+        PAN_BOTTOM_Y + 0.052,
+        0.070,
+        0.11,
+        0.012,
+    )
+    add_part(asset, "Cafe_FryingPan", kit.merge(pan_bowl, pan_handle),
+             "frying_pan", "CafeMetalDetail", group="props")
+    add_part(
+        asset,
+        "Cafe_CuttingBoard",
+        bp.u_box(
+            (
+                CUTTING_BOARD_CENTER[0],
+                (CUTTING_BOARD_LOW_Y + CUTTING_BOARD_HIGH_Y) * 0.5,
+                CUTTING_BOARD_CENTER[1],
+            ),
+            (
+                CUTTING_BOARD_SIZE[0],
+                CUTTING_BOARD_HIGH_Y - CUTTING_BOARD_LOW_Y,
+                CUTTING_BOARD_SIZE[1],
+            ),
+            0.018,
+        ),
+        "cutting_board",
+        "CafeCounterDetail",
+        group="props",
+    )
+
+    # The existing cold service light moves into a visible suspended task
+    # fixture directly above the plate. Geometry adds no new Light or tone;
+    # Unity continues to own the same three-light cafe contract.
+    task_fixture = merge([
+        bp.u_box(STOVE_TASK_FIXTURE_CENTER, (1.38, 0.20, 0.74), 0.028),
+        bp.u_cylinder(
+            (STOVE_CENTER[0] - 0.44, 3.31, STOVE_CENTER[1]),
+            (0.05, 0.87, 0.05),
+            10,
+        ),
+        bp.u_cylinder(
+            (STOVE_CENTER[0] + 0.44, 3.31, STOVE_CENTER[1]),
+            (0.05, 0.87, 0.05),
+            10,
+        ),
+    ])
+    add_part(asset, "Cafe_StoveTaskFixture", task_fixture,
+             "stove_task_fixture", "CafeMetalDetail", group="lighting")
+    add_part(
+        asset,
+        "Cafe_StoveTaskLens",
+        bp.u_box(STOVE_TASK_LENS_CENTER, (1.02, 0.04, 0.46), 0.010),
+        "stove_task_lens",
+        "CafePropsDetail",
+        group="lighting",
+        emissive=True,
+        casts_shadows=False,
+    )
+
+    # Refrigerator body and interior remain fixed. The closed leaf is a sixth
+    # authored dynamic assembly whose root is the real hinge; no runtime driver
+    # is added here. Opening it later reveals a recessed liner and two shelves.
+    fridge_shell_z = FRIDGE_CENTER[2] - 0.02
+    fridge_back_z = FRIDGE_CENTER[2] + 0.34
+    fridge_body = merge([
+        bp.u_box((-4.335, 0.98, fridge_shell_z), (0.09, 1.96, 0.68), 0.015),
+        bp.u_box((-3.305, 0.98, fridge_shell_z), (0.09, 1.96, 0.68), 0.015),
+        bp.u_box((-3.82, 1.915, fridge_shell_z), (0.94, 0.09, 0.68), 0.015),
+        bp.u_box((-3.82, 0.045, fridge_shell_z), (0.94, 0.09, 0.68), 0.015),
+        bp.u_box((-3.82, 0.98, fridge_back_z), (1.12, 1.96, 0.04), 0.010),
+    ])
+    add_part(asset, "Cafe_RefrigeratorBody", fridge_body,
+             "refrigerator_body", "CafePropsDetail", group="appliance")
+    add_part(
+        asset,
+        "Cafe_RefrigeratorCavity",
+        bp.u_box(
+            (-3.82, 0.98, 5.025 + FRIDGE_Z_SHIFT),
+            (0.90, 1.70, 0.018),
+            0.003,
+        ),
+        "refrigerator_cavity",
+        "CafePropsDetail",
+        group="appliance",
+    )
+    add_part(
+        asset,
+        "Cafe_RefrigeratorShelves",
+        merge([
+            bp.u_box((-3.82, 0.65, fridge_shell_z),
+                     (0.84, 0.025, 0.56), 0.006),
+            bp.u_box((-3.82, 1.25, fridge_shell_z),
+                     (0.84, 0.025, 0.56), 0.006),
+        ]),
+        "refrigerator_shelf",
+        "CafePropsDetail",
+        group="appliance",
+    )
+    fridge_door = add_prop(
+        asset,
+        "FridgeDoor",
+        "fridge_door",
+        "FridgeDoor",
+        FRIDGE_DOOR_PIVOT,
+    )
+    door_geometry = merge([
+        bp.u_box(
+            (FRIDGE_DOOR_WIDTH * 0.5, 0.98, 0.0),
+            (FRIDGE_DOOR_WIDTH, FRIDGE_DOOR_HEIGHT, FRIDGE_DOOR_DEPTH),
+            0.022,
+        ),
+        bp.u_box((0.04, 0.98, -0.055), (0.035, 1.72, 0.030), 0.005),
+        bp.u_box((0.975, 0.98, -0.055), (0.030, 1.72, 0.030), 0.005),
+        bp.u_box((0.50, 0.09, -0.055), (0.78, 0.045, 0.030), 0.005),
+        bp.u_box((0.50, 1.87, -0.055), (0.78, 0.045, 0.030), 0.005),
+        bp.u_box(
+            (FRIDGE_GRIP_LOCAL[0], FRIDGE_GRIP_LOCAL[1], -0.085),
+            (0.050, 1.15, 0.090),
+            0.010,
+        ),
+    ])
+    add_part(
+        asset,
+        "Cafe_FridgeDoor",
+        door_geometry,
+        "fridge_door",
+        "CafePropsDetail",
+        group="dynamic_prop",
+        parent=fridge_door.root,
+    )
+    fridge_door.part_names.append("Cafe_FridgeDoor")
+    add_anchor(
+        asset,
+        "Grip.FridgeDoor",
+        "fridge_door_grip",
+        FRIDGE_GRIP_LOCAL,
+        (0.0, 0.0, -1.0),
+        parent=fridge_door.root,
+    )
     rear_door = merge([
         bp.u_box((3.75, 1.24, 5.25), (1.12, 2.38, 0.055), 0.008),
         bp.u_box((3.32, 1.24, 5.205), (0.055, 2.26, 0.035), 0.004),
@@ -1006,16 +1364,20 @@ def build_interior(asset: AssetBuild) -> None:
     # Twin urns with lids, gauges, taps and sight glasses.
     urn_metal: list[kit.Geometry] = []
     urn_glass: list[kit.Geometry] = []
+    urn_z = 3.84 + KITCHEN_EQUIPMENT_Z_SHIFT
     for x in (1.55, 2.75):
         urn_metal.extend([
-            bp.u_cylinder((x, 1.54, 3.84), (0.62, 0.59, 0.62), 14),
-            bp.u_cylinder((x, 2.17, 3.84), (0.52, 0.045, 0.52), 14),
-            bp.u_cylinder((x, 2.25, 3.84), (0.09, 0.055, 0.09), 10),
-            bp.u_cylinder((x, 1.05, 3.84), (0.48, 0.055, 0.48), 14),
-            bp.u_box((x, 1.42, 3.49), (0.08, 0.32, 0.22), 0.006),
-            bp.u_box((x, 1.23, 3.39), (0.28, 0.06, 0.07), 0.005),
+            bp.u_cylinder((x, 1.54, urn_z), (0.62, 0.59, 0.62), 14),
+            bp.u_cylinder((x, 2.17, urn_z), (0.52, 0.045, 0.52), 14),
+            bp.u_cylinder((x, 2.25, urn_z), (0.09, 0.055, 0.09), 10),
+            bp.u_cylinder((x, 1.05, urn_z), (0.48, 0.055, 0.48), 14),
+            bp.u_box((x, 1.42, 3.49 + KITCHEN_EQUIPMENT_Z_SHIFT),
+                     (0.08, 0.32, 0.22), 0.006),
+            bp.u_box((x, 1.23, 3.39 + KITCHEN_EQUIPMENT_Z_SHIFT),
+                     (0.28, 0.06, 0.07), 0.005),
         ])
-        urn_glass.append(bp.u_cylinder((x - 0.19, 1.60, 3.50),
+        urn_glass.append(bp.u_cylinder(
+            (x - 0.19, 1.60, 3.50 + KITCHEN_EQUIPMENT_Z_SHIFT),
                                        (0.07, 0.34, 0.07), 10))
     add_part(asset, "Cafe_CoffeeUrns", merge(urn_metal), "coffee_urn",
              "CafeMetalDetail", group="appliance")
@@ -1076,7 +1438,7 @@ def build_cup_props(asset: AssetBuild) -> None:
 
 
 def build_service_props(asset: AssetBuild) -> None:
-    pot_position = (2.55, 1.02, 3.72)
+    pot_position = (2.55, 1.02, 3.72 + KITCHEN_EQUIPMENT_Z_SHIFT)
     pot = add_prop(asset, "ServicePot", "service_pot", "Attendant", pot_position)
     body = kit.merge(
         bp.u_tapered_cylinder((0.0, 0.15, 0.0), (0.30, 0.15, 0.30), 0.86, 14),
@@ -1147,6 +1509,23 @@ def build_anchors(asset: AssetBuild) -> None:
     add_anchor(asset, "CounterStart", "counter_start", (-2.56, 1.02, -1.15))
     add_anchor(asset, "CounterCorner", "counter_corner", (3.20, 1.02, -1.15))
     add_anchor(asset, "CounterEnd", "counter_end", (3.45, 1.02, 0.55))
+    add_anchor(asset, "FridgeDoorPivot", "fridge_door_pivot",
+               FRIDGE_DOOR_PIVOT, (0.0, 0.0, -1.0))
+    add_anchor(
+        asset,
+        "CuttingBoardDock",
+        "cutting_board_dock",
+        (CUTTING_BOARD_CENTER[0], CUTTING_BOARD_HIGH_Y,
+         CUTTING_BOARD_CENTER[1]),
+        (0.0, 0.0, -1.0),
+    )
+    add_anchor(
+        asset,
+        "StovePanDock",
+        "stove_pan_dock",
+        (PAN_CENTER[0], PAN_BOTTOM_Y, PAN_CENTER[1]),
+        (0.0, 0.0, -1.0),
+    )
     add_anchor(asset, "HeroSeat", "hero_seat", (-0.38, STOOL_SEAT_TOP_Y, STOOL_Z),
                (0.0, 0.0, 1.0))
     for name, position in (
@@ -1158,11 +1537,13 @@ def build_anchors(asset: AssetBuild) -> None:
         add_anchor(asset, name, "cast_mark", position, (0.0, 0.0, 1.0))
     for name, role, position in (
         ("Light.WarmCounter", "light_warm_counter", (0.60, 3.47, -0.65)),
-        ("Light.ColdService", "light_cold_service", (1.70, 3.35, 3.30)),
+        ("Light.ColdService", "light_cold_service", STOVE_TASK_LENS_CENTER),
         ("Light.ExteriorWash", "light_exterior_wash", (3.60, 5.00, -3.60)),
-        ("Audio.Fridge", "audio_fridge", (-3.82, 1.0, 4.72)),
+        ("Audio.Fridge", "audio_fridge",
+         (FRIDGE_CENTER[0], 1.0, FRIDGE_CENTER[2])),
         ("Audio.Fixture", "audio_fixture", (0.60, 3.47, -0.65)),
-        ("Audio.Boiler", "audio_boiler", (2.15, 1.55, 3.84)),
+        ("Audio.Boiler", "audio_boiler",
+         (2.15, 1.55, 3.84 + KITCHEN_EQUIPMENT_Z_SHIFT)),
     ):
         add_anchor(asset, name, role, position)
 
@@ -1176,8 +1557,8 @@ COLLIDER_DESCRIPTORS = (
     {"id": "boundary-east", "shape": "box", "center": [4.48, 2.08, 1.84], "size": [0.12, 4.16, 7.20], "yaw": 0.0},
     {"id": "counter-main", "shape": "box", "center": [0.62, 0.45, -1.15], "size": [6.10, 0.90, 0.82], "yaw": 0.0},
     {"id": "counter-return", "shape": "box", "center": [3.325, 0.447, -0.30], "size": [1.718, 0.894, 0.62], "yaw": -81.634},
-    {"id": "service-cabinet", "shape": "box", "center": [2.15, 0.43, 3.90], "size": [3.65, 0.86, 0.78], "yaw": 0.0},
-    {"id": "fridge", "shape": "box", "center": [-3.82, 0.98, 4.72], "size": [1.12, 1.96, 0.72], "yaw": 0.0},
+    {"id": "service-cabinet", "shape": "box", "center": list(SERVICE_CABINET_CENTER), "size": list(SERVICE_CABINET_SIZE), "yaw": 0.0},
+    {"id": "fridge", "shape": "box", "center": list(FRIDGE_CENTER), "size": list(FRIDGE_SIZE), "yaw": 0.0},
     {"id": "stool-00", "shape": "capsule", "center": [-1.50, 0.40875, -2.18], "radius": 0.25, "height": 0.8175, "yaw": 0.0},
     {"id": "stool-01", "shape": "capsule", "center": [-0.38, 0.40875, -2.18], "radius": 0.25, "height": 0.8175, "yaw": 0.0},
     {"id": "stool-02", "shape": "capsule", "center": [0.75, 0.40875, -2.18], "radius": 0.25, "height": 0.8175, "yaw": 0.0},
@@ -1223,6 +1604,14 @@ def world_source_geometry(part: Part) -> kit.Geometry:
     vertices, faces = part.local_geometry
     transformed = [tuple(part.obj.matrix_world @ Vector(vertex)) for vertex in vertices]
     return transformed, list(faces)
+
+
+def unity_world_bounds(
+    part: Part,
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+    """Measured root-local bounds in the Unity axis convention."""
+    low, high = kit.bounds(world_source_geometry(part))
+    return (low[0], low[2], low[1]), (high[0], high[2], high[1])
 
 
 def face_normal(
@@ -1392,16 +1781,34 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
         "practical_emission", "interior_wall", "counter_base", "counter_top",
         "counter_rail", "stool_metal", "stool_seat", "coffee_urn",
         "cup_ceramic", "cup_saucer", "coffee_liquid", "service_pot",
-        "service_towel", "pour_stream",
+        "service_towel", "pour_stream", "service_cabinet", "service_worktop",
+        "kitchen_cabinet_front", "kitchen_cabinet_handle",
+        "kitchen_backsplash", "stove", "frying_pan", "cutting_board",
+        "stove_task_fixture", "stove_task_lens", "refrigerator_body",
+        "refrigerator_cavity", "refrigerator_shelf", "fridge_door",
     }
     roles = {part.role for part in asset.parts}
     for role in sorted(required_roles - roles):
         problems.append(f"the cafe has no '{role}' geometry")
 
+    required_part_names = {
+        "Cafe_ServiceCabinet", "Cafe_ServiceWorktop",
+        "Cafe_KitchenCabinetFronts", "Cafe_KitchenHandles",
+        "Cafe_KitchenBacksplash", "Cafe_Stove", "Cafe_FryingPan",
+        "Cafe_CuttingBoard", "Cafe_StoveTaskFixture",
+        "Cafe_StoveTaskLens", "Cafe_RefrigeratorBody",
+        "Cafe_RefrigeratorCavity", "Cafe_RefrigeratorShelves",
+        "Cafe_FridgeDoor", "Cafe_CoffeeUrns", "Cafe_RearDoor",
+    }
+    for name in sorted(required_part_names - names):
+        problems.append(f"required cafe part '{name}' is missing")
+
     if len(STOOL_STATIONS) != 7:
         problems.append("the authored counter must retain exactly seven stools")
     if len([prop for prop in asset.props.values() if prop.role == "cup_assembly"]) != 2:
         problems.append("the cafe must expose exactly two cup assemblies")
+    if len(asset.props) != 6:
+        problems.append("the cafe must expose five service props and one fridge door")
     if len(COLLIDER_DESCRIPTORS) != 17:
         problems.append("the passive model must publish exactly 17 collider descriptors")
 
@@ -1410,6 +1817,8 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
         "GlassCorner",
         "CounterStart", "CounterCorner", "CounterEnd", "HeroSeat",
         "Cup.PairMan", "Cup.PairWoman", "PotDock", "PotSpout",
+        "FridgeDoorPivot", "Grip.FridgeDoor", "CuttingBoardDock",
+        "StovePanDock",
         "Cast.Lone", "Cast.PairMan", "Cast.PairWoman", "Cast.Attendant",
         "Light.WarmCounter", "Light.ColdService", "Light.ExteriorWash",
         "Audio.Fridge", "Audio.Fixture", "Audio.Boiler",
@@ -1420,6 +1829,172 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
     door = asset.anchors.get("DoorThreshold")
     if door is None or door.unity_position != DOOR_CENTER:
         problems.append("door threshold moved away from the terminal plan")
+
+    # Door-ready means a real hinge hierarchy and measured leaf, not runtime
+    # behaviour. Grip.FridgeDoor is intentionally child-local so the current
+    # importer can bind it to the same passive dynamic-prop pattern as cups.
+    fridge_prop = asset.props.get("FridgeDoor")
+    fridge_door_part = next(
+        (part for part in asset.parts if part.name == "Cafe_FridgeDoor"), None)
+    fridge_grip = asset.anchors.get("Grip.FridgeDoor")
+    fridge_pivot = asset.anchors.get("FridgeDoorPivot")
+    if (fridge_prop is None or fridge_prop.role != "fridge_door" or
+            fridge_prop.owner != "FridgeDoor" or
+            fridge_prop.part_names != ["Cafe_FridgeDoor"]):
+        problems.append("FridgeDoor dynamic prop contract is incomplete")
+    elif max(
+        abs(actual - expected)
+        for actual, expected in zip(
+            fridge_prop.root.location,
+            unity_to_source(FRIDGE_DOOR_PIVOT),
+        )
+    ) > 1e-6:
+        problems.append("FridgeDoor root moved away from its authored hinge")
+    if (fridge_door_part is None or fridge_prop is None or
+            fridge_door_part.obj.parent is not fridge_prop.root):
+        problems.append("Cafe_FridgeDoor is not parented directly to its hinge root")
+    if (fridge_grip is None or fridge_prop is None or
+            fridge_grip.obj.parent is not fridge_prop.root or
+            fridge_grip.unity_position != FRIDGE_GRIP_LOCAL):
+        problems.append("Grip.FridgeDoor is not a child-local handle contact")
+    if (fridge_pivot is None or
+            fridge_pivot.unity_position != FRIDGE_DOOR_PIVOT):
+        problems.append("FridgeDoorPivot anchor moved away from the hinge")
+
+    parts_by_name = {part.name: part for part in asset.parts}
+    if not (required_part_names - names):
+        measured = {
+            name: unity_world_bounds(parts_by_name[name])
+            for name in required_part_names
+        }
+        cabinet_low, cabinet_high = measured["Cafe_ServiceCabinet"]
+        worktop_low, worktop_high = measured["Cafe_ServiceWorktop"]
+        stove_low, stove_high = measured["Cafe_Stove"]
+        pan_low, pan_high = measured["Cafe_FryingPan"]
+        board_low, board_high = measured["Cafe_CuttingBoard"]
+        backsplash_low, backsplash_high = measured["Cafe_KitchenBacksplash"]
+        fixture_low, fixture_high = measured["Cafe_StoveTaskFixture"]
+        lens_low, lens_high = measured["Cafe_StoveTaskLens"]
+        fridge_low, fridge_high = measured["Cafe_RefrigeratorBody"]
+        cavity_low, cavity_high = measured["Cafe_RefrigeratorCavity"]
+        shelves_low, shelves_high = measured["Cafe_RefrigeratorShelves"]
+        authored_door_low, authored_door_high = measured["Cafe_FridgeDoor"]
+        rear_door_low, _ = measured["Cafe_RearDoor"]
+        urn_low, _ = measured["Cafe_CoffeeUrns"]
+
+        if abs(cabinet_low[1]) > 0.001 or abs(fridge_low[1]) > 0.001:
+            problems.append("kitchen cabinet and refrigerator must stand on the floor")
+        for supported_name, supported_low in (
+            ("stove", stove_low[1]),
+            ("cutting board", board_low[1]),
+        ):
+            support_gap = supported_low - worktop_high[1]
+            if not (OPAQUE_DETAIL_CLEARANCE - 0.0005 <= support_gap <= 0.004):
+                problems.append(
+                    f"{supported_name} support gap is {support_gap:.4f} m"
+                )
+        pan_support_gap = pan_low[1] - stove_high[1]
+        if abs(pan_support_gap) > 0.001:
+            problems.append(
+                f"frying pan leaves its burner by {pan_support_gap:.4f} m"
+            )
+
+        for surface_name, surface_high, expected_gap in (
+            ("service cabinet", cabinet_high, KITCHEN_CABINET_WALL_GAP),
+            ("service worktop", worktop_high, KITCHEN_WALL_GAP),
+            ("kitchen backsplash", backsplash_high, KITCHEN_WALL_GAP),
+            ("refrigerator", fridge_high, KITCHEN_WALL_GAP),
+        ):
+            wall_gap = REAR_LINING_FRONT_Z - surface_high[2]
+            if abs(wall_gap - expected_gap) > 0.001:
+                problems.append(
+                    f"{surface_name} wall gap is {wall_gap:.4f} m"
+                )
+        for surface_name, surface_high in (
+            ("service cabinet", cabinet_high),
+            ("service worktop", worktop_high),
+            ("kitchen backsplash", backsplash_high),
+        ):
+            rear_door_gap = rear_door_low[0] - surface_high[0]
+            if rear_door_gap < 0.08:
+                problems.append(
+                    f"{surface_name} leaves only {rear_door_gap:.3f} m "
+                    "before the rear door"
+                )
+
+        if cabinet_low[2] < 3.50 - 0.001 or worktop_low[2] < 3.45 - 0.001:
+            problems.append("expanded kitchen run intrudes into the old service aisle")
+        if pan_low[2] < 3.25:
+            problems.append("frying-pan handle intrudes into the service aisle")
+        fridge_to_cabinet = cabinet_low[0] - fridge_high[0]
+        if fridge_to_cabinet < 0.45:
+            problems.append(
+                f"fridge-to-cabinet clearance is {fridge_to_cabinet:.3f} m"
+            )
+        stove_to_board = board_low[0] - stove_high[0]
+        board_to_urn = urn_low[0] - board_high[0]
+        if stove_to_board < 0.30 or board_to_urn < 0.45:
+            problems.append(
+                "cutting-board prep zone has no clean appliance clearance"
+            )
+        if not (
+            worktop_low[0] <= stove_low[0] <= stove_high[0] <= worktop_high[0]
+            and worktop_low[2] <= stove_low[2] <= stove_high[2] <= worktop_high[2]
+            and worktop_low[0] <= board_low[0] <= board_high[0] <= worktop_high[0]
+            and worktop_low[2] <= board_low[2] <= board_high[2] <= worktop_high[2]
+        ):
+            problems.append("stove or cutting board leaves the authored worktop")
+
+        fixture_center_x = (fixture_low[0] + fixture_high[0]) * 0.5
+        fixture_center_z = (fixture_low[2] + fixture_high[2]) * 0.5
+        stove_center_x = (stove_low[0] + stove_high[0]) * 0.5
+        # Front controls make stove Z bounds asymmetric, so compare against
+        # the authored burner centre rather than their decorative protrusion.
+        if (abs(fixture_center_x - stove_center_x) > 0.015 or
+                abs(fixture_center_z - STOVE_CENTER[1]) > 0.015 or
+                lens_low[1] - pan_high[1] < 0.90 or
+                abs(fixture_high[1] - 4.18) > 0.002):
+            problems.append("task fixture is not supported directly above the stove")
+        cold_anchor = asset.anchors.get("Light.ColdService")
+        if cold_anchor is None or not all(
+            low_value - 1e-6 <= value <= high_value + 1e-6
+            for value, low_value, high_value in zip(
+                cold_anchor.unity_position, lens_low, lens_high)
+        ):
+            problems.append("Light.ColdService is not inside the visible task lens")
+        lens_part = parts_by_name["Cafe_StoveTaskLens"]
+        if (not lens_part.emissive or lens_part.casts_shadows or
+                lens_part.sheet != "CafePropsDetail"):
+            problems.append(
+                "stove task lens is not a shadowless cold-emission surface"
+            )
+
+        if not (
+            fridge_low[0] + 0.08 < cavity_low[0] < cavity_high[0] < fridge_high[0] - 0.08
+            and fridge_low[1] < cavity_low[1] < cavity_high[1] < fridge_high[1]
+            and fridge_low[2] < shelves_low[2] < shelves_high[2] < cavity_high[2]
+        ):
+            problems.append("refrigerator cavity or shelves leave the body shell")
+        if (abs(authored_door_high[2] - fridge_low[2]) > 0.002 or
+                authored_door_low[0] < fridge_low[0] or
+                authored_door_high[0] > fridge_high[0]):
+            problems.append("closed refrigerator door does not seat against its body")
+
+        # Prove the +90 degree outward leaf pose without authoring animation.
+        # Unity yaw maps local (x,z) to (z,-x) at +90 degrees.
+        if fridge_door_part is not None:
+            open_vertices = []
+            for source_x, source_y, source_z in fridge_door_part.local_geometry[0]:
+                local_x, local_y, local_z = source_x, source_z, source_y
+                open_vertices.append((
+                    FRIDGE_DOOR_PIVOT[0] + local_z,
+                    FRIDGE_DOOR_PIVOT[1] + local_y,
+                    FRIDGE_DOOR_PIVOT[2] - local_x,
+                ))
+            open_low, open_high = kit.bounds((open_vertices, []))
+            if (open_low[0] < -5.10 or open_low[2] < 3.20 or
+                    open_high[0] > cabinet_low[0] - 0.45):
+                problems.append("90-degree refrigerator door sweep loses clearance")
 
     static_geometry = merge(
         world_source_geometry(part)
@@ -1438,6 +2013,29 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
     triangles = sum(kit.triangle_count(part.local_geometry) for part in asset.parts)
     if triangles > 45000:
         problems.append(f"the cafe costs {triangles} triangles against 45000")
+
+    for part in asset.parts:
+        if part.role not in APPLIANCE_ENAMEL_ROLES:
+            continue
+        if not uses_appliance_panel_patch(part):
+            problems.append(
+                f"{part.name} does not use the grid-free appliance panel patch"
+            )
+            continue
+        layer = part.obj.data.uv_layers.active
+        region_u, region_v, region_span_u, region_span_v = (
+            appliance_panel_region(part)
+        )
+        if layer is None or any(
+            uv.uv.x < region_u - 1e-5 or
+            uv.uv.x > region_u + region_span_u + 1e-5 or
+            uv.uv.y < region_v - 1e-5 or
+            uv.uv.y > region_v + region_span_v + 1e-5
+            for uv in layer.data
+        ):
+            problems.append(
+                f"{part.name} samples an appliance pattern edge"
+            )
 
     overlaps, allowed_seams = broad_coplanar_overlaps(asset)
     for overlap in overlaps:
@@ -1581,12 +2179,28 @@ def manifest_for(
         "cameras": False,
         "materials": False,
         "animation_count": 0,
+        "kitchen_contract": {
+            "fridge_door_dynamic_prop": "FridgeDoor",
+            "fridge_door_runtime_driver": False,
+            "fridge_door_pivot_anchor": "FridgeDoorPivot",
+            "fridge_door_grip_anchor": "Grip.FridgeDoor",
+            "cutting_board_dock_anchor": "CuttingBoardDock",
+            "stove_pan_dock_anchor": "StovePanDock",
+            "cold_service_light_anchor": "Light.ColdService",
+            "runtime_light_count_delta": 0,
+            "visible_rear_lining_z_m": REAR_LINING_FRONT_Z,
+            "worktop_wall_gap_m": KITCHEN_WALL_GAP,
+            "cabinet_wall_gap_m": KITCHEN_CABINET_WALL_GAP,
+            "rear_door_clearance_m": 0.08,
+        },
         "surface_contract": {
             "opaque_detail_min_clearance_m": OPAQUE_DETAIL_CLEARANCE,
             "glass_layers_per_pane": 1,
             "liquid_wall_clearance_m": LIQUID_WALL_CLEARANCE,
             "liquid_rim_clearance_m": LIQUID_RIM_CLEARANCE,
             "detail_atlases_add_no_new_palette_family": True,
+            "appliance_reference": "home_refrigerator_enamel_parameters",
+            "appliance_pattern_edges_sampled": False,
             "broad_coplanar_overlap_count": report["overlap_count"],
             "allowed_buried_seam_contact_count":
                 report["allowed_seam_contact_count"],
@@ -1642,7 +2256,9 @@ def manifest_for(
                 "sheet": part.sheet,
                 "base_surface": BASE_SURFACE[part.sheet],
                 "uv_strategy": (
-                    "semantic_sha256_quarter_turn_plus_offset_metres"
+                    "single_inset_appliance_patch_without_pattern_edges"
+                    if uses_appliance_panel_patch(part)
+                    else "semantic_sha256_quarter_turn_plus_offset_metres"
                     if part.sheet not in {
                         "CafePropsDetail", "CafeGlassDetail",
                         "CafeWarmEmission", "CafeCoffee"

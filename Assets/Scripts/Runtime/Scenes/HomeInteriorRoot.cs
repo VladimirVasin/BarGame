@@ -25,6 +25,16 @@ namespace BarPromenade
         public CityNightWorldResult ExteriorNight { get; private set; }
         public CityPedestrianPlan PedestrianPlan { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
+        public CityBalconySmokerPlan BalconySmokerPlan
+        {
+            get;
+            private set;
+        }
+        public CityBalconySmokerRuntime BalconySmokers
+        {
+            get;
+            private set;
+        }
         public PlayerRuntime Player { get; private set; }
         public PlayerAnimatedInteractionController AnimatedInteraction
         {
@@ -293,6 +303,12 @@ namespace BarPromenade
                     PedestrianPlan),
                 CityPedestrianPopulationProfile.HomeBalcony);
             Pedestrians.enabled = false;
+            BalconySmokerPlan = CityBalconySmokerPlan
+                .Create(ExteriorContext.Layout)
+                .TransformForHome(ExteriorContext);
+            BalconySmokers = CityBalconySmokerFactory.Create(
+                ExteriorView,
+                BalconySmokerPlan);
             GameObject musicObject =
                 new GameObject("Home Music");
             musicObject.transform.SetParent(transform, false);
@@ -317,6 +333,7 @@ namespace BarPromenade
                 Layout,
                 GameSessionState.CitySeed);
             ExteriorAtmosphere.BindPedestrians(Pedestrians);
+            ExteriorAtmosphere.BindBalconySmokers(BalconySmokers);
             GameObject dayNightObject =
                 new GameObject("Home Day Night");
             dayNightObject.transform.SetParent(transform, false);
@@ -421,6 +438,12 @@ namespace BarPromenade
                 GameLog.Field(
                     "duration_ms",
                     timer.ElapsedMilliseconds));
+        }
+
+        private void OnDestroy()
+        {
+            BalconySmokers?.Shutdown();
+            BalconySmokers = null;
         }
 
         /// <summary>

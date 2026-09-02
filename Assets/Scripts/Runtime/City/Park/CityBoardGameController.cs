@@ -203,6 +203,14 @@ namespace BarPromenade
             controller.checkersPlayer = parkCheckersPlayer;
             controller.quarrel = parkQuarrel;
             controller.randomState = CreateRandomState(citySeed);
+            // Declared again rather than relying on the quarrel having
+            // run first. Re-declaring one owner replaces his entry, so
+            // this is free, and a park that grew a board but no quarrel
+            // still has an opponent who can speak.
+            DeclarePlayers(
+                speechBubbles,
+                parkChessPlayer,
+                parkCheckersPlayer);
 
             for (int index = 0; index < tables.Count; index++)
             {
@@ -1192,15 +1200,13 @@ namespace BarPromenade
             }
 
             bool chess = active.Table.Game == CityBoardGameKind.Chess;
+            // The anchor and the voice were declared by the quarrel when
+            // the two men were raised; a game says the words and nothing
+            // else about who is saying them.
             UnityEngine.Object owner = chess
                 ? (UnityEngine.Object)chessPlayer
                 : checkersPlayer;
-            Transform anchor = chess
-                ? chessPlayer != null ? chessPlayer.SpeechAnchor : null
-                : checkersPlayer != null
-                    ? checkersPlayer.SpeechAnchor
-                    : null;
-            if (owner == null || anchor == null)
+            if (owner == null)
             {
                 return;
             }
@@ -1211,9 +1217,38 @@ namespace BarPromenade
                 active.Table.Game,
                 cue.ToString(),
                 line);
-            if (bubbles.Show(owner, anchor, LocalizationService.Get(key)))
+            if (bubbles.Show(owner, LocalizationService.Get(key)))
             {
                 speechCooldownRemaining = SpeechCooldownSeconds;
+            }
+        }
+
+        private static void DeclarePlayers(
+            NpcSpeechBubbleView speechBubbles,
+            ParkChessPlayerPresentation chess,
+            ParkCheckersPlayerPresentation checkers)
+        {
+            if (speechBubbles == null)
+            {
+                return;
+            }
+
+            if (chess != null)
+            {
+                speechBubbles.DeclareSpeaker(
+                    chess,
+                    chess.SpeechAnchor,
+                    chess.SpeechDesignId,
+                    NpcEarshotProfile.Shout);
+            }
+
+            if (checkers != null)
+            {
+                speechBubbles.DeclareSpeaker(
+                    checkers,
+                    checkers.SpeechAnchor,
+                    checkers.SpeechDesignId,
+                    NpcEarshotProfile.Shout);
             }
         }
 

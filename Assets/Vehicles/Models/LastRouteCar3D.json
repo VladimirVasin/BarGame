@@ -15,8 +15,8 @@
     "wheelbase": 2.7,
     "wheel_radius": 0.34
   },
-  "mesh_count": 63,
-  "triangle_count": 2880,
+  "mesh_count": 66,
+  "triangle_count": 2916,
   "bounds_min": [
     -0.94,
     -2.53,
@@ -48,7 +48,7 @@
   "dashboard_top_z": 1.04,
   "glovebox_lid_open_degrees": 78.0,
   "radio_dial_width_m": 0.14,
-  "build_signature": "b497b6d661dee1d4fedf0b6083f1c68b8419434e825992072b1e66a33e76a350",
+  "build_signature": "24417178c9781fa94fc07e95018441bf103ca017d2f033c3161c16c692046e68",
   "parts": [
     {
       "name": "GEO_Ashtray",
@@ -78,6 +78,22 @@
       "name": "GEO_CabinFloor",
       "role": "cabin_floor",
       "material_slot": "Interior",
+      "parent": "ROOT_Body",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_CabinLampHousing",
+      "role": "cabin_lamp_housing",
+      "material_slot": "Trim",
+      "parent": "ROOT_Body",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_CabinLampLens",
+      "role": "cabin_lamp_lens",
+      "material_slot": "CabinLamp",
       "parent": "ROOT_Body",
       "vertices": 8,
       "triangles": 12
@@ -227,6 +243,14 @@
       "triangles": 16
     },
     {
+      "name": "GEO_GloveboxBulb",
+      "role": "glovebox_bulb",
+      "material_slot": "CabinLamp",
+      "parent": "ROOT_Body",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
       "name": "GEO_GloveboxCatch",
       "role": "glovebox_catch",
       "material_slot": "Chrome",
@@ -325,7 +349,7 @@
     {
       "name": "GEO_InstrumentFaces",
       "role": "instrument_faces",
-      "material_slot": "Plate",
+      "material_slot": "CabinLamp",
       "parent": "ROOT_Body",
       "vertices": 40,
       "triangles": 72

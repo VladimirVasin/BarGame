@@ -49,7 +49,8 @@ namespace BarPromenade
             string confirmationPromptKey,
             string missingRequirementResponseKey,
             float feedbackDurationSeconds =
-                DefaultFeedbackDurationSeconds)
+                DefaultFeedbackDurationSeconds,
+            NpcSpeaker speaker = default)
         {
             if (!requirement.IsValid)
             {
@@ -80,6 +81,7 @@ namespace BarPromenade
             }
 
             FeedbackDurationSeconds = feedbackDurationSeconds;
+            Speaker = speaker;
         }
 
         /// <summary>
@@ -96,18 +98,21 @@ namespace BarPromenade
             string talkResponseKey,
             string confirmationPromptKey,
             float feedbackDurationSeconds =
-                DefaultFeedbackDurationSeconds)
+                DefaultFeedbackDurationSeconds,
+            NpcSpeaker speaker = default)
         {
             return new InventoryTargetInteractionDefinition(
                 talkResponseKey,
                 confirmationPromptKey,
-                feedbackDurationSeconds);
+                feedbackDurationSeconds,
+                speaker);
         }
 
         private InventoryTargetInteractionDefinition(
             string talkResponseKey,
             string confirmationPromptKey,
-            float feedbackDurationSeconds)
+            float feedbackDurationSeconds,
+            NpcSpeaker speaker)
         {
             Requirement = default;
             HasRequirement = false;
@@ -130,6 +135,7 @@ namespace BarPromenade
             }
 
             FeedbackDurationSeconds = feedbackDurationSeconds;
+            Speaker = speaker;
         }
 
         public InventoryItemRequirement Requirement { get; }
@@ -145,6 +151,21 @@ namespace BarPromenade
         public string ConfirmationPromptKey { get; }
         public string MissingRequirementResponseKey { get; }
         public float FeedbackDurationSeconds { get; }
+
+        /// <summary>
+        /// Who says <see cref="TalkResponseKey"/>, when anybody does.
+        /// The Ferryman does — his answer types out in his own tone
+        /// after the menu closes. The stairwell cat does not: that line
+        /// is the hero's own thought about a cat, not the cat talking,
+        /// and it stays whole, instant and silent. The default is
+        /// nobody, so a definition that says nothing about this behaves
+        /// exactly as it did before.
+        ///
+        /// It lives on the DEFINITION rather than on the controller
+        /// because the controller is shared between the two of them.
+        /// </summary>
+        public NpcSpeaker Speaker { get; }
+
         public bool IsValid =>
             (!HasRequirement || Requirement.IsValid) &&
             !string.IsNullOrWhiteSpace(TalkResponseKey) &&

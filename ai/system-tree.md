@@ -162,7 +162,7 @@ Assets/
     MountainRoad/
       MountainRoadCafeCastProvider.asset  four isolated staged cafe prefab links
       Cafe/
-        MountainRoadCafe3D.prefab         passive 48-mesh Nighthawks-inspired cafe + registry
+        MountainRoadCafe3D.prefab         passive 59-mesh cafe, hinge-ready fridge/kitchen + registry
         Textures/                         six 512 px semantic detail sheets
     Church/
       ChurchExterior3D.prefab          passive Catholic exterior + typed semantic anchors
@@ -354,7 +354,8 @@ Assets/
         MountainRoadCafeCollisionWorldBuilder.cs  exact 17-collider plan-owned shell
         MountainRoadCafe{ServiceTimeline,ServicePresentation,CupView}.cs role-staggered drink/fill/refill + measured prop contacts
                                        hand/mouth-fitted cups, exact saucer return, counter-clear carry + per-frame spout-to-target stream
-        MountainRoadCafeCigaretteEffect.cs woman idle phase -> ember/plume envelopes; no separate clock, Light or AudioSource
+        MountainRoadCafeCigaretteEffect.cs woman idle phase -> separate ember glow + world-space SOCKET_Mouth exhale
+                                       no separate clock, Light or AudioSource
         MountainRoadCafeConversation{Lines,Timeline,Controller,Look}.cs fixed ten-pair RU/EN bubble loop, cafe-volume gate + action-safe queue/head turns
         MountainRoadCafeSeatView.cs   cafe-stool first-person camera/head lifecycle
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
@@ -394,7 +395,7 @@ Assets/
         MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
         MountainRoad{Terrain,Surface,Scenery}*.cs 76 m terrain, gorge, road + colliderless terminal apron
         MountainRoadSurfaceAppearance.cs six printed + nine borrowed measured surface families
-        MountainRoadCafe{WorldBuilder,WorldResult}.cs imported enterable 48-mesh glass cafe composition
+        MountainRoadCafe{WorldBuilder,WorldResult}.cs imported enterable 59-mesh glass cafe composition
         MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs ten-clip cast: every-third-exchange ignored husband one-shot + silent attendant + drinking, talking pair
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
@@ -432,6 +433,7 @@ Assets/
         CityWorldBuilder.cs      continuous terrain, fenced corner infill, river/bridges, graded streets, stairs + guarded drops
         CityBuildingPrototypePlacement.cs fixed-metre front/roof/facade poses + Home half-space classification
         CityBuildingPrototypeWorldBuilder.cs semantic building composition + inset foundation/collider authority split
+        CityBuildingAssetRegistry.cs opening kind + one-to-one Residential balcony door/deck/dock metadata
         CityBuildingSurfaceAppearance.cs 24 district/opaque-surface recipes on one shared material through MPBs
         CitySpecialBuildingWorldBuilder.cs inset special-building foundations/collision + Home projection
         CityBuildingWindowSlotAppearance.cs UV2-addressed row-balanced warm/dark window binding
@@ -540,7 +542,7 @@ Assets/
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
         HomeExteriorContextPlan.cs  bounded street/decoration/pedestrian + Home-stop context
-        HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails + permanent ashtray
+        HomeBalconyWorldBuilder.cs   window, open door, deck, safe rails, ashtray; no camera-crossing eave fascia
         HomeExteriorViewBuilder.cs   collider-free lots/windows/lights + static Home stop
         HomeBedDeformableSurfaceFactory.cs  grid-top mattress/pillow meshes + data component
         HomeBedInteractionPlan.cs  open-side trigger + separate entry/action/exit poses
@@ -594,6 +596,12 @@ Assets/
         CityArchShelterResidentAssetRegistry.cs one textured Hero-Avatar model + quiet loop contract
         CityArchShelterResidentProvider.cs build-safe references to the three staged prefabs
         CityArchShelterResidentPresentation.cs independent manual PlayableGraph, no player input
+      City/Balcony/  local passive smokers on authored Residential docks
+        CityBalconySmokerPlan.cs        all-building candidate catalogue + bounded Home selection
+        CityBalconySmokerDirector.cs    per-session local chance, activation and distance release
+        CityBalconySmokerFactory.cs     roaming-prefab reuse + authored cigarette attachment
+        CityBalconySmokerPresentation.cs hidden Hero SmokeLoop driver, 31-bone pose transfer, grounding + timed plume
+        CityBalconySmokerRuntime.cs     scene-owned visibility and playable cleanup
       Yard/          staged yard roles plus bounded colliderless courtyard-life residents
         YardWheelchairMotion.cs      pure drift pose; computes the reserved wheel differential
         YardWheelchairPlan.cs        circuit read back from the authored ring and dead tree
@@ -697,6 +705,7 @@ Assets/
         LastRouteFerrymanRideStage.cs  the monotone ladder both areas build him from
         LastRouteCarDrive{Path,Model}.cs  one drivable centreline with the one place on it the car gives way, and how fast a car will take it - corners, the end of the road and a stop line all braked to the same way
         LastRouteCarDriver.cs      the engine on the runtime root: pose, steering, wheel roll and what the road does to the springs
+        LastRouteCarCabinLight.cs  the light INSIDE the car: a plafond tilted BACK at the seats so the windscreen's inward pane and the bonnet stay at 0.000, a glovebox bulb that follows the lid's animated openness, and the instrument faces lit by emission because a vertical panel is the one thing no cabin lamp lights well; lens and dials burn always (§20), the realtime pool only while somebody is in the cabin
         LastRouteCarHeadlights.cs  two shadow-casting beams and a wide spill on the SPRUNG body, emitting from OUTSIDE the shell just proud of the lit face, switched by the journey itself; the area they light keeps its ordinary grade
         LastRouteCarGiveWay{,Model}.cs  wait or go at the turn across the road: the pure clock and commit rule, and the live look for an oncoming bus or anyone walking over the mouth
         LastRouteCityDeparturePlanner.cs  the lot exit, a Dijkstra over the layout's own street edges (NEVER the bus graph - that is Route 01's one-way loop), the turn off where the forecourt opens, and the run into the tunnel
@@ -791,7 +800,7 @@ Assets/
         HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three fixed shots + activation/hold hysteresis
-        HomeBalconyExteriorAtmosphere.cs  Balcony-only City fog/lights + pedestrian gate
+        HomeBalconyExteriorAtmosphere.cs  Balcony-only City fog/lights + pedestrian/smoker gate
         HomeOcclusionResolver.cs      five camera-to-player sample rays
         HomePlayerOcclusionController.cs  grouped dither fade/hold/restore
         HomeInteriorAtmosphere.cs     two practicals + bathroom/window Spots, grade and dust
@@ -1058,7 +1067,7 @@ tools/
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mothers-house-interior-3d-model.py  fixed-metre room, UV/triangle/anchor/export validator
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
-  build-mountain-road-cafe-3d-model.py  48-mesh cafe, six sheets, anchors/props/collider/overlap validator
+  build-mountain-road-cafe-3d-model.py  v1.1.0 / 59-mesh cafe, passive kitchen + hinge/anchor/prop/collider/overlap validator
   build-village-3d-model.py      v3.0.0 / village_house_archetypes_v3, 17 assemblies / 43 outward-validated meshes; no doors/panes/new sheet
   build-city-misc-3d-model.py    82 kinds / 122 assemblies / 259 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 28 semantic meshes + UV/exact/near-layer validation
@@ -1131,9 +1140,9 @@ MountainRoadRoot -> MountainRoadPlanner -> validated 620 m continuous climb
                                       -> joined ~42 x 27 m terminal
                                          -> visible colliderless R7.5 m apron on shared collision
                                          -> enterable five-sided glass cafe on left
-                                            -> current runtime shell / four silent roles
-                                            -> [Planned] Blender shell + 7 stools / 3 visitors
-                                            -> 2 visible practicals + technical wash
+                                            -> imported 59-mesh shell / 7 stools / four-role tableau
+                                            -> passive kitchen + undriven hinge-ready FridgeDoor
+                                            -> warm practical + cold stove task fixture + technical wash
                                          -> 230 m / 9-support / 8-cabin cableway on right
                                             -> boarding open; line brakes to a dock on request
                                             -> outboard platform: pedestal fills the track gap

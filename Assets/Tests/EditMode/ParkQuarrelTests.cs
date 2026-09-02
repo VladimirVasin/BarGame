@@ -349,17 +349,17 @@ namespace BarPromenade.Tests.EditMode
             const string line = "Конь ходит буквой Г. От слова «горе».";
 
             Assert.That(
-                NpcSpeechBubbleView.ResolveRevealedCharacters(line, 0f),
+                SpeechDelivery.ResolveRevealedCharacters(line, 0f),
                 Is.Zero);
             Assert.That(
-                NpcSpeechBubbleView.ResolveRevealedCharacters(line, -3f),
+                SpeechDelivery.ResolveRevealedCharacters(line, -3f),
                 Is.Zero);
 
             int previous = 0;
             for (int step = 0; step <= 120; step++)
             {
                 int revealed =
-                    NpcSpeechBubbleView.ResolveRevealedCharacters(
+                    SpeechDelivery.ResolveRevealedCharacters(
                         line,
                         step * 0.05f);
                 Assert.That(revealed, Is.GreaterThanOrEqualTo(previous));
@@ -374,7 +374,7 @@ namespace BarPromenade.Tests.EditMode
             // seconds it is up, or the panel takes itself down while the
             // player is still being handed the words a letter at a time.
             float typedIn = line.Length /
-                NpcSpeechBubbleView.CharactersPerSecond;
+                SpeechDelivery.CharactersPerSecond;
             Assert.That(
                 typedIn,
                 Is.LessThan(NpcSpeechBubbleView.VisibleSeconds * 0.5f));
@@ -391,9 +391,15 @@ namespace BarPromenade.Tests.EditMode
                 speaker.transform.SetParent(host.transform, false);
 
                 Assert.That(
-                    view.ShowAt(
+                    view.DeclareSpeaker(
                         speaker,
                         speaker.transform,
+                        NpcVoiceCatalog.ChessPlayerDesignId,
+                        NpcEarshotProfile.Shout),
+                    Is.True);
+                Assert.That(
+                    view.ShowAt(
+                        speaker,
                         "Шашки — это шахматы для уставших.",
                         100f),
                     Is.True);
@@ -422,50 +428,90 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Bubble_RefusesALineFromAnUndeclaredSpeaker()
+        {
+            var host = new GameObject("Bubble Declaration Test Host");
+            try
+            {
+                var view = host.AddComponent<NpcSpeechBubbleView>();
+                var stranger = new GameObject("Stranger");
+                stranger.transform.SetParent(host.transform, false);
+
+                Assert.That(
+                    view.ShowAt(stranger, "Никто.", 10f),
+                    Is.False,
+                    "A line from nobody has no head to hang over and " +
+                    "no voice to say it in.");
+                Assert.That(view.IsShowing(stranger), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
         // -- The distance fade -------------------------------------------
 
         [Test]
         public void Bubble_IsFaintAcrossTheParkAndSolidAtTheTables()
         {
+            NpcEarshotProfile shout = NpcEarshotProfile.Shout;
+
             Assert.That(
-                CityParkQuarrelController.ResolveBubbleOpacity(
-                    CityParkQuarrelController.AudibleRadiusMeters),
-                Is.EqualTo(CityParkQuarrelController.FaintOpacity)
+                shout.ResolveOpacity(
+                    NpcEarshotProfile.ShoutFaintRadiusMeters),
+                Is.EqualTo(NpcEarshotProfile.DefaultFaintOpacity)
                     .Within(0.0001f),
                 "At the edge of earshot it is barely there.");
             Assert.That(
-                CityParkQuarrelController.ResolveBubbleOpacity(
-                    CityParkQuarrelController.SilenceRadiusMeters),
-                Is.EqualTo(CityParkQuarrelController.FaintOpacity)
+                shout.ResolveOpacity(
+                    NpcEarshotProfile.ShoutCullRadiusMeters),
+                Is.EqualTo(NpcEarshotProfile.DefaultFaintOpacity)
                     .Within(0.0001f),
-                "And no fainter out in the hysteresis band.");
+                "And no fainter out to the very last metre.");
             Assert.That(
-                CityParkQuarrelController.ResolveBubbleOpacity(
+                shout.ResolveOpacity(
                     CityParkQuarrelController.SolidRadiusMeters),
                 Is.EqualTo(1f).Within(0.0001f),
                 "At the tables it is solid.");
             Assert.That(
-                CityParkQuarrelController.ResolveBubbleOpacity(0f),
+                shout.ResolveOpacity(0f),
                 Is.EqualTo(1f).Within(0.0001f),
                 "And stays solid all the way in.");
+
+            // The whole band the two of them argue across has to stay
+            // comfortably readable. Tying the fade's far edge to the
+            // engage gate, as the first build did, put the words at
+            // their faintest over the entire approach.
+            Assert.That(
+                NpcEarshotProfile.ShoutFaintRadiusMeters,
+                Is.GreaterThan(
+                    CityParkQuarrelController.SilenceRadiusMeters),
+                "They stop arguing before their words start fading.");
+            Assert.That(
+                shout.ResolveOpacity(
+                    CityParkQuarrelController.AudibleRadiusMeters),
+                Is.GreaterThan(
+                    NpcEarshotProfile.DefaultFaintOpacity + 0.05f),
+                "A line thrown the moment they start is legible.");
         }
 
         [Test]
         public void Bubble_FirmsUpWithoutEverGoingBackwards()
         {
+            NpcEarshotProfile shout = NpcEarshotProfile.Shout;
             float previous = 0f;
             for (int step = 0; step <= 200; step++)
             {
                 float distance =
-                    CityParkQuarrelController.SilenceRadiusMeters *
+                    NpcEarshotProfile.ShoutCullRadiusMeters *
                     (1f - step / 200f);
-                float opacity =
-                    CityParkQuarrelController.ResolveBubbleOpacity(
-                        distance);
+                float opacity = shout.ResolveOpacity(distance);
                 Assert.That(
                     opacity,
                     Is.InRange(
-                        CityParkQuarrelController.FaintOpacity,
+                        NpcEarshotProfile.DefaultFaintOpacity,
                         1f));
                 Assert.That(
                     opacity,
@@ -480,30 +526,235 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Bubble_OpacityIsClampedAndSurvivesNonsense()
         {
-            var host = new GameObject("Bubble Opacity Test Host");
+            NpcEarshotProfile shout = NpcEarshotProfile.Shout;
+
+            Assert.That(
+                shout.ResolveOpacity(float.NaN),
+                Is.EqualTo(NpcEarshotProfile.DefaultFaintOpacity),
+                "A NaN must never leave the park invisible.");
+            Assert.That(
+                shout.ResolveOpacity(-2f),
+                Is.EqualTo(1f),
+                "Nonsense on the near side reads as standing on him.");
+            Assert.That(
+                shout.ResolveOpacity(float.PositiveInfinity),
+                Is.Zero,
+                "And nonsense on the far side is simply not there.");
+            Assert.That(
+                shout.ResolveOpacity(
+                    NpcEarshotProfile.ShoutCullRadiusMeters + 0.01f),
+                Is.Zero,
+                "Past the cull radius a line is absent, not faint.");
+        }
+
+        /// <summary>
+        /// The whole reason the fade moved off the view. Two men at two
+        /// distances used to share one opacity, so this could not be
+        /// asked at all.
+        /// </summary>
+        [Test]
+        public void Bubble_FadesEachSpeakerOnHisOwnDistance()
+        {
+            var host = new GameObject("Bubble Per-Speaker Test Host");
             try
             {
                 var view = host.AddComponent<NpcSpeechBubbleView>();
-                Assert.That(
-                    view.Opacity,
-                    Is.EqualTo(NpcSpeechBubbleView.SolidOpacity),
-                    "Anything that never fades draws solid.");
+                var hero = new GameObject("Hero");
+                var near = new GameObject("Near Speaker");
+                var far = new GameObject("Far Speaker");
+                var gone = new GameObject("Out Of Earshot Speaker");
+                hero.transform.SetParent(host.transform, false);
+                near.transform.SetParent(host.transform, false);
+                far.transform.SetParent(host.transform, false);
+                gone.transform.SetParent(host.transform, false);
+                hero.transform.position = Vector3.zero;
+                near.transform.position = new Vector3(
+                    NpcEarshotProfile.ShoutSolidRadiusMeters * 0.5f,
+                    0f,
+                    0f);
+                far.transform.position = new Vector3(
+                    NpcEarshotProfile.ShoutFaintRadiusMeters,
+                    0f,
+                    0f);
+                gone.transform.position = new Vector3(
+                    NpcEarshotProfile.ShoutCullRadiusMeters + 5f,
+                    0f,
+                    0f);
 
-                view.SetOpacity(4f);
-                Assert.That(view.Opacity, Is.EqualTo(1f));
-                view.SetOpacity(-2f);
-                Assert.That(view.Opacity, Is.Zero);
-                view.SetOpacity(0.4f);
-                view.SetOpacity(float.NaN);
+                view.Initialize(null, hero.transform);
+                view.DeclareSpeaker(
+                    near,
+                    near.transform,
+                    NpcVoiceCatalog.ChessPlayerDesignId,
+                    NpcEarshotProfile.Shout);
+                view.DeclareSpeaker(
+                    far,
+                    far.transform,
+                    NpcVoiceCatalog.CheckersPlayerDesignId,
+                    NpcEarshotProfile.Shout);
+                view.DeclareSpeaker(
+                    gone,
+                    gone.transform,
+                    NpcVoiceCatalog.WatchmanDesignId,
+                    NpcEarshotProfile.Shout);
+
+                view.ShowAt(near, "Рядом.", 50f);
+                view.ShowAt(far, "Далеко.", 50f);
+                view.ShowAt(gone, "Не слышно.", 50f);
+                view.AdvanceTo(50.1f);
+
                 Assert.That(
-                    view.Opacity,
-                    Is.EqualTo(NpcSpeechBubbleView.SolidOpacity),
-                    "A NaN must never leave the park invisible.");
+                    view.OpacityOf(near),
+                    Is.EqualTo(1f).Within(0.0001f),
+                    "The near man is solid.");
+                Assert.That(
+                    view.OpacityOf(far),
+                    Is.EqualTo(NpcEarshotProfile.DefaultFaintOpacity)
+                        .Within(0.0001f),
+                    "And the far one is faint at the same instant.");
+                Assert.That(
+                    view.OpacityOf(near),
+                    Is.GreaterThan(view.OpacityOf(far)),
+                    "Two speakers at two distances read differently.");
+                Assert.That(
+                    view.OpacityOf(gone),
+                    Is.Zero,
+                    "Past the cull radius there is nothing to read.");
             }
             finally
             {
                 Object.DestroyImmediate(host);
             }
+        }
+
+        // -- The typewriter and its keystroke ----------------------------
+
+        /// <summary>
+        /// The reveal is stepped once a frame and the keystroke rides
+        /// that step, so a dropped frame can never turn three letters
+        /// into three blips.
+        /// </summary>
+        [Test]
+        public void Delivery_StepsOncePerFrameAndBlipsOnLettersOnly()
+        {
+            const string line = "Да, да... и ещё раз.";
+            SpeechDelivery delivery = SpeechDelivery.Spoken(line, 0f);
+
+            int blips = 0;
+            int frames = 0;
+            int previousRevealed = 0;
+            float lastBlipAt = float.NegativeInfinity;
+            for (float now = 0f; now <= 2f; now += 1f / 60f)
+            {
+                frames++;
+                if (delivery.Step(now, out char blip))
+                {
+                    blips++;
+                    Assert.That(
+                        SpeechDelivery.IsSpeakableCharacter(blip),
+                        Is.True,
+                        "A space or a full stop never ticks.");
+                    Assert.That(
+                        now - lastBlipAt,
+                        Is.GreaterThanOrEqualTo(
+                            SpeechDelivery.MinimumBlipIntervalSeconds -
+                            0.0001f),
+                        "Two keystrokes are never inside the throttle.");
+                    lastBlipAt = now;
+                }
+
+                Assert.That(
+                    delivery.RevealedCharacters,
+                    Is.GreaterThanOrEqualTo(previousRevealed),
+                    "The reveal never runs backwards.");
+                previousRevealed = delivery.RevealedCharacters;
+            }
+
+            Assert.That(
+                delivery.RevealedCharacters,
+                Is.EqualTo(line.Length));
+            Assert.That(blips, Is.GreaterThan(0));
+            Assert.That(
+                blips,
+                Is.LessThan(frames),
+                "One blip per frame at the very most.");
+            Assert.That(
+                blips,
+                Is.LessThan(line.Length),
+                "The throttle and the punctuation both thin it out.");
+        }
+
+        [Test]
+        public void Delivery_AHitchYieldsOneKeystrokeNotABurst()
+        {
+            SpeechDelivery delivery =
+                SpeechDelivery.Spoken("абвгде", 0f);
+
+            // A tenth of a second at 34 characters a second reveals
+            // three letters at once. The ear must get one stroke.
+            Assert.That(delivery.Step(0.1f, out char blip), Is.True);
+            Assert.That(delivery.RevealedCharacters, Is.EqualTo(3));
+            Assert.That(
+                blip,
+                Is.EqualTo('в'),
+                "Pitched from the newest letter, the one the eye is on.");
+            Assert.That(
+                delivery.Step(0.1f, out _),
+                Is.False,
+                "And the same frame asked twice adds nothing.");
+        }
+
+        [Test]
+        public void Delivery_NarrationIsWholeAndSilent()
+        {
+            SpeechDelivery narration =
+                SpeechDelivery.Instant("Дверь заперта.");
+
+            Assert.That(narration.IsSilent, Is.True);
+            Assert.That(narration.IsComplete, Is.True);
+            Assert.That(
+                narration.RevealedText,
+                Is.EqualTo("Дверь заперта."));
+            Assert.That(
+                narration.Step(5f, out _),
+                Is.False,
+                "A description of a door is not somebody talking.");
+        }
+
+        [Test]
+        public void Delivery_SpokenDurationLeavesRoomToReadTheLongest()
+        {
+            // The watchman's longest line is the longest anybody says.
+            string longest = string.Empty;
+            foreach (string key in CemeteryWatchmanQuips.LineKeys)
+            {
+                string text = LocalizationService.Get(key);
+                if (text.Length > longest.Length)
+                {
+                    longest = text;
+                }
+            }
+
+            Assert.That(
+                CemeteryWatchmanInteraction.ResolveResponseSeconds(
+                    CemeteryWatchmanQuips.LineKeys[0]),
+                Is.GreaterThanOrEqualTo(
+                    CemeteryWatchmanInteraction
+                        .ResponseDurationSeconds),
+                "The old floor is still a floor.");
+
+            float typedIn = longest.Length /
+                            SpeechDelivery.CharactersPerSecond;
+            float longestDuration =
+                SpeechDelivery.ResolveSpokenDuration(
+                    longest,
+                    CemeteryWatchmanInteraction.ReadingTailSeconds);
+            Assert.That(
+                longestDuration - typedIn,
+                Is.GreaterThanOrEqualTo(
+                    CemeteryWatchmanInteraction.ReadingTailSeconds -
+                    0.0001f),
+                "Even his longest line keeps its whole reading tail.");
         }
     }
 }

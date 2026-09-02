@@ -163,6 +163,14 @@ namespace BarPromenade
             var interaction = trigger
                 .AddComponent<SeacoastFishermanInteraction>();
             interaction.Initialize(stance.Position, citySeed);
+            // His own tone and his own head. The source stays on the
+            // speech service: the passive-presentation guard below
+            // rejects an AudioSource inside this instance, and should.
+            interaction.AttachSpeaker(
+                NpcSpeaker.FromRegistry(
+                    presentation,
+                    registry,
+                    NpcEarshotProfile.Conversation));
 
             GameLog.Info(
                 "city",

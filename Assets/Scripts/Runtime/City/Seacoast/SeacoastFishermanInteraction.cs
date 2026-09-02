@@ -21,7 +21,12 @@ namespace BarPromenade
         /// his lines are shorter, but they are meant to sit.</summary>
         public const float ResponseDurationSeconds = 3.4f;
 
+        /// <summary>How long a fully typed line is left standing —
+        /// the same tail the watchman's answers keep.</summary>
+        public const float ReadingTailSeconds = 2.0f;
+
         private Vector3 standPosition;
+        private NpcSpeaker speaker = NpcSpeaker.None;
         private uint quipState;
         private int lastLineIndex = -1;
         private bool isInitialized;
@@ -41,6 +46,16 @@ namespace BarPromenade
             quipState = SeacoastFishermanQuips.CreateState(citySeed);
             lastLineIndex = -1;
             isInitialized = true;
+        }
+
+        /// <summary>
+        /// Who he is when he answers: which head the sound comes from,
+        /// what tone he writes in, and how far it carries. Without it
+        /// he answers whole, instantly and silently, as he did before.
+        /// </summary>
+        public void AttachSpeaker(in NpcSpeaker value)
+        {
+            speaker = value;
         }
 
         public bool CanInteract(PlayerInteractor interactor)
@@ -63,9 +78,25 @@ namespace BarPromenade
             lastLineIndex = SeacoastFishermanQuips.NextIndex(
                 ref quipState,
                 lastLineIndex);
-            interactor.ShowFeedback(
-                SeacoastFishermanQuips.LineKeys[lastLineIndex],
-                ResponseDurationSeconds);
+            string lineKey =
+                SeacoastFishermanQuips.LineKeys[lastLineIndex];
+            interactor.ShowSpokenFeedback(
+                lineKey,
+                ResolveResponseSeconds(lineKey),
+                speaker);
+        }
+
+        /// <summary>
+        /// The time it takes to type plus a tail to read it in, never
+        /// less than the floor above.
+        /// </summary>
+        public static float ResolveResponseSeconds(string key)
+        {
+            return Mathf.Max(
+                ResponseDurationSeconds,
+                SpeechDelivery.ResolveSpokenDuration(
+                    LocalizationService.Get(key),
+                    ReadingTailSeconds));
         }
     }
 }

@@ -1513,6 +1513,16 @@ namespace BarPromenade
         /// working on this instant.</summary>
         private Vector3 GetCameraInterest()
         {
+            // The plaque shot stands square to the board, so its
+            // shallow Bokeh focus has to follow that same point. The
+            // stone remains borrowed while the inscription is typed;
+            // letting the checks below win focuses on its head and
+            // leaves the brass and its letters visibly soft.
+            if (inscribing || reading)
+            {
+                return GetBoardPosition();
+            }
+
             if (lattice != null && target >= 0)
             {
                 return GetTargetFace();
