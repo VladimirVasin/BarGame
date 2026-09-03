@@ -22,6 +22,7 @@ namespace BarPromenade
             Array.Empty<BarDrinkVesselView>();
         [SerializeField] private Transform streamRoot;
         [SerializeField] private Renderer streamRenderer;
+        [SerializeField] private BarDrinkMenuPresentation menuPresentation;
 
         private BarDrinkServicePlan plan;
         private ReadOnlyCollection<BarDrinkBottleView> bottlesView;
@@ -47,6 +48,8 @@ namespace BarPromenade
         public BarDrinkVesselView ActiveVessel => activeVessel;
         public Transform StreamRoot => streamRoot;
         public Renderer StreamRenderer => streamRenderer;
+        public BarDrinkMenuPresentation MenuPresentation =>
+            menuPresentation;
         public Transform ReferenceTransform => transform;
         public bool IsStreamVisible =>
             streamRoot != null && streamRoot.gameObject.activeSelf;
@@ -56,7 +59,8 @@ namespace BarPromenade
             IReadOnlyList<BarDrinkBottleView> newBottles,
             IReadOnlyList<BarDrinkVesselView> newVessels,
             Transform newStreamRoot,
-            Renderer newStreamRenderer)
+            Renderer newStreamRenderer,
+            BarDrinkMenuPresentation newMenuPresentation)
         {
             plan = newPlan ?? throw new ArgumentNullException(nameof(newPlan));
             if (newBottles == null ||
@@ -119,6 +123,15 @@ namespace BarPromenade
                     nameof(newStreamRoot));
             }
 
+            if (newMenuPresentation == null ||
+                !newMenuPresentation.IsConfigured ||
+                !newMenuPresentation.transform.IsChildOf(transform))
+            {
+                throw new ArgumentException(
+                    "The physical menu must belong to the service root.",
+                    nameof(newMenuPresentation));
+            }
+
             bottles = bottleCopy;
             vessels = vesselCopy;
             bottlesView = Array.AsReadOnly(bottleCopy);
@@ -130,6 +143,7 @@ namespace BarPromenade
                     vesselLookup);
             streamRoot = newStreamRoot;
             streamRenderer = newStreamRenderer;
+            menuPresentation = newMenuPresentation;
             streamProperties = new MaterialPropertyBlock();
             initialized = true;
             ResetPresentation();
@@ -414,6 +428,7 @@ namespace BarPromenade
 
             selectedBottle = null;
             activeVessel = null;
+            menuPresentation?.ResetPresentation();
         }
 
         private void OnDisable()

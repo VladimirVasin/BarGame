@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Build deterministic surface albedos for the bar interior and exterior.
 
-Six seamless 1024x1024 sheets, imported by Unity at 512. Four carry the
-worn Residential interior and two carry the old neighbourhood-pub exterior:
-small urban brick with no painted windows, and dirty patched whitewash.
+Seventeen seamless 1024x1024 sheets, imported by Unity at 512. Fifteen split
+the pub into visibly different physical materials instead of tinting bare
+meshes: floorboards, wallpaper, carved and polished timber, leather, plaster,
+brass, mirror and patterned glass, carpet, cloth, painted metal, paper,
+bottle glass and ceramic. Two carry the old neighbourhood-pub exterior.
 
-The whole measured contract is imported from `build-home-textures.py`
-and the interior sheets reuse its established home grammars. The two exterior
-grammars remain here because their coursed brick and weather-exposed plaster
-belong to the pub, not to a generic room.
+The measured contract is imported from `build-home-textures.py`, following
+the houses' material-per-surface approach. Shared grammars remain shared;
+pub-specific brass, glass and paper wear live here.
 """
 
 from __future__ import annotations
@@ -180,8 +181,158 @@ def draw_exterior_plaster(base: Image.Image, rng) -> Image.Image:
     return home.soft_overlay(plaster, 13.0, runoff)
 
 
+def draw_polished_wood(base: Image.Image, rng) -> Image.Image:
+    """Long lacquered grain with rings, scratches and repaired dull patches."""
+    wood = home.draw_veneer(base, rng)
+    draw = ImageDraw.Draw(wood)
+    for _ in range(9):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        diameter = rng.randint(38, 82)
+        home.wrap_ellipse(
+            draw,
+            (x, y, x + diameter, y + diameter),
+            outline=home.BASE - rng.randint(16, 28),
+            width=2,
+        )
+    for _ in range(26):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        length = rng.randint(45, 210)
+        home.wrap_line(
+            draw,
+            (x, y, x + length, y + rng.randint(-4, 4)),
+            home.BASE + rng.choice((-20, -13, 14)),
+            width=1,
+        )
+    return wood
+
+
+def draw_aged_brass(base: Image.Image, rng) -> Image.Image:
+    """Brushed brass with dark handling bands and green-black tarnish islands."""
+    draw = ImageDraw.Draw(base)
+    for y in range(0, SHEET_SIZE, 16):
+        tone = home.BASE + (5 if (y // 16) % 2 else -5)
+        home.wrap_line(draw, (0, y, SHEET_SIZE, y), tone, width=1)
+    for _ in range(520):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        home.wrap_line(
+            draw,
+            (x, y, x + rng.randint(24, 180), y + rng.randint(-2, 2)),
+            home.BASE + rng.randint(-13, 12),
+            width=1,
+        )
+
+    def tarnish(layer_draw: ImageDraw.ImageDraw) -> None:
+        for _ in range(13):
+            x = rng.randrange(SHEET_SIZE)
+            y = rng.randrange(SHEET_SIZE)
+            home.wrap_ellipse(
+                layer_draw,
+                (x, y, x + rng.randint(50, 180), y + rng.randint(28, 100)),
+                fill=128 - rng.randint(18, 34),
+            )
+
+    return home.soft_overlay(base, 8.0, tarnish)
+
+
+def draw_mirror_glass(base: Image.Image, rng) -> Image.Image:
+    """Old mirror: vertical cleaning streaks, edge haze and sparse foxing."""
+    draw = ImageDraw.Draw(base)
+    for _ in range(150):
+        x = rng.randrange(SHEET_SIZE)
+        tone = home.BASE + rng.randint(-12, 12)
+        home.wrap_line(
+            draw,
+            (x, 0, x + rng.randint(-5, 5), SHEET_SIZE),
+            tone,
+            width=rng.randint(1, 3),
+        )
+    for _ in range(95):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        radius = rng.randint(2, 7)
+        home.wrap_ellipse(
+            draw,
+            (x - radius, y - radius, x + radius, y + radius),
+            fill=home.BASE - rng.randint(28, 58),
+        )
+    return base
+
+
+def draw_patterned_glass(base: Image.Image, rng) -> Image.Image:
+    """Pressed diamond glass whose broad relief survives the PS1 composite."""
+    draw = ImageDraw.Draw(base)
+    pitch = 128
+    for offset in range(-SHEET_SIZE, SHEET_SIZE * 2, pitch):
+        home.wrap_line(
+            draw,
+            (offset, 0, offset + SHEET_SIZE, SHEET_SIZE),
+            home.BASE - 24,
+            width=5,
+        )
+        home.wrap_line(
+            draw,
+            (offset + SHEET_SIZE, 0, offset, SHEET_SIZE),
+            home.BASE + 14,
+            width=3,
+        )
+    return base
+
+
+def draw_pub_paper(base: Image.Image, rng) -> Image.Image:
+    """Fibrous, finger-marked stock for menus, labels and unlettered notices."""
+    paper = home.draw_whitewash(base, rng)
+    draw = ImageDraw.Draw(paper)
+    for _ in range(180):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        home.wrap_line(
+            draw,
+            (x, y, x + rng.randint(8, 55), y + rng.randint(-3, 3)),
+            home.BASE + rng.randint(-13, 12),
+            width=1,
+        )
+    for _ in range(7):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        home.wrap_ellipse(
+            draw,
+            (x, y, x + rng.randint(55, 150), y + rng.randint(35, 110)),
+            outline=home.BASE - rng.randint(16, 25),
+            width=3,
+        )
+    return paper
+
+
+def draw_bottle_glass(base: Image.Image, rng) -> Image.Image:
+    """Moulded glass with vertical flow, bubbles and uneven old bottle walls."""
+    draw = ImageDraw.Draw(base)
+    for x in range(0, SHEET_SIZE, 32):
+        tone = home.BASE + (9 if (x // 32) % 2 else -8)
+        home.wrap_rect(draw, (x, 0, x + 3, SHEET_SIZE), tone)
+    for _ in range(115):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        radius = rng.randint(2, 9)
+        home.wrap_ellipse(
+            draw,
+            (x - radius, y - radius, x + radius, y + radius),
+            outline=home.BASE + rng.randint(15, 28),
+            width=2,
+        )
+    return base
+
+
 home.GRAMMARS["bar_exterior_brick"] = draw_exterior_brick
 home.GRAMMARS["bar_exterior_plaster"] = draw_exterior_plaster
+home.GRAMMARS["bar_polished_wood"] = draw_polished_wood
+home.GRAMMARS["bar_aged_brass"] = draw_aged_brass
+home.GRAMMARS["bar_mirror_glass"] = draw_mirror_glass
+home.GRAMMARS["bar_patterned_glass"] = draw_patterned_glass
+home.GRAMMARS["bar_paper"] = draw_pub_paper
+home.GRAMMARS["bar_bottle_glass"] = draw_bottle_glass
 
 
 BAR_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
@@ -246,6 +397,162 @@ BAR_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
             ("BarInteriorWorldBuilder.Leather",
              (0.30, 0.035, 0.045)),
         ),
+    ),
+    home.HomeSheetSpec(
+        key="BarCeilingPlasterAlbedo",
+        grammar="whitewash",
+        seed=0x4243504C,
+        cast=(1.03, 1.00, 0.94),
+        mean_target=0.54,
+        meters_per_tile=2.4,
+        smoothness=0.025,
+        metallic=0.0,
+        tints=(("BarInteriorWorldBuilder.Ceiling", (0.18, 0.14, 0.11)),),
+    ),
+    home.HomeSheetSpec(
+        key="BarPolishedWoodAlbedo",
+        grammar="bar_polished_wood",
+        seed=0x42505744,
+        cast=(1.05, 1.00, 0.92),
+        mean_target=0.52,
+        meters_per_tile=0.75,
+        smoothness=0.34,
+        metallic=0.0,
+        tints=(
+            ("BarInteriorWorldBuilder.CounterTop", (0.16, 0.055, 0.028)),
+            ("BarInteriorWorldBuilder.TableTop", (0.22, 0.095, 0.045)),
+        ),
+    ),
+    home.HomeSheetSpec(
+        key="BarAgedBrassAlbedo",
+        grammar="bar_aged_brass",
+        seed=0x42425253,
+        cast=(1.08, 1.00, 0.84),
+        mean_target=0.72,
+        meters_per_tile=0.42,
+        smoothness=0.42,
+        metallic=0.72,
+        tints=(
+            ("BarDistrictIdentity.Memory.Metal", (0.62, 0.34, 0.13)),
+            ("BarDistrictIdentity.Household.Metal", (0.86, 0.46, 0.14)),
+            ("BarDistrictIdentity.AfterShift.Metal", (0.32, 0.40, 0.38)),
+            ("BarDistrictIdentity.Escape.Metal", (0.52, 0.18, 0.44)),
+        ),
+        contrast_floor=26,
+    ),
+    home.HomeSheetSpec(
+        key="BarMirrorGlassAlbedo",
+        grammar="bar_mirror_glass",
+        seed=0x424D4952,
+        cast=(0.95, 1.02, 1.05),
+        mean_target=0.62,
+        meters_per_tile=1.35,
+        smoothness=0.78,
+        metallic=0.12,
+        tints=(("BarInteriorWorldBuilder.Mirror", (0.22, 0.34, 0.38)),),
+        contrast_floor=28,
+    ),
+    home.HomeSheetSpec(
+        key="BarPatternedGlassAlbedo",
+        grammar="bar_patterned_glass",
+        seed=0x4250474C,
+        cast=(0.96, 1.02, 1.04),
+        mean_target=0.58,
+        meters_per_tile=0.72,
+        smoothness=0.64,
+        metallic=0.04,
+        tints=(("BarInteriorWorldBuilder.PatternedGlass", (0.18, 0.28, 0.30)),),
+        contrast_floor=30,
+    ),
+    home.HomeSheetSpec(
+        key="BarPubCarpetAlbedo",
+        grammar="rug",
+        seed=0x42435250,
+        cast=(1.06, 0.98, 0.92),
+        mean_target=0.56,
+        meters_per_tile=1.15,
+        smoothness=0.015,
+        metallic=0.0,
+        tints=(
+            ("BarInteriorWorldBuilder.Carpet", (0.22, 0.055, 0.052)),
+            ("BarInteriorWorldBuilder.CarpetBorder", (0.36, 0.27, 0.10)),
+            ("BarInteriorWorldBuilder.BayRug", (0.16, 0.065, 0.055)),
+        ),
+    ),
+    home.HomeSheetSpec(
+        key="BarWornFabricAlbedo",
+        grammar="linen",
+        seed=0x42464142,
+        cast=(1.04, 0.99, 0.95),
+        mean_target=0.48,
+        meters_per_tile=0.68,
+        smoothness=0.02,
+        metallic=0.0,
+        tints=(
+            ("BarInteriorWorldBuilder.Curtain", (0.30, 0.035, 0.045)),
+            ("BarInteriorWorldBuilder.Shade", (0.32, 0.18, 0.14)),
+        ),
+    ),
+    home.HomeSheetSpec(
+        key="BarPaintedMetalAlbedo",
+        grammar="painted_metal",
+        seed=0x424D4554,
+        cast=(0.99, 1.00, 0.98),
+        mean_target=0.56,
+        meters_per_tile=0.82,
+        smoothness=0.20,
+        metallic=0.30,
+        tints=(
+            ("BarInteriorWorldBuilder.DarkMetal", (0.18, 0.20, 0.19)),
+            ("BarInteriorWorldBuilder.Speaker", (0.12, 0.12, 0.13)),
+        ),
+    ),
+    home.HomeSheetSpec(
+        key="BarPaperAlbedo",
+        grammar="bar_paper",
+        seed=0x42504150,
+        cast=(1.04, 1.00, 0.90),
+        mean_target=0.70,
+        meters_per_tile=0.55,
+        smoothness=0.025,
+        metallic=0.0,
+        tints=(
+            ("BarService.MenuPage", (0.74, 0.66, 0.47)),
+            ("BarService.BottleLabel", (0.72, 0.66, 0.48)),
+            ("BarInteriorWorldBuilder.Notice", (0.62, 0.38, 0.20)),
+        ),
+        contrast_floor=24,
+    ),
+    home.HomeSheetSpec(
+        key="BarBottleGlassAlbedo",
+        grammar="bar_bottle_glass",
+        seed=0x42474C53,
+        cast=(0.95, 1.03, 1.02),
+        mean_target=0.78,
+        meters_per_tile=0.36,
+        smoothness=0.68,
+        metallic=0.02,
+        tints=(
+            ("BarService.ColouredBottle", (0.28, 0.20, 0.11)),
+            ("BarService.ClearGlass", (0.62, 0.82, 0.86)),
+            ("BarService.Liquid", (0.90, 0.58, 0.18)),
+        ),
+        contrast_floor=24,
+    ),
+    home.HomeSheetSpec(
+        key="BarCeramicAlbedo",
+        grammar="enamel",
+        seed=0x42434552,
+        cast=(1.02, 1.00, 0.96),
+        mean_target=0.70,
+        meters_per_tile=0.42,
+        smoothness=0.48,
+        metallic=0.04,
+        tints=(
+            ("BarInteriorWorldBuilder.Cup", (0.82, 0.12, 0.10)),
+            ("BarInteriorWorldBuilder.Foam", (0.74, 0.62, 0.42)),
+        ),
+        contrast_floor=22,
     ),
     home.HomeSheetSpec(
         key="BarExteriorBrickAlbedo",

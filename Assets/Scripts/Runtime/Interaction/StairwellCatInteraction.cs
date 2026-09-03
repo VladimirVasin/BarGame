@@ -172,10 +172,35 @@ namespace BarPromenade
             TryOpen(interactor);
         }
 
+        /// <summary>
+        /// True while the cat is asking to be fed at all. Before the
+        /// calendar opens the quest — the whole of the first day — he
+        /// is just a cat on a rail: looking at him gives the one line
+        /// he has always given, and there is no tin, no menu and no
+        /// requirement anywhere near him.
+        ///
+        /// This is not only about the offer being tidy. The tin is
+        /// consumed the frame he puts his head in it, and completing
+        /// the quest silently fails while it is not active — so a
+        /// feeding allowed on day one would eat the can and leave the
+        /// hero locked in his own stairwell on day two with nothing to
+        /// feed the cat.
+        /// </summary>
+        public static bool IsFeedingOffered =>
+            GameSessionState.IsQuestActive(QuestId.FeedTheCat);
+
         public bool TryOpen(PlayerInteractor interactor)
         {
             if (!CanInteract(interactor))
             {
+                return false;
+            }
+
+            if (!IsFeedingOffered)
+            {
+                interactor.ShowFeedback(
+                    ResponsePromptKey,
+                    ResponseDurationSeconds);
                 return false;
             }
 

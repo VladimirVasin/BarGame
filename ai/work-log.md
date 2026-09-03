@@ -6,6 +6,272 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-03 — The pub counter, seated eye and material scale were reconciled
+
+The first real seated frame exposed a physical mismatch rather than a menu
+layout fault: the visible counter top stood at `1.56 m`, almost level with the
+authored `1.63 m` eye, so the lens looked through the worktop and saw the open
+booklet at a grazing angle. The visible top now sits at `1.16 m`, reconciled
+with the layout planner's `0.50 m` centre and `1.00 m` height. The hero stool top
+moved from `0.82` to `0.96 m`, the authored eye from `1.63` to `1.76 m`, and
+its look target from `2.02` to `1.86 m`. The menu and vessel docks follow the
+corrected top at `1.185` and `1.175 m`, so neither service prop floats at the
+old height.
+
+The shared focus mechanism remains common, but its scene adapters now keep
+their own framing. The bar opens its wider two-page, nine-row spread at
+`1.10 m` and FOV `60`; the smaller three-row Mountain Road cafe page remains
+at `0.50 m` and FOV `40`. Seating, wrap navigation, purchase, physical return
+and repeat delivery are unchanged.
+
+The prefab builder now reapplies every manifest-authored Unity anchor basis in
+prefab-root space. FBX conversion had left the menu origin in wrapper axes, so
+aligning it to the dock turned otherwise correct row sockets away from the
+reader; the physical page and its TMP face now agree after flattening.
+
+Generator `3.1.0` keeps `bar_interior_v3` at `179` semantic meshes / `12,804`
+triangles with signature
+`f7e7ada5e36bf24a505efcb710d3e2c724d9bc1bbfc2ca557042f1915ac85cce`.
+Its fifteen deterministic interior albedo families are authored at
+`1024 x 1024` and imported by Unity at `512 x 512`. Measured world-metric UVs
+preserve their scale through import instead of resetting each material's
+mapping; the same textures are wired into the `.blend` preview nodes. Every
+non-emissive interior part names one of all fifteen recognized sheets. This is
+a division into visibly different physical materials — plank, wallpaper,
+timber, leather, plaster, brass, mirror/patterned glass, carpet, cloth, painted
+metal, paper, bottle glass and ceramic — not a claim that separate PBR maps
+were added.
+
+The companion service library advances to `1.2.0` without changing its
+`29` meshes / `2,280` triangles; signature
+`4c98dce2cdfd017922c236f88849862f8823bd000380b62a26601dbc744c0026`.
+All its non-emissive bottle, vessel and menu parts resolve through five
+recognized sheets from the same measured family set. Runtime-cloned practical
+cables and shades keep the painted-metal sheet, while the dedicated transparent
+glass/liquid shaders sample the authored bottle-glass sheet and its measured
+albedo compensation instead of collapsing those parts back to flat colour.
+
+Verification: `build-bar-textures.py --verify` passed all `17` bar sheets;
+`BarSurfaceAppearanceTests` passed `21/21`, including every runtime practical;
+the focused texture-import and service-prop prefab contracts passed; the
+transparent vessel/stream and compensated bottle-surface PlayMode contracts
+passed `1/1` each; the focused seated counter-menu PlayMode regression passed
+with counter top `1.160 m`, seated/focused eye clearance `0.600/0.611 m`,
+nearest booklet surface `0.804 m`, and viewport `x 0.325..0.652`,
+`y 0.246..0.596` after the anchor-basis correction.
+
+## 2026-09-03 — The bar became a physical pub with the cafe's menu language
+
+The `22 x 16 x 4.8 m` layout, seven semantic zones and four circulation paths
+remain the authority, but the visible room no longer rebuilds permanent
+furniture from runtime boxes. Generator `3.0.0` emits
+`bar_interior_v3`: `179` semantic meshes / `12,804` triangles with the long
+panelled counter and its right return, brass foot rail and taps, mirror-and-
+bottle backbar, three booths and snug, four small round pub tables, reduced
+music pocket, heavy curtains, worn carpet/plank and low practical fixtures.
+Its signature is
+`67dad496b9bc118ccdfa29a348a50f53339ebe1e556ff1ee89ab5157f7406e39`.
+The British reference governs construction and wear, not country or lore:
+there is no flag, crest, pub name, brand or readable advertising.
+
+The same generator emits the separate passive `bar_service_props_v1`
+library (`1.1.0`, `29` meshes / `2,280` triangles, signature
+`a84f89aa6a9cbd4251a54ebb9e5f2103dcbf94c858e6832c28cff50c613d131c`).
+Nine bottle assemblies, five vessel forms, the pour stream and the open
+two-page menu now all come from Blender. Unity still owns selection colliders,
+liquid state, placement and interaction; the former
+`BarDrinkServiceMeshLibrary` runtime geometry authority is removed.
+
+The bar counter now uses the same physical interaction grammar as the Mountain
+Road cafe. `CounterSeat{Plan,Interaction,View}` owns the authored approach,
+world-rig sit/loop/stand and exact seated/pre-seat camera restoration. The new
+shared `CounterMenu{Model,Input,PageView,HintView,PropMotion}` layer owns the
+ordered lifecycle, wrap navigation, upright focus, world TMP/marker and
+grip-to-dock handoff; cafe and bar adapters supply only their rows and scene
+clock. The cafe remains three price-free, effect-free items. The bar lays its
+nine localized drink names and fixed prices over five left-page and four
+right-page anchors. A failed purchase keeps browsing with the existing reason;
+a successful atomic purchase marks `X`, releases the close-up, returns the
+same booklet and starts the existing physical bottle/vessel/pour/three-second-
+drink sequence. Completing service presents the menu again; standing exits
+through the authored physical pose.
+
+`bar_bartender_v2` replaces the active six-armed publican one for one. The new
+`1.75 m`, `39`-mesh / `1,136`-triangle NpcHumanV2 model has two ordinary arms,
+a dark-green waistcoat, rolled sleeves, apron and towel, and signature
+`011e1029d300de7ac1fdbabbecfe884cf590d88c14deb66408d299dd5359f2c8`.
+It reuses the cafe attendant's Wipe/Walk/Pour/Notice clips; the existing bar
+timeline drives a manual graph while the right hand follows the bottle and the
+left follows the menu or vessel. The provider keeps the byte-preserved
+six-armed prefab as an inactive legacy reference, so on-disk humanoid designs
+become `27` and the full appearance catalog `29` (`8` bizarre / `21` normal)
+without growing the active cast.
+
+Verification recorded during implementation: Blender validate-only passed for
+the final pub (`179` meshes / `12,804` triangles), service (`29` / `2,280`) and
+unchanged facade (`38` / `4,308`) manifests. Centralized Unity asset setup
+completed without compilation or contract errors. Focused EditMode
+`CounterSeatPlanTests` passed `3/3`; focused PlayMode checks passed `1/1` for
+the ordinary waiter-animation presentation and `1/1` for the physical
+nine-price menu, including insufficient funds, purchase, service and repeat
+delivery. Those checks exposed and fixed imported-empty seat orientation,
+repeat-delivery bottle selection and the towel/menu handoff overlap. The real
+`BarInterior` capture fixture then passed `1/1`; all eight generated views were
+inspected for the room, counter, booths, lighting and ordinary two-armed
+bartender. No complete Unity suite or player build was run in fast mode.
+
+## 2026-09-03 — The menu's lettering stood upright inside the paper
+
+The cafe menu opened on three lines that were not there. On screen each dish
+showed a few millimetres of its tallest letters and nothing else — the first
+third of every line missing, the rest a smear the colour of the page.
+
+**The lettering was 89.5 degrees out.** Each text anchor carries a
+`unity_local_forward` / `_up` pair, and the presentation pushed the forward
+through `ModelRoot.TransformDirection` to get the page normal. But that pair is
+written in **Unity** axes while the imported model root's own local space is
+the **model's** — Y and Z swapped — so the normal came back as `(0.10, 0, 1)`
+where the page's own is `(0.10, 1, 0)`. Every line was a signboard standing
+upright in the paper, sunk to between `-17.8 mm` and `+6.3 mm` of the page
+plane, showing only the sliver that cleared it. The selection mark was a
+`5 mm` plate on edge and invisible.
+
+The page basis is now **measured from the three anchors themselves**, which are
+real transforms and cannot disagree with the model they came from: the
+selection mark and item `00` share a line, items `00` and `01` share a column,
+and three points not in a line pin the plane exactly. Every glyph corner now
+sits `1.50 mm` above it, flat, and survives any re-export.
+
+Two layout faults were underneath. The item anchors sit on the right page's own
+**centre** line (`x = 0.130` of a `0.005..0.250` leaf), but the boxes were
+built `TextAlignmentOptions.Left`, which hung the text toward the spine, left
+eight blank centimetres at the outer edge, and printed the first letter over
+the very margin mark the `MenuText.Selection` anchor exists to hold. The rows
+are centred now, and the mark is set beside the chosen row's own left edge
+rather than at a fixed margin — the rows differ by four centimetres of length,
+so a fixed mark reads as a speck on the paper instead of a cursor. It is also
+drawn at `0.24` against the lines' `0.15`, because a bullet is a fifth of an em.
+
+`MountainRoadCafeMenuPresentation.OrientTextForFocus` is gone. It re-derived
+the same broken basis from the same authored vectors at focus time, so it
+could only ever reproduce the fault; with the measured basis the rows read
+left to right, in order, from the seated view by construction.
+
+**Why the suite did not catch it.** `AssertReadableWorldText` already checked
+that every glyph faces the camera, is not mirrored, is not upside down, fits
+one line and lands on screen — and a quad standing on edge in the page passes
+all five. The missing assertion is now permanent:
+`AssertTextLiesOnThePage` measures the page plane from the anchors and demands
+every glyph corner rest within `0..6 mm` above it, plus the text plane's own
+normal within one degree of the page's.
+
+Verification: PlayMode `3/3` — the two existing menu scenarios plus
+`MountainRoadCafeMenuVisualCapturePlayModeTests`, a new explicit capture
+fixture (`Captures/CafeMenu/`) that photographs the seated close-up, an
+overhead reference and a three-quarter view, and logs each line's clearance
+above the page plane. It is what found this: the numbers named the fault in one
+run after the seated screenshot only showed that something was wrong. Two runs
+in between died on the neighbouring agent's half-written `CounterSeatPlan.cs`
+and `BarBartenderPresentation.cs`, neither in this change set.
+
+Still open, and deliberately not done here: the **left page is blank**. Filling
+it wants text anchors authored on the left leaf, which tilts the other way and
+so needs its own plane — a Blender re-author and FBX re-export, not a runtime
+change.
+
+## 2026-09-03 — The cafe menu gained a focused view and a physical return
+
+The existing `Menu.Hero` asset and localization remain unchanged: generator
+`1.2.1`, `61` meshes / `5,794` triangles / `52` anchors / seven dynamic props
+and signature
+`9f2b0c86c31d2d2b872b954fefafc8a8958d8a060d63b22dbf440e9efdb70451`.
+Once the service frame reports `HeroMenuPlaced`, the existing seated-view
+owner blends its fixed camera over `0.45 s` along the current seated sight
+line to a `40`-degree close-up `0.50 m` from the authored page. Its up axis is
+projected from world-up, so imported page orientation cannot turn the push-in
+into an overhead or rolled shot. While that focus has any weight, all arrow,
+right-mouse and right-stick look sampling is blocked; `W/S`, D-pad,
+`Space`/West and the existing `E`/`Enter`/South stand path remain live.
+
+The pure menu lifecycle now continues through `Retrieving -> Closed`.
+Confirmation preserves the first selected identifier and visible `X`, releases
+the close-up back to the saved seated view, and idempotently requests return.
+Standing releases the entire seated view immediately, restores the exact
+pre-seat fixed/follow camera and requests the same return without committing an
+item. Either route is safe while delivery or another service beat is finishing.
+
+Retrieval is serialized on the existing attendant clock as
+`WalkToMenu -> TakeMenu` (`2.5 s`) `-> CarryMenuBack`. The booklet remains on
+the counter until the physical pickup, then follows the right-hand socket and
+is hidden only after reaching the service dock. The retrieved flag prevents a
+second handoff in the same scene, and neither route changes the two patron cups,
+conversation, husband interruption, order/economy/inventory, food/drink,
+dialogue, reaction, audio or story state.
+The attendant alone uses `AlwaysAnimate`, so the hand and carried booklet keep
+their contact even while the locked menu close-up leaves the worker off-screen.
+
+Focused EditMode and PlayMode coverage now names the focus geometry, look lock,
+both camera-restoration branches, idempotent queueing and physical hand contact.
+The first visual pass exposed that a page-normal pose produced an overhead,
+apparently inverted shot instead of a push-in. The focus now stays on the ray
+from the pre-focus seated camera to the page; EditMode and the real authored
+PlayMode regression assert same-side approach, above-counter framing and zero
+roll. A following close-up exposed two independent page faults: the shared
+props atlas put its green appliance stripe through a menu row, while the text
+basis could expose reversed or inverted glyphs. The `menu_pages` role now uses
+plain warm paper through its existing material property block; each TMP face
+is aimed toward the real focus camera and its right axis is matched to camera
+right. The PlayMode regression projects every rendered glyph into viewport
+space, requires left-to-right/upright/full single-line text, and verifies the
+page no longer samples the props texture.
+
+After both visual corrections,
+`CounterSeat_FocusesConfirmsAndRetrievesWorldMenu` passed `1/1`; the preceding
+lifecycle verification of
+`CounterSeat_StandingWithoutChoiceRetrievesMenuAndRestoresCamera` also passed
+`1/1` and its unaffected path was not rerun. EditMode suites, Blender, a player
+build and broader regression suites were intentionally not run in fast mode.
+
+## 2026-09-03 — The mountain cafe menu became a physical object
+
+Generator `1.2.1` adds one thin open `Menu.Hero` assembly to the measured cafe
+instead of drawing a detached screen panel. Its cover and pages add two meshes
+and `112` triangles; `MenuDock.Hero`, `Grip.HeroMenu`, `ServiceRail.Hero`, three
+item anchors and one selection anchor add seven anchors. The complete asset is
+therefore `61` meshes / `5,794` triangles / `52` anchors / seven dynamic props,
+with signature
+`9f2b0c86c31d2d2b872b954fefafc8a8958d8a060d63b22dbf440e9efdb70451`.
+The menu begins hidden, owns no collider or Rigidbody, and keeps all text just
+above its real page plane. The napkin dispenser, sugar shaker and salt shaker
+moved together from local `Z=-1.20` to `Z=-0.88`, clearing the hero-side dock
+without moving the paper stack or the counter.
+
+Completing the existing stool sit now requests a single service-timeline beat.
+The silent attendant uses the existing Notice/Walk clips, carries the booklet
+at the right-hand socket with the coffee pot explicitly hidden, places it at
+the authored counter dock, then returns to Wipe. A pure
+`MountainRoadCafeMenuModel` owns `Hidden -> Delivering -> Open -> Confirmed`;
+the controller opens input only after the placement frame and the world-space
+presentation writes three localized item names and the selection mark onto the
+page. This request queues behind an in-progress pair refill and does
+not alter either cup, the pair conversation or the husband's interruption.
+
+While the booklet is open, `W/S` or D-pad wraps the three rows and
+`Space`/gamepad West confirms. Those keys avoid the existing
+`E`/`Enter`/gamepad South stand action. The arrow keys, right-mouse drag and
+right stick all retain the same bounded seated-camera look throughout.
+Confirmation only locks the first chosen identifier and draws an `X`. It creates no order,
+product, payment, inventory item, food, drink, dialogue, reaction, audio or
+session/story state.
+
+Blender validate-only and the full deterministic generation both completed
+green. The focused PlayMode regression
+`CounterSeat_DeliversWorldMenuAndConfirmsWithoutStanding` passed `1/1` in its
+final post-import run. It covers hand-to-book contact at the carry/place edge,
+world-page readability, `W/S` selection, arrow-key camera motion without a menu
+change, `Space` confirmation and remaining seated. Complete suites and a player
+build were intentionally not run in fast mode.
+
 ## 2026-09-03 — The mountain cafe kitchen closed its false rear aisle
 
 The visible rear lining is at local `Z=5.2725`, while the first kitchen pass
@@ -44,6 +310,104 @@ emissive-lens binding and task/cast cone coverage. The explicit graphical
 frame was reviewed for wall contact, appliance surfaces, a visibly burning
 lens and a real light pool across the stove and pan. Complete suites and a
 player build were intentionally not run.
+
+## 2026-09-03 — The calendar opens events, and the cat waits for day two
+
+`FeedTheCat` was put up by `QuestLogState.ResetWithStarterQuests`, which made it
+the first thing a new game did — and the descent blocker with it, standing in
+the hero's own stairwell from the moment he woke. The user asked for the first
+day to carry no feeding check and no obstacle to leaving the house, and then for
+the general base rather than a one-off.
+
+`GameDaySchedule` is that base: a pure `event -> first day` table, looked up by
+id, knowing nothing about what an event does. `GameSessionState.SyncDayEvents`
+walks it on the clock's day rollover and on the debug day jump, and
+`ApplyDayEvent` is the single place a row becomes a change in the world. Events
+fire once per session, tracked in a set rather than left to each event to be
+idempotent on its own — quest activation happens to be safe to repeat, the next
+dated event will not be, and that should not have to be remembered. A new game
+clears the set and re-syncs, so anything dated to day one still opens at once.
+
+Three things worth keeping:
+
+- **The tutorial doc has been unwalkable this whole time.** Step 6 of
+  `ai/tutorial-scenario.md` has the hero descend the stairwell and use the
+  street door on day one, which the blocker made impossible. The dating fixes a
+  contradiction rather than introducing one.
+- **Leaving the feeding available on day one would have been a trap.** All
+  three existing gates already read `IsQuestActive`, so not activating the
+  quest was enough for the descent blocker and the tin reservation. The feeding
+  itself was not gated — and the tin is consumed the frame the cat's head goes
+  in, while `TryCompleteQuest` returns false when the quest is not active. A
+  day-one feeding would have eaten the can, recorded nothing, and locked the
+  hero in his own stairwell on day two with no way down. `TryOpen` now answers
+  with the ordinary «Кот молча смотрит» line and opens no menu before the quest
+  exists.
+- **`FeedTheCat` still does not recur daily**, which §9's «Каждый день»
+  describes; it is not a repeatable quest. That was already true and is left
+  alone.
+
+Two story-bible facts moved with the code (§2's «первый квест новой игры», §9's
+«Каждый день»), plus `systems-map`, `README` and an accepted decision in
+`architecture-notes`.
+
+Verification: `GameDayScheduleTests` (new), `QuestLogTests`,
+`GameSessionStateTests` and `StairwellCatInteractionTests` passed `70/70` in
+`0.59 s`. Complete suites, PlayMode and a player build were intentionally not
+run.
+
+Test edits worth naming, because each marks a place the old start date was
+baked in as an assumption rather than stated: `QuestLogTests` opened on
+`NewGame_ActivatesTheFeedTheCatQuest`, now split into
+`NewGame_LeavesTheFirstDayEmpty` and `SecondDay_OpensTheFeedTheCatQuest`;
+`GameSessionStateTests.StewReservation_LastsExactlyAsLongAsTheCatQuest` asserted
+"a new game opens owing the stairwell cat a tin" and now proves both halves
+across the day boundary; and `StairwellCatInteractionTests.SetUp` begins a new
+game, so all five feeding-flow tests would have been handed the day-one refusal
+— its setup now moves to the cat's own day, and a new
+`FirstDay_GivesTheCatsLineAndOpensNoMenu` covers what day one actually does.
+
+This work was written while the concurrent Codex session in this checkout was
+mid-feature on the mountain cafe menu, which left the shared tree uncompilable
+for about forty minutes — `MountainRoadCafeAssetSetup.cs` against a
+`menu_contract` field, then `MountainRoadRoot.cs` against a
+`MountainRoadCafeMenuController`, then `MountainRoadCafeMenuPlayModeTests.cs`
+against a `Unity.TextMeshPro` reference its asmdef did not carry. None of those
+files belong to this work; the run above is from after that session finished. By
+user decision the other session's files were left alone rather than unblocked
+from here.
+
+## 2026-09-03 — The church interior gets its own theme slot
+
+The church is its own scene, so its theme is a scene theme like the bar's and
+the supermarket's, not a place theme like the cemetery's — that one waits
+silent inside City for the hero to cross onto the grounds, which is not what
+walking in through a door is. `ChurchMusicPlayer` is therefore four lines over
+`SceneMusicPlayer`, raised on `ChurchInteriorRoot` beside the atmosphere.
+
+Nothing had to be registered anywhere: `SceneTransitionService` finds every
+`IMusicMixSource` in the active scene by type when it leaves, so the theme
+hands its tail to `MusicMix` on the way out for free. The base player already
+treats a missing clip as `Unavailable`, so until a file lands the church is
+exactly as quiet as it was.
+
+`MusicMix.ChurchOutputVolume` takes `DefaultOutputVolume`, the same placeholder
+the cemetery slot has carried since it was cut. The other six trims were
+measured to land near `-30.5 LUFS` after the Music and Master buses; there is
+nothing to measure yet, and a guessed number would only look as if it had been.
+Both the README beside the folder and `MusicMix` now say so where somebody
+will read it when the track arrives.
+
+Verification: `ChurchInteriorPlayModeTests` `2/3`, with the music contract
+added to `AssertInteriorContract` — the player exists, sits in THIS scene, is
+an `IMusicMixSource`, and with no track reports `Unavailable` at zero gain.
+**The third test fails for an unrelated reason and failed identically before
+this work**: `ChurchInterior_BootsAndCompletesDoorRoundTrip` is the only church
+test that returns to City, and it trips `LogAssert` on a City warning — "Only
+custom filters can be played … (Car Rear Axle Audio)" from `LastRouteCarAudio`.
+Confirmed by stashing this change and re-running the single test against
+`083b64a`: same failure, same message. Not repaired here; it belongs to the
+car's audio rig.
 
 ## 2026-09-03 — The keystrokes carry further, and start falling later
 

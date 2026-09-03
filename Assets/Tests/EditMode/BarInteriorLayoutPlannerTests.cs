@@ -30,7 +30,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(new Vector3(0f, 0.9f, -7.25f)));
             Assert.That(
                 plan.CounterSize,
-                Is.EqualTo(new Vector3(11.2f, 1.4f, 1f)));
+                Is.EqualTo(new Vector3(11.2f, 1f, 1f)));
             Assert.That(
                 plan.CounterStationPosition,
                 Is.EqualTo(new Vector3(-1.15f, 0.9f, 4.75f)));
@@ -41,7 +41,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(plan.Paths, Has.Count.EqualTo(4));
             Assert.That(
                 plan.FurnitureFootprints,
-                Has.Count.EqualTo(12));
+                Has.Count.EqualTo(13));
             Assert.That(plan.NpcAnchors, Has.Count.EqualTo(12));
             Assert.That(
                 BarInteriorLayoutValidator.MaximumNpcAnchors,
@@ -78,6 +78,24 @@ namespace BarPromenade.Tests.EditMode
                 counter.Center,
                 Is.EqualTo(plan.CounterPosition));
             Assert.That(counter.Size, Is.EqualTo(plan.CounterSize));
+            Assert.That(
+                plan.TryGetFurniture(
+                    BarInteriorFurnitureKind.CounterReturn,
+                    out BarInteriorFurnitureFootprint counterReturn),
+                Is.True);
+            Assert.That(
+                counterReturn.Bounds,
+                Is.EqualTo(new Rect(4.56f, 2.495f, 1.04f, 3.25f)));
+            Assert.That(
+                plan.FurnitureFootprints.Count(
+                    item => item.Kind == BarInteriorFurnitureKind.PubTable),
+                Is.EqualTo(4));
+            Assert.That(
+                plan.FurnitureFootprints
+                    .Where(item =>
+                        item.Kind == BarInteriorFurnitureKind.PubTable)
+                    .All(item => Mathf.Approximately(item.Height, 0.82f)),
+                Is.True);
             Assert.DoesNotThrow(
                 () => BarInteriorLayoutValidator.ValidateOrThrow(plan));
         }

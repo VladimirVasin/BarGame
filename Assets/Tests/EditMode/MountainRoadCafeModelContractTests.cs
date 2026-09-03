@@ -17,10 +17,10 @@ namespace BarPromenade.Tests.EditMode
             "Assets/MountainRoad/Cafe/Models/MountainRoadCafe3D.json";
         private const string ModelPath =
             "Assets/MountainRoad/Cafe/Models/MountainRoadCafe3D.fbx";
-        private const int ExpectedMeshCount = 59;
-        private const int ExpectedTriangleCount = 5682;
-        private const int ExpectedAnchorCount = 45;
-        private const int ExpectedPropCount = 6;
+        private const int ExpectedMeshCount = 61;
+        private const int ExpectedTriangleCount = 5794;
+        private const int ExpectedAnchorCount = 52;
+        private const int ExpectedPropCount = 7;
         private const int ExpectedColliderDescriptorCount = 17;
         private static readonly int BaseMapId =
             Shader.PropertyToID("_BaseMap");
@@ -88,6 +88,7 @@ namespace BarPromenade.Tests.EditMode
                 "Broad coplanar overlaps reintroduce visible flicker.");
             AssertDoorHeaderClosesFacade(manifest);
             AssertPassiveKitchenManifest(manifest);
+            AssertPassiveHeroMenuManifest(manifest);
             Assert.That(manifest.stool_count, Is.EqualTo(7));
             Assert.That(manifest.cup_assembly_count, Is.EqualTo(2));
             Assert.That(manifest.colliders, Is.False);
@@ -219,6 +220,139 @@ namespace BarPromenade.Tests.EditMode
                     .And.Contain("CuttingBoardDock")
                     .And.Contain("StovePanDock")
                     .And.Contain("Light.ColdService"));
+        }
+
+        private static void AssertPassiveHeroMenuManifest(
+            CafeManifest manifest)
+        {
+            CafeMenuContract contract = manifest.menu_contract;
+            Assert.That(contract, Is.Not.Null);
+            Assert.That(contract.dynamic_prop, Is.EqualTo("Menu.Hero"));
+            Assert.That(contract.owner, Is.EqualTo("HeroMenu"));
+            Assert.That(contract.initially_visible, Is.False);
+            Assert.That(contract.runtime_driver, Is.False);
+            Assert.That(contract.dock_anchor, Is.EqualTo("MenuDock.Hero"));
+            Assert.That(contract.grip_anchor, Is.EqualTo("Grip.HeroMenu"));
+            Assert.That(
+                contract.service_rail_anchor,
+                Is.EqualTo("ServiceRail.Hero"));
+            Assert.That(
+                contract.item_anchors,
+                Is.EqualTo(new[]
+                {
+                    "MenuText.Item.00",
+                    "MenuText.Item.01",
+                    "MenuText.Item.02",
+                }));
+            Assert.That(
+                contract.selection_anchor,
+                Is.EqualTo("MenuText.Selection"));
+            AssertVectorNear(
+                contract.text_forward_local,
+                new Vector3(0.095846f, 0.995396f, 0f),
+                "menu page normal");
+            AssertVectorNear(
+                contract.text_up_local,
+                Vector3.forward,
+                "menu page up");
+            Assert.That(
+                contract.text_line_width_m,
+                Is.EqualTo(0.18f).Within(0.0001f));
+            Assert.That(
+                contract.text_line_height_m,
+                Is.EqualTo(0.028f).Within(0.0001f));
+
+            foreach (var expected in new[]
+                     {
+                         new
+                         {
+                             Name = "Cafe_MenuCover",
+                             Role = "menu_cover",
+                             Sheet = "CafeCounterDetail",
+                             BaseSurface = "Timber",
+                         },
+                         new
+                         {
+                             Name = "Cafe_MenuPages",
+                             Role = "menu_pages",
+                             Sheet = "CafePropsDetail",
+                             BaseSurface = "PaleEnamel",
+                         },
+                     })
+            {
+                CafePart part = manifest.parts.Single(candidate =>
+                    candidate.name == expected.Name);
+                Assert.That(part.role, Is.EqualTo(expected.Role));
+                Assert.That(part.group, Is.EqualTo("dynamic_prop"));
+                Assert.That(part.sheet, Is.EqualTo(expected.Sheet));
+                Assert.That(part.base_surface, Is.EqualTo(expected.BaseSurface));
+                Assert.That(part.initially_visible, Is.False);
+            }
+
+            CafeDynamicProp menu = manifest.dynamic_props.Single(prop =>
+                prop.name == "Menu.Hero");
+            Assert.That(menu.role, Is.EqualTo("menu_booklet"));
+            Assert.That(menu.owner, Is.EqualTo("HeroMenu"));
+            Assert.That(menu.root_name, Is.EqualTo("PROP_Menu.Hero"));
+            Assert.That(menu.lift_root_name, Is.Empty);
+            Assert.That(menu.liquid_part, Is.Empty);
+            Assert.That(
+                menu.part_names,
+                Is.EqualTo(new[] { "Cafe_MenuCover", "Cafe_MenuPages" }));
+
+            CafeAnchor dock = manifest.anchors.Single(anchor =>
+                anchor.name == "MenuDock.Hero");
+            Assert.That(dock.role, Is.EqualTo("menu_dock"));
+            AssertVectorNear(
+                dock.unity_local_position,
+                new Vector3(-0.38f, 1.02f, -1.38f),
+                dock.name);
+            CafeAnchor grip = manifest.anchors.Single(anchor =>
+                anchor.name == "Grip.HeroMenu");
+            Assert.That(grip.role, Is.EqualTo("menu_grip"));
+            AssertVectorNear(
+                grip.unity_local_position,
+                new Vector3(0f, 0.042f, 0.130f),
+                grip.name);
+            AssertVectorNear(
+                grip.unity_local_forward,
+                Vector3.back,
+                $"{grip.name} forward");
+            CafeAnchor serviceRail = manifest.anchors.Single(anchor =>
+                anchor.name == "ServiceRail.Hero");
+            Assert.That(serviceRail.role, Is.EqualTo("service_rail"));
+            AssertVectorNear(
+                serviceRail.unity_local_position,
+                new Vector3(-0.38f, 0f, -0.76f),
+                serviceRail.name);
+
+            foreach (var expected in new[]
+                     {
+                         new { Name = "MenuText.Item.00", X = 0.130f, Y = 0.029983f, Z = 0.035f },
+                         new { Name = "MenuText.Item.01", X = 0.130f, Y = 0.029983f, Z = -0.020f },
+                         new { Name = "MenuText.Item.02", X = 0.130f, Y = 0.029983f, Z = -0.075f },
+                         new { Name = "MenuText.Selection", X = 0.035f, Y = 0.039088f, Z = 0.035f },
+                     })
+            {
+                CafeAnchor anchor = manifest.anchors.Single(candidate =>
+                    candidate.name == expected.Name);
+                Vector3 position = ToVector(anchor.unity_local_position);
+                string expectedRole = expected.Name == "MenuText.Selection"
+                    ? "menu_text_selection"
+                    : "menu_text_item";
+                Assert.That(anchor.role, Is.EqualTo(expectedRole));
+                Assert.That(position.x, Is.EqualTo(expected.X).Within(0.0001f));
+                Assert.That(position.y, Is.EqualTo(expected.Y).Within(0.0001f));
+                Assert.That(position.z, Is.EqualTo(expected.Z).Within(0.0001f));
+                AssertVectorNear(
+                    anchor.unity_local_forward,
+                    ToVector(contract.text_forward_local),
+                    $"{anchor.name} forward");
+                AssertVectorNear(
+                    anchor.unity_local_up,
+                    ToVector(contract.text_up_local),
+                    $"{anchor.name} up");
+            }
         }
 
         private static void AssertDoorHeaderClosesFacade(
@@ -382,6 +516,7 @@ namespace BarPromenade.Tests.EditMode
 
             AssertCupBindings(registry, manifest);
             AssertPassiveKitchenBindings(registry);
+            AssertPassiveHeroMenuBindings(registry);
             registry.ApplyAppearance();
             AssertSharedTransparentGlass(registry);
             AssertApplianceAppearance(registry);
@@ -609,6 +744,104 @@ namespace BarPromenade.Tests.EditMode
                 "The visible task fixture must stay directly above the stove.");
         }
 
+        private static void AssertPassiveHeroMenuBindings(
+            MountainRoadCafeAssetRegistry registry)
+        {
+            Assert.That(
+                registry.TryGetProp(
+                    "Menu.Hero",
+                    out MountainRoadCafeDynamicPropBinding menu),
+                Is.True);
+            Assert.That(menu.Role, Is.EqualTo("menu_booklet"));
+            Assert.That(menu.Owner, Is.EqualTo("HeroMenu"));
+            Assert.That(menu.PropRoot, Is.Not.Null);
+            Assert.That(menu.LiftRoot, Is.Null);
+            Assert.That(menu.GripAnchor, Is.Not.Null);
+            Assert.That(menu.GripAnchor.IsChildOf(menu.PropRoot), Is.True);
+            Assert.That(menu.PourTarget, Is.Null);
+            Assert.That(menu.LiquidTransform, Is.Null);
+            Assert.That(menu.LiquidRenderer, Is.Null);
+            Assert.That(menu.Renderers.Count, Is.EqualTo(2));
+            Assert.That(
+                menu.Renderers.Select(renderer => renderer.name),
+                Is.EquivalentTo(new[] { "Cafe_MenuCover", "Cafe_MenuPages" }));
+            Assert.That(
+                menu.Renderers.All(renderer => renderer.enabled == false),
+                Is.True,
+                "The menu must remain hidden until runtime delivers it.");
+            Assert.That(
+                menu.Renderers.All(renderer =>
+                    renderer.GetComponent<Collider>() == null &&
+                    renderer.GetComponent<Rigidbody>() == null),
+                Is.True);
+
+            Assert.That(
+                registry.TryGetAnchor(
+                    "MenuDock.Hero",
+                    out Transform menuDock),
+                Is.True);
+            Assert.That(
+                Vector3.Distance(menu.PropRoot.position, menuDock.position),
+                Is.LessThan(0.002f));
+            Assert.That(menuDock.IsChildOf(menu.PropRoot), Is.False);
+            Assert.That(
+                Vector3.Distance(
+                    menu.GripAnchor.localPosition,
+                    new Vector3(0f, 0.042f, 0.130f)),
+                Is.LessThan(0.0001f));
+
+            Bounds menuBounds = menu.Renderers[0].bounds;
+            menuBounds.Encapsulate(menu.Renderers[1].bounds);
+            Renderer counterTop = RequirePart(
+                registry,
+                "Cafe_CounterTop").Renderer;
+            Assert.That(
+                menuBounds.min.y - counterTop.bounds.max.y,
+                Is.EqualTo(0.004f).Within(0.001f));
+            Assert.That(menuBounds.size.x, Is.EqualTo(0.54f).Within(0.012f));
+            Assert.That(menuBounds.size.z, Is.EqualTo(0.32f).Within(0.002f));
+
+            foreach (string anchorName in new[]
+                     {
+                         "MenuText.Item.00",
+                         "MenuText.Item.01",
+                         "MenuText.Item.02",
+                         "MenuText.Selection",
+                     })
+            {
+                Assert.That(
+                    registry.TryGetAnchor(anchorName, out Transform anchor),
+                    Is.True);
+                Assert.That(anchor.IsChildOf(menu.PropRoot), Is.True, anchorName);
+                MountainRoadCafeAnchorBinding binding = registry.Anchors.Single(
+                    candidate => candidate.AnchorName == anchorName);
+                Assert.That(
+                    Vector3.Distance(
+                        binding.AuthoredForward,
+                        new Vector3(0.095846f, 0.995396f, 0f)),
+                    Is.LessThan(0.0001f),
+                    anchorName);
+                Assert.That(
+                    Vector3.Distance(binding.AuthoredUp, Vector3.forward),
+                    Is.LessThan(0.0001f),
+                    anchorName);
+            }
+
+            Assert.That(
+                registry.TryGetAnchor(
+                    "ServiceRail.Hero",
+                    out Transform serviceRail),
+                Is.True);
+            Vector3 serviceRailLocal = registry.transform.InverseTransformPoint(
+                serviceRail.position);
+            Assert.That(serviceRailLocal.x,
+                Is.EqualTo(-0.38f).Within(0.001f));
+            Assert.That(serviceRailLocal.y, Is.Zero.Within(0.001f));
+            Assert.That(serviceRailLocal.z,
+                Is.EqualTo(-0.76f).Within(0.001f));
+            Assert.That(serviceRail.IsChildOf(menu.PropRoot), Is.False);
+        }
+
         private static MountainRoadCafePartBinding RequirePart(
             MountainRoadCafeAssetRegistry registry,
             string sourceName)
@@ -624,6 +857,23 @@ namespace BarPromenade.Tests.EditMode
             return Vector2.Distance(
                 new Vector2(first.x, first.z),
                 new Vector2(second.x, second.z));
+        }
+
+        private static Vector3 ToVector(float[] values)
+        {
+            Assert.That(values, Has.Length.EqualTo(3));
+            return new Vector3(values[0], values[1], values[2]);
+        }
+
+        private static void AssertVectorNear(
+            float[] actual,
+            Vector3 expected,
+            string context)
+        {
+            Assert.That(
+                Vector3.Distance(ToVector(actual), expected),
+                Is.LessThan(0.0001f),
+                context);
         }
 
         private static void AssertCupBindings(
@@ -756,11 +1006,30 @@ namespace BarPromenade.Tests.EditMode
             public int stool_count;
             public int cup_assembly_count;
             public CafeKitchenContract kitchen_contract;
+            public CafeMenuContract menu_contract;
             public CafeTexture[] textures;
             public CafePart[] parts;
             public CafeAnchor[] anchors;
             public CafeDynamicProp[] dynamic_props;
             public CafeCollider[] collider_descriptors;
+        }
+
+        [Serializable]
+        private sealed class CafeMenuContract
+        {
+            public string dynamic_prop;
+            public string owner;
+            public bool initially_visible;
+            public bool runtime_driver;
+            public string dock_anchor;
+            public string grip_anchor;
+            public string service_rail_anchor;
+            public string[] item_anchors;
+            public string selection_anchor;
+            public float[] text_forward_local;
+            public float[] text_up_local;
+            public float text_line_width_m;
+            public float text_line_height_m;
         }
 
         [Serializable]
@@ -791,6 +1060,7 @@ namespace BarPromenade.Tests.EditMode
             public string uv_strategy;
             public bool emissive;
             public bool shadows;
+            public bool initially_visible;
             public float[] bounds_min;
             public float[] bounds_max;
         }
@@ -799,6 +1069,10 @@ namespace BarPromenade.Tests.EditMode
         private sealed class CafeAnchor
         {
             public string name;
+            public string role;
+            public float[] unity_local_position;
+            public float[] unity_local_forward;
+            public float[] unity_local_up;
         }
 
         [Serializable]

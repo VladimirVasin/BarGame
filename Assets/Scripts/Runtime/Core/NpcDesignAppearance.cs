@@ -57,8 +57,8 @@ namespace BarPromenade
     /// beside `signature_anatomy` in each model's own manifest, and that is
     /// where it should end up. It is not there yet because the generators
     /// have no manifest-only mode: `main()` always exports the FBX and saves
-    /// the blend, so adding one JSON key would mean twenty-seven Blender
-    /// runs rewriting twenty-eight tracked FBXs, blends and preview PNGs.
+    /// the blend, so adding one JSON key would mean twenty-eight Blender
+    /// runs rewriting twenty-nine tracked FBXs, blends and preview PNGs.
     /// Seventeen of the pedestrian manifests also carry a stale
     /// `generator_version`, which sits inside the build signature, so their
     /// signatures would move on rebuild whatever the new field did — and
@@ -156,6 +156,12 @@ namespace BarPromenade
                 ["cafe_attendant_v2"] = NpcDesignAppearance.Normal,
 
                 // --- Dedicated one-offs ----------------------------------
+                // The active replacement is an ordinary two-armed publican;
+                // his waistcoat, apron and towel are clothing and props.
+                ["bar_bartender_v2"] = NpcDesignAppearance.Normal,
+
+                // Retained as a dormant design rather than overwritten when
+                // the ordinary bartender becomes active.
                 ["six_armed_bartender_v1"] = NpcDesignAppearance.Bizarre,
 
                 // The production supermarket clerk keeps the Watcher's

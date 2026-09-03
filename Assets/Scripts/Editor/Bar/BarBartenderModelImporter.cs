@@ -10,10 +10,15 @@ namespace BarPromenade.Editor
     {
         private void OnPreprocessModel()
         {
-            if (!string.Equals(
-                    assetPath,
-                    BarBartenderAssetSetup.ModelPath,
-                    StringComparison.OrdinalIgnoreCase) ||
+            bool isLegacy = string.Equals(
+                assetPath,
+                BarBartenderAssetSetup.ModelPath,
+                StringComparison.OrdinalIgnoreCase);
+            bool isOrdinary = string.Equals(
+                assetPath,
+                BarBartenderV2AssetSetup.ModelPath,
+                StringComparison.OrdinalIgnoreCase);
+            if ((!isLegacy && !isOrdinary) ||
                 !(assetImporter is ModelImporter importer))
             {
                 return;
@@ -75,7 +80,9 @@ namespace BarPromenade.Editor
         {
             if (NpcHumanV2AssetSetup.IsAnyPipelineBuilding ||
                 Player3DAssetSetup.IsBuilding ||
-                Player3DV2AssetSetup.IsBuilding)
+                Player3DV2AssetSetup.IsBuilding ||
+                BarBartenderAssetSetup.IsBuilding ||
+                BarBartenderV2AssetSetup.IsBuilding)
             {
                 return;
             }
@@ -83,6 +90,35 @@ namespace BarPromenade.Editor
             for (int index = 0; index < importedAssets.Length; index++)
             {
                 string importedPath = importedAssets[index];
+                if (string.Equals(
+                        importedPath,
+                        BarBartenderV2AssetSetup.ModelPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        BarBartenderV2AssetSetup.ManifestPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        BarBartenderV2AssetSetup.AnimationPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        BarBartenderV2AssetSetup.PlayerModelPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        BarBartenderV2AssetSetup.SharedMaterialPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        BarBartenderV2AssetSetup.LegacyPrefabPath,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    BarBartenderV2AssetSetup
+                        .QueueBuildWhenSourcesExist();
+                }
+
                 if (string.Equals(
                         importedPath,
                         BarBartenderAssetSetup.ModelPath,

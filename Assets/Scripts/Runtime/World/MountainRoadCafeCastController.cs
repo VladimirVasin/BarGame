@@ -31,6 +31,7 @@ namespace BarPromenade
         public const float MaximumSchedulerStepSeconds = 0.25f;
         public const float ActivationRadius = 16f;
         public const bool ServesHero = false;
+        public const bool OffersHeroMenu = true;
         private const string LeftCupSocketName = "SOCKET_Vessel.L";
 
         // The shared Hero/NPC V2 rig exposes its cup-shaped right-hand
@@ -84,6 +85,8 @@ namespace BarPromenade
         public Transform AttendantMotionRoot => attendant != null
             ? attendant.transform
             : null;
+        public Transform AttendantMenuHandSocket => attendant?.Registry
+            ?.FindModelTransform(RightCupSocketName);
 
         public Transform GetCupHandSocket(MountainRoadCafeCastRole role)
         {
@@ -260,6 +263,41 @@ namespace BarPromenade
         public bool TryRequestHeroNotice()
         {
             if (!IsInitialized || !timeline.TryRequestHeroNotice())
+            {
+                return false;
+            }
+
+            IsTimelineArmed = true;
+            ApplyFrame(timeline.Frame);
+            return true;
+        }
+
+        /// <summary>
+        /// Requests the accepted one-shot physical menu handoff. The pure
+        /// service clock queues it behind any pour already in progress and
+        /// never assigns the hero a cup target.
+        /// </summary>
+        public bool TryRequestHeroMenu()
+        {
+            if (!IsInitialized || !timeline.TryRequestHeroMenu())
+            {
+                return false;
+            }
+
+            IsTimelineArmed = true;
+            ApplyFrame(timeline.Frame);
+            return true;
+        }
+
+        /// <summary>
+        /// Queues the attendant to collect the already placed physical menu.
+        /// It shares the service clock with the pair refills, so no second
+        /// attendant action can overlap it.
+        /// </summary>
+        public bool TryRequestHeroMenuRetrieval()
+        {
+            if (!IsInitialized ||
+                !timeline.TryRequestHeroMenuRetrieval())
             {
                 return false;
             }
@@ -573,10 +611,17 @@ namespace BarPromenade
             switch (frame.Phase)
             {
                 case MountainRoadCafeServicePhase.Notice:
+                case MountainRoadCafeServicePhase.MenuNotice:
                     attendantClip = MountainRoadCafeCastClipKind.Notice;
                     break;
                 case MountainRoadCafeServicePhase.WalkToCup:
                 case MountainRoadCafeServicePhase.WalkBack:
+                case MountainRoadCafeServicePhase.WalkToHero:
+                case MountainRoadCafeServicePhase.PlaceMenu:
+                case MountainRoadCafeServicePhase.MenuWalkBack:
+                case MountainRoadCafeServicePhase.WalkToMenu:
+                case MountainRoadCafeServicePhase.TakeMenu:
+                case MountainRoadCafeServicePhase.CarryMenuBack:
                     attendantClip = MountainRoadCafeCastClipKind.Walk;
                     break;
                 case MountainRoadCafeServicePhase.Pour:
@@ -587,11 +632,27 @@ namespace BarPromenade
                     break;
             }
 
-            attendant.ApplyClip(
-                attendantClip,
-                attendantClip == MountainRoadCafeCastClipKind.Wipe
-                    ? elapsedSeconds
-                    : frame.PhaseElapsedSeconds);
+            if (frame.Phase != MountainRoadCafeServicePhase.PlaceMenu &&
+                frame.Phase != MountainRoadCafeServicePhase.TakeMenu)
+            {
+                attendant.ApplyClip(
+                    attendantClip,
+                    attendantClip == MountainRoadCafeCastClipKind.Wipe
+                        ? elapsedSeconds
+                        : frame.PhaseElapsedSeconds,
+                    frame.Phase ==
+                        MountainRoadCafeServicePhase.CarryMenuBack);
+            }
+            // Keep the final Walk pose while the booklet moves between hand
+            // and counter in either direction. Resampling another clip here
+            // would snap the hand away from the prop at the contact edge.
+            if (IsMenuBookletPhase(frame.Phase))
+            {
+                // Walk normally exposes the baked coffee pot. During the
+                // menu handoff the same measured step cycle is reused with
+                // the right hand carrying the booklet instead.
+                attendant.Registry.SetCoffeePotVisible(false);
+            }
             servicePresentation?.SetFrame(frame);
         }
 
@@ -660,10 +721,29 @@ namespace BarPromenade
                 case MountainRoadCafeServicePhase.WalkToCup:
                 case MountainRoadCafeServicePhase.Pour:
                 case MountainRoadCafeServicePhase.WalkBack:
+                case MountainRoadCafeServicePhase.MenuNotice:
+                case MountainRoadCafeServicePhase.WalkToHero:
+                case MountainRoadCafeServicePhase.PlaceMenu:
+                case MountainRoadCafeServicePhase.MenuWalkBack:
+                case MountainRoadCafeServicePhase.WalkToMenu:
+                case MountainRoadCafeServicePhase.TakeMenu:
+                case MountainRoadCafeServicePhase.CarryMenuBack:
                     return MountainRoadCafeCastEpisode.Attendant;
                 default:
                     return MountainRoadCafeCastEpisode.None;
             }
+        }
+
+        private static bool IsMenuBookletPhase(
+            MountainRoadCafeServicePhase phase)
+        {
+            return phase == MountainRoadCafeServicePhase.MenuNotice ||
+                   phase == MountainRoadCafeServicePhase.WalkToHero ||
+                   phase == MountainRoadCafeServicePhase.PlaceMenu ||
+                   phase == MountainRoadCafeServicePhase.MenuWalkBack ||
+                   phase == MountainRoadCafeServicePhase.WalkToMenu ||
+                   phase == MountainRoadCafeServicePhase.TakeMenu ||
+                   phase == MountainRoadCafeServicePhase.CarryMenuBack;
         }
     }
 }

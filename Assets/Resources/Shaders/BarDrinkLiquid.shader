@@ -2,7 +2,9 @@ Shader "Bar Promenade/Bar Drink Liquid"
 {
     Properties
     {
+        _BaseMap("Surface Albedo", 2D) = "white" {}
         _BaseColor("Liquid Color", Color) = (0.72, 0.30, 0.08, 0.88)
+        _SurfaceAlbedoCompensation("Surface Albedo Compensation", Float) = 1.0
     }
 
     SubShader
@@ -34,8 +36,13 @@ Shader "Bar Promenade/Bar Drink Liquid"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+
             CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
                 half4 _BaseColor;
+                half _SurfaceAlbedoCompensation;
             CBUFFER_END
 
             struct Attributes
@@ -68,7 +75,7 @@ Shader "Bar Promenade/Bar Drink Liquid"
                 output.positionCS = positions.positionCS;
                 output.positionWS = positions.positionWS;
                 output.normalWS = normals.normalWS;
-                output.uv = input.uv;
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 float viewZ = -TransformWorldToView(positions.positionWS).z;
                 output.fogFactor = ComputeFogFactorZ0ToFar(
                     max(viewZ - _ProjectionParams.y, 0));
@@ -82,8 +89,15 @@ Shader "Bar Promenade/Bar Drink Liquid"
                 half top = saturate(normal.y * 0.5h + 0.5h);
                 half sideShade = 0.76h +
                     0.24h * abs(dot(normal, half3(0.44h, 0.31h, 0.84h)));
-                half3 color = _BaseColor.rgb * sideShade;
-                color += top * _BaseColor.rgb * 0.16h;
+                half3 surface = saturate(
+                    SAMPLE_TEXTURE2D(
+                        _BaseMap,
+                        sampler_BaseMap,
+                        input.uv).rgb *
+                    _SurfaceAlbedoCompensation);
+                half3 texturedTint = _BaseColor.rgb * surface;
+                half3 color = texturedTint * sideShade;
+                color += top * texturedTint * 0.16h;
                 color = MixFog(color, input.fogFactor);
                 return half4(color, _BaseColor.a);
             }

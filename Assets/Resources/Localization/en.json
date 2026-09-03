@@ -1549,6 +1549,26 @@
       "value": "It's time to go home. I'm here."
     },
     {
+      "key": "mountain.cafe.menu.item.fried_eggs",
+      "value": "Fried Eggs"
+    },
+    {
+      "key": "mountain.cafe.menu.item.cheese_sandwich",
+      "value": "Cheese Sandwich"
+    },
+    {
+      "key": "mountain.cafe.menu.item.black_coffee",
+      "value": "Black Coffee"
+    },
+    {
+      "key": "mountain.cafe.menu.select_hint",
+      "value": "W / S — select"
+    },
+    {
+      "key": "mountain.cafe.menu.order_hint",
+      "value": "Space — order"
+    },
+    {
       "key": "park.quarrel.chess.line.01",
       "value": "In draughts they think with the knee."
     },

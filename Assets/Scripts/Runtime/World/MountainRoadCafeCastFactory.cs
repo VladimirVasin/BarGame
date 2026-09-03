@@ -104,8 +104,12 @@ namespace BarPromenade
                         MountainRoadCafeCastAssetRegistry>(true);
                     registry.ApplyBaseColors();
                     registry.Animator.applyRootMotion = false;
+                    // The menu close-up can keep the attendant off-screen
+                    // while a world prop still follows the animated hand.
                     registry.Animator.cullingMode =
-                        AnimatorCullingMode.CullUpdateTransforms;
+                        member.Role == MountainRoadCafeCastRole.Attendant
+                            ? AnimatorCullingMode.AlwaysAnimate
+                            : AnimatorCullingMode.CullUpdateTransforms;
 
                     var presentation = instance.AddComponent<
                         MountainRoadCafeCastPresentation>();

@@ -601,6 +601,40 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interior.Journal, Is.Not.Null);
             Assert.That(interior.PauseMenu, Is.Not.Null);
 
+            // The theme is raised whether or not a track exists yet, and
+            // it lives in THIS scene, which is what makes the transition
+            // service find it as an IMusicMixSource and take its tail on
+            // the way out. Without a file it must sit in Unavailable and
+            // leave the church exactly as quiet as it was.
+            Assert.That(interior.Music, Is.Not.Null);
+            Assert.That(
+                interior.Music.gameObject.scene,
+                Is.EqualTo(interior.gameObject.scene));
+            Assert.That(
+                interior.Music,
+                Is.InstanceOf<IMusicMixSource>());
+            if (interior.Music.ActiveClip == null)
+            {
+                Assert.That(
+                    interior.Music.PlaybackState,
+                    Is.EqualTo(SceneMusicPlaybackState.Unavailable),
+                    "A church with no track must stay silent, not " +
+                    "sit half-loaded.");
+                Assert.That(interior.Music.NormalizedGain, Is.Zero);
+            }
+            else
+            {
+                Assert.That(
+                    interior.Music.Source.outputAudioMixerGroup,
+                    Is.EqualTo(
+                        GameAudioMixer.GetGroup(GameAudioGroup.Music)),
+                    "A church theme belongs on the Music bus.");
+                Assert.That(
+                    interior.Music.Source.loop,
+                    Is.True,
+                    "A theme is a loop, not a one-shot.");
+            }
+
             int blockingFixtureCount = interior.Layout.Fixtures.Count(
                 fixture => fixture.BlocksMovement);
             Assert.That(

@@ -46,6 +46,34 @@ namespace BarPromenade.Editor
                 ModelImporterMaterialImportMode.None;
         }
 
+        private void OnPreprocessTexture()
+        {
+            if (!BarAssetSetup.IsTexturePath(assetPath) ||
+                !(assetImporter is TextureImporter importer))
+            {
+                return;
+            }
+
+            // The FBX carries metre-scaled UVs. Match the house-surface
+            // contract so detailed grain survives while large faces repeat
+            // at the generator's measured material pitch.
+            importer.textureType = TextureImporterType.Default;
+            importer.textureShape = TextureImporterShape.Texture2D;
+            importer.sRGBTexture = true;
+            importer.alphaSource = TextureImporterAlphaSource.None;
+            importer.alphaIsTransparency = false;
+            importer.mipmapEnabled = true;
+            importer.streamingMipmaps = false;
+            importer.isReadable = false;
+            importer.npotScale = TextureImporterNPOTScale.None;
+            importer.wrapMode = UnityEngine.TextureWrapMode.Repeat;
+            importer.filterMode = UnityEngine.FilterMode.Bilinear;
+            importer.anisoLevel = 4;
+            importer.textureCompression =
+                TextureImporterCompression.Uncompressed;
+            importer.maxTextureSize = 512;
+        }
+
         private static void OnPostprocessAllAssets(
             string[] importedAssets,
             string[] deletedAssets,

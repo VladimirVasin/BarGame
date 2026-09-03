@@ -12,4 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad7465a9378188d4181ff2a06ef72717, type: 3}
   m_Name: BarBartenderProvider
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.BarBartenderProvider
-  bartenderPrefab: {fileID: 681270319529995433, guid: 8e5b6df9a07532e48a8e2bed3a9bfaff, type: 3}
+  bartenderPrefab: {fileID: 4553079957294780520, guid: 7d21f97c1b8f84d42bc5dbcf3119478e, type: 3}
+  legacyBartenderPrefab: {fileID: 681270319529995433, guid: 8e5b6df9a07532e48a8e2bed3a9bfaff, type: 3}

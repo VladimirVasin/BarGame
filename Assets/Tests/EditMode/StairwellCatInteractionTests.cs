@@ -19,6 +19,13 @@ namespace BarPromenade.Tests.EditMode
         public void SetUp()
         {
             GameSessionState.BeginNewGame();
+            // The cat asks to be fed from his own day onwards. Every
+            // test here but the first-day one below is about the
+            // feeding flow rather than about when it opens, so put the
+            // clock on that day the way the calendar does.
+            GameSessionState.TrySetDebugGameDay(
+                GameDaySchedule.GetFirstDayNumber(
+                    GameDayEventId.FeedTheCatOpens));
             SetTransitioning(false);
 
             rootObject = new GameObject("Stairwell Test Root");
@@ -171,6 +178,49 @@ namespace BarPromenade.Tests.EditMode
                     default));
             Assert.That(animation.IsActive, Is.False);
             Assert.That(player.Motor.InputEnabled, Is.True);
+            Assert.That(player.Interactor.InputEnabled, Is.True);
+        }
+
+        /// <summary>
+        /// The first day has no feeding in it at all. He is a cat on a
+        /// rail: looking at him gives the one line he has always given
+        /// and opens nothing, so there is no tin to want and no menu to
+        /// refuse. Left available, a day-one feeding would eat the can
+        /// — it is consumed the frame his head goes in — while the
+        /// quest that is not yet active recorded nothing, and day two
+        /// would find the hero shut in his own stairwell with no way
+        /// down.
+        /// </summary>
+        [Test]
+        public void FirstDay_GivesTheCatsLineAndOpensNoMenu()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(
+                GameSessionState.GameDayNumber,
+                Is.EqualTo(GameDaySchedule.FirstDayNumber));
+            Assert.That(
+                StairwellCatInteraction.IsFeedingOffered,
+                Is.False);
+            Assert.That(
+                catInteraction.CanInteract(player.Interactor),
+                Is.True,
+                "He is still there to be looked at.");
+
+            Assert.That(
+                catInteraction.TryOpen(player.Interactor),
+                Is.False);
+
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(prompt.IsFeedbackVisible, Is.True);
+            Assert.That(
+                prompt.PromptKey,
+                Is.EqualTo(
+                    StairwellCatInteraction.ResponsePromptKey));
+            Assert.That(
+                player.Motor.InputEnabled,
+                Is.True,
+                "Nothing took the hero's input for a menu that never " +
+                "opened.");
             Assert.That(player.Interactor.InputEnabled, Is.True);
         }
 

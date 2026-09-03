@@ -6,8 +6,10 @@ using UnityEngine.Rendering;
 namespace BarPromenade
 {
     /// <summary>
-    /// Builds the complete physical drink-service set from a validated local
-    /// plan. No generated object owns a unique Material or a realtime Light.
+    /// Places the Blender-authored drink-service assemblies from a validated
+    /// local plan. Unity owns state, physics and per-drink colour only; every
+    /// visible bottle, vessel, menu page and pour stream comes from the shared
+    /// bar service prop pack.
     /// </summary>
     public static class BarDrinkServiceWorldBuilder
     {
@@ -22,13 +24,6 @@ namespace BarPromenade
 
         private static readonly Color GlassColor =
             new Color(0.62f, 0.82f, 0.86f, 0.24f);
-        private static readonly Color DarkWoodColor =
-            new Color(0.11f, 0.045f, 0.025f);
-        private static readonly Color LeatherColor =
-            new Color(0.31f, 0.055f, 0.052f);
-        private static readonly Color BrassColor =
-            new Color(0.68f, 0.44f, 0.14f);
-
         public static BarDrinkServiceView Build(
             Transform parent,
             BarDrinkServicePlan plan)
@@ -57,8 +52,10 @@ namespace BarPromenade
             BarDrinkServiceView serviceView =
                 serviceObject.AddComponent<BarDrinkServiceView>();
 
-            BuildServiceStool(serviceRoot, plan);
-            BuildMenu(serviceRoot, plan);
+            BarDrinkMenuPresentation menu = BuildMenu(
+                serviceRoot,
+                plan,
+                parent.Find("MenuDock"));
 
             var bottles = new List<BarDrinkBottleView>(
                 BarDrinkServicePlan.RequiredBottleCount);
@@ -79,15 +76,19 @@ namespace BarPromenade
                 vessels.Add(BuildVessel(serviceRoot, VesselKinds[index]));
             }
 
-            GameObject stream = RuntimePrimitiveFactory.CreateCylinder(
-                "Bar Drink Pour Stream",
-                serviceRoot,
-                Vector3.zero,
-                Vector3.one,
-                Color.white,
-                BarDrinkServiceResources.LiquidMaterial,
-                false);
-            Renderer streamRenderer = stream.GetComponent<Renderer>();
+            BarServicePropInstance stream =
+                BarServicePropFactory.CreatePourStream(serviceRoot);
+            if (!stream.TryGetRenderer(
+                    "service_pour_stream",
+                    out Renderer streamRenderer))
+            {
+                throw new InvalidOperationException(
+                    "The authored bar service stream has no renderer.");
+            }
+
+            streamRenderer.sharedMaterial =
+                BarDrinkServiceResources.LiquidMaterial;
+            RuntimePrimitiveFactory.SetColor(streamRenderer, Color.white);
             SetTransparentRenderer(streamRenderer);
 
             serviceView.Initialize(
@@ -95,7 +96,8 @@ namespace BarPromenade
                 bottles,
                 vessels,
                 stream.transform,
-                streamRenderer);
+                streamRenderer,
+                menu);
             return serviceView;
         }
 
@@ -110,17 +112,27 @@ namespace BarPromenade
             slotObject.transform.localPosition = slotPlan.Pose.Position;
             slotObject.transform.localRotation = slotPlan.Pose.Rotation;
 
-            var bottleObject = new GameObject(
-                $"Bar Drink Bottle {presentation.StableId}");
-            bottleObject.transform.SetParent(slotObject.transform, false);
+            BarServicePropInstance authored =
+                BarServicePropFactory.CreateBottle(
+                    slotObject.transform,
+                    presentation.BottleStyle);
+            GameObject bottleObject = authored.gameObject;
+            bottleObject.name =
+                $"Bar Drink Bottle {presentation.StableId}";
             Transform bottleRoot = bottleObject.transform;
             var renderers = new List<Renderer>();
             var colors = new List<Color>();
-            BottleDimensions dimensions = BuildBottleGeometry(
-                bottleRoot,
+            ConfigureBottleAppearance(
+                authored,
                 presentation,
                 renderers,
                 colors);
+            Transform mouth = RequireAnchor(
+                authored,
+                "service_bottle_mouth:" + presentation.BottleStyle);
+            Bounds localBounds = CalculateLocalBounds(
+                bottleRoot,
+                renderers);
 
             Collider solidCollider;
             if (presentation.BottleStyle ==
@@ -128,14 +140,10 @@ namespace BarPromenade
             {
                 BoxCollider solidBox =
                     bottleObject.AddComponent<BoxCollider>();
-                solidBox.center = new Vector3(
-                    0f,
-                    dimensions.TotalHeight * 0.48f,
-                    0f);
-                solidBox.size = new Vector3(
-                    dimensions.Width * 0.94f,
-                    dimensions.TotalHeight * 0.96f,
-                    dimensions.Depth * 0.94f);
+                solidBox.center = localBounds.center;
+                solidBox.size = Vector3.Scale(
+                    localBounds.size,
+                    new Vector3(0.94f, 0.96f, 0.94f));
                 solidCollider = solidBox;
             }
             else
@@ -143,26 +151,22 @@ namespace BarPromenade
                 CapsuleCollider solidCapsule =
                     bottleObject.AddComponent<CapsuleCollider>();
                 solidCapsule.direction = 1;
-                solidCapsule.center = new Vector3(
-                    0f,
-                    dimensions.TotalHeight * 0.5f,
-                    0f);
-                solidCapsule.radius =
-                    Mathf.Min(dimensions.Width, dimensions.Depth) * 0.5f;
-                solidCapsule.height = dimensions.TotalHeight;
+                solidCapsule.center = localBounds.center;
+                solidCapsule.radius = Mathf.Max(
+                    0.01f,
+                    Mathf.Min(localBounds.size.x, localBounds.size.z) *
+                    0.47f);
+                solidCapsule.height = Mathf.Max(
+                    localBounds.size.y * 0.98f,
+                    solidCapsule.radius * 2f);
                 solidCollider = solidCapsule;
             }
 
             BoxCollider selectionTrigger =
                 bottleObject.AddComponent<BoxCollider>();
-            selectionTrigger.center = new Vector3(
-                0f,
-                dimensions.TotalHeight * 0.5f,
-                0f);
-            selectionTrigger.size = new Vector3(
-                dimensions.Width + 0.09f,
-                dimensions.TotalHeight + 0.07f,
-                dimensions.Depth + 0.09f);
+            selectionTrigger.center = localBounds.center;
+            selectionTrigger.size = localBounds.size +
+                new Vector3(0.09f, 0.07f, 0.09f);
             selectionTrigger.isTrigger = true;
 
             Rigidbody body = bottleObject.AddComponent<Rigidbody>();
@@ -174,17 +178,14 @@ namespace BarPromenade
             body.collisionDetectionMode =
                 CollisionDetectionMode.ContinuousSpeculative;
 
-            var mouthObject = new GameObject("Bottle Mouth Anchor");
-            mouthObject.transform.SetParent(bottleRoot, false);
-            mouthObject.transform.localPosition =
-                Vector3.up * dimensions.TotalHeight;
+            mouth.name = "Bottle Mouth Anchor";
 
             BarDrinkBottleView bottleView =
                 bottleObject.AddComponent<BarDrinkBottleView>();
             bottleView.Initialize(
                 presentation.DrinkId,
                 slotPlan.Id,
-                mouthObject.transform,
+                mouth,
                 renderers,
                 colors,
                 solidCollider,
@@ -195,314 +196,251 @@ namespace BarPromenade
 
         /// <summary>
         /// Builds the same authored bottle silhouette the service
-        /// shelf uses, visuals only — no colliders, physics or view
-        /// state — for props such as the patrons' hand-held bottles.
+        /// shelf uses, visuals only -- no colliders, physics or view
+        /// state -- for props such as the patrons' hand-held bottles.
         /// Returns the bottle's total local height.
         /// </summary>
         internal static float BuildBottleVisual(
             Transform root,
             BarDrinkPresentation presentation)
         {
+            BarServicePropInstance authored =
+                BarServicePropFactory.CreateBottle(
+                    root,
+                    presentation.BottleStyle);
             var renderers = new List<Renderer>();
             var colors = new List<Color>();
-            BottleDimensions dimensions = BuildBottleGeometry(
-                root,
+            ConfigureBottleAppearance(
+                authored,
                 presentation,
                 renderers,
                 colors);
-            return dimensions.TotalHeight;
+            Transform mouth = RequireAnchor(
+                authored,
+                "service_bottle_mouth:" + presentation.BottleStyle);
+            return mouth.localPosition.y;
         }
 
-        private static BottleDimensions BuildBottleGeometry(
-            Transform root,
+        private static void ConfigureBottleAppearance(
+            BarServicePropInstance authored,
             BarDrinkPresentation presentation,
             ICollection<Renderer> renderers,
             ICollection<Color> colors)
         {
-            Color bottleColor = presentation.BottleColor;
-            Color labelColor = presentation.LabelColor;
-            BottleDimensions dimensions;
-            switch (presentation.BottleStyle)
+            RegisterAuthoredPart(
+                RequireRenderer(authored, "service_bottle_body"),
+                presentation.BottleColor,
+                BarSurfaceKind.BottleGlass,
+                renderers,
+                colors,
+                true);
+            RegisterAuthoredPart(
+                RequireRenderer(authored, "service_bottle_closure"),
+                ResolveClosureColor(presentation.BottleStyle),
+                BarSurfaceKind.PaintedMetal,
+                renderers,
+                colors,
+                true);
+            RegisterAuthoredPart(
+                RequireRenderer(authored, "service_bottle_label"),
+                presentation.LabelColor,
+                BarSurfaceKind.Paper,
+                renderers,
+                colors,
+                true);
+
+            if (renderers.Count != authored.Renderers.Count)
+            {
+                throw new InvalidOperationException(
+                    $"The authored {presentation.BottleStyle} bottle has " +
+                    "an unexpected visible part contract.");
+            }
+        }
+
+        private static Color ResolveClosureColor(
+            BarDrinkBottleStyle style)
+        {
+            switch (style)
             {
                 case BarDrinkBottleStyle.WaterBottle:
-                    dimensions = new BottleDimensions(0.21f, 0.21f, 0.68f);
-                    AddCylinder(root, "Body", 0.21f, 0.48f, 0.24f,
-                        bottleColor, renderers, colors);
-                    AddCylinder(root, "Shoulder", 0.18f, 0.08f, 0.52f,
-                        Shade(bottleColor, 0.95f), renderers, colors);
-                    AddCylinder(root, "Neck", 0.085f, 0.10f, 0.61f,
-                        Shade(bottleColor, 1.05f), renderers, colors);
-                    AddCylinder(root, "Cap", 0.098f, 0.04f, 0.66f,
-                        new Color(0.74f, 0.78f, 0.69f), renderers, colors);
-                    break;
+                    return new Color(0.74f, 0.78f, 0.69f);
                 case BarDrinkBottleStyle.BeerLongneck:
-                    dimensions = new BottleDimensions(0.21f, 0.21f, 0.72f);
-                    AddCylinder(root, "Body", 0.21f, 0.44f, 0.22f,
-                        bottleColor, renderers, colors);
-                    AddCylinder(root, "Shoulder", 0.17f, 0.07f, 0.475f,
-                        Shade(bottleColor, 0.96f), renderers, colors);
-                    AddCylinder(root, "Long Neck", 0.083f, 0.20f, 0.61f,
-                        Shade(bottleColor, 1.03f), renderers, colors);
-                    AddCylinder(root, "Crown Cap", 0.098f, 0.035f, 0.7025f,
-                        new Color(0.57f, 0.48f, 0.31f), renderers, colors);
-                    break;
+                    return new Color(0.57f, 0.48f, 0.31f);
                 case BarDrinkBottleStyle.WineBottle:
-                    dimensions = new BottleDimensions(0.23f, 0.23f, 0.82f);
-                    AddCylinder(root, "Body", 0.23f, 0.50f, 0.25f,
-                        bottleColor, renderers, colors);
-                    AddCylinder(root, "Shoulder", 0.18f, 0.07f, 0.535f,
-                        Shade(bottleColor, 0.97f), renderers, colors);
-                    AddCylinder(root, "Neck", 0.08f, 0.23f, 0.685f,
-                        Shade(bottleColor, 1.04f), renderers, colors);
-                    AddCylinder(root, "Cork", 0.088f, 0.035f, 0.8025f,
-                        new Color(0.48f, 0.30f, 0.16f), renderers, colors);
-                    break;
+                    return new Color(0.48f, 0.30f, 0.16f);
                 case BarDrinkBottleStyle.VodkaBottle:
-                    dimensions = new BottleDimensions(0.25f, 0.18f, 0.67f);
-                    AddBox(root, "Square Body", new Vector3(0.25f, 0.44f, 0.18f),
-                        0.22f, bottleColor, renderers, colors);
-                    AddBox(root, "Square Shoulder", new Vector3(0.21f, 0.07f, 0.16f),
-                        0.475f, Shade(bottleColor, 0.96f), renderers, colors);
-                    AddCylinder(root, "Neck", 0.105f, 0.14f, 0.58f,
-                        Shade(bottleColor, 1.04f), renderers, colors);
-                    AddCylinder(root, "Metal Cap", 0.12f, 0.05f, 0.645f,
-                        new Color(0.52f, 0.58f, 0.57f), renderers, colors);
-                    break;
+                    return new Color(0.52f, 0.58f, 0.57f);
                 case BarDrinkBottleStyle.CognacBottle:
-                    dimensions = new BottleDimensions(0.30f, 0.24f, 0.61f);
-                    AddCylinder(root, "Broad Body", 0.30f, 0.36f, 0.18f,
-                        bottleColor, renderers, colors, 0.80f);
-                    AddCylinder(root, "Shoulder", 0.24f, 0.08f, 0.40f,
-                        Shade(bottleColor, 0.97f), renderers, colors, 0.84f);
-                    AddCylinder(root, "Neck", 0.10f, 0.13f, 0.505f,
-                        Shade(bottleColor, 1.04f), renderers, colors);
-                    AddCylinder(root, "Stopper", 0.125f, 0.04f, 0.59f,
-                        new Color(0.38f, 0.19f, 0.08f), renderers, colors);
-                    break;
+                    return new Color(0.38f, 0.19f, 0.08f);
                 default:
                     throw new ArgumentOutOfRangeException(
-                        nameof(presentation),
-                        presentation.BottleStyle,
+                        nameof(style),
+                        style,
                         "Unsupported bottle style.");
             }
-
-            float bodyMidpoint = Mathf.Min(
-                dimensions.TotalHeight * 0.34f,
-                0.25f);
-            AddBox(
-                root,
-                "Front Label",
-                new Vector3(
-                    dimensions.Width * 0.76f,
-                    Mathf.Min(0.18f, dimensions.TotalHeight * 0.27f),
-                    0.018f),
-                bodyMidpoint,
-                labelColor,
-                renderers,
-                colors,
-                -dimensions.Depth * 0.5f - 0.011f);
-            AddBox(
-                root,
-                "Label Band",
-                new Vector3(
-                    dimensions.Width * 0.52f,
-                    0.026f,
-                    0.021f),
-                bodyMidpoint + 0.035f,
-                Shade(labelColor, 0.45f),
-                renderers,
-                colors,
-                -dimensions.Depth * 0.5f - 0.013f);
-            return dimensions;
         }
 
         private static BarDrinkVesselView BuildVessel(
             Transform parent,
             BarDrinkVesselKind kind)
         {
-            var vesselObject = new GameObject($"Bar Drink Vessel {kind}");
-            vesselObject.transform.SetParent(parent, false);
+            BarServicePropInstance authored =
+                BarServicePropFactory.CreateVessel(parent, kind);
+            GameObject vesselObject = authored.gameObject;
+            vesselObject.name = $"Bar Drink Vessel {kind}";
+            Renderer glassRenderer = RequireRenderer(
+                authored,
+                "service_vessel_shell");
+            glassRenderer.sharedMaterial =
+                BarDrinkServiceResources.GlassMaterial;
+            RuntimePrimitiveFactory.SetColor(glassRenderer, GlassColor);
+            SetTransparentRenderer(glassRenderer);
 
-            GameObject glass = CreateMeshObject(
-                "Glass",
-                vesselObject.transform,
-                BarDrinkServiceMeshLibrary.GetGlassMesh(kind),
-                BarDrinkServiceResources.GlassMaterial,
-                GlassColor);
-            SetTransparentRenderer(glass.GetComponent<Renderer>());
+            Renderer liquidRenderer = RequireRenderer(
+                authored,
+                "service_vessel_liquid");
+            liquidRenderer.sharedMaterial =
+                BarDrinkServiceResources.LiquidMaterial;
+            RuntimePrimitiveFactory.SetColor(liquidRenderer, Color.white);
+            SetTransparentRenderer(liquidRenderer);
 
             var liquidObject = new GameObject("Liquid Fill");
             liquidObject.transform.SetParent(vesselObject.transform, false);
-            liquidObject.transform.localPosition = Vector3.up *
-                BarDrinkServiceMeshLibrary.GetLiquidBaseHeight(kind);
-            GameObject liquid = CreateMeshObject(
-                "Liquid Volume",
+            Transform liquidBase = RequireAnchor(
+                authored,
+                "service_vessel_liquid_base:" + kind);
+            liquidObject.transform.localPosition = liquidBase.localPosition;
+            liquidRenderer.transform.SetParent(
                 liquidObject.transform,
-                BarDrinkServiceMeshLibrary.GetLiquidMesh(kind),
-                BarDrinkServiceResources.LiquidMaterial,
-                Color.white);
-            Renderer liquidRenderer = liquid.GetComponent<Renderer>();
-            SetTransparentRenderer(liquidRenderer);
-
-            var targetObject = new GameObject("Pour Target");
-            targetObject.transform.SetParent(vesselObject.transform, false);
-            targetObject.transform.localPosition = Vector3.up *
-                (BarDrinkServiceMeshLibrary.GetVesselHeight(kind) - 0.025f);
+                true);
+            Transform pourTarget = RequireAnchor(
+                authored,
+                "service_vessel_target:" + kind);
+            pourTarget.name = "Pour Target";
 
             BarDrinkVesselView view =
                 vesselObject.AddComponent<BarDrinkVesselView>();
             view.Initialize(
                 kind,
-                glass.GetComponent<Renderer>(),
+                glassRenderer,
                 liquidObject.transform,
                 liquidRenderer,
-                targetObject.transform);
+                pourTarget);
             return view;
         }
 
-        private static void BuildServiceStool(
+        private static BarDrinkMenuPresentation BuildMenu(
             Transform parent,
-            BarDrinkServicePlan plan)
+            BarDrinkServicePlan plan,
+            Transform authoredDock)
         {
-            var stoolObject = new GameObject("Bar Drink Service Stool");
-            stoolObject.transform.SetParent(parent, false);
-            stoolObject.transform.localPosition = plan.ServiceStoolPosition;
-            Transform stool = stoolObject.transform;
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Stool Floor Plate",
-                stool,
-                Vector3.up * 0.035f,
-                new Vector3(0.42f, 0.035f, 0.42f),
-                DarkWoodColor,
-                false);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Stool Stem",
-                stool,
-                Vector3.up * 0.43f,
-                new Vector3(0.105f, 0.39f, 0.105f),
-                BrassColor,
-                false);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Stool Seat",
-                stool,
-                Vector3.up * 0.86f,
-                new Vector3(0.48f, 0.075f, 0.48f),
-                LeatherColor,
-                false);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Stool Foot Ring",
-                stool,
-                Vector3.up * 0.30f,
-                new Vector3(0.52f, 0.025f, 0.52f),
-                BrassColor,
-                false);
+            return BarDrinkMenuPresentation.CreateAndBind(
+                parent,
+                plan,
+                authoredDock);
         }
 
-        private static void BuildMenu(
-            Transform parent,
-            BarDrinkServicePlan plan)
+        private static Renderer RequireRenderer(
+            BarServicePropInstance authored,
+            string role)
         {
-            var menuObject = new GameObject("Physical Bar Drink Menu");
-            menuObject.transform.SetParent(parent, false);
-            menuObject.transform.localPosition = plan.MenuPose.Position;
-            menuObject.transform.localRotation = plan.MenuPose.Rotation;
-            Transform menu = menuObject.transform;
-            RuntimePrimitiveFactory.CreateBox(
-                "Menu Board",
-                menu,
-                Vector3.up * 0.018f,
-                new Vector3(0.42f, 0.036f, 0.29f),
-                DarkWoodColor,
-                false);
-            for (int index = 0; index < 4; index++)
+            if (authored != null &&
+                authored.TryGetRenderer(role, out Renderer renderer) &&
+                renderer != null)
             {
-                RuntimePrimitiveFactory.CreateBox(
-                    $"Menu Line {index + 1}",
-                    menu,
-                    new Vector3(
-                        -0.025f + (index % 2) * 0.055f,
-                        0.039f,
-                        -0.09f + index * 0.055f),
-                    new Vector3(
-                        index % 2 == 0 ? 0.28f : 0.21f,
-                        0.009f,
-                        0.018f),
-                    index == 0 ? BrassColor : new Color(0.74f, 0.65f, 0.45f),
-                    false);
+                return renderer;
             }
+
+            throw new InvalidOperationException(
+                $"The authored bar service group has no renderer role " +
+                $"'{role}'.");
         }
 
-        private static GameObject CreateMeshObject(
-            string name,
-            Transform parent,
-            Mesh mesh,
-            Material material,
-            Color color)
+        private static Transform RequireAnchor(
+            BarServicePropInstance authored,
+            string role)
         {
-            var result = new GameObject(name);
-            result.transform.SetParent(parent, false);
-            result.AddComponent<MeshFilter>().sharedMesh = mesh;
-            MeshRenderer renderer = result.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = material;
-            RuntimePrimitiveFactory.SetColor(renderer, color);
-            return result;
+            if (authored != null &&
+                authored.TryGetAnchor(role, out Transform anchor) &&
+                anchor != null)
+            {
+                return anchor;
+            }
+
+            throw new InvalidOperationException(
+                $"The authored bar service group has no anchor role " +
+                $"'{role}'.");
         }
 
-        private static void AddCylinder(
-            Transform root,
-            string name,
-            float diameter,
-            float height,
-            float centerY,
+        private static void RegisterAuthoredPart(
+            Renderer renderer,
             Color color,
+            BarSurfaceKind surface,
             ICollection<Renderer> renderers,
             ICollection<Color> colors,
-            float depthScale = 1f)
+            bool castsShadows)
         {
-            GameObject part = RuntimePrimitiveFactory.CreateCylinder(
-                name,
-                root,
-                Vector3.up * centerY,
-                new Vector3(
-                    diameter,
-                    height * 0.5f,
-                    diameter * depthScale),
+            Color displayColor = BarSurfaceAppearance.CreateDisplayTint(
                 color,
-                false);
-            Register(part, color, renderers, colors);
-        }
-
-        private static void AddBox(
-            Transform root,
-            string name,
-            Vector3 size,
-            float centerY,
-            Color color,
-            ICollection<Renderer> renderers,
-            ICollection<Color> colors,
-            float centerZ = 0f)
-        {
-            GameObject part = RuntimePrimitiveFactory.CreateBox(
-                name,
-                root,
-                new Vector3(0f, centerY, centerZ),
-                size,
-                color,
-                false);
-            Register(part, color, renderers, colors);
-        }
-
-        private static void Register(
-            GameObject part,
-            Color color,
-            ICollection<Renderer> renderers,
-            ICollection<Color> colors)
-        {
-            Renderer renderer = part.GetComponent<Renderer>();
-            renderer.shadowCastingMode = ShadowCastingMode.On;
-            renderer.receiveShadows = true;
+                surface);
+            RuntimePrimitiveFactory.SetColor(renderer, displayColor);
+            renderer.shadowCastingMode = castsShadows
+                ? ShadowCastingMode.On
+                : ShadowCastingMode.Off;
+            renderer.receiveShadows = castsShadows;
             renderers.Add(renderer);
-            colors.Add(color);
+            colors.Add(displayColor);
+        }
+
+        private static Bounds CalculateLocalBounds(
+            Transform root,
+            IReadOnlyList<Renderer> renderers)
+        {
+            bool hasPoint = false;
+            Bounds result = default;
+            for (int rendererIndex = 0;
+                 rendererIndex < renderers.Count;
+                 rendererIndex++)
+            {
+                Renderer renderer = renderers[rendererIndex];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                Bounds world = renderer.bounds;
+                for (int cornerIndex = 0; cornerIndex < 8; cornerIndex++)
+                {
+                    Vector3 corner = world.center + new Vector3(
+                        (cornerIndex & 1) == 0
+                            ? -world.extents.x
+                            : world.extents.x,
+                        (cornerIndex & 2) == 0
+                            ? -world.extents.y
+                            : world.extents.y,
+                        (cornerIndex & 4) == 0
+                            ? -world.extents.z
+                            : world.extents.z);
+                    Vector3 local = root.InverseTransformPoint(corner);
+                    if (!hasPoint)
+                    {
+                        result = new Bounds(local, Vector3.zero);
+                        hasPoint = true;
+                    }
+                    else
+                    {
+                        result.Encapsulate(local);
+                    }
+                }
+            }
+
+            if (!hasPoint || result.size.sqrMagnitude < 0.000001f)
+            {
+                throw new InvalidOperationException(
+                    "The authored bottle has no measurable renderer bounds.");
+            }
+
+            return result;
         }
 
         private static void SetTransparentRenderer(Renderer renderer)
@@ -511,27 +449,5 @@ namespace BarPromenade
             renderer.receiveShadows = false;
         }
 
-        private static Color Shade(Color color, float multiplier)
-        {
-            return new Color(
-                color.r * multiplier,
-                color.g * multiplier,
-                color.b * multiplier,
-                color.a);
-        }
-
-        private readonly struct BottleDimensions
-        {
-            public BottleDimensions(float width, float depth, float totalHeight)
-            {
-                Width = width;
-                Depth = depth;
-                TotalHeight = totalHeight;
-            }
-
-            public float Width { get; }
-            public float Depth { get; }
-            public float TotalHeight { get; }
-        }
     }
 }

@@ -34,7 +34,9 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            if (controller == null || !controller.IsOpen)
+            if (controller == null ||
+                !controller.IsOpen ||
+                controller.UsesPhysicalMenu)
             {
                 return;
             }

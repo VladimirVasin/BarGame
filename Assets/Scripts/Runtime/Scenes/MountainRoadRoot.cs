@@ -89,6 +89,10 @@ namespace BarPromenade
         /// cafe stool.</summary>
         public MountainRoadCafeSeatView CafeSeatView { get; private set; }
 
+        /// <summary>The physical booklet delivered to the hero at the cafe
+        /// stool and its selection-only placeholder order.</summary>
+        public MountainRoadCafeMenuController CafeMenu { get; private set; }
+
         /// <summary>The alternating private talk of the two cafe patrons.
         /// It owns its over-head bubble view and runs only inside the cafe.
         /// </summary>
@@ -445,10 +449,8 @@ namespace BarPromenade
         /// <summary>
         /// The two sit offers, installed after the player because the
         /// shared builder raises the animated-interaction controller on
-        /// him. Sitting at the counter is also the one thing on this
-        /// mountain that asks the cafe for a reaction: the attendant
-        /// notices, once, through the tableau's own scheduler rather than
-        /// around it.
+        /// him. The counter seat additionally binds the measured first-person
+        /// view and the attendant's one physical menu round trip.
         /// </summary>
         private void BuildSeats(Camera camera)
         {
@@ -471,20 +473,18 @@ namespace BarPromenade
                 CafeSeatView = gameObject.AddComponent<
                     MountainRoadCafeSeatView>();
                 CafeSeatView.Initialize(seat, Player, CameraFollow);
-                seat.SeatedChanged += HandleCounterSeatedChanged;
+                MountainRoadCafeMenuPresentation menuPresentation =
+                    MountainRoadCafeMenuPresentation.CreateAndBind(
+                        World.Cafe.Model,
+                        World.Cafe.Cast);
+                CafeMenu = gameObject.AddComponent<
+                    MountainRoadCafeMenuController>();
+                CafeMenu.Initialize(
+                    seat,
+                    CafeSeatView,
+                    World.Cafe.Cast,
+                    menuPresentation);
             }
-        }
-
-        private void HandleCounterSeatedChanged(
-            CityBenchSitInteraction seat,
-            bool seated)
-        {
-            if (!seated)
-            {
-                return;
-            }
-
-            World.Cafe.Cast?.TryRequestHeroNotice();
         }
 
         /// <summary>

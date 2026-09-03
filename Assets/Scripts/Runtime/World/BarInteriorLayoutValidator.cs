@@ -443,7 +443,10 @@ namespace BarPromenade
                 {
                     if (furniture[second].BlocksMovement &&
                         furniture[first].Bounds.Overlaps(
-                            furniture[second].Bounds))
+                            furniture[second].Bounds) &&
+                        !IsCounterAssemblyPair(
+                            furniture[first],
+                            furniture[second]))
                     {
                         throw new InvalidOperationException(
                             $"Furniture '{furniture[first].Id}' overlaps " +
@@ -451,6 +454,16 @@ namespace BarPromenade
                     }
                 }
             }
+        }
+
+        private static bool IsCounterAssemblyPair(
+            BarInteriorFurnitureFootprint first,
+            BarInteriorFurnitureFootprint second)
+        {
+            return (first.Kind == BarInteriorFurnitureKind.Counter &&
+                    second.Kind == BarInteriorFurnitureKind.CounterReturn) ||
+                   (first.Kind == BarInteriorFurnitureKind.CounterReturn &&
+                    second.Kind == BarInteriorFurnitureKind.Counter);
         }
 
         private static void ValidateNpcAnchors(

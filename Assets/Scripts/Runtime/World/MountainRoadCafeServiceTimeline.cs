@@ -10,13 +10,21 @@ namespace BarPromenade
         Notice = 3,
         WalkToCup = 4,
         Pour = 5,
-        WalkBack = 6
+        WalkBack = 6,
+        MenuNotice = 7,
+        WalkToHero = 8,
+        PlaceMenu = 9,
+        MenuWalkBack = 10,
+        WalkToMenu = 11,
+        TakeMenu = 12,
+        CarryMenuBack = 13
     }
 
     /// <summary>
-    /// Immutable view of the cafe's two-cup service state. The sleeping lone
-    /// patron and the hero are deliberately absent: sitting at the spare stool
-    /// can earn a glance, never another cup or a place in the service queue.
+    /// Immutable view of the cafe's two-cup service state and the two halves
+    /// of one menu handoff.
+    /// The sleeping lone patron and hero remain absent from the cup arrays:
+    /// the hero's booleans describe only the physical booklet delivery.
     /// </summary>
     public readonly struct MountainRoadCafeServiceFrame
     {
@@ -30,7 +38,11 @@ namespace BarPromenade
             MountainRoadCafeCastRole walkOrigin,
             bool hasWalkOrigin,
             float pairManFill,
-            float pairWomanFill)
+            float pairWomanFill,
+            bool heroMenuRequested,
+            bool heroMenuPlaced,
+            bool heroMenuRetrievalRequested,
+            bool heroMenuRetrieved)
         {
             Phase = phase;
             PhaseElapsedSeconds = phaseElapsedSeconds;
@@ -42,6 +54,10 @@ namespace BarPromenade
             HasWalkOrigin = hasWalkOrigin;
             PairManFill = pairManFill;
             PairWomanFill = pairWomanFill;
+            HeroMenuRequested = heroMenuRequested;
+            HeroMenuPlaced = heroMenuPlaced;
+            HeroMenuRetrievalRequested = heroMenuRetrievalRequested;
+            HeroMenuRetrieved = heroMenuRetrieved;
         }
 
         public MountainRoadCafeServicePhase Phase { get; }
@@ -54,6 +70,10 @@ namespace BarPromenade
         public bool HasWalkOrigin { get; }
         public float PairManFill { get; }
         public float PairWomanFill { get; }
+        public bool HeroMenuRequested { get; }
+        public bool HeroMenuPlaced { get; }
+        public bool HeroMenuRetrievalRequested { get; }
+        public bool HeroMenuRetrieved { get; }
         public float PhaseNormalized => PhaseDurationSeconds > 0f
             ? Mathf.Clamp01(PhaseElapsedSeconds / PhaseDurationSeconds)
             : 1f;
@@ -136,6 +156,8 @@ namespace BarPromenade
         public const float PourSeconds = 3.5f;
         public const float PourFlowStartNormalized = 0.38f;
         public const float PourFlowEndNormalized = 0.72f;
+        public const float MenuPlaceStartNormalized = 0.30f;
+        public const float MenuPlaceEndNormalized = 0.82f;
         public const float MinimumWipeSeconds = 18f;
         public const float MaximumWipeSeconds = 32f;
         public const float RefilledLevel = 0.90f;
@@ -143,6 +165,7 @@ namespace BarPromenade
         public const float InitialPairManFill = 0.44f;
         public const float InitialPairWomanFill = 0.56f;
         public const bool ServesHero = false;
+        public const bool OffersHeroMenu = true;
 
         private const float PairManSipConsumedAmount = 0.16f;
         private const float PairWomanSipConsumedAmount = 0.18f;
@@ -159,6 +182,10 @@ namespace BarPromenade
         private int serviceTargetIndex;
         private int queuedServiceTargetIndex;
         private int walkOriginIndex;
+        private bool heroMenuRequested;
+        private bool heroMenuPlaced;
+        private bool heroMenuRetrievalRequested;
+        private bool heroMenuRetrieved;
 
         public MountainRoadCafeServiceTimeline(int seed)
         {
@@ -176,7 +203,11 @@ namespace BarPromenade
                 RoleFromCupIndex(walkOriginIndex),
                 walkOriginIndex >= 0,
                 fills[0],
-                fills[1]);
+                fills[1],
+                heroMenuRequested,
+                heroMenuPlaced,
+                heroMenuRetrievalRequested,
+                heroMenuRetrieved);
 
         public float RemainingPhaseSeconds => Mathf.Max(
             0f,
@@ -213,6 +244,20 @@ namespace BarPromenade
                 phaseNormalized);
         }
 
+        public static float ResolveMenuPlacementNormalized(
+            float phaseNormalized)
+        {
+            return Mathf.InverseLerp(
+                MenuPlaceStartNormalized,
+                MenuPlaceEndNormalized,
+                phaseNormalized);
+        }
+
+        public static float ResolveMenuPickupNormalized(float phaseNormalized)
+        {
+            return ResolveMenuPlacementNormalized(phaseNormalized);
+        }
+
         public void Reset(int seed)
         {
             randomState = unchecked((uint)seed) ^ 0x9E3779B9u;
@@ -233,6 +278,10 @@ namespace BarPromenade
             serviceTargetIndex = -1;
             queuedServiceTargetIndex = -1;
             walkOriginIndex = -1;
+            heroMenuRequested = false;
+            heroMenuPlaced = false;
+            heroMenuRetrievalRequested = false;
+            heroMenuRetrieved = false;
             BeginPhase(
                 MountainRoadCafeServicePhase.Wiping,
                 NextWipeDuration());
@@ -316,6 +365,52 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// Queues the one physical menu handoff. Unlike the old notice-only
+        /// beat, a request made while the attendant is pouring is retained
+        /// and starts as soon as the current service walk returns to its
+        /// dock. It never creates a cup target or mutates either fill.
+        /// </summary>
+        public bool TryRequestHeroMenu()
+        {
+            if (heroMenuRequested || heroMenuPlaced ||
+                heroMenuRetrievalRequested || heroMenuRetrieved)
+            {
+                return false;
+            }
+
+            heroMenuRequested = true;
+            if (phase == MountainRoadCafeServicePhase.Wiping)
+            {
+                BeginMenuNotice();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Queues the reverse handoff after the booklet is on the counter.
+        /// Active drink, delivery and return phases finish first; the same
+        /// attendant then walks back, takes the menu and carries it to the
+        /// service dock without touching either patron cup.
+        /// </summary>
+        public bool TryRequestHeroMenuRetrieval()
+        {
+            if (!heroMenuPlaced || heroMenuRetrievalRequested ||
+                heroMenuRetrieved)
+            {
+                return false;
+            }
+
+            heroMenuRetrievalRequested = true;
+            if (phase == MountainRoadCafeServicePhase.Wiping)
+            {
+                BeginWalkToMenu();
+            }
+
+            return true;
+        }
+
         private void CompletePhase()
         {
             ApplyContinuousState();
@@ -364,6 +459,42 @@ namespace BarPromenade
                     }
                     break;
                 case MountainRoadCafeServicePhase.WalkBack:
+                    BeginWiping();
+                    break;
+                case MountainRoadCafeServicePhase.MenuNotice:
+                    BeginPhase(
+                        MountainRoadCafeServicePhase.WalkToHero,
+                        WalkSeconds);
+                    break;
+                case MountainRoadCafeServicePhase.WalkToHero:
+                    BeginPhase(
+                        MountainRoadCafeServicePhase.PlaceMenu,
+                        NoticeSeconds);
+                    break;
+                case MountainRoadCafeServicePhase.PlaceMenu:
+                    heroMenuRequested = false;
+                    heroMenuPlaced = true;
+                    BeginPhase(
+                        MountainRoadCafeServicePhase.MenuWalkBack,
+                        WalkSeconds);
+                    break;
+                case MountainRoadCafeServicePhase.MenuWalkBack:
+                    BeginWiping();
+                    break;
+                case MountainRoadCafeServicePhase.WalkToMenu:
+                    BeginPhase(
+                        MountainRoadCafeServicePhase.TakeMenu,
+                        NoticeSeconds);
+                    break;
+                case MountainRoadCafeServicePhase.TakeMenu:
+                    heroMenuPlaced = false;
+                    BeginPhase(
+                        MountainRoadCafeServicePhase.CarryMenuBack,
+                        WalkSeconds);
+                    break;
+                case MountainRoadCafeServicePhase.CarryMenuBack:
+                    heroMenuRetrievalRequested = false;
+                    heroMenuRetrieved = true;
                     BeginWiping();
                     break;
                 default:
@@ -423,9 +554,43 @@ namespace BarPromenade
             queuedServiceTargetIndex = -1;
             walkOriginIndex = -1;
             CaptureCurrentFills();
+            if (heroMenuRequested && !heroMenuPlaced)
+            {
+                BeginMenuNotice();
+                return;
+            }
+
+            if (heroMenuRetrievalRequested && heroMenuPlaced)
+            {
+                BeginWalkToMenu();
+                return;
+            }
+
             BeginPhase(
                 MountainRoadCafeServicePhase.Wiping,
                 NextWipeDuration());
+        }
+
+        private void BeginMenuNotice()
+        {
+            serviceTargetIndex = -1;
+            queuedServiceTargetIndex = -1;
+            walkOriginIndex = -1;
+            CaptureCurrentFills();
+            BeginPhase(
+                MountainRoadCafeServicePhase.MenuNotice,
+                NoticeSeconds);
+        }
+
+        private void BeginWalkToMenu()
+        {
+            serviceTargetIndex = -1;
+            queuedServiceTargetIndex = -1;
+            walkOriginIndex = -1;
+            CaptureCurrentFills();
+            BeginPhase(
+                MountainRoadCafeServicePhase.WalkToMenu,
+                WalkSeconds);
         }
 
         private void CapturePourTargets()

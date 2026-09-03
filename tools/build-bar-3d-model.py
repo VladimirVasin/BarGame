@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Build the bar interior and its complete old-pub exterior.
+"""Build the redesigned British-pub bar and its existing exterior.
 
-Every visible thing in the bar - the shell, the counter, the backbar and
-its bottles, the booths, the stage, the tables and stools, the dressing,
-the four activity sets, the four district variants, the jukebox, the fan
-and the practical lights - is authored here.  Before this the room was
-`89` `RuntimePrimitiveFactory` calls composed at runtime.
+Every visible interior object is authored here: the panelled L counter,
+brass rails and taps, mirrored backbar, snug screens, booths, small pub
+tables, carpet fields, music nook, service markers, bartender duckboard,
+reusable service props, jukebox, fan and practical lights.  Unity owns
+only behaviour, placement state, logical collision and lighting.
 
-The room is deliberately NOT re-designed.  Every dimension is the one
-`BarInteriorLayoutPlanner` publishes or the one the primitive it replaces
-used, and the manifest records them so an EditMode test can prove the two
-still agree.  What changes is only what the geometry is made of: edges
-are relieved, cups and shades taper, the doorway has reveals, and the
-floor meets the wall at a skirting instead of at one black line.
+The late-Victorian exterior and the established ``22 x 16 x 4.8 m`` room
+envelope remain fixed.  The interior is a compact, worn urban public
+house rather than a themed attraction: there are no flags, brands, pub
+name, legible advertising or tourist props.  The manifest records every
+fixed-metre part and semantic anchor so the Unity contract can be proven
+against the layout plan.
 
 Run with Blender 5 from the repository root::
 
@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -52,8 +53,8 @@ import interior_kit as kit  # noqa: E402  (after the sys.path fix)
 import bar_parts as bp  # noqa: E402
 import bar_exterior as exterior  # noqa: E402
 
-INTERIOR_GENERATOR_VERSION = "2.0.0"
-DESIGN_ID = "bar_interior_v2"
+INTERIOR_GENERATOR_VERSION = "3.1.0"
+DESIGN_ID = "bar_interior_v3"
 DISPLAY_NAME = "Bar Promenade Bar Interior"
 
 # --- the layout contract, mirrored from BarInteriorLayoutPlanner --------
@@ -67,9 +68,16 @@ FLOOR_THICKNESS = 0.24
 CEILING_THICKNESS = 0.20
 
 #: `plan.CounterPosition` / `plan.CounterSize`.
-COUNTER_POS = (0.0, 0.7, 5.75)
-COUNTER_SIZE = (11.2, 1.4, 1.0)
+COUNTER_POS = (0.0, 0.5, 5.75)
+COUNTER_SIZE = (11.2, 1.0, 1.0)
 COUNTER_STATION = (-1.15, 0.9, 4.75)
+COUNTER_RETURN_POS = (5.08, 0.5, 4.12)
+COUNTER_RETURN_SIZE = (1.04, 1.0, 3.25)
+HERO_SEAT = (-1.15, 0.96, 4.77)
+HERO_APPROACH = (-1.15, 0.0, 3.35)
+HERO_STAND = (-1.15, 0.0, 4.02)
+BARTENDER_POSITION = (-0.55, 0.0, 6.50)
+BARTENDER_DUCKBOARD_SIZE = (1.35, 0.42, 0.85)
 ACTIVITY_STATION = (5.1, 0.9, -1.55)
 
 #: Furniture footprints, from `BarInteriorLayoutPlanner.CreateFurniture`.
@@ -82,7 +90,8 @@ BOOTH_ZS = (-3.9, -0.35, 3.15)
 BOOTH_RECT_WIDTH = 3.07
 BOOTH_RECT_HEIGHT = 2.3
 BOOTH_RECT_X = -10.66
-HIGH_TOPS = ((-3.5, -3.65), (3.5, -3.65), (-3.5, 2.5), (3.5, 2.5))
+PUB_TABLES = ((-3.5, -3.65), (3.5, -3.65),
+              (-3.5, 2.5), (3.25, 2.55))
 COAT_RACK = (-8.85, -6.45)
 
 ACTIVITY_RECTS = {
@@ -102,6 +111,12 @@ ACTIVITY_KINDS = ("BeerPong", "Cocktail", "SplitTheG", "TinctureMatch")
 DEFAULT_BLEND = ROOT / "ArtSource" / "Bar" / "Blender" / "Bar3D.blend"
 DEFAULT_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarInterior3D.fbx"
 DEFAULT_MANIFEST = ROOT / "Assets" / "Bar" / "Models" / "Bar3D.json"
+SERVICE_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarServiceProps3D.fbx"
+SERVICE_MANIFEST = (
+    ROOT / "Assets" / "Bar" / "Models" / "BarServiceProps3D.json")
+SERVICE_GENERATOR_VERSION = "1.2.0"
+SERVICE_DESIGN_ID = "bar_service_props_v1"
+SERVICE_DISPLAY_NAME = "Bar Promenade Authored Service Props"
 FACADE_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarFacade3D.fbx"
 FACADE_MANIFEST = (
     ROOT / "Assets" / "Bar" / "Models" / "BarFacade3D.json")
@@ -117,6 +132,17 @@ SHEET_PITCH = {
     "Wallpaper": 1.8,
     "DarkWood": 1.1,
     "WornLeather": 0.9,
+    "CeilingPlaster": 2.4,
+    "PolishedWood": 0.75,
+    "AgedBrass": 0.42,
+    "MirrorGlass": 1.35,
+    "PatternedGlass": 0.72,
+    "PubCarpet": 1.15,
+    "WornFabric": 0.68,
+    "PaintedMetal": 0.82,
+    "Paper": 0.55,
+    "BottleGlass": 0.36,
+    "Ceramic": 0.42,
     "ExteriorBrick": 1.2,
     "ExteriorPlaster": 2.6,
     "CityRoof": 4.0,
@@ -128,11 +154,42 @@ PREVIEW_COLORS = {
     "Wallpaper": (0.29, 0.075, 0.075, 1.0),
     "DarkWood": (0.075, 0.024, 0.017, 1.0),
     "WornLeather": (0.30, 0.035, 0.045, 1.0),
+    "CeilingPlaster": (0.18, 0.14, 0.11, 1.0),
+    "PolishedWood": (0.22, 0.095, 0.045, 1.0),
+    "AgedBrass": (0.62, 0.34, 0.13, 1.0),
+    "MirrorGlass": (0.22, 0.34, 0.38, 1.0),
+    "PatternedGlass": (0.18, 0.28, 0.30, 1.0),
+    "PubCarpet": (0.22, 0.055, 0.052, 1.0),
+    "WornFabric": (0.30, 0.035, 0.045, 1.0),
+    "PaintedMetal": (0.18, 0.20, 0.19, 1.0),
+    "Paper": (0.74, 0.66, 0.47, 1.0),
+    "BottleGlass": (0.28, 0.20, 0.11, 1.0),
+    "Ceramic": (0.82, 0.12, 0.10, 1.0),
     "ExteriorBrick": (0.30, 0.12, 0.075, 1.0),
     "ExteriorPlaster": (0.48, 0.44, 0.34, 1.0),
     "CityRoof": (0.095, 0.105, 0.115, 1.0),
     "": (0.34, 0.29, 0.13, 1.0),
     "emissive": (1.0, 0.62, 0.28, 1.0),
+}
+
+PREVIEW_SURFACE_PROPERTIES = {
+    "WornPlank": (0.08, 0.0),
+    "Wallpaper": (0.04, 0.0),
+    "DarkWood": (0.12, 0.0),
+    "WornLeather": (0.06, 0.0),
+    "CeilingPlaster": (0.025, 0.0),
+    "PolishedWood": (0.34, 0.0),
+    "AgedBrass": (0.42, 0.72),
+    "MirrorGlass": (0.78, 0.12),
+    "PatternedGlass": (0.64, 0.04),
+    "PubCarpet": (0.015, 0.0),
+    "WornFabric": (0.02, 0.0),
+    "PaintedMetal": (0.20, 0.30),
+    "Paper": (0.025, 0.0),
+    "BottleGlass": (0.68, 0.02),
+    "Ceramic": (0.48, 0.04),
+    "ExteriorBrick": (0.04, 0.0),
+    "ExteriorPlaster": (0.035, 0.0),
 }
 
 
@@ -142,6 +199,41 @@ def rect_center(rect: Sequence[float]) -> tuple[float, float]:
 
 def rect_max(rect: Sequence[float]) -> tuple[float, float]:
     return rect[0] + rect[2], rect[1] + rect[3]
+
+
+def u_torus(
+    center: Sequence[float],
+    major_radius: float,
+    tube_radius: float,
+    major_segments: int = 16,
+    tube_segments: int = 6,
+) -> kit.Geometry:
+    """Watertight Unity-Y-up torus used for honest brass foot rings."""
+    cx, cy, cz = center
+    vertices: list[tuple[float, float, float]] = []
+    for major_index in range(major_segments):
+        major_angle = math.tau * major_index / major_segments
+        cosine_major = math.cos(major_angle)
+        sine_major = math.sin(major_angle)
+        for tube_index in range(tube_segments):
+            tube_angle = math.tau * tube_index / tube_segments
+            radial = major_radius + tube_radius * math.cos(tube_angle)
+            vertices.append((
+                cx + radial * cosine_major,
+                cy + tube_radius * math.sin(tube_angle),
+                cz + radial * sine_major,
+            ))
+    faces: list[tuple[int, ...]] = []
+    for major_index in range(major_segments):
+        next_major = (major_index + 1) % major_segments
+        for tube_index in range(tube_segments):
+            next_tube = (tube_index + 1) % tube_segments
+            current = major_index * tube_segments + tube_index
+            around_tube = major_index * tube_segments + next_tube
+            diagonal = next_major * tube_segments + next_tube
+            around_ring = next_major * tube_segments + tube_index
+            faces.append((current, around_tube, diagonal, around_ring))
+    return vertices, faces
 
 
 @dataclass
@@ -171,6 +263,28 @@ def stable(value: float) -> float:
     return round(float(value), 6)
 
 
+def anchor_signature(anchor: "bpy.types.Object") -> list | dict:
+    position = [stable(value) for value in anchor.location]
+    right = [stable(value) for value in anchor.get(
+        "bp_unity_right", (1.0, 0.0, 0.0))]
+    up = [stable(value) for value in anchor.get(
+        "bp_unity_up", (0.0, 1.0, 0.0))]
+    forward = [stable(value) for value in anchor.get(
+        "bp_unity_forward", (0.0, 0.0, 1.0))]
+    if (right == [1.0, 0.0, 0.0] and
+            up == [0.0, 1.0, 0.0] and
+            forward == [0.0, 0.0, 1.0]):
+        # Preserve existing interior/facade signatures when only the service
+        # pack starts publishing oriented anchors.
+        return position
+    return {
+        "position": position,
+        "unity_right": right,
+        "unity_up": up,
+        "unity_forward": forward,
+    }
+
+
 # ------------------------------------------------------------ scene ---
 
 
@@ -178,7 +292,36 @@ def create_material(key: str) -> "bpy.types.Material":
     material = bpy.data.materials.new(f"PREVIEW_Bar_{key or 'Flat'}")
     color = PREVIEW_COLORS[key]
     material.diffuse_color = color
-    material.roughness = 0.3 if key == "emissive" else 0.78
+    smoothness, metallic = PREVIEW_SURFACE_PROPERTIES.get(
+        key, (0.70 if key == "emissive" else 0.22, 0.0))
+    material.roughness = 1.0 - smoothness
+    material.metallic = metallic
+
+    texture_path = (
+        ROOT / "Assets" / "Resources" / "Bar" / "Textures" /
+        f"Bar{key}Albedo.png")
+    if key and key != "emissive" and texture_path.is_file():
+        material.use_nodes = True
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+        principled = nodes.get("Principled BSDF")
+        if principled is not None:
+            image_node = nodes.new("ShaderNodeTexImage")
+            image_node.name = f"{key} Albedo"
+            image_node.label = f"{key} measured albedo"
+            image_node.image = bpy.data.images.load(
+                str(texture_path), check_existing=True)
+            image_node.interpolation = "Linear"
+            image_node.extension = "REPEAT"
+            multiply = nodes.new("ShaderNodeMixRGB")
+            multiply.blend_type = "MULTIPLY"
+            multiply.inputs[0].default_value = 1.0
+            multiply.inputs[2].default_value = color
+            links.new(image_node.outputs["Color"], multiply.inputs[1])
+            links.new(multiply.outputs["Color"],
+                      principled.inputs["Base Color"])
+            principled.inputs["Roughness"].default_value = 1.0 - smoothness
+            principled.inputs["Metallic"].default_value = metallic
     return material
 
 
@@ -224,6 +367,82 @@ def ensure_group(
     return None
 
 
+def resolve_default_sheet(name: str, role: str) -> str:
+    """Give every visible pub part its own physical material family.
+
+    The previous model left roughly half of the interior on tint-only
+    materials.  The mapping is role-driven so rebuilding Blender/FBX cannot
+    silently turn a detailed pub back into flat-colour primitives.
+    """
+    by_role = {
+        "ceiling": "CeilingPlaster",
+        "entrance_frame": "PolishedWood",
+        "wainscot_rail": "AgedBrass",
+        "counter_top": "PolishedWood",
+        "counter_rail": "AgedBrass",
+        "hero_stool_footring": "AgedBrass",
+        "drink_order_point": "AgedBrass",
+        "tap_stem": "AgedBrass",
+        "tap_handle": "Ceramic",
+        "backbar_mirror": "MirrorGlass",
+        "backbar_patterned_glass": "AgedBrass",
+        "backbar_shelf": "PolishedWood",
+        "backbar_glass_rack": "AgedBrass",
+        "bottle": "BottleGlass",
+        "booth_table": "PolishedWood",
+        "snug_divider_glass": "PatternedGlass",
+        "stage_speaker": "PaintedMetal",
+        "stage_mic": "PaintedMetal",
+        "pub_carpet": "PubCarpet",
+        "pub_carpet_border": "PubCarpet",
+        "pub_carpet_pattern": "PubCarpet",
+        "bay_rug": "PubCarpet",
+        "bay_border": "AgedBrass",
+        "coat_rack": "PolishedWood",
+        "coat_hook": "AgedBrass",
+        "service_door": "PaintedMetal",
+        "service_door_frame": "PolishedWood",
+        "poster_frame": "PolishedWood",
+        "poster": "Paper",
+        "entrance_curtain_rail": "AgedBrass",
+        "fan_hub": "AgedBrass",
+        "jukebox_grille": "PaintedMetal",
+        "jukebox_key": "AgedBrass",
+        "practical_cable": "PaintedMetal",
+        "practical_shade": "PaintedMetal",
+        "activity_table": "PolishedWood",
+        "activity_line": "Paper",
+        "activity_cup": "Ceramic",
+        "activity_console_top": "PolishedWood",
+        "service_bottle_body": "BottleGlass",
+        "service_bottle_closure": "PaintedMetal",
+        "service_bottle_label": "Paper",
+        "service_vessel_shell": "BottleGlass",
+        "service_vessel_liquid": "BottleGlass",
+        "service_menu_pages": "Paper",
+        "service_menu_relief": "AgedBrass",
+        "service_pour_stream": "BottleGlass",
+    }
+    if role in by_role:
+        return by_role[role]
+    if role in ("district_field", "district_cards"):
+        if "Curtain" in name or "Pleats" in name:
+            return "WornFabric"
+        if "Industrial" in name:
+            return "PaintedMetal"
+        return "Paper"
+    if role == "activity_prop":
+        if any(token in name for token in (
+                "Glass", "Pint", "Shot", "Bottle")):
+            return "BottleGlass"
+        if "Foam" in name:
+            return "Ceramic"
+        if "Target" in name or "Sign" in name or "Marks" in name:
+            return "Paper"
+        return "PaintedMetal"
+    return ""
+
+
 def add_part(
     asset: AssetBuild,
     materials: dict,
@@ -248,6 +467,9 @@ def add_part(
     """
     if unity_space:
         geometry = bp.to_source(geometry)
+
+    if not emissive and not sheet:
+        sheet = resolve_default_sheet(name, role)
 
     vertices, faces = geometry
     if not vertices or not faces:
@@ -276,6 +498,9 @@ def add_anchor(
     name: str,
     role: str,
     unity_position: Sequence[float],
+    unity_right: Sequence[float] = (1.0, 0.0, 0.0),
+    unity_up: Sequence[float] = (0.0, 1.0, 0.0),
+    unity_forward: Sequence[float] = (0.0, 0.0, 1.0),
 ) -> None:
     anchor = bpy.data.objects.new(f"ANCHOR_{name}", None)
     asset.collection.objects.link(anchor)
@@ -284,7 +509,26 @@ def add_anchor(
     anchor.empty_display_size = 0.5
     x, y, z = unity_position
     anchor.location = (float(x), float(z), float(y))
+    # Positions pass through the same Y/Z swap as all authored geometry.
+    # Conjugating the Unity rotation by that swap gives Blender the source
+    # rotation whose imported Transform axes recover the exact requested
+    # right/up/forward basis. Identity remains identity for ordinary anchors.
+    from mathutils import Matrix
+    swap_yz = Matrix(((1.0, 0.0, 0.0),
+                      (0.0, 0.0, 1.0),
+                      (0.0, 1.0, 0.0)))
+    unity_rotation = Matrix((
+        (unity_right[0], unity_up[0], unity_forward[0]),
+        (unity_right[1], unity_up[1], unity_forward[1]),
+        (unity_right[2], unity_up[2], unity_forward[2]),
+    ))
+    source_rotation = swap_yz @ unity_rotation @ swap_yz
+    anchor.rotation_mode = "QUATERNION"
+    anchor.rotation_quaternion = source_rotation.to_quaternion()
     anchor["bp_role"] = role
+    anchor["bp_unity_right"] = list(unity_right)
+    anchor["bp_unity_up"] = list(unity_up)
+    anchor["bp_unity_forward"] = list(unity_forward)
     asset.anchors[name] = anchor
 
 
@@ -353,7 +597,7 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
             "entrance_frame", bp.ident("MetalTint"))
     add_part(
         asset, materials, "Entrance Lintel",
-        bp.u_box((0.0, 4.20, -half_depth + 0.04), (3.7, 0.30, 0.42)),
+        bp.u_box((0.0, 4.48, -half_depth + 0.04), (3.7, 0.20, 0.42)),
         "entrance_frame", bp.ident("MetalTint"))
 
     wainscot = [
@@ -406,6 +650,8 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
 def build_counter(asset: AssetBuild, materials: dict) -> None:
     cx, cy, cz = COUNTER_POS
     sx, sy, sz = COUNTER_SIZE
+    rx, ry, rz = COUNTER_RETURN_POS
+    rsx, rsy, rsz = COUNTER_RETURN_SIZE
 
     add_part(
         asset, materials, "Bar Counter",
@@ -415,14 +661,42 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
         "counter", bp.ident("CounterWoodTint"), sheet="DarkWood",
         colliders=[((cx, cy, cz), (sx, sy, sz))], unity_space=False)
     add_part(
+        asset, materials, "Bar Counter Return",
+        bp.u_box((rx, ry, rz), (rsx, rsy, rsz), 0.026),
+        "counter_return", bp.ident("CounterWoodTint"), sheet="DarkWood",
+        colliders=[((rx, ry, rz), (rsx, rsy, rsz))])
+    add_part(
         asset, materials, "Counter Top",
         bp.u_box((cx, cy + sy * 0.5 + 0.08, cz),
                  (sx + 0.45, 0.16, sz + 0.32), 0.02),
         "counter_top", bp.ident("MetalTint"))
     add_part(
-        asset, materials, "Counter Foot Rail",
-        bp.u_box((cx, cy - sy * 0.29, cz - sz * 0.62),
-                 (sx - 0.45, 0.10, 0.10), 0.008),
+        asset, materials, "Counter Return Top",
+        bp.u_box((rx, ry + rsy * 0.5 + 0.08, rz - 0.08),
+                 (rsx + 0.32, 0.16, rsz + 0.16), 0.02),
+        "counter_top", bp.ident("MetalTint"))
+
+    main_rail = kit.translated(
+        bp.u_rotated(
+            bp.u_cylinder(
+                (0.0, 0.0, 0.0),
+                (0.10, (sx - 0.45) * 0.5, 0.10),
+                sides=12),
+            (0.0, 0.0, 90.0)),
+        (cx, cy - sy * 0.29, cz - sz * 0.62))
+    add_part(
+        asset, materials, "Counter Foot Rail", main_rail,
+        "counter_rail", bp.ident("MetalTint"))
+    return_rail = kit.translated(
+        bp.u_rotated(
+            bp.u_cylinder(
+                (0.0, 0.0, 0.0),
+                (0.10, (rsz - 0.38) * 0.5, 0.10),
+                sides=12),
+            (90.0, 0.0, 0.0)),
+        (rx - rsx * 0.62, ry - rsy * 0.29, rz - 0.12))
+    add_part(
+        asset, materials, "Counter Return Foot Rail", return_rail,
         "counter_rail", bp.ident("MetalTint"))
 
     panels = []
@@ -437,9 +711,21 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
         "counter_panel", bp.ident("WoodTint"), sheet="DarkWood",
         shadows=False)
 
-    #  The stool beside the counter station is left out, exactly as the
-    #  loop that built these left it out: the bartender serves across
-    #  that gap and a stool in it blocks the transaction.
+    return_panels = []
+    for index in range(3):
+        panel_z = rz - rsz * 0.5 + 0.34 + index * 0.88
+        return_panels.append(bp.u_box(
+            (rx - rsx * 0.51, ry, panel_z),
+            (0.08, rsy - 0.20, 0.72), 0.006))
+    add_part(
+        asset, materials, "Counter Return Panels",
+        kit.merge_all(return_panels), "counter_panel",
+        bp.ident("WoodTint"), sheet="DarkWood", shadows=False)
+
+    # The regular stools leave the service bay clear. The hero stool uses
+    # the same top height: lowering only the interactive seat buried the
+    # seated avatar behind the counter even though the surrounding stools
+    # still read correctly.
     stool_z = cz - sz * 0.5 - 0.72
     for index, x in enumerate((-4.25, -2.55, -0.85, 0.85, 2.55, 4.25)):
         dx = x - COUNTER_STATION[0]
@@ -457,6 +743,77 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
             bp.u_tapered_cylinder((x, 0.87, stool_z), (0.48, 0.09, 0.48),
                                   0.94),
             "stool_seat", bp.rgb(0.30, 0.035, 0.045), sheet="WornLeather")
+
+    hero_x, hero_top, hero_z = HERO_SEAT
+    hero_leg_offsets = (-0.16, 0.16)
+    add_part(
+        asset, materials, "Bar Drink Service Stool Legs",
+        kit.merge_all([
+            bp.u_box(
+                (hero_x + offset_x, 0.35, hero_z + offset_z),
+                (0.075, 0.66, 0.075), 0.012)
+            for offset_x in hero_leg_offsets
+            for offset_z in hero_leg_offsets
+        ]),
+        "hero_stool_legs", bp.ident("DarkWoodTint"), sheet="DarkWood")
+    add_part(
+        asset, materials, "Bar Drink Service Stool Footring",
+        u_torus((hero_x, 0.31, hero_z), 0.215, 0.018),
+        "hero_stool_footring", bp.ident("MetalTint"), shadows=False)
+    add_part(
+        asset, materials, "Bar Drink Service Stool",
+        bp.u_tapered_cylinder(
+            (hero_x, hero_top - 0.07, hero_z),
+            (0.50, 0.07, 0.50), 0.94, sides=12),
+        "hero_stool_seat", bp.ident("UpholsteryTint"),
+        sheet="WornLeather",
+        colliders=[((hero_x, hero_top - 0.07, hero_z),
+                    (0.50, 0.14, 0.50))])
+
+    duck_x, _, duck_z = BARTENDER_POSITION
+    duck_sx, duck_sy, duck_sz = BARTENDER_DUCKBOARD_SIZE
+    slats = [
+        bp.u_box(
+            (duck_x - duck_sx * 0.5 + 0.15 + index * 0.265,
+             duck_sy - 0.055,
+             duck_z),
+            (0.23, 0.11, duck_sz), 0.01)
+        for index in range(5)
+    ]
+    slats += [
+        bp.u_box(
+            (duck_x, 0.155, duck_z + offset),
+            (duck_sx - 0.08, 0.31, 0.12), 0.008)
+        for offset in (-0.27, 0.27)
+    ]
+    add_part(
+        asset, materials, "Bartender Duckboard", kit.merge_all(slats),
+        "bartender_duckboard", bp.rgb(0.16, 0.11, 0.07),
+        sheet="WornPlank",
+        colliders=[((duck_x, duck_sy * 0.5, duck_z),
+                    BARTENDER_DUCKBOARD_SIZE)])
+
+    add_part(
+        asset, materials, "Drink Order Point",
+        bp.u_box((COUNTER_STATION[0], 0.06, COUNTER_STATION[2]),
+                 (0.74, 0.08, 0.56), 0.018),
+        "drink_order_point", bp.ident("MetalTint"), shadows=False)
+    add_part(
+        asset, materials, "Drink Order Sign Frame",
+        bp.u_box((COUNTER_STATION[0], 1.17, cz - 0.58),
+                 (0.88, 0.44, 0.10), 0.018),
+        "drink_order_marker_frame", bp.ident("DarkWoodTint"),
+        sheet="DarkWood", shadows=False)
+    order_mark = kit.merge_all([
+        bp.u_plate((COUNTER_STATION[0], 1.17, cz - 0.637),
+                   (0.66, 0.26, 0.025)),
+        bp.u_box((COUNTER_STATION[0] + 0.22, 1.17, cz - 0.657),
+                 (0.12, 0.13, 0.025), 0.004),
+    ])
+    add_part(
+        asset, materials, "Drink Order Sign", order_mark,
+        "drink_order_marker", bp.ident("SignGlowColor", 0.72),
+        emissive=True, shadows=False)
 
     for index in range(5):
         x = -2.2 + index * 1.1
@@ -494,6 +851,34 @@ def build_backbar(asset: AssetBuild, materials: dict) -> None:
         asset, materials, "Backbar Mirror Panels", kit.merge_all(mirrors),
         "backbar_mirror", bp.ident("GlassTint"), shadows=False)
 
+    mirror_frames = []
+    mirror_lattice = []
+    for index in range(5):
+        panel_x = -4.25 + index * 2.125
+        for x_offset in (-0.95, 0.95):
+            mirror_frames.append(bp.u_box(
+                (panel_x + x_offset, 2.72, back_z - 0.09),
+                (0.10, 2.72, 0.10), 0.008))
+        for y in (1.42, 4.02):
+            mirror_frames.append(bp.u_box(
+                (panel_x, y, back_z - 0.09),
+                (2.00, 0.10, 0.10), 0.008))
+        for pitch in (-34.0, 34.0):
+            mirror_lattice.append(kit.translated(
+                bp.u_rotated(
+                    bp.u_box((0.0, 0.0, 0.0),
+                             (1.76, 0.035, 0.045), 0.005),
+                    (0.0, 0.0, pitch)),
+                (panel_x, 2.72, back_z - 0.125)))
+    add_part(
+        asset, materials, "Backbar Mirror Frames",
+        kit.merge_all(mirror_frames), "backbar_mirror_frame",
+        bp.ident("DarkWoodTint"), sheet="DarkWood", shadows=False)
+    add_part(
+        asset, materials, "Backbar Patterned Glass Lattice",
+        kit.merge_all(mirror_lattice), "backbar_patterned_glass",
+        bp.ident("MetalTint"), shadows=False)
+
     shelves = [
         bp.u_box((0.0, 1.62 + row * 0.72, back_z - 0.12),
                  (10.7, 0.10, 0.36), 0.008)
@@ -507,6 +892,19 @@ def build_backbar(asset: AssetBuild, materials: dict) -> None:
     add_part(
         asset, materials, "Backbar Shelves", kit.merge_all(shelves),
         "backbar_shelf", bp.ident("MetalTint"), shadows=False)
+
+    glass_rack = [
+        bp.u_box((x, 3.77, back_z - 0.48), (0.06, 0.08, 0.72), 0.006)
+        for x in (-3.85, -1.95, -0.05, 1.85, 3.75)
+    ]
+    glass_rack += [
+        bp.u_box((0.0, 3.77, back_z - 0.78), (9.2, 0.07, 0.06), 0.006),
+        bp.u_box((0.0, 3.77, back_z - 0.18), (9.2, 0.07, 0.06), 0.006),
+    ]
+    add_part(
+        asset, materials, "Backbar Hanging Glass Rack",
+        kit.merge_all(glass_rack), "backbar_glass_rack",
+        bp.ident("MetalTint"), shadows=False)
 
     build_bottles(asset, materials, back_z - 0.28)
 
@@ -591,6 +989,28 @@ def build_booths(asset: AssetBuild, materials: dict) -> None:
             "booth_table_leg", bp.ident("DarkWoodTint"), sheet="DarkWood",
             colliders=[((table_x, 0.43, z), (0.18, 0.86, 0.18))])
 
+    divider_timber = []
+    divider_glass = []
+    for z in (-5.05, -2.75, 0.80, 4.30):
+        divider_timber += [
+            bp.u_box((-10.42, 1.25, z), (0.13, 2.50, 0.14), 0.01),
+            bp.u_box((-7.72, 1.25, z), (0.13, 2.50, 0.14), 0.01),
+            bp.u_box((-9.07, 1.08, z), (2.78, 0.13, 0.14), 0.01),
+            bp.u_box((-9.07, 2.38, z), (2.78, 0.13, 0.14), 0.01),
+            bp.u_box((-9.07, 0.55, z), (2.56, 0.86, 0.11), 0.012),
+        ]
+        for x in (-9.94, -9.07, -8.20):
+            divider_glass.append(bp.u_box(
+                (x, 1.72, z), (0.73, 0.98, 0.055), 0.008))
+    add_part(
+        asset, materials, "Snug Divider Timber",
+        kit.merge_all(divider_timber), "snug_divider_timber",
+        bp.ident("DarkWoodTint"), sheet="DarkWood")
+    add_part(
+        asset, materials, "Snug Divider Patterned Glass",
+        kit.merge_all(divider_glass), "snug_divider_glass",
+        bp.ident("GlassTint"), shadows=False)
+
 
 def build_stage(asset: AssetBuild, materials: dict) -> None:
     center_x, center_z = rect_center(STAGE_RECT)
@@ -615,13 +1035,13 @@ def build_stage(asset: AssetBuild, materials: dict) -> None:
         add_part(
             asset, materials, f"Stage {label} Curtain",
             kit.merge_all(folds), "stage_curtain",
-            bp.ident("UpholsteryTint"), sheet="WornLeather")
+            bp.ident("UpholsteryTint"), sheet="WornFabric")
 
     add_part(
         asset, materials, "Stage Valance",
         bp.u_box((center_x, 4.34, curtain_z),
                  (STAGE_RECT[2] + 0.12, 0.62, 0.35), 0.014),
-        "stage_curtain", bp.ident("UpholsteryTint"), sheet="WornLeather")
+        "stage_curtain", bp.ident("UpholsteryTint"), sheet="WornFabric")
 
     for label, x in (("Left", x_min + 0.55), ("Right", x_max - 0.55)):
         add_part(
@@ -643,10 +1063,47 @@ def build_stage(asset: AssetBuild, materials: dict) -> None:
 
 
 def build_tables_and_bay(asset: AssetBuild, materials: dict) -> None:
+    carpet_fields = [
+        bp.u_box((-0.75, 0.018, -0.65), (7.50, 0.035, 8.05), 0.006),
+        bp.u_box((-8.72, 0.018, -0.40), (4.10, 0.035, 10.75), 0.006),
+        bp.u_box((0.0, 0.018, -6.20), (2.05, 0.035, 2.25), 0.006),
+    ]
+    add_part(
+        asset, materials, "Pub Carpet Fields", kit.merge_all(carpet_fields),
+        "pub_carpet", bp.rgb(0.22, 0.055, 0.052), shadows=False)
+
+    carpet_borders = [
+        bp.u_box((-0.75, 0.044, -4.66), (7.56, 0.018, 0.075), 0.004),
+        bp.u_box((-0.75, 0.044, 3.36), (7.56, 0.018, 0.075), 0.004),
+        bp.u_box((-4.47, 0.044, -0.65), (0.075, 0.018, 7.96), 0.004),
+        bp.u_box((2.97, 0.044, -0.65), (0.075, 0.018, 7.96), 0.004),
+        bp.u_box((-8.72, 0.044, -5.74), (4.16, 0.018, 0.075), 0.004),
+        bp.u_box((-8.72, 0.044, 4.94), (4.16, 0.018, 0.075), 0.004),
+        bp.u_box((-10.73, 0.044, -0.40), (0.075, 0.018, 10.62), 0.004),
+        bp.u_box((-6.71, 0.044, -0.40), (0.075, 0.018, 10.62), 0.004),
+    ]
+    add_part(
+        asset, materials, "Pub Carpet Borders", kit.merge_all(carpet_borders),
+        "pub_carpet_border", bp.rgb(0.36, 0.27, 0.10), shadows=False)
+
+    carpet_motifs = []
+    for x in (-3.7, -2.2, -0.7, 0.8, 2.3):
+        for z in (-3.8, -2.2, -0.6, 1.0, 2.6):
+            carpet_motifs.append(kit.translated(
+                bp.u_rotated(
+                    bp.u_box((0.0, 0.0, 0.0),
+                             (0.28, 0.022, 0.28), 0.004),
+                    (0.0, 45.0, 0.0)),
+                (x, 0.052, z)))
+    add_part(
+        asset, materials, "Pub Carpet Diamond Motifs",
+        kit.merge_all(carpet_motifs), "pub_carpet_pattern",
+        bp.rgb(0.42, 0.31, 0.12), shadows=False)
+
     add_part(
         asset, materials, "Activity Bay Rug",
         bp.u_box((7.00, 0.018, 0.55), (6.15, 0.035, 5.65), 0.006),
-        "bay_rug", bp.rgb(0.12, 0.11, 0.20), shadows=False)
+        "bay_rug", bp.rgb(0.16, 0.065, 0.055), shadows=False)
 
     border = [
         bp.u_box((7.0, 0.045, -2.28), (6.22, 0.06, 0.08), 0.006),
@@ -656,20 +1113,23 @@ def build_tables_and_bay(asset: AssetBuild, materials: dict) -> None:
     ]
     add_part(
         asset, materials, "Activity Bay Border", kit.merge_all(border),
-        "bay_border", bp.rgb(0.86, 0.46, 0.14), shadows=False)
+        "bay_border", bp.rgb(0.36, 0.27, 0.10), shadows=False)
 
-    for index, (x, z) in enumerate(HIGH_TOPS, start=1):
-        name = f"Social High Table {index}"
+    for index, (x, z) in enumerate(PUB_TABLES, start=1):
+        name = f"Social Pub Table {index}"
         add_part(
             asset, materials, f"{name} Leg",
-            bp.u_cylinder((x, 0.47, z), (0.17, 0.47, 0.17)),
+            kit.merge_all([
+                bp.u_cylinder((x, 0.35, z), (0.18, 0.35, 0.18)),
+                bp.u_cylinder((x, 0.07, z), (0.48, 0.07, 0.48)),
+            ]),
             "table_leg", bp.rgb(0.075, 0.024, 0.017), sheet="DarkWood",
-            colliders=[((x, 0.47, z), (0.17, 0.94, 0.17))])
+            colliders=[((x, 0.35, z), (0.18, 0.70, 0.18))])
         add_part(
             asset, materials, name,
-            bp.u_cylinder((x, 0.98, z), (0.90, 0.08, 0.90), sides=12),
-            "table_top", bp.rgb(0.86, 0.46, 0.14),
-            colliders=[((x, 0.98, z), (0.90, 0.16, 0.90))])
+            bp.u_cylinder((x, 0.76, z), (0.92, 0.06, 0.92), sides=12),
+            "table_top", bp.ident("WoodTint"), sheet="PolishedWood",
+            colliders=[((x, 0.76, z), (0.92, 0.12, 0.92))])
 
 
 def build_dressing(asset: AssetBuild, materials: dict) -> None:
@@ -715,6 +1175,50 @@ def build_dressing(asset: AssetBuild, materials: dict) -> None:
             asset, materials, name,
             bp.u_plate((x - 0.055, y, z), (0.06, 1.50, 0.98)),
             "poster", tint, shadows=False)
+
+    curtain_folds = []
+    for side in (-1.0, 1.0):
+        for fold in (-1.5, -0.5, 0.5, 1.5):
+            curtain_folds.append(bp.u_tapered_cylinder(
+                (side * (2.08 + fold * 0.075), 2.25,
+                 -ROOM_DEPTH * 0.5 + 0.24),
+                (0.19, 2.05, 0.16), 0.78, sides=8))
+    add_part(
+        asset, materials, "Entrance Heavy Curtains",
+        kit.merge_all(curtain_folds), "entrance_curtain",
+        bp.ident("UpholsteryTint"), sheet="WornFabric")
+
+    curtain_rod = kit.merge_all([
+        kit.translated(
+            bp.u_rotated(
+                bp.u_cylinder((0.0, 0.0, 0.0),
+                              (0.075, 2.15, 0.075), sides=12),
+                (0.0, 0.0, 90.0)),
+            (0.0, 4.34, -ROOM_DEPTH * 0.5 + 0.44)),
+        bp.u_tapered_cylinder(
+            (-2.27, 4.34, -ROOM_DEPTH * 0.5 + 0.44),
+            (0.16, 0.10, 0.16), 0.62, sides=12),
+        bp.u_tapered_cylinder(
+            (2.27, 4.34, -ROOM_DEPTH * 0.5 + 0.44),
+            (0.16, 0.10, 0.16), 0.62, sides=12),
+    ])
+    add_part(
+        asset, materials, "Entrance Curtain Brass Rail", curtain_rod,
+        "entrance_curtain_rail", bp.ident("MetalTint"), shadows=False)
+
+    exit_y = ROOM_HEIGHT - 0.62
+    exit_z = -ROOM_DEPTH * 0.5 + 0.18
+    add_part(
+        asset, materials, "Exit Header Frame",
+        bp.u_box((0.0, exit_y, exit_z), (3.58, 0.34, 0.20), 0.018),
+        "exit_header_frame", bp.ident("DarkWoodTint"),
+        sheet="DarkWood", shadows=False)
+    add_part(
+        asset, materials, "Exit Header",
+        bp.u_box((0.0, exit_y, exit_z - 0.115),
+                 (3.28, 0.10, 0.035), 0.006),
+        "exit_header", bp.ident("SignGlowColor", 0.58),
+        emissive=True, shadows=False)
 
 
 def build_ceiling_fan(asset: AssetBuild, materials: dict) -> None:
@@ -840,7 +1344,7 @@ def build_districts(asset: AssetBuild, materials: dict) -> None:
         asset, materials, "Residential Curtain Field",
         bp.u_plate((10.76, 2.68, 0.0), (0.06, 2.35, 4.80)),
         "district_field", bp.ident("UpholsteryTint"),
-        group=household, sheet="WornLeather", shadows=False)
+        group=household, sheet="WornFabric", shadows=False)
     add_part(
         asset, materials, "Residential Curtain Pleats",
         kit.merge_all(wall_cards(2.68, 7, 0.64, 2.18, 0.14)),
@@ -1044,6 +1548,537 @@ def build_activities(asset: AssetBuild, materials: dict) -> None:
         shadows=False)
 
 
+# ------------------------------------------------------ service props -
+
+
+SERVICE_BOTTLE_STYLES = (
+    "WaterBottle",
+    "BeerLongneck",
+    "WineBottle",
+    "VodkaBottle",
+    "CognacBottle",
+)
+
+# The physical menu deliberately follows the Mountain Plateau Cafe's
+# authored open-book language: two thin dark covers, two warm paper leaves,
+# a raised spine and semantic text sockets.  The bar has nine choices, so
+# its closed booklet is a little taller while the readable rows stay on one
+# real page plane; runtime never has to guess which leaf a line belongs to.
+SERVICE_MENU_COVER_WIDTH = 0.58
+SERVICE_MENU_COVER_DEPTH = 0.50
+SERVICE_MENU_COVER_THICKNESS = 0.006
+SERVICE_MENU_COVER_GAP = 0.006
+SERVICE_MENU_COVER_MIN_Y = 0.004
+SERVICE_MENU_PAGE_WIDTH = 0.54
+SERVICE_MENU_PAGE_DEPTH = 0.46
+SERVICE_MENU_PAGE_THICKNESS = 0.004
+SERVICE_MENU_PAGE_GAP = 0.010
+SERVICE_MENU_PAGE_MIN_Y = 0.013
+SERVICE_MENU_OPEN_ANGLE_DEGREES = 5.5
+SERVICE_MENU_TEXT_CLEARANCE = 0.0015
+SERVICE_MENU_TEXT_X = 0.145
+SERVICE_MENU_SELECTION_X = 0.035
+SERVICE_MENU_LEFT_ROW_Z = (0.14, 0.07, 0.0, -0.07, -0.14)
+SERVICE_MENU_RIGHT_ROW_Z = (0.105, 0.035, -0.035, -0.105)
+SERVICE_MENU_GRIP = (0.0, 0.046, 0.215)
+SERVICE_MENU_BASIS_LENGTH = 0.10
+
+SERVICE_VESSEL_PROFILES = {
+    "Tumbler": {
+        "glass": ((0.13, 0.0), (0.14, 0.27), (0.15, 0.30)),
+        "liquid": ((0.115, 0.0), (0.134, 0.245)),
+        "liquid_base": 0.025,
+    },
+    "Pint": {
+        "glass": ((0.13, 0.0), (0.16, 0.34), (0.18, 0.39)),
+        "liquid": ((0.115, 0.0), (0.162, 0.335)),
+        "liquid_base": 0.025,
+    },
+    "WineGlass": {
+        "glass": (
+            (0.16, 0.0), (0.16, 0.018), (0.025, 0.025),
+            (0.025, 0.15), (0.07, 0.16), (0.145, 0.25),
+            (0.13, 0.37),
+        ),
+        "liquid": ((0.058, 0.0), (0.132, 0.085), (0.116, 0.172)),
+        "liquid_base": 0.165,
+    },
+    "ShotGlass": {
+        "glass": ((0.065, 0.0), (0.09, 0.145)),
+        "liquid": ((0.052, 0.0), (0.076, 0.112)),
+        "liquid_base": 0.018,
+    },
+    "Snifter": {
+        "glass": (
+            (0.14, 0.0), (0.14, 0.018), (0.027, 0.025),
+            (0.027, 0.10), (0.07, 0.11), (0.16, 0.18),
+            (0.15, 0.25), (0.105, 0.32),
+        ),
+        "liquid": ((0.058, 0.0), (0.145, 0.075), (0.098, 0.175)),
+        "liquid_base": 0.115,
+    },
+}
+
+
+def add_service_bottle(
+    asset: AssetBuild,
+    materials: dict,
+    style: str,
+) -> None:
+    group = f"service:bottle:{style}"
+    bottle = bp.rgb(0.28, 0.20, 0.11)
+    closure = bp.rgb(0.52, 0.48, 0.36)
+    label = bp.rgb(0.72, 0.66, 0.48)
+    body: list[kit.Geometry]
+    total_height: float
+    width: float
+    depth: float
+
+    if style == "WaterBottle":
+        width, depth, total_height = 0.21, 0.21, 0.68
+        body = [
+            bp.u_cylinder((0.0, 0.24, 0.0), (0.21, 0.24, 0.21), sides=12),
+            bp.u_tapered_cylinder(
+                (0.0, 0.52, 0.0), (0.18, 0.04, 0.18), 0.48, sides=12),
+            bp.u_cylinder((0.0, 0.61, 0.0), (0.085, 0.05, 0.085), sides=12),
+        ]
+        cap = bp.u_cylinder(
+            (0.0, 0.66, 0.0), (0.098, 0.02, 0.098), sides=12)
+    elif style == "BeerLongneck":
+        width, depth, total_height = 0.21, 0.21, 0.72
+        body = [
+            bp.u_cylinder((0.0, 0.22, 0.0), (0.21, 0.22, 0.21), sides=12),
+            bp.u_tapered_cylinder(
+                (0.0, 0.475, 0.0), (0.17, 0.035, 0.17),
+                0.49, sides=12),
+            bp.u_cylinder((0.0, 0.61, 0.0), (0.083, 0.10, 0.083), sides=12),
+        ]
+        cap = bp.u_cylinder(
+            (0.0, 0.7025, 0.0), (0.098, 0.0175, 0.098), sides=12)
+    elif style == "WineBottle":
+        width, depth, total_height = 0.23, 0.23, 0.82
+        body = [
+            bp.u_cylinder((0.0, 0.25, 0.0), (0.23, 0.25, 0.23), sides=12),
+            bp.u_tapered_cylinder(
+                (0.0, 0.535, 0.0), (0.18, 0.035, 0.18),
+                0.45, sides=12),
+            bp.u_cylinder((0.0, 0.685, 0.0), (0.08, 0.115, 0.08), sides=12),
+        ]
+        cap = bp.u_cylinder(
+            (0.0, 0.8025, 0.0), (0.088, 0.0175, 0.088), sides=12)
+        closure = bp.rgb(0.48, 0.30, 0.16)
+    elif style == "VodkaBottle":
+        width, depth, total_height = 0.25, 0.18, 0.67
+        body = [
+            bp.u_box((0.0, 0.22, 0.0), (0.25, 0.44, 0.18), 0.018),
+            bp.u_tapered_cylinder(
+                (0.0, 0.475, 0.0), (0.18, 0.035, 0.15),
+                0.58, sides=12),
+            bp.u_cylinder((0.0, 0.58, 0.0), (0.105, 0.07, 0.105), sides=12),
+        ]
+        cap = bp.u_cylinder(
+            (0.0, 0.645, 0.0), (0.12, 0.025, 0.12), sides=12)
+        bottle = bp.rgb(0.62, 0.76, 0.78)
+    elif style == "CognacBottle":
+        width, depth, total_height = 0.30, 0.24, 0.61
+        body = [
+            bp.u_tapered_cylinder(
+                (0.0, 0.18, 0.0), (0.30, 0.18, 0.24), 0.80, sides=12),
+            bp.u_tapered_cylinder(
+                (0.0, 0.40, 0.0), (0.24, 0.04, 0.20), 0.50, sides=12),
+            bp.u_cylinder((0.0, 0.505, 0.0), (0.10, 0.065, 0.10), sides=12),
+        ]
+        cap = bp.u_cylinder(
+            (0.0, 0.59, 0.0), (0.125, 0.02, 0.125), sides=12)
+        closure = bp.rgb(0.38, 0.19, 0.08)
+    else:
+        raise ValueError(f"unsupported service bottle style '{style}'")
+
+    add_part(
+        asset, materials, f"Service {style} Body", kit.merge_all(body),
+        "service_bottle_body", bottle, group=group, shadows=False)
+    add_part(
+        asset, materials, f"Service {style} Closure", cap,
+        "service_bottle_closure", closure, group=group, shadows=False)
+    label_y = min(0.18, total_height * 0.27)
+    label_z = -depth * 0.5 - 0.011
+    label_geometry = kit.merge_all([
+        bp.u_box(
+            (0.0, label_y, label_z),
+            (width * 0.76, min(0.18, total_height * 0.27), 0.018), 0.004),
+        bp.u_box(
+            (0.0, label_y + 0.035, label_z - 0.002),
+            (width * 0.52, 0.026, 0.021), 0.004),
+    ])
+    add_part(
+        asset, materials, f"Service {style} Blank Label", label_geometry,
+        "service_bottle_label", label, group=group, shadows=False)
+    add_anchor(
+        asset, f"{style}Mouth", f"service_bottle_mouth:{style}",
+        (0.0, total_height, 0.0))
+
+
+def service_menu_leaf_geometry(
+    side: int,
+    total_width: float,
+    depth: float,
+    thickness: float,
+    spine_gap: float,
+    minimum_y: float,
+) -> tuple[kit.Geometry, float]:
+    """Build one cafe-language menu leaf and return its vertical offset."""
+    if side not in (-1, 1):
+        raise ValueError("A service menu leaf side must be -1 or +1.")
+    leaf_width = (total_width - spine_gap) * 0.5
+    inner_x = side * spine_gap * 0.5
+    center_x = inner_x + side * leaf_width * 0.5
+    geometry = bp.u_box(
+        (center_x, thickness * 0.5, 0.0),
+        (leaf_width, thickness, depth),
+        min(0.001, thickness * 0.20))
+    geometry = bp.u_rotated_about(
+        geometry,
+        (0.0, 0.0, -side * SERVICE_MENU_OPEN_ANGLE_DEGREES),
+        (inner_x, 0.0, 0.0))
+    low, _ = kit.bounds(geometry)
+    y_offset = minimum_y - low[1]
+    return kit.translated(geometry, (0.0, y_offset, 0.0)), y_offset
+
+
+def service_menu_page_surface_y(
+    side: int,
+    local_x: float,
+    page_y_offset: float,
+) -> float:
+    """Upper surface of either tilted page in menu-local Unity space."""
+    angle = math.radians(SERVICE_MENU_OPEN_ANGLE_DEGREES)
+    inner_x = side * SERVICE_MENU_PAGE_GAP * 0.5
+    return (
+        -side * (local_x - inner_x) * math.sin(angle)
+        + SERVICE_MENU_PAGE_THICKNESS * math.cos(angle)
+        + page_y_offset)
+
+
+def service_menu_row_basis(
+    side: int,
+) -> tuple[tuple[float, float, float],
+           tuple[float, float, float],
+           tuple[float, float, float]]:
+    """Cafe/TMP pose: +X line-right, +Y page-up, -Z paper-outward."""
+    angle = math.radians(SERVICE_MENU_OPEN_ANGLE_DEGREES)
+    cosine = math.cos(angle)
+    sine = math.sin(angle)
+    right = (cosine, -side * sine, 0.0)
+    up = (0.0, 0.0, 1.0)
+    # TMP's visible face is local -Z. Keeping +Z in the paper makes the
+    # transform right-handed while its -forward remains the physical normal.
+    forward = (-side * sine, -cosine, 0.0)
+    return right, up, forward
+
+
+def service_menu_relief_geometry(
+    left_page_y_offset: float,
+    right_page_y_offset: float,
+) -> kit.Geometry:
+    """Unreadable page borders and a raised binding; text stays runtime."""
+    details: list[kit.Geometry] = [
+        bp.u_box(
+            (0.0, 0.030, 0.0),
+            (0.014, 0.012, SERVICE_MENU_PAGE_DEPTH - 0.025),
+            0.003),
+    ]
+    for side, y_offset in (
+        (-1, left_page_y_offset),
+        (1, right_page_y_offset),
+    ):
+        inner_x = side * SERVICE_MENU_PAGE_GAP * 0.5
+        page_details = kit.merge_all([
+            bp.u_box(
+                (side * 0.145,
+                 SERVICE_MENU_PAGE_THICKNESS + 0.0015,
+                 0.205),
+                (0.185, 0.003, 0.007), 0.001),
+            bp.u_box(
+                (side * 0.145,
+                 SERVICE_MENU_PAGE_THICKNESS + 0.0015,
+                 -0.205),
+                (0.185, 0.003, 0.007), 0.001),
+            bp.u_box(
+                (side * 0.252,
+                 SERVICE_MENU_PAGE_THICKNESS + 0.0015,
+                 0.0),
+                (0.007, 0.003, 0.330), 0.001),
+        ])
+        page_details = bp.u_rotated_about(
+            page_details,
+            (0.0, 0.0, -side * SERVICE_MENU_OPEN_ANGLE_DEGREES),
+            (inner_x, 0.0, 0.0))
+        details.append(kit.translated(page_details, (0.0, y_offset, 0.0)))
+    return kit.merge_all(details)
+
+
+def build_service_props(materials: dict) -> AssetBuild:
+    collection = bpy.data.collections.new("ServiceProps")
+    bpy.context.scene.collection.children.link(collection)
+    root = bpy.data.objects.new("ROOT_BarServiceProps3D", None)
+    root.empty_display_type = "PLAIN_AXES"
+    collection.objects.link(root)
+    asset = AssetBuild(root, collection)
+
+    for style in SERVICE_BOTTLE_STYLES:
+        add_service_bottle(asset, materials, style)
+
+    for vessel, recipe in SERVICE_VESSEL_PROFILES.items():
+        group = f"service:vessel:{vessel}"
+        glass = kit.lathe(recipe["glass"], segments=12)
+        liquid = kit.translated(
+            kit.lathe(recipe["liquid"], segments=12),
+            (0.0, 0.0, recipe["liquid_base"]))
+        add_part(
+            asset, materials, f"Service {vessel} Shell", glass,
+            "service_vessel_shell", bp.rgb(0.62, 0.82, 0.86),
+            group=group, shadows=False, unity_space=False)
+        add_part(
+            asset, materials, f"Service {vessel} Liquid", liquid,
+            "service_vessel_liquid", bp.rgb(0.90, 0.58, 0.18),
+            group=group, shadows=False, unity_space=False)
+        glass_height = recipe["glass"][-1][1]
+        add_anchor(
+            asset, f"{vessel}PourTarget",
+            f"service_vessel_target:{vessel}",
+            (0.0, glass_height - 0.025, 0.0))
+        add_anchor(
+            asset, f"{vessel}LiquidBase",
+            f"service_vessel_liquid_base:{vessel}",
+            (0.0, recipe["liquid_base"], 0.0))
+
+    menu_group = "service:menu"
+    left_cover, _ = service_menu_leaf_geometry(
+        -1,
+        SERVICE_MENU_COVER_WIDTH,
+        SERVICE_MENU_COVER_DEPTH,
+        SERVICE_MENU_COVER_THICKNESS,
+        SERVICE_MENU_COVER_GAP,
+        SERVICE_MENU_COVER_MIN_Y)
+    right_cover, _ = service_menu_leaf_geometry(
+        1,
+        SERVICE_MENU_COVER_WIDTH,
+        SERVICE_MENU_COVER_DEPTH,
+        SERVICE_MENU_COVER_THICKNESS,
+        SERVICE_MENU_COVER_GAP,
+        SERVICE_MENU_COVER_MIN_Y)
+    left_page, left_page_y_offset = service_menu_leaf_geometry(
+        -1,
+        SERVICE_MENU_PAGE_WIDTH,
+        SERVICE_MENU_PAGE_DEPTH,
+        SERVICE_MENU_PAGE_THICKNESS,
+        SERVICE_MENU_PAGE_GAP,
+        SERVICE_MENU_PAGE_MIN_Y)
+    right_page, right_page_y_offset = service_menu_leaf_geometry(
+        1,
+        SERVICE_MENU_PAGE_WIDTH,
+        SERVICE_MENU_PAGE_DEPTH,
+        SERVICE_MENU_PAGE_THICKNESS,
+        SERVICE_MENU_PAGE_GAP,
+        SERVICE_MENU_PAGE_MIN_Y)
+    add_part(
+        asset, materials, "Service Menu Cover",
+        kit.merge_all((left_cover, right_cover)),
+        "service_menu_cover", bp.rgb(0.11, 0.045, 0.025),
+        group=menu_group, sheet="DarkWood", shadows=False)
+    add_part(
+        asset, materials, "Service Menu Pages",
+        kit.merge_all((left_page, right_page)),
+        "service_menu_pages", bp.rgb(0.74, 0.66, 0.47),
+        group=menu_group, shadows=False)
+    add_part(
+        asset, materials, "Service Menu Blank Relief",
+        service_menu_relief_geometry(
+            left_page_y_offset,
+            right_page_y_offset),
+        "service_menu_relief", bp.rgb(0.47, 0.25, 0.08),
+        group=menu_group, shadows=False)
+
+    add_anchor(
+        asset, "BarMenu.Origin", "service_menu_origin", (0.0, 0.0, 0.0))
+    add_anchor(
+        asset, "Grip.BarMenu", "service_menu_grip", SERVICE_MENU_GRIP)
+
+    # The common focus basis is centred on the open spread. Each point is
+    # exactly 0.10 m from the origin, making camera framing independent of
+    # imported Empty scale or Blender axis conversion.
+    spread_y = max(
+        service_menu_page_surface_y(-1, -SERVICE_MENU_PAGE_GAP * 0.5,
+                                    left_page_y_offset),
+        service_menu_page_surface_y(1, SERVICE_MENU_PAGE_GAP * 0.5,
+                                    right_page_y_offset),
+    ) + SERVICE_MENU_TEXT_CLEARANCE
+    spread_origin = (0.0, spread_y, 0.0)
+    add_anchor(
+        asset, "BarMenuPage.Origin", "service_menu_page_origin",
+        spread_origin)
+    add_anchor(
+        asset, "BarMenuPage.Right", "service_menu_page_right",
+        (SERVICE_MENU_BASIS_LENGTH, spread_y, 0.0))
+    add_anchor(
+        asset, "BarMenuPage.Up", "service_menu_page_up",
+        (0.0, spread_y, SERVICE_MENU_BASIS_LENGTH))
+    add_anchor(
+        asset, "BarMenuPage.Normal", "service_menu_page_normal",
+        (0.0, spread_y + SERVICE_MENU_BASIS_LENGTH, 0.0))
+
+    # Five lines sit on the left leaf and four on the right. Their imported
+    # Transform axes are the authored cafe/TMP pose: +X reads along the row,
+    # +Y toward the page head and local -Z points out of the paper.
+    row_index = 0
+    for side, row_positions in (
+        (-1, SERVICE_MENU_LEFT_ROW_Z),
+        (1, SERVICE_MENU_RIGHT_ROW_Z),
+    ):
+        local_x = side * SERVICE_MENU_TEXT_X
+        local_y = service_menu_page_surface_y(
+            side, local_x,
+            left_page_y_offset if side < 0 else right_page_y_offset)
+        right, up, forward = service_menu_row_basis(side)
+        for local_z in row_positions:
+            add_anchor(
+                asset,
+                f"BarMenuText.Item.{row_index:02d}",
+                f"service_menu_text_item:{row_index:02d}",
+                (local_x, local_y + SERVICE_MENU_TEXT_CLEARANCE, local_z),
+                right,
+                up,
+                forward)
+            row_index += 1
+
+    selection_side = -1
+    selection_x = -SERVICE_MENU_SELECTION_X
+    selection_y = service_menu_page_surface_y(
+        selection_side, selection_x, left_page_y_offset)
+    selection_right, selection_up, selection_forward = (
+        service_menu_row_basis(selection_side))
+    add_anchor(
+        asset,
+        "BarMenuText.Selection",
+        "service_menu_text_selection",
+        (selection_x,
+         selection_y + SERVICE_MENU_TEXT_CLEARANCE,
+         0.14),
+        selection_right,
+        selection_up,
+        selection_forward)
+
+    stream_group = "service:pour_stream"
+    add_part(
+        asset, materials, "Service Pour Stream",
+        # Unity's cylinder primitive is two units tall. Keeping that exact
+        # centred contract lets BarDrinkServiceView place the midpoint and
+        # scale Y by length * 0.5 for an exact start-to-end stream.
+        bp.u_cylinder((0.0, 0.0, 0.0), (0.026, 1.0, 0.026), sides=8),
+        "service_pour_stream", bp.rgb(0.90, 0.58, 0.18),
+        group=stream_group, shadows=False)
+    add_anchor(asset, "PourStreamOrigin", "service_pour_stream_origin",
+               (0.0, 0.0, 0.0))
+    return asset
+
+
+def validate_service_props(asset: AssetBuild) -> None:
+    problems: list[str] = []
+    names: set[str] = set()
+    for part in asset.parts:
+        if part.name in names:
+            problems.append(f"duplicate service prop name '{part.name}'")
+        names.add(part.name)
+        if not part.emissive and not part.sheet:
+            problems.append(
+                f"'{part.name}' has no authored physical surface")
+        elif part.sheet not in SHEET_PITCH:
+            problems.append(
+                f"'{part.name}' names an unmeasured sheet '{part.sheet}'")
+        if part.colliders:
+            problems.append(
+                f"'{part.name}' carries collision; runtime owns prop state")
+        volume = bp.signed_volume(part.geometry)
+        if volume <= 0.0:
+            problems.append(
+                f"'{part.name}' has inverted normals "
+                f"(signed volume {volume:.5f})")
+
+    groups = {part.group for part in asset.parts}
+    for style in SERVICE_BOTTLE_STYLES:
+        group = f"service:bottle:{style}"
+        if group not in groups:
+            problems.append(f"service bottle '{style}' is missing")
+    for vessel in SERVICE_VESSEL_PROFILES:
+        group = f"service:vessel:{vessel}"
+        if group not in groups:
+            problems.append(f"service vessel '{vessel}' is missing")
+    for group in ("service:menu", "service:pour_stream"):
+        if group not in groups:
+            problems.append(f"service group '{group}' is missing")
+
+    menu_roles = {
+        part.role for part in asset.parts if part.group == "service:menu"
+    }
+    for role in (
+        "service_menu_cover",
+        "service_menu_pages",
+        "service_menu_relief",
+    ):
+        if role not in menu_roles:
+            problems.append(f"the authored menu has no '{role}' geometry")
+
+    required_menu_anchors = {
+        "BarMenu.Origin": "service_menu_origin",
+        "Grip.BarMenu": "service_menu_grip",
+        "BarMenuPage.Origin": "service_menu_page_origin",
+        "BarMenuPage.Right": "service_menu_page_right",
+        "BarMenuPage.Up": "service_menu_page_up",
+        "BarMenuPage.Normal": "service_menu_page_normal",
+        "BarMenuText.Selection": "service_menu_text_selection",
+    }
+    for index in range(9):
+        required_menu_anchors[f"BarMenuText.Item.{index:02d}"] = (
+            f"service_menu_text_item:{index:02d}")
+    for name, role in required_menu_anchors.items():
+        anchor = asset.anchors.get(name)
+        if anchor is None or anchor.get("bp_role") != role:
+            problems.append(
+                f"the authored menu anchor '{name}' / '{role}' is missing")
+
+    row_anchors = [
+        asset.anchors.get(f"BarMenuText.Item.{index:02d}")
+        for index in range(9)
+    ]
+    if all(anchor is not None for anchor in row_anchors):
+        for index, anchor in enumerate(row_anchors):
+            right = tuple(anchor.get("bp_unity_right", ()))
+            up = tuple(anchor.get("bp_unity_up", ()))
+            forward = tuple(anchor.get("bp_unity_forward", ()))
+            if (len(right) != 3 or len(up) != 3 or len(forward) != 3 or
+                    forward[1] >= -0.98 or up != (0.0, 0.0, 1.0)):
+                problems.append(
+                    f"menu row {index:02d} lost its cafe/TMP page basis")
+
+    stream = next((
+        part for part in asset.parts
+        if part.role == "service_pour_stream"), None)
+    if stream is None:
+        problems.append("the authored pour stream is missing")
+    else:
+        stream_low, stream_high = kit.bounds(stream.geometry)
+        if (abs(stream_low[2] + 1.0) > 1e-6 or
+                abs(stream_high[2] - 1.0) > 1e-6):
+            problems.append(
+                "the authored pour stream is not a centred two-unit "
+                "Unity cylinder")
+
+    if problems:
+        raise SystemExit(
+            "Bar service props failed validation:\n  " +
+            "\n  ".join(problems))
+
+
 # ------------------------------------------------------------ facade --
 
 
@@ -1208,10 +2243,14 @@ def validate_facade(asset: AssetBuild) -> None:
 # ------------------------------------------------------------ build ---
 
 
-def build() -> tuple[AssetBuild, AssetBuild]:
+def build() -> tuple[AssetBuild, AssetBuild, AssetBuild]:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     materials = {key: create_material(key) for key in PREVIEW_COLORS}
-    return build_interior(materials), build_facade(materials)
+    return (
+        build_interior(materials),
+        build_service_props(materials),
+        build_facade(materials),
+    )
 
 
 def build_interior(materials: dict) -> AssetBuild:
@@ -1240,6 +2279,24 @@ def build_interior(materials: dict) -> AssetBuild:
     add_anchor(asset, "CounterStation", "counter_station", COUNTER_STATION)
     add_anchor(asset, "ActivityStation", "activity_station",
                ACTIVITY_STATION)
+    add_anchor(asset, "HeroSeat", "hero_seat", HERO_SEAT)
+    add_anchor(asset, "HeroApproach", "hero_approach", HERO_APPROACH)
+    add_anchor(asset, "HeroStand", "hero_stand", HERO_STAND)
+    add_anchor(asset, "HeroCamera", "hero_camera",
+               (HERO_SEAT[0], 1.76, HERO_SEAT[2] + 0.12))
+    add_anchor(asset, "HeroCameraLook", "hero_camera_look",
+               (HERO_SEAT[0], 1.86, 7.37))
+    add_anchor(asset, "ServicePosition", "bartender_service_position",
+               BARTENDER_POSITION)
+    add_anchor(asset, "BartenderPlatformTop", "bartender_platform_top",
+               (BARTENDER_POSITION[0], BARTENDER_DUCKBOARD_SIZE[1],
+                BARTENDER_POSITION[2]))
+    add_anchor(asset, "MenuDock", "service_menu_dock",
+               (COUNTER_STATION[0] + 0.77, 1.185, 5.44))
+    add_anchor(asset, "VesselDock", "service_vessel_dock",
+               (COUNTER_STATION[0], 1.175, 5.50))
+    add_anchor(asset, "PourTarget", "service_pour_target",
+               (COUNTER_STATION[0], 1.175, 5.50))
     add_anchor(asset, "CeilingFan", "ceiling_fan_pivot", (0.0, 4.35, 0.75))
     add_anchor(asset, "Jukebox", "jukebox_pivot", (6.4, 0.0, -6.78))
     return asset
@@ -1259,6 +2316,9 @@ def validate(asset: AssetBuild) -> None:
         if part.sheet not in SHEET_PITCH:
             problems.append(
                 f"'{part.name}' names an unmeasured sheet '{part.sheet}'")
+        if not part.emissive and not part.sheet:
+            problems.append(
+                f"'{part.name}' has no authored physical surface")
 
         #  A reflection reverses winding. If `to_source` ever stops
         #  re-winding, every solid here turns inside out - lit from
@@ -1337,7 +2397,7 @@ def signature_for(
             for part in asset.parts
         ],
         "anchors": {
-            name: [stable(value) for value in anchor.location]
+            name: anchor_signature(anchor)
             for name, anchor in sorted(asset.anchors.items())
         },
     }
@@ -1417,6 +2477,12 @@ def write_manifest(
                 "name": name,
                 "role": anchor["bp_role"],
                 "local_position": [stable(v) for v in anchor.location],
+                "unity_right": [stable(v) for v in anchor.get(
+                    "bp_unity_right", (1.0, 0.0, 0.0))],
+                "unity_up": [stable(v) for v in anchor.get(
+                    "bp_unity_up", (0.0, 1.0, 0.0))],
+                "unity_forward": [stable(v) for v in anchor.get(
+                    "bp_unity_forward", (0.0, 0.0, 1.0))],
             }
             for name, anchor in sorted(asset.anchors.items())
         ],
@@ -1464,35 +2530,69 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args(list(sys.argv))
-    interior, facade = build()
+    interior, service_props, facade = build()
     validate(interior)
+    validate_service_props(service_props)
     validate_facade(facade)
     total = kit.triangle_count(
         kit.merge_all([part.geometry for part in interior.parts]))
     facade_total = kit.triangle_count(
         kit.merge_all([part.geometry for part in facade.parts]))
+    service_total = kit.triangle_count(
+        kit.merge_all([part.geometry for part in service_props.parts]))
     if args.validate_only:
         print(
             f"Bar validates: interior {len(interior.parts)} parts / "
-            f"{total} triangles, facade {len(facade.parts)} parts / "
-            f"{facade_total} triangles.")
+            f"{total} triangles, service props {len(service_props.parts)} "
+            f"parts / {service_total} triangles, facade "
+            f"{len(facade.parts)} parts / {facade_total} triangles.")
         return
 
     manifest = write_manifest(interior, args.manifest)
     export_fbx(interior, args.fbx)
-    facade_manifest = write_manifest(
-        facade,
-        FACADE_MANIFEST,
-        exterior.DESIGN_ID,
-        generator_version=exterior.GENERATOR_VERSION,
-        display_name=exterior.DISPLAY_NAME,
-        dimensions=(exterior.WIDTH, exterior.DEPTH, exterior.HEIGHT),
-        wall_thickness=exterior.WALL_THICKNESS,
-        door_opening=(exterior.DOOR_WIDTH, exterior.DOOR_HEIGHT),
-        unity_outward_axis="+X",
+    service_manifest = write_manifest(
+        service_props,
+        SERVICE_MANIFEST,
+        SERVICE_DESIGN_ID,
+        generator_version=SERVICE_GENERATOR_VERSION,
+        display_name=SERVICE_DISPLAY_NAME,
+        dimensions=(SERVICE_MENU_COVER_WIDTH,
+                    SERVICE_MENU_COVER_DEPTH,
+                    2.0),
+        wall_thickness=0.0,
+        door_opening=(0.0, 0.0),
         activity_kinds=(),
         district_moods=())
-    export_fbx(facade, FACADE_FBX)
+    export_fbx(service_props, SERVICE_FBX)
+
+    facade_signature = signature_for(
+        facade, exterior.DESIGN_ID, exterior.GENERATOR_VERSION)
+    preserve_facade = False
+    if FACADE_MANIFEST.exists() and FACADE_FBX.exists():
+        try:
+            previous_facade = json.loads(
+                FACADE_MANIFEST.read_text(encoding="utf-8"))
+            preserve_facade = (
+                previous_facade.get("design_id") == exterior.DESIGN_ID and
+                previous_facade.get("build_signature") == facade_signature)
+        except (OSError, ValueError):
+            preserve_facade = False
+    if preserve_facade:
+        facade_manifest = previous_facade
+    else:
+        facade_manifest = write_manifest(
+            facade,
+            FACADE_MANIFEST,
+            exterior.DESIGN_ID,
+            generator_version=exterior.GENERATOR_VERSION,
+            display_name=exterior.DISPLAY_NAME,
+            dimensions=(exterior.WIDTH, exterior.DEPTH, exterior.HEIGHT),
+            wall_thickness=exterior.WALL_THICKNESS,
+            door_opening=(exterior.DOOR_WIDTH, exterior.DOOR_HEIGHT),
+            unity_outward_axis="+X",
+            activity_kinds=(),
+            district_moods=())
+        export_fbx(facade, FACADE_FBX)
     args.blend.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(args.blend))
     print(
@@ -1500,7 +2600,12 @@ def main() -> None:
         f"{manifest['triangle_count']} triangles, "
         f"signature {manifest['build_signature'][:12]}.")
     print(
-        f"Bar exterior written: {facade_manifest['mesh_count']} parts, "
+        f"Bar service props written: {service_manifest['mesh_count']} parts, "
+        f"{service_manifest['triangle_count']} triangles, "
+        f"signature {service_manifest['build_signature'][:12]}.")
+    print(
+        f"Bar exterior {'preserved' if preserve_facade else 'written'}: "
+        f"{facade_manifest['mesh_count']} parts, "
         f"{facade_manifest['triangle_count']} triangles, "
         f"signature {facade_manifest['build_signature'][:12]}.")
 

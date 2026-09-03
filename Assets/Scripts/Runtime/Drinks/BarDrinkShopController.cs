@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BarPromenade.Rendering;
+using BarPromenade.Runtime.World;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -35,6 +36,10 @@ namespace BarPromenade
         private BarDrinkServiceTimeline timeline =
             new BarDrinkServiceTimeline();
         private BarDrinkFirstPersonArms firstPersonArms;
+        private CounterSeatView counterSeatView;
+        private BarDrinkMenuPresentation menuPresentation;
+        private CounterMenuModel counterMenuModel;
+        private CounterMenuHintView counterMenuHint;
         private Camera targetCamera;
         private BarDrinkBottleView hoveredBottle;
         private BarDrinkPresentation activePresentation;
@@ -71,6 +76,10 @@ namespace BarPromenade
         private bool clinkPlayed;
         private bool pourPlayed;
         private bool gulpPlayed;
+        private bool menuDeliveryWhileBrowsing;
+        private float menuDeliveryElapsedSeconds;
+
+        public event Action<BarDrinkShopController> Closed;
 
         public bool IsOpen { get; private set; }
         public int SelectedIndex { get; private set; }
@@ -91,7 +100,10 @@ namespace BarPromenade
                     : BarDrinkServicePhase.Closed;
         public bool IsBrowsing =>
             IsOpen &&
-            (!hasPhysicalPresentation || timeline.IsBrowsing);
+            (!hasPhysicalPresentation ||
+             (timeline.IsBrowsing &&
+              (!UsesPhysicalMenu ||
+               counterMenuModel.State == CounterMenuState.Open)));
         public bool IsServing =>
             IsOpen && hasPhysicalPresentation && timeline.IsCommitted;
         public bool PurchaseCommitted => purchaseCommitted;
@@ -99,6 +111,16 @@ namespace BarPromenade
         public BarDrinkServiceView ServiceView => serviceView;
         public BarDrinkFirstPersonArms FirstPersonArms => firstPersonArms;
         public BarDrinkBottleView HoveredBottle => hoveredBottle;
+        public CounterSeatView CounterSeatView => counterSeatView;
+        public bool UsesCounterSeatView => counterSeatView != null;
+        public BarDrinkMenuPresentation MenuPresentation =>
+            menuPresentation;
+        public CounterMenuState MenuState => counterMenuModel?.State ??
+            CounterMenuState.Hidden;
+        public bool UsesPhysicalMenu => counterSeatView != null &&
+            menuPresentation != null && counterMenuModel != null;
+        public bool CanExitPhysicalMenu => UsesPhysicalMenu && IsOpen &&
+            !IsServing && timeline != null && timeline.CanCancel;
 
         public void Initialize(
             BarDrinkShopView shopView,
@@ -116,11 +138,62 @@ namespace BarPromenade
             serviceView = null;
             servicePlan = null;
             firstPersonArms = null;
+            counterSeatView = null;
+            menuPresentation = null;
+            counterMenuModel = null;
+            counterMenuHint?.Hide();
+            counterMenuHint = null;
             sceneMarkerRenderers = Array.Empty<Renderer>();
             previousSceneMarkerStates = Array.Empty<bool>();
             sceneMarkerStateCaptured = false;
             timeline = new BarDrinkServiceTimeline();
             view?.Initialize(this);
+        }
+
+        /// <summary>
+        /// Hands camera and world-hero visibility ownership to a physical
+        /// counter seat. The shop continues to own the transaction, modal UI,
+        /// camera-local arms and drink-service timeline.
+        /// </summary>
+        public void ConfigureSeatedView(CounterSeatView seatedView)
+        {
+            if (IsOpen || modalLock.IsLocked)
+            {
+                throw new InvalidOperationException(
+                    "The bar counter seat cannot change while the shop is open.");
+            }
+
+            if (seatedView == null || !seatedView.IsInitialized)
+            {
+                throw new ArgumentException(
+                    "The bar shop requires an initialized counter seat view.",
+                    nameof(seatedView));
+            }
+
+            counterSeatView = seatedView;
+            if (menuPresentation == null || !menuPresentation.IsConfigured ||
+                counterMenuModel == null)
+            {
+                throw new InvalidOperationException(
+                    "A seated bar requires the authored physical menu.");
+            }
+
+            counterMenuHint = CounterMenuHintView.Create(
+                transform,
+                "Bar Drink Menu Hint",
+                MountainRoadCafeMenuHintView.SelectHintKey,
+                MountainRoadCafeMenuHintView.OrderHintKey);
+        }
+
+        public void ConfigureMenuCarrier(Transform carrier)
+        {
+            if (menuPresentation == null)
+            {
+                throw new InvalidOperationException(
+                    "The physical bar menu is not initialized.");
+            }
+
+            menuPresentation.ConfigureCarrier(carrier);
         }
 
         public void Initialize(
@@ -150,6 +223,22 @@ namespace BarPromenade
             player = playerRuntime;
             serviceView = physicalPresentation;
             servicePlan = physicalPresentation.Plan;
+            menuPresentation = physicalPresentation.MenuPresentation;
+            if (menuPresentation == null || !menuPresentation.IsConfigured)
+            {
+                throw new ArgumentException(
+                    "Physical drink service requires an authored menu.",
+                    nameof(physicalPresentation));
+            }
+
+            var menuItemIds = new string[BarDrinkCatalog.Offers.Count];
+            for (int index = 0; index < menuItemIds.Length; index++)
+            {
+                menuItemIds[index] =
+                    BarDrinkCatalog.Offers[index].NameKey;
+            }
+
+            counterMenuModel = new CounterMenuModel(menuItemIds);
             targetCamera = follow != null
                 ? follow.GetComponent<Camera>()
                 : Camera.main;
@@ -211,12 +300,17 @@ namespace BarPromenade
             if (IsOpen ||
                 interactor == null ||
                 Offers.Count == 0 ||
+                (counterSeatView != null &&
+                 !counterSeatView.IsFirstPerson) ||
+                (counterSeatView != null &&
+                 CounterMenuInput.IsBlockedByOtherUi()) ||
                 SceneTransitionService.IsTransitioning)
             {
                 return false;
             }
 
-            if (!modalLock.TryCaptureAndDisable(
+            if (counterSeatView == null &&
+                !modalLock.TryCaptureAndDisable(
                     interactor,
                     cameraFollow,
                     hud))
@@ -234,10 +328,25 @@ namespace BarPromenade
                 ResetCueState();
                 if (hasPhysicalPresentation)
                 {
-                    CaptureCameraPath();
-                    CapturePlayerVisualState();
+                    if (counterSeatView == null)
+                    {
+                        CaptureCameraPath();
+                        CapturePlayerVisualState();
+                    }
+                    else
+                    {
+                        BeginServiceDepthOfField();
+                    }
+
                     serviceView.ResetPresentation();
                     serviceView.SelectBottle(SelectedOffer.DrinkId);
+                    if (UsesPhysicalMenu)
+                    {
+                        BeginPhysicalMenuDelivery(
+                            immediate: false,
+                            whileBrowsing: false);
+                    }
+
                     timeline.Reset();
                     if (!timeline.BeginOpen())
                     {
@@ -270,12 +379,22 @@ namespace BarPromenade
             }
 
             bool changed = SelectedIndex != index;
+            if (UsesPhysicalMenu &&
+                (counterMenuModel.State != CounterMenuState.Open ||
+                 !counterMenuModel.Select(index)))
+            {
+                return false;
+            }
+
             SelectedIndex = index;
             FeedbackKey = string.Empty;
+            counterMenuHint?.ClearStatus();
             if (hasPhysicalPresentation)
             {
                 serviceView.SelectBottle(SelectedOffer.DrinkId);
             }
+
+            menuPresentation?.SetSelection(SelectedIndex, false);
 
             if (changed)
             {
@@ -300,7 +419,9 @@ namespace BarPromenade
 
         public bool ConfirmSelection()
         {
-            if (!IsBrowsing || Offers.Count == 0)
+            if (!IsBrowsing || Offers.Count == 0 ||
+                (UsesPhysicalMenu &&
+                 counterMenuModel.State != CounterMenuState.Open))
             {
                 return false;
             }
@@ -310,8 +431,26 @@ namespace BarPromenade
             if (!result.Succeeded)
             {
                 FeedbackKey = GetFailureKey(result.Status);
+                counterMenuHint?.ShowStatus(FeedbackKey);
                 RetroAudio.Play(RetroSfxId.Bad);
                 return false;
+            }
+
+            if (UsesPhysicalMenu)
+            {
+                if (!counterMenuModel.Confirm())
+                {
+                    throw new InvalidOperationException(
+                        "A purchased bar-menu selection could not commit.");
+                }
+
+                menuPresentation.SetSelection(SelectedIndex, true);
+                counterMenuModel.BeginRetrieval();
+                menuPresentation.BeginRetrieval();
+                menuDeliveryWhileBrowsing = false;
+                menuDeliveryElapsedSeconds = 0f;
+                counterSeatView.EndMenuFocus();
+                counterMenuHint.Hide();
             }
 
             purchaseCommitted = true;
@@ -378,6 +517,16 @@ namespace BarPromenade
             if (timeline.Cancel())
             {
                 FeedbackKey = string.Empty;
+                if (UsesPhysicalMenu &&
+                    counterMenuModel.BeginRetrieval())
+                {
+                    menuPresentation.BeginRetrieval();
+                    menuDeliveryWhileBrowsing = false;
+                    menuDeliveryElapsedSeconds = 0f;
+                    counterSeatView.EndMenuFocus();
+                    counterMenuHint.Hide();
+                }
+
                 RetroAudio.Play(RetroSfxId.UiCancel);
                 ApplyCurrentPresentation();
             }
@@ -394,6 +543,7 @@ namespace BarPromenade
         /// </summary>
         public void Close()
         {
+            bool wasOpen = IsOpen;
             bool hadOwnership =
                 IsOpen ||
                 modalLock.IsLocked ||
@@ -412,6 +562,11 @@ namespace BarPromenade
                 firstPersonArms?.Hide();
                 modalLock.Restore();
             }
+
+            if (wasOpen)
+            {
+                Closed?.Invoke(this);
+            }
         }
 
         public void AdvancePresentation(float unscaledDeltaTime)
@@ -422,6 +577,8 @@ namespace BarPromenade
             }
 
             bool wasCommitted = timeline.IsCommitted;
+            bool wasBrowsingMenuDelivery =
+                menuDeliveryWhileBrowsing;
             timeline.Advance(unscaledDeltaTime);
             PlayCrossedCues();
             if (wasCommitted &&
@@ -431,11 +588,17 @@ namespace BarPromenade
                 CompleteOrderPresentation();
             }
 
+            if (wasBrowsingMenuDelivery)
+            {
+                AdvanceBrowsingMenuDelivery(unscaledDeltaTime);
+            }
+
             ApplyCurrentPresentation();
             if (timeline.Phase == BarDrinkServicePhase.Closed)
             {
                 IsOpen = false;
                 RestoreOwnedState();
+                Closed?.Invoke(this);
             }
         }
 
@@ -448,16 +611,25 @@ namespace BarPromenade
 
             if (hasPhysicalPresentation)
             {
+                if (UsesPhysicalMenu)
+                {
+                    UpdatePhysicalMenuHint();
+                }
+
                 if (!timeline.IsCommitted &&
                     !timeline.IsBrowsing &&
                     Time.frameCount > inputUnlockFrame &&
-                    IsCancelPressed())
+                    (!UsesPhysicalMenu ||
+                     !CounterMenuInput.IsBlockedByOtherUi()) &&
+                    ReadCancelPressed())
                 {
                     Cancel();
                 }
 
                 if (timeline.IsBrowsing &&
-                    Time.frameCount > inputUnlockFrame)
+                    Time.frameCount > inputUnlockFrame &&
+                    (!UsesPhysicalMenu ||
+                     !CounterMenuInput.IsBlockedByOtherUi()))
                 {
                     HandleBrowsingInput();
                 }
@@ -506,10 +678,35 @@ namespace BarPromenade
         private void OnDestroy()
         {
             Close();
+            Closed = null;
         }
 
         private void HandleBrowsingInput()
         {
+            if (UsesPhysicalMenu)
+            {
+                if (CounterMenuInput.WasCancelPressed())
+                {
+                    Cancel();
+                    return;
+                }
+
+                int menuSelectionDelta =
+                    CounterMenuInput.ReadSelectionDelta();
+                if (menuSelectionDelta != 0)
+                {
+                    MoveSelection(menuSelectionDelta);
+                    return;
+                }
+
+                if (CounterMenuInput.WasConfirmPressed())
+                {
+                    ConfirmSelection();
+                }
+
+                return;
+            }
+
             RefreshPointerHover();
             if (IsCancelPressed())
             {
@@ -539,6 +736,37 @@ namespace BarPromenade
             {
                 ConfirmSelection();
             }
+        }
+
+        private bool ReadCancelPressed()
+        {
+            return UsesPhysicalMenu
+                ? CounterMenuInput.WasCancelPressed()
+                : IsCancelPressed();
+        }
+
+        private void UpdatePhysicalMenuHint()
+        {
+            if (counterMenuHint == null)
+            {
+                return;
+            }
+
+            if (!IsBrowsing ||
+                CounterMenuInput.IsBlockedByOtherUi())
+            {
+                counterMenuHint.Hide();
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(FeedbackKey))
+            {
+                counterMenuHint.ShowStatus(FeedbackKey);
+                return;
+            }
+
+            counterMenuHint.ClearStatus();
+            counterMenuHint.Show();
         }
 
         private void RefreshPointerHover()
@@ -669,13 +897,19 @@ namespace BarPromenade
                 Vector3.up * 0.18f +
                 cameraStartRotation * Vector3.right * 0.08f;
 
+            BeginServiceDepthOfField();
+        }
+
+        private void BeginServiceDepthOfField()
+        {
             // The counter's pour spot is what the shot studies; the
             // shelves and the hall behind melt into bokeh.
+            Transform reference = serviceView.transform;
             depthOfFieldFocusPoint = reference.TransformPoint(
                 servicePlan.BottlePourPose.Position);
             CinematicDepthOfField.Begin(
                 Vector3.Distance(
-                    cameraStartPosition,
+                    targetCamera.transform.position,
                     depthOfFieldFocusPoint),
                 4f);
         }
@@ -688,6 +922,7 @@ namespace BarPromenade
             }
 
             BarDrinkServiceFrame frame = timeline.CurrentFrame;
+            ApplyPhysicalMenuPresentation(frame);
             ApplyCamera(frame.CameraBlend);
             // The bartender owns the bottle now; the hero's right arm
             // never grips, only the left-hand drink lift remains his.
@@ -700,9 +935,151 @@ namespace BarPromenade
             ApplyVesselPresentation(frame);
         }
 
+        private void ApplyPhysicalMenuPresentation(
+            BarDrinkServiceFrame frame)
+        {
+            if (!UsesPhysicalMenu)
+            {
+                return;
+            }
+
+            switch (frame.Phase)
+            {
+                case BarDrinkServicePhase.CameraApproach:
+                    if (counterMenuModel.State ==
+                        CounterMenuState.Delivering)
+                    {
+                        menuPresentation.EvaluateDelivery(
+                            frame.PhaseProgress);
+                    }
+                    break;
+                case BarDrinkServicePhase.Browsing:
+                    if (counterMenuModel.State ==
+                            CounterMenuState.Delivering &&
+                        !menuDeliveryWhileBrowsing)
+                    {
+                        CompletePhysicalMenuDelivery();
+                    }
+                    else if (counterMenuModel.State ==
+                             CounterMenuState.Closed)
+                    {
+                        BeginPhysicalMenuDelivery(
+                            immediate: false,
+                            whileBrowsing: true);
+                    }
+                    break;
+                case BarDrinkServicePhase.BottlePickup:
+                case BarDrinkServicePhase.CameraReturn:
+                    if (counterMenuModel.State ==
+                        CounterMenuState.Retrieving)
+                    {
+                        menuPresentation.EvaluateRetrieval(
+                            frame.PhaseProgress);
+                    }
+                    break;
+                default:
+                    if (counterMenuModel.State ==
+                        CounterMenuState.Retrieving)
+                    {
+                        CompletePhysicalMenuRetrieval();
+                    }
+                    break;
+            }
+        }
+
+        private void BeginPhysicalMenuDelivery(
+            bool immediate,
+            bool whileBrowsing)
+        {
+            if (!UsesPhysicalMenu)
+            {
+                return;
+            }
+
+            counterMenuModel.Reset();
+            counterMenuModel.BeginDelivery();
+            SelectedIndex = 0;
+            if (!serviceView.SelectBottle(SelectedOffer.DrinkId))
+            {
+                throw new InvalidOperationException(
+                    "The reset bar-menu selection has no service bottle.");
+            }
+
+            FeedbackKey = string.Empty;
+            counterMenuHint?.Hide();
+            menuPresentation.SetSelection(SelectedIndex, false);
+            menuPresentation.BeginDelivery();
+            menuDeliveryWhileBrowsing = whileBrowsing && !immediate;
+            menuDeliveryElapsedSeconds = 0f;
+            if (immediate)
+            {
+                menuPresentation.EvaluateDelivery(1f);
+                CompletePhysicalMenuDelivery();
+            }
+        }
+
+        private void CompletePhysicalMenuDelivery()
+        {
+            if (!UsesPhysicalMenu ||
+                counterMenuModel.State != CounterMenuState.Delivering)
+            {
+                return;
+            }
+
+            menuPresentation.CompleteDelivery();
+            counterMenuModel.Open();
+            menuDeliveryWhileBrowsing = false;
+            menuDeliveryElapsedSeconds = 0f;
+            menuPresentation.SetSelection(SelectedIndex, false);
+            counterSeatView.BeginMenuFocus(
+                menuPresentation.ResolveCameraFocusPose(
+                    counterSeatView.CurrentCameraPosition),
+                BarDrinkMenuPresentation.CameraFocusFieldOfView);
+            inputUnlockFrame = Time.frameCount + 1;
+        }
+
+        private void CompletePhysicalMenuRetrieval()
+        {
+            if (!UsesPhysicalMenu ||
+                counterMenuModel.State != CounterMenuState.Retrieving)
+            {
+                return;
+            }
+
+            menuPresentation.CompleteRetrieval();
+            counterMenuModel.CompleteRetrieval();
+            menuDeliveryWhileBrowsing = false;
+            menuDeliveryElapsedSeconds = 0f;
+            counterMenuHint?.Hide();
+        }
+
+        private void AdvanceBrowsingMenuDelivery(float unscaledDeltaTime)
+        {
+            if (!menuDeliveryWhileBrowsing ||
+                counterMenuModel == null ||
+                counterMenuModel.State != CounterMenuState.Delivering)
+            {
+                return;
+            }
+
+            menuDeliveryElapsedSeconds += Mathf.Max(
+                0f,
+                unscaledDeltaTime);
+            float duration =
+                BarDrinkServiceTimeline.CameraApproachDurationSeconds;
+            float progress = duration > 0f
+                ? Mathf.Clamp01(menuDeliveryElapsedSeconds / duration)
+                : 1f;
+            menuPresentation.EvaluateDelivery(progress);
+            if (progress >= 1f)
+            {
+                CompletePhysicalMenuDelivery();
+            }
+        }
+
         private void ApplyCamera(float blend)
         {
-            if (cameraFollow == null)
+            if (cameraFollow == null || counterSeatView != null)
             {
                 return;
             }
@@ -860,6 +1237,11 @@ namespace BarPromenade
         private void ApplyPlayerVisualForFrame(
             BarDrinkServiceFrame frame)
         {
+            if (counterSeatView != null)
+            {
+                return;
+            }
+
             bool shouldHide =
                 frame.Phase != BarDrinkServicePhase.CameraReturn &&
                 frame.Phase != BarDrinkServicePhase.Closed &&
@@ -949,6 +1331,12 @@ namespace BarPromenade
         private void RestoreOwnedState()
         {
             hoveredBottle = null;
+            counterSeatView?.EndMenuFocus();
+            counterMenuHint?.Hide();
+            counterMenuModel?.Reset();
+            menuDeliveryWhileBrowsing = false;
+            menuDeliveryElapsedSeconds = 0f;
+            menuPresentation?.ResetPresentation();
             serviceView?.ResetPresentation();
             firstPersonArms?.Hide();
             RestorePlayerVisual();
@@ -978,13 +1366,28 @@ namespace BarPromenade
             FeedbackKey = string.Empty;
             inputUnlockFrame = Time.frameCount + 1;
             ResetCueState();
+            if (UsesPhysicalMenu)
+            {
+                if (counterMenuModel.State ==
+                    CounterMenuState.Retrieving)
+                {
+                    CompletePhysicalMenuRetrieval();
+                }
+
+                BeginPhysicalMenuDelivery(
+                    immediate: false,
+                    whileBrowsing: true);
+            }
+
             Physics.SyncTransforms();
         }
 
         private void RestoreCameraState()
         {
             CinematicDepthOfField.End();
-            if (cameraFollow == null || !hasPhysicalPresentation)
+            if (cameraFollow == null ||
+                !hasPhysicalPresentation ||
+                counterSeatView != null)
             {
                 return;
             }

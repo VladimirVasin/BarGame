@@ -52,7 +52,7 @@ namespace BarPromenade
         public IReadOnlyList<BarPatron> Patrons { get; private set; }
 
         /// <summary>
-        /// The Six-Armed Bartender behind the counter, or <c>null</c>
+        /// The ordinary two-armed bartender behind the counter, or <c>null</c>
         /// when his prefab or anchor is unavailable.
         /// </summary>
         public BarBartenderPresentation Bartender
@@ -216,7 +216,7 @@ namespace BarPromenade
             ReportPhase("player_and_ui", phaseTimer);
 
             phaseTimer.Restart();
-            BuildCounterStation();
+            BuildCounterStation(follow);
             BuildExit();
             BuildNpcCrowd(camera);
             IsInitialized = true;
@@ -375,6 +375,12 @@ namespace BarPromenade
                 Layout);
             if (Bartender != null && DrinkShop != null)
             {
+                if (DrinkShop.UsesPhysicalMenu)
+                {
+                    DrinkShop.ConfigureMenuCarrier(
+                        Bartender.Registry.LeftGripSocket);
+                }
+
                 BarBartenderServiceChoreography choreography =
                     Bartender.gameObject.AddComponent<
                         BarBartenderServiceChoreography>();
@@ -422,7 +428,7 @@ namespace BarPromenade
                 DrinkServiceView);
         }
 
-        private void BuildCounterStation()
+        private void BuildCounterStation(PlayerCameraFollow follow)
         {
             GameObject station =
                 new GameObject("Bar Drink Counter Station");
@@ -434,36 +440,26 @@ namespace BarPromenade
             trigger.size = Layout.CounterStationTriggerSize;
             CounterStation =
                 station.AddComponent<BarCounterStation>();
-            CounterStation.Configure(DrinkShop);
+            CounterSeatPlan seatPlan =
+                CounterSeatPlan.FromServiceAnchors(
+                    DrinkServiceView.transform,
+                    DrinkServicePlan,
+                    Room.Find("HeroSeat"),
+                    Room.Find("HeroApproach"),
+                    Room.Find("HeroStand"),
+                    Room.Find("HeroStand"),
+                    Room.Find("HeroCamera"),
+                    Room.Find("HeroCameraLook"));
+            CounterStation.ConfigureSeated(
+                DrinkShop,
+                Player,
+                seatPlan,
+                follow);
 
-            Vector3 stationPosition =
-                Layout.CounterStationPosition;
-            Color markerColor =
-                new Color(0.30f, 0.74f, 0.57f);
-            GameObject orderPoint = RuntimePrimitiveFactory.CreateBox(
-                "Drink Order Point",
-                transform,
-                new Vector3(
-                    stationPosition.x,
-                    0.06f,
-                    stationPosition.z),
-                new Vector3(0.74f, 0.08f, 0.56f),
-                markerColor,
-                false);
-            GameObject orderSign = RuntimePrimitiveFactory.CreateBox(
-                "Drink Order Sign",
-                transform,
-                new Vector3(
-                    stationPosition.x,
-                    1.57f,
-                    Layout.CounterPosition.z - 0.58f),
-                new Vector3(0.82f, 0.38f, 0.09f),
-                markerColor,
-                CityNightResources.EmissiveMaterial,
-                false);
-            DrinkShop.ConfigureSceneMarkers(
-                orderPoint.GetComponent<Renderer>(),
-                orderSign.GetComponent<Renderer>());
+            var markers = new List<Renderer>(2);
+            AddAuthoredMarker(markers, "Drink Order Point");
+            AddAuthoredMarker(markers, "Drink Order Sign");
+            DrinkShop.ConfigureSceneMarkers(markers.ToArray());
         }
 
         private void BuildExit()
@@ -485,17 +481,30 @@ namespace BarPromenade
                     transform.TransformPoint(exitDock),
                     transform.TransformDirection(Vector3.back)));
 
-            RuntimePrimitiveFactory.CreateBox(
-                "Exit Header",
-                transform,
-                new Vector3(
-                    0f,
-                    Layout.RoomHeight - 0.62f,
-                    -Layout.RoomSize.y * 0.5f + 0.18f),
-                new Vector3(3.4f, 0.24f, 0.16f),
-                new Color(2.1f, 0.78f, 0.20f),
-                CityNightResources.EmissiveMaterial,
-                false);
+            if (Room.Find("Exit Header") == null)
+            {
+                GameLog.Warning("bar", "authored_exit_header_missing");
+            }
+        }
+
+        private void AddAuthoredMarker(
+            ICollection<Renderer> markers,
+            string partName)
+        {
+            Transform part = Room.Find(partName);
+            Renderer renderer = part != null
+                ? part.GetComponent<Renderer>()
+                : null;
+            if (renderer != null)
+            {
+                markers.Add(renderer);
+                return;
+            }
+
+            GameLog.Warning(
+                "bar",
+                "authored_service_marker_missing",
+                GameLog.Field("part", partName));
         }
 
         private static BarActivityKind ResolveActivity(

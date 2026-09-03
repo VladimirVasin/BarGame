@@ -28,6 +28,12 @@ namespace BarPromenade.Editor
             "Assets/Bar/Models/Bar3D.json";
         public const string InteriorPrefabPath =
             "Assets/Resources/Bar/BarInterior3D.prefab";
+        public const string ServicePropsModelPath =
+            "Assets/Bar/Models/BarServiceProps3D.fbx";
+        public const string ServicePropsManifestPath =
+            "Assets/Bar/Models/BarServiceProps3D.json";
+        public const string ServicePropsPrefabPath =
+            "Assets/Resources/Bar/BarServiceProps3D.prefab";
         public const string FacadeModelPath =
             "Assets/Bar/Models/BarFacade3D.fbx";
         public const string FacadeManifestPath =
@@ -38,8 +44,12 @@ namespace BarPromenade.Editor
             "Assets/Resources/Materials/RuntimePrimitiveLit.mat";
         public const string SharedEmissionMaterialPath =
             "Assets/Resources/Materials/CityNoirEmission.mat";
+        public const string TextureFolderPath =
+            "Assets/Resources/Bar/Textures/";
 
-        private const string ExpectedDesignId = "bar_interior_v2";
+        private const string ExpectedDesignId = "bar_interior_v3";
+        private const string ExpectedServicePropsDesignId =
+            "bar_service_props_v1";
         private const string ExpectedFacadeDesignId = "bar_exterior_v2";
         private const int MaximumTriangles = 24000;
         private const int MaximumRenderers = 200;
@@ -101,6 +111,10 @@ namespace BarPromenade.Editor
                  string.Equals(
                      path,
                      FacadeModelPath,
+                     StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(
+                     path,
+                     ServicePropsModelPath,
                      StringComparison.OrdinalIgnoreCase));
         }
 
@@ -114,6 +128,10 @@ namespace BarPromenade.Editor
                  string.Equals(
                      path,
                      FacadeManifestPath,
+                     StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(
+                     path,
+                     ServicePropsManifestPath,
                      StringComparison.OrdinalIgnoreCase));
         }
 
@@ -121,8 +139,21 @@ namespace BarPromenade.Editor
         {
             return File.Exists(InteriorModelPath) &&
                 File.Exists(ManifestPath) &&
+                File.Exists(ServicePropsModelPath) &&
+                File.Exists(ServicePropsManifestPath) &&
                 File.Exists(FacadeModelPath) &&
                 File.Exists(FacadeManifestPath);
+        }
+
+        public static bool IsTexturePath(string path)
+        {
+            return !string.IsNullOrEmpty(path) &&
+                path.StartsWith(
+                    TextureFolderPath,
+                    StringComparison.OrdinalIgnoreCase) &&
+                path.EndsWith(
+                    ".png",
+                    StringComparison.OrdinalIgnoreCase);
         }
 
         public static void QueueBuildWhenSourcesExist()
@@ -151,6 +182,8 @@ namespace BarPromenade.Editor
                 foreach (string path in new[]
                          {
                              InteriorModelPath, ManifestPath,
+                             ServicePropsModelPath,
+                             ServicePropsManifestPath,
                              FacadeModelPath, FacadeManifestPath,
                          })
                 {
@@ -166,6 +199,13 @@ namespace BarPromenade.Editor
                     InteriorModelPath,
                     InteriorPrefabPath,
                     "BarInterior3D");
+                BuildPrefab(
+                    LoadAndValidateManifest(
+                        ServicePropsManifestPath,
+                        ExpectedServicePropsDesignId),
+                    ServicePropsModelPath,
+                    ServicePropsPrefabPath,
+                    "BarServiceProps3D");
                 BuildPrefab(
                     LoadAndValidateManifest(
                         FacadeManifestPath, ExpectedFacadeDesignId),
@@ -188,6 +228,12 @@ namespace BarPromenade.Editor
                 LoadAndValidateManifest(ManifestPath, ExpectedDesignId),
                 InteriorPrefabPath,
                 true);
+            ValidatePrefabOrThrow(
+                LoadAndValidateManifest(
+                    ServicePropsManifestPath,
+                    ExpectedServicePropsDesignId),
+                ServicePropsPrefabPath,
+                false);
             ValidatePrefabOrThrow(
                 LoadAndValidateManifest(
                     FacadeManifestPath, ExpectedFacadeDesignId),
@@ -456,6 +502,7 @@ namespace BarPromenade.Editor
                             "manifest but not in the model.");
                     }
 
+                    ApplyManifestAnchorBasis(anchor, transform);
                     anchors.Add(new BarAnchorBinding(
                         anchor.name,
                         anchor.role,
@@ -693,6 +740,43 @@ namespace BarPromenade.Editor
                 : Vector3.zero;
         }
 
+        private static void ApplyManifestAnchorBasis(
+            BarManifestAnchor anchor,
+            Transform transform)
+        {
+            if (anchor.unity_right == null ||
+                anchor.unity_up == null ||
+                anchor.unity_forward == null)
+            {
+                return;
+            }
+
+            Vector3 right = ToVector(anchor.unity_right).normalized;
+            Vector3 up = ToVector(anchor.unity_up).normalized;
+            Vector3 forward = ToVector(anchor.unity_forward).normalized;
+            bool valid = right.sqrMagnitude > 0.99f &&
+                         up.sqrMagnitude > 0.99f &&
+                         forward.sqrMagnitude > 0.99f &&
+                         Mathf.Abs(Vector3.Dot(right, up)) < 0.001f &&
+                         Mathf.Abs(Vector3.Dot(right, forward)) < 0.001f &&
+                         Mathf.Abs(Vector3.Dot(up, forward)) < 0.001f &&
+                         Vector3.Dot(
+                             Vector3.Cross(up, forward),
+                             right) > 0.999f;
+            if (!valid)
+            {
+                throw new InvalidOperationException(
+                    $"Bar anchor '{anchor.name}' has an invalid Unity " +
+                    "basis in its manifest.");
+            }
+
+            // FBX axis conversion preserves anchor positions, but an Empty's
+            // axes still inherit the imported wrapper basis. Reapply the
+            // explicit basis in prefab-root space so later flattening sees
+            // the exact Unity socket orientation declared by the manifest.
+            transform.rotation = Quaternion.LookRotation(forward, up);
+        }
+
         private static Color ToColor(float[] values)
         {
             return values != null && values.Length >= 3
@@ -787,6 +871,9 @@ namespace BarPromenade.Editor
         public string name;
         public string role;
         public float[] local_position;
+        public float[] unity_right;
+        public float[] unity_up;
+        public float[] unity_forward;
     }
 
     [Serializable]

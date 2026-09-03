@@ -732,6 +732,199 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("MountainRoad")]
+        public void
+            ServiceTimeline_HeroMenuQueuesBehindPourAndCompletesHandoff()
+        {
+            var timeline = new MountainRoadCafeServiceTimeline(91);
+
+            Assert.That(MountainRoadCafeServiceTimeline.OffersHeroMenu,
+                Is.True);
+            Assert.That(
+                timeline.TryRequestDrink(
+                    MountainRoadCafeCastRole.PairMan),
+                Is.True);
+            timeline.Advance(
+                MountainRoadCafeServiceTimeline.CoupleDrinkSeconds +
+                MountainRoadCafeServiceTimeline.NoticeSeconds +
+                MountainRoadCafeServiceTimeline.WalkSeconds +
+                MountainRoadCafeServiceTimeline.PourSeconds * 0.5f);
+
+            MountainRoadCafeServiceFrame beforeRequest = timeline.Frame;
+            Assert.That(
+                beforeRequest.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.Pour));
+            Assert.That(beforeRequest.HasServiceTarget, Is.True);
+            Assert.That(
+                beforeRequest.ServiceTarget,
+                Is.EqualTo(MountainRoadCafeCastRole.PairMan));
+
+            Assert.That(timeline.TryRequestHeroMenu(), Is.True);
+            MountainRoadCafeServiceFrame queued = timeline.Frame;
+            Assert.That(queued.Phase, Is.EqualTo(beforeRequest.Phase));
+            Assert.That(
+                queued.HasServiceTarget,
+                Is.EqualTo(beforeRequest.HasServiceTarget));
+            Assert.That(
+                queued.PhaseElapsedSeconds,
+                Is.EqualTo(beforeRequest.PhaseElapsedSeconds)
+                    .Within(0.0001f));
+            Assert.That(
+                queued.ServiceTarget,
+                Is.EqualTo(beforeRequest.ServiceTarget));
+            Assert.That(
+                queued.PairManFill,
+                Is.EqualTo(beforeRequest.PairManFill).Within(0.0001f));
+            Assert.That(
+                queued.PairWomanFill,
+                Is.EqualTo(beforeRequest.PairWomanFill).Within(0.0001f));
+            Assert.That(queued.HeroMenuRequested, Is.True);
+            Assert.That(queued.HeroMenuPlaced, Is.False);
+            Assert.That(timeline.TryRequestHeroMenu(), Is.False);
+
+            timeline.Advance(
+                timeline.RemainingPhaseSeconds +
+                MountainRoadCafeServiceTimeline.WalkSeconds);
+            MountainRoadCafeServiceFrame menuNotice = timeline.Frame;
+            Assert.That(
+                menuNotice.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.MenuNotice));
+            Assert.That(menuNotice.HasServiceTarget, Is.False);
+            Assert.That(menuNotice.HeroMenuRequested, Is.True);
+            Assert.That(menuNotice.HeroMenuPlaced, Is.False);
+            Assert.That(
+                menuNotice.PairManFill,
+                Is.EqualTo(MountainRoadCafeServiceTimeline.RefilledLevel)
+                    .Within(0.0001f));
+            Assert.That(
+                menuNotice.PairWomanFill,
+                Is.EqualTo(beforeRequest.PairWomanFill).Within(0.0001f));
+
+            float menuManFill = menuNotice.PairManFill;
+            float menuWomanFill = menuNotice.PairWomanFill;
+            timeline.Advance(MountainRoadCafeServiceTimeline.NoticeSeconds);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.WalkToHero));
+            Assert.That(timeline.Frame.HasServiceTarget, Is.False);
+            Assert.That(
+                timeline.Frame.PairManFill,
+                Is.EqualTo(menuManFill).Within(0.0001f));
+            Assert.That(
+                timeline.Frame.PairWomanFill,
+                Is.EqualTo(menuWomanFill).Within(0.0001f));
+            timeline.Advance(MountainRoadCafeServiceTimeline.WalkSeconds);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.PlaceMenu));
+            Assert.That(timeline.Frame.HasServiceTarget, Is.False);
+            Assert.That(timeline.Frame.HeroMenuPlaced, Is.False);
+            Assert.That(
+                timeline.Frame.PairManFill,
+                Is.EqualTo(menuManFill).Within(0.0001f));
+            Assert.That(
+                timeline.Frame.PairWomanFill,
+                Is.EqualTo(menuWomanFill).Within(0.0001f));
+            timeline.Advance(MountainRoadCafeServiceTimeline.NoticeSeconds);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.MenuWalkBack));
+            Assert.That(timeline.Frame.HeroMenuRequested, Is.False);
+            Assert.That(timeline.Frame.HeroMenuPlaced, Is.True);
+            Assert.That(
+                timeline.Frame.PairManFill,
+                Is.EqualTo(menuManFill).Within(0.0001f));
+            Assert.That(
+                timeline.Frame.PairWomanFill,
+                Is.EqualTo(menuWomanFill).Within(0.0001f));
+
+            timeline.Advance(MountainRoadCafeServiceTimeline.WalkSeconds);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.Wiping));
+            Assert.That(timeline.Frame.HasServiceTarget, Is.False);
+            Assert.That(timeline.Frame.HeroMenuPlaced, Is.True);
+            Assert.That(
+                timeline.Frame.PairManFill,
+                Is.EqualTo(menuManFill).Within(0.0001f));
+            Assert.That(
+                timeline.Frame.PairWomanFill,
+                Is.EqualTo(menuWomanFill).Within(0.0001f));
+        }
+
+        [Test]
+        [Category("MountainRoad")]
+        public void
+            ServiceTimeline_MenuRetrievalQueuesAndPreservesPatronCups()
+        {
+            var timeline = new MountainRoadCafeServiceTimeline(109);
+            Assert.That(timeline.TryRequestHeroMenu(), Is.True);
+            timeline.Advance(
+                MountainRoadCafeServiceTimeline.NoticeSeconds +
+                MountainRoadCafeServiceTimeline.WalkSeconds +
+                MountainRoadCafeServiceTimeline.NoticeSeconds);
+
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.MenuWalkBack));
+            Assert.That(timeline.Frame.HeroMenuPlaced, Is.True);
+            timeline.Advance(
+                MountainRoadCafeServiceTimeline.WalkSeconds * 0.4f);
+            MountainRoadCafeServiceFrame beforeRequest = timeline.Frame;
+
+            Assert.That(
+                timeline.TryRequestHeroMenuRetrieval(),
+                Is.True);
+            Assert.That(
+                timeline.TryRequestHeroMenuRetrieval(),
+                Is.False);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.MenuWalkBack));
+            Assert.That(
+                timeline.Frame.PhaseElapsedSeconds,
+                Is.EqualTo(beforeRequest.PhaseElapsedSeconds)
+                    .Within(0.0001f));
+            Assert.That(timeline.Frame.HeroMenuRetrievalRequested, Is.True);
+            Assert.That(timeline.Frame.HeroMenuRetrieved, Is.False);
+
+            float pairManFill = timeline.Frame.PairManFill;
+            float pairWomanFill = timeline.Frame.PairWomanFill;
+            timeline.Advance(timeline.RemainingPhaseSeconds);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.WalkToMenu));
+            Assert.That(timeline.Frame.HeroMenuPlaced, Is.True);
+
+            timeline.Advance(MountainRoadCafeServiceTimeline.WalkSeconds);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.TakeMenu));
+            Assert.That(timeline.Frame.HeroMenuPlaced, Is.True);
+
+            timeline.Advance(MountainRoadCafeServiceTimeline.NoticeSeconds);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.CarryMenuBack));
+            Assert.That(timeline.Frame.HeroMenuPlaced, Is.False);
+            Assert.That(timeline.Frame.HeroMenuRetrievalRequested, Is.True);
+
+            timeline.Advance(MountainRoadCafeServiceTimeline.WalkSeconds);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.Wiping));
+            Assert.That(timeline.Frame.HeroMenuRetrievalRequested, Is.False);
+            Assert.That(timeline.Frame.HeroMenuRetrieved, Is.True);
+            Assert.That(
+                timeline.Frame.PairManFill,
+                Is.EqualTo(pairManFill).Within(0.0001f));
+            Assert.That(
+                timeline.Frame.PairWomanFill,
+                Is.EqualTo(pairWomanFill).Within(0.0001f));
+            Assert.That(timeline.TryRequestHeroMenu(), Is.False);
+        }
+
+        [Test]
+        [Category("MountainRoad")]
         public void CafeActivationRadius_DoesNotReachTheClimbingRoute()
         {
             MountainRoadPlan plan = MountainRoadPlanner.Create(

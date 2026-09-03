@@ -104,6 +104,8 @@ namespace BarPromenade
             new InventoryState();
         private static readonly QuestLogState questLog =
             new QuestLogState();
+        private static readonly HashSet<GameDayEventId> firedDayEvents =
+            new HashSet<GameDayEventId>();
         private static readonly CemeteryGraveWorkLedger graveWork =
             new CemeteryGraveWorkLedger();
         private static readonly GameTimeState gameTime =
@@ -318,6 +320,9 @@ namespace BarPromenade
                 return false;
             }
 
+            // A debug jump to a later day must land on that day's world,
+            // not on day one's with a different number on it.
+            SyncDayEvents();
             GameLog.Info(
                 "session",
                 "debug_game_day_changed",
@@ -333,6 +338,7 @@ namespace BarPromenade
         public static void AdvanceGameTime(float scaledDelta)
         {
             double advancedGameMinutes = gameTime.Advance(scaledDelta);
+            SyncDayEvents();
             PlayerNeedsProgressionResult progression =
                 needsProgression.Advance(advancedGameMinutes);
             if (!progression.Changed)
@@ -354,6 +360,73 @@ namespace BarPromenade
                     "previous_fatigue",
                     progression.FatigueBefore),
                 GameLog.Field("fatigue", progression.FatigueAfter));
+        }
+
+        /// <summary>
+        /// True once the calendar has opened this event in this
+        /// session. It stays true afterwards: an event is a thing that
+        /// happened, not a thing that is happening, so a debug jump
+        /// back to an earlier day does not un-happen it.
+        /// </summary>
+        public static bool HasDayEventFired(GameDayEventId id)
+        {
+            return firedDayEvents.Contains(id);
+        }
+
+        /// <summary>
+        /// Opens whatever the calendar has reached. Called from the one
+        /// place the clock rolls a day over and from the debug day
+        /// jump, so a day cannot arrive without the work that belongs
+        /// to it.
+        ///
+        /// Each event fires exactly once per session, tracked here
+        /// rather than left to each event to be idempotent on its own.
+        /// Quest activation happens to be safe to repeat; the next
+        /// event somebody dates will not be, and that is not the kind
+        /// of thing that should have to be remembered.
+        /// </summary>
+        private static void SyncDayEvents()
+        {
+            int dayNumber = gameTime.DayNumber;
+            IReadOnlyList<GameDayScheduleEntry> schedule =
+                GameDaySchedule.All;
+            for (int index = 0; index < schedule.Count; index++)
+            {
+                GameDayScheduleEntry entry = schedule[index];
+                if (dayNumber < entry.FirstDayNumber ||
+                    !firedDayEvents.Add(entry.Id))
+                {
+                    continue;
+                }
+
+                ApplyDayEvent(entry.Id);
+                GameLog.Info(
+                    "session",
+                    "day_event_opened",
+                    GameLog.Field("event_id", entry.Id.ToString()),
+                    GameLog.Field(
+                        "scheduled_day_number",
+                        entry.FirstDayNumber),
+                    GameLog.Field("day_number", dayNumber));
+            }
+        }
+
+        /// <summary>
+        /// The one place an event on the calendar turns into a change
+        /// in the world. Add a case here when a row is added to
+        /// <see cref="GameDaySchedule"/>; the schedule itself stays
+        /// pure data.
+        /// </summary>
+        private static void ApplyDayEvent(GameDayEventId id)
+        {
+            switch (id)
+            {
+                case GameDayEventId.FeedTheCatOpens:
+                    questLog.TryActivate(QuestId.FeedTheCat);
+                    return;
+                default:
+                    return;
+            }
         }
 
         private static void ResetToDefaults()
@@ -388,6 +461,11 @@ namespace BarPromenade
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
             questLog.ResetWithStarterQuests();
+            firedDayEvents.Clear();
+            // Day one of a new game is still a day, so anything the
+            // calendar dates to it opens right here rather than
+            // waiting for the first tick of the clock.
+            SyncDayEvents();
             GameLog.SetCitySeed(CitySeed);
         }
 

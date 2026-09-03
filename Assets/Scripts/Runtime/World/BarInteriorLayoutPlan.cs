@@ -31,7 +31,9 @@ namespace BarPromenade
         HighTopTable = 3,
         Stage = 4,
         ActivityFixture = 5,
-        CoatRack = 6
+        CoatRack = 6,
+        CounterReturn = 7,
+        PubTable = 8
     }
 
     public enum BarNpcRole

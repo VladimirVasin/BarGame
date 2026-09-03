@@ -118,7 +118,8 @@ namespace BarPromenade
 
         public bool ApplyClip(
             MountainRoadCafeCastClipKind kind,
-            float elapsedSeconds)
+            float elapsedSeconds,
+            bool preserveServiceCarryWeight = false)
         {
             if (!IsInitialized ||
                 float.IsNaN(elapsedSeconds) ||
@@ -170,11 +171,13 @@ namespace BarPromenade
             EnsureActionPlayable(kind, clip);
             actionPlayable.SetTime(currentClipTimeSeconds);
             actionPlayable.SetSpeed(0d);
-            float actionWeight = ResolveAuthoredActionWeight(
-                kind,
-                elapsedSeconds,
-                clip.length,
-                actionStartedFromServiceCarry);
+            float actionWeight = preserveServiceCarryWeight
+                ? 1f
+                : ResolveAuthoredActionWeight(
+                    kind,
+                    elapsedSeconds,
+                    clip.length,
+                    actionStartedFromServiceCarry);
             mixer.SetInputWeight(0, 1f - actionWeight);
             mixer.SetInputWeight(1, actionWeight);
             graph.Evaluate(0f);

@@ -46,9 +46,13 @@ import interior_kit as kit  # noqa: E402
 import bar_parts as bp  # noqa: E402
 
 
-GENERATOR_VERSION = "1.1.2"
+GENERATOR_VERSION = "1.2.1"
 DESIGN_ID = "mountain_road_cafe_nighthawks_v1"
 DISPLAY_NAME = "Bar Promenade Mountain Road Nighthawks Cafe"
+EXPECTED_MESH_COUNT = 61
+EXPECTED_TRIANGLE_COUNT = 5794
+EXPECTED_ANCHOR_COUNT = 52
+EXPECTED_PROP_COUNT = 7
 
 # Logical footprint published by MountainRoadTerminalPlanner, translated so
 # MountainRoadCafePlan.Center is the model origin. Do not alter these numbers
@@ -95,6 +99,39 @@ CUP_STATIONS = {
 STOOL_SEAT_TOP_Y = 0.8175
 LIQUID_EMPTY_LOCAL_Y = 0.022
 LIQUID_FULL_LOCAL_Y = 0.101
+
+# The hero's menu is authored as a passive dynamic prop. Its root is the
+# delivery dock so runtime can reveal and move the whole assembly without
+# reconstructing either the opened-page pose or its text plane.
+MENU_DOCK = (-0.38, 1.02, -1.38)
+MENU_COVER_WIDTH = 0.54
+MENU_COVER_DEPTH = 0.32
+MENU_COVER_THICKNESS = 0.006
+MENU_COVER_GAP = 0.006
+MENU_COVER_MIN_Y = 0.004
+MENU_PAGE_WIDTH = 0.50
+MENU_PAGE_DEPTH = 0.29
+MENU_PAGE_THICKNESS = 0.004
+MENU_PAGE_GAP = 0.010
+MENU_PAGE_MIN_Y = 0.013
+MENU_OPEN_ANGLE_DEGREES = 5.5
+MENU_TEXT_CLEARANCE = 0.0015
+MENU_GRIP_LOCAL = (0.0, 0.042, 0.130)
+MENU_TEXT_X = 0.130
+MENU_TEXT_POSITIONS = {
+    "MenuText.Item.00": (MENU_TEXT_X, 0.035),
+    "MenuText.Item.01": (MENU_TEXT_X, -0.020),
+    "MenuText.Item.02": (MENU_TEXT_X, -0.075),
+    "MenuText.Selection": (0.035, 0.035),
+}
+MENU_PAGE_FORWARD = (
+    math.sin(math.radians(MENU_OPEN_ANGLE_DEGREES)),
+    math.cos(math.radians(MENU_OPEN_ANGLE_DEGREES)),
+    0.0,
+)
+MENU_PAGE_UP = (0.0, 0.0, 1.0)
+HERO_COUNTER_DETAIL_Z = -0.88
+HERO_SERVICE_RAIL = (-0.38, 0.0, -0.76)
 
 # The rear service run finishes 3 mm before the visible inner lining. This is
 # enough to avoid z-fighting without reading as a second aisle behind the
@@ -1386,13 +1423,156 @@ def build_interior(asset: AssetBuild) -> None:
 
     # Small counter equipment: napkin dispenser, sugar, salt and paper stack.
     details = merge([
-        bp.u_box((-0.25, 1.10, -1.20), (0.22, 0.22, 0.15), 0.012),
-        bp.u_cylinder((0.10, 1.10, -1.20), (0.10, 0.10, 0.10), 10),
-        bp.u_cylinder((0.30, 1.09, -1.20), (0.08, 0.09, 0.08), 10),
+        bp.u_box(
+            (-0.25, 1.10, HERO_COUNTER_DETAIL_Z),
+            (0.22, 0.22, 0.15),
+            0.012,
+        ),
+        bp.u_cylinder(
+            (0.10, 1.10, HERO_COUNTER_DETAIL_Z),
+            (0.10, 0.10, 0.10),
+            10,
+        ),
+        bp.u_cylinder(
+            (0.30, 1.09, HERO_COUNTER_DETAIL_Z),
+            (0.08, 0.09, 0.08),
+            10,
+        ),
         bp.u_box((2.43, 1.045, -1.18), (0.42, 0.025, 0.30), 0.004),
     ])
     add_part(asset, "Cafe_CounterDetails", details, "counter_details",
              "CafePropsDetail", group="props")
+
+
+def menu_leaf_geometry(
+    side: int,
+    total_width: float,
+    depth: float,
+    thickness: float,
+    spine_gap: float,
+    minimum_y: float,
+) -> tuple[kit.Geometry, float]:
+    """Build one leaf and return its translated geometry/Y offset.
+
+    Both leaves descend from the raised spine toward their outer edge. The
+    explicit offset keeps the lowest cover point a few millimetres above the
+    real counter plane while preserving one deterministic local page plane.
+    """
+    if side not in (-1, 1):
+        raise ValueError("A menu leaf side must be -1 or +1.")
+    leaf_width = (total_width - spine_gap) * 0.5
+    inner_x = side * spine_gap * 0.5
+    center_x = inner_x + side * leaf_width * 0.5
+    geometry = bp.u_box(
+        (center_x, thickness * 0.5, 0.0),
+        (leaf_width, thickness, depth),
+        min(0.001, thickness * 0.20),
+    )
+    geometry = bp.u_rotated_about(
+        geometry,
+        (0.0, 0.0, -side * MENU_OPEN_ANGLE_DEGREES),
+        (inner_x, 0.0, 0.0),
+    )
+    low, _ = kit.bounds(geometry)
+    y_offset = minimum_y - low[1]
+    return translate_geometry(geometry, (0.0, y_offset, 0.0)), y_offset
+
+
+def menu_right_page_surface_y(local_x: float, page_y_offset: float) -> float:
+    """Height of the right page's upper plane in Menu.Hero local space."""
+    angle = math.radians(MENU_OPEN_ANGLE_DEGREES)
+    inner_x = MENU_PAGE_GAP * 0.5
+    return (
+        -(local_x - inner_x) * math.sin(angle)
+        + MENU_PAGE_THICKNESS * math.cos(angle)
+        + page_y_offset
+    )
+
+
+def build_menu_prop(asset: AssetBuild) -> None:
+    menu = add_prop(asset, "Menu.Hero", "menu_booklet", "HeroMenu", MENU_DOCK)
+    left_cover, _ = menu_leaf_geometry(
+        -1,
+        MENU_COVER_WIDTH,
+        MENU_COVER_DEPTH,
+        MENU_COVER_THICKNESS,
+        MENU_COVER_GAP,
+        MENU_COVER_MIN_Y,
+    )
+    right_cover, _ = menu_leaf_geometry(
+        1,
+        MENU_COVER_WIDTH,
+        MENU_COVER_DEPTH,
+        MENU_COVER_THICKNESS,
+        MENU_COVER_GAP,
+        MENU_COVER_MIN_Y,
+    )
+    left_page, _ = menu_leaf_geometry(
+        -1,
+        MENU_PAGE_WIDTH,
+        MENU_PAGE_DEPTH,
+        MENU_PAGE_THICKNESS,
+        MENU_PAGE_GAP,
+        MENU_PAGE_MIN_Y,
+    )
+    right_page, right_page_y_offset = menu_leaf_geometry(
+        1,
+        MENU_PAGE_WIDTH,
+        MENU_PAGE_DEPTH,
+        MENU_PAGE_THICKNESS,
+        MENU_PAGE_GAP,
+        MENU_PAGE_MIN_Y,
+    )
+    add_part(
+        asset,
+        "Cafe_MenuCover",
+        merge((left_cover, right_cover)),
+        "menu_cover",
+        "CafeCounterDetail",
+        group="dynamic_prop",
+        parent=menu.root,
+        initially_visible=False,
+    )
+    add_part(
+        asset,
+        "Cafe_MenuPages",
+        merge((left_page, right_page)),
+        "menu_pages",
+        "CafePropsDetail",
+        group="dynamic_prop",
+        parent=menu.root,
+        initially_visible=False,
+    )
+    menu.part_names.extend(("Cafe_MenuCover", "Cafe_MenuPages"))
+
+    add_anchor(asset, "MenuDock.Hero", "menu_dock", MENU_DOCK)
+    add_anchor(
+        asset,
+        "Grip.HeroMenu",
+        "menu_grip",
+        MENU_GRIP_LOCAL,
+        (0.0, 0.0, -1.0),
+        parent=menu.root,
+    )
+    for name, (local_x, local_z) in MENU_TEXT_POSITIONS.items():
+        local_y = (
+            menu_right_page_surface_y(local_x, right_page_y_offset)
+            + MENU_TEXT_CLEARANCE
+        )
+        role = (
+            "menu_text_selection"
+            if name == "MenuText.Selection"
+            else "menu_text_item"
+        )
+        add_anchor(
+            asset,
+            name,
+            role,
+            (local_x, local_y, local_z),
+            MENU_PAGE_FORWARD,
+            MENU_PAGE_UP,
+            parent=menu.root,
+        )
 
 
 def build_cup_props(asset: AssetBuild) -> None:
@@ -1493,6 +1673,7 @@ def build_service_props(asset: AssetBuild) -> None:
         (2.10, 0.0, -0.76),
     )):
         add_anchor(asset, f"ServiceRail.{index:02d}", "service_rail", position)
+    add_anchor(asset, "ServiceRail.Hero", "service_rail", HERO_SERVICE_RAIL)
 
 
 def build_anchors(asset: AssetBuild) -> None:
@@ -1593,6 +1774,7 @@ def build() -> AssetBuild:
     asset = AssetBuild(root, collection, materials)
     build_shell(asset)
     build_interior(asset)
+    build_menu_prop(asset)
     build_cup_props(asset)
     build_service_props(asset)
     build_anchors(asset)
@@ -1786,6 +1968,7 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
         "kitchen_backsplash", "stove", "frying_pan", "cutting_board",
         "stove_task_fixture", "stove_task_lens", "refrigerator_body",
         "refrigerator_cavity", "refrigerator_shelf", "fridge_door",
+        "menu_cover", "menu_pages",
     }
     roles = {part.role for part in asset.parts}
     for role in sorted(required_roles - roles):
@@ -1799,6 +1982,7 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
         "Cafe_StoveTaskLens", "Cafe_RefrigeratorBody",
         "Cafe_RefrigeratorCavity", "Cafe_RefrigeratorShelves",
         "Cafe_FridgeDoor", "Cafe_CoffeeUrns", "Cafe_RearDoor",
+        "Cafe_MenuCover", "Cafe_MenuPages",
     }
     for name in sorted(required_part_names - names):
         problems.append(f"required cafe part '{name}' is missing")
@@ -1807,8 +1991,16 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
         problems.append("the authored counter must retain exactly seven stools")
     if len([prop for prop in asset.props.values() if prop.role == "cup_assembly"]) != 2:
         problems.append("the cafe must expose exactly two cup assemblies")
-    if len(asset.props) != 6:
-        problems.append("the cafe must expose five service props and one fridge door")
+    if len(asset.parts) != EXPECTED_MESH_COUNT:
+        problems.append(
+            f"the cafe has {len(asset.parts)} meshes; expected "
+            f"{EXPECTED_MESH_COUNT}"
+        )
+    if len(asset.props) != EXPECTED_PROP_COUNT:
+        problems.append(
+            f"the cafe has {len(asset.props)} dynamic props; expected "
+            f"{EXPECTED_PROP_COUNT}"
+        )
     if len(COLLIDER_DESCRIPTORS) != 17:
         problems.append("the passive model must publish exactly 17 collider descriptors")
 
@@ -1818,13 +2010,20 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
         "CounterStart", "CounterCorner", "CounterEnd", "HeroSeat",
         "Cup.PairMan", "Cup.PairWoman", "PotDock", "PotSpout",
         "FridgeDoorPivot", "Grip.FridgeDoor", "CuttingBoardDock",
-        "StovePanDock",
+        "StovePanDock", "MenuDock.Hero", "Grip.HeroMenu",
+        "MenuText.Item.00", "MenuText.Item.01", "MenuText.Item.02",
+        "MenuText.Selection", "ServiceRail.Hero",
         "Cast.Lone", "Cast.PairMan", "Cast.PairWoman", "Cast.Attendant",
         "Light.WarmCounter", "Light.ColdService", "Light.ExteriorWash",
         "Audio.Fridge", "Audio.Fixture", "Audio.Boiler",
     }
     for name in sorted(required_anchors - set(asset.anchors)):
         problems.append(f"required anchor '{name}' is missing")
+    if len(asset.anchors) != EXPECTED_ANCHOR_COUNT:
+        problems.append(
+            f"the cafe has {len(asset.anchors)} anchors; expected "
+            f"{EXPECTED_ANCHOR_COUNT}"
+        )
 
     door = asset.anchors.get("DoorThreshold")
     if door is None or door.unity_position != DOOR_CENTER:
@@ -1860,6 +2059,124 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
     if (fridge_pivot is None or
             fridge_pivot.unity_position != FRIDGE_DOOR_PIVOT):
         problems.append("FridgeDoorPivot anchor moved away from the hinge")
+
+    # Menu.Hero is geometry-only but has the complete hierarchy needed for a
+    # later delivery/reveal pass. Page text sockets stay child-local to the
+    # prop and publish the real tilted page normal, so presentation code does
+    # not need to guess the authored open-book angle.
+    menu_prop = asset.props.get("Menu.Hero")
+    menu_cover = next(
+        (part for part in asset.parts if part.name == "Cafe_MenuCover"), None)
+    menu_pages = next(
+        (part for part in asset.parts if part.name == "Cafe_MenuPages"), None)
+    if (menu_prop is None or menu_prop.role != "menu_booklet" or
+            menu_prop.owner != "HeroMenu" or
+            menu_prop.part_names != ["Cafe_MenuCover", "Cafe_MenuPages"] or
+            menu_prop.lift_root is not None or menu_prop.liquid_part):
+        problems.append("Menu.Hero passive dynamic-prop contract is incomplete")
+    elif max(
+        abs(actual - expected)
+        for actual, expected in zip(
+            menu_prop.root.location,
+            unity_to_source(MENU_DOCK),
+        )
+    ) > 1e-6:
+        problems.append("Menu.Hero root moved away from its authored dock")
+    for part, expected_sheet in (
+        (menu_cover, "CafeCounterDetail"),
+        (menu_pages, "CafePropsDetail"),
+    ):
+        if (part is None or menu_prop is None or
+                part.obj.parent is not menu_prop.root or
+                part.group != "dynamic_prop" or part.initially_visible or
+                part.sheet != expected_sheet):
+            problems.append(
+                f"{part.name if part else 'menu part'} is not an initially "
+                "hidden child of Menu.Hero"
+            )
+
+    menu_dock = asset.anchors.get("MenuDock.Hero")
+    menu_grip = asset.anchors.get("Grip.HeroMenu")
+    hero_service_rail = asset.anchors.get("ServiceRail.Hero")
+    if (menu_dock is None or menu_dock.obj.parent is not asset.root or
+            menu_dock.role != "menu_dock" or
+            menu_dock.unity_position != MENU_DOCK):
+        problems.append("MenuDock.Hero is not the root-level menu delivery dock")
+    if (menu_grip is None or menu_prop is None or
+            menu_grip.obj.parent is not menu_prop.root or
+            menu_grip.role != "menu_grip" or
+            menu_grip.unity_position != MENU_GRIP_LOCAL):
+        problems.append("Grip.HeroMenu is not a child-local menu contact")
+    if (hero_service_rail is None or
+            hero_service_rail.obj.parent is not asset.root or
+            hero_service_rail.role != "service_rail" or
+            hero_service_rail.unity_position != HERO_SERVICE_RAIL):
+        problems.append("ServiceRail.Hero moved away from the hero service mark")
+
+    _, expected_page_y_offset = menu_leaf_geometry(
+        1,
+        MENU_PAGE_WIDTH,
+        MENU_PAGE_DEPTH,
+        MENU_PAGE_THICKNESS,
+        MENU_PAGE_GAP,
+        MENU_PAGE_MIN_Y,
+    )
+    for name, (local_x, local_z) in MENU_TEXT_POSITIONS.items():
+        anchor = asset.anchors.get(name)
+        expected_role = (
+            "menu_text_selection"
+            if name == "MenuText.Selection"
+            else "menu_text_item"
+        )
+        expected_position = (
+            local_x,
+            menu_right_page_surface_y(local_x, expected_page_y_offset)
+            + MENU_TEXT_CLEARANCE,
+            local_z,
+        )
+        if (anchor is None or menu_prop is None or
+                anchor.obj.parent is not menu_prop.root or
+                anchor.role != expected_role or
+                max(abs(actual - expected) for actual, expected in zip(
+                    anchor.unity_position, expected_position)) > 1e-6 or
+                max(abs(actual - expected) for actual, expected in zip(
+                    anchor.unity_forward, MENU_PAGE_FORWARD)) > 1e-6 or
+                anchor.unity_up != MENU_PAGE_UP):
+            problems.append(f"{name} does not follow the authored right page")
+
+    if menu_cover is not None and menu_pages is not None:
+        cover_low, cover_high = unity_world_bounds(menu_cover)
+        pages_low, pages_high = unity_world_bounds(menu_pages)
+        menu_low = tuple(
+            min(cover_low[index], pages_low[index]) for index in range(3))
+        menu_high = tuple(
+            max(cover_high[index], pages_high[index]) for index in range(3))
+        support_gap = menu_low[1] - 1.02
+        if not (0.0035 <= support_gap <= 0.0045):
+            problems.append(f"Menu.Hero support gap is {support_gap:.4f} m")
+        if (menu_low[0] < MENU_DOCK[0] - 0.28 or
+                menu_high[0] > MENU_DOCK[0] + 0.28 or
+                menu_low[2] < MENU_DOCK[2] - 0.161 or
+                menu_high[2] > MENU_DOCK[2] + 0.161):
+            problems.append("Menu.Hero leaves its 0.54 x 0.32 m authored footprint")
+
+    counter_details = next(
+        (part for part in asset.parts if part.name == "Cafe_CounterDetails"),
+        None,
+    )
+    if counter_details is None:
+        problems.append("Cafe_CounterDetails is missing")
+    else:
+        hero_detail_vertices = [
+            vertex for vertex in counter_details.local_geometry[0]
+            if vertex[0] < 0.5
+        ]
+        detail_center_z = (
+            min(vertex[1] for vertex in hero_detail_vertices)
+            + max(vertex[1] for vertex in hero_detail_vertices)
+        ) * 0.5
+        if abs(detail_center_z - HERO_COUNTER_DETAIL_Z) > 1e-6:
+            problems.append("hero napkin/sugar/salt cluster left z=-0.88 m")
 
     parts_by_name = {part.name: part for part in asset.parts}
     if not (required_part_names - names):
@@ -2011,6 +2328,11 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
     if len(asset.parts) > 90:
         problems.append(f"the cafe fragments into {len(asset.parts)} renderers against 90")
     triangles = sum(kit.triangle_count(part.local_geometry) for part in asset.parts)
+    if triangles != EXPECTED_TRIANGLE_COUNT:
+        problems.append(
+            f"the cafe has {triangles} triangles; expected "
+            f"{EXPECTED_TRIANGLE_COUNT}"
+        )
     if triangles > 45000:
         problems.append(f"the cafe costs {triangles} triangles against 45000")
 
@@ -2192,6 +2514,25 @@ def manifest_for(
             "worktop_wall_gap_m": KITCHEN_WALL_GAP,
             "cabinet_wall_gap_m": KITCHEN_CABINET_WALL_GAP,
             "rear_door_clearance_m": 0.08,
+        },
+        "menu_contract": {
+            "dynamic_prop": "Menu.Hero",
+            "owner": "HeroMenu",
+            "initially_visible": False,
+            "runtime_driver": False,
+            "dock_anchor": "MenuDock.Hero",
+            "grip_anchor": "Grip.HeroMenu",
+            "service_rail_anchor": "ServiceRail.Hero",
+            "item_anchors": [
+                "MenuText.Item.00",
+                "MenuText.Item.01",
+                "MenuText.Item.02",
+            ],
+            "selection_anchor": "MenuText.Selection",
+            "text_forward_local": [stable(value) for value in MENU_PAGE_FORWARD],
+            "text_up_local": [stable(value) for value in MENU_PAGE_UP],
+            "text_line_width_m": 0.18,
+            "text_line_height_m": 0.028,
         },
         "surface_contract": {
             "opaque_detail_min_clearance_m": OPAQUE_DETAIL_CLEARANCE,

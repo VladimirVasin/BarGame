@@ -19,6 +19,7 @@ namespace BarPromenade
         [SerializeField] private Transform attendantDock;
         [SerializeField] private Transform pairManServiceMark;
         [SerializeField] private Transform pairWomanServiceMark;
+        [SerializeField] private Transform heroServiceMark;
         [SerializeField] private Transform potSpout;
         [SerializeField] private Transform pourStream;
         [SerializeField] private Renderer pourStreamRenderer;
@@ -94,7 +95,8 @@ namespace BarPromenade
                     cast.AttendantMotionRoot,
                     RequireAnchor(environment, "ServiceRail.00"),
                     RequireAnchor(environment, "ServiceRail.01"),
-                    RequireAnchor(environment, "ServiceRail.02")) ||
+                    RequireAnchor(environment, "ServiceRail.02"),
+                    RequireAnchor(environment, "ServiceRail.Hero")) ||
                 !cast.BindServicePresentation(presentation))
             {
                 throw new InvalidOperationException(
@@ -221,7 +223,8 @@ namespace BarPromenade
             Transform configuredAttendantMotionRoot,
             Transform configuredAttendantDock,
             Transform configuredPairManServiceMark,
-            Transform configuredPairWomanServiceMark)
+            Transform configuredPairWomanServiceMark,
+            Transform configuredHeroServiceMark = null)
         {
             if (!IsConfigured ||
                 configuredAttendantMotionRoot == null ||
@@ -236,6 +239,8 @@ namespace BarPromenade
             attendantDock = configuredAttendantDock;
             pairManServiceMark = configuredPairManServiceMark;
             pairWomanServiceMark = configuredPairWomanServiceMark;
+            heroServiceMark = configuredHeroServiceMark ??
+                              configuredAttendantDock;
             attendantAuthoredRotation = attendantMotionRoot.rotation;
             SnapAttendantTo(attendantDock);
             return true;
@@ -348,6 +353,54 @@ namespace BarPromenade
             {
                 SetAttendantBetween(
                     ResolveServiceMark(frame.ServiceTarget),
+                    attendantDock,
+                    Mathf.SmoothStep(0f, 1f, frame.PhaseNormalized));
+                return;
+            }
+
+            if (frame.Phase == MountainRoadCafeServicePhase.WalkToHero)
+            {
+                SetAttendantBetween(
+                    attendantDock,
+                    heroServiceMark,
+                    Mathf.SmoothStep(0f, 1f, frame.PhaseNormalized));
+                return;
+            }
+
+            if (frame.Phase == MountainRoadCafeServicePhase.PlaceMenu)
+            {
+                SnapAttendantTo(heroServiceMark);
+                return;
+            }
+
+            if (frame.Phase == MountainRoadCafeServicePhase.MenuWalkBack)
+            {
+                SetAttendantBetween(
+                    heroServiceMark,
+                    attendantDock,
+                    Mathf.SmoothStep(0f, 1f, frame.PhaseNormalized));
+                return;
+            }
+
+            if (frame.Phase == MountainRoadCafeServicePhase.WalkToMenu)
+            {
+                SetAttendantBetween(
+                    attendantDock,
+                    heroServiceMark,
+                    Mathf.SmoothStep(0f, 1f, frame.PhaseNormalized));
+                return;
+            }
+
+            if (frame.Phase == MountainRoadCafeServicePhase.TakeMenu)
+            {
+                SnapAttendantTo(heroServiceMark);
+                return;
+            }
+
+            if (frame.Phase == MountainRoadCafeServicePhase.CarryMenuBack)
+            {
+                SetAttendantBetween(
+                    heroServiceMark,
                     attendantDock,
                     Mathf.SmoothStep(0f, 1f, frame.PhaseNormalized));
                 return;

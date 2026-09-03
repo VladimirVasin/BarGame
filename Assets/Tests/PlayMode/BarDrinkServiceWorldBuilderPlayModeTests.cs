@@ -8,6 +8,15 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed class BarDrinkServiceWorldBuilderPlayModeTests
     {
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int BaseMapTransformId =
+            Shader.PropertyToID("_BaseMap_ST");
+        private static readonly int BaseColorId =
+            Shader.PropertyToID("_BaseColor");
+        private static readonly int SurfaceAlbedoCompensationId =
+            Shader.PropertyToID("_SurfaceAlbedoCompensation");
+
         private GameObject owner;
         private BarDrinkServicePlan plan;
         private BarDrinkServiceView view;
@@ -164,6 +173,20 @@ namespace BarPromenade.Tests.PlayMode
                         out BarDrinkBottleView bySolid),
                     Is.True);
                 Assert.That(bySolid, Is.SameAs(bottle));
+
+                bottle.SetSelectionHighlight(1f);
+                bottle.SetSelectionHighlight(0f);
+                AssertUsesOpaqueSheet(
+                    bottle.Renderers[0],
+                    BarSurfaceKind.BottleGlass,
+                    presentation.BottleColor);
+                AssertUsesOpaqueSheet(
+                    bottle.Renderers[1],
+                    BarSurfaceKind.PaintedMetal);
+                AssertUsesOpaqueSheet(
+                    bottle.Renderers[2],
+                    BarSurfaceKind.Paper,
+                    presentation.LabelColor);
             }
 
             Assert.That(drinkIds.Contains(DrinkId.None), Is.False);
@@ -200,6 +223,8 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     vessel.LiquidRenderer.sharedMaterial,
                     Is.SameAs(BarDrinkServiceResources.LiquidMaterial));
+                AssertUsesBottleGlassSheet(vessel.GlassRenderer);
+                AssertUsesBottleGlassSheet(vessel.LiquidRenderer);
             }
 
             Assert.That(
@@ -215,6 +240,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 view.StreamRenderer.sharedMaterial,
                 Is.SameAs(BarDrinkServiceResources.LiquidMaterial));
+            AssertUsesBottleGlassSheet(view.StreamRenderer);
             Assert.That(view.IsStreamVisible, Is.False);
 
             BarDrinkBottleView finalBottle =
@@ -335,6 +361,58 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             yield return null;
+        }
+
+        private static void AssertUsesBottleGlassSheet(Renderer renderer)
+        {
+            Assert.That(renderer.sharedMaterial.HasProperty(BaseMapId), Is.True);
+            Assert.That(
+                renderer.sharedMaterial.HasProperty(
+                    SurfaceAlbedoCompensationId),
+                Is.True);
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            Assert.That(
+                properties.GetTexture(BaseMapId),
+                Is.SameAs(
+                    BarSurfaceAppearance.GetTexture(
+                        BarSurfaceKind.BottleGlass)));
+            Assert.That(
+                properties.GetVector(BaseMapTransformId),
+                Is.EqualTo(new Vector4(1f, 1f, 0f, 0f)));
+            Assert.That(
+                properties.GetFloat(SurfaceAlbedoCompensationId),
+                Is.EqualTo(
+                    BarSurfaceAppearance.GetRecipe(
+                        BarSurfaceKind.BottleGlass).AlbedoCompensation));
+        }
+
+        private static void AssertUsesOpaqueSheet(
+            Renderer renderer,
+            BarSurfaceKind kind,
+            Color? sourceTint = null)
+        {
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            Assert.That(
+                properties.GetTexture(BaseMapId),
+                Is.SameAs(BarSurfaceAppearance.GetTexture(kind)));
+            Assert.That(
+                properties.GetVector(BaseMapTransformId),
+                Is.EqualTo(new Vector4(1f, 1f, 0f, 0f)));
+            if (!sourceTint.HasValue)
+            {
+                return;
+            }
+
+            Color expected = BarSurfaceAppearance.CreateDisplayTint(
+                sourceTint.Value,
+                kind);
+            Color actual = properties.GetColor(BaseColorId);
+            Assert.That(actual.r, Is.EqualTo(expected.r).Within(0.00001f));
+            Assert.That(actual.g, Is.EqualTo(expected.g).Within(0.00001f));
+            Assert.That(actual.b, Is.EqualTo(expected.b).Within(0.00001f));
+            Assert.That(actual.a, Is.EqualTo(expected.a).Within(0.00001f));
         }
 
         private void AssertBottleRowFitsNarrowWidescreen()

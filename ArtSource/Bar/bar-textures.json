@@ -116,6 +116,335 @@
       "sha256": "4AF39B259ED3B13BD314F8A679217292EECF7588E5E731BD20262865FD8D37DE"
     },
     {
+      "key": "BarCeilingPlasterAlbedo",
+      "grammar": "whitewash",
+      "resourcePath": "Bar/Textures/BarCeilingPlasterAlbedo",
+      "meanLinearLuminance": 0.540172,
+      "albedoCompensation": 1.408,
+      "brightnessError": 0.037721,
+      "metersPerTile": 2.4,
+      "smoothness": 0.025,
+      "metallic": 0.0,
+      "exposure": 0.635201,
+      "tints": {
+        "BarInteriorWorldBuilder.Ceiling": [
+          0.18,
+          0.14,
+          0.11
+        ]
+      },
+      "edgeDelta": 1.7088,
+      "seamRatio": 1.0333,
+      "contrast": 51,
+      "channelRatio": 1.0598,
+      "sha256": "EF662BCB1232B11629171B4D097B09ABAE5A5D25BE7CE52C6469B17C1F38D4D0"
+    },
+    {
+      "key": "BarPolishedWoodAlbedo",
+      "grammar": "bar_polished_wood",
+      "resourcePath": "Bar/Textures/BarPolishedWoodAlbedo",
+      "meanLinearLuminance": 0.519863,
+      "albedoCompensation": 1.436,
+      "brightnessError": 0.066661,
+      "metersPerTile": 0.75,
+      "smoothness": 0.34,
+      "metallic": 0.0,
+      "exposure": 0.694927,
+      "tints": {
+        "BarInteriorWorldBuilder.CounterTop": [
+          0.16,
+          0.055,
+          0.028
+        ],
+        "BarInteriorWorldBuilder.TableTop": [
+          0.22,
+          0.095,
+          0.045
+        ]
+      },
+      "edgeDelta": 2.5273,
+      "seamRatio": 1.339,
+      "contrast": 62,
+      "channelRatio": 1.0962,
+      "sha256": "D11A0E2188F756FD656B4EF422AACEF8DBD7596EA5F5C5D0627CCACA02C70A61"
+    },
+    {
+      "key": "BarAgedBrassAlbedo",
+      "grammar": "bar_aged_brass",
+      "resourcePath": "Bar/Textures/BarAgedBrassAlbedo",
+      "meanLinearLuminance": 0.719942,
+      "albedoCompensation": 1.1625,
+      "brightnessError": 0.066748,
+      "metersPerTile": 0.42,
+      "smoothness": 0.42,
+      "metallic": 0.72,
+      "exposure": 0.361456,
+      "tints": {
+        "BarDistrictIdentity.Memory.Metal": [
+          0.62,
+          0.34,
+          0.13
+        ],
+        "BarDistrictIdentity.Household.Metal": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "BarDistrictIdentity.AfterShift.Metal": [
+          0.32,
+          0.4,
+          0.38
+        ],
+        "BarDistrictIdentity.Escape.Metal": [
+          0.52,
+          0.18,
+          0.44
+        ]
+      },
+      "edgeDelta": 1.1855,
+      "seamRatio": 1.0322,
+      "contrast": 35,
+      "channelRatio": 1.0953,
+      "sha256": "1C18DBF450BA6F17EAFFEF99666B19A4CCEF1E94AD59F19535A827FE04625D61"
+    },
+    {
+      "key": "BarMirrorGlassAlbedo",
+      "grammar": "bar_mirror_glass",
+      "resourcePath": "Bar/Textures/BarMirrorGlassAlbedo",
+      "meanLinearLuminance": 0.62013,
+      "albedoCompensation": 1.263,
+      "brightnessError": 0.019355,
+      "metersPerTile": 1.35,
+      "smoothness": 0.78,
+      "metallic": 0.12,
+      "exposure": 0.526184,
+      "tints": {
+        "BarInteriorWorldBuilder.Mirror": [
+          0.22,
+          0.34,
+          0.38
+        ]
+      },
+      "edgeDelta": 1.6133,
+      "seamRatio": 0.8684,
+      "contrast": 48,
+      "channelRatio": 1.054,
+      "sha256": "20389AC15FC7F1FFCCFB60BFA6BBA3E26788DC958C9EFBE01089AD9416AFCA24"
+    },
+    {
+      "key": "BarPatternedGlassAlbedo",
+      "grammar": "bar_patterned_glass",
+      "resourcePath": "Bar/Textures/BarPatternedGlassAlbedo",
+      "meanLinearLuminance": 0.580236,
+      "albedoCompensation": 1.316,
+      "brightnessError": 0.024008,
+      "metersPerTile": 0.72,
+      "smoothness": 0.64,
+      "metallic": 0.04,
+      "exposure": 0.611202,
+      "tints": {
+        "BarInteriorWorldBuilder.PatternedGlass": [
+          0.18,
+          0.28,
+          0.3
+        ]
+      },
+      "edgeDelta": 1.9757,
+      "seamRatio": 1.0655,
+      "contrast": 51,
+      "channelRatio": 1.05,
+      "sha256": "81E837D40706F814160F0F2A16B8F98E8AAAB05095826F599A3553802A0CB240"
+    },
+    {
+      "key": "BarPubCarpetAlbedo",
+      "grammar": "rug",
+      "resourcePath": "Bar/Textures/BarPubCarpetAlbedo",
+      "meanLinearLuminance": 0.5597,
+      "albedoCompensation": 1.3605,
+      "brightnessError": 0.075488,
+      "metersPerTile": 1.15,
+      "smoothness": 0.015,
+      "metallic": 0.0,
+      "exposure": 0.632488,
+      "tints": {
+        "BarInteriorWorldBuilder.Carpet": [
+          0.22,
+          0.055,
+          0.052
+        ],
+        "BarInteriorWorldBuilder.CarpetBorder": [
+          0.36,
+          0.27,
+          0.1
+        ],
+        "BarInteriorWorldBuilder.BayRug": [
+          0.16,
+          0.065,
+          0.055
+        ]
+      },
+      "edgeDelta": 2.1325,
+      "seamRatio": 1.0289,
+      "contrast": 52,
+      "channelRatio": 1.0938,
+      "sha256": "F8404CDF20EB17392A6975542558281FDB5A992062ACB5BEE8C5EC0684BA49CA"
+    },
+    {
+      "key": "BarWornFabricAlbedo",
+      "grammar": "linen",
+      "resourcePath": "Bar/Textures/BarWornFabricAlbedo",
+      "meanLinearLuminance": 0.479901,
+      "albedoCompensation": 1.455,
+      "brightnessError": 0.054597,
+      "metersPerTile": 0.68,
+      "smoothness": 0.02,
+      "metallic": 0.0,
+      "exposure": 0.838904,
+      "tints": {
+        "BarInteriorWorldBuilder.Curtain": [
+          0.3,
+          0.035,
+          0.045
+        ],
+        "BarInteriorWorldBuilder.Shade": [
+          0.32,
+          0.18,
+          0.14
+        ]
+      },
+      "edgeDelta": 3.2134,
+      "seamRatio": 1.5703,
+      "contrast": 64,
+      "channelRatio": 1.0789,
+      "sha256": "791444887E97DC89EF024170E7B670CF709776E572747061DA6D34C3530A22C6"
+    },
+    {
+      "key": "BarPaintedMetalAlbedo",
+      "grammar": "painted_metal",
+      "resourcePath": "Bar/Textures/BarPaintedMetalAlbedo",
+      "meanLinearLuminance": 0.560071,
+      "albedoCompensation": 1.3715,
+      "brightnessError": 0.034587,
+      "metersPerTile": 0.82,
+      "smoothness": 0.2,
+      "metallic": 0.3,
+      "exposure": 0.608592,
+      "tints": {
+        "BarInteriorWorldBuilder.DarkMetal": [
+          0.18,
+          0.2,
+          0.19
+        ],
+        "BarInteriorWorldBuilder.Speaker": [
+          0.12,
+          0.12,
+          0.13
+        ]
+      },
+      "edgeDelta": 1.7681,
+      "seamRatio": 0.9782,
+      "contrast": 55,
+      "channelRatio": 1.0124,
+      "sha256": "293C15660399323EFB9E355BC000C72D5B5F3B05EA13842A00A4E5977FCB951C"
+    },
+    {
+      "key": "BarPaperAlbedo",
+      "grammar": "bar_paper",
+      "resourcePath": "Bar/Textures/BarPaperAlbedo",
+      "meanLinearLuminance": 0.700129,
+      "albedoCompensation": 1.1865,
+      "brightnessError": 0.028438,
+      "metersPerTile": 0.55,
+      "smoothness": 0.025,
+      "metallic": 0.0,
+      "exposure": 0.370857,
+      "tints": {
+        "BarService.MenuPage": [
+          0.74,
+          0.66,
+          0.47
+        ],
+        "BarService.BottleLabel": [
+          0.72,
+          0.66,
+          0.48
+        ],
+        "BarInteriorWorldBuilder.Notice": [
+          0.62,
+          0.38,
+          0.2
+        ]
+      },
+      "edgeDelta": 1.1922,
+      "seamRatio": 1.0782,
+      "contrast": 37,
+      "channelRatio": 1.0551,
+      "sha256": "5B95C25D293AD1B9A6D351152C2EC574E60EB6B003E9C2D0B63DA3D14E1D636A"
+    },
+    {
+      "key": "BarBottleGlassAlbedo",
+      "grammar": "bar_bottle_glass",
+      "resourcePath": "Bar/Textures/BarBottleGlassAlbedo",
+      "meanLinearLuminance": 0.779673,
+      "albedoCompensation": 1.111,
+      "brightnessError": 0.074615,
+      "metersPerTile": 0.36,
+      "smoothness": 0.68,
+      "metallic": 0.02,
+      "exposure": 0.264193,
+      "tints": {
+        "BarService.ColouredBottle": [
+          0.28,
+          0.2,
+          0.11
+        ],
+        "BarService.ClearGlass": [
+          0.62,
+          0.82,
+          0.86
+        ],
+        "BarService.Liquid": [
+          0.9,
+          0.58,
+          0.18
+        ]
+      },
+      "edgeDelta": 1.1738,
+      "seamRatio": 1.3761,
+      "contrast": 25,
+      "channelRatio": 1.0216,
+      "sha256": "18F7C86CE4C013C3BD684FD47A3B8B64BEA9E42AF14BC8D02CF92F5907E2E10C"
+    },
+    {
+      "key": "BarCeramicAlbedo",
+      "grammar": "enamel",
+      "resourcePath": "Bar/Textures/BarCeramicAlbedo",
+      "meanLinearLuminance": 0.699867,
+      "albedoCompensation": 1.202,
+      "brightnessError": 0.061006,
+      "metersPerTile": 0.42,
+      "smoothness": 0.48,
+      "metallic": 0.04,
+      "exposure": 0.357227,
+      "tints": {
+        "BarInteriorWorldBuilder.Cup": [
+          0.82,
+          0.12,
+          0.1
+        ],
+        "BarInteriorWorldBuilder.Foam": [
+          0.74,
+          0.62,
+          0.42
+        ]
+      },
+      "edgeDelta": 1.1258,
+      "seamRatio": 1.0642,
+      "contrast": 33,
+      "channelRatio": 1.0219,
+      "sha256": "7A78CC1FEF884F251E513217EAB4B8A14466A64DDC59FF11E807A207F05BFD36"
+    },
+    {
       "key": "BarExteriorBrickAlbedo",
       "grammar": "bar_exterior_brick",
       "resourcePath": "Bar/Textures/BarExteriorBrickAlbedo",

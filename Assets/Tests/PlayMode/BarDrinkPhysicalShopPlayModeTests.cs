@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using BarPromenade.Rendering;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
+using UnityEngine.TestTools.Utils;
 
 namespace BarPromenade.Tests.PlayMode
 {
@@ -24,6 +26,8 @@ namespace BarPromenade.Tests.PlayMode
         private bool[] initialRendererStates;
         private bool initialContactShadowState;
         private bool previousDepthOfFieldEnabled;
+        private InputTestFixture inputFixture;
+        private Keyboard keyboard;
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -100,6 +104,11 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator TearDown()
         {
             controller?.Close();
+            if (keyboard != null && keyboard.added)
+            {
+                InputSystem.RemoveDevice(keyboard);
+            }
+
             GraphicsEffectsSettings.DepthOfFieldEnabled =
                 previousDepthOfFieldEnabled;
             DestroyObject(uiObject);
@@ -110,8 +119,363 @@ namespace BarPromenade.Tests.PlayMode
 
             DestroyObject(cameraObject);
             DestroyObject(worldObject);
+            inputFixture?.TearDown();
+            inputFixture = null;
             ResetSession();
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator
+            PhysicalCounterSeat_OpensOnlyAfterSitAndRestoresOnShopExit()
+        {
+            CounterSeatPlan seatPlan = CounterSeatPlan.FromService(
+                serviceView.transform,
+                servicePlan);
+            player.Motor.Teleport(seatPlan.EntryPose.RootPosition);
+            player.GameObject.transform.rotation =
+                seatPlan.EntryPose.RootRotation;
+            Physics.SyncTransforms();
+
+            var stationObject = new GameObject("Physical Counter Seat");
+            stationObject.transform.SetParent(worldObject.transform, false);
+            BarCounterStation station =
+                stationObject.AddComponent<BarCounterStation>();
+            station.ConfigureSeated(
+                controller,
+                player,
+                seatPlan,
+                cameraFollow);
+
+            Assert.That(controller.IsOpen, Is.False);
+            station.Interact(player.Interactor);
+            Assert.That(controller.IsOpen, Is.False,
+                "Accepting E may begin only the visible approach/entry.");
+            Assert.That(station.Seat.IsSeated, Is.False);
+
+            float timeout = Time.realtimeSinceStartup + 5f;
+            while (!station.Seat.IsSeated &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            Assert.That(station.Seat.IsSeated, Is.True);
+            Assert.That(station.SeatView.IsFirstPerson, Is.True);
+            Assert.That(controller.IsOpen, Is.True,
+                "The shop opens from SeatedChanged, after the entry clip.");
+            Assert.That(controller.UsesCounterSeatView, Is.True);
+            Assert.That(cameraFollow.FixedPoseActive, Is.True);
+            Assert.That(
+                station.SeatView.HiddenHeadRendererCount,
+                Is.GreaterThan(0));
+            Assert.That(
+                player.PresentationVisibility.IsHidden,
+                Is.False,
+                "The seated shop must not hide the complete world hero.");
+
+            controller.Exit();
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.CameraReturnDurationSeconds);
+            yield return null;
+
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(station.Seat.IsSeated, Is.False);
+            Assert.That(station.SeatView.IsFirstPerson, Is.False);
+            Assert.That(cameraFollow.FixedPoseActive, Is.False);
+            Assert.That(cameraFollow.CinematicMotionEnabled, Is.True);
+            Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
+            AssertPlayerVisualRestored();
+
+            timeout = Time.realtimeSinceStartup + 5f;
+            while (station.Seat.Controller.IsActive &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            Assert.That(station.Seat.Controller.IsActive, Is.False);
+            Assert.That(player.Motor.InputEnabled, Is.True);
+            Assert.That(player.Interactor.InputEnabled, Is.True);
+            Assert.That(
+                player.GameObject.transform.position,
+                Is.EqualTo(seatPlan.ExitPose.RootPosition)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+        }
+
+        [UnityTest]
+        public IEnumerator
+            PhysicalCounterMenu_ListsNinePricesRejectsThenServesAndRestores()
+        {
+            inputFixture = new InputTestFixture();
+            inputFixture.Setup();
+            keyboard = InputSystem.AddDevice<Keyboard>();
+
+            const int waterPurchasesToLeaveOneRouble = 499;
+            for (int index = 0;
+                 index < waterPurchasesToLeaveOneRouble;
+                 index++)
+            {
+                Assert.That(
+                    GameSessionState.TryPurchaseDrink(
+                        DrinkId.Water).Succeeded,
+                    Is.True);
+            }
+
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(1));
+
+            Pose menuDockPose = new Pose(
+                controller.MenuPresentation.PropRoot.position,
+                controller.MenuPresentation.PropRoot.rotation);
+            var carrierObject = new GameObject("Bartender Menu Hand Test");
+            carrierObject.transform.SetParent(worldObject.transform, false);
+            carrierObject.transform.SetPositionAndRotation(
+                menuDockPose.position +
+                menuDockPose.rotation * new Vector3(-0.75f, 0.15f, 0f),
+                menuDockPose.rotation);
+            controller.ConfigureMenuCarrier(carrierObject.transform);
+
+            CounterSeatPlan seatPlan = CounterSeatPlan.FromService(
+                serviceView.transform,
+                servicePlan);
+            player.Motor.Teleport(seatPlan.EntryPose.RootPosition);
+            player.GameObject.transform.rotation =
+                seatPlan.EntryPose.RootRotation;
+            Physics.SyncTransforms();
+
+            var stationObject = new GameObject(
+                "Physical Counter Menu Station");
+            stationObject.transform.SetParent(worldObject.transform, false);
+            stationObject.transform.position = seatPlan.InteractionPosition;
+            SphereCollider stationTrigger =
+                stationObject.AddComponent<SphereCollider>();
+            stationTrigger.radius = 0.35f;
+            stationTrigger.isTrigger = true;
+            BarCounterStation station =
+                stationObject.AddComponent<BarCounterStation>();
+            station.ConfigureSeated(
+                controller,
+                player,
+                seatPlan,
+                cameraFollow);
+            station.Interact(player.Interactor);
+
+            float timeout = Time.realtimeSinceStartup + 5f;
+            while (!station.Seat.IsSeated &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            Assert.That(station.Seat.IsSeated, Is.True);
+            Assert.That(controller.UsesPhysicalMenu, Is.True);
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Delivering));
+
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.CameraApproachDurationSeconds);
+
+            Assert.That(controller.IsBrowsing, Is.True);
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Open));
+            Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
+            Assert.That(controller.MenuPresentation.IsTextVisible, Is.True);
+            Assert.That(
+                controller.MenuPresentation.ItemLines.Count,
+                Is.EqualTo(9));
+            Assert.That(controller.Offers.Count, Is.EqualTo(9));
+            Assert.That(controller.Offers[0].DrinkId, Is.EqualTo(DrinkId.Water));
+            Assert.That(controller.Offers[0].Price, Is.EqualTo(2));
+
+            for (int index = 0; index < controller.Offers.Count; index++)
+            {
+                BarDrinkOffer offer = controller.Offers[index];
+                string expectedPrice = string.Format(
+                    LocalizationService.Get("drink_shop.price"),
+                    offer.Price);
+                Assert.That(
+                    controller.MenuPresentation.ItemLines[index].text,
+                    Is.EqualTo(
+                        LocalizationService.Get(offer.NameKey) +
+                        "   " +
+                        expectedPrice));
+
+                float localX = controller.MenuPresentation.PropRoot
+                    .InverseTransformPoint(
+                        controller.MenuPresentation.ItemLines[index]
+                            .transform.position).x;
+                Assert.That(
+                    localX,
+                    index < 5
+                        ? Is.LessThan(-0.01f)
+                        : Is.GreaterThan(0.01f),
+                    "The authored booklet must keep five rows on the left " +
+                    "page and four on the right.");
+            }
+
+            int expensiveOfferIndex = FindOfferIndex(DrinkId.CognacVsop);
+            Assert.That(controller.Select(expensiveOfferIndex), Is.True);
+            int drinksBeforeFailure = GameSessionState.DrinksConsumed;
+            Assert.That(controller.ConfirmSelection(), Is.False);
+            Assert.That(controller.IsBrowsing, Is.True);
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Open));
+            Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
+            Assert.That(controller.MenuPresentation.IsTextVisible, Is.True);
+            Assert.That(
+                controller.MenuPresentation.SelectionMarker.text,
+                Is.EqualTo("\u2022"));
+            Assert.That(
+                controller.FeedbackKey,
+                Is.EqualTo("drink_shop.failure.insufficient_funds"));
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.EqualTo(drinksBeforeFailure));
+
+            int servedOfferIndex = FindOfferIndex(DrinkId.RedWine);
+            BarDrinkOffer servedOffer = controller.Offers[servedOfferIndex];
+            Assert.That(
+                GameSessionState.TryEarnCash(
+                    servedOffer.Price - GameSessionState.CashBalance,
+                    "bar-menu-focused-test"),
+                Is.True);
+            Assert.That(controller.Select(servedOfferIndex), Is.True);
+            Assert.That(controller.ConfirmSelection(), Is.True);
+            Assert.That(controller.IsServing, Is.True);
+            Assert.That(controller.PurchaseCommitted, Is.True);
+            Assert.That(
+                serviceView.SelectedDrinkId,
+                Is.EqualTo(DrinkId.RedWine));
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottlePickup));
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Retrieving));
+            Assert.That(
+                controller.MenuPresentation.SelectionMarker.text,
+                Is.EqualTo("X"));
+
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.ConfirmedPresentationDurationSeconds +
+                0.01f);
+
+            Assert.That(controller.IsBrowsing, Is.False);
+            Assert.That(controller.PurchaseCommitted, Is.False);
+            Assert.That(controller.SelectedIndex, Is.Zero);
+            Assert.That(
+                serviceView.SelectedDrinkId,
+                Is.EqualTo(DrinkId.Water),
+                "Repeat delivery must synchronize its reset selection " +
+                "before the next confirmation.");
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Delivering));
+            Assert.That(controller.MenuPresentation.IsPlaced, Is.False);
+            Assert.That(controller.MenuPresentation.IsVisible, Is.True);
+            Assert.That(controller.MenuPresentation.IsTextVisible, Is.False);
+            float deliveryStartDistance = Vector3.Distance(
+                controller.MenuPresentation.PropRoot.position,
+                menuDockPose.position);
+            Assert.That(deliveryStartDistance, Is.GreaterThan(0.25f));
+
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.CameraApproachDurationSeconds * 0.5f);
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Delivering));
+            float deliveryMidpointDistance = Vector3.Distance(
+                controller.MenuPresentation.PropRoot.position,
+                menuDockPose.position);
+            Assert.That(
+                deliveryMidpointDistance,
+                Is.InRange(0.01f, deliveryStartDistance - 0.01f));
+
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.CameraApproachDurationSeconds * 0.5f +
+                0.01f);
+            Assert.That(controller.IsBrowsing, Is.True);
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Open));
+            Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
+            Assert.That(controller.MenuPresentation.IsTextVisible, Is.True);
+            Assert.That(
+                Vector3.Distance(
+                    controller.MenuPresentation.PropRoot.position,
+                    menuDockPose.position),
+                Is.LessThan(0.001f));
+
+            Assert.That(player.Interactor.InputEnabled, Is.True,
+                "The seated loop must restore the ordinary interactor.");
+            Assert.That(player.Interactor.isActiveAndEnabled, Is.True);
+            Assert.That(station.CanInteract(player.Interactor), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(station.Seat.IsSeated, Is.True);
+            Assert.That(controller.CanExitPhysicalMenu, Is.True);
+            Assert.That(station.CanInteract(player.Interactor), Is.True);
+            stationObject.transform.position =
+                player.Interactor.transform.position + Vector3.up * 0.8f;
+            Physics.SyncTransforms();
+            timeout = Time.realtimeSinceStartup + 1f;
+            while (!ReferenceEquals(
+                       player.Interactor.ActiveInteractable,
+                       station) &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                player.Interactor.ActiveInteractable,
+                Is.SameAs(station),
+                "The real E path must resolve the seated station.");
+            inputFixture.Press(keyboard.eKey, queueEventOnly: true);
+            yield return null;
+            inputFixture.Release(keyboard.eKey, queueEventOnly: true);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.CameraReturn));
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Retrieving));
+
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.01f);
+            yield return null;
+
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(station.Seat.IsSeated, Is.False);
+            Assert.That(station.SeatView.IsFirstPerson, Is.False);
+            Assert.That(cameraFollow.FixedPoseActive, Is.False);
+
+            timeout = Time.realtimeSinceStartup + 5f;
+            while (station.Seat.Controller.IsActive &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            Assert.That(station.Seat.Controller.IsActive, Is.False);
+            Assert.That(player.Motor.InputEnabled, Is.True);
+            Assert.That(player.Interactor.InputEnabled, Is.True);
+            AssertPlayerVisualRestored();
+            Assert.That(
+                player.GameObject.transform.position,
+                Is.EqualTo(seatPlan.ExitPose.RootPosition)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
         }
 
         [UnityTest]

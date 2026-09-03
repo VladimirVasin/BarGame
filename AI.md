@@ -189,12 +189,19 @@ becoming a second vista. Natural debris gathers into five unequal roadside
 chapters with deliberate gaps around those structural beats and a shared
 conservative footprint clearance against all existing roadside furniture.
 The cafe's visible shell, interior and furniture now come from one
-deterministic fixed-metre Blender set: `59` semantic meshes / `5,682`
-triangles, `45` anchors and six dynamic prop assemblies. Its rear service line
+deterministic fixed-metre Blender set: `61` semantic meshes / `5,794`
+triangles, `52` anchors and seven dynamic prop assemblies. Its rear service line
 now carries an extended cabinet with a cutting-board dock, a compact stove and
 pan, and a refrigerator cavity with two shelves plus a separate hinge-ready
 door and grip. That door has no runtime driver, Animator or Rigidbody, and
 neither the attendant nor the player uses any of the new kitchen equipment.
+The napkin dispenser, sugar shaker and salt shaker have moved clear of the
+hero's place, leaving the authored `MenuDock.Hero` free. The seventh prop is
+the thin open `Menu.Hero`, initially hidden until the attendant carries it to
+that dock after the hero sits. Its pages use a role-specific plain warm-paper
+surface instead of the green-banded shared props atlas. The localized TMP
+lettering keeps its readable face and screen-right aligned to the focus camera,
+so no row is mirrored, hidden by the page or crossed by that atlas band.
 The terminal plan still owns its five-sided footprint, open `1.6 m` door,
 shelter, map landmark, three causal appliance voices and exactly `17` logical
 colliders. Seven stools
@@ -211,10 +218,26 @@ player reaches the cafe's `16 m` entrance radius, which excludes every earlier
 hairpin; the first visible sip crosses the refill threshold and begins a Pour
 within one minute instead of expiring during the `620 m` approach. Completing
 the hero-stool sit switches to a bounded eye-level first-person view of the
-counter, hides head geometry, and restores the prior follow camera on exit. The
-ten-clip cast (one sleeping loop plus one lone-patron interjection, four pair
-clips and four attendant clips) keeps the attendant silent and never serves
-the hero. Only inside the physical cafe, PairMan and PairWoman follow the fixed
+counter, hides head geometry, and restores the prior follow camera on exit.
+The attendant then silently carries and places the one physical open menu.
+Once `HeroMenuPlaced` is true, the same `MountainRoadCafeSeatView` blends its
+fixed camera over `0.45 s` to a `40`-degree close-up `0.50 m` from the page
+along the current seated sight line, keeps world-up with no roll, and blocks
+every look source. `W/S` or the D-pad still wraps through three
+localized items, `Space`/gamepad West confirms, and
+`E`/`Enter`/gamepad South still stands the hero up. Confirmation leaves a
+visible `X`, releases the close-up back to the saved seated view and
+idempotently queues retrieval; standing restores the exact pre-seat follow
+camera immediately and queues the same retrieval without a commit. The
+attendant serializes `WalkToMenu -> TakeMenu` (`2.5 s`) `-> CarryMenuBack`
+through the existing service timeline: the booklet stays in the world until
+the hand physically takes it, follows that hand back and is hidden only at its
+dock. Delivery and retrieval are one-shot per scene. They create no order,
+product, payment, inventory item, food, drink, dialogue, reaction, sound or
+story state. The ten-clip cast (one sleeping loop plus one lone-patron
+interjection, four pair clips and four attendant clips) keeps the attendant
+silent, and the hero never enters the pair's cup/refill queue. Only inside the
+physical cafe, PairMan and PairWoman follow the fixed
 localized text cycle `Man01 -> Woman01 -> ... -> Man10 -> Woman10 -> loop`, with
 ten keys per role present in both Russian and English. A pending turn waits
 without being consumed or skipped while either patron is in Drink or the
@@ -239,8 +262,9 @@ starts inside the visible task fixture over the stove and, together with the
 wash, keeps all four figures readable without reaching the terrace, parapet
 or dark brink. No additional Light was added. Six colour-neutral semantic
 detail sheets split exterior, interior, counter, metal, props and glass without
-adding a new hue, readable text, `PHILLIES`, `5¢`, logo, price, menu or copied
-city background; authored UV regions and a zero-overlap validator prevent
+adding a new hue, `PHILLIES`, `5¢`, logo, price, copied city background or any
+readable object text beyond the menu's exactly three localized item names;
+authored UV regions and a zero-overlap validator prevent
 stretching, repeated samples and coplanar flicker.
 Eight of the
 twelve roadside-misc kinds — `102` of `159` placements — now render from a
@@ -533,11 +557,14 @@ returns. They spawn at randomly
   walker per event, uses much longer random delays throughout and retains
   authored simulation pace; walkers already active at dusk are not culled
   early.
-  The on-disk humanoid-NPC asset set contains `26` rigged designs: the five
+  The on-disk humanoid-NPC asset set contains `27` rigged designs: the five
   models in the production pedestrian folder, `17` staged residents, the
-  active bartender, normal supermarket cashier and bus driver, plus the
-  retained inactive Watcher Cashier. The active humanoid cast does not grow:
-  `supermarket_cashier_v1` replaces `watcher_cashier_v1` one for one. Roaming
+  active ordinary and retained inactive six-armed bartenders, the active
+  normal and retained inactive Watcher cashiers, and the bus driver. The
+  active humanoid cast does not grow: `bar_bartender_v2` replaces
+  `six_armed_bartender_v1`, and `supermarket_cashier_v1` replaces
+  `watcher_cashier_v1`, one for one; the on-disk roster keeps both superseded
+  models as legacy assets. Roaming
   is no longer the same distinction:
   since 2026-09-02 the street pool is eight, and seven of those eight are
   staged residents that roam as well. Every one uses `NpcHumanV2`: the exact Hero V2
@@ -548,8 +575,9 @@ returns. They spawn at randomly
   `10`-clip bank, and the `53`-clip `CityPedestrianLocomotion` bank all use
   `4.5.2` — one shared generator, so one version. The mother and her own bank
   sit one revision back at `4.5.1`; the shelter trio and their isolated
-  three-loop bank at `4.3.1`; the
-  bartender and driver manifests use `2.0.0`. The cashier generator owns two
+  three-loop bank at `4.3.1`; the active bartender manifest uses `3.0.0`,
+  while the retained six-armed bartender and driver manifests use `2.0.0`.
+  The cashier generator owns two
   sibling assets over one `256 px` garment-detail atlas: the `1.0.0`
   `SupermarketCashier3D` output is the active `1.75 m`, `40`-mesh / `1,244`-tri
   ordinary-proportioned clerk, while the retained `2.2.0`, `44`-mesh / `1,588`-tri
@@ -561,22 +589,29 @@ returns. They spawn at randomly
   through `NpcSkinnedMeshCullingGuard`. Clip-driven limbs and bounded
   procedural looks therefore cannot be frustum-culled by the small A-pose boxes
   imported from the separate model FBXs.
-  The other special active models include the `50`-mesh/`1,436`-triangle
-  full-body `1.75 m` bartender and the `48`-mesh/`1,496`-triangle driver. The
-  bartender's prefab is loaded through
-  `BarBartenderProvider` at the authored counter anchor; procedural idle and
-  ordinary one-bottle touch/carry/steady service are live, while
-  multi-ingredient cocktail ordering and the six-arm bottle chord remain
-  deferred. The common adult substrate changes large anatomical proportions,
-  not identity: the Long-Arm remains mouthless with ground-reaching forearms
-  and heavy hands, the kettle and hopper silhouettes remain, the bartender
-  keeps six arms, and the driver keeps the long horizontal eyes. The active
+  The other special active models include the ordinary two-armed,
+  `39`-mesh/`1,136`-triangle full-body `1.75 m` bartender and the
+  `48`-mesh/`1,496`-triangle driver. The bartender wears a dark-green
+  waistcoat, rolled sleeves and an apron, with a service towel in his idle
+  hand. `BarBartenderProvider` selects `bar_bartender_v2` at the authored
+  counter anchor and retains `six_armed_bartender_v1` only through its
+  inactive legacy reference. The active registry reuses
+  `CafeAttendantWipe`, `CafeAttendantWalk`, `CafeAttendantPour` and
+  `CafeAttendantNotice` from `MountainRoadCafeCast`; a manually evaluated
+  `PlayableGraph` reads `BarDrinkServiceTimeline`, while the right hand
+  follows the selected bottle and the left steadies the vessel. The former
+  six-arm cocktail chord was never implemented and belongs only to the
+  superseded legacy proposal, not the active delivery plan. The common adult
+  substrate changes large anatomical proportions, not identity: the Long-Arm
+  remains mouthless with ground-reaching forearms and heavy hands, the kettle
+  and hopper silhouettes remain, the inactive legacy bartender alone keeps
+  six arms, and the driver keeps the long horizontal eyes. The active
   cashier keeps the former uniform, face, blink and attentive bounded gaze but
   has an ordinary head and a non-scaling human neck; the old `18 m` Watcher
   treatment survives only in its inactive asset. `NpcDesignAppearanceCatalog`
-  consequently covers `28` on-disk character designs: `7` bizarre and `21`
-  normal, with the inactive Watcher remaining bizarre and the active cashier
-  classified normal.
+  consequently covers `29` on-disk character designs: `8` bizarre and `21`
+  normal. The inactive Watcher and six-armed bartender remain bizarre; their
+  active cashier and ordinary bartender replacements are classified normal.
   The presentation pool repeats a stable ordered catalog of eight ordinary
   people: the Chair Carrier, the Yard Babushka, the Weigh Attendant, the
   Cemetery Watchman, the two Park players, the Cemetery Mourner and the Lake

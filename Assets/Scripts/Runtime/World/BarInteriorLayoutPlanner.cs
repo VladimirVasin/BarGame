@@ -63,8 +63,8 @@ namespace BarPromenade
                 new Vector3(0f, 0.9f, -7.25f),
                 new Vector3(0f, 0.12f, -6.9f),
                 new Vector3(2f, 1.8f, 1.35f),
-                new Vector3(0f, 0.7f, 5.75f),
-                new Vector3(11.2f, 1.4f, 1f),
+                new Vector3(0f, 0.5f, 5.75f),
+                new Vector3(11.2f, 1f, 1f),
                 counterStation,
                 counterStationTriggerSize,
                 activityStation,
@@ -196,7 +196,13 @@ namespace BarPromenade
                         "counter",
                         BarInteriorFurnitureKind.Counter,
                         new Rect(-5.6f, 5.25f, 11.2f, 1f),
-                        1.4f,
+                        1f,
+                        true),
+                    new BarInteriorFurnitureFootprint(
+                        "counter-return",
+                        BarInteriorFurnitureKind.CounterReturn,
+                        new Rect(4.56f, 2.495f, 1.04f, 3.25f),
+                        1f,
                         true),
                     new BarInteriorFurnitureFootprint(
                         "back-bar",
@@ -213,10 +219,10 @@ namespace BarPromenade
                     CreateBooth("booth-1", -3.9f),
                     CreateBooth("booth-2", -0.35f),
                     CreateBooth("booth-3", 3.15f),
-                    CreateHighTop("high-top-left-front", -3.5f, -3.65f),
-                    CreateHighTop("high-top-right-front", 3.5f, -3.65f),
-                    CreateHighTop("high-top-left-rear", -3.5f, 2.5f),
-                    CreateHighTop("high-top-right-rear", 3.5f, 2.5f),
+                    CreatePubTable("pub-table-left-front", -3.5f, -3.65f),
+                    CreatePubTable("pub-table-right-front", 3.5f, -3.65f),
+                    CreatePubTable("pub-table-left-rear", -3.5f, 2.5f),
+                    CreatePubTable("pub-table-right-rear", 3.25f, 2.55f),
                     new BarInteriorFurnitureFootprint(
                         "coat-rack",
                         BarInteriorFurnitureKind.CoatRack,
@@ -240,16 +246,16 @@ namespace BarPromenade
                 true);
         }
 
-        private static BarInteriorFurnitureFootprint CreateHighTop(
+        private static BarInteriorFurnitureFootprint CreatePubTable(
             string id,
             float x,
             float z)
         {
             return new BarInteriorFurnitureFootprint(
                 id,
-                BarInteriorFurnitureKind.HighTopTable,
+                BarInteriorFurnitureKind.PubTable,
                 new Rect(x - 0.5f, z - 0.5f, 1f, 1f),
-                1.05f,
+                0.82f,
                 true);
         }
 

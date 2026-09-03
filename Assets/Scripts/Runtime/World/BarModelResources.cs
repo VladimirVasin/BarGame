@@ -3,14 +3,17 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Loads the two authored bar models built by
+    /// Loads the authored bar models built by
     /// `tools/build-bar-3d-model.py` and assembled into prefabs by
-    /// `BarAssetSetup`: the interior room and the street facade.
+    /// `BarAssetSetup`: the interior room, reusable service props and
+    /// the street facade.
     /// </summary>
     public static class BarModelResources
     {
         public const string InteriorPrefabResourcePath =
             BarAssetRegistry.InteriorPrefabResourcePath;
+        public const string ServicePropsPrefabResourcePath =
+            BarAssetRegistry.ServicePropsPrefabResourcePath;
         public const string FacadePrefabResourcePath =
             BarAssetRegistry.FacadePrefabResourcePath;
 
@@ -22,6 +25,11 @@ namespace BarPromenade
         public static GameObject LoadFacadePrefab()
         {
             return Resources.Load<GameObject>(FacadePrefabResourcePath);
+        }
+
+        public static GameObject LoadServicePropsPrefab()
+        {
+            return Resources.Load<GameObject>(ServicePropsPrefabResourcePath);
         }
     }
 }

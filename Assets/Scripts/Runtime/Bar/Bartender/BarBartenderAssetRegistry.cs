@@ -4,6 +4,39 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum BarBartenderClipKind
+    {
+        Wipe = 0,
+        Walk = 1,
+        Pour = 2,
+        Notice = 3
+    }
+
+    [Serializable]
+    public sealed class BarBartenderClipBinding
+    {
+        [SerializeField] private BarBartenderClipKind kind;
+        [SerializeField] private AnimationClip clip;
+        [SerializeField] private bool loop;
+
+        public BarBartenderClipBinding(
+            BarBartenderClipKind configuredKind,
+            AnimationClip configuredClip,
+            bool configuredLoop)
+        {
+            kind = configuredKind;
+            clip = configuredClip != null
+                ? configuredClip
+                : throw new ArgumentNullException(
+                    nameof(configuredClip));
+            loop = configuredLoop;
+        }
+
+        public BarBartenderClipKind Kind => kind;
+        public AnimationClip Clip => clip;
+        public bool Loop => loop;
+    }
+
     [Serializable]
     public sealed class BarBartenderRendererBinding
     {
@@ -74,9 +107,11 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Serialized editor-built bindings of the Six-Armed Bartender
-    /// prefab: the exact bones the procedural pose needs, the four
-    /// rigid extra-arm chains and the per-renderer manifest colors.
+    /// Serialized editor-built bindings shared by both bartender assets.
+    /// The inactive legacy prefab owns four rigid extra-arm chains; the
+    /// active ordinary prefab owns the four authored waiter clips and
+    /// explicit left-vessel/right-bottle sockets. Both keep the exact
+    /// NpcHumanV2 bones and per-renderer manifest colours.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BarBartenderAssetRegistry : MonoBehaviour
@@ -117,6 +152,16 @@ namespace BarPromenade
         [SerializeField] private BarBartenderArmChain[] extraArmChains =
             Array.Empty<BarBartenderArmChain>();
 
+        [Header("Ordinary service")]
+        [SerializeField] private BarBartenderClipBinding[] clipBindings =
+            Array.Empty<BarBartenderClipBinding>();
+        [SerializeField] private Transform leftGripSocket;
+        [SerializeField] private Transform leftVesselSocket;
+        [SerializeField] private Transform rightGripSocket;
+        [SerializeField] private Transform rightBottleSocket;
+        [SerializeField] private Transform vesselGripAnchor;
+        [SerializeField] private Transform bottleGripAnchor;
+
         [Header("Source contract")]
         [SerializeField] private Bounds localBounds;
         [SerializeField] private int sourceTriangleCount;
@@ -145,6 +190,16 @@ namespace BarPromenade
         public Transform RightHand => rightHand;
         public IReadOnlyList<BarBartenderArmChain> ExtraArmChains =>
             extraArmChains;
+        public IReadOnlyList<BarBartenderClipBinding> ClipBindings =>
+            clipBindings ?? Array.Empty<BarBartenderClipBinding>();
+        public Transform LeftGripSocket => leftGripSocket;
+        public Transform LeftVesselSocket => leftVesselSocket;
+        public Transform RightGripSocket => rightGripSocket;
+        public Transform RightBottleSocket => rightBottleSocket;
+        public Transform VesselGripAnchor => vesselGripAnchor;
+        public Transform BottleGripAnchor => bottleGripAnchor;
+        public bool UsesAuthoredServiceClips =>
+            clipBindings != null && clipBindings.Length > 0;
 
         public Bounds LocalBounds => localBounds;
         public int SourceTriangleCount => sourceTriangleCount;
@@ -207,6 +262,104 @@ namespace BarPromenade
             ApplyBaseColors();
         }
 
+        public void ConfigureOrdinaryService(
+            BarBartenderClipBinding[] configuredClipBindings,
+            Transform configuredLeftGripSocket,
+            Transform configuredLeftVesselSocket,
+            Transform configuredRightGripSocket,
+            Transform configuredRightBottleSocket,
+            Transform configuredVesselGripAnchor,
+            Transform configuredBottleGripAnchor)
+        {
+            if (configuredClipBindings == null ||
+                configuredClipBindings.Length != 4)
+            {
+                throw new ArgumentException(
+                    "Ordinary bartender service requires exactly four " +
+                    "authored clip bindings.",
+                    nameof(configuredClipBindings));
+            }
+
+            clipBindings = configuredClipBindings;
+            leftGripSocket = configuredLeftGripSocket != null
+                ? configuredLeftGripSocket
+                : throw new ArgumentNullException(
+                    nameof(configuredLeftGripSocket));
+            leftVesselSocket = configuredLeftVesselSocket != null
+                ? configuredLeftVesselSocket
+                : throw new ArgumentNullException(
+                    nameof(configuredLeftVesselSocket));
+            rightGripSocket = configuredRightGripSocket != null
+                ? configuredRightGripSocket
+                : throw new ArgumentNullException(
+                    nameof(configuredRightGripSocket));
+            rightBottleSocket = configuredRightBottleSocket != null
+                ? configuredRightBottleSocket
+                : throw new ArgumentNullException(
+                    nameof(configuredRightBottleSocket));
+            vesselGripAnchor = configuredVesselGripAnchor != null
+                ? configuredVesselGripAnchor
+                : throw new ArgumentNullException(
+                    nameof(configuredVesselGripAnchor));
+            bottleGripAnchor = configuredBottleGripAnchor != null
+                ? configuredBottleGripAnchor
+                : throw new ArgumentNullException(
+                    nameof(configuredBottleGripAnchor));
+        }
+
+        public bool TryGetClip(
+            BarBartenderClipKind kind,
+            out AnimationClip clip,
+            out bool loop)
+        {
+            if (clipBindings != null)
+            {
+                for (int index = 0;
+                     index < clipBindings.Length;
+                     index++)
+                {
+                    BarBartenderClipBinding binding =
+                        clipBindings[index];
+                    if (binding != null && binding.Kind == kind)
+                    {
+                        clip = binding.Clip;
+                        loop = binding.Loop;
+                        return clip != null;
+                    }
+                }
+            }
+
+            clip = null;
+            loop = false;
+            return false;
+        }
+
+        public void SetServiceTowelVisible(bool visible)
+        {
+            if (rendererBindings == null)
+            {
+                return;
+            }
+
+            for (int index = 0;
+                 index < rendererBindings.Length;
+                 index++)
+            {
+                BarBartenderRendererBinding binding =
+                    rendererBindings[index];
+                if (binding != null &&
+                    string.Equals(
+                        binding.RendererName,
+                        "ACC_ServiceTowel",
+                        StringComparison.Ordinal) &&
+                    binding.Renderer != null)
+                {
+                    binding.Renderer.enabled = visible;
+                    return;
+                }
+            }
+        }
+
         public void ApplyBaseColors()
         {
             MaterialPropertyBlock properties =
@@ -238,6 +391,7 @@ namespace BarPromenade
         private void OnEnable()
         {
             ApplyBaseColors();
+            SetServiceTowelVisible(true);
         }
     }
 }

@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "2.0.0",
+  "generator_version": "3.1.0",
   "blender_version": "5.0.1",
-  "design_id": "bar_interior_v2",
+  "design_id": "bar_interior_v3",
   "display_name": "Bar Promenade Bar Interior",
   "dimensions_m": {
     "width": 22.0,
@@ -43,8 +43,8 @@
     8.15,
     5.0
   ],
-  "mesh_count": 156,
-  "triangle_count": 8484,
+  "mesh_count": 179,
+  "triangle_count": 12804,
   "anchors": [
     {
       "name": "ActivityStation",
@@ -53,6 +53,45 @@
         5.1,
         -1.55,
         0.9
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "BartenderPlatformTop",
+      "role": "bartender_platform_top",
+      "local_position": [
+        -0.55,
+        6.5,
+        0.42
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
       ]
     },
     {
@@ -62,6 +101,21 @@
         0.0,
         0.75,
         4.35
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
       ]
     },
     {
@@ -71,6 +125,21 @@
         -1.15,
         4.75,
         0.9
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
       ]
     },
     {
@@ -80,6 +149,141 @@
         0.0,
         -8.0,
         0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "HeroApproach",
+      "role": "hero_approach",
+      "local_position": [
+        -1.15,
+        3.35,
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "HeroCamera",
+      "role": "hero_camera",
+      "local_position": [
+        -1.15,
+        4.89,
+        1.76
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "HeroCameraLook",
+      "role": "hero_camera_look",
+      "local_position": [
+        -1.15,
+        7.37,
+        1.86
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "HeroSeat",
+      "role": "hero_seat",
+      "local_position": [
+        -1.15,
+        4.77,
+        0.96
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "HeroStand",
+      "role": "hero_stand",
+      "local_position": [
+        -1.15,
+        4.02,
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
       ]
     },
     {
@@ -89,6 +293,69 @@
         6.4,
         -6.78,
         0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "MenuDock",
+      "role": "service_menu_dock",
+      "local_position": [
+        -0.38,
+        5.44,
+        1.185
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "PourTarget",
+      "role": "service_pour_target",
+      "local_position": [
+        -1.15,
+        5.5,
+        1.175
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
       ]
     },
     {
@@ -98,6 +365,69 @@
         0.0,
         0.0,
         0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "ServicePosition",
+      "role": "bartender_service_position",
+      "local_position": [
+        -0.55,
+        6.5,
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "VesselDock",
+      "role": "service_vessel_dock",
+      "local_position": [
+        -1.15,
+        5.5,
+        1.175
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
       ]
     }
   ],
@@ -146,7 +476,7 @@
       "name": "Ceiling",
       "role": "ceiling",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "CeilingPlaster",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -372,7 +702,7 @@
       "name": "Entrance Left Post",
       "role": "entrance_frame",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -399,7 +729,7 @@
       "name": "Entrance Right Post",
       "role": "entrance_frame",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -426,7 +756,7 @@
       "name": "Entrance Lintel",
       "role": "entrance_frame",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -480,7 +810,7 @@
       "name": "Wall Brass Rails",
       "role": "wainscot_rail",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -584,12 +914,12 @@
         {
           "center": [
             0.0,
-            0.7,
+            0.5,
             5.75
           ],
           "size": [
             11.2,
-            1.4,
+            1.0,
             1.0
           ]
         }
@@ -598,10 +928,77 @@
       "triangles": 76
     },
     {
+      "name": "Bar Counter Return",
+      "role": "counter_return",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            5.08,
+            0.5,
+            4.12
+          ],
+          "size": [
+            1.04,
+            1.0,
+            3.25
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
       "name": "Counter Top",
       "role": "counter_top",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Counter Return Top",
+      "role": "counter_top",
+      "group": "fixed",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -628,7 +1025,7 @@
       "name": "Counter Foot Rail",
       "role": "counter_rail",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -648,8 +1045,35 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Counter Return Foot Rail",
+      "role": "counter_rail",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "Counter Front Panels",
@@ -677,6 +1101,33 @@
       "colliders": [],
       "vertices": 112,
       "triangles": 196
+    },
+    {
+      "name": "Counter Return Panels",
+      "role": "counter_panel",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "WoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
     },
     {
       "name": "Bar Stool 1 Leg",
@@ -949,10 +1400,225 @@
       "triangles": 28
     },
     {
+      "name": "Bar Drink Service Stool Legs",
+      "role": "hero_stool_legs",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112
+    },
+    {
+      "name": "Bar Drink Service Stool Footring",
+      "role": "hero_stool_footring",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 192
+    },
+    {
+      "name": "Bar Drink Service Stool",
+      "role": "hero_stool_seat",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -1.15,
+            0.89,
+            4.77
+          ],
+          "size": [
+            0.5,
+            0.14,
+            0.5
+          ]
+        }
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Bartender Duckboard",
+      "role": "bartender_duckboard",
+      "group": "fixed",
+      "sheet": "WornPlank",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.16,
+          0.11,
+          0.07
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -0.55,
+            0.21,
+            6.5
+          ],
+          "size": [
+            1.35,
+            0.42,
+            0.85
+          ]
+        }
+      ],
+      "vertices": 112,
+      "triangles": 196
+    },
+    {
+      "name": "Drink Order Point",
+      "role": "drink_order_point",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Drink Order Sign Frame",
+      "role": "drink_order_marker_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Drink Order Sign",
+      "role": "drink_order_marker",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "SignGlowColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 0.72,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
       "name": "Beer Tap Stem 1",
       "role": "tap_stem",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -979,7 +1645,7 @@
       "name": "Beer Tap Handle 1",
       "role": "tap_handle",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1006,7 +1672,7 @@
       "name": "Beer Tap Stem 2",
       "role": "tap_stem",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1033,7 +1699,7 @@
       "name": "Beer Tap Handle 2",
       "role": "tap_handle",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1060,7 +1726,7 @@
       "name": "Beer Tap Stem 3",
       "role": "tap_stem",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1087,7 +1753,7 @@
       "name": "Beer Tap Handle 3",
       "role": "tap_handle",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1114,7 +1780,7 @@
       "name": "Beer Tap Stem 4",
       "role": "tap_stem",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1141,7 +1807,7 @@
       "name": "Beer Tap Handle 4",
       "role": "tap_handle",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1168,7 +1834,7 @@
       "name": "Beer Tap Stem 5",
       "role": "tap_stem",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1195,7 +1861,7 @@
       "name": "Beer Tap Handle 5",
       "role": "tap_handle",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1262,7 +1928,7 @@
       "name": "Backbar Mirror Panels",
       "role": "backbar_mirror",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "MirrorGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -1286,10 +1952,64 @@
       "triangles": 140
     },
     {
+      "name": "Backbar Mirror Frames",
+      "role": "backbar_mirror_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 320,
+      "triangles": 560
+    },
+    {
+      "name": "Backbar Patterned Glass Lattice",
+      "role": "backbar_patterned_glass",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 160,
+      "triangles": 280
+    },
+    {
       "name": "Backbar Shelves",
       "role": "backbar_shelf",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -1313,10 +2033,37 @@
       "triangles": 252
     },
     {
+      "name": "Backbar Hanging Glass Rack",
+      "role": "backbar_glass_rack",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 112,
+      "triangles": 196
+    },
+    {
       "name": "Bottle Silhouettes 1",
       "role": "bottle",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -1343,7 +2090,7 @@
       "name": "Bottle Silhouettes 2",
       "role": "bottle",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -1370,7 +2117,7 @@
       "name": "Bottle Silhouettes 3",
       "role": "bottle",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -1397,7 +2144,7 @@
       "name": "Bottle Silhouettes 4",
       "role": "bottle",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -1585,7 +2332,7 @@
       "name": "Booth Table Top 1",
       "role": "booth_table",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1772,7 +2519,7 @@
       "name": "Booth Table Top 2",
       "role": "booth_table",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -1959,7 +2706,7 @@
       "name": "Booth Table Top 3",
       "role": "booth_table",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2036,6 +2783,60 @@
       "triangles": 28
     },
     {
+      "name": "Snug Divider Timber",
+      "role": "snug_divider_timber",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 320,
+      "triangles": 560
+    },
+    {
+      "name": "Snug Divider Patterned Glass",
+      "role": "snug_divider_glass",
+      "group": "fixed",
+      "sheet": "PatternedGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "GlassTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 336
+    },
+    {
       "name": "Small Stage",
       "role": "stage",
       "group": "fixed",
@@ -2079,7 +2880,7 @@
       "name": "Stage Left Curtain",
       "role": "stage_curtain",
       "group": "fixed",
-      "sheet": "WornLeather",
+      "sheet": "WornFabric",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2106,7 +2907,7 @@
       "name": "Stage Right Curtain",
       "role": "stage_curtain",
       "group": "fixed",
-      "sheet": "WornLeather",
+      "sheet": "WornFabric",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2133,7 +2934,7 @@
       "name": "Stage Valance",
       "role": "stage_curtain",
       "group": "fixed",
-      "sheet": "WornLeather",
+      "sheet": "WornFabric",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2160,7 +2961,7 @@
       "name": "Stage Left Speaker",
       "role": "stage_speaker",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2200,7 +3001,7 @@
       "name": "Stage Right Speaker",
       "role": "stage_speaker",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2240,7 +3041,7 @@
       "name": "Stage Microphone Stand",
       "role": "stage_mic",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2267,7 +3068,7 @@
       "name": "Stage Microphone",
       "role": "stage_mic",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2291,18 +3092,99 @@
       "triangles": 28
     },
     {
-      "name": "Activity Bay Rug",
-      "role": "bay_rug",
+      "name": "Pub Carpet Fields",
+      "role": "pub_carpet",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PubCarpet",
       "emissive": false,
       "shadows": false,
       "tint": {
         "field": "",
         "rgb": [
-          0.12,
-          0.11,
-          0.2
+          0.22,
+          0.055,
+          0.052
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Pub Carpet Borders",
+      "role": "pub_carpet_border",
+      "group": "fixed",
+      "sheet": "PubCarpet",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.36,
+          0.27,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224
+    },
+    {
+      "name": "Pub Carpet Diamond Motifs",
+      "role": "pub_carpet_pattern",
+      "group": "fixed",
+      "sheet": "PubCarpet",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.42,
+          0.31,
+          0.12
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 400,
+      "triangles": 700
+    },
+    {
+      "name": "Activity Bay Rug",
+      "role": "bay_rug",
+      "group": "fixed",
+      "sheet": "PubCarpet",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.16,
+          0.065,
+          0.055
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2321,15 +3203,15 @@
       "name": "Activity Bay Border",
       "role": "bay_border",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": false,
       "tint": {
         "field": "",
         "rgb": [
-          0.86,
-          0.46,
-          0.14
+          0.36,
+          0.27,
+          0.1
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2345,7 +3227,7 @@
       "triangles": 112
     },
     {
-      "name": "Social High Table 1 Leg",
+      "name": "Social Pub Table 1 Leg",
       "role": "table_leg",
       "group": "fixed",
       "sheet": "DarkWood",
@@ -2371,32 +3253,32 @@
         {
           "center": [
             -3.5,
-            0.47,
+            0.35,
             -3.65
           ],
           "size": [
-            0.17,
-            0.94,
-            0.17
+            0.18,
+            0.7,
+            0.18
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 32,
+      "triangles": 56
     },
     {
-      "name": "Social High Table 1",
+      "name": "Social Pub Table 1",
       "role": "table_top",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
-        "field": "",
+        "field": "WoodTint",
         "rgb": [
-          0.86,
-          0.46,
-          0.14
+          0.0,
+          0.0,
+          0.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2411,13 +3293,13 @@
         {
           "center": [
             -3.5,
-            0.98,
+            0.76,
             -3.65
           ],
           "size": [
-            0.9,
-            0.16,
-            0.9
+            0.92,
+            0.12,
+            0.92
           ]
         }
       ],
@@ -2425,7 +3307,7 @@
       "triangles": 44
     },
     {
-      "name": "Social High Table 2 Leg",
+      "name": "Social Pub Table 2 Leg",
       "role": "table_leg",
       "group": "fixed",
       "sheet": "DarkWood",
@@ -2451,32 +3333,32 @@
         {
           "center": [
             3.5,
-            0.47,
+            0.35,
             -3.65
           ],
           "size": [
-            0.17,
-            0.94,
-            0.17
+            0.18,
+            0.7,
+            0.18
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 32,
+      "triangles": 56
     },
     {
-      "name": "Social High Table 2",
+      "name": "Social Pub Table 2",
       "role": "table_top",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
-        "field": "",
+        "field": "WoodTint",
         "rgb": [
-          0.86,
-          0.46,
-          0.14
+          0.0,
+          0.0,
+          0.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2491,13 +3373,13 @@
         {
           "center": [
             3.5,
-            0.98,
+            0.76,
             -3.65
           ],
           "size": [
-            0.9,
-            0.16,
-            0.9
+            0.92,
+            0.12,
+            0.92
           ]
         }
       ],
@@ -2505,7 +3387,7 @@
       "triangles": 44
     },
     {
-      "name": "Social High Table 3 Leg",
+      "name": "Social Pub Table 3 Leg",
       "role": "table_leg",
       "group": "fixed",
       "sheet": "DarkWood",
@@ -2531,32 +3413,32 @@
         {
           "center": [
             -3.5,
-            0.47,
+            0.35,
             2.5
           ],
           "size": [
-            0.17,
-            0.94,
-            0.17
+            0.18,
+            0.7,
+            0.18
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 32,
+      "triangles": 56
     },
     {
-      "name": "Social High Table 3",
+      "name": "Social Pub Table 3",
       "role": "table_top",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
-        "field": "",
+        "field": "WoodTint",
         "rgb": [
-          0.86,
-          0.46,
-          0.14
+          0.0,
+          0.0,
+          0.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2571,13 +3453,13 @@
         {
           "center": [
             -3.5,
-            0.98,
+            0.76,
             2.5
           ],
           "size": [
-            0.9,
-            0.16,
-            0.9
+            0.92,
+            0.12,
+            0.92
           ]
         }
       ],
@@ -2585,7 +3467,7 @@
       "triangles": 44
     },
     {
-      "name": "Social High Table 4 Leg",
+      "name": "Social Pub Table 4 Leg",
       "role": "table_leg",
       "group": "fixed",
       "sheet": "DarkWood",
@@ -2610,33 +3492,33 @@
       "colliders": [
         {
           "center": [
-            3.5,
-            0.47,
-            2.5
+            3.25,
+            0.35,
+            2.55
           ],
           "size": [
-            0.17,
-            0.94,
-            0.17
+            0.18,
+            0.7,
+            0.18
           ]
         }
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 32,
+      "triangles": 56
     },
     {
-      "name": "Social High Table 4",
+      "name": "Social Pub Table 4",
       "role": "table_top",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
-        "field": "",
+        "field": "WoodTint",
         "rgb": [
-          0.86,
-          0.46,
-          0.14
+          0.0,
+          0.0,
+          0.0
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -2650,14 +3532,14 @@
       "colliders": [
         {
           "center": [
-            3.5,
-            0.98,
-            2.5
+            3.25,
+            0.76,
+            2.55
           ],
           "size": [
-            0.9,
-            0.16,
-            0.9
+            0.92,
+            0.12,
+            0.92
           ]
         }
       ],
@@ -2668,7 +3550,7 @@
       "name": "Coat Rack",
       "role": "coat_rack",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2708,7 +3590,7 @@
       "name": "Coat Rack Hook 1",
       "role": "coat_hook",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2735,7 +3617,7 @@
       "name": "Coat Rack Hook 2",
       "role": "coat_hook",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2762,7 +3644,7 @@
       "name": "Coat Rack Hook 3",
       "role": "coat_hook",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2789,7 +3671,7 @@
       "name": "Coat Rack Hook 4",
       "role": "coat_hook",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2816,7 +3698,7 @@
       "name": "Service Door",
       "role": "service_door",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2843,7 +3725,7 @@
       "name": "Service Door Frame",
       "role": "service_door_frame",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -2870,7 +3752,7 @@
       "name": "Burgundy Poster Frame",
       "role": "poster_frame",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -2897,7 +3779,7 @@
       "name": "Burgundy Poster",
       "role": "poster",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -2924,7 +3806,7 @@
       "name": "Teal Poster Frame",
       "role": "poster_frame",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -2951,7 +3833,7 @@
       "name": "Teal Poster",
       "role": "poster",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -2978,7 +3860,7 @@
       "name": "Entrance Notice Frame",
       "role": "poster_frame",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3005,7 +3887,7 @@
       "name": "Entrance Notice",
       "role": "poster",
       "group": "fixed",
-      "sheet": "",
+      "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3029,10 +3911,118 @@
       "triangles": 28
     },
     {
+      "name": "Entrance Heavy Curtains",
+      "role": "entrance_curtain",
+      "group": "fixed",
+      "sheet": "WornFabric",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224
+    },
+    {
+      "name": "Entrance Curtain Brass Rail",
+      "role": "entrance_curtain_rail",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 72,
+      "triangles": 132
+    },
+    {
+      "name": "Exit Header Frame",
+      "role": "exit_header_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Exit Header",
+      "role": "exit_header",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "SignGlowColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 0.58,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
       "name": "Fan Hub",
       "role": "fan_hub",
       "group": "pivot:Slow Ceiling Fan",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3302,7 +4292,7 @@
       "name": "Jukebox Grille",
       "role": "jukebox_grille",
       "group": "pivot:Bar Jukebox",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3329,7 +4319,7 @@
       "name": "Jukebox Key 1",
       "role": "jukebox_key",
       "group": "pivot:Bar Jukebox",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3356,7 +4346,7 @@
       "name": "Jukebox Key 2",
       "role": "jukebox_key",
       "group": "pivot:Bar Jukebox",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3383,7 +4373,7 @@
       "name": "Jukebox Key 3",
       "role": "jukebox_key",
       "group": "pivot:Bar Jukebox",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3410,7 +4400,7 @@
       "name": "Jukebox Key 4",
       "role": "jukebox_key",
       "group": "pivot:Bar Jukebox",
-      "sheet": "",
+      "sheet": "AgedBrass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3437,7 +4427,7 @@
       "name": "Practical Cable",
       "role": "practical_cable",
       "group": "prefab:Practical",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3464,7 +4454,7 @@
       "name": "Practical Shade",
       "role": "practical_shade",
       "group": "prefab:Practical",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3518,7 +4508,7 @@
       "name": "Old Town Ledger Field",
       "role": "district_field",
       "group": "district:Memory",
-      "sheet": "",
+      "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3545,7 +4535,7 @@
       "name": "Old Town Missing Portraits",
       "role": "district_cards",
       "group": "district:Memory",
-      "sheet": "",
+      "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3572,7 +4562,7 @@
       "name": "Residential Curtain Field",
       "role": "district_field",
       "group": "district:Household",
-      "sheet": "WornLeather",
+      "sheet": "WornFabric",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3599,7 +4589,7 @@
       "name": "Residential Curtain Pleats",
       "role": "district_cards",
       "group": "district:Household",
-      "sheet": "",
+      "sheet": "WornFabric",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3626,7 +4616,7 @@
       "name": "Industrial Safety Band",
       "role": "district_field",
       "group": "district:AfterShift",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3653,7 +4643,7 @@
       "name": "Industrial Utility Pipes",
       "role": "district_cards",
       "group": "district:AfterShift",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3734,7 +4724,7 @@
       "name": "Beer Pong Table",
       "role": "activity_table",
       "group": "activity:BeerPong",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -3934,7 +4924,7 @@
       "name": "Beer Pong Center Line",
       "role": "activity_line",
       "group": "activity:BeerPong",
-      "sheet": "",
+      "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3961,7 +4951,7 @@
       "name": "Beer Pong Cup 1",
       "role": "activity_cup",
       "group": "activity:BeerPong",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -3988,7 +4978,7 @@
       "name": "Beer Pong Cup 2",
       "role": "activity_cup",
       "group": "activity:BeerPong",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4015,7 +5005,7 @@
       "name": "Beer Pong Cup 3",
       "role": "activity_cup",
       "group": "activity:BeerPong",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4042,7 +5032,7 @@
       "name": "Beer Pong Cup 4",
       "role": "activity_cup",
       "group": "activity:BeerPong",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4069,7 +5059,7 @@
       "name": "Beer Pong Cup 5",
       "role": "activity_cup",
       "group": "activity:BeerPong",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4096,7 +5086,7 @@
       "name": "Beer Pong Cup 6",
       "role": "activity_cup",
       "group": "activity:BeerPong",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4163,7 +5153,7 @@
       "name": "Cocktail Service Cart Top",
       "role": "activity_console_top",
       "group": "activity:Cocktail",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -4217,7 +5207,7 @@
       "name": "Cocktail Shaker",
       "role": "activity_prop",
       "group": "activity:Cocktail",
-      "sheet": "",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -4244,7 +5234,7 @@
       "name": "Cocktail Glass",
       "role": "activity_prop",
       "group": "activity:Cocktail",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -4311,7 +5301,7 @@
       "name": "Split the G Tap Cart Top",
       "role": "activity_console_top",
       "group": "activity:SplitTheG",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -4392,7 +5382,7 @@
       "name": "Split the G Pint",
       "role": "activity_prop",
       "group": "activity:SplitTheG",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -4419,7 +5409,7 @@
       "name": "Split the G Foam",
       "role": "activity_prop",
       "group": "activity:SplitTheG",
-      "sheet": "",
+      "sheet": "Ceramic",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -4446,7 +5436,7 @@
       "name": "Split the G Target",
       "role": "activity_prop",
       "group": "activity:SplitTheG",
-      "sheet": "",
+      "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4513,7 +5503,7 @@
       "name": "Tincture Apothecary Cart Top",
       "role": "activity_console_top",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -4594,7 +5584,7 @@
       "name": "Tincture Shot 1",
       "role": "activity_prop",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4621,7 +5611,7 @@
       "name": "Tincture Shot 2",
       "role": "activity_prop",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4648,7 +5638,7 @@
       "name": "Tincture Shot 3",
       "role": "activity_prop",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4675,7 +5665,7 @@
       "name": "Tincture Shot 4",
       "role": "activity_prop",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4702,7 +5692,7 @@
       "name": "Tincture Shot 5",
       "role": "activity_prop",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4729,7 +5719,7 @@
       "name": "Tincture XXX Bottle",
       "role": "activity_prop",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -4756,7 +5746,7 @@
       "name": "Tincture XXX Bottle Neck",
       "role": "activity_prop",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "BottleGlass",
       "emissive": false,
       "shadows": true,
       "tint": {
@@ -4783,7 +5773,7 @@
       "name": "Tincture XXX Sign",
       "role": "activity_prop",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4810,7 +5800,7 @@
       "name": "Tincture XXX Marks",
       "role": "activity_prop",
       "group": "activity:TinctureMatch",
-      "sheet": "",
+      "sheet": "Paper",
       "emissive": false,
       "shadows": false,
       "tint": {
@@ -4834,5 +5824,5 @@
       "triangles": 168
     }
   ],
-  "build_signature": "5c14a514e2894f4e778ad99fb7573f55269c292d3374dbcfb65c712fedfe4607"
+  "build_signature": "f7e7ada5e36bf24a505efcb710d3e2c724d9bc1bbfc2ca557042f1915ac85cce"
 }

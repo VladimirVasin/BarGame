@@ -2,7 +2,9 @@ Shader "Bar Promenade/Bar Drink Glass"
 {
     Properties
     {
+        _BaseMap("Surface Albedo", 2D) = "white" {}
         _BaseColor("Glass Tint", Color) = (0.62, 0.82, 0.86, 0.24)
+        _SurfaceAlbedoCompensation("Surface Albedo Compensation", Float) = 1.0
     }
 
     SubShader
@@ -34,8 +36,13 @@ Shader "Bar Promenade/Bar Drink Glass"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+
             CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
                 half4 _BaseColor;
+                half _SurfaceAlbedoCompensation;
             CBUFFER_END
 
             struct Attributes
@@ -68,7 +75,7 @@ Shader "Bar Promenade/Bar Drink Glass"
                 output.positionCS = positions.positionCS;
                 output.positionWS = positions.positionWS;
                 output.normalWS = normals.normalWS;
-                output.uv = input.uv;
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 float viewZ = -TransformWorldToView(positions.positionWS).z;
                 output.fogFactor = ComputeFogFactorZ0ToFar(
                     max(viewZ - _ProjectionParams.y, 0));
@@ -86,7 +93,13 @@ Shader "Bar Promenade/Bar Drink Glass"
                         viewDirection))),
                     2.0h);
                 half facet = step(0.54h, frac(input.uv.x * 8.0h));
-                half3 color = _BaseColor.rgb *
+                half3 surface = saturate(
+                    SAMPLE_TEXTURE2D(
+                        _BaseMap,
+                        sampler_BaseMap,
+                        input.uv).rgb *
+                    _SurfaceAlbedoCompensation);
+                half3 color = _BaseColor.rgb * surface *
                     lerp(0.72h, 1.42h, edge) *
                     lerp(0.94h, 1.04h, facet);
                 color = MixFog(color, input.fogFactor);

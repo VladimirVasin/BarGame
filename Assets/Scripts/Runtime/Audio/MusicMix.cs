@@ -55,7 +55,14 @@ namespace BarPromenade
         public const float SmokingOutputVolume = 0.58f;
         public const float StairwellOutputVolume = 0.38f;
         public const float SupermarketOutputVolume = 0.52f;
+
+        // The two themes whose masters do not exist yet keep the default
+        // trim. There is nothing to measure against the calibration above
+        // until a file lands, and guessing a number would only look like
+        // it had been measured. Re-trim each one the day its track
+        // arrives.
         public const float CemeteryOutputVolume = DefaultOutputVolume;
+        public const float ChurchOutputVolume = DefaultOutputVolume;
 
         private static readonly List<AudioSource> FadingOut =
             new List<AudioSource>();

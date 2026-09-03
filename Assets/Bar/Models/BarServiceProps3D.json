@@ -1,0 +1,1594 @@
+{
+  "generator": "tools/build-bar-3d-model.py",
+  "generator_version": "1.2.0",
+  "blender_version": "5.0.1",
+  "design_id": "bar_service_props_v1",
+  "display_name": "Bar Promenade Authored Service Props",
+  "dimensions_m": {
+    "width": 0.58,
+    "depth": 0.5,
+    "height": 2.0
+  },
+  "wall_thickness_m": 0.0,
+  "door_opening_m": {
+    "width": 0.0,
+    "height": 0.0
+  },
+  "blender_forward_axis": "-Y",
+  "unity_entrance_outward_axis": "-Z",
+  "runtime_wrapper_yaw_degrees": 0.0,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "activity_kinds": [],
+  "district_moods": [],
+  "bounds_min": [
+    -0.289254,
+    -0.25,
+    -1.0
+  ],
+  "bounds_max": [
+    0.289254,
+    0.25,
+    1.0
+  ],
+  "mesh_count": 29,
+  "triangle_count": 2280,
+  "anchors": [
+    {
+      "name": "BarMenu.Origin",
+      "role": "service_menu_origin",
+      "local_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "BarMenuPage.Normal",
+      "role": "service_menu_page_normal",
+      "local_position": [
+        0.0,
+        0.0,
+        0.143881
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "BarMenuPage.Origin",
+      "role": "service_menu_page_origin",
+      "local_position": [
+        0.0,
+        0.0,
+        0.043881
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "BarMenuPage.Right",
+      "role": "service_menu_page_right",
+      "local_position": [
+        0.1,
+        0.0,
+        0.043881
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "BarMenuPage.Up",
+      "role": "service_menu_page_up",
+      "local_position": [
+        0.0,
+        0.1,
+        0.043881
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Item.00",
+      "role": "service_menu_text_item:00",
+      "local_position": [
+        -0.145,
+        0.14,
+        0.030462
+      ],
+      "unity_right": [
+        0.995396,
+        0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Item.01",
+      "role": "service_menu_text_item:01",
+      "local_position": [
+        -0.145,
+        0.07,
+        0.030462
+      ],
+      "unity_right": [
+        0.995396,
+        0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Item.02",
+      "role": "service_menu_text_item:02",
+      "local_position": [
+        -0.145,
+        0.0,
+        0.030462
+      ],
+      "unity_right": [
+        0.995396,
+        0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Item.03",
+      "role": "service_menu_text_item:03",
+      "local_position": [
+        -0.145,
+        -0.07,
+        0.030462
+      ],
+      "unity_right": [
+        0.995396,
+        0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Item.04",
+      "role": "service_menu_text_item:04",
+      "local_position": [
+        -0.145,
+        -0.14,
+        0.030462
+      ],
+      "unity_right": [
+        0.995396,
+        0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Item.05",
+      "role": "service_menu_text_item:05",
+      "local_position": [
+        0.145,
+        0.105,
+        0.030462
+      ],
+      "unity_right": [
+        0.995396,
+        -0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        -0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Item.06",
+      "role": "service_menu_text_item:06",
+      "local_position": [
+        0.145,
+        0.035,
+        0.030462
+      ],
+      "unity_right": [
+        0.995396,
+        -0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        -0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Item.07",
+      "role": "service_menu_text_item:07",
+      "local_position": [
+        0.145,
+        -0.035,
+        0.030462
+      ],
+      "unity_right": [
+        0.995396,
+        -0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        -0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Item.08",
+      "role": "service_menu_text_item:08",
+      "local_position": [
+        0.145,
+        -0.105,
+        0.030462
+      ],
+      "unity_right": [
+        0.995396,
+        -0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        -0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BarMenuText.Selection",
+      "role": "service_menu_text_selection",
+      "local_position": [
+        -0.035,
+        0.14,
+        0.041005
+      ],
+      "unity_right": [
+        0.995396,
+        0.095846,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        0.095846,
+        -0.995396,
+        0.0
+      ]
+    },
+    {
+      "name": "BeerLongneckMouth",
+      "role": "service_bottle_mouth:BeerLongneck",
+      "local_position": [
+        0.0,
+        0.0,
+        0.72
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "CognacBottleMouth",
+      "role": "service_bottle_mouth:CognacBottle",
+      "local_position": [
+        0.0,
+        0.0,
+        0.61
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "Grip.BarMenu",
+      "role": "service_menu_grip",
+      "local_position": [
+        0.0,
+        0.215,
+        0.046
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "PintLiquidBase",
+      "role": "service_vessel_liquid_base:Pint",
+      "local_position": [
+        0.0,
+        0.0,
+        0.025
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "PintPourTarget",
+      "role": "service_vessel_target:Pint",
+      "local_position": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "PourStreamOrigin",
+      "role": "service_pour_stream_origin",
+      "local_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "ShotGlassLiquidBase",
+      "role": "service_vessel_liquid_base:ShotGlass",
+      "local_position": [
+        0.0,
+        0.0,
+        0.018
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "ShotGlassPourTarget",
+      "role": "service_vessel_target:ShotGlass",
+      "local_position": [
+        0.0,
+        0.0,
+        0.12
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "SnifterLiquidBase",
+      "role": "service_vessel_liquid_base:Snifter",
+      "local_position": [
+        0.0,
+        0.0,
+        0.115
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "SnifterPourTarget",
+      "role": "service_vessel_target:Snifter",
+      "local_position": [
+        0.0,
+        0.0,
+        0.295
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "TumblerLiquidBase",
+      "role": "service_vessel_liquid_base:Tumbler",
+      "local_position": [
+        0.0,
+        0.0,
+        0.025
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "TumblerPourTarget",
+      "role": "service_vessel_target:Tumbler",
+      "local_position": [
+        0.0,
+        0.0,
+        0.275
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "VodkaBottleMouth",
+      "role": "service_bottle_mouth:VodkaBottle",
+      "local_position": [
+        0.0,
+        0.0,
+        0.67
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WaterBottleMouth",
+      "role": "service_bottle_mouth:WaterBottle",
+      "local_position": [
+        0.0,
+        0.0,
+        0.68
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WineBottleMouth",
+      "role": "service_bottle_mouth:WineBottle",
+      "local_position": [
+        0.0,
+        0.0,
+        0.82
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WineGlassLiquidBase",
+      "role": "service_vessel_liquid_base:WineGlass",
+      "local_position": [
+        0.0,
+        0.0,
+        0.165
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WineGlassPourTarget",
+      "role": "service_vessel_target:WineGlass",
+      "local_position": [
+        0.0,
+        0.0,
+        0.345
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "name": "Service WaterBottle Body",
+      "role": "service_bottle_body",
+      "group": "service:bottle:WaterBottle",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.28,
+          0.2,
+          0.11
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 72,
+      "triangles": 132
+    },
+    {
+      "name": "Service WaterBottle Closure",
+      "role": "service_bottle_closure",
+      "group": "service:bottle:WaterBottle",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.52,
+          0.48,
+          0.36
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Service WaterBottle Blank Label",
+      "role": "service_bottle_label",
+      "group": "service:bottle:WaterBottle",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.66,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Service BeerLongneck Body",
+      "role": "service_bottle_body",
+      "group": "service:bottle:BeerLongneck",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.28,
+          0.2,
+          0.11
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 72,
+      "triangles": 132
+    },
+    {
+      "name": "Service BeerLongneck Closure",
+      "role": "service_bottle_closure",
+      "group": "service:bottle:BeerLongneck",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.52,
+          0.48,
+          0.36
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Service BeerLongneck Blank Label",
+      "role": "service_bottle_label",
+      "group": "service:bottle:BeerLongneck",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.66,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Service WineBottle Body",
+      "role": "service_bottle_body",
+      "group": "service:bottle:WineBottle",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.28,
+          0.2,
+          0.11
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 72,
+      "triangles": 132
+    },
+    {
+      "name": "Service WineBottle Closure",
+      "role": "service_bottle_closure",
+      "group": "service:bottle:WineBottle",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.48,
+          0.3,
+          0.16
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Service WineBottle Blank Label",
+      "role": "service_bottle_label",
+      "group": "service:bottle:WineBottle",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.66,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Service VodkaBottle Body",
+      "role": "service_bottle_body",
+      "group": "service:bottle:VodkaBottle",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.76,
+          0.78
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 116
+    },
+    {
+      "name": "Service VodkaBottle Closure",
+      "role": "service_bottle_closure",
+      "group": "service:bottle:VodkaBottle",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.52,
+          0.48,
+          0.36
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Service VodkaBottle Blank Label",
+      "role": "service_bottle_label",
+      "group": "service:bottle:VodkaBottle",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.66,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Service CognacBottle Body",
+      "role": "service_bottle_body",
+      "group": "service:bottle:CognacBottle",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.28,
+          0.2,
+          0.11
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 72,
+      "triangles": 132
+    },
+    {
+      "name": "Service CognacBottle Closure",
+      "role": "service_bottle_closure",
+      "group": "service:bottle:CognacBottle",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.38,
+          0.19,
+          0.08
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Service CognacBottle Blank Label",
+      "role": "service_bottle_label",
+      "group": "service:bottle:CognacBottle",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.66,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Service Tumbler Shell",
+      "role": "service_vessel_shell",
+      "group": "service:vessel:Tumbler",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.82,
+          0.86
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 36,
+      "triangles": 68
+    },
+    {
+      "name": "Service Tumbler Liquid",
+      "role": "service_vessel_liquid",
+      "group": "service:vessel:Tumbler",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.9,
+          0.58,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Service Pint Shell",
+      "role": "service_vessel_shell",
+      "group": "service:vessel:Pint",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.82,
+          0.86
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 36,
+      "triangles": 68
+    },
+    {
+      "name": "Service Pint Liquid",
+      "role": "service_vessel_liquid",
+      "group": "service:vessel:Pint",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.9,
+          0.58,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Service WineGlass Shell",
+      "role": "service_vessel_shell",
+      "group": "service:vessel:WineGlass",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.82,
+          0.86
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 84,
+      "triangles": 164
+    },
+    {
+      "name": "Service WineGlass Liquid",
+      "role": "service_vessel_liquid",
+      "group": "service:vessel:WineGlass",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.9,
+          0.58,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 36,
+      "triangles": 68
+    },
+    {
+      "name": "Service ShotGlass Shell",
+      "role": "service_vessel_shell",
+      "group": "service:vessel:ShotGlass",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.82,
+          0.86
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Service ShotGlass Liquid",
+      "role": "service_vessel_liquid",
+      "group": "service:vessel:ShotGlass",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.9,
+          0.58,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Service Snifter Shell",
+      "role": "service_vessel_shell",
+      "group": "service:vessel:Snifter",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.82,
+          0.86
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 188
+    },
+    {
+      "name": "Service Snifter Liquid",
+      "role": "service_vessel_liquid",
+      "group": "service:vessel:Snifter",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.9,
+          0.58,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 36,
+      "triangles": 68
+    },
+    {
+      "name": "Service Menu Cover",
+      "role": "service_menu_cover",
+      "group": "service:menu",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.11,
+          0.045,
+          0.025
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Service Menu Pages",
+      "role": "service_menu_pages",
+      "group": "service:menu",
+      "sheet": "Paper",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.74,
+          0.66,
+          0.47
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Service Menu Blank Relief",
+      "role": "service_menu_relief",
+      "group": "service:menu",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.25,
+          0.08
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 112,
+      "triangles": 196
+    },
+    {
+      "name": "Service Pour Stream",
+      "role": "service_pour_stream",
+      "group": "service:pour_stream",
+      "sheet": "BottleGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.9,
+          0.58,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    }
+  ],
+  "build_signature": "4c98dce2cdfd017922c236f88849862f8823bd000380b62a26601dbc744c0026"
+}

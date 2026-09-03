@@ -54,7 +54,10 @@ namespace BarPromenade.Editor
             "Assets/Resources/Materials/CityNoirEmission.mat";
         private const string ExpectedDesignId =
             "mountain_road_cafe_nighthawks_v1";
-        private const int ExpectedMeshCount = 59;
+        private const int ExpectedMeshCount = 61;
+        private const int ExpectedTriangleCount = 5794;
+        private const int ExpectedAnchorCount = 52;
+        private const int ExpectedPropCount = 7;
         private const int ExpectedStoolCount = 7;
         private const int ExpectedCupCount = 2;
         private const int ExpectedColliderCount = 17;
@@ -88,6 +91,12 @@ namespace BarPromenade.Editor
             "Grip.FridgeDoor",
             "CuttingBoardDock",
             "StovePanDock",
+            "MenuDock.Hero",
+            "Grip.HeroMenu",
+            "MenuText.Item.00",
+            "MenuText.Item.01",
+            "MenuText.Item.02",
+            "MenuText.Selection",
             "HeroSeat",
             "Cast.Lone",
             "Cast.PairMan",
@@ -107,6 +116,7 @@ namespace BarPromenade.Editor
             "ServiceRail.00",
             "ServiceRail.01",
             "ServiceRail.02",
+            "ServiceRail.Hero",
             "Light.WarmCounter",
             "Light.ColdService",
             "Light.ExteriorWash",
@@ -482,15 +492,19 @@ namespace BarPromenade.Editor
                 problems.Add("registry build signature differs from manifest");
             }
 
-            if (registry.Parts.Count != manifest.parts.Length ||
+            if (registry.Parts.Count != ExpectedMeshCount ||
+                registry.Parts.Count != manifest.parts.Length ||
+                registry.Anchors.Count != ExpectedAnchorCount ||
                 registry.Anchors.Count != manifest.anchors.Length ||
+                registry.Props.Count != ExpectedPropCount ||
                 registry.Props.Count != manifest.dynamic_props.Length ||
                 registry.Colliders.Count != ExpectedColliderCount)
             {
                 problems.Add("registry collection counts differ from manifest");
             }
 
-            if (registry.SourceTriangleCount != manifest.triangle_count)
+            if (registry.SourceTriangleCount != ExpectedTriangleCount ||
+                registry.SourceTriangleCount != manifest.triangle_count)
             {
                 problems.Add("registry triangle count differs from manifest");
             }
@@ -568,6 +582,47 @@ namespace BarPromenade.Editor
                     "fridge door lacks its passive hinge/grip binding");
             }
 
+            string[] menuTextAnchors =
+            {
+                "MenuText.Item.00",
+                "MenuText.Item.01",
+                "MenuText.Item.02",
+                "MenuText.Selection",
+            };
+            bool hasMenu = registry.TryGetProp(
+                "Menu.Hero",
+                out MountainRoadCafeDynamicPropBinding heroMenu);
+            if (!hasMenu || heroMenu.PropRoot == null ||
+                !string.Equals(
+                    heroMenu.Role,
+                    "menu_booklet",
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    heroMenu.Owner,
+                    "HeroMenu",
+                    StringComparison.Ordinal) ||
+                heroMenu.GripAnchor == null ||
+                !heroMenu.GripAnchor.IsChildOf(heroMenu.PropRoot) ||
+                heroMenu.LiftRoot != null || heroMenu.PourTarget != null ||
+                heroMenu.LiquidTransform != null ||
+                heroMenu.LiquidRenderer != null ||
+                heroMenu.Renderers.Count != 2 ||
+                heroMenu.Renderers.Any(renderer =>
+                    renderer == null || renderer.enabled) ||
+                !registry.TryGetAnchor(
+                    "MenuDock.Hero",
+                    out Transform menuDock) ||
+                Vector3.Distance(
+                    heroMenu.PropRoot.position,
+                    menuDock.position) > MeasureTolerance ||
+                menuTextAnchors.Any(anchorName =>
+                    !registry.TryGetAnchor(anchorName, out Transform anchor) ||
+                    anchor == null || !anchor.IsChildOf(heroMenu.PropRoot)))
+            {
+                problems.Add(
+                    "hero menu lacks its hidden passive prop/page-anchor binding");
+            }
+
             foreach (MountainRoadCafePartBinding part in registry.Parts)
             {
                 if (part == null || part.Renderer == null)
@@ -625,11 +680,13 @@ namespace BarPromenade.Editor
                 manifest.materials || manifest.animation_count != 0 ||
                 manifest.mesh_count != ExpectedMeshCount ||
                 manifest.parts.Length != ExpectedMeshCount ||
+                manifest.triangle_count != ExpectedTriangleCount ||
+                manifest.anchors.Length != ExpectedAnchorCount ||
+                manifest.dynamic_props.Length != ExpectedPropCount ||
                 manifest.stool_count != ExpectedStoolCount ||
                 manifest.cup_assembly_count != ExpectedCupCount ||
                 manifest.collider_descriptors.Length != ExpectedColliderCount ||
                 manifest.overlap_count != 0 || manifest.textures.Length != 6 ||
-                manifest.triangle_count <= 0 ||
                 manifest.triangle_count > MaximumTriangles)
             {
                 throw new InvalidOperationException(
@@ -782,7 +839,8 @@ namespace BarPromenade.Editor
             foreach (string required in new[]
             {
                 "Cup.PairMan", "Cup.PairWoman",
-                "PourStream", "ServicePot", "ServiceTowel", "FridgeDoor"
+                "PourStream", "ServicePot", "ServiceTowel", "FridgeDoor",
+                "Menu.Hero"
             })
             {
                 if (!propNames.Contains(required))
@@ -798,6 +856,10 @@ namespace BarPromenade.Editor
                 bool fridgeDoor = string.Equals(
                     prop.name,
                     "FridgeDoor",
+                    StringComparison.Ordinal);
+                bool heroMenu = string.Equals(
+                    prop.name,
+                    "Menu.Hero",
                     StringComparison.Ordinal);
                 if (string.IsNullOrWhiteSpace(prop.root_name) ||
                     prop.part_names == null || prop.part_names.Length == 0 ||
@@ -818,6 +880,24 @@ namespace BarPromenade.Editor
                           prop.part_names[0],
                           "Cafe_FridgeDoor",
                           StringComparison.Ordinal) ||
+                      !string.IsNullOrEmpty(prop.lift_root_name) ||
+                      !string.IsNullOrEmpty(prop.liquid_part))) ||
+                    (heroMenu &&
+                     (!string.Equals(
+                          prop.role,
+                          "menu_booklet",
+                          StringComparison.Ordinal) ||
+                      !string.Equals(
+                          prop.owner,
+                          "HeroMenu",
+                          StringComparison.Ordinal) ||
+                      !string.Equals(
+                          prop.root_name,
+                          "PROP_Menu.Hero",
+                          StringComparison.Ordinal) ||
+                      prop.part_names.Length != 2 ||
+                      !prop.part_names.SequenceEqual(
+                          new[] { "Cafe_MenuCover", "Cafe_MenuPages" }) ||
                       !string.IsNullOrEmpty(prop.lift_root_name) ||
                       !string.IsNullOrEmpty(prop.liquid_part))))
                 {
@@ -1046,6 +1126,7 @@ namespace BarPromenade.Editor
         {
             Vector3 expectedMeters = ToVector(anchor.unity_local_position);
             bool parentLocal = anchor.name.StartsWith("Grip.", StringComparison.Ordinal) ||
+                anchor.name.StartsWith("MenuText.", StringComparison.Ordinal) ||
                 string.Equals(anchor.name, "PotSpout", StringComparison.Ordinal);
             Vector3 expectedWorld = parentLocal
                 ? anchorTransform.parent.position +

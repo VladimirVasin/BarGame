@@ -147,9 +147,10 @@ Assets/
         NightlifePrototype01.prefab   passive fixed-metre wrapper + semantic registry
     Bar/
       BarFacade3D.prefab            complete fixed-metre bar_exterior_v2 + door/sign anchors
-      BarInterior3D.prefab          passive shared 22 x 16 x 4.8 m room model
-      BarBartenderProvider.asset    dedicated six-armed NPC prefab link
-      Textures/                     four interior albedos + exterior brick/plaster sheets
+      BarInterior3D.prefab          passive 179-mesh bar_interior_v3 / generator 3.1.0 pub room
+      BarServiceProps3D.prefab      passive 29-mesh bottle/vessel/menu/stream library / 1.2.0
+      BarBartenderProvider.asset    active ordinary + retained legacy six-arm links
+      Textures/                     fifteen 512 px interior albedos (five used by service) + two exterior sheets
     Supermarket/
       SupermarketInterior3D.prefab     passive 16 x 11 x 3.6 m authored shop + semantic registry
       SupermarketExterior3D.prefab     complete passive fixed-metre neighbourhood-store exterior
@@ -162,7 +163,7 @@ Assets/
     MountainRoad/
       MountainRoadCafeCastProvider.asset  four isolated staged cafe prefab links
       Cafe/
-        MountainRoadCafe3D.prefab         passive 59-mesh cafe, hinge-ready fridge/kitchen + registry
+        MountainRoadCafe3D.prefab         passive 61-mesh cafe, hinge-ready fridge/open hero menu + registry
         Textures/                         six 512 px semantic detail sheets
     Church/
       ChurchExterior3D.prefab          passive Catholic exterior + typed semantic anchors
@@ -244,11 +245,14 @@ Assets/
     Models/
       BarFacade3D.fbx                   38-part complete old-neighbourhood pub exterior
       BarFacade3D.json                  bar_exterior_v2 bounds, parts, door/sign anchors + signature
-      BarInterior3D.fbx                 156-part shared interior
-      Bar3D.json                        interior layout/parts/groups + build signature
+      BarInterior3D.fbx                 179-part late-Victorian British-pub interior v3.1.0
+      Bar3D.json                        v3 layout + 1.16 m counter/0.96 m stool/1.76 m eye + signature
+      BarServiceProps3D.{fbx,json}      29-part bottles/vessels/open menu/pour-stream pack / 1.2.0
     Bartender/
-      Models/BarBartender3D.{fbx,json}  1.75 m six-armed NpcHumanV2 model / v2.0.0 manifest
-      Prefabs/BarBartender.prefab       provider-bound passive runtime bartender
+      Models/BarBartenderOrdinary3D.{fbx,json}  active two-arm NpcHumanV2 / v3.0.0 / 39 meshes
+      Models/BarBartender3D.{fbx,json}          retained six-arm legacy model / v2.0.0
+      Prefabs/BarBartenderOrdinary.prefab       provider-selected active bartender
+      Prefabs/BarBartender.prefab               retained inactive six-arm asset
   Supermarket/
     Interior/
       Models/SupermarketInterior3D.{fbx,json}  passive authored hall, fixtures, pivots + measured contract
@@ -293,6 +297,8 @@ Assets/
         AreaTravelTypes.cs        stable City/MountainRoad IDs + arrival token
         AreaTravelService.cs      guarded Single-load area handoff through AreaLoading
         GameSessionState.cs       persistent clock/needs + debug day 1..7 + one-shot debug-map handoff
+                                  -> SyncDayEvents/ApplyDayEvent: the one place a dated event changes the world
+        GameDaySchedule.cs        pure event -> first-day table, looked up by id; FeedTheCatOpens = day 2
         GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed delta + one-based day
         GameTimeRuntime.cs        persistent scaled-delta driver + day-announcement owner
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
@@ -352,12 +358,16 @@ Assets/
         MountainRoadCafe{AssetRegistry,ModelResources,SurfaceAppearance}.cs
                                       passive authored cafe presentation bridge
         MountainRoadCafeCollisionWorldBuilder.cs  exact 17-collider plan-owned shell
-        MountainRoadCafe{ServiceTimeline,ServicePresentation,CupView}.cs role-staggered drink/fill/refill + measured prop contacts
+        MountainRoadCafe{ServiceTimeline,ServicePresentation,CupView}.cs role-staggered drink/fill/refill + serialized menu handoff/retrieval
                                        hand/mouth-fitted cups, exact saucer return, counter-clear carry + per-frame spout-to-target stream
         MountainRoadCafeCigaretteEffect.cs woman idle phase -> separate ember glow + world-space SOCKET_Mouth exhale
                                        no separate clock, Light or AudioSource
         MountainRoadCafeConversation{Lines,Timeline,Controller,Look}.cs fixed ten-pair RU/EN bubble loop, cafe-volume gate + action-safe queue/head turns
-        MountainRoadCafeSeatView.cs   cafe-stool first-person camera/head lifecycle
+        MountainRoadCafeSeatView.cs   cafe-stool first-person lifecycle + upright viewer-ray page focus/all-look lock/exact restore
+        CounterSeat{Plan,View}.cs     reusable bar counter-seat camera/entry/exit plan
+        CounterMenu{Model,PageView,PropMotion}.cs shared selection lifecycle, page/focus and grip-to-dock motion
+        BarServicePropFactory.cs     imported bottle/vessel/menu/stream role bridge
+        MountainRoadCafeMenu{Model,Controller,Presentation}.cs three-item selection-only adapter over shared CounterMenu
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
         CityBlueprintCatalog.cs  default 13x12 river city with eastern Cemetery, six Yards + legacy blueprint
         CityRiverPlan.cs         10 m channel, dual core promenades, three typed bridges + four lower landings
@@ -395,8 +405,8 @@ Assets/
         MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
         MountainRoad{Terrain,Surface,Scenery}*.cs 76 m terrain, gorge, road + colliderless terminal apron
         MountainRoadSurfaceAppearance.cs six printed + nine borrowed measured surface families
-        MountainRoadCafe{WorldBuilder,WorldResult}.cs imported enterable 59-mesh glass cafe composition
-        MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs ten-clip cast: every-third-exchange ignored husband one-shot + silent attendant + drinking, talking pair
+        MountainRoadCafe{WorldBuilder,WorldResult}.cs imported enterable 61-mesh glass cafe composition
+        MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs ten-clip cast: every-third-exchange ignored husband one-shot + silent attendant/menu handoff + drinking, talking pair
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
         AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + looming 74° / 60 m ridge, 12 m margin, brink mesh
@@ -762,7 +772,9 @@ Assets/
         HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
         SupermarketProductCatalog.cs five offers with localized metadata/prices
         SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
-      Interaction/   contracts, shops and bar/home/stairwell/supermarket/church/mother-house doors
+      Interaction/   reusable CounterSeat + shared CounterMenu input, shops and location doors
+        CounterSeatInteraction.cs    physical authored approach/sit/loop/stand lifecycle
+        CounterMenuInput.cs          shared W/S/D-pad selection and Space/West confirmation
         CityTunnelTravel{Plan,Planner,Controller}.cs automatic unavailable crossing + visible return
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
         PlayerAnimatedInteraction*.cs  positioning, static/moving pelvis targets + independent exit
@@ -812,7 +824,8 @@ Assets/
       BarInteriorRoot.cs            bar layout/world/patrons/drink-shop composition
       BarPatronWorldBuilder.cs      pooled 3D guests on NPC anchors, seated via seat contract
       Bar/Bartender/                provider, registry, world builder, presentation + service choreography
-      Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
+      Drinks/        bar menu adapter, stable IDs, atomic purchases and physical service
+        BarDrinkMenuPresentation.cs  nine priced rows over shared physical CounterMenu
       Supermarket/Cashier/  normal observing cashier + retained inactive Watcher asset
         SupermarketCashierProvider.cs      one addressable ref to the off-Resources prefab
         SupermarketCashierAssetRegistry.cs bones, ordinary head/eye + renderer bindings
@@ -847,6 +860,8 @@ Assets/
         InventoryTargetInteractionController.cs shared modal target menu + atomic consumption
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
+        CounterMenuHintView.cs       shared compact W/S + Space world-menu hint/status
+        MountainRoadCafeMenuHintView.cs cafe localization adapter for the shared hint
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       MothersHouse/  fixed-metre FBX import, passive Resources prefab + manifest validation
       Environment/ExteriorCloud{AssetSetup,ModelImporter,TextureImporter}.cs  deterministic import/prefab validation
@@ -855,14 +870,15 @@ Assets/
       City/CityBuilding{AssetSetup,ModelImporter}.cs passive v2 FBX import + four wrappers/provider
       City/CityBuildingSurfaceTextureImporter.cs path-specific Clamp/Repeat, max-size, mip and readability contract
       City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
-      Bar/BarAssetSetup.cs       shared interior/exterior importer, prefab and manifest validation
+      Bar/BarAssetSetup.cs       v3 interior/exterior/service-pack import, prefab and manifest validation
+      Bar/BarBartenderV2AssetSetup.cs ordinary bartender import/prefab/provider setup
       Supermarket/SupermarketExterior{AssetSetup,ModelImporter}.cs passive exterior import, Resources prefab + manifest validation
       Supermarket/SupermarketInteriorAssetSetup.cs passive hall import, anchor/part binding + manifest validation
       Supermarket/SupermarketProductAssetSetup.cs six extracted Resources prefabs + passive pack validation
       PlayerHome/PlayerHomeExterior{AssetSetup,ModelImporter}.cs passive import, prefab authoring + exact lit-window validation
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       MountainRoadCafeCastAssetSetup.cs  isolated v2 model/clip/256 px atlas import, validation + provider setup
-      NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 26 on-disk humanoid NPC designs; cashier swap leaves active cast unchanged
+      NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 27 on-disk humanoid NPC designs; bartender/cashier swaps leave active cast unchanged
       City/NPC/CityArchShelterResidentAssetSetup.cs isolated three-model/atlas/loop prefab + provider pipeline
       MothersHouse/MothersHouseMotherAssetSetup.cs  her own pipeline: the shared descriptor reads clip names out of the ONE bank and demands a walk, and she has neither
       City/NPC/CityPedestrianTextureImporter.cs  routes pedestrian detail atlases to the Hero V2 atlas import contract (Point/Clamp/sRGB/256/no mip)
@@ -878,7 +894,7 @@ Assets/
       CityBuildingAssetTests.cs   4 prototypes / 28 semantic meshes, UV, importer, wrapper + provider contract
       CityBuildingSurfaceAppearanceTests.cs 24-sheet resource/import/shared-material + MPB contract
       CityBuildingPrototypeRuntimeTests.cs City/Home placement, six opaque bindings, inset foundation, slot shader + half-space policy
-      BarModelContractTests.cs    shared interior + complete bar_exterior_v2 manifest/runtime contract
+      BarModelContractTests.cs    pub v3/service-pack/exterior manifest and runtime contract
       SupermarketExteriorModelContractTests.cs dimensions, sheets, clearance, passive importer + prefab registry contract
       SupermarketInteriorModelContractTests.cs fixed metres, semantic/product anchors, sheets, passive prefab + layout parity
       SupermarketProductModelContractTests.cs six-item manifest/import/prefab/passivity/bounds contract
@@ -920,6 +936,8 @@ Assets/
       MountainRoadTerminalTests.cs       apron, landmarks, terrain blend + cabin clearance
       MountainRoadCafeCastTests.cs       roles/gaps/v2 atlas density/clip blend/world ownership
       MountainRoadCafeConversationTests.cs fixed RU/EN pair loop, every-third completed-exchange husband interruption, wrap-safe queue + partner-only look
+      MountainRoadCafeMenuModelTests.cs  viewer-ray/no-roll focus plan + delivery/open/selection/confirm/retrieval/close contracts
+      CounterSeatPlanTests.cs       authored/fallback physical counter-seat geometry contracts
       MountainCablewayTests.cs            loop continuity, world ownership and causal audio
       MountainCablewayRideTests.cs        exact docking, boarding step, treads, return station
       AlpineVillageTests.cs               lane grade, OBB seed sweep, looming bowl, shared-edge two-submesh ground/brink, weather + teleport ground
@@ -1002,7 +1020,9 @@ Assets/
       Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
+      BarDrinkPhysicalShopPlayModeTests.cs physical seat/menu/purchase/service/exit lifecycle
       MountainRoadCafePlayModeTests.cs  shipped-scene cup/saucer + hand/pot/counter contacts, silent phase idles and seat-camera restoration
+      MountainRoadCafeMenuPlayModeTests.cs physical handoff, upright viewer-ray focus, confirm/stand camera restore + physical retrieval/no-effect contract
 ArtSource/
   Environment/Clouds/Blender/    generated cloud-dome `.blend` and deterministic density preview
   Vehicles/
@@ -1029,7 +1049,7 @@ ArtSource/
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
     Blender/                     park chess, CityMisc3D and four-prototype CityBuildings3D sources/previews
     BuildingSurfaces/            24-sheet ordinary-building manifest + district/role contact sheet
-  Bar/                           shared interior/exterior .blend, contact sheet and texture manifest
+  Bar/                           pub v3 interior/exterior/service `.blend`, 1024 px albedo sources + preview nodes
   Home/                          apartment albedo contract, manifest and contact sheet
   PlayerHome/                    generated exterior .blend/preview + nine-sheet manifest/contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
@@ -1067,7 +1087,7 @@ tools/
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mothers-house-interior-3d-model.py  fixed-metre room, UV/triangle/anchor/export validator
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
-  build-mountain-road-cafe-3d-model.py  v1.1.0 / 59-mesh cafe, passive kitchen + hinge/anchor/prop/collider/overlap validator
+  build-mountain-road-cafe-3d-model.py  v1.2.1 / 61-mesh cafe, passive kitchen/menu + hinge/anchor/prop/collider/overlap validator
   build-village-3d-model.py      v3.0.0 / village_house_archetypes_v3, 17 assemblies / 43 outward-validated meshes; no doors/panes/new sheet
   build-city-misc-3d-model.py    82 kinds / 122 assemblies / 259 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 28 semantic meshes + UV/exact/near-layer validation
@@ -1075,9 +1095,10 @@ tools/
   city_building_parts.py         pure deterministic building geometry + surface/UV/attachment/window metadata
   atlas_kit.py                   shared PNG canvas/writer + rect-based atlas and UV helpers (Hero V2 + pedestrians)
   city_building_coplanarity.py   pure exact + <3 cm broad visible-layer audit with synthetic controls
-  build-bar-3d-model.py          shared interior + complete fixed-metre pub exterior/export validator
+  build-bar-3d-model.py          v3.1.0 179-mesh pub + v1.2.0 29-mesh service pack + exterior validator
+  build-ordinary-bartender-3d-model.py active two-arm NpcHumanV2 bartender generator/validator
   bar_exterior.py                deterministic 38-part late-Victorian pub geometry
-  build-bar-textures.py          interior sheets + exterior brick/plaster albedos
+  build-bar-textures.py          fifteen measured interior/service albedos + exterior brick/plaster sheets
   build-supermarket-cashier-3d-model.py  normal/Watcher cashier build, export and contract validation
   supermarket_cashier_variants.py       shared variant descriptors + normal/head geometry helpers
   supermarket_cashier_detail_atlas.py   shared deterministic uniform-detail atlas schema and painter
@@ -1140,8 +1161,11 @@ MountainRoadRoot -> MountainRoadPlanner -> validated 620 m continuous climb
                                       -> joined ~42 x 27 m terminal
                                          -> visible colliderless R7.5 m apron on shared collision
                                          -> enterable five-sided glass cafe on left
-                                            -> imported 59-mesh shell / 7 stools / four-role tableau
+                                            -> imported 61-mesh shell / 7 stools / four-role tableau
                                             -> passive kitchen + undriven hinge-ready FridgeDoor
+                                            -> one open Menu.Hero handoff -> 0.45 s locked upright viewer-ray focus at 0.50 m/FOV40
+                                               -> W/S or D-pad -> Space/West no-op confirm or E stand
+                                               -> WalkToMenu/TakeMenu/CarryMenuBack -> hidden at service dock
                                             -> warm practical + cold stove task fixture + technical wash
                                          -> 230 m / 9-support / 8-cabin cableway on right
                                             -> boarding open; line brakes to a dock on request
@@ -1606,17 +1630,21 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
        -> BarPatronWorldBuilder -> pooled 3D guests seated/standing on anchors
        -> BarSoundscape -> spatial crowd bed + rare bar cues
        -> BarArrivalPresentation -> skippable Bezier camera reveal
-        -> BarCounterStation -> BarDrinkShop
-                            -> retail catalog + atomic cash/drink transaction
-                            -> BarDrinkServicePlan -> nine physical bottle slots
-                            -> BarDrinkServiceWorldBuilder
-                               -> 9 bottle views + 5 vessel views + pour stream
-                            -> BarDrinkServiceTimeline
-                               -> seated camera + prefab-derived arm subsets
-                               -> owner-scoped world visibility lease
-                               -> pickup -> pour -> 3 s drink -> vessel return
-                               -> persistent browser -> explicit camera exit
-                             -> GameSessionState wallet + drinking progress
+       -> BarCounterStation -> CounterSeatPlan/View/Interaction
+                            -> authored approach -> 0.96 m stool -> physical sit -> 1.76 m eye
+                            -> shared CounterMenu model/input/page/hint/prop motion
+                               -> bar adapter: 5 + 4 localized priced rows at 1.10 m / FOV 60
+                               -> failed purchase stays open
+                               -> success marks X + physical menu return
+                            -> BarDrinkShop
+                               -> retail catalog + atomic cash/drink transaction
+                               -> BarDrinkServicePlan -> nine physical bottle slots
+                               -> BarDrinkServiceWorldBuilder
+                                  -> Blender service pack: 9 bottles + 5 vessels + stream + menu
+                               -> BarDrinkServiceTimeline
+                                  -> bartender pickup -> pour -> 3 s drink -> vessel return
+                                  -> repeated physical menu -> explicit stand/restore
+                               -> GameSessionState wallet + drinking progress
        -> SupermarketInteriorLayoutPlanner -> validated 16x11x3.6 shop
                                              -> three physical shelf views
                                                 -> exact product-pack anchors

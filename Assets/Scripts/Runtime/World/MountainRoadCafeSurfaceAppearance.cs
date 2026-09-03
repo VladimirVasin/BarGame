@@ -54,6 +54,8 @@ namespace BarPromenade
             new Color(0.86f, 0.90f, 0.82f, 1f);
         private static readonly Color PropsTint =
             new Color(0.95f, 0.93f, 0.82f, 1f);
+        private static readonly Color MenuPaperTint =
+            new Color(0.82f, 0.77f, 0.64f, 1f);
         private static readonly Color FridgeEnamelTint =
             new Color(0.68f, 0.69f, 0.54f, 1f);
         private static readonly Color FridgeInteriorTint =
@@ -132,7 +134,7 @@ namespace BarPromenade
                 return;
             }
 
-            if (TryApplyApplianceSurface(binding))
+            if (TryApplyRoleSurface(binding))
             {
                 return;
             }
@@ -147,11 +149,23 @@ namespace BarPromenade
             Apply(binding.Renderer, kind);
         }
 
-        private static bool TryApplyApplianceSurface(
+        private static bool TryApplyRoleSurface(
             MountainRoadCafePartBinding binding)
         {
             switch (binding.Role)
             {
+                case "menu_pages":
+                    // The shared props sheet contains the green appliance
+                    // stripe used by the counter dressing. Mapping that whole
+                    // sheet across an open book puts the stripe through its
+                    // lettering, so pages use plain warm paper instead.
+                    ApplyLit(
+                        binding.Renderer,
+                        Texture2D.whiteTexture,
+                        MenuPaperTint,
+                        0.08f,
+                        0f);
+                    return true;
                 case "refrigerator_body":
                 case "fridge_door":
                     ApplyLit(

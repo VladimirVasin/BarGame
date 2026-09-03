@@ -5,13 +5,11 @@ namespace BarPromenade
 {
     /// <summary>
     /// The bartender's hands during drink service. The authored
-    /// <see cref="BarDrinkServiceTimeline"/> channels keep driving the
-    /// props exactly as before — his arms are readers, never drivers:
-    /// every frame the assigned chain CCD-follows the prop the
-    /// timeline moves, so the brass-banded mid-right arm visibly
-    /// carries the bottle the hero picked, the mid-left arm rides the
-    /// vessel it slides in along the counter, and the lower pair
-    /// fingers whatever bottle the hero is only hovering over.
+    /// <see cref="BarDrinkServiceTimeline"/> remains the single clock and
+    /// keeps driving every prop. The active ordinary bartender reads its
+    /// phase into waiter clips while his right hand follows the selected
+    /// bottle and his left hand steadies the vessel. The retained legacy
+    /// path keeps its former four-chain mapping for prefab inspection.
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(315)]
@@ -69,13 +67,73 @@ namespace BarPromenade
                 shop.ServiceView == null)
             {
                 ReleaseAll();
+                presentation.ResetServicePose();
                 return;
             }
 
             BarDrinkServiceFrame frame = shop.Timeline.CurrentFrame;
+            BarDrinkMenuPresentation menu = shop.MenuPresentation;
+            bool menuHandled =
+                menu != null &&
+                menu.IsVisible &&
+                !menu.IsPlaced &&
+                menu.GripAnchor != null;
+            presentation.ApplyServiceFrame(frame, menuHandled);
+            if (presentation.UsesOrdinaryRig)
+            {
+                ApplyOrdinaryService(frame, menu, menuHandled);
+                return;
+            }
+
             ApplyHoverTouch(frame);
             ApplyBottleCarry(frame);
             ApplyVesselGuide(frame);
+        }
+
+        private void ApplyOrdinaryService(
+            BarDrinkServiceFrame frame,
+            BarDrinkMenuPresentation menu,
+            bool menuHandled)
+        {
+            BarDrinkBottleView bottle =
+                shop.ServiceView.SelectedBottle;
+            bool bottleHandled =
+                frame.Phase == BarDrinkServicePhase.BottlePickup ||
+                frame.Phase == BarDrinkServicePhase.VesselPlacement ||
+                frame.Phase == BarDrinkServicePhase.Pouring ||
+                frame.Phase == BarDrinkServicePhase.BottleReturn;
+            presentation.SetChainTarget(
+                BarBartenderPresentation.OrdinaryBottleHandIndex,
+                bottle != null && bottleHandled
+                    ? bottle.transform.position +
+                      bottle.transform.up * 0.30f
+                    : Vector3.zero,
+                bottle != null &&
+                bottleHandled &&
+                shop.Timeline.IsCommitted
+                    ? CarryWeight
+                    : 0f);
+
+            BarDrinkVesselView vessel =
+                shop.ServiceView.ActiveVessel;
+            bool vesselHandled =
+                frame.Phase ==
+                    BarDrinkServicePhase.VesselPlacement ||
+                frame.Phase == BarDrinkServicePhase.Pouring ||
+                frame.Phase == BarDrinkServicePhase.BottleReturn;
+            presentation.SetChainTarget(
+                BarBartenderPresentation.OrdinaryVesselHandIndex,
+                menuHandled
+                    ? menu.GripAnchor.position
+                    : vessel != null && vesselHandled
+                        ? vessel.transform.position + Vector3.up * 0.08f
+                        : Vector3.zero,
+                menuHandled ||
+                (vessel != null &&
+                 vesselHandled &&
+                 vessel.gameObject.activeInHierarchy)
+                    ? CarryWeight
+                    : 0f);
         }
 
         /// <summary>

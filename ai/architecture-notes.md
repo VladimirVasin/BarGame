@@ -56,6 +56,44 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   rigidbody or animator; each is enforced by the asset setup's
   `ValidateOrThrow`, not by review. Collision and illumination stay authored
   from the layout plan, so a model can be re-cut without risking traversal.
+- **Accepted — the bar is one authored pub, not a runtime furniture kit:**
+  `bar_interior_v3` keeps the validated `22 x 16 x 4.8 m` plan but moves every
+  permanent visible surface into one passive Blender asset (`179` semantic
+  meshes / `12,804` triangles). Its counter return, backbar, booths/snug, four
+  small round tables, music pocket, curtains, carpet/plank and practical
+  fixtures express a worn late-Victorian British pub without flag, name,
+  brand, readable advertising or new lore. `bar_service_props_v1` is a second
+  passive `29`-mesh / `2,280`-triangle library for the nine bottles, five
+  vessel forms, pour stream and two-page menu. Unity continues to own stable
+  layout data, collision, light, liquid and interaction state; the deleted
+  runtime service-mesh library has no second geometry authority.
+- **Accepted — the bar seat is reusable and cafe/bar share one physical menu
+  substrate:** `CounterSeat{Plan,Interaction,View}` packages the bar's authored
+  approach, physical entry/loop/exit and exact camera restoration in the same
+  interaction grammar as the cafe seat. Both scenes consume
+  `CounterMenu{Model,Input,PageView,HintView,PropMotion}` for the ordered
+  lifecycle, wrap navigation, upright page focus, world TMP/selection marker,
+  compact hint and grip-to-dock delivery/retrieval; their adapters supply only
+  rows and choreography. The bar adapter keeps the wider spread at `1.10 m` /
+  FOV `60` while the cafe retains `0.50 m` / FOV `40`. `BarAssetSetup`
+  reapplies each manifest-declared Unity basis in prefab-root space because
+  FBX Empty wrapper axes otherwise rotate the text sockets when the menu
+  origin is aligned to its dock. The
+  cafe keeps three price-free, effect-free entries; the bar supplies the nine
+  localized drink names/prices, leaves failed purchases open, and only after a
+  successful atomic purchase marks `X`, returns the booklet and enters the
+  existing one-bottle service timeline. This records the user's explicit
+  `2026-09-03` decision to reuse the cafe menu fully while changing the bar
+  entries, not to build a second parallel menu.
+- **Accepted by explicit user decision, 2026-09-03 — the active bartender is
+  ordinary and two-armed:** `bar_bartender_v2` is a `1.75 m`, `39`-mesh /
+  `1,136`-triangle NpcHumanV2 figure in a dark-green waistcoat, rolled sleeves
+  and apron. Its registry reuses the four existing cafe-attendant clips and
+  its manual service graph follows the established `BarDrinkServiceTimeline`:
+  right hand to bottle, left hand to menu or vessel. `BarBartenderProvider`
+  selects `BarBartenderOrdinary.prefab`; the former six-armed prefab remains a
+  serialized inactive legacy reference. This is a one-for-one active-cast
+  replacement and introduces no new strange body.
 - **Accepted:** Alpine Village separates inhabited `TerrainBounds` from the
   larger physical `TerrainMeshBounds`; only the latter may prove the enclosing
   ridge and cable brink.
@@ -189,15 +227,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   emitted only by designs that declare them, so the other thirteen city
   signatures are byte-identical.
 - **Accepted — NpcHumanV2 is the common adult anatomical substrate:** all
-  `26` rigged humanoid NPC model designs on disk copy the production Hero V2
+  `27` rigged humanoid NPC model designs on disk copy the production Hero V2
   31-bone A-pose Avatar and use its `0.835 m` rest pelvis. The active humanoid
-  cast does not grow: the new normal supermarket cashier replaces the Watcher
-  one for one, while the latter remains an inactive asset. Ordinary silhouettes target
+  cast does not grow: the ordinary bartender and cashier each replace a
+  retained inactive predecessor one for one. Ordinary silhouettes target
   roughly `7–7.5` heads and `2.3–2.5` head-width shoulders without increasing
-  polygon density. Canon-required deformations — six bartender arms, the
-  Long-Arm figure, kettle head and hopper feet — remain authored overlays on
-  that substrate; the retained Watcher's long neck is asset history, not an
-  active-world overlay.
+  polygon density. The Long-Arm figure, kettle head and hopper feet remain
+  authored overlays on that substrate; six bartender arms and the Watcher's
+  long neck are retained asset history, not active-world overlays.
   Amended 2026-08-31 by explicit user request: the three arch-shelter residents
   are no longer unrigged exceptions. They are staged Hero-Avatar prefabs with
   separate `256 px` detail atlases and three long, autonomous, bone-only loops
@@ -215,17 +252,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   character design now carries one of two marks,
   `NpcDesignAppearance.Normal` or `.Bizarre`, in
   `Assets/Scripts/Runtime/Core/NpcDesignAppearance.cs`, keyed on `design_id`
-  and covering all `28` designs (the `26` rigged humanoid assets plus the raven
+  and covering all `29` designs (the `27` rigged humanoid assets plus the raven
   and the cat; the hero's own models are out of scope). The line is this
   document's and the art bible's, not a new one: strangeness of the BODY is
   bizarre, a strange thing worn or carried is not — «его странность — само
   тело, а не надетый или несомый предмет»
   (`ai/city-zones-art-bible.md` §15). Animals are judged as ordinary
-  specimens of their own species. Seven designs are bizarre: Long-Arm,
-  Lampshade, Kettle Hat and Helmet Lamp Hopper among the pooled walkers, the
-  six-armed bartender, the retained Watcher cashier and the stairwell cat.
-  The active `supermarket_cashier_v1` joins the normal group, giving `7`
-  bizarre and `21` normal designs without increasing the active cast. The
+  specimens of their own species. Eight designs are bizarre: Long-Arm,
+  Lampshade, Chair Carrier, Kettle Hat and Helmet Lamp Hopper among the
+  authored walkers, the six-armed bartender, the retained Watcher cashier and
+  the stairwell cat.
+  The active `bar_bartender_v2` and `supermarket_cashier_v1` belong to the
+  normal group, giving `8` bizarre and `21` normal designs without increasing
+  the active cast. The
   long-eyed bus driver is NORMAL by explicit user decision — his head is
   authored as an ordinary one and his own generator refuses any part that
   would replace or conceal it, so a stylised eye sits nearer a worn thing
@@ -1431,14 +1470,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   («никакой мистики» at the cemetery, the mourner, the watchman, the fisherman
   and the church). Rather than weaken those bans, they are re-read as
   describing **level `0-1`** of the story bible's `0-5` scale, which is the
-  city exactly as it ships today — strange pedestrians and the six-armed
-  bartender included. The explanation the story bible
+  city exactly as it ships today — strange pedestrians included, while the
+  active bartender is now an ordinary two-armed man. The explanation the story bible
   supplies is not supernatural at all: **everything strange in the game is the
   hero's, because the game is about his alcoholism.** The citizens are
   ordinary and nobody ever reacts to any of it, which is the single rule the
   player uses to read the world. Above level 1 a ban is lifted only by name,
   dated to a level, in the story bible's §6 registry, and nowhere else; seven
-  entries exist and the permanent list (skeletons, blood, monsters, sirens,
+  registry entries exist and the permanent list (skeletons, blood, monsters, sirens,
   cults, otherworld transitions, rust-as-aesthetic, daytime flickering
   lanterns, local fog, screamers) is never lifted at any level. The binding
   constraint is that **every level must still pass all nine of the art bible's
@@ -1544,6 +1583,41 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The panel is sized once from the whole line and only the drawn substring
   grows, because `GUIStyle.CalcHeight` on a growing string steps the box a
   row taller mid-word.
+- **Accepted 2026-09-03 by direct user decision — the cat's quest is dated to
+  day two, and dating anything to a day is now a table rather than a
+  condition:** the user asked for the first day to carry no feeding check and
+  no obstacle to leaving the house, and then for the general base rather than a
+  one-off. `GameDaySchedule` is that base: a pure `event -> first day` table
+  looked up BY ID, with `GameSessionState.ApplyDayEvent` as the single place a
+  row turns into a change in the world. The schedule stays free of a session, a
+  scene and a clock, so it can be proved on its own — the split the quest and
+  inventory catalogs already use — and lookup is by id rather than by enum
+  ordinal because an ordinal-addressed table hands every later row its
+  neighbour's data the moment somebody files an entry out of order, silently,
+  which this project has already been bitten by in the sound table.
+  Events fire **once per session**, tracked in `GameSessionState` rather than
+  left to each event to be idempotent on its own. Quest activation happens to
+  be safe to repeat; the next event somebody dates will not be, and that is not
+  a thing anyone should have to remember. A debug jump backwards does not
+  un-fire what already happened.
+  Two facts this changes, both recorded where they were stated: the story
+  bible's §2 said `FeedTheCat` was «первый квест новой игры», and §9's «Каждый
+  день» now begins on the second. Worth keeping: the manual tutorial path in
+  `ai/tutorial-scenario.md` has always had the hero descend the stairwell and
+  use the street door on day one — which the descent blocker made literally
+  impossible. The dating fixes a contradiction rather than introducing one.
+- **Accepted — the cat offers no feeding at all before his quest opens:** the
+  obvious reading of "no checks on day one" is to leave the descent blocker and
+  the tin reservation gated (they already read `IsQuestActive`) and let the
+  feeding itself stand. That is a trap. The tin is consumed the frame the cat
+  puts his head in it, and `TryCompleteQuest` returns false while the quest is
+  not active — so a feeding allowed on day one would eat the can, record
+  nothing, and leave the hero locked in his own stairwell on day two with
+  nothing to feed the cat and no way down. `StairwellCatInteraction.TryOpen`
+  therefore answers with the ordinary «Кот молча смотрит» line and opens no
+  menu until the quest exists. **Note what was NOT done:** `FeedTheCat` is
+  still not repeatable, so it does not recur daily the way §9's «Каждый день»
+  describes. That was already true before this work and is left alone.
 - **Accepted 2026-09-02 by direct user decision — every spoken line types out,
   and every letter it writes ticks:** the game had two ways of saying a thing.
   The park quarrel and the mountain cafe typed into a bubble over the speaker's
@@ -2173,7 +2247,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   prior camera mode, pose, FOV and cinematic-motion state on exit or teardown.
   The pair's conversation types out and ticks with the game-wide writing blip
   (see the accepted decision below); voice acting, phonemes and free ambience
-  are deliberately absent, and the hero is never a service target or addressee.
+  are deliberately absent, and the hero is never a cup/refill target or spoken
+  addressee; the single physical menu exception is recorded below.
   The
   right landmark is a `230 m` cableway: eight colliderless cabins traverse one
   continuous loop over nine supports, while the far turn stands beyond the
@@ -2196,26 +2271,33 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted and implemented — The terminal cafe is a bounded Blender
   migration, not a rewrite of the whole terminal:** the cafe's visible
   runtime-primitive shell, interior and furniture were replaced by one
-  fixed-metre deterministic Blender-authored set and measured manifest (`59`
-  meshes / `5,682` triangles / `45` anchors / six dynamic props). The terminal
+  fixed-metre deterministic Blender-authored set and measured manifest (`61`
+  meshes / `5,794` triangles / `52` anchors / seven dynamic props). The terminal
   plan continues to own the five-sided
   footprint, `4.4 m` height, `2.8 m` chamfer, open `1.6 m` door, walkability,
   logical collision, shelter, map landmark, semantic/audio anchors and
   lighting; imported geometry brings no collider, Light, camera or material.
-  Generator `1.1.0` extends the rear service wall through that same bounded
+  Generator `1.2.1` retains the rear service wall through that same bounded
   asset contract: an extended cabinet and cutting-board dock, a compact stove
   with its pan dock, and a refrigerator cavity with two shelves. The sixth
-  dynamic prop is the separate hinge-ready `FridgeDoor`, with authored
+  dynamic prop remains the separate hinge-ready `FridgeDoor`, with authored
   `FridgeDoorPivot` and child `Grip.FridgeDoor`. It remains closed and has no
   runtime driver, Animator, Rigidbody or attendant/player interaction; the
   existing closed-fridge and service-cabinet boxes remain two of the same
-  `17` plan-owned logical colliders.
+  `17` plan-owned logical colliders. The seventh prop is the colliderless,
+  Rigidbody-free open `Menu.Hero`, initially hidden and owning one hand grip,
+  one counter dock, one service-rail stop, three item anchors and one selection
+  anchor. The napkin dispenser, sugar shaker and salt shaker move together from
+  local `Z=-1.20` to `Z=-0.88`, leaving that dock clear. Runtime surface
+  dispatch gives `menu_pages` uniform warm paper through the shared material
+  property-block path instead of sampling the green band in `CafePropsDetail`;
+  no material instance or seventh texture sheet is introduced.
   The counter has seven `0.8175 m`-high stools: the sleeping lone visitor and
   visually grouped pair occupy three with grounded seat contact, four remain
   empty, and the existing hero seat stays on one of those empty positions. The
-  attendant remains the fourth silent figure behind the counter. Sitting may
-  keep the existing bounded tableau notice, but it creates no order, item,
-  service, dialogue with the hero or new gameplay transaction.
+  attendant remains the fourth silent figure behind the counter. Sitting now
+  requests only the menu handoff below; it still creates no drink/food order,
+  item, dialogue with the hero or gameplay transaction.
   The two visible practicals plus one shadowless technical sulphur spill proxy
   with no third visible fixture remain the complete three-Light cafe contract.
   The warm key aims at the sleeping contact pose without self-shadowing the
@@ -2224,6 +2306,54 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   dark-clothed seated line before its range fade, while the reduced common wash
   keeps the pale attendant from owning the whole shot. The proxy reaches only
   the threshold and near apron, never the terrace or brink.
+
+  **Accepted architecture exception — 2026-09-03, explicit user request — one
+  silent physical menu handoff with a selection-only placeholder:** this
+  supersedes only the cafe clauses above that forbid every menu and every form
+  of hero service. After the hero completes the existing stool sit, the silent
+  attendant may carry and place one open menu in front of him. It contains
+  exactly three localized ordinary item names with no title, prices or brands.
+  `W/S` or D-pad changes only the visible selection; `Space` or gamepad West
+  marks it with an `X` and then locks that first choice. Mouse/right-stick
+  look and the arrow keys remain free throughout the bounded seated view;
+  `E`/`Enter`/gamepad South remains the stand action.
+  No product, payment, cash mutation, inventory item, food or drink, line,
+  reaction, sound or story state is created, and the pair, husband and
+  two-cup refill cycles remain unchanged. This does not authorize another menu,
+  other object text, a complete order flow or ownership of the hero
+  presentation outside the existing seated view.
+
+  **Accepted architecture exception — 2026-09-03, later explicit user
+  request — locked page focus and one physical menu return:** this supersedes
+  only the free-look and handoff-only lifecycle clauses of the menu exception
+  immediately above. Once the shared service frame exposes
+  `HeroMenuPlaced`, `MountainRoadCafeSeatView` remains the sole camera owner
+  and blends its fixed pose over `0.45 s` along the ray from the current
+  seated camera to the authored page, stopping `0.50 m` from it at FOV `40`.
+  The focus looks back along that ray and derives its up axis from world-up,
+  so an imported page basis can produce neither an overhead jump nor roll.
+  World-space TMP uses its local `-Z` readable face toward that focus and
+  aligns glyph-right with camera-right, preventing mirrored or inverted rows.
+  Every arrow, right-mouse, right-stick
+  and other look source is suppressed while that focus has weight; `W/S`,
+  D-pad, `Space`/West and `E`/`Enter`/South remain live, so this is an
+  interactive inspection rather than an unbounded cutscene.
+  Confirmation preserves the first identifier and visible `X`, immediately
+  releases focus back to the saved seated pose and idempotently requests
+  retrieval. Standing instead ends the seated view immediately, restores the
+  exact pre-seat fixed/follow camera and requests retrieval without a commit.
+  The focus lock may never outlive that seated view.
+  `MountainRoadCafeServiceTimeline` serializes the request with every existing
+  attendant beat as `WalkToMenu -> TakeMenu` (`2.5 s`) `-> CarryMenuBack`.
+  `Menu.Hero` remains visible at the counter until the animated grip takes it,
+  follows the right-hand socket back and is hidden only after the prop returns
+  to its service dock; it is never teleported away at confirm or stand. The
+  retrieved state makes the handoff/return one-shot per scene. This later
+  exception adds no second menu or text and creates no order, product, payment,
+  cash/inventory mutation, food, drink, dialogue, reaction, audio or story
+  state. It does not change the pair, husband or two-cup refill cycles. Asset
+  and localization contracts remain generator `1.2.1`, `61` meshes / `5,794`
+  triangles / `52` anchors / seven dynamic props.
 
   **Accepted exception — role-staggered cafe drinking:** on `2026-09-01` the
   user explicitly replaced the earlier synchronized-pair beat. The pair stays
@@ -3993,12 +4123,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   standing roles idle in place. The `Bartender` anchor is deliberately left
   empty until a dedicated 3D bartender pass, mirroring the empty supermarket
   checkout.
-- **Superseded 2026-08-29 — the bartender anchor is now staffed:** the
-  provider-bound `BarBartender` prefab is a complete `1.75 m` NpcHumanV2
-  figure with the canonical six arms. `BarBartenderWorldBuilder` owns the
-  anchor and `BarBartenderServiceChoreography` owns the implemented physical
-  service motions; only the separate cocktail/minigame expansion remains
-  deferred.
+- **Superseded in production 2026-09-03 — the six-armed bartender pass:** on
+  2026-08-29 the provider-bound `BarBartender` prefab first staffed the anchor
+  as a complete `1.75 m` six-armed NpcHumanV2 figure. The asset and its legacy
+  provider reference remain, but production now selects the ordinary two-arm
+  replacement recorded in Current facts above. `BarBartenderWorldBuilder` and
+  `BarBartenderServiceChoreography` continue to own the same anchor and
+  physical service boundaries.
 - **Accepted by explicit user decision, 2026-09-02 — the active cashier is
   normal and the Watcher is retained, not deleted:** the production provider
   now selects `supermarket_cashier_v1`, an ordinary-proportioned `1.75 m`
@@ -4015,7 +4146,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and ordinary gameplay never instantiates it. Both share
   `SupermarketCashier3DDetailAtlas.png`. This is a one-for-one cast replacement,
   not a new resident: the active humanoid cast does not grow, while the on-disk
-  appearance catalog contains `28` designs (`7` bizarre, `21` normal).
+  appearance catalog now contains `29` designs (`8` bizarre, `21` normal)
+  after the analogous bartender replacement retained both bartender assets.
 - **Superseded for production on 2026-09-02; retained as an inactive asset —
   The Watcher Cashier:** the former supermarket checkout was staffed
   by one bespoke animation-free 3D clerk (`watcher_cashier_v1`) built by

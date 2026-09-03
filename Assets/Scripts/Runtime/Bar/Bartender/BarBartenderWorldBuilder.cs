@@ -4,21 +4,16 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Stands the Six-Armed Bartender on the layout's authored
-    /// Bartender anchor — the dedicated pass the patron builder has
-    /// been reserving that spot for. Loads the bespoke prefab through
-    /// its addressable provider (the cashier pattern) and starts the
-    /// procedural six-arm presentation.
+    /// Stands the active ordinary bartender on the layout's authored
+    /// Bartender anchor. The six-armed prefab remains provider-addressable
+    /// as legacy data but is never selected here.
     /// </summary>
     public static class BarBartenderWorldBuilder
     {
         /// <summary>
-        /// The service duckboard he works from. The canonical
-        /// shoulders sit at 1.29 m and the counter top at ~1.56 m, so
-        /// without the platform only his head clears the counter and
-        /// reads as one more backbar bottle from the hall. Raised,
-        /// his shoulders and the whole six-arm fan work above the
-        /// counter line.
+        /// Root offset matching the Blender-authored service duckboard. The
+        /// interior model owns the visible platform; runtime creates no
+        /// substitute geometry.
         /// </summary>
         public const float DuckboardHeight = 0.42f;
 
@@ -65,15 +60,6 @@ namespace BarPromenade
                 GameLog.Warning("bar", "bartender_prefab_missing");
                 return null;
             }
-
-            RuntimePrimitiveFactory.CreateBox(
-                "Bartender Duckboard",
-                parent,
-                anchor.Position +
-                new Vector3(0f, DuckboardHeight * 0.5f, 0f),
-                new Vector3(1.35f, DuckboardHeight, 0.85f),
-                new Color(0.16f, 0.11f, 0.07f),
-                false);
 
             GameObject bartender = UnityEngine.Object.Instantiate(
                 provider.BartenderPrefab,

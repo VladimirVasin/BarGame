@@ -570,9 +570,11 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void FoodUse_ClearsFractionalHungerProgress()
         {
-            // A new game owes the stairwell cat a can, and a
-            // reserved can cannot be eaten. This test is about hunger
-            // arithmetic, so settle with the cat first.
+            // The cat's quest opens on its own day, so a new game
+            // reserves nothing and the can is the hero's to eat. Kept
+            // explicit rather than relied upon: this test is about
+            // hunger arithmetic and must not start failing the day
+            // somebody dates the cat differently.
             GameSessionState.TryCompleteQuest(QuestId.FeedTheCat);
             GameSessionState.UpdateNeeds(60, 0);
             Assert.That(
@@ -609,8 +611,17 @@ namespace BarPromenade.Tests.EditMode
         {
             Assert.That(
                 GameSessionState.IsQuestActive(QuestId.FeedTheCat),
+                Is.False,
+                "The first day owes the cat nothing.");
+            Assert.That(
+                GameSessionState.TrySetDebugGameDay(
+                    GameDaySchedule.GetFirstDayNumber(
+                        GameDayEventId.FeedTheCatOpens)),
+                Is.True);
+            Assert.That(
+                GameSessionState.IsQuestActive(QuestId.FeedTheCat),
                 Is.True,
-                "A new game opens owing the stairwell cat a tin.");
+                "The cat's own day opens owing him a tin.");
             Assert.That(
                 GameSessionState.TryAddInventoryItem(
                     InventoryItemId.OpenStewCan,
@@ -664,7 +675,7 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void CheapFoodUse_StopsAtFloorAndKeepsUnusedItem()
         {
-            // As above: the cat's can is not the hero's to eat.
+            // As above: settle any claim on the can before measuring.
             GameSessionState.TryCompleteQuest(QuestId.FeedTheCat);
             GameSessionState.UpdateNeeds(60, 40);
             Assert.That(

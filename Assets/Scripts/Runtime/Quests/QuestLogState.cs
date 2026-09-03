@@ -16,10 +16,19 @@ namespace BarPromenade
 
         public IReadOnlyList<QuestLogEntry> Entries => entriesView;
 
+        /// <summary>
+        /// A new game starts with an empty log. `FeedTheCat` used to be
+        /// put up here and was therefore the first thing a new game
+        /// did; it is now dated to
+        /// <see cref="GameSessionState.FeedTheCatFirstDayNumber"/> and
+        /// raised by the clock, so the first day has no job in it at
+        /// all. The method stays because a starter quest is a thing
+        /// this game may want again, and because clearing the log is
+        /// still exactly what a new game needs.
+        /// </summary>
         public void ResetWithStarterQuests()
         {
             entries.Clear();
-            TryActivate(QuestId.FeedTheCat);
         }
 
         public QuestStatus GetStatus(QuestId questId)

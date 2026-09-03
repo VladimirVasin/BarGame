@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-mountain-road-cafe-3d-model.py",
-  "generator_version": "1.1.2",
+  "generator_version": "1.2.1",
   "blender_version": "5.0.1",
   "design_id": "mountain_road_cafe_nighthawks_v1",
   "display_name": "Bar Promenade Mountain Road Nighthawks Cafe",
@@ -77,6 +77,33 @@
     "cabinet_wall_gap_m": 0.02,
     "rear_door_clearance_m": 0.08
   },
+  "menu_contract": {
+    "dynamic_prop": "Menu.Hero",
+    "owner": "HeroMenu",
+    "initially_visible": false,
+    "runtime_driver": false,
+    "dock_anchor": "MenuDock.Hero",
+    "grip_anchor": "Grip.HeroMenu",
+    "service_rail_anchor": "ServiceRail.Hero",
+    "item_anchors": [
+      "MenuText.Item.00",
+      "MenuText.Item.01",
+      "MenuText.Item.02"
+    ],
+    "selection_anchor": "MenuText.Selection",
+    "text_forward_local": [
+      0.095846,
+      0.995396,
+      0.0
+    ],
+    "text_up_local": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "text_line_width_m": 0.18,
+    "text_line_height_m": 0.028
+  },
   "surface_contract": {
     "opaque_detail_min_clearance_m": 0.003,
     "glass_layers_per_pane": 1,
@@ -108,8 +135,8 @@
     5.56,
     4.4
   ],
-  "mesh_count": 59,
-  "triangle_count": 5682,
+  "mesh_count": 61,
+  "triangle_count": 5794,
   "overlap_count": 0,
   "allowed_seam_contact_count": 33,
   "textures": [
@@ -868,6 +895,30 @@
       ]
     },
     {
+      "name": "Grip.HeroMenu",
+      "role": "menu_grip",
+      "local_position": [
+        0.0,
+        0.13,
+        0.042
+      ],
+      "unity_local_position": [
+        0.0,
+        0.042,
+        0.13
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
       "name": "Grip.PairMan",
       "role": "cup_grip",
       "local_position": [
@@ -1033,6 +1084,126 @@
         0.0,
         1.0,
         0.0
+      ]
+    },
+    {
+      "name": "MenuDock.Hero",
+      "role": "menu_dock",
+      "local_position": [
+        -0.38,
+        -1.38,
+        1.02
+      ],
+      "unity_local_position": [
+        -0.38,
+        1.02,
+        -1.38
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "MenuText.Item.00",
+      "role": "menu_text_item",
+      "local_position": [
+        0.13,
+        0.035,
+        0.029983
+      ],
+      "unity_local_position": [
+        0.13,
+        0.029983,
+        0.035
+      ],
+      "unity_local_forward": [
+        0.095846,
+        0.995396,
+        0.0
+      ],
+      "unity_local_up": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "MenuText.Item.01",
+      "role": "menu_text_item",
+      "local_position": [
+        0.13,
+        -0.02,
+        0.029983
+      ],
+      "unity_local_position": [
+        0.13,
+        0.029983,
+        -0.02
+      ],
+      "unity_local_forward": [
+        0.095846,
+        0.995396,
+        0.0
+      ],
+      "unity_local_up": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "MenuText.Item.02",
+      "role": "menu_text_item",
+      "local_position": [
+        0.13,
+        -0.075,
+        0.029983
+      ],
+      "unity_local_position": [
+        0.13,
+        0.029983,
+        -0.075
+      ],
+      "unity_local_forward": [
+        0.095846,
+        0.995396,
+        0.0
+      ],
+      "unity_local_up": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "MenuText.Selection",
+      "role": "menu_text_selection",
+      "local_position": [
+        0.035,
+        0.035,
+        0.039088
+      ],
+      "unity_local_position": [
+        0.035,
+        0.039088,
+        0.035
+      ],
+      "unity_local_forward": [
+        0.095846,
+        0.995396,
+        0.0
+      ],
+      "unity_local_up": [
+        0.0,
+        0.0,
+        1.0
       ]
     },
     {
@@ -1213,6 +1384,30 @@
       ],
       "unity_local_position": [
         2.1,
+        0.0,
+        -0.76
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ServiceRail.Hero",
+      "role": "service_rail",
+      "local_position": [
+        -0.38,
+        -0.76,
+        0.0
+      ],
+      "unity_local_position": [
+        -0.38,
         0.0,
         -0.76
       ],
@@ -1531,6 +1726,20 @@
       "owner": "FridgeDoor",
       "part_names": [
         "Cafe_FridgeDoor"
+      ],
+      "liquid_part": "",
+      "empty_local_y": 0.0,
+      "full_local_y": 0.0
+    },
+    {
+      "name": "Menu.Hero",
+      "root_name": "PROP_Menu.Hero",
+      "lift_root_name": "",
+      "role": "menu_booklet",
+      "owner": "HeroMenu",
+      "part_names": [
+        "Cafe_MenuCover",
+        "Cafe_MenuPages"
       ],
       "liquid_part": "",
       "empty_local_y": 0.0,
@@ -2946,8 +3155,64 @@
       ],
       "bounds_max": [
         2.64,
-        -1.03,
+        -0.805,
         1.21
+      ]
+    },
+    {
+      "name": "Cafe_MenuCover",
+      "role": "menu_cover",
+      "group": "dynamic_prop",
+      "sheet": "CafeCounterDetail",
+      "base_surface": "Timber",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 2.577935,
+        "offset_v": 4.308736
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": false,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -0.649346,
+        -1.54,
+        1.024
+      ],
+      "bounds_max": [
+        -0.110654,
+        -1.22,
+        1.055563
+      ]
+    },
+    {
+      "name": "Cafe_MenuPages",
+      "role": "menu_pages",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 4.90988,
+        "offset_v": 5.576608
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": false,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -0.629255,
+        -1.525,
+        1.033
+      ],
+      "bounds_max": [
+        -0.130745,
+        -1.235,
+        1.060464
       ]
     },
     {
@@ -3231,5 +3496,5 @@
       ]
     }
   ],
-  "build_signature": "a332d2a6f5b052e047d25927455985e13c8e61b376c9a76bac0b3a8c6b579176"
+  "build_signature": "9f2b0c86c31d2d2b872b954fefafc8a8958d8a060d63b22dbf440e9efdb70451"
 }

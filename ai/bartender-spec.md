@@ -1,159 +1,127 @@
-# The Six-Armed Bartender — model, rig and service choreography spec
+# The Ordinary Bartender — active model, rig and service choreography
 
-Status: **model, imported prefab/provider, runtime presence, procedural
-idle and ordinary one-bottle service choreography implemented**.
-Multi-ingredient cocktail ordering and its simultaneous six-arm
-bottle-return chord remain designed but deferred.
+Status: **Current**. The active bar worker is the ordinary two-armed
+`bar_bartender_v2`. The former six-armed design remains packaged as an
+inactive legacy asset and is never selected by the bar world builder.
 
-## 1. Concept
+## 1. Active character contract
 
-A heavy, patient figure behind the counter with **three pairs of arms**
-— the bar's one openly impossible thing, in the same register as the
-Watcher Cashier and the Silent Hill attention idiom. He is not a
-monster; he is staff. The wrongness is presented as pure competence:
-six hands mean the pour never waits.
+The bartender is an ordinary, silent publican. His replacement changes only
+his appearance and working motion; the existing drink catalogue, prices,
+payment, intoxication, closing state and `BarDrinkServiceTimeline` remain the
+source of gameplay truth.
 
-- Silhouette: a relatively heavy but believable adult `1.75 m` body
-  under the shared `NpcHumanV2` standard, with a short neck and heavy
-  head. Three arm pairs are stacked on the torso — shoulder line,
-  mid-ribs line and floating-rib line — so the impossible outline still
-  reads as a fan.
-- The hero never sees him walk, but the production asset is a complete
-  body with pelvis, thighs, lower legs and feet rather than the former
-  waist-up proposal. The counter and `0.42 m` service duckboard hide
-  most of that ordinary anatomy during play.
-- Palette: waistcoat black-green over rolled shirt (bar's amber warms
-  it), skin in the pale pedestrian range, one accent — a dull brass
-  arm-band on the middle-right arm (the pouring arm).
-- Idle is the sell: the canonical pair braces on the counter while the
-  four extra hands trace quiet unsynchronized arcs that suggest
-  polishing, drumming and waiting without literal props. Never
-  symmetric, never still, never fast.
+- Silhouette: a believable full-body adult at `1.75 m`, with two arms and no
+  signature-anatomy overlay.
+- Work clothes: dark-green waistcoat, rolled shirt sleeves, dark apron and a
+  service towel. The model also carries the restrained flat cap and moustache
+  already declared by its measured parts.
+- Service roles: the right hand handles the selected bottle and the left hand
+  steadies the vessel. Outside those windows he returns to the quiet wiping
+  loop.
+- World meaning: he is not an oddity, never comments on the hero and gains no
+  replacement supernatural trait.
 
-## 2. Model pipeline
+## 2. Model and asset pipeline
 
-The implemented pipeline mirrors the Watcher Cashier pass:
+- **Tool:** `tools/build-ordinary-bartender-3d-model.py`.
+- **Design:** `bar_bartender_v2`, generator `3.0.0`, anatomy standard
+  `NpcHumanV2`, A-pose, full height `1.75 m`, rest pelvis `0.835 m`.
+- **Rig:** the exact Hero V2 Generic Avatar and 31-bone hierarchy from
+  `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`.
+- **Measured geometry:** `39` meshes / `1,136` triangles, inside the declared
+  `900-2,600` triangle budget. The manifest declares zero extra arm pairs,
+  colliders, lights and rigidbodies.
+- **Outputs:**
+  `Assets/Bar/Bartender/Models/BarBartenderOrdinary3D.{fbx,json}` and the
+  Blender source/preview under `ArtSource/Bar/Bartender/`.
+- **Editor setup:** `BarBartenderV2AssetSetup` builds
+  `Assets/Bar/Bartender/Prefabs/BarBartenderOrdinary.prefab`, binds the shared
+  `Player3DLit` material and writes its measured data into
+  `BarBartenderAssetRegistry`.
+- **Provider:** `Assets/Resources/Bar/BarBartenderProvider.asset` points
+  `BartenderPrefab` at the ordinary prefab and retains the old prefab only in
+  `LegacyBartenderPrefab`. `BarBartenderWorldBuilder` always instantiates the
+  active reference.
 
-- **Tool**: `tools/build-bartender-3d-model.py`, subclassing
-  `PedestrianBuilder` via the cashier's `load_character_build_base()`
-  idiom from `tools/build-supermarket-cashier-3d-model.py`.
-- **Manifest**: generator version `2.0.0`, anatomy standard
-  `NpcHumanV2`, full height `1.75 m`, rest pelvis `0.835 m`,
-  `50` meshes and `1,436` triangles.
-- **Skeleton and Avatar**: the base rig remains the exact 31-bone Hero
-  V2 A-pose hierarchy. Unity copies the Avatar from
-  `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`. The four extra
-  arms do not add bones to that retarget contract: their root-bound
-  meshes are registered as `Arm2.L/R` and `Arm3.L/R` pivot chains
-  with independent grip transforms, then reparented procedurally at
-  runtime.
-- **Geometry**: the full adult body uses the same low-poly
-  box/ellipsoid language as the other NPCs. The two extra arm pairs
-  remain the declared `extra_arm_pairs` signature overlay; the
-  anatomy pass does not normalize them away or increase polygon
-  density.
-- **Animation**: the FBX intentionally contains no authored clips.
-  Counter rest, unsynchronized idle and reach are owned by the runtime
-  presentation.
-- **Validation + export**: the measured manifest and FBX live at
-  `Assets/Bar/Bartender/Models/BarBartender3D.{json,fbx}`; preview
-  output remains under `ArtSource/Bar/Bartender/`.
-- **Editor setup**: `BarBartenderAssetSetup` builds
-  `Assets/Bar/Bartender/Prefabs/BarBartender.prefab` with a
-  `BarBartenderAssetRegistry`. The Resources-loadable
-  `Assets/Resources/Bar/BarBartenderProvider.asset` points to that
-  production prefab. These outputs were rebuilt and replaced in the
-  runtime path; this is no longer only a generator-side design.
+The model FBX itself remains animation-free. Its registry references the
+shared waiter clips in
+`Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx` instead of duplicating
+them.
 
-## 3. Runtime presentation
+## 3. Hands, sockets and authored anchors
 
-- `BarBartenderWorldBuilder` loads `BarBartenderProvider`, instantiates
-  the production prefab at the layout's authored
-  `BarNpcRole.Bartender` anchor and raises it onto the service
-  duckboard.
-- `BarBartenderPresentation` folds the canonical upper arms from
-  A-pose into counter rest, reparents the four extra pivot chains and
-  gives every pair quiet, unsynchronized motion. Its extra chains use
-  the established capture → CCD → slerp reach idiom.
-- `BarBartenderServiceChoreography` assigns fixed, readable jobs
-  rather than the proposed standalone allocator: the lower pair
-  touches hovered bottles, the brass-banded middle-right arm follows
-  the committed bottle, and the middle-left arm guides the vessel.
+The ordinary registry exposes exactly two service hands:
 
-## 4. Implemented ordinary service integration
+- left hand: `SOCKET_Grip.L`, `SOCKET_Vessel.L` and
+  `ANCHOR_BartenderVesselGrip`;
+- right hand: `SOCKET_Grip.R`, `SOCKET_Bottle.R` and
+  `ANCHOR_BartenderBottleGrip`.
 
-The load-bearing trick: **bottle and vessel motion stay exactly on the
-authored `BarDrinkServiceTimeline` channels** (`BottleTravel`,
-`BottleTilt`, `VesselVisibility`, `StreamVisibility`, `VesselFill` —
-all existing tests and determinism untouched). The bartender's hands
-are *readers* of that motion, never drivers: every frame the assigned
-arm CCD-follows the moving bottle's grip point, so his hand visibly
-carries what the timeline moves.
+The role sockets remain on the canonical hand bones. The two authored anchors
+give the procedural reach layer stable grip transforms without adding bones or
+extra limbs to the shared retarget contract.
 
-Per phase of `BarDrinkServicePhase`:
+The visible `0.42 m` service duckboard belongs to the Blender-authored bar
+interior. Runtime creates no replacement platform; `BarBartenderWorldBuilder`
+only applies the matching `0.42 m` root offset at the planned bartender anchor.
 
-- **Browsing**: pointer hover (`BarDrinkShopController` selection
-  highlight) sends the lower arm on the bottle's side toward its shelf
-  position at weight `0.65`; the other lower arm returns to idle.
-- **BottlePickup → Pouring → BottleReturn**: the brass-banded
-  middle-right chain follows the committed bottle at full weight while
-  the middle-left chain guides the vessel through
-  `VesselPlacement`, `Pouring` and `BottleReturn`. The remaining
-  pairs continue their idle business.
-- **Drinking**: the bartender's service chains ease out while the
-  existing first-person drinking presentation owns the final lift.
-- **Cancel/CameraReturn**: all arm weights ease to zero over the
-  existing return blends.
+## 4. Reused waiter animation
 
-## 5. Cocktails — deferred
+The registry binds the same four Café attendant clips used by the Mountain
+Plateau Café:
 
-Everything in this section remains a proposed follow-up. None of the
-multi-ingredient order model, UI, mixture state or bottle chord is
-reported as current runtime behaviour.
+| Bar role | Shared clip | Import contract |
+| --- | --- | --- |
+| quiet default | `CafeAttendantWipe` | `9 s`, looping |
+| pickup, placement and return travel | `CafeAttendantWalk` | `1.25 s`, looping |
+| pour | `CafeAttendantPour` | `3.5 s`, one-shot |
+| acknowledge the service start | `CafeAttendantNotice` | `2.5 s`, one-shot |
 
-- **Order model**: in Browsing a new "mix" affordance (localized
-  prompt keys `interaction.mix_drink` / `interaction.serve_mix`) lets
-  the hero queue **2–3 alcoholic ingredients** (water excluded) before
-  confirming. A pure `BarCocktailOrder` holds the queued `DrinkId`s
-  and derives price (sum of offers + a flat mixing fee), intoxication
-  payload (sum), and the blended liquid color (mean of the
-  ingredients' `BarDrinkPresentation` liquid colors).
-- **Choreography**: the confirmed sequence loops
-  `BottlePickup → Pouring(short, 0.9 s) → hold` once per ingredient —
-  and **each ingredient gets its own arm**, which keeps holding its
-  bottle mid-air after pouring. The finale: all engaged arms return
-  their bottles to the shelf simultaneously — the six-armed chord the
-  whole feature exists for. Timeline change is additive: an
-  ingredient-loop wrapper around the existing phases with
-  per-ingredient durations; `ConfirmedPresentationDurationSeconds`
-  becomes a function of ingredient count.
-- **Names**: a small fixed table for the recognizable pairs
-  (`Ёрш` = beer + vodka first among them), falling back to
-  "Смесь №<stable hash>" for uncatalogued blends. Names surface in
-  the service UI and the intoxication HUD toast.
-- **State**: no new `DrinkId`s. `GameSessionState` gains a served-mix
-  commit (ingredient list) so persistence and intoxication rules stay
-  on existing enums; purchase validation walks the ingredient offers.
+`BarBartenderPresentation` evaluates those clips through a manually driven
+`PlayableGraph`. It reads the current `BarDrinkServiceTimeline` frame: Notice
+during `CameraApproach`, Walk during `BottlePickup`, `VesselPlacement` and
+`BottleReturn`, Pour during `Pouring`, and Wipe in the remaining phases. The
+service towel is hidden while the left hand is working with the vessel and is
+restored on return to idle.
 
-## 6. Verification status
+`BarBartenderServiceChoreography` is still a reader, never a transaction
+driver. The existing timeline continues to move the bottle and vessel. A
+bounded reach overlay brings the right grip to the committed bottle and the
+left grip to the visible vessel, then blends both hands back out when service
+ends or the shop closes.
 
-- Implemented EditMode coverage validates the provider, Hero V2 Avatar
-  source, measured prefab/renderer contract and all four extra pivot
-  chains.
-- The bar scene smoke contract requires the bartender at the authored
-  anchor and verifies every extra chain exposes a grip transform.
-- Cocktail order, ingredient-loop, mixture-state and three-ingredient
-  end-to-end tests remain part of the deferred cocktail pass; they
-  must not be counted as current coverage.
+## 5. Verification contract
 
-## 7. Delivery state
+- `BarBartenderAssetTests` verifies that the provider selects the distinct
+  ordinary prefab while retaining legacy, that the active prefab uses the Hero
+  V2 Avatar, has no extra-arm chains, and exposes four waiter clips plus all
+  required sockets and anchors.
+- The same fixture drives a real `BarDrinkServiceTimeline` through Notice,
+  Walk, Pour and Wipe and checks the two-hand reach contract.
+- `SceneFlowSmokeTests` requires the spawned bar worker to use the ordinary
+  rig at the authored bartender anchor.
+- The Blender validator owns the measured `39`-mesh / `1,136`-triangle,
+  `1.75 m`, two-arm manifest contract.
 
-1. **Model/import pass — implemented**: generator `2.0.0`, measured
-   FBX/manifest, prefab, registry and provider.
-2. **Presence pass — implemented**: world builder plus procedural
-   counter idle for all three arm pairs.
-3. **Ordinary service pass — implemented**: hover touch, bottle follow
-   and vessel steady during the existing single-drink flow.
-4. **Cocktail pass — deferred**: order model, ingredient-loop
-   timeline, names, state commit, UI affordance and simultaneous
-   bottle-return chord.
+## Appendix A. Inactive six-armed legacy design
+
+The original `six_armed_bartender_v1` is retained for history and asset
+compatibility. Its generator, measured output and prefab remain at
+`tools/build-bartender-3d-model.py`,
+`Assets/Bar/Bartender/Models/BarBartender3D.{fbx,json}` and
+`Assets/Bar/Bartender/Prefabs/BarBartender.prefab`.
+
+That legacy asset is a `1.75 m` NpcHumanV2 figure with `50` meshes / `1,436`
+triangles and four procedural pivot chains (`Arm2.L/R`, `Arm3.L/R`) layered on
+top of the canonical arm pair. `BarBartenderAssetRegistry` and the legacy
+branch of `BarBartenderPresentation` still preserve those bindings so the
+asset remains inspectable. `BarBartenderProvider.LegacyBartenderPrefab`
+retains the reference, but `BarBartenderWorldBuilder` never chooses it.
+
+Its former multi-ingredient cocktail proposal — mix affordance, mixture state,
+one bottle per extra hand and a simultaneous bottle-return chord — was never
+implemented and is now superseded together with the active six-arm concept.
+It is not current behaviour or an active delivery plan; the ordinary bartender
+continues to serve the existing single selected drink through the unchanged
+timeline.

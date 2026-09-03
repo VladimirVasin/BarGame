@@ -22,6 +22,8 @@ namespace BarPromenade.Tests.EditMode
         private const string ManifestPath = "Assets/Bar/Models/Bar3D.json";
         private const string ModelPath =
             "Assets/Bar/Models/BarInterior3D.fbx";
+        private const string ServiceManifestPath =
+            "Assets/Bar/Models/BarServiceProps3D.json";
         private const string ExteriorManifestPath =
             "Assets/Bar/Models/BarFacade3D.json";
         private const string ExteriorModelPath =
@@ -33,7 +35,7 @@ namespace BarPromenade.Tests.EditMode
         {
             BarManifest manifest = LoadManifest();
 
-            Assert.That(manifest.design_id, Is.EqualTo("bar_interior_v2"));
+            Assert.That(manifest.design_id, Is.EqualTo("bar_interior_v3"));
             Assert.That(manifest.colliders, Is.False);
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
@@ -57,6 +59,80 @@ namespace BarPromenade.Tests.EditMode
                 importer.materialImportMode,
                 Is.EqualTo(ModelImporterMaterialImportMode.None),
                 "materials from the FBX would break district tinting");
+        }
+
+        [Test]
+        public void BarModels_AssignARecognizedSurfaceToEveryVisiblePart()
+        {
+            foreach (string path in new[]
+                     {
+                         ManifestPath,
+                         ServiceManifestPath,
+                     })
+            {
+                BarManifest manifest = LoadManifest(path);
+                BarManifestPart[] visible = manifest.parts
+                    .Where(part => !part.emissive)
+                    .ToArray();
+                Assert.That(visible, Is.Not.Empty);
+                foreach (BarManifestPart part in visible)
+                {
+                    Assert.That(
+                        string.IsNullOrWhiteSpace(part.sheet),
+                        Is.False,
+                        $"'{part.name}' in {path} has only a flat tint");
+                    Assert.That(
+                        BarSurfaceAppearance.TryResolveSheet(
+                            part.sheet,
+                            out _),
+                        Is.True,
+                        $"'{part.name}' names unknown sheet " +
+                        $"'{part.sheet}'");
+                }
+
+                int distinctSheets = visible
+                    .Select(part => part.sheet)
+                    .Distinct(StringComparer.Ordinal)
+                    .Count();
+                int minimum = path == ManifestPath ? 12 : 5;
+                Assert.That(
+                    distinctSheets,
+                    Is.GreaterThanOrEqualTo(minimum),
+                    $"{path} collapses visibly different materials into " +
+                    "too few texture families");
+            }
+        }
+
+        [Test]
+        public void BarSurfaceTextures_UseTheMeasuredRepeatImportContract()
+        {
+            foreach (BarSurfaceKind kind in
+                     Enum.GetValues(typeof(BarSurfaceKind)))
+            {
+                HomeSurfaceRecipe recipe =
+                    BarSurfaceAppearance.GetRecipe(kind);
+                string assetPath =
+                    $"Assets/Resources/{recipe.ResourcePath}.png";
+                TextureImporter importer =
+                    AssetImporter.GetAtPath(assetPath) as TextureImporter;
+                Assert.That(
+                    importer,
+                    Is.Not.Null,
+                    $"missing generated texture '{assetPath}'");
+                Assert.That(importer.sRGBTexture, Is.True);
+                Assert.That(importer.mipmapEnabled, Is.True);
+                Assert.That(
+                    importer.wrapMode,
+                    Is.EqualTo(TextureWrapMode.Repeat));
+                Assert.That(importer.filterMode,
+                    Is.EqualTo(FilterMode.Bilinear));
+                Assert.That(importer.anisoLevel, Is.EqualTo(4));
+                Assert.That(
+                    importer.textureCompression,
+                    Is.EqualTo(
+                        TextureImporterCompression.Uncompressed));
+                Assert.That(importer.maxTextureSize, Is.EqualTo(512));
+            }
         }
 
         [Test]
@@ -270,10 +346,289 @@ namespace BarPromenade.Tests.EditMode
                 AssertAnchor(
                     registry, instance.transform, "room_centre",
                     Vector3.zero);
+                AssertAnchor(
+                    registry, instance.transform, "hero_seat",
+                    new Vector3(-1.15f, 0.96f, 4.77f));
+                AssertAnchor(
+                    registry, instance.transform, "hero_approach",
+                    new Vector3(-1.15f, 0f, 3.35f));
+                AssertAnchor(
+                    registry, instance.transform, "hero_stand",
+                    new Vector3(-1.15f, 0f, 4.02f));
+                AssertAnchor(
+                    registry, instance.transform, "hero_camera",
+                    new Vector3(-1.15f, 1.76f, 4.89f));
+                AssertAnchor(
+                    registry, instance.transform, "hero_camera_look",
+                    new Vector3(-1.15f, 1.86f, 7.37f));
+                AssertAnchor(
+                    registry, instance.transform,
+                    "bartender_platform_top",
+                    new Vector3(-0.55f, 0.42f, 6.50f));
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void BarModel_CarriesTheAuthoredPubAndInteractionFixtures()
+        {
+            BarManifest manifest = LoadManifest();
+            string[] requiredParts =
+            {
+                "Bar Counter Return",
+                "Counter Return Foot Rail",
+                "Backbar Mirror Panels",
+                "Backbar Patterned Glass Lattice",
+                "Snug Divider Timber",
+                "Snug Divider Patterned Glass",
+                "Pub Carpet Fields",
+                "Pub Carpet Diamond Motifs",
+                "Entrance Heavy Curtains",
+                "Bar Drink Service Stool Legs",
+                "Bar Drink Service Stool Footring",
+                "Bar Drink Service Stool",
+                "Bartender Duckboard",
+                "Drink Order Point",
+                "Drink Order Sign",
+                "Exit Header"
+            };
+
+            for (int index = 0; index < requiredParts.Length; index++)
+            {
+                Assert.That(
+                    manifest.parts.Any(part =>
+                        part.name == requiredParts[index]),
+                    Is.True,
+                    $"the pub redesign has no '{requiredParts[index]}'");
+            }
+
+            BarManifestPart heroStool = manifest.parts.Single(part =>
+                part.name == "Bar Drink Service Stool");
+            Assert.That(
+                heroStool.colliders,
+                Has.Length.EqualTo(1),
+                "the authored hero stool seat must keep its collider");
+
+            for (int index = 1; index <= 4; index++)
+            {
+                Assert.That(
+                    manifest.parts.Any(part =>
+                        part.name == $"Social Pub Table {index}"),
+                    Is.True);
+            }
+        }
+
+        [Test]
+        public void BarServiceProps_AreAuthoredPassiveAndFactoryFlattened()
+        {
+            BarManifest manifest = LoadManifest(ServiceManifestPath);
+            Assert.That(
+                manifest.design_id,
+                Is.EqualTo("bar_service_props_v1"));
+            Assert.That(manifest.colliders, Is.False);
+            Assert.That(manifest.lights, Is.False);
+            Assert.That(manifest.cameras, Is.False);
+            Assert.That(manifest.animation_count, Is.Zero);
+
+            string[] requiredGroups =
+            {
+                "service:bottle:WaterBottle",
+                "service:bottle:BeerLongneck",
+                "service:bottle:WineBottle",
+                "service:bottle:VodkaBottle",
+                "service:bottle:CognacBottle",
+                "service:vessel:Tumbler",
+                "service:vessel:Pint",
+                "service:vessel:WineGlass",
+                "service:vessel:ShotGlass",
+                "service:vessel:Snifter",
+                "service:menu",
+                "service:pour_stream"
+            };
+            for (int index = 0; index < requiredGroups.Length; index++)
+            {
+                Assert.That(
+                    manifest.parts.Any(part =>
+                        part.group == requiredGroups[index]),
+                    Is.True,
+                    $"the service pack has no '{requiredGroups[index]}'");
+            }
+
+            var host = new GameObject("Bar Service Prop Test");
+            try
+            {
+                BarServicePropInstance bottle =
+                    BarServicePropFactory.CreateBottle(
+                        host.transform,
+                        BarDrinkBottleStyle.WaterBottle);
+                Assert.That(bottle.transform.localScale, Is.EqualTo(Vector3.one));
+                Assert.That(
+                    bottle.TryGetRenderer(
+                        "service_bottle_body",
+                        out Renderer bottleBody),
+                    Is.True);
+                Assert.That(
+                    bottle.TryGetRenderer(
+                        "service_bottle_label",
+                        out Renderer bottleLabel),
+                    Is.True);
+                Assert.That(bottleBody, Is.Not.Null);
+                Assert.That(bottleLabel, Is.Not.Null);
+                Assert.That(
+                    bottle.TryGetAnchor(
+                        "service_bottle_mouth:WaterBottle",
+                        out Transform mouth),
+                    Is.True);
+                Assert.That(
+                    mouth.localPosition.y,
+                    Is.EqualTo(0.68f).Within(Tolerance));
+
+                BarServicePropInstance vessel =
+                    BarServicePropFactory.CreateVessel(
+                        host.transform,
+                        BarDrinkVesselKind.Pint);
+                Assert.That(
+                    vessel.TryGetRenderer(
+                        "service_vessel_shell",
+                        out Renderer shell),
+                    Is.True);
+                Assert.That(shell.bounds.size.y,
+                    Is.EqualTo(0.39f).Within(0.02f));
+                Assert.That(
+                    vessel.TryGetAnchor(
+                        "service_vessel_target:Pint",
+                        out Transform pourTarget),
+                    Is.True);
+                Assert.That(
+                    pourTarget.localPosition.y,
+                    Is.EqualTo(0.365f).Within(Tolerance));
+
+                BarServicePropInstance menu =
+                    BarServicePropFactory.CreateMenu(host.transform);
+                Assert.That(
+                    menu.TryGetRenderer(
+                        "service_menu_cover",
+                        out Renderer menuCover),
+                    Is.True);
+                Assert.That(
+                    menu.TryGetRenderer(
+                        "service_menu_pages",
+                        out Renderer menuPages),
+                    Is.True);
+                Assert.That(menuCover, Is.Not.Null);
+                Assert.That(menuPages, Is.Not.Null);
+                var menuProperties = new MaterialPropertyBlock();
+                menuPages.GetPropertyBlock(menuProperties);
+                Color menuPageTint =
+                    menuProperties.GetColor("_BaseColor");
+                Color expectedMenuPageTint =
+                    BarSurfaceAppearance.CreateDisplayTint(
+                        new Color(0.74f, 0.66f, 0.47f),
+                        BarSurfaceKind.Paper);
+                Assert.That(menuPageTint.r,
+                    Is.EqualTo(expectedMenuPageTint.r).Within(Tolerance));
+                Assert.That(menuPageTint.g,
+                    Is.EqualTo(expectedMenuPageTint.g).Within(Tolerance));
+                Assert.That(menuPageTint.b,
+                    Is.EqualTo(expectedMenuPageTint.b).Within(Tolerance));
+
+                Assert.That(
+                    menu.TryGetAnchor(
+                        BarServicePropFactory.MenuOriginRole,
+                        out Transform menuOrigin),
+                    Is.True);
+                Assert.That(
+                    Vector3.Dot(menuOrigin.right, Vector3.right),
+                    Is.GreaterThan(0.999f));
+                Assert.That(
+                    Vector3.Dot(menuOrigin.up, Vector3.up),
+                    Is.GreaterThan(0.999f));
+                Assert.That(
+                    Vector3.Dot(menuOrigin.forward, Vector3.forward),
+                    Is.GreaterThan(0.999f));
+
+                Assert.That(
+                    menu.TryGetAnchor(
+                        BarServicePropFactory.MenuPageOriginRole,
+                        out Transform pageOrigin),
+                    Is.True);
+                Assert.That(
+                    menu.TryGetAnchor(
+                        BarServicePropFactory.MenuPageRightRole,
+                        out Transform pageRight),
+                    Is.True);
+                Assert.That(
+                    menu.TryGetAnchor(
+                        BarServicePropFactory.MenuPageUpRole,
+                        out Transform pageUp),
+                    Is.True);
+                Assert.That(
+                    menu.TryGetAnchor(
+                        BarServicePropFactory.MenuPageNormalRole,
+                        out Transform pageNormal),
+                    Is.True);
+                Assert.That(
+                    Vector3.Distance(
+                        pageRight.localPosition - pageOrigin.localPosition,
+                        Vector3.right * 0.1f),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    Vector3.Distance(
+                        pageUp.localPosition - pageOrigin.localPosition,
+                        Vector3.forward * 0.1f),
+                    Is.LessThan(0.001f));
+                Assert.That(
+                    Vector3.Distance(
+                        pageNormal.localPosition - pageOrigin.localPosition,
+                        Vector3.up * 0.1f),
+                    Is.LessThan(0.001f));
+
+                for (int index = 0;
+                     index < BarServicePropFactory.MenuItemCount;
+                     index++)
+                {
+                    Assert.That(
+                        menu.TryGetAnchor(
+                            BarServicePropFactory.MenuTextItemRole(index),
+                            out Transform row),
+                        Is.True,
+                        $"the open bar menu has no row {index:00}");
+                    Assert.That(row.right.x, Is.GreaterThan(0.98f));
+                    Assert.That(row.up.z, Is.GreaterThan(0.98f));
+                    Assert.That(-row.forward.y, Is.GreaterThan(0.98f));
+                    if (index < 5)
+                    {
+                        Assert.That(row.localPosition.x, Is.LessThan(0f));
+                    }
+                    else
+                    {
+                        Assert.That(row.localPosition.x, Is.GreaterThan(0f));
+                    }
+                }
+                Assert.That(
+                    menu.TryGetAnchor(
+                        BarServicePropFactory.MenuTextSelectionRole,
+                        out Transform selection),
+                    Is.True);
+                Assert.That(selection.localPosition.x, Is.LessThan(0f));
+
+                BarServicePropInstance stream =
+                    BarServicePropFactory.CreatePourStream(host.transform);
+                Assert.That(
+                    stream.TryGetRenderer(
+                        "service_pour_stream",
+                        out Renderer streamRenderer),
+                    Is.True);
+                Assert.That(
+                    streamRenderer.bounds.size.y,
+                    Is.EqualTo(2f).Within(0.02f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
             }
         }
 
@@ -319,7 +674,7 @@ namespace BarPromenade.Tests.EditMode
                     Is.True,
                     "every part needs exactly one bound material");
 
-                //  Exactly two shared materials across 150-odd parts: lit
+                //  Exactly two shared materials across the complete part set: lit
                 //  and emissive. That is what makes a district tint a
                 //  property block rather than an asset per district per
                 //  part.
@@ -421,6 +776,20 @@ namespace BarPromenade.Tests.EditMode
                     new Vector3(6.4f, 0f, -6.78f));
                 AssertPlaced(room, "Slow Ceiling Fan",
                     new Vector3(0f, 4.35f, 0.75f));
+                AssertPlaced(room, "HeroSeat",
+                    new Vector3(-1.15f, 0.96f, 4.77f));
+                AssertPlaced(room, "HeroApproach",
+                    new Vector3(-1.15f, 0f, 3.35f));
+                AssertPlaced(room, "HeroStand",
+                    new Vector3(-1.15f, 0f, 4.02f));
+                AssertPlaced(room, "HeroCamera",
+                    new Vector3(-1.15f, 1.76f, 4.89f));
+                AssertPlaced(room, "HeroCameraLook",
+                    new Vector3(-1.15f, 1.86f, 7.37f));
+                Assert.That(room.Find("Drink Order Point"), Is.Not.Null);
+                Assert.That(room.Find("Drink Order Sign"), Is.Not.Null);
+                Assert.That(room.Find("Exit Header"), Is.Not.Null);
+                Assert.That(room.Find("Bartender Duckboard"), Is.Not.Null);
 
                 //  One pendant per light anchor, hung where the plan says
                 //  and at the size it was authored - a lamp cloned from a
@@ -621,8 +990,8 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void BarModel_KeepsTheRoomTheSameShapeInEveryDistrict()
         {
-            //  The migration is one-to-one, so the geometry may not vary
-            //  with the district - only the tint may. If a district ever
+            //  One authored pub serves every district, so its envelope may
+            //  not vary with the district - only the tint may. If a district ever
             //  changed the room, one authored model would be the wrong
             //  tool and this test is where that surfaces.
             Vector2 first = default;
@@ -737,6 +1106,14 @@ namespace BarPromenade.Tests.EditMode
             public string sheet;
             public bool emissive;
             public BarManifestTint tint;
+            public BarManifestCollider[] colliders;
+        }
+
+        [Serializable]
+        private sealed class BarManifestCollider
+        {
+            public float[] center;
+            public float[] size;
         }
 
         [Serializable]

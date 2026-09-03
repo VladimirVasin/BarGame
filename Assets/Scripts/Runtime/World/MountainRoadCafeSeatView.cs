@@ -17,6 +17,10 @@ namespace BarPromenade
         public const float MaximumYawOffsetDegrees = 70f;
         public const float MinimumPitchDegrees = -25f;
         public const float MaximumPitchDegrees = 55f;
+        public const float MenuFocusDistanceMeters = 0.50f;
+        public const float MenuSurfaceLiftMeters = 0.018f;
+        public const float MenuFocusFieldOfView = 40f;
+        public const float MenuFocusBlendSeconds = 0.45f;
 
         public static void EvaluateCamera(
             Vector3 pelvisPosition,
@@ -49,13 +53,76 @@ namespace BarPromenade
             rotation = Quaternion.LookRotation(planar, Vector3.up) *
                 Quaternion.Euler(pitch, yaw, 0f);
         }
+
+        public static void EvaluateMenuCamera(
+            Vector3 menuRootPosition,
+            Vector3 pageNormal,
+            Vector3 pageUp,
+            Vector3 viewerPosition,
+            out Vector3 position,
+            out Quaternion rotation)
+        {
+            if (pageNormal.sqrMagnitude < 0.000001f)
+            {
+                throw new ArgumentException(
+                    "The cafe menu view needs a page normal.",
+                    nameof(pageNormal));
+            }
+
+            pageNormal.Normalize();
+            if (Vector3.Dot(pageNormal, Vector3.up) < 0f)
+            {
+                pageNormal = -pageNormal;
+            }
+
+            pageUp = Vector3.ProjectOnPlane(pageUp, pageNormal);
+            if (pageUp.sqrMagnitude < 0.000001f)
+            {
+                throw new ArgumentException(
+                    "The cafe menu view needs a page up axis.",
+                    nameof(pageUp));
+            }
+
+            pageUp.Normalize();
+            Vector3 target = menuRootPosition +
+                pageNormal * MenuSurfaceLiftMeters;
+            Vector3 towardViewer = viewerPosition - target;
+            if (towardViewer.sqrMagnitude < 0.000001f)
+            {
+                throw new ArgumentException(
+                    "The cafe menu view needs a distinct viewer position.",
+                    nameof(viewerPosition));
+            }
+
+            // Approach the page along the player's existing sight line. A
+            // page-normal camera turns the seated view into an abrupt overhead
+            // shot and can inherit an upside-down imported page basis.
+            position = target +
+                towardViewer.normalized * MenuFocusDistanceMeters;
+            Vector3 forward = (target - position).normalized;
+            Vector3 cameraUp = Vector3.ProjectOnPlane(Vector3.up, forward);
+            if (cameraUp.sqrMagnitude < 0.000001f)
+            {
+                cameraUp = Vector3.ProjectOnPlane(pageUp, forward);
+            }
+
+            if (cameraUp.sqrMagnitude < 0.000001f)
+            {
+                throw new ArgumentException(
+                    "The cafe menu view cannot resolve an upright camera.",
+                    nameof(pageUp));
+            }
+
+            rotation = Quaternion.LookRotation(forward, cameraUp.normalized);
+        }
     }
 
     /// <summary>
     /// Owns the camera only while the hero is settled on the cafe stool.
     /// Entry and exit remain visible in the ordinary follow camera; the
-    /// looping seated pose uses the hero's eyes, hides every head-bound mesh
-    /// and restores the exact previous camera state on stand/cancel/unload.
+    /// looping seated pose uses the hero's eyes, hides every head-bound mesh,
+    /// owns the menu close-up and restores the exact previous camera state on
+    /// stand/cancel/unload.
     /// </summary>
     [DefaultExecutionOrder(90)]
     [DisallowMultipleComponent]
@@ -71,9 +138,21 @@ namespace BarPromenade
         private float previousFixedFieldOfView;
         private float viewYaw;
         private float viewPitch;
+        private Pose menuFocusPose;
+        private float menuFocusWeight;
+        private bool menuFocusRequested;
 
         public bool IsInitialized { get; private set; }
         public bool IsFirstPerson { get; private set; }
+        public bool IsMenuFocusLocked => menuFocusRequested ||
+            menuFocusWeight > 0.0001f;
+        public bool IsMenuFocusComplete => menuFocusRequested &&
+            menuFocusWeight >= 0.9999f;
+        public float MenuFocusWeight => menuFocusWeight;
+        public Pose MenuFocusPose => menuFocusPose;
+        public Vector3 CurrentCameraPosition => cameraFollow != null
+            ? cameraFollow.transform.position
+            : Vector3.zero;
         public int HiddenHeadRendererCount =>
             hiddenHead?.HiddenRendererCount ?? 0;
 
@@ -132,7 +211,17 @@ namespace BarPromenade
                 return;
             }
 
-            if (!PauseMenuController.IsAnyPaused)
+            float focusTarget = menuFocusRequested ? 1f : 0f;
+            menuFocusWeight = MountainRoadCafeSeatViewPlan
+                    .MenuFocusBlendSeconds > 0f
+                ? Mathf.MoveTowards(
+                    menuFocusWeight,
+                    focusTarget,
+                    Time.unscaledDeltaTime /
+                    MountainRoadCafeSeatViewPlan.MenuFocusBlendSeconds)
+                : focusTarget;
+
+            if (!PauseMenuController.IsAnyPaused && !IsMenuFocusLocked)
             {
                 Vector2 look = cameraFollow.SampleOrbitInputDegrees(
                     Time.unscaledDeltaTime);
@@ -149,6 +238,23 @@ namespace BarPromenade
             }
 
             ApplyView();
+        }
+
+        public bool BeginMenuFocus(Pose focusPose)
+        {
+            if (!IsFirstPerson || cameraFollow == null)
+            {
+                return false;
+            }
+
+            menuFocusPose = focusPose;
+            menuFocusRequested = true;
+            return true;
+        }
+
+        public void EndMenuFocus()
+        {
+            menuFocusRequested = false;
         }
 
         private void HandleSeatedChanged(
@@ -184,6 +290,8 @@ namespace BarPromenade
             cameraFollow.SetCinematicMotionEnabled(false);
             viewYaw = 0f;
             viewPitch = MountainRoadCafeSeatViewPlan.BasePitchDegrees;
+            menuFocusWeight = 0f;
+            menuFocusRequested = false;
             hiddenHead = Player3DHeadVisibility.Hide(playerRegistry);
             IsFirstPerson = true;
             ApplyView();
@@ -204,10 +312,35 @@ namespace BarPromenade
                 viewPitch,
                 out Vector3 position,
                 out Quaternion rotation);
-            cameraFollow.SetFixedPose(
-                position,
-                rotation,
-                MountainRoadCafeSeatViewPlan.FieldOfView);
+            float fieldOfView = MountainRoadCafeSeatViewPlan.FieldOfView;
+            if (menuFocusWeight > 0f)
+            {
+                float amount = Mathf.SmoothStep(0f, 1f, menuFocusWeight);
+                position = Vector3.Lerp(
+                    position,
+                    menuFocusPose.position,
+                    amount);
+                Quaternion blendedRotation = Quaternion.Slerp(
+                    rotation,
+                    menuFocusPose.rotation,
+                    amount);
+                Vector3 blendedForward =
+                    blendedRotation * Vector3.forward;
+                Vector3 blendedUp = Vector3.ProjectOnPlane(
+                    Vector3.up,
+                    blendedForward);
+                rotation = blendedUp.sqrMagnitude > 0.000001f
+                    ? Quaternion.LookRotation(
+                        blendedForward,
+                        blendedUp.normalized)
+                    : blendedRotation;
+                fieldOfView = Mathf.Lerp(
+                    fieldOfView,
+                    MountainRoadCafeSeatViewPlan.MenuFocusFieldOfView,
+                    amount);
+            }
+
+            cameraFollow.SetFixedPose(position, rotation, fieldOfView);
         }
 
         private void EndView()
@@ -218,6 +351,8 @@ namespace BarPromenade
             }
 
             IsFirstPerson = false;
+            menuFocusRequested = false;
+            menuFocusWeight = 0f;
             hiddenHead?.Restore();
             hiddenHead = null;
             if (cameraFollow == null)

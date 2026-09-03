@@ -16,16 +16,15 @@ namespace BarPromenade
     /// district tint, the collision, the interactive jukebox, the turning
     /// fan, and one pendant instanced per light anchor.
     ///
-    /// Two properties of the old room are preserved on purpose, because
-    /// a great deal of code depends on them:
+    /// Two placement properties are deliberate, because interaction and
+    /// collision code depend on them:
     ///
-    /// * every part is a DIRECT child of the room under its original
-    ///   name, so `room.Find("Small Stage")` still answers. The model's
+    /// * every part is a DIRECT child of the room under its authored
+    ///   semantic name. The model's
     ///   own hierarchy is flattened away after the tints are applied.
     /// * collision is authored, not taken from the meshes. The model
-    ///   declares a box per collider in its manifest; those boxes are the
-    ///   ones the primitives had, so traversal is bit-identical while the
-    ///   visible geometry is free to be re-cut.
+    ///   declares a box per collider in its manifest, so traversal remains
+    ///   data-owned while visible geometry is free to be re-cut.
     /// </summary>
     public static class BarInteriorWorldBuilder
     {
@@ -34,26 +33,10 @@ namespace BarPromenade
         private const string JukeboxName = "Bar Jukebox";
         private const string PracticalGroup = "prefab:Practical";
 
-        private static readonly int BaseMapId =
-            Shader.PropertyToID("_BaseMap");
-        private static readonly int BaseMapTransformId =
-            Shader.PropertyToID("_BaseMap_ST");
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId =
             Shader.PropertyToID("_Color");
-        private static readonly int SmoothnessId =
-            Shader.PropertyToID("_Smoothness");
-        private static readonly int MetallicId =
-            Shader.PropertyToID("_Metallic");
-
-        //  UVs are baked in Blender at each sheet's measured
-        //  metres-per-tile, so the material tiles once and offsets not at
-        //  all. `BarSurfaceAppearance.Apply` derives this from the mesh
-        //  bounding box instead, which is right for a slab and wrong for
-        //  a wall with a doorway cut through it.
-        private static readonly Vector4 IdentityBaseMapTransform =
-            new Vector4(1f, 1f, 0f, 0f);
 
         //  Reparenting KEEPS the world transform, and that is load
         //  bearing. An imported FBX carries its unit factor on the
@@ -119,6 +102,7 @@ namespace BarPromenade
                 registry, room, "jukebox_pivot",
                 new Vector3(6.4f, 0f, -6.78f));
 
+            PreserveAuthoredAnchors(room, registry);
             ApplySurfaces(registry, plan);
             BuildPracticals(room, registry, plan);
             Organise(room, registry, plan, fanPivot, jukeboxPivot);
@@ -131,13 +115,40 @@ namespace BarPromenade
             return room;
         }
 
+        /// <summary>
+        /// Keeps Blender's semantic positions after the imported wrapper is
+        /// flattened and destroyed. Each marker is a direct, unit-scale child
+        /// named exactly as the manifest anchor (`HeroSeat`, `MenuDock`, ...),
+        /// so interaction code never has to interpret FBX scale or axis data.
+        /// </summary>
+        private static void PreserveAuthoredAnchors(
+            Transform room,
+            BarAssetRegistry registry)
+        {
+            foreach (BarAnchorBinding binding in registry.Anchors)
+            {
+                if (binding == null || binding.Anchor == null ||
+                    string.IsNullOrWhiteSpace(binding.AnchorName))
+                {
+                    continue;
+                }
+
+                var marker = new GameObject(binding.AnchorName);
+                marker.transform.SetParent(room, false);
+                marker.transform.localPosition =
+                    room.InverseTransformPoint(binding.Anchor.position);
+                marker.transform.localRotation =
+                    Quaternion.Inverse(room.rotation) *
+                    binding.Anchor.rotation;
+            }
+        }
+
         // -------------------------------------------------- surfaces --
 
         /// <summary>
-        /// Gives every part its district tint, and its measured sheet
-        /// when the district wears the worn set.
+        /// Gives every part its district tint and authored surface sheet.
         ///
-        /// The same property-block path `BarSurfaceAppearance.Apply`
+        /// The same property-block path `BarSurfaceAppearance.ApplyAuthored`
         /// takes for a primitive, so a district tint is still a
         /// `_BaseColor` and not something baked into an asset. That is
         /// the whole reason the model imports with
@@ -148,7 +159,6 @@ namespace BarPromenade
             BarInteriorLayoutPlan plan)
         {
             BarDistrictIdentity identity = plan.DistrictIdentity;
-            bool worn = identity.SurfaceSet == BarSurfaceSetKind.Worn;
             var properties = new MaterialPropertyBlock();
 
             foreach (BarPartBinding binding in registry.Parts)
@@ -164,7 +174,7 @@ namespace BarPromenade
                     properties,
                     binding.Tint.Resolve(identity),
                     binding.Sheet,
-                    worn && !binding.Emissive);
+                    !binding.Emissive);
             }
         }
 
@@ -176,54 +186,18 @@ namespace BarPromenade
             bool sheeted)
         {
             properties.Clear();
-            if (sheeted && TryGetSheet(sheet, out BarSurfaceKind kind))
+            if (sheeted &&
+                BarSurfaceAppearance.TryResolveSheet(
+                    sheet,
+                    out BarSurfaceKind kind))
             {
-                HomeSurfaceRecipe recipe =
-                    BarSurfaceAppearance.GetRecipe(kind);
-                Color displayTint =
-                    BarSurfaceAppearance.CreateDisplayTint(tint, kind);
-                properties.SetTexture(
-                    BaseMapId,
-                    BarSurfaceAppearance.GetTexture(kind));
-                properties.SetColor(BaseColorId, displayTint);
-                properties.SetColor(ColorId, displayTint);
-                properties.SetVector(
-                    BaseMapTransformId,
-                    IdentityBaseMapTransform);
-                properties.SetFloat(SmoothnessId, recipe.Smoothness);
-                properties.SetFloat(MetallicId, recipe.Metallic);
-            }
-            else
-            {
-                properties.SetColor(BaseColorId, tint);
-                properties.SetColor(ColorId, tint);
+                BarSurfaceAppearance.ApplyAuthored(renderer, kind, tint);
+                return;
             }
 
+            properties.SetColor(BaseColorId, tint);
+            properties.SetColor(ColorId, tint);
             renderer.SetPropertyBlock(properties);
-        }
-
-        private static bool TryGetSheet(
-            string sheet,
-            out BarSurfaceKind kind)
-        {
-            switch (sheet)
-            {
-                case "WornPlank":
-                    kind = BarSurfaceKind.WornPlank;
-                    return true;
-                case "Wallpaper":
-                    kind = BarSurfaceKind.Wallpaper;
-                    return true;
-                case "DarkWood":
-                    kind = BarSurfaceKind.DarkWood;
-                    return true;
-                case "WornLeather":
-                    kind = BarSurfaceKind.WornLeather;
-                    return true;
-                default:
-                    kind = default;
-                    return false;
-            }
         }
 
         // ------------------------------------------------- collision --
@@ -293,7 +267,8 @@ namespace BarPromenade
         /// small. It is also simply the better split: which parts share a
         /// parent at runtime is the room's business, not the model's.
         ///
-        /// Four things happen. Unselected activity sets and district
+        /// Five things happen. Semantic anchors have already been copied
+        /// directly under the room. Unselected activity sets and district
         /// dressings are destroyed. The surviving dressing is gathered
         /// under "District Identity", the name the room has always
         /// published it under. The fan and the jukebox are gathered under
@@ -510,8 +485,8 @@ namespace BarPromenade
                     placedCable.GetComponent<Renderer>(),
                     properties,
                     identity.DarkWoodTint,
-                    string.Empty,
-                    false);
+                    "PaintedMetal",
+                    true);
 
                 Transform placedShade = Clone(
                     shade, room, $"Practical Shade {index + 1}",
@@ -523,8 +498,8 @@ namespace BarPromenade
                     index % 2 == 0
                         ? identity.MetalTint
                         : identity.DarkWoodTint,
-                    string.Empty,
-                    false);
+                    "PaintedMetal",
+                    true);
 
                 Transform placedBulb = Clone(
                     bulb, room, $"Practical Bulb {index + 1}",

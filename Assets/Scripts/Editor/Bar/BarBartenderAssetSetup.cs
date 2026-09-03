@@ -280,11 +280,11 @@ namespace BarPromenade.Editor
                 AssetDatabase.LoadAssetAtPath<BarBartenderProvider>(
                     ProviderPath);
             if (provider == null ||
-                provider.BartenderPrefab != prefab)
+                provider.LegacyBartenderPrefab != prefab)
             {
                 throw new InvalidOperationException(
-                    "The bartender provider asset must reference the " +
-                    "built prefab.");
+                    "The bartender provider asset must retain the built " +
+                    "six-armed prefab as its inactive legacy reference.");
             }
         }
 
@@ -724,12 +724,7 @@ namespace BarPromenade.Editor
 
             GameObject prefab =
                 AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            SerializedObject serialized =
-                new SerializedObject(provider);
-            serialized
-                .FindProperty("bartenderPrefab")
-                .objectReferenceValue = prefab;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
+            provider.ConfigureLegacy(prefab);
             EditorUtility.SetDirty(provider);
         }
 

@@ -67,6 +67,7 @@ namespace BarPromenade
             get;
             private set;
         }
+        public ChurchMusicPlayer Music { get; private set; }
         public ChurchExit Exit { get; private set; }
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
@@ -102,6 +103,14 @@ namespace BarPromenade
             DayNight = ChurchInteriorDayNightController.Install(
                 transform,
                 Atmosphere);
+
+            // Raised on the root like every other scene theme, so the
+            // transition service finds it as an IMusicMixSource in this
+            // scene and it hands its tail over on the way out. Silent
+            // and harmless while no track exists.
+            GameObject musicObject = new GameObject("Church Music");
+            musicObject.transform.SetParent(transform, false);
+            Music = musicObject.AddComponent<ChurchMusicPlayer>();
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);

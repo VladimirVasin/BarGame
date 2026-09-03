@@ -1,20 +1,18 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 
 namespace BarPromenade
 {
     /// <summary>
-    /// Procedural presentation of the Six-Armed Bartender. On
-    /// initialization the four extra-arm chains re-parent under their
-    /// authored pivots (the cashier-neck/wheelchair mechanism), the
-    /// canonical arms fold from the imported A-pose to a counter rest,
-    /// and every frame each pair runs its own quiet unsynchronized
-    /// business — never symmetric, never still, never fast. A chain
-    /// given a world target CCD-reaches for it with its grip pivot,
-    /// which is how the service pass will put bottles in his hands.
-    /// The recorded standard exception for procedural posing lives in
-    /// ai/architecture-notes.md.
+    /// Presentation shared by the active ordinary bartender and the retained
+    /// six-armed legacy asset. The ordinary path plays authored waiter clips
+    /// on the common NpcHumanV2 Avatar, then applies a light two-hand contact
+    /// pass toward the independently driven bar service props. The legacy
+    /// path keeps its original four procedural chains so that prefab remains
+    /// inspectable without ever being selected by the runtime provider.
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(320)]
@@ -26,6 +24,9 @@ namespace BarPromenade
         public const float ElbowSwayDegrees = 7f;
         public const float HeadSwayDegrees = 9f;
         public const float ReachBlendSeconds = 0.28f;
+        public const int OrdinaryHandCount = 2;
+        public const int OrdinaryVesselHandIndex = 0;
+        public const int OrdinaryBottleHandIndex = 1;
         private const int SolveIterations = 3;
 
         // Root-local rest points the canonical hands hold ON the
@@ -63,11 +64,26 @@ namespace BarPromenade
         private Quaternion rightUpperRest;
         private Quaternion rightForearmRest;
         private Quaternion headRest;
+        private PlayableGraph graph;
+        private AnimationMixerPlayable mixer;
+        private AnimationClipPlayable defaultPlayable;
+        private AnimationClipPlayable actionPlayable;
+        private AnimationClip actionClip;
+        private BarBartenderClipKind currentClipKind =
+            BarBartenderClipKind.Wipe;
+        private float currentClipTimeSeconds;
+        private float ordinaryIdleElapsedSeconds;
+        private bool hasGraph;
+        private bool hasActionPlayable;
+        private bool usesOrdinaryRig;
         private float elapsed;
         private bool isInitialized;
 
         public bool IsInitialized => isInitialized;
         public BarBartenderAssetRegistry Registry => registry;
+        public bool UsesOrdinaryRig => usesOrdinaryRig;
+        public BarBartenderClipKind CurrentClipKind => currentClipKind;
+        public float CurrentClipTimeSeconds => currentClipTimeSeconds;
         public int ChainCount =>
             chainShoulders != null ? chainShoulders.Length : 0;
 
@@ -85,20 +101,87 @@ namespace BarPromenade
                 ? assetRegistry
                 : throw new ArgumentNullException(
                     nameof(assetRegistry));
-            if (registry.ExtraArmChains.Count !=
-                BarBartenderAssetRegistry.ExtraArmChainCount ||
-                registry.Chest == null ||
+            if (registry.Chest == null ||
                 registry.Head == null ||
                 registry.LeftUpperArm == null ||
                 registry.RightUpperArm == null)
             {
                 throw new InvalidOperationException(
-                    "The bartender registry lacks its chains or " +
+                    "The bartender registry lacks its " +
                     "canonical bones.");
             }
 
+            usesOrdinaryRig = registry.UsesAuthoredServiceClips;
+            if (usesOrdinaryRig)
+            {
+                InitializeOrdinaryRig();
+            }
+            else
+            {
+                InitializeLegacyRig();
+            }
+            chainTargets = new Vector3[ChainCount];
+            chainWeights = new float[ChainCount];
+            chainGoalWeights = new float[ChainCount];
+            isInitialized = true;
+            if (usesOrdinaryRig && Application.isPlaying)
+            {
+                CreateOrdinaryGraph();
+            }
+            Advance(0f);
+        }
+
+        private void InitializeOrdinaryRig()
+        {
+            if (registry.ExtraArmChains.Count != 0 ||
+                registry.Animator == null ||
+                registry.Animator.avatar == null ||
+                registry.LeftVesselSocket == null ||
+                registry.RightBottleSocket == null ||
+                registry.VesselGripAnchor == null ||
+                registry.BottleGripAnchor == null)
+            {
+                throw new InvalidOperationException(
+                    "The ordinary bartender registry lacks its authored " +
+                    "clips, Avatar or two-hand service sockets.");
+            }
+
+            chainShoulders = new[]
+            {
+                registry.LeftUpperArm,
+                registry.RightUpperArm
+            };
+            chainElbows = new[]
+            {
+                registry.LeftForearm,
+                registry.RightForearm
+            };
+            chainWrists = new[]
+            {
+                registry.LeftHand,
+                registry.RightHand
+            };
+            chainGrips = new[]
+            {
+                registry.VesselGripAnchor,
+                registry.BottleGripAnchor
+            };
+            registry.Animator.enabled = true;
+            registry.SetServiceTowelVisible(true);
+        }
+
+        private void InitializeLegacyRig()
+        {
+            if (registry.ExtraArmChains.Count !=
+                BarBartenderAssetRegistry.ExtraArmChainCount)
+            {
+                throw new InvalidOperationException(
+                    "The legacy bartender registry lacks its four " +
+                    "extra-arm chains.");
+            }
+
             // The imported Animator carries the shared Avatar but no
-            // controller; nothing may fight the procedural pose.
+            // controller; nothing may fight the retained procedural pose.
             if (registry.Animator != null)
             {
                 registry.Animator.enabled = false;
@@ -106,17 +189,12 @@ namespace BarPromenade
 
             ReparentChains();
             CaptureRestPose();
-            chainTargets = new Vector3[ChainCount];
-            chainWeights = new float[ChainCount];
-            chainGoalWeights = new float[ChainCount];
-            isInitialized = true;
-            Advance(0f);
         }
 
         /// <summary>
-        /// Points one extra arm at a world position. Weight eases in
-        /// over <see cref="ReachBlendSeconds"/>; zero releases the
-        /// chain back to its idle business.
+        /// Points one service hand at a world position. On the active model
+        /// indices 0/1 are the ordinary left-vessel/right-bottle hands; on
+        /// the retained legacy model they are its original extra-arm chains.
         /// </summary>
         public void SetChainTarget(
             int chainIndex,
@@ -153,6 +231,80 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Makes the authored waiter animation a pure reader of the bar's
+        /// existing deterministic service clock. It never advances the shop
+        /// or moves a bottle/vessel itself.
+        /// </summary>
+        public void ApplyServiceFrame(
+            BarDrinkServiceFrame frame,
+            bool leftHandCarriesMenu = false)
+        {
+            if (!isInitialized || !usesOrdinaryRig)
+            {
+                return;
+            }
+
+            switch (frame.Phase)
+            {
+                case BarDrinkServicePhase.CameraApproach:
+                    SetOrdinaryClip(
+                        BarBartenderClipKind.Notice,
+                        frame.PhaseProgress *
+                        ResolveClipLength(BarBartenderClipKind.Notice));
+                    break;
+                case BarDrinkServicePhase.BottlePickup:
+                    SetOrdinaryClip(
+                        BarBartenderClipKind.Walk,
+                        frame.PhaseElapsedSeconds);
+                    break;
+                case BarDrinkServicePhase.VesselPlacement:
+                    SetOrdinaryClip(
+                        BarBartenderClipKind.Walk,
+                        BarDrinkServiceTimeline
+                            .BottlePickupDurationSeconds +
+                        frame.PhaseElapsedSeconds);
+                    break;
+                case BarDrinkServicePhase.Pouring:
+                    SetOrdinaryClip(
+                        BarBartenderClipKind.Pour,
+                        frame.PhaseProgress *
+                        ResolveClipLength(BarBartenderClipKind.Pour));
+                    break;
+                case BarDrinkServicePhase.BottleReturn:
+                    SetOrdinaryClip(
+                        BarBartenderClipKind.Walk,
+                        frame.PhaseElapsedSeconds);
+                    break;
+                default:
+                    SetOrdinaryClip(
+                        BarBartenderClipKind.Wipe,
+                        ordinaryIdleElapsedSeconds);
+                    break;
+            }
+
+            bool leftHandServing =
+                leftHandCarriesMenu ||
+                frame.Phase ==
+                    BarDrinkServicePhase.VesselPlacement ||
+                frame.Phase == BarDrinkServicePhase.Pouring ||
+                frame.Phase == BarDrinkServicePhase.BottleReturn;
+            registry.SetServiceTowelVisible(!leftHandServing);
+        }
+
+        public void ResetServicePose()
+        {
+            if (!isInitialized || !usesOrdinaryRig)
+            {
+                return;
+            }
+
+            SetOrdinaryClip(
+                BarBartenderClipKind.Wipe,
+                ordinaryIdleElapsedSeconds);
+            registry.SetServiceTowelVisible(true);
+        }
+
+        /// <summary>
         /// Public so EditMode tests can drive the pose without a
         /// player loop.
         /// </summary>
@@ -164,6 +316,12 @@ namespace BarPromenade
             }
 
             elapsed += Mathf.Max(0f, deltaTime);
+            if (usesOrdinaryRig)
+            {
+                AdvanceOrdinary(deltaTime);
+                return;
+            }
+
             ApplyCanonicalRest();
             ApplyHeadSway();
             for (int index = 0; index < ChainCount; index++)
@@ -186,6 +344,117 @@ namespace BarPromenade
         private void LateUpdate()
         {
             Advance(Time.deltaTime);
+        }
+
+        private void AdvanceOrdinary(float deltaTime)
+        {
+            ordinaryIdleElapsedSeconds += Mathf.Max(0f, deltaTime);
+            if (currentClipKind == BarBartenderClipKind.Wipe)
+            {
+                currentClipTimeSeconds = ordinaryIdleElapsedSeconds;
+            }
+
+            if (Application.isPlaying && !hasGraph)
+            {
+                CreateOrdinaryGraph();
+            }
+
+            EvaluateOrdinaryAnimation();
+            for (int index = 0; index < ChainCount; index++)
+            {
+                chainWeights[index] = Mathf.MoveTowards(
+                    chainWeights[index],
+                    chainGoalWeights[index],
+                    deltaTime <= 0f
+                        ? 0f
+                        : deltaTime / ReachBlendSeconds);
+                if (chainWeights[index] > 0.0001f)
+                {
+                    SolveOrdinaryReach(index);
+                }
+            }
+        }
+
+        private void SetOrdinaryClip(
+            BarBartenderClipKind kind,
+            float elapsedSeconds)
+        {
+            currentClipKind = kind;
+            currentClipTimeSeconds = Mathf.Max(0f, elapsedSeconds);
+        }
+
+        private float ResolveClipLength(BarBartenderClipKind kind)
+        {
+            return registry.TryGetClip(kind, out AnimationClip clip, out _)
+                ? clip.length
+                : 0f;
+        }
+
+        private void EvaluateOrdinaryAnimation()
+        {
+            if (!hasGraph ||
+                !registry.TryGetClip(
+                    BarBartenderClipKind.Wipe,
+                    out AnimationClip idleClip,
+                    out _))
+            {
+                return;
+            }
+
+            defaultPlayable.SetTime(Mathf.Repeat(
+                ordinaryIdleElapsedSeconds,
+                Mathf.Max(0.0001f, idleClip.length)));
+            if (currentClipKind == BarBartenderClipKind.Wipe)
+            {
+                mixer.SetInputWeight(0, 1f);
+                mixer.SetInputWeight(1, 0f);
+                graph.Evaluate(0f);
+                return;
+            }
+
+            if (!registry.TryGetClip(
+                    currentClipKind,
+                    out AnimationClip clip,
+                    out bool loop))
+            {
+                return;
+            }
+
+            EnsureOrdinaryActionPlayable(clip);
+            float time = loop
+                ? Mathf.Repeat(
+                    currentClipTimeSeconds,
+                    Mathf.Max(0.0001f, clip.length))
+                : Mathf.Min(currentClipTimeSeconds, clip.length);
+            actionPlayable.SetTime(time);
+            mixer.SetInputWeight(0, 0f);
+            mixer.SetInputWeight(1, 1f);
+            graph.Evaluate(0f);
+        }
+
+        private void SolveOrdinaryReach(int index)
+        {
+            Transform shoulder = chainShoulders[index];
+            Transform elbow = chainElbows[index];
+            Transform grip = chainGrips[index];
+            Quaternion shoulderBase = shoulder.rotation;
+            Quaternion elbowBase = elbow.rotation;
+            for (int iteration = 0;
+                 iteration < SolveIterations;
+                 iteration++)
+            {
+                RotateTowards(elbow, grip, chainTargets[index]);
+                RotateTowards(shoulder, grip, chainTargets[index]);
+            }
+
+            shoulder.rotation = Quaternion.Slerp(
+                shoulderBase,
+                shoulder.rotation,
+                chainWeights[index]);
+            elbow.rotation = Quaternion.Slerp(
+                elbowBase,
+                elbow.rotation,
+                chainWeights[index]);
         }
 
         /// <summary>
@@ -415,6 +684,117 @@ namespace BarPromenade
                 elbowBase,
                 elbow.rotation,
                 weight);
+        }
+
+        private void OnEnable()
+        {
+            if (Application.isPlaying &&
+                isInitialized &&
+                usesOrdinaryRig &&
+                !hasGraph)
+            {
+                CreateOrdinaryGraph();
+            }
+        }
+
+        private void OnDisable()
+        {
+            DestroyOrdinaryGraph();
+            registry?.SetServiceTowelVisible(true);
+        }
+
+        private void OnDestroy()
+        {
+            DestroyOrdinaryGraph();
+        }
+
+        private void CreateOrdinaryGraph()
+        {
+            if (hasGraph || !usesOrdinaryRig)
+            {
+                return;
+            }
+
+            if (!registry.TryGetClip(
+                    BarBartenderClipKind.Wipe,
+                    out AnimationClip idleClip,
+                    out bool idleLoops) ||
+                !idleLoops)
+            {
+                throw new InvalidOperationException(
+                    "The ordinary bartender needs a looping Wipe clip.");
+            }
+
+            graph = PlayableGraph.Create("Bar Bartender Service");
+            try
+            {
+                graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+                defaultPlayable = AnimationClipPlayable.Create(
+                    graph,
+                    idleClip);
+                defaultPlayable.SetApplyFootIK(false);
+                defaultPlayable.SetApplyPlayableIK(false);
+                defaultPlayable.SetSpeed(0d);
+                mixer = AnimationMixerPlayable.Create(graph, 2);
+                graph.Connect(defaultPlayable, 0, mixer, 0);
+                mixer.SetInputWeight(0, 1f);
+                mixer.SetInputWeight(1, 0f);
+                AnimationPlayableOutput.Create(
+                        graph,
+                        "Bar Bartender Pose",
+                        registry.Animator)
+                    .SetSourcePlayable(mixer);
+                graph.Play();
+                graph.Evaluate(0f);
+                hasGraph = true;
+            }
+            catch
+            {
+                if (graph.IsValid())
+                {
+                    graph.Destroy();
+                }
+
+                hasGraph = false;
+                hasActionPlayable = false;
+                throw;
+            }
+        }
+
+        private void EnsureOrdinaryActionPlayable(AnimationClip clip)
+        {
+            if (hasActionPlayable && actionClip == clip)
+            {
+                return;
+            }
+
+            if (hasActionPlayable)
+            {
+                graph.Disconnect(mixer, 1);
+                actionPlayable.Destroy();
+                hasActionPlayable = false;
+                actionClip = null;
+            }
+
+            actionPlayable = AnimationClipPlayable.Create(graph, clip);
+            actionPlayable.SetApplyFootIK(false);
+            actionPlayable.SetApplyPlayableIK(false);
+            actionPlayable.SetSpeed(0d);
+            graph.Connect(actionPlayable, 0, mixer, 1);
+            actionClip = clip;
+            hasActionPlayable = true;
+        }
+
+        private void DestroyOrdinaryGraph()
+        {
+            if (graph.IsValid())
+            {
+                graph.Destroy();
+            }
+
+            hasGraph = false;
+            hasActionPlayable = false;
+            actionClip = null;
         }
 
         private static void RotateTowards(

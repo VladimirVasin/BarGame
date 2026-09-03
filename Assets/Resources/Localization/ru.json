@@ -1549,6 +1549,26 @@
       "value": "Дорогая… давай уже домой."
     },
     {
+      "key": "mountain.cafe.menu.item.fried_eggs",
+      "value": "Яичница"
+    },
+    {
+      "key": "mountain.cafe.menu.item.cheese_sandwich",
+      "value": "Бутерброд с сыром"
+    },
+    {
+      "key": "mountain.cafe.menu.item.black_coffee",
+      "value": "Чёрный кофе"
+    },
+    {
+      "key": "mountain.cafe.menu.select_hint",
+      "value": "W / S — выбрать"
+    },
+    {
+      "key": "mountain.cafe.menu.order_hint",
+      "value": "Space — заказать"
+    },
+    {
       "key": "park.quarrel.chess.line.01",
       "value": "В шашках думают коленом."
     },

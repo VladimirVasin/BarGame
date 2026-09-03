@@ -610,11 +610,12 @@ The vertical slice contains:
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
-  The on-disk humanoid-NPC asset set comprises `26` rigged designs: five
+  The on-disk humanoid-NPC asset set comprises `27` rigged designs: five
   production-folder pedestrian models, `17` staged residents, the active
-  bartender, normal supermarket cashier and bus driver, plus the retained
-  inactive Watcher Cashier. The active humanoid cast does not grow because the
-  normal cashier replaces the Watcher one for one. Every rigged design uses
+  ordinary and retained inactive six-armed bartenders, the active normal and
+  retained inactive Watcher cashiers, and the bus driver. The active humanoid
+  cast does not grow because both ordinary replacements are one-for-one. Every
+  rigged design uses
   `NpcHumanV2`, the exact Hero V2
   31-bone A-pose hierarchy and Avatar copied from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
@@ -622,7 +623,8 @@ The vertical slice contains:
   manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
   The four Mountain Road cafe models and their separate `10`-clip bank use
   `4.5.2`; the shelter trio and dedicated three-loop bank use `4.2.0`.
-  The bartender and bus-driver manifests use `2.0.0`; the cashier generator
+  The active bartender manifest uses `3.0.0`, while the retained six-armed
+  bartender and bus-driver manifests use `2.0.0`; the cashier generator
   owns the active `1.0.0` normal output (`1.75 m`, `40` meshes / `1,244`
   triangles) and the retained `2.2.0` Watcher output (`2.05 m`, `44` /
   `1,588`) over one shared `256 px` garment-detail atlas. The generated FBXs were
@@ -633,17 +635,18 @@ The vertical slice contains:
   dynamic bounds, and the six registry families reassert that contract once
   when an instance wakes. Clip-driven limbs and procedural bones therefore
   cannot be frustum-culled by the small A-pose boxes imported from the separate
-  model FBXs. The other special active models include the
-  `50`-mesh/`1,436`-triangle full-body `1.75 m` bartender and the
+  model FBXs. The other special active models include the ordinary two-armed
+  `39`-mesh/`1,136`-triangle full-body `1.75 m` bartender and the
   `48`-mesh/`1,496`-triangle driver. This is a shared adult anatomical substrate,
-  not a character redesign: the mouthless Long-Arm, kettle and hopper
-  silhouettes, six bartender arms and driver's horizontal eyes remain
-  canonical overlays. The active cashier keeps the same uniform, face, blink
+  not a flattening of character identity: the mouthless Long-Arm, kettle and
+  hopper silhouettes remain, the inactive legacy bartender alone keeps six
+  arms, and the driver keeps his horizontal eyes. The active cashier keeps the same uniform, face, blink
   and attentive gaze, but uses an ordinary head and non-scaling human neck;
   the former `18 m` treatment survives only in the inactive
-  `watcher_cashier_v1` asset. The appearance catalog covers all `28` designs on
-  disk — `7` bizarre and `21` normal — while ordinary gameplay instantiates
-  only `supermarket_cashier_v1` at the checkout.
+  `watcher_cashier_v1` asset. The appearance catalog covers all `29` designs on
+  disk — `8` bizarre and `21` normal. The active bartender and cashier are
+  normal; their retained six-armed/Watcher predecessors are bizarre and never
+  create duplicate active roles.
   The pool holds one presentation per registered design — Lampshade Walker,
   Chair Carrier, Kettle Hat Walker, Long-Arm Walker and Helmet Lamp Hopper —
   each with four material-property-block palettes. All five use dedicated
@@ -822,7 +825,9 @@ The vertical slice contains:
   `supermarket_theme` slot loads only from
   `Resources/Audio/SupermarketMusic` in `SupermarketInterior`, and the
   optional `stairwell_theme` slot loads only from
-  `Resources/Audio/StairwellMusic` in `StairwellInterior`; Home adds an optional
+  `Resources/Audio/StairwellMusic` in `StairwellInterior`, and the optional
+  `church_theme` slot only from `Resources/Audio/ChurchMusic` in
+  `ChurchInterior`; Home adds an optional
   `Resources/Audio/HomeMusic/home_theme` loop. One mixing rule (`MusicMix`)
   governs every music change, whether the hero loads into it or walks into
   it: a theme always leaves through an unscaled `4 s` fade-out, and no other
@@ -1484,14 +1489,21 @@ The vertical slice contains:
   plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
   enterable without a scene load. Its lone patron, neighbouring couple and
   attendant are four dedicated staged models rather than pedestrian-pool
-  substitutes. Its deterministic fixed-metre Blender set contains `59` meshes /
-  `5,682` triangles, `45` semantic anchors and six dynamic prop assemblies.
+  substitutes. Its deterministic fixed-metre Blender set contains `61` meshes /
+  `5,794` triangles, `52` semantic anchors and seven dynamic prop assemblies.
   The rear service wall now reads as one kitchen run: an extended cabinet and
   worktop with `CuttingBoardDock`, a compact stove and pan at `StovePanDock`,
   and a refrigerator cavity with two shelves. `FridgeDoor` is the sixth
   dynamic prop, rooted at the authored `FridgeDoorPivot` with child
-  `Grip.FridgeDoor`; it ships closed and has no runtime driver, Animator,
-  Rigidbody or attendant/player interaction.
+  `Grip.FridgeDoor`; it remains the sixth prop, ships closed and has no runtime
+  driver, Animator, Rigidbody or attendant/player interaction. The napkin
+  dispenser, sugar shaker and salt shaker have moved away from the hero's
+  counter place so they no longer occupy the menu handoff area. The seventh
+  prop is a thin open `Menu.Hero`, with its own hand grip, counter dock and
+  three item/one selection anchors; it begins hidden and is presented only by
+  the cafe menu runtime. At runtime its `menu_pages` role uses plain warm paper
+  rather than the green-banded shared props sheet, and the TMP readable face
+  and horizontal glyph direction are resolved against the actual focus camera.
   Seven stools follow the main counter and return with their seat tops at
   `0.8175 m`: three are occupied with real butt contact and four remain empty.
   The hero may take the middle main-row gap; its dock remains in the aisle while
@@ -1515,9 +1527,30 @@ The vertical slice contains:
   attendant wipes between episodes, then walks and pours when either of those
   two cups crosses that threshold. Completing
   the hero-stool sit switches to a bounded eye-level first-person view of the
-  counter and restores the exact prior follow-camera state on exit. The
+  counter and restores the exact prior follow-camera state on exit. It also
+  requests one silent attendant handoff: `MountainRoadCafeMenuController`
+  advances its pure model from delivery to open only after the physical menu
+  reaches `MenuDock.Hero`, while `MountainRoadCafeMenuPresentation` keeps the
+  booklet and its localized TMP text in world space. When
+  `HeroMenuPlaced` becomes true, the existing `MountainRoadCafeSeatView`
+  blends the fixed camera over `0.45 s` along the current seated sight line
+  to a `40`-degree view `0.50 m` from the page. The close-up preserves
+  world-up without roll and suppresses every look source. `W/S` (or the D-pad)
+  still wraps
+  through the three items and `Space`/gamepad West confirms; the ordinary
+  `E`/`Enter`/gamepad South interaction remains available for standing.
+  Confirmation keeps the visible `X`, releases focus back to the saved seated
+  view and idempotently requests retrieval. Standing instead restores the
+  exact pre-seat follow-camera state immediately and requests retrieval with
+  no committed item. The shared attendant timeline serializes that return as
+  `WalkToMenu -> TakeMenu` (`2.5 s`) `-> CarryMenuBack`; the booklet remains
+  at the counter until the physical take, follows the hand and is hidden at
+  its service dock. The handoff/return is one-shot for the scene and creates
+  no order, product, payment, inventory item, food, drink, dialogue, reaction,
+  sound or story state. The
   ten-clip cast (`2` lone-patron clips, `2 + 2` pair clips, `4` attendant
-  clips) has no NPC voice bed and never services the hero. Only while the player is
+  clips) has no NPC voice bed; the hero never enters its pair-only cup/refill
+  queue. Only while the player is
   inside the plan's physical cafe volume, the pair follows the fixed localized
   text order `Man01 -> Woman01 -> ... -> Man10 -> Woman10 -> loop`; each role
   owns ten stable keys in both Russian and English. A queued turn survives
@@ -1556,7 +1589,8 @@ The vertical slice contains:
   detail sheets partition exterior, interior, counter, metal, props and glass;
   authored UV regions and a zero-overlap validator prevent repeated samples,
   stretching and flicker without a new base hue, readable brand, `PHILLIES`,
-  `5¢`, price, menu or city background.
+  `5¢`, price, city background or object text beyond the menu's exactly three
+  localized item names.
   The four cast members also use role-specific `256 px` detail atlases and
   curved/multi-segment geometry at the current Hero V2 fidelity level; these
   atlases cover face, clothing, hair/headwear and shoes through the shared
@@ -1668,15 +1702,28 @@ The vertical slice contains:
   track starts with the player's loop, pauses ordinary cat idle/look and
   restores the hero, cat, contact shadow, input, HUD, camera and modal
   ownership after normal completion or abnormal cleanup;
-- one deterministic shared `22 x 16 x 4.8 m` bar interior with seven authored
-  zones and four validated circulation paths; its long layered counter,
-  bottle-backed mirrors, three booths, four high tables, stage, entrance
-  dressing and dedicated activity bay are composed at runtime from one
-  validated layout plan. The same geometry now reads one district identity
-  across shell, floor, counter, upholstery, glass, signage and practicals:
-  Old Town adds ledger/portrait traces, Residential uses the packaged worn set
-  and curtain wall, Industrial adds a safety band and utility pipes, and
-  Nightlife adds restrained cyan/magenta neon;
+- one deterministic `22 x 16 x 4.8 m` bar interior with seven authored zones
+  and four validated circulation paths. Its visible permanent environment is
+  the passive fixed-metre `bar_interior_v3` Blender asset at generator `3.1.0`
+  (`179` semantic meshes / `12,804` triangles, signature
+  `f7e7ada5e36bf24a505efcb710d3e2c724d9bc1bbfc2ca557042f1915ac85cce`):
+  a long dark panelled counter with a right-hand
+  return, taps and brass foot rail, a mirror-and-bottle backbar, three booths
+  with a snug, four small round pub tables, a reduced music pocket, heavy
+  curtains, worn carpet/plank and low warm practicals. Unity retains the plan,
+  collision, lighting, state and interaction authority rather than rebuilding
+  the furniture from runtime primitives. The Residential identity and
+  `SplitTheG` dressing remain without turning the British-pub reference into a
+  flag, brand, readable advertisement or new lore. Its visible counter top is
+  now `1.16 m` rather than `1.56 m`, matching the plan's `0.50 m` centre /
+  `1.00 m` height. The hero stool top is `0.96 m`, the authored eye and look
+  target are `1.76 / 1.86 m`, and the menu/vessel docks track the surface at
+  `1.185 / 1.175 m`. Fifteen deterministic `1024 px` source albedo families
+  import at `512 px`; all non-emissive interior parts use all fifteen
+  recognized sheets, while service parts use five. Their measured world-metric
+  UV scale survives import and the same textures feed the `.blend` preview
+  nodes. These are diverse material albedos with scalar surface response, not
+  a separate set of PBR maps;
 - six shadowless practical light pools, a bar-only Bloom/color/vignette/grain
   grade, local dust, a slow ceiling fan and a skippable `1.35 s` single-camera
   Bezier reveal establish the interior without changing the chase-camera
@@ -1980,14 +2027,18 @@ The vertical slice contains:
   sit in booths through the shared seated-ride contract and stand at tables on
   the deterministic layout anchors with per-anchor palette variants, idling
   through the shared pedestrian presentation;
-- one dedicated full-body `BarBartender3D` now occupies the authored bartender
-  anchor. `BarBartenderProvider` loads the rebuilt production
-  `Assets/Bar/Bartender/Prefabs/BarBartender.prefab`;
-  `BarBartenderPresentation` gives its three arm pairs independent quiet idle
-  motion, and `BarBartenderServiceChoreography` makes the extra hands follow
-  the selected bottle and vessel while the existing timeline remains
-  authoritative. Ordinary one-bottle service is live; multi-ingredient
-  cocktail ordering and its simultaneous six-arm return chord remain deferred;
+- one dedicated full-body `bar_bartender_v2` occupies the authored bartender
+  anchor. `BarBartenderProvider` selects the rebuilt
+  `Assets/Bar/Bartender/Prefabs/BarBartenderOrdinary.prefab` and retains the
+  former six-armed prefab only as an inactive legacy reference. The active
+  `1.75 m`, `39`-mesh / `1,136`-triangle ordinary two-armed publican wears a
+  dark-green waistcoat, rolled sleeves and apron and reuses
+  `CafeAttendantWipe`, `CafeAttendantWalk`, `CafeAttendantPour` and
+  `CafeAttendantNotice`; `BarBartenderServiceChoreography` binds the right hand
+  to the selected bottle and the left to the physical menu or vessel while the
+  existing service timeline remains authoritative. Ordinary one-bottle service
+  is live; multi-ingredient mixing and multi-bottle choreography remain
+  deferred;
 - a scene-local spatial crowd bed plus rare glass/chair cues consume their
   layout radius/gain data and coexist with the existing bar music and
   procedural ambience inside a four-source budget;
@@ -2014,20 +2065,28 @@ The vertical slice contains:
   Unity warnings/errors; `F8` writes an immediate state snapshot and
   `Shift+F8` opens the log directory;
 - a session-only cash wallet starting at `$999`, shared by finite supermarket
-  stock and a localized physical
-  nine-item counter menu in every bar. Interaction glides into a seated
-  first-person shot with left/right arm subsets filtered from the production
-  player prefab and a full-width row of nine
-  individually selectable 3D bottle objects; every bottle owns a solid
-  collider, selection trigger, kinematic Rigidbody and mouth anchor. Confirm
-  atomically deducts the fixed integer price and consumes the selected drink
-  once, then locks ordinary cancellation while the right hand picks up and
-  tilts that exact bottle, a world-space stream fills the matching reusable 3D
-  tumbler, pint, wine glass, shot glass or snifter. The left hand holds it at
-  the mouth for an exact three-second drink, then returns the empty vessel to
-  the counter. Completing an order stays in the same seated browser for
-  another selection; only the dedicated Exit action (`Esc` / gamepad `B` or
-  the visible button) starts camera return and leaves the menu.
+  stock and the bar's nine-item drink catalog. The bar now uses the same
+  physical counter-seat and `CounterMenu` behavior as the Mountain Road cafe:
+  the world rig walks to the authored stool and sits, the bartender carries an
+  open booklet from the passive `bar_service_props_v1` `1.2.0` library
+  (`29` meshes / `2,280` triangles, signature
+  `4c98dce2cdfd017922c236f88849862f8823bd000380b62a26601dbc744c0026`)
+  to its dock. The shared model/input/page/focus/hint/prop-motion layer opens
+  the bar spread over `0.45 s` at `1.10 m` and FOV `60`; the cafe keeps its
+  independent `0.50 m`, FOV-40 framing.
+  `W/S` or D-pad wraps selection and `Space`/West confirms; `E`/`Enter`/South
+  leaves the seat through the physical exit. The bar adapter fills five rows
+  on the left page and four on the right with the nine localized drink names
+  and their fixed prices, while the cafe adapter remains three selection-only
+  item names. A rejected bar purchase leaves the booklet open with the existing
+  failure feedback. A successful confirmation atomically deducts the price,
+  leaves `X`, restores the seated view and physically returns the menu before
+  the existing one-bottle service: the right hand picks up and tilts that exact
+  bottle, a world-space stream fills the matching reusable 3D tumbler, pint,
+  wine glass, shot glass or snifter, and the hero's left hand holds it at the
+  mouth for an exact three-second drink before returning the empty vessel.
+  Completing an order reopens the same physical menu for another selection;
+  exiting restores the exact pre-seat camera and world rig.
   Water costs `$2`, counts as consumed, does not sober the player and preserves
   the last-alcohol context; lifecycle teardown restores every transform,
   collider, camera, world-presentation, shadow, input and HUD state without refunding an
@@ -2064,8 +2123,9 @@ The vertical slice contains:
   future bar activities start from a new design. The cemetery gravedigging
   acts are the first minigames built on that footing — city-side, and on the
   surviving `BarMinigameModalLock` rather than the removed catalog.
-- Multi-ingredient cocktail ordering, mixture state/UI and the bartender's
-  simultaneous six-arm bottle-return chord. The bartender model, runtime
-  presence and ordinary one-bottle service choreography are already shipped.
+- Multi-ingredient cocktail ordering, mixture state/UI and multi-bottle
+  choreography. The active ordinary bartender, physical menu and ordinary
+  one-bottle service are already present; the former six-arm return chord is a
+  superseded legacy proposal, not the upgrade path.
 
 South City Rollers/Skaters is a design reference only for procedural-world and sprite-character approaches; its code and assets are not present in this repository.
