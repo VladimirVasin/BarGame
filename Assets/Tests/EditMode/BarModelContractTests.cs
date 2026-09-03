@@ -348,7 +348,7 @@ namespace BarPromenade.Tests.EditMode
                     Vector3.zero);
                 AssertAnchor(
                     registry, instance.transform, "hero_seat",
-                    new Vector3(-1.15f, 0.96f, 4.77f));
+                    new Vector3(-1.15f, 0.8175f, 4.53f));
                 AssertAnchor(
                     registry, instance.transform, "hero_approach",
                     new Vector3(-1.15f, 0f, 3.35f));
@@ -357,10 +357,10 @@ namespace BarPromenade.Tests.EditMode
                     new Vector3(-1.15f, 0f, 4.02f));
                 AssertAnchor(
                     registry, instance.transform, "hero_camera",
-                    new Vector3(-1.15f, 1.76f, 4.89f));
+                    new Vector3(-1.15f, 1.6175f, 4.65f));
                 AssertAnchor(
                     registry, instance.transform, "hero_camera_look",
-                    new Vector3(-1.15f, 1.86f, 7.37f));
+                    new Vector3(-1.15f, 1.7175f, 7.37f));
                 AssertAnchor(
                     registry, instance.transform,
                     "bartender_platform_top",
@@ -391,7 +391,6 @@ namespace BarPromenade.Tests.EditMode
                 "Bar Drink Service Stool Footring",
                 "Bar Drink Service Stool",
                 "Bartender Duckboard",
-                "Drink Order Point",
                 "Drink Order Sign",
                 "Exit Header"
             };
@@ -404,6 +403,25 @@ namespace BarPromenade.Tests.EditMode
                     Is.True,
                     $"the pub redesign has no '{requiredParts[index]}'");
             }
+
+            BarManifestPart regularSeat = manifest.parts.Single(part =>
+                part.name == "Bar Stool 1");
+            BarManifestPart regularMetal = manifest.parts.Single(part =>
+                part.name == "Bar Stool 1 Leg");
+            BarManifestPart heroSeat = manifest.parts.Single(part =>
+                part.name == "Bar Drink Service Stool");
+            BarManifestPart heroLegs = manifest.parts.Single(part =>
+                part.name == "Bar Drink Service Stool Legs");
+            BarManifestPart heroFootring = manifest.parts.Single(part =>
+                part.name == "Bar Drink Service Stool Footring");
+            Assert.That(heroSeat.vertices, Is.EqualTo(regularSeat.vertices));
+            Assert.That(heroSeat.triangles, Is.EqualTo(regularSeat.triangles));
+            Assert.That(
+                heroLegs.vertices + heroFootring.vertices,
+                Is.EqualTo(regularMetal.vertices));
+            Assert.That(
+                heroLegs.triangles + heroFootring.triangles,
+                Is.EqualTo(regularMetal.triangles));
 
             BarManifestPart heroStool = manifest.parts.Single(part =>
                 part.name == "Bar Drink Service Stool");
@@ -777,19 +795,52 @@ namespace BarPromenade.Tests.EditMode
                 AssertPlaced(room, "Slow Ceiling Fan",
                     new Vector3(0f, 4.35f, 0.75f));
                 AssertPlaced(room, "HeroSeat",
-                    new Vector3(-1.15f, 0.96f, 4.77f));
+                    new Vector3(-1.15f, 0.8175f, 4.53f));
                 AssertPlaced(room, "HeroApproach",
                     new Vector3(-1.15f, 0f, 3.35f));
                 AssertPlaced(room, "HeroStand",
                     new Vector3(-1.15f, 0f, 4.02f));
                 AssertPlaced(room, "HeroCamera",
-                    new Vector3(-1.15f, 1.76f, 4.89f));
+                    new Vector3(-1.15f, 1.6175f, 4.65f));
                 AssertPlaced(room, "HeroCameraLook",
-                    new Vector3(-1.15f, 1.86f, 7.37f));
-                Assert.That(room.Find("Drink Order Point"), Is.Not.Null);
+                    new Vector3(-1.15f, 1.7175f, 7.37f));
+                Assert.That(room.Find("Drink Order Point"), Is.Null);
                 Assert.That(room.Find("Drink Order Sign"), Is.Not.Null);
                 Assert.That(room.Find("Exit Header"), Is.Not.Null);
                 Assert.That(room.Find("Bartender Duckboard"), Is.Not.Null);
+
+                Transform regularStool = room.Find("Bar Stool 1");
+                Transform heroStool = room.Find(
+                    "Bar Drink Service Stool");
+                Assert.That(regularStool, Is.Not.Null);
+                Assert.That(heroStool, Is.Not.Null);
+                Bounds regularSeat =
+                    regularStool.GetComponent<Renderer>().bounds;
+                Bounds heroSeat =
+                    heroStool.GetComponent<Renderer>().bounds;
+                Assert.That(
+                    Vector3.Distance(regularSeat.size, heroSeat.size),
+                    Is.LessThan(Tolerance));
+                Assert.That(
+                    heroSeat.size.x,
+                    Is.EqualTo(
+                            MountainRoadCafeWorldBuilder.StoolSeatDiameter)
+                        .Within(Tolerance));
+                Assert.That(
+                    heroSeat.size.y,
+                    Is.EqualTo(
+                            MountainRoadCafeWorldBuilder.StoolSeatThickness)
+                        .Within(Tolerance));
+                Assert.That(
+                    heroSeat.max.y,
+                    Is.EqualTo(
+                            MountainRoadCafeWorldBuilder
+                                .StoolSeatTopAboveFloor)
+                        .Within(Tolerance));
+                Assert.That(
+                    heroSeat.center.z,
+                    Is.EqualTo(regularSeat.center.z).Within(Tolerance),
+                    "The hero stool must sit in the same visual row.");
 
                 //  One pendant per light anchor, hung where the plan says
                 //  and at the size it was authored - a lamp cloned from a
@@ -1107,6 +1158,8 @@ namespace BarPromenade.Tests.EditMode
             public bool emissive;
             public BarManifestTint tint;
             public BarManifestCollider[] colliders;
+            public int vertices;
+            public int triangles;
         }
 
         [Serializable]

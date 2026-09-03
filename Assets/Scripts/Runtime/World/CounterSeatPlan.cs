@@ -13,7 +13,8 @@ namespace BarPromenade
     public sealed class CounterSeatPlan
     {
         public const float SeatClearance = 0.03f;
-        public const float FallbackSeatTopHeight = 0.8975f;
+        public const float FallbackSeatTopHeight =
+            MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor;
         public const float FallbackSeatDepth = 0.48f;
         public const float FallbackDockClearance = 0.52f;
         public const float ApproachVerticalTolerance = 0.25f;
@@ -162,8 +163,8 @@ namespace BarPromenade
 
         /// <summary>
         /// Creates the seat from the existing local drink-service plan. This
-        /// is the compatibility path for the v2 room: its stool root is on the
-        /// floor and its seat top is derived from the measured stool height.
+        /// anchor-free compatibility path keeps its stool root on the floor
+        /// and derives the seat top from the shared mountain-cafe contract.
         /// </summary>
         public static CounterSeatPlan FromService(
             Transform serviceSpace,

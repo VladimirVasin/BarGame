@@ -456,8 +456,7 @@ namespace BarPromenade
                 seatPlan,
                 follow);
 
-            var markers = new List<Renderer>(2);
-            AddAuthoredMarker(markers, "Drink Order Point");
+            var markers = new List<Renderer>(1);
             AddAuthoredMarker(markers, "Drink Order Sign");
             DrinkShop.ConfigureSceneMarkers(markers.ToArray());
         }

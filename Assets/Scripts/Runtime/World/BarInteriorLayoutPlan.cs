@@ -42,7 +42,8 @@ namespace BarPromenade
         SeatedPatron = 1,
         StandingPatron = 2,
         Performer = 3,
-        Walker = 4
+        Walker = 4,
+        CounterPatron = 5
     }
 
     public enum BarInteriorLightKind

@@ -6,7 +6,57 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-03 — The bar crowd was bound to its furniture
+
+The first playable views of the rebuilt pub exposed three different placement
+failures behind one generic crowd pass: a seated patron could appear before
+his seat pose had been evaluated, booth occupants inherited a generic seat
+height/back offset, and a nominally seated figure near the counter had no
+counter stool contract at all. The bar now owns a deterministic `11`-person
+composition instead of consuming the general roaming order: six compatible
+patrons sit on the actual `0.48 m` booth cushions, two sit on the exact cafe
+`0.8175 m` counter stools and three stand at the edges of the pub tables. The
+shared seated-pelvis/back-offset contract aligns each body to its concrete furniture,
+and world construction evaluates the pose before the first visible frame. The
+Yard Babushka and the crouched Chess/Checkers designs are excluded from the bar
+list because they cannot pass the relevant furniture-contact contract.
+
+Every regular and hero counter stool was rebuilt with the exact Mountain Road
+cafe geometry (`0.8175 m` top, `0.48 m` seat diameter and `0.055 m` thickness)
+and reuses the exact runtime `CafeMetalDetail` / `CafeCounterDetail` surfaces.
+The hero stool joins the ordinary row at local `z = 4.53`; its authored
+approach and interaction trigger remain, while the visible floor marker was
+deleted. Only the emissive counter sign remains under presentation control.
+This advances `bar_interior_v3` to generator `3.2.1`: `178` semantic meshes /
+`12,940` triangles, signature
+`efad807bda9314094e97562288f11f55bf82efb94b55bcaaa08ed5015df60c36`.
+The counter top is `1.02 m`, the seated camera/look heights are
+`1.6175 / 1.7175 m`, and the menu/vessel docks are `1.045 / 1.035 m`.
+
+The two counter patrons now sample the exact authored `CafeManDrink` clip
+through a full-body action input in `CityPedestrianPresentation`'s existing
+`PlayableGraph`; their prop is a bottle, not a coffee cup or a second competing
+animation graph. A bottle-specific overlay visibly leans torso and head back,
+turns the bottle horizontal and solves the authored neck anchor onto the mouth.
+The three table patrons use the same sip over a procedural standing pose: the
+left hand remains supported on the tabletop while the right raises the bottle.
+Booth patrons remain seated without a drink prop.
+
+Verification: Blender validate-only passed the `178`-part / `12,940`-triangle
+interior, unchanged `29` / `2,280` service library and `38` / `4,308` facade;
+the focused EditMode bar contract selection passed `62/62`, and the final
+counter-seat fallback and bottle-rotation selections each passed `5/5`.
+Focused PlayMode
+`AreaCaptureFixture.Bar` passed `1/1`, including the `11`-patron placement,
+horizontal bottle axis, mouth/hand contact and tabletop support within the
+strict `0.04 m` contact bound; it wrote all ten bar views for visual review.
+No complete Unity suite or player build was run in fast mode.
+
 ## 2026-09-03 — The pub counter, seated eye and material scale were reconciled
+
+This entry records the intermediate counter reconciliation; the later
+furniture-bound pass above supersedes its `1.16 / 0.96 m` geometry and anchor
+heights while retaining the menu framing and material-scale work.
 
 The first real seated frame exposed a physical mismatch rather than a menu
 layout fault: the visible counter top stood at `1.56 m`, almost level with the

@@ -29,8 +29,8 @@ namespace BarPromenade
         public bool IsSeated { get; }
 
         /// <summary>
-        /// The guest's procedural drinking layer, or <c>null</c> for
-        /// the deliberate empty-handed minority.
+        /// The guest's bottle presentation. Booth guests deliberately keep
+        /// their hands clear; every counter/table drinker owns one.
         /// </summary>
         public BarPatronDrinkingArmPose Drinking { get; }
     }
@@ -76,8 +76,11 @@ namespace BarPromenade
     {
         public const string RootName = "Bar Patrons";
 
-        /// <summary>Booth and stool seat height under a guest.</summary>
-        public const float SeatHeight = 0.46f;
+        public const float BoothSeatHeight = 0.48f;
+        public const float CounterSeatHeight =
+            MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor;
+        public const float PubTableTopHeight = 0.82f;
+        public const float PubTableHandInset = 0.28f;
 
         /// <summary>
         /// Shelf bottles are counter-scale showpieces; the same
@@ -86,16 +89,31 @@ namespace BarPromenade
         public const float BottlePropScale = 0.42f;
 
         /// <summary>The fist wraps the bottle at this height share.</summary>
-        public const float BottleGripHeightShare = 0.45f;
-
-        /// <summary>Every Nth guest keeps their hands empty.</summary>
-        public const int EmptyHandedEvery = 3;
+        public const float BottleGripHeightShare = 0.55f;
 
         public const string BottleSocketName = "SOCKET_Bottle.R";
         public const string MouthSocketName = "SOCKET_Mouth";
         public const string RightUpperArmBoneName = "upper_arm.R";
         public const string RightForearmBoneName = "forearm.R";
+        public const string LeftClavicleBoneName = "clavicle.L";
+        public const string LeftUpperArmBoneName = "upper_arm.L";
+        public const string LeftForearmBoneName = "forearm.L";
+        public const string LeftHandSocketName = "SOCKET_Vessel.L";
+        public const string SpineBoneName = "spine";
+        public const string ChestBoneName = "chest";
         public const string HeadBoneName = "head";
+
+        private static readonly string[] SeatedDesignIds =
+        {
+            CityPedestrianResources.WeighAttendantDesignId,
+            CityPedestrianResources.WatchmanDesignId
+        };
+
+        private static readonly string[] TableDesignIds =
+        {
+            CityPedestrianResources.WeighAttendantDesignId,
+            CityPedestrianResources.WatchmanDesignId
+        };
 
         // A dim bar crowd drinks what the shelf actually sells: mostly
         // beer, the odd vodka and cognac. Water stays behind the bar.
@@ -129,16 +147,10 @@ namespace BarPromenade
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
 
-            GameObject[] prefabs =
-                CityPedestrianResources.LoadPooledPrefabs(
-                    Mathf.Max(1, layout.NpcAnchors.Count));
-            if (prefabs.Length == 0)
-            {
-                GameLog.Warning("bar", "patron_prefabs_missing");
-                return patrons;
-            }
-
             int patronIndex = 0;
+            int seatedDesignIndex = 0;
+            int tableDesignIndex = 0;
+            AnimationClip counterDrinkClip = LoadCafeDrinkClip();
             for (int index = 0; index < layout.NpcAnchors.Count; index++)
             {
                 BarNpcAnchor anchor = layout.NpcAnchors[index];
@@ -147,9 +159,24 @@ namespace BarPromenade
                     continue;
                 }
 
-                GameObject prefab =
-                    prefabs[patronIndex % prefabs.Length];
                 patronIndex++;
+                string designId = ResolveDesignId(
+                    anchor,
+                    ref seatedDesignIndex,
+                    ref tableDesignIndex);
+                if (!CityPedestrianResources.TryGetArchetype(
+                        designId,
+                        out CityPedestrianArchetype archetype))
+                {
+                    GameLog.Warning(
+                        "bar",
+                        "patron_design_missing",
+                        GameLog.Field("design", designId));
+                    continue;
+                }
+
+                GameObject prefab =
+                    CityPedestrianResources.LoadPrefab(archetype);
                 if (!CityPedestrianResources.TryInstantiate(
                         prefab,
                         root,
@@ -181,15 +208,51 @@ namespace BarPromenade
                 presentation.Initialize(registry);
                 presentation.SetMoving(false, true);
 
-                bool seated = anchor.Role == BarNpcRole.SeatedPatron &&
-                              TrySeat(root, anchor, registry, presentation);
-                BarPatronDrinkingArmPose drinking =
-                    patronIndex % EmptyHandedEvery == 0
-                        ? null
-                        : TryAttachDrinking(
-                            anchor,
-                            registry,
-                            patronIndex);
+                bool requiresSeat =
+                    anchor.Role == BarNpcRole.SeatedPatron ||
+                    anchor.Role == BarNpcRole.CounterPatron;
+                bool seated = requiresSeat &&
+                              TrySeat(
+                                  root,
+                                  anchor,
+                                  archetype,
+                                  presentation);
+                if (requiresSeat && !seated)
+                {
+                    GameLog.Warning(
+                        "bar",
+                        "patron_seat_contract_failed",
+                        GameLog.Field("anchor", anchor.Id),
+                        GameLog.Field("design", registry.DesignId));
+                    UnityEngine.Object.Destroy(registry.gameObject);
+                    continue;
+                }
+
+                if (seated)
+                {
+                    // Bind before the first camera frame; waiting for Update
+                    // is what made a guest appear suspended on scene entry.
+                    presentation.Advance(0f, false, true);
+                }
+
+                BarPatronDrinkingArmPose drinking = null;
+                if (anchor.Role == BarNpcRole.CounterPatron &&
+                    counterDrinkClip != null)
+                {
+                    drinking = TryAttachCounterDrinking(
+                        anchor,
+                        registry,
+                        presentation,
+                        counterDrinkClip,
+                        patronIndex);
+                }
+                else if (anchor.Role == BarNpcRole.StandingPatron)
+                {
+                    drinking = TryAttachTableDrinking(
+                        anchor,
+                        registry,
+                        patronIndex);
+                }
                 patrons.Add(new BarPatron(
                     anchor,
                     registry,
@@ -213,37 +276,40 @@ namespace BarPromenade
         private static bool TrySeat(
             Transform root,
             BarNpcAnchor anchor,
-            CityPedestrianAssetRegistry registry,
+            CityPedestrianArchetype archetype,
             CityPedestrianPresentation presentation)
         {
-            if (!CityPedestrianResources.TryGetArchetype(
-                    registry.DesignId,
-                    out CityPedestrianArchetype archetype) ||
-                archetype.SeatedRide == null)
+            if (archetype == null || archetype.SeatedRide == null)
             {
                 return false;
             }
 
+            Quaternion rotation =
+                Quaternion.Euler(0f, anchor.YawDegrees, 0f);
+            float seatHeight =
+                anchor.Role == BarNpcRole.CounterPatron
+                    ? CounterSeatHeight
+                    : BoothSeatHeight;
             var seatAnchor = new GameObject(
                 $"Bar Patron Seat {anchor.Id}");
             seatAnchor.transform.SetParent(root, false);
             seatAnchor.transform.localPosition =
-                anchor.Position + (Vector3.up * SeatHeight);
-            seatAnchor.transform.localRotation =
-                Quaternion.Euler(0f, anchor.YawDegrees, 0f);
+                anchor.Position +
+                (Vector3.up * seatHeight) +
+                (rotation * Vector3.forward *
+                 archetype.SeatedRide.SeatBackOffset);
+            seatAnchor.transform.localRotation = rotation;
             return presentation.TrySeat(
                 seatAnchor.transform,
                 archetype.SeatedRide);
         }
 
-        /// <summary>
-        /// Puts one of the bar's own bottle designs into the guest's
-        /// right hand and starts their seeded drinking cadence. A
-        /// design without the canonical sockets simply drinks nothing.
-        /// </summary>
-        public static BarPatronDrinkingArmPose TryAttachDrinking(
+        private static BarPatronDrinkingArmPose
+            TryAttachCounterDrinking(
             BarNpcAnchor anchor,
             CityPedestrianAssetRegistry registry,
+            CityPedestrianPresentation pedestrianPresentation,
+            AnimationClip drinkClip,
             int patronIndex)
         {
             Transform socket = FindDeep(
@@ -252,53 +318,184 @@ namespace BarPromenade
             Transform mouth = FindDeep(
                 registry.transform,
                 MouthSocketName);
-            Transform upperArm = FindDeep(
+            Transform rightUpperArm = FindDeep(
                 registry.transform,
                 RightUpperArmBoneName);
-            Transform forearm = FindDeep(
+            Transform rightForearm = FindDeep(
                 registry.transform,
                 RightForearmBoneName);
-            Transform headBone = FindDeep(
+            Transform spine = FindDeep(
+                registry.transform,
+                SpineBoneName);
+            Transform chest = FindDeep(
+                registry.transform,
+                ChestBoneName);
+            Transform head = FindDeep(
                 registry.transform,
                 HeadBoneName);
             if (socket == null ||
                 mouth == null ||
-                upperArm == null ||
-                forearm == null ||
-                headBone == null)
+                rightUpperArm == null ||
+                rightForearm == null ||
+                spine == null ||
+                chest == null ||
+                head == null)
             {
-                GameLog.Warning(
-                    "bar",
-                    "patron_drink_sockets_missing",
-                    GameLog.Field("design", registry.DesignId));
+                LogMissingDrinkRig(registry);
                 return null;
             }
 
             int seed = StableSeed(anchor.Id, patronIndex);
-            BarDrinkPresentation presentation =
+            CreateBottle(
+                registry,
+                seed,
+                out Transform bottleRoot,
+                out Transform bottleMouth,
+                out float gripToLipDistance);
+            BarPatronDrinkingArmPose pose =
+                registry.gameObject.AddComponent<
+                    BarPatronDrinkingArmPose>();
+            pose.InitializeCounter(
+                new BarPatronDrinkTimeline(seed),
+                pedestrianPresentation,
+                drinkClip,
+                registry.transform,
+                rightUpperArm,
+                rightForearm,
+                socket,
+                spine,
+                chest,
+                head,
+                mouth,
+                bottleRoot,
+                bottleMouth,
+                gripToLipDistance);
+            return pose;
+        }
+
+        private static BarPatronDrinkingArmPose TryAttachTableDrinking(
+            BarNpcAnchor anchor,
+            CityPedestrianAssetRegistry registry,
+            int patronIndex)
+        {
+            Transform rightSocket = FindDeep(
+                registry.transform,
+                BottleSocketName);
+            Transform mouth = FindDeep(
+                registry.transform,
+                MouthSocketName);
+            Transform rightUpperArm = FindDeep(
+                registry.transform,
+                RightUpperArmBoneName);
+            Transform rightForearm = FindDeep(
+                registry.transform,
+                RightForearmBoneName);
+            Transform leftClavicle = FindDeep(
+                registry.transform,
+                LeftClavicleBoneName);
+            Transform leftUpperArm = FindDeep(
+                registry.transform,
+                LeftUpperArmBoneName);
+            Transform leftForearm = FindDeep(
+                registry.transform,
+                LeftForearmBoneName);
+            Transform leftSocket = FindDeep(
+                registry.transform,
+                LeftHandSocketName);
+            Transform spine = FindDeep(
+                registry.transform,
+                SpineBoneName);
+            Transform chest = FindDeep(
+                registry.transform,
+                ChestBoneName);
+            Transform head = FindDeep(
+                registry.transform,
+                HeadBoneName);
+            if (rightSocket == null ||
+                mouth == null ||
+                rightUpperArm == null ||
+                rightForearm == null ||
+                leftClavicle == null ||
+                leftUpperArm == null ||
+                leftForearm == null ||
+                leftSocket == null ||
+                spine == null ||
+                chest == null ||
+                head == null)
+            {
+                LogMissingDrinkRig(registry);
+                return null;
+            }
+
+            int seed = StableSeed(anchor.Id, patronIndex);
+            CreateBottle(
+                registry,
+                seed,
+                out Transform bottleRoot,
+                out Transform bottleMouth,
+                out float gripToLipDistance);
+            Quaternion rotation =
+                Quaternion.Euler(0f, anchor.YawDegrees, 0f);
+            Vector3 localSupportPoint =
+                anchor.Position +
+                (rotation * Vector3.forward * PubTableHandInset) +
+                (rotation * Vector3.left * 0.10f) +
+                (Vector3.up * (PubTableTopHeight + 0.015f));
+            Transform layoutRoot = registry.transform.parent;
+            Vector3 supportPoint = layoutRoot != null
+                ? layoutRoot.TransformPoint(localSupportPoint)
+                : localSupportPoint;
+            BarPatronDrinkingArmPose pose =
+                registry.gameObject.AddComponent<
+                    BarPatronDrinkingArmPose>();
+            pose.InitializeTable(
+                new BarPatronDrinkTimeline(seed),
+                registry.transform,
+                rightUpperArm,
+                rightForearm,
+                rightSocket,
+                leftClavicle,
+                leftUpperArm,
+                leftForearm,
+                leftSocket,
+                spine,
+                chest,
+                head,
+                mouth,
+                bottleRoot,
+                bottleMouth,
+                gripToLipDistance,
+                supportPoint);
+            return pose;
+        }
+
+        private static void CreateBottle(
+            CityPedestrianAssetRegistry registry,
+            int seed,
+            out Transform bottleRoot,
+            out Transform bottleMouth,
+            out float gripToLipDistance)
+        {
+            BarDrinkPresentation drink =
                 BarDrinkPresentationCatalog.Get(
-                    PatronDrinks[Mathf.Abs(seed) %
+                    PatronDrinks[(seed & int.MaxValue) %
                                  PatronDrinks.Length]);
 
             var bottleObject = new GameObject(
-                $"Patron Bottle {presentation.StableId}");
-            Transform bottleRoot = bottleObject.transform;
-            bottleRoot.SetParent(socket, false);
-            bottleRoot.localScale = InverseScale(socket.lossyScale);
+                $"Patron Bottle {drink.StableId}");
+            bottleRoot = bottleObject.transform;
+            bottleRoot.SetParent(registry.transform, false);
 
-            // The socket bone's +Y runs from the palm toward the
-            // ground at rest, so the rig flips it: the bottle stands
-            // neck-up out of the fist, gripped at its body.
             var rigObject = new GameObject("Bottle Rig");
             Transform rig = rigObject.transform;
             rig.SetParent(bottleRoot, false);
-            rig.localRotation = Quaternion.Euler(180f, 0f, 0f);
+            rig.localRotation = Quaternion.identity;
             rig.localScale = Vector3.one * BottlePropScale;
             float bottleHeight =
                 BarDrinkServiceWorldBuilder.BuildBottleVisual(
                     rig,
-                    presentation);
-            rig.localPosition = Vector3.up *
+                    drink);
+            rig.localPosition = Vector3.down *
                 (bottleHeight *
                  BottlePropScale *
                  BottleGripHeightShare);
@@ -307,19 +504,59 @@ namespace BarPromenade
             mouthAnchor.transform.SetParent(rig, false);
             mouthAnchor.transform.localPosition =
                 Vector3.up * bottleHeight;
+            bottleMouth = mouthAnchor.transform;
+            gripToLipDistance =
+                bottleHeight *
+                BottlePropScale *
+                (1f - BottleGripHeightShare);
+        }
 
-            BarPatronDrinkingArmPose pose =
-                registry.gameObject.AddComponent<
-                    BarPatronDrinkingArmPose>();
-            pose.Initialize(
-                new BarPatronDrinkTimeline(seed),
-                upperArm,
-                forearm,
-                headBone,
-                mouth,
-                bottleRoot,
-                mouthAnchor.transform);
-            return pose;
+        private static AnimationClip LoadCafeDrinkClip()
+        {
+            MountainRoadCafeCastProvider provider =
+                MountainRoadCafeCastProvider.Load();
+            MountainRoadCafeCastAssetRegistry source =
+                provider != null && provider.PairManPrefab != null
+                    ? provider.PairManPrefab.GetComponent<
+                        MountainRoadCafeCastAssetRegistry>()
+                    : null;
+            AnimationClip clip = source?.GetClip(
+                MountainRoadCafeCastClipKind.Drink);
+            if (clip == null)
+            {
+                GameLog.Warning("bar", "cafe_drink_clip_missing");
+            }
+
+            return clip;
+        }
+
+        private static string ResolveDesignId(
+            BarNpcAnchor anchor,
+            ref int seatedIndex,
+            ref int tableIndex)
+        {
+            if (anchor.Role == BarNpcRole.SeatedPatron ||
+                anchor.Role == BarNpcRole.CounterPatron)
+            {
+                string design = SeatedDesignIds[
+                    seatedIndex % SeatedDesignIds.Length];
+                seatedIndex++;
+                return design;
+            }
+
+            string tableDesign = TableDesignIds[
+                tableIndex % TableDesignIds.Length];
+            tableIndex++;
+            return tableDesign;
+        }
+
+        private static void LogMissingDrinkRig(
+            CityPedestrianAssetRegistry registry)
+        {
+            GameLog.Warning(
+                "bar",
+                "patron_drink_sockets_missing",
+                GameLog.Field("design", registry.DesignId));
         }
 
         private static Transform FindDeep(
@@ -355,19 +592,6 @@ namespace BarPromenade
 
                 return (hash * 397) ^ patronIndex;
             }
-        }
-
-        private static Vector3 InverseScale(Vector3 scale)
-        {
-            const float minimumAxis = 0.0001f;
-
-            // Unity's Blender/FBX bone hierarchy carries a 100x
-            // transform scale even though the skinned character
-            // renders in metres; cancel it at the prop root.
-            return new Vector3(
-                Mathf.Abs(scale.x) < minimumAxis ? 1f : 1f / scale.x,
-                Mathf.Abs(scale.y) < minimumAxis ? 1f : 1f / scale.y,
-                Mathf.Abs(scale.z) < minimumAxis ? 1f : 1f / scale.z);
         }
 
         private static int CountSeated(IReadOnlyList<BarPatron> patrons)

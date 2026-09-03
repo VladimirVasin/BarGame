@@ -1704,9 +1704,9 @@ The vertical slice contains:
   ownership after normal completion or abnormal cleanup;
 - one deterministic `22 x 16 x 4.8 m` bar interior with seven authored zones
   and four validated circulation paths. Its visible permanent environment is
-  the passive fixed-metre `bar_interior_v3` Blender asset at generator `3.1.0`
-  (`179` semantic meshes / `12,804` triangles, signature
-  `f7e7ada5e36bf24a505efcb710d3e2c724d9bc1bbfc2ca557042f1915ac85cce`):
+  the passive fixed-metre `bar_interior_v3` Blender asset at generator `3.2.1`
+  (`178` semantic meshes / `12,940` triangles, signature
+  `efad807bda9314094e97562288f11f55bf82efb94b55bcaaa08ed5015df60c36`):
   a long dark panelled counter with a right-hand
   return, taps and brass foot rail, a mirror-and-bottle backbar, three booths
   with a snug, four small round pub tables, a reduced music pocket, heavy
@@ -1715,12 +1715,17 @@ The vertical slice contains:
   the furniture from runtime primitives. The Residential identity and
   `SplitTheG` dressing remain without turning the British-pub reference into a
   flag, brand, readable advertisement or new lore. Its visible counter top is
-  now `1.16 m` rather than `1.56 m`, matching the plan's `0.50 m` centre /
-  `1.00 m` height. The hero stool top is `0.96 m`, the authored eye and look
-  target are `1.76 / 1.86 m`, and the menu/vessel docks track the surface at
-  `1.185 / 1.175 m`. Fifteen deterministic `1024 px` source albedo families
-  import at `512 px`; all non-emissive interior parts use all fifteen
-  recognized sheets, while service parts use five. Their measured world-metric
+  `1.02 m` rather than `1.56 m`, matching the plan's `0.43 m` centre /
+  `0.86 m` height. Every regular and hero counter stool uses the exact Mountain
+  Road cafe geometry: `0.8175 m` top, `0.48 m` seat diameter and `0.055 m`
+  thickness. The hero stool shares the regular row at local `z = 4.53`; its
+  interaction trigger and approach remain authored, but the floor marker was
+  removed. The authored eye/look heights are `1.6175 / 1.7175 m`, and the
+  menu/vessel docks track the surface at `1.045 / 1.035 m`. Fifteen
+  deterministic `1024 px` source albedo families import at `512 px`; ordinary
+  non-emissive interior parts use recognized bar sheets, while the stool metal
+  and seats reuse the exact runtime `CafeMetalDetail` / `CafeCounterDetail`
+  textures and service parts use five bar sheets. Their measured world-metric
   UV scale survives import and the same textures feed the `.blend` preview
   nodes. These are diverse material albedos with scalar surface response, not
   a separate set of PBR maps;
@@ -2023,10 +2028,19 @@ The vertical slice contains:
   and a mirror teeth-brushing close-up shot from the mirror plane with a
   procedural brushing arm, foam and a rinse; toilet/shower relieve
   stress on completion, brushing once per game day;
-- 3D bar patrons drawn from the same pooled city pedestrian prefabs: guests
-  sit in booths through the shared seated-ride contract and stand at tables on
-  the deterministic layout anchors with per-anchor palette variants, idling
-  through the shared pedestrian presentation;
+- a deterministic `11`-person bar crowd drawn from ordinary city pedestrian
+  prefabs: six compatible designs sit at the booth anchors on concrete
+  `0.48 m` seats, two sit at the counter on the exact cafe `0.8175 m` stools,
+  and three stand at pub-table edges. The bar owns this bounded cast instead
+  of sampling the roaming order; the Yard Babushka and the crouched
+  Chess/Checkers designs are excluded because they cannot satisfy their
+  furniture contact contracts. Counter patrons sample the exact
+  `CafeManDrink` authored clip and hold bottles; its bottle-specific overlay
+  leans torso and head back, keeps the bottle horizontal and places its actual
+  neck anchor at the mouth. Table patrons use the same sip while standing and
+  keeping their left hands planted on the tabletop.
+  Seating, action and prop pose are evaluated before the first
+  visible frame, so no patron begins suspended or embedded in furniture;
 - one dedicated full-body `bar_bartender_v2` occupies the authored bartender
   anchor. `BarBartenderProvider` selects the rebuilt
   `Assets/Bar/Bartender/Prefabs/BarBartenderOrdinary.prefab` and retains the
@@ -2093,8 +2107,9 @@ The vertical slice contains:
   already committed purchase. The whole bottle row remains inside the seated
   shot at 16:9 and 16:10, and repeated orders restore reusable vessels to their
   authored scale. The service camera sits above the counter at natural seated
-  eye height, while the green order marker and sign remain hidden across
-  repeated orders until the explicit camera return completes.
+  eye height. There is no green floor marker; the remaining emissive counter
+  sign stays hidden across repeated orders until the explicit camera return
+  completes.
 
 ## Deferred
 

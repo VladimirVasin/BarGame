@@ -199,9 +199,21 @@ namespace BarPromenade.Tests.PlayMode
                         new Vector3(-1.6f, 1.65f, 1.4f),
                         new Vector3(-0.6f, 1.35f, 6.2f), 55f),
                     Shot.At(
+                        "02-counter-drink",
+                        new Vector3(-6.5f, 1.55f, 3.85f),
+                        new Vector3(-4.2f, 1.35f, 4.70f), 45f,
+                        readyWhen: () => IsBarDrinkAtLips(
+                            "counter-seat-left")),
+                    Shot.At(
                         "03-booths-and-stage",
                         new Vector3(-2.5f, 1.8f, -2.2f),
                         new Vector3(-9.5f, 1.2f, 2.0f), 62f),
+                    Shot.At(
+                        "03-table-drink",
+                        new Vector3(-3.8f, 1.75f, -6.1f),
+                        new Vector3(-3.85f, 1.15f, -3.55f), 48f,
+                        readyWhen: () => IsBarDrinkAtLips(
+                            "social-left-front")),
                     Shot.At(
                         "04-activity-bay",
                         new Vector3(1.5f, 1.75f, -4.2f),
@@ -219,6 +231,309 @@ namespace BarPromenade.Tests.PlayMode
                         new Vector3(1.0f, 1.6f, -2.6f),
                         new Vector3(6.6f, 1.1f, -6.9f), 58f),
                 });
+            AssertBarPatronPlacement();
+        }
+
+        private static bool IsBarDrinkAtLips(string anchorId)
+        {
+            BarInteriorRoot bar =
+                Object.FindAnyObjectByType<BarInteriorRoot>();
+            if (bar == null || bar.Patrons == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < bar.Patrons.Count; index++)
+            {
+                BarPatron patron = bar.Patrons[index];
+                BarPatronDrinkingArmPose drinking = patron.Drinking;
+                bool selected = string.Equals(
+                    patron.Anchor.Id,
+                    anchorId,
+                    StringComparison.Ordinal);
+                if (selected &&
+                    drinking != null &&
+                    drinking.Timeline.Phase == BarPatronDrinkPhase.Sip &&
+                    drinking.Timeline.VesselTipWeight >= 0.95f &&
+                    drinking.BottleMouthDistance <=
+                    BarPatronDrinkingArmPose.BottleLipContactTolerance &&
+                    drinking.BottleGripError <=
+                    BarPatronDrinkingArmPose.BottleGripContactTolerance &&
+                    drinking.BottleSipAxisErrorDegrees <= 5f &&
+                    drinking.BottleHorizontalErrorDegrees <= 5f &&
+                    drinking.MeasuredTorsoLeanBackDegrees >=
+                    BarPatronDrinkingArmPose
+                        .MinimumSipTorsoLeanBackDegrees &&
+                    drinking.MeasuredHeadLeanBackDegrees >=
+                    BarPatronDrinkingArmPose
+                        .MinimumSipHeadLeanBackDegrees)
+                {
+                    if (patron.Anchor.Role == BarNpcRole.CounterPatron)
+                    {
+                        return patron.Presentation.AuthoredActionClip ==
+                                   drinking.AuthoredDrinkClip &&
+                               patron.Presentation.AuthoredActionWeight >=
+                                   0.95f;
+                    }
+
+                    if (patron.Anchor.Role == BarNpcRole.StandingPatron)
+                    {
+                        return drinking.IsTableLean &&
+                               drinking.TableSupportError <=
+                               BarPatronDrinkingArmPose
+                                   .TableSupportContactTolerance;
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AssertBarPatronPlacement()
+        {
+            BarInteriorRoot bar =
+                Object.FindAnyObjectByType<BarInteriorRoot>();
+            Assert.That(bar, Is.Not.Null);
+            Assert.That(bar.Patrons, Has.Count.EqualTo(11));
+
+            int boothCount = 0;
+            int counterCount = 0;
+            int tableCount = 0;
+            for (int index = 0; index < bar.Patrons.Count; index++)
+            {
+                BarPatron patron = bar.Patrons[index];
+                Assert.That(patron.Registry, Is.Not.Null);
+                Assert.That(patron.Presentation, Is.Not.Null);
+                Assert.That(
+                    patron.Registry.DesignId,
+                    Is.Not.EqualTo(
+                        CityPedestrianResources.BabushkaDesignId),
+                    patron.Anchor.Id);
+
+                Vector3 expectedRoot =
+                    bar.transform.TransformPoint(patron.Anchor.Position);
+                if (patron.Anchor.Role == BarNpcRole.SeatedPatron ||
+                    patron.Anchor.Role == BarNpcRole.CounterPatron)
+                {
+                    bool counter =
+                        patron.Anchor.Role == BarNpcRole.CounterPatron;
+                    if (counter)
+                    {
+                        counterCount++;
+                    }
+                    else
+                    {
+                        boothCount++;
+                    }
+
+                    Assert.That(patron.IsSeated, Is.True, patron.Anchor.Id);
+                    Assert.That(
+                        patron.Presentation.IsSeated,
+                        Is.True,
+                        patron.Anchor.Id);
+                    Assert.That(
+                        patron.Presentation.SeatAnchor,
+                        Is.Not.Null,
+                        patron.Anchor.Id);
+                    Assert.That(
+                        CityPedestrianResources.TryGetArchetype(
+                            patron.Registry.DesignId,
+                            out CityPedestrianArchetype archetype),
+                        Is.True,
+                        patron.Anchor.Id);
+                    Assert.That(
+                        archetype.SeatedRide,
+                        Is.Not.Null,
+                        patron.Anchor.Id);
+                    float seatTop = counter
+                        ? BarPatronWorldBuilder.CounterSeatHeight
+                        : BarPatronWorldBuilder.BoothSeatHeight;
+                    Assert.That(
+                        patron.Presentation.SeatAnchor.position.y,
+                        Is.EqualTo(
+                                bar.transform.TransformPoint(
+                                    patron.Anchor.Position +
+                                    Vector3.up * seatTop).y)
+                            .Within(0.002f),
+                        patron.Anchor.Id);
+
+                    Vector3 pelvis = patron.Registry.PelvisAnchor.position;
+                    float expectedPelvisHeight =
+                        patron.Presentation.SeatAnchor.position.y +
+                        archetype.SeatedRide.SeatLift;
+                    Assert.That(
+                        pelvis.y,
+                        Is.EqualTo(expectedPelvisHeight).Within(0.012f),
+                        $"{patron.Anchor.Id} pelvis is vertically detached " +
+                        "from its concrete seat top.");
+                    float horizontalError = Vector2.Distance(
+                        new Vector2(pelvis.x, pelvis.z),
+                        new Vector2(expectedRoot.x, expectedRoot.z));
+                    Assert.That(
+                        horizontalError,
+                        Is.LessThanOrEqualTo(0.035f),
+                        $"{patron.Anchor.Id} pelvis misses its seat by " +
+                        $"{horizontalError:F3} m.");
+
+                    if (counter)
+                    {
+                        Assert.That(patron.Drinking, Is.Not.Null);
+                        Assert.That(
+                            patron.Drinking.AuthoredDrinkClip.name,
+                            Does.Contain("CafeManDrink"));
+                        Assert.That(
+                            patron.Drinking.IsTableLean,
+                            Is.False);
+                        if (patron.Drinking.Timeline.VesselTipWeight >= 0.95f)
+                        {
+                            Assert.That(
+                                patron.Drinking.BottleMouthDistance,
+                                Is.LessThanOrEqualTo(
+                                    BarPatronDrinkingArmPose
+                                        .BottleLipContactTolerance),
+                                $"{patron.Anchor.Id} bottle neck does not " +
+                                "meet the authored mouth anchor.");
+                            Assert.That(
+                                patron.Drinking.BottleGripError,
+                                Is.LessThanOrEqualTo(
+                                    BarPatronDrinkingArmPose
+                                        .BottleGripContactTolerance),
+                                $"{patron.Anchor.Id} hand is detached from " +
+                                "the bottle grip.");
+                            Assert.That(
+                                patron.Drinking.BottleSipAxisErrorDegrees,
+                                Is.LessThanOrEqualTo(5f),
+                                $"{patron.Anchor.Id} bottle is not horizontal " +
+                                "at the drinker's mouth.");
+                            Assert.That(
+                                patron.Drinking.BottleHorizontalErrorDegrees,
+                                Is.LessThanOrEqualTo(5f),
+                                $"{patron.Anchor.Id} bottle is tilted away " +
+                                "from the horizontal drinking pose.");
+                            Assert.That(
+                                patron.Drinking.MeasuredTorsoLeanBackDegrees,
+                                Is.GreaterThanOrEqualTo(
+                                    BarPatronDrinkingArmPose
+                                        .MinimumSipTorsoLeanBackDegrees),
+                                $"{patron.Anchor.Id} does not lean back for " +
+                                "the bottle sip.");
+                            Assert.That(
+                                patron.Drinking.MeasuredHeadLeanBackDegrees,
+                                Is.GreaterThanOrEqualTo(
+                                    BarPatronDrinkingArmPose
+                                        .MinimumSipHeadLeanBackDegrees),
+                                $"{patron.Anchor.Id} does not tip the head " +
+                                "back for the bottle sip.");
+                        }
+                    }
+                    else
+                    {
+                        Assert.That(
+                            patron.Drinking,
+                            Is.Null,
+                            "Booth patrons keep both hands clear of the " +
+                            "table and upholstery.");
+                    }
+
+                    continue;
+                }
+
+                Assert.That(
+                    patron.Anchor.Role,
+                    Is.EqualTo(BarNpcRole.StandingPatron));
+                tableCount++;
+                Assert.That(
+                    patron.Registry.transform.position.y,
+                    Is.EqualTo(expectedRoot.y).Within(0.002f),
+                    patron.Anchor.Id);
+                Assert.That(patron.IsSeated, Is.False);
+                Assert.That(
+                    patron.Registry.DesignId,
+                    Is.Not.EqualTo(
+                        CityPedestrianResources.ChessPlayerDesignId),
+                    $"{patron.Anchor.Id} must not borrow a chess-table " +
+                    "silhouette for a standing pub pose.");
+                Assert.That(
+                    patron.Registry.DesignId,
+                    Is.Not.EqualTo(
+                        CityPedestrianResources.CheckersPlayerDesignId),
+                    $"{patron.Anchor.Id} must not borrow a checkers-table " +
+                    "silhouette for a standing pub pose.");
+                Assert.That(patron.Drinking, Is.Not.Null);
+                Assert.That(patron.Drinking.IsTableLean, Is.True);
+                Assert.That(
+                    patron.Drinking.TableSupportError,
+                    Is.LessThanOrEqualTo(
+                        BarPatronDrinkingArmPose
+                            .TableSupportContactTolerance),
+                    $"{patron.Anchor.Id} is not resting a hand on the " +
+                    "tabletop.");
+                if (patron.Drinking.Timeline.VesselTipWeight >= 0.95f)
+                {
+                    Assert.That(
+                        patron.Drinking.BottleMouthDistance,
+                        Is.LessThanOrEqualTo(
+                            BarPatronDrinkingArmPose
+                                .BottleLipContactTolerance),
+                        $"{patron.Anchor.Id} bottle neck does not meet the " +
+                        "authored mouth anchor.");
+                    Assert.That(
+                        patron.Drinking.BottleGripError,
+                        Is.LessThanOrEqualTo(
+                            BarPatronDrinkingArmPose
+                                .BottleGripContactTolerance),
+                        $"{patron.Anchor.Id} hand is detached from the " +
+                        "bottle grip.");
+                    Assert.That(
+                        patron.Drinking.BottleSipAxisErrorDegrees,
+                        Is.LessThanOrEqualTo(5f),
+                        $"{patron.Anchor.Id} bottle is not horizontal at " +
+                        "the drinker's mouth.");
+                    Assert.That(
+                        patron.Drinking.BottleHorizontalErrorDegrees,
+                        Is.LessThanOrEqualTo(5f),
+                        $"{patron.Anchor.Id} bottle is tilted away from the " +
+                        "horizontal drinking pose.");
+                    Assert.That(
+                        patron.Drinking.MeasuredTorsoLeanBackDegrees,
+                        Is.GreaterThanOrEqualTo(
+                            BarPatronDrinkingArmPose
+                                .MinimumSipTorsoLeanBackDegrees),
+                        $"{patron.Anchor.Id} does not lean back for the " +
+                        "bottle sip.");
+                    Assert.That(
+                        patron.Drinking.MeasuredHeadLeanBackDegrees,
+                        Is.GreaterThanOrEqualTo(
+                            BarPatronDrinkingArmPose
+                                .MinimumSipHeadLeanBackDegrees),
+                        $"{patron.Anchor.Id} does not tip the head back for " +
+                        "the bottle sip.");
+                }
+                Quaternion patronRotation = Quaternion.Euler(
+                    0f,
+                    patron.Anchor.YawDegrees,
+                    0f);
+                Vector3 expectedSupportLocal =
+                    patron.Anchor.Position +
+                    patronRotation * Vector3.forward *
+                    BarPatronWorldBuilder.PubTableHandInset +
+                    patronRotation * Vector3.left * 0.10f +
+                    Vector3.up *
+                    (BarPatronWorldBuilder.PubTableTopHeight + 0.015f);
+                Assert.That(
+                    Vector3.Distance(
+                        patron.Drinking.TableSupportPoint,
+                        bar.transform.TransformPoint(expectedSupportLocal)),
+                    Is.LessThanOrEqualTo(0.002f),
+                    $"{patron.Anchor.Id} uses a support point in the wrong " +
+                    "coordinate space.");
+            }
+
+            Assert.That(boothCount, Is.EqualTo(6));
+            Assert.That(counterCount, Is.EqualTo(2));
+            Assert.That(tableCount, Is.EqualTo(3));
         }
 
         //  Every area below is photographed from the hero, because his

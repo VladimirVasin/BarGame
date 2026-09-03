@@ -18,7 +18,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void FromService_ProvidesMeasuredLegacySeatFallback()
+        public void FromService_ProvidesSharedCafeStoolFallback()
         {
             Transform serviceSpace = CreateServiceSpace();
             BarDrinkServicePlan service = CreateServicePlan();
@@ -29,7 +29,7 @@ namespace BarPromenade.Tests.EditMode
 
             AssertVector(
                 plan.InteractionPosition,
-                new Vector3(-1.15f, 0.8975f, 4.77f));
+                new Vector3(-1.15f, 0.8175f, 4.77f));
             AssertVector(
                 plan.EntryPose.RootPosition,
                 new Vector3(
@@ -38,7 +38,7 @@ namespace BarPromenade.Tests.EditMode
                     4.01f));
             AssertVector(
                 plan.ActionHipPosition,
-                new Vector3(-1.15f, 0.9275f, 4.77f));
+                new Vector3(-1.15f, 0.8475f, 4.77f));
             AssertVector(
                 plan.ExitPose.RootPosition,
                 plan.EntryPose.RootPosition);
@@ -204,16 +204,16 @@ namespace BarPromenade.Tests.EditMode
             BarDrinkServicePlan service = CreateServicePlan();
             Transform seat = CreateAnchor(
                 "HeroSeat",
-                new Vector3(-1.15f, 0.96f, 4.77f));
+                new Vector3(-1.15f, 0.8175f, 4.53f));
             Transform stand = CreateAnchor(
                 "HeroStand",
                 new Vector3(-1.15f, 0f, 4.02f));
             Transform camera = CreateAnchor(
                 "HeroCamera",
-                new Vector3(-1.15f, 1.76f, 4.89f));
+                new Vector3(-1.15f, 1.6175f, 4.65f));
             Transform cameraLook = CreateAnchor(
                 "HeroCameraLook",
-                new Vector3(-1.15f, 1.86f, 7.37f));
+                new Vector3(-1.15f, 1.7175f, 7.37f));
 
             CounterSeatPlan plan = CounterSeatPlan.FromServiceAnchors(
                 serviceSpace,
@@ -231,7 +231,7 @@ namespace BarPromenade.Tests.EditMode
                 out Vector3 position,
                 out Quaternion rotation);
 
-            AssertVector(position, new Vector3(-1.15f, 1.76f, 4.89f));
+            AssertVector(position, new Vector3(-1.15f, 1.6175f, 4.65f));
             Assert.That(
                 Vector3.Dot(
                     rotation * Vector3.forward,
@@ -242,8 +242,8 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void BarMenuFocus_PreservesCafeDefaultsAndUsesReadableFraming()
         {
-            var menu = new Vector3(-0.38f, 1.2289f, 5.44f);
-            var viewer = new Vector3(-1.15f, 1.76f, 4.89f);
+            var menu = new Vector3(-0.38f, 1.0889f, 5.44f);
+            var viewer = new Vector3(-1.15f, 1.6175f, 4.65f);
             Vector3 target = menu +
                 Vector3.up * CounterMenuCameraPlan.SurfaceLiftMeters;
 
@@ -281,9 +281,9 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThan(0.20f));
             Assert.That(
                 barPosition.y,
-                Is.GreaterThanOrEqualTo(1.34f),
+                Is.GreaterThanOrEqualTo(1.20f),
                 "The focused lens must remain visibly above the " +
-                "1.16 m counter top.");
+                "1.02 m counter top.");
             Assert.That(
                 BarDrinkMenuPresentation.CameraFocusFieldOfView,
                 Is.EqualTo(60f));

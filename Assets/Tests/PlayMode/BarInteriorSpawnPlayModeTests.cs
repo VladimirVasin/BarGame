@@ -35,7 +35,7 @@ namespace BarPromenade.Tests.PlayMode
         //  geometry behind the hero. Under a metre it is inside him.
         private const float MinimumCameraDistance = 1f;
 
-        //  Keep the seated lens visibly above the 1.16 m counter silhouette.
+        //  Keep the seated lens visibly above the 1.02 m counter silhouette.
         //  This is deliberately smaller than ordinary seated eye clearance,
         //  leaving authoring room without letting the timber bury the view.
         private const float MinimumEyeAboveCounter = 0.18f;

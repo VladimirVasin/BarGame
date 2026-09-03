@@ -188,5 +188,63 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThan(sips),
                 "A bar must murmur, not gurgle in chorus.");
         }
+
+        [Test]
+        public void CafeActionWeight_BlendsOutBeforeTheLastClipSample()
+        {
+            const float clipLength = 4.75f;
+            Assert.That(
+                BarPatronDrinkingArmPose.ResolveAuthoredActionWeight(
+                    0f,
+                    clipLength),
+                Is.Zero);
+            Assert.That(
+                BarPatronDrinkingArmPose.ResolveAuthoredActionWeight(
+                    0.5f,
+                    clipLength),
+                Is.EqualTo(1f));
+            Assert.That(
+                BarPatronDrinkingArmPose.ResolveAuthoredActionWeight(
+                    1f - 0.16f / clipLength,
+                    clipLength),
+                Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(
+                BarPatronDrinkingArmPose.ResolveAuthoredActionWeight(
+                    1f,
+                    clipLength),
+                Is.Zero,
+                "Drink must already match the seated base pose before " +
+                "the timeline clears it on the following Rest frame.");
+        }
+
+        [Test]
+        public void BottleRotation_ReachesHorizontalSipWithoutEndpointRoll()
+        {
+            Quaternion almostAtSip =
+                BarPatronDrinkingArmPose.ResolveBottleRotation(
+                    Vector3.right,
+                    Vector3.up,
+                    Vector3.back,
+                    0.999f);
+            Quaternion atSip =
+                BarPatronDrinkingArmPose.ResolveBottleRotation(
+                    Vector3.right,
+                    Vector3.up,
+                    Vector3.back,
+                    1f);
+
+            Assert.That(
+                Quaternion.Angle(almostAtSip, atSip),
+                Is.LessThan(0.2f),
+                "The last sip sample must not snap the bottle roll.");
+            Assert.That(
+                Vector3.Angle(atSip * Vector3.up, Vector3.back),
+                Is.LessThan(0.001f),
+                "The bottle neck must finish horizontal into the mouth.");
+            Assert.That(
+                Vector3.Angle(atSip * Vector3.forward, Vector3.right),
+                Is.LessThan(0.001f),
+                "The bottle roll reference must stay stable at full sip.");
+        }
     }
 }

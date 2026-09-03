@@ -362,6 +362,43 @@ namespace BarPromenade.Tests.EditMode
                     CountTexturedRenderers(room),
                     Is.GreaterThanOrEqualTo(12),
                     $"The {district} identity must retain authored sheets.");
+                Texture2D cafeSeat = Resources.Load<Texture2D>(
+                    MountainRoadCafeSurfaceAppearance
+                        .CounterTextureResourcePath);
+                Texture2D cafeMetal = Resources.Load<Texture2D>(
+                    MountainRoadCafeSurfaceAppearance
+                        .MetalTextureResourcePath);
+                foreach (string stoolName in new[]
+                         {
+                             "Bar Stool 1",
+                             "Bar Stool 2",
+                             "Bar Stool 4",
+                             "Bar Stool 5",
+                             "Bar Stool 6",
+                             "Bar Drink Service Stool"
+                         })
+                {
+                    AssertTransformTexture(
+                        room.Find(stoolName),
+                        cafeSeat);
+                }
+
+                foreach (string stoolName in new[]
+                         {
+                             "Bar Stool 1 Leg",
+                             "Bar Stool 2 Leg",
+                             "Bar Stool 4 Leg",
+                             "Bar Stool 5 Leg",
+                             "Bar Stool 6 Leg",
+                             "Bar Drink Service Stool Legs",
+                             "Bar Drink Service Stool Footring"
+                         })
+                {
+                    AssertTransformTexture(
+                        room.Find(stoolName),
+                        cafeMetal);
+                }
+
                 for (int lightIndex = 0;
                      lightIndex < plan.LightAnchors.Count;
                      lightIndex++)
@@ -451,6 +488,22 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 properties.GetTexture(BaseMapId),
                 Is.SameAs(BarSurfaceAppearance.GetTexture(expectedKind)),
+                target.name);
+        }
+
+        private static void AssertTransformTexture(
+            Transform target,
+            Texture expectedTexture)
+        {
+            Assert.That(target, Is.Not.Null);
+            Assert.That(expectedTexture, Is.Not.Null);
+            Renderer renderer = target.GetComponent<Renderer>();
+            Assert.That(renderer, Is.Not.Null, target.name);
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            Assert.That(
+                properties.GetTexture(BaseMapId),
+                Is.SameAs(expectedTexture),
                 target.name);
         }
 

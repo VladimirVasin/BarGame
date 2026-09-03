@@ -45,7 +45,12 @@ namespace BarPromenade
         private AnimationClipPlayable idlePlayable;
         private AnimationClipPlayable walkPlayable;
         private AnimationClipPlayable sitPlayable;
+        private AnimationClipPlayable authoredActionPlayable;
+        private AnimationClip authoredActionClip;
         private bool hasSitPlayable;
+        private bool hasAuthoredActionPlayable;
+        private int authoredActionInputIndex = -1;
+        private float authoredActionWeight;
         private Transform seatAnchor;
         private CityPedestrianSeatedRide seatedRide;
         private CityPedestrianAssetRegistry registry;
@@ -68,6 +73,8 @@ namespace BarPromenade
         public float WalkWeight { get; private set; }
         public float AnimationSpeed => animationSpeed;
         public CityPedestrianAssetRegistry Registry => registry;
+        public AnimationClip AuthoredActionClip => authoredActionClip;
+        public float AuthoredActionWeight => authoredActionWeight;
 
         /// <summary>The seat this walker is aligned to, or <c>null</c> on
         /// the pavement.</summary>
@@ -227,25 +234,81 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Samples one full-body authored action on the presentation's own
+        /// graph. Scene-local tableaux use this instead of creating a second
+        /// PlayableGraph for the same Animator. The ordinary idle/sit pose
+        /// remains input zero and the caller owns the blend envelope.
+        /// </summary>
+        public bool ApplyAuthoredAction(
+            AnimationClip clip,
+            float normalizedTime,
+            float weight)
+        {
+            if (!IsInitialized ||
+                clip == null ||
+                !IsFinite(normalizedTime) ||
+                !IsFinite(weight) ||
+                !locomotionMixer.IsValid())
+            {
+                return false;
+            }
+
+            EnsureAuthoredActionPlayable(clip);
+            authoredActionPlayable.SetTime(
+                Mathf.Clamp01(normalizedTime) * clip.length);
+            authoredActionPlayable.SetSpeed(0d);
+            authoredActionWeight = Mathf.Clamp01(weight);
+            ApplyMixerWeights();
+            EvaluateGraph(0f);
+            return true;
+        }
+
+        public void ClearAuthoredAction()
+        {
+            if (!IsInitialized || !locomotionMixer.IsValid())
+            {
+                return;
+            }
+
+            authoredActionWeight = 0f;
+            ApplyMixerWeights();
+            EvaluateGraph(0f);
+        }
+
         private void ApplyMixerWeights()
         {
+            float baseWeight = 1f - authoredActionWeight;
             if (IsSeated)
             {
                 locomotionMixer.SetInputWeight(0, 0f);
                 locomotionMixer.SetInputWeight(1, 0f);
                 if (hasSitPlayable)
                 {
-                    locomotionMixer.SetInputWeight(2, 1f);
+                    locomotionMixer.SetInputWeight(2, baseWeight);
                 }
-
-                return;
+            }
+            else
+            {
+                locomotionMixer.SetInputWeight(
+                    0,
+                    (1f - WalkWeight) * baseWeight);
+                locomotionMixer.SetInputWeight(
+                    1,
+                    WalkWeight * baseWeight);
+                if (hasSitPlayable)
+                {
+                    locomotionMixer.SetInputWeight(2, 0f);
+                }
             }
 
-            locomotionMixer.SetInputWeight(0, 1f - WalkWeight);
-            locomotionMixer.SetInputWeight(1, WalkWeight);
-            if (hasSitPlayable)
+            if (authoredActionInputIndex >= 0)
             {
-                locomotionMixer.SetInputWeight(2, 0f);
+                locomotionMixer.SetInputWeight(
+                    authoredActionInputIndex,
+                    hasAuthoredActionPlayable
+                        ? authoredActionWeight
+                        : 0f);
             }
         }
 
@@ -299,6 +362,10 @@ namespace BarPromenade
             seatAnchor = null;
             seatedRide = null;
             hasSitPlayable = false;
+            hasAuthoredActionPlayable = false;
+            authoredActionClip = null;
+            authoredActionInputIndex = -1;
+            authoredActionWeight = 0f;
             WalkWeight = 0f;
             targetWalkWeight = 0f;
             archetypeGroundTrim = 0f;
@@ -314,9 +381,10 @@ namespace BarPromenade
                 $"City Pedestrian {GetEntityId()}");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             hasSitPlayable = registry.SitClip != null;
+            authoredActionInputIndex = hasSitPlayable ? 3 : 2;
             locomotionMixer = AnimationMixerPlayable.Create(
                 graph,
-                hasSitPlayable ? 3 : 2);
+                authoredActionInputIndex + 1);
             // Which pair this body lives on. ROAMING is the ambient one
             // where a design declares it and the ordinary slots otherwise: a
             // promoted resident walks the street on the shared citizen gait
@@ -360,6 +428,7 @@ namespace BarPromenade
                 graph.Connect(sitPlayable, 0, locomotionMixer, 2);
                 locomotionMixer.SetInputWeight(2, 0f);
             }
+            locomotionMixer.SetInputWeight(authoredActionInputIndex, 0f);
 
             AnimationPlayableOutput output =
                 AnimationPlayableOutput.Create(
@@ -368,6 +437,38 @@ namespace BarPromenade
                     animator);
             output.SetSourcePlayable(locomotionMixer);
             graph.Play();
+        }
+
+        private void EnsureAuthoredActionPlayable(AnimationClip clip)
+        {
+            if (hasAuthoredActionPlayable && authoredActionClip == clip)
+            {
+                return;
+            }
+
+            if (hasAuthoredActionPlayable)
+            {
+                graph.Disconnect(
+                    locomotionMixer,
+                    authoredActionInputIndex);
+                authoredActionPlayable.Destroy();
+                hasAuthoredActionPlayable = false;
+                authoredActionClip = null;
+            }
+
+            authoredActionPlayable = AnimationClipPlayable.Create(
+                graph,
+                clip);
+            authoredActionPlayable.SetApplyFootIK(false);
+            authoredActionPlayable.SetApplyPlayableIK(false);
+            authoredActionPlayable.SetSpeed(0d);
+            graph.Connect(
+                authoredActionPlayable,
+                0,
+                locomotionMixer,
+                authoredActionInputIndex);
+            authoredActionClip = clip;
+            hasAuthoredActionPlayable = true;
         }
 
         private void EvaluateGraph(float deltaTime)
@@ -486,10 +587,10 @@ namespace BarPromenade
             IsMoving = false;
             WalkWeight = 0f;
             targetWalkWeight = 0f;
+            authoredActionWeight = 0f;
             if (locomotionMixer.IsValid())
             {
-                locomotionMixer.SetInputWeight(0, 1f);
-                locomotionMixer.SetInputWeight(1, 0f);
+                ApplyMixerWeights();
             }
 
             RestoreModelBasePosition();

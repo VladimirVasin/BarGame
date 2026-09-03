@@ -136,11 +136,14 @@ namespace BarPromenade
             }
 
             float serviceX = layout.CounterStationPosition.x;
-            float customerZ = counter.Bounds.yMin - 0.48f;
+            float customerZ = counter.Bounds.yMin - 0.72f;
             float counterSurfaceY =
                 layout.CounterPosition.y +
                 layout.CounterSize.y * 0.5f +
                 0.16f;
+            float seatedEyeY =
+                MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor +
+                0.80f;
             var slots = new BarDrinkBottleSlotPlan[RequiredBottleCount];
             const float spacing = 0.62f;
             float firstX = serviceX - spacing * 4f;
@@ -176,8 +179,8 @@ namespace BarPromenade
                 new BarDrinkServicePose(
                     new Vector3(serviceX, 0f, customerZ),
                     Quaternion.identity),
-                new Vector3(serviceX, 1.76f, customerZ + 0.04f),
-                new Vector3(serviceX, 2.12f, bottleZ),
+                new Vector3(serviceX, seatedEyeY, customerZ + 0.04f),
+                new Vector3(serviceX, seatedEyeY + 0.36f, bottleZ),
                 // Keep complete bottle geometry inside the seated shot at
                 // both 16:9 and the narrower 16:10 aspect ratio.
                 72f,
@@ -192,10 +195,16 @@ namespace BarPromenade
                     vesselPosition,
                     Quaternion.identity),
                 new BarDrinkServicePose(
-                    new Vector3(serviceX - 0.28f, 1.24f, customerZ + 0.43f),
+                    new Vector3(
+                        serviceX - 0.28f,
+                        counterSurfaceY + 0.08f,
+                        customerZ + 0.43f),
                     Quaternion.Euler(-8f, 0f, 3f)),
                 new BarDrinkServicePose(
-                    new Vector3(serviceX + 0.43f, 1.34f, customerZ + 0.45f),
+                    new Vector3(
+                        serviceX + 0.43f,
+                        counterSurfaceY + 0.18f,
+                        customerZ + 0.45f),
                     Quaternion.Euler(3f, 0f, -9f)),
                 new BarDrinkServicePose(
                     vesselPosition + new Vector3(0.72f, 0.66f, 0.02f),

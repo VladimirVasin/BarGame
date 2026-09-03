@@ -53,7 +53,7 @@ import interior_kit as kit  # noqa: E402  (after the sys.path fix)
 import bar_parts as bp  # noqa: E402
 import bar_exterior as exterior  # noqa: E402
 
-INTERIOR_GENERATOR_VERSION = "3.1.0"
+INTERIOR_GENERATOR_VERSION = "3.2.1"
 DESIGN_ID = "bar_interior_v3"
 DISPLAY_NAME = "Bar Promenade Bar Interior"
 
@@ -68,17 +68,31 @@ FLOOR_THICKNESS = 0.24
 CEILING_THICKNESS = 0.20
 
 #: `plan.CounterPosition` / `plan.CounterSize`.
-COUNTER_POS = (0.0, 0.5, 5.75)
-COUNTER_SIZE = (11.2, 1.0, 1.0)
+COUNTER_POS = (0.0, 0.43, 5.75)
+COUNTER_SIZE = (11.2, 0.86, 1.0)
 COUNTER_STATION = (-1.15, 0.9, 4.75)
-COUNTER_RETURN_POS = (5.08, 0.5, 4.12)
-COUNTER_RETURN_SIZE = (1.04, 1.0, 3.25)
-HERO_SEAT = (-1.15, 0.96, 4.77)
+COUNTER_RETURN_POS = (5.08, 0.43, 4.12)
+COUNTER_RETURN_SIZE = (1.04, 0.86, 3.25)
+COUNTER_SURFACE_Y = (
+    COUNTER_POS[1] + COUNTER_SIZE[1] * 0.5 + 0.16)
+HERO_SEAT = (-1.15, 0.8175, 4.53)
 HERO_APPROACH = (-1.15, 0.0, 3.35)
 HERO_STAND = (-1.15, 0.0, 4.02)
 BARTENDER_POSITION = (-0.55, 0.0, 6.50)
 BARTENDER_DUCKBOARD_SIZE = (1.35, 0.42, 0.85)
 ACTIVITY_STATION = (5.1, 0.9, -1.55)
+
+#: Mountain Road Cafe stool silhouette, dimensions and palette. Every Bar
+#: stool, including the hero's, is the same 0.8175 m stool rather than an
+#: interaction prop with a different profile.
+CAFE_STOOL_STEM_DIAMETER = 0.10
+CAFE_STOOL_STEM_SEAT_OVERLAP = 0.0175
+CAFE_STOOL_FOOT_DIAMETER = 0.34
+CAFE_STOOL_FOOT_HALF_HEIGHT = 0.035
+CAFE_STOOL_SEAT_DIAMETER = 0.48
+CAFE_STOOL_SEAT_HALF_HEIGHT = 0.0275
+CAFE_STOOL_METAL_RGB = (0.48, 0.50, 0.43)
+CAFE_STOOL_SEAT_RGB = (0.34, 0.095, 0.035)
 
 #: Furniture footprints, from `BarInteriorLayoutPlanner.CreateFurniture`.
 #: Rects are (xMin, yMin, width, height) in the plan's XZ.
@@ -201,39 +215,36 @@ def rect_max(rect: Sequence[float]) -> tuple[float, float]:
     return rect[0] + rect[2], rect[1] + rect[3]
 
 
-def u_torus(
-    center: Sequence[float],
-    major_radius: float,
-    tube_radius: float,
-    major_segments: int = 16,
-    tube_segments: int = 6,
-) -> kit.Geometry:
-    """Watertight Unity-Y-up torus used for honest brass foot rings."""
-    cx, cy, cz = center
-    vertices: list[tuple[float, float, float]] = []
-    for major_index in range(major_segments):
-        major_angle = math.tau * major_index / major_segments
-        cosine_major = math.cos(major_angle)
-        sine_major = math.sin(major_angle)
-        for tube_index in range(tube_segments):
-            tube_angle = math.tau * tube_index / tube_segments
-            radial = major_radius + tube_radius * math.cos(tube_angle)
-            vertices.append((
-                cx + radial * cosine_major,
-                cy + tube_radius * math.sin(tube_angle),
-                cz + radial * sine_major,
-            ))
-    faces: list[tuple[int, ...]] = []
-    for major_index in range(major_segments):
-        next_major = (major_index + 1) % major_segments
-        for tube_index in range(tube_segments):
-            next_tube = (tube_index + 1) % tube_segments
-            current = major_index * tube_segments + tube_index
-            around_tube = major_index * tube_segments + next_tube
-            diagonal = next_major * tube_segments + next_tube
-            around_ring = next_major * tube_segments + tube_index
-            faces.append((current, around_tube, diagonal, around_ring))
-    return vertices, faces
+def cafe_stool_geometry(
+    x: float,
+    z: float,
+    seat_top_y: float,
+) -> tuple[kit.Geometry, kit.Geometry, kit.Geometry]:
+    """Return the cafe's pedestal, disk foot and seat at a Bar seat height."""
+    seat_center_y = seat_top_y - CAFE_STOOL_SEAT_HALF_HEIGHT
+    seat_bottom_y = seat_top_y - CAFE_STOOL_SEAT_HALF_HEIGHT * 2.0
+    stem_top_y = seat_bottom_y + CAFE_STOOL_STEM_SEAT_OVERLAP
+    stem_half_height = stem_top_y * 0.5
+    return (
+        bp.u_cylinder(
+            (x, stem_half_height, z),
+            (CAFE_STOOL_STEM_DIAMETER,
+             stem_half_height,
+             CAFE_STOOL_STEM_DIAMETER),
+            sides=10),
+        bp.u_cylinder(
+            (x, CAFE_STOOL_FOOT_HALF_HEIGHT, z),
+            (CAFE_STOOL_FOOT_DIAMETER,
+             CAFE_STOOL_FOOT_HALF_HEIGHT,
+             CAFE_STOOL_FOOT_DIAMETER),
+            sides=12),
+        bp.u_cylinder(
+            (x, seat_center_y, z),
+            (CAFE_STOOL_SEAT_DIAMETER,
+             CAFE_STOOL_SEAT_HALF_HEIGHT,
+             CAFE_STOOL_SEAT_DIAMETER),
+            sides=14),
+    )
 
 
 @dataclass
@@ -381,7 +392,6 @@ def resolve_default_sheet(name: str, role: str) -> str:
         "counter_top": "PolishedWood",
         "counter_rail": "AgedBrass",
         "hero_stool_footring": "AgedBrass",
-        "drink_order_point": "AgedBrass",
         "tap_stem": "AgedBrass",
         "tap_handle": "Ceramic",
         "backbar_mirror": "MirrorGlass",
@@ -722,10 +732,8 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
         kit.merge_all(return_panels), "counter_panel",
         bp.ident("WoodTint"), sheet="DarkWood", shadows=False)
 
-    # The regular stools leave the service bay clear. The hero stool uses
-    # the same top height: lowering only the interactive seat buried the
-    # seated avatar behind the counter even though the surrounding stools
-    # still read correctly.
+    # The regular stools leave the service bay clear. The hero stool occupies
+    # that opening but otherwise uses the exact same cafe geometry.
     stool_z = cz - sz * 0.5 - 0.72
     for index, x in enumerate((-4.25, -2.55, -0.85, 0.85, 2.55, 4.25)):
         dx = x - COUNTER_STATION[0]
@@ -734,41 +742,42 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
             continue
 
         name = f"Bar Stool {index + 1}"
+        pedestal, foot, seat = cafe_stool_geometry(
+            x, stool_z, HERO_SEAT[1])
         add_part(
             asset, materials, f"{name} Leg",
-            bp.u_cylinder((x, 0.42, stool_z), (0.12, 0.42, 0.12)),
-            "stool_leg", bp.rgb(0.075, 0.024, 0.017), sheet="DarkWood")
+            kit.merge_all([pedestal, foot]),
+            "stool_leg", bp.rgb(*CAFE_STOOL_METAL_RGB),
+            sheet="PaintedMetal")
         add_part(
-            asset, materials, name,
-            bp.u_tapered_cylinder((x, 0.87, stool_z), (0.48, 0.09, 0.48),
-                                  0.94),
-            "stool_seat", bp.rgb(0.30, 0.035, 0.045), sheet="WornLeather")
+            asset, materials, name, seat,
+            "stool_seat", bp.rgb(*CAFE_STOOL_SEAT_RGB),
+            sheet="PolishedWood")
 
     hero_x, hero_top, hero_z = HERO_SEAT
-    hero_leg_offsets = (-0.16, 0.16)
+    hero_pedestal, hero_foot, hero_seat = cafe_stool_geometry(
+        hero_x, hero_z, hero_top)
     add_part(
         asset, materials, "Bar Drink Service Stool Legs",
-        kit.merge_all([
-            bp.u_box(
-                (hero_x + offset_x, 0.35, hero_z + offset_z),
-                (0.075, 0.66, 0.075), 0.012)
-            for offset_x in hero_leg_offsets
-            for offset_z in hero_leg_offsets
-        ]),
-        "hero_stool_legs", bp.ident("DarkWoodTint"), sheet="DarkWood")
+        hero_pedestal,
+        "hero_stool_legs", bp.rgb(*CAFE_STOOL_METAL_RGB),
+        sheet="PaintedMetal")
     add_part(
         asset, materials, "Bar Drink Service Stool Footring",
-        u_torus((hero_x, 0.31, hero_z), 0.215, 0.018),
-        "hero_stool_footring", bp.ident("MetalTint"), shadows=False)
+        hero_foot,
+        "hero_stool_footring", bp.rgb(*CAFE_STOOL_METAL_RGB),
+        sheet="PaintedMetal")
     add_part(
         asset, materials, "Bar Drink Service Stool",
-        bp.u_tapered_cylinder(
-            (hero_x, hero_top - 0.07, hero_z),
-            (0.50, 0.07, 0.50), 0.94, sides=12),
-        "hero_stool_seat", bp.ident("UpholsteryTint"),
-        sheet="WornLeather",
-        colliders=[((hero_x, hero_top - 0.07, hero_z),
-                    (0.50, 0.14, 0.50))])
+        hero_seat,
+        "hero_stool_seat", bp.rgb(*CAFE_STOOL_SEAT_RGB),
+        sheet="PolishedWood",
+        colliders=[((hero_x,
+                     hero_top - CAFE_STOOL_SEAT_HALF_HEIGHT,
+                     hero_z),
+                    (CAFE_STOOL_SEAT_DIAMETER,
+                     CAFE_STOOL_SEAT_HALF_HEIGHT * 2.0,
+                     CAFE_STOOL_SEAT_DIAMETER))])
 
     duck_x, _, duck_z = BARTENDER_POSITION
     duck_sx, duck_sy, duck_sz = BARTENDER_DUCKBOARD_SIZE
@@ -794,20 +803,17 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
                     BARTENDER_DUCKBOARD_SIZE)])
 
     add_part(
-        asset, materials, "Drink Order Point",
-        bp.u_box((COUNTER_STATION[0], 0.06, COUNTER_STATION[2]),
-                 (0.74, 0.08, 0.56), 0.018),
-        "drink_order_point", bp.ident("MetalTint"), shadows=False)
-    add_part(
         asset, materials, "Drink Order Sign Frame",
-        bp.u_box((COUNTER_STATION[0], 1.17, cz - 0.58),
+        bp.u_box((COUNTER_STATION[0], COUNTER_SURFACE_Y + 0.01, cz - 0.58),
                  (0.88, 0.44, 0.10), 0.018),
         "drink_order_marker_frame", bp.ident("DarkWoodTint"),
         sheet="DarkWood", shadows=False)
     order_mark = kit.merge_all([
-        bp.u_plate((COUNTER_STATION[0], 1.17, cz - 0.637),
+        bp.u_plate((COUNTER_STATION[0], COUNTER_SURFACE_Y + 0.01, cz - 0.637),
                    (0.66, 0.26, 0.025)),
-        bp.u_box((COUNTER_STATION[0] + 0.22, 1.17, cz - 0.657),
+        bp.u_box((COUNTER_STATION[0] + 0.22,
+                  COUNTER_SURFACE_Y + 0.01,
+                  cz - 0.657),
                  (0.12, 0.13, 0.025), 0.004),
     ])
     add_part(
@@ -2283,20 +2289,22 @@ def build_interior(materials: dict) -> AssetBuild:
     add_anchor(asset, "HeroApproach", "hero_approach", HERO_APPROACH)
     add_anchor(asset, "HeroStand", "hero_stand", HERO_STAND)
     add_anchor(asset, "HeroCamera", "hero_camera",
-               (HERO_SEAT[0], 1.76, HERO_SEAT[2] + 0.12))
+               (HERO_SEAT[0], HERO_SEAT[1] + 0.80, HERO_SEAT[2] + 0.12))
     add_anchor(asset, "HeroCameraLook", "hero_camera_look",
-               (HERO_SEAT[0], 1.86, 7.37))
+               (HERO_SEAT[0], HERO_SEAT[1] + 0.90, 7.37))
     add_anchor(asset, "ServicePosition", "bartender_service_position",
                BARTENDER_POSITION)
     add_anchor(asset, "BartenderPlatformTop", "bartender_platform_top",
                (BARTENDER_POSITION[0], BARTENDER_DUCKBOARD_SIZE[1],
                 BARTENDER_POSITION[2]))
     add_anchor(asset, "MenuDock", "service_menu_dock",
-               (COUNTER_STATION[0] + 0.77, 1.185, 5.44))
+               (COUNTER_STATION[0] + 0.77,
+                COUNTER_SURFACE_Y + 0.025,
+                5.44))
     add_anchor(asset, "VesselDock", "service_vessel_dock",
-               (COUNTER_STATION[0], 1.175, 5.50))
+               (COUNTER_STATION[0], COUNTER_SURFACE_Y + 0.015, 5.50))
     add_anchor(asset, "PourTarget", "service_pour_target",
-               (COUNTER_STATION[0], 1.175, 5.50))
+               (COUNTER_STATION[0], COUNTER_SURFACE_Y + 0.015, 5.50))
     add_anchor(asset, "CeilingFan", "ceiling_fan_pivot", (0.0, 4.35, 0.75))
     add_anchor(asset, "Jukebox", "jukebox_pivot", (6.4, 0.0, -6.78))
     return asset

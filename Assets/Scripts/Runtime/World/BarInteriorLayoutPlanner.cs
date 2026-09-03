@@ -63,8 +63,8 @@ namespace BarPromenade
                 new Vector3(0f, 0.9f, -7.25f),
                 new Vector3(0f, 0.12f, -6.9f),
                 new Vector3(2f, 1.8f, 1.35f),
-                new Vector3(0f, 0.5f, 5.75f),
-                new Vector3(11.2f, 1f, 1f),
+                new Vector3(0f, 0.43f, 5.75f),
+                new Vector3(11.2f, 0.86f, 1f),
                 counterStation,
                 counterStationTriggerSize,
                 activityStation,
@@ -196,13 +196,13 @@ namespace BarPromenade
                         "counter",
                         BarInteriorFurnitureKind.Counter,
                         new Rect(-5.6f, 5.25f, 11.2f, 1f),
-                        1f,
+                        0.86f,
                         true),
                     new BarInteriorFurnitureFootprint(
                         "counter-return",
                         BarInteriorFurnitureKind.CounterReturn,
                         new Rect(4.56f, 2.495f, 1.04f, 3.25f),
-                        1f,
+                        0.86f,
                         true),
                     new BarInteriorFurnitureFootprint(
                         "back-bar",
@@ -320,47 +320,47 @@ namespace BarPromenade
             AddNpc(
                 anchors,
                 stableSeed,
-                "stage-performer",
-                BarNpcRole.Performer,
-                new Vector3(-8.1f, 0.32f, 5.25f),
-                150f,
-                "stage",
-                0.08f);
+                "counter-seat-left",
+                BarNpcRole.CounterPatron,
+                new Vector3(-4.25f, 0f, 4.53f),
+                0f,
+                string.Empty,
+                0f);
+            AddNpc(
+                anchors,
+                stableSeed,
+                "counter-seat-right",
+                BarNpcRole.CounterPatron,
+                new Vector3(2.55f, 0f, 4.53f),
+                0f,
+                string.Empty,
+                0f);
             AddNpc(
                 anchors,
                 stableSeed,
                 "social-left-front",
                 BarNpcRole.StandingPatron,
-                new Vector3(-2.3f, 0f, 1.8f),
-                55f,
-                "social",
-                0.12f);
+                new Vector3(-4.2f, 0f, -3.65f),
+                90f,
+                "pub-table-left-front",
+                0f);
             AddNpc(
                 anchors,
                 stableSeed,
                 "social-right-front",
                 BarNpcRole.StandingPatron,
-                new Vector3(2.4f, 0f, 2f),
-                235f,
-                "social",
-                0.12f);
+                new Vector3(4.2f, 0f, -3.65f),
+                270f,
+                "pub-table-right-front",
+                0f);
             AddNpc(
                 anchors,
                 stableSeed,
                 "social-left-rear",
                 BarNpcRole.StandingPatron,
-                new Vector3(-3.7f, 0f, 3.2f),
-                75f,
-                "social",
-                0.1f);
-            AddNpc(
-                anchors,
-                stableSeed,
-                "walker-main",
-                BarNpcRole.Walker,
-                new Vector3(0f, 0f, -3.7f),
-                0f,
-                "main-loop",
+                new Vector3(-4.2f, 0f, 2.5f),
+                90f,
+                "pub-table-left-rear",
                 0f);
             return anchors.AsReadOnly();
         }
@@ -371,26 +371,28 @@ namespace BarPromenade
             int booth,
             float boothCenterZ)
         {
-            // Both guests sit ON the bench slab (x ~ -9.7), knees
-            // toward the table, facing east into the room.
+            // The seat target is 0.20 m forward of its former position. The
+            // seated presentation then applies each design's measured back
+            // offset, leaving both pelvises forward on the cushion and the
+            // guests facing east toward the table.
             AddNpc(
                 anchors,
                 stableSeed,
                 $"booth-{booth}-near",
                 BarNpcRole.SeatedPatron,
-                new Vector3(-9.7f, 0f, boothCenterZ - 0.55f),
+                new Vector3(-9.5f, 0f, boothCenterZ - 0.55f),
                 90f,
                 string.Empty,
-                0.04f);
+                0f);
             AddNpc(
                 anchors,
                 stableSeed,
                 $"booth-{booth}-far",
                 BarNpcRole.SeatedPatron,
-                new Vector3(-9.7f, 0f, boothCenterZ + 0.55f),
+                new Vector3(-9.5f, 0f, boothCenterZ + 0.55f),
                 90f,
                 string.Empty,
-                0.04f);
+                0f);
         }
 
         private static void AddNpc(
@@ -418,7 +420,7 @@ namespace BarPromenade
                 NpcVisualVariantCount);
             float phase = HashToUnitFloat(Mix(hash, 0x50484153u));
             float yawJitter =
-                role == BarNpcRole.Walker
+                role == BarNpcRole.Walker || jitter <= 0f
                     ? 0f
                     : (HashToUnitFloat(Mix(hash, 0x59415721u)) - 0.5f) *
                       8f;

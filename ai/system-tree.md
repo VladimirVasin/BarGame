@@ -147,7 +147,7 @@ Assets/
         NightlifePrototype01.prefab   passive fixed-metre wrapper + semantic registry
     Bar/
       BarFacade3D.prefab            complete fixed-metre bar_exterior_v2 + door/sign anchors
-      BarInterior3D.prefab          passive 179-mesh bar_interior_v3 / generator 3.1.0 pub room
+      BarInterior3D.prefab          passive 178-mesh / 12,940-triangle bar_interior_v3 / generator 3.2.1 pub room
       BarServiceProps3D.prefab      passive 29-mesh bottle/vessel/menu/stream library / 1.2.0
       BarBartenderProvider.asset    active ordinary + retained legacy six-arm links
       Textures/                     fifteen 512 px interior albedos (five used by service) + two exterior sheets
@@ -245,8 +245,8 @@ Assets/
     Models/
       BarFacade3D.fbx                   38-part complete old-neighbourhood pub exterior
       BarFacade3D.json                  bar_exterior_v2 bounds, parts, door/sign anchors + signature
-      BarInterior3D.fbx                 179-part late-Victorian British-pub interior v3.1.0
-      Bar3D.json                        v3 layout + 1.16 m counter/0.96 m stool/1.76 m eye + signature
+      BarInterior3D.fbx                 178-part / 12,940-triangle late-Victorian British-pub interior v3.2.1
+      Bar3D.json                        v3.2.1 layout + 1.02 m counter/0.8175 m cafe stools/1.6175 m eye + signature
       BarServiceProps3D.{fbx,json}      29-part bottles/vessels/open menu/pour-stream pack / 1.2.0
     Bartender/
       Models/BarBartenderOrdinary3D.{fbx,json}  active two-arm NpcHumanV2 / v3.0.0 / 39 meshes
@@ -822,7 +822,8 @@ Assets/
         SupermarketInteriorRoot.cs    layout/world/player/shop/UI composition
         SupermarketInteriorAtmosphere.cs  six shadowless practicals + flickering row
       BarInteriorRoot.cs            bar layout/world/patrons/drink-shop composition
-      BarPatronWorldBuilder.cs      pooled 3D guests on NPC anchors, seated via seat contract
+      BarPatronWorldBuilder.cs      deterministic 6 booth + 2 counter + 3 table patrons bound to furniture
+      BarPatronDrinkingBehavior.cs  exact cafe drink action at counter + bottle/table-support pose
       Bar/Bartender/                provider, registry, world builder, presentation + service choreography
       Drinks/        bar menu adapter, stable IDs, atomic purchases and physical service
         BarDrinkMenuPresentation.cs  nine priced rows over shared physical CounterMenu
@@ -1095,7 +1096,7 @@ tools/
   city_building_parts.py         pure deterministic building geometry + surface/UV/attachment/window metadata
   atlas_kit.py                   shared PNG canvas/writer + rect-based atlas and UV helpers (Hero V2 + pedestrians)
   city_building_coplanarity.py   pure exact + <3 cm broad visible-layer audit with synthetic controls
-  build-bar-3d-model.py          v3.1.0 179-mesh pub + v1.2.0 29-mesh service pack + exterior validator
+  build-bar-3d-model.py          v3.2.1 178-mesh / 12,940-triangle pub + exact cafe stools + v1.2.0 service pack
   build-ordinary-bartender-3d-model.py active two-arm NpcHumanV2 bartender generator/validator
   bar_exterior.py                deterministic 38-part late-Victorian pub geometry
   build-bar-textures.py          fifteen measured interior/service albedos + exterior brick/plaster sheets
@@ -1627,11 +1628,13 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                    -> district palette/wall motif
                                    -> practical light/audio/NPC anchors
        -> BarInteriorAtmosphere -> six shadowless lights + grade + dust
-       -> BarPatronWorldBuilder -> pooled 3D guests seated/standing on anchors
+       -> BarPatronWorldBuilder -> deterministic 11-person furniture-bound cast
+                                -> 6 booth seats at 0.48 m + 2 cafe stools at 0.8175 m
+                                -> 3 standing table leans + bottles; no Babushka/Chess/Checkers
        -> BarSoundscape -> spatial crowd bed + rare bar cues
        -> BarArrivalPresentation -> skippable Bezier camera reveal
        -> BarCounterStation -> CounterSeatPlan/View/Interaction
-                            -> authored approach -> 0.96 m stool -> physical sit -> 1.76 m eye
+                            -> authored approach -> 0.8175 m stool -> physical sit -> 1.6175 m eye
                             -> shared CounterMenu model/input/page/hint/prop motion
                                -> bar adapter: 5 + 4 localized priced rows at 1.10 m / FOV 60
                                -> failed purchase stays open

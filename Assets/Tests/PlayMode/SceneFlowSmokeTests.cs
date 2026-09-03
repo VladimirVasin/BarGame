@@ -1093,15 +1093,58 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Not.Empty,
                 "The bar must seat its 3D guests.");
             int drinkingPatrons = 0;
+            int boothPatrons = 0;
+            int counterPatrons = 0;
+            int tablePatrons = 0;
             foreach (BarPatron patron in interiorRoot.Patrons)
             {
                 Assert.That(patron.Registry, Is.Not.Null);
                 Assert.That(patron.Presentation, Is.Not.Null);
                 Assert.That(
+                    patron.Registry.DesignId,
+                    Is.Not.EqualTo(
+                        CityPedestrianResources.BabushkaDesignId),
+                    "The bar crowd must never select the standing-only " +
+                    "grandmother model for furniture seating.");
+                Assert.That(
                     patron.Anchor.Role,
                     Is.Not.EqualTo(BarNpcRole.Bartender),
                     "The bartender anchor belongs to the dedicated " +
                     "ordinary bartender, not a patron slot.");
+
+                switch (patron.Anchor.Role)
+                {
+                    case BarNpcRole.SeatedPatron:
+                        boothPatrons++;
+                        Assert.That(patron.IsSeated, Is.True);
+                        Assert.That(patron.Presentation.IsSeated, Is.True);
+                        Assert.That(patron.Drinking, Is.Null);
+                        break;
+                    case BarNpcRole.CounterPatron:
+                        counterPatrons++;
+                        Assert.That(patron.IsSeated, Is.True);
+                        Assert.That(patron.Presentation.IsSeated, Is.True);
+                        Assert.That(patron.Drinking, Is.Not.Null);
+                        Assert.That(
+                            patron.Drinking.AuthoredDrinkClip,
+                            Is.Not.Null);
+                        Assert.That(
+                            patron.Drinking.IsTableLean,
+                            Is.False);
+                        break;
+                    case BarNpcRole.StandingPatron:
+                        tablePatrons++;
+                        Assert.That(patron.IsSeated, Is.False);
+                        Assert.That(
+                            patron.Registry.transform.localPosition.y,
+                            Is.EqualTo(0f).Within(0.001f));
+                        Assert.That(patron.Drinking, Is.Not.Null);
+                        Assert.That(
+                            patron.Drinking.IsTableLean,
+                            Is.True);
+                        break;
+                }
+
                 if (patron.Drinking == null)
                 {
                     continue;
@@ -1115,8 +1158,7 @@ namespace BarPromenade.Tests.PlayMode
                     patron.Drinking.BottleRoot.IsChildOf(
                         patron.Registry.transform),
                     Is.True,
-                    "The held bottle must ride the guest's hand " +
-                    "socket.");
+                    "The stable bottle rig must stay owned by its guest.");
                 Assert.That(
                     patron.Drinking.BottleRoot
                         .GetComponentsInChildren<Renderer>(true),
@@ -1126,12 +1168,13 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(
                 drinkingPatrons,
-                Is.GreaterThan(0),
-                "A bar crowd without a single drink is no bar crowd.");
+                Is.EqualTo(5),
+                "Both counter patrons and all three table patrons drink.");
             Assert.That(
-                drinkingPatrons,
-                Is.LessThan(interiorRoot.Patrons.Count),
-                "The deliberate empty-handed minority must survive.");
+                boothPatrons,
+                Is.EqualTo(6));
+            Assert.That(counterPatrons, Is.EqualTo(2));
+            Assert.That(tablePatrons, Is.EqualTo(3));
 
             Assert.That(
                 interiorRoot.Bartender,
@@ -1225,13 +1268,13 @@ namespace BarPromenade.Tests.PlayMode
                 interiorRoot.Room.Find("Drink Order Point");
             Transform drinkOrderSign =
                 interiorRoot.Room.Find("Drink Order Sign");
-            Assert.That(drinkOrderPoint, Is.Not.Null);
+            Assert.That(
+                drinkOrderPoint,
+                Is.Null,
+                "The hero stool must not have a unique floor marker.");
             Assert.That(drinkOrderSign, Is.Not.Null);
-            Renderer drinkOrderPointRenderer =
-                drinkOrderPoint.GetComponent<Renderer>();
             Renderer drinkOrderSignRenderer =
                 drinkOrderSign.GetComponent<Renderer>();
-            Assert.That(drinkOrderPointRenderer.enabled, Is.True);
             Assert.That(drinkOrderSignRenderer.enabled, Is.True);
             BoxCollider counterStationTrigger =
                 interiorRoot.CounterStation.GetComponent<BoxCollider>();
@@ -1288,7 +1331,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.CounterStation.SeatView.IsFirstPerson,
                 Is.True);
-            Assert.That(drinkOrderPointRenderer.enabled, Is.False);
             Assert.That(drinkOrderSignRenderer.enabled, Is.False);
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
             Assert.That(
@@ -1308,7 +1350,6 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(interiorRoot.DrinkShop.IsOpen, Is.True);
             Assert.That(interiorRoot.DrinkShop.IsServing, Is.True);
-            Assert.That(drinkOrderPointRenderer.enabled, Is.False);
             Assert.That(drinkOrderSignRenderer.enabled, Is.False);
             Assert.That(
                 interiorRoot.DrinkShop.PurchaseCommitted,
@@ -1342,7 +1383,6 @@ namespace BarPromenade.Tests.PlayMode
                 interiorRoot.DrinkShop.FirstPersonArms.IsVisible,
                 Is.True);
             Assert.That(follow.FixedPoseActive, Is.True);
-            Assert.That(drinkOrderPointRenderer.enabled, Is.False);
             Assert.That(drinkOrderSignRenderer.enabled, Is.False);
             Assert.That(
                 GameSessionState.CashBalance,
@@ -1377,7 +1417,6 @@ namespace BarPromenade.Tests.PlayMode
                 BarDrinkServiceTimeline.CameraApproachDurationSeconds +
                 0.01f);
             Assert.That(interiorRoot.DrinkShop.IsBrowsing, Is.True);
-            Assert.That(drinkOrderPointRenderer.enabled, Is.False);
             Assert.That(drinkOrderSignRenderer.enabled, Is.False);
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
             Assert.That(
@@ -1388,13 +1427,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.DrinkShop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.CameraReturn));
-            Assert.That(drinkOrderPointRenderer.enabled, Is.False);
             Assert.That(drinkOrderSignRenderer.enabled, Is.False);
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
             interiorRoot.DrinkShop.AdvancePresentation(
                 BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.01f);
             Assert.That(interiorRoot.DrinkShop.IsOpen, Is.False);
-            Assert.That(drinkOrderPointRenderer.enabled, Is.True);
             Assert.That(drinkOrderSignRenderer.enabled, Is.True);
             Assert.That(follow.FixedPoseActive, Is.False);
             yield return WaitUntil(

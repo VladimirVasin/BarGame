@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "3.1.0",
+  "generator_version": "3.2.1",
   "blender_version": "5.0.1",
   "design_id": "bar_interior_v3",
   "display_name": "Bar Promenade Bar Interior",
@@ -43,8 +43,8 @@
     8.15,
     5.0
   ],
-  "mesh_count": 179,
-  "triangle_count": 12804,
+  "mesh_count": 178,
+  "triangle_count": 12940,
   "anchors": [
     {
       "name": "ActivityStation",
@@ -195,8 +195,8 @@
       "role": "hero_camera",
       "local_position": [
         -1.15,
-        4.89,
-        1.76
+        4.65,
+        1.6175
       ],
       "unity_right": [
         1.0,
@@ -220,7 +220,7 @@
       "local_position": [
         -1.15,
         7.37,
-        1.86
+        1.7175
       ],
       "unity_right": [
         1.0,
@@ -243,8 +243,8 @@
       "role": "hero_seat",
       "local_position": [
         -1.15,
-        4.77,
-        0.96
+        4.53,
+        0.8175
       ],
       "unity_right": [
         1.0,
@@ -316,7 +316,7 @@
       "local_position": [
         -0.38,
         5.44,
-        1.185
+        1.045
       ],
       "unity_right": [
         1.0,
@@ -340,7 +340,7 @@
       "local_position": [
         -1.15,
         5.5,
-        1.175
+        1.035
       ],
       "unity_right": [
         1.0,
@@ -412,7 +412,7 @@
       "local_position": [
         -1.15,
         5.5,
-        1.175
+        1.035
       ],
       "unity_right": [
         1.0,
@@ -914,12 +914,12 @@
         {
           "center": [
             0.0,
-            0.5,
+            0.43,
             5.75
           ],
           "size": [
             11.2,
-            1.0,
+            0.86,
             1.0
           ]
         }
@@ -954,12 +954,12 @@
         {
           "center": [
             5.08,
-            0.5,
+            0.43,
             4.12
           ],
           "size": [
             1.04,
-            1.0,
+            0.86,
             3.25
           ]
         }
@@ -1133,15 +1133,15 @@
       "name": "Bar Stool 1 Leg",
       "role": "stool_leg",
       "group": "fixed",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.075,
-          0.024,
-          0.017
+          0.48,
+          0.5,
+          0.43
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1153,22 +1153,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 44,
+      "triangles": 80
     },
     {
       "name": "Bar Stool 1",
       "role": "stool_seat",
       "group": "fixed",
-      "sheet": "WornLeather",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.3,
-          0.035,
-          0.045
+          0.34,
+          0.095,
+          0.035
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1180,22 +1180,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 28,
+      "triangles": 52
     },
     {
       "name": "Bar Stool 2 Leg",
       "role": "stool_leg",
       "group": "fixed",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.075,
-          0.024,
-          0.017
+          0.48,
+          0.5,
+          0.43
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1207,22 +1207,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 44,
+      "triangles": 80
     },
     {
       "name": "Bar Stool 2",
       "role": "stool_seat",
       "group": "fixed",
-      "sheet": "WornLeather",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.3,
-          0.035,
-          0.045
+          0.34,
+          0.095,
+          0.035
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1234,22 +1234,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 28,
+      "triangles": 52
     },
     {
       "name": "Bar Stool 4 Leg",
       "role": "stool_leg",
       "group": "fixed",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.075,
-          0.024,
-          0.017
+          0.48,
+          0.5,
+          0.43
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1261,22 +1261,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 44,
+      "triangles": 80
     },
     {
       "name": "Bar Stool 4",
       "role": "stool_seat",
       "group": "fixed",
-      "sheet": "WornLeather",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.3,
-          0.035,
-          0.045
+          0.34,
+          0.095,
+          0.035
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1288,22 +1288,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 28,
+      "triangles": 52
     },
     {
       "name": "Bar Stool 5 Leg",
       "role": "stool_leg",
       "group": "fixed",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.075,
-          0.024,
-          0.017
+          0.48,
+          0.5,
+          0.43
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1315,22 +1315,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 44,
+      "triangles": 80
     },
     {
       "name": "Bar Stool 5",
       "role": "stool_seat",
       "group": "fixed",
-      "sheet": "WornLeather",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.3,
-          0.035,
-          0.045
+          0.34,
+          0.095,
+          0.035
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1342,22 +1342,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 28,
+      "triangles": 52
     },
     {
       "name": "Bar Stool 6 Leg",
       "role": "stool_leg",
       "group": "fixed",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.075,
-          0.024,
-          0.017
+          0.48,
+          0.5,
+          0.43
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1369,22 +1369,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 44,
+      "triangles": 80
     },
     {
       "name": "Bar Stool 6",
       "role": "stool_seat",
       "group": "fixed",
-      "sheet": "WornLeather",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
         "field": "",
         "rgb": [
-          0.3,
-          0.035,
-          0.045
+          0.34,
+          0.095,
+          0.035
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1396,22 +1396,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 28,
+      "triangles": 52
     },
     {
       "name": "Bar Drink Service Stool Legs",
       "role": "hero_stool_legs",
       "group": "fixed",
-      "sheet": "DarkWood",
+      "sheet": "PaintedMetal",
       "emissive": false,
       "shadows": true,
       "tint": {
-        "field": "DarkWoodTint",
+        "field": "",
         "rgb": [
-          0.0,
-          0.0,
-          0.0
+          0.48,
+          0.5,
+          0.43
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1423,22 +1423,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 64,
-      "triangles": 112
+      "vertices": 20,
+      "triangles": 36
     },
     {
       "name": "Bar Drink Service Stool Footring",
       "role": "hero_stool_footring",
       "group": "fixed",
-      "sheet": "AgedBrass",
+      "sheet": "PaintedMetal",
       "emissive": false,
-      "shadows": false,
+      "shadows": true,
       "tint": {
-        "field": "MetalTint",
+        "field": "",
         "rgb": [
-          0.0,
-          0.0,
-          0.0
+          0.48,
+          0.5,
+          0.43
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1450,22 +1450,22 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 96,
-      "triangles": 192
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "Bar Drink Service Stool",
       "role": "hero_stool_seat",
       "group": "fixed",
-      "sheet": "WornLeather",
+      "sheet": "PolishedWood",
       "emissive": false,
       "shadows": true,
       "tint": {
-        "field": "UpholsteryTint",
+        "field": "",
         "rgb": [
-          0.0,
-          0.0,
-          0.0
+          0.34,
+          0.095,
+          0.035
         ],
         "scale": 1.0,
         "lerp_field": "",
@@ -1480,18 +1480,18 @@
         {
           "center": [
             -1.15,
-            0.89,
-            4.77
+            0.79,
+            4.53
           ],
           "size": [
-            0.5,
-            0.14,
-            0.5
+            0.48,
+            0.055,
+            0.48
           ]
         }
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 28,
+      "triangles": 52
     },
     {
       "name": "Bartender Duckboard",
@@ -1532,33 +1532,6 @@
       ],
       "vertices": 112,
       "triangles": 196
-    },
-    {
-      "name": "Drink Order Point",
-      "role": "drink_order_point",
-      "group": "fixed",
-      "sheet": "AgedBrass",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "MetalTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 16,
-      "triangles": 28
     },
     {
       "name": "Drink Order Sign Frame",
@@ -5824,5 +5797,5 @@
       "triangles": 168
     }
   ],
-  "build_signature": "f7e7ada5e36bf24a505efcb710d3e2c724d9bc1bbfc2ca557042f1915ac85cce"
+  "build_signature": "efad807bda9314094e97562288f11f55bf82efb94b55bcaaa08ed5015df60c36"
 }

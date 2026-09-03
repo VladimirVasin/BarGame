@@ -417,7 +417,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private void AssertBottleRowFitsNarrowWidescreen()
         {
-            Assert.That(plan.CameraPosition.y, Is.InRange(1.70f, 1.85f));
+            Assert.That(plan.CameraPosition.y, Is.InRange(1.60f, 1.65f));
             Assert.That(
                 plan.CameraLookAt.y - plan.CameraPosition.y,
                 Is.InRange(0.25f, 0.45f));

@@ -58,8 +58,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   from the layout plan, so a model can be re-cut without risking traversal.
 - **Accepted — the bar is one authored pub, not a runtime furniture kit:**
   `bar_interior_v3` keeps the validated `22 x 16 x 4.8 m` plan but moves every
-  permanent visible surface into one passive Blender asset (`179` semantic
-  meshes / `12,804` triangles). Its counter return, backbar, booths/snug, four
+  permanent visible surface into one passive Blender asset (`178` semantic
+  meshes / `12,940` triangles at generator `3.2.1`). Its counter return,
+  backbar, booths/snug, four
   small round tables, music pocket, curtains, carpet/plank and practical
   fixtures express a worn late-Victorian British pub without flag, name,
   brand, readable advertising or new lore. `bar_service_props_v1` is a second
@@ -67,6 +68,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   vessel forms, pour stream and two-page menu. Unity continues to own stable
   layout data, collision, light, liquid and interaction state; the deleted
   runtime service-mesh library has no second geometry authority.
+- **Accepted by explicit user decision, 2026-09-03 — bar patrons are bound to
+  concrete furniture, and the hero stool has no visual affordance:** every
+  regular and hero counter stool uses the Mountain Road cafe geometry
+  (`0.8175 m` top, `0.48 m` seat diameter and `0.055 m` thickness) and the
+  exact runtime `CafeMetalDetail` / `CafeCounterDetail` surfaces. The hero
+  stool joins the regular row at local `z = 4.53`; its trigger and approach
+  remain authored, but the deleted floor marker and the stool itself provide
+  no special visual affordance. The bar no longer samples a general roaming
+  order: its deterministic `11`-person composition is six compatible booth
+  sitters on `0.48 m` cushions, two counter sitters on `0.8175 m` stools and
+  three standing table patrons. The Yard Babushka and the crouched
+  Chess/Checkers designs are excluded because they cannot satisfy the relevant
+  furniture-contact contract. Counter patrons reuse the exact authored
+  `CafeManDrink` clip through an additional input in the presentation's one
+  existing `PlayableGraph` and replace the cup with a bottle. A scene-local
+  overlay visibly leans torso/head back, turns the bottle horizontal and solves
+  its authored neck anchor to the mouth. Table patrons apply the same sip while
+  planting their left hand on the real tabletop.
+  World construction evaluates seating, action and prop attachment before the
+  first visible frame. This changes only the existing bar tableau and action
+  presentation: it adds no dialogue, interaction, character design or story
+  state.
 - **Accepted — the bar seat is reusable and cafe/bar share one physical menu
   substrate:** `CounterSeat{Plan,Interaction,View}` packages the bar's authored
   approach, physical entry/loop/exit and exact camera restoration in the same
@@ -1887,10 +1910,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   keeps each of them common where they belong and rare elsewhere, not a
   reversal of the promotion.
 
-  **Known and deliberate:** `BarPatronWorldBuilder` seeds the bar crowd from
-  the same pool, so the bar now shows the promoted residents instead of the
-  four oddities. If that is ever unwanted, the bar needs its own list rather
-  than a narrowing of the street.
+  **Corrected by the bar's explicit composition decision:**
+  `BarPatronWorldBuilder` still resolves ordinary city pedestrian prefabs, but
+  it now owns a narrow deterministic bar list rather than inheriting the
+  roaming order. This does not narrow the street catalog; it only prevents an
+  incompatible body or prop from being forced into bar furniture.
 - **Accepted — Local player-relative street pedestrians:** City layout and session
   seed produce one immutable, radius-safe graph over sidewalk lanes, junction
   turns and explicit three-link zebra connectors. Recursive 2-core pruning
@@ -4116,13 +4140,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   table, stage) but constructs no controller and no `BarActivityStation`.
   `BarMinigameModalLock` survives as the generic gameplay modal lock used by
   maps, shops and inspectors.
-- **Accepted — 3D bar patrons from the city pool:** `BarPatronWorldBuilder`
-  instantiates the pooled city pedestrian prefabs on the deterministic layout
-  NPC anchors, applies each anchor's palette variant and seats `SeatedPatron`
-  roles through the shared `CityPedestrianSeatedRide` contract at `0.46 m`;
-  standing roles idle in place. The `Bartender` anchor is deliberately left
-  empty until a dedicated 3D bartender pass, mirroring the empty supermarket
-  checkout.
+- **Superseded in production 2026-09-03 — random 3D bar patrons from the city
+  pool:** the first pass sampled the general pedestrian order, seated every
+  `SeatedPatron` at one generic `0.46 m` height and left standing roles idle.
+  That contract could place garment-incompatible designs in booths and left no
+  distinct counter-seat or table-action semantics. Production now uses the
+  explicit furniture-bound `11`-person composition recorded in Current facts;
+  the shared pedestrian prefabs and seating substrate remain, but random cast
+  inheritance and the generic seat height do not.
 - **Superseded in production 2026-09-03 — the six-armed bartender pass:** on
   2026-08-29 the provider-bound `BarBartender` prefab first staffed the anchor
   as a complete `1.75 m` six-armed NpcHumanV2 figure. The asset and its legacy
@@ -4316,9 +4341,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bounds inside a 16:10 viewport, and every reusable vessel snapshots and
   restores its authored transform so repeated orders cannot compound scale.
   The camera is placed above the counter at seated eye height with a shallow
-  upward pitch; the counter's floor marker and emissive sign participate in
-  the controller's captured presentation state and remain hidden through
-  repeated orders until the explicit camera return finishes.
+  upward pitch. There is no floor order marker; the remaining emissive counter
+  sign participates in the controller's captured presentation state and stays
+  hidden through repeated orders until the explicit camera return finishes.
 - **Accepted — Session wallet and immediate bar purchases:** A fresh runtime
   session starts with `$999` in integer cash and preserves that balance across
   city/bar/supermarket scene loads and city-seed changes. Every bar owns one separate

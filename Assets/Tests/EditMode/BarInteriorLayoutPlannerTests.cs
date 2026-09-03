@@ -30,7 +30,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(new Vector3(0f, 0.9f, -7.25f)));
             Assert.That(
                 plan.CounterSize,
-                Is.EqualTo(new Vector3(11.2f, 1f, 1f)));
+                Is.EqualTo(new Vector3(11.2f, 0.86f, 1f)));
             Assert.That(
                 plan.CounterStationPosition,
                 Is.EqualTo(new Vector3(-1.15f, 0.9f, 4.75f)));
@@ -86,6 +86,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 counterReturn.Bounds,
                 Is.EqualTo(new Rect(4.56f, 2.495f, 1.04f, 3.25f)));
+            Assert.That(counterReturn.Height, Is.EqualTo(0.86f));
             Assert.That(
                 plan.FurnitureFootprints.Count(
                     item => item.Kind == BarInteriorFurnitureKind.PubTable),
@@ -284,8 +285,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.NpcAnchors.Count(
                     anchor =>
-                        anchor.Role == BarNpcRole.Performer),
-                Is.EqualTo(1));
+                        anchor.Role == BarNpcRole.CounterPatron),
+                Is.EqualTo(2));
             Assert.That(
                 plan.NpcAnchors.Count(
                     anchor =>
@@ -294,12 +295,104 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.NpcAnchors.Count(
                     anchor =>
+                        anchor.Role == BarNpcRole.Performer ||
                         anchor.Role == BarNpcRole.Walker),
-                Is.EqualTo(1));
+                Is.Zero);
         }
 
         [Test]
-        public void GeneratedNpcAnchors_RestOnFloorOrStage()
+        public void GeneratedFurnitureBoundNpcAnchorsMatchAuthoredPlaces()
+        {
+            BarInteriorLayoutPlan plan =
+                BarInteriorLayoutPlanner.Generate(
+                    91275,
+                    "bar-furniture-bound-crowd",
+                    BarActivityKind.BeerPong);
+            var expected = new[]
+            {
+                (
+                    "booth-1-near",
+                    BarNpcRole.SeatedPatron,
+                    new Vector3(-9.5f, 0f, -3.9f - 0.55f),
+                    90f,
+                    string.Empty),
+                (
+                    "booth-1-far",
+                    BarNpcRole.SeatedPatron,
+                    new Vector3(-9.5f, 0f, -3.9f + 0.55f),
+                    90f,
+                    string.Empty),
+                (
+                    "booth-2-near",
+                    BarNpcRole.SeatedPatron,
+                    new Vector3(-9.5f, 0f, -0.35f - 0.55f),
+                    90f,
+                    string.Empty),
+                (
+                    "booth-2-far",
+                    BarNpcRole.SeatedPatron,
+                    new Vector3(-9.5f, 0f, -0.35f + 0.55f),
+                    90f,
+                    string.Empty),
+                (
+                    "booth-3-near",
+                    BarNpcRole.SeatedPatron,
+                    new Vector3(-9.5f, 0f, 3.15f - 0.55f),
+                    90f,
+                    string.Empty),
+                (
+                    "booth-3-far",
+                    BarNpcRole.SeatedPatron,
+                    new Vector3(-9.5f, 0f, 3.15f + 0.55f),
+                    90f,
+                    string.Empty),
+                (
+                    "counter-seat-left",
+                    BarNpcRole.CounterPatron,
+                    new Vector3(-4.25f, 0f, 4.53f),
+                    0f,
+                    string.Empty),
+                (
+                    "counter-seat-right",
+                    BarNpcRole.CounterPatron,
+                    new Vector3(2.55f, 0f, 4.53f),
+                    0f,
+                    string.Empty),
+                (
+                    "social-left-front",
+                    BarNpcRole.StandingPatron,
+                    new Vector3(-4.2f, 0f, -3.65f),
+                    90f,
+                    "pub-table-left-front"),
+                (
+                    "social-right-front",
+                    BarNpcRole.StandingPatron,
+                    new Vector3(4.2f, 0f, -3.65f),
+                    270f,
+                    "pub-table-right-front"),
+                (
+                    "social-left-rear",
+                    BarNpcRole.StandingPatron,
+                    new Vector3(-4.2f, 0f, 2.5f),
+                    90f,
+                    "pub-table-left-rear")
+            };
+            var actual = plan.NpcAnchors
+                .Where(anchor => anchor.Role != BarNpcRole.Bartender)
+                .Select(anchor =>
+                    (
+                        anchor.Id,
+                        anchor.Role,
+                        anchor.Position,
+                        anchor.YawDegrees,
+                        anchor.RouteId))
+                .ToArray();
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [Test]
+        public void GeneratedNpcAnchors_RestOnFloor()
         {
             BarInteriorLayoutPlan plan =
                 BarInteriorLayoutPlanner.Generate(
@@ -309,13 +402,9 @@ namespace BarPromenade.Tests.EditMode
 
             foreach (BarNpcAnchor anchor in plan.NpcAnchors)
             {
-                float expectedHeight =
-                    anchor.Role == BarNpcRole.Performer
-                        ? 0.32f
-                        : 0f;
                 Assert.That(
                     anchor.Position.y,
-                    Is.EqualTo(expectedHeight).Within(0.001f),
+                    Is.EqualTo(0f).Within(0.001f),
                     anchor.Id);
             }
         }
