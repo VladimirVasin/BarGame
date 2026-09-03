@@ -26,7 +26,8 @@ namespace BarPromenade
     public sealed class Player3DCharacterPresentation :
         MonoBehaviour,
         IPlayerPresentation,
-        IPlayerClipPresentation
+        IPlayerClipPresentation,
+        IPlayerBalancePresentation
     {
         public const float FullWalkSpeed = 2.6f;
         public const float FullRunSpeed = 4.2f;
@@ -51,6 +52,16 @@ namespace BarPromenade
         private const float MotionThreshold = 0.05f;
         private const float StatusBlendSpeed = 4.5f;
         private const float BodyRadius = 0.32f;
+
+        // How far maximum intoxication lowers the pelvis onto the
+        // IK-held boots: the "heavy knees" of the old symmetric bend.
+        private const float IntoxicationCrouchMetres = 0.03f;
+
+        // The balance model's arm reaction at full instability, and how
+        // much of its pelvis roll the chest counters so the head stays
+        // nearer level than the hips.
+        private const float BalanceArmReactionDegrees = 35f;
+        private const float BalanceChestCounterRoll = -0.35f;
 
         // Turn-in-place engages only while the feet are effectively
         // stationary and the player is clearly holding a yaw input.
@@ -122,6 +133,11 @@ namespace BarPromenade
         private float fallAmount;
         private float fallDirection = 1f;
         private float footPlantAmount = 1f;
+        private float footPlantLeft = 1f;
+        private float footPlantRight = 1f;
+        private bool forwardGaitDominant;
+        private float statusSwayPhase;
+        private PlayerBalancePose balancePose = PlayerBalancePose.Neutral;
         private bool ragdollPoseActive;
         private bool interactionHandoffLocked;
         private bool releaseInteractionHandoffAfterLateUpdate;
@@ -138,6 +154,8 @@ namespace BarPromenade
         private Transform rightThighBone;
         private Transform leftShinBone;
         private Transform rightShinBone;
+        private Transform leftFootBone;
+        private Transform rightFootBone;
         private Transform headBone;
         private Transform neckBone;
         private Vector3? attentionFocus;
@@ -149,11 +167,8 @@ namespace BarPromenade
         private Quaternion attentionHeadBase;
         private Quaternion attentionNeckBase;
         private bool attentionBaseCaptured;
-        private ProceduralStatusPoseBase proceduralStatusPoseBase;
-        private bool proceduralStatusPoseBaseCaptured;
-        private FootGroundingProbe footGroundingProbe;
-        private float groundedFootHeightOffset;
-        private bool groundedFootHeightOffsetCaptured;
+        private readonly Player3DProceduralLocomotionLayer layer =
+            new Player3DProceduralLocomotionLayer();
         private PlayerFacialExpression visibleFacialExpression;
 
         public Player3DAssetRegistry Registry => registry;
@@ -199,6 +214,22 @@ namespace BarPromenade
         public float FallAmount => fallAmount;
         public float FallDirection => fallDirection;
         public bool RagdollPoseActive => ragdollPoseActive;
+
+        /// <summary>Per-foot plant weights the late leg layer works from.</summary>
+        public float LeftFootPlant => footPlantLeft;
+        public float RightFootPlant => footPlantRight;
+
+        /// <summary>What the ground probe under each boot found this frame.</summary>
+        public FootGroundSample LeftFootGround =>
+            layer.GetSample(FootSide.Left);
+        public FootGroundSample RightFootGround =>
+            layer.GetSample(FootSide.Right);
+
+        /// <summary>How far the leg solve has faded in (<c>0..1</c>).</summary>
+        public float FootIkBlend => layer.IkBlend;
+
+        /// <summary>The pelvis offset the leg layer applied this frame.</summary>
+        public float PelvisDrop => layer.LastPelvisDrop;
         public PlayerFacialExpression CurrentFacialExpression =>
             visibleFacialExpression;
         public bool UsesFacialAtlas => faceAtlasPresenter.IsConfigured;
@@ -265,8 +296,28 @@ namespace BarPromenade
             ApplyLocomotionWeights(immediate: true);
             EvaluateGraph(0f);
             ApplyFacialExpression(PlayerFacialExpression.Neutral);
-            footGroundingProbe = FootGroundingProbe.Create(registry);
-            CaptureGroundedFootHeightOffset();
+            layer.Bind(
+                registry,
+                actorFacingTransform,
+                pelvisBone,
+                chestBone,
+                leftUpperArmBone,
+                rightUpperArmBone,
+                leftThighBone,
+                leftShinBone,
+                leftFootBone,
+                rightThighBone,
+                rightShinBone,
+                rightFootBone,
+                Player3DFootGroundProbe.CreateForHero(
+                    registry,
+                    actorFacingTransform));
+            layer.BindArms(
+                GetPartBone(Player3DAnatomicalPart.LeftForearm),
+                GetPartBone(Player3DAnatomicalPart.LeftHand),
+                GetPartBone(Player3DAnatomicalPart.RightForearm),
+                GetPartBone(Player3DAnatomicalPart.RightHand));
+            layer.Calibrate();
         }
 
         public void SetMotion(in PlayerMotionSample motion)
@@ -344,7 +395,7 @@ namespace BarPromenade
             releaseInteractionHandoffAfterLateUpdate = false;
             planarSpeed = 0f;
             ResetGaitWeights();
-            footPlantAmount = 1f;
+            SetFootPlant(1f, 1f, 1f, false);
             CurrentLocomotionState = Player3DLocomotionState.Idle;
             facialState.Reset();
             ApplyLocomotionWeights(immediate: true);
@@ -366,6 +417,19 @@ namespace BarPromenade
         {
             balanceLeanTarget = Mathf.Clamp(signedLean, -1f, 1f);
         }
+
+        /// <summary>
+        /// The balance model's pose for this frame: lean, arm reaction,
+        /// crouch and any recovery step, applied additively over the clip
+        /// in the late layer. Replaced every frame by the balance
+        /// controller; a frozen or absent controller leaves it neutral.
+        /// </summary>
+        public void SetBalance(in PlayerBalancePose pose)
+        {
+            balancePose = pose;
+        }
+
+        public PlayerBalancePose BalancePose => balancePose;
 
         public void SetFallPose(float signedDirection, float amount)
         {
@@ -436,15 +500,16 @@ namespace BarPromenade
                 return;
             }
 
-            RestoreProceduralStatusPoseBase();
+            layer.Restore();
             ragdollPoseActive = active;
             if (active)
             {
                 RestoreFacialBones();
-                footPlantAmount = 0.25f;
+                SetFootPlant(0.25f, 0.25f, 0.25f, false);
             }
             else
             {
+                layer.ResetBlend();
                 EvaluateGraph(0f);
             }
         }
@@ -580,7 +645,7 @@ namespace BarPromenade
 
             if (ragdollPoseActive)
             {
-                footPlantAmount = 0.25f;
+                SetFootPlant(0.25f, 0.25f, 0.25f, false);
                 return;
             }
 
@@ -598,7 +663,8 @@ namespace BarPromenade
             else
             {
                 EvaluateGraph(0f);
-                footPlantAmount = Mathf.Lerp(1f, 0.35f, fallAmount);
+                float clipPlant = Mathf.Lerp(1f, 0.35f, fallAmount);
+                SetFootPlant(clipPlant, clipPlant, clipPlant, false);
             }
         }
 
@@ -606,7 +672,7 @@ namespace BarPromenade
         {
             if (!ragdollPoseActive)
             {
-                ApplyProceduralStatusPose();
+                ApplyProceduralStatusPose(Time.deltaTime);
                 ApplyFacialPose();
                 ApplyAttentionPose(Time.deltaTime);
             }
@@ -626,7 +692,7 @@ namespace BarPromenade
             // advancing any presentation state a second time.
             if (!ragdollPoseActive)
             {
-                ApplyProceduralStatusPose();
+                ApplyProceduralStatusPose(0f);
                 ReapplyFacialPose();
                 ApplyAttentionPose(0f);
             }
@@ -642,7 +708,8 @@ namespace BarPromenade
             balanceLean = 0f;
             fallAmount = 0f;
             fallDirection = 1f;
-            footPlantAmount = 1f;
+            SetFootPlant(1f, 1f, 1f, false);
+            balancePose = PlayerBalancePose.Neutral;
             ragdollPoseActive = false;
             planarSpeed = 0f;
             ResetGaitWeights();
@@ -660,8 +727,14 @@ namespace BarPromenade
             {
                 EndClip();
             }
-            else if (graph.IsValid())
+
+            if (graph.IsValid())
             {
+                // A disabled presentation rests on the exact neutral
+                // frame whichever way it got here: ending a clip used to
+                // leave the idle loop at whatever phase it had reached,
+                // so the resting pose depended on how long the scene had
+                // been running.
                 ApplyLocomotionWeights(immediate: true);
                 if (idlePlayable.IsValid())
                 {
@@ -676,8 +749,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
-            footGroundingProbe?.Dispose();
-            footGroundingProbe = null;
+            layer.Dispose();
             faceAtlasPresenter.Reset();
             DestroyGraph();
         }
@@ -909,6 +981,18 @@ namespace BarPromenade
                 sharedCyclesPerSecond * runBinding.Clip.length));
         }
 
+        private void SetFootPlant(
+            float combined,
+            float left,
+            float right,
+            bool forwardGait)
+        {
+            footPlantAmount = combined;
+            footPlantLeft = left;
+            footPlantRight = right;
+            forwardGaitDominant = forwardGait;
+        }
+
         private void UpdateFootPlant()
         {
             float forwardWeight =
@@ -923,20 +1007,33 @@ namespace BarPromenade
             {
                 float visibleRunRatio = Mathf.Clamp01(
                     gaitWeights[RunGait] / forwardWeight);
-                float walkPlant = SampleFootPlant(
+                SampleFootPlants(
                     walkPlayable,
                     walkBinding,
                     0.68f,
-                    false);
-                float runPlant = SampleFootPlant(
+                    false,
+                    out float walkLeft,
+                    out float walkRight);
+                SampleFootPlants(
                     runPlayable,
                     runBinding,
                     hasAuthoredRunClip ? 0.42f : 0.68f,
-                    hasAuthoredRunClip);
-                footPlantAmount = Mathf.Lerp(
+                    hasAuthoredRunClip,
+                    out float runLeft,
+                    out float runRight);
+                float left = Mathf.Lerp(
                     1f,
-                    Mathf.Lerp(walkPlant, runPlant, visibleRunRatio),
+                    Mathf.Lerp(walkLeft, runLeft, visibleRunRatio),
                     locomotionBlend);
+                float right = Mathf.Lerp(
+                    1f,
+                    Mathf.Lerp(walkRight, runRight, visibleRunRatio),
+                    locomotionBlend);
+                SetFootPlant(
+                    PlayerFootPlacementRules.CombinedPlant(left, right),
+                    left,
+                    right,
+                    true);
                 return;
             }
 
@@ -970,50 +1067,58 @@ namespace BarPromenade
                 gaitBinding = turnRightBinding;
             }
 
-            footPlantAmount = Mathf.Lerp(
+            // Backpedal and turn-in-place clips do not share Walk's
+            // left-first contact order, so both boots take the scalar
+            // plant: the legs still ground themselves, but neither is
+            // singled out as the stance foot.
+            SampleFootPlants(
+                gaitPlayable,
+                gaitBinding,
+                0.68f,
+                false,
+                out float otherLeft,
+                out float otherRight);
+            float symmetric = Mathf.Lerp(
                 1f,
-                SampleFootPlant(
-                    gaitPlayable,
-                    gaitBinding,
-                    0.68f,
-                    false),
+                PlayerFootPlacementRules.CombinedPlant(
+                    otherLeft,
+                    otherRight),
                 locomotionBlend);
+            SetFootPlant(symmetric, symmetric, symmetric, false);
         }
 
-        private static float SampleFootPlant(
+        /// <summary>
+        /// Where each boot is in its contact cycle. Walk contacts the left
+        /// heel at cycle zero and the right at one half; Run keeps the
+        /// order with a short flight near .375/.875. The scalar the
+        /// contact shadow reads is the larger of the two.
+        /// </summary>
+        private static void SampleFootPlants(
             AnimationClipPlayable playable,
             Player3DAnimationBinding binding,
             float minimumPlant,
-            bool usesRunLandmarks)
+            bool usesRunLandmarks,
+            out float left,
+            out float right)
         {
             if (!playable.IsValid() ||
                 binding == null ||
                 binding.Clip == null ||
                 binding.Clip.length <= 0.0001f)
             {
-                return 1f;
+                left = 1f;
+                right = 1f;
+                return;
             }
 
             float cycle = (float)(playable.GetTime() /
                                   binding.Clip.length);
-            float planted;
-            if (usesRunLandmarks)
-            {
-                // Run contacts at 0/.5 and reaches its short flight near
-                // .375/.875. Express that asymmetrical half-cycle directly
-                // instead of reusing Walk's quarter-cycle cosine.
-                float halfCycle = Mathf.Repeat(cycle, 0.5f) * 2f;
-                planted = halfCycle <= 0.75f
-                    ? 1f - (halfCycle / 0.75f)
-                    : (halfCycle - 0.75f) / 0.25f;
-            }
-            else
-            {
-                planted = Mathf.Abs(
-                    Mathf.Cos(cycle * Mathf.PI * 2f));
-            }
-
-            return Mathf.Lerp(minimumPlant, 1f, planted);
+            PlayerFootPlacementRules.FootPlantAmounts(
+                cycle,
+                usesRunLandmarks,
+                minimumPlant,
+                out left,
+                out right);
         }
 
         /// <summary>
@@ -1151,55 +1256,178 @@ namespace BarPromenade
             attentionBaseCaptured = false;
         }
 
-        private void ApplyProceduralStatusPose()
+        private void ApplyProceduralStatusPose(float deltaTime)
         {
-            RestoreProceduralStatusPoseBase();
-            if (registry == null || IsClipActive ||
-                interactionHandoffLocked)
+            layer.Restore();
+            bool enabled = registry != null &&
+                           !IsClipActive &&
+                           !interactionHandoffLocked;
+            if (!enabled)
             {
+                ReleaseBalanceStep();
+                layer.Apply(
+                    Player3DProceduralLayerInput.Disabled,
+                    deltaTime);
                 return;
             }
 
-            CaptureProceduralStatusPoseBase();
-            float phase = Time.unscaledTime * 1.35f;
-            float sway = Mathf.Sin(phase) *
+            UpdateBalanceStep();
+
+            // The ambient drunk idle: a slow pelvis/chest roll and spread
+            // arms scaled by the status level, on the game clock so a
+            // pinned test clock and the real game agree. The balance
+            // model's lean (slice 3) lands on top of this additively.
+            statusSwayPhase += Mathf.Max(0f, deltaTime) * 1.35f;
+            float sway = Mathf.Sin(statusSwayPhase) *
                          intoxicationAmount * 5f;
-            float stagger = Mathf.Cos(phase * 0.73f) *
+            float stagger = Mathf.Cos(statusSwayPhase * 0.73f) *
                             intoxicationAmount;
             float lean = balanceLean * 13f;
-            if (pelvisBone != null)
-            {
-                // Keep the authored horizontal pelvis anchor. Procedural
-                // translation here moves the whole scale-100 imported rig.
-                pelvisBone.localRotation *= Quaternion.AngleAxis(
-                    lean + sway,
-                    Vector3.forward);
-            }
-
-            if (chestBone != null)
-            {
-                chestBone.localRotation *= Quaternion.AngleAxis(
-                    (lean * -0.42f) + (sway * 0.55f),
-                    Vector3.forward);
-            }
-
             float armSpread = intoxicationAmount * 9f;
-            RotateBone(
-                leftUpperArmBone,
-                Vector3.forward,
-                armSpread + (stagger * 2f));
-            RotateBone(
-                rightUpperArmBone,
-                Vector3.forward,
-                -armSpread + (stagger * 2f));
 
-            float kneeBend = intoxicationAmount * 7f;
-            RotateBone(leftThighBone, Vector3.right, -kneeBend);
-            RotateBone(rightThighBone, Vector3.right, -kneeBend);
-            RotateBone(leftShinBone, Vector3.right, kneeBend * 1.35f);
-            RotateBone(rightShinBone, Vector3.right, kneeBend * 1.35f);
+            // The balance model's lean lands on top: the pelvis rolls
+            // toward the capture point, the chest counters a little so
+            // the head stays nearer level, and the arms go out as the
+            // stagger gets worse.
+            float modelWeight = balancePose.Weight;
+            float modelRoll = balancePose.LeanRollDegrees * modelWeight;
+            float modelPitch = balancePose.LeanPitchDegrees * modelWeight;
+            float modelArms = balancePose.ArmReaction * modelWeight *
+                              BalanceArmReactionDegrees;
 
-            GroundOrdinaryPose();
+            // Heavy knees come from lowering the pelvis while both boots
+            // are held by the leg solve, so they bend anatomically and
+            // asymmetrically when the feet stand on different heights.
+            float crouch = intoxicationAmount * IntoxicationCrouchMetres +
+                           balancePose.CrouchMetres * modelWeight;
+
+            layer.Apply(
+                new Player3DProceduralLayerInput(
+                    true,
+                    lean + sway + modelRoll,
+                    (lean * -0.42f) + (sway * 0.55f) +
+                    (modelRoll * BalanceChestCounterRoll),
+                    modelPitch,
+                    armSpread + (stagger * 2f) + modelArms,
+                    -armSpread + (stagger * 2f) - modelArms,
+                    crouch,
+                    footPlantLeft,
+                    footPlantRight,
+                    runBlend,
+                    hasAuthoredRunClip,
+                    forwardGaitDominant,
+                    balancePose.WallReach),
+                deltaTime);
+        }
+
+        private bool balanceStepWasActive;
+        private FootSide balanceStepSide;
+        private Vector3 balanceStepLandingWorld;
+
+        /// <summary>
+        /// Turns the balance model's recovery step into world targets for
+        /// the leg layer: the stepping boot arcs to where the model put
+        /// it, the stance boot holds its ground for the whole step, and a
+        /// boot that has landed stays where it landed until the clip
+        /// itself lifts it again.
+        /// </summary>
+        private void UpdateBalanceStep()
+        {
+            PlayerBalanceStepPose step = balancePose.Step;
+            bool active = step.Active &&
+                          balancePose.Weight > 0f &&
+                          actorFacingTransform != null;
+            if (active)
+            {
+                Vector3 forward = actorFacingTransform.forward;
+                forward.y = 0f;
+                forward = forward.sqrMagnitude > 0.0001f
+                    ? forward.normalized
+                    : Vector3.forward;
+                Vector3 right = Vector3.Cross(Vector3.up, forward);
+                float eased = Mathf.SmoothStep(0f, 1f, step.Progress);
+                Vector2 local = Vector2.Lerp(
+                    step.FromLocal,
+                    step.ToLocal,
+                    eased);
+                Vector3 world = actorFacingTransform.position +
+                                right * local.x +
+                                forward * local.y;
+                float lift = Mathf.Sin(step.Progress * Mathf.PI) * step.Lift;
+                layer.SetStepTarget(step.Side, world, lift);
+                balanceStepLandingWorld = actorFacingTransform.position +
+                                          right * step.ToLocal.x +
+                                          forward * step.ToLocal.y;
+
+                bool stepStarted = !balanceStepWasActive ||
+                                   balanceStepSide != step.Side;
+                if (stepStarted)
+                {
+                    // The stance boot holds the ground it was LAST solved
+                    // onto — the raw clip pose under it may be centimetres
+                    // away, and a lock taken there would jump the boot.
+                    FootSide stance = step.Side == FootSide.Left
+                        ? FootSide.Right
+                        : FootSide.Left;
+                    Transform stanceFoot = stance == FootSide.Left
+                        ? leftFootBone
+                        : rightFootBone;
+                    layer.ReleaseFoot(step.Side);
+                    if (layer.TryGetLastAnklePosition(
+                            stance,
+                            out Vector3 stancePosition))
+                    {
+                        layer.LockFoot(stance, stancePosition);
+                    }
+                    else if (stanceFoot != null)
+                    {
+                        layer.LockFoot(stance, stanceFoot.position);
+                    }
+                }
+
+                balanceStepWasActive = true;
+                balanceStepSide = step.Side;
+                return;
+            }
+
+            if (balanceStepWasActive)
+            {
+                // Landed: the boot keeps the spot the step put it on until
+                // the clip swings it, and the stance boot is free again.
+                layer.ClearStepTarget();
+                layer.ReleaseFoot(FootSide.Left);
+                layer.ReleaseFoot(FootSide.Right);
+                if (balancePose.Weight > 0f)
+                {
+                    layer.LockFoot(balanceStepSide, balanceStepLandingWorld);
+                }
+
+                balanceStepWasActive = false;
+            }
+
+            if (layer.IsFootLocked(FootSide.Left) && footPlantLeft < 0.5f)
+            {
+                layer.ReleaseFoot(FootSide.Left);
+            }
+
+            if (layer.IsFootLocked(FootSide.Right) && footPlantRight < 0.5f)
+            {
+                layer.ReleaseFoot(FootSide.Right);
+            }
+
+            if (balancePose.Weight <= 0f)
+            {
+                layer.ReleaseFoot(FootSide.Left);
+                layer.ReleaseFoot(FootSide.Right);
+            }
+        }
+
+        private void ReleaseBalanceStep()
+        {
+            layer.ClearStepTarget();
+            layer.ReleaseFoot(FootSide.Left);
+            layer.ReleaseFoot(FootSide.Right);
+            balanceStepWasActive = false;
         }
 
         private void CaptureStatusBones()
@@ -1220,109 +1448,12 @@ namespace BarPromenade
                 Player3DAnatomicalPart.LeftShin);
             rightShinBone = GetPartBone(
                 Player3DAnatomicalPart.RightShin);
-            proceduralStatusPoseBaseCaptured = false;
-            footGroundingProbe?.Dispose();
-            footGroundingProbe = null;
-            groundedFootHeightOffsetCaptured = false;
-        }
-
-        private void CaptureProceduralStatusPoseBase()
-        {
-            proceduralStatusPoseBase = new ProceduralStatusPoseBase(
-                pelvisBone,
-                chestBone,
-                leftUpperArmBone,
-                rightUpperArmBone,
-                leftThighBone,
-                rightThighBone,
-                leftShinBone,
-                rightShinBone);
-            proceduralStatusPoseBaseCaptured = true;
-        }
-
-        private void RestoreProceduralStatusPoseBase()
-        {
-            if (!proceduralStatusPoseBaseCaptured)
-            {
-                return;
-            }
-
-            proceduralStatusPoseBase.Restore();
-            proceduralStatusPoseBaseCaptured = false;
-        }
-
-        private bool TryGetLowestFootHeight(out float height)
-        {
-            height = float.PositiveInfinity;
-            if (registry == null)
-            {
-                return false;
-            }
-
-            IncludeFootHeight(registry.Anchors.LeftFoot, ref height);
-            IncludeFootHeight(registry.Anchors.RightFoot, ref height);
-            return !float.IsPositiveInfinity(height);
-        }
-
-        private void CaptureGroundedFootHeightOffset()
-        {
-            groundedFootHeightOffsetCaptured = false;
-            if (actorFacingTransform == null ||
-                !TryGetGroundingHeight(out float footHeight))
-            {
-                return;
-            }
-
-            groundedFootHeightOffset =
-                footHeight - actorFacingTransform.position.y;
-            groundedFootHeightOffsetCaptured = true;
-        }
-
-        private void GroundOrdinaryPose()
-        {
-            if (pelvisBone == null ||
-                actorFacingTransform == null ||
-                !groundedFootHeightOffsetCaptured ||
-                !TryGetGroundingHeight(out float footHeight))
-            {
-                return;
-            }
-
-            // The CharacterController owns the grounded actor root, while
-            // ordinary locomotion and intoxication are bone-only. Always
-            // lift sole penetration. Walk/Idle still pin the lower boot, but
-            // Run progressively releases downward correction so its brief
-            // authored flight phase survives the crossfade.
-            float targetHeight = actorFacingTransform.position.y +
-                                 groundedFootHeightOffset;
-            float correction = targetHeight - footHeight;
-            if (correction < 0f && hasAuthoredRunClip)
-            {
-                correction *= 1f - Mathf.Clamp01(runBlend);
-            }
-
-            pelvisBone.position += Vector3.up * correction;
-        }
-
-        private bool TryGetGroundingHeight(out float height)
-        {
-            if (footGroundingProbe != null &&
-                footGroundingProbe.TryGetLowestHeight(out height))
-            {
-                return true;
-            }
-
-            return TryGetLowestFootHeight(out height);
-        }
-
-        private static void IncludeFootHeight(
-            Transform foot,
-            ref float height)
-        {
-            if (foot != null && IsFinite(foot.position))
-            {
-                height = Mathf.Min(height, foot.position.y);
-            }
+            leftFootBone = registry.Anchors.LeftFoot != null
+                ? registry.Anchors.LeftFoot
+                : GetPartBone(Player3DAnatomicalPart.LeftFoot);
+            rightFootBone = registry.Anchors.RightFoot != null
+                ? registry.Anchors.RightFoot
+                : GetPartBone(Player3DAnatomicalPart.RightFoot);
         }
 
         private Transform GetPartBone(Player3DAnatomicalPart part)
@@ -1331,19 +1462,6 @@ namespace BarPromenade
                    binding != null
                 ? binding.Bone
                 : null;
-        }
-
-        private static void RotateBone(
-            Transform bone,
-            Vector3 localAxis,
-            float degrees)
-        {
-            if (bone != null)
-            {
-                bone.localRotation *= Quaternion.AngleAxis(
-                    degrees,
-                    localAxis);
-            }
         }
 
         private void CaptureFacialBones()
@@ -1555,7 +1673,7 @@ namespace BarPromenade
             // frame: restoring them in LateUpdate instead would roll the
             // freshly evaluated head/neck animation back to a stale base
             // and freeze it for as long as the additive stays engaged.
-            RestoreProceduralStatusPoseBase();
+            layer.Restore();
             RestoreAttentionPoseBase();
             if (graph.IsValid())
             {
@@ -1565,7 +1683,7 @@ namespace BarPromenade
 
         private void DestroyGraph()
         {
-            RestoreProceduralStatusPoseBase();
+            layer.Restore();
             RestoreAttentionPoseBase();
             ResetClipSpatialOffset();
             if (graph.IsValid())
@@ -1576,184 +1694,6 @@ namespace BarPromenade
             activeClipPlayable = default;
             activeClipBinding = null;
             activeClipOwner = ClipOwner.None;
-        }
-
-        private readonly struct ProceduralStatusPoseBase
-        {
-            private readonly BoneLocalPose pelvis;
-            private readonly BoneLocalPose chest;
-            private readonly BoneLocalPose leftUpperArm;
-            private readonly BoneLocalPose rightUpperArm;
-            private readonly BoneLocalPose leftThigh;
-            private readonly BoneLocalPose rightThigh;
-            private readonly BoneLocalPose leftShin;
-            private readonly BoneLocalPose rightShin;
-
-            public ProceduralStatusPoseBase(
-                Transform pelvisBone,
-                Transform chestBone,
-                Transform leftUpperArmBone,
-                Transform rightUpperArmBone,
-                Transform leftThighBone,
-                Transform rightThighBone,
-                Transform leftShinBone,
-                Transform rightShinBone)
-            {
-                pelvis = new BoneLocalPose(pelvisBone);
-                chest = new BoneLocalPose(chestBone);
-                leftUpperArm = new BoneLocalPose(leftUpperArmBone);
-                rightUpperArm = new BoneLocalPose(rightUpperArmBone);
-                leftThigh = new BoneLocalPose(leftThighBone);
-                rightThigh = new BoneLocalPose(rightThighBone);
-                leftShin = new BoneLocalPose(leftShinBone);
-                rightShin = new BoneLocalPose(rightShinBone);
-            }
-
-            public void Restore()
-            {
-                pelvis.Restore();
-                chest.Restore();
-                leftUpperArm.Restore();
-                rightUpperArm.Restore();
-                leftThigh.Restore();
-                rightThigh.Restore();
-                leftShin.Restore();
-                rightShin.Restore();
-            }
-        }
-
-        private sealed class FootGroundingProbe
-        {
-            private readonly SkinnedMeshRenderer[] soleRenderers;
-            private readonly Mesh bakedSoleMesh;
-            private readonly List<Vector3> bakedSoleVertices =
-                new List<Vector3>(32);
-
-            private FootGroundingProbe(
-                SkinnedMeshRenderer[] renderers)
-            {
-                soleRenderers = renderers;
-                bakedSoleMesh = new Mesh
-                {
-                    name = "Player3D Foot Grounding Probe",
-                    hideFlags = HideFlags.HideAndDontSave
-                };
-                bakedSoleMesh.MarkDynamic();
-            }
-
-            public static FootGroundingProbe Create(
-                Player3DAssetRegistry assetRegistry)
-            {
-                if (assetRegistry == null)
-                {
-                    return null;
-                }
-
-                var renderers = new List<SkinnedMeshRenderer>();
-                IReadOnlyList<Player3DMeshBinding> bindings =
-                    assetRegistry.MeshBindings;
-                for (int index = 0; index < bindings.Count; index++)
-                {
-                    Player3DMeshBinding binding = bindings[index];
-                    if (binding == null ||
-                        !(binding.Renderer is SkinnedMeshRenderer renderer) ||
-                        binding.Bone == null ||
-                        (binding.BoneName != "foot.L" &&
-                         binding.BoneName != "foot.R"))
-                    {
-                        continue;
-                    }
-
-                    if (!renderers.Contains(renderer))
-                    {
-                        renderers.Add(renderer);
-                    }
-                }
-
-                return renderers.Count > 0
-                    ? new FootGroundingProbe(renderers.ToArray())
-                    : null;
-            }
-
-            public bool TryGetLowestHeight(out float height)
-            {
-                height = float.PositiveInfinity;
-                for (int index = 0;
-                     index < soleRenderers.Length;
-                     index++)
-                {
-                    SkinnedMeshRenderer renderer = soleRenderers[index];
-                    if (renderer == null || renderer.sharedMesh == null)
-                    {
-                        continue;
-                    }
-
-                    bakedSoleMesh.Clear(false);
-                    renderer.BakeMesh(bakedSoleMesh, true);
-                    bakedSoleVertices.Clear();
-                    bakedSoleMesh.GetVertices(bakedSoleVertices);
-                    for (int vertexIndex = 0;
-                         vertexIndex < bakedSoleVertices.Count;
-                         vertexIndex++)
-                    {
-                        Vector3 worldVertex =
-                            renderer.transform.TransformPoint(
-                                bakedSoleVertices[vertexIndex]);
-                        if (IsFinite(worldVertex))
-                        {
-                            height = Mathf.Min(height, worldVertex.y);
-                        }
-                    }
-                }
-
-                return !float.IsPositiveInfinity(height);
-            }
-
-            public void Dispose()
-            {
-                if (bakedSoleMesh == null)
-                {
-                    return;
-                }
-
-                if (Application.isPlaying)
-                {
-                    UnityEngine.Object.Destroy(bakedSoleMesh);
-                }
-                else
-                {
-                    UnityEngine.Object.DestroyImmediate(bakedSoleMesh);
-                }
-            }
-        }
-
-        private readonly struct BoneLocalPose
-        {
-            private readonly Transform bone;
-            private readonly Vector3 localPosition;
-            private readonly Quaternion localRotation;
-
-            public BoneLocalPose(Transform boneToCapture)
-            {
-                bone = boneToCapture;
-                localPosition = bone != null
-                    ? bone.localPosition
-                    : Vector3.zero;
-                localRotation = bone != null
-                    ? bone.localRotation
-                    : Quaternion.identity;
-            }
-
-            public void Restore()
-            {
-                if (bone == null)
-                {
-                    return;
-                }
-
-                bone.localPosition = localPosition;
-                bone.localRotation = localRotation;
-            }
         }
 
         private static bool IsFinite(Vector3 value)

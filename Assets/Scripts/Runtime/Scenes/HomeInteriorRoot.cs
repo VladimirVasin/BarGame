@@ -347,18 +347,12 @@ namespace BarPromenade
             BuildRefrigeratorInteraction();
             BuildBalconySmokingInteraction();
             BuildBathroomSceneInteractions();
-            BalanceCheckView balanceView =
-                ui.AddComponent<BalanceCheckView>();
-            balanceView.Initialize(
-                Player.GameObject.transform,
-                camera);
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
                 Player,
                 CameraFollow,
-                IntoxicationHud,
-                balanceView);
+                IntoxicationHud);
             BuildExit();
             if (Arrival == HomeArrivalKind.OpeningSleep)
             {

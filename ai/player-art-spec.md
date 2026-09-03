@@ -153,9 +153,17 @@ fallback and is not deleted.
   Events remain disabled. The ragdoll is a procedural runtime phase rather than
   an Action; its ownership flag prevents the manual PlayableGraph and additive
   late pose from writing the same bones until recovery.
-- Intoxication sway, arm spread, knee bend and signed balance lean are additive
-  bone presentation over ordinary locomotion and reset to neutral through the
-  shared lifecycle cleanup.
+- Intoxication sway and arm spread are additive bone presentation over ordinary
+  locomotion, on the game clock, and reset to neutral through the shared
+  lifecycle cleanup. The old symmetric knee bend is gone: heavy knees come from
+  a lowered pelvis while both boots are held to the ground by the late leg
+  layer, so they bend anatomically and asymmetrically on uneven ground. The
+  balance model's lean, arm reaction, crouch, recovery steps and wall hand land
+  on the same layer additively; every ordinary clip therefore keeps its
+  authored feet and the layer only corrects them to the probed surface (heel
+  and toe rays under each boot, the lower boot leading the pelvis, the clip's
+  own lift preserved relative to the other boot, run flight released with the
+  Run weight).
 - Runtime blends Idle, Walk and Run from actual constrained planar speed with
   damped `0.14 s` start and `0.20 s` stop envelopes. The Run blend begins above
   the `2.6 m/s` walk ceiling and reaches full weight at `4.2 m/s`; collision,

@@ -67,7 +67,7 @@ namespace BarPromenade
     /// picture.
     ///
     /// The simulation steps at a fixed rate, like
-    /// <see cref="BalanceChallengeModel"/>, so a hitched frame cannot
+    /// <see cref="PlayerBalanceModel"/>, so a hitched frame cannot
     /// slide the marker past the window.
     /// </summary>
     public sealed class CemeteryStrokeModel

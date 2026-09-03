@@ -10,7 +10,8 @@ namespace BarPromenade
             PlayerInteractor interactor,
             IPlayerPresentation visual,
             PlayerContactShadow contactShadow = null,
-            Player3DRagdollController ragdoll = null)
+            Player3DRagdollController ragdoll = null,
+            PlayerBalanceController balance = null)
         {
             GameObject = gameObject;
             Motor = motor;
@@ -18,6 +19,7 @@ namespace BarPromenade
             Visual = visual;
             ContactShadow = contactShadow;
             Ragdoll = ragdoll;
+            Balance = balance;
             PresentationVisibility = visual != null
                 ? new PlayerPresentationVisibility(
                     visual,
@@ -31,6 +33,9 @@ namespace BarPromenade
         public IPlayerPresentation Visual { get; }
         public PlayerContactShadow ContactShadow { get; }
         public Player3DRagdollController Ragdoll { get; }
+
+        /// <summary>The drunk balance model's driver, or null on a bare rig.</summary>
+        public PlayerBalanceController Balance { get; }
         public PlayerPresentationVisibility PresentationVisibility
         {
             get;
@@ -148,13 +153,26 @@ namespace BarPromenade
             PlayerAttentionController attention =
                 player.AddComponent<PlayerAttentionController>();
             attention.Initialize(interactor, visual);
+
+            // The drunk balance: a model that drifts the capsule through
+            // the motor and leans the rig through the presentation. Inert
+            // until the status controller raises its intoxication.
+            PlayerBalanceController balance =
+                player.AddComponent<PlayerBalanceController>();
             var runtime = new PlayerRuntime(
                 player,
                 motor,
                 interactor,
                 visual,
                 contactShadow,
-                ragdoll);
+                ragdoll,
+                balance);
+            balance.Initialize(
+                runtime,
+                walkableArea,
+                PlayerBalanceRules.EpisodeSeed(
+                    GameSessionState.CitySeed,
+                    GameSessionState.BalanceCheckSequence));
             PlayerAnimatedInteractionController animatedInteraction =
                 player.AddComponent<
                     PlayerAnimatedInteractionController>();

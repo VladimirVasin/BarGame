@@ -4581,3 +4581,41 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   ambient walkers the same rest-pelvis and Avatar contract; their per-archetype
   seated offsets remain independent so canonical silhouettes still clear the
   cabin.
+- **Accepted and implemented 2026-09-03 — the drunk hero is a continuous
+  balance model, not a scheduled check; feet are solved onto the ground:** the
+  modal arrow challenge (`BalanceChallengeModel`, `BalanceCheckView`, its
+  interval schedule and `BarMinigameModalLockOptions.BalanceCheck` capture at
+  the check) is removed by the user's decision. `PlayerBalanceModel` is a pure,
+  seeded, fixed-step (`1/120 s`) linear inverted pendulum in the hero's frame:
+  seeded sways and filtered noise scaled by the level push the centre of mass,
+  the centre of pressure chases the capture point with a level-dependent delay,
+  A/D shifts it toward the pressed side (leaning into the fall is the
+  recovery, and tank yaw is scaled down while unstable so the recovery does not
+  spin him), a capture point outside the two boots' polygon plans a recovery
+  step past it, a wall within reach on the tipping side becomes support once
+  the hand holds it, and a kerb under the swinging boot is a forward trip.
+  Sober is bit-exactly inert. The model's drift moves the CAPSULE: `PlayerMotor`
+  carries it as a second `Move` through the same `IWalkableArea` constraint and
+  never folds it into the player's own momentum, so the capsule, the camera and
+  the body cannot disagree and a wall that stops the drift cannot fling him.
+  `IntoxicationStatusController` keeps the Fall clip -> ragdoll -> Rise pipeline
+  unchanged and starts it only when the model latches a fall above level `60`,
+  after the session's grace, grounded and on a surface under `12°`; on a stair
+  the model is pinned to the recoverable polygon and only staggers.
+  `GameSessionState.BalanceCheckDelayRemaining` now means the grace before
+  balance can be lost again and `BalanceCheckSequence` the episode counter, so
+  the session format is unchanged. Feet: `Player3DProceduralLocomotionLayer`
+  is the one late bone writer after the clip — restore, lean, per-foot heel/toe
+  probes (`Physics.DefaultRaycastLayers`, triggers accepted only on the
+  `FootProbe` layer), pelvis to the lower boot (run-released), `LimbTwoBoneIk`
+  per leg (the seated-arm solver moved out of `SeatedArmIk` and given an
+  analytic law-of-cosines pre-bend, because CCD aims but cannot shorten a
+  nearly straight leg), stance-foot locks during recovery steps, and the wall
+  hand. Stair treads in the stairwell and the city exterior stairs are
+  render-only boxes over a hidden ramp, so each tread now also carries a
+  raycast-only TRIGGER `BoxCollider` on the `FootProbe` layer (user layer 10):
+  the physics matrix hides it from the hero, the ragdoll, pedestrians and the
+  bus, every obstacle sweep in the project ignores triggers, and only the foot
+  probes see it. City walkers adopt the legs-only layer with bones found by
+  the shared names; airborne designs and seated riders keep their old paths.
+

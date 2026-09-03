@@ -19,7 +19,6 @@ namespace BarPromenade.Tests.PlayMode
         private Player3DRagdollController ragdoll;
         private Player3DCharacterPresentation presentation;
         private IntoxicationHudView hud;
-        private BalanceCheckView balanceView;
         private IntoxicationStatusController status;
 
         [UnitySetUp]
@@ -60,11 +59,6 @@ namespace BarPromenade.Tests.PlayMode
             uiObject = new GameObject(
                 "Intoxication Test UI");
             hud = uiObject.AddComponent<IntoxicationHudView>();
-            balanceView =
-                uiObject.AddComponent<BalanceCheckView>();
-            balanceView.Initialize(
-                playerObject.transform,
-                camera);
             status =
                 uiObject.AddComponent<IntoxicationStatusController>();
 
@@ -98,8 +92,7 @@ namespace BarPromenade.Tests.PlayMode
             status.Initialize(
                 CreatePlayerRuntime(),
                 cameraFollow,
-                hud,
-                balanceView);
+                hud);
             yield return null;
 
             Assert.That(
@@ -131,6 +124,14 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 IntoxicationRenderState.Current.GhostPixels,
                 Is.EqualTo(3f).Within(0.001f));
+            Assert.That(
+                status.Balance,
+                Is.Not.Null,
+                "The production hero carries the balance controller.");
+            Assert.That(
+                status.Balance.Intoxication,
+                Is.EqualTo(1f).Within(0.001f),
+                "The status controller feeds the balance model its level.");
 
             IntoxicationLensVolumeDriver lensDriver =
                 uiObject
@@ -157,7 +158,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator BalanceCheck_AboveSixtyKeepsMovementAndCancelsAtThreshold()
+        public IEnumerator Staggering_AboveSixtyKeepsInputAndStopsAtThreshold()
         {
             GameSessionState.UpdateDrinkingProgress(
                 80,
@@ -166,8 +167,7 @@ namespace BarPromenade.Tests.PlayMode
             status.Initialize(
                 CreatePlayerRuntime(),
                 cameraFollow,
-                hud,
-                balanceView);
+                hud);
 
             float groundedDeadline =
                 Time.realtimeSinceStartup + 1f;
@@ -178,34 +178,34 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(motor.IsGrounded, Is.True);
-            Assert.That(status.TryStartBalanceCheck(), Is.True);
-            Assert.That(status.IsBalanceCheckActive, Is.True);
-            Assert.That(balanceView.Visible, Is.True);
-            Assert.That(balanceView.IsWarning, Is.True);
+            yield return null;
+            yield return null;
+
+            // No modal, no arrow: the model runs while he keeps every
+            // control, and the only thing the level did was let a fall
+            // become possible.
+            Assert.That(status.Balance, Is.Not.Null);
+            Assert.That(status.Balance.IsActive, Is.True);
+            Assert.That(status.Balance.FallAllowedNow, Is.True);
+            Assert.That(status.IsFalling, Is.False);
             Assert.That(motor.InputEnabled, Is.True);
-            Assert.That(interactor.InputEnabled, Is.False);
-            Assert.That(cameraFollow.OrbitInputEnabled, Is.False);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(cameraFollow.CinematicMotionEnabled, Is.True);
             Assert.That(hud.Visible, Is.True);
-
-            float activeDeadline = Time.realtimeSinceStartup + 1.5f;
-            while (status.BalanceStateName != "Active" &&
-                   Time.realtimeSinceStartup < activeDeadline)
-            {
-                yield return null;
-            }
-
-            Assert.That(status.BalanceStateName, Is.EqualTo("Active"));
-            Assert.That(motor.InputEnabled, Is.True);
+            Assert.That(
+                status.Balance.Intoxication,
+                Is.GreaterThan(0.5f));
 
             GameSessionState.UpdateDrinkingProgress(
                 60,
                 DrinkId.RedWine,
                 4);
             yield return null;
+            yield return null;
 
-            Assert.That(status.IsBalanceCheckActive, Is.False);
-            Assert.That(balanceView.Visible, Is.False);
+            Assert.That(status.Balance.FallAllowedNow, Is.False);
+            Assert.That(status.IsFalling, Is.False);
             Assert.That(motor.InputEnabled, Is.True);
             Assert.That(interactor.InputEnabled, Is.True);
             Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
@@ -216,7 +216,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator FailedBalanceCheck_FallsRecoversAndSchedulesCooldown()
+        public IEnumerator LostBalance_FallsRecoversAndArmsGrace()
         {
             GameSessionState.UpdateDrinkingProgress(
                 100,
@@ -225,8 +225,7 @@ namespace BarPromenade.Tests.PlayMode
             status.Initialize(
                 CreatePlayerRuntime(),
                 cameraFollow,
-                hud,
-                balanceView);
+                hud);
 
             float groundedDeadline =
                 Time.realtimeSinceStartup + 1f;
@@ -237,9 +236,14 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(motor.IsGrounded, Is.True);
-            Assert.That(status.TryStartBalanceCheck(), Is.True);
+            yield return null;
             Assert.That(motor.InputEnabled, Is.True);
-            Assert.That(interactor.InputEnabled, Is.False);
+            Assert.That(interactor.InputEnabled, Is.True);
+            Assert.That(
+                status.DebugForceLoseBalance(1f),
+                Is.True,
+                "A grounded, unblocked hero above the threshold can " +
+                "lose his balance.");
 
             float fallDeadline =
                 Time.realtimeSinceStartup + 6f;
@@ -251,9 +255,13 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(status.IsFalling, Is.True);
             Assert.That(status.BalanceStateName, Is.EqualTo("Falling"));
-            Assert.That(balanceView.Visible, Is.False);
+            Assert.That(status.FallDirection, Is.EqualTo(1f));
             Assert.That(motor.InputEnabled, Is.False);
             Assert.That(interactor.InputEnabled, Is.False);
+            Assert.That(
+                status.Balance.IsActive,
+                Is.False,
+                "The model is frozen while the fall plays.");
             Assert.That(ragdoll, Is.Not.Null);
             Assert.That(ragdoll.IsSimulating, Is.False);
             Assert.That(presentation.RagdollPoseActive, Is.False);
@@ -379,16 +387,27 @@ namespace BarPromenade.Tests.PlayMode
                 "Rise(1) must remain active for one presentation frame " +
                 "before ordinary locomotion is restored.");
             Assert.That(status.IsFalling, Is.False);
-            Assert.That(status.IsBalanceCheckActive, Is.False);
             Assert.That(motor.InputEnabled, Is.True);
             Assert.That(interactor.InputEnabled, Is.True);
             Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(
+                status.Balance.Model.LostBalance,
+                Is.False,
+                "The next episode starts on a fresh model.");
+            Assert.That(
                 GameSessionState.BalanceCheckDelayRemaining,
-                Is.GreaterThan(12f));
+                Is.GreaterThan(
+                    IntoxicationStatusController.PostFallGraceDuration - 1f),
+                "A fall arms the post-fall grace in the session.");
             Assert.That(
                 GameSessionState.BalanceCheckSequence,
-                Is.EqualTo(2));
+                Is.EqualTo(1),
+                "One episode was consumed by the fall.");
+            yield return null;
+            Assert.That(
+                status.Balance.FallAllowedNow,
+                Is.False,
+                "Balance cannot be lost again inside the grace.");
         }
 
         private PlayerRuntime CreatePlayerRuntime()

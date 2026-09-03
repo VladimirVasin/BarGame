@@ -98,7 +98,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void BalanceRules_EnableOnlyAboveSixtyAndGetHarder()
+        public void BalanceThreshold_EnablesFallsOnlyAboveSixty()
         {
             IntoxicationProfile threshold =
                 IntoxicationStageRules.Evaluate(60);
@@ -106,60 +106,37 @@ namespace BarPromenade.Tests.EditMode
                 IntoxicationStageRules.Evaluate(61);
             IntoxicationProfile maximum =
                 IntoxicationStageRules.Evaluate(100);
-            BalanceChallengeSettings low =
-                BalanceChallengeSettings.FromDifficulty(
-                    firstEnabled.BalanceDifficulty);
-            BalanceChallengeSettings high =
-                BalanceChallengeSettings.FromDifficulty(
-                    maximum.BalanceDifficulty);
 
             Assert.That(threshold.BalanceEnabled, Is.False);
             Assert.That(firstEnabled.BalanceEnabled, Is.True);
             Assert.That(maximum.BalanceEnabled, Is.True);
-            Assert.That(high.WarningDuration, Is.LessThan(low.WarningDuration));
-            Assert.That(high.Duration, Is.GreaterThan(low.Duration));
             Assert.That(
-                high.SafeSectorDegrees,
-                Is.LessThan(low.SafeSectorDegrees));
-            Assert.That(
-                high.PointerFrequency,
-                Is.GreaterThan(low.PointerFrequency));
-            Assert.That(
-                BalanceChallengeRules.GetMinimumInterval(100),
-                Is.LessThan(BalanceChallengeRules.GetMinimumInterval(61)));
-            Assert.That(
-                BalanceChallengeRules.GetMaximumInterval(100),
-                Is.LessThan(BalanceChallengeRules.GetMaximumInterval(61)));
+                maximum.BalanceDifficulty,
+                Is.GreaterThan(firstEnabled.BalanceDifficulty));
         }
 
         [Test]
-        public void BalanceRules_IntervalsAndSeeds_AreDeterministic()
+        public void EpisodeSeed_IsDeterministicAndChangesWithSequence()
         {
             const int citySeed = 887733;
             const int sequence = 4;
-            float first = BalanceChallengeRules.GetNextInterval(
-                84,
-                citySeed,
-                sequence);
-            float repeated = BalanceChallengeRules.GetNextInterval(
-                84,
-                citySeed,
-                sequence);
 
-            Assert.That(repeated, Is.EqualTo(first));
             Assert.That(
-                first,
-                Is.InRange(
-                    BalanceChallengeRules.GetMinimumInterval(84),
-                    BalanceChallengeRules.GetMaximumInterval(84)));
+                PlayerBalanceRules.EpisodeSeed(citySeed, sequence),
+                Is.EqualTo(
+                    PlayerBalanceRules.EpisodeSeed(citySeed, sequence)));
             Assert.That(
-                BalanceChallengeRules.GetChallengeSeed(
-                    citySeed,
-                    sequence),
+                PlayerBalanceRules.EpisodeSeed(citySeed, sequence),
                 Is.Not.EqualTo(
-                    BalanceChallengeRules.GetChallengeSeed(
+                    PlayerBalanceRules.EpisodeSeed(
                         citySeed,
                         sequence + 1)));
+            Assert.That(
+                PlayerBalanceRules.EpisodeSeed(citySeed, sequence),
+                Is.Not.EqualTo(
+                    PlayerBalanceRules.EpisodeSeed(
+                        citySeed + 1,
+                        sequence)));
         }
 
         [Test]
@@ -181,129 +158,5 @@ namespace BarPromenade.Tests.EditMode
                         .RecoverySecondsPerPointAtMaximumLevel));
         }
 
-        [Test]
-        public void BalanceModel_FixedStepIsIndependentOfFrameChunking()
-        {
-            BalanceChallengeSettings settings =
-                BalanceChallengeSettings.FromDifficulty(0.65f);
-            var sixtyFps = new BalanceChallengeModel(settings, 12345);
-            var thirtyFps = new BalanceChallengeModel(settings, 12345);
-
-            for (int index = 0; index < 60; index++)
-            {
-                sixtyFps.Advance(1f / 60f, 0.35f);
-            }
-
-            for (int index = 0; index < 30; index++)
-            {
-                thirtyFps.Advance(1f / 30f, 0.35f);
-            }
-
-            Assert.That(
-                sixtyFps.Position,
-                Is.EqualTo(thirtyFps.Position).Within(0.0001f));
-            Assert.That(
-                sixtyFps.Velocity,
-                Is.EqualTo(thirtyFps.Velocity).Within(0.0001f));
-            Assert.That(
-                sixtyFps.Risk,
-                Is.EqualTo(thirtyFps.Risk).Within(0.0001f));
-            Assert.That(
-                sixtyFps.Elapsed,
-                Is.EqualTo(thirtyFps.Elapsed).Within(0.0001f));
-        }
-
-        [Test]
-        public void BalanceModel_LeftAndRightInputPushInOppositeDirections()
-        {
-            BalanceChallengeSettings settings =
-                BalanceChallengeSettings.FromDifficulty(0.5f);
-            var left = new BalanceChallengeModel(settings, 5566);
-            var right = new BalanceChallengeModel(settings, 5566);
-
-            for (int index = 0; index < 60; index++)
-            {
-                left.Advance(1f / 60f, -1f);
-                right.Advance(1f / 60f, 1f);
-            }
-
-            Assert.That(
-                right.Position - left.Position,
-                Is.GreaterThan(0.35f));
-        }
-
-        [Test]
-        public void BalanceModel_MaximumDifficultyCanBeStabilized()
-        {
-            BalanceChallengeSettings settings =
-                BalanceChallengeSettings.FromDifficulty(1f);
-            var model = new BalanceChallengeModel(settings, 91827);
-
-            for (int index = 0;
-                 index < 1000 && !model.IsComplete;
-                 index++)
-            {
-                float input = model.Position > 0f
-                    ? -1f
-                    : model.Position < 0f
-                        ? 1f
-                        : 0f;
-                model.Advance(
-                    BalanceChallengeModel.FixedStep,
-                    input);
-            }
-
-            Assert.That(model.IsComplete, Is.True);
-            Assert.That(model.Succeeded, Is.True);
-        }
-
-        [Test]
-        public void PlayerPose_PositiveBalanceAndFallLeanScreenRight()
-        {
-            PlayerIntoxicationPose balance =
-                PlayerIntoxicationPoseEvaluator.Evaluate(
-                    0f,
-                    0f,
-                    1f,
-                    1f,
-                    0f);
-            PlayerIntoxicationPose fall =
-                PlayerIntoxicationPoseEvaluator.Evaluate(
-                    0f,
-                    0f,
-                    0f,
-                    1f,
-                    1f);
-
-            Assert.That(balance.BodyOffsetX, Is.GreaterThan(0f));
-            Assert.That(balance.BodyRoll, Is.LessThan(0f));
-            Assert.That(fall.BodyOffsetX, Is.GreaterThan(0f));
-            Assert.That(fall.BodyRoll, Is.LessThan(-80f));
-        }
-
-        [Test]
-        public void PlayerPose_FullyDownPoseDoesNotKeepDrunkenSway()
-        {
-            PlayerIntoxicationPose first =
-                PlayerIntoxicationPoseEvaluator.Evaluate(
-                    1f,
-                    0f,
-                    0f,
-                    -1f,
-                    1f);
-            PlayerIntoxicationPose later =
-                PlayerIntoxicationPoseEvaluator.Evaluate(
-                    1f,
-                    4.3f,
-                    0f,
-                    -1f,
-                    1f);
-
-            Assert.That(later.BodyOffsetX, Is.EqualTo(first.BodyOffsetX));
-            Assert.That(later.BodyLift, Is.EqualTo(first.BodyLift));
-            Assert.That(later.BodyRoll, Is.EqualTo(first.BodyRoll));
-            Assert.That(later.ArmSpread, Is.EqualTo(first.ArmSpread));
-            Assert.That(later.KneeBend, Is.EqualTo(first.KneeBend));
-        }
     }
 }

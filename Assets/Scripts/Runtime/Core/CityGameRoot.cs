@@ -1057,11 +1057,6 @@ namespace BarPromenade
                 camera,
                 ExteriorCloudProfiles.City,
                 GameSessionState.CitySeed);
-            BalanceCheckView balanceView =
-                ui.AddComponent<BalanceCheckView>();
-            balanceView.Initialize(
-                Player.GameObject.transform,
-                camera);
             // Lines spoken by somebody who is not talking to the hero.
             // Raised here rather than with the two men because it needs
             // the camera, which does not exist until this far down.
@@ -1157,8 +1152,7 @@ namespace BarPromenade
             IntoxicationStatus.Initialize(
                 Player,
                 follow,
-                intoxicationHud,
-                balanceView);
+                intoxicationHud);
             Map = ui.AddComponent<CityMapController>();
             Map.Initialize(
                 Layout,

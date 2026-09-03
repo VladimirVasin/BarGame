@@ -231,6 +231,9 @@ namespace BarPromenade
                     false);
                 step.transform.localRotation =
                     Quaternion.Euler(0f, yaw, 0f);
+                // The controller walks the hidden ramp below; the tread
+                // itself is a surface only the hero's foot probes see.
+                FootProbeSurface.AddTreadCollider(step);
             }
 
             colliders.Add(

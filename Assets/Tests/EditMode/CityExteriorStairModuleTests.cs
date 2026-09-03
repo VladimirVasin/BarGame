@@ -113,16 +113,47 @@ namespace BarPromenade.Tests.EditMode
                     Renderer renderer = step.GetComponent<Renderer>();
                     Assert.That(renderer, Is.Not.Null);
                     Assert.That(renderer.enabled, Is.True);
-                    Assert.That(step.GetComponent<Collider>(), Is.Null);
+                    // A tread carries a collider only rays can see: on a
+                    // child on the FootProbe layer, which the physics
+                    // matrix hides from every walking body, so the hero's
+                    // boots can rest on the tread while his controller
+                    // still climbs the one hidden ramp. The visible step
+                    // keeps its own layer for every camera mask.
+                    Assert.That(
+                        step.GetComponent<Collider>(),
+                        Is.Null,
+                        "The visible step itself stays collider-free.");
+                    Assert.That(step.layer, Is.EqualTo(0));
+                    Transform probe = step.transform.Find(
+                        FootProbeSurface.ProbeChildName);
+                    Assert.That(probe, Is.Not.Null);
+                    Collider treadCollider = probe.GetComponent<Collider>();
+                    Assert.That(treadCollider, Is.TypeOf<BoxCollider>());
+                    Assert.That(
+                        treadCollider.isTrigger,
+                        Is.True,
+                        "A tread is a trigger so obstacle sweeps that " +
+                        "ignore triggers never see it.");
+                    Assert.That(
+                        probe.gameObject.layer,
+                        Is.EqualTo(FootProbeSurface.LayerIndex));
+                    Assert.That(
+                        Physics.GetIgnoreLayerCollision(
+                            0,
+                            FootProbeSurface.LayerIndex),
+                        Is.True);
                     Assert.That(
                         renderer.sharedMaterial,
                         Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
                 }
 
                 Assert.That(result.RampColliders, Has.Count.EqualTo(1));
-                Assert.That(
+                Collider[] walkableColliders = System.Array.FindAll(
                     flight.GetComponentsInChildren<Collider>(true),
-                    Has.Length.EqualTo(1));
+                    candidate =>
+                        candidate.gameObject.layer !=
+                        FootProbeSurface.LayerIndex);
+                Assert.That(walkableColliders, Has.Length.EqualTo(1));
                 Collider rampCollider = result.RampColliders[0];
                 Assert.That(rampCollider, Is.TypeOf<BoxCollider>());
                 Assert.That(rampCollider.enabled, Is.True);
