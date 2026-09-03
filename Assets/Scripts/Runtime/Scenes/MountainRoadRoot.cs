@@ -634,15 +634,12 @@ namespace BarPromenade
 
         private void BuildCommonUi(GameObject ui)
         {
-            BalanceCheckView balance = ui.AddComponent<BalanceCheckView>();
-            balance.Initialize(Player.GameObject.transform, Camera.main);
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
                 Player,
                 CameraFollow,
-                IntoxicationHud,
-                balance);
+                IntoxicationHud);
 
             CityLayout cityMapLayout = GenerateCityMapLayout();
             CityMountainBoundaryPlan cityMountains =

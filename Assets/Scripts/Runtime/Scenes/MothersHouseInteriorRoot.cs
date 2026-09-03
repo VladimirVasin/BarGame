@@ -208,18 +208,12 @@ namespace BarPromenade
 
         private void BuildStatus(GameObject ui, Camera camera)
         {
-            BalanceCheckView balanceView =
-                ui.AddComponent<BalanceCheckView>();
-            balanceView.Initialize(
-                Player.GameObject.transform,
-                camera);
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
                 Player,
                 CameraFollow,
-                IntoxicationHud,
-                balanceView);
+                IntoxicationHud);
         }
 
         /// <summary>

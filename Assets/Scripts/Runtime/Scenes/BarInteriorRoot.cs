@@ -194,18 +194,12 @@ namespace BarPromenade
             follow.Initialize(camera, Player.GameObject.transform, true);
             BuildDrinkShop(ui, intoxicationHud, follow);
 
-            BalanceCheckView balanceView =
-                ui.AddComponent<BalanceCheckView>();
-            balanceView.Initialize(
-                Player.GameObject.transform,
-                camera);
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
                 Player,
                 follow,
-                intoxicationHud,
-                balanceView);
+                intoxicationHud);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,

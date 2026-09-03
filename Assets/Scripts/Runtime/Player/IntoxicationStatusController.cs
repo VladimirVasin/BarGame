@@ -1,9 +1,23 @@
 using BarPromenade.Rendering;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
+    /// <summary>
+    /// The drink's consequences, every frame: the smoothed intoxication
+    /// profile that drives speed, presentation and post-processing, and
+    /// the fall the balance model can latch — Fall clip, ragdoll, Rise —
+    /// which this controller still owns end to end.
+    ///
+    /// Balance itself is no longer a scheduled modal check. The
+    /// <see cref="PlayerBalanceController"/> runs its model continuously
+    /// while the hero is on his feet; this controller tells it whether a
+    /// fall is allowed (level above the threshold, grace elapsed, footing
+    /// not a stair), freezes it while a fall plays, reseeds it for the
+    /// next episode, and keeps the session's grace timer so a scene
+    /// change mid-grace keeps its promise.
+    /// </summary>
+    [DefaultExecutionOrder(5)]
     [DisallowMultipleComponent]
     public sealed class IntoxicationStatusController : MonoBehaviour
     {
@@ -15,52 +29,56 @@ namespace BarPromenade
         public const float ModalExitGraceDuration = 3f;
         public const float PostFallGraceDuration = 6f;
 
-        private const float MaximumBalanceSurfaceAngle = 12f;
+        /// <summary>Instability above which the hero counts as staggering.</summary>
+        public const float StaggerThreshold = 0.5f;
+
         private const float BalanceSurfaceProbeStartHeight = 0.35f;
         private const float BalanceSurfaceProbeDistance = 1f;
+
+        private static readonly RaycastHit[] SurfaceHits = new RaycastHit[16];
 
         private enum BalanceState
         {
             Idle = 0,
-            Warning,
-            Active,
             Falling,
             Down,
             RagdollRecovering,
             Rising
         }
 
-        private readonly BarMinigameModalLock balanceLock =
+        private readonly BarMinigameModalLock fallLock =
             new BarMinigameModalLock();
 
         private PlayerMotor motor;
         private PlayerInteractor interactor;
         private IPlayerStatusPresentation playerPresentation;
         private Player3DRagdollController ragdoll;
+        private PlayerBalanceController balance;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView hud;
-        private BalanceCheckView balanceView;
         private IntoxicationLensVolumeDriver lensDriver;
-        private BalanceChallengeSettings challengeSettings;
-        private BalanceChallengeModel challengeModel;
         private BalanceState balanceState;
         private IntoxicationProfile currentProfile;
         private float presentationLevel;
         private float balanceStateElapsed;
-        private float warningLean;
         private float fallDirection = 1f;
         private float fallAmount;
-        private int scheduledSequence;
+        private int episodeSequence;
         private int previousRawLevel;
-        private bool delayArmed;
         private bool sawExternalBlock;
         private bool finishFallAfterTerminalRiseFrame;
         private bool initialized;
 
         public IntoxicationProfile CurrentProfile => currentProfile;
-        public bool IsBalanceCheckActive =>
-            balanceState == BalanceState.Warning ||
-            balanceState == BalanceState.Active;
+
+        /// <summary>The balance model is fighting: capture point well outside the feet.</summary>
+        public bool IsStaggering =>
+            balance != null &&
+            balance.IsActive &&
+            balance.Instability > StaggerThreshold;
+
+        /// <summary>Kept for diagnostics that predate the continuous model.</summary>
+        public bool IsBalanceCheckActive => IsStaggering;
         public bool IsFalling =>
             balanceState == BalanceState.Falling ||
             balanceState == BalanceState.Down ||
@@ -68,30 +86,34 @@ namespace BarPromenade
             balanceState == BalanceState.Rising;
         public bool IsRagdollActive =>
             ragdoll != null && ragdoll.IsActive;
+
+        /// <summary>Lateral capture point of the model, metres, positive right.</summary>
         public float BalancePosition =>
-            challengeModel == null
-                ? warningLean
-                : challengeModel.Position;
+            balance != null ? balance.Output.CapturePoint.x : 0f;
         public float BalanceRisk =>
-            challengeModel == null ? 0f : challengeModel.Risk;
+            balance != null ? balance.Instability : 0f;
         public string BalanceStateName => balanceState.ToString();
-        public bool IsBalanceDelayArmed => delayArmed;
-        public int ScheduledBalanceSequence => scheduledSequence;
+
+        /// <summary>Balance cannot be lost until the session's grace runs out.</summary>
+        public bool IsBalanceDelayArmed =>
+            GameSessionState.BalanceCheckDelayRemaining > 0f;
+        public int ScheduledBalanceSequence => episodeSequence;
+        public PlayerBalanceController Balance => balance;
+        public float FallDirection => fallDirection;
 
         public void Initialize(
             PlayerRuntime player,
             PlayerCameraFollow follow,
-            IntoxicationHudView intoxicationHud,
-            BalanceCheckView view)
+            IntoxicationHudView intoxicationHud)
         {
             motor = player.Motor;
             interactor = player.Interactor;
             playerPresentation = player.Visual;
             ragdoll = player.Ragdoll;
             ragdoll?.Cancel();
+            balance = player.Balance;
             cameraFollow = follow;
             hud = intoxicationHud;
-            balanceView = view;
             lensDriver =
                 GetComponent<IntoxicationLensVolumeDriver>();
             if (lensDriver == null)
@@ -99,122 +121,47 @@ namespace BarPromenade
                 lensDriver = gameObject
                     .AddComponent<IntoxicationLensVolumeDriver>();
             }
+
             presentationLevel =
                 GameSessionState.IntoxicationLevel;
             currentProfile = IntoxicationStageRules.Evaluate(
                 GameSessionState.IntoxicationLevel);
             previousRawLevel =
                 GameSessionState.IntoxicationLevel;
-            delayArmed =
-                GameSessionState.BalanceCheckDelayRemaining > 0f;
-            if (delayArmed)
+            episodeSequence = GameSessionState.BalanceCheckSequence;
+            if (balance != null)
             {
-                scheduledSequence =
-                    GameSessionState.BalanceCheckSequence > 0
-                        ? GameSessionState.BalanceCheckSequence - 1
-                        : GameSessionState
-                            .ConsumeBalanceCheckSequence();
+                balance.Reseed(
+                    PlayerBalanceRules.EpisodeSeed(
+                        GameSessionState.CitySeed,
+                        episodeSequence));
+                balance.SetFrozen(false);
+                balance.ArmGrace(
+                    GameSessionState.BalanceCheckDelayRemaining);
+                balance.SetFallsAllowedByLevel(false);
             }
 
-            if (previousRawLevel >
-                    IntoxicationStageRules.BalanceThreshold &&
-                !delayArmed)
-            {
-                ScheduleNextCheck();
-            }
-
+            balanceState = BalanceState.Idle;
+            balanceStateElapsed = 0f;
+            fallAmount = 0f;
             initialized = true;
             ApplyPresentation();
         }
 
-        public bool TryStartBalanceCheck()
+        /// <summary>
+        /// Debug and test seam: the model latches a fall in the given
+        /// direction and the next update runs the ordinary fall.
+        /// </summary>
+        public bool DebugForceLoseBalance(float direction)
         {
-            if (!CanStartBalanceCheck())
+            if (!initialized ||
+                balanceState != BalanceState.Idle ||
+                balance == null)
             {
                 return false;
             }
 
-            EnsureScheduledSequence();
-            IntoxicationProfile rawProfile =
-                IntoxicationStageRules.Evaluate(
-                    GameSessionState.IntoxicationLevel);
-            challengeSettings =
-                BalanceChallengeSettings.FromDifficulty(
-                    rawProfile.BalanceDifficulty);
-            int challengeSeed =
-                BalanceChallengeRules.GetChallengeSeed(
-                    GameSessionState.CitySeed,
-                    scheduledSequence);
-            challengeModel = new BalanceChallengeModel(
-                challengeSettings,
-                challengeSeed);
-            if (!balanceLock.TryCaptureAndDisable(
-                    interactor,
-                    cameraFollow,
-                    hud,
-                    BarMinigameModalLockOptions.BalanceCheck))
-            {
-                ArmCheckDelay(ModalExitGraceDuration);
-                GameLog.Warning(
-                    "balance",
-                    "start_deferred",
-                    GameLog.Field(
-                        "sequence",
-                        scheduledSequence),
-                    GameLog.Field(
-                        "challenge_seed",
-                        challengeSeed),
-                    GameLog.Field(
-                        "intoxication",
-                        GameSessionState.IntoxicationLevel),
-                    GameLog.Field(
-                        "reason",
-                        "modal_lock_unavailable"),
-                    GameLog.Field(
-                        "retry_delay_seconds",
-                        GameSessionState
-                            .BalanceCheckDelayRemaining));
-                challengeModel = null;
-                return false;
-            }
-
-            balanceState = BalanceState.Warning;
-            balanceStateElapsed = 0f;
-            warningLean = 0f;
-            fallAmount = 0f;
-            finishFallAfterTerminalRiseFrame = false;
-            balanceView?.Show(
-                challengeSettings,
-                0f,
-                0f,
-                true);
-            GameLog.Info(
-                "balance",
-                "started",
-                GameLog.Field(
-                    "sequence",
-                    scheduledSequence),
-                GameLog.Field(
-                    "challenge_seed",
-                    challengeSeed),
-                GameLog.Field(
-                    "intoxication",
-                    GameSessionState.IntoxicationLevel),
-                GameLog.Field(
-                    "difficulty",
-                    challengeSettings.Difficulty),
-                GameLog.Field(
-                    "warning_seconds",
-                    challengeSettings.WarningDuration),
-                GameLog.Field(
-                    "duration_seconds",
-                    challengeSettings.Duration),
-                GameLog.Field(
-                    "safe_sector_degrees",
-                    challengeSettings.SafeSectorDegrees),
-                GameLog.Field(
-                    "initial_position",
-                    challengeModel.Position));
+            balance.DebugForceLoseBalance(direction);
             return true;
         }
 
@@ -281,38 +228,33 @@ namespace BarPromenade
                 }
             }
 
-            bool levelIncreased = rawLevel > previousRawLevel;
+            // Crossing the threshold while playing buys a few seconds of
+            // stagger before the first fall can come: the drink lands with
+            // the model already swaying, and a fall inside the first
+            // second would read as a punishment for the glass, not for
+            // the walk. A fresh level set before Initialize keeps whatever
+            // grace the session carries.
             if (balanceState == BalanceState.Idle &&
-                delayArmed &&
-                levelIncreased &&
-                rawLevel >
-                IntoxicationStageRules.BalanceThreshold)
+                rawLevel > IntoxicationStageRules.BalanceThreshold &&
+                previousRawLevel <=
+                IntoxicationStageRules.BalanceThreshold &&
+                GameSessionState.BalanceCheckDelayRemaining <
+                ModalExitGraceDuration)
             {
-                float maximumDelay =
-                    rawLevel >= IntoxicationStageRules.MaximumLevel
-                        ? ModalExitGraceDuration
-                        : BalanceChallengeRules.GetMaximumInterval(
-                            rawLevel);
-                GameSessionState.SetBalanceCheckDelay(
-                    Mathf.Min(
-                        GameSessionState
-                            .BalanceCheckDelayRemaining,
-                        maximumDelay));
+                ArmGrace(ModalExitGraceDuration);
             }
 
+            // Crossing into the top stage shortens whatever grace is left
+            // to a modal-exit's worth: a hero that just drank himself to
+            // one hundred should not enjoy a long immunity he earned lower.
             if (balanceState == BalanceState.Idle &&
                 rawLevel >= IntoxicationStageRules.MaximumLevel &&
                 previousRawLevel <
-                IntoxicationStageRules.MaximumLevel)
+                IntoxicationStageRules.MaximumLevel &&
+                GameSessionState.BalanceCheckDelayRemaining >
+                ModalExitGraceDuration)
             {
-                float currentDelay =
-                    GameSessionState.BalanceCheckDelayRemaining;
-                ArmCheckDelay(
-                    currentDelay <= 0f
-                        ? ModalExitGraceDuration
-                        : Mathf.Min(
-                            currentDelay,
-                            ModalExitGraceDuration));
+                ArmGrace(ModalExitGraceDuration);
             }
 
             previousRawLevel = rawLevel;
@@ -333,12 +275,12 @@ namespace BarPromenade
             {
                 if (balanceState != BalanceState.Idle)
                 {
-                    CancelBalanceCheck(false);
+                    CancelFall(false);
                 }
 
-                delayArmed = false;
                 sawExternalBlock = false;
                 GameSessionState.SetBalanceCheckDelay(0f);
+                balance?.SetFallsAllowedByLevel(false);
                 return;
             }
 
@@ -346,11 +288,11 @@ namespace BarPromenade
             {
                 if (SceneTransitionService.IsTransitioning)
                 {
-                    CancelBalanceCheck(true);
+                    CancelFall(true);
                     return;
                 }
 
-                AdvanceActiveBalanceState(deltaTime);
+                AdvanceFallState(deltaTime);
                 return;
             }
 
@@ -364,81 +306,50 @@ namespace BarPromenade
             if (externallyBlocked)
             {
                 sawExternalBlock = true;
+                balance?.SetFallsAllowedByLevel(false);
                 return;
             }
 
             if (sawExternalBlock)
             {
                 sawExternalBlock = false;
-                ArmCheckDelay(
+                ArmGrace(
                     Mathf.Max(
                         ModalExitGraceDuration,
                         GameSessionState
                             .BalanceCheckDelayRemaining));
             }
 
-            if (!delayArmed)
-            {
-                ScheduleNextCheck();
-            }
-
-            if (!motor.IsGrounded)
+            GameSessionState.AdvanceBalanceCheckDelay(deltaTime);
+            bool graceElapsed =
+                GameSessionState.BalanceCheckDelayRemaining <= 0f;
+            balance?.SetFallsAllowedByLevel(graceElapsed);
+            if (balance == null ||
+                balance.Model == null ||
+                !balance.Model.LostBalance)
             {
                 return;
             }
 
-            GameSessionState.AdvanceBalanceCheckDelay(deltaTime);
-            if (GameSessionState.BalanceCheckDelayRemaining <= 0f)
+            if (!graceElapsed ||
+                !motor.IsGrounded ||
+                !HasStableBalanceSurface())
             {
-                TryStartBalanceCheck();
+                // Latched somewhere a fall was never allowed to play out
+                // (a stair, a slope, mid-air): stand him back up in the
+                // model and carry on staggering.
+                balance.ResetModel();
+                return;
             }
+
+            BeginFall(balance.Model.FallDirection);
         }
 
-        private void AdvanceActiveBalanceState(float deltaTime)
+        private void AdvanceFallState(float deltaTime)
         {
             balanceStateElapsed += deltaTime;
             switch (balanceState)
             {
-                case BalanceState.Warning:
-                    warningLean = Mathf.Sin(
-                        balanceStateElapsed * 8f) * 0.22f;
-                    balanceView?.Show(
-                        challengeSettings,
-                        warningLean,
-                        0f,
-                        true);
-                    if (balanceStateElapsed >=
-                        challengeSettings.WarningDuration)
-                    {
-                        balanceState = BalanceState.Active;
-                        balanceStateElapsed = 0f;
-                    }
-
-                    break;
-
-                case BalanceState.Active:
-                    challengeModel.Advance(
-                        deltaTime,
-                        ReadBalanceInput());
-                    balanceView?.Show(
-                        challengeSettings,
-                        challengeModel.Position,
-                        challengeModel.Risk,
-                        false);
-                    if (challengeModel.IsComplete)
-                    {
-                        if (challengeModel.Succeeded)
-                        {
-                            CompleteSuccessfulCheck();
-                        }
-                        else
-                        {
-                            BeginFall();
-                        }
-                    }
-
-                    break;
-
                 case BalanceState.Falling:
                     fallAmount = Mathf.Clamp01(
                         balanceStateElapsed / FallDuration);
@@ -518,37 +429,46 @@ namespace BarPromenade
             }
         }
 
-        private void BeginFall()
+        private void BeginFall(float direction)
         {
+            fallDirection = direction < 0f ? -1f : 1f;
+            // The fall owns the interactor, the orbit and the HUD the way
+            // the old check did, and the motor from the first frame: no
+            // input steers a man who is already going down.
+            fallLock.TryCaptureAndDisable(
+                interactor,
+                cameraFollow,
+                hud,
+                BarMinigameModalLockOptions.BalanceCheck);
             motor?.SetInputEnabled(false);
-            fallDirection = Mathf.Sign(
-                Mathf.Approximately(
-                    challengeModel.Position,
-                    0f)
-                    ? 1f
-                    : challengeModel.Position);
-            LogBalanceResult(
-                "failed",
-                fallDirection);
+            balance?.SetFrozen(true);
+            GameLog.Info(
+                "balance",
+                "lost",
+                GameLog.Field(
+                    "sequence",
+                    episodeSequence),
+                GameLog.Field(
+                    "intoxication",
+                    GameSessionState.IntoxicationLevel),
+                GameLog.Field(
+                    "fall_direction",
+                    fallDirection),
+                GameLog.Field(
+                    "instability",
+                    balance != null ? balance.Instability : 0f),
+                GameLog.Field(
+                    "capture_point",
+                    balance != null ? balance.Output.CapturePoint.x : 0f),
+                GameLog.Field(
+                    "steps_taken",
+                    balance != null && balance.Model != null
+                        ? balance.Model.StepsTaken
+                        : 0));
             balanceState = BalanceState.Falling;
             balanceStateElapsed = 0f;
-            warningLean = 0f;
             fallAmount = 0f;
             finishFallAfterTerminalRiseFrame = false;
-            balanceView?.Hide();
-        }
-
-        private void CompleteSuccessfulCheck()
-        {
-            LogBalanceResult("succeeded", 0f);
-            balanceView?.Hide();
-            balanceLock.Restore();
-            balanceState = BalanceState.Idle;
-            balanceStateElapsed = 0f;
-            warningLean = 0f;
-            fallAmount = 0f;
-            challengeModel = null;
-            ScheduleNextCheck();
         }
 
         private void FinishFall()
@@ -558,7 +478,7 @@ namespace BarPromenade
                 "fall_recovered",
                 GameLog.Field(
                     "sequence",
-                    scheduledSequence),
+                    episodeSequence),
                 GameLog.Field(
                     "intoxication",
                     GameSessionState.IntoxicationLevel),
@@ -575,24 +495,22 @@ namespace BarPromenade
                     "rising_seconds",
                     RisingDuration));
             ragdoll?.Cancel();
-            balanceLock.Restore();
+            fallLock.Restore();
             balanceState = BalanceState.Idle;
             balanceStateElapsed = 0f;
-            warningLean = 0f;
             fallAmount = 0f;
             finishFallAfterTerminalRiseFrame = false;
-            challengeModel = null;
-            ScheduleNextCheck(PostFallGraceDuration);
+            BeginNextEpisode(PostFallGraceDuration);
         }
 
-        private void CancelBalanceCheck(bool keepGrace)
+        private void CancelFall(bool keepGrace)
         {
             GameLog.Info(
                 "balance",
                 "cancelled",
                 GameLog.Field(
                     "sequence",
-                    scheduledSequence),
+                    episodeSequence),
                 GameLog.Field(
                     "state",
                     balanceState.ToString()),
@@ -603,87 +521,67 @@ namespace BarPromenade
                     "intoxication",
                     GameSessionState.IntoxicationLevel),
                 GameLog.Field(
-                    "elapsed_seconds",
-                    challengeModel?.Elapsed ?? 0f),
-                GameLog.Field(
-                    "position",
-                    challengeModel?.Position ?? warningLean),
-                GameLog.Field(
-                    "risk",
-                    challengeModel?.Risk ?? 0f),
-                GameLog.Field(
                     "delay_before_seconds",
                     GameSessionState
                         .BalanceCheckDelayRemaining));
-            balanceView?.Hide();
             ragdoll?.Cancel();
-            balanceLock.Restore();
+            fallLock.Restore();
             balanceState = BalanceState.Idle;
             balanceStateElapsed = 0f;
-            warningLean = 0f;
             fallAmount = 0f;
             finishFallAfterTerminalRiseFrame = false;
-            challengeModel = null;
-            if (keepGrace &&
+            BeginNextEpisode(
+                keepGrace &&
                 GameSessionState.IntoxicationLevel >
-                IntoxicationStageRules.BalanceThreshold)
+                IntoxicationStageRules.BalanceThreshold
+                    ? ModalExitGraceDuration
+                    : 0f);
+        }
+
+        /// <summary>
+        /// A fresh model for the next stagger: new seed from the next
+        /// episode number, feet under him, and a grace the session keeps.
+        /// </summary>
+        private void BeginNextEpisode(float graceSeconds)
+        {
+            // Consume returns the episode just closed; the new one is the
+            // number the session reports from now on, so a fall never
+            // replays the stagger that caused it.
+            GameSessionState.ConsumeBalanceCheckSequence();
+            episodeSequence = GameSessionState.BalanceCheckSequence;
+            if (balance != null)
             {
-                ArmCheckDelay(ModalExitGraceDuration);
+                balance.Reseed(
+                    PlayerBalanceRules.EpisodeSeed(
+                        GameSessionState.CitySeed,
+                        episodeSequence));
+                balance.SetFrozen(false);
+            }
+
+            if (graceSeconds > 0f)
+            {
+                ArmGrace(graceSeconds);
+                // The balance controller runs before this one, so tell it
+                // now rather than on the next update: a fall cannot be
+                // lost again inside the grace, not even for one frame.
+                balance?.SetFallsAllowedByLevel(false);
+            }
+            else
+            {
+                GameSessionState.SetBalanceCheckDelay(0f);
             }
         }
 
-        private void ScheduleNextCheck(float extraDelay = 0f)
+        private void ArmGrace(float seconds)
         {
-            scheduledSequence =
-                GameSessionState.ConsumeBalanceCheckSequence();
-            float interval = BalanceChallengeRules.GetNextInterval(
-                GameSessionState.IntoxicationLevel,
-                GameSessionState.CitySeed,
-                scheduledSequence);
-            GameSessionState.SetBalanceCheckDelay(
-                Mathf.Max(0f, extraDelay) + interval);
-            delayArmed = true;
-            GameLog.Info(
-                "balance",
-                "scheduled",
-                GameLog.Field(
-                    "sequence",
-                    scheduledSequence),
-                GameLog.Field(
-                    "challenge_seed",
-                    BalanceChallengeRules.GetChallengeSeed(
-                        GameSessionState.CitySeed,
-                        scheduledSequence)),
-                GameLog.Field(
-                    "intoxication",
-                    GameSessionState.IntoxicationLevel),
-                GameLog.Field(
-                    "interval_seconds",
-                    interval),
-                GameLog.Field(
-                    "extra_delay_seconds",
-                    Mathf.Max(0f, extraDelay)),
-                GameLog.Field(
-                    "total_delay_seconds",
-                    GameSessionState
-                        .BalanceCheckDelayRemaining));
-        }
-
-        private void ArmCheckDelay(float seconds)
-        {
-            EnsureScheduledSequence();
             GameSessionState.SetBalanceCheckDelay(seconds);
+            balance?.ArmGrace(seconds);
             GameLog.Info(
                 "balance",
                 "delay_armed",
                 GameLog.Field(
                     "sequence",
-                    scheduledSequence),
-                GameLog.Field(
-                    "challenge_seed",
-                    BalanceChallengeRules.GetChallengeSeed(
-                        GameSessionState.CitySeed,
-                        scheduledSequence)),
+                    episodeSequence),
                 GameLog.Field(
                     "intoxication",
                     GameSessionState.IntoxicationLevel),
@@ -693,88 +591,22 @@ namespace BarPromenade
                         .BalanceCheckDelayRemaining));
         }
 
-        private void LogBalanceResult(
-            string outcome,
-            float resultFallDirection)
-        {
-            if (challengeModel == null)
-            {
-                return;
-            }
-
-            GameLog.Info(
-                "balance",
-                "result",
-                GameLog.Field(
-                    "sequence",
-                    scheduledSequence),
-                GameLog.Field("outcome", outcome),
-                GameLog.Field(
-                    "intoxication",
-                    GameSessionState.IntoxicationLevel),
-                GameLog.Field(
-                    "difficulty",
-                    challengeSettings.Difficulty),
-                GameLog.Field(
-                    "elapsed_seconds",
-                    challengeModel.Elapsed),
-                GameLog.Field(
-                    "position",
-                    challengeModel.Position),
-                GameLog.Field(
-                    "velocity",
-                    challengeModel.Velocity),
-                GameLog.Field(
-                    "risk",
-                    challengeModel.Risk),
-                GameLog.Field(
-                    "fall_direction",
-                    resultFallDirection));
-        }
-
-        private void EnsureScheduledSequence()
-        {
-            if (delayArmed)
-            {
-                return;
-            }
-
-            scheduledSequence =
-                GameSessionState.ConsumeBalanceCheckSequence();
-            delayArmed = true;
-        }
-
-        private bool CanStartBalanceCheck()
-        {
-            return initialized &&
-                   balanceState == BalanceState.Idle &&
-                   GameSessionState.IntoxicationLevel >
-                   IntoxicationStageRules.BalanceThreshold &&
-                   !SceneTransitionService.IsTransitioning &&
-                   !BarMinigameModalLock.IsAnyLocked &&
-                   motor != null &&
-                   interactor != null &&
-                   motor.InputEnabled &&
-                   interactor.InputEnabled &&
-                   motor.IsGrounded &&
-                   HasStableBalanceSurface();
-        }
-
         private bool HasStableBalanceSurface()
         {
-            RaycastHit[] hits = Physics.RaycastAll(
+            int count = Physics.RaycastNonAlloc(
                 motor.transform.position +
                 Vector3.up * BalanceSurfaceProbeStartHeight,
                 Vector3.down,
+                SurfaceHits,
                 BalanceSurfaceProbeDistance,
                 Physics.DefaultRaycastLayers,
                 QueryTriggerInteraction.Ignore);
             float closestDistance = float.PositiveInfinity;
             Vector3 closestNormal = Vector3.up;
             bool found = false;
-            for (int index = 0; index < hits.Length; index++)
+            for (int index = 0; index < count; index++)
             {
-                RaycastHit hit = hits[index];
+                RaycastHit hit = SurfaceHits[index];
                 if (hit.collider == null ||
                     hit.collider.transform.IsChildOf(motor.transform) ||
                     hit.normal.y <= 0.001f ||
@@ -790,7 +622,7 @@ namespace BarPromenade
 
             return !found ||
                    Vector3.Angle(closestNormal, Vector3.up) <=
-                   MaximumBalanceSurfaceAngle;
+                   PlayerBalanceRules.MaximumBalanceSurfaceAngle;
         }
 
         private void ApplyPresentation()
@@ -799,8 +631,20 @@ namespace BarPromenade
                 currentProfile.SpeedMultiplier);
             playerPresentation?.SetIntoxication(
                 currentProfile.Normalized);
-            float balanceLean = GetPresentationBalanceLean();
-            playerPresentation?.SetBalancePose(balanceLean);
+            balance?.SetIntoxication(currentProfile.Normalized);
+
+            // The 3D presentation takes the model's pose straight from the
+            // balance controller; the legacy scalar lean is for anything
+            // else that still listens to it, and would double the roll on
+            // a presentation that already has the pose.
+            float modelLean = balance != null && balance.IsActive
+                ? balance.Output.LeanRollDegrees /
+                  PlayerBalanceModel.MaximumLeanRollDegrees
+                : 0f;
+            float legacyLean = playerPresentation is IPlayerBalancePresentation
+                ? 0f
+                : modelLean;
+            playerPresentation?.SetBalancePose(legacyLean);
             playerPresentation?.SetFallPose(
                 fallDirection,
                 fallAmount);
@@ -809,8 +653,12 @@ namespace BarPromenade
                 GetFallAnimationProgress());
             cameraFollow?.SetIntoxication(
                 currentProfile.Normalized);
+            float cameraLean = balance != null &&
+                               balance.Instability > 0.3f
+                ? modelLean * 0.5f
+                : 0f;
             cameraFollow?.SetBalanceReaction(
-                balanceLean,
+                cameraLean,
                 fallDirection,
                 fallAmount);
             IntoxicationRenderState.Set(
@@ -819,22 +667,6 @@ namespace BarPromenade
             lensDriver?.Apply(
                 currentProfile.ChromaticAberration,
                 currentProfile.LensDistortion);
-        }
-
-        private float GetPresentationBalanceLean()
-        {
-            if (balanceState == BalanceState.Warning)
-            {
-                return warningLean;
-            }
-
-            if (balanceState == BalanceState.Active &&
-                challengeModel != null)
-            {
-                return challengeModel.Position;
-            }
-
-            return 0f;
         }
 
         private PlayerFallAnimationPhase GetFallAnimationPhase()
@@ -883,11 +715,10 @@ namespace BarPromenade
 
             if (balanceState != BalanceState.Idle)
             {
-                CancelBalanceCheck(true);
+                CancelFall(true);
             }
 
-            balanceLock.Restore();
-            balanceView?.Hide();
+            fallLock.Restore();
             motor?.SetSpeedMultiplier(1f);
             playerPresentation?.SetIntoxication(0f);
             playerPresentation?.SetBalancePose(0f);
@@ -895,48 +726,18 @@ namespace BarPromenade
             playerPresentation?.SetFallAnimation(
                 PlayerFallAnimationPhase.None,
                 0f);
+            if (balance != null)
+            {
+                balance.SetIntoxication(0f);
+                balance.SetFallsAllowedByLevel(false);
+                balance.SetFrozen(false);
+            }
+
             cameraFollow?.SetIntoxication(0f);
             cameraFollow?.SetBalanceReaction(0f, 0f, 0f);
             IntoxicationRenderState.Clear();
             lensDriver?.Clear();
             initialized = false;
-        }
-
-        private static float ReadBalanceInput()
-        {
-            float input = 0f;
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null)
-            {
-                bool left =
-                    keyboard.leftArrowKey.isPressed ||
-                    keyboard.aKey.isPressed;
-                bool right =
-                    keyboard.rightArrowKey.isPressed ||
-                    keyboard.dKey.isPressed;
-                input = (right ? 1f : 0f) -
-                        (left ? 1f : 0f);
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            if (gamepad == null)
-            {
-                return input;
-            }
-
-            float gamepadInput =
-                gamepad.leftStick.ReadValue().x;
-            float dpadInput = gamepad.dpad.ReadValue().x;
-            if (Mathf.Abs(dpadInput) >
-                Mathf.Abs(gamepadInput))
-            {
-                gamepadInput = dpadInput;
-            }
-
-            return Mathf.Abs(gamepadInput) >
-                   Mathf.Abs(input)
-                ? Mathf.Clamp(gamepadInput, -1f, 1f)
-                : input;
         }
     }
 }

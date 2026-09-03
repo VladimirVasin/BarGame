@@ -11,11 +11,13 @@ namespace BarPromenade
     /// would have been copied rather than shared. It is deliberately not an
     /// IK framework: CCD iterations toward the target, one bend-hint twist,
     /// and a hard wrist write so the hand ROLLS with the rim it holds.
+    ///
+    /// The solver itself now lives in <see cref="LimbTwoBoneIk"/>, where the
+    /// hero's legs and wall hand share it; this is the seated-arm contract
+    /// kept exactly as the bus and the Last Route car were tuned against.
     /// </summary>
     internal static class SeatedArmIk
     {
-        private const int Iterations = 5;
-
         internal static void SolveTwoBone(
             Transform upper,
             Transform lower,
@@ -24,78 +26,13 @@ namespace BarPromenade
             Quaternion targetRotation,
             Vector3 hintPosition)
         {
-            if (upper == null || lower == null || tip == null)
-            {
-                return;
-            }
-
-            for (int iteration = 0; iteration < Iterations; iteration++)
-            {
-                RotateJointToward(lower, tip.position, targetPosition);
-                RotateJointToward(upper, tip.position, targetPosition);
-            }
-
-            // The recovery after the bend hint used to be two iterations,
-            // and at the car's full lock - a rim rolled `99` degrees, the
-            // grips carried well away from where the drive pose drew the
-            // hands - that left the palm hovering `2.2 cm` off a `2 cm`
-            // contract. Four converges it; on the bus's smaller angles the
-            // extra two are a no-op that lands on the same pose.
-            ApplyBendHint(upper, lower, targetPosition, hintPosition);
-            for (int iteration = 0; iteration < 4; iteration++)
-            {
-                RotateJointToward(lower, tip.position, targetPosition);
-                RotateJointToward(upper, tip.position, targetPosition);
-            }
-
-            tip.rotation = targetRotation;
-        }
-
-        private static void RotateJointToward(
-            Transform joint,
-            Vector3 tipPosition,
-            Vector3 targetPosition)
-        {
-            Vector3 current = tipPosition - joint.position;
-            Vector3 target = targetPosition - joint.position;
-            if (current.sqrMagnitude < 0.000001f ||
-                target.sqrMagnitude < 0.000001f)
-            {
-                return;
-            }
-
-            joint.rotation = Quaternion.FromToRotation(current, target) *
-                joint.rotation;
-        }
-
-        private static void ApplyBendHint(
-            Transform upper,
-            Transform lower,
-            Vector3 targetPosition,
-            Vector3 hintPosition)
-        {
-            Vector3 axis = targetPosition - upper.position;
-            if (axis.sqrMagnitude < 0.000001f)
-            {
-                return;
-            }
-
-            axis.Normalize();
-            Vector3 current = Vector3.ProjectOnPlane(
-                lower.position - upper.position,
-                axis);
-            Vector3 desired = Vector3.ProjectOnPlane(
-                hintPosition - upper.position,
-                axis);
-            if (current.sqrMagnitude < 0.000001f ||
-                desired.sqrMagnitude < 0.000001f)
-            {
-                return;
-            }
-
-            float angle = Vector3.SignedAngle(current, desired, axis);
-            upper.rotation = Quaternion.AngleAxis(angle, axis) *
-                upper.rotation;
+            LimbTwoBoneIk.Solve(
+                upper,
+                lower,
+                tip,
+                targetPosition,
+                targetRotation,
+                hintPosition);
         }
     }
 

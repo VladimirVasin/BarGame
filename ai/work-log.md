@@ -6,6 +6,37 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-03 — Feet on the treads and a drunk who really staggers
+
+The hero's grounding and his drunkenness are procedural now. One late layer
+after every ordinary clip probes the ground under each boot with a heel and a
+toe ray, lowers the pelvis to the lower boot and solves each leg with the
+two-bone solver the bus driver's hands already used, so knees bend forward
+onto kerbs and treads instead of the whole model being pinned to its lowest
+sole. The solver gained an analytic law-of-cosines pre-bend: CCD aims but
+cannot shorten a nearly straight leg, and the idle leg is authored `99.98 %`
+straight. Stair treads in the stairwell and the city exterior stairs were
+render-only boxes over a hidden ramp, so each tread now carries a raycast-only
+trigger collider on the new `FootProbe` layer that only the foot probes see.
+
+The modal balance check is gone by the user's decision. `PlayerBalanceModel`
+is a seeded fixed-step inverted pendulum with a capture point: it drifts the
+capsule through the motor (a second constrained `Move`, never re-integrated as
+momentum), plans recovery steps that the layer draws with the stance boot
+locked, leans the body, spreads the arms, reaches a hand for a wall within
+reach on the tipping side, and trips on a kerb under the swinging boot. A/D
+toward the lean is the recovery; sober is bit-exactly inert. A fall is latched
+only above level `60`, after the session's grace and on ground under `12°`,
+and then plays the untouched Fall -> ragdoll -> Rise pipeline. City walkers
+share the legs-only layer.
+
+Verification:
+
+- Runtime, EditMode and PlayMode assemblies compile with `dotnet build`.
+- Focused PlayMode and EditMode suites in an isolated worktree; the four
+  reds that also fail on a pristine `HEAD` worktree (`RiseClips…AllFours`,
+  three stairwell cat tests) are recorded as pre-existing.
+
 ## 2026-09-03 — The bar crowd was bound to its furniture
 
 The first playable views of the rebuilt pub exposed three different placement

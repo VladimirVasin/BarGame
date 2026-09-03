@@ -65,7 +65,13 @@ namespace BarPromenade
         private bool groundedFootHeightOffsetCaptured;
         private float archetypeGroundTrim;
         private bool archetypeGroundTrimResolved;
-        private FootGroundingProbe footGroundingProbe;
+        // The hero's leg layer, legs only: per-foot probes and a two-bone
+        // solve so a walker's boots rest on the kerb or tread under each
+        // of them instead of the whole model being pinned to its lowest
+        // sole. Airborne designs and seated riders keep the old paths.
+        private readonly Player3DProceduralLocomotionLayer legLayer =
+            new Player3DProceduralLocomotionLayer();
+        private bool legLayerBound;
 
         public bool IsInitialized { get; private set; }
         public bool IsMoving { get; private set; }
@@ -137,11 +143,11 @@ namespace BarPromenade
             modelBaseLocalPosition = registry.ModelRoot != null
                 ? registry.ModelRoot.localPosition
                 : Vector3.zero;
-            footGroundingProbe = FootGroundingProbe.Create(registry);
 
             BuildGraph(animator);
             IsInitialized = true;
             ConfigureCycle(animationSpeed, 0f);
+            BindLegLayer();
             SetMoving(false);
         }
 
@@ -370,7 +376,8 @@ namespace BarPromenade
             targetWalkWeight = 0f;
             archetypeGroundTrim = 0f;
             archetypeGroundTrimResolved = false;
-            footGroundingProbe = null;
+            legLayer.Dispose();
+            legLayerBound = false;
             registry = null;
             Advanced = null;
         }
@@ -479,10 +486,17 @@ namespace BarPromenade
             }
 
             RestoreModelBasePosition();
+            legLayer.Restore();
             graph.Evaluate(deltaTime);
             if (IsSeated)
             {
                 AlignPelvisToSeat();
+                return;
+            }
+
+            if (legLayerBound && !registry.PreservesAirborneMotion)
+            {
+                ApplyLegLayer(deltaTime);
                 return;
             }
 
@@ -593,6 +607,7 @@ namespace BarPromenade
                 ApplyMixerWeights();
             }
 
+            legLayer.Restore();
             RestoreModelBasePosition();
         }
 
@@ -603,16 +618,171 @@ namespace BarPromenade
 
         private bool TryGetGroundingHeight(out float height)
         {
-            if (footGroundingProbe != null &&
-                footGroundingProbe.TryGetLowestHeight(out height))
-            {
-                return true;
-            }
-
             height = float.PositiveInfinity;
             IncludeHeight(registry.LeftFootAnchor, ref height);
             IncludeHeight(registry.RightFootAnchor, ref height);
             return !float.IsPositiveInfinity(height);
+        }
+
+        /// <summary>
+        /// Adopts the hero's leg layer for this walker: pelvis, thigh, shin
+        /// and foot bones found by the names every humanoid rig in the
+        /// project shares, boot soles from the renderer bindings. A rig
+        /// missing any of them keeps the legacy whole-model pin.
+        /// </summary>
+        private void BindLegLayer()
+        {
+            legLayerBound = false;
+            if (registry == null ||
+                registry.Animator == null ||
+                registry.PelvisAnchor == null ||
+                registry.PreservesAirborneMotion)
+            {
+                return;
+            }
+
+            Transform bones = registry.Animator.transform;
+            Transform leftThigh = FindBone(bones, "thigh.L");
+            Transform leftShin = FindBone(bones, "shin.L");
+            Transform leftFoot = registry.LeftFootAnchor != null
+                ? registry.LeftFootAnchor
+                : FindBone(bones, "foot.L");
+            Transform rightThigh = FindBone(bones, "thigh.R");
+            Transform rightShin = FindBone(bones, "shin.R");
+            Transform rightFoot = registry.RightFootAnchor != null
+                ? registry.RightFootAnchor
+                : FindBone(bones, "foot.R");
+            if (leftThigh == null || leftShin == null || leftFoot == null ||
+                rightThigh == null || rightShin == null || rightFoot == null)
+            {
+                return;
+            }
+
+            CollectSoleRenderers(
+                out List<SkinnedMeshRenderer> leftSoles,
+                out List<SkinnedMeshRenderer> rightSoles);
+            legLayer.Bind(
+                null,
+                transform,
+                registry.PelvisAnchor,
+                null,
+                null,
+                null,
+                leftThigh,
+                leftShin,
+                leftFoot,
+                rightThigh,
+                rightShin,
+                rightFoot,
+                Player3DFootGroundProbe.Create(
+                    leftSoles,
+                    rightSoles,
+                    transform));
+            legLayer.Calibrate();
+            legLayerBound = legLayer.HasGroundedFootHeightOffset;
+            if (!legLayerBound)
+            {
+                legLayer.Dispose();
+            }
+        }
+
+        private void ApplyLegLayer(float deltaTime)
+        {
+            // Walkers do not share the hero's left-first contact order for
+            // certain, so both boots take the same plant: fully down when
+            // standing, the walk's own cosine when moving. The layer keeps
+            // each boot's authored lift relative to the other, so the swing
+            // still clears the ground.
+            float plant = 1f;
+            if (WalkWeight > 0.0001f &&
+                walkPlayable.IsValid() &&
+                activeWalkClip != null &&
+                activeWalkClip.length > 0.0001f)
+            {
+                float cycle = (float)(walkPlayable.GetTime() /
+                                      activeWalkClip.length);
+                PlayerFootPlacementRules.FootPlantAmounts(
+                    cycle,
+                    false,
+                    0.68f,
+                    out float left,
+                    out float right);
+                plant = Mathf.Lerp(
+                    1f,
+                    PlayerFootPlacementRules.CombinedPlant(left, right),
+                    WalkWeight);
+            }
+
+            legLayer.Apply(
+                new Player3DProceduralLayerInput(
+                    true,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    plant,
+                    plant,
+                    0f,
+                    false,
+                    WalkWeight > 0.5f),
+                deltaTime);
+        }
+
+        private void CollectSoleRenderers(
+            out List<SkinnedMeshRenderer> leftSoles,
+            out List<SkinnedMeshRenderer> rightSoles)
+        {
+            leftSoles = new List<SkinnedMeshRenderer>();
+            rightSoles = new List<SkinnedMeshRenderer>();
+            IReadOnlyList<CityPedestrianRendererBinding> bindings =
+                registry.RendererBindings;
+            for (int index = 0; index < bindings.Count; index++)
+            {
+                CityPedestrianRendererBinding binding = bindings[index];
+                if (binding == null ||
+                    !(binding.Renderer is SkinnedMeshRenderer skinned))
+                {
+                    continue;
+                }
+
+                string rendererName = binding.RendererName ?? string.Empty;
+                if (rendererName.IndexOf("LeftBootSole", StringComparison.Ordinal) >= 0 ||
+                    rendererName.IndexOf("ShoeSole.L", StringComparison.Ordinal) >= 0)
+                {
+                    leftSoles.Add(skinned);
+                }
+                else if (rendererName.IndexOf("RightBootSole", StringComparison.Ordinal) >= 0 ||
+                         rendererName.IndexOf("ShoeSole.R", StringComparison.Ordinal) >= 0)
+                {
+                    rightSoles.Add(skinned);
+                }
+            }
+        }
+
+        private static Transform FindBone(Transform root, string boneName)
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (root.name == boneName)
+            {
+                return root;
+            }
+
+            for (int index = 0; index < root.childCount; index++)
+            {
+                Transform found = FindBone(root.GetChild(index), boneName);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         private static void IncludeHeight(
@@ -624,154 +794,6 @@ namespace BarPromenade
                 lowestHeight = Mathf.Min(
                     lowestHeight,
                     anchor.position.y);
-            }
-        }
-
-        private sealed class FootGroundingProbe
-        {
-            private readonly FootContactPoint[] contacts;
-
-            private FootGroundingProbe(FootContactPoint[] contactPoints)
-            {
-                contacts = contactPoints;
-            }
-
-            public static FootGroundingProbe Create(
-                CityPedestrianAssetRegistry assetRegistry)
-            {
-                if (assetRegistry == null)
-                {
-                    return null;
-                }
-
-                var points = new List<FootContactPoint>();
-                IReadOnlyList<CityPedestrianRendererBinding> bindings =
-                    assetRegistry.RendererBindings;
-                for (int index = 0; index < bindings.Count; index++)
-                {
-                    CityPedestrianRendererBinding binding = bindings[index];
-                    if (binding == null || binding.Renderer == null)
-                    {
-                        continue;
-                    }
-
-                    Transform foot = null;
-                    string rendererName = binding.RendererName ??
-                                          string.Empty;
-                    if (ContainsOrdinal(
-                            rendererName,
-                            "LeftBootSole") ||
-                        ContainsOrdinal(
-                            rendererName,
-                            "ShoeSole.L"))
-                    {
-                        foot = assetRegistry.LeftFootAnchor;
-                    }
-                    else if (ContainsOrdinal(
-                                 rendererName,
-                                 "RightBootSole") ||
-                             ContainsOrdinal(
-                                 rendererName,
-                                 "ShoeSole.R"))
-                    {
-                        foot = assetRegistry.RightFootAnchor;
-                    }
-
-                    if (foot != null)
-                    {
-                        AddBoundsContacts(
-                            points,
-                            foot,
-                            binding.Renderer.bounds);
-                    }
-                }
-
-                return points.Count > 0
-                    ? new FootGroundingProbe(points.ToArray())
-                    : null;
-            }
-
-            private static bool ContainsOrdinal(
-                string value,
-                string pattern)
-            {
-                return value.IndexOf(
-                    pattern,
-                    StringComparison.Ordinal) >= 0;
-            }
-
-            public bool TryGetLowestHeight(out float height)
-            {
-                height = float.PositiveInfinity;
-                for (int index = 0; index < contacts.Length; index++)
-                {
-                    if (contacts[index].TryGetWorldPosition(
-                            out Vector3 position))
-                    {
-                        height = Mathf.Min(height, position.y);
-                    }
-                }
-
-                return !float.IsPositiveInfinity(height);
-            }
-
-            private static void AddBoundsContacts(
-                ICollection<FootContactPoint> points,
-                Transform bone,
-                Bounds bounds)
-            {
-                AddBoundsFace(points, bone, bounds, bounds.min.y);
-                AddBoundsFace(points, bone, bounds, bounds.max.y);
-            }
-
-            private static void AddBoundsFace(
-                ICollection<FootContactPoint> points,
-                Transform bone,
-                Bounds bounds,
-                float y)
-            {
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.min.x, y, bounds.min.z)));
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.min.x, y, bounds.max.z)));
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.max.x, y, bounds.min.z)));
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.max.x, y, bounds.max.z)));
-            }
-        }
-
-        private readonly struct FootContactPoint
-        {
-            private readonly Transform bone;
-            private readonly Vector3 boneLocalPosition;
-
-            public FootContactPoint(
-                Transform footBone,
-                Vector3 worldPosition)
-            {
-                bone = footBone;
-                boneLocalPosition = bone != null
-                    ? bone.InverseTransformPoint(worldPosition)
-                    : Vector3.zero;
-            }
-
-            public bool TryGetWorldPosition(out Vector3 position)
-            {
-                if (bone == null)
-                {
-                    position = default;
-                    return false;
-                }
-
-                position = bone.TransformPoint(boneLocalPosition);
-                return IsFinite(position.x) &&
-                       IsFinite(position.y) &&
-                       IsFinite(position.z);
             }
         }
 

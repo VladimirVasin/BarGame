@@ -98,6 +98,10 @@ namespace BarPromenade
                         Quaternion.Euler(0f, yaw, 0f);
                     CityExteriorAppearance.ApplySidewalkSurface(
                         step.GetComponent<Renderer>());
+                    // Walking bodies use the invisible ramp below; the
+                    // tread is a surface only foot probes and the contact
+                    // shadow can see.
+                    FootProbeSurface.AddTreadCollider(step);
                 }
 
                 rampColliders.Add(BuildFlightRamp(flightRoot, flight));

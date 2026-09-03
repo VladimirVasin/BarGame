@@ -469,14 +469,6 @@
       "value": "Very drunk"
     },
     {
-      "key": "balance.warning",
-      "value": "KEEP YOUR BALANCE!"
-    },
-    {
-      "key": "balance.hold",
-      "value": "HOLD THE CENTER"
-    },
-    {
       "key": "drinking.none",
       "value": "nothing"
     },

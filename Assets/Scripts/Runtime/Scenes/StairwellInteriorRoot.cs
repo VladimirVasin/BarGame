@@ -186,18 +186,12 @@ namespace BarPromenade
                 CameraFollow,
                 IntoxicationHud);
             BuildCat(camera);
-            BalanceCheckView balanceView =
-                ui.AddComponent<BalanceCheckView>();
-            balanceView.Initialize(
-                Player.GameObject.transform,
-                camera);
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
                 Player,
                 CameraFollow,
-                IntoxicationHud,
-                balanceView);
+                IntoxicationHud);
             BuildExits();
             GameObject blockerObject = new GameObject(
                 "Stairwell Quest Descent Blocker");
