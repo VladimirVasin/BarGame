@@ -734,7 +734,7 @@ namespace BarPromenade
 
         private void Update()
         {
-            AdvanceFold(Time.unscaledDeltaTime);
+            AdvanceFold(Time.deltaTime);
         }
 
         private void BuildFoldingProp(

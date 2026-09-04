@@ -24,11 +24,11 @@ namespace BarPromenade.Tests.EditMode
         private static readonly string[] RequiredGroupPaths =
         {
             "Master",
-            "Master/Music",
-            "Master/Ambience/Beds",
-            "Master/Ambience/Details",
-            "Master/SFX/World",
-            "Master/SFX/Gameplay",
+            "Master/Perception/Music",
+            "Master/Perception/Ambience/Beds",
+            "Master/Perception/Ambience/Details",
+            "Master/Perception/SFX/World",
+            "Master/Perception/SFX/Gameplay",
             "Master/UI"
         };
 
@@ -262,6 +262,7 @@ namespace BarPromenade.Tests.EditMode
                 RequireEffects(effects, "SFX Reverb", 1)[0];
             Object echo =
                 RequireEffects(effects, "Echo", 1)[0];
+            Object tape = RequireEffects(effects, IntoxicationAudioDriver.EffectName, 1)[0];
             List<Object> receives =
                 RequireEffects(effects, "Receive", 2);
             List<Object> sends =
@@ -277,37 +278,47 @@ namespace BarPromenade.Tests.EditMode
 
             AudioMixerGroup master =
                 FindExactGroup(mixer, "Master", "Master");
+            AudioMixerGroup perception = FindExactGroup(
+                mixer, GameAudioMixer.PerceptionGroupPath, "Perception");
             AudioMixerGroup music =
                 FindExactGroup(
                     mixer,
-                    "Master/Music",
+                    "Master/Perception/Music",
                     "Music");
             AudioMixerGroup details =
                 FindExactGroup(
                     mixer,
-                    "Master/Ambience/Details",
+                    "Master/Perception/Ambience/Details",
                     "Details");
             AudioMixerGroup world =
                 FindExactGroup(
                     mixer,
-                    "Master/SFX/World",
+                    "Master/Perception/SFX/World",
                     "World");
             AudioMixerGroup ui =
                 FindExactGroup(mixer, "Master/UI", "UI");
             AudioMixerGroup reverbReturn =
                 FindExactGroup(
                     mixer,
-                    "Master/Environment Reverb Return",
+                    "Master/Perception/Environment Reverb Return",
                     "Environment Reverb Return");
             AudioMixerGroup echoReturn =
                 FindExactGroup(
                     mixer,
-                    "Master/Echo Return",
+                    "Master/Perception/Echo Return",
                     "Echo Return");
 
             Assert.That(
                 GetSingleGroupEffect(master, "Compressor"),
                 Is.SameAs(compressor));
+            Assert.That(GetSingleGroupEffect(perception, IntoxicationAudioDriver.EffectName),
+                Is.SameAs(tape));
+            Assert.That(GetGroupEffects(ui, IntoxicationAudioDriver.EffectName), Is.Empty);
+            Assert.That(GetGroupEffects(master, IntoxicationAudioDriver.EffectName), Is.Empty,
+                "UI must join after the tape, while reverb and echo must pass through it.");
+            Assert.That(mixer.GetFloat(IntoxicationAudioDriver.IntensityParameter, out _), Is.True);
+            Assert.That(mixer.GetFloat(IntoxicationAudioDriver.PausedParameter, out _), Is.True);
+            Assert.That(mixer.GetFloat(IntoxicationAudioDriver.ResetParameter, out _), Is.True);
             Assert.That(
                 GetSingleGroupEffect(
                     reverbReturn,
@@ -348,6 +359,11 @@ namespace BarPromenade.Tests.EditMode
                 AudioMixerSnapshot snapshot =
                     mixer.FindSnapshot(snapshotName);
                 Assert.That(snapshot, Is.Not.Null);
+
+                AssertValue(GetGroupVolume(perception, mixer, snapshot), 0f,
+                    snapshotName + " perception gain");
+                AssertValue(GetEffectParameter(tape, mixer, snapshot, "Intensity"), 0f,
+                    snapshotName + " sober tape default");
 
                 AssertValue(
                     GetEffectParameter(

@@ -4,6 +4,42 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class GameTimeStateTests
     {
+        [Test]
+        public void Tempo_NestedPausePreservesClockRateAndLatestIntoxication()
+        {
+            GameTimeScaleState tempo = new GameTimeScaleState(0.75f, 0.02f);
+            tempo.SetIntoxicationLevel(100f);
+            Assert.That(tempo.EffectiveTimeScale, Is.EqualTo(0.66f).Within(0.00001f));
+            Assert.That(tempo.FixedDeltaTime, Is.EqualTo(0.0132f).Within(0.00001f));
+            GameTimeState clock = new GameTimeState();
+            clock.Advance(tempo.RealGameplayDelta(10f));
+            Assert.That(clock.MinuteOfDay, Is.EqualTo(359), "Pre-wake stays frozen.");
+            clock.TryStartFromWake();
+            clock.Advance(tempo.RealGameplayDelta(GameTimeState.RealSecondsPerGameDay));
+            Assert.That(clock.DayIndex, Is.EqualTo(1), "Slow motion keeps a 24-minute day.");
+            Assert.That(clock.MinuteOfDay, Is.EqualTo(360));
+
+            long first = tempo.AcquirePause();
+            long second = tempo.AcquirePause();
+            tempo.ReleasePause(first);
+            Assert.That(tempo.EffectiveTimeScale, Is.Zero);
+            Assert.That(tempo.RealGameplayDelta(5f), Is.Zero);
+            tempo.SetIntoxicationLevel(0f);
+            Assert.That(tempo.EffectiveTimeScale, Is.Zero);
+            tempo.ReleasePause(second);
+            Assert.That(tempo.EffectiveTimeScale, Is.EqualTo(0.75f));
+            Assert.That(tempo.ReleasePause(second), Is.False);
+
+            long obsolete = tempo.AcquirePause();
+            tempo.ResetSession();
+            long current = tempo.AcquirePause();
+            Assert.That(tempo.ReleasePause(obsolete), Is.False);
+            Assert.That(tempo.IsPaused, Is.True);
+            tempo.ReleasePause(current);
+            Assert.That(tempo.EffectiveTimeScale, Is.EqualTo(1f));
+            Assert.That(tempo.FixedDeltaTime, Is.EqualTo(0.02f));
+        }
+
         [SetUp]
         public void SetUp()
         {

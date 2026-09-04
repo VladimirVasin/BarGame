@@ -494,6 +494,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.ResetEconomyState();
             GameSessionState.ResetDrinkingState();
+            GameSessionState.UpdateDrinkingProgress(80, DrinkId.None, 0);
             BarInteriorRoot bar = null;
             yield return LoadBar(result => bar = result);
             bar.ArrivalPresentation.Skip();
@@ -543,6 +544,8 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(shop.IsBrowsing, Is.True);
+            Assert.That(Time.timeScale, Is.InRange(0.94f, 0.96f),
+                "The complete production route must retain hand contact in slow motion.");
             Assert.That(
                 shop.Select(FindOfferIndex(shop, DrinkId.RedWine)),
                 Is.True);
@@ -859,7 +862,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(travel.TranslationFrameCount, Is.GreaterThan(10));
             Assert.That(travel.MaximumLocalFootTravel, Is.GreaterThan(0.05f));
             Assert.That(GameSessionState.IntoxicationLevel,
-                Is.EqualTo(intoxicationBefore));
+                Is.LessThanOrEqualTo(intoxicationBefore),
+                "Waiting for service may sober the hero; delivery must not apply the drink.");
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
             Assert.That(GameSessionState.LastAlcoholicDrink,
                 Is.EqualTo(DrinkId.None));
@@ -875,9 +879,10 @@ namespace BarPromenade.Tests.PlayMode
                 lookDirection.normalized, Vector3.up);
             shop.RefreshServedDrinkAffordance();
             Assert.That(shop.IsLookingAtServedVessel, Is.True);
+            int intoxicationBeforeDrink = GameSessionState.IntoxicationLevel;
             Assert.That(shop.BeginServedDrink(), Is.True);
             Assert.That(GameSessionState.IntoxicationLevel,
-                Is.EqualTo(intoxicationBefore));
+                Is.EqualTo(intoxicationBeforeDrink));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
             float previousTimeScale = Time.timeScale;
             try
@@ -899,7 +904,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(shop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.EmptyOnCounter));
             Assert.That(GameSessionState.IntoxicationLevel,
-                Is.EqualTo(intoxicationBefore +
+                Is.EqualTo(intoxicationBeforeDrink +
                     DrinkRules.GetIntoxicationGain(DrinkId.RedWine)));
             Assert.That(GameSessionState.DrinksConsumed,
                 Is.EqualTo(drinksBefore + 1));
@@ -910,7 +915,7 @@ namespace BarPromenade.Tests.PlayMode
             shop.AdvancePresentation(30f);
             yield return null;
             Assert.That(GameSessionState.IntoxicationLevel,
-                Is.EqualTo(appliedIntoxication));
+                Is.LessThanOrEqualTo(appliedIntoxication));
             Assert.That(GameSessionState.DrinksConsumed,
                 Is.EqualTo(drinksBefore + 1));
         }

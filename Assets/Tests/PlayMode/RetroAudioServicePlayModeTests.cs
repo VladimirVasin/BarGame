@@ -9,6 +9,69 @@ namespace BarPromenade.Tests.PlayMode
     public sealed class RetroAudioServicePlayModeTests
     {
         [UnityTest]
+        public IEnumerator IntoxicationTape_KeepsUiDryAndRestoresAcrossPauseAndReset()
+        {
+            bool previousPause = AudioListener.pause;
+            GameSessionState.BeginNewGame();
+            IntoxicationAudioDriver driver = IntoxicationAudioDriver.EnsureInstalled();
+            RetroAudioService service = RetroAudioService.EnsureInstalled();
+            try
+            {
+                GameSessionState.UpdateDrinkingProgress(100, DrinkId.None, 0);
+                GameTimeScaleRuntime.SetIntoxicationLevel(100f);
+                yield return null;
+                yield return null;
+                Assert.That(driver.IsConfigured, Is.True, "The native tape controls must be exposed.");
+                Assert.That(IntoxicationAudioDriver.EnsureInstalled(), Is.SameAs(driver));
+                Assert.That(driver.AppliedIntensity, Is.EqualTo(1f));
+                AssertTapeParameter(IntoxicationAudioDriver.IntensityParameter, 1f);
+                AssertPoolRouting(service, "UI", RetroAudioService.UiPoolSize, GameAudioMixer.UiGroup);
+                AssertPoolRouting(service, "World", RetroAudioService.WorldPoolSize,
+                    GameAudioMixer.SfxWorldGroup);
+                Assert.That(GameAudioMixer.Mixer.FindMatchingGroups("Master/UI"), Has.Length.EqualTo(1));
+
+                GameAudioMixer.ApplyProfile(GameAudioProfile.Bar);
+                yield return null;
+                AssertTapeParameter(IntoxicationAudioDriver.IntensityParameter, 1f);
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    AudioListener.pause = true;
+                    yield return null;
+                    yield return null;
+                    Assert.That(Time.timeScale, Is.Zero);
+                    AssertTapeParameter(IntoxicationAudioDriver.PausedParameter, 1f);
+                    AudioListener.pause = false;
+                }
+                yield return null;
+                yield return null;
+                Assert.That(Time.timeScale, Is.EqualTo(0.88f).Within(0.0001f));
+                AssertTapeParameter(IntoxicationAudioDriver.PausedParameter, 0f);
+                AssertTapeParameter(IntoxicationAudioDriver.IntensityParameter, 1f);
+
+                GameAudioMixer.Mixer.GetFloat(IntoxicationAudioDriver.ResetParameter, out float oldEpoch);
+                GameSessionState.BeginNewGame();
+                yield return null;
+                yield return null;
+                AssertTapeParameter(IntoxicationAudioDriver.IntensityParameter, 0f);
+                Assert.That(Time.timeScale, Is.EqualTo(1f));
+                GameAudioMixer.Mixer.GetFloat(IntoxicationAudioDriver.ResetParameter, out float newEpoch);
+                Assert.That(newEpoch, Is.Not.EqualTo(oldEpoch), "A new game must clear captured sound.");
+            }
+            finally
+            {
+                AudioListener.pause = previousPause;
+                GameSessionState.BeginNewGame();
+                service.StopAll();
+            }
+        }
+
+        private static void AssertTapeParameter(string name, float expected)
+        {
+            Assert.That(GameAudioMixer.Mixer.GetFloat(name, out float actual), Is.True, name);
+            Assert.That(actual, Is.EqualTo(expected).Within(0.0001f), name);
+        }
+
+        [UnityTest]
         public IEnumerator EnsureInstalled_CreatesOnePersistentBoundedService()
         {
             RetroAudioService service =

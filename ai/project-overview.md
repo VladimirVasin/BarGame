@@ -106,11 +106,11 @@ The vertical slice contains:
 - one session-owned in-game clock that starts every fresh run frozen at
   `05:59`, advances only after the successful startup Wake or accepted Home
   F9 debug skip sets it to `06:00`, and persists through Single-mode scene
-  loads. It advances on scaled time at
+  loads. It advances on unpaused real time at
   `1.0` game minute per real second, so a full `24 h` cycle takes exactly
   `1440` real seconds (`24` minutes), crosses midnight with a zero-based day
-  index exposed to the player as one-based `DAY N`, and naturally pauses
-  wherever gameplay sets `timeScale` to zero. The Home clock shows `HH:MM`;
+  index exposed to the player as one-based `DAY N`. True pause stops it;
+  intoxication's world slowdown does not. The Home clock shows `HH:MM`;
   the inventory Status panel shows `DAY N · HH:MM`, while one persistent view
   briefly announces day 1 after Wake and every later midnight;
 - a separately runtime-composed `MountainRoad` area. The hero arrives `6 m`
@@ -1426,6 +1426,18 @@ The vertical slice contains:
   bend, camera roll and world-image distortion within those ranges, with the
   HUD rendered as five independently filling 20-point segments; presentation
   eases toward a changed level over about `0.7 s`;
+- exponential VHS-like processing of existing music, ambience, SFX and their
+  reverb/echo returns, with dry UI and exact sober bypass. The shared stereo
+  transport wanders, flutters, drops out briefly and chews fragments most
+  strongly at `81-100` (`0.4-1 s` episodes every `2-4 s` at maximum), adding no
+  voice, noise bed or world source. `IntoxicationPerceptionRules` maps the
+  alcohol percentage through `A = (exp(4.5 L/100)-1)/(exp(4.5)-1)`; world
+  motion follows `1-0.12 A`, bounded at `0.88`. The persistent
+  `GameTimeScaleRuntime` owns the shared `0.7 s` unpaused real-time level
+  smoothing used by status and audio, composes pause leases and a matching
+  positive physics step. Physical bar service and fall/rise/crawl share world time with the
+  bodies; UI, input response, calendar, needs and recovery retain their
+  intended real-time rates, with progression stopped by true pause;
 - above `60` the hero is balanced by a continuous seeded model rather than a
   check: the drink pushes his centre of mass, the ankles chase it late, the
   torso and arms whip to buy ground, the boots step to catch it, and A/D
@@ -1886,13 +1898,14 @@ The vertical slice contains:
   icon grid, selected item description and contextual Eat/Drink, Examine and
   Close commands. Hunger, stress and fatigue are session-owned `0-100` values
   that start at zero and survive ordinary scene loads. Once the startup Wake
-  starts the shared scaled session clock, hunger rises from `0` to `100` over
+  starts the shared session clock, hunger rises from `0` to `100` over
   `1440` game minutes and fatigue over `1080`; both use hidden double-precision
   fractions while the existing menu bars expose only clamped integers. The
-  same `Time.deltaTime` path freezes progression before Wake and whenever
-  `timeScale` is zero, but otherwise continues through scenes, transitions and
-  ordinary interactions. Food clears the hunger fraction when it applies its
-  relief, while only a normally completed bed sleep clears fatigue and its
+  same pause-aware real-time path freezes progression before Wake and during
+  true pause, but otherwise continues through scenes, transitions and ordinary
+  interactions without following intoxication's world slowdown. Food clears
+  the hunger fraction when it applies its relief, while only a normally
+  completed bed sleep clears fatigue and its
   fraction. Neither need has a gameplay debuff yet. The selected item is a
   live low-resolution 3D model in both the lower panel and Examine view; its
   hidden preview stage rotates on unscaled time and reuses the same procedural

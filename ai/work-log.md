@@ -6,6 +6,39 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-05 — Exponential VHS intoxication and gentle world slowdown
+
+The accepted perception contract uses `A = (exp(4.5 L/100)-1)/(exp(4.5)-1)`
+for existing music/world audio and `1-0.12 A` for world motion, bounded at
+`0.88`. The native `Intoxication VHS` effect sits on `Master/Perception`
+after Music, Ambience, SFX and their reverb/echo returns; UI is a dry sibling.
+Bounded history and one stereo transport supply wow/flutter, dropouts,
+saturation and brief chewing episodes without synthetic voices or noise.
+Sober sound bypasses exactly.
+
+`GameTimeScaleRuntime`/`GameTimeScaleState` own world scale and pause leases;
+bar hand-contact service and the hero's fall/rise/body share world time.
+Calendar/needs retain a `24`-real-minute day, and alcohol recovery retains its
+real-time rate and modal blockers. True pause still freezes progression.
+Both bibles record the explicit `2026-09-05` decision separately from the
+story's irreversible `0-5` scale. Native source is in `tools/audio-vhs` and the
+Windows x86_64 plugin under `Assets/Plugins/AudioVhs/x86_64`.
+
+Verification: the native DLL validator passed at 22.05/44.1/48/96 kHz,
+including exact sober bypass, pause/reset/silence clearing, block-size
+invariance, mono/stereo/5.1/7.1 coherence and bounded output. Six comparative
+WAVs and the report are in ignored `Captures/AudioVhs`. Unity loaded the
+Windows x86_64 plugin after correcting its importer serialization to version
+`2`, and authored the mixer through the editor API. Moving existing return
+groups now temporarily disconnects and restores Send edges.
+
+Focused Unity checks: `4/4` EditMode (mixer topology/DSP, exponential curve,
+tempo state) and `4/4` distinct PlayMode cases (audio pause/reset, nested pause,
+pause input guard, complete wine service under slow motion). The last two
+passed on a focused rerun after correcting test isolation and allowing the
+existing real-time recovery during service. `git diff --check` passed.
+Full suites, player build and manual in-game listening were not run.
+
 ## 2026-09-04 — All four bar drinks have physical service
 
 The visible menu remains exactly four offers. Beer keeps the central tap and

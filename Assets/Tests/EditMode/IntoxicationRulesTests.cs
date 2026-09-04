@@ -4,6 +4,37 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class IntoxicationRulesTests
     {
+        [Test]
+        public void Perception_IsContinuousExponentialWithExactEndpoints()
+        {
+            Assert.That(IntoxicationPerceptionRules.Evaluate(0f).Intensity,
+                Is.Zero);
+            Assert.That(IntoxicationPerceptionRules.Evaluate(100f).Intensity,
+                Is.EqualTo(1f));
+            Assert.That(IntoxicationPerceptionRules.Evaluate(0f).WorldTimeScale,
+                Is.EqualTo(1f));
+            Assert.That(IntoxicationPerceptionRules.Evaluate(100f).WorldTimeScale,
+                Is.EqualTo(0.88f));
+            float previous = 0f;
+            float previousIncrement = 0f;
+            for (int step = 1; step <= 200; step++)
+            {
+                float current = IntoxicationPerceptionRules.Evaluate(step * 0.5f)
+                    .Intensity;
+                Assert.That(current, Is.GreaterThan(previous));
+                Assert.That(current - previous, Is.GreaterThan(previousIncrement));
+                previousIncrement = current - previous;
+                previous = current;
+            }
+
+            Assert.That(IntoxicationPerceptionRules.Evaluate(80f).Intensity,
+                Is.EqualTo(0.3999f).Within(0.001f));
+            Assert.That(IntoxicationPerceptionRules.Evaluate(90f).Intensity,
+                Is.EqualTo(0.6336f).Within(0.001f));
+            Assert.That(IntoxicationPerceptionRules.Evaluate(float.NaN).Intensity,
+                Is.Zero);
+        }
+
         [TestCase(-1, 0, IntoxicationStage.Sober)]
         [TestCase(0, 0, IntoxicationStage.Sober)]
         [TestCase(1, 1, IntoxicationStage.LightBuzz)]

@@ -236,7 +236,7 @@ namespace BarPromenade
             return true;
         }
 
-        public void AdvanceInteraction(float unscaledDeltaTime)
+        public void AdvanceInteraction(float deltaTime)
         {
             if (!ownsInteraction || timeline == null)
             {
@@ -245,12 +245,12 @@ namespace BarPromenade
 
             HomeRefrigeratorInteractionPhase previousPhase =
                 timeline.Phase;
-            timeline.Advance(unscaledDeltaTime);
+            timeline.Advance(deltaTime);
             bool canBrowseItems = timeline.IsInspecting;
             itemInspection?.SetBrowsingEnabled(canBrowseItems);
             if (canBrowseItems)
             {
-                itemInspection?.AdvanceInspection(unscaledDeltaTime);
+                itemInspection?.AdvanceInspection(deltaTime);
             }
 
             PlayCrossedCues();
@@ -309,7 +309,7 @@ namespace BarPromenade
                 RequestClose();
             }
 
-            AdvanceInteraction(Time.unscaledDeltaTime);
+            AdvanceInteraction(Time.deltaTime);
         }
 
         private void LateUpdate()

@@ -953,7 +953,7 @@ six-second camera and wake animation begin and settle into the normal Home
 shot. Ordinary later bed wakes retain their two-second timing.
 
 Fresh-session time is frozen at `05:59` until that successful startup Wake,
-then advances from `06:00` on scaled time at `1.0` game minute per real second.
+then advances from `06:00` at `1.0` game minute per unpaused real second.
 The clock persists across scene loads and drives the Home display, inventory
 time readout and shared City/Home window and balcony lighting; one complete
 in-game day is exactly
@@ -962,6 +962,21 @@ in-game day is exactly
 `18:00-19:00`, and night resumes at `19:00`. City fog, its matching
 background, `48 m` far clip, `CityFogField` and `CityNoirVolumeProfile` do not
 change with time; Bar, Supermarket and Stairwell visuals remain unchanged.
+
+Intoxication also bends the existing sound through the shared `Intoxication
+VHS` mixer effect: slow pitch wander, flutter, softened dropouts and brief
+tape-chewing episodes rise exponentially across `0-100`, with the strongest
+breakup in `81-100`. Music, ambience, world/gameplay SFX and their spatial
+returns share the transport; UI stays dry, and sober audio is an exact bypass.
+`IntoxicationPerceptionRules` owns `A = (exp(4.5 L/100)-1)/(exp(4.5)-1)`;
+world motion slows smoothly to `1-0.12 A` (`0.88` at `100`). The single
+`GameTimeScaleRuntime` owns this scale, pause leases and the shared `0.7 s`
+unpaused real-time level smoothing consumed by status and audio. Physics,
+hand-contact service and the hero's fall/rise use the same world time. Calendar/needs and
+sobering retain their real-time rates; a real pause still freezes progression.
+No voice, synthetic noise or new in-world source is added. Native DSP source
+lives in `tools/audio-vhs`, with its Windows x86_64 Unity plugin under
+`Assets/Plugins/AudioVhs/x86_64`.
 
 Exterior weather is a deterministic pure function of the city seed and the
 absolute session time (`GameWeatherRules`): `90`-game-minute slots draw clear

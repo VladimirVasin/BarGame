@@ -26,6 +26,7 @@ namespace BarPromenade
 
             instance = this;
             DontDestroyOnLoad(gameObject);
+            GameTimeScaleRuntime.EnsureInstalled();
             DayAnnouncement = GetComponent<GameDayAnnouncementView>();
             if (DayAnnouncement == null)
             {
@@ -36,7 +37,8 @@ namespace BarPromenade
 
         private void Update()
         {
-            GameSessionState.AdvanceGameTime(Time.deltaTime);
+            GameSessionState.AdvanceGameTime(
+                GameTimeScaleRuntime.CalendarDeltaTime);
         }
 
         private void OnDestroy()

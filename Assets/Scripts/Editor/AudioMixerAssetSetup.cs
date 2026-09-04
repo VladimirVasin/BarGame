@@ -92,12 +92,18 @@ namespace BarPromenade.Editor
         [MenuItem("Bar Promenade/Audio/Create or Update Audio Mixer")]
         public static void Run()
         {
+            var api = new MixerEditorApi();
+            api.RefreshEffectDefinitions();
+            if (!api.EffectExists(IntoxicationAudioDriver.EffectName))
+            {
+                throw new InvalidOperationException(
+                    "Required AudioMixer effect is unavailable: " +
+                    IntoxicationAudioDriver.EffectName);
+            }
+
             EnsureFolder("Assets/Resources");
             EnsureFolder("Assets/Resources/Audio");
             EnsureFolder("Assets/Resources/Audio/Mixers");
-
-            var api = new MixerEditorApi();
-            api.RefreshEffectDefinitions();
 
             AudioMixer mixer =
                 AssetDatabase.LoadAssetAtPath<AudioMixer>(MixerPath);
@@ -119,8 +125,21 @@ namespace BarPromenade.Editor
                 controller = api.FindController(mixer, MixerPath);
             }
 
-            Dictionary<string, object> groups =
-                EnsureGroups(api, mixer, controller);
+            // AddChildToParent briefly detaches a moved branch. A live Send
+            // targeting a Receive in that branch makes Unity build an invalid
+            // FMOD graph during the detach, even though the final tree is valid.
+            // Keep the same effects and snapshot GUIDs; suspend only their edges.
+            Dictionary<object, object> sends = api.DisconnectSends(controller);
+            Dictionary<string, object> groups;
+            try
+            {
+                groups = EnsureGroups(api, mixer, controller);
+            }
+            finally
+            {
+                api.RestoreSends(sends);
+            }
+
             Dictionary<string, object> snapshots =
                 EnsureSnapshots(api, controller);
             ConfigureMixer(
@@ -156,17 +175,21 @@ namespace BarPromenade.Editor
             SetObjectName(master, "Master");
             groups.Add("Master", master);
 
+            object perception = EnsureGroup(
+                api, mixer, controller, master, "Perception");
+            groups.Add(GameAudioMixer.PerceptionGroupPath, perception);
+
             object music = EnsureGroup(
                 api,
                 mixer,
                 controller,
-                master,
+                perception,
                 "Music");
             object ambience = EnsureGroup(
                 api,
                 mixer,
                 controller,
-                master,
+                perception,
                 "Ambience");
             object beds = EnsureGroup(
                 api,
@@ -184,7 +207,7 @@ namespace BarPromenade.Editor
                 api,
                 mixer,
                 controller,
-                master,
+                perception,
                 "SFX");
             object world = EnsureGroup(
                 api,
@@ -208,27 +231,27 @@ namespace BarPromenade.Editor
                 api,
                 mixer,
                 controller,
-                master,
+                perception,
                 "Environment Reverb Return");
             object echoReturn = EnsureGroup(
                 api,
                 mixer,
                 controller,
-                master,
+                perception,
                 "Echo Return");
 
-            groups.Add("Master/Music", music);
-            groups.Add("Master/Ambience", ambience);
-            groups.Add("Master/Ambience/Beds", beds);
-            groups.Add("Master/Ambience/Details", details);
-            groups.Add("Master/SFX", sfx);
-            groups.Add("Master/SFX/World", world);
-            groups.Add("Master/SFX/Gameplay", gameplay);
+            groups.Add("Master/Perception/Music", music);
+            groups.Add("Master/Perception/Ambience", ambience);
+            groups.Add("Master/Perception/Ambience/Beds", beds);
+            groups.Add("Master/Perception/Ambience/Details", details);
+            groups.Add("Master/Perception/SFX", sfx);
+            groups.Add("Master/Perception/SFX/World", world);
+            groups.Add("Master/Perception/SFX/Gameplay", gameplay);
             groups.Add("Master/UI", ui);
             groups.Add(
-                "Master/Environment Reverb Return",
+                "Master/Perception/Environment Reverb Return",
                 reverbReturn);
-            groups.Add("Master/Echo Return", echoReturn);
+            groups.Add("Master/Perception/Echo Return", echoReturn);
             return groups;
         }
 
@@ -330,13 +353,19 @@ namespace BarPromenade.Editor
             IReadOnlyDictionary<string, object> snapshots)
         {
             object master = groups["Master"];
-            object music = groups["Master/Music"];
-            object details = groups["Master/Ambience/Details"];
-            object world = groups["Master/SFX/World"];
+            object music = groups["Master/Perception/Music"];
+            object details = groups["Master/Perception/Ambience/Details"];
+            object world = groups["Master/Perception/SFX/World"];
             object ui = groups["Master/UI"];
             object reverbReturn =
-                groups["Master/Environment Reverb Return"];
-            object echoReturn = groups["Master/Echo Return"];
+                groups["Master/Perception/Environment Reverb Return"];
+            object echoReturn = groups["Master/Perception/Echo Return"];
+
+            object perception = groups[GameAudioMixer.PerceptionGroupPath];
+            object tape = EnsureRequiredEffect(
+                api, mixer, perception, int.MaxValue,
+                IntoxicationAudioDriver.EffectName);
+            IntoxicationAudioMixerSetup.Configure(controller, tape);
 
             api.RemoveEffectsByName(controller, ui, "Send");
 
@@ -413,6 +442,7 @@ namespace BarPromenade.Editor
             {
                 SceneMix mix = SceneMixes[index];
                 object snapshot = snapshots[mix.SnapshotName];
+                api.SetGroupVolume(perception, controller, snapshot, 0f);
                 for (int groupIndex = 0;
                      groupIndex < (int)GameAudioGroup.Count;
                      groupIndex++)
@@ -1116,6 +1146,41 @@ namespace BarPromenade.Editor
                     controller,
                     child,
                     parent);
+            }
+
+            public Dictionary<object, object> DisconnectSends(object controller)
+            {
+                var connections = new Dictionary<object, object>();
+                foreach (object group in GetAllGroups(controller))
+                {
+                    foreach (object effect in GetEffects(group))
+                    {
+                        if (!string.Equals(GetEffectName(effect), "Send",
+                                StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        object target = sendTarget.GetValue(effect);
+                        if (target == null)
+                        {
+                            continue;
+                        }
+
+                        connections.Add(effect, target);
+                        sendTarget.SetValue(effect, null);
+                    }
+                }
+
+                return connections;
+            }
+
+            public void RestoreSends(IReadOnlyDictionary<object, object> connections)
+            {
+                foreach (KeyValuePair<object, object> connection in connections)
+                {
+                    sendTarget.SetValue(connection.Key, connection.Value);
+                }
             }
 
             public object[] GetSnapshots(object controller)

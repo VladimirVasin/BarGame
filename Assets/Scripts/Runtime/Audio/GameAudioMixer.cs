@@ -44,15 +44,16 @@ namespace BarPromenade
             "Audio/Mixers/BarPromenadeAudio";
 
         public const string MasterGroupPath = "Master";
-        public const string MusicGroupPath = "Master/Music";
+        public const string PerceptionGroupPath = "Master/Perception";
+        public const string MusicGroupPath = "Master/Perception/Music";
         public const string AmbienceBedsGroupPath =
-            "Master/Ambience/Beds";
+            "Master/Perception/Ambience/Beds";
         public const string AmbienceDetailsGroupPath =
-            "Master/Ambience/Details";
+            "Master/Perception/Ambience/Details";
         public const string SfxWorldGroupPath =
-            "Master/SFX/World";
+            "Master/Perception/SFX/World";
         public const string SfxGameplayGroupPath =
-            "Master/SFX/Gameplay";
+            "Master/Perception/SFX/Gameplay";
         public const string UiGroupPath = "Master/UI";
 
         public const string CitySnapshotName = "City";

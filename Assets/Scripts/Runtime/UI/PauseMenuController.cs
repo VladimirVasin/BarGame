@@ -23,7 +23,7 @@ namespace BarPromenade
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
         private GUIStyle messageStyle;
-        private float previousTimeScale = 1f;
+        private IDisposable timePause;
         private bool previousAudioPause;
         private bool ownsPauseState;
         private bool closePending;
@@ -125,7 +125,7 @@ namespace BarPromenade
                 return false;
             }
 
-            previousTimeScale = Time.timeScale;
+            timePause = GameTimeScaleRuntime.AcquirePause();
             previousAudioPause = AudioListener.pause;
             ownsPauseState = true;
             activeController = this;
@@ -134,7 +134,6 @@ namespace BarPromenade
             model.Open();
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
-            Time.timeScale = 0f;
             AudioListener.pause = true;
             RetroAudio.Play(RetroSfxId.MapOpen);
             GameLog.Info(
@@ -310,7 +309,8 @@ namespace BarPromenade
                 return;
             }
 
-            Time.timeScale = previousTimeScale;
+            timePause?.Dispose();
+            timePause = null;
             AudioListener.pause = previousAudioPause;
             modalLock.Restore();
             ownsPauseState = false;

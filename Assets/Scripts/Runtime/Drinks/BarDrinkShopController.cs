@@ -1400,7 +1400,7 @@ namespace BarPromenade
             }
         }
 
-        public void AdvancePresentation(float unscaledDeltaTime)
+        public void AdvancePresentation(float deltaTime)
         {
             if (!IsOpen || !hasPhysicalPresentation)
             {
@@ -1408,7 +1408,7 @@ namespace BarPromenade
             }
 
             bool wasCommitted = timeline.IsCommitted;
-            timeline.Advance(unscaledDeltaTime);
+            timeline.Advance(deltaTime);
             PlayCrossedCues();
             if (wasCommitted &&
                 !timeline.IsCommitted &&
@@ -1429,7 +1429,7 @@ namespace BarPromenade
                 CompleteOrderPresentation();
             }
 
-            AdvanceCounterMenuDelivery(unscaledDeltaTime);
+            AdvanceCounterMenuDelivery(deltaTime);
 
             ApplyCurrentPresentation();
             if (timeline.Phase == BarDrinkServicePhase.Closed)
@@ -1512,11 +1512,10 @@ namespace BarPromenade
 
                 bool isPlayerDrinkPhase =
                     IsPlayerDrinkPhase(timeline.Phase);
-                float presentationDeltaTime = isPlayerDrinkPhase
-                    ? Time.frameCount <= playerDrinkStartedFrame
+                float presentationDeltaTime = isPlayerDrinkPhase &&
+                    Time.frameCount <= playerDrinkStartedFrame
                         ? 0f
-                        : Time.deltaTime
-                    : Time.unscaledDeltaTime;
+                        : Time.deltaTime;
                 AdvancePresentation(presentationDeltaTime);
                 return;
             }
@@ -2045,7 +2044,7 @@ namespace BarPromenade
             counterMenuHint?.Hide();
         }
 
-        private void AdvanceCounterMenuDelivery(float unscaledDeltaTime)
+        private void AdvanceCounterMenuDelivery(float deltaTime)
         {
             if (counterMenuModel == null ||
                 counterMenuModel.State != CounterMenuState.Delivering)
@@ -2070,7 +2069,7 @@ namespace BarPromenade
 
             menuDeliveryElapsedSeconds += Mathf.Max(
                 0f,
-                unscaledDeltaTime);
+                deltaTime);
             float duration =
                 BarDrinkServiceTimeline.CameraApproachDurationSeconds;
             float progress = duration > 0f

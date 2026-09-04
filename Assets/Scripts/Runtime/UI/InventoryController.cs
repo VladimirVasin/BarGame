@@ -21,7 +21,7 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView intoxicationHud;
         private Func<bool> additionalCanOpen;
-        private float previousTimeScale = 1f;
+        private IDisposable timePause;
         private int inputUnlockFrame;
         private bool ownsTimeState;
 
@@ -147,7 +147,7 @@ namespace BarPromenade
                 return false;
             }
 
-            previousTimeScale = Time.timeScale;
+            timePause = GameTimeScaleRuntime.AcquirePause();
             ownsTimeState = true;
             activeController = this;
             model.Open(GameSessionState.InventoryItems.Count);
@@ -155,7 +155,6 @@ namespace BarPromenade
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
             View.RefreshPreview();
-            Time.timeScale = 0f;
             RetroAudio.Play(RetroSfxId.MapOpen);
             GameLog.Info(
                 "inventory",
@@ -344,7 +343,8 @@ namespace BarPromenade
 
             if (ownsTimeState)
             {
-                Time.timeScale = previousTimeScale;
+                timePause?.Dispose();
+                timePause = null;
                 ownsTimeState = false;
             }
 

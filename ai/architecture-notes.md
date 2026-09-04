@@ -4,6 +4,39 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted by explicit user decision, 2026-09-05 — intoxication changes
+  perceived sound and world pace:** `IntoxicationPerceptionRules.Evaluate`
+  clamps the alcohol level to `0-100` and returns
+  `A = (exp(4.5 L/100)-1)/(exp(4.5)-1)` plus `WorldTimeScale = 1-0.12 A`.
+  These are reversible alcohol effects, independent of the story's monotonic
+  `0-5` scale and degradation. The most severe sound breakup belongs to the
+  last alcohol stage; time remains gently bounded at `0.88` even at `100`.
+  The persistent `GameTimeScaleRuntime` owns the shared `0.7 s` unpaused
+  real-time level smoothing; status reads its smoothed level and
+  `IntoxicationAudioDriver` forwards its intensity to the native
+  `Intoxication VHS` mixer effect. `Master/Perception` contains Music,
+  Ambience, SFX and the reverb/echo returns; UI is a dry sibling. One bounded
+  history and shared stereo transport produce wow/flutter, brief dropouts,
+  saturation and tape-chewing episodes (`0.4-1 s`, every `2-4 s` at maximum),
+  while preserving spatial relationships. The effect transforms existing
+  audio only: no generated hiss, voice, new sound source or in-fiction
+  explanation. At sober it bypasses exactly, with no persistent delay.
+  Source and native validation live in `tools/audio-vhs`; the packaged
+  Windows x86_64 plugin is
+  `Assets/Plugins/AudioVhs/x86_64/AudioPluginIntoxicationVhs.dll`.
+  `GameTimeScaleState` and the persistent `GameTimeScaleRuntime` are the
+  single authority for world speed and independent pause leases. A pause
+  forces zero and release restores the current world factor; it never
+  restores an obsolete captured intoxication scale. The positive physics
+  step follows world scale, never becoming zero during pause. Bar movement,
+  hand-contact service, drinking, refrigerator interaction/inspection and the
+  hero's fall/rise/crawl advance on coherent world time. Camera input, UI and
+  loading retain real-time response.
+  Calendar and needs keep one game minute per unpaused real second
+  (`24` real minutes per day), and alcohol recovery keeps its previous
+  unscaled rate and modal/transition blockers. This explicitly supersedes
+  the earlier scaled-calendar and unscaled physical bar/refrigerator
+  descriptions below.
 - **Accepted:** Unity `6000.6.0f1` with URP `17.6.0` (moved from `6000.5.10f1` / URP `17.5.0` on 2026-09-04; the package set — test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0` — came with the editor).
 - **Accepted:** New Input System is enabled.
 - **Corrected — balcony smokers are a local population, not a city-load

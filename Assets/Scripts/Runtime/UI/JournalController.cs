@@ -29,7 +29,7 @@ namespace BarPromenade
         private GUIStyle descriptionStyle;
         private GUIStyle emptyStyle;
         private GUIStyle hintStyle;
-        private float previousTimeScale = 1f;
+        private IDisposable timePause;
         private int inputUnlockFrame;
         private bool ownsTimeState;
 
@@ -83,12 +83,11 @@ namespace BarPromenade
                 return false;
             }
 
-            previousTimeScale = Time.timeScale;
+            timePause = GameTimeScaleRuntime.AcquirePause();
             ownsTimeState = true;
             activeController = this;
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
-            Time.timeScale = 0f;
             RetroAudio.Play(RetroSfxId.MapOpen);
             GameLog.Info(
                 "journal",
@@ -158,7 +157,8 @@ namespace BarPromenade
 
             if (ownsTimeState)
             {
-                Time.timeScale = previousTimeScale;
+                timePause?.Dispose();
+                timePause = null;
                 ownsTimeState = false;
             }
 

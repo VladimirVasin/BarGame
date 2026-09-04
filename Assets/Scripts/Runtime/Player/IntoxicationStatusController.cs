@@ -86,6 +86,7 @@ namespace BarPromenade
         private bool initialized;
 
         public IntoxicationProfile CurrentProfile => currentProfile;
+        public float SmoothedPresentationLevel => presentationLevel;
 
         /// <summary>The balance model is fighting: capture point well outside the feet.</summary>
         public bool IsStaggering =>
@@ -159,6 +160,7 @@ namespace BarPromenade
 
             presentationLevel =
                 GameSessionState.IntoxicationLevel;
+            GameTimeScaleRuntime.SetIntoxicationLevel(presentationLevel);
             currentProfile = IntoxicationStageRules.Evaluate(
                 GameSessionState.IntoxicationLevel);
             previousRawLevel =
@@ -207,16 +209,20 @@ namespace BarPromenade
                 return;
             }
 
-            float deltaTime = Time.unscaledDeltaTime;
+            float deltaTime = GameTimeScaleRuntime.CalendarDeltaTime;
             if (!SceneTransitionService.IsTransitioning &&
-                !BarMinigameModalLock.IsAnyLocked)
+                !BarMinigameModalLock.IsAnyLocked &&
+                !GameTimeScaleRuntime.IsPaused)
             {
                 GameSessionState.AdvanceIntoxicationRecovery(
                     deltaTime);
             }
 
-            UpdatePresentationLevel(deltaTime);
-            UpdateBalance(deltaTime);
+            UpdatePresentationLevel();
+            if (!GameTimeScaleRuntime.IsPaused && Time.deltaTime > 0f)
+            {
+                UpdateBalance(Time.deltaTime);
+            }
             ApplyPresentation();
             ApplyRiseBlend();
         }
@@ -231,7 +237,7 @@ namespace BarPromenade
             Shutdown();
         }
 
-        private void UpdatePresentationLevel(float deltaTime)
+        private void UpdatePresentationLevel()
         {
             int rawLevel = GameSessionState.IntoxicationLevel;
             if (rawLevel != previousRawLevel)
@@ -294,12 +300,7 @@ namespace BarPromenade
             }
 
             previousRawLevel = rawLevel;
-            presentationLevel = Mathf.MoveTowards(
-                presentationLevel,
-                rawLevel,
-                deltaTime *
-                IntoxicationStageRules.MaximumLevel /
-                0.7f);
+            presentationLevel = GameTimeScaleRuntime.SmoothedPresentationLevel;
             currentProfile = IntoxicationStageRules.Evaluate(
                 Mathf.RoundToInt(presentationLevel));
         }

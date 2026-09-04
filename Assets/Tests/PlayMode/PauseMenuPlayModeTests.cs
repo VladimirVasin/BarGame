@@ -42,6 +42,8 @@ namespace BarPromenade.Tests.PlayMode
 
             previousTimeScale = Time.timeScale;
             previousAudioPause = AudioListener.pause;
+            GameSessionState.ResetDrinkingState();
+            GameTimeScaleRuntime.SetIntoxicationLevel(0f);
             Time.timeScale = 0.75f;
             AudioListener.pause = false;
 
@@ -95,6 +97,8 @@ namespace BarPromenade.Tests.PlayMode
             Destroy(uiObject);
             Destroy(cameraObject);
             Destroy(playerObject);
+            GameSessionState.ResetDrinkingState();
+            GameTimeScaleRuntime.ResetSession();
             Time.timeScale = previousTimeScale;
             AudioListener.pause = previousAudioPause;
             inputFixture?.TearDown();
@@ -112,6 +116,61 @@ namespace BarPromenade.Tests.PlayMode
 
             suspendedMenus.Clear();
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator NestedPause_RestoresLatestTempoAndIgnoresOldSessionLeases()
+        {
+            GameSessionState.BeginNewGame();
+            Time.timeScale = 0.75f;
+            GameTimeScaleRuntime.EnsureInstalled();
+            GameTimeScaleRuntime.SetIntoxicationLevel(0f);
+            float normalFixedDelta = Time.fixedDeltaTime / 0.75f;
+            GameSessionState.UpdateDrinkingProgress(100, DrinkId.None, 0);
+            GameTimeScaleRuntime.SetIntoxicationLevel(100f);
+            Assert.That(Time.timeScale, Is.EqualTo(0.66f).Within(0.00001f));
+            Assert.That(Time.fixedDeltaTime,
+                Is.EqualTo(normalFixedDelta * 0.66f).Within(0.00001f));
+            Assert.That(menu.Open(), Is.True);
+            System.IDisposable nested = GameTimeScaleRuntime.AcquirePause();
+            try
+            {
+                Assert.That(menu.Cancel(), Is.True);
+                yield return null;
+                Assert.That(menu.IsOpen, Is.False);
+                Assert.That(Time.timeScale, Is.Zero);
+                Assert.That(GameTimeScaleRuntime.CalendarDeltaTime, Is.Zero);
+                GameSessionState.UpdateDrinkingProgress(0, DrinkId.None, 0);
+                GameTimeScaleRuntime.SetIntoxicationLevel(0f);
+                Assert.That(Time.timeScale, Is.Zero);
+            }
+            finally
+            {
+                nested.Dispose();
+            }
+
+            Assert.That(Time.timeScale, Is.EqualTo(0.75f));
+            GameSessionState.UpdateDrinkingProgress(100, DrinkId.None, 0);
+            GameTimeScaleRuntime.SetIntoxicationLevel(100f);
+            System.IDisposable obsolete = GameTimeScaleRuntime.AcquirePause();
+            GameSessionState.BeginNewGame();
+            Assert.That(Time.timeScale, Is.EqualTo(1f));
+            Assert.That(Time.fixedDeltaTime,
+                Is.EqualTo(normalFixedDelta).Within(0.00001f));
+            Assert.That(GameTimeScaleRuntime.PerceptionIntensity, Is.Zero);
+            System.IDisposable current = GameTimeScaleRuntime.AcquirePause();
+            try
+            {
+                obsolete.Dispose();
+                Assert.That(Time.timeScale, Is.Zero,
+                    "An outgoing scene's lease must not unpause a new session.");
+            }
+            finally
+            {
+                current.Dispose();
+            }
+
+            Assert.That(Time.timeScale, Is.EqualTo(1f));
         }
 
         [UnityTest]

@@ -39,7 +39,7 @@ namespace BarPromenade
             }
 
             IsLoadingHome = true;
-            Time.timeScale = 1f;
+            GameTimeScaleRuntime.EnsureInstalled();
             GameSessionState.BeginNewGame();
             GameSessionState.PrepareHomeArrival(
                 HomeArrivalKind.OpeningSleep);

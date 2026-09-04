@@ -4,6 +4,8 @@
 
 ```text
 Assets/
+  Plugins/AudioVhs/x86_64/
+    AudioPluginIntoxicationVhs.dll  native bounded stereo VHS effect for Windows
   Scenes/
     MainMenu.unity
     City.unity
@@ -297,7 +299,9 @@ Assets/
                                   -> SyncDayEvents/ApplyDayEvent: the one place a dated event changes the world
         GameDaySchedule.cs        pure event -> first-day table, looked up by id; FeedTheCatOpens = day 2
         GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed delta + one-based day
-        GameTimeRuntime.cs        persistent scaled-delta driver + day-announcement owner
+        GameTimeRuntime.cs        pause-aware real-time calendar/needs + day announcement
+        GameTimeScaleState.cs     world factor and independent pause ownership
+        GameTimeScaleRuntime.cs   persistent shared 0.7 s level smoothing + sole timeScale/physics writer
         SecondOrderFilter.cs      pure sub-stepped mass-spring-damper: limb inertia, exactly zero at rest
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
         GameWeatherRules.cs       seeded 90-minute clear/light-rain/heavy-rain slots
@@ -307,6 +311,7 @@ Assets/
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
+        IntoxicationAudioDriver.cs         forwards shared tempo-owner intensity to native VHS
         CityRainSound.cs                   deterministic rain noise loop + intensity player
         CitySurfSound.cs                   one nearest-waterline spatial surf voice
         CityThunderSound.cs                deterministic azimuthal thunder + distance delay
@@ -756,6 +761,7 @@ Assets/
         PlayerNeedsProgressionState.cs  fractional clock-driven hunger/fatigue
         PlayerNeedsRules.cs        shared 0-100 need bounds + hunger/stress relief
         IntoxicationStageRules.cs   five ranges and interpolated profiles
+        IntoxicationPerceptionRules.cs exponential audio intensity and bounded world scale
         PlayerBalanceModel.cs       seeded LIP + torso flywheel + steps; Steady/Recovering/Toppling/Fallen with lunges, brace and the fall's motion
         PlayerBalanceRules.cs       support polygon, tuning table, capture point, lunge/flywheel/brace formulas
         PlayerBalanceController.cs  feeds the model, drifts the motor, probes walls and the brace floor, builds the ragdoll handoff
@@ -1090,6 +1096,7 @@ ArtSource/
     Preview/                     approved wide fixed-camera composition PNG
     Textures/MothersHousePositiveAtlas.prompt.md  4 x 4 clean/aged atlas source prompt + acceptance
 tools/
+  audio-vhs/                          native Intoxication VHS source, build and validation
   build-exterior-cloud-3d-model.py  deterministic hemisphere, packed density texture and export validator
   build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
@@ -1150,7 +1157,7 @@ build index 0 -> MainMenuRoot -> BeginNewGame
                               -> Single-load HomeInterior
                               -> time frozen at 05:59
 startup Wake or accepted Home F9 debug skip -> session time 06:00
-                                             -> GameTimeRuntime scaled delta
+                                             -> GameTimeRuntime unpaused real delta
                                   -> 1440 real seconds per game day
                                   -> one-based day -> queued DAY N announcement
                                   -> PlayerNeedsProgressionState
@@ -1607,7 +1614,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                      -> no FOV pulse; continuous phase clock
                                   -> drift fades to zero with exact shot restoration
                                   -> optional smoking_theme fade in/out
-       -> HomeRefrigeratorInteraction -> modal unscaled timeline
+       -> HomeRefrigeratorInteraction -> modal world-time timeline
                                       -> clickable close prompt -> RequestClose
                                       -> first-person Bezier camera
                                          + prefab-derived right-arm subset
@@ -1716,6 +1723,11 @@ GameSessionState intoxication -> IntoxicationStageRules
                                  -> BalanceCheckView
                                  -> success or Fall clip -> bounded ragdoll
                                     -> one 50-frame Rise phase via all fours/crouch
+                             -> IntoxicationPerceptionRules -> exponential intensity
+                                -> IntoxicationAudioDriver -> Perception/VHS DSP
+                                -> GameTimeScaleRuntime -> world motion + physics
+pause/inventory/journal -> pause leases -> world/calendar freeze
+unpaused real time -> calendar/needs + modal-aware alcohol recovery
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
                           -> direct day 1..7 -> day index only, keep HH:MM/needs
                           -> City test-teleport toggle -> CityMap all-lot selection
@@ -1742,7 +1754,8 @@ lightning azimuth + distance -> delayed spatial thunder ----------> SFX/World
 Bar/Home/Stairwell root -> spatial soundscape --------------------> Ambience/Details
 Home opening -> HomeAlarmClock -> spatial mechanical ring --------> SFX/Gameplay
 input/gameplay events -> RetroAudioService -> pooled SFX/UI groups
-music + compensated details/world sends -> reverb/echo -> Master compressor
+music + ambience + SFX + reverb/echo returns -> Perception/VHS -> Master compressor
+UI ------------------------------------------> dry sibling -> Master compressor
 URP post-processing -> 640x360 average -> subtle RGB555 blend -> point upscale
 world composite -> crisp soot/bone IMGUI overlay
 ```

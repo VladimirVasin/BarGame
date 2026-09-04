@@ -287,6 +287,8 @@ namespace BarPromenade
         public static void BeginNewGame()
         {
             ResetToDefaults();
+            GameTimeScaleRuntime.ResetSession();
+            IntoxicationAudioDriver.ResetSession();
             GameLog.Info(
                 "session",
                 "new_game_started",

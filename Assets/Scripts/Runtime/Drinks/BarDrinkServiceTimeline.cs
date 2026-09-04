@@ -305,15 +305,15 @@ namespace BarPromenade
             SetPhase(BarDrinkServicePhase.Closed);
         }
 
-        public void Advance(float unscaledDeltaTime)
+        public void Advance(float deltaTime)
         {
-            ValidateDeltaTime(unscaledDeltaTime);
-            if (!IsActive || unscaledDeltaTime <= 0f)
+            ValidateDeltaTime(deltaTime);
+            if (!IsActive || deltaTime <= 0f)
             {
                 return;
             }
 
-            phaseElapsedSeconds += unscaledDeltaTime;
+            phaseElapsedSeconds += deltaTime;
             if (IsPersistentPhase(Phase))
             {
                 return;
@@ -720,15 +720,15 @@ namespace BarPromenade
                    phase == BarDrinkServicePhase.EmptyOnCounter;
         }
 
-        private static void ValidateDeltaTime(float unscaledDeltaTime)
+        private static void ValidateDeltaTime(float deltaTime)
         {
-            if (float.IsNaN(unscaledDeltaTime) ||
-                float.IsInfinity(unscaledDeltaTime) ||
-                unscaledDeltaTime < 0f)
+            if (float.IsNaN(deltaTime) ||
+                float.IsInfinity(deltaTime) ||
+                deltaTime < 0f)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(unscaledDeltaTime),
-                    unscaledDeltaTime,
+                    nameof(deltaTime),
+                    deltaTime,
                     "Delta time must be finite and non-negative.");
             }
         }
