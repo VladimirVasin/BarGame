@@ -1584,11 +1584,11 @@ namespace BarPromenade.Tests.PlayMode
                 MothersHouseShot(
                     root,
                     HomeCameraShotKind.UpperSouthRoom,
-                    "02-empty-south-room"),
+                    "02-childhood-room"),
                 MothersHouseShot(
                     root,
                     HomeCameraShotKind.UpperNorthRoom,
-                    "03-empty-north-room")
+                    "03-parents-bedroom")
             };
         }
 

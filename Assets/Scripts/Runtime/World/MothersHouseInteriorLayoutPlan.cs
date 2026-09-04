@@ -9,7 +9,10 @@ namespace BarPromenade
     {
         EntryApproach = 0,
         MainPassage = 1,
-        TableApproach = 2
+        TableApproach = 2,
+        UpperCorridorRun = 3,
+        UpperNorthApproach = 4,
+        UpperSouthApproach = 5
     }
 
     public enum MothersHouseInteriorFixtureKind
@@ -20,7 +23,22 @@ namespace BarPromenade
         Fireplace = 3,
         Cupboard = 4,
         YarnBasket = 5,
-        FloorLamp = 6
+        FloorLamp = 6,
+        UpperChimney = 7,
+        UpperNorthBed = 8,
+        UpperNorthChest = 9,
+        UpperNorthBedside = 10,
+        UpperSouthBed = 11,
+        UpperSouthChair = 12,
+        UpperCorridorChest = 13,
+        UpperNorthWardrobe = 14,
+        UpperNorthTrunk = 15,
+        UpperNorthChair = 16,
+        UpperSouthLinenPress = 17,
+        UpperSouthTable = 18,
+        UpperSouthTrunk = 19,
+        UpperSouthBasket = 20,
+        UpperCorridorPail = 21
     }
 
     public readonly struct MothersHouseInteriorPathPlan
@@ -29,18 +47,27 @@ namespace BarPromenade
             string id,
             MothersHouseInteriorPathKind kind,
             Rect bounds,
-            float minimumClearance)
+            float minimumClearance,
+            float floorElevation = 0f)
         {
             Id = id ?? string.Empty;
             Kind = kind;
             Bounds = bounds;
             MinimumClearance = minimumClearance;
+            FloorElevation = floorElevation;
         }
 
         public string Id { get; }
         public MothersHouseInteriorPathKind Kind { get; }
         public Rect Bounds { get; }
         public float MinimumClearance { get; }
+
+        /// <summary>
+        /// Which floor this route belongs to. The two storeys overlap in
+        /// <c>X/Z</c>, so a route may only be measured against the furniture
+        /// standing on its own floor.
+        /// </summary>
+        public float FloorElevation { get; }
     }
 
     public readonly struct MothersHouseInteriorFixturePlan
@@ -93,8 +120,16 @@ namespace BarPromenade
             float doorOpeningWidth,
             float doorOpeningHeight,
             float southDoorCenterZ,
-            float northDoorCenterZ)
+            float northDoorCenterZ,
+            Vector3 northWindowPosition,
+            Vector3 southWindowPosition,
+            Vector3 northLampPosition,
+            Vector3 southLampPosition)
         {
+            NorthWindowPosition = northWindowPosition;
+            SouthWindowPosition = southWindowPosition;
+            NorthLampPosition = northLampPosition;
+            SouthLampPosition = southLampPosition;
             FloorElevation = floorElevation;
             CeilingHeight = ceilingHeight;
             StairFlight = stairFlight;
@@ -125,6 +160,22 @@ namespace BarPromenade
         public float DoorOpeningHeight { get; }
         public float SouthDoorCenterZ { get; }
         public float NorthDoorCenterZ { get; }
+
+        /// <summary>
+        /// One window per bedroom, in that room's own outer wall. The summit
+        /// house already lights one upper pane on each of those two facades
+        /// from the village side.
+        /// </summary>
+        public Vector3 NorthWindowPosition { get; }
+        public Vector3 SouthWindowPosition { get; }
+
+        /// <summary>
+        /// One hanging light per bedroom. The parents' room carries an enamel
+        /// bowl shade; the childhood room's flex carries a bare bulb, because
+        /// the shade came off it when the room went out of use.
+        /// </summary>
+        public Vector3 NorthLampPosition { get; }
+        public Vector3 SouthLampPosition { get; }
 
         public Vector3 SouthRoomCenter => new Vector3(
             SouthRoomBounds.center.x,

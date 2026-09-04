@@ -347,6 +347,36 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   breathing blanket replaces it. The
   legacy static residents remain in the City-misc catalog only for
   compatibility and are never instantiated.
+  Amended 2026-09-04 by explicit user request, which overturns the
+  "without increasing polygon density" clause above for seven designs: the
+  measured standard for an ordinary adult is now Hero V2's anatomy, not its
+  bone list alone. The hero is `1,984` triangles and the mountain-cafe four
+  were the only NPCs built to the same body; the rest carried a
+  twelve-triangle tapered box for the whole trunk, another for the pelvis
+  and a third for each hand, with no ears and no separately drawn thigh.
+  The six designs that actually roam the city (`pool_eligible=True`) were
+  the six lowest-density humanoids in the project at `928–1,260`. So a
+  shared `PedestrianBuilder.build_ordinary_adult_body` now draws the
+  shelled chest/waist/seat, ellipsoid hands with a thumb, ears, profiled
+  limbs and an angular boot for `yard_babushka`, `weigh_attendant`,
+  `cemetery_mourner`, `cemetery_watchman`, `park_chess_player`,
+  `park_checkers_player` and `last_route_ferryman`, taking them to
+  `1,836–2,384`. Their `triangle_budget` floors rise from `900` to `1,800`
+  in both `ARCHETYPES` and the seven `PedestrianDescriptor`s, which is what
+  makes the density a contract rather than a one-time pass: a return to box
+  torsos now fails the Blender build and the Unity import alike. The
+  substrate deliberately does not draw footwear contact, headwear, faces or
+  props, and does not add `GEO_FaceSurface`, because that part is an atlas
+  carrier and none of the seven declares a `texture_atlas`; their faces stay
+  the authored `ACC_` features. Two companion helpers exist because a detail
+  authored flush on a flat box front stands off a round trunk like a shelf:
+  `make_trunk_band` rings the shell for quilt seams and hems, and
+  `make_trunk_patch` curves pockets, lapels, aprons and scarf tails onto it.
+  `GENERATOR_VERSION` deliberately stayed `4.5.2`, so the fifteen untouched
+  city signatures are byte-identical. Cost on the street is roughly
+  `+7,000` triangles across the whole roaming pool. The Lake Fisherman is
+  built the same way and was left out of this pass by scope, not by
+  judgement; he is the obvious next one.
 
 - **Accepted — the normal/bizarre verdict lives in C#, temporarily:** every
   character design now carries one of two marks,
@@ -545,6 +575,36 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   composition remain. This lifts form and circulation only: no mother, Cat,
   dinner, news, dialogue, reaction, room function, family clue, readable text
   or new lore is inferred.
+- **Accepted architecture exception — 2026-09-04, explicit user request — the
+  two upper rooms are furnished and named:** This supersedes the `2026-09-01`
+  clause above that leaves them "currently unfurnished", story-bible §25's «Они
+  не получают функции, названия или владельца» and art-bible §10g's «Комнаты
+  пока пусты». The north room becomes the parents' bedroom and carries the
+  double bed; it is still slept in, and the hearth flue continued up its outer
+  wall is what makes it the warm one. The south room becomes the hero's
+  childhood room, taken out of use and kept clean under a dust sheet.
+  **What is lifted is function and ownership, not the unwritten event:** no
+  name, no line, no Cat, no dinner, no news, no dialogue, no reaction, no
+  interaction and no prompt exists upstairs. The rooms add no photograph,
+  letter, diary, newspaper, document, readable text, wall inscription, object
+  bearing a name or a date, no relic of the father, no memorial, no medicine,
+  no diagnosis and no explanation of what kind of child the hero was; the
+  childhood read is carried by furniture dimensions and one wooden top on the
+  sill, which is §19's already-permitted child's-thing-without-a-child. The
+  turned-back half of the double bed is the state of a bed, not a keepsake.
+  Two upper windows are cut as real openings with reveals inside the existing
+  full-height north and south upper walls, whose part name and parapet sides
+  are unchanged; the summit house already lit one upper pane per long facade
+  from the village and stays a closed opaque volume. Two practicals replace the
+  dark floor - the bedroom's hanging bowl, the childhood room's bare bulb and
+  the two window spills. Both rooms are wired; what tells them apart is the
+  KIND of fitting, not the absence of one, and the disused room's unshaded
+  flex stays under the shaded bowl so it never reads as the cosier of the two.
+  Upper furniture rides the
+  EXISTING fixture and route lists; the validator gains a floor test so that
+  two storeys sharing one `X/Z` footprint stop being compared against each
+  other. Generator `1.5.0`; the mesh cap moves `64 -> 80` and the triangle cap
+  stays `14000`; later passes added the childhood room's own fitting and then furnished both rooms properly - wardrobe, chests, chair, table, basket, peg rails and the skirting the upper storey never had - moving the caps to `104` meshes and `16000` triangles at `97 / 12,836`, and `RequiredFixtureCount` to `22`.
 - **Accepted architecture exception — 2026-08-29, explicit user request —
   Alpine Village always carries very heavy snow and very strong wind:** This
   supersedes story-bible §6 level `0` «Ясно», the §12 / art-bible §10g ban on

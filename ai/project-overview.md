@@ -53,7 +53,17 @@ The vertical slice contains:
   between two north windows and a light, clean, cared-for but old and modest
   domestic dressing. Behind the sofa, a real north-entry stair rises south
   through a split slab to a narrow west corridor and exactly two separate,
-  accessible, currently empty upper rooms. One hidden plan-owned ramp makes the
+  accessible, furnished upper bedrooms: the parents' room north, still slept in
+  and warmed by the hearth flue carried up its outer wall, and the hero's
+  childhood room south, taken out of use under a dust sheet. Each has one real
+  window answering a pane the village facade already lit and one hanging fitting
+  of its own - a fabric bowl over the bed still slept in, a bare bulb over the
+  one that is not. Both are furnished rather than indicated: wardrobe, chests,
+  chair, peg rail and slippers in the bedroom, linen press, table, chest and
+  wicker basket in the childhood room, a high linen shelf and a pail in the
+  corridor, and a skirting the upper storey previously lacked. Nothing up
+  there is interactive. One
+  hidden plan-owned ramp makes the
   visible collider-free steps continuously walkable; structural slabs,
   partitions, door openings and well guards are runtime collision. Four
   height-aware fixed shots cover the ground room, stair/corridor and both rooms.
@@ -68,7 +78,7 @@ The vertical slice contains:
   instantiates the literal Kettle Hat pedestrian
   prefab and leaves only its ten authored kettle renderers visible, preserving
   the source meshes, material and detail atlas as the explicit atlas exception;
-  mother, cat, dinner and dialogue
+  the mother sits silently in the rocking chair, while cat, dinner and dialogue
   remain outside this MVP;
 - a black `MainMenu` launch boundary at build index `0` that resets every
   session-owned value, writes the one-shot `OpeningSleep` Home arrival and

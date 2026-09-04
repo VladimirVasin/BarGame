@@ -48,7 +48,11 @@ namespace BarPromenade.Tests.PlayMode
             "Ceramic",
             "PaintedMetal",
             "Glass",
-            "Fire"
+            "Fire",
+            "BookCloth",
+            "Wicker",
+            "TeaCloth",
+            "PaleWood"
         };
 
         private static readonly string[] ForbiddenRoomTextureResourcePaths =
@@ -106,7 +110,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator PlayerClimbsTheRealStairAndEntersBothEmptyRooms()
+        public IEnumerator PlayerClimbsTheRealStairAndEntersBothBedrooms()
         {
             MothersHouseInteriorRoot interior = null;
             yield return LoadSceneAndWaitForRoot(
@@ -368,6 +372,16 @@ namespace BarPromenade.Tests.PlayMode
             AssertBlockingFixtureCollider(
                 interior,
                 MothersHouseInteriorFixtureKind.FloorLamp);
+            AssertBlockingFixtureCollider(
+                interior,
+                MothersHouseInteriorFixtureKind.UpperNorthBed);
+            AssertBlockingFixtureCollider(
+                interior,
+                MothersHouseInteriorFixtureKind.UpperSouthBed);
+            AssertBlockingFixtureCollider(
+                interior,
+                MothersHouseInteriorFixtureKind.UpperChimney);
+            AssertUpperRoomsAreFurnishedAndWalkable(interior);
             AssertSouthDoorAndSpawnContract(interior);
 
             PlayerDoorActionTarget exitAction =
@@ -921,7 +935,7 @@ namespace BarPromenade.Tests.PlayMode
                     MothersHouseInteriorAtmosphere.WindowLightCount));
             Assert.That(
                 MothersHouseInteriorAtmosphere.PracticalLightCount,
-                Is.EqualTo(4));
+                Is.EqualTo(8));
             Assert.That(
                 atmosphere.GetComponentsInChildren<Light>(true),
                 Has.Length.EqualTo(
@@ -967,11 +981,50 @@ namespace BarPromenade.Tests.PlayMode
                 "It stands in for the fire's bounce and must not sit in it.");
             Assert.That(
                 MothersHouseInteriorAtmosphere.LampLightCount,
-                Is.EqualTo(1));
-            Assert.That(atmosphere.LampLights, Has.Length.EqualTo(1));
+                Is.EqualTo(3));
+            Assert.That(atmosphere.LampLights, Has.Length.EqualTo(3));
             Assert.That(
                 atmosphere.LampLights[0],
                 Is.SameAs(atmosphere.FloorLampLight));
+            Assert.That(
+                atmosphere.LampLights[1],
+                Is.SameAs(atmosphere.UpperBedroomLampLight));
+            Assert.That(
+                atmosphere.LampLights[2],
+                Is.SameAs(atmosphere.UpperChildLampLight));
+
+            // Both bedrooms are wired, and each fitting hangs over its own
+            // room above a standing hero. What separates the rooms is the
+            // kind of light, not its absence, so the disused one must never
+            // end up the cosier of the two.
+            Assert.That(
+                atmosphere.UpperBedroomLampLight.transform.position.y -
+                    interior.Layout.UpperFloor.FloorElevation,
+                Is.GreaterThan(1.8f),
+                "The bedroom lamp must hang above a standing hero.");
+            Assert.That(
+                atmosphere.UpperChildLampLight.transform.position.y -
+                    interior.Layout.UpperFloor.FloorElevation,
+                Is.GreaterThan(1.8f),
+                "The childhood room's bulb must hang above a standing hero.");
+            Assert.That(
+                interior.Layout.UpperFloor.NorthRoomBounds.Contains(
+                    new Vector2(
+                        interior.Layout.UpperFloor.NorthLampPosition.x,
+                        interior.Layout.UpperFloor.NorthLampPosition.z)),
+                Is.True,
+                "The shaded bowl belongs to the lived-in room.");
+            Assert.That(
+                interior.Layout.UpperFloor.SouthRoomBounds.Contains(
+                    new Vector2(
+                        interior.Layout.UpperFloor.SouthLampPosition.x,
+                        interior.Layout.UpperFloor.SouthLampPosition.z)),
+                Is.True,
+                "The bare bulb belongs to the childhood room.");
+            Assert.That(
+                atmosphere.UpperChildLampLight.intensity,
+                Is.LessThan(atmosphere.UpperBedroomLampLight.intensity),
+                "The disused room must not read as the cosier of the two.");
             Assert.That(
                 atmosphere.LampLights.All(
                     light =>
@@ -1010,7 +1063,7 @@ namespace BarPromenade.Tests.PlayMode
                         light.shadows == LightShadows.None &&
                         light.intensity < atmosphere.FireLight.intensity),
                 Is.True,
-                "Two weak window spills must remain subordinate to the fire.");
+                "Four weak window spills must remain subordinate to the fire.");
             AssertVectorApproximately(
                 atmosphere.WindowLights[0].transform.position,
                 interior.transform.TransformPoint(
@@ -1023,6 +1076,28 @@ namespace BarPromenade.Tests.PlayMode
                     interior.Layout.EastWindowPosition),
                 0.001f,
                 "East window light moved off its planned opening.");
+
+            // One pane per bedroom, in that room's own outer wall. The
+            // childhood room's is the stronger of the two because nothing
+            // warm burns in a room nobody sleeps in any more.
+            AssertVectorApproximately(
+                atmosphere.WindowLights[2].transform.position,
+                interior.transform.TransformPoint(
+                    interior.Layout.UpperFloor.NorthWindowPosition),
+                0.001f,
+                "Upper north window light moved off its planned opening.");
+            AssertVectorApproximately(
+                atmosphere.WindowLights[3].transform.position,
+                interior.transform.TransformPoint(
+                    interior.Layout.UpperFloor.SouthWindowPosition),
+                0.001f,
+                "Upper south window light moved off its planned opening.");
+            Assert.That(
+                atmosphere.WindowLights.Skip(2).All(
+                    pane => pane.intensity <
+                        atmosphere.UpperChildLampLight.intensity),
+                Is.True,
+                "Cold panes must stay under the fittings that share the room.");
             Assert.That(atmosphere.FireFlicker, Is.Not.Null);
             Assert.That(
                 atmosphere.FireFlicker.FireLight,
@@ -1033,6 +1108,62 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(atmosphere.FireCrackleSource.loop, Is.True);
             Assert.That(atmosphere.FireCrackleSource.clip, Is.Not.Null);
             Assert.That(RenderSettings.fog, Is.False);
+        }
+
+        /// <summary>
+        /// Both upper rooms are furnished now, and the walk below teleports
+        /// the capsule to the exact centre of each one. Furniture standing
+        /// there does not fail an assert - it jams the controller - so the
+        /// clearance is stated here, where the failure names itself.
+        /// </summary>
+        private static void AssertUpperRoomsAreFurnishedAndWalkable(
+            MothersHouseInteriorRoot interior)
+        {
+            MothersHouseInteriorUpperFloorPlan upper =
+                interior.Layout.UpperFloor;
+            var rooms = new[]
+            {
+                ("south", upper.SouthRoomBounds),
+                ("north", upper.NorthRoomBounds)
+            };
+            foreach ((string name, Rect room) in rooms)
+            {
+                MothersHouseInteriorFixturePlan[] inRoom =
+                    interior.Layout.Fixtures
+                        .Where(fixture =>
+                            fixture.BaseHeight >=
+                                upper.FloorElevation - 0.001f &&
+                            room.Overlaps(fixture.Bounds))
+                        .ToArray();
+                Assert.That(
+                    inRoom,
+                    Is.Not.Empty,
+                    $"The {name} room upstairs is still unfurnished.");
+
+                Vector2 centre = room.center;
+                foreach (MothersHouseInteriorFixturePlan fixture in inRoom)
+                {
+                    if (!fixture.BlocksMovement)
+                    {
+                        continue;
+                    }
+
+                    Vector2 nearest = new Vector2(
+                        Mathf.Clamp(
+                            centre.x,
+                            fixture.Bounds.xMin,
+                            fixture.Bounds.xMax),
+                        Mathf.Clamp(
+                            centre.y,
+                            fixture.Bounds.yMin,
+                            fixture.Bounds.yMax));
+                    Assert.That(
+                        Vector2.Distance(nearest, centre),
+                        Is.GreaterThan(0.32f),
+                        $"Fixture '{fixture.Id}' stands on the {name} room " +
+                        "centre the player is walked to.");
+                }
+            }
         }
 
         private static void AssertNoTableLamp(MothersHouseInteriorRoot interior)

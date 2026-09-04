@@ -2,9 +2,13 @@
 """Build the two-storey fixed-camera interior of the mother's house.
 
 The ground floor remains the quiet, ordinary lived-in room.  A real stair rises
-behind its west sofa to a narrow upper corridor and exactly two finished but
-unfurnished rooms.  Story actors, text, medicine, family photographs and the
-kettle are intentionally absent.  The table kettle is instantiated by Unity
+behind its west sofa to a narrow upper corridor and exactly two furnished
+rooms: the parents' bedroom to the north, still slept in, and the hero's
+childhood room to the south, taken out of use and kept clean.  Story actors,
+text, medicine, family photographs and the kettle are intentionally absent,
+and neither bedroom carries a photograph, a letter, a named or dated object,
+or anything that explains what the hero was like as a child.  The table kettle
+is instantiated by Unity
 from the existing kettle-head NPC prefab; this asset publishes only
 ``ANCHOR_TeapotDock`` for it.
 
@@ -47,7 +51,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
 import bar_parts as bp  # noqa: E402
-GENERATOR_VERSION = "1.4.1"
+GENERATOR_VERSION = "1.5.0"
 DESIGN_ID = "mothers_house_interior_v1"
 DISPLAY_NAME = "Bar Promenade Mother's House Interior"
 
@@ -81,6 +85,106 @@ UPPER_ROOM_DIVIDER_Z = 0.0
 UPPER_DOOR_WIDTH = 1.20
 UPPER_DOOR_HEIGHT = 2.20
 UPPER_DOOR_CENTERS_Z = (-1.85, 1.85)
+
+# Second storey.  The north room is the parents' bedroom and is still slept
+# in; the south room is the hero's childhood room and has been taken out of
+# use.  Heights below are measured from the upper floor, not from the ground.
+UPPER_WINDOW_WIDTH = 1.00
+UPPER_WINDOW_SILL = 0.92
+UPPER_WINDOW_HEAD = 2.02
+UPPER_NORTH_WINDOW_X = -1.10
+UPPER_SOUTH_WINDOW_X = -0.90
+
+# The hearth flue stops dead at the interstorey slab.  Continuing it is what
+# makes the north wall the warm one, and a real flue narrows as it climbs.
+UPPER_CHIMNEY_WIDTH = 0.95
+UPPER_CHIMNEY_DEPTH = 0.30
+UPPER_CHIMNEY_CENTER_X = 0.0
+UPPER_CHIMNEY_Z_MAX = 3.88
+
+# Both beds stand clear of their room's own centre point: the play-mode
+# test walks the controller to UpperFloorPlan.<Room>RoomCenter, and a
+# capsule of radius 0.32 has to arrive there without touching furniture.
+NORTH_BED_X = (2.15, 3.65)
+NORTH_BED_Z = (1.85, 3.85)
+NORTH_BEDSIDE_X = (1.62, 2.04)
+NORTH_BEDSIDE_Z = (3.45, 3.85)
+NORTH_CHEST_X = (-1.60, -0.60)
+NORTH_CHEST_Z = (3.32, 3.87)
+NORTH_CHEST_HEIGHT = 0.80
+NORTH_RUG_X = (1.55, 2.10)
+NORTH_RUG_Z = (2.00, 3.35)
+UPPER_NORTH_LAMP_CENTER = (1.30, 1.70)
+
+# The childhood room is lit too, but by a bare bulb on its flex: the shade
+# came off it when the room went out of use and was never put back. Same
+# wiring, different intonation.
+UPPER_SOUTH_LAMP_CENTER = (1.20, -1.75)
+
+SOUTH_BED_X = (2.15, 3.05)
+SOUTH_BED_Z = (-3.80, -2.10)
+SOUTH_CHAIR_X = (1.35, 1.77)
+SOUTH_CHAIR_Z = (-3.55, -3.13)
+SOUTH_SHELF_Z = (-3.20, -2.40)
+SOUTH_SHELF_HEIGHT = 1.25
+SOUTH_ROLLED_RUG_Z = (-3.60, -2.10)
+
+# Second-storey furnishing, pass two. The divider wall at z = 0 stands almost
+# square to both fixed cameras and fills a third of each frame, so it carries
+# the tall pieces; the east third is the near foreground and carries shapes
+# that read large. Every rect below is checked against the room centres the
+# play-mode walk teleports to.
+NORTH_WARDROBE_X = (2.45, 3.95)
+NORTH_WARDROBE_Z = (0.14, 0.76)
+NORTH_WARDROBE_HEIGHT = 1.95
+NORTH_TRUNK_X = (2.25, 3.55)
+NORTH_TRUNK_Z = (1.28, 1.75)
+NORTH_TRUNK_HEIGHT = 0.52
+NORTH_CHAIR_X = (0.72, 1.18)
+NORTH_CHAIR_Z = (2.72, 3.18)
+NORTH_CHAIR_HEIGHT = 0.92
+NORTH_PEG_X = (0.90, 1.80)
+NORTH_PEG_HEIGHT = 1.62
+
+SOUTH_PRESS_X = (1.15, 2.25)
+SOUTH_PRESS_Z = (-0.72, -0.18)
+SOUTH_PRESS_HEIGHT = 1.15
+SOUTH_TABLE_X = (-0.15, 0.85)
+SOUTH_TABLE_Z = (-3.74, -3.16)
+SOUTH_TABLE_HEIGHT = 0.62
+SOUTH_TRUNK_X = (3.25, 4.15)
+SOUTH_TRUNK_Z = (-3.55, -2.95)
+SOUTH_TRUNK_HEIGHT = 0.55
+SOUTH_BASKET_X = (3.35, 3.90)
+SOUTH_BASKET_Z = (-1.60, -1.05)
+SOUTH_BASKET_HEIGHT = 0.52
+
+CORRIDOR_SHELF_Z = (-1.10, 1.10)
+CORRIDOR_SHELF_HEIGHT = 1.94
+CORRIDOR_PAIL_X = (-3.12, -2.72)
+CORRIDOR_PAIL_Z = (-3.62, -3.28)
+CORRIDOR_PAIL_HEIGHT = 0.46
+
+# The ground floor carries a skirting and a cornice; the upper storey had
+# neither, and the bare pool-of-floor-meets-wall line is what read as
+# unfinished. No cornice up here - 2.36 m in the clear would only feel lower.
+UPPER_SKIRTING_HEIGHT = 0.135
+UPPER_SKIRTING_DEPTH = 0.022
+
+CORRIDOR_RUNNER_X = (-3.05, -2.00)
+CORRIDOR_RUNNER_Z = (-2.55, 2.40)
+CORRIDOR_PEG_Z = (0.30, 1.20)
+CORRIDOR_PEG_HEIGHT = 1.55
+# The two upper rooms, mirrored either side of the divider.  These match
+# MothersHouseInteriorLayoutPlanner.Upper{South,North}RoomBounds exactly.
+UPPER_SOUTH_ROOM_X = (-1.67, 4.88)
+UPPER_SOUTH_ROOM_Z = (-3.88, -0.08)
+UPPER_NORTH_ROOM_X = (-1.67, 4.88)
+UPPER_NORTH_ROOM_Z = (0.08, 3.88)
+
+CORRIDOR_CHEST_X = (-3.05, -1.95)
+CORRIDOR_CHEST_Z = (2.85, 3.55)
+CORRIDOR_CHEST_HEIGHT = 0.55
 
 TABLE_WIDTH = 1.45
 TABLE_DEPTH = 0.90
@@ -146,6 +250,12 @@ SHEET_PITCH = {
     "Glass": 1.00,
     "Ceramic": 0.70,
     "Fire": 0.55,
+    # The four reserved cells of the atlas' bottom row, drawn with the rest
+    # of it and unused until the upper storey was furnished.
+    "BookCloth": 0.85,
+    "Wicker": 0.55,
+    "TeaCloth": 0.95,
+    "PaleWood": 1.15,
 }
 
 PREVIEW_COLORS = {
@@ -161,6 +271,10 @@ PREVIEW_COLORS = {
     "Glass": (0.32, 0.52, 0.68, 0.62),
     "Ceramic": (0.88, 0.82, 0.69, 1.0),
     "Fire": (1.0, 0.34, 0.065, 1.0),
+    "BookCloth": (0.46, 0.55, 0.66, 1.0),
+    "Wicker": (0.78, 0.62, 0.34, 1.0),
+    "TeaCloth": (0.86, 0.83, 0.74, 1.0),
+    "PaleWood": (0.72, 0.55, 0.34, 1.0),
 }
 
 
@@ -585,6 +699,49 @@ def u_box_limits(
     )
 
 
+def pierced_upper_wall(
+    wall_center_z: float,
+    window_center_x: float,
+) -> kit.Geometry:
+    """One full-height upper wall composed around a single window.
+
+    The opening is never subtracted from a slab: the wall is drawn as two
+    piers, an under-sill panel and a head, exactly the way the ground floor
+    composes its own walls around the door and the two north windows.
+    """
+
+    z_min = wall_center_z - WALL_THICKNESS * 0.5
+    z_max = wall_center_z + WALL_THICKNESS * 0.5
+    x_min = -(ROOM_WIDTH + WALL_THICKNESS) * 0.5
+    x_max = (ROOM_WIDTH + WALL_THICKNESS) * 0.5
+    opening_x_min = window_center_x - UPPER_WINDOW_WIDTH * 0.5
+    opening_x_max = window_center_x + UPPER_WINDOW_WIDTH * 0.5
+    sill_y = UPPER_FLOOR_ELEVATION + UPPER_WINDOW_SILL
+    head_y = UPPER_FLOOR_ELEVATION + UPPER_WINDOW_HEAD
+    return merge((
+        u_box_limits(
+            x_min, opening_x_min,
+            UPPER_FLOOR_ELEVATION, UPPER_CEILING_HEIGHT,
+            z_min, z_max, 0.008,
+        ),
+        u_box_limits(
+            opening_x_max, x_max,
+            UPPER_FLOOR_ELEVATION, UPPER_CEILING_HEIGHT,
+            z_min, z_max, 0.008,
+        ),
+        u_box_limits(
+            opening_x_min, opening_x_max,
+            UPPER_FLOOR_ELEVATION, sill_y,
+            z_min, z_max, 0.008,
+        ),
+        u_box_limits(
+            opening_x_min, opening_x_max,
+            head_y, UPPER_CEILING_HEIGHT,
+            z_min, z_max, 0.008,
+        ),
+    ))
+
+
 def build_upper_storey(asset: AssetBuild, materials: dict) -> None:
     opening_x_min, opening_z_min, opening_x_max, opening_z_max = (
         STAIR_OPENING
@@ -752,17 +909,12 @@ def build_upper_storey(asset: AssetBuild, materials: dict) -> None:
     upper_wall_center_y = (
         UPPER_FLOOR_ELEVATION + UPPER_CEILING_HEIGHT
     ) * 0.5
+    # The village facade already lights one upper window on each of these two
+    # walls, so both are composed around an opening rather than drawn solid.
+    # The east and west sides stay the low camera cut-off parapet.
     upper_perimeter = merge((
-        bp.u_box(
-            (0.0, upper_wall_center_y, -ROOM_DEPTH * 0.5),
-            (ROOM_WIDTH + WALL_THICKNESS, upper_wall_height, WALL_THICKNESS),
-            0.008,
-        ),
-        bp.u_box(
-            (0.0, upper_wall_center_y, ROOM_DEPTH * 0.5),
-            (ROOM_WIDTH + WALL_THICKNESS, upper_wall_height, WALL_THICKNESS),
-            0.008,
-        ),
+        pierced_upper_wall(-ROOM_DEPTH * 0.5, UPPER_SOUTH_WINDOW_X),
+        pierced_upper_wall(ROOM_DEPTH * 0.5, UPPER_NORTH_WINDOW_X),
         bp.u_box(
             (-ROOM_WIDTH * 0.5, UPPER_FLOOR_ELEVATION + 0.31, 0.0),
             (WALL_THICKNESS, 0.62, ROOM_DEPTH + WALL_THICKNESS),
@@ -982,6 +1134,1467 @@ def build_windows(asset: AssetBuild, materials: dict) -> None:
             "BedLinen",
             tint=(0.31, 0.25, 0.17, 1.0),
         )
+
+
+def build_upper_windows(asset: AssetBuild, materials: dict) -> None:
+    """One window per bedroom, in the two full-height upper walls.
+
+    The village facade already lights exactly one upper opening on each of
+    these walls, so the rooms are not gaining a window - the interior is
+    finally answering one the exterior always showed.
+    """
+
+    # Each opening is authored as its own part. The atlas contract stretches
+    # a sheet across the whole UV span of a mesh, so two windows seven metres
+    # apart in one mesh would share a single smeared piece of timber.
+    height = UPPER_WINDOW_HEAD - UPPER_WINDOW_SILL
+    rooms = (
+        ("North", UPPER_NORTH_WINDOW_X, 1.0),
+        ("South", UPPER_SOUTH_WINDOW_X, -1.0),
+    )
+    for room, window_x, facing in rooms:
+        frame = kit.door_frame(
+            UPPER_WINDOW_WIDTH,
+            height,
+            WALL_THICKNESS + 0.045,
+            jamb=0.070,
+            architrave=0.012,
+        )
+        sill = kit.chamfered_box(
+            (0.0, 0.0, -0.045),
+            (UPPER_WINDOW_WIDTH + 0.20, WALL_THICKNESS + 0.12, 0.09),
+            0.012,
+        )
+        mullion = kit.chamfered_box(
+            (0.0, -0.045, height * 0.5),
+            (0.050, 0.050, height - 0.07),
+            0.008,
+        )
+        transom = kit.chamfered_box(
+            (0.0, -0.045, height * 0.54),
+            (UPPER_WINDOW_WIDTH - 0.07, 0.050, 0.050),
+            0.008,
+        )
+        add_part(
+            asset,
+            materials,
+            f"FIX_Upper{room}.WindowFrame",
+            kit.translated(
+                merge((frame, sill, mullion, transom)),
+                (
+                    window_x,
+                    facing * (ROOM_DEPTH * 0.5 - 0.06),
+                    UPPER_FLOOR_ELEVATION + UPPER_WINDOW_SILL,
+                ),
+            ),
+            "upper_window_frame",
+            "DarkWood",
+            unity_space=False,
+        )
+        add_part(
+            asset,
+            materials,
+            f"FIX_Upper{room}.WindowGlass",
+            bp.u_plate(
+                (
+                    window_x,
+                    UPPER_FLOOR_ELEVATION +
+                    (UPPER_WINDOW_SILL + UPPER_WINDOW_HEAD) * 0.5,
+                    facing * 3.82,
+                ),
+                (UPPER_WINDOW_WIDTH - 0.13, height - 0.13, 0.018),
+            ),
+            "upper_window_glass",
+            "Glass",
+            casts_shadows=False,
+            tint=(0.16, 0.24, 0.28, 0.65),
+        )
+
+    # North is lived in and its cloth is held open at both jambs.  South is
+    # out of use and half drawn, so the childhood room keeps one cold band
+    # of daylight instead of an evenly lit floor.
+    curtain_center_y = (
+        UPPER_FLOOR_ELEVATION + UPPER_WINDOW_SILL + height * 0.52
+    )
+    north_curtains: list[kit.Geometry] = []
+    south_curtains: list[kit.Geometry] = []
+    for direction in (-1.0, 1.0):
+        edge_x = UPPER_NORTH_WINDOW_X + direction * (
+            UPPER_WINDOW_WIDTH * 0.5 + 0.08)
+        for fold_index in range(2):
+            north_curtains.append(bp.u_box(
+                (
+                    edge_x + direction * fold_index * 0.070,
+                    curtain_center_y,
+                    3.72 - fold_index * 0.015,
+                ),
+                (0.085, height + 0.16 - fold_index * 0.06, 0.050),
+                0.012,
+            ))
+
+    south_curtains.append(bp.u_box(
+        (
+            UPPER_SOUTH_WINDOW_X - (UPPER_WINDOW_WIDTH * 0.5 + 0.08),
+            curtain_center_y,
+            -3.72,
+        ),
+        (0.085, height + 0.16, 0.050),
+        0.012,
+    ))
+    for fold_index in range(3):
+        south_curtains.append(bp.u_box(
+            (
+                UPPER_SOUTH_WINDOW_X + 0.10 + fold_index * 0.135,
+                curtain_center_y,
+                -3.73 + fold_index * 0.012,
+            ),
+            (0.150, height + 0.14 - fold_index * 0.03, 0.045),
+            0.012,
+        ))
+
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Curtain",
+        merge(north_curtains),
+        "upper_window_curtain",
+        "BedLinen",
+        tint=(0.33, 0.27, 0.18, 1.0),
+    )
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.Curtain",
+        merge(south_curtains),
+        "upper_window_curtain",
+        "BedLinen",
+        tint=(0.35, 0.30, 0.21, 1.0),
+    )
+
+
+def build_upper_north_room(asset: AssetBuild, materials: dict) -> None:
+    """The parents' bedroom: still slept in, and the warm room of the house.
+
+    The hearth flue stops at the interstorey slab downstairs.  Carrying it up
+    is both the architectural truth and the ordinary reason the double bed
+    stands against this wall and not another.
+    """
+
+    floor = UPPER_FLOOR_ELEVATION
+    flue_z = UPPER_CHIMNEY_Z_MAX - UPPER_CHIMNEY_DEPTH * 0.5
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperChimney",
+        merge((
+            u_box_limits(
+                UPPER_CHIMNEY_CENTER_X - UPPER_CHIMNEY_WIDTH * 0.5,
+                UPPER_CHIMNEY_CENTER_X + UPPER_CHIMNEY_WIDTH * 0.5,
+                floor,
+                UPPER_CEILING_HEIGHT,
+                UPPER_CHIMNEY_Z_MAX - UPPER_CHIMNEY_DEPTH,
+                UPPER_CHIMNEY_Z_MAX,
+                0.020,
+            ),
+            bp.u_box(
+                (UPPER_CHIMNEY_CENTER_X, floor + 0.14, flue_z - 0.020),
+                (UPPER_CHIMNEY_WIDTH + 0.10, 0.14,
+                 UPPER_CHIMNEY_DEPTH + 0.06),
+                0.016,
+            ),
+        )),
+        "upper_chimney",
+        "Concrete",
+        tint=(0.60, 0.55, 0.45, 1.0),
+    )
+
+    bed_x_min, bed_x_max = NORTH_BED_X
+    bed_z_min, bed_z_max = NORTH_BED_Z
+    bed_center_x = (bed_x_min + bed_x_max) * 0.5
+    bed_center_z = (bed_z_min + bed_z_max) * 0.5
+    bed_width = bed_x_max - bed_x_min
+    bed_length = bed_z_max - bed_z_min
+    frame: list[kit.Geometry] = [
+        bp.u_box(
+            (bed_center_x, floor + 0.31, bed_center_z),
+            (bed_width, 0.22, bed_length),
+            0.018,
+        ),
+        bp.u_box(
+            (bed_center_x, floor + 0.72, bed_z_max - 0.04),
+            (bed_width, 1.06, 0.080),
+            0.016,
+        ),
+        bp.u_box(
+            (bed_center_x, floor + 0.42, bed_z_min + 0.04),
+            (bed_width, 0.62, 0.080),
+            0.016,
+        ),
+    ]
+    for leg_x in (bed_x_min + 0.09, bed_x_max - 0.09):
+        for leg_z in (bed_z_min + 0.12, bed_z_max - 0.12):
+            frame.append(bp.u_box(
+                (leg_x, floor + 0.10, leg_z),
+                (0.105, 0.20, 0.105),
+                0.014,
+            ))
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperNorth.Bed",
+        merge(frame),
+        "upper_double_bed",
+        "DarkWood",
+        tint=(0.135, 0.048, 0.024, 1.0),
+    )
+
+    # Slept in on one side only.  This is the state of a bed, not a keepsake:
+    # it states nothing about who is missing and carries no name or date.
+    bedding: list[kit.Geometry] = [
+        bp.u_box(
+            (bed_center_x, floor + 0.51, bed_center_z),
+            (bed_width - 0.07, 0.18, bed_length - 0.10),
+            0.045,
+        ),
+        bp.u_box(
+            (bed_center_x - 0.36, floor + 0.66, bed_z_max - 0.31),
+            (0.62, 0.13, 0.36),
+            0.055,
+        ),
+        bp.u_rotated_about(
+            bp.u_box(
+                (bed_center_x + 0.36, floor + 0.63, bed_z_max - 0.29),
+                (0.62, 0.11, 0.36),
+                0.055,
+            ),
+            (0.0, 0.0, -4.0),
+            (bed_center_x + 0.36, floor + 0.63, bed_z_max - 0.29),
+        ),
+    ]
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Bedding",
+        merge(bedding),
+        "upper_double_bedding",
+        "TeaCloth",
+        tint=(0.72, 0.66, 0.55, 1.0),
+    )
+
+    # The coverlet is a separate cloth from the ticking under it, which is
+    # the whole point: one half of the bed is still made and the other is
+    # turned back. That is the state of a bed, not a keepsake - it names
+    # nobody, carries no date and is not framed, lit or remarked on.
+    coverlet: list[kit.Geometry] = [
+        bp.u_plate(
+            (bed_center_x - 0.33, floor + 0.625, bed_center_z - 0.12),
+            (bed_width - 0.70, 0.050, bed_length - 0.36),
+        ),
+        bp.u_plate(
+            (bed_x_min + 0.02, floor + 0.50, bed_center_z - 0.12),
+            (0.045, 0.22, bed_length - 0.36),
+        ),
+    ]
+    for fold_index in range(3):
+        coverlet.append(bp.u_rotated_about(
+            bp.u_plate(
+                (
+                    bed_center_x + 0.30 + fold_index * 0.030,
+                    floor + 0.615,
+                    bed_center_z - 0.60 + fold_index * 0.055,
+                ),
+                (0.56, 0.045, 0.50),
+            ),
+            (0.0, 0.0, 8.0 + fold_index * 4.0),
+            (bed_center_x + 0.30, floor + 0.615, bed_center_z - 0.60),
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Coverlet",
+        merge(coverlet),
+        "upper_double_coverlet",
+        "BookCloth",
+        tint=(0.30, 0.36, 0.44, 1.0),
+    )
+
+    chest_x_min, chest_x_max = NORTH_CHEST_X
+    chest_z_min, chest_z_max = NORTH_CHEST_Z
+    chest_x = (chest_x_min + chest_x_max) * 0.5
+    chest_z = (chest_z_min + chest_z_max) * 0.5
+    chest_width = chest_x_max - chest_x_min
+    chest_depth = chest_z_max - chest_z_min
+    bedside_x_min, bedside_x_max = NORTH_BEDSIDE_X
+    bedside_z_min, bedside_z_max = NORTH_BEDSIDE_Z
+    bedside_x = (bedside_x_min + bedside_x_max) * 0.5
+    bedside_z = (bedside_z_min + bedside_z_max) * 0.5
+    chest: list[kit.Geometry] = [
+        bp.u_box(
+            (chest_x, floor + 0.44, chest_z),
+            (chest_width, 0.66, chest_depth),
+            0.016,
+        ),
+        bp.u_box(
+            (chest_x, floor + 0.06, chest_z),
+            (chest_width - 0.07, 0.12, chest_depth - 0.06),
+            0.012,
+        ),
+        bp.u_box(
+            (chest_x, floor + NORTH_CHEST_HEIGHT - 0.025, chest_z),
+            (chest_width + 0.055, 0.050, chest_depth + 0.045),
+            0.010,
+        ),
+    ]
+    for drawer_y in (0.26, 0.55):
+        chest.append(bp.u_plate(
+            (chest_x, floor + drawer_y, chest_z_min + 0.012),
+            (chest_width - 0.10, 0.20, 0.030),
+        ))
+        chest.append(bp.u_cylinder(
+            (chest_x, floor + drawer_y, chest_z_min - 0.010),
+            (0.055, 0.022, 0.055),
+            8,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Chest",
+        merge(chest),
+        "upper_bedroom_chest",
+        "PaleWood",
+        tint=(0.42, 0.29, 0.16, 1.0),
+    )
+
+    bedside: list[kit.Geometry] = [
+        bp.u_box(
+            (bedside_x, floor + 0.34, bedside_z),
+            (bedside_x_max - bedside_x_min, 0.48,
+             bedside_z_max - bedside_z_min),
+            0.014,
+        ),
+        bp.u_box(
+            (bedside_x, floor + 0.60, bedside_z),
+            (bedside_x_max - bedside_x_min + 0.05, 0.045,
+             bedside_z_max - bedside_z_min + 0.04),
+            0.010,
+        ),
+    ]
+    for leg_x in (bedside_x_min + 0.05, bedside_x_max - 0.05):
+        for leg_z in (bedside_z_min + 0.05, bedside_z_max - 0.05):
+            bedside.append(bp.u_box(
+                (leg_x, floor + 0.05, leg_z),
+                (0.055, 0.10, 0.055),
+                0.010,
+            ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Bedside",
+        merge(bedside),
+        "upper_bedroom_bedside",
+        "PaleWood",
+        tint=(0.44, 0.31, 0.17, 1.0),
+    )
+
+    # A washstand set and one enamel cup: she pours water, and the stair is
+    # nineteen risers, so what she needs at night stands beside the bed.
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Washstand",
+        merge((
+            bp.u_tapered_cylinder(
+                (chest_x - 0.19, floor + NORTH_CHEST_HEIGHT + 0.055,
+                 chest_z),
+                (0.30, 0.055, 0.30),
+                1.30,
+                12,
+            ),
+            bp.u_tapered_cylinder(
+                (chest_x + 0.26, floor + NORTH_CHEST_HEIGHT + 0.11,
+                 chest_z),
+                (0.20, 0.110, 0.20),
+                0.72,
+                10,
+            ),
+            bp.u_cylinder(
+                (chest_x + 0.26, floor + NORTH_CHEST_HEIGHT + 0.245,
+                 chest_z),
+                (0.105, 0.030, 0.105),
+                10,
+            ),
+            bp.u_cylinder(
+                (bedside_x, floor + 0.675, bedside_z),
+                (0.090, 0.048, 0.090),
+                8,
+            ),
+        )),
+        "upper_washstand",
+        "PaintedMetal",
+        tint=(0.60, 0.56, 0.44, 1.0),
+    )
+
+    rug_x_min, rug_x_max = NORTH_RUG_X
+    rug_z_min, rug_z_max = NORTH_RUG_Z
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Rug",
+        bp.u_plate(
+            (
+                (rug_x_min + rug_x_max) * 0.5,
+                floor + 0.014,
+                (rug_z_min + rug_z_max) * 0.5,
+            ),
+            (rug_x_max - rug_x_min, 0.024, rug_z_max - rug_z_min),
+        ),
+        "upper_bedside_rug",
+        "Rug",
+        tint=(0.33, 0.15, 0.085, 1.0),
+    )
+
+    lamp_x, lamp_z = UPPER_NORTH_LAMP_CENTER
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.CeilingLamp",
+        merge((
+            bp.u_cylinder(
+                (lamp_x, UPPER_CEILING_HEIGHT - 0.12, lamp_z),
+                (0.024, 0.120, 0.024),
+                6,
+            ),
+            bp.u_cylinder(
+                (lamp_x, UPPER_CEILING_HEIGHT - 0.025, lamp_z),
+                (0.115, 0.025, 0.115),
+                8,
+            ),
+            bp.u_tapered_cylinder(
+                (lamp_x, UPPER_CEILING_HEIGHT - 0.30, lamp_z),
+                (0.36, 0.060, 0.36),
+                0.36,
+                12,
+            ),
+        )),
+        "upper_ceiling_lamp",
+        "PaintedMetal",
+        tint=(0.58, 0.53, 0.40, 1.0),
+    )
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.LampBulb",
+        bp.u_cylinder(
+            (lamp_x, UPPER_CEILING_HEIGHT - 0.385, lamp_z),
+            (0.095, 0.055, 0.095),
+            8,
+        ),
+        "upper_lamp_bulb",
+        "Ceramic",
+        emissive=True,
+        casts_shadows=False,
+        tint=(1.0, 0.80, 0.52, 1.0),
+    )
+
+
+def build_upper_south_room(asset: AssetBuild, materials: dict) -> None:
+    """The hero's childhood room, taken out of use but not abandoned.
+
+    Nothing here explains what he was like: no photograph, no letter, no
+    named or dated object.  One wooden toy is the already-allowed motif of a
+    child's thing without a child.
+    """
+
+    floor = UPPER_FLOOR_ELEVATION
+    bed_x_min, bed_x_max = SOUTH_BED_X
+    bed_z_min, bed_z_max = SOUTH_BED_Z
+    bed_x = (bed_x_min + bed_x_max) * 0.5
+    bed_z = (bed_z_min + bed_z_max) * 0.5
+    bed_width = bed_x_max - bed_x_min
+    bed_length = bed_z_max - bed_z_min
+    frame: list[kit.Geometry] = [
+        bp.u_box(
+            (bed_x, floor + 0.28, bed_z),
+            (bed_width, 0.20, bed_length),
+            0.016,
+        ),
+        bp.u_box(
+            (bed_x, floor + 0.56, bed_z_min + 0.04),
+            (bed_width, 0.90, 0.075),
+            0.014,
+        ),
+        bp.u_box(
+            (bed_x, floor + 0.37, bed_z_max - 0.04),
+            (bed_width, 0.52, 0.075),
+            0.014,
+        ),
+    ]
+    for leg_x in (bed_x_min + 0.08, bed_x_max - 0.08):
+        for leg_z in (bed_z_min + 0.11, bed_z_max - 0.11):
+            frame.append(bp.u_box(
+                (leg_x, floor + 0.09, leg_z),
+                (0.090, 0.18, 0.090),
+                0.012,
+            ))
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperSouth.Bed",
+        merge(frame),
+        "upper_child_bed",
+        "DarkWood",
+        tint=(0.145, 0.052, 0.026, 1.0),
+    )
+
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.Bedding",
+        merge((
+            bp.u_box(
+                (bed_x, floor + 0.46, bed_z),
+                (bed_width - 0.06, 0.16, bed_length - 0.09),
+                0.040,
+            ),
+            bp.u_box(
+                (bed_x, floor + 0.60, bed_z_min + 0.30),
+                (0.56, 0.11, 0.32),
+                0.048,
+            ),
+        )),
+        "upper_child_bedding",
+        "BedLinen",
+        tint=(0.36, 0.30, 0.20, 1.0),
+    )
+
+    chair_x_min, chair_x_max = SOUTH_CHAIR_X
+    chair_z_min, chair_z_max = SOUTH_CHAIR_Z
+    chair_x = (chair_x_min + chair_x_max) * 0.5
+    chair_z = (chair_z_min + chair_z_max) * 0.5
+    chair_width = chair_x_max - chair_x_min
+    chair_depth = chair_z_max - chair_z_min
+
+    # A plain dust sheet over the bed and the chair.  The room is out of use
+    # and kept clean; it is not damp, mouldy or derelict.
+    sheet: list[kit.Geometry] = [
+        bp.u_plate(
+            (bed_x, floor + 0.565, bed_z + 0.02),
+            (bed_width + 0.07, 0.030, bed_length - 0.32),
+        ),
+        bp.u_plate(
+            (bed_x_min - 0.015, floor + 0.42, bed_z + 0.02),
+            (0.035, 0.26, bed_length - 0.32),
+        ),
+        bp.u_plate(
+            (bed_x_max + 0.015, floor + 0.42, bed_z + 0.02),
+            (0.035, 0.26, bed_length - 0.32),
+        ),
+        bp.u_plate(
+            (bed_x, floor + 0.45, bed_z_max + 0.06),
+            (bed_width + 0.05, 0.24, 0.032),
+        ),
+        bp.u_plate(
+            (chair_x, floor + 0.885, chair_z),
+            (chair_width + 0.08, 0.026, chair_depth + 0.08),
+        ),
+        bp.u_plate(
+            (chair_x, floor + 0.76, chair_z - (chair_depth * 0.5 + 0.04)),
+            (chair_width + 0.06, 0.24, 0.030),
+        ),
+    ]
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.DustSheet",
+        merge(sheet),
+        "upper_dust_sheet",
+        "TeaCloth",
+        tint=(0.78, 0.75, 0.66, 1.0),
+    )
+
+    shelf_z_min, shelf_z_max = SOUTH_SHELF_Z
+    shelf_z = (shelf_z_min + shelf_z_max) * 0.5
+    shelf_x = UPPER_PARTITION_X + UPPER_PARTITION_THICKNESS * 0.5 + 0.11
+    casework: list[kit.Geometry] = [
+        bp.u_box(
+            (shelf_x, floor + SOUTH_SHELF_HEIGHT, shelf_z),
+            (0.22, 0.036, shelf_z_max - shelf_z_min),
+            0.008,
+        ),
+        bp.u_box(
+            (chair_x, floor + 0.44, chair_z),
+            (chair_width, 0.045, chair_depth),
+            0.010,
+        ),
+        bp.u_box(
+            (chair_x, floor + 0.67, chair_z - (chair_depth * 0.5 - 0.03)),
+            (chair_width, 0.44, 0.048),
+            0.010,
+        ),
+    ]
+    for bracket_z in (shelf_z_min + 0.11, shelf_z_max - 0.11):
+        casework.append(bp.u_box(
+            (shelf_x - 0.045, floor + SOUTH_SHELF_HEIGHT - 0.085, bracket_z),
+            (0.130, 0.135, 0.040),
+            0.008,
+        ))
+    for leg_x in (chair_x_min + 0.035, chair_x_max - 0.035):
+        for leg_z in (chair_z_min + 0.035, chair_z_max - 0.035):
+            casework.append(bp.u_box(
+                (leg_x, floor + 0.21, leg_z),
+                (0.040, 0.42, 0.040),
+                0.008,
+            ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.Casework",
+        merge(casework),
+        "upper_child_casework",
+        "PaleWood",
+        tint=(0.44, 0.31, 0.17, 1.0),
+    )
+
+    # One wooden top on the sill, standing in the room's only band of light.
+    toy_y = floor + UPPER_WINDOW_SILL
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.WoodenToy",
+        merge((
+            bp.u_tapered_cylinder(
+                (UPPER_SOUTH_WINDOW_X, toy_y + 0.045, -3.85),
+                (0.048, 0.045, 0.048),
+                2.45,
+                10,
+            ),
+            bp.u_cylinder(
+                (UPPER_SOUTH_WINDOW_X, toy_y + 0.122, -3.85),
+                (0.024, 0.032, 0.024),
+                6,
+            ),
+        )),
+        "upper_wooden_toy",
+        "PaleWood",
+        tint=(0.52, 0.36, 0.19, 1.0),
+    )
+
+    # A bare bulb on its flex. The room is out of use, not unwired: someone
+    # still comes up here to sweep it, and the shade that used to be on this
+    # flex is simply not on it any more.
+    lamp_x, lamp_z = UPPER_SOUTH_LAMP_CENTER
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.CeilingLamp",
+        merge((
+            bp.u_cylinder(
+                (lamp_x, UPPER_CEILING_HEIGHT - 0.025, lamp_z),
+                (0.105, 0.025, 0.105),
+                8,
+            ),
+            bp.u_cylinder(
+                (lamp_x, UPPER_CEILING_HEIGHT - 0.175, lamp_z),
+                (0.022, 0.150, 0.022),
+                6,
+            ),
+            bp.u_tapered_cylinder(
+                (lamp_x, UPPER_CEILING_HEIGHT - 0.355, lamp_z),
+                (0.075, 0.035, 0.075),
+                0.80,
+                8,
+            ),
+        )),
+        "upper_child_lamp",
+        "PaintedMetal",
+        tint=(0.55, 0.50, 0.38, 1.0),
+    )
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.LampBulb",
+        bp.u_tapered_cylinder(
+            (lamp_x, UPPER_CEILING_HEIGHT - 0.435, lamp_z),
+            (0.115, 0.048, 0.115),
+            0.55,
+            10,
+        ),
+        "upper_child_lamp_bulb",
+        "Ceramic",
+        emissive=True,
+        casts_shadows=False,
+        tint=(1.0, 0.86, 0.62, 1.0),
+    )
+
+    rolled_z_min, rolled_z_max = SOUTH_ROLLED_RUG_Z
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.RolledRug",
+        kit.translated(
+            bp.u_rotated(
+                bp.u_cylinder(
+                    (0.0, 0.0, 0.0),
+                    (0.26, (rolled_z_max - rolled_z_min) * 0.5, 0.26),
+                    8,
+                ),
+                (90.0, 0.0, 0.0),
+            ),
+            (
+                UPPER_PARTITION_X + UPPER_PARTITION_THICKNESS * 0.5 + 0.16,
+                UPPER_FLOOR_ELEVATION + 0.135,
+                (rolled_z_min + rolled_z_max) * 0.5,
+            ),
+        ),
+        "upper_rolled_rug",
+        "Rug",
+        tint=(0.30, 0.14, 0.080, 1.0),
+    )
+
+
+def build_upper_corridor(asset: AssetBuild, materials: dict) -> None:
+    """The corridor is a working passage, not a gallery."""
+
+    floor = UPPER_FLOOR_ELEVATION
+    runner_x_min, runner_x_max = CORRIDOR_RUNNER_X
+    runner_z_min, runner_z_max = CORRIDOR_RUNNER_Z
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperCorridor.Runner",
+        bp.u_plate(
+            (
+                (runner_x_min + runner_x_max) * 0.5,
+                floor + 0.012,
+                (runner_z_min + runner_z_max) * 0.5,
+            ),
+            (
+                runner_x_max - runner_x_min,
+                0.020,
+                runner_z_max - runner_z_min,
+            ),
+        ),
+        "upper_corridor_runner",
+        "Rug",
+        tint=(0.32, 0.16, 0.095, 1.0),
+    )
+
+    peg_z_min, peg_z_max = CORRIDOR_PEG_Z
+    peg_face_x = UPPER_PARTITION_X - UPPER_PARTITION_THICKNESS * 0.5
+    rail: list[kit.Geometry] = [
+        bp.u_box(
+            (
+                peg_face_x - 0.028,
+                floor + CORRIDOR_PEG_HEIGHT,
+                (peg_z_min + peg_z_max) * 0.5,
+            ),
+            (0.055, 0.095, peg_z_max - peg_z_min),
+            0.008,
+        ),
+    ]
+    peg_positions = (peg_z_min + 0.16, (peg_z_min + peg_z_max) * 0.5,
+                     peg_z_max - 0.16)
+    for peg_z in peg_positions:
+        rail.append(bp.u_box(
+            (peg_face_x - 0.086, floor + CORRIDOR_PEG_HEIGHT - 0.018,
+             peg_z),
+            (0.075, 0.038, 0.038),
+            0.008,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperCorridor.PegRail",
+        merge(rail),
+        "upper_peg_rail",
+        "DarkWood",
+        tint=(0.140, 0.050, 0.025, 1.0),
+    )
+
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperCorridor.HangingShawl",
+        merge((
+            bp.u_box(
+                (peg_face_x - 0.115, floor + CORRIDOR_PEG_HEIGHT - 0.38,
+                 peg_positions[0]),
+                (0.055, 0.72, 0.245),
+                0.018,
+            ),
+            bp.u_box(
+                (peg_face_x - 0.105, floor + CORRIDOR_PEG_HEIGHT - 0.27,
+                 peg_positions[2]),
+                (0.045, 0.50, 0.195),
+                0.016,
+            ),
+        )),
+        "upper_hanging_cloth",
+        "BookCloth",
+        tint=(0.28, 0.33, 0.40, 1.0),
+    )
+
+    chest_x_min, chest_x_max = CORRIDOR_CHEST_X
+    chest_z_min, chest_z_max = CORRIDOR_CHEST_Z
+    chest_x = (chest_x_min + chest_x_max) * 0.5
+    chest_z = (chest_z_min + chest_z_max) * 0.5
+    chest_width = chest_x_max - chest_x_min
+    chest_depth = chest_z_max - chest_z_min
+    chest: list[kit.Geometry] = [
+        bp.u_box(
+            (chest_x, floor + CORRIDOR_CHEST_HEIGHT * 0.5 - 0.035, chest_z),
+            (chest_width, CORRIDOR_CHEST_HEIGHT - 0.07, chest_depth),
+            0.020,
+        ),
+        bp.u_box(
+            (chest_x, floor + CORRIDOR_CHEST_HEIGHT - 0.025, chest_z),
+            (chest_width + 0.045, 0.055, chest_depth + 0.040),
+            0.014,
+        ),
+    ]
+    for band_y in (0.14, 0.30, 0.44):
+        chest.append(bp.u_box(
+            (chest_x, floor + band_y, chest_z),
+            (chest_width + 0.022, 0.035, chest_depth + 0.022),
+            0.010,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperCorridor.LinenChest",
+        merge(chest),
+        "upper_linen_chest",
+        "Wicker",
+        tint=(0.52, 0.38, 0.18, 1.0),
+    )
+
+
+def build_upper_north_extras(asset: AssetBuild, materials: dict) -> None:
+    """What a bedroom actually needs beyond a bed.
+
+    The divider wall stands square to this room's camera and filled a third
+    of the frame with nothing, so the wardrobe goes there. Everything else
+    follows the shapes the ground floor already established.
+    """
+
+    floor = UPPER_FLOOR_ELEVATION
+    x_min, x_max = NORTH_WARDROBE_X
+    z_min, z_max = NORTH_WARDROBE_Z
+    x_mid = (x_min + x_max) * 0.5
+    z_mid = (z_min + z_max) * 0.5
+    width = x_max - x_min
+    depth = z_max - z_min
+    body_top = floor + NORTH_WARDROBE_HEIGHT - 0.09
+
+    # Authored in Blender space, like the tea table, because the kit's
+    # panelled leaf is: mixing the two conventions inside one merge is what
+    # turns a wardrobe inside out. Blender (x, y, z) = Unity (x, z, y).
+    wardrobe: list[kit.Geometry] = [
+        kit.chamfered_box(
+            (x_mid, z_mid, floor + 0.06),
+            (width - 0.06, depth - 0.06, 0.12),
+            0.012,
+        ),
+        kit.chamfered_box(
+            (x_mid, z_mid, (floor + 0.12 + body_top) * 0.5),
+            (width - 0.06, depth - 0.06, body_top - floor - 0.12),
+            0.018,
+        ),
+        kit.chamfered_box(
+            (x_mid, z_mid, body_top + 0.045),
+            (width + 0.06, depth + 0.045, 0.09),
+            0.014,
+        ),
+    ]
+
+    # The one use of the kit's panelled leaf in the whole project. It hinges
+    # on its own -X edge, so each leaf is just translated to its own stile.
+    leaf_width = (width - 0.14) * 0.5
+    for index, hinge_x in enumerate((x_min + 0.06, x_mid + 0.01)):
+        wardrobe.append(kit.translated(
+            kit.panelled_leaf(leaf_width, 1.62, 0.034, panels=2, stile=0.10),
+            (hinge_x, z_max - 0.017, floor + 0.14),
+        ))
+        knob_x = (
+            hinge_x + leaf_width - 0.07 if index == 0 else hinge_x + 0.07
+        )
+        wardrobe.append(kit.chamfered_box(
+            (knob_x, z_max + 0.012, floor + 0.95),
+            (0.052, 0.055, 0.052),
+            0.010,
+        ))
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperNorth.Wardrobe",
+        merge(wardrobe),
+        "upper_wardrobe",
+        "DarkWood",
+        tint=(0.125, 0.045, 0.022, 1.0),
+        unity_space=False,
+    )
+
+    x_min, x_max = NORTH_TRUNK_X
+    z_min, z_max = NORTH_TRUNK_Z
+    x_mid = (x_min + x_max) * 0.5
+    z_mid = (z_min + z_max) * 0.5
+    width = x_max - x_min
+    depth = z_max - z_min
+    trunk: list[kit.Geometry] = [
+        bp.u_box(
+            (x_mid, floor + NORTH_TRUNK_HEIGHT * 0.5 - 0.03, z_mid),
+            (width, NORTH_TRUNK_HEIGHT - 0.06, depth),
+            0.018,
+        ),
+        bp.u_box(
+            (x_mid, floor + NORTH_TRUNK_HEIGHT - 0.022, z_mid),
+            (width + 0.04, 0.048, depth + 0.036),
+            0.012,
+        ),
+    ]
+    for band_x in (x_min + 0.22, x_max - 0.22):
+        trunk.append(bp.u_box(
+            (band_x, floor + NORTH_TRUNK_HEIGHT * 0.5 - 0.03, z_mid),
+            (0.045, NORTH_TRUNK_HEIGHT - 0.09, depth + 0.020),
+            0.008,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Trunk",
+        merge(trunk),
+        "upper_bedroom_trunk",
+        "PaleWood",
+        tint=(0.40, 0.27, 0.15, 1.0),
+    )
+
+    linen: list[kit.Geometry] = []
+    for index, lift in enumerate((0.0, 0.062, 0.118)):
+        linen.append(bp.u_box(
+            (
+                x_mid - 0.24 + index * 0.026,
+                floor + NORTH_TRUNK_HEIGHT + 0.032 + lift,
+                z_mid + 0.012 * index,
+            ),
+            (0.46 - index * 0.03, 0.058, depth - 0.14 - index * 0.02),
+            0.024,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.TrunkLinen",
+        merge(linen),
+        "upper_folded_linen",
+        "TeaCloth",
+        tint=(0.80, 0.77, 0.68, 1.0),
+    )
+
+    x_min, x_max = NORTH_CHAIR_X
+    z_min, z_max = NORTH_CHAIR_Z
+    x_mid = (x_min + x_max) * 0.5
+    z_mid = (z_min + z_max) * 0.5
+    width = x_max - x_min
+    depth = z_max - z_min
+    chair: list[kit.Geometry] = [
+        bp.u_box(
+            (x_mid, floor + 0.44, z_mid),
+            (width, 0.048, depth),
+            0.010,
+        ),
+        bp.u_box(
+            (x_mid, floor + 0.70, z_max - 0.03),
+            (width, 0.44, 0.050),
+            0.010,
+        ),
+        bp.u_box(
+            (x_mid, floor + 0.905, z_max - 0.03),
+            (width + 0.03, 0.045, 0.065),
+            0.010,
+        ),
+    ]
+    for leg_x in (x_min + 0.035, x_max - 0.035):
+        for leg_z in (z_min + 0.035, z_max - 0.035):
+            chair.append(bp.u_box(
+                (leg_x, floor + 0.21, leg_z),
+                (0.042, 0.42, 0.042),
+                0.008,
+            ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Chair",
+        merge(chair),
+        "upper_bedroom_chair",
+        "DarkWood",
+        tint=(0.150, 0.055, 0.026, 1.0),
+    )
+
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.ChairClothes",
+        merge((
+            bp.u_box(
+                (x_mid - 0.02, floor + 0.755, z_max - 0.055),
+                (width - 0.06, 0.30, 0.075),
+                0.030,
+            ),
+            bp.u_box(
+                (x_mid + 0.03, floor + 0.495, z_mid + 0.03),
+                (width - 0.10, 0.055, depth - 0.10),
+                0.026,
+            ),
+        )),
+        "upper_folded_clothes",
+        "BookCloth",
+        tint=(0.29, 0.34, 0.42, 1.0),
+    )
+
+    # Peg rail on the divider wall, the same fitting as the corridor's.
+    peg_x_min, peg_x_max = NORTH_PEG_X
+    peg_face_z = UPPER_ROOM_DIVIDER_Z + UPPER_PARTITION_THICKNESS * 0.5
+    rail: list[kit.Geometry] = [
+        bp.u_box(
+            (
+                (peg_x_min + peg_x_max) * 0.5,
+                floor + NORTH_PEG_HEIGHT,
+                peg_face_z + 0.028,
+            ),
+            (peg_x_max - peg_x_min, 0.095, 0.055),
+            0.008,
+        ),
+    ]
+    peg_positions = (
+        peg_x_min + 0.16,
+        (peg_x_min + peg_x_max) * 0.5,
+        peg_x_max - 0.16,
+    )
+    for peg_x in peg_positions:
+        rail.append(bp.u_box(
+            (peg_x, floor + NORTH_PEG_HEIGHT - 0.018, peg_face_z + 0.086),
+            (0.038, 0.038, 0.075),
+            0.008,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.PegRail",
+        merge(rail),
+        "upper_bedroom_pegs",
+        "DarkWood",
+        tint=(0.140, 0.050, 0.025, 1.0),
+    )
+
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.HangingRobe",
+        merge((
+            bp.u_box(
+                (peg_positions[1], floor + NORTH_PEG_HEIGHT - 0.42,
+                 peg_face_z + 0.115),
+                (0.285, 0.80, 0.055),
+                0.020,
+            ),
+            bp.u_box(
+                (peg_positions[1] - 0.015, floor + NORTH_PEG_HEIGHT - 0.80,
+                 peg_face_z + 0.105),
+                (0.22, 0.30, 0.045),
+                0.018,
+            ),
+        )),
+        "upper_hanging_robe",
+        "BookCloth",
+        tint=(0.31, 0.36, 0.44, 1.0),
+    )
+
+    rug_x_min, rug_x_max = NORTH_RUG_X
+    slipper_z = NORTH_RUG_Z[0] + 0.34
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperNorth.Slippers",
+        merge((
+            bp.u_box(
+                ((rug_x_min + rug_x_max) * 0.5 - 0.09, floor + 0.055,
+                 slipper_z),
+                (0.115, 0.085, 0.255),
+                0.038,
+            ),
+            bp.u_box(
+                ((rug_x_min + rug_x_max) * 0.5 + 0.075, floor + 0.055,
+                 slipper_z + 0.045),
+                (0.115, 0.085, 0.255),
+                0.038,
+            ),
+        )),
+        "upper_slippers",
+        "BedLinen",
+        tint=(0.33, 0.26, 0.17, 1.0),
+    )
+
+
+def build_upper_south_extras(asset: AssetBuild, materials: dict) -> None:
+    """The childhood room's own furniture, plus what has moved into it.
+
+    A room nobody sleeps in is where the things needed once a year end up.
+    None of it says anything about the child: it is either the room's own
+    furniture or the mother's household, which is exactly why it works.
+    """
+
+    floor = UPPER_FLOOR_ELEVATION
+    x_min, x_max = SOUTH_PRESS_X
+    z_min, z_max = SOUTH_PRESS_Z
+    x_mid = (x_min + x_max) * 0.5
+    z_mid = (z_min + z_max) * 0.5
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.LinenPress",
+        kit.translated(
+            kit.counter_run(
+                x_max - x_min,
+                z_max - z_min,
+                SOUTH_PRESS_HEIGHT,
+                top_thickness=0.046,
+                nosing=0.026,
+                plinth_inset=0.06,
+            ),
+            (x_mid, z_mid, floor),
+        ),
+        "upper_linen_press",
+        "PaleWood",
+        tint=(0.43, 0.30, 0.17, 1.0),
+        unity_space=False,
+    )
+
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.PressSheet",
+        merge((
+            bp.u_plate(
+                (x_mid, floor + SOUTH_PRESS_HEIGHT + 0.016, z_mid),
+                (x_max - x_min + 0.075, 0.028, z_max - z_min + 0.070),
+            ),
+            bp.u_plate(
+                (x_mid, floor + SOUTH_PRESS_HEIGHT - 0.13, z_max + 0.048),
+                (x_max - x_min + 0.055, 0.28, 0.030),
+            ),
+        )),
+        "upper_press_sheet",
+        "TeaCloth",
+        tint=(0.79, 0.76, 0.67, 1.0),
+    )
+
+    x_min, x_max = SOUTH_TABLE_X
+    z_min, z_max = SOUTH_TABLE_Z
+    x_mid = (x_min + x_max) * 0.5
+    z_mid = (z_min + z_max) * 0.5
+    width = x_max - x_min
+    depth = z_max - z_min
+    table = [
+        kit.table_top(width, depth, 0.048, SOUTH_TABLE_HEIGHT, 0.012),
+        kit.chamfered_box(
+            (0.0, -depth * 0.5 + 0.055, SOUTH_TABLE_HEIGHT - 0.11),
+            (width - 0.13, 0.048, 0.100),
+            0.008,
+        ),
+        kit.chamfered_box(
+            (0.0, depth * 0.5 - 0.055, SOUTH_TABLE_HEIGHT - 0.11),
+            (width - 0.13, 0.048, 0.100),
+            0.008,
+        ),
+    ]
+    for leg_x in (-width * 0.5 + 0.055, width * 0.5 - 0.055):
+        for leg_z in (-depth * 0.5 + 0.055, depth * 0.5 - 0.055):
+            table.append(kit.chamfered_box(
+                (leg_x, leg_z, (SOUTH_TABLE_HEIGHT - 0.048) * 0.5),
+                (0.048, 0.048, SOUTH_TABLE_HEIGHT - 0.048),
+                0.008,
+            ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.Table",
+        kit.translated(merge(table), (x_mid, z_mid, floor)),
+        "upper_child_table",
+        "PaleWood",
+        tint=(0.45, 0.32, 0.18, 1.0),
+        unity_space=False,
+    )
+
+    x_min, x_max = SOUTH_TRUNK_X
+    z_min, z_max = SOUTH_TRUNK_Z
+    x_mid = (x_min + x_max) * 0.5
+    z_mid = (z_min + z_max) * 0.5
+    width = x_max - x_min
+    depth = z_max - z_min
+    trunk: list[kit.Geometry] = [
+        bp.u_box(
+            (x_mid, floor + SOUTH_TRUNK_HEIGHT * 0.5 - 0.03, z_mid),
+            (width, SOUTH_TRUNK_HEIGHT - 0.06, depth),
+            0.018,
+        ),
+        bp.u_box(
+            (x_mid, floor + SOUTH_TRUNK_HEIGHT - 0.022, z_mid),
+            (width + 0.04, 0.048, depth + 0.036),
+            0.012,
+        ),
+    ]
+    for band_x in (x_min + 0.18, x_max - 0.18):
+        trunk.append(bp.u_box(
+            (band_x, floor + SOUTH_TRUNK_HEIGHT * 0.5 - 0.03, z_mid),
+            (0.042, SOUTH_TRUNK_HEIGHT - 0.09, depth + 0.020),
+            0.008,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.Trunk",
+        merge(trunk),
+        "upper_child_trunk",
+        "DarkWood",
+        tint=(0.140, 0.050, 0.025, 1.0),
+    )
+
+    blankets: list[kit.Geometry] = []
+    for index, lift in enumerate((0.0, 0.070, 0.132)):
+        blankets.append(bp.u_box(
+            (
+                x_mid + 0.02 - index * 0.022,
+                floor + SOUTH_TRUNK_HEIGHT + 0.036 + lift,
+                z_mid - 0.010 * index,
+            ),
+            (width - 0.20 - index * 0.03, 0.062, depth - 0.16),
+            0.026,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.TrunkBlankets",
+        merge(blankets),
+        "upper_folded_blankets",
+        "BookCloth",
+        tint=(0.30, 0.35, 0.43, 1.0),
+    )
+
+    x_min, x_max = SOUTH_BASKET_X
+    z_min, z_max = SOUTH_BASKET_Z
+    x_mid = (x_min + x_max) * 0.5
+    z_mid = (z_min + z_max) * 0.5
+    width = x_max - x_min
+    depth = z_max - z_min
+    basket: list[kit.Geometry] = [
+        bp.u_tapered_cylinder(
+            (x_mid, floor + SOUTH_BASKET_HEIGHT * 0.5 - 0.02, z_mid),
+            (width - 0.09, SOUTH_BASKET_HEIGHT * 0.5 - 0.02, depth - 0.09),
+            1.18,
+            10,
+        ),
+        bp.u_cylinder(
+            (x_mid, floor + SOUTH_BASKET_HEIGHT - 0.025, z_mid),
+            (width, 0.026, depth),
+            10,
+        ),
+    ]
+    for stave_x, stave_z in (
+        (x_min + 0.035, z_mid),
+        (x_max - 0.035, z_mid),
+        (x_mid, z_min + 0.035),
+        (x_mid, z_max - 0.035),
+    ):
+        basket.append(bp.u_box(
+            (stave_x, floor + SOUTH_BASKET_HEIGHT * 0.5, stave_z),
+            (0.032, SOUTH_BASKET_HEIGHT - 0.06, 0.032),
+            0.006,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperSouth.Basket",
+        merge(basket),
+        "upper_laundry_basket",
+        "Wicker",
+        tint=(0.54, 0.40, 0.19, 1.0),
+    )
+
+
+def build_upper_corridor_extras(asset: AssetBuild, materials: dict) -> None:
+    """The corridor is too narrow for furniture, so it uses its walls."""
+
+    floor = UPPER_FLOOR_ELEVATION
+    z_min, z_max = CORRIDOR_SHELF_Z
+    z_mid = (z_min + z_max) * 0.5
+    shelf_x = UPPER_PARTITION_X - UPPER_PARTITION_THICKNESS * 0.5 - 0.12
+    shelf: list[kit.Geometry] = [
+        bp.u_box(
+            (shelf_x, floor + CORRIDOR_SHELF_HEIGHT, z_mid),
+            (0.24, 0.038, z_max - z_min),
+            0.008,
+        ),
+    ]
+    for bracket_z in (z_min + 0.13, z_max - 0.13):
+        shelf.append(bp.u_box(
+            (
+                shelf_x + 0.048,
+                floor + CORRIDOR_SHELF_HEIGHT - 0.088,
+                bracket_z,
+            ),
+            (0.135, 0.140, 0.042),
+            0.008,
+        ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperCorridor.HighShelf",
+        merge(shelf),
+        "upper_corridor_shelf",
+        "PaleWood",
+        tint=(0.42, 0.29, 0.16, 1.0),
+    )
+
+    stacks: list[kit.Geometry] = []
+    for index, stack_z in enumerate((z_min + 0.34, z_mid + 0.16, z_max - 0.26)):
+        for level in range(2 + (index % 2)):
+            stacks.append(bp.u_box(
+                (
+                    shelf_x - 0.006 * level,
+                    floor + CORRIDOR_SHELF_HEIGHT + 0.055 + level * 0.062,
+                    stack_z,
+                ),
+                (0.205 - level * 0.012, 0.058, 0.40 - index * 0.05),
+                0.024,
+            ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperCorridor.ShelfLinen",
+        merge(stacks),
+        "upper_shelf_linen",
+        "TeaCloth",
+        tint=(0.81, 0.78, 0.69, 1.0),
+    )
+
+    x_min, x_max = CORRIDOR_PAIL_X
+    z_min, z_max = CORRIDOR_PAIL_Z
+    pail_x = x_min + 0.24
+    pail_z = (z_min + z_max) * 0.5
+    pail: list[kit.Geometry] = [
+        bp.u_tapered_cylinder(
+            (pail_x, floor + 0.145, pail_z),
+            (0.30, 0.145, 0.30),
+            1.14,
+            10,
+        ),
+        bp.u_cylinder(
+            (pail_x, floor + 0.282, pail_z),
+            (0.335, 0.020, 0.335),
+            10,
+        ),
+    ]
+    for side in (-1.0, 1.0):
+        pail.append(bp.u_rotated_about(
+            bp.u_box(
+                (pail_x + side * 0.10, floor + 0.40, pail_z),
+                (0.026, 0.30, 0.026),
+                0.006,
+            ),
+            (0.0, 0.0, side * 26.0),
+            (pail_x, floor + 0.28, pail_z),
+        ))
+    # A broom leaning into the dead end beside it.
+    pail.append(bp.u_rotated_about(
+        bp.u_box(
+            (x_max - 0.14, floor + 0.62, z_max - 0.10),
+            (0.032, 1.24, 0.032),
+            0.006,
+        ),
+        (7.0, 0.0, 5.0),
+        (x_max - 0.14, floor, z_max - 0.10),
+    ))
+    pail.append(bp.u_box(
+        (x_max - 0.20, floor + 0.055, z_max - 0.13),
+        (0.085, 0.105, 0.30),
+        0.010,
+    ))
+    add_part(
+        asset,
+        materials,
+        "DRESS_UpperCorridor.Pail",
+        merge(pail),
+        "upper_corridor_pail",
+        "PaintedMetal",
+        tint=(0.56, 0.52, 0.40, 1.0),
+    )
+
+
+def build_upper_skirting(asset: AssetBuild, materials: dict) -> None:
+    """The upper storey had no skirting at all.
+
+    The ground floor carries one, and its absence up here is what left the
+    floor-to-wall joint reading as a bare line. No cornice: at 2.36 m in the
+    clear it would only press the ceiling down.
+    """
+
+    floor = UPPER_FLOOR_ELEVATION
+    half = UPPER_SKIRTING_HEIGHT * 0.5
+    depth = UPPER_SKIRTING_DEPTH
+    door_half = UPPER_DOOR_WIDTH * 0.5
+    room_face = UPPER_PARTITION_X + UPPER_PARTITION_THICKNESS * 0.5
+    corridor_face = UPPER_PARTITION_X - UPPER_PARTITION_THICKNESS * 0.5
+    divider_south = UPPER_ROOM_DIVIDER_Z - UPPER_PARTITION_THICKNESS * 0.5
+    divider_north = UPPER_ROOM_DIVIDER_Z + UPPER_PARTITION_THICKNESS * 0.5
+    east_face = ROOM_WIDTH * 0.5 - WALL_THICKNESS * 0.5
+    north_face = ROOM_DEPTH * 0.5 - WALL_THICKNESS * 0.5
+    runs: list[kit.Geometry] = []
+
+    def run_x(x_from, x_to, z_face, outward):
+        runs.append(u_box_limits(
+            min(x_from, x_to), max(x_from, x_to),
+            floor, floor + UPPER_SKIRTING_HEIGHT,
+            z_face - depth if outward > 0 else z_face,
+            z_face if outward > 0 else z_face + depth,
+            0.005,
+        ))
+
+    def run_z(z_from, z_to, x_face, outward):
+        runs.append(u_box_limits(
+            x_face - depth if outward > 0 else x_face,
+            x_face if outward > 0 else x_face + depth,
+            floor, floor + UPPER_SKIRTING_HEIGHT,
+            min(z_from, z_to), max(z_from, z_to),
+            0.005,
+        ))
+
+    for room_z_far, divider_face, door_center in (
+        (north_face, divider_north, UPPER_DOOR_CENTERS_Z[1]),
+        (-north_face, divider_south, UPPER_DOOR_CENTERS_Z[0]),
+    ):
+        outward = 1.0 if room_z_far > 0 else -1.0
+        run_x(room_face, east_face, room_z_far, outward)
+        run_x(room_face, east_face, divider_face, -outward)
+        run_z(divider_face, room_z_far, east_face, 1.0)
+        run_z(divider_face, door_center - door_half, room_face, -1.0)
+        run_z(door_center + door_half, room_z_far, room_face, -1.0)
+
+    corridor_far_z = ROOM_DEPTH * 0.5
+    run_z(-corridor_far_z, UPPER_DOOR_CENTERS_Z[0] - door_half,
+          corridor_face, 1.0)
+    run_z(UPPER_DOOR_CENTERS_Z[0] + door_half,
+          UPPER_DOOR_CENTERS_Z[1] - door_half, corridor_face, 1.0)
+    run_z(UPPER_DOOR_CENTERS_Z[1] + door_half, corridor_far_z,
+          corridor_face, 1.0)
+
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperSkirting",
+        merge(runs),
+        "upper_skirting",
+        "DarkWood",
+        tint=(0.135, 0.048, 0.024, 1.0),
+    )
 
 
 def build_fireplace(asset: AssetBuild, materials: dict) -> None:
@@ -1504,6 +3117,14 @@ def build() -> AssetBuild:
     asset = AssetBuild(root, collection)
     build_shell(asset, materials)
     build_upper_storey(asset, materials)
+    build_upper_windows(asset, materials)
+    build_upper_north_room(asset, materials)
+    build_upper_south_room(asset, materials)
+    build_upper_corridor(asset, materials)
+    build_upper_north_extras(asset, materials)
+    build_upper_south_extras(asset, materials)
+    build_upper_corridor_extras(asset, materials)
+    build_upper_skirting(asset, materials)
     build_windows(asset, materials)
     build_fireplace(asset, materials)
     build_dressing(asset, materials)
@@ -1526,6 +3147,13 @@ def source_bounds_to_unity(
 def centre_for(part: Part) -> tuple[float, float, float]:
     low, high = source_bounds_to_unity(kit.bounds(part.geometry))
     return tuple((low[index] + high[index]) * 0.5 for index in range(3))
+
+
+def bounds_for(part: Part) -> tuple[
+    tuple[float, float, float],
+    tuple[float, float, float],
+]:
+    return source_bounds_to_unity(kit.bounds(part.geometry))
 
 
 def validate(asset: AssetBuild) -> dict:
@@ -1562,6 +3190,31 @@ def validate(asset: AssetBuild) -> dict:
         "FIX_UpperStairGuards", "FIX_UpperCeiling",
         "DRESS_FloorLamp.Frame", "DRESS_FloorLamp.Shade",
         "DRESS_FloorLamp.Bulb",
+        "FIX_UpperChimney",
+        "FIX_UpperNorth.WindowFrame", "FIX_UpperNorth.WindowGlass",
+        "FIX_UpperSouth.WindowFrame", "FIX_UpperSouth.WindowGlass",
+        "DRESS_UpperNorth.Curtain", "DRESS_UpperSouth.Curtain",
+        "FIX_UpperNorth.Bed", "DRESS_UpperNorth.Bedding", "DRESS_UpperNorth.Coverlet",
+        "DRESS_UpperNorth.Chest", "DRESS_UpperNorth.Bedside",
+        "DRESS_UpperNorth.Washstand",
+        "DRESS_UpperNorth.Rug", "DRESS_UpperNorth.CeilingLamp",
+        "DRESS_UpperNorth.LampBulb",
+        "FIX_UpperSouth.Bed", "DRESS_UpperSouth.Bedding",
+        "DRESS_UpperSouth.DustSheet", "DRESS_UpperSouth.Casework",
+        "DRESS_UpperSouth.WoodenToy", "DRESS_UpperSouth.RolledRug",
+        "DRESS_UpperSouth.CeilingLamp", "DRESS_UpperSouth.LampBulb",
+        "DRESS_UpperCorridor.Runner", "DRESS_UpperCorridor.PegRail",
+        "DRESS_UpperCorridor.HangingShawl",
+        "DRESS_UpperCorridor.LinenChest",
+        "FIX_UpperNorth.Wardrobe", "DRESS_UpperNorth.Trunk",
+        "DRESS_UpperNorth.TrunkLinen", "DRESS_UpperNorth.Chair",
+        "DRESS_UpperNorth.ChairClothes", "DRESS_UpperNorth.PegRail",
+        "DRESS_UpperNorth.HangingRobe", "DRESS_UpperNorth.Slippers",
+        "DRESS_UpperSouth.LinenPress", "DRESS_UpperSouth.PressSheet",
+        "DRESS_UpperSouth.Table", "DRESS_UpperSouth.Trunk",
+        "DRESS_UpperSouth.TrunkBlankets", "DRESS_UpperSouth.Basket",
+        "DRESS_UpperCorridor.HighShelf", "DRESS_UpperCorridor.ShelfLinen",
+        "DRESS_UpperCorridor.Pail", "FIX_UpperSkirting",
     }
     for missing in sorted(expected_names - names):
         problems.append(f"required semantic part '{missing}' is missing")
@@ -1577,6 +3230,24 @@ def validate(asset: AssetBuild) -> dict:
         "floor_lamp_bulb", "interstorey_ceiling", "upper_floor",
         "stair", "stair_guard", "upper_wall", "upper_partition",
         "upper_door_frame", "upper_ceiling",
+        "upper_chimney", "upper_window_frame", "upper_window_glass",
+        "upper_window_curtain", "upper_double_bed", "upper_double_bedding",
+        "upper_double_coverlet",
+        "upper_bedroom_chest", "upper_bedroom_bedside",
+        "upper_washstand", "upper_bedside_rug",
+        "upper_ceiling_lamp", "upper_lamp_bulb", "upper_child_bed",
+        "upper_child_bedding", "upper_dust_sheet", "upper_child_casework",
+        "upper_wooden_toy", "upper_rolled_rug",
+        "upper_child_lamp", "upper_child_lamp_bulb",
+        "upper_corridor_runner",
+        "upper_peg_rail", "upper_hanging_cloth", "upper_linen_chest",
+        "upper_wardrobe", "upper_bedroom_trunk", "upper_folded_linen",
+        "upper_bedroom_chair", "upper_folded_clothes", "upper_bedroom_pegs",
+        "upper_hanging_robe", "upper_slippers", "upper_linen_press",
+        "upper_press_sheet", "upper_child_table", "upper_child_trunk",
+        "upper_folded_blankets", "upper_laundry_basket",
+        "upper_corridor_shelf", "upper_shelf_linen",
+        "upper_corridor_pail", "upper_skirting",
     }
     roles = {part.role for part in asset.parts}
     for missing in sorted(required_roles - roles):
@@ -1668,6 +3339,61 @@ def validate(asset: AssetBuild) -> dict:
     if door_leaf[2] > -3.70 or door_leaf[0] <= DOOR_WIDTH * 0.5:
         problems.append("the open entrance leaf is not flat east of the south opening")
 
+    # The furnished storey above.  The two rooms sit directly over the room
+    # below and share every X/Z coordinate with it, so each check names the
+    # room it means.
+    double_bed = bounds_for(by_name["FIX_UpperNorth.Bed"])
+    child_bed = bounds_for(by_name["FIX_UpperSouth.Bed"])
+    flue = bounds_for(by_name["FIX_UpperChimney"])
+    if double_bed[0][2] <= 0.0 or child_bed[1][2] >= 0.0:
+        problems.append("a bed is standing in the wrong upper room")
+    if double_bed[1][0] - double_bed[0][0] < 1.40:
+        problems.append("the parents' bed is no longer a double")
+    if child_bed[1][0] - child_bed[0][0] > 1.00:
+        problems.append("the childhood bed is no longer a single")
+    if child_bed[1][2] - child_bed[0][2] >= double_bed[1][2] - double_bed[0][2]:
+        problems.append("the childhood bed is not shorter than the double")
+    if abs(flue[0][0] + flue[1][0]) > 0.16:
+        problems.append("the upper flue left the hearth's own centre line")
+    if (abs(flue[0][1] - UPPER_FLOOR_ELEVATION) > 0.002 or
+            abs(flue[1][1] - UPPER_CEILING_HEIGHT) > 0.002):
+        problems.append("the upper flue no longer spans floor to ceiling")
+
+    # The play-mode walk teleports the capsule to the exact centre of each
+    # upper room. Furniture standing there does not fail an assert - it jams
+    # the controller, so the clearance is pinned here where it is cheap.
+    capsule_radius = 0.32
+    capsule_height = 1.70
+    blocking_roles = {
+        "upper_chimney", "upper_double_bed", "upper_bedroom_chest",
+        "upper_bedroom_bedside", "upper_child_bed", "upper_child_casework",
+        "upper_wardrobe", "upper_bedroom_trunk", "upper_bedroom_chair",
+        "upper_linen_press", "upper_child_table", "upper_child_trunk",
+        "upper_laundry_basket",
+    }
+    room_centres = (
+        ("south", UPPER_SOUTH_ROOM_X, UPPER_SOUTH_ROOM_Z),
+        ("north", UPPER_NORTH_ROOM_X, UPPER_NORTH_ROOM_Z),
+    )
+    for room_name, span_x, span_z in room_centres:
+        centre_x = (span_x[0] + span_x[1]) * 0.5
+        centre_z = (span_z[0] + span_z[1]) * 0.5
+        for part in asset.parts:
+            if part.role not in blocking_roles:
+                continue
+            low, high = bounds_for(part)
+            if low[2] > span_z[1] or high[2] < span_z[0]:
+                continue
+            if low[1] > UPPER_FLOOR_ELEVATION + capsule_height:
+                continue
+            near_x = min(max(centre_x, low[0]), high[0])
+            near_z = min(max(centre_z, low[2]), high[2])
+            gap = math.hypot(near_x - centre_x, near_z - centre_z)
+            if gap < capsule_radius:
+                problems.append(
+                    f"'{part.name}' stands {gap:.3f} m from the "
+                    f"{room_name} room centre the player walks to")
+
     entry = ANCHORS_UNITY["ANCHOR_Entry"]
     spawn = ANCHORS_UNITY["ANCHOR_Spawn"]
     exit_anchor = ANCHORS_UNITY["ANCHOR_Exit"]
@@ -1725,10 +3451,10 @@ def validate(asset: AssetBuild) -> dict:
         problems.append("the kettle dock leaves the tabletop depth")
 
     triangles = kit.triangle_count(merged)
-    if len(asset.parts) > 64:
-        problems.append(f"{len(asset.parts)} meshes exceed the 64-mesh cap")
-    if triangles > 14000:
-        problems.append(f"{triangles} triangles exceed the 14000 cap")
+    if len(asset.parts) > 104:
+        problems.append(f"{len(asset.parts)} meshes exceed the 104-mesh cap")
+    if triangles > 16000:
+        problems.append(f"{triangles} triangles exceed the 16000 cap")
 
     if problems:
         raise SystemExit(
@@ -1846,7 +3572,47 @@ def manifest_for(asset: AssetBuild, report: dict, signature: str) -> dict:
             "door_height": UPPER_DOOR_HEIGHT,
             "door_centers_z": list(UPPER_DOOR_CENTERS_Z),
             "room_count": 2,
-            "furnished": False,
+            "furnished": True,
+            "rooms": {
+                "north": {
+                    "use": "parents_bedroom",
+                    "state": "lived_in",
+                    "bed": "double",
+                },
+                "south": {
+                    "use": "hero_childhood_room",
+                    "state": "out_of_use",
+                    "bed": "single",
+                },
+            },
+            "windows": [
+                {
+                    "wall": "south",
+                    "center_x": UPPER_SOUTH_WINDOW_X,
+                    "width": UPPER_WINDOW_WIDTH,
+                    "sill_above_floor": UPPER_WINDOW_SILL,
+                    "head_above_floor": UPPER_WINDOW_HEAD,
+                },
+                {
+                    "wall": "north",
+                    "center_x": UPPER_NORTH_WINDOW_X,
+                    "width": UPPER_WINDOW_WIDTH,
+                    "sill_above_floor": UPPER_WINDOW_SILL,
+                    "head_above_floor": UPPER_WINDOW_HEAD,
+                },
+            ],
+            "ceiling_lamps": {
+                "north": [
+                    UPPER_NORTH_LAMP_CENTER[0],
+                    UPPER_CEILING_HEIGHT - 0.385,
+                    UPPER_NORTH_LAMP_CENTER[1],
+                ],
+                "south": [
+                    UPPER_SOUTH_LAMP_CENTER[0],
+                    UPPER_CEILING_HEIGHT - 0.435,
+                    UPPER_SOUTH_LAMP_CENTER[1],
+                ],
+            },
         },
         "wall_thickness_m": WALL_THICKNESS,
         "floor_thickness_m": FLOOR_THICKNESS,
@@ -1875,7 +3641,7 @@ def manifest_for(asset: AssetBuild, report: dict, signature: str) -> dict:
             "floor_lamp_light": list(
                 ANCHORS_UNITY["ANCHOR_FloorLampLight"]),
             "upper_room_count": 2,
-            "upper_rooms_furnished": False,
+            "upper_rooms_furnished": True,
         },
         "spawn_forward_unity": list(SPAWN_FORWARD_UNITY),
         # "mother" left this list on 2026-09-01: she is present in the chair

@@ -6,8 +6,8 @@ namespace BarPromenade
 {
     public static class MothersHouseInteriorLayoutValidator
     {
-        public const int RequiredPathCount = 3;
-        public const int RequiredFixtureCount = 7;
+        public const int RequiredPathCount = 6;
+        public const int RequiredFixtureCount = 22;
         public const float MinimumRouteClearance = 1.2f;
         public const float MaximumExteriorWidth = 11f;
         public const float MaximumExteriorDepth = 9f;
@@ -365,7 +365,7 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The upper storey must keep one continuous safe stair, " +
-                    "a real corridor and exactly two empty rooms.");
+                    "a real corridor and exactly two furnished rooms.");
             }
 
             float halfDoor = upper.DoorOpeningWidth * 0.5f;
@@ -393,7 +393,9 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The mother's room requires a table, rocking chair, " +
                     "sofa, fireplace, cupboard, yarn basket and floor " +
-                    "lamp.");
+                    "lamp, and the storey above it the flue, both beds, " +
+                    "the chest, the bedside table, the chair and the " +
+                    "corridor's linen chest.");
             }
 
             var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -414,7 +416,7 @@ namespace BarPromenade
                     fixture.BaseHeight < 0f ||
                     !IsPositiveFinite(fixture.Height) ||
                     fixture.BaseHeight + fixture.Height >
-                        plan.RoomHeight + Tolerance)
+                        CeilingAbove(plan, fixture.BaseHeight) + Tolerance)
                 {
                     throw new InvalidOperationException(
                         "Every fixture must be unique, finite and contained " +
@@ -423,12 +425,18 @@ namespace BarPromenade
 
                 for (int previous = 0; previous < index; previous++)
                 {
-                    if (fixture.Bounds.Overlaps(
-                            plan.Fixtures[previous].Bounds))
+                    MothersHouseInteriorFixturePlan other =
+                        plan.Fixtures[previous];
+
+                    // The two storeys share the same X/Z footprint, so a
+                    // bed upstairs sits directly over the sofa downstairs.
+                    // Only fixtures whose heights actually meet can clash.
+                    if (SharesHeight(fixture, other) &&
+                        fixture.Bounds.Overlaps(other.Bounds))
                     {
                         throw new InvalidOperationException(
                             $"Fixtures '{fixture.Id}' and " +
-                            $"'{plan.Fixtures[previous].Id}' overlap.");
+                            $"'{other.Id}' overlap.");
                     }
                 }
             }
@@ -482,7 +490,12 @@ namespace BarPromenade
                 {
                     MothersHouseInteriorFixturePlan fixture =
                         plan.Fixtures[fixtureIndex];
+
+                    // A route is only obstructed by what stands on its own
+                    // floor: the upper rooms sit directly above the lower
+                    // one and share every X/Z coordinate with it.
                     if (fixture.BlocksMovement &&
+                        StandsOnFloor(plan, fixture, path.FloorElevation) &&
                         path.Bounds.Overlaps(fixture.Bounds))
                     {
                         throw new InvalidOperationException(
@@ -509,6 +522,80 @@ namespace BarPromenade
                     "The spawn must connect continuously to the central " +
                     "table without crossing furniture.");
             }
+
+            ValidateUpperRoutes(plan);
+        }
+
+        /// <summary>
+        /// Upstairs the corridor and the two rooms are separated by a real
+        /// partition, so their routes cannot touch the way ground-floor
+        /// lanes do. They join through the doorways instead, and each side
+        /// has to reach its own face of that partition.
+        /// </summary>
+        private static void ValidateUpperRoutes(
+            MothersHouseInteriorLayoutPlan plan)
+        {
+            MothersHouseInteriorUpperFloorPlan upper = plan.UpperFloor;
+            MothersHouseInteriorPathPlan corridor = RequirePath(
+                plan,
+                MothersHouseInteriorPathKind.UpperCorridorRun);
+            MothersHouseInteriorPathPlan north = RequirePath(
+                plan,
+                MothersHouseInteriorPathKind.UpperNorthApproach);
+            MothersHouseInteriorPathPlan south = RequirePath(
+                plan,
+                MothersHouseInteriorPathKind.UpperSouthApproach);
+
+            float corridorFace =
+                upper.PartitionX - upper.PartitionThickness * 0.5f;
+            float roomFace =
+                upper.PartitionX + upper.PartitionThickness * 0.5f;
+            if (corridor.FloorElevation < upper.FloorElevation - Tolerance ||
+                north.FloorElevation < upper.FloorElevation - Tolerance ||
+                south.FloorElevation < upper.FloorElevation - Tolerance ||
+                Mathf.Abs(corridor.Bounds.xMax - corridorFace) > Tolerance ||
+                Mathf.Abs(north.Bounds.xMin - roomFace) > Tolerance ||
+                Mathf.Abs(south.Bounds.xMin - roomFace) > Tolerance ||
+                !Contains(upper.CorridorBounds, corridor.Bounds) ||
+                !Contains(upper.NorthRoomBounds, north.Bounds) ||
+                !Contains(upper.SouthRoomBounds, south.Bounds))
+            {
+                throw new InvalidOperationException(
+                    "Both upper routes must stand on the upper floor and " +
+                    "meet the partition they pass through.");
+            }
+
+            float halfDoor = upper.DoorOpeningWidth * 0.5f;
+            if (!SpansDoorway(
+                    corridor.Bounds,
+                    upper.NorthDoorCenterZ,
+                    halfDoor) ||
+                !SpansDoorway(
+                    corridor.Bounds,
+                    upper.SouthDoorCenterZ,
+                    halfDoor) ||
+                !SpansDoorway(
+                    north.Bounds,
+                    upper.NorthDoorCenterZ,
+                    halfDoor) ||
+                !SpansDoorway(
+                    south.Bounds,
+                    upper.SouthDoorCenterZ,
+                    halfDoor))
+            {
+                throw new InvalidOperationException(
+                    "Every upper route must cover the full clear width of " +
+                    "the doorway it serves.");
+            }
+        }
+
+        private static bool SpansDoorway(
+            Rect route,
+            float doorCenterZ,
+            float halfDoor)
+        {
+            return route.yMin <= doorCenterZ - halfDoor + Tolerance &&
+                   route.yMax >= doorCenterZ + halfDoor - Tolerance;
         }
 
         private static void ValidateComposition(
@@ -615,6 +702,134 @@ namespace BarPromenade
                     "The visible fire and floor-lamp light must stay on " +
                     "their authored hearth and sofa-side fixtures.");
             }
+
+            ValidateUpperComposition(plan);
+        }
+
+        /// <summary>
+        /// The furnished storey above: the flue carries the hearth up the
+        /// north wall, the double bed stands against it, the childhood bed
+        /// stands in the other room, and each room keeps its own window.
+        /// </summary>
+        private static void ValidateUpperComposition(
+            MothersHouseInteriorLayoutPlan plan)
+        {
+            MothersHouseInteriorUpperFloorPlan upper = plan.UpperFloor;
+            MothersHouseInteriorFixturePlan flue = RequireFixture(
+                plan,
+                MothersHouseInteriorFixtureKind.UpperChimney);
+            MothersHouseInteriorFixturePlan doubleBed = RequireFixture(
+                plan,
+                MothersHouseInteriorFixtureKind.UpperNorthBed);
+            MothersHouseInteriorFixturePlan childBed = RequireFixture(
+                plan,
+                MothersHouseInteriorFixtureKind.UpperSouthBed);
+            MothersHouseInteriorFixturePlan chest = RequireFixture(
+                plan,
+                MothersHouseInteriorFixtureKind.UpperNorthChest);
+            MothersHouseInteriorFixturePlan bedside = RequireFixture(
+                plan,
+                MothersHouseInteriorFixtureKind.UpperNorthBedside);
+            MothersHouseInteriorFixturePlan chair = RequireFixture(
+                plan,
+                MothersHouseInteriorFixtureKind.UpperSouthChair);
+            MothersHouseInteriorFixturePlan linenChest = RequireFixture(
+                plan,
+                MothersHouseInteriorFixtureKind.UpperCorridorChest);
+
+            // The flue is the ground-floor hearth continued, so it keeps the
+            // hearth's own centre line and reaches the ceiling.
+            if (Mathf.Abs(flue.Bounds.center.x -
+                    plan.FireplacePosition.x) > 0.08f ||
+                flue.Bounds.yMax < upper.NorthRoomBounds.yMax - Tolerance ||
+                Mathf.Abs(flue.BaseHeight - upper.FloorElevation) >
+                    Tolerance ||
+                Mathf.Abs(
+                    flue.BaseHeight + flue.Height -
+                    upper.CeilingHeight) > Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "The upper flue must continue the hearth to the ceiling.");
+            }
+
+            if (!Contains(upper.NorthRoomBounds, doubleBed.Bounds) ||
+                !Contains(upper.NorthRoomBounds, chest.Bounds) ||
+                !Contains(upper.NorthRoomBounds, bedside.Bounds) ||
+                !Contains(upper.SouthRoomBounds, childBed.Bounds) ||
+                !Contains(upper.SouthRoomBounds, chair.Bounds) ||
+                !Contains(upper.CorridorBounds, linenChest.Bounds))
+            {
+                throw new InvalidOperationException(
+                    "Every upper fixture must stand in the room it belongs " +
+                    "to.");
+            }
+
+            // The double bed is the wide one and stands head to the warm
+            // wall; the childhood bed is narrower and shorter than it.
+            if (doubleBed.Bounds.width <= childBed.Bounds.width ||
+                doubleBed.Bounds.height <= childBed.Bounds.height ||
+                doubleBed.Bounds.width < 1.3f ||
+                doubleBed.Bounds.yMax <
+                    upper.NorthRoomBounds.yMax - 0.12f ||
+                childBed.Bounds.yMin >
+                    upper.SouthRoomBounds.yMin + 0.12f ||
+                bedside.Bounds.yMax < doubleBed.Bounds.yMax - 0.05f)
+            {
+                throw new InvalidOperationException(
+                    "The parents' bed must be the wide one against the warm " +
+                    "wall, with the bedside table at its head.");
+            }
+
+            // Each bedroom gets its own window, in its own wall.
+            if (plan.UpperFloor.NorthWindowPosition.z <=
+                    upper.NorthRoomBounds.yMax - 0.4f ||
+                plan.UpperFloor.SouthWindowPosition.z >=
+                    upper.SouthRoomBounds.yMin + 0.4f ||
+                plan.UpperFloor.NorthWindowPosition.x >= flue.Bounds.xMin ||
+                plan.UpperFloor.NorthWindowPosition.x <=
+                    upper.NorthRoomBounds.xMin ||
+                plan.UpperFloor.SouthWindowPosition.x <=
+                    upper.SouthRoomBounds.xMin ||
+                plan.UpperFloor.NorthWindowPosition.y <= upper.FloorElevation ||
+                plan.UpperFloor.SouthWindowPosition.y <= upper.FloorElevation ||
+                plan.UpperFloor.NorthWindowPosition.y >= upper.CeilingHeight ||
+                plan.UpperFloor.SouthWindowPosition.y >= upper.CeilingHeight)
+            {
+                throw new InvalidOperationException(
+                    "Both bedrooms must keep one window in their own outer " +
+                    "wall, clear of the flue.");
+            }
+
+            // Each bedroom owns one hanging light. Both must clear a standing
+            // head and hang over open floor rather than over a bed.
+            if (!HangsOverOpenFloor(
+                    plan.UpperFloor.NorthLampPosition,
+                    upper,
+                    upper.NorthRoomBounds,
+                    doubleBed.Bounds) ||
+                !HangsOverOpenFloor(
+                    plan.UpperFloor.SouthLampPosition,
+                    upper,
+                    upper.SouthRoomBounds,
+                    childBed.Bounds))
+            {
+                throw new InvalidOperationException(
+                    "Each bedroom lamp must hang over open floor in its own " +
+                    "room, above a standing hero.");
+            }
+        }
+
+        private static bool HangsOverOpenFloor(
+            Vector3 lamp,
+            MothersHouseInteriorUpperFloorPlan upper,
+            Rect room,
+            Rect bed)
+        {
+            var footprint = new Vector2(lamp.x, lamp.z);
+            return room.Contains(footprint) &&
+                   !bed.Contains(footprint) &&
+                   lamp.y < upper.CeilingHeight &&
+                   lamp.y > upper.FloorElevation + 1.8f;
         }
 
         private static MothersHouseInteriorPathPlan RequirePath(
@@ -643,6 +858,47 @@ namespace BarPromenade
             }
 
             return fixture;
+        }
+
+        /// <summary>
+        /// The ceiling that closes over a fixture standing at this height.
+        /// The house is two storeys, so "the ceiling" is not one number.
+        /// </summary>
+        private static float CeilingAbove(
+            MothersHouseInteriorLayoutPlan plan,
+            float baseHeight)
+        {
+            return baseHeight >= plan.UpperFloor.FloorElevation - Tolerance
+                ? plan.UpperFloor.CeilingHeight
+                : plan.RoomHeight;
+        }
+
+        /// <summary>
+        /// Whether two fixtures occupy any of the same height at all. Two
+        /// that do not can share a footprint: one is simply above the other.
+        /// </summary>
+        private static bool SharesHeight(
+            MothersHouseInteriorFixturePlan first,
+            MothersHouseInteriorFixturePlan second)
+        {
+            return first.BaseHeight <
+                       second.BaseHeight + second.Height - Tolerance &&
+                   second.BaseHeight <
+                       first.BaseHeight + first.Height - Tolerance;
+        }
+
+        private static bool StandsOnFloor(
+            MothersHouseInteriorLayoutPlan plan,
+            MothersHouseInteriorFixturePlan fixture,
+            float floorElevation)
+        {
+            bool fixtureIsUpstairs =
+                fixture.BaseHeight >=
+                    plan.UpperFloor.FloorElevation - Tolerance;
+            bool routeIsUpstairs =
+                floorElevation >=
+                    plan.UpperFloor.FloorElevation - Tolerance;
+            return fixtureIsUpstairs == routeIsUpstairs;
         }
 
         private static bool ConnectedWithClearance(

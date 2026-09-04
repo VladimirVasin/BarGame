@@ -588,6 +588,14 @@ namespace BarPromenade
                     return new SurfaceProperties(0.32f, 0.02f);
                 case "Fire":
                     return new SurfaceProperties(0.05f, 0f);
+                case "BookCloth":
+                    return new SurfaceProperties(0.03f, 0f);
+                case "Wicker":
+                    return new SurfaceProperties(0.07f, 0f);
+                case "TeaCloth":
+                    return new SurfaceProperties(0.03f, 0f);
+                case "PaleWood":
+                    return new SurfaceProperties(0.11f, 0f);
                 default:
                     throw new InvalidOperationException(
                         $"The mother's house model declares unknown " +

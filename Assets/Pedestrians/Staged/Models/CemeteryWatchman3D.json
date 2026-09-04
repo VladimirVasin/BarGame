@@ -18,24 +18,24 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 43,
-  "triangle_count": 988,
+  "mesh_count": 47,
+  "triangle_count": 2192,
   "triangle_budget": [
-    900,
-    2000
+    1800,
+    2400
   ],
   "staged": true,
   "pool_eligible": true,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.765901,
-    -0.209194,
+    -0.777467,
+    -0.228688,
     0.0
   ],
   "bounds_max": [
-    0.767901,
-    0.166367,
+    0.779467,
+    0.1548,
     1.75
   ],
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -64,7 +64,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "376128e1fcbc5880ab5f52b9fa939819b007da651fa4d27904fcbeace19a477e",
+  "build_signature": "a317c6b075b1c1a9b1daaebe7a9b10071d5f271476dd050a03ddcc9fb62d314b",
   "bones": [
     {
       "name": "root",
@@ -684,8 +684,8 @@
         0.048,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "ACC_QuiltSeam.02",
@@ -698,8 +698,8 @@
         0.048,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "ACC_QuiltSeam.03",
@@ -712,8 +712,8 @@
         0.048,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "ACC_QuiltSeam.04",
@@ -726,8 +726,8 @@
         0.048,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "ACC_QuiltSeam.05",
@@ -740,8 +740,8 @@
         0.048,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "ACC_ShirtV",
@@ -754,8 +754,8 @@
         0.18,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 16,
+      "triangles": 28
     },
     {
       "name": "ACC_Stubble",
@@ -770,34 +770,6 @@
       ],
       "vertices": 8,
       "triangles": 12
-    },
-    {
-      "name": "CLO_BootShaft.L",
-      "role": "clothing",
-      "bone": "shin.L",
-      "palette_name": "shoe",
-      "base_color": [
-        0.045,
-        0.038,
-        0.032,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "CLO_BootShaft.R",
-      "role": "clothing",
-      "bone": "shin.R",
-      "palette_name": "shoe",
-      "base_color": [
-        0.045,
-        0.038,
-        0.032,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
     },
     {
       "name": "CLO_CapBand",
@@ -856,7 +828,7 @@
       "triangles": 12
     },
     {
-      "name": "CLO_CoatChest",
+      "name": "CLO_Chest",
       "role": "body",
       "bone": "chest",
       "palette_name": "watch_coat",
@@ -866,36 +838,8 @@
         0.095,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "CLO_CoatHem",
-      "role": "clothing",
-      "bone": "pelvis",
-      "palette_name": "watch_coat_dark",
-      "base_color": [
-        0.07,
-        0.065,
-        0.048,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "CLO_CoatWaist",
-      "role": "body",
-      "bone": "spine",
-      "palette_name": "watch_coat",
-      "base_color": [
-        0.14,
-        0.13,
-        0.095,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 72,
+      "triangles": 140
     },
     {
       "name": "CLO_Collar",
@@ -912,32 +856,46 @@
       "triangles": 36
     },
     {
-      "name": "CLO_Sleeve.L",
-      "role": "clothing",
-      "bone": "upper_arm.L",
-      "palette_name": "watch_coat",
+      "name": "CLO_Seat",
+      "role": "body",
+      "bone": "pelvis",
+      "palette_name": "watch_coat_dark",
       "base_color": [
-        0.14,
-        0.13,
-        0.095,
+        0.07,
+        0.065,
+        0.048,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 48,
+      "triangles": 92
     },
     {
-      "name": "CLO_Sleeve.R",
+      "name": "CLO_Shin.L",
       "role": "clothing",
-      "bone": "upper_arm.R",
-      "palette_name": "watch_coat",
+      "bone": "shin.L",
+      "palette_name": "shoe",
       "base_color": [
-        0.14,
-        0.13,
-        0.095,
+        0.045,
+        0.038,
+        0.032,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76
+    },
+    {
+      "name": "CLO_Shin.R",
+      "role": "clothing",
+      "bone": "shin.R",
+      "palette_name": "shoe",
+      "base_color": [
+        0.045,
+        0.038,
+        0.032,
+        1.0
+      ],
+      "vertices": 40,
+      "triangles": 76
     },
     {
       "name": "CLO_SleeveCuff.L",
@@ -978,8 +936,8 @@
         0.095,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
       "name": "CLO_SleeveLower.R",
@@ -992,11 +950,39 @@
         0.095,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
-      "name": "CLO_TrouserUpper.L",
+      "name": "CLO_SleeveUpper.L",
+      "role": "clothing",
+      "bone": "upper_arm.L",
+      "palette_name": "watch_coat",
+      "base_color": [
+        0.14,
+        0.13,
+        0.095,
+        1.0
+      ],
+      "vertices": 40,
+      "triangles": 76
+    },
+    {
+      "name": "CLO_SleeveUpper.R",
+      "role": "clothing",
+      "bone": "upper_arm.R",
+      "palette_name": "watch_coat",
+      "base_color": [
+        0.14,
+        0.13,
+        0.095,
+        1.0
+      ],
+      "vertices": 40,
+      "triangles": 76
+    },
+    {
+      "name": "CLO_Thigh.L",
       "role": "clothing",
       "bone": "thigh.L",
       "palette_name": "watch_trousers",
@@ -1006,11 +992,11 @@
         0.08,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
-      "name": "CLO_TrouserUpper.R",
+      "name": "CLO_Thigh.R",
       "role": "clothing",
       "bone": "thigh.R",
       "palette_name": "watch_trousers",
@@ -1020,8 +1006,22 @@
         0.08,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
+    },
+    {
+      "name": "CLO_Waist",
+      "role": "body",
+      "bone": "spine",
+      "palette_name": "watch_coat_dark",
+      "base_color": [
+        0.07,
+        0.065,
+        0.048,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
     },
     {
       "name": "GEO_Boot.L",
@@ -1034,8 +1034,8 @@
         0.032,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_Boot.R",
@@ -1048,12 +1048,12 @@
         0.032,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_BootSole.L",
-      "role": "body",
+      "role": "footwear_detail",
       "bone": "foot.L",
       "palette_name": "sole",
       "base_color": [
@@ -1067,7 +1067,7 @@
     },
     {
       "name": "GEO_BootSole.R",
-      "role": "body",
+      "role": "footwear_detail",
       "bone": "foot.R",
       "palette_name": "sole",
       "base_color": [
@@ -1080,6 +1080,34 @@
       "triangles": 12
     },
     {
+      "name": "GEO_Ear.L",
+      "role": "body_detail",
+      "bone": "head",
+      "palette_name": "skin",
+      "base_color": [
+        0.355,
+        0.235,
+        0.165,
+        1.0
+      ],
+      "vertices": 14,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_Ear.R",
+      "role": "body_detail",
+      "bone": "head",
+      "palette_name": "skin",
+      "base_color": [
+        0.355,
+        0.235,
+        0.165,
+        1.0
+      ],
+      "vertices": 14,
+      "triangles": 24
+    },
+    {
       "name": "GEO_Hand.L",
       "role": "body",
       "bone": "hand.L",
@@ -1090,8 +1118,8 @@
         0.165,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "GEO_Hand.R",
@@ -1104,8 +1132,8 @@
         0.165,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "GEO_Head",
@@ -1118,8 +1146,8 @@
         0.165,
         1.0
       ],
-      "vertices": 62,
-      "triangles": 120
+      "vertices": 100,
+      "triangles": 196
     },
     {
       "name": "GEO_Neck",
@@ -1132,8 +1160,36 @@
         0.165,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Thumb.L",
+      "role": "body_detail",
+      "bone": "hand.L",
+      "palette_name": "skin",
+      "base_color": [
+        0.355,
+        0.235,
+        0.165,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_Thumb.R",
+      "role": "body_detail",
+      "bone": "hand.R",
+      "palette_name": "skin",
+      "base_color": [
+        0.355,
+        0.235,
+        0.165,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
     }
   ]
 }

@@ -119,7 +119,7 @@ Assets/
         HomeConcreteAlbedo.png          stucco, offset formwork seams, damp streaks
         HomeRugAlbedo.png               diamond lattice, medallions, worn walking track
     MothersHouse/
-      MothersHouseInterior3D.prefab     passive 10 x 8 m two-storey shell, stair/rooms + typed anchors/parts; no gameplay components
+      MothersHouseInterior3D.prefab     passive 10 x 8 m two-storey shell, stair/furnished bedrooms + typed anchors/parts; no gameplay components
       Textures/
         MothersHousePositiveAtlas.png   dedicated light, clean 4 x 4 room atlas; no Home/City sheets
     Stairwell/
@@ -352,7 +352,7 @@ Assets/
         DraughtsMatch.cs       lattice-native adapter, capture-compulsory flag
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket/mother-house plans and builders
-        MothersHouseInterior{LayoutPlan,LayoutPlanner,LayoutValidator,WorldBuilder,WorldResult}.cs  ground + stair/corridor/two-room plan and collision
+        MothersHouseInterior{LayoutPlan,LayoutPlanner,LayoutValidator,WorldBuilder,WorldResult}.cs  ground + stair/corridor/two furnished bedrooms, floor-aware fixtures/routes and collision
         MothersHouseMotherPlan.cs       where she sits, measured off the drawn cushion; one of her, no seed, no spawn band
         MothersHouseSofaSeatPlanner.cs  the sofa as one authored CityBenchSeat: south cushion, front-approach-only past the stair ramp
                                       pure room contract + imported-model composition

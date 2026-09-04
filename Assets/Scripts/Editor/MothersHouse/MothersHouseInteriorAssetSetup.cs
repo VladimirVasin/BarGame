@@ -24,10 +24,10 @@ namespace BarPromenade.Editor
         public const string SharedEmissionMaterialPath = "Assets/Resources/Materials/CityNoirEmission.mat";
 
         private const string ExpectedDesignId = "mothers_house_interior_v1";
-        private const string ExpectedGeneratorVersion = "1.4.1";
+        private const string ExpectedGeneratorVersion = "1.5.0";
         private const int ExpectedAnchorCount = 10;
-        private const int MaximumRenderers = 64;
-        private const int MaximumTriangles = 14000;
+        private const int MaximumRenderers = 104;
+        private const int MaximumTriangles = 16000;
         private const float MeasureTolerance = 0.02f;
         private const float RotationToleranceDegrees = 0.1f;
         private const float UvTolerance = 0.00001f;
@@ -44,7 +44,11 @@ namespace BarPromenade.Editor
             new MothersHouseInteriorAtlasCell("Ceramic", 0, 1),
             new MothersHouseInteriorAtlasCell("PaintedMetal", 1, 1),
             new MothersHouseInteriorAtlasCell("Glass", 2, 1),
-            new MothersHouseInteriorAtlasCell("Fire", 3, 1)
+            new MothersHouseInteriorAtlasCell("Fire", 3, 1),
+            new MothersHouseInteriorAtlasCell("BookCloth", 0, 0),
+            new MothersHouseInteriorAtlasCell("Wicker", 1, 0),
+            new MothersHouseInteriorAtlasCell("TeaCloth", 2, 0),
+            new MothersHouseInteriorAtlasCell("PaleWood", 3, 0)
         };
 
         private static readonly string[] RequiredAnchorRoles = {
@@ -84,6 +88,62 @@ namespace BarPromenade.Editor
             "FIX_UpperCeiling"
         };
 
+        /// <summary>
+        /// The furnishing of the two upper bedrooms. The north room is the
+        /// parents' bedroom and is still slept in; the south room is the
+        /// hero's childhood room and has been taken out of use. Neither
+        /// carries a photograph, a letter, a named or dated object or
+        /// anything that explains what he was like as a child.
+        /// </summary>
+        private static readonly string[] RequiredUpperFurnitureParts = {
+            "FIX_UpperChimney",
+            "FIX_UpperNorth.WindowFrame",
+            "FIX_UpperNorth.WindowGlass",
+            "FIX_UpperSouth.WindowFrame",
+            "FIX_UpperSouth.WindowGlass",
+            "DRESS_UpperNorth.Curtain",
+            "DRESS_UpperSouth.Curtain",
+            "FIX_UpperNorth.Bed",
+            "DRESS_UpperNorth.Bedding",
+            "DRESS_UpperNorth.Coverlet",
+            "DRESS_UpperNorth.Chest",
+            "DRESS_UpperNorth.Bedside",
+            "DRESS_UpperNorth.Washstand",
+            "DRESS_UpperNorth.Rug",
+            "DRESS_UpperNorth.CeilingLamp",
+            "DRESS_UpperNorth.LampBulb",
+            "FIX_UpperSouth.Bed",
+            "DRESS_UpperSouth.Bedding",
+            "DRESS_UpperSouth.DustSheet",
+            "DRESS_UpperSouth.Casework",
+            "DRESS_UpperSouth.WoodenToy",
+            "DRESS_UpperSouth.RolledRug",
+            "DRESS_UpperSouth.CeilingLamp",
+            "DRESS_UpperSouth.LampBulb",
+            "DRESS_UpperCorridor.Runner",
+            "DRESS_UpperCorridor.PegRail",
+            "DRESS_UpperCorridor.HangingShawl",
+            "DRESS_UpperCorridor.LinenChest",
+            "FIX_UpperNorth.Wardrobe",
+            "DRESS_UpperNorth.Trunk",
+            "DRESS_UpperNorth.TrunkLinen",
+            "DRESS_UpperNorth.Chair",
+            "DRESS_UpperNorth.ChairClothes",
+            "DRESS_UpperNorth.PegRail",
+            "DRESS_UpperNorth.HangingRobe",
+            "DRESS_UpperNorth.Slippers",
+            "DRESS_UpperSouth.LinenPress",
+            "DRESS_UpperSouth.PressSheet",
+            "DRESS_UpperSouth.Table",
+            "DRESS_UpperSouth.Trunk",
+            "DRESS_UpperSouth.TrunkBlankets",
+            "DRESS_UpperSouth.Basket",
+            "DRESS_UpperCorridor.HighShelf",
+            "DRESS_UpperCorridor.ShelfLinen",
+            "DRESS_UpperCorridor.Pail",
+            "FIX_UpperSkirting"
+        };
+
         private static readonly HashSet<string> AllowedSheets = new HashSet<string>(StringComparer.Ordinal)
             {
                 "Wallpaper",
@@ -97,7 +157,11 @@ namespace BarPromenade.Editor
                 "Rug",
                 "Glass",
                 "Ceramic",
-                "Fire"
+                "Fire",
+                "BookCloth",
+                "Wicker",
+                "TeaCloth",
+                "PaleWood"
             };
 
         private static bool buildQueued;
@@ -698,7 +762,7 @@ namespace BarPromenade.Editor
                 "upper door height");
             if (manifest.upper_storey_m.stair_step_count != 19 ||
                 manifest.upper_storey_m.room_count != 2 ||
-                manifest.upper_storey_m.furnished ||
+                !manifest.upper_storey_m.furnished ||
                 manifest.upper_storey_m.stair_opening == null ||
                 manifest.upper_storey_m.stair_opening.Length != 4 ||
                 manifest.upper_storey_m.door_centers_z == null ||
@@ -848,7 +912,8 @@ namespace BarPromenade.Editor
             foreach (string requiredPart in
                      RequiredFireParts
                          .Concat(RequiredPracticalParts)
-                         .Concat(RequiredUpperParts))
+                         .Concat(RequiredUpperParts)
+                         .Concat(RequiredUpperFurnitureParts))
             {
                 if (!names.Contains(requiredPart))
                 {

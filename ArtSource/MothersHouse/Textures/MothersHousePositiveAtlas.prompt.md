@@ -30,14 +30,16 @@ Constraints: every swatch must tile seamlessly within its own square; exact unif
 
 ## Runtime cell mapping
 
-The top three visual rows map to the twelve authored room sheets:
+All sixteen cells are now in use. The bottom row was drawn with the rest of
+the atlas and reserved; furnishing the upper storey on `2026-09-04` claimed
+it without redrawing the PNG:
 
 | Visual row | Column 1 | Column 2 | Column 3 | Column 4 |
 | --- | --- | --- | --- | --- |
 | 1 | `Wallpaper` | `CeilingPlaster` | `PlankFloor` | `DarkWood` |
 | 2 | `Upholstery` | `BedLinen` | `Rug` | `Concrete` |
 | 3 | `Ceramic` | `PaintedMetal` | `Glass` | `Fire` |
-| 4 | reserved | reserved | reserved | reserved |
+| 4 | `BookCloth` | `Wicker` | `TeaCloth` | `PaleWood` |
 
 Unity addresses rows from the bottom. The importer therefore reverses the
 visual row index and applies a two-pixel inset; the PNG itself is not reordered.

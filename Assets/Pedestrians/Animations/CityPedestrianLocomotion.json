@@ -582,16 +582,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.734284,
-        -0.332196
+        -0.738645,
+        -0.339848
       ],
       "animated_local_xz_max_m": [
-        0.736574,
+        0.74086,
         0.436524
       ],
       "animated_local_xz_size_m": [
-        1.470858,
-        0.76872
+        1.479505,
+        0.776373
       ]
     },
     {
@@ -616,15 +616,15 @@
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
         -0.928715,
-        -0.547808
+        -0.54043
       ],
       "animated_local_xz_max_m": [
-        0.830231,
+        0.838588,
         0.605403
       ],
       "animated_local_xz_size_m": [
-        1.758946,
-        1.153212
+        1.767303,
+        1.145833
       ]
     },
     {
@@ -649,15 +649,15 @@
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
         -0.560411,
-        -0.480874
+        -0.472247
       ],
       "animated_local_xz_max_m": [
-        0.669427,
-        0.277179
+        0.650761,
+        0.271802
       ],
       "animated_local_xz_size_m": [
-        1.229839,
-        0.758052
+        1.211172,
+        0.744049
       ]
     },
     {
@@ -681,16 +681,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.868744,
-        -0.361847
+        -0.868004,
+        -0.364696
       ],
       "animated_local_xz_max_m": [
         0.543401,
-        1.06006
+        1.060148
       ],
       "animated_local_xz_size_m": [
-        1.412146,
-        1.421907
+        1.411406,
+        1.424844
       ]
     },
     {
@@ -713,20 +713,20 @@
       ],
       "seated": true,
       "seated_headroom_m": 0.914559,
-      "seated_drop_m": 0.384033,
-      "seated_contact_m": 0.053765,
+      "seated_drop_m": 0.384879,
+      "seated_contact_m": 0.066308,
       "seated_floor_drop_limit_m": 0.41,
       "animated_local_xz_min_m": [
-        -0.549473,
-        -0.393592
+        -0.546155,
+        -0.385822
       ],
       "animated_local_xz_max_m": [
-        0.545228,
-        0.465463
+        0.534226,
+        0.469848
       ],
       "animated_local_xz_size_m": [
-        1.094701,
-        0.859055
+        1.080381,
+        0.85567
       ]
     },
     {
@@ -750,16 +750,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.748669,
-        -0.195936
+        -0.754738,
+        -0.181029
       ],
       "animated_local_xz_max_m": [
-        0.750888,
-        0.172243
+        0.756909,
+        0.158637
       ],
       "animated_local_xz_size_m": [
-        1.499557,
-        0.368179
+        1.511647,
+        0.339666
       ]
     },
     {
@@ -783,16 +783,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.815504,
-        -0.547808
+        -0.824567,
+        -0.54043
       ],
       "animated_local_xz_max_m": [
-        0.824198,
-        0.46675
+        0.832501,
+        0.486299
       ],
       "animated_local_xz_size_m": [
-        1.639702,
-        1.014559
+        1.657068,
+        1.026729
       ]
     },
     {
@@ -816,16 +816,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.847934,
-        -0.576387
+        -0.853796,
+        -0.569185
       ],
       "animated_local_xz_max_m": [
-        0.546685,
-        0.45712
+        0.536803,
+        0.456194
       ],
       "animated_local_xz_size_m": [
-        1.394619,
-        1.033508
+        1.390599,
+        1.025379
       ]
     },
     {
@@ -850,15 +850,15 @@
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
         -0.577997,
-        -0.509575
+        -0.501238
       ],
       "animated_local_xz_max_m": [
-        0.576815,
-        0.331575
+        0.568747,
+        0.351016
       ],
       "animated_local_xz_size_m": [
-        1.154812,
-        0.841149
+        1.146744,
+        0.852254
       ]
     },
     {
@@ -883,15 +883,15 @@
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
         -0.533699,
-        -0.342322
+        -0.335253
       ],
       "animated_local_xz_max_m": [
-        0.510785,
+        0.51399,
         0.285893
       ],
       "animated_local_xz_size_m": [
-        1.044484,
-        0.628214
+        1.047689,
+        0.621145
       ]
     },
     {
@@ -916,15 +916,15 @@
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
         -0.871961,
-        -0.545607
+        -0.539799
       ],
       "animated_local_xz_max_m": [
-        0.821001,
-        0.463875
+        0.828008,
+        0.481452
       ],
       "animated_local_xz_size_m": [
-        1.692962,
-        1.009482
+        1.699969,
+        1.021251
       ]
     },
     {
@@ -949,15 +949,15 @@
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
         -0.564675,
-        -0.493805
+        -0.486837
       ],
       "animated_local_xz_max_m": [
-        0.494132,
-        0.274795
+        0.496892,
+        0.276175
       ],
       "animated_local_xz_size_m": [
-        1.058807,
-        0.7686
+        1.061568,
+        0.763012
       ]
     },
     {
@@ -982,15 +982,15 @@
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
         -0.676625,
-        -0.539262
+        -0.53343
       ],
       "animated_local_xz_max_m": [
-        0.554213,
-        0.632021
+        0.542319,
+        0.632706
       ],
       "animated_local_xz_size_m": [
-        1.230838,
-        1.171283
+        1.218944,
+        1.166135
       ]
     },
     {
@@ -1013,20 +1013,20 @@
       ],
       "seated": true,
       "seated_headroom_m": 0.909434,
-      "seated_drop_m": 0.378949,
-      "seated_contact_m": 0.048497,
+      "seated_drop_m": 0.379678,
+      "seated_contact_m": 0.061926,
       "seated_floor_drop_limit_m": 0.41,
       "animated_local_xz_min_m": [
-        -0.299171,
-        -0.198772
+        -0.295491,
+        -0.19865
       ],
       "animated_local_xz_max_m": [
-        0.305754,
-        0.456347
+        0.301812,
+        0.470222
       ],
       "animated_local_xz_size_m": [
-        0.604925,
-        0.655119
+        0.597303,
+        0.668872
       ]
     },
     {
@@ -1050,16 +1050,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.686931,
-        -0.201402
+        -0.679642,
+        -0.183552
       ],
       "animated_local_xz_max_m": [
-        0.688529,
-        0.183827
+        0.681176,
+        0.180579
       ],
       "animated_local_xz_size_m": [
-        1.37546,
-        0.38523
+        1.360818,
+        0.364131
       ]
     },
     {
@@ -1083,16 +1083,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.8157,
-        -0.547808
+        -0.82317,
+        -0.54043
       ],
       "animated_local_xz_max_m": [
-        0.823974,
-        0.46675
+        0.830678,
+        0.486299
       ],
       "animated_local_xz_size_m": [
-        1.639674,
-        1.014559
+        1.653849,
+        1.026729
       ]
     },
     {
@@ -1116,16 +1116,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.332766,
-        -0.209964
+        -0.329563,
+        -0.186386
       ],
       "animated_local_xz_max_m": [
-        0.323579,
+        0.319283,
         0.299017
       ],
       "animated_local_xz_size_m": [
-        0.656345,
-        0.508981
+        0.648847,
+        0.485403
       ]
     },
     {
@@ -1149,16 +1149,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.309018,
-        -0.439395
+        -0.304919,
+        -0.430372
       ],
       "animated_local_xz_max_m": [
-        0.310744,
-        0.305713
+        0.306448,
+        0.308625
       ],
       "animated_local_xz_size_m": [
-        0.619763,
-        0.745108
+        0.611367,
+        0.738997
       ]
     },
     {
@@ -1313,8 +1313,8 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.506004,
-      "perch_seat_height_max_m": 0.507747,
+      "perch_seat_height_min_m": 0.501525,
+      "perch_seat_height_max_m": 0.504255,
       "perch_support_contact_min_m": 0.866865,
       "perch_support_contact_max_m": 0.866865,
       "perch_support_radius_m": 0.0,
@@ -1327,18 +1327,18 @@
         "GEO_BootSole.L",
         "GEO_BootSole.R"
       ],
-      "seated_drop_m": 0.485969,
+      "seated_drop_m": 0.482476,
       "animated_local_xz_min_m": [
-        -0.279475,
-        -0.268494
+        -0.269598,
+        -0.269065
       ],
       "animated_local_xz_max_m": [
-        0.532931,
-        0.908761
+        0.530182,
+        0.919651
       ],
       "animated_local_xz_size_m": [
-        0.812406,
-        1.177255
+        0.79978,
+        1.188716
       ]
     },
     {
@@ -1362,16 +1362,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.278643,
-        -0.450031
+        -0.283708,
+        -0.44696
       ],
       "animated_local_xz_max_m": [
-        0.278563,
-        0.406069
+        0.28418,
+        0.427986
       ],
       "animated_local_xz_size_m": [
-        0.557206,
-        0.8561
+        0.567888,
+        0.874946
       ]
     },
     {
@@ -1393,16 +1393,16 @@
         0.0
       ],
       "animated_local_xz_min_m": [
-        -0.278777,
-        -0.420019
+        -0.281996,
+        -0.417649
       ],
       "animated_local_xz_max_m": [
-        0.283289,
-        0.844517
+        0.283238,
+        0.863203
       ],
       "animated_local_xz_size_m": [
-        0.562067,
-        1.264536
+        0.565234,
+        1.280852
       ]
     },
     {
@@ -1424,16 +1424,16 @@
         0.0
       ],
       "animated_local_xz_min_m": [
-        -0.338118,
-        -0.427168
+        -0.34203,
+        -0.422468
       ],
       "animated_local_xz_max_m": [
-        0.589988,
-        0.911957
+        0.598868,
+        0.918604
       ],
       "animated_local_xz_size_m": [
-        0.928106,
-        1.339125
+        0.940899,
+        1.341072
       ]
     },
     {
@@ -1455,21 +1455,21 @@
         0.0
       ],
       "seated": true,
-      "seated_headroom_m": 0.943046,
-      "seated_drop_m": 0.21962,
-      "seated_contact_m": 0.045095,
+      "seated_headroom_m": 0.952565,
+      "seated_drop_m": 0.209467,
+      "seated_contact_m": 0.062497,
       "seated_floor_drop_limit_m": 0.22,
       "animated_local_xz_min_m": [
-        -0.28751,
+        -0.278323,
         -0.149006
       ],
       "animated_local_xz_max_m": [
-        0.285811,
-        0.911957
+        0.277786,
+        0.918592
       ],
       "animated_local_xz_size_m": [
-        0.573321,
-        1.060962
+        0.556109,
+        1.067597
       ]
     },
     {
@@ -1493,16 +1493,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.491567,
+        -0.488553,
         -0.17582
       ],
       "animated_local_xz_max_m": [
-        0.494141,
-        0.677512
+        0.490799,
+        0.694421
       ],
       "animated_local_xz_size_m": [
-        0.985708,
-        0.853332
+        0.979352,
+        0.870241
       ]
     },
     {
@@ -1526,16 +1526,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.840208,
-        -0.54857
+        -0.852264,
+        -0.540773
       ],
       "animated_local_xz_max_m": [
-        0.846909,
-        0.469626
+        0.858229,
+        0.488752
       ],
       "animated_local_xz_size_m": [
-        1.687118,
-        1.018196
+        1.710494,
+        1.029525
       ]
     },
     {
@@ -1558,8 +1558,8 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.537254,
-      "perch_seat_height_max_m": 0.542873,
+      "perch_seat_height_min_m": 0.53776,
+      "perch_seat_height_max_m": 0.545764,
       "perch_support_contact_min_m": 0.775737,
       "perch_support_contact_max_m": 0.778049,
       "perch_support_radius_m": 0.0,
@@ -1569,20 +1569,21 @@
         0.018905
       ],
       "perch_contact_parts": [
+        "GEO_Boot.R",
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.606446,
+      "seated_drop_m": 0.606937,
       "animated_local_xz_min_m": [
-        -0.287313,
+        -0.285342,
         -0.180106
       ],
       "animated_local_xz_max_m": [
-        0.29748,
-        0.677512
+        0.29288,
+        0.694421
       ],
       "animated_local_xz_size_m": [
-        0.584793,
-        0.857617
+        0.578222,
+        0.874526
       ]
     },
     {
@@ -1606,16 +1607,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.286693,
-        -0.527786
+        -0.286842,
+        -0.519251
       ],
       "animated_local_xz_max_m": [
-        0.28945,
+        0.289906,
         0.375636
       ],
       "animated_local_xz_size_m": [
-        0.576143,
-        0.903422
+        0.576748,
+        0.894887
       ]
     },
     {
@@ -1638,8 +1639,8 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.537254,
-      "perch_seat_height_max_m": 0.537254,
+      "perch_seat_height_min_m": 0.545764,
+      "perch_seat_height_max_m": 0.545764,
       "perch_support_contact_min_m": 0.777916,
       "perch_support_contact_max_m": 0.778068,
       "perch_support_radius_m": 0.0,
@@ -1649,20 +1650,20 @@
         0.01465
       ],
       "perch_contact_parts": [
-        "GEO_BootSole.L"
+        "GEO_Boot.R"
       ],
-      "seated_drop_m": 0.598426,
+      "seated_drop_m": 0.606937,
       "animated_local_xz_min_m": [
-        -0.298091,
+        -0.293648,
         -0.17666
       ],
       "animated_local_xz_max_m": [
-        0.867691,
-        0.68351
+        0.876276,
+        0.700419
       ],
       "animated_local_xz_size_m": [
-        1.165782,
-        0.86017
+        1.169924,
+        0.877079
       ]
     },
     {
@@ -1686,16 +1687,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.491567,
+        -0.488553,
         -0.17582
       ],
       "animated_local_xz_max_m": [
-        0.494141,
-        0.677512
+        0.490799,
+        0.694421
       ],
       "animated_local_xz_size_m": [
-        0.985708,
-        0.853332
+        0.979352,
+        0.870241
       ]
     },
     {
@@ -1719,16 +1720,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.840208,
-        -0.54857
+        -0.852264,
+        -0.540773
       ],
       "animated_local_xz_max_m": [
-        0.846909,
-        0.469626
+        0.858229,
+        0.488752
       ],
       "animated_local_xz_size_m": [
-        1.687118,
-        1.018196
+        1.710494,
+        1.029525
       ]
     },
     {
@@ -1751,8 +1752,8 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.537254,
-      "perch_seat_height_max_m": 0.542873,
+      "perch_seat_height_min_m": 0.53868,
+      "perch_seat_height_max_m": 0.545764,
       "perch_support_contact_min_m": 0.775715,
       "perch_support_contact_max_m": 0.778049,
       "perch_support_radius_m": 0.0,
@@ -1762,20 +1763,21 @@
         0.018656
       ],
       "perch_contact_parts": [
+        "GEO_Boot.R",
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.606446,
+      "seated_drop_m": 0.606937,
       "animated_local_xz_min_m": [
-        -0.291282,
+        -0.288273,
         -0.179106
       ],
       "animated_local_xz_max_m": [
-        0.292854,
-        0.677512
+        0.288939,
+        0.694421
       ],
       "animated_local_xz_size_m": [
-        0.584136,
-        0.856618
+        0.577212,
+        0.873526
       ]
     },
     {
@@ -1799,16 +1801,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.286693,
-        -0.527786
+        -0.286842,
+        -0.519251
       ],
       "animated_local_xz_max_m": [
-        0.28945,
+        0.289906,
         0.42254
       ],
       "animated_local_xz_size_m": [
-        0.576143,
-        0.950326
+        0.576748,
+        0.941791
       ]
     },
     {
@@ -1831,8 +1833,8 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.537254,
-      "perch_seat_height_max_m": 0.537254,
+      "perch_seat_height_min_m": 0.545764,
+      "perch_seat_height_max_m": 0.545764,
       "perch_support_contact_min_m": 0.777916,
       "perch_support_contact_max_m": 0.778068,
       "perch_support_radius_m": 0.0,
@@ -1842,22 +1844,22 @@
         0.01465
       ],
       "perch_contact_parts": [
-        "GEO_BootSole.L"
+        "GEO_Boot.R"
       ],
-      "seated_drop_m": 0.598426,
+      "seated_drop_m": 0.606937,
       "animated_local_xz_min_m": [
-        -0.298091,
+        -0.293648,
         -0.17666
       ],
       "animated_local_xz_max_m": [
-        0.867691,
-        0.68351
+        0.876276,
+        0.700419
       ],
       "animated_local_xz_size_m": [
-        1.165782,
-        0.86017
+        1.169924,
+        0.877079
       ]
     }
   ],
-  "build_signature": "9751eb68d0e78ee29495c4963621cd70b007f31068f5dc64b9e35224b82aa4cf"
+  "build_signature": "5ecc3e955b1ee723ecd377782cd5660d20b9f62d91070c030b09449d18fd58c3"
 }

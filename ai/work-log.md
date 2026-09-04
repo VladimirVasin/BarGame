@@ -28,6 +28,186 @@ Verification: Runtime build passed; focused EditMode
 — 1/1 passed. Focused PlayMode coverage for the production RedWine route and
 the physical-menu reopen lifecycle — 2/2 passed.
 
+## 2026-09-04 — The mother's house upper storey is furnished
+
+Both upper rooms have been finished-but-empty since `2026-09-01`, and the
+capture frames showed them almost black. They are now the parents' bedroom to
+the north and the hero's childhood room to the south, by explicit user request
+and a new §6 registry row.
+
+Three measurements shaped the design rather than taste. The village already
+lights **one upper window per long facade** on the summit house
+(`AlpineVillageWorldBuilder.BuildLitWindows`, `tallest` branch, `Height * 0.59`),
+so the interior was failing to answer an opening the exterior had always shown;
+both bedrooms now cut a real reveal into the existing full-height north and
+south upper walls, which keeps the part name `FIX_UpperWalls` and both parapet
+sides untouched. The hearth's stonework **stops dead at `y = 3.39`**, the
+underside of the interstorey slab, so continuing the flue upstairs was a hole
+in the model as much as a composition: it is what makes the north wall the warm
+one and the ordinary reason the double bed stands against it. And the atlas
+contract normalises a mesh's whole UV span into one cell
+(`MothersHouseInteriorAtlasContract.TryCreateBaseMapTransform`), so **the mesh
+bound, not `SHEET_PITCH`, sets texture scale** — the two windows, the two
+curtains and the chest/bedside pair are authored as separate parts rather than
+merged, or each would have worn one smeared piece of cloth stretched over seven
+metres.
+
+The four reserved cells of the atlas bottom row were already drawn and are now
+used: `BookCloth`, `Wicker`, `TeaCloth`, `PaleWood`. The PNG is unchanged; the
+atlas is simply full at `4 x 4`.
+
+**One trap cost real time and is worth writing down.** The play-mode walk
+teleports the CharacterController to `UpperFloorPlan.<Room>RoomCenter`, and the
+first natural placement — a double bed centred against the warm wall — put
+furniture exactly on that point. That does not fail an assert, it jams the
+capsule. Both beds were moved east so each room centre keeps more than the
+`0.32 m` capsule radius clear, and the clearance is now pinned twice: in the
+generator, where it costs seconds, and in `AssertUpperRoomsAreFurnishedAndWalkable`,
+where the failure names itself.
+
+Upper furniture rides the EXISTING `Fixtures` and `Paths` lists rather than new
+ones. That works because the validator learned about floors: fixtures only
+collide when their height ranges actually meet, the ceiling test picks
+`RoomHeight` or `UpperFloor.CeilingHeight` by base height, and a route is only
+obstructed by furniture on its own storey. Without that last one a bed upstairs
+would have been measured against a corridor below it — the two storeys share
+every `X/Z` coordinate. `RequiredFixtureCount 7 -> 14`, `RequiredPathCount
+3 -> 6`, and the upper routes join through the doorways instead of by rectangle
+overlap, because a `0.16 m` partition stands between corridor and room.
+
+Light: the bedroom's hanging enamel bowl (`4.2 / range 4.2 / 132 deg`, sized by
+`illumination x distance squared` at two metres), the childhood room's bare
+bulb (`3.6 / range 4.4 / 158 deg`) and one spill per window. The first pass gave
+the disused room no fitting at all and leaned on its window; the frames showed
+that for what it was — a room lit from nowhere — and on the user's call it got
+a real source instead. Both rooms are wired now, and what separates them is the
+KIND of fitting: a fabric bowl over the bed that is still slept in, an unshaded
+flex over the one that is not. The bare bulb stays under the shaded one, so the
+disused room never reads as the cosier of the two.
+
+What was deliberately NOT added, and is stated in the registry row: no
+photograph, letter, diary, document, readable text, object bearing a name or a
+date, no relic of the father, no memorial, no medicine, no diagnosis, no
+explanation of what kind of child the hero was, and no interaction or prompt of
+any kind. The childhood read is furniture dimensions plus one wooden top on the
+sill — §19's already-permitted child's thing without a child. The turned-back
+half of the double bed is the state of a bed, not a keepsake.
+
+**A second pass filled the rooms out**, because the first one furnished them
+too thinly to read. The measurement said it plainly: the upper floor already
+carried as many PARTS as the ground floor, but almost all of them were small
+goods - glass, curtain, mattress, coverlet, dust sheet - and only three large
+pieces of furniture in one bedroom and two in the other, against five
+downstairs. Sixty-eight and seventy-nine per cent of each floor was empty. Two
+areas were bare and both are the most visible in frame: the divider wall at
+`z = 0`, which stands almost square to both cameras and fills a third of each
+shot, and the east third, which is the near foreground at `1.8-2.2 m`.
+
+Added: a wardrobe with two panelled leaves against the divider wall, a chest at
+the foot of the bed with folded linen on it, a chair with clothes over its
+back, a peg rail with a robe, slippers; in the childhood room a linen press
+under a dust sheet, a small empty table under the window, a chest with folded
+blankets, a wicker laundry basket; in the corridor a high shelf of stacked
+linen above head height, and a pail with a broom in the south dead end.
+
+Two things worth keeping. **The upper storey had no skirting at all** while the
+ground floor has one, and the bare floor-to-wall line was doing as much damage
+as the missing furniture; one merged part of boxes fixed it. No cornice - at
+`2.36 m` in the clear it would only press down. And **`kit.panelled_leaf` had
+never been used anywhere in the project**; the wardrobe doors are its first
+use, which meant authoring the whole wardrobe in Blender space, since mixing
+that convention with `bar_parts` Unity space inside one merge turns a solid
+inside out.
+
+Two placements were wrong and both were caught rather than shipped. A spare
+mattress stood on its edge against the east wall and read as a concrete pillar
+across half the frame - removed after seeing the capture. The pail was put in
+the corridor's south dead end and landed exactly on the waypoint the play-mode
+walk uses to step off the stair; the test failed with "Controller did not reach
+(-2.45, -2.93)". It moved into the corner, and the protected corridor route was
+widened south to `z = -3.2` so the VALIDATOR owns that clearance from now on
+instead of the walk discovering it.
+
+Generator `1.5.0`, `97 meshes / 12,836 triangles`, signature `69154636b0fb6831`;
+mesh cap `64 -> 104`, triangle cap `14000 -> 16000`. Eight more blocking
+fixtures, `RequiredFixtureCount 14 -> 22`.
+
+Verification: `MothersHouseInteriorPlayModeTests` — 3 passed, 0 failed,
+including the stair climb into both rooms, the 16-sheet atlas contract, the
+collider count and the light contract. Frames re-shot through
+`AreaCaptureFixture.MothersHouse` and reviewed at
+`Captures/MothersHouseInterior/0*.png`; `02` and `03` were renamed from
+`empty-south-room` / `empty-north-room` to `childhood-room` /
+`parents-bedroom`. The first bedroom capture showed the bed reading as bare
+ticking, so the coverlet was split onto its own `BookCloth` part and the frames
+re-shot. No player build was run.
+
+## 2026-09-04 — Seven ordinary adults get the hero's body
+
+A measurement started this: reading `triangle_count` out of all `48` model
+manifests and re-deriving it independently from the FBX index buffers put the
+hero at `1,984` triangles and showed that only the four mountain-cafe figures
+were built to the same anatomy. Everyone else carried a `12`-triangle tapered
+box for the entire trunk, another for the pelvis, a third for each hand, no
+ears and, on the skirted designs, no thigh at all. The six designs with
+`pool_eligible=True` — the ones actually walking the city — were the six
+lowest-density humanoids in the project, `928–1,260`.
+
+`PedestrianBuilder.build_ordinary_adult_body` now draws that body once for
+`yard_babushka`, `weigh_attendant`, `cemetery_mourner`, `cemetery_watchman`,
+`park_chess_player`, `park_checkers_player` and `last_route_ferryman`:
+`CLO_Chest` `140`, `CLO_Waist`/`CLO_Seat` `92`, `GEO_Head` at `14x8`,
+`GEO_Ear` `24` a side, `GEO_Hand` `80` with a `20`-triangle `GEO_Thumb`,
+profiled sleeves and legs at `76`, and `make_cafe_shoe` given length, width
+and height scales so one six-station shoe also serves a work boot. Results,
+against the hero's `1,984`: babushka `1,836`, mourner `1,904`, ferryman
+`1,980`, weigh attendant `2,180`, watchman `2,192`, chess player `2,248`,
+checkers player `2,384`. Roughly `+7,000` triangles across the roaming pool.
+
+Everything the designs do NOT share stayed theirs: dimensions, joint points,
+palette, headwear, faces and props. Four parameters exist only because a
+single design needed them and none of them could be derived: explicit station
+tables, because the babushka is a barrel whose waist is wider than her chest
+and no monotonic formula draws that; `bare_forearms`, because her short
+housecoat sleeve is the one bare forearm in the library; `seat_name`, because
+the Ferryman's pelvis shell is named `CLO_CoatSeat` by a runtime anchor and an
+asset test and the park players' is the `CLO_CoatHem` that
+`perch_seat_height_m` is measured down from; and a four-point leg, because a
+design that sits with the knee folded needs each leg part to stop at its own
+bone head or the shin swings out through the thigh.
+
+The lesson worth keeping is what the first review render showed: a detail
+authored flush on a flat box front stands off a round trunk like a shelf. The
+weigh attendant's five quilt seams, drawn as straight `0.380 m` bars, left the
+cloth at the ribs and hung in the air. So `make_trunk_band` rings the shell
+(seams, hems, the chess yoke) and `make_trunk_patch` samples it across the
+part and rides it (pockets, lapels, aprons, scarf tails), and every button,
+check square and draught spot is placed through `trunk_surface_y` instead of
+at a literal `y`. Half of this pass was re-seating surface detail, not
+building bodies.
+
+Budget floors rose from `900` to `1,800` in `ARCHETYPES` and in the seven
+`PedestrianDescriptor`s — `ValidateManifest` demands the two agree exactly, so
+missing the C# half is a red import rather than a silent drift. That is what
+makes the density a contract: box torsos now fail both the Blender build and
+the Unity import. `GENERATOR_VERSION` deliberately stayed `4.5.2`, so the
+fifteen untouched city signatures are byte-identical, and no design outside
+the seven changed its triangle count.
+
+Verified: `--archetype all` passes, including the determinism double-build and
+the animated grounding, footprint and seated-clip validators; the park
+players' `perch_seat_height_m` held at `(0.53, 0.55)` and the Ferryman's at
+`(0.50, 0.52)` without widening either band; `CityPedestrianAssetSetup
+.BuildOrThrow` imported clean; `182/182` EditMode tests across
+`LastRouteFerryman*`, `ParkChess*`, `ParkCheckers*`, `Cemetery*`,
+`DryingYardBabushka*`, `Weighbridge*` and `CityPedestrian*` pass. The full
+`2,383`-test EditMode run has `19` failures, all of them in bar, mountain-road,
+supermarket, localization and Ps1Lit shader parity and none touching
+pedestrians.
+
+The Lake Fisherman is built exactly the same way and was left at `1,052` by
+scope, not by judgement. He is the next one.
+
 ## 2026-09-04 — Beer service follows the bartender, hero and camera
 
 The follow-up pass corrected four visible staging faults in the bar. The handled

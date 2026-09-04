@@ -12,8 +12,47 @@ namespace BarPromenade
     {
         public const string RootName = "Mother's House Atmosphere";
         public const int FireLightCount = 1;
-        public const int WindowLightCount = 2;
-        public const int LampLightCount = 1;
+
+        /// <summary>
+        /// Four: the two that flank the hearth downstairs and one in each
+        /// upper bedroom. The village facade already lights one upper pane
+        /// per long wall, so the interior is answering openings the exterior
+        /// always showed.
+        /// </summary>
+        public const int WindowLightCount = 4;
+
+        /// <summary>
+        /// Three: the fabric-shaded floor lamp beside the sofa, the enamel
+        /// bowl hanging in the parents' bedroom, and the bare bulb in the
+        /// childhood room. Both upper rooms are wired; what separates them is
+        /// the KIND of light, not its absence - a shade over the bed that is
+        /// still slept in, an unshaded flex over the one that is not.
+        /// </summary>
+        public const int LampLightCount = 3;
+
+        /// <summary>
+        /// Hung two metres over the bedroom floor and sized by
+        /// `illumination x distance squared`, which lands near `0.9` on the
+        /// boards below it. `Range` is the second, invisible divisor, so it
+        /// is set to the room's own depth rather than opened up "to be safe".
+        /// It stays far under the hearth's `8.2`, which the room's own test
+        /// requires of every lamp.
+        /// </summary>
+        public const float UpperBedroomLampIntensity = 4.2f;
+        public const float UpperBedroomLampRange = 4.2f;
+        public const float UpperBedroomLampSpotAngle = 132f;
+
+        /// <summary>
+        /// The childhood room's bare bulb. A naked filament throws wider and
+        /// harder than a fabric bowl but carries less glass, so it opens up
+        /// and cools down rather than getting brighter: the disused room must
+        /// never read as the cosier of the two.
+        /// </summary>
+        public const float UpperChildLampIntensity = 3.6f;
+        public const float UpperChildLampRange = 4.4f;
+        public const float UpperChildLampSpotAngle = 158f;
+        private static readonly Color UpperChildLampColor =
+            new Color(1f, 0.82f, 0.62f);
         public const int PracticalLightCount =
             FireLightCount + WindowLightCount + LampLightCount;
         /// <summary>
@@ -112,6 +151,8 @@ namespace BarPromenade
 
         public Light FireLight { get; private set; }
         public Light FloorLampLight { get; private set; }
+        public Light UpperBedroomLampLight { get; private set; }
+        public Light UpperChildLampLight { get; private set; }
         public Light[] LampLights { get; private set; } =
             Array.Empty<Light>();
         public Light[] WindowLights { get; private set; } =
@@ -167,9 +208,29 @@ namespace BarPromenade
                 FloorLampIntensity,
                 4.5f,
                 FloorLampSpotAngle);
+            atmosphere.UpperBedroomLampLight = atmosphere.CreateLampLight(
+                "Upper Bedroom Bowl Lamp",
+                world.Root.TransformPoint(
+                    plan.UpperFloor.NorthLampPosition),
+                world.Root.TransformDirection(Vector3.down),
+                FloorLampColor,
+                UpperBedroomLampIntensity,
+                UpperBedroomLampRange,
+                UpperBedroomLampSpotAngle);
+            atmosphere.UpperChildLampLight = atmosphere.CreateLampLight(
+                "Upper Childhood Room Bare Bulb",
+                world.Root.TransformPoint(
+                    plan.UpperFloor.SouthLampPosition),
+                world.Root.TransformDirection(Vector3.down),
+                UpperChildLampColor,
+                UpperChildLampIntensity,
+                UpperChildLampRange,
+                UpperChildLampSpotAngle);
             atmosphere.LampLights = new[]
             {
-                atmosphere.FloorLampLight
+                atmosphere.FloorLampLight,
+                atmosphere.UpperBedroomLampLight,
+                atmosphere.UpperChildLampLight
             };
             atmosphere.WindowLights = atmosphere.CreateWindowLights(
                 parent,
@@ -297,8 +358,62 @@ namespace BarPromenade
                 CreateWindowLight(
                     roomRoot,
                     "East Window Spill",
-                    plan.EastWindowPosition)
+                    plan.EastWindowPosition),
+
+                // Upstairs the cold light has to fall INTO the room off a
+                // wall the camera looks along, so each upper pane aims at
+                // its own floor rather than at the ground-floor hearth line.
+                CreateUpperWindowLight(
+                    roomRoot,
+                    "Upper North Window Spill",
+                    plan.UpperFloor.NorthWindowPosition,
+                    new Vector3(
+                        plan.UpperFloor.NorthWindowPosition.x + 0.5f,
+                        plan.UpperFloor.FloorElevation + 0.45f,
+                        2.6f),
+                    1.05f),
+                CreateUpperWindowLight(
+                    roomRoot,
+                    "Upper South Window Spill",
+                    plan.UpperFloor.SouthWindowPosition,
+                    new Vector3(
+                        plan.UpperFloor.SouthWindowPosition.x + 0.45f,
+                        plan.UpperFloor.FloorElevation + 0.45f,
+                        -2.6f),
+                    1.05f)
             };
+        }
+
+        /// <summary>
+        /// Both upper panes stay secondary now that each bedroom owns a real
+        /// fitting: the cold light widens the room, it does not light it.
+        /// </summary>
+        private Light CreateUpperWindowLight(
+            Transform roomRoot,
+            string name,
+            Vector3 localPosition,
+            Vector3 localTarget,
+            float intensity)
+        {
+            GameObject lightObject = new GameObject(name);
+            lightObject.transform.SetParent(transform, false);
+            lightObject.transform.position =
+                roomRoot.TransformPoint(localPosition);
+            lightObject.transform.rotation = Quaternion.LookRotation(
+                roomRoot.TransformPoint(localTarget) -
+                    lightObject.transform.position,
+                Vector3.up);
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = WindowColor;
+            light.intensity = intensity;
+            light.range = 7f;
+            light.spotAngle = 76f;
+            light.innerSpotAngle = 48f;
+            light.shadows = LightShadows.None;
+            light.bounceIntensity = 0f;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+            return light;
         }
 
         private Light CreateLampLight(

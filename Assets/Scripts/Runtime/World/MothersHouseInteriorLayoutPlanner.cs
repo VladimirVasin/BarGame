@@ -114,6 +114,114 @@ namespace BarPromenade
             4.88f,
             3.88f);
 
+        // Second storey furniture. The north room is the parents' bedroom
+        // and is still slept in; the south room is the hero's childhood room
+        // and has been taken out of use. Every base height is measured from
+        // the interior floor, so upper fixtures start at UpperFloorElevation.
+        public static readonly Rect UpperChimneyBounds = Rect.MinMaxRect(
+            -0.475f,
+            3.58f,
+            0.475f,
+            3.88f);
+        // Both beds stand clear of their own room's centre point: the
+        // play-mode walk teleports the capsule there, and furniture standing
+        // on that spot jams the controller rather than failing an assert.
+        public static readonly Rect UpperNorthBedBounds = Rect.MinMaxRect(
+            2.15f,
+            1.85f,
+            3.65f,
+            3.85f);
+        public const float UpperNorthBedHeight = 1.25f;
+        public static readonly Rect UpperNorthChestBounds = Rect.MinMaxRect(
+            -1.6f,
+            3.32f,
+            -0.6f,
+            3.87f);
+        public const float UpperNorthChestHeight = 0.8f;
+        public static readonly Rect UpperNorthBedsideBounds =
+            Rect.MinMaxRect(1.62f, 3.45f, 2.04f, 3.85f);
+        public const float UpperNorthBedsideHeight = 0.62f;
+        public static readonly Rect UpperSouthBedBounds = Rect.MinMaxRect(
+            2.15f,
+            -3.8f,
+            3.05f,
+            -2.1f);
+        public const float UpperSouthBedHeight = 1.01f;
+        public static readonly Rect UpperSouthChairBounds = Rect.MinMaxRect(
+            1.35f,
+            -3.55f,
+            1.77f,
+            -3.13f);
+        public const float UpperSouthChairHeight = 0.89f;
+        public static readonly Rect UpperCorridorChestBounds =
+            Rect.MinMaxRect(-3.05f, 2.85f, -1.95f, 3.55f);
+        public const float UpperCorridorChestHeight = 0.55f;
+
+        // Second furnishing pass. The divider wall at z = 0 stands square to
+        // both fixed cameras, so it carries the tall pieces; the east third
+        // is the near foreground and carries shapes that read large.
+        public static readonly Rect UpperNorthWardrobeBounds =
+            Rect.MinMaxRect(2.45f, 0.14f, 3.95f, 0.76f);
+        public const float UpperNorthWardrobeHeight = 1.95f;
+        public static readonly Rect UpperNorthTrunkBounds =
+            Rect.MinMaxRect(2.25f, 1.28f, 3.55f, 1.75f);
+        public const float UpperNorthTrunkHeight = 0.52f;
+        public static readonly Rect UpperNorthChairBounds =
+            Rect.MinMaxRect(0.72f, 2.72f, 1.18f, 3.18f);
+        public const float UpperNorthChairHeight = 0.92f;
+        public static readonly Rect UpperSouthLinenPressBounds =
+            Rect.MinMaxRect(1.15f, -0.72f, 2.25f, -0.18f);
+        public const float UpperSouthLinenPressHeight = 1.15f;
+        public static readonly Rect UpperSouthTableBounds =
+            Rect.MinMaxRect(-0.15f, -3.74f, 0.85f, -3.16f);
+        public const float UpperSouthTableHeight = 0.62f;
+        public static readonly Rect UpperSouthTrunkBounds =
+            Rect.MinMaxRect(3.25f, -3.55f, 4.15f, -2.95f);
+        public const float UpperSouthTrunkHeight = 0.55f;
+        public static readonly Rect UpperSouthBasketBounds =
+            Rect.MinMaxRect(3.35f, -1.6f, 3.9f, -1.05f);
+        public const float UpperSouthBasketHeight = 0.52f;
+        public static readonly Rect UpperCorridorPailBounds =
+            Rect.MinMaxRect(-3.12f, -3.62f, -2.72f, -3.28f);
+        public const float UpperCorridorPailHeight = 0.46f;
+
+        /// <summary>
+        /// The enamel bowl lamp hanging in the parents' bedroom. It is what
+        /// explains her coming up nineteen risers at the end of the day.
+        /// </summary>
+        public static readonly Vector3 UpperNorthLampPosition =
+            new Vector3(1.3f, UpperCeilingHeight - 0.385f, 1.7f);
+
+        /// <summary>
+        /// The childhood room's light is a bare bulb on the same kind of
+        /// flex: the room is out of use, not unwired, and the shade that
+        /// used to hang here is simply not on it any more.
+        /// </summary>
+        public static readonly Vector3 UpperSouthLampPosition =
+            new Vector3(1.2f, UpperCeilingHeight - 0.435f, -1.75f);
+
+        public const float UpperWindowWidth = 1f;
+        public const float UpperWindowSill = 0.92f;
+        public const float UpperWindowHead = 2.02f;
+
+        /// <summary>
+        /// Where the cold daylight enters each bedroom. The village facade
+        /// already lights one upper window on both of these walls, so the
+        /// interior is answering an opening the exterior always showed.
+        /// </summary>
+        public static readonly Vector3 UpperNorthWindowPosition =
+            new Vector3(
+                -1.1f,
+                UpperFloorElevation +
+                    (UpperWindowSill + UpperWindowHead) * 0.5f,
+                3.82f);
+        public static readonly Vector3 UpperSouthWindowPosition =
+            new Vector3(
+                -0.9f,
+                UpperFloorElevation +
+                    (UpperWindowSill + UpperWindowHead) * 0.5f,
+                -3.82f);
+
         public static MothersHouseInteriorLayoutPlan Generate()
         {
             List<HomeCameraShot> cameraShots = CreateCameraShots();
@@ -139,7 +247,11 @@ namespace BarPromenade
                 UpperDoorOpeningWidth,
                 UpperDoorOpeningHeight,
                 UpperSouthDoorCenterZ,
-                UpperNorthDoorCenterZ);
+                UpperNorthDoorCenterZ,
+                UpperNorthWindowPosition,
+                UpperSouthWindowPosition,
+                UpperNorthLampPosition,
+                UpperSouthLampPosition);
 
             var plan = new MothersHouseInteriorLayoutPlan(
                 new Vector2(RoomWidth, RoomDepth),
@@ -286,7 +398,29 @@ namespace BarPromenade
                     "table-approach",
                     MothersHouseInteriorPathKind.TableApproach,
                     new Rect(0.73f, -0.65f, 2.4f, 1.3f),
-                    1.2f)
+                    1.2f),
+
+                // Upstairs. The corridor runs from the stair landing to the
+                // far bedroom door, and each room keeps one clear lane in
+                // from its own doorway.
+                new MothersHouseInteriorPathPlan(
+                    "upper-corridor-run",
+                    MothersHouseInteriorPathKind.UpperCorridorRun,
+                    Rect.MinMaxRect(-3.18f, -3.2f, -1.83f, 2.45f),
+                    1.2f,
+                    UpperFloorElevation),
+                new MothersHouseInteriorPathPlan(
+                    "upper-north-approach",
+                    MothersHouseInteriorPathKind.UpperNorthApproach,
+                    Rect.MinMaxRect(-1.67f, 0.6f, 0.53f, 2.45f),
+                    1.2f,
+                    UpperFloorElevation),
+                new MothersHouseInteriorPathPlan(
+                    "upper-south-approach",
+                    MothersHouseInteriorPathKind.UpperSouthApproach,
+                    Rect.MinMaxRect(-1.67f, -2.45f, 0.53f, -0.85f),
+                    1.2f,
+                    UpperFloorElevation)
             };
         }
 
@@ -342,6 +476,115 @@ namespace BarPromenade
                     FloorLampBounds,
                     0f,
                     FloorLampHeight,
+                    true),
+
+                // Second storey. The flue carries the hearth up through the
+                // parents' bedroom, which is why the double bed stands
+                // against that wall and not another.
+                new MothersHouseInteriorFixturePlan(
+                    "upper-chimney",
+                    MothersHouseInteriorFixtureKind.UpperChimney,
+                    UpperChimneyBounds,
+                    UpperFloorElevation,
+                    UpperCeilingHeight - UpperFloorElevation,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-north-bed",
+                    MothersHouseInteriorFixtureKind.UpperNorthBed,
+                    UpperNorthBedBounds,
+                    UpperFloorElevation,
+                    UpperNorthBedHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-north-chest",
+                    MothersHouseInteriorFixtureKind.UpperNorthChest,
+                    UpperNorthChestBounds,
+                    UpperFloorElevation,
+                    UpperNorthChestHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-north-bedside",
+                    MothersHouseInteriorFixtureKind.UpperNorthBedside,
+                    UpperNorthBedsideBounds,
+                    UpperFloorElevation,
+                    UpperNorthBedsideHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-south-bed",
+                    MothersHouseInteriorFixtureKind.UpperSouthBed,
+                    UpperSouthBedBounds,
+                    UpperFloorElevation,
+                    UpperSouthBedHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-south-chair",
+                    MothersHouseInteriorFixtureKind.UpperSouthChair,
+                    UpperSouthChairBounds,
+                    UpperFloorElevation,
+                    UpperSouthChairHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-corridor-chest",
+                    MothersHouseInteriorFixtureKind.UpperCorridorChest,
+                    UpperCorridorChestBounds,
+                    UpperFloorElevation,
+                    UpperCorridorChestHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-north-wardrobe",
+                    MothersHouseInteriorFixtureKind.UpperNorthWardrobe,
+                    UpperNorthWardrobeBounds,
+                    UpperFloorElevation,
+                    UpperNorthWardrobeHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-north-trunk",
+                    MothersHouseInteriorFixtureKind.UpperNorthTrunk,
+                    UpperNorthTrunkBounds,
+                    UpperFloorElevation,
+                    UpperNorthTrunkHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-north-chair",
+                    MothersHouseInteriorFixtureKind.UpperNorthChair,
+                    UpperNorthChairBounds,
+                    UpperFloorElevation,
+                    UpperNorthChairHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-south-linen-press",
+                    MothersHouseInteriorFixtureKind.UpperSouthLinenPress,
+                    UpperSouthLinenPressBounds,
+                    UpperFloorElevation,
+                    UpperSouthLinenPressHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-south-table",
+                    MothersHouseInteriorFixtureKind.UpperSouthTable,
+                    UpperSouthTableBounds,
+                    UpperFloorElevation,
+                    UpperSouthTableHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-south-trunk",
+                    MothersHouseInteriorFixtureKind.UpperSouthTrunk,
+                    UpperSouthTrunkBounds,
+                    UpperFloorElevation,
+                    UpperSouthTrunkHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-south-basket",
+                    MothersHouseInteriorFixtureKind.UpperSouthBasket,
+                    UpperSouthBasketBounds,
+                    UpperFloorElevation,
+                    UpperSouthBasketHeight,
+                    true),
+                new MothersHouseInteriorFixturePlan(
+                    "upper-corridor-pail",
+                    MothersHouseInteriorFixtureKind.UpperCorridorPail,
+                    UpperCorridorPailBounds,
+                    UpperFloorElevation,
+                    UpperCorridorPailHeight,
                     true)
             };
         }

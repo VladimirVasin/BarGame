@@ -18,23 +18,23 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 33,
-  "triangle_count": 992,
+  "mesh_count": 35,
+  "triangle_count": 1980,
   "triangle_budget": [
-    900,
-    2200
+    1800,
+    2400
   ],
   "staged": true,
   "pool_eligible": false,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.765912,
-    -0.204485,
+    -0.781722,
+    -0.226287,
     0.0
   ],
   "bounds_max": [
-    0.767912,
+    0.783722,
     0.153312,
     1.75
   ],
@@ -67,7 +67,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "262d7492bdf6136f5b7e2210242977a2544295b687540ab1b14549e633a354b1",
+  "build_signature": "f7f46475e824b3f17843980746a44e227d552f2240430998e3c1e4551033aa88",
   "bones": [
     {
       "name": "root",
@@ -663,7 +663,7 @@
       "triangles": 12
     },
     {
-      "name": "CLO_CoatChest",
+      "name": "CLO_Chest",
       "role": "body",
       "bone": "chest",
       "palette_name": "ferry_coat",
@@ -673,8 +673,8 @@
         0.088,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 72,
+      "triangles": 140
     },
     {
       "name": "CLO_CoatFacing",
@@ -687,8 +687,8 @@
         0.053,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 12,
+      "triangles": 20
     },
     {
       "name": "CLO_CoatHem",
@@ -715,22 +715,8 @@
         0.053,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "CLO_CoatWaist",
-      "role": "body",
-      "bone": "spine",
-      "palette_name": "ferry_coat",
-      "base_color": [
-        0.078,
-        0.082,
-        0.088,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 48,
+      "triangles": 92
     },
     {
       "name": "CLO_Collar",
@@ -747,32 +733,32 @@
       "triangles": 36
     },
     {
-      "name": "CLO_Sleeve.L",
+      "name": "CLO_Shin.L",
       "role": "clothing",
-      "bone": "upper_arm.L",
-      "palette_name": "ferry_coat",
+      "bone": "shin.L",
+      "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.078,
-        0.082,
-        0.088,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76
     },
     {
-      "name": "CLO_Sleeve.R",
+      "name": "CLO_Shin.R",
       "role": "clothing",
-      "bone": "upper_arm.R",
-      "palette_name": "ferry_coat",
+      "bone": "shin.R",
+      "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.078,
-        0.082,
-        0.088,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76
     },
     {
       "name": "CLO_SleeveCuff.L",
@@ -813,8 +799,8 @@
         0.088,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
       "name": "CLO_SleeveLower.R",
@@ -827,39 +813,39 @@
         0.088,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
-      "name": "CLO_TrouserLower.L",
+      "name": "CLO_SleeveUpper.L",
       "role": "clothing",
-      "bone": "shin.L",
-      "palette_name": "ferry_coat_dark",
+      "bone": "upper_arm.L",
+      "palette_name": "ferry_coat",
       "base_color": [
-        0.046,
-        0.049,
-        0.053,
+        0.078,
+        0.082,
+        0.088,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
-      "name": "CLO_TrouserLower.R",
+      "name": "CLO_SleeveUpper.R",
       "role": "clothing",
-      "bone": "shin.R",
-      "palette_name": "ferry_coat_dark",
+      "bone": "upper_arm.R",
+      "palette_name": "ferry_coat",
       "base_color": [
-        0.046,
-        0.049,
-        0.053,
+        0.078,
+        0.082,
+        0.088,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
-      "name": "CLO_TrouserUpper.L",
+      "name": "CLO_Thigh.L",
       "role": "clothing",
       "bone": "thigh.L",
       "palette_name": "ferry_coat_dark",
@@ -869,11 +855,11 @@
         0.053,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
     },
     {
-      "name": "CLO_TrouserUpper.R",
+      "name": "CLO_Thigh.R",
       "role": "clothing",
       "bone": "thigh.R",
       "palette_name": "ferry_coat_dark",
@@ -883,8 +869,22 @@
         0.053,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 40,
+      "triangles": 76
+    },
+    {
+      "name": "CLO_Waist",
+      "role": "body",
+      "bone": "spine",
+      "palette_name": "ferry_coat_dark",
+      "base_color": [
+        0.046,
+        0.049,
+        0.053,
+        1.0
+      ],
+      "vertices": 48,
+      "triangles": 92
     },
     {
       "name": "GEO_Boot.L",
@@ -897,8 +897,8 @@
         0.06,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_Boot.R",
@@ -911,12 +911,12 @@
         0.06,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_BootSole.L",
-      "role": "body",
+      "role": "footwear_detail",
       "bone": "foot.L",
       "palette_name": "sole",
       "base_color": [
@@ -930,7 +930,7 @@
     },
     {
       "name": "GEO_BootSole.R",
-      "role": "body",
+      "role": "footwear_detail",
       "bone": "foot.R",
       "palette_name": "sole",
       "base_color": [
@@ -953,8 +953,8 @@
         0.33,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "GEO_Hand.R",
@@ -967,8 +967,8 @@
         0.33,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "GEO_Head",
@@ -981,8 +981,8 @@
         0.33,
         1.0
       ],
-      "vertices": 62,
-      "triangles": 120
+      "vertices": 100,
+      "triangles": 196
     },
     {
       "name": "GEO_Neck",
@@ -995,8 +995,36 @@
         0.33,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Thumb.L",
+      "role": "body_detail",
+      "bone": "hand.L",
+      "palette_name": "ferry_skin",
+      "base_color": [
+        0.47,
+        0.395,
+        0.33,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_Thumb.R",
+      "role": "body_detail",
+      "bone": "hand.R",
+      "palette_name": "ferry_skin",
+      "base_color": [
+        0.47,
+        0.395,
+        0.33,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
     }
   ]
 }

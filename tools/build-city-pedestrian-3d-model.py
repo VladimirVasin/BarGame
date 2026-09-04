@@ -23,7 +23,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 import sys
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 try:
     import bpy
@@ -658,7 +658,7 @@ ARCHETYPES = {
         "yard_babushka", "yard_babushka_v1", "Yard Babushka", 715233,
         "YardBabushka3D.blend", "YardBabushka3D",
         "YardBabushka3D.png", "BabushkaSmoke", "BabushkaBeat",
-        (900, 2000),
+        (1800, 2400),
         staged=True,
         pool_eligible=True,
         ambient_idle_clip="BabushkaStreetIdle",
@@ -697,7 +697,7 @@ ARCHETYPES = {
         "weigh_attendant", "weigh_attendant_v1", "Weigh Attendant", 842519,
         "WeighbridgeAttendant3D.blend", "WeighbridgeAttendant3D",
         "WeighbridgeAttendant3D.png", "WeigherCheck", "WeighedPace",
-        (900, 2000),
+        (1800, 2400),
         sit_clip="WeigherSit", seated_clearance_m=(0.84, 0.99),
         staged=True,
         pool_eligible=True,
@@ -715,7 +715,7 @@ ARCHETYPES = {
         "cemetery_mourner", "cemetery_mourner_v1", "Cemetery Mourner", 918477,
         "CemeteryMourner3D.blend", "CemeteryMourner3D",
         "CemeteryMourner3D.png", "MournerMourn", "MournerWalk",
-        (900, 2000),
+        (1800, 2400),
         ambient_idle_clip="MournerStreetIdle",
         ambient_walk_clip="MournerStreetWalk",
         staged=True,
@@ -731,7 +731,7 @@ ARCHETYPES = {
         "cemetery_watchman", "cemetery_watchman_v1", "Cemetery Watchman", 963201,
         "CemeteryWatchman3D.blend", "CemeteryWatchman3D",
         "CemeteryWatchman3D.png", "WatchmanWatch", "WatchmanShuffle",
-        (900, 2000),
+        (1800, 2400),
         sit_clip="WatchmanSit", seated_clearance_m=(0.84, 0.99),
         staged=True,
         pool_eligible=True,
@@ -798,7 +798,7 @@ ARCHETYPES = {
         1264099,
         "LastRouteFerryman3D.blend", "LastRouteFerryman3D",
         "LastRouteFerryman3D.png", "FerrymanWait", "FerrymanTrudge",
-        (900, 2200),
+        (1800, 2400),
         staged=True,
         pool_eligible=False,
         perch_seat_height_m=(0.50, 0.52),
@@ -820,7 +820,7 @@ ARCHETYPES = {
         1104733,
         "ParkChessPlayer3D.blend", "ParkChessPlayer3D",
         "ParkChessPlayer3D.png", "ChessBrood", "ChessTrudge",
-        (900, 2100),
+        (1800, 2400),
         ambient_idle_clip="ChessStreetIdle",
         ambient_walk_clip="ChessStreetWalk",
         staged=True,
@@ -853,7 +853,7 @@ ARCHETYPES = {
         1187419,
         "ParkCheckersPlayer3D.blend", "ParkCheckersPlayer3D",
         "ParkCheckersPlayer3D.png", "CheckersMull", "CheckersTrudge",
-        (900, 2200),
+        (1800, 2500),
         ambient_idle_clip="CheckersStreetIdle",
         ambient_walk_clip="CheckersStreetWalk",
         staged=True,
@@ -1869,8 +1869,20 @@ def make_vertical_shell(
     return vertices, faces
 
 
-def make_cafe_shoe(center_x: float):
-    """One angular shoe with heel, instep and tapered toe planes."""
+def make_cafe_shoe(
+    center_x: float,
+    length_scale: float = 1.0,
+    width_scale: float = 1.0,
+    height_scale: float = 1.0,
+    toe_y: float = 0.0,
+):
+    """One angular shoe with heel, instep and tapered toe planes.
+
+    The three scales exist so the same six-station footwear serves a low
+    cafe shoe, a squarer work boot and a soft house slipper without any of
+    them falling back to the twelve-triangle box they replace.  Default
+    arguments reproduce the original cafe shoe vertex for vertex.
+    """
 
     stations = (
         (-0.255, 0.050, 0.000, 0.043),
@@ -1882,6 +1894,10 @@ def make_cafe_shoe(center_x: float):
     )
     vertices: list[Vector] = []
     for y, half_width, bottom_z, top_z in stations:
+        y = toe_y + y * length_scale
+        half_width *= width_scale
+        bottom_z *= height_scale
+        top_z *= height_scale
         vertices.extend(
             (
                 Vector((center_x - half_width, y, bottom_z)),
@@ -2030,6 +2046,10 @@ class PedestrianBuilder:
         # the FBX material.
         self.atlas_path = atlas_path
         self.result: BuildResult | None = None
+        # Filled by `build_ordinary_adult_body`: the z/half-width/half-depth/
+        # y stations of the trunk shell, so surface detail can be seated on
+        # the round trunk rather than on a flat box front.
+        self.trunk_stations: tuple[tuple[float, float, float, float], ...] = ()
 
     def build(self) -> BuildResult:
         self.reset_scene()
@@ -4166,50 +4186,73 @@ class PedestrianBuilder:
         BabushkaSmoke rather than in the geometry.
         """
 
-        self.add_part(
-            "GEO_Head",
-            make_ellipsoid((0, -0.038, 1.545), (0.104, 0.096, 0.128), 12, 6),
-            "head", "body", "skin",
+        self.build_ordinary_adult_body(
+            skin="skin",
+            coat="gran_robe",
+            coat_dark="gran_robe",
+            trousers="gran_wool",
+            shin_material="gran_wool",
+            # She is the barrel of the seven: the waist is wider than the
+            # chest and the chest widens upward, which no monotonic
+            # shorthand draws. Her stations are spelled out instead.
+            chest_stations=(
+                (1.075, 0.200, 0.135, 0.010),
+                (1.123, 0.204, 0.140, 0.008),
+                (1.189, 0.209, 0.144, 0.004),
+                (1.255, 0.214, 0.150, -0.002),
+                (1.306, 0.219, 0.151, -0.006),
+                (1.340, 0.213, 0.141, -0.008),
+            ),
+            waist_stations=(
+                (0.870, 0.215, 0.155, 0.026),
+                (0.944, 0.212, 0.150, 0.022),
+                (1.039, 0.207, 0.142, 0.016),
+                (1.095, 0.203, 0.138, 0.012),
+            ),
+            lower_body="skirt",
+            seat_material="gran_skirt",
+            lower_stations=(
+                (0.360, 0.278, 0.222, 0.020),
+                (0.545, 0.268, 0.206, 0.022),
+                (0.750, 0.242, 0.184, 0.024),
+                (0.890, 0.220, 0.166, 0.024),
+            ),
+            build_thighs=False,
+            head_center=(0, -0.038, 1.545),
+            head_radii=(0.104, 0.096, 0.128),
+            neck_span=(1.320, 1.450),
+            neck_radii=(0.075, 0.062),
+            # Nothing of an ear survives the headscarf.
+            ears=False,
+            # The one design with a bare forearm: a short housecoat
+            # sleeve over the elbow, then skin down to the wrist.
+            bare_forearms=True,
+            hand_scale=1.06,
+            arm_points={
+                "L": (
+                    (0.208, -0.004, 1.292), (0.470, -0.010, 1.175),
+                    (0.680, -0.018, 1.075), (0.752, -0.021, 1.040),
+                ),
+                "R": (
+                    (-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175),
+                    (-0.680, -0.018, 1.075), (-0.752, -0.021, 1.040),
+                ),
+            },
+            leg_points={
+                "L": (
+                    (0.098, 0.004, 0.730), (0.103, -0.012, 0.354),
+                    (0.112, -0.022, 0.100),
+                ),
+                "R": (
+                    (-0.098, 0.004, 0.730), (-0.103, -0.012, 0.354),
+                    (-0.112, -0.022, 0.100),
+                ),
+            },
+            foot_part_name="Boot",
+            shoe_shape=(0.94, 1.12, 1.34),
         )
-        self.add_part(
-            "GEO_Neck",
-            make_frustum_between((0, -0.010, 1.320), (0, -0.026, 1.450), 0.075, 0.062, 10),
-            "neck", "body", "skin",
-        )
-        self.add_part(
-            "GEO_Bust",
-            make_tapered_box((0, 0.010, 1.075), (0, -0.008, 1.340), (0.400, 0.270, 0), (0.440, 0.300, 0)),
-            "chest", "body", "gran_robe",
-        )
-        self.add_part(
-            "GEO_Waist",
-            make_tapered_box((0, 0.026, 0.870), (0, 0.012, 1.095), (0.430, 0.310, 0), (0.405, 0.275, 0)),
-            "spine", "body", "gran_robe",
-        )
-        self.add_part(
-            "CLO_Skirt",
-            make_tapered_box((0, 0.020, 0.360), (0, 0.024, 0.890), (0.530, 0.430, 0), (0.440, 0.330, 0)),
-            "pelvis", "clothing", "gran_skirt",
-        )
-        self.add_part(
-            "CLO_Apron",
-            make_tapered_box((0, -0.212, 0.400), (0, -0.165, 0.860), (0.300, 0.024, 0), (0.250, 0.022, 0)),
-            "pelvis", "clothing", "gran_apron",
-        )
+        # The dark cuff that ends the short housecoat sleeve.
         for side, sign in (("L", 1.0), ("R", -1.0)):
-            shoulder = (sign * 0.208, sign * -0.004, 1.292)
-            elbow = (sign * 0.470, -0.010, 1.175)
-            wrist = (sign * 0.680, -0.018, 1.075)
-            self.add_part(
-                f"CLO_Sleeve.{side}",
-                make_frustum_between(shoulder, elbow, 0.074, 0.060, 10),
-                f"upper_arm.{side}", "clothing", "gran_robe",
-            )
-            self.add_part(
-                f"GEO_Forearm.{side}",
-                make_frustum_between(elbow, wrist, 0.048, 0.038, 8),
-                f"forearm.{side}", "body", "skin",
-            )
             self.add_part(
                 f"CLO_SleeveCuff.{side}",
                 make_frustum_between(
@@ -4219,33 +4262,13 @@ class PedestrianBuilder:
                 ),
                 f"forearm.{side}", "clothing", "gran_robe_dark",
             )
-            self.add_part(
-                f"GEO_Hand.{side}",
-                make_box((sign * 0.718, -0.020, 1.055), (0.085, 0.070, 0.058)),
-                f"hand.{side}", "body", "skin",
-            )
-            knee = (sign * 0.103, sign * -0.012, 0.354)
-            ankle = (sign * 0.112, sign * -0.022, 0.095)
-            self.add_part(
-                f"CLO_Stocking.{side}",
-                make_frustum_between(knee, ankle, 0.058, 0.047, 8),
-                f"shin.{side}", "clothing", "gran_wool",
-            )
-            self.add_part(
-                f"GEO_Boot.{side}",
-                make_tapered_box(
-                    (sign * 0.112, -0.085, 0.030),
-                    (sign * 0.112, -0.052, 0.145),
-                    (0.104, 0.260, 0),
-                    (0.092, 0.190, 0),
-                ),
-                f"foot.{side}", "body", "shoe",
-            )
-            self.add_part(
-                f"GEO_BootSole.{side}",
-                make_box((sign * 0.112, -0.085, 0.012), (0.108, 0.268, 0.024)),
-                f"foot.{side}", "body", "sole",
-            )
+        self.add_part(
+            "CLO_Apron",
+            self.make_trunk_patch(
+                (0.400, 0.860), 0.0, (0.150, 0.125), 0.022, 4,
+            ),
+            "pelvis", "clothing", "gran_apron",
+        )
         # The headscarf shell sits behind the face plane and owns the
         # silhouette; the wrap and knot close it under the chin.
         self.add_part(
@@ -4703,54 +4726,64 @@ class PedestrianBuilder:
         shoulders — everything the babushka's housecoat is not.
         """
 
-        self.add_part(
-            "GEO_Head",
-            make_ellipsoid((0, -0.038, 1.545), (0.102, 0.094, 0.126), 12, 6),
-            "head", "body", "pale_skin",
+        self.build_ordinary_adult_body(
+            skin="pale_skin",
+            coat="mourner_coat",
+            coat_dark="mourner_coat",
+            trousers="mourner_stocking",
+            shin_material="mourner_stocking",
+            shoulder_width=0.410,
+            waist_width=0.400,
+            chest_span=(1.075, 1.340),
+            waist_span=(0.870, 1.095),
+            chest_depth=0.134,
+            waist_depth=0.138,
+            seat_depth=0.166,
+            head_center=(0, -0.038, 1.545),
+            head_radii=(0.102, 0.094, 0.126),
+            neck_span=(1.320, 1.450),
+            neck_radii=(0.070, 0.058),
+            # Ears would only be buried under the veil.
+            ears=False,
+            # The long mourning coat: one dark fall from the waist to the
+            # boot shafts. It swallows the thighs whole, so none are built.
+            lower_body="skirt",
+            skirt_span=(0.310, 0.890),
+            # The box this replaced reached its full 0.500 only at the
+            # corners; a shell reaches it straight ahead and reads
+            # thinner, so the hem is opened up to keep the heavy fall.
+            skirt_widths=(0.545, 0.470),
+            build_thighs=False,
+            arm_points={
+                "L": (
+                    (0.208, -0.004, 1.292), (0.470, -0.010, 1.175),
+                    (0.680, -0.018, 1.075), (0.752, -0.021, 1.040),
+                ),
+                "R": (
+                    (-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175),
+                    (-0.680, -0.018, 1.075), (-0.752, -0.021, 1.040),
+                ),
+            },
+            leg_points={
+                "L": (
+                    (0.098, 0.004, 0.730), (0.103, -0.012, 0.354),
+                    (0.112, -0.022, 0.100),
+                ),
+                "R": (
+                    (-0.098, 0.004, 0.730), (-0.103, -0.012, 0.354),
+                    (-0.112, -0.022, 0.100),
+                ),
+            },
+            foot_part_name="Boot",
+            shoe_shape=(0.92, 1.10, 1.30),
         )
-        self.add_part(
-            "GEO_Neck",
-            make_frustum_between((0, -0.010, 1.320), (0, -0.026, 1.450), 0.070, 0.058, 10),
-            "neck", "body", "pale_skin",
-        )
-        self.add_part(
-            "GEO_Bust",
-            make_tapered_box((0, 0.010, 1.075), (0, -0.008, 1.340), (0.380, 0.255, 0), (0.410, 0.280, 0)),
-            "chest", "body", "mourner_coat",
-        )
-        self.add_part(
-            "GEO_Waist",
-            make_tapered_box((0, 0.026, 0.870), (0, 0.012, 1.095), (0.400, 0.290, 0), (0.385, 0.260, 0)),
-            "spine", "body", "mourner_coat",
-        )
-        # The long mourning coat: one dark fall from the waist to the
-        # boot shafts, with a near-void hem band closing it.
-        self.add_part(
-            "CLO_Coat",
-            make_tapered_box((0, 0.020, 0.310), (0, 0.024, 0.890), (0.500, 0.400, 0), (0.420, 0.310, 0)),
-            "pelvis", "clothing", "mourner_coat",
-        )
+        # The near-void band that closes the coat at the ankle.
         self.add_part(
             "CLO_CoatHem",
-            make_tapered_box((0, 0.020, 0.256), (0, 0.020, 0.316), (0.512, 0.410, 0), (0.502, 0.402, 0)),
+            self.make_trunk_band(0.286, 0.060, 0.006),
             "pelvis", "clothing", "mourner_coat_dark",
         )
         for side, sign in (("L", 1.0), ("R", -1.0)):
-            shoulder = (sign * 0.208, sign * -0.004, 1.292)
-            elbow = (sign * 0.470, -0.010, 1.175)
-            wrist = (sign * 0.680, -0.018, 1.075)
-            self.add_part(
-                f"CLO_Sleeve.{side}",
-                make_frustum_between(shoulder, elbow, 0.072, 0.058, 10),
-                f"upper_arm.{side}", "clothing", "mourner_coat",
-            )
-            # Long sleeves down to the wrist: a mourner shows no bare
-            # forearm, only the pale hands stay uncovered.
-            self.add_part(
-                f"CLO_SleeveLower.{side}",
-                make_frustum_between(elbow, wrist, 0.056, 0.044, 8),
-                f"forearm.{side}", "clothing", "mourner_coat",
-            )
             self.add_part(
                 f"CLO_SleeveCuff.{side}",
                 make_frustum_between(
@@ -4759,33 +4792,6 @@ class PedestrianBuilder:
                     0.048, 0.044, 8,
                 ),
                 f"forearm.{side}", "clothing", "mourner_coat_dark",
-            )
-            self.add_part(
-                f"GEO_Hand.{side}",
-                make_box((sign * 0.718, -0.020, 1.055), (0.082, 0.068, 0.056)),
-                f"hand.{side}", "body", "pale_skin",
-            )
-            knee = (sign * 0.103, sign * -0.012, 0.354)
-            ankle = (sign * 0.112, sign * -0.022, 0.095)
-            self.add_part(
-                f"CLO_Stocking.{side}",
-                make_frustum_between(knee, ankle, 0.056, 0.045, 8),
-                f"shin.{side}", "clothing", "mourner_stocking",
-            )
-            self.add_part(
-                f"GEO_Boot.{side}",
-                make_tapered_box(
-                    (sign * 0.112, -0.085, 0.030),
-                    (sign * 0.112, -0.052, 0.145),
-                    (0.102, 0.255, 0),
-                    (0.090, 0.185, 0),
-                ),
-                f"foot.{side}", "body", "shoe",
-            )
-            self.add_part(
-                f"GEO_BootSole.{side}",
-                make_box((sign * 0.112, -0.085, 0.012), (0.106, 0.262, 0.024)),
-                f"foot.{side}", "body", "sole",
             )
         # The heavy veil owns the silhouette: a shell behind the face
         # plane, a folded crest carrying the exact 1.75 m envelope, a
@@ -4849,21 +4855,16 @@ class PedestrianBuilder:
         lay cue and places its own bouquet on the grave slab.
         """
 
-        self.add_part(
-            "ACC_CoatButton.01",
-            make_box((0, -0.148, 1.250), (0.022, 0.016, 0.022)),
-            "chest", "surface_detail", "button",
-        )
-        self.add_part(
-            "ACC_CoatButton.02",
-            make_box((0, -0.142, 1.130), (0.022, 0.016, 0.022)),
-            "chest", "surface_detail", "button",
-        )
-        self.add_part(
-            "ACC_CoatButton.03",
-            make_box((0, -0.144, 1.000), (0.022, 0.016, 0.022)),
-            "spine", "surface_detail", "button",
-        )
+        for index, height in enumerate((1.250, 1.130, 1.000), start=1):
+            self.add_part(
+                f"ACC_CoatButton.{index:02d}",
+                make_box(
+                    (0, self.trunk_surface_y(height, 0.0, 0.006), height),
+                    (0.022, 0.016, 0.022),
+                ),
+                "chest" if height > 1.09 else "spine",
+                "surface_detail", "button",
+            )
 
         # Up and slightly forward out of the fist: with both forearms
         # folded to the chest in the authored clips, this direction
@@ -4928,15 +4929,60 @@ class PedestrianBuilder:
         a plank rather than as cloth.
         """
 
-        self.add_part(
-            "GEO_Head",
-            make_ellipsoid((0, -0.030, 1.566), (0.098, 0.092, 0.122), 12, 6),
-            "head", "body", "ferry_skin",
-        )
-        self.add_part(
-            "GEO_Neck",
-            make_frustum_between((0, -0.006, 1.318), (0, -0.018, 1.472), 0.060, 0.052, 10),
-            "neck", "body", "ferry_skin",
+        # Tall-shouldered and narrow: a spare man in a heavy coat.
+        self.build_ordinary_adult_body(
+            skin="ferry_skin",
+            coat="ferry_coat",
+            coat_dark="ferry_coat_dark",
+            trousers="ferry_coat_dark",
+            shoe="ferry_boot",
+            shoulder_width=0.384,
+            waist_width=0.372,
+            chest_span=(1.075, 1.336),
+            waist_span=(0.880, 1.092),
+            chest_depth=0.1135,
+            waist_depth=0.112,
+            head_center=(0, -0.030, 1.566),
+            head_radii=(0.098, 0.092, 0.122),
+            neck_span=(1.318, 1.472),
+            neck_radii=(0.060, 0.052),
+            # The high collar closes over them, and a cap band sits on
+            # the same radius.
+            ears=False,
+            # Large hands. He is thin everywhere else.
+            hand_scale=1.10,
+            # See the note below: the pelvis shell keeps its authored
+            # name, its narrower width and its 0.734 floor.
+            seat_name="CLO_CoatSeat",
+            lower_stations=(
+                (0.734, 0.168, 0.119, 0.014),
+                (0.790, 0.168, 0.116, 0.013),
+                (0.855, 0.168, 0.112, 0.011),
+                (0.902, 0.168, 0.110, 0.010),
+            ),
+            arm_points={
+                "L": (
+                    (0.196, -0.002, 1.300), (0.462, -0.008, 1.180),
+                    (0.676, -0.016, 1.078), (0.756, -0.022, 1.034),
+                ),
+                "R": (
+                    (-0.196, 0.002, 1.300), (-0.462, -0.008, 1.180),
+                    (-0.676, -0.016, 1.078), (-0.756, -0.022, 1.034),
+                ),
+            },
+            leg_points={
+                "L": (
+                    (0.094, 0.004, 0.734), (0.100, -0.012, 0.356),
+                    (0.100, -0.012, 0.348), (0.110, -0.020, 0.128),
+                ),
+                "R": (
+                    (-0.094, 0.004, 0.734), (-0.100, -0.012, 0.356),
+                    (-0.100, -0.012, 0.348), (-0.110, -0.020, 0.128),
+                ),
+            },
+            # Boots muddy to the ankle - he waits outdoors.
+            foot_part_name="Boot",
+            shoe_shape=(0.93, 1.12, 1.36),
         )
         # High collar, turned up: the coat closes around the jaw and
         # takes over from the cap shadow.
@@ -4945,17 +4991,16 @@ class PedestrianBuilder:
             make_frustum_between((0, -0.004, 1.322), (0, -0.020, 1.436), 0.108, 0.112, 10),
             "neck", "clothing", "ferry_coat_dark",
         )
-        # Tall-shouldered and narrow: a spare man in a heavy coat.
-        self.add_part(
-            "CLO_CoatChest",
-            make_tapered_box((0, 0.004, 1.075), (0, -0.006, 1.336), (0.372, 0.222, 0), (0.392, 0.238, 0)),
-            "chest", "body", "ferry_coat",
-        )
-        self.add_part(
-            "CLO_CoatWaist",
-            make_tapered_box((0, 0.010, 0.880), (0, 0.006, 1.092), (0.352, 0.216, 0), (0.374, 0.224, 0)),
-            "spine", "body", "ferry_coat",
-        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_SleeveCuff.{side}",
+                make_frustum_between(
+                    (sign * 0.628, -0.014, 1.102),
+                    (sign * 0.690, -0.018, 1.070),
+                    0.047, 0.042, 8,
+                ),
+                f"forearm.{side}", "clothing", "ferry_coat_dark",
+            )
         # The seat of him: hips and backside, bridging the waist above to
         # the thighs below.
         #
@@ -4976,11 +5021,8 @@ class PedestrianBuilder:
         # already was, so the perch measurement this design is converged
         # against does not move. The coat waist above is wider than this
         # and overhangs it, which is what a coat does over hips.
-        self.add_part(
-            "CLO_CoatSeat",
-            make_tapered_box((0, 0.014, 0.734), (0, 0.010, 0.902), (0.336, 0.238, 0), (0.336, 0.220, 0)),
-            "pelvis", "body", "ferry_coat_dark",
-        )
+        # (Drawn by the shared substrate above, under this exact name.)
+        #
         # The hem stub. The cloth panel hangs from its underside, so it
         # has to be wide enough that no gap shows where the two meet.
         self.add_part(
@@ -4992,70 +5034,11 @@ class PedestrianBuilder:
         # than as a tube even before the cloth takes over.
         self.add_part(
             "CLO_CoatFacing",
-            make_box((0, -0.118, 1.040), (0.052, 0.026, 0.470)),
+            self.make_trunk_patch(
+                (0.805, 1.275), 0.0, 0.026, 0.026, 2,
+            ),
             "spine", "clothing", "ferry_coat_dark",
         )
-        for side, sign in (("L", 1.0), ("R", -1.0)):
-            shoulder = (sign * 0.196, sign * -0.002, 1.300)
-            elbow = (sign * 0.462, -0.008, 1.180)
-            wrist = (sign * 0.676, -0.016, 1.078)
-            self.add_part(
-                f"CLO_Sleeve.{side}",
-                make_frustum_between(shoulder, elbow, 0.074, 0.058, 10),
-                f"upper_arm.{side}", "clothing", "ferry_coat",
-            )
-            self.add_part(
-                f"CLO_SleeveLower.{side}",
-                make_frustum_between(elbow, wrist, 0.054, 0.044, 8),
-                f"forearm.{side}", "clothing", "ferry_coat",
-            )
-            self.add_part(
-                f"CLO_SleeveCuff.{side}",
-                make_frustum_between(
-                    (sign * 0.628, -0.014, 1.102),
-                    (sign * 0.690, -0.018, 1.070),
-                    0.047, 0.042, 8,
-                ),
-                f"forearm.{side}", "clothing", "ferry_coat_dark",
-            )
-            # Large hands. He is thin everywhere else.
-            self.add_part(
-                f"GEO_Hand.{side}",
-                make_box((sign * 0.716, -0.019, 1.056), (0.086, 0.072, 0.058)),
-                f"hand.{side}", "body", "ferry_skin",
-            )
-            hip = (sign * 0.094, 0.004, 0.734)
-            knee = (sign * 0.100, -0.012, 0.356)
-            self.add_part(
-                f"CLO_TrouserUpper.{side}",
-                make_frustum_between(hip, knee, 0.080, 0.058, 8),
-                f"thigh.{side}", "clothing", "ferry_coat_dark",
-            )
-            self.add_part(
-                f"CLO_TrouserLower.{side}",
-                make_frustum_between(
-                    (sign * 0.100, -0.012, 0.348),
-                    (sign * 0.110, -0.020, 0.128),
-                    0.058, 0.052, 8,
-                ),
-                f"shin.{side}", "clothing", "ferry_coat_dark",
-            )
-            # Boots muddy to the ankle - he waits outdoors.
-            self.add_part(
-                f"GEO_Boot.{side}",
-                make_tapered_box(
-                    (sign * 0.110, -0.082, 0.032),
-                    (sign * 0.110, -0.050, 0.150),
-                    (0.106, 0.256, 0),
-                    (0.094, 0.188, 0),
-                ),
-                f"foot.{side}", "body", "ferry_boot",
-            )
-            self.add_part(
-                f"GEO_BootSole.{side}",
-                make_box((sign * 0.110, -0.082, 0.012), (0.110, 0.264, 0.024)),
-                f"foot.{side}", "body", "sole",
-            )
 
     def build_last_route_ferryman_details(self) -> None:
         """Cap, the shadow under its brim, and one coil of rope.
@@ -5119,32 +5102,49 @@ class PedestrianBuilder:
         brow, narrowed eyes, an off-centre mouth and grey whiskers.
         """
 
-        self.add_part(
-            "GEO_Head",
-            make_ellipsoid((0, -0.036, 1.560), (0.100, 0.094, 0.124), 12, 6),
-            "head", "body", "skin",
-        )
-        self.add_part(
-            "GEO_Neck",
-            make_frustum_between((0, -0.010, 1.320), (0, -0.024, 1.470), 0.066, 0.056, 10),
-            "neck", "body", "skin",
-        )
-        # The quilted telogreika: boxy, a little sunken at the chest —
-        # an old man's jacket, not a worker's.
-        self.add_part(
-            "CLO_CoatChest",
-            make_tapered_box((0, 0.008, 1.070), (0, -0.004, 1.340), (0.400, 0.245, 0), (0.405, 0.255, 0)),
-            "chest", "body", "watch_coat",
-        )
-        self.add_part(
-            "CLO_CoatWaist",
-            make_tapered_box((0, 0.016, 0.870), (0, 0.010, 1.090), (0.395, 0.250, 0), (0.400, 0.248, 0)),
-            "spine", "body", "watch_coat",
-        )
-        self.add_part(
-            "CLO_CoatHem",
-            make_tapered_box((0, 0.018, 0.690), (0, 0.016, 0.890), (0.415, 0.268, 0), (0.398, 0.252, 0)),
-            "pelvis", "clothing", "watch_coat_dark",
+        self.build_ordinary_adult_body(
+            skin="skin",
+            coat="watch_coat",
+            coat_dark="watch_coat_dark",
+            trousers="watch_trousers",
+            # Trousers tucked into tall kirza boot shafts: the shin is
+            # footwear on this design, not cloth.
+            shin_material="shoe",
+            shoulder_width=0.405,
+            waist_width=0.400,
+            chest_span=(1.070, 1.340),
+            waist_span=(0.870, 1.090),
+            seat_span=(0.690, 0.890),
+            seat_width=0.415,
+            chest_depth=0.126,
+            waist_depth=0.124,
+            seat_depth=0.128,
+            head_center=(0, -0.036, 1.560),
+            head_radii=(0.100, 0.094, 0.124),
+            neck_span=(1.320, 1.470),
+            neck_radii=(0.066, 0.056),
+            arm_points={
+                "L": (
+                    (0.208, -0.004, 1.292), (0.470, -0.010, 1.175),
+                    (0.680, -0.018, 1.075), (0.752, -0.021, 1.040),
+                ),
+                "R": (
+                    (-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175),
+                    (-0.680, -0.018, 1.075), (-0.752, -0.021, 1.040),
+                ),
+            },
+            leg_points={
+                "L": (
+                    (0.096, 0.004, 0.730), (0.103, -0.012, 0.354),
+                    (0.112, -0.022, 0.100),
+                ),
+                "R": (
+                    (-0.096, 0.004, 0.730), (-0.103, -0.012, 0.354),
+                    (-0.112, -0.022, 0.100),
+                ),
+            },
+            foot_part_name="Boot",
+            shoe_shape=(0.94, 1.12, 1.34),
         )
         # The open collar shows a sliver of the old shirt underneath.
         self.add_part(
@@ -5154,23 +5154,10 @@ class PedestrianBuilder:
         )
         self.add_part(
             "ACC_ShirtV",
-            make_tapered_box((0, -0.132, 1.238), (0, -0.128, 1.320), (0.120, 0.020, 0), (0.052, 0.016, 0)),
+            self.make_trunk_patch((1.238, 1.320), 0.0, (0.060, 0.026), 0.014),
             "chest", "surface_detail", "watch_shirt",
         )
         for side, sign in (("L", 1.0), ("R", -1.0)):
-            shoulder = (sign * 0.208, sign * -0.004, 1.292)
-            elbow = (sign * 0.470, -0.010, 1.175)
-            wrist = (sign * 0.680, -0.018, 1.075)
-            self.add_part(
-                f"CLO_Sleeve.{side}",
-                make_frustum_between(shoulder, elbow, 0.076, 0.062, 10),
-                f"upper_arm.{side}", "clothing", "watch_coat",
-            )
-            self.add_part(
-                f"CLO_SleeveLower.{side}",
-                make_frustum_between(elbow, wrist, 0.056, 0.045, 8),
-                f"forearm.{side}", "clothing", "watch_coat",
-            )
             self.add_part(
                 f"CLO_SleeveCuff.{side}",
                 make_frustum_between(
@@ -5179,44 +5166,6 @@ class PedestrianBuilder:
                     0.048, 0.043, 8,
                 ),
                 f"forearm.{side}", "clothing", "watch_coat_dark",
-            )
-            self.add_part(
-                f"GEO_Hand.{side}",
-                make_box((sign * 0.718, -0.020, 1.055), (0.082, 0.068, 0.056)),
-                f"hand.{side}", "body", "skin",
-            )
-            hip = (sign * 0.096, 0.004, 0.730)
-            knee = (sign * 0.103, -0.012, 0.354)
-            ankle = (sign * 0.112, -0.022, 0.095)
-            # Trousers tucked into tall kirza boot shafts.
-            self.add_part(
-                f"CLO_TrouserUpper.{side}",
-                make_frustum_between(hip, knee, 0.084, 0.060, 8),
-                f"thigh.{side}", "clothing", "watch_trousers",
-            )
-            self.add_part(
-                f"CLO_BootShaft.{side}",
-                make_frustum_between(
-                    (sign * 0.103, -0.014, 0.340),
-                    (sign * 0.112, -0.022, 0.100),
-                    0.064, 0.056, 8,
-                ),
-                f"shin.{side}", "clothing", "shoe",
-            )
-            self.add_part(
-                f"GEO_Boot.{side}",
-                make_tapered_box(
-                    (sign * 0.112, -0.085, 0.030),
-                    (sign * 0.112, -0.052, 0.145),
-                    (0.104, 0.260, 0),
-                    (0.092, 0.190, 0),
-                ),
-                f"foot.{side}", "body", "shoe",
-            )
-            self.add_part(
-                f"GEO_BootSole.{side}",
-                make_box((sign * 0.112, -0.085, 0.012), (0.108, 0.268, 0.024)),
-                f"foot.{side}", "body", "sole",
             )
         # The wide aerodrome flat cap owns the silhouette and the
         # exact 1.75 m envelope: a shallow dome over a band with a
@@ -5288,35 +5237,34 @@ class PedestrianBuilder:
         the whole uniform.
         """
 
-        # Horizontal quilt ridges read as the telogreika's padding.
-        for index, height in enumerate((1.280, 1.180, 1.080), start=1):
+        # Horizontal quilt ridges read as the telogreika's padding. They
+        # ring the trunk, since a straight bar leaves the shelled coat at
+        # the ribs and stands off it in front.
+        for index, height in enumerate(
+            (1.280, 1.180, 1.080, 0.980, 0.895), start=1
+        ):
             self.add_part(
                 f"ACC_QuiltSeam.{index:02d}",
-                make_box((0, -0.146, height), (0.370, 0.014, 0.016)),
+                self.make_trunk_band(height, 0.016),
                 "chest" if height > 1.1 else "spine",
                 "surface_detail", "watch_coat_dark",
             )
-        for index, height in enumerate((0.980, 0.895), start=4):
+        for index, (offset_x, height) in enumerate(
+            ((0.060, 1.230), (0.058, 1.110), (0.056, 0.990)), start=1
+        ):
             self.add_part(
-                f"ACC_QuiltSeam.{index:02d}",
-                make_box((0, -0.140, height), (0.360, 0.014, 0.016)),
-                "spine", "surface_detail", "watch_coat_dark",
+                f"ACC_CoatButton.{index:02d}",
+                make_box(
+                    (
+                        offset_x,
+                        self.trunk_surface_y(height, offset_x, 0.006),
+                        height,
+                    ),
+                    (0.022, 0.016, 0.022),
+                ),
+                "chest" if height > 1.09 else "spine",
+                "surface_detail", "button",
             )
-        self.add_part(
-            "ACC_CoatButton.01",
-            make_box((0.060, -0.152, 1.230), (0.022, 0.016, 0.022)),
-            "chest", "surface_detail", "button",
-        )
-        self.add_part(
-            "ACC_CoatButton.02",
-            make_box((0.058, -0.146, 1.110), (0.022, 0.016, 0.022)),
-            "chest", "surface_detail", "button",
-        )
-        self.add_part(
-            "ACC_CoatButton.03",
-            make_box((0.056, -0.148, 0.990), (0.022, 0.016, 0.022)),
-            "spine", "surface_detail", "button",
-        )
         # Grey stubble on the chin closes the whiskered face.
         self.add_part(
             "ACC_Stubble",
@@ -5651,50 +5599,66 @@ class PedestrianBuilder:
         full-length hem would stand straight through both thighs.
         """
 
-        self.add_part(
-            "GEO_Head",
-            make_ellipsoid((0, -0.030, 1.528), (0.094, 0.090, 0.132), 12, 6),
-            "head", "body", "chess_skin",
-        )
-        self.add_part(
-            "GEO_Neck",
-            make_frustum_between((0, -0.012, 1.318), (0, -0.022, 1.452), 0.064, 0.054, 10),
-            "neck", "body", "chess_skin",
-        )
-        self.add_part(
-            "CLO_CoatChest",
-            make_tapered_box((0, 0.006, 1.080), (0, -0.004, 1.340), (0.400, 0.246, 0), (0.412, 0.258, 0)),
-            "chest", "body", "chess_coat",
-        )
-        self.add_part(
-            "CLO_CoatWaist",
-            make_tapered_box((0, 0.010, 0.900), (0, 0.006, 1.090), (0.392, 0.248, 0), (0.402, 0.250, 0)),
-            "spine", "body", "chess_coat",
-        )
-        self.add_part(
-            "CLO_CoatHem",
-            make_tapered_box((0, 0.012, 0.655), (0, 0.010, 0.910), (0.424, 0.272, 0), (0.396, 0.252, 0)),
-            "pelvis", "clothing", "chess_coat_dark",
+        self.build_ordinary_adult_body(
+            skin="chess_skin",
+            coat="chess_coat",
+            coat_dark="chess_coat",
+            trousers="chess_trousers",
+            shoe="chess_boot",
+            shoulder_width=0.404,
+            waist_width=0.400,
+            chest_span=(1.080, 1.340),
+            waist_span=(0.900, 1.090),
+            chest_depth=0.124,
+            waist_depth=0.125,
+            # The pelvis shell keeps its authored name: `CLO_CoatHem` is
+            # the datum `perch_seat_height_m` is measured from, and its
+            # underside must stay where the plank recipe expects it.
+            seat_name="CLO_CoatHem",
+            seat_material="chess_coat_dark",
+            lower_stations=(
+                (0.655, 0.212, 0.136, 0.012),
+                (0.739, 0.208, 0.133, 0.011),
+                (0.834, 0.202, 0.129, 0.011),
+                (0.910, 0.198, 0.126, 0.010),
+            ),
+            head_center=(0, -0.030, 1.528),
+            head_radii=(0.094, 0.090, 0.132),
+            neck_span=(1.318, 1.452),
+            neck_radii=(0.064, 0.054),
+            arm_points={
+                "L": (
+                    (0.208, -0.004, 1.292), (0.470, -0.010, 1.175),
+                    (0.680, -0.018, 1.075), (0.764, -0.026, 1.021),
+                ),
+                "R": (
+                    (-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175),
+                    (-0.680, -0.018, 1.075), (-0.764, -0.026, 1.021),
+                ),
+            },
+            # Both leg parts stop exactly at their own bone head. A shin
+            # part authored above the knee swings out through the thigh
+            # the moment the knee bends, and this design sits with both
+            # knees folded to a right angle for its entire life.
+            leg_points={
+                "L": (
+                    (0.092, 0.006, 0.742), (0.103, -0.012, 0.358),
+                    (0.103, -0.012, 0.352), (0.112, -0.024, 0.128),
+                ),
+                "R": (
+                    (-0.092, 0.006, 0.742), (-0.103, -0.012, 0.358),
+                    (-0.103, -0.012, 0.352), (-0.112, -0.024, 0.128),
+                ),
+            },
+            foot_part_name="Boot",
+            shoe_shape=(0.95, 1.14, 1.30),
         )
         self.add_part(
             "CLO_CoatYoke",
-            make_tapered_box((0, 0.002, 1.180), (0, -0.004, 1.325), (0.444, 0.278, 0), (0.408, 0.256, 0)),
+            self.make_trunk_band(1.252, 0.145, 0.006),
             "chest", "clothing", "chess_coat_light",
         )
         for side, sign in (("L", 1.0), ("R", -1.0)):
-            shoulder = (sign * 0.208, sign * -0.004, 1.292)
-            elbow = (sign * 0.470, -0.010, 1.175)
-            wrist = (sign * 0.680, -0.018, 1.075)
-            self.add_part(
-                f"CLO_Sleeve.{side}",
-                make_frustum_between(shoulder, elbow, 0.076, 0.062, 10),
-                f"upper_arm.{side}", "clothing", "chess_coat",
-            )
-            self.add_part(
-                f"CLO_SleeveLower.{side}",
-                make_frustum_between(elbow, wrist, 0.058, 0.046, 8),
-                f"forearm.{side}", "clothing", "chess_coat",
-            )
             self.add_part(
                 f"CLO_SleeveCuff.{side}",
                 make_frustum_between(
@@ -5703,48 +5667,6 @@ class PedestrianBuilder:
                     0.050, 0.045, 8,
                 ),
                 f"forearm.{side}", "clothing", "chess_coat_dark",
-            )
-            self.add_part(
-                f"GEO_Hand.{side}",
-                make_box((sign * 0.722, -0.022, 1.048), (0.082, 0.068, 0.056)),
-                f"hand.{side}", "body", "chess_skin",
-            )
-            # Both leg parts stop exactly at their own bone head. A shin
-            # part authored above the knee swings out through the thigh
-            # the moment the knee bends, and this design sits with both
-            # knees folded to a right angle for its entire life.
-            self.add_part(
-                f"CLO_TrouserUpper.{side}",
-                make_frustum_between(
-                    (sign * 0.092, 0.006, 0.742),
-                    (sign * 0.103, -0.012, 0.358),
-                    0.084, 0.066, 8,
-                ),
-                f"thigh.{side}", "clothing", "chess_trousers",
-            )
-            self.add_part(
-                f"CLO_TrouserLower.{side}",
-                make_frustum_between(
-                    (sign * 0.103, -0.012, 0.352),
-                    (sign * 0.112, -0.024, 0.128),
-                    0.070, 0.058, 8,
-                ),
-                f"shin.{side}", "clothing", "chess_trousers",
-            )
-            self.add_part(
-                f"GEO_Boot.{side}",
-                make_tapered_box(
-                    (sign * 0.112, -0.086, 0.024),
-                    (sign * 0.112, -0.052, 0.140),
-                    (0.106, 0.264, 0),
-                    (0.094, 0.190, 0),
-                ),
-                f"foot.{side}", "body", "chess_boot",
-            )
-            self.add_part(
-                f"GEO_BootSole.{side}",
-                make_box((sign * 0.112, -0.086, 0.012), (0.110, 0.272, 0.024)),
-                f"foot.{side}", "body", "sole",
             )
 
         # The crown owns the silhouette and the exact 1.75 m envelope.
@@ -5846,27 +5768,28 @@ class PedestrianBuilder:
         for side, sign in (("L", 1.0), ("R", -1.0)):
             self.add_part(
                 f"CLO_ScarfTail.{side}",
-                make_tapered_box(
-                    (sign * 0.052, -0.132, 1.010),
-                    (sign * 0.058, -0.146, 1.330),
-                    (0.086, 0.030, 0),
-                    (0.092, 0.032, 0),
+                self.make_trunk_patch(
+                    (1.010, 1.330), sign * 0.055, (0.043, 0.046), 0.030,
                 ),
                 "chest", "clothing", "chess_check_dark",
             )
             self.add_part(
                 f"CLO_Lapel.{side}",
-                make_tapered_box(
-                    (sign * 0.088, -0.128, 1.086),
-                    (sign * 0.132, -0.136, 1.318),
-                    (0.076, 0.028, 0),
-                    (0.104, 0.030, 0),
+                self.make_trunk_patch(
+                    (1.086, 1.318), sign * 0.110, (0.038, 0.052), 0.028,
                 ),
                 "chest", "clothing", "chess_check_dark",
             )
             self.add_part(
                 f"ACC_LapelCheck.{side}",
-                make_box((sign * 0.112, -0.144, 1.240), (0.046, 0.024, 0.046)),
+                make_box(
+                    (
+                        sign * 0.112,
+                        self.trunk_surface_y(1.240, 0.112, 0.012),
+                        1.240,
+                    ),
+                    (0.046, 0.024, 0.046),
+                ),
                 "chest", "surface_detail", "chess_check_light",
             )
 
@@ -5885,7 +5808,13 @@ class PedestrianBuilder:
                 self.add_part(
                     f"ACC_ScarfCheck.{index:02d}",
                     make_box(
-                        (sign * offset, -0.154, height),
+                        (
+                            sign * offset,
+                            self.trunk_surface_y(
+                                height, sign * offset, 0.012
+                            ),
+                            height,
+                        ),
                         (0.042, 0.026, 0.042),
                     ),
                     "chest", "surface_detail", "chess_check_light",
@@ -5893,19 +5822,22 @@ class PedestrianBuilder:
 
         self.add_part(
             "ACC_CoatSeam",
-            make_box((0, -0.126, 0.902), (0.392, 0.014, 0.014)),
+            self.make_trunk_band(0.902, 0.014, 0.006),
             "spine", "surface_detail", "chess_coat_dark",
         )
-        self.add_part(
-            "ACC_CoatButton.01",
-            make_box((0.016, -0.130, 1.040), (0.024, 0.018, 0.026)),
-            "spine", "surface_detail", "chess_crown_dark",
-        )
-        self.add_part(
-            "ACC_CoatButton.02",
-            make_box((0.016, -0.128, 0.944), (0.024, 0.018, 0.026)),
-            "spine", "surface_detail", "chess_crown_dark",
-        )
+        for index, height in enumerate((1.040, 0.944), start=1):
+            self.add_part(
+                f"ACC_CoatButton.{index:02d}",
+                make_box(
+                    (
+                        0.016,
+                        self.trunk_surface_y(height, 0.016, 0.006),
+                        height,
+                    ),
+                    (0.024, 0.018, 0.026),
+                ),
+                "spine", "surface_detail", "chess_crown_dark",
+            )
 
     def build_park_checkers_player_body(self) -> None:
         """The same old man at the other table, under a draught.
@@ -5948,50 +5880,62 @@ class PedestrianBuilder:
         the brow leaves the face open from the park approach.
         """
 
-        self.add_part(
-            "GEO_Head",
-            make_ellipsoid((0, -0.030, 1.528), (0.094, 0.090, 0.132), 12, 6),
-            "head", "body", "checkers_skin",
-        )
-        self.add_part(
-            "GEO_Neck",
-            make_frustum_between((0, -0.012, 1.318), (0, -0.022, 1.452), 0.064, 0.054, 10),
-            "neck", "body", "checkers_skin",
-        )
-        self.add_part(
-            "CLO_CoatChest",
-            make_tapered_box((0, 0.006, 1.080), (0, -0.004, 1.340), (0.400, 0.246, 0), (0.412, 0.258, 0)),
-            "chest", "body", "checkers_coat",
-        )
-        self.add_part(
-            "CLO_CoatWaist",
-            make_tapered_box((0, 0.010, 0.900), (0, 0.006, 1.090), (0.392, 0.248, 0), (0.402, 0.250, 0)),
-            "spine", "body", "checkers_coat",
-        )
-        self.add_part(
-            "CLO_CoatHem",
-            make_tapered_box((0, 0.012, 0.655), (0, 0.010, 0.910), (0.424, 0.272, 0), (0.396, 0.252, 0)),
-            "pelvis", "clothing", "checkers_coat_dark",
+        # Called with the neighbour's numbers on purpose: sharing the
+        # substrate is now what makes "identical below the neck" a fact
+        # rather than two tables of coordinates kept in step by hand.
+        self.build_ordinary_adult_body(
+            skin="checkers_skin",
+            coat="checkers_coat",
+            coat_dark="checkers_coat",
+            trousers="checkers_trousers",
+            shoe="checkers_boot",
+            shoulder_width=0.404,
+            waist_width=0.400,
+            chest_span=(1.080, 1.340),
+            waist_span=(0.900, 1.090),
+            chest_depth=0.124,
+            waist_depth=0.125,
+            seat_name="CLO_CoatHem",
+            seat_material="checkers_coat_dark",
+            lower_stations=(
+                (0.655, 0.212, 0.136, 0.012),
+                (0.739, 0.208, 0.133, 0.011),
+                (0.834, 0.202, 0.129, 0.011),
+                (0.910, 0.198, 0.126, 0.010),
+            ),
+            head_center=(0, -0.030, 1.528),
+            head_radii=(0.094, 0.090, 0.132),
+            neck_span=(1.318, 1.452),
+            neck_radii=(0.064, 0.054),
+            arm_points={
+                "L": (
+                    (0.208, -0.004, 1.292), (0.470, -0.010, 1.175),
+                    (0.680, -0.018, 1.075), (0.764, -0.026, 1.021),
+                ),
+                "R": (
+                    (-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175),
+                    (-0.680, -0.018, 1.075), (-0.764, -0.026, 1.021),
+                ),
+            },
+            leg_points={
+                "L": (
+                    (0.092, 0.006, 0.742), (0.103, -0.012, 0.358),
+                    (0.103, -0.012, 0.352), (0.112, -0.024, 0.128),
+                ),
+                "R": (
+                    (-0.092, 0.006, 0.742), (-0.103, -0.012, 0.358),
+                    (-0.103, -0.012, 0.352), (-0.112, -0.024, 0.128),
+                ),
+            },
+            foot_part_name="Boot",
+            shoe_shape=(0.95, 1.14, 1.30),
         )
         self.add_part(
             "CLO_CoatYoke",
-            make_tapered_box((0, 0.002, 1.180), (0, -0.004, 1.325), (0.444, 0.278, 0), (0.408, 0.256, 0)),
+            self.make_trunk_band(1.252, 0.145, 0.006),
             "chest", "clothing", "checkers_coat_light",
         )
         for side, sign in (("L", 1.0), ("R", -1.0)):
-            shoulder = (sign * 0.208, sign * -0.004, 1.292)
-            elbow = (sign * 0.470, -0.010, 1.175)
-            wrist = (sign * 0.680, -0.018, 1.075)
-            self.add_part(
-                f"CLO_Sleeve.{side}",
-                make_frustum_between(shoulder, elbow, 0.076, 0.062, 10),
-                f"upper_arm.{side}", "clothing", "checkers_coat",
-            )
-            self.add_part(
-                f"CLO_SleeveLower.{side}",
-                make_frustum_between(elbow, wrist, 0.058, 0.046, 8),
-                f"forearm.{side}", "clothing", "checkers_coat",
-            )
             self.add_part(
                 f"CLO_SleeveCuff.{side}",
                 make_frustum_between(
@@ -6000,44 +5944,6 @@ class PedestrianBuilder:
                     0.050, 0.045, 8,
                 ),
                 f"forearm.{side}", "clothing", "checkers_coat_dark",
-            )
-            self.add_part(
-                f"GEO_Hand.{side}",
-                make_box((sign * 0.722, -0.022, 1.048), (0.082, 0.068, 0.056)),
-                f"hand.{side}", "body", "checkers_skin",
-            )
-            self.add_part(
-                f"CLO_TrouserUpper.{side}",
-                make_frustum_between(
-                    (sign * 0.092, 0.006, 0.742),
-                    (sign * 0.103, -0.012, 0.358),
-                    0.084, 0.066, 8,
-                ),
-                f"thigh.{side}", "clothing", "checkers_trousers",
-            )
-            self.add_part(
-                f"CLO_TrouserLower.{side}",
-                make_frustum_between(
-                    (sign * 0.103, -0.012, 0.352),
-                    (sign * 0.112, -0.024, 0.128),
-                    0.070, 0.058, 8,
-                ),
-                f"shin.{side}", "clothing", "checkers_trousers",
-            )
-            self.add_part(
-                f"GEO_Boot.{side}",
-                make_tapered_box(
-                    (sign * 0.112, -0.086, 0.024),
-                    (sign * 0.112, -0.052, 0.140),
-                    (0.106, 0.264, 0),
-                    (0.094, 0.190, 0),
-                ),
-                f"foot.{side}", "body", "checkers_boot",
-            )
-            self.add_part(
-                f"GEO_BootSole.{side}",
-                make_box((sign * 0.112, -0.086, 0.012), (0.110, 0.272, 0.024)),
-                f"foot.{side}", "body", "sole",
             )
 
         # The draught. One piece, worn plate-flat and raked back off the
@@ -6198,32 +6104,27 @@ class PedestrianBuilder:
         for side, sign in (("L", 1.0), ("R", -1.0)):
             self.add_part(
                 f"CLO_ScarfTail.{side}",
-                make_tapered_box(
-                    (sign * 0.052, -0.132, 1.010),
-                    (sign * 0.058, -0.146, 1.330),
-                    (0.086, 0.030, 0),
-                    (0.092, 0.032, 0),
+                self.make_trunk_patch(
+                    (1.010, 1.330), sign * 0.055, (0.043, 0.046), 0.030,
                 ),
                 "chest", "clothing", "checkers_spot_dark",
             )
             self.add_part(
                 f"CLO_Lapel.{side}",
-                make_tapered_box(
-                    (sign * 0.088, -0.128, 1.086),
-                    (sign * 0.132, -0.136, 1.318),
-                    (0.076, 0.028, 0),
-                    (0.104, 0.030, 0),
+                self.make_trunk_patch(
+                    (1.086, 1.318), sign * 0.110, (0.038, 0.052), 0.028,
                 ),
                 "chest", "clothing", "checkers_spot_dark",
             )
             # One on each lapel, where the neighbour carries one square,
             # and deliberately off the tails' diagonal rather than on
             # it: a second run up here crowds the first into a knot.
+            lapel_face = self.trunk_surface_y(1.258, sign * 0.118, 0.028)
             self.add_part(
                 f"ACC_LapelSpot.{side}",
                 make_frustum_between(
-                    (sign * 0.118, -0.144, 1.258),
-                    (sign * 0.118, -0.166, 1.258),
+                    (sign * 0.118, lapel_face, 1.258),
+                    (sign * 0.118, lapel_face - 0.022, 1.258),
                     0.020, 0.020, 10, 1.0,
                 ),
                 "chest", "surface_detail", "checkers_spot_light",
@@ -6258,11 +6159,14 @@ class PedestrianBuilder:
         for side, sign in (("L", 1.0), ("R", -1.0)):
             for offset, height in spot_rows:
                 index += 1
+                tail_face = self.trunk_surface_y(
+                    height, sign * offset, 0.030
+                )
                 self.add_part(
                     f"ACC_ScarfSpot.{index:02d}",
                     make_frustum_between(
-                        (sign * offset, -0.148, height),
-                        (sign * offset, -0.170, height),
+                        (sign * offset, tail_face, height),
+                        (sign * offset, tail_face - 0.022, height),
                         0.016, 0.016, 10, 1.0,
                     ),
                     "chest", "surface_detail", "checkers_spot_light",
@@ -6295,31 +6199,50 @@ class PedestrianBuilder:
         weighbridge never reads as a checkpoint.
         """
 
-        self.add_part(
-            "GEO_Head",
-            make_ellipsoid((0, -0.036, 1.560), (0.100, 0.094, 0.124), 12, 6),
-            "head", "body", "skin",
-        )
-        self.add_part(
-            "GEO_Neck",
-            make_frustum_between((0, -0.010, 1.320), (0, -0.024, 1.470), 0.068, 0.058, 10),
-            "neck", "body", "skin",
-        )
-        # The quilted torso: boxy, widest at the chest, hem at the hips.
-        self.add_part(
-            "CLO_JacketChest",
-            make_tapered_box((0, 0.006, 1.070), (0, -0.006, 1.345), (0.410, 0.250, 0), (0.430, 0.270, 0)),
-            "chest", "body", "weigh_jacket",
-        )
-        self.add_part(
-            "CLO_JacketWaist",
-            make_tapered_box((0, 0.014, 0.870), (0, 0.008, 1.090), (0.400, 0.255, 0), (0.415, 0.255, 0)),
-            "spine", "body", "weigh_jacket",
-        )
-        self.add_part(
-            "CLO_JacketHem",
-            make_tapered_box((0, 0.016, 0.700), (0, 0.014, 0.890), (0.420, 0.272, 0), (0.405, 0.258, 0)),
-            "pelvis", "clothing", "weigh_jacket_dark",
+        self.build_ordinary_adult_body(
+            skin="skin",
+            coat="weigh_jacket",
+            coat_dark="weigh_jacket_dark",
+            trousers="weigh_trousers",
+            shoulder_width=0.430,
+            waist_width=0.410,
+            chest_span=(1.070, 1.345),
+            waist_span=(0.870, 1.090),
+            seat_span=(0.700, 0.890),
+            # The padded hem still overhangs the waist, as it did when it
+            # was a wider box: that flare is the jacket's whole shape.
+            seat_width=0.428,
+            chest_depth=0.128,
+            waist_depth=0.124,
+            seat_depth=0.130,
+            head_center=(0, -0.036, 1.560),
+            head_radii=(0.100, 0.094, 0.124),
+            neck_span=(1.320, 1.470),
+            neck_radii=(0.068, 0.058),
+            arm_points={
+                "L": (
+                    (0.208, -0.004, 1.292), (0.470, -0.010, 1.175),
+                    (0.680, -0.018, 1.075), (0.752, -0.021, 1.040),
+                ),
+                "R": (
+                    (-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175),
+                    (-0.680, -0.018, 1.075), (-0.752, -0.021, 1.040),
+                ),
+            },
+            leg_points={
+                "L": (
+                    (0.096, 0.004, 0.730), (0.103, -0.012, 0.354),
+                    (0.112, -0.022, 0.100),
+                ),
+                "R": (
+                    (-0.096, 0.004, 0.730), (-0.103, -0.012, 0.354),
+                    (-0.112, -0.022, 0.100),
+                ),
+            },
+            foot_part_name="Boot",
+            # A work boot: shorter and squarer than the cafe shoe, and
+            # tall enough to keep the trouser hem off the sole.
+            shoe_shape=(0.94, 1.12, 1.34),
         )
         self.add_part(
             "CLO_Collar",
@@ -6327,19 +6250,6 @@ class PedestrianBuilder:
             "neck", "clothing", "weigh_jacket_dark",
         )
         for side, sign in (("L", 1.0), ("R", -1.0)):
-            shoulder = (sign * 0.208, sign * -0.004, 1.292)
-            elbow = (sign * 0.470, -0.010, 1.175)
-            wrist = (sign * 0.680, -0.018, 1.075)
-            self.add_part(
-                f"CLO_Sleeve.{side}",
-                make_frustum_between(shoulder, elbow, 0.078, 0.064, 10),
-                f"upper_arm.{side}", "clothing", "weigh_jacket",
-            )
-            self.add_part(
-                f"CLO_SleeveLower.{side}",
-                make_frustum_between(elbow, wrist, 0.058, 0.046, 8),
-                f"forearm.{side}", "clothing", "weigh_jacket",
-            )
             self.add_part(
                 f"CLO_SleeveCuff.{side}",
                 make_frustum_between(
@@ -6348,39 +6258,6 @@ class PedestrianBuilder:
                     0.050, 0.044, 8,
                 ),
                 f"forearm.{side}", "clothing", "weigh_jacket_dark",
-            )
-            self.add_part(
-                f"GEO_Hand.{side}",
-                make_box((sign * 0.718, -0.020, 1.055), (0.082, 0.068, 0.056)),
-                f"hand.{side}", "body", "skin",
-            )
-            hip = (sign * 0.096, 0.004, 0.730)
-            knee = (sign * 0.103, -0.012, 0.354)
-            ankle = (sign * 0.112, -0.022, 0.095)
-            self.add_part(
-                f"CLO_TrouserUpper.{side}",
-                make_frustum_between(hip, knee, 0.086, 0.062, 8),
-                f"thigh.{side}", "clothing", "weigh_trousers",
-            )
-            self.add_part(
-                f"CLO_TrouserLower.{side}",
-                make_frustum_between(knee, ankle, 0.060, 0.050, 8),
-                f"shin.{side}", "clothing", "weigh_trousers",
-            )
-            self.add_part(
-                f"GEO_Boot.{side}",
-                make_tapered_box(
-                    (sign * 0.112, -0.085, 0.030),
-                    (sign * 0.112, -0.052, 0.145),
-                    (0.104, 0.260, 0),
-                    (0.092, 0.190, 0),
-                ),
-                f"foot.{side}", "body", "shoe",
-            )
-            self.add_part(
-                f"GEO_BootSole.{side}",
-                make_box((sign * 0.112, -0.085, 0.012), (0.108, 0.268, 0.024)),
-                f"foot.{side}", "body", "sole",
             )
         # The knit cap owns the silhouette and the exact 1.75 m envelope.
         self.add_part(
@@ -6424,39 +6301,34 @@ class PedestrianBuilder:
         """
 
         # Horizontal quilt seams read as the padded jacket's stitching.
-        for index, height in enumerate((1.290, 1.190, 1.090), start=1):
+        # They ring the trunk now: on the shelled torso a straight bar
+        # left the cloth at the ribs and stood out in front like a shelf.
+        for index, height in enumerate(
+            (1.290, 1.190, 1.090, 0.990, 0.905), start=1
+        ):
             self.add_part(
                 f"ACC_QuiltSeam.{index:02d}",
-                make_box((0, -0.148, height), (0.380, 0.014, 0.016)),
+                self.make_trunk_band(height, 0.016),
                 "chest" if height > 1.1 else "spine",
                 "surface_detail", "weigh_jacket_dark",
             )
-        for index, height in enumerate((0.990, 0.905), start=4):
+        for index, height in enumerate((1.240, 1.120, 1.000), start=1):
             self.add_part(
-                f"ACC_QuiltSeam.{index:02d}",
-                make_box((0, -0.142, height), (0.370, 0.014, 0.016)),
-                "spine", "surface_detail", "weigh_jacket_dark",
+                f"ACC_JacketButton.{index:02d}",
+                make_box(
+                    (0.062, self.trunk_surface_y(height, 0.062, 0.006), height),
+                    (0.024, 0.018, 0.024),
+                ),
+                "chest" if height > 1.09 else "spine",
+                "surface_detail", "button",
             )
-        self.add_part(
-            "ACC_JacketButton.01",
-            make_box((0.062, -0.152, 1.240), (0.024, 0.018, 0.024)),
-            "chest", "surface_detail", "button",
-        )
-        self.add_part(
-            "ACC_JacketButton.02",
-            make_box((0.062, -0.148, 1.120), (0.024, 0.018, 0.024)),
-            "chest", "surface_detail", "button",
-        )
-        self.add_part(
-            "ACC_JacketButton.03",
-            make_box((0.062, -0.146, 1.000), (0.024, 0.018, 0.024)),
-            "spine", "surface_detail", "button",
-        )
         # One patch pocket per hip: a working jacket, not a uniform.
         for side, sign in (("L", 1.0), ("R", -1.0)):
             self.add_part(
                 f"ACC_HipPocket.{side}",
-                make_box((sign * 0.130, -0.146, 0.790), (0.110, 0.018, 0.120)),
+                self.make_trunk_patch(
+                    (0.730, 0.850), sign * 0.130, 0.055, 0.016,
+                ),
                 "pelvis", "surface_detail", "weigh_jacket_dark",
             )
         self.add_part(
@@ -6468,6 +6340,485 @@ class PedestrianBuilder:
             ),
             "hand.R", "surface_detail", "chalk",
         )
+
+    def trunk_section(self, height: float) -> tuple[float, float, float]:
+        """Half-width, half-depth and y offset of the trunk at a height."""
+
+        if not self.trunk_stations:
+            raise RuntimeError(
+                "The trunk shell has not been built on this design"
+            )
+        stations = self.trunk_stations
+        if height <= stations[0][0]:
+            return stations[0][1], stations[0][2], stations[0][3]
+        if height >= stations[-1][0]:
+            return stations[-1][1], stations[-1][2], stations[-1][3]
+        for lower, upper in zip(stations, stations[1:]):
+            if lower[0] <= height <= upper[0]:
+                span = upper[0] - lower[0]
+                weight = 0.0 if span <= 0.0 else (height - lower[0]) / span
+                return (
+                    lower[1] + (upper[1] - lower[1]) * weight,
+                    lower[2] + (upper[2] - lower[2]) * weight,
+                    lower[3] + (upper[3] - lower[3]) * weight,
+                )
+        return stations[-1][1], stations[-1][2], stations[-1][3]
+
+    def trunk_surface_y(
+        self,
+        height: float,
+        offset_x: float = 0.0,
+        clearance: float = 0.004,
+    ) -> float:
+        """Front-facing y of the trunk shell directly under a point.
+
+        A detail authored at a fixed y was flush on the old box front and
+        floats in front of the shell that replaced it. Asking for the
+        surface keeps buttons, seams and pockets lying on the cloth.
+        """
+
+        half_width, half_depth, offset_y = self.trunk_section(height)
+        if half_width <= 0.0:
+            return offset_y - half_depth - clearance
+        ratio = min(1.0, abs(offset_x) / half_width)
+        return offset_y - half_depth * math.sqrt(
+            max(0.0, 1.0 - ratio * ratio)
+        ) - clearance
+
+    def make_trunk_band(
+        self,
+        height: float,
+        thickness: float,
+        clearance: float = 0.004,
+    ):
+        """A closed band lying on the trunk: a seam, a belt or a hem.
+
+        Two rings of the trunk section, grown by `clearance`, so the band
+        follows the cloth all the way round instead of ending in mid-air
+        where a straight bar leaves the chest.
+        """
+
+        stations = []
+        for edge in (-thickness * 0.5, thickness * 0.5):
+            half_width, half_depth, offset_y = self.trunk_section(
+                height + edge
+            )
+            stations.append(
+                (
+                    height + edge,
+                    half_width + clearance,
+                    half_depth + clearance,
+                    offset_y,
+                )
+            )
+        return make_vertical_shell(tuple(stations), 12)
+
+    def make_trunk_patch(
+        self,
+        height_span: tuple[float, float],
+        centre_x: float,
+        half_width: float | tuple[float, float],
+        thickness: float = 0.018,
+        columns: int = 3,
+        clearance: float = 0.004,
+    ):
+        """A pocket, lapel or panel curved onto the trunk shell.
+
+        A flat box does not fit a round trunk: over a hip its inner edge
+        sinks into the cloth while its outer edge stands off it. This
+        samples the shell across the patch and rides it, so both edges
+        touch. `half_width` may be a `(low, high)` pair for a panel that
+        tapers, such as a shirt showing through an open collar.
+        """
+
+        low, high = height_span
+        if isinstance(half_width, (int, float)):
+            widths = (float(half_width), float(half_width))
+        else:
+            widths = (float(half_width[0]), float(half_width[1]))
+        vertices: list[Vector] = []
+        for height, width_here in zip((low, high), widths):
+            for index in range(columns + 1):
+                offset_x = centre_x + width_here * (
+                    -1.0 + 2.0 * index / columns
+                )
+                surface_y = self.trunk_surface_y(height, offset_x, clearance)
+                vertices.append(Vector((offset_x, surface_y, height)))
+        inner = len(vertices)
+        for index in range(inner):
+            point = vertices[index]
+            vertices.append(Vector((point.x, point.y - thickness, point.z)))
+        width = columns + 1
+        faces: list[tuple[int, ...]] = []
+        for index in range(columns):
+            low_left = index
+            high_left = width + index
+            faces.append(
+                (low_left, low_left + 1, high_left + 1, high_left)
+            )
+            faces.append(
+                (
+                    inner + high_left,
+                    inner + high_left + 1,
+                    inner + low_left + 1,
+                    inner + low_left,
+                )
+            )
+            faces.append(
+                (inner + low_left, inner + low_left + 1, low_left + 1, low_left)
+            )
+            faces.append(
+                (
+                    high_left,
+                    high_left + 1,
+                    inner + high_left + 1,
+                    inner + high_left,
+                )
+            )
+        faces.append((0, width, inner + width, inner))
+        faces.append(
+            (
+                columns,
+                inner + columns,
+                inner + width + columns,
+                width + columns,
+            )
+        )
+        return vertices, faces
+
+    def build_ordinary_adult_body(
+        self,
+        *,
+        skin: str,
+        coat: str,
+        coat_dark: str,
+        trousers: str,
+        coat_light: str | None = None,
+        shin_material: str | None = None,
+        # A short housecoat sleeve leaves the forearm bare: it becomes
+        # skin under its own name instead of a lower sleeve.
+        bare_forearms: bool = False,
+        shoe: str = "shoe",
+        sole: str = "sole",
+        shoulder_width: float = 0.430,
+        waist_width: float = 0.400,
+        chest_span: tuple[float, float] = (1.055, 1.335),
+        waist_span: tuple[float, float] = (0.855, 1.070),
+        seat_span: tuple[float, float] = (0.690, 0.860),
+        seat_width: float | None = None,
+        chest_depth: float = 0.108,
+        waist_depth: float = 0.103,
+        seat_depth: float = 0.104,
+        # Full z/half-width/half-depth/y station tables, for the designs
+        # the spans-and-widths shorthand above cannot express. The
+        # babushka is the reason: her waist is wider than her chest, and
+        # no monotonic formula draws a barrel.
+        chest_stations: Sequence[tuple[float, float, float, float]] | None = None,
+        waist_stations: Sequence[tuple[float, float, float, float]] | None = None,
+        lower_stations: Sequence[tuple[float, float, float, float]] | None = None,
+        head_center: Sequence[float] = (0.0, -0.036, 1.560),
+        head_radii: Sequence[float] = (0.100, 0.094, 0.124),
+        neck_span: tuple[float, float] = (1.320, 1.470),
+        neck_radii: tuple[float, float] = (0.068, 0.058),
+        ears: bool = True,
+        ear_radii: Sequence[float] = (0.018, 0.012, 0.034),
+        hand_scale: float = 1.0,
+        arm_points: Mapping[str, Sequence[Sequence[float]]] | None = None,
+        leg_points: Mapping[str, Sequence[Sequence[float]]] | None = None,
+        lower_body: str = "trousers",
+        skirt_span: tuple[float, float] = (0.560, 0.880),
+        skirt_widths: tuple[float, float] = (0.560, 0.470),
+        build_thighs: bool = True,
+        # The Ferryman's pelvis shell has to keep its authored name: a
+        # runtime anchor and an asset test both name `CLO_CoatSeat`.
+        seat_name: str | None = None,
+        seat_material: str | None = None,
+        foot_part_name: str = "Shoe",
+        shoe_shape: tuple[float, float, float] = (1.0, 1.0, 1.0),
+    ) -> None:
+        """The shared low-poly adult substrate for the ordinary designs.
+
+        Every design that used to author its trunk as three tapered boxes
+        (twelve triangles each) gets the same shelled chest/waist/seat, the
+        same ellipsoid hands with a real thumb, ears, and profiled limbs
+        that `build_cafe_human_body` already gives the cafe cast.  The
+        anatomy is the only thing shared: dimensions, joint points,
+        palette, headwear, face and every carried prop stay the property
+        of the design's own body and details methods.
+
+        Joint points are arguments rather than constants because three of
+        the designs on this substrate are seated, and a seated hip is not
+        a scaled standing one.  Passing `None` uses the canonical A-pose.
+
+        `lower_body="skirt"` swaps the seat shell and the trouser thighs
+        for one skirt shell over stockings, for the designs whose legs are
+        never separately visible.
+        """
+
+        if lower_body not in {"trousers", "skirt"}:
+            raise ValueError(f"Unknown lower body style: {lower_body}")
+        coat_light = coat_light or coat
+        # A tucked trouser leg is a boot shaft, not cloth: the designs
+        # in kirza boots paint their shin with the footwear instead.
+        shin_material = shin_material or trousers
+        seat_width = waist_width if seat_width is None else seat_width
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid(head_center, head_radii, 14, 8),
+            "head", "body", skin,
+        )
+        if ears:
+            for side, sign in (("L", 1.0), ("R", -1.0)):
+                self.add_part(
+                    f"GEO_Ear.{side}",
+                    make_ellipsoid(
+                        (
+                            sign * (head_radii[0] + 0.002),
+                            head_center[1] + 0.008,
+                            head_center[2] + 0.005,
+                        ),
+                        ear_radii,
+                        6,
+                        3,
+                    ),
+                    "head", "body_detail", skin,
+                )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between(
+                (0, -0.010, neck_span[0]), (0, -0.024, neck_span[1]),
+                neck_radii[0], neck_radii[1], 12,
+            ),
+            "neck", "body", skin,
+        )
+
+        # The trunk: three closed shells where three boxes used to sit.
+        # Widths are read off the design's own shoulder/waist so a stout
+        # figure stays stout - only the cross-section stops being square.
+        chest_low, chest_high = chest_span
+        chest_stations = chest_stations or (
+            (chest_low, waist_width * 0.50, chest_depth * 0.94, 0.008),
+            (chest_low + (chest_high - chest_low) * 0.18,
+             waist_width * 0.51, chest_depth * 0.97, 0.006),
+            (chest_low + (chest_high - chest_low) * 0.43,
+             shoulder_width * 0.48, chest_depth, 0.002),
+            (chest_low + (chest_high - chest_low) * 0.68,
+             shoulder_width * 0.50, chest_depth * 1.04, -0.002),
+            (chest_low + (chest_high - chest_low) * 0.87,
+             shoulder_width * 0.51, chest_depth * 1.05, -0.004),
+            (chest_high, shoulder_width * 0.47, chest_depth * 0.98, -0.004),
+        )
+        self.add_part(
+            "CLO_Chest",
+            make_vertical_shell(chest_stations, 12),
+            "chest", "body", coat,
+        )
+        waist_low, waist_high = waist_span
+        waist_stations = waist_stations or (
+            (waist_low, waist_width * 0.48, waist_depth * 0.97, 0.010),
+            (waist_low + (waist_high - waist_low) * 0.33,
+             waist_width * 0.49, waist_depth * 0.99, 0.010),
+            (waist_low + (waist_high - waist_low) * 0.75,
+             waist_width * 0.50, waist_depth, 0.009),
+            (waist_high, waist_width * 0.50, waist_depth, 0.008),
+        )
+        self.add_part(
+            "CLO_Waist",
+            make_vertical_shell(waist_stations, 12),
+            "spine", "body", coat_dark,
+        )
+        if lower_body == "trousers":
+            seat_low, seat_high = seat_span
+            lower_stations = lower_stations or (
+                (seat_low, seat_width * 0.47, seat_depth * 0.97, 0.010),
+                (seat_low + (seat_high - seat_low) * 0.33,
+                 seat_width * 0.49, seat_depth, 0.011),
+                (seat_low + (seat_high - seat_low) * 0.70,
+                 seat_width * 0.50, seat_depth, 0.010),
+                (seat_high, seat_width * 0.49, seat_depth * 0.99, 0.010),
+            )
+        else:
+            skirt_low, skirt_high = skirt_span
+            hem_width, hip_width = skirt_widths
+            lower_stations = lower_stations or (
+                (skirt_low, hem_width * 0.50, seat_depth * 1.22, 0.010),
+                (skirt_low + (skirt_high - skirt_low) * 0.38,
+                 hip_width * 0.50, seat_depth * 1.16, 0.011),
+                (skirt_low + (skirt_high - skirt_low) * 0.74,
+                 hip_width * 0.49, seat_depth * 1.05, 0.010),
+                (skirt_high, waist_width * 0.49, seat_depth * 0.99, 0.010),
+            )
+        self.add_part(
+            seat_name or (
+                "CLO_Seat" if lower_body == "trousers" else "CLO_Skirt"
+            ),
+            make_vertical_shell(lower_stations, 12),
+            "pelvis", "body", seat_material or coat_dark,
+        )
+        # Remembered so the design's own details method can seat seams,
+        # buttons and pockets ON the shell instead of on the flat front of
+        # the box this substrate replaced. A detail authored for the box
+        # sticks out of the round trunk like a shelf.
+        self.trunk_stations = tuple(
+            sorted(
+                tuple(lower_stations)
+                + tuple(waist_stations)
+                + tuple(chest_stations)
+            )
+        )
+
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            if arm_points is not None:
+                shoulder, elbow, wrist, hand = arm_points[side]
+            else:
+                shoulder = (sign * shoulder_width * 0.49, 0.0, 1.296)
+                elbow = (sign * 0.470, -0.010, 1.176)
+                wrist = (sign * 0.680, -0.018, 1.075)
+                hand = (sign * 0.752, -0.022, 1.038)
+            forearm_name = (
+                f"GEO_Forearm.{side}" if bare_forearms
+                else f"CLO_SleeveLower.{side}"
+            )
+            forearm_profile = (
+                (
+                    (0.0, 0.050, 0.84),
+                    (0.24, 0.053, 0.86),
+                    (0.68, 0.045, 0.83),
+                    (1.0, 0.039, 0.80),
+                ) if bare_forearms else (
+                    (0.0, 0.058, 0.84),
+                    (0.24, 0.061, 0.86),
+                    (0.68, 0.051, 0.83),
+                    (1.0, 0.044, 0.80),
+                )
+            )
+            self.add_part(
+                f"CLO_SleeveUpper.{side}",
+                make_profiled_segment(
+                    shoulder,
+                    elbow,
+                    (
+                        (0.0, 0.058, 0.82),
+                        (0.18, 0.075, 0.86),
+                        (0.62, 0.066, 0.84),
+                        (1.0, 0.057, 0.82),
+                    ),
+                    10,
+                ),
+                f"upper_arm.{side}", "clothing", coat,
+            )
+            self.add_part(
+                forearm_name,
+                make_profiled_segment(elbow, wrist, forearm_profile, 10),
+                f"forearm.{side}",
+                "body" if bare_forearms else "clothing",
+                skin if bare_forearms else coat_light,
+            )
+            wrist_vector = v(wrist)
+            hand_vector = v(hand)
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_ellipsoid(
+                    tuple((wrist_vector + hand_vector) * 0.5),
+                    (
+                        0.046 * hand_scale,
+                        0.035 * hand_scale,
+                        0.060 * hand_scale,
+                    ),
+                    10,
+                    5,
+                    orientation=(hand_vector - wrist_vector).to_track_quat(
+                        "Z", "Y"
+                    ),
+                ),
+                f"hand.{side}", "body", skin,
+            )
+            self.add_part(
+                f"GEO_Thumb.{side}",
+                make_frustum_between(
+                    tuple(
+                        wrist_vector.lerp(hand_vector, 0.28)
+                        + Vector((sign * 0.020, -0.005, -0.002))
+                    ),
+                    tuple(
+                        wrist_vector.lerp(hand_vector, 0.68)
+                        + Vector((sign * 0.036, -0.012, -0.014))
+                    ),
+                    0.017 * hand_scale,
+                    0.012 * hand_scale,
+                    6,
+                    0.82,
+                ),
+                f"hand.{side}", "body_detail", skin,
+            )
+
+            if leg_points is not None:
+                # Four points split the knee: a design that spends its
+                # life with the knee folded needs each leg part to stop
+                # exactly at its own bone head, or the shin swings out
+                # through the thigh.
+                if len(leg_points[side]) == 4:
+                    hip, knee, shin_top, ankle = leg_points[side]
+                else:
+                    hip, knee, ankle = leg_points[side]
+                    shin_top = knee
+            else:
+                hip = (sign * 0.092, 0.006, 0.734)
+                knee = (sign * 0.103, -0.011, 0.355)
+                shin_top = knee
+                ankle = (sign * 0.112, -0.022, 0.100)
+            thigh_name = "CLO_Thigh" if lower_body == "trousers" else "CLO_Hose"
+            shin_name = "CLO_Shin" if lower_body == "trousers" else "CLO_Stocking"
+            # A floor-length coat swallows the thigh whole. Building one
+            # inside it would spend the density where nobody can see it.
+            if build_thighs:
+                self.add_part(
+                    f"{thigh_name}.{side}",
+                    make_profiled_segment(
+                        hip,
+                        knee,
+                        (
+                            (0.0, 0.084, 0.88),
+                            (0.22, 0.089, 0.90),
+                            (0.68, 0.074, 0.86),
+                            (1.0, 0.066, 0.84),
+                        ),
+                        10,
+                    ),
+                    f"thigh.{side}", "clothing", trousers,
+                )
+            self.add_part(
+                f"{shin_name}.{side}",
+                make_profiled_segment(
+                    shin_top,
+                    ankle,
+                    (
+                        (0.0, 0.066, 0.84),
+                        (0.20, 0.071, 0.87),
+                        (0.58, 0.062, 0.84),
+                        (1.0, 0.052, 0.81),
+                    ),
+                    10,
+                ),
+                f"shin.{side}", "clothing", shin_material,
+            )
+            length_scale, width_scale, height_scale = shoe_shape
+            self.add_part(
+                f"GEO_{foot_part_name}.{side}",
+                make_cafe_shoe(
+                    ankle[0], length_scale, width_scale, height_scale,
+                ),
+                f"foot.{side}", "body", shoe,
+            )
+            self.add_part(
+                f"GEO_{foot_part_name}Sole.{side}",
+                make_box(
+                    (ankle[0], -0.090 * length_scale, 0.012),
+                    (0.132 * width_scale, 0.260 * length_scale, 0.024),
+                ),
+                f"foot.{side}", "footwear_detail", sole,
+            )
 
     def build_cafe_human_body(
         self,

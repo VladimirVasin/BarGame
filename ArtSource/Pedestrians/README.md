@@ -160,11 +160,24 @@ Rebuild from the repository root with Blender 5:
 Add `-- --archetype kettle_hat` to iterate on one design without rebuilding the
 shared library or the contact sheet.
 
-The generator validates each `1.75 m` grounded silhouette, its lightweight
+The generator validates each `1.75 m` grounded silhouette, its
 triangle budget, one source material, rigid weights, non-emissive and
 collider-free model exports, no model-local Actions, and the exact 31-bone
 Generic names, hierarchy and rest pose of `PlayerCharacter3DV2`. It writes the
 production FBXs and manifests under `Assets/Pedestrians/Models/`.
+
+Seven designs — the six that roam the city and the Ferryman — share one body.
+`PedestrianBuilder.build_ordinary_adult_body` draws their chest, waist and
+seat as closed shells, their hands as ellipsoids with a thumb, and their
+limbs as profiled segments, which is the anatomy Hero V2 and the mountain-cafe
+cast already had and the rest of the library did not: a trunk used to be one
+twelve-triangle box. Each design still owns its own dimensions, joint points,
+palette, headwear, face and props; only the body underneath is shared. Two
+helpers exist for the consequence — a detail drawn flush on a flat box front
+stands off a round trunk like a shelf, so `make_trunk_band` rings the shell
+for quilt seams and hems and `make_trunk_patch` curves pockets, lapels,
+aprons and scarf tails onto it. Their budget floors are `1,800`, so a return
+to box torsos fails the build.
 
 The Pipeback Roller takes a separate staged output branch:
 

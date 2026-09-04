@@ -243,6 +243,561 @@ MonoBehaviour:
       height: 0.7055
     baseMapTransform: {x: 0.31642333, y: 0.34983727, z: 0.32437226, w: 0.32156235}
     renderer: {fileID: 7140205439259180135}
+  - sourceName: DRESS_UpperCorridor.HangingShawl
+    role: upper_hanging_cloth
+    group: fixed
+    sheet: BookCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.28, g: 0.33, b: 0.4, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -2.320588
+      y: 0.41323528
+      width: 3.6588235
+      height: 5.5514708
+    baseMapTransform: {x: 0.06745616, y: 0.044458523, z: 0.15813287, w: -0.016776934}
+    renderer: {fileID: 4507133140963964355}
+  - sourceName: DRESS_UpperCorridor.HighShelf
+    role: upper_corridor_shelf
+    group: fixed
+    sheet: PaleWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.42, g: 0.29, b: 0.16, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -1.8
+      y: -0.95652175
+      width: 2.7565217
+      height: 5.738261
+    baseMapTransform: {x: 0.08953682, y: 0.043011323, z: 0.91276115, w: 0.04273616}
+    renderer: {fileID: 5669874435887497214}
+  - sourceName: DRESS_UpperCorridor.LinenChest
+    role: upper_linen_chest
+    group: fixed
+    sheet: Wicker
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.52, g: 0.38, b: 0.18, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -5.586364
+      y: 5.1704545
+      width: 12.060909
+      height: 2.270455
+    baseMapTransform: {x: 0.020463647, y: 0.10870518, z: 0.3659123, w: -0.56046027}
+    renderer: {fileID: 8004549431563457474}
+  - sourceName: DRESS_UpperCorridor.Pail
+    role: upper_corridor_pail
+    group: fixed
+    sheet: PaintedMetal
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.56, g: 0.52, b: 0.4, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.56
+      y: -3.6126306
+      width: 0.85099983
+      height: 8.381308
+    baseMapTransform: {x: 0.2900238, y: 0.029447695, z: 1.2840797, w: 0.35797855}
+    renderer: {fileID: 4251304641281203211}
+  - sourceName: DRESS_UpperCorridor.PegRail
+    role: upper_peg_rail
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.14, g: 0.05, b: 0.025, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -1.7759091
+      y: 0.27272728
+      width: 2.8668182
+      height: 4.397727
+    baseMapTransform: {x: 0.08609203, y: 0.056122217, z: 0.90448654, w: 0.73628885}
+    renderer: {fileID: 5168642348342609386}
+  - sourceName: DRESS_UpperCorridor.Runner
+    role: upper_corridor_runner
+    group: fixed
+    sheet: Rug
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.32, g: 0.16, b: 0.095, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -2.0333333
+      y: -1.6968001
+      width: 3.6333332
+      height: 4.071467
+    baseMapTransform: {x: 0.06792942, y: 0.060619477, z: 0.63971806, w: 0.60445404}
+    renderer: {fileID: 5124331195105339293}
+  - sourceName: DRESS_UpperCorridor.ShelfLinen
+    role: upper_shelf_linen
+    group: fixed
+    sheet: TeaCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.81, g: 0.78, b: 0.69, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -2.1605263
+      y: -0.99526316
+      width: 3.2026315
+      height: 6.9826317
+    baseMapTransform: {x: 0.07706481, y: 0.0353463, z: 0.66809547, w: 0.036773767}
+    renderer: {fileID: 1841545920240813556}
+  - sourceName: DRESS_UpperNorth.Bedding
+    role: upper_double_bedding
+    group: fixed
+    sheet: TeaCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.72, g: 0.66, b: 0.55, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 2
+      y: 2.0473685
+      width: 1.9526317
+      height: 2.4421048
+    baseMapTransform: {x: 0.12639874, y: 0.10106454, z: 0.24879742, w: -0.20532146}
+    renderer: {fileID: 5557919267536384657}
+  - sourceName: DRESS_UpperNorth.Bedside
+    role: upper_bedroom_bedside
+    group: fixed
+    sheet: PaleWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.44, g: 0.31, b: 0.17, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 1.3869566
+      y: 2.9826088
+      width: 1.9782606
+      height: 0.63695645
+    baseMapTransform: {x: 0.12476122, y: 0.38748363, z: 0.57855654, w: -1.1541172}
+    renderer: {fileID: 1872142449042714886}
+  - sourceName: DRESS_UpperNorth.CeilingLamp
+    role: upper_ceiling_lamp
+    group: fixed
+    sheet: PaintedMetal
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.58, g: 0.53, b: 0.4, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 1.12
+      y: 1.52
+      width: 0.66999996
+      height: 4.38
+    baseMapTransform: {x: 0.36837345, y: 0.05634936, z: -0.16098337, w: 0.16594388}
+    renderer: {fileID: 5862186324479366587}
+  - sourceName: DRESS_UpperNorth.Chair
+    role: upper_bedroom_chair
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.15, g: 0.055, b: 0.026, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 0.6409091
+      y: 2.4818182
+      width: 2.2522726
+      height: 1.5795455
+    baseMapTransform: {x: 0.10958274, y: 0.15625393, z: 0.68136233, w: 0.36380103}
+    renderer: {fileID: 7950284297948871007}
+  - sourceName: DRESS_UpperNorth.ChairClothes
+    role: upper_folded_clothes
+    group: fixed
+    sheet: BookCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.29, g: 0.34, b: 0.42, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 0.85882354
+      y: 3.2941177
+      width: 2.8617647
+      height: 1.9352944
+    baseMapTransform: {x: 0.08624406, y: 0.12753108, z: -0.07247353, w: -0.4185075}
+    renderer: {fileID: 8841893500538411681}
+  - sourceName: DRESS_UpperNorth.Chest
+    role: upper_bedroom_chest
+    group: fixed
+    sheet: PaleWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.42, g: 0.29, b: 0.16, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -1.4152174
+      y: 2.854348
+      width: 4.8
+      height: 0.9195652
+    baseMapTransform: {x: 0.05141879, y: 0.2683988, z: 0.82436365, w: -0.76450866}
+    renderer: {fileID: 3866363672930318048}
+  - sourceName: DRESS_UpperNorth.Coverlet
+    role: upper_double_coverlet
+    group: fixed
+    sheet: BookCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.3, g: 0.36, b: 0.44, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 2.2470589
+      y: 2.2470589
+      width: 1.9294119
+      height: 2.7768764
+    baseMapTransform: {x: 0.12791991, y: 0.08888051, z: -0.28584868, w: -0.19812484}
+    renderer: {fileID: 180308779806714601}
+  - sourceName: DRESS_UpperNorth.Curtain
+    role: upper_window_curtain
+    group: fixed
+    sheet: BedLinen
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.33, g: 0.27, b: 0.18, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -1.9916667
+      y: 4.088889
+      width: 6.139445
+      height: 2.2022223
+    baseMapTransform: {x: 0.040200736, y: 0.11207324, z: 0.33166137, w: 0.043339837}
+    renderer: {fileID: 7580987504714827239}
+  - sourceName: DRESS_UpperNorth.HangingRobe
+    role: upper_hanging_robe
+    group: fixed
+    sheet: BookCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.31, g: 0.36, b: 0.44, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 0.19705883
+      y: 0.20441176
+      width: 1.5588235
+      height: 5.8426466
+    baseMapTransform: {x: 0.15833108, y: 0.042242877, z: -0.02960564, w: -0.0070400448}
+    renderer: {fileID: 8871424879407847146}
+  - sourceName: DRESS_UpperNorth.LampBulb
+    role: upper_lamp_bulb
+    group: fixed
+    sheet: Ceramic
+    emissive: 1
+    castsShadows: 0
+    tint: {r: 1, g: 0.8, b: 0.52, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 1.7892858
+      y: 2.3607144
+      width: 0.6872679
+      height: 5.596429
+    baseMapTransform: {x: 0.3591179, y: 0.044101372, z: -0.64096963, w: 0.14748415}
+    renderer: {fileID: 3172817240950747016}
+  - sourceName: DRESS_UpperNorth.PegRail
+    role: upper_bedroom_pegs
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.14, g: 0.05, b: 0.025, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 0.073181815
+      y: 0.073181815
+      width: 1.5631818
+      height: 4.660909
+    baseMapTransform: {x: 0.15788963, y: 0.052953232, z: 0.74004024, w: 0.7477197}
+    renderer: {fileID: 3324560186530808410}
+  - sourceName: DRESS_UpperNorth.Rug
+    role: upper_bedside_rug
+    group: fixed
+    sheet: Rug
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.33, g: 0.15, b: 0.085, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 1.0333333
+      y: 1.3371733
+      width: 1.2
+      height: 1.0401601
+    baseMapTransform: {x: 0.20567515, y: 0.23728098, z: 0.2890639, w: 0.1843091}
+    renderer: {fileID: 1610924326896066421}
+  - sourceName: DRESS_UpperNorth.Slippers
+    role: upper_slippers
+    group: fixed
+    sheet: BedLinen
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.33, g: 0.26, b: 0.17, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 1.8638889
+      y: 2.4819446
+      width: 0.9277779
+      height: 1.559722
+    baseMapTransform: {x: 0.26602295, y: 0.15823987, z: -0.24424231, w: 0.10885231}
+    renderer: {fileID: 8568661448101635378}
+  - sourceName: DRESS_UpperNorth.Trunk
+    role: upper_bedroom_trunk
+    group: fixed
+    sheet: PaleWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.4, g: 0.27, b: 0.15, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 1.0973912
+      y: 1.0973912
+      width: 2.0069566
+      height: 2.4347825
+    baseMapTransform: {x: 0.122977346, y: 0.10136848, z: 0.6166406, w: -0.109645985}
+    renderer: {fileID: 3199668194994183184}
+  - sourceName: DRESS_UpperNorth.TrunkLinen
+    role: upper_folded_linen
+    group: fixed
+    sheet: TeaCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.8, g: 0.77, b: 0.68, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 1.4210527
+      y: 1.4210527
+      width: 1.6442103
+      height: 3.0410526
+    baseMapTransform: {x: 0.15010865, y: 0.081159465, z: 0.2882826, w: -0.11373698}
+    renderer: {fileID: 7006888765747773717}
+  - sourceName: DRESS_UpperNorth.Washstand
+    role: upper_washstand
+    group: fixed
+    sheet: PaintedMetal
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.6, g: 0.56, b: 0.44, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -1.485
+      y: 3.4
+      width: 5.248875
+      height: 1.2149997
+    baseMapTransform: {x: 0.04702154, y: 0.20313603, z: 0.3214219, w: -0.4390676}
+    renderer: {fileID: 93498584935518421}
+  - sourceName: DRESS_UpperSouth.Basket
+    role: upper_laundry_basket
+    group: fixed
+    sheet: Wicker
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.54, g: 0.4, b: 0.19, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -2.8636365
+      y: -2.8846192
+      width: 9.954546
+      height: 10.268255
+    baseMapTransform: {x: 0.024793718, y: 0.024036236, z: 0.3225951, w: 0.07093029}
+    renderer: {fileID: 3337553841196917522}
+  - sourceName: DRESS_UpperSouth.Bedding
+    role: upper_child_bedding
+    group: fixed
+    sheet: BedLinen
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.36, g: 0.3, b: 0.2, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -4.172222
+      y: -4.172222
+      width: 7.5277777
+      height: 8.833334
+    baseMapTransform: {x: 0.032786597, y: 0.027940774, z: 0.38838786, w: 0.61817}
+    renderer: {fileID: 8083711836261015286}
+  - sourceName: DRESS_UpperSouth.Casework
+    role: upper_child_casework
+    group: fixed
+    sheet: PaleWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.44, g: 0.31, b: 0.17, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.0869565
+      y: -3.081739
+      width: 4.626087
+      height: 7.2626085
+    baseMapTransform: {x: 0.053351827, y: 0.033983685, z: 0.9162897, w: 0.10632374}
+    renderer: {fileID: 7698785723438198673}
+  - sourceName: DRESS_UpperSouth.CeilingLamp
+    role: upper_child_lamp
+    group: fixed
+    sheet: PaintedMetal
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.55, g: 0.5, b: 0.38, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -1.7871231
+      y: -1.8025
+      width: 3.0396233
+      height: 7.7025003
+    baseMapTransform: {x: 0.08119763, y: 0.03204287, z: 0.39670506, w: 0.30935216}
+    renderer: {fileID: 8696628987995001136}
+  - sourceName: DRESS_UpperSouth.Curtain
+    role: upper_window_curtain
+    group: fixed
+    sheet: BedLinen
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.35, g: 0.3, b: 0.21, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -4.1694446
+      y: -4.1569443
+      width: 3.663889
+      height: 10.448055
+    baseMapTransform: {x: 0.067362905, y: 0.023622597, z: 0.5324608, w: 0.5997927}
+    renderer: {fileID: 1686625339293399587}
+  - sourceName: DRESS_UpperSouth.DustSheet
+    role: upper_dust_sheet
+    group: fixed
+    sheet: TeaCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.78, g: 0.75, b: 0.66, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.8105261
+      y: -3.8105261
+      width: 7.0578947
+      height: 8.482105
+    baseMapTransform: {x: 0.03496938, y: 0.029097753, z: 0.6348466, w: 0.112472646}
+    renderer: {fileID: 1159247750316481216}
+  - sourceName: DRESS_UpperSouth.LampBulb
+    role: upper_child_lamp_bulb
+    group: fixed
+    sheet: Ceramic
+    emissive: 1
+    castsShadows: 0
+    tint: {r: 1, g: 0.86, b: 0.62, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -2.5482824
+      y: -2.5781224
+      width: 4.3447113
+      height: 10.453836
+    baseMapTransform: {x: 0.05680704, y: 0.023609534, z: 0.14635527, w: 0.31246316}
+    renderer: {fileID: 8579378665445788825}
+  - sourceName: DRESS_UpperSouth.LinenPress
+    role: upper_linen_press
+    group: fixed
+    sheet: PaleWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.43, g: 0.3, b: 0.17, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -0.64869565
+      y: -0.64869565
+      width: 2.6278262
+      height: 4.7169566
+    baseMapTransform: {x: 0.09392181, y: 0.052324034, z: 0.8125216, w: 0.03553727}
+    renderer: {fileID: 8850857309819377783}
+  - sourceName: DRESS_UpperSouth.PressSheet
+    role: upper_press_sheet
+    group: fixed
+    sheet: TeaCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.79, g: 0.76, b: 0.67, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -0.79473686
+      y: -0.79473686
+      width: 3.2026315
+      height: 5.763158
+    baseMapTransform: {x: 0.07706481, y: 0.042825513, z: 0.5628412, w: 0.03562991}
+    renderer: {fileID: 4490888614786230582}
+  - sourceName: DRESS_UpperSouth.RolledRug
+    role: upper_rolled_rug
+    group: fixed
+    sheet: Rug
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.3, g: 0.14, b: 0.08, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -2.3999999
+      y: -2.3999999
+      width: 1.4799998
+      height: 4.9366665
+    baseMapTransform: {x: 0.16676368, y: 0.049995314, z: 0.9018277, w: 0.62158364}
+    renderer: {fileID: 5187278012945210615}
+  - sourceName: DRESS_UpperSouth.Table
+    role: upper_child_table
+    group: fixed
+    sheet: PaleWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.45, g: 0.32, b: 0.18, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.252174
+      y: -3.241739
+      width: 3.9913044
+      height: 6.85913
+    baseMapTransform: {x: 0.061836977, y: 0.035982728, z: 0.9526995, w: 0.11824151}
+    renderer: {fileID: 1086930533185426814}
+  - sourceName: DRESS_UpperSouth.Trunk
+    role: upper_child_trunk
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.14, g: 0.05, b: 0.025, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.2436364
+      y: -3.2327273
+      width: 7.0345454
+      height: 6.9527273
+    baseMapTransform: {x: 0.03508545, y: 0.03549833, z: 0.86539936, w: 0.8663513}
+    renderer: {fileID: 8956689108220100399}
+  - sourceName: DRESS_UpperSouth.TrunkBlankets
+    role: upper_folded_blankets
+    group: fixed
+    sheet: BookCloth
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.3, g: 0.35, b: 0.43, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -4.105882
+      y: -4.105882
+      width: 8.894117
+      height: 9.151764
+    baseMapTransform: {x: 0.027749825, y: 0.026968593, z: 0.115532406, w: 0.11232476}
+    renderer: {fileID: 5009443422403668300}
+  - sourceName: DRESS_UpperSouth.WoodenToy
+    role: upper_wooden_toy
+    group: fixed
+    sheet: PaleWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.52, g: 0.36, b: 0.19, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.3778799
+      y: -3.396454
+      width: 2.6464016
+      height: 7.4086275
+    baseMapTransform: {x: 0.09326256, y: 0.03331389, z: 1.0666246, w: 0.11474399}
+    renderer: {fileID: 5520882066312283865}
   - sourceName: DRESS_WallClock.Body
     role: wall_clock
     group: fixed
@@ -648,6 +1203,21 @@ MonoBehaviour:
       height: 3.5835714
     baseMapTransform: {x: 0.069106854, y: 0.06887269, z: 0.375, w: 0.8498369}
     renderer: {fileID: 8926195971594530097}
+  - sourceName: FIX_UpperChimney
+    role: upper_chimney
+    group: fixed
+    sheet: Concrete
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.6, g: 0.55, b: 0.45, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -0.21874999
+      y: 1.475
+      width: 1.8395834
+      height: 0.98333347
+    baseMapTransform: {x: 0.13416636, y: 0.2509934, z: 0.7809438, w: 0.13137963}
+    renderer: {fileID: 1039521487817196514}
   - sourceName: FIX_UpperDoorFrames
     role: upper_door_frame
     group: fixed
@@ -678,6 +1248,66 @@ MonoBehaviour:
       height: 4.99625
     baseMapTransform: {x: 0.03948963, y: 0.04939909, z: 0.625, w: 0.875}
     renderer: {fileID: 6825216009458014892}
+  - sourceName: FIX_UpperNorth.Bed
+    role: upper_double_bed
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.135, g: 0.048, b: 0.024, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 1.6818182
+      y: 1.6818182
+      width: 1.8181818
+      height: 2.6727273
+    baseMapTransform: {x: 0.13574561, y: 0.09234395, z: 0.52329546, w: 0.59628916}
+    renderer: {fileID: 5737795219498546906}
+  - sourceName: FIX_UpperNorth.Wardrobe
+    role: upper_wardrobe
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.125, g: 0.045, b: 0.022, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: 0.106818184
+      y: 0.106818184
+      width: 3.5113637
+      height: 4.884091
+    baseMapTransform: {x: 0.070288986, y: 0.0505335, z: 0.74408674, w: 0.746197}
+    renderer: {fileID: 4447940771590726531}
+  - sourceName: FIX_UpperNorth.WindowFrame
+    role: upper_window_frame
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -1.5454546
+      y: 3.429091
+      width: 5.2909093
+      height: 1.6890907
+    baseMapTransform: {x: 0.046647973, y: 0.14612016, z: 0.82368726, w: 0.25053558}
+    renderer: {fileID: 987901413457505035}
+  - sourceName: FIX_UpperNorth.WindowGlass
+    role: upper_window_glass
+    group: fixed
+    sheet: Glass
+    emissive: 0
+    castsShadows: 0
+    tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -1.535
+      y: 3.811
+      width: 5.35968
+      height: 1.6839998
+    baseMapTransform: {x: 0.046049427, y: 0.14656189, z: 0.57228076, w: -0.30695248}
+    renderer: {fileID: 6178480001025311805}
   - sourceName: FIX_UpperPartitions
     role: upper_partition
     group: fixed
@@ -693,6 +1323,66 @@ MonoBehaviour:
       height: 5.2073684
     baseMapTransform: {x: 0.052104376, y: 0.04739634, z: 0.111288324, w: 0.851227}
     renderer: {fileID: 8754462885076163961}
+  - sourceName: FIX_UpperSkirting
+    role: upper_skirting
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.135, g: 0.048, b: 0.024, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.6363637
+      y: -3.6363637
+      width: 8.072727
+      height: 7.2727275
+    baseMapTransform: {x: 0.030573336, y: 0.0339364, z: 0.8627707, w: 0.875}
+    renderer: {fileID: 2790313795801631937}
+  - sourceName: FIX_UpperSouth.Bed
+    role: upper_child_bed
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.145, g: 0.052, b: 0.026, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.4545455
+      y: -3.4399998
+      width: 6.227273
+      height: 7.5763636
+    baseMapTransform: {x: 0.03963375, y: 0.03257634, z: 0.8885115, w: 0.86365753}
+    renderer: {fileID: 4219688727169386434}
+  - sourceName: FIX_UpperSouth.WindowFrame
+    role: upper_window_frame
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint: {r: 0.38, g: 0.17, b: 0.07, a: 1}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.7454545
+      y: -3.7345452
+      width: 3.4727273
+      height: 8.852727
+    baseMapTransform: {x: 0.071071, y: 0.027879568, z: 1.017788, w: 0.8557124}
+    renderer: {fileID: 4955934981828517849}
+  - sourceName: FIX_UpperSouth.WindowGlass
+    role: upper_window_glass
+    group: fixed
+    sheet: Glass
+    emissive: 0
+    castsShadows: 0
+    tint: {r: 0.16, g: 0.24, b: 0.28, a: 0.65}
+    sourceUvBounds:
+      serializedVersion: 2
+      x: -3.82468
+      y: -3.829
+      width: 3.3596802
+      height: 9.323999
+    baseMapTransform: {x: 0.07346241, y: 0.026470423, z: 0.7825651, w: 0.35295016}
+    renderer: {fileID: 3900904974867058158}
   - sourceName: FIX_UpperStairGuards
     role: stair_guard
     group: fixed
@@ -893,8 +1583,20 @@ MonoBehaviour:
     - sheet: Fire
       column: 3
       row: 1
+    - sheet: BookCloth
+      column: 0
+      row: 0
+    - sheet: Wicker
+      column: 1
+      row: 0
+    - sheet: TeaCloth
+      column: 2
+      row: 0
+    - sheet: PaleWood
+      column: 3
+      row: 0
   localBounds:
-    m_Center: {x: 0, y: 2.9299998, z: 0.00000047683716}
+    m_Center: {x: 0, y: 2.9299996, z: 0.00000047683716}
     m_Extent: {x: 5.12, y: 3.1100001, z: 4.12}
   dimensions:
     width: 10
@@ -903,10 +1605,10 @@ MonoBehaviour:
     wallThickness: 0.24
     doorWidth: 1.3
     doorHeight: 2.2
-  sourceTriangleCount: 7200
-  sourceGeneratorVersion: 1.4.1
+  sourceTriangleCount: 12836
+  sourceGeneratorVersion: 1.5.0
   designId: mothers_house_interior_v1
-  buildSignature: efd6f0076db459cee505ae79d4f783a2907830ecd2999f21ece9cc4481e6f53e
+  buildSignature: 69154636b0fb68312a8dce29dd0a8327fb25de88ad9a1ccdd47e47a95e133752
 --- !u!1001 &4490380615483208827
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -915,7 +1617,19 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6889096280518319373}
     m_Modifications:
+    - target: {fileID: -9161020008944303688, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -9159997977488079492, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -8940969140034119688, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -8872564147564579911, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -959,6 +1673,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8614325020494366315, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8614325020494366315, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8614325020494366315, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -8604171893531664961, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -967,7 +1693,15 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -8360620282002455909, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -8143062034342594615, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -8038295860477528543, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1007,6 +1741,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -7428644713410987846, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -7207412937417595301, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1019,7 +1757,31 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -6365232501820766851, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -6350228164544089713, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -6338202659794588914, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -6252947161392329128, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -5888613952725324101, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -5787982501089937460, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -5673263467169701627, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1043,7 +1805,19 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -4840916043521171822, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -4518465261529720153, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -4285871360013947892, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -4229820629810421103, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1055,6 +1829,18 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -3944843141917755166, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3944843141917755166, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3944843141917755166, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7099587ab09c75d4284cccb7fc96843f, type: 2}
     - target: {fileID: -3509562988361880149, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -1067,6 +1853,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 7099587ab09c75d4284cccb7fc96843f, type: 2}
+    - target: {fileID: -3367331133757315143, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -3136188645921264387, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1083,7 +1873,39 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -1445840526823313338, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1445840526823313338, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1445840526823313338, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -1081293120944387195, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -1012826977552825695, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -905017638933821718, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: -472644110944733028, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -455460878953338740, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -390108944724448350, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1091,7 +1913,19 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -300589846389023433, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 1088543187328333, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 241271926044537036, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 337385602739873904, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1115,6 +1949,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: Model
       objectReference: {fileID: 0}
+    - target: {fileID: 1153017067216394089, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 1312386036698146923, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 1322111161054239731, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1322111161054239731, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1322111161054239731, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7099587ab09c75d4284cccb7fc96843f, type: 2}
     - target: {fileID: 1500167904164499590, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1135,6 +1989,14 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 3475677381758810009, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 3739309823419785072, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 3756977374425000115, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1143,7 +2005,15 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 4547831980539536558, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 4704056689913758959, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 4764109300630850388, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1151,7 +2021,19 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 4964583252602941146, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 5021863854238800202, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 5107548840666572107, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 5240792833841140041, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1167,11 +2049,27 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 7099587ab09c75d4284cccb7fc96843f, type: 2}
+    - target: {fileID: 5655980674882497165, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 5765764289373048100, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 5825798173403098999, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 6090728940929604586, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 6109319697309906024, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 6297187422146851228, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1195,6 +2093,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 7099587ab09c75d4284cccb7fc96843f, type: 2}
+    - target: {fileID: 6875995343712908654, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 6983113438014795479, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1211,7 +2113,23 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8001667317418418624, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8272854808809140898, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 8595215241057895991, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8740432936976372710, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8785324079917674897, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
@@ -1224,6 +2142,16 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+--- !u!23 &93498584935518421 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4547831980539536558, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &180308779806714601 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -4840916043521171822, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &489616567240282016 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5144660207352284197, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
@@ -1249,6 +2177,26 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3756977374425000115, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &987901413457505035 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3739309823419785072, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1039521487817196514 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3475677381758810009, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1086930533185426814 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -5673263467169701627, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1159247750316481216 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -5888613952725324101, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &1296471492778148791 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5787982501089937460, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
@@ -1259,9 +2207,29 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 3166625318716375973, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &1610924326896066421 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6338202659794588914, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1686625339293399587 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6252947161392329128, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1711505380933860100 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -6228068770232512641, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1841545920240813556 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6350228164544089713, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1872142449042714886 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6365232501820766851, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1965304013762139145 stripped
@@ -1319,9 +2287,24 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -7492974232163528187, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &2790313795801631937 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7428644713410987846, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &3062627663916557565 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1500167904164499590, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3172817240950747016 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1322111161054239731, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3199668194994183184 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1312386036698146923, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &3217954656391222845 stripped
@@ -1332,6 +2315,16 @@ MeshRenderer:
 --- !u!23 &3292862251336743929 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -7790222790332444798, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3324560186530808410 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -8038295860477528543, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3337553841196917522 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1153017067216394089, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &3508024119984063410 stripped
@@ -1352,6 +2345,16 @@ MeshRenderer:
 --- !u!4 &3793630699949866123 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8433933248032536336, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3866363672930318048 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -8360620282002455909, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3900904974867058158 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -8614325020494366315, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &3925420903876148859 stripped
@@ -1379,9 +2382,34 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &4219688727169386434 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -8872564147564579911, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4251304641281203211 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 337385602739873904, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &4397803420820800695 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 241271926044537036, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4447940771590726531 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -8940969140034119688, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4490888614786230582 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1088543187328333, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4507133140963964355 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -9161020008944303688, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &4517162378121179399 stripped
@@ -1404,9 +2432,34 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -378060353946735903, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &4955934981828517849 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -390108944724448350, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5009443422403668300 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -300589846389023433, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5124331195105339293 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8740432936976372710, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &5125621734633393383 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -472644110944733028, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5168642348342609386 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8785324079917674897, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5187278012945210615 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -455460878953338740, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &5267346621031166540 stripped
@@ -1419,9 +2472,39 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8488461578033070812, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &5520882066312283865 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8272854808809140898, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5557919267536384657 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -905017638933821718, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5669874435887497214 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -1081293120944387195, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5737795219498546906 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -1012826977552825695, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &5770679022299912536 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 7945643455027424547, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5862186324479366587 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8001667317418418624, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &6178480001025311805 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -1445840526823313338, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &6216641043315697624 stripped
@@ -1437,6 +2520,11 @@ MeshRenderer:
 --- !u!23 &6825216009458014892 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6983113438014795479, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7006888765747773717 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6875995343712908654, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &7082666782734070386 stripped
@@ -1469,6 +2557,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6608105235075200134, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &7580987504714827239 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6297187422146851228, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &7650222041543661702 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -3136188645921264387, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
@@ -1479,6 +2572,16 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6109319697309906024, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &7698785723438198673 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6090728940929604586, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7950284297948871007 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5765764289373048100, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &7964736829148797708 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5825798173403098999, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
@@ -1487,6 +2590,16 @@ MeshRenderer:
 --- !u!4 &7977133820578512216 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -3394181876544763613, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8004549431563457474 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -3367331133757315143, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8083711836261015286 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5655980674882497165, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &8149983081159842256 stripped
@@ -1509,9 +2622,39 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5253596202503581117, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &8568661448101635378 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5240792833841140041, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8579378665445788825 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -3944843141917755166, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8696628987995001136 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5107548840666572107, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &8754462885076163961 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4094034859249145598, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8841893500538411681 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4964583252602941146, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8850857309819377783 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -4285871360013947892, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8871424879407847146 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -4229820629810421103, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &8918731562696184183 stripped
@@ -1522,6 +2665,11 @@ MeshRenderer:
 --- !u!23 &8926195971594530097 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5021863854238800202, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
+  m_PrefabInstance: {fileID: 4490380615483208827}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8956689108220100399 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4764109300630850388, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &8967537304627312531 stripped
