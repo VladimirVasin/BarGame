@@ -358,6 +358,9 @@ namespace BarPromenade.Tests.PlayMode
                 station.PromptKey,
                 Is.EqualTo(BarCounterStation.DrinkPromptKey));
 
+            Vector3 cameraBeforePickup = camera.transform.position;
+            Quaternion actionGazeRotation = camera.transform.rotation;
+            float nearClipBeforePickup = camera.nearClipPlane;
             station.Interact(player.Interactor);
             Assert.That(
                 controller.Phase,
@@ -365,10 +368,42 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(station.Seat.Controller.IsNestedLoopActionActive, Is.True);
             Assert.That(station.SeatView.IsActionLookLocked, Is.True);
             Assert.That(vessel.IsInteractionHighlighted, Is.False);
+            Assert.That(
+                camera.nearClipPlane,
+                Is.EqualTo(Mathf.Min(
+                        nearClipBeforePickup,
+                        CounterSeatView.ActionNearClipPlane))
+                    .Within(0.0001f),
+                "The close mug action needs its measured near plane.");
 
             float previousTimeScale = Time.timeScale;
             try
             {
+                Time.timeScale = 4f;
+                timeout = Time.realtimeSinceStartup + 3f;
+                while (controller.Phase ==
+                           BarDrinkServicePhase.PlayerPickup &&
+                       controller.Timeline.PhaseProgress < 0.50f &&
+                       Time.realtimeSinceStartup < timeout)
+                {
+                    yield return null;
+                }
+
+                Assert.That(controller.Phase,
+                    Is.EqualTo(BarDrinkServicePhase.PlayerPickup));
+                Vector3 pickupCameraTravel =
+                    camera.transform.position - cameraBeforePickup;
+                Assert.That(
+                    Vector3.Dot(
+                        pickupCameraTravel,
+                        player.GameObject.transform.forward),
+                    Is.GreaterThan(0.02f),
+                    "The first-person hero must lean toward the mug before " +
+                    "it leaves the counter.");
+                Assert.That(
+                    pickupCameraTravel.y,
+                    Is.LessThan(-0.01f),
+                    "The first-person camera must dip with the reaching head.");
                 Time.timeScale = 20f;
                 timeout = Time.realtimeSinceStartup + 3f;
                 while (controller.Phase !=
@@ -419,6 +454,44 @@ namespace BarPromenade.Tests.PlayMode
                     Quaternion.Angle(seatedHeadRotation, head.rotation),
                     Is.GreaterThan(12f),
                     "The head must lift with the horizontal drinking pose.");
+                Assert.That(vessel.GlassRenderer.enabled, Is.True);
+                Bounds mugBounds = vessel.GlassRenderer.bounds;
+                Vector3 cameraForward = camera.transform.forward;
+                Vector3 mugExtents = mugBounds.extents;
+                float projectedMugExtent =
+                    Mathf.Abs(cameraForward.x) * mugExtents.x +
+                    Mathf.Abs(cameraForward.y) * mugExtents.y +
+                    Mathf.Abs(cameraForward.z) * mugExtents.z;
+                float nearestMugDepth = Vector3.Dot(
+                        mugBounds.center - camera.transform.position,
+                        cameraForward) -
+                    projectedMugExtent;
+                Assert.That(
+                    nearestMugDepth,
+                    Is.GreaterThan(camera.nearClipPlane + 0.005f),
+                    "The complete mug bounds must stay beyond the near " +
+                    "plane at the sip.");
+                Vector3 mugViewport = camera.WorldToViewportPoint(
+                    mugBounds.center);
+                Assert.That(
+                    mugViewport.z,
+                    Is.GreaterThan(camera.nearClipPlane + 0.02f),
+                    "The mug body must remain in front of the lens at the sip.");
+                Assert.That(
+                    mugViewport.x,
+                    Is.InRange(0.05f, 0.95f),
+                    "The mug disappeared through a horizontal frame edge.");
+                Assert.That(
+                    mugViewport.y,
+                    Is.InRange(0.05f, 0.95f),
+                    "The mug disappeared through a vertical frame edge.");
+                Assert.That(
+                    Quaternion.Angle(
+                        actionGazeRotation,
+                        camera.transform.rotation),
+                    Is.GreaterThan(8f),
+                    "The sip camera must rise with the animated head instead " +
+                    "of remaining behind at the initiating gaze.");
 
                 timeout = Time.realtimeSinceStartup + 3f;
                 while (controller.IsServing &&
@@ -438,6 +511,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(vessel.gameObject.activeSelf, Is.True);
             Assert.That(vessel.FillProgress, Is.Zero);
             Assert.That(station.SeatView.IsActionLookLocked, Is.False);
+            Assert.That(
+                camera.nearClipPlane,
+                Is.EqualTo(nearClipBeforePickup).Within(0.0001f),
+                "The action-specific near plane was not restored.");
             Assert.That(
                 GameSessionState.IntoxicationLevel,
                 Is.EqualTo(

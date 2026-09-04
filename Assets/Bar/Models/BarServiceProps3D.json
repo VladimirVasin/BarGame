@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "1.4.0",
+  "generator_version": "1.4.1",
   "blender_version": "5.0.1",
   "design_id": "bar_service_props_v1",
   "display_name": "Bar Promenade Authored Service Props",
@@ -473,8 +473,8 @@
       "role": "service_vessel_drink_rim:Pint",
       "local_position": [
         0.0,
-        -0.048,
-        0.145
+        -0.05136,
+        0.15515
       ],
       "unity_right": [
         1.0,
@@ -496,9 +496,9 @@
       "name": "PintGrip",
       "role": "service_vessel_grip:Pint",
       "local_position": [
-        0.084,
+        0.08988,
         0.0,
-        0.074
+        0.07918
       ],
       "unity_right": [
         1.0,
@@ -522,7 +522,7 @@
       "local_position": [
         0.0,
         0.0,
-        0.012
+        0.01284
       ],
       "unity_right": [
         1.0,
@@ -546,7 +546,7 @@
       "local_position": [
         0.0,
         0.0,
-        0.12
+        0.1284
       ],
       "unity_right": [
         1.0,
@@ -1965,5 +1965,5 @@
       "triangles": 28
     }
   ],
-  "build_signature": "ea8995480c0eaf1b41579aab109b385582a4788dd1698ab8424ad84bbaa8717c"
+  "build_signature": "9de264b5f290e18680b359cf65991c7ba526d233915cebba7db14a4ca5a0b9cd"
 }

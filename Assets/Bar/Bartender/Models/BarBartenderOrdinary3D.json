@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-ordinary-bartender-3d-model.py",
-  "generator_version": "3.0.0",
+  "generator_version": "3.1.0",
   "blender_version": "5.0.1",
   "design_id": "bar_bartender_v2",
   "display_name": "Bar Bartender",
@@ -44,7 +44,9 @@
     "CafeAttendantPour",
     "CafeAttendantNotice"
   ],
-  "build_signature": "011e1029d300de7ac1fdbabbecfe884cf590d88c14deb66408d299dd5359f2c8",
+  "locomotion_animation_asset": "Assets/Player3D/V2/Animations/PlayerCharacter3DV2Animations.fbx",
+  "locomotion_clip": "Walk",
+  "build_signature": "dd18e47a5bbf5709b74343f6318773117dbc76c8b4aed0801b2d76decb922b02",
   "arm_design": "ordinary_two_armed_v2",
   "extra_arm_pairs": 0,
   "bones": [

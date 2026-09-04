@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -9,6 +10,11 @@ namespace BarPromenade.Tests.EditMode
     {
         private const string PlayerModelPath =
             "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
+        private const string ServiceAnimationPath =
+            "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx";
+        private const string WalkAnimationPath =
+            "Assets/Player3D/V2/Animations/" +
+            "PlayerCharacter3DV2Animations.fbx";
 
         [Test]
         public void Provider_SelectsOrdinaryPrefab_AndRetainsLegacy()
@@ -44,7 +50,25 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(active.Renderers.Count));
             Assert.That(active.ExtraArmChains, Is.Empty);
             Assert.That(active.UsesAuthoredServiceClips, Is.True);
-            Assert.That(active.ClipBindings.Count, Is.EqualTo(4));
+            Assert.That(active.ClipBindings.Count, Is.EqualTo(5));
+            BarBartenderClipBinding walk = active.ClipBindings.Single(
+                binding => binding.Kind == BarBartenderClipKind.Walk);
+            Assert.That(
+                AssetDatabase.GetAssetPath(walk.Clip),
+                Is.EqualTo(WalkAnimationPath));
+            Assert.That(walk.Clip.name, Is.EqualTo("Walk"));
+            Assert.That(walk.Clip.length, Is.EqualTo(1f).Within(0.002f));
+            Assert.That(walk.Loop, Is.True);
+            BarBartenderClipBinding serviceStep =
+                active.ClipBindings.Single(
+                    binding => binding.Kind ==
+                        BarBartenderClipKind.ServiceStep);
+            Assert.That(
+                AssetDatabase.GetAssetPath(serviceStep.Clip),
+                Is.EqualTo(ServiceAnimationPath));
+            Assert.That(
+                serviceStep.Clip.name,
+                Is.EqualTo("CafeAttendantWalk"));
             Assert.That(active.LeftGripSocket, Is.Not.Null);
             Assert.That(active.LeftVesselSocket, Is.Not.Null);
             Assert.That(active.RightGripSocket, Is.Not.Null);
@@ -105,7 +129,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void OrdinaryPresentation_ReadsServiceTimelineIntoWaiterClips()
+        public void OrdinaryPresentation_ReadsServiceTimelineIntoServiceClips()
         {
             BarBartenderProvider provider = BarBartenderProvider.Load();
             GameObject instance = Object.Instantiate(
@@ -177,9 +201,16 @@ namespace BarPromenade.Tests.EditMode
                     leftHandCarriesMenu: true);
                 Assert.That(
                     presentation.CurrentClipKind,
-                    Is.EqualTo(BarBartenderClipKind.Walk));
+                    Is.EqualTo(BarBartenderClipKind.ServiceStep));
                 Assert.That(serviceTowel.enabled, Is.False,
                     "Menu retrieval must free the bartender's left hand towel.");
+
+                presentation.ApplyCounterTravelPose(
+                    0.25f,
+                    leftHandCarriesMenu: true);
+                Assert.That(
+                    presentation.CurrentClipKind,
+                    Is.EqualTo(BarBartenderClipKind.Walk));
 
                 timeline.Advance(
                     BarDrinkServiceTimeline

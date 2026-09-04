@@ -12,7 +12,8 @@ namespace BarPromenade.Editor
     /// <summary>
     /// Builds the active ordinary bartender beside, never over, the retained
     /// six-armed prefab. The model remains animation-free; four bone-only
-    /// cafe-attendant clips are referenced from their shared authored FBX.
+    /// service clips come from the cafe bank and its full walk comes from the
+    /// compatible Hero V2 bank.
     /// </summary>
     [InitializeOnLoad]
     public static class BarBartenderV2AssetSetup
@@ -34,6 +35,9 @@ namespace BarPromenade.Editor
             "Assets/Player3D/Materials/Player3DLit.mat";
         public const string AnimationPath =
             "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx";
+        public const string WalkAnimationPath =
+            "Assets/Player3D/V2/Animations/" +
+            "PlayerCharacter3DV2Animations.fbx";
         public const string ProviderPath =
             "Assets/Resources/Bar/BarBartenderProvider.asset";
 
@@ -68,21 +72,31 @@ namespace BarPromenade.Editor
         {
             new ClipDescriptor(
                 BarBartenderClipKind.Wipe,
+                AnimationPath,
                 "CafeAttendantWipe",
                 9f,
                 true),
             new ClipDescriptor(
                 BarBartenderClipKind.Walk,
+                WalkAnimationPath,
+                "Walk",
+                1f,
+                true),
+            new ClipDescriptor(
+                BarBartenderClipKind.ServiceStep,
+                AnimationPath,
                 "CafeAttendantWalk",
                 1.25f,
                 true),
             new ClipDescriptor(
                 BarBartenderClipKind.Pour,
+                AnimationPath,
                 "CafeAttendantPour",
                 3.5f,
                 false),
             new ClipDescriptor(
                 BarBartenderClipKind.Notice,
+                AnimationPath,
                 "CafeAttendantNotice",
                 2.5f,
                 false)
@@ -130,7 +144,8 @@ namespace BarPromenade.Editor
                 File.Exists(LegacyPrefabPath) &&
                 File.Exists(PlayerModelPath) &&
                 File.Exists(SharedMaterialPath) &&
-                File.Exists(AnimationPath);
+                File.Exists(AnimationPath) &&
+                File.Exists(WalkAnimationPath);
         }
 
         public static void QueueBuildWhenSourcesExist()
@@ -156,7 +171,8 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "Ordinary bartender build requires its FBX/manifest, " +
                     "the retained legacy prefab, Hero V2, Player3DLit and " +
-                    "the shared cafe-attendant animation FBX.");
+                    "the cafe service and Hero V2 locomotion animation " +
+                    "FBXs.");
             }
 
             isBuilding = true;
@@ -168,6 +184,10 @@ namespace BarPromenade.Editor
                     ImportAssetOptions.ForceSynchronousImport);
                 AssetDatabase.ImportAsset(
                     AnimationPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    WalkAnimationPath,
                     ImportAssetOptions.ForceUpdate |
                     ImportAssetOptions.ForceSynchronousImport);
                 AssetDatabase.ImportAsset(
@@ -526,6 +546,10 @@ namespace BarPromenade.Editor
                     binding.Loop != expected.Loop ||
                     binding.Clip == null ||
                     !string.Equals(
+                        AssetDatabase.GetAssetPath(binding.Clip),
+                        expected.AssetPath,
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
                         NormalizeClipName(binding.Clip.name),
                         expected.Name,
                         StringComparison.Ordinal) ||
@@ -534,7 +558,7 @@ namespace BarPromenade.Editor
                 {
                     throw new InvalidOperationException(
                         $"Ordinary bartender clip binding {index} " +
-                        "differs from the authored waiter contract.");
+                        "differs from the authored service contract.");
                 }
             }
         }
@@ -594,12 +618,25 @@ namespace BarPromenade.Editor
                     AnimationPath,
                     StringComparison.Ordinal) ||
                 !manifest.shared_clips.SequenceEqual(
-                    Clips.Select(clip => clip.Name),
-                    StringComparer.Ordinal))
+                    Clips.Where(clip => string.Equals(
+                            clip.AssetPath,
+                            AnimationPath,
+                            StringComparison.Ordinal))
+                        .Select(clip => clip.Name),
+                    StringComparer.Ordinal) ||
+                !string.Equals(
+                    manifest.locomotion_animation_asset,
+                    WalkAnimationPath,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    manifest.locomotion_clip,
+                    Clips.Single(clip => clip.Kind ==
+                        BarBartenderClipKind.Walk).Name,
+                    StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     "Ordinary bartender service sockets, anchors or " +
-                    "shared waiter clips changed.");
+                    "service or locomotion clips changed.");
             }
 
             if (Mathf.Abs(manifest.height_m - ExpectedHeight) > 0.0001f ||
@@ -679,7 +716,7 @@ namespace BarPromenade.Editor
         private static AnimationClip LoadClip(ClipDescriptor descriptor)
         {
             AnimationClip clip = AssetDatabase
-                .LoadAllAssetsAtPath(AnimationPath)
+                .LoadAllAssetsAtPath(descriptor.AssetPath)
                 .OfType<AnimationClip>()
                 .FirstOrDefault(candidate =>
                     !candidate.name.StartsWith(
@@ -693,7 +730,7 @@ namespace BarPromenade.Editor
                 Mathf.Abs(clip.length - descriptor.Duration) > 0.002f)
             {
                 throw new InvalidOperationException(
-                    $"Shared waiter clip '{descriptor.Name}' is missing " +
+                    $"Bartender clip '{descriptor.Name}' is missing " +
                     "or has the wrong duration.");
             }
 
@@ -892,17 +929,20 @@ namespace BarPromenade.Editor
         {
             public ClipDescriptor(
                 BarBartenderClipKind kind,
+                string assetPath,
                 string name,
                 float duration,
                 bool loop)
             {
                 Kind = kind;
+                AssetPath = assetPath;
                 Name = name;
                 Duration = duration;
                 Loop = loop;
             }
 
             public BarBartenderClipKind Kind { get; }
+            public string AssetPath { get; }
             public string Name { get; }
             public float Duration { get; }
             public bool Loop { get; }
@@ -929,6 +969,8 @@ namespace BarPromenade.Editor
             public int animation_count;
             public string shared_animation_asset;
             public string[] shared_clips;
+            public string locomotion_animation_asset;
+            public string locomotion_clip;
             public string build_signature;
             public string arm_design;
             public int extra_arm_pairs;

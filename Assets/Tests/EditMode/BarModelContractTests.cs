@@ -530,7 +530,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo("bar_service_props_v1"));
-            Assert.That(manifest.generator_version, Is.EqualTo("1.4.0"));
+            Assert.That(manifest.generator_version, Is.EqualTo("1.4.1"));
             Assert.That(manifest.colliders, Is.False);
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
@@ -600,13 +600,13 @@ namespace BarPromenade.Tests.EditMode
                     Is.True);
                 Bounds mugBounds = shell.bounds;
                 Assert.That(mugBounds.size.y,
-                    Is.EqualTo(0.145f).Within(Tolerance));
+                    Is.EqualTo(0.15515f).Within(Tolerance));
                 Assert.That(mugBounds.size.z,
-                    Is.EqualTo(0.096f).Within(Tolerance));
+                    Is.EqualTo(0.10272f).Within(Tolerance));
                 Assert.That(mugBounds.min.x,
-                    Is.EqualTo(-0.048f).Within(Tolerance));
+                    Is.EqualTo(-0.05136f).Within(Tolerance));
                 Assert.That(mugBounds.max.x,
-                    Is.EqualTo(0.091f).Within(Tolerance),
+                    Is.EqualTo(0.09737f).Within(Tolerance),
                     "the mug handle must form a visible arc on +X");
                 Assert.That(
                     mugBounds.max.x - Mathf.Abs(mugBounds.min.x),
@@ -619,16 +619,16 @@ namespace BarPromenade.Tests.EditMode
                     Is.True);
                 Assert.That(
                     pourTarget.localPosition.y,
-                    Is.EqualTo(0.120f).Within(Tolerance));
+                    Is.EqualTo(0.1284f).Within(Tolerance));
                 Assert.That(
                     vessel.TryGetAnchor(
                         "service_vessel_grip:Pint",
                         out Transform mugGrip),
                     Is.True);
                 Assert.That(mugGrip.localPosition.x,
-                    Is.EqualTo(0.084f).Within(0.001f));
+                    Is.EqualTo(0.08988f).Within(0.001f));
                 Assert.That(mugGrip.localPosition.y,
-                    Is.EqualTo(0.074f).Within(0.001f));
+                    Is.EqualTo(0.07918f).Within(0.001f));
                 Assert.That(mugGrip.localPosition.z,
                     Is.EqualTo(0f).Within(0.001f));
                 Assert.That(
@@ -644,9 +644,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(drinkRim.localPosition.x,
                     Is.EqualTo(0f).Within(0.001f));
                 Assert.That(drinkRim.localPosition.y,
-                    Is.EqualTo(0.145f).Within(0.001f));
+                    Is.EqualTo(0.15515f).Within(0.001f));
                 Assert.That(drinkRim.localPosition.z,
-                    Is.EqualTo(-0.048f).Within(0.001f));
+                    Is.EqualTo(-0.05136f).Within(0.001f));
                 Assert.That(
                     Quaternion.Angle(
                         drinkRim.localRotation,

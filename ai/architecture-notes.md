@@ -65,7 +65,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   entrance, carpet/plank and practical
   fixtures express a worn late-Victorian British pub without flag, name,
   brand, readable advertising or new lore. `bar_service_props_v1` is a second
-  passive `34`-mesh / `4,136`-triangle library at `1.4.0` for five reusable
+  passive `34`-mesh / `4,136`-triangle library at `1.4.1` for five reusable
   bottle silhouettes, five vessel forms with interaction-highlight shells,
   pour stream and two-page menu. Runtime now
   instantiates only the four bottles belonging to the visible menu. Unity continues to own stable
@@ -76,7 +76,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   oversized trim and curtain assembly are removed. The authored interior now
   repeats the facade's ordinary `1.45 x 2.34 m` panelled door language and the
   collision plan closes the wall above it with a lintel. Door interaction and
-  `DoorTransition` ownership are unchanged.
+  `DoorTransition` ownership are unchanged. The interior arrival root is now
+  `1.10 m` deeper than its former threshold placement, which leaves the
+  restored chase-camera lens inside the closed door plane after entry.
 - **Accepted by explicit user decision, 2026-09-03 — bar patrons are bound to
   concrete furniture, and the hero stool has no visual affordance:** every
   regular and hero counter stool uses the Mountain Road cafe geometry
@@ -178,11 +180,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   ordinary and two-armed:** `bar_bartender_v2` is a `1.75 m`, `39`-mesh /
   `1,136`-triangle NpcHumanV2 figure in a dark-green waistcoat, rolled sleeves
   and apron. Its registry reuses the four existing cafe-attendant clips and
-  its manual service graph follows the established `BarDrinkServiceTimeline`:
-  right hand to bottle, left hand to menu or vessel. `BarBartenderProvider`
+  its manual service graph follows the established
+  `BarDrinkServiceTimeline`: right hand to bottle, left hand to menu or vessel.
+  `BarBartenderProvider`
   selects `BarBartenderOrdinary.prefab`; the former six-armed prefab remains a
   serialized inactive legacy reference. This is a one-for-one active-cast
   replacement and introduces no new strange body.
+- **Accepted by explicit user correction, 2026-09-04 — bartender translation
+  uses a complete walk:** the compatible Hero V2 `Walk` cycle is the fifth
+  registry binding. Counter travel turns the root into the path before moving,
+  samples that complete stride only while position changes, keeps the short
+  cafe-attendant step for handling and in-place turns, then restores the
+  authored working orientation. A carried vessel target is stored in bartender
+  local space so the hand and mug advance with the moving root.
 - **Accepted:** Alpine Village separates inhabited `TerrainBounds` from the
   larger physical `TerrainMeshBounds`; only the latter may prove the enclosing
   ridge and cable brink.
@@ -4510,12 +4520,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   mug and patron-aligned sip:** this supersedes only the vessel form, grip side
   and drinking-pose clauses of the central-tap decision above. The stable
   `Pint` enum/group identity remains for compatibility, while its visible mesh
-  is a smaller beer mug whose handle rests on the hero's right. The authored
+  is a small beer mug whose corrected `1.07` scale measures `155 mm` high and
+  `103 mm` across the rim; its handle rests on the hero's right. The authored
   grip sits directly on that handle and binds to Hero V2's right-hand anchor;
   the vessel also exposes a drink-rim anchor and opening direction. During the
-  sip, the rim stays at the mouth, the mug reaches a horizontal pose and the
-  head and upper body rise with it, following the same restrained pose logic as
-  the corrected patron drink. The central tap, `2/3/2 s` timeline, payment and
+  pickup, the seated first-person camera begins from the gaze which accepted the
+  mug and keeps its captured eye-space offset through the live head's complete
+  pose. It eases `0.02 m` back along the view as the rim reaches the mouth. Its
+  near plane is bounded at `0.03 m` for the close action and restored afterwards, so the
+  vessel remains ahead of the lens when the body moves back into the sip. The
+  rim stays at the mouth, the mug reaches a horizontal pose and the head and
+  upper body rise with it, following the same restrained pose logic as the
+  corrected patron drink. The central tap, `2/3/2 s` timeline, payment and
   deferred-effect boundaries, empty return and silent level-`0` meaning remain
   unchanged; no new lore or contextual-animation exception is introduced.
 - **Accepted — Session wallet and paid bar orders:** A fresh runtime

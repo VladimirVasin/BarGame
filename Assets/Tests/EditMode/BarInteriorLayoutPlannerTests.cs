@@ -24,7 +24,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(plan.WallThickness, Is.EqualTo(0.3f));
             Assert.That(
                 plan.PlayerSpawn,
-                Is.EqualTo(new Vector3(0f, 0.12f, -6.45f)));
+                Is.EqualTo(new Vector3(0f, 0.12f, -5.35f)));
             Assert.That(
                 plan.ExitPosition,
                 Is.EqualTo(new Vector3(0f, 0.9f, -7.25f)));

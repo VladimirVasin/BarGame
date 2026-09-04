@@ -6,6 +6,50 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-04 — Beer service follows the bartender, hero and camera
+
+The follow-up pass corrected four visible staging faults in the bar. The handled
+beer mug is uniformly `1.07` times the previous compact form: `155 mm` high,
+`103 mm` across the rim and `149 mm` across the full handle silhouette. Its
+right-side grip, drinking-rim and pour sockets scale with the mesh. This is a
+service-prop change, so the unchanged interior remains generator `3.3.3` at
+signature `cc252752752c27aa69d0fa57de8ab8222bd3f265bef92e145bd3fe1989c6b512`;
+the `34`-mesh / `4,136`-triangle service pack advances to `1.4.1`, signature
+`9de264b5f290e18680b359cf65991c7ba526d233915cebba7db14a4ca5a0b9cd`.
+
+The bartender's former counter motion sampled the cafe attendant's short
+service step while translating an arbitrarily oriented root, which read as a
+sideways glide. The ordinary asset is now generator `3.1.0` with five bindings:
+four restrained cafe service clips plus the compatible complete Hero V2 `Walk`.
+Counter travel first turns toward the route, translates only within `8°` of it
+with the complete stride, uses the short step for handling and in-place turns,
+then restores the authored work orientation. The carried-vessel target is kept
+in bartender-local space, so the hand and mug advance with the root rather than
+chasing the previous frame's world point. The rebuilt `39`-mesh /
+`1,136`-triangle asset has signature
+`dd18e47a5bbf5709b74343f6318773117dbc76c8b4aed0801b2d76decb922b02`.
+
+For the hero, the locked seated camera previously copied only head translation
+while the mouth inherited the complete animated head pose. At the sip the face,
+mug and lens therefore crossed, which made the mug disappear. The camera now
+captures its eye-space position and rotation when the player accepts the mug,
+follows the complete live head pose through pickup and sip, and eases `0.02 m`
+back along the view only as the rim reaches the mouth. The action near plane is
+bounded at `0.03 m` and restored afterwards. The production right hand still
+solves directly to the handle, the drinking edge stays at the mouth and the mug
+becomes horizontal with the lifting head and torso. Finally, the bar arrival
+spawn moves from local `z = -6.45` to `-5.35`, placing the returned chase camera
+inside the closed entrance plane.
+
+Verification: both Blender generators passed their own geometry, rig, socket
+and manifest validators; `BarBartenderV2AssetSetup` and `BarAssetSetup` rebuilt
+and validated the Unity prefabs. Focused PlayMode
+`BeerTapService_WaitsForGazeThenHeroDrinksFromRightHandledMug` passed `1/1`,
+including right-handle grip, rim-to-mouth alignment, horizontal sip, live head
+camera motion and full mug bounds in frame. Focused arrival coverage passed
+`1/1` with the chase lens inside the entrance. Per fast mode, no broad Unity
+suite or player build was run.
+
 ## 2026-09-04 — Hero V2 is the only packaged player
 
 By the user's explicit decision, the former Hero V1 rollback branch is removed

@@ -8,9 +8,10 @@ namespace BarPromenade
 {
     /// <summary>
     /// Presentation shared by the active ordinary bartender and the retained
-    /// six-armed legacy asset. The ordinary path plays authored waiter clips
-    /// on the common NpcHumanV2 Avatar, then applies a light two-hand contact
-    /// pass toward the independently driven bar service props. The legacy
+    /// six-armed legacy asset. The ordinary path plays authored service and
+    /// locomotion clips on the common NpcHumanV2 Avatar, then applies a light
+    /// two-hand contact pass toward the independently driven bar service props.
+    /// The legacy
     /// path keeps its original four procedural chains so that prefab remains
     /// inspectable without ever being selected by the runtime provider.
     /// </summary>
@@ -31,7 +32,7 @@ namespace BarPromenade
 
         // Root-local rest points retained for the inspectable legacy
         // six-arm path. The active ordinary bartender stays ground-level and
-        // uses the shared authored waiter clips. World-space aiming is
+        // uses the shared authored human clips. World-space aiming is
         // deliberate — imported FBX bone axes are not trustworthy for local
         // Euler folds.
         private static readonly Vector3 LeftHandRestLocal =
@@ -231,7 +232,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Makes the authored waiter animation a pure reader of the bar's
+        /// Makes the authored service animation a pure reader of the bar's
         /// existing deterministic service clock. It never advances the shop
         /// or moves a bottle/vessel itself.
         /// </summary>
@@ -255,15 +256,12 @@ namespace BarPromenade
                 case BarDrinkServicePhase.BottlePickup:
                 case BarDrinkServicePhase.BeerWalkToTap:
                 case BarDrinkServicePhase.BeerCarryToGuest:
-                    SetOrdinaryClip(
-                        BarBartenderClipKind.Walk,
-                        frame.PhaseElapsedSeconds);
-                    break;
                 case BarDrinkServicePhase.VesselPlacement:
+                case BarDrinkServicePhase.BottleReturn:
+                case BarDrinkServicePhase.BeerGlassPickup:
+                case BarDrinkServicePhase.BeerGlassPlacement:
                     SetOrdinaryClip(
-                        BarBartenderClipKind.Walk,
-                        BarDrinkServiceTimeline
-                            .BottlePickupDurationSeconds +
+                        BarBartenderClipKind.ServiceStep,
                         frame.PhaseElapsedSeconds);
                     break;
                 case BarDrinkServicePhase.Pouring:
@@ -272,13 +270,6 @@ namespace BarPromenade
                         BarBartenderClipKind.Pour,
                         frame.PhaseProgress *
                         ResolveClipLength(BarBartenderClipKind.Pour));
-                    break;
-                case BarDrinkServicePhase.BottleReturn:
-                case BarDrinkServicePhase.BeerGlassPickup:
-                case BarDrinkServicePhase.BeerGlassPlacement:
-                    SetOrdinaryClip(
-                        BarBartenderClipKind.Walk,
-                        frame.PhaseElapsedSeconds);
                     break;
                 default:
                     SetOrdinaryClip(
@@ -324,6 +315,21 @@ namespace BarPromenade
 
             SetOrdinaryClip(
                 BarBartenderClipKind.Walk,
+                Mathf.Max(0f, elapsedSeconds));
+            registry.SetServiceTowelVisible(!leftHandCarriesMenu);
+        }
+
+        public void ApplyCounterTurnPose(
+            float elapsedSeconds,
+            bool leftHandCarriesMenu = false)
+        {
+            if (!isInitialized || !usesOrdinaryRig)
+            {
+                return;
+            }
+
+            SetOrdinaryClip(
+                BarBartenderClipKind.ServiceStep,
                 Mathf.Max(0f, elapsedSeconds));
             registry.SetServiceTowelVisible(!leftHandCarriesMenu);
         }

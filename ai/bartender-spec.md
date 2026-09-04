@@ -25,7 +25,7 @@ state and `BarDrinkServiceTimeline` remain the source of gameplay truth.
 ## 2. Model and asset pipeline
 
 - **Tool:** `tools/build-ordinary-bartender-3d-model.py`.
-- **Design:** `bar_bartender_v2`, generator `3.0.0`, anatomy standard
+- **Design:** `bar_bartender_v2`, generator `3.1.0`, anatomy standard
   `NpcHumanV2`, A-pose, full height `1.75 m`, rest pelvis `0.835 m`.
 - **Rig:** the exact Hero V2 Generic Avatar and 31-bone hierarchy from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`.
@@ -44,9 +44,9 @@ state and `BarDrinkServiceTimeline` remain the source of gameplay truth.
   `LegacyBartenderPrefab`. `BarBartenderWorldBuilder` always instantiates the
   active reference.
 
-The model FBX itself remains animation-free. Its registry references the
-shared waiter clips in
-`Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx` instead of duplicating
+The model FBX itself remains animation-free. Its registry references four
+service clips in `Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx` and
+the full `Walk` in Hero V2's compatible animation bank instead of duplicating
 them.
 
 ## 3. Hands, sockets and authored anchors
@@ -72,24 +72,30 @@ The separate menu handoff keeps its existing left-grip motion, but its dock is
 collinear with the selected stool: the booklet lands directly before the hero,
 matching the Mountain Road cafe placement.
 
-## 4. Reused waiter animation
+## 4. Reused service and locomotion animation
 
-The registry binds the same four Café attendant clips used by the Mountain
-Plateau Café:
+The registry keeps all four Café attendant service clips and adds the
+compatible full Hero V2 walk:
 
 | Bar role | Shared clip | Import contract |
 | --- | --- | --- |
 | quiet default | `CafeAttendantWipe` | `9 s`, looping |
-| pickup, placement and return travel | `CafeAttendantWalk` | `1.25 s`, looping |
+| counter travel | Hero V2 `Walk` | `1 s`, looping |
+| handling and turns | `CafeAttendantWalk` | `1.25 s`, looping |
 | pour | `CafeAttendantPour` | `3.5 s`, one-shot |
 | acknowledge the service start | `CafeAttendantNotice` | `2.5 s`, one-shot |
 
-`BarBartenderPresentation` evaluates those clips through a manually driven
+The four service clips remain in `MountainRoadCafeCast`; locomotion comes
+from the compatible Hero V2 animation bank so counter travel uses a complete
+stride instead of the cafe attendant's short service step. The choreography
+turns the root toward the path before translation and restores the authored
+working orientation after arrival. `BarBartenderPresentation` evaluates the
+clips through a manually driven
 `PlayableGraph`. It reads the current `BarDrinkServiceTimeline` frame: Notice
-during `CameraApproach`; Walk during bottle travel,
-`BeerWalkToTap`, `BeerGlassPickup`, `BeerCarryToGuest` and
-`BeerGlassPlacement`; Pour during `Pouring` and `BeerPouring`; and Wipe in the
-remaining phases. The
+during `CameraApproach`; the short service step during stationary pickup,
+placement and turns; Pour during `Pouring` and `BeerPouring`; Wipe in the
+remaining phases; and the full Walk only while the root actually translates.
+The
 service towel is hidden while the left hand is working with the vessel and is
 restored on return to idle. In that idle phase the shared
 `CafeAttendantWipe` is visibly sampled; the grounded actor placement puts its
@@ -109,24 +115,25 @@ then blends both hands back out when service ends or the shop closes.
 
 - `BarBartenderAssetTests` verifies that the provider selects the distinct
   ordinary prefab while retaining legacy, that the active prefab uses the Hero
-  V2 Avatar, has no extra-arm chains, and exposes four waiter clips plus all
-  required sockets and anchors.
+  V2 Avatar, has no extra-arm chains, and exposes four cafe service clips plus
+  the full Hero V2 Walk and all required sockets and anchors.
 - The same fixture drives a real `BarDrinkServiceTimeline` through Notice,
-  Walk, Pour and Wipe and checks the two-hand reach contract, including beer
-  walk/pour/carry phases.
+  ServiceStep, Walk, Pour and Wipe and checks the two-hand reach contract,
+  including beer walk/pour/carry phases.
 - `BarDrinkServiceTimelineTests.BeerService_WaitsForPhysicalArrivalAndExplicitDrink`
   checks both position gates, the indefinite `AwaitingDrink` hold and the
   explicit `2/3/2 s` pickup/sip/return branch.
-- `BarDrinkPhysicalShopPlayModeTests.BeerTapService_WaitsForGazeThenHeroReturnsEmptyPint`
+- `BarDrinkPhysicalShopPlayModeTests.BeerTapService_WaitsForGazeThenHeroDrinksFromRightHandledMug`
   checks the central handle and stream, delayed gameplay effects, gaze-bound
-  prompt/outline, nested Hero V2 action, hand-to-pint contact and persistent
-  empty vessel.
+  prompt/outline, nested Hero V2 action, direct right-hand grip, first-person
+  reach and sip visibility, and the persistent empty vessel.
 - `GameSessionStateTests.PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce`
   checks that cash commits at order confirmation while intoxication,
   last-drink, count and stress commit exactly once on consumption.
-- `BarInteriorSpawnPlayModeTests` requires the active root to remain grounded
-  and samples changing points of Wipe to prove that the towel both contacts and
-  travels across the real counter top.
+- `BarInteriorSpawnPlayModeTests` requires the active root to remain grounded,
+  keeps the arrival camera inside the entrance door and samples changing
+  points of Wipe to prove that the towel both contacts and travels across the
+  real counter top.
 - `SceneFlowSmokeTests` requires the spawned bar worker to use the ordinary
   rig at the authored bartender anchor.
 - The Blender validator owns the measured `39`-mesh / `1,136`-triangle,

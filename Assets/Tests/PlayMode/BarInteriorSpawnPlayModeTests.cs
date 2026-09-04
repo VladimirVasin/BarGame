@@ -122,7 +122,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ArrivingHero_IsNotStandingInsideHisOwnCamera()
+        public IEnumerator ArrivingHero_CameraReturnsInsideEntranceAndClearOfHero()
         {
             BarInteriorRoot bar = null;
             yield return LoadBar(result => bar = result);
@@ -151,6 +151,19 @@ namespace BarPromenade.Tests.PlayMode
                 $"the camera sits {distance:F2} m from the hero's head - " +
                 "inside him. Its collision probe is starting inside a " +
                 "collider, so the chase distance collapsed to nothing.");
+
+            Vector3 cameraInRoom = bar.Room.InverseTransformPoint(
+                camera.transform.position);
+            float minimumInteriorCameraZ =
+                bar.Layout.RoomBounds.yMin +
+                bar.Layout.WallThickness * 0.5f +
+                camera.nearClipPlane;
+            Assert.That(
+                cameraInRoom.z,
+                Is.GreaterThan(minimumInteriorCameraZ),
+                $"the camera sits behind the closed entrance door at " +
+                $"room z={cameraInRoom.z:F2}; its lens must stay inside " +
+                $"the door plane beyond z={minimumInteriorCameraZ:F2}.");
         }
 
         [UnityTest]

@@ -7,7 +7,9 @@ namespace BarPromenade
     /// Neutral eye-level view for any physically occupied counter seat. The
     /// visible entry and exit stay in the ordinary follow camera. Only the
     /// looping seated phase owns this fixed view, and only head-bound meshes
-    /// are hidden while the camera is inside the production hero rig.
+    /// are hidden while the camera is inside the production hero rig. A
+    /// locked close action starts from the player's current gaze and keeps the
+    /// lens at its captured eye-space offset throughout the animated head pose.
     /// </summary>
     [DefaultExecutionOrder(90)]
     [DisallowMultipleComponent]
@@ -16,6 +18,8 @@ namespace BarPromenade
         public const float MaximumYawOffsetDegrees = 70f;
         public const float MinimumPitchDegrees = -25f;
         public const float MaximumPitchDegrees = 55f;
+        public const float ActionNearClipPlane = 0.03f;
+        public const float ActionEyeClearanceMetres = 0.02f;
 
         private CounterSeatInteraction seat;
         private PlayerCameraFollow cameraFollow;
@@ -34,6 +38,18 @@ namespace BarPromenade
             CounterMenuCameraPlan.FocusFieldOfView;
         private bool menuFocusRequested;
         private bool actionLookLocked;
+        private float actionEyeClearanceWeight;
+        private Vector3 actionHeadPositionInPelvis;
+        private bool actionHeadPositionCaptured;
+        private Vector3 actionCameraPositionInHead;
+        private bool actionCameraPositionCaptured;
+        private Quaternion actionCameraRotation;
+        private Quaternion actionCameraRotationInHead;
+        private bool actionCameraRotationInHeadCaptured;
+        private bool actionCameraRotationCaptured;
+        private Camera actionCamera;
+        private float actionPreviousNearClipPlane;
+        private bool actionNearClipCaptured;
 
         public bool IsInitialized { get; private set; }
         public bool IsFirstPerson { get; private set; }
@@ -111,7 +127,28 @@ namespace BarPromenade
 
         public void SetActionLookLocked(bool locked)
         {
-            actionLookLocked = IsFirstPerson && locked;
+            if (!IsFirstPerson || !locked)
+            {
+                actionLookLocked = false;
+                ReleaseActionCameraTracking();
+                return;
+            }
+
+            if (actionLookLocked)
+            {
+                return;
+            }
+
+            actionLookLocked = true;
+            actionEyeClearanceWeight = 0f;
+            CaptureActionCameraTracking();
+        }
+
+        public void SetActionEyeClearance(float weight)
+        {
+            actionEyeClearanceWeight = actionLookLocked && IsFirstPerson
+                ? Mathf.Clamp01(weight)
+                : 0f;
         }
 
         public void Initialize(
@@ -228,6 +265,7 @@ namespace BarPromenade
                 return;
             }
 
+            ReleaseActionCameraTracking();
             previousCinematicMotion = cameraFollow.CinematicMotionEnabled;
             previousOrbitInput = cameraFollow.OrbitInputEnabled;
             previousFixedPose = cameraFollow.FixedPoseActive;
@@ -262,6 +300,7 @@ namespace BarPromenade
                 viewPitch,
                 out Vector3 position,
                 out Quaternion rotation);
+
             float fieldOfView = plan.CameraFieldOfView;
             if (menuFocusWeight > 0f)
             {
@@ -290,11 +329,48 @@ namespace BarPromenade
                     amount);
             }
 
+            if (actionLookLocked)
+            {
+                Transform head = playerRegistry?.Anchors.Head;
+                if (head != null)
+                {
+                    if (actionCameraPositionCaptured)
+                    {
+                        // Keep the lens at its captured eye-space offset. The
+                        // head rotation then moves the camera around the neck
+                        // with the face, so the mouth and mug cannot pass
+                        // through a camera which only copied translation.
+                        position = head.TransformPoint(
+                            actionCameraPositionInHead);
+                    }
+                    else if (actionHeadPositionCaptured)
+                    {
+                        Vector3 baselineHeadPosition =
+                            pelvis.TransformPoint(actionHeadPositionInPelvis);
+                        position += head.position - baselineHeadPosition;
+                    }
+                }
+            }
+
+            if (actionLookLocked && actionCameraRotationCaptured)
+            {
+                Transform head = playerRegistry?.Anchors.Head;
+                rotation = head != null &&
+                           actionCameraRotationInHeadCaptured
+                    ? head.rotation * actionCameraRotationInHead
+                    : actionCameraRotation;
+                position -= rotation * Vector3.forward *
+                    (ActionEyeClearanceMetres *
+                     actionEyeClearanceWeight);
+            }
+
             cameraFollow.SetFixedPose(position, rotation, fieldOfView);
         }
 
         private void EndView()
         {
+            ReleaseActionCameraTracking();
+
             if (!IsFirstPerson)
             {
                 return;
@@ -328,6 +404,67 @@ namespace BarPromenade
             cameraFollow.SetOrbitInputEnabled(previousOrbitInput);
             cameraFollow.SetCinematicMotionEnabled(
                 previousCinematicMotion);
+        }
+
+        private void CaptureActionCameraTracking()
+        {
+            Transform pelvis = playerRegistry?.Anchors.Pelvis;
+            Transform head = playerRegistry?.Anchors.Head;
+            if (pelvis != null && head != null)
+            {
+                actionHeadPositionInPelvis =
+                    pelvis.InverseTransformPoint(head.position);
+                actionHeadPositionCaptured = true;
+            }
+
+            Camera targetCamera = cameraFollow != null
+                ? cameraFollow.GetComponent<Camera>()
+                : null;
+            if (targetCamera == null)
+            {
+                return;
+            }
+
+            actionCamera = targetCamera;
+            actionCameraRotation = targetCamera.transform.rotation;
+            if (head != null)
+            {
+                actionCameraPositionInHead =
+                    head.InverseTransformPoint(targetCamera.transform.position);
+                actionCameraPositionCaptured = true;
+                actionCameraRotationInHead =
+                    Quaternion.Inverse(head.rotation) *
+                    targetCamera.transform.rotation;
+                actionCameraRotationInHeadCaptured = true;
+            }
+
+            actionCameraRotationCaptured = true;
+            actionPreviousNearClipPlane = targetCamera.nearClipPlane;
+            actionNearClipCaptured = true;
+            targetCamera.nearClipPlane = Mathf.Min(
+                targetCamera.nearClipPlane,
+                ActionNearClipPlane);
+        }
+
+        private void ReleaseActionCameraTracking()
+        {
+            if (actionNearClipCaptured && actionCamera != null)
+            {
+                actionCamera.nearClipPlane = actionPreviousNearClipPlane;
+            }
+
+            actionCamera = null;
+            actionCameraRotation = Quaternion.identity;
+            actionCameraRotationInHead = Quaternion.identity;
+            actionCameraRotationInHeadCaptured = false;
+            actionCameraRotationCaptured = false;
+            actionPreviousNearClipPlane = 0f;
+            actionNearClipCaptured = false;
+            actionHeadPositionInPelvis = Vector3.zero;
+            actionHeadPositionCaptured = false;
+            actionEyeClearanceWeight = 0f;
+            actionCameraPositionInHead = Vector3.zero;
+            actionCameraPositionCaptured = false;
         }
 
         private void OnEnable()

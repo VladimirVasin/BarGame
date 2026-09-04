@@ -11,7 +11,7 @@ parallel source deliberately keeps that pipeline untouched while sharing its
 NpcHumanV2-compatible 31-bone body substrate.  The active bartender is an
 ordinary publican in a dark green waistcoat, rolled sleeves and apron, with
 the standard left-vessel and right-bottle sockets used by the authored cafe
-attendant animation set.
+service set. Long counter travel reuses Hero V2's full ordinary walk cycle.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry.
     ) from error
 
 
-GENERATOR_VERSION = "3.0.0"
+GENERATOR_VERSION = "3.1.0"
 DESIGN_ID = "bar_bartender_v2"
 DISPLAY_NAME = "Bar Bartender"
 SEED = 460918
@@ -40,15 +40,19 @@ TOTAL_HEIGHT = 1.75
 MIN_TRIANGLES = 900
 MAX_TRIANGLES = 2600
 SHARED_MATERIAL_ASSET = "Assets/Player3D/Materials/Player3DLit.mat"
-ANIMATION_ASSET = (
+SERVICE_ANIMATION_ASSET = (
     "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx"
 )
-ANIMATION_CLIPS = (
+SERVICE_ANIMATION_CLIPS = (
     "CafeAttendantWipe",
     "CafeAttendantWalk",
     "CafeAttendantPour",
     "CafeAttendantNotice",
 )
+LOCOMOTION_ANIMATION_ASSET = (
+    "Assets/Player3D/V2/Animations/PlayerCharacter3DV2Animations.fbx"
+)
+LOCOMOTION_ANIMATION_CLIP = "Walk"
 SOCKET_NAMES = (
     "SOCKET_Grip.L",
     "SOCKET_Vessel.L",
@@ -208,7 +212,8 @@ class OrdinaryBartenderBuilder(legacy.BartenderBuilder):
         scene["bp_seed"] = SEED
         scene["bp_has_own_animations"] = False
         scene["bp_runtime_material"] = SHARED_MATERIAL_ASSET
-        scene["bp_animation_asset"] = ANIMATION_ASSET
+        scene["bp_animation_asset"] = SERVICE_ANIMATION_ASSET
+        scene["bp_locomotion_animation_asset"] = LOCOMOTION_ANIMATION_ASSET
         scene["bp_anatomy_standard"] = base.NPC_ANATOMY_STANDARD
         scene["bp_rest_pelvis_height_m"] = base.NPC_PELVIS_HEIGHT
         scene["bp_arm_design"] = "ordinary_two_armed_v2"
@@ -495,7 +500,12 @@ def validate_result(result):
             for part in sorted(result.parts, key=lambda item: item.obj.name)
         ],
         "anchors": list(result.anchors),
-        "animations": list(ANIMATION_CLIPS),
+        "animations": {
+            "service_asset": SERVICE_ANIMATION_ASSET,
+            "service_clips": list(SERVICE_ANIMATION_CLIPS),
+            "locomotion_asset": LOCOMOTION_ANIMATION_ASSET,
+            "locomotion_clip": LOCOMOTION_ANIMATION_CLIP,
+        },
     }
     signature = hashlib.sha256(
         json.dumps(
@@ -579,8 +589,10 @@ def write_manifest(path: Path, result, report) -> None:
         "rigidbodies": False,
         "animation_count": 0,
         "animations": [],
-        "shared_animation_asset": ANIMATION_ASSET,
-        "shared_clips": list(ANIMATION_CLIPS),
+        "shared_animation_asset": SERVICE_ANIMATION_ASSET,
+        "shared_clips": list(SERVICE_ANIMATION_CLIPS),
+        "locomotion_animation_asset": LOCOMOTION_ANIMATION_ASSET,
+        "locomotion_clip": LOCOMOTION_ANIMATION_CLIP,
         "build_signature": report.build_signature,
         "arm_design": "ordinary_two_armed_v2",
         "extra_arm_pairs": 0,
@@ -633,7 +645,10 @@ def main() -> None:
     print(f"  Service anchors: {len(result.anchors)}")
     print(f"  Meshes: {report.mesh_count}")
     print(f"  Triangles: {report.triangle_count}/{MAX_TRIANGLES}")
-    print(f"  Shared clips: {len(ANIMATION_CLIPS)}")
+    print(
+        f"  Shared clips: {len(SERVICE_ANIMATION_CLIPS)} service + "
+        "1 locomotion"
+    )
     print(f"  Signature: {report.build_signature}")
     print(f"  Blend: {config.output}")
     print(f"  FBX: {config.fbx}")

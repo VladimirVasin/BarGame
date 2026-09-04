@@ -7,7 +7,7 @@ namespace BarPromenade
     /// The bartender's hands during drink service. The authored
     /// <see cref="BarDrinkServiceTimeline"/> remains the single clock and
     /// keeps driving every prop. The active ordinary bartender reads its
-    /// phase into waiter clips while his right hand follows the selected
+    /// phase into human service clips while his right hand follows the selected
     /// bottle and his left hand steadies the vessel. The retained legacy
     /// path keeps its former four-chain mapping for prefab inspection.
     /// </summary>
@@ -28,11 +28,16 @@ namespace BarPromenade
         public const float CarryWeight = 1f;
         public const float CounterTravelSpeed = 2.25f;
         public const float CounterTurnSpeedDegrees = 360f;
+        public const float CounterTravelFacingToleranceDegrees = 8f;
+
+        private const float PositionToleranceSquared = 0.000001f;
+        private const float AuthoredFacingToleranceDegrees = 0.1f;
 
         private BarBartenderPresentation presentation;
         private BarDrinkShopController shop;
         private Vector3 homeLocalPosition;
         private Quaternion homeLocalRotation;
+        private Vector3 vesselCarryTargetLocalPosition;
         private float counterTravelElapsedSeconds;
         private bool isInitialized;
 
@@ -85,6 +90,9 @@ namespace BarPromenade
                 }
 
                 beerPostSolve.Initialize(registry, shop);
+                vesselCarryTargetLocalPosition =
+                    transform.InverseTransformPoint(
+                        registry.VesselGripAnchor.position);
             }
 
             homeLocalPosition = transform.localPosition;
@@ -99,15 +107,16 @@ namespace BarPromenade
                 return;
             }
 
-            bool movingAlongCounter = UpdateCounterPosition(Time.deltaTime);
+            CounterTravelFrame counterTravel =
+                UpdateCounterPosition(Time.deltaTime);
             if (shop.IsReturningCounterMenuHome)
             {
                 ReleaseAll();
-                if (movingAlongCounter)
+                if (counterTravel.IsActive)
                 {
-                    presentation.ApplyCounterTravelPose(
-                        counterTravelElapsedSeconds,
-                        leftHandCarriesMenu: true);
+                    ApplyCounterMotionPose(
+                        counterTravel,
+                        leftHandOccupied: true);
                 }
                 else
                 {
@@ -123,10 +132,9 @@ namespace BarPromenade
                 shop.ServiceView == null)
             {
                 ReleaseAll();
-                if (movingAlongCounter)
+                if (counterTravel.IsActive)
                 {
-                    presentation.ApplyCounterTravelPose(
-                        counterTravelElapsedSeconds);
+                    ApplyCounterMotionPose(counterTravel);
                 }
                 else
                 {
@@ -146,13 +154,11 @@ namespace BarPromenade
             if (presentation.UsesOrdinaryRig)
             {
                 ApplyOrdinaryService(frame, menu, menuHandled);
-                if (movingAlongCounter &&
-                    shop.MenuState ==
-                        BarPromenade.Runtime.World.CounterMenuState.Delivering)
+                if (counterTravel.IsActive)
                 {
-                    presentation.ApplyCounterTravelPose(
-                        counterTravelElapsedSeconds,
-                        leftHandCarriesMenu: true);
+                    ApplyCounterMotionPose(
+                        counterTravel,
+                        IsLeftHandOccupied(frame, menuHandled));
                 }
                 return;
             }
@@ -162,7 +168,7 @@ namespace BarPromenade
             ApplyVesselGuide(frame);
         }
 
-        private bool UpdateCounterPosition(float deltaTime)
+        private CounterTravelFrame UpdateCounterPosition(float deltaTime)
         {
             Vector3 target = homeLocalPosition;
             Quaternion targetRotation = homeLocalRotation;
@@ -205,29 +211,60 @@ namespace BarPromenade
             }
 
             float step = Mathf.Max(0f, deltaTime) * CounterTravelSpeed;
+            float turnStep = Mathf.Max(0f, deltaTime) *
+                CounterTurnSpeedDegrees;
             Vector3 previous = transform.localPosition;
             Quaternion previousRotation = transform.localRotation;
-            transform.localPosition = Vector3.MoveTowards(
-                previous,
-                target,
-                step);
-            transform.localRotation = Quaternion.RotateTowards(
-                previousRotation,
-                targetRotation,
-                Mathf.Max(0f, deltaTime) *
-                CounterTurnSpeedDegrees);
+            Vector3 flatPath = target - previous;
+            flatPath.y = 0f;
+            bool hasFlatPath =
+                flatPath.sqrMagnitude > PositionToleranceSquared;
+            if (hasFlatPath)
+            {
+                Quaternion travelRotation = Quaternion.LookRotation(
+                    flatPath.normalized,
+                    Vector3.up);
+                transform.localRotation = Quaternion.RotateTowards(
+                    previousRotation,
+                    travelRotation,
+                    turnStep);
+                if (Quaternion.Angle(
+                        transform.localRotation,
+                        travelRotation) <=
+                    CounterTravelFacingToleranceDegrees)
+                {
+                    transform.localPosition = Vector3.MoveTowards(
+                        previous,
+                        target,
+                        step);
+                }
+            }
+            else
+            {
+                transform.localPosition = Vector3.MoveTowards(
+                    previous,
+                    target,
+                    step);
+                transform.localRotation = Quaternion.RotateTowards(
+                    previousRotation,
+                    targetRotation,
+                    turnStep);
+            }
+
             bool movingPosition =
                 (transform.localPosition - target).sqrMagnitude >
-                0.000001f;
+                PositionToleranceSquared;
             bool turning = Quaternion.Angle(
                 transform.localRotation,
-                targetRotation) > 0.1f;
-            bool movedThisFrame =
+                targetRotation) > AuthoredFacingToleranceDegrees;
+            bool translatedThisFrame =
                 (transform.localPosition - previous).sqrMagnitude >
-                0.000001f ||
-                Quaternion.Angle(
+                PositionToleranceSquared;
+            bool rotatedThisFrame = Quaternion.Angle(
                     previousRotation,
                     transform.localRotation) > 0.01f;
+            bool movedThisFrame =
+                translatedThisFrame || rotatedThisFrame;
             if (movingPosition || turning || movedThisFrame)
             {
                 counterTravelElapsedSeconds += Mathf.Max(0f, deltaTime);
@@ -237,7 +274,7 @@ namespace BarPromenade
                 counterTravelElapsedSeconds = 0f;
             }
 
-            bool arrived = !movingPosition && !turning && !movedThisFrame;
+            bool arrived = !movingPosition && !turning;
             shop?.ReportCounterServerAtTarget(
                 targetsCounter && arrived);
             if (shop != null)
@@ -250,7 +287,49 @@ namespace BarPromenade
                     arrived);
             }
 
-            return movingPosition || turning || movedThisFrame;
+            return new CounterTravelFrame(
+                !arrived || movedThisFrame,
+                translatedThisFrame);
+        }
+
+        private void ApplyCounterMotionPose(
+            CounterTravelFrame frame,
+            bool leftHandOccupied = false)
+        {
+            if (frame.IsTranslating)
+            {
+                presentation.ApplyCounterTravelPose(
+                    counterTravelElapsedSeconds,
+                    leftHandOccupied);
+                return;
+            }
+
+            presentation.ApplyCounterTurnPose(
+                counterTravelElapsedSeconds,
+                leftHandOccupied);
+        }
+
+        private bool IsLeftHandOccupied(
+            BarDrinkServiceFrame frame,
+            bool menuHandled)
+        {
+            if (menuHandled ||
+                shop.MenuState ==
+                    BarPromenade.Runtime.World.CounterMenuState.Delivering ||
+                shop.MenuState ==
+                    BarPromenade.Runtime.World.CounterMenuState.Retrieving)
+            {
+                return true;
+            }
+
+            return frame.Phase ==
+                       BarDrinkServicePhase.VesselPlacement ||
+                   frame.Phase == BarDrinkServicePhase.Pouring ||
+                   frame.Phase == BarDrinkServicePhase.BottleReturn ||
+                   frame.Phase == BarDrinkServicePhase.BeerGlassPickup ||
+                   frame.Phase == BarDrinkServicePhase.BeerPouring ||
+                   frame.Phase == BarDrinkServicePhase.BeerCarryToGuest ||
+                   frame.Phase == BarDrinkServicePhase.BeerGlassPlacement;
         }
 
         private void ApplyOrdinaryService(
@@ -331,7 +410,8 @@ namespace BarPromenade
             if (vessel != null && vesselWeight > 0f)
             {
                 vesselTarget = carriesVessel
-                    ? presentation.Registry.VesselGripAnchor.position
+                    ? transform.TransformPoint(
+                        vesselCarryTargetLocalPosition)
                     : vessel.GripWorldPosition;
             }
 
@@ -461,6 +541,20 @@ namespace BarPromenade
             {
                 presentation.SetChainTarget(chain, Vector3.zero, 0f);
             }
+        }
+
+        private readonly struct CounterTravelFrame
+        {
+            public CounterTravelFrame(
+                bool isActive,
+                bool isTranslating)
+            {
+                IsActive = isActive;
+                IsTranslating = isTranslating;
+            }
+
+            public bool IsActive { get; }
+            public bool IsTranslating { get; }
         }
     }
 

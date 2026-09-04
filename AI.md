@@ -577,7 +577,7 @@ returns. They spawn at randomly
   `10`-clip bank, and the `53`-clip `CityPedestrianLocomotion` bank all use
   `4.5.2` — one shared generator, so one version. The mother and her own bank
   sit one revision back at `4.5.1`; the shelter trio and their isolated
-  three-loop bank at `4.3.1`; the active bartender manifest uses `3.0.0`,
+  three-loop bank at `4.3.1`; the active bartender manifest uses `3.1.0`,
   while the retained six-armed bartender and driver manifests use `2.0.0`.
   The cashier generator owns two
   sibling assets over one `256 px` garment-detail atlas: the `1.0.0`
@@ -600,19 +600,25 @@ returns. They spawn at randomly
   inactive legacy reference. The active root stands on the bar floor: the
   former `0.42 m` duckboard and matching root lift belonged to the superseded
   six-arm presentation and are absent from the active world. The active
-  registry reuses
-  `CafeAttendantWipe`, `CafeAttendantWalk`, `CafeAttendantPour` and
-  `CafeAttendantNotice` from `MountainRoadCafeCast`; a manually evaluated
-  `PlayableGraph` reads `BarDrinkServiceTimeline`. For beer the bartender
-  walks to the central tap, takes and fills the compact beer mug, carries it
-  to the selected place and sets it directly before the hero with its handle
-  on his right; the right hand pulls the tap handle while the left steadies
-  the vessel. The full mug then waits without a timeout: looking at it owns
+  registry reuses the four `CafeAttendant*` service clips from
+  `MountainRoadCafeCast`, plus the complete `Walk` cycle from the compatible
+  Hero V2 bank; a manually evaluated
+  `PlayableGraph` reads `BarDrinkServiceTimeline`. During counter travel the
+  root first faces its path, then advances with that full leg cycle before
+  turning back to the authored working orientation. For beer the bartender
+  walks to the central tap, takes and fills the slightly enlarged handled beer
+  mug, carries it to the selected place and sets it directly before the hero
+  with its handle on his right; the right hand pulls the tap handle while the
+  left steadies the vessel. The full mug then waits without a timeout: looking at it owns
   both the localized drink prompt and the same thin yellow contour used by the
   closed menu. Accepting the prompt runs a nested pickup, sip and return on the
-  visible seated Hero V2 rig. His right hand grips the handle; the rim stays at
-  his mouth while the mug reaches horizontal and the head and torso rise with
-  it, then the mug remains empty on the counter.
+  visible seated Hero V2 rig. His right hand grips the handle; the seated
+  first-person camera begins from the accepted gaze and keeps its captured eye
+  offset through the animated head's complete reach-and-sip pose. It eases only
+  `0.02 m` back along that gaze as the rim reaches the mouth. The
+  rim stays at his mouth while the mug reaches horizontal and the head and
+  torso rise with it, and the close-action clip plane keeps the vessel visible;
+  then the mug remains empty on the counter.
   Cash is paid at confirmation, while drinking effects commit exactly once
   only after that visible action completes. During the
   quiet shared Wipe, that grounded placement puts the towel against the real
@@ -623,6 +629,9 @@ returns. They spawn at randomly
   stools not occupied by patrons are usable, each with its own safe entry,
   exit, camera and service offset; the rightmost is moved inward clear of the
   counter return, and the former single-seat floor/sign marker is not shown.
+  The interior arrival stands `1.10 m` farther inside the entrance than the
+  former spawn, keeping the restored chase-camera lens in front of the closed
+  door after the transition.
   Exactly three beer taps form a compact `0.33 m`-spaced bank at the seat-free
   right end of the counter, beyond that last stool. The menu dock shares the
   selected seat's lateral axis, so the bartender puts the booklet directly

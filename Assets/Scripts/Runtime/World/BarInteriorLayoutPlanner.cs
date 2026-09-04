@@ -59,7 +59,7 @@ namespace BarPromenade
                 RoomHeight,
                 WallThickness,
                 new Rect(-10.25f, -7.25f, 20.5f, 14.5f),
-                new Vector3(0f, 0.12f, -6.45f),
+                new Vector3(0f, 0.12f, -5.35f),
                 new Vector3(0f, 0.9f, -7.25f),
                 new Vector3(0f, 0.12f, -6.9f),
                 new Vector3(2f, 1.8f, 1.35f),

@@ -1594,6 +1594,7 @@ namespace BarPromenade
             BarDrinkServiceFrame frame = timeline.CurrentFrame;
             ApplyPhysicalMenuPresentation(frame);
             ApplyCamera(frame.CameraBlend);
+            ApplyActionEyeClearance(frame);
             ApplyCounterSeatDepthOfField();
             // The bartender owns the bottle now. During a real counter-seat
             // session the old camera-local arm meshes stay hidden; their
@@ -1607,6 +1608,39 @@ namespace BarPromenade
             ApplyPlayerVisualForFrame(frame);
             ApplyBottlePresentation(frame);
             ApplyVesselPresentation(frame);
+        }
+
+        private void ApplyActionEyeClearance(BarDrinkServiceFrame frame)
+        {
+            if (counterSeatView == null)
+            {
+                return;
+            }
+
+            float weight;
+            switch (frame.Phase)
+            {
+                case BarDrinkServicePhase.PlayerPickup:
+                    weight = SmoothRange(
+                        frame.PhaseProgress,
+                        0.68f,
+                        0.90f);
+                    break;
+                case BarDrinkServicePhase.PlayerDrinking:
+                    weight = 1f;
+                    break;
+                case BarDrinkServicePhase.PlayerVesselReturn:
+                    weight = 1f - SmoothRange(
+                        frame.PhaseProgress,
+                        0.25f,
+                        0.62f);
+                    break;
+                default:
+                    weight = 0f;
+                    break;
+            }
+
+            counterSeatView.SetActionEyeClearance(weight);
         }
 
         private void ApplyCounterSeatDepthOfField()

@@ -163,7 +163,7 @@ DEFAULT_MANIFEST = ROOT / "Assets" / "Bar" / "Models" / "Bar3D.json"
 SERVICE_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarServiceProps3D.fbx"
 SERVICE_MANIFEST = (
     ROOT / "Assets" / "Bar" / "Models" / "BarServiceProps3D.json")
-SERVICE_GENERATOR_VERSION = "1.4.0"
+SERVICE_GENERATOR_VERSION = "1.4.1"
 SERVICE_DESIGN_ID = "bar_service_props_v1"
 SERVICE_DISPLAY_NAME = "Bar Promenade Authored Service Props"
 FACADE_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarFacade3D.fbx"
@@ -1747,15 +1747,26 @@ SERVICE_MENU_BASIS_LENGTH = 0.10
 
 # The runtime enum and authored group retain the historical ``Pint`` name,
 # but the visible beer vessel is an ordinary half-litre handled mug. These
-# measurements are in Unity metres: the body is 145 mm high and 96 mm across
-# its rim, while the handle extends the complete width to 139 mm on +X.
-SERVICE_PINT_MUG_HEIGHT = 0.145
-SERVICE_PINT_MUG_BOTTOM_RADIUS = 0.043
-SERVICE_PINT_MUG_RIM_RADIUS = 0.048
-SERVICE_PINT_MUG_HANDLE_CENTER = (0.037, 0.074, 0.0)
-SERVICE_PINT_MUG_HANDLE_MAJOR_RADIUS = 0.047
-SERVICE_PINT_MUG_HANDLE_MINOR_RADIUS = 0.007
-SERVICE_PINT_MUG_GRIP = (0.084, 0.074, 0.0)
+# measurements are in Unity metres. The current 1.07 scale keeps it compact
+# beside the hero's hand while making the body and handle a little easier to
+# read in the first-person drinking shot: 155 mm high, 103 mm across the rim
+# and 149 mm across the complete handled silhouette.
+SERVICE_PINT_MUG_SCALE = 1.07
+SERVICE_PINT_MUG_HEIGHT = 0.145 * SERVICE_PINT_MUG_SCALE
+SERVICE_PINT_MUG_BOTTOM_RADIUS = 0.043 * SERVICE_PINT_MUG_SCALE
+SERVICE_PINT_MUG_RIM_RADIUS = 0.048 * SERVICE_PINT_MUG_SCALE
+SERVICE_PINT_MUG_HANDLE_CENTER = (
+    0.037 * SERVICE_PINT_MUG_SCALE,
+    0.074 * SERVICE_PINT_MUG_SCALE,
+    0.0,
+)
+SERVICE_PINT_MUG_HANDLE_MAJOR_RADIUS = 0.047 * SERVICE_PINT_MUG_SCALE
+SERVICE_PINT_MUG_HANDLE_MINOR_RADIUS = 0.007 * SERVICE_PINT_MUG_SCALE
+SERVICE_PINT_MUG_GRIP = (
+    0.084 * SERVICE_PINT_MUG_SCALE,
+    0.074 * SERVICE_PINT_MUG_SCALE,
+    0.0,
+)
 SERVICE_PINT_MUG_DRINK_RIM = (
     0.0,
     SERVICE_PINT_MUG_HEIGHT,
@@ -1773,12 +1784,19 @@ SERVICE_VESSEL_PROFILES = {
     "Pint": {
         "glass": (
             (SERVICE_PINT_MUG_BOTTOM_RADIUS, 0.0),
-            (0.044, 0.018),
-            (0.046, 0.125),
+            (0.044 * SERVICE_PINT_MUG_SCALE,
+             0.018 * SERVICE_PINT_MUG_SCALE),
+            (0.046 * SERVICE_PINT_MUG_SCALE,
+             0.125 * SERVICE_PINT_MUG_SCALE),
             (SERVICE_PINT_MUG_RIM_RADIUS, SERVICE_PINT_MUG_HEIGHT),
         ),
-        "liquid": ((0.038, 0.0), (0.043, 0.108)),
-        "liquid_base": 0.012,
+        "liquid": (
+            (0.038 * SERVICE_PINT_MUG_SCALE, 0.0),
+            (0.043 * SERVICE_PINT_MUG_SCALE,
+             0.108 * SERVICE_PINT_MUG_SCALE),
+        ),
+        "liquid_base": 0.012 * SERVICE_PINT_MUG_SCALE,
+        "pour_target_y": 0.120 * SERVICE_PINT_MUG_SCALE,
         "handle": {
             "center": SERVICE_PINT_MUG_HANDLE_CENTER,
             "major_radius": SERVICE_PINT_MUG_HANDLE_MAJOR_RADIUS,
@@ -2157,7 +2175,7 @@ def build_service_props(materials: dict) -> AssetBuild:
         add_anchor(
             asset, f"{vessel}PourTarget",
             f"service_vessel_target:{vessel}",
-            (0.0, glass_height - 0.025, 0.0))
+            (0.0, recipe.get("pour_target_y", glass_height - 0.025), 0.0))
         add_anchor(
             asset, f"{vessel}LiquidBase",
             f"service_vessel_liquid_base:{vessel}",

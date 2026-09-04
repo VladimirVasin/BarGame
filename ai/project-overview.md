@@ -630,7 +630,7 @@ The vertical slice contains:
   manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
   The four Mountain Road cafe models and their separate `10`-clip bank use
   `4.5.2`; the shelter trio and dedicated three-loop bank use `4.2.0`.
-  The active bartender manifest uses `3.0.0`, while the retained six-armed
+  The active bartender manifest uses `3.1.0`, while the retained six-armed
   bartender and bus-driver manifests use `2.0.0`; the cashier generator
   owns the active `1.0.0` normal output (`1.75 m`, `40` meshes / `1,244`
   triangles) and the retained `2.2.0` Watcher output (`2.05 m`, `44` /
@@ -2083,13 +2083,15 @@ The vertical slice contains:
   `Assets/Bar/Bartender/Prefabs/BarBartenderOrdinary.prefab` and retains the
   former six-armed prefab only as an inactive legacy reference. The active
   `1.75 m`, `39`-mesh / `1,136`-triangle ordinary two-armed publican wears a
-  dark-green waistcoat, rolled sleeves and apron and reuses
-  `CafeAttendantWipe`, `CafeAttendantWalk`, `CafeAttendantPour` and
-  `CafeAttendantNotice`; `BarBartenderServiceChoreography` binds the hands to
-  the physical menu, bottle, central tap or vessel while the service timeline
-  remains authoritative. For beer he walks to the tap, pulls its handle over
-  the compact handled mug, carries the full mug to the selected stool and
-  places it directly before the hero. The active root and feet
+  dark-green waistcoat, rolled sleeves and apron. It reuses all four
+  `CafeAttendant*` service clips, while counter locomotion uses the compatible
+  Hero V2 `Walk` cycle;
+  `BarBartenderServiceChoreography` turns the root into its path, advances it
+  with that complete stride and then restores its working orientation while
+  binding the hands to the physical menu, bottle, central tap or vessel. For
+  beer he walks to the tap, pulls its handle over the slightly enlarged
+  handled mug, carries the full mug to the selected stool and places it
+  directly before the hero. The active root and feet
   remain on the authored floor: the legacy `0.42 m` duckboard and matching
   actor lift are absent. During the quiet shared Wipe, that grounded placement
   puts the towel against the real `Y = 1.02 m` counter top and the clip carries
@@ -2135,9 +2137,9 @@ The vertical slice contains:
   clear of the counter return. Three closely spaced taps occupy the seat-free
   counter end beyond it. The world rig walks to the chosen stool and
   sits, then the bartender carries a booklet from the passive
-  `bar_service_props_v1` `1.4.0` library
+  `bar_service_props_v1` `1.4.1` library
   (`34` meshes / `4,136` triangles, signature
-  `ea8995480c0eaf1b41579aab109b385582a4788dd1698ab8424ad84bbaa8717c`)
+  `9de264b5f290e18680b359cf65991c7ba526d233915cebba7db14a4ca5a0b9cd`)
   to a dock exactly on that stool's lateral axis, directly before the hero.
   The shared model/input/page/focus/hint/prop-motion layer focuses
   the larger bar spread over `0.45 s` at `0.45 m` and FOV `72`, using a
@@ -2170,14 +2172,18 @@ The vertical slice contains:
   booklet on the counter and commits a pending order, but defers intoxication,
   last-drink, consumed-count and stress effects until the physical drink is
   finished. Beer uses the central tap: the bartender walks to it, takes the
-  compact mug, pulls the real handle, fills it with the world-space stream,
+  `155 mm`-high mug, pulls the real handle, fills it with the world-space stream,
   carries it to the selected place and sets it directly before the hero with
   its handle on his right. While the full mug waits, the same gaze predicate
   drives its thin yellow contour and the localized `E` drink prompt. The seated
   world body remains authoritative and runs `2 s` pickup, `3 s` sip and `2 s`
-  return actions. Its right hand grips the handle directly; during the sip the
-  drinking rim stays at the mouth, the mug reaches horizontal, and the head
-  and torso rise with it in the same restrained motion as the corrected bar
+  return actions. Its right hand grips the handle directly. The seated
+  first-person camera starts from the gaze that accepted the mug and keeps its
+  captured eye-space offset through the animated head's complete pose. It eases
+  `0.02 m` back along that gaze at the mouth and temporarily uses a `0.03 m`
+  near plane. During the sip the drinking rim stays at the
+  mouth, the mug reaches horizontal and remains in frame, and the head and
+  torso rise with it in the same restrained motion as the corrected bar
   patrons. The empty mug returns to the counter and remains there, and the
   pending order is consumed exactly once only after that visible action
   completes. The old camera-local bar arm meshes remain
@@ -2188,6 +2194,8 @@ The vertical slice contains:
   Exiting restores the exact pre-seat camera and world rig; only
   after the visible stand-up completes does the bartender take the booklet and
   carry it home, and a later sit starts a fresh delivery.
+  On scene arrival the hero starts `1.10 m` farther into the entrance, leaving
+  the restored chase-camera lens inside the closed door plane.
   Legacy drink IDs and purchase definitions remain readable for saved/session
   compatibility, but none of their five removed entries is exposed by the bar
   menu. Lifecycle teardown restores every transform,

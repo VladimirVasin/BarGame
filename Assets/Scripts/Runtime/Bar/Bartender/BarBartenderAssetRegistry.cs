@@ -9,7 +9,8 @@ namespace BarPromenade
         Wipe = 0,
         Walk = 1,
         Pour = 2,
-        Notice = 3
+        Notice = 3,
+        ServiceStep = 4
     }
 
     [Serializable]
@@ -109,9 +110,9 @@ namespace BarPromenade
     /// <summary>
     /// Serialized editor-built bindings shared by both bartender assets.
     /// The inactive legacy prefab owns four rigid extra-arm chains; the
-    /// active ordinary prefab owns the four authored waiter clips and
-    /// explicit left-vessel/right-bottle sockets. Both keep the exact
-    /// NpcHumanV2 bones and per-renderer manifest colours.
+    /// active ordinary prefab owns four authored service clips, one full
+    /// locomotion clip and explicit left-vessel/right-bottle sockets. Both keep
+    /// the exact NpcHumanV2 bones and per-renderer manifest colours.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class BarBartenderAssetRegistry : MonoBehaviour
@@ -272,10 +273,10 @@ namespace BarPromenade
             Transform configuredBottleGripAnchor)
         {
             if (configuredClipBindings == null ||
-                configuredClipBindings.Length != 4)
+                configuredClipBindings.Length != 5)
             {
                 throw new ArgumentException(
-                    "Ordinary bartender service requires exactly four " +
+                    "Ordinary bartender service requires exactly five " +
                     "authored clip bindings.",
                     nameof(configuredClipBindings));
             }

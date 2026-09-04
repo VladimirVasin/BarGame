@@ -695,9 +695,9 @@ MonoBehaviour:
     doorWidth: 0
     doorHeight: 0
   sourceTriangleCount: 4136
-  sourceGeneratorVersion: 1.4.0
+  sourceGeneratorVersion: 1.4.1
   designId: bar_service_props_v1
-  buildSignature: ea8995480c0eaf1b41579aab109b385582a4788dd1698ab8424ad84bbaa8717c
+  buildSignature: 9de264b5f290e18680b359cf65991c7ba526d233915cebba7db14a4ca5a0b9cd
 --- !u!1001 &3838405881583726865
 PrefabInstance:
   m_ObjectHideFlags: 0

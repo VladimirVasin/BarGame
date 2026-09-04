@@ -341,6 +341,9 @@ MonoBehaviour:
     clip: {fileID: -2869807845820341257, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
     loop: 1
   - kind: 1
+    clip: {fileID: -227416529858450933, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    loop: 1
+  - kind: 4
     clip: {fileID: -7226570737868844738, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
     loop: 1
   - kind: 2
@@ -359,9 +362,9 @@ MonoBehaviour:
     m_Center: {x: -0.013394594, y: 0.8749999, z: 0.036740184}
     m_Extent: {x: 0.817446, y: 0.8749999, z: 0.17479417}
   sourceTriangleCount: 1136
-  sourceGeneratorVersion: 3.0.0
+  sourceGeneratorVersion: 3.1.0
   designId: bar_bartender_v2
-  buildSignature: 011e1029d300de7ac1fdbabbecfe884cf590d88c14deb66408d299dd5359f2c8
+  buildSignature: dd18e47a5bbf5709b74343f6318773117dbc76c8b4aed0801b2d76decb922b02
 --- !u!1001 &90930596431503315
 PrefabInstance:
   m_ObjectHideFlags: 0

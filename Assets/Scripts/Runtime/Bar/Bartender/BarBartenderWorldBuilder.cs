@@ -58,7 +58,7 @@ namespace BarPromenade
                 provider.BartenderPrefab,
                 parent);
             bartender.name = "Bar Bartender";
-            // The shared cafe service clips were authored against a
+            // The authored human service clips were built against a
             // ground-level human and the bar counter has the same 1.02 m
             // working height. Keeping the former six-arm duckboard lift here
             // raises the towel by exactly 0.42 m and makes Wipe clean air.

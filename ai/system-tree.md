@@ -147,7 +147,7 @@ Assets/
     Bar/
       BarFacade3D.prefab            complete fixed-metre bar_exterior_v2 + door/sign anchors
       BarInterior3D.prefab          passive 174-mesh / 12,832-triangle bar_interior_v3 / generator 3.3.3 pub room + central-tap anchors
-      BarServiceProps3D.prefab      passive 34-mesh bottle/vessel/highlight/menu/stream library / 1.4.0
+      BarServiceProps3D.prefab      passive 34-mesh bottle/vessel/highlight/menu/stream library / 1.4.1
       BarBartenderProvider.asset    active ordinary + retained legacy six-arm links
       Textures/                     fifteen 512 px interior albedos (five used by service) + two exterior sheets
     Supermarket/
@@ -241,9 +241,9 @@ Assets/
       BarFacade3D.json                  bar_exterior_v2 bounds, parts, door/sign anchors + signature
       BarInterior3D.fbx                 174-part / 12,832-triangle late-Victorian British-pub interior v3.3.3
       Bar3D.json                        v3.3.3 layout + standard entrance/three-tap bank/central service anchors/seat-axis MenuDock + signature
-      BarServiceProps3D.{fbx,json}      34-part bottles/vessels/highlights/menu/stream pack / 1.4.0
+      BarServiceProps3D.{fbx,json}      34-part bottles/vessels/highlights/menu/stream pack / 1.4.1
     Bartender/
-      Models/BarBartenderOrdinary3D.{fbx,json}  active two-arm NpcHumanV2 / v3.0.0 / 39 meshes
+      Models/BarBartenderOrdinary3D.{fbx,json}  active two-arm NpcHumanV2 / v3.1.0 / 39 meshes / cafe service + Hero V2 Walk banks
       Models/BarBartender3D.{fbx,json}          retained six-arm legacy model / v2.0.0
       Prefabs/BarBartenderOrdinary.prefab       provider-selected active bartender
       Prefabs/BarBartender.prefab               retained inactive six-arm asset
@@ -1040,8 +1040,8 @@ Assets/
       Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  seated renderer suppression + retained compatibility attachment root
-      BarDrinkPhysicalShopPlayModeTests.cs multi-seat order + compact mug/right-handle/rim-to-mouth drink and return
-      BarInteriorSpawnPlayModeTests.cs real-scene inset menu/DOF release + grounded moving Wipe-to-counter contact
+      BarDrinkPhysicalShopPlayModeTests.cs multi-seat order + handled mug/right-hand grip/head-follow camera/sip visibility and return
+      BarInteriorSpawnPlayModeTests.cs real-scene arrival camera/inset menu/DOF release + grounded moving Wipe-to-counter contact
       MountainRoadCafePlayModeTests.cs  shipped-scene cup/saucer + hand/pot/counter contacts, silent phase idles and seat-camera restoration
       MountainRoadCafeMenuPlayModeTests.cs handoff, close/rest/reopen, stand restore + post-exit physical retrieval/no-effect contract
 ArtSource/
@@ -1115,8 +1115,8 @@ tools/
   city_building_parts.py         pure deterministic building geometry + surface/UV/attachment/window metadata
   atlas_kit.py                   shared PNG canvas/writer + rect-based atlas and UV helpers (Hero V2 + pedestrians)
   city_building_coplanarity.py   pure exact + <3 cm broad visible-layer audit with synthetic controls
-  build-bar-3d-model.py          v3.3.3 source: standard entrance/grounded bartender anchor/safe right stool/three-tap service anchors/seat-axis menu dock + v1.4.0 service pack
-  build-ordinary-bartender-3d-model.py active two-arm NpcHumanV2 bartender generator/validator
+  build-bar-3d-model.py          v3.3.3 source: standard entrance/grounded bartender anchor/safe right stool/three-tap service anchors/seat-axis menu dock + v1.4.1 service pack
+  build-ordinary-bartender-3d-model.py v3.1.0 active two-arm NpcHumanV2 bartender generator/validator + split service/locomotion banks
   bar_exterior.py                deterministic 38-part late-Victorian pub geometry
   build-bar-textures.py          fifteen measured interior/service albedos + exterior brick/plaster sheets
   build-supermarket-cashier-3d-model.py  normal/Watcher cashier build, export and contract validation
