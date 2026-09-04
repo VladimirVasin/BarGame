@@ -297,6 +297,8 @@ namespace BarPromenade
         private float soleClearance;
         private bool soleClearanceCaptured;
         private float lastPelvisDrop;
+        private float smoothedPlaneDelta;
+        private bool hasSmoothedPlaneDelta;
 
         /// <summary>
         /// Bound to an actor root; the registry is optional (pedestrians
@@ -379,6 +381,7 @@ namespace BarPromenade
             ikBlend = 0f;
             groundedOffsetCaptured = false;
             soleClearanceCaptured = false;
+            hasSmoothedPlaneDelta = false;
             lastPelvisDrop = 0f;
             samples[0] = FootGroundSample.None;
             samples[1] = FootGroundSample.None;
@@ -402,7 +405,12 @@ namespace BarPromenade
             for (int index = 0; index < legs.Length; index++)
             {
                 legs[index].Calibrate(actorForward);
+                // A rebind or a teleport leaves a smoothed target that
+                // belongs to another room; the next frame probes afresh.
+                legs[index].HasSmoothedTarget = false;
             }
+
+            hasSmoothedPlaneDelta = false;
 
             Vector3 actorRight = Vector3.Cross(Vector3.up, actorForward);
             arms[0].Calibrate(actorRight, actorForward);
@@ -771,7 +779,10 @@ namespace BarPromenade
                 ikBlend = input.LegsWeight;
                 plants[0] = 1f;
                 plants[1] = 1f;
-                ApplyLegs(StandingRiseInput, Mathf.Max(0f, deltaTime));
+                ApplyLegs(
+                    StandingRiseInput,
+                    Mathf.Max(0f, deltaTime),
+                    allowReachDip: false);
             }
             else if (input.StepActive && input.StepWeight > 0.0001f)
             {
@@ -1069,9 +1080,16 @@ namespace BarPromenade
             }
         }
 
+        /// <param name="allowReachDip">
+        /// Whether a boot that cannot reach its target may bring the hips
+        /// down to it. False through a rise: the Rise clip and the rise
+        /// model own the pelvis there, and a half-kneeling boot is out of
+        /// reach by design.
+        /// </param>
         private void ApplyLegs(
             in Player3DProceduralLayerInput input,
-            float deltaTime)
+            float deltaTime,
+            bool allowReachDip = true)
         {
             lastPelvisDrop = 0f;
             if (pelvis == null)
@@ -1161,8 +1179,21 @@ namespace BarPromenade
                     // planted boot; a swinging boot follows freely. Only
                     // the SURFACE is smoothed — the clip's own lift rides
                     // on top unfiltered, or the swing would lag the clip.
+                    //
+                    // And it is smoothed relative to the ACTOR ROOT, never
+                    // in the world. The capsule carries the body down a
+                    // stair flight at more than a metre a second; a world
+                    // height chasing at the planted rate reads that descent
+                    // as ground sinking under a planted boot and falls half
+                    // a metre behind in one flight. Both deltas then went
+                    // positive, the pelvis pinned at its lift cap, and the
+                    // hero came down the stairwell with his boots in the
+                    // air and his knees folded double. Held above the root,
+                    // his own descent passes through untouched and only a
+                    // real change under the foot — a nosing, a kerb — is
+                    // rate-limited.
                     baseSole = Mathf.MoveTowards(
-                        leg.SmoothedTargetSole,
+                        rootY + leg.SmoothedSoleAboveRoot,
                         baseSole,
                         PlayerFootPlacementRules.MaximumTargetStep(
                             plant,
@@ -1170,7 +1201,7 @@ namespace BarPromenade
                 }
 
                 float targetSole = baseSole + lift;
-                leg.SmoothedTargetSole = baseSole;
+                leg.SmoothedSoleAboveRoot = baseSole - rootY;
                 leg.HasSmoothedTarget = sample.HasSurface;
                 leg.TargetBoneY = targetSole + (anklePosition.y - leg.SoleY);
                 leg.Delta = targetSole - leg.SoleY;
@@ -1178,19 +1209,80 @@ namespace BarPromenade
                 leg.Prepared = true;
             }
 
-            float leftDelta = legs[0].Prepared ? legs[0].Delta : legs[1].Delta;
-            float rightDelta = legs[1].Prepared ? legs[1].Delta : legs[0].Delta;
-            float pelvisDrop = PlayerFootPlacementRules.PelvisDrop(
-                leftDelta,
-                rightDelta,
-                input.RunBlend,
-                input.HasRunClip);
+            // The pelvis follows the ground the CAPSULE stands on, not
+            // whichever boot found the lower tread. On a floor the two are
+            // the same number to the last decimal — both boots probe the
+            // surface under him — but on a stair flight the boots straddle
+            // two or three risers while the controller walks one hidden
+            // ramp, and following the lower boot dives the hips a quarter
+            // of a metre ahead of the footfall every step.
+            float pelvisDrop;
+            if (probe != null &&
+                probe.TryProbeActorGround(
+                    actorRoot.position,
+                    out float actorGroundY,
+                    out _))
+            {
+                float planeDelta = PlayerFootPlacementRules.PelvisPlaneDelta(
+                    actorGroundY,
+                    soleClearance,
+                    referenceSole);
+                // Rate-limited like a boot's own surface, and for the same
+                // reason: the ray reads the ground under the capsule's
+                // CENTRE, which crosses a kerb's edge a few frames after
+                // the controller has already stepped the body up onto it.
+                // Raw, that pair of frames would drop the hips a whole kerb
+                // and snap them back. The term is measured against the clip
+                // plane, which rides the root, so a ramp under him is
+                // already a constant here and nothing filters the descent.
+                if (hasSmoothedPlaneDelta)
+                {
+                    planeDelta = Mathf.MoveTowards(
+                        smoothedPlaneDelta,
+                        planeDelta,
+                        PlayerFootPlacementRules.MaximumTargetStep(
+                            1f,
+                            deltaTime));
+                }
+
+                smoothedPlaneDelta = planeDelta;
+                hasSmoothedPlaneDelta = true;
+                pelvisDrop = PlayerFootPlacementRules.PelvisDrop(
+                    planeDelta,
+                    planeDelta,
+                    input.RunBlend,
+                    input.HasRunClip);
+            }
+            else
+            {
+                // Nothing walkable under him — a pedestrian bound without a
+                // probe, a body over a gap — so the boots are all there is.
+                float leftDelta = legs[0].Prepared ? legs[0].Delta : legs[1].Delta;
+                float rightDelta = legs[1].Prepared ? legs[1].Delta : legs[0].Delta;
+                hasSmoothedPlaneDelta = false;
+                pelvisDrop = PlayerFootPlacementRules.PelvisDrop(
+                    leftDelta,
+                    rightDelta,
+                    input.RunBlend,
+                    input.HasRunClip);
+            }
+
+            // The reach is measured from the hip the GROUND has moved, not
+            // from the crouched one: a drunk's squat and his reach for a
+            // boot he has thrown wide are two separate demands on the hips
+            // and they add, exactly as they did before the ground term
+            // existed. Measuring after the crouch would quietly make the
+            // deeper of the two the whole answer.
+            float reachHipDrop = pelvisDrop;
             pelvisDrop -= input.CrouchMetres;
-            // A boot the drunk walk has put wide or long may be out of its
-            // leg's reach from where the hips are; the hips come down to
-            // it (a wide stance is a squat), never the sole up off the
-            // floor.
-            pelvisDrop -= GaitReachShortfall(input, actorForward);
+            // A boot out of its leg's reach from where the hips have just
+            // been put brings the hips down to it — a wide drunk stance is
+            // a squat, a tread below the flight's ramp is a reach — never
+            // the sole up off the ground.
+            if (allowReachDip)
+            {
+                pelvisDrop -= ReachShortfall(input, actorForward, reachHipDrop);
+            }
             lastPelvisDrop = pelvisDrop;
             if (Mathf.Abs(pelvisDrop) > 0.00001f)
             {
@@ -1347,33 +1439,61 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// How far the hips must come down for every disordered boot to
-        /// reach its target: the largest shortfall of any leg whose
-        /// target lies beyond its reach from the hip.
+        /// How far the hips must come down for a boot to reach its target:
+        /// the largest shortfall of any leg whose target lies beyond its
+        /// reach from the hip the pelvis drop has ALREADY moved (a hip
+        /// lifted onto a kerb has to answer for the foot still on the road
+        /// below it).
+        ///
+        /// A boot the drunk walk has thrown wide or long counts whatever
+        /// its phase — that stance is a squat and was tuned as one. A sober
+        /// boot counts by its plant instead, so the leg carrying the weight
+        /// brings the hips to its tread while the one still swinging down a
+        /// flight reaches as far as its leg goes and no further. Following
+        /// a swinging boot is how a body ends up diving a whole riser ahead
+        /// of its own footfall.
         /// </summary>
-        private float GaitReachShortfall(
+        private float ReachShortfall(
             in Player3DProceduralLayerInput input,
-            Vector3 actorForward)
+            Vector3 actorForward,
+            float pelvisDrop)
         {
             float shortfall = 0f;
             Vector3 right = Vector3.Cross(Vector3.up, actorForward);
+            float lowestPlant = Mathf.Min(plants[0], plants[1]);
+            float highestPlant = Mathf.Max(plants[0], plants[1]);
             for (int index = 0; index < legs.Length; index++)
             {
                 Leg leg = legs[index];
                 bool stepping = stepActive && stepSide == (FootSide)index;
-                if (!leg.Prepared ||
-                    stepping ||
-                    leg.Locked ||
-                    !input.ForwardGait ||
-                    !input.HasGaitDisorder(index))
+                if (!leg.Prepared || stepping || leg.Locked)
                 {
                     continue;
                 }
 
-                Vector2 offsetLocal = index == 0
-                    ? input.LeftFootOffsetLocal
-                    : input.RightFootOffsetLocal;
-                Vector3 offsetWorld = right * offsetLocal.x + actorForward * offsetLocal.y;
+                bool disordered = input.ForwardGait &&
+                                  input.HasGaitDisorder(index);
+                float weight = disordered
+                    ? 1f
+                    : PlayerFootPlacementRules.StanceWeight(
+                        plants[index],
+                        lowestPlant,
+                        highestPlant);
+                if (weight <= 0.0001f)
+                {
+                    continue;
+                }
+
+                Vector3 offsetWorld = Vector3.zero;
+                if (disordered)
+                {
+                    Vector2 offsetLocal = index == 0
+                        ? input.LeftFootOffsetLocal
+                        : input.RightFootOffsetLocal;
+                    offsetWorld = right * offsetLocal.x +
+                                  actorForward * offsetLocal.y;
+                }
+
                 Vector3 hip = leg.Thigh.position;
                 Vector3 ankle = leg.Foot.position;
                 Vector3 planar = new Vector3(
@@ -1383,15 +1503,12 @@ namespace BarPromenade
                 float reach = Mathf.Max(
                     leg.Length * PlayerFootPlacementRules.DefaultReachFraction,
                     Vector3.Distance(hip, ankle));
-                float planarDistance = planar.magnitude;
-                if (planarDistance >= reach)
-                {
-                    continue;
-                }
-
-                float vertical = hip.y - leg.TargetBoneY;
-                float allowed = Mathf.Sqrt(reach * reach - planarDistance * planarDistance);
-                shortfall = Mathf.Max(shortfall, vertical - allowed);
+                shortfall = Mathf.Max(
+                    shortfall,
+                    weight * PlayerFootPlacementRules.ReachShortfall(
+                        planar.magnitude,
+                        hip.y + pelvisDrop - leg.TargetBoneY,
+                        reach));
             }
 
             return Mathf.Max(0f, shortfall);
@@ -1544,7 +1661,13 @@ namespace BarPromenade
             public float SoleY;
             public float TargetBoneY;
             public float Delta;
-            public float SmoothedTargetSole;
+
+            /// <summary>
+            /// The smoothed surface target, held above the ACTOR ROOT so
+            /// the body's own descent is never mistaken for ground moving
+            /// under the boot.
+            /// </summary>
+            public float SmoothedSoleAboveRoot;
             public bool HasSmoothedTarget;
             public bool Prepared;
             public Quaternion ClipFootRotation;

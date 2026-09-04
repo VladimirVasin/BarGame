@@ -4,7 +4,7 @@ namespace BarPromenade
 {
     /// <summary>
     /// Applies one canonical facial cell without cloning the hero's shared
-    /// material. The binding is optional, so Hero V1 never enters this path.
+    /// material.
     /// </summary>
     internal sealed class Player3DFaceAtlasPresenter
     {

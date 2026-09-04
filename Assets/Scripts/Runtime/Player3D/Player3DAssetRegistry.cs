@@ -209,9 +209,8 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Optional Hero V2 face surface. Atlas rows use Unity UV order: row zero
-    /// starts at the texture bottom. Hero V1 omits this binding and keeps its
-    /// registered facial bones.
+    /// Production face surface. Atlas rows use Unity UV order: row zero starts
+    /// at the texture bottom.
     /// </summary>
     [Serializable]
     public sealed class Player3DFaceAtlasBinding

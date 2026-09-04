@@ -10,8 +10,6 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class Player3DV2AssetPipelineTests
     {
-        private const string V1PrefabPath =
-            "Assets/Resources/Player/Player3D.prefab";
         private const string V2ModelPath =
             "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         private const string V2ManifestPath =
@@ -50,39 +48,46 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void ResourceSelector_DefaultsToV2_AndKeepsV1Fallback()
+        public void ProductionResources_ContainOnlyHeroV2()
         {
             Assert.That(
-                Player3DResources.GetPrefabResourcePath(
-                    Player3DVariant.ProductionV1),
-                Is.EqualTo(Player3DResources.V1PrefabResourcePath));
-            Assert.That(
-                Player3DResources.GetPrefabResourcePath(
-                    Player3DVariant.ProductionV2),
-                Is.EqualTo(Player3DResources.PrefabResourcePath));
-            Assert.That(
-                Player3DResources.V1PrefabResourcePath,
-                Is.Not.EqualTo(Player3DResources.PrefabResourcePath));
-            Assert.Throws<ArgumentOutOfRangeException>(
-                () => Player3DResources.GetPrefabResourcePath(
-                    (Player3DVariant)999));
+                Player3DResources.PrefabResourcePath,
+                Is.EqualTo("Player/Player3DV2"));
 
             GameObject defaultPrefab = Player3DResources.LoadPrefab();
             Assert.That(defaultPrefab, Is.Not.Null);
             Assert.That(
                 AssetDatabase.GetAssetPath(defaultPrefab),
                 Is.EqualTo(V2PrefabPath));
+
+            string[] retiredV1Assets =
+            {
+                "Assets/Resources/Player/Player3D.prefab",
+                "Assets/Resources/Player/Player3DPortrait.png",
+                "Assets/Player3D/Models/PlayerCharacter3D.fbx",
+                "Assets/Player3D/Models/PlayerCharacter3D.json",
+                "Assets/Player3D/Animations/PlayerCharacter3DAnimations.fbx"
+            };
+            for (int index = 0; index < retiredV1Assets.Length; index++)
+            {
+                Assert.That(
+                    AssetDatabase.LoadMainAssetAtPath(retiredV1Assets[index]),
+                    Is.Null,
+                    $"Retired Hero V1 asset is still packaged: " +
+                    retiredV1Assets[index]);
+            }
+
+            Assert.That(Resources.Load<GameObject>("Player/Player3D"), Is.Null);
         }
 
         [Test]
-        public void PlayerFactory_DefaultsToV2_AndExplicitlyCreatesV1Fallback()
+        public void PlayerFactory_CreatesProductionV2()
         {
             RequireGeneratedSources();
 
             GameObject root = new GameObject("Hero variant factory test");
             GameObject cameraObject = new GameObject("Hero variant test camera");
             PlayerRuntime defaultPlayer = default;
-            PlayerRuntime v1Player = default;
             try
             {
                 Camera camera = cameraObject.AddComponent<Camera>();
@@ -99,21 +104,6 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(defaultRegistry, Is.Not.Null);
                 Assert.That(defaultRegistry.HasFaceAtlas, Is.True);
 
-                UnityEngine.Object.DestroyImmediate(defaultPlayer.GameObject);
-                defaultPlayer = default;
-
-                v1Player = PlayerFactory.Create(
-                    root.transform,
-                    Vector3.zero,
-                    camera,
-                    null,
-                    null,
-                    Player3DVariant.ProductionV1);
-                Player3DAssetRegistry v1Registry =
-                    v1Player.GameObject.GetComponentInChildren<
-                        Player3DAssetRegistry>(true);
-                Assert.That(v1Registry, Is.Not.Null);
-                Assert.That(v1Registry.HasFaceAtlas, Is.False);
             }
             finally
             {
@@ -123,14 +113,94 @@ namespace BarPromenade.Tests.EditMode
                         defaultPlayer.GameObject);
                 }
 
-                if (v1Player.GameObject != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(v1Player.GameObject);
-                }
-
                 UnityEngine.Object.DestroyImmediate(cameraObject);
                 UnityEngine.Object.DestroyImmediate(root);
             }
+        }
+
+        [Test]
+        public void BedTimingConstants_ReproduceTheAuthoredClipDurations()
+        {
+            V2Manifest manifest = LoadManifest();
+            AssertRuntimeTiming(
+                manifest,
+                "BedEnter",
+                HomeBedInteraction.BedEnterFrameCount,
+                HomeBedInteraction.BedTransitionFramesPerSecond);
+            AssertRuntimeTiming(
+                manifest,
+                "BedSleepLoop",
+                HomeBedInteraction.SleepLoopFrameCount,
+                HomeBedInteraction.SleepLoopFramesPerSecond);
+            AssertRuntimeTiming(
+                manifest,
+                "BedExit",
+                HomeBedInteraction.BedExitFrameCount,
+                HomeBedInteraction.BedTransitionFramesPerSecond);
+        }
+
+        [Test]
+        public void DoorTimingConstants_ReproduceTheAuthoredClipDurations()
+        {
+            V2Manifest manifest = LoadManifest();
+            AssertRuntimeTiming(
+                manifest,
+                "DoorUseEnter",
+                PlayerDoorActionController.EnterFrameCount,
+                PlayerDoorActionController.TransitionFramesPerSecond);
+            AssertRuntimeTiming(
+                manifest,
+                "DoorUseLoop",
+                PlayerDoorActionController.LoopFrameCount,
+                PlayerDoorActionController.LoopFramesPerSecond);
+            AssertRuntimeTiming(
+                manifest,
+                "DoorUseExit",
+                PlayerDoorActionController.ExitFrameCount,
+                PlayerDoorActionController.TransitionFramesPerSecond);
+        }
+
+        [Test]
+        public void BedContract_MatchesTheMeasuredGeneratorValues()
+        {
+            V2ManifestBedContract bed = LoadManifest().bed_contract;
+            Assert.That(
+                bed,
+                Is.Not.Null,
+                "The manifest must publish the measured bed contract.");
+
+            AssertMirrored(
+                "supine pelvis support",
+                PlayerCharacterDimensions.SupinePelvisSupportOffset,
+                bed.supine_pelvis_offset_m);
+            AssertMirrored(
+                "supine head support",
+                PlayerCharacterDimensions.SupineHeadSupportOffset,
+                bed.supine_head_offset_m);
+            AssertMirrored(
+                "seated pelvis lift",
+                PlayerCharacterDimensions.SeatedPelvisSupportOffset,
+                bed.seated_pelvis_lift_m);
+            AssertMirrored(
+                "mattress height",
+                HomeInteriorWorldBuilder.BedMattressSurfaceHeight,
+                bed.mattress_above_floor_m);
+            AssertMirrored(
+                "enter seat arrival",
+                HomeBedInteractionPlan.EnterSeatArrivalProgress,
+                bed.enter_seat_arrival);
+            AssertMirrored(
+                "enter seat departure",
+                HomeBedInteractionPlan.EnterSeatDepartureProgress,
+                bed.enter_seat_departure);
+            AssertMirrored(
+                "exit seat arrival",
+                HomeBedInteractionPlan.ExitSeatArrivalProgress,
+                bed.exit_seat_arrival);
+            AssertMirrored(
+                "exit seat departure",
+                HomeBedInteractionPlan.ExitSeatDepartureProgress,
+                bed.exit_seat_departure);
         }
 
         [Test]
@@ -166,16 +236,13 @@ namespace BarPromenade.Tests.EditMode
                     "Player/Player3DV2Portrait"),
                 Is.SameAs(portrait));
 
-            GameObject prefab = Player3DResources.LoadPrefab(
-                Player3DVariant.ProductionV2);
+            GameObject prefab = Player3DResources.LoadPrefab();
             Assert.That(prefab, Is.Not.Null);
             Assert.That(AssetDatabase.GetAssetPath(prefab), Is.EqualTo(V2PrefabPath));
 
             GameObject owner = new GameObject("Hero V2 test owner");
             Player3DAssetRegistry directRegistry =
-                Player3DResources.Instantiate(
-                    owner.transform,
-                    Player3DVariant.ProductionV2);
+                Player3DResources.Instantiate(owner.transform);
             try
             {
                 Player3DAssetRegistry registry = directRegistry;
@@ -266,16 +333,56 @@ namespace BarPromenade.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(owner);
             }
 
-            GameObject v1Prefab = Player3DResources.LoadPrefab(
-                Player3DVariant.ProductionV1);
-            Player3DAssetRegistry v1Registry =
-                v1Prefab.GetComponent<Player3DAssetRegistry>();
-            Assert.That(v1Registry, Is.Not.Null);
-            Assert.That(v1Registry.HasFaceAtlas, Is.False);
+        }
+
+        private static V2Manifest LoadManifest()
+        {
+            RequireGeneratedSources();
+            TextAsset manifestAsset =
+                AssetDatabase.LoadAssetAtPath<TextAsset>(V2ManifestPath);
+            Assert.That(manifestAsset, Is.Not.Null);
+            V2Manifest manifest =
+                JsonUtility.FromJson<V2Manifest>(manifestAsset.text);
+            Assert.That(manifest, Is.Not.Null);
+            return manifest;
+        }
+
+        private static void AssertRuntimeTiming(
+            V2Manifest manifest,
+            string name,
+            int runtimeFrameCount,
+            float runtimeFramesPerSecond)
+        {
+            V2Action action = Array.Find(
+                manifest.actions,
+                candidate => string.Equals(
+                    candidate.name,
+                    name,
+                    StringComparison.Ordinal));
+            Assert.That(action, Is.Not.Null, $"Missing action '{name}'.");
             Assert.That(
-                v1Registry.Animations.Count,
-                Is.EqualTo(37),
-                "The retained Hero V1 bank must stay frozen at 37 Actions.");
+                runtimeFrameCount / runtimeFramesPerSecond,
+                Is.EqualTo(action.duration_seconds).Within(0.0001f),
+                $"The runtime timeline plays '{name}' over " +
+                $"{runtimeFrameCount / runtimeFramesPerSecond:F3} s, but the " +
+                $"authored clip is {action.duration_seconds:F3} s long.");
+            Assert.That(
+                runtimeFrameCount,
+                Is.EqualTo(action.source_frame_count),
+                $"The runtime frame count for '{name}' must match the " +
+                "authored source frames.");
+        }
+
+        private static void AssertMirrored(
+            string what,
+            float runtimeValue,
+            float authoredValue)
+        {
+            Assert.That(
+                runtimeValue,
+                Is.EqualTo(authoredValue).Within(0.0001f),
+                $"The runtime {what} is {runtimeValue:F4}, but the generator " +
+                $"measured {authoredValue:F4}.");
         }
 
         private static void RequireGeneratedSources()
@@ -751,7 +858,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 AssetDatabase.GetAssetPath(importer.sourceAvatar),
                 Is.EqualTo(V2ModelPath),
-                "V2 animation must use the V2 Avatar, never retained V1.");
+                "V2 animation must use the production model Avatar.");
 
             ModelImporterClipAnimation runSettings = Array.Find(
                 importer.clipAnimations,
@@ -974,6 +1081,20 @@ namespace BarPromenade.Tests.EditMode
             public V2FaceAtlas face_atlas;
             public V2TextureBinding[] texture_bindings;
             public V2DesignMetrics design_metrics;
+            public V2ManifestBedContract bed_contract;
+        }
+
+        [Serializable]
+        private sealed class V2ManifestBedContract
+        {
+            public float supine_pelvis_offset_m;
+            public float supine_head_offset_m;
+            public float seated_pelvis_lift_m;
+            public float mattress_above_floor_m;
+            public float enter_seat_arrival;
+            public float enter_seat_departure;
+            public float exit_seat_arrival;
+            public float exit_seat_departure;
         }
 
         [Serializable]

@@ -163,7 +163,7 @@ DEFAULT_MANIFEST = ROOT / "Assets" / "Bar" / "Models" / "Bar3D.json"
 SERVICE_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarServiceProps3D.fbx"
 SERVICE_MANIFEST = (
     ROOT / "Assets" / "Bar" / "Models" / "BarServiceProps3D.json")
-SERVICE_GENERATOR_VERSION = "1.3.0"
+SERVICE_GENERATOR_VERSION = "1.4.0"
 SERVICE_DESIGN_ID = "bar_service_props_v1"
 SERVICE_DISPLAY_NAME = "Bar Promenade Authored Service Props"
 FACADE_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarFacade3D.fbx"
@@ -1745,18 +1745,51 @@ SERVICE_MENU_RIGHT_ROW_Z = (0.105, 0.035, -0.035, -0.105)
 SERVICE_MENU_GRIP = (0.0, 0.046, 0.215)
 SERVICE_MENU_BASIS_LENGTH = 0.10
 
+# The runtime enum and authored group retain the historical ``Pint`` name,
+# but the visible beer vessel is an ordinary half-litre handled mug. These
+# measurements are in Unity metres: the body is 145 mm high and 96 mm across
+# its rim, while the handle extends the complete width to 139 mm on +X.
+SERVICE_PINT_MUG_HEIGHT = 0.145
+SERVICE_PINT_MUG_BOTTOM_RADIUS = 0.043
+SERVICE_PINT_MUG_RIM_RADIUS = 0.048
+SERVICE_PINT_MUG_HANDLE_CENTER = (0.037, 0.074, 0.0)
+SERVICE_PINT_MUG_HANDLE_MAJOR_RADIUS = 0.047
+SERVICE_PINT_MUG_HANDLE_MINOR_RADIUS = 0.007
+SERVICE_PINT_MUG_GRIP = (0.084, 0.074, 0.0)
+SERVICE_PINT_MUG_DRINK_RIM = (
+    0.0,
+    SERVICE_PINT_MUG_HEIGHT,
+    -SERVICE_PINT_MUG_RIM_RADIUS,
+)
+
 SERVICE_VESSEL_PROFILES = {
     "Tumbler": {
         "glass": ((0.13, 0.0), (0.14, 0.27), (0.15, 0.30)),
         "liquid": ((0.115, 0.0), (0.134, 0.245)),
         "liquid_base": 0.025,
         "grip": (0.145, 0.16, 0.0),
+        "drink_rim": (0.0, 0.30, -0.15),
     },
     "Pint": {
-        "glass": ((0.13, 0.0), (0.16, 0.34), (0.18, 0.39)),
-        "liquid": ((0.115, 0.0), (0.162, 0.335)),
-        "liquid_base": 0.025,
-        "grip": (0.17, 0.21, 0.0),
+        "glass": (
+            (SERVICE_PINT_MUG_BOTTOM_RADIUS, 0.0),
+            (0.044, 0.018),
+            (0.046, 0.125),
+            (SERVICE_PINT_MUG_RIM_RADIUS, SERVICE_PINT_MUG_HEIGHT),
+        ),
+        "liquid": ((0.038, 0.0), (0.043, 0.108)),
+        "liquid_base": 0.012,
+        "handle": {
+            "center": SERVICE_PINT_MUG_HANDLE_CENTER,
+            "major_radius": SERVICE_PINT_MUG_HANDLE_MAJOR_RADIUS,
+            "minor_radius": SERVICE_PINT_MUG_HANDLE_MINOR_RADIUS,
+            "start_degrees": -82.0,
+            "end_degrees": 82.0,
+            "arc_segments": 12,
+            "tube_segments": 6,
+        },
+        "grip": SERVICE_PINT_MUG_GRIP,
+        "drink_rim": SERVICE_PINT_MUG_DRINK_RIM,
     },
     "WineGlass": {
         "glass": (
@@ -1767,12 +1800,14 @@ SERVICE_VESSEL_PROFILES = {
         "liquid": ((0.058, 0.0), (0.132, 0.085), (0.116, 0.172)),
         "liquid_base": 0.165,
         "grip": (0.027, 0.085, 0.0),
+        "drink_rim": (0.0, 0.37, -0.13),
     },
     "ShotGlass": {
         "glass": ((0.065, 0.0), (0.09, 0.145)),
         "liquid": ((0.052, 0.0), (0.076, 0.112)),
         "liquid_base": 0.018,
         "grip": (0.085, 0.075, 0.0),
+        "drink_rim": (0.0, 0.145, -0.09),
     },
     "Snifter": {
         "glass": (
@@ -1783,8 +1818,59 @@ SERVICE_VESSEL_PROFILES = {
         "liquid": ((0.058, 0.0), (0.145, 0.075), (0.098, 0.175)),
         "liquid_base": 0.115,
         "grip": (0.155, 0.19, 0.0),
+        "drink_rim": (0.0, 0.32, -0.105),
     },
 }
+
+
+def service_vessel_handle_geometry(recipe: dict) -> kit.Geometry:
+    """Builds a closed tube arc in source XZ around a right-side handle.
+
+    Vessel shells are already in Blender's Z-up source frame when they reach
+    ``add_part``. Handle recipes stay in Unity coordinates with their Grip
+    and drink-rim peers, so the Y/Z mapping is applied explicitly here.
+    """
+    handle = recipe["handle"]
+    center_x, center_y, center_z = handle["center"]
+    major_radius = handle["major_radius"]
+    minor_radius = handle["minor_radius"]
+    start_degrees = handle["start_degrees"]
+    end_degrees = handle["end_degrees"]
+    arc_segments = handle["arc_segments"]
+    tube_segments = handle["tube_segments"]
+
+    vertices: list[tuple[float, float, float]] = []
+    rings: list[list[int]] = []
+    for arc_index in range(arc_segments + 1):
+        progress = arc_index / arc_segments
+        angle = math.radians(
+            start_degrees + (end_degrees - start_degrees) * progress)
+        radial_x = math.cos(angle)
+        radial_height = math.sin(angle)
+        ring: list[int] = []
+        for tube_index in range(tube_segments):
+            tube_angle = math.tau * tube_index / tube_segments
+            radial_offset = math.cos(tube_angle) * minor_radius
+            depth_offset = math.sin(tube_angle) * minor_radius
+            ring.append(len(vertices))
+            vertices.append((
+                center_x + radial_x * (major_radius + radial_offset),
+                center_z + depth_offset,
+                center_y + radial_height * (major_radius + radial_offset),
+            ))
+        rings.append(ring)
+
+    faces: list[tuple[int, ...]] = []
+    for lower, upper in zip(rings, rings[1:]):
+        for index in range(tube_segments):
+            following = (index + 1) % tube_segments
+            faces.append((
+                lower[index], lower[following],
+                upper[following], upper[index],
+            ))
+    faces.append(tuple(reversed(rings[0])))
+    faces.append(tuple(rings[-1]))
+    return vertices, faces
 
 
 def service_vessel_highlight_geometry(recipe: dict) -> kit.Geometry:
@@ -1792,16 +1878,27 @@ def service_vessel_highlight_geometry(recipe: dict) -> kit.Geometry:
     radius = max(point[0] for point in recipe["glass"])
     height = recipe["glass"][-1][1]
     rail = 0.008
-    outer = radius + 0.014
+    left = -radius - 0.014
+    right = radius + 0.014
+    if "handle" in recipe:
+        handle = recipe["handle"]
+        right = max(
+            right,
+            handle["center"][0] + handle["major_radius"] +
+            handle["minor_radius"] + 0.014,
+        )
+    center_x = (left + right) * 0.5
+    width = right - left
+    depth = radius + 0.014
     rails = [
         bp.u_box(
-            (side * outer, height * 0.5, 0.0),
+            (x, height * 0.5, 0.0),
             (rail, height + rail * 2.0, rail),
             rail * 0.25)
-        for side in (-1.0, 1.0)
+        for x in (left, right)
     ] + [
         bp.u_box(
-            (0.0, height * 0.5, side * outer),
+            (center_x, height * 0.5, side * depth),
             (rail, height + rail * 2.0, rail),
             rail * 0.25)
         for side in (-1.0, 1.0)
@@ -1809,17 +1906,17 @@ def service_vessel_highlight_geometry(recipe: dict) -> kit.Geometry:
     for y in (-rail * 0.5, height + rail * 0.5):
         rails.extend([
             bp.u_box(
-                (0.0, y, side * outer),
-                (outer * 2.0 + rail, rail, rail),
+                (center_x, y, side * depth),
+                (width + rail, rail, rail),
                 rail * 0.25)
             for side in (-1.0, 1.0)
         ])
         rails.extend([
             bp.u_box(
-                (side * outer, y, 0.0),
-                (rail, rail, outer * 2.0 + rail),
+                (x, y, 0.0),
+                (rail, rail, depth * 2.0 + rail),
                 rail * 0.25)
-            for side in (-1.0, 1.0)
+            for x in (left, right)
         ])
     return kit.merge_all(rails)
 
@@ -2035,6 +2132,11 @@ def build_service_props(materials: dict) -> AssetBuild:
     for vessel, recipe in SERVICE_VESSEL_PROFILES.items():
         group = f"service:vessel:{vessel}"
         glass = kit.lathe(recipe["glass"], segments=12)
+        if "handle" in recipe:
+            glass = kit.merge(
+                glass,
+                service_vessel_handle_geometry(recipe),
+            )
         liquid = kit.translated(
             kit.lathe(recipe["liquid"], segments=12),
             (0.0, 0.0, recipe["liquid_base"]))
@@ -2064,6 +2166,11 @@ def build_service_props(materials: dict) -> AssetBuild:
             asset, f"{vessel}Grip",
             f"service_vessel_grip:{vessel}",
             recipe["grip"])
+        if "drink_rim" in recipe:
+            add_anchor(
+                asset, f"{vessel}DrinkRim",
+                f"service_vessel_drink_rim:{vessel}",
+                recipe["drink_rim"])
 
     menu_group = "service:menu"
     left_cover, _ = service_menu_leaf_geometry(
@@ -2251,6 +2358,104 @@ def validate_service_props(asset: AssetBuild) -> None:
                    for axis in range(3)):
                 problems.append(
                     f"service vessel '{vessel}' grip left its surface")
+
+        recipe = SERVICE_VESSEL_PROFILES[vessel]
+        handle_recipe = recipe.get("handle")
+        if vessel == "Pint" and handle_recipe is None:
+            problems.append("the Pint compatibility group has no mug handle")
+        elif handle_recipe is not None:
+            handle = service_vessel_handle_geometry(recipe)
+            if bp.signed_volume(handle) <= 0.0:
+                problems.append(
+                    f"service vessel '{vessel}' handle has inverted normals")
+            handle_low, handle_high = kit.bounds(handle)
+            body_radius = max(point[0] for point in recipe["glass"])
+            if (handle_low[0] > body_radius or
+                    handle_high[0] < body_radius + 0.035):
+                problems.append(
+                    f"service vessel '{vessel}' handle is not joined on +X")
+            expected_handle_grip_x = (
+                handle_recipe["center"][0] +
+                handle_recipe["major_radius"])
+            if abs(recipe["grip"][0] - expected_handle_grip_x) > 0.001:
+                problems.append(
+                    f"service vessel '{vessel}' grip left its handle arc")
+
+        rim_role = f"service_vessel_drink_rim:{vessel}"
+        rims = [
+            anchor for anchor in asset.anchors.values()
+            if anchor.get("bp_role") == rim_role
+        ]
+        expected_rim = recipe.get("drink_rim")
+        if expected_rim is None:
+            problems.append(
+                f"service vessel '{vessel}' has no authored drink rim")
+        else:
+            expected_edge = (
+                0.0,
+                recipe["glass"][-1][1],
+                -recipe["glass"][-1][0],
+            )
+            if any(abs(expected_rim[axis] - expected_edge[axis]) > 0.001
+                   for axis in range(3)):
+                problems.append(
+                    f"service vessel '{vessel}' drink rim is not on its "
+                    "top -Z edge")
+            if len(rims) != 1:
+                problems.append(
+                    f"service vessel '{vessel}' needs one authored drink rim")
+            else:
+                actual_rim = anchor_unity_position(rims[0])
+                if any(abs(actual_rim[axis] - expected_rim[axis]) > 0.001
+                       for axis in range(3)):
+                    problems.append(
+                        f"service vessel '{vessel}' drink rim left its edge")
+                if actual_rim[2] >= 0.0:
+                    problems.append(
+                        f"service vessel '{vessel}' drink rim is not on -Z")
+                identity_basis = {
+                    "bp_unity_right": (1.0, 0.0, 0.0),
+                    "bp_unity_up": (0.0, 1.0, 0.0),
+                    "bp_unity_forward": (0.0, 0.0, 1.0),
+                }
+                for key, expected_axis in identity_basis.items():
+                    actual_axis = rims[0].get(key)
+                    if actual_axis is None or any(
+                            abs(actual_axis[axis] - expected_axis[axis]) >
+                            0.001 for axis in range(3)):
+                        problems.append(
+                            f"service vessel '{vessel}' drink rim lost its "
+                            "identity basis")
+                        break
+
+        if vessel == "Pint":
+            shells = [
+                part for part in vessel_parts
+                if part.role == "service_vessel_shell"
+            ]
+            if len(shells) != 1:
+                problems.append(
+                    "the Pint compatibility group needs one mug shell")
+            else:
+                shell_low, shell_high = kit.bounds(shells[0].geometry)
+                expected_low = (
+                    -SERVICE_PINT_MUG_RIM_RADIUS,
+                    -SERVICE_PINT_MUG_RIM_RADIUS,
+                    0.0,
+                )
+                expected_high = (
+                    SERVICE_PINT_MUG_HANDLE_CENTER[0] +
+                    SERVICE_PINT_MUG_HANDLE_MAJOR_RADIUS +
+                    SERVICE_PINT_MUG_HANDLE_MINOR_RADIUS,
+                    SERVICE_PINT_MUG_RIM_RADIUS,
+                    SERVICE_PINT_MUG_HEIGHT,
+                )
+                if any(abs(shell_low[axis] - expected_low[axis]) > 0.001
+                       for axis in range(3)) or any(
+                        abs(shell_high[axis] - expected_high[axis]) > 0.001
+                        for axis in range(3)):
+                    problems.append(
+                        "the Pint compatibility mug left its measured bounds")
     for group in ("service:menu", "service:pour_stream"):
         if group not in groups:
             problems.append(f"service group '{group}' is missing")

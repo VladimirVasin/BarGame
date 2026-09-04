@@ -154,7 +154,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(prefabs.Distinct().Count(), Is.EqualTo(4));
 
             Player3DAssetRegistry playerRegistry =
-                Player3DResources.LoadPrefab(Player3DVariant.ProductionV2)
+                Player3DResources.LoadPrefab()
                     .GetComponent<Player3DAssetRegistry>();
             Assert.That(playerRegistry, Is.Not.Null);
             Assert.That(playerRegistry.Animator.avatar, Is.Not.Null);

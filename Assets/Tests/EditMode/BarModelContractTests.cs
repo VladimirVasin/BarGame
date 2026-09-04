@@ -530,6 +530,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo("bar_service_props_v1"));
+            Assert.That(manifest.generator_version, Is.EqualTo("1.4.0"));
             Assert.That(manifest.colliders, Is.False);
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
@@ -597,8 +598,20 @@ namespace BarPromenade.Tests.EditMode
                         "service_vessel_shell",
                         out Renderer shell),
                     Is.True);
-                Assert.That(shell.bounds.size.y,
-                    Is.EqualTo(0.39f).Within(0.02f));
+                Bounds mugBounds = shell.bounds;
+                Assert.That(mugBounds.size.y,
+                    Is.EqualTo(0.145f).Within(Tolerance));
+                Assert.That(mugBounds.size.z,
+                    Is.EqualTo(0.096f).Within(Tolerance));
+                Assert.That(mugBounds.min.x,
+                    Is.EqualTo(-0.048f).Within(Tolerance));
+                Assert.That(mugBounds.max.x,
+                    Is.EqualTo(0.091f).Within(Tolerance),
+                    "the mug handle must form a visible arc on +X");
+                Assert.That(
+                    mugBounds.max.x - Mathf.Abs(mugBounds.min.x),
+                    Is.GreaterThan(0.035f),
+                    "the Pint compatibility group lost its right-side handle");
                 Assert.That(
                     vessel.TryGetAnchor(
                         "service_vessel_target:Pint",
@@ -606,7 +619,72 @@ namespace BarPromenade.Tests.EditMode
                     Is.True);
                 Assert.That(
                     pourTarget.localPosition.y,
-                    Is.EqualTo(0.365f).Within(Tolerance));
+                    Is.EqualTo(0.120f).Within(Tolerance));
+                Assert.That(
+                    vessel.TryGetAnchor(
+                        "service_vessel_grip:Pint",
+                        out Transform mugGrip),
+                    Is.True);
+                Assert.That(mugGrip.localPosition.x,
+                    Is.EqualTo(0.084f).Within(0.001f));
+                Assert.That(mugGrip.localPosition.y,
+                    Is.EqualTo(0.074f).Within(0.001f));
+                Assert.That(mugGrip.localPosition.z,
+                    Is.EqualTo(0f).Within(0.001f));
+                Assert.That(
+                    Quaternion.Angle(
+                        mugGrip.localRotation,
+                        Quaternion.identity),
+                    Is.LessThan(0.1f));
+                Assert.That(
+                    vessel.TryGetAnchor(
+                        "service_vessel_drink_rim:Pint",
+                        out Transform drinkRim),
+                    Is.True);
+                Assert.That(drinkRim.localPosition.x,
+                    Is.EqualTo(0f).Within(0.001f));
+                Assert.That(drinkRim.localPosition.y,
+                    Is.EqualTo(0.145f).Within(0.001f));
+                Assert.That(drinkRim.localPosition.z,
+                    Is.EqualTo(-0.048f).Within(0.001f));
+                Assert.That(
+                    Quaternion.Angle(
+                        drinkRim.localRotation,
+                        Quaternion.identity),
+                    Is.LessThan(0.1f));
+
+                foreach (BarDrinkVesselKind kind in
+                         Enum.GetValues(typeof(BarDrinkVesselKind))
+                             .Cast<BarDrinkVesselKind>())
+                {
+                    if (kind == BarDrinkVesselKind.None ||
+                        kind == BarDrinkVesselKind.Pint)
+                    {
+                        continue;
+                    }
+
+                    BarServicePropInstance otherVessel =
+                        BarServicePropFactory.CreateVessel(
+                            host.transform,
+                            kind);
+                    Assert.That(
+                        otherVessel.TryGetAnchor(
+                            $"service_vessel_drink_rim:{kind}",
+                            out Transform otherDrinkRim),
+                        Is.True,
+                        $"the {kind} vessel has no near-edge drink rim");
+                    Assert.That(otherDrinkRim.localPosition.x,
+                        Is.EqualTo(0f).Within(0.001f));
+                    Assert.That(otherDrinkRim.localPosition.y,
+                        Is.GreaterThan(0f));
+                    Assert.That(otherDrinkRim.localPosition.z,
+                        Is.LessThan(0f));
+                    Assert.That(
+                        Quaternion.Angle(
+                            otherDrinkRim.localRotation,
+                            Quaternion.identity),
+                        Is.LessThan(0.1f));
+                }
 
                 BarServicePropInstance menu =
                     BarServicePropFactory.CreateMenu(host.transform);

@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model-v2.py",
-  "generator_version": "1.1.0",
+  "generator_version": "1.2.0",
   "blender_version": "5.0.1",
   "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
   "runtime_integrated": true,
@@ -1045,8 +1045,7 @@
   ],
   "design_version": "HeroV2",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
-  "content_signature_sha256": "98f348c139677987fece49ca52eb055dbe0ba96dcf586c8ea68358558a0bae0b",
-  "parallel_to": "HeroV1",
+  "content_signature_sha256": "13e64a6b9fa51e3577915355567ac1afcab57c7cbe9ce43e5bb3869ee2d4ece7",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",

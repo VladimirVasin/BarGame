@@ -16,10 +16,9 @@
 
 ## Production Hero V2
 
-Hero V2 is the production default. All eight gameplay roots, prefab-derived
-first-person subsets and the inventory portrait resolve through
-`Player3DVariant.ProductionV2`. Hero V1 remains packaged as an explicit
-fallback and is not deleted.
+Hero V2 is the sole packaged production player. All nine gameplay roots,
+prefab-derived first-person subsets and the inventory portrait resolve through
+the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
 
 - The same `1.75 m` lean adult is `7.4946` heads tall. His head is
   `0.2335 x 0.176 m`, the shoulder joints span `0.41814 m` (`2.3758` head
@@ -64,7 +63,7 @@ fallback and is not deleted.
   and the face/clothing atlases under `Assets/Player3D/V2/Textures`.
 - Runtime source of truth: one
   `Assets/Resources/Player/Player3DV2.prefab`, loaded through the default
-  `Player3DResources`/`PlayerFactory` route in all eight gameplay roots.
+  `Player3DResources`/`PlayerFactory` route in all nine gameplay roots.
 - Canonical height is `1.75 m`. The production bind pose is an A-pose; Unity
   imports a Generic rig, preserves the hierarchy, disables root motion and
   keeps the Animator free of gameplay-owned transitions and events.
@@ -84,19 +83,10 @@ fallback and is not deleted.
   anchors. Runtime code does not reconstruct the production hierarchy with
   name searches.
 
-## Retained Hero V1 fallback
-
-- `ArtSource/Player`, `Assets/Player3D/{Models,Animations}`, the original
-  `Assets/Resources/Player/Player3D.prefab` and `Player3DPortrait.png` remain
-  intact. `Player3DVariant.ProductionV1` is the only runtime path that selects it.
-- V1 keeps its 73-part burgundy overshirt, diagonal strap and bone-driven face
-  plus its frozen `37`-action bank solely for rollback and legacy contract
-  checks. Ordinary gameplay, first-person subsets and inventory never select
-  it after the V2 promotion. The separate pedestrian locomotion bank likewise
-  remains at `37` actions; the production hero's `Run` is not added to it.
-
 ## Animation contract
 
+- The independent pedestrian locomotion bank remains at `37` actions; the
+  production hero's `Run` is not added to it.
 - `Relaxed`, the four-second `Idle`, the one-second `Walk` and the `0.75 s`
   (`18` frames at `24 fps`) `Run` own ordinary in-place presentation. Idle
   returns to the exact Relaxed seam while two
@@ -113,9 +103,7 @@ fallback and is not deleted.
   reach it a few frames later. Both endpoints still key the whole rig.
 - `Face_Neutral`, `Face_HalfBlink`, `Face_ClosedBlink`, `Face_Watchful` and
   `Face_Tense` preserve deterministic facial timing. Hero V2 resolves authored
-  clip keys through its atlas; the retained V1 resolves the same states
-  through registered face bones (the drink's four faces get bone-scale
-  stand-ins there). The fall's clips (`Fall`, `Down`, `Rise`) no longer own
+  clip keys through its atlas. The fall's clips (`Fall`, `Down`, `Rise`) no longer own
   the face at all: the presentation reads the moment — the fight for balance,
   the floor, the stir, the crawl — and the level, and draws it, under the
   ragdoll too.
@@ -204,9 +192,12 @@ fallback and is not deleted.
   the layer's `0.2 s` blend after a clip, and every term is exactly zero
   sober. Every ordinary clip keeps its
   authored feet and the layer only corrects them to the probed surface (heel
-  and toe rays under each boot, the lower boot leading the pelvis, the clip's
-  own lift preserved relative to the other boot, run flight released with the
-  Run weight).
+  and toe rays under each boot, each surface smoothed relative to the actor
+  root so the body's own descent is never rate-limited, the pelvis led by the
+  walkable ground under the capsule — the hidden ramp on a flight of stairs,
+  the lower boot only where no such ground is found — and dipped further for a
+  boot left out of its leg's reach, the clip's own lift preserved relative to
+  the other boot, run flight released with the Run weight).
 - Runtime blends Idle, Walk and Run from actual constrained planar speed with
   damped `0.14 s` start and `0.20 s` stop envelopes. The Run blend begins above
   the `2.6 m/s` walk ceiling and reaches full weight at `4.2 m/s`; collision,
@@ -239,8 +230,8 @@ fallback and is not deleted.
 
 - Rebuild production through Blender with `tools/build-player-3d-model-v2.py`;
   it owns the V2 anatomy, silhouette, atlas, garment and compatibility
-  validators and reuses the shared action/bed checks from
-  `tools/build-player-3d-model.py`. Together the validators
+  validators and imports shared rig, action, export and bed checks from
+  `tools/player_3d_model_common.py`. Together the validators
   own exact height, outward winding, unique mesh data, weights, triangle budget,
   required parts/bones/sockets/actions, no root motion, signature asymmetry and
   the bed loop's head-to-foot, face-up and closed-eye orientation. Bed support

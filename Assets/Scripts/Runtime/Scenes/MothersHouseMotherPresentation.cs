@@ -103,8 +103,7 @@ namespace BarPromenade
         /// Nothing calls this. It exists because the atlas exists, and the
         /// atlas exists because the face was asked for whole rather than in
         /// the one state the room currently needs. Returns false when the
-        /// design carries no configured atlas, which is the same answer the
-        /// hero's own V1 rig gives.
+        /// design carries no configured atlas.
         /// </summary>
         public bool SetExpression(PlayerFacialExpression expression)
         {

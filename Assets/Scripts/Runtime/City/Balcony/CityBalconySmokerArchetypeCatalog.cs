@@ -78,8 +78,7 @@ namespace BarPromenade
                 return true;
             }
 
-            GameObject heroPrefab = Player3DResources.LoadPrefab(
-                Player3DVariant.ProductionV2);
+            GameObject heroPrefab = Player3DResources.LoadPrefab();
             Player3DAssetRegistry hero = heroPrefab != null
                 ? heroPrefab.GetComponent<Player3DAssetRegistry>()
                 : null;

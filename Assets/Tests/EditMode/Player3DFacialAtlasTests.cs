@@ -246,54 +246,6 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void ActiveLegacyClip_KeepsItsAuthoredFaceOnLateReapply()
-        {
-            GameObject prefab = Player3DResources.LoadPrefab(
-                Player3DVariant.ProductionV1);
-            if (prefab == null)
-            {
-                Assert.Ignore("Production Hero V1 prefab is unavailable.");
-            }
-
-            GameObject instance = Object.Instantiate(prefab);
-            try
-            {
-                Player3DAssetRegistry registry =
-                    instance.GetComponent<Player3DAssetRegistry>();
-                Assert.That(registry, Is.Not.Null);
-                Player3DCharacterPresentation presentation =
-                    instance.GetComponent<Player3DCharacterPresentation>() ??
-                    instance.AddComponent<Player3DCharacterPresentation>();
-                presentation.Initialize(instance.transform, registry);
-                Transform leftEye = FindBone(registry, "face.eye.L");
-                Assert.That(leftEye, Is.Not.Null);
-                Vector3 neutralScale = leftEye.localScale;
-
-                Assert.That(
-                    presentation.TryBeginClip("BedSleepLoop"),
-                    Is.True);
-                presentation.SampleActiveClip(0.5f);
-                Vector3 authoredClosedScale = leftEye.localScale;
-                Assert.That(
-                    authoredClosedScale.y,
-                    Is.LessThan(neutralScale.y * 0.2f));
-                presentation.ReapplyLatePresentationPose();
-
-                Assert.That(presentation.UsesFacialAtlas, Is.False);
-                Assert.That(
-                    presentation.CurrentFacialExpression,
-                    Is.EqualTo(PlayerFacialExpression.ClosedBlink));
-                Assert.That(
-                    leftEye.localScale,
-                    Is.EqualTo(authoredClosedScale));
-            }
-            finally
-            {
-                Object.DestroyImmediate(instance);
-            }
-        }
-
-        [Test]
         public void Presenter_FallsBackWhenACellIsMissing()
         {
             GameObject face = new GameObject("Face Surface");
@@ -401,22 +353,5 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actual, Is.EqualTo(expected));
         }
 
-        private static Transform FindBone(
-            Player3DAssetRegistry registry,
-            string boneName)
-        {
-            for (int index = 0;
-                 index < registry.MeshBindings.Count;
-                 index++)
-            {
-                Player3DMeshBinding binding = registry.MeshBindings[index];
-                if (binding != null && binding.BoneName == boneName)
-                {
-                    return binding.Bone;
-                }
-            }
-
-            return null;
-        }
     }
 }

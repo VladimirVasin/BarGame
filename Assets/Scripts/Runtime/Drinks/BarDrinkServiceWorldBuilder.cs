@@ -327,6 +327,10 @@ namespace BarPromenade
                 authored,
                 "service_vessel_grip:" + kind);
             gripAnchor.name = "Vessel Grip Anchor";
+            Transform drinkRimAnchor = RequireAnchor(
+                authored,
+                "service_vessel_drink_rim:" + kind);
+            drinkRimAnchor.name = "Vessel Drink Rim Anchor";
 
             Renderer highlightRenderer = null;
             if (authored.TryGetRenderer(
@@ -351,6 +355,7 @@ namespace BarPromenade
                 liquidRenderer,
                 pourTarget,
                 gripAnchor,
+                drinkRimAnchor,
                 highlightRenderer);
             return view;
         }

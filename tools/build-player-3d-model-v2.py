@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-"""Build the parallel Hero V2 model without touching the production Hero V1.
+"""Build Bar Promenade's production Hero V2 model.
 
-Hero V2 keeps the stable 31-bone compatibility contract, but authors new adult
-proportions, a leaner low-poly body, a UV-driven expression face and one
-production-only Run Action. The script deliberately imports the proven V1
-action authoring helpers instead of copying them: V1 remains the compatibility
-source at 40 Actions while V2 extends that bank to 41 with the same socket
-names, FBX axis contract and deterministic export code.
+Hero V2 owns the adult proportions, lean low-poly body, UV-driven expression
+face and complete 41-action bank. Shared rig, action, export and validation
+helpers live in ``player_3d_model_common.py`` so this remains the only runnable
+hero model generator.
 
 Run with Blender 5.0:
 
     blender --background --factory-startup \
       --python tools/build-player-3d-model-v2.py
 
-The no-argument invocation writes only new V2 source and Unity assets.
+The no-argument invocation writes the production source and Unity assets.
 """
 
 from __future__ import annotations
@@ -39,8 +37,8 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 
 import atlas_kit  # noqa: E402  (after the sys.path fix)
 
-V1_GENERATOR_PATH = REPO_ROOT / "tools" / "build-player-3d-model.py"
-V2_GENERATOR_VERSION = "1.1.0"
+COMMON_AUTHORING_PATH = REPO_ROOT / "tools" / "player_3d_model_common.py"
+V2_GENERATOR_VERSION = "1.2.0"
 RUN_ACTION_NAME = "Run"
 RUN_DURATION_SECONDS = 0.75
 RUN_SOURCE_FRAME_COUNT = 18
@@ -163,23 +161,26 @@ CLOTHING_RENDERER_REGIONS = {
 }
 
 
-def load_v1_generator():
+def load_common_authoring():
     spec = importlib.util.spec_from_file_location(
-        "bp_player_v1_generator",
-        V1_GENERATOR_PATH,
+        "bp_player_model_common",
+        COMMON_AUTHORING_PATH,
     )
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"Cannot load V1 generator from {V1_GENERATOR_PATH}")
+        raise RuntimeError(
+            "Cannot load shared player authoring module from "
+            f"{COMMON_AUTHORING_PATH}"
+        )
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
 
-v1 = load_v1_generator()
-V2_REQUIRED_ACTIONS = (*v1.REQUIRED_ACTIONS, RUN_ACTION_NAME)
+common = load_common_authoring()
+V2_REQUIRED_ACTIONS = (*common.REQUIRED_ACTIONS, RUN_ACTION_NAME)
 
-V2_PALETTE_HEX = dict(v1.PALETTE_HEX)
+V2_PALETTE_HEX = dict(common.PALETTE_HEX)
 V2_PALETTE_HEX.update(
     {
         # Faded dark olive-drab field jacket.  Film-specific insignia/text are
@@ -203,13 +204,13 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[v1.BuildConfig, Path, Path, Path, Path, Path, Path]:
+def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path]:
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
 
     parser = argparse.ArgumentParser(
-        description="Generate Bar Promenade's parallel Hero V2 candidate."
+        description="Generate Bar Promenade's production Hero V2."
     )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--preview", type=Path, default=DEFAULT_PREVIEW)
@@ -255,7 +256,7 @@ def parse_args() -> tuple[v1.BuildConfig, Path, Path, Path, Path, Path, Path]:
     if not 1.40 <= args.height <= 2.10:
         parser.error("--height must be between 1.40 and 2.10 metres")
 
-    config = v1.BuildConfig(
+    config = common.BuildConfig(
         output=resolve_path(args.output),
         preview=resolve_path(args.preview),
         portrait=resolve_path(args.portrait),
@@ -657,7 +658,7 @@ def create_face_atlas_material(path: Path) -> bpy.types.Material:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         material.use_nodes = True
-    material.diffuse_color = v1.hex_to_linear_rgba("AE8D7B")
+    material.diffuse_color = common.hex_to_linear_rgba("AE8D7B")
     material["bp_face_atlas"] = True
     material["bp_atlas_columns"] = ATLAS_COLUMNS
     material["bp_atlas_rows"] = ATLAS_ROWS
@@ -702,7 +703,7 @@ def make_profiled_segment_geometry(
 ) -> tuple[list[Vector], list[tuple[int, ...]]]:
     """One closed limb volume with authored radius/depth along its axis."""
 
-    axis_x, axis_y, _ = v1.segment_basis(start, end)
+    axis_x, axis_y, _ = common.segment_basis(start, end)
     vertices: list[Vector] = []
     for fraction, radius, depth_scale in profile:
         center = start.lerp(end, fraction)
@@ -835,10 +836,10 @@ def assign_boot_uv(obj: bpy.types.Object, region_name: str) -> None:
     )
 
 
-class HeroV2Builder(v1.CharacterBuilder):
+class HeroV2Builder(common.ProductionPlayerBuilderBase):
     def __init__(
         self,
-        config: v1.BuildConfig,
+        config: common.BuildConfig,
         face_atlas_path: Path,
         clothing_atlas_path: Path,
     ):
@@ -846,11 +847,11 @@ class HeroV2Builder(v1.CharacterBuilder):
         self.face_atlas_path = face_atlas_path
         self.clothing_atlas_path = clothing_atlas_path
 
-    def build(self) -> v1.BuildResult:
+    def build(self) -> common.BuildResult:
         self.reset_scene()
         collections = self.create_collections()
         materials = {
-            name: v1.create_material(name, color)
+            name: common.create_material(name, color)
             for name, color in V2_PALETTE_HEX.items()
         }
         materials["FaceAtlas"] = create_face_atlas_material(self.face_atlas_path)
@@ -862,7 +863,7 @@ class HeroV2Builder(v1.CharacterBuilder):
         rig = self.create_armature(collections["rig"], root, bone_specs)
         self.bone_heads = {spec.name: spec.head for spec in bone_specs}
         self.bone_specs = {spec.name: spec for spec in bone_specs}
-        self.result = v1.BuildResult(
+        self.result = common.BuildResult(
             root=root,
             rig=rig,
             collections=collections,
@@ -878,18 +879,27 @@ class HeroV2Builder(v1.CharacterBuilder):
         return self.result
 
     def build_actions(self) -> None:
-        """Keep the frozen V1 bank and append V2's heavy in-place run."""
+        """Build the shared action bank and append the heavy in-place run."""
 
         super().build_actions()
+        if self.result is None:
+            raise RuntimeError("BuildResult has not been initialized")
+        for action_name in (
+            "BarDrinkPickupEnter",
+            "BarDrinkSipLoop",
+            "BarDrinkReturnExit",
+        ):
+            self.result.actions[action_name].action[
+                "bp_generator_version"] = V2_GENERATOR_VERSION
         relaxed = self.relaxed_pose()
-        bone_pose = v1.BonePose
+        bone_pose = common.BonePose
 
         def run_pose(
             vertical_m: float,
             twist_degrees: float,
             roll_degrees: float,
-            limbs: dict[str, v1.BonePose],
-        ) -> dict[str, v1.BonePose]:
+            limbs: dict[str, common.BonePose],
+        ) -> dict[str, common.BonePose]:
             # Forward source space is -Y, so positive local X through the
             # pelvis/spine/chest creates the persistent tired forward pitch.
             # Vertical motion belongs to the pelvis, never the root bone.
@@ -1146,7 +1156,7 @@ class HeroV2Builder(v1.CharacterBuilder):
         root = super().create_root(collection)
         root.name = "ROOT_PlayerV2"
         root["bp_generator_version"] = V2_GENERATOR_VERSION
-        root["bp_design"] = "Hero V2 lean weary adult survival-horror candidate"
+        root["bp_design"] = "Hero V2 lean weary adult survival-horror production"
         root["bp_design_version"] = "HeroV2"
         root["bp_runtime_integrated"] = True
         return root
@@ -1191,9 +1201,9 @@ class HeroV2Builder(v1.CharacterBuilder):
             )
         return points
 
-    def create_bone_specs(self) -> list[v1.BoneSpec]:
+    def create_bone_specs(self) -> list[common.BoneSpec]:
         p = self.points
-        B = v1.BoneSpec
+        B = common.BoneSpec
         specs = [
             B("root", self.v(0, 0, 0), self.v(0, 0, 0.18), deform=False),
             B("pelvis", self.v(0, 0.008, 0.835), self.v(0, 0.004, 1.015), "root"),
@@ -1254,7 +1264,7 @@ class HeroV2Builder(v1.CharacterBuilder):
         )
         self.add_part(
             "GEO_Head",
-            v1.make_ringed_ellipsoid(self.v(0, -0.018, 0), head_rings, 12),
+            common.make_ringed_ellipsoid(self.v(0, -0.018, 0), head_rings, 12),
             "Skin",
             "core",
             "head",
@@ -1264,7 +1274,7 @@ class HeroV2Builder(v1.CharacterBuilder):
         )
         neck = self.add_part(
             "GEO_Neck",
-            v1.make_frustum_between(
+            common.make_frustum_between(
                 self.v(0, -0.008, 1.455), self.v(0, -0.020, 1.522),
                 self.d(0.074), self.d(0.0635), 8, 0.84, 0.0,
             ),
@@ -1285,7 +1295,7 @@ class HeroV2Builder(v1.CharacterBuilder):
         )
         torso = self.add_part(
             "GEO_Torso",
-            v1.make_ringed_ellipsoid(self.v(0, 0, 0), torso_rings, 10),
+            common.make_ringed_ellipsoid(self.v(0, 0, 0), torso_rings, 10),
             "Shirt", "core", "chest", "Body", "body_part",
         )
         torso["bp_waist_half_width_m"] = 0.166
@@ -1302,7 +1312,7 @@ class HeroV2Builder(v1.CharacterBuilder):
         )
         pelvis = self.add_part(
             "GEO_Pelvis",
-            v1.make_ringed_ellipsoid(self.v(0, 0, 0), pelvis_rings, 10),
+            common.make_ringed_ellipsoid(self.v(0, 0, 0), pelvis_rings, 10),
             "JeansAtlas", "core", "pelvis", "Body", "body_part",
         )
         assign_ring_strip_uv(pelvis, "JeansPelvis", 10, len(pelvis_rings))
@@ -1323,19 +1333,19 @@ class HeroV2Builder(v1.CharacterBuilder):
             clothed_upper_start = shoulder.lerp(elbow, 0.12)
             self.add_part(
                 f"GEO_UpperArm.{side}",
-                v1.make_frustum_between(clothed_upper_start, elbow, self.d(0.047), self.d(0.043), 8, 0.86),
+                common.make_frustum_between(clothed_upper_start, elbow, self.d(0.047), self.d(0.043), 8, 0.86),
                 "SkinShadow", "core", f"upper_arm.{side}", upper_sprite, "body_part", anatomical,
             )
             self.add_part(
                 f"GEO_Forearm.{side}",
-                v1.make_frustum_between(elbow, wrist, self.d(0.048), self.d(0.034), 8, 0.86),
+                common.make_frustum_between(elbow, wrist, self.d(0.048), self.d(0.034), 8, 0.86),
                 "Skin", "core", f"forearm.{side}", lower_sprite, "body_part", anatomical,
             )
             hand_axis = hand_tail - wrist
             hand_rotation = hand_axis.to_track_quat("Z", "Y")
             self.add_part(
                 f"GEO_Hand.{side}",
-                v1.make_ellipsoid_geometry(
+                common.make_ellipsoid_geometry(
                     (wrist + hand_tail) * 0.5,
                     self.v(0.038, 0.029, 0.060),
                     8, 4, hand_rotation,
@@ -1346,7 +1356,7 @@ class HeroV2Builder(v1.CharacterBuilder):
             thumb_end = wrist.lerp(hand_tail, 0.70) + self.v(sign * 0.036, -0.010, -0.015)
             self.add_part(
                 f"GEO_Thumb.{side}",
-                v1.make_frustum_between(thumb_start, thumb_end, self.d(0.017), self.d(0.012), 6, 0.82),
+                common.make_frustum_between(thumb_start, thumb_end, self.d(0.017), self.d(0.012), 6, 0.82),
                 "SkinShadow", "core", f"hand.{side}", lower_sprite, "body_detail", anatomical,
                 origin=wrist,
             )
@@ -1600,7 +1610,7 @@ class HeroV2Builder(v1.CharacterBuilder):
             anatomical = "Left" if side == "L" else "Right"
             self.add_part(
                 f"GEO_Ear.{side}",
-                v1.make_ellipsoid_geometry(
+                common.make_ellipsoid_geometry(
                     self.v(sign * 0.090, -0.020, 1.615),
                     self.v(0.013, 0.011, 0.030), 6, 3,
                 ),
@@ -1650,7 +1660,7 @@ class HeroV2Builder(v1.CharacterBuilder):
         )
         self.add_part(
             "GEO_HairBack",
-            v1.make_ellipsoid_geometry(
+            common.make_ellipsoid_geometry(
                 self.v(0, 0.036, 1.655),
                 self.v(0.084, 0.052, 0.073),
                 10,
@@ -1661,7 +1671,7 @@ class HeroV2Builder(v1.CharacterBuilder):
         for side, sign in (("L", 1.0), ("R", -1.0)):
             self.add_part(
                 f"GEO_HairTemple.{side}",
-                v1.make_ellipsoid_geometry(
+                common.make_ellipsoid_geometry(
                     self.v(sign * 0.074, -0.004, 1.655),
                     self.v(0.014, 0.025, 0.058),
                     8,
@@ -1687,7 +1697,7 @@ class HeroV2Builder(v1.CharacterBuilder):
             tip.z = min(tip.z, self.d(1.75))
             self.add_part(
                 f"GEO_HairTuft.{index:02d}",
-                v1.make_frustum_between(base_point, tip, self.d(radius), self.d(radius * 0.52), 6, 0.74, 0.0),
+                common.make_frustum_between(base_point, tip, self.d(radius), self.d(radius * 0.52), 6, 0.74, 0.0),
                 "HairHighlight" if index == 2 else "Hair",
                 "details", "head", "Body", "hair",
             )
@@ -1731,7 +1741,7 @@ def measure_visual_neck_height(records: dict[str, object]) -> float:
 
     head = records["GEO_Head"].obj
     neck = records["GEO_Neck"].obj
-    _, jacket_max = v1.mesh_bounds_world(records["CLO_JacketBody"].obj)
+    _, jacket_max = common.mesh_bounds_world(records["CLO_JacketBody"].obj)
     target_half_width = float(neck.get("bp_top_width_m", 0.124)) * 0.5
     rings: dict[float, float] = {}
     for vertex in head.data.vertices:
@@ -1758,7 +1768,7 @@ def measure_ring_width(obj: bpy.types.Object, sides: int, ring_index: int) -> fl
     return max(point.x for point in points) - min(point.x for point in points)
 
 
-def measure_relaxed_arm_landmarks(result: v1.BuildResult) -> dict[str, float]:
+def measure_relaxed_arm_landmarks(result: common.BuildResult) -> dict[str, float]:
     """Evaluate Relaxed without changing the bind pose left for export."""
 
     scene = bpy.context.scene
@@ -1790,25 +1800,24 @@ def measure_relaxed_arm_landmarks(result: v1.BuildResult) -> dict[str, float]:
 
 
 def validate_v2_result(
-    config: v1.BuildConfig,
-    result: v1.BuildResult,
+    config: common.BuildConfig,
+    result: common.BuildResult,
     face_atlas_path: Path,
     clothing_atlas_path: Path,
-) -> v1.ValidationReport:
+) -> common.ValidationReport:
     bpy.context.view_layer.update()
     errors: list[str] = []
-    # The fall, the lie and the rise are authored in the V1 generator and
-    # shipped by this one. Its landmark contacts (hands and knees on the
-    # floor at all fours, the low crouch's boots) were fitted to the V1
-    # proportions and float on this rig — known debt the runtime's hand
+    # The shared fall, lie and rise poses predate the current proportions.
+    # Their landmark contacts (hands and knees on the floor at all fours,
+    # the low crouch's boots) float on this rig — known debt the runtime's hand
     # and boot IK hides. What is held here is what no rig may do: pass a
     # limb through the floor on any frame, or bend a knee or an elbow the
     # wrong way.
-    v1.validate_fall_recovery_dense(result, errors)
+    common.validate_fall_recovery_dense(result, errors)
     records = {record.obj.name: record for record in result.parts}
     if len(records) != len(result.parts):
         errors.append("Export mesh names are not unique")
-    for required in (*v1.REQUIRED_BODY_OBJECTS, "GEO_FaceSurface"):
+    for required in (*common.REQUIRED_BODY_OBJECTS, "GEO_FaceSurface"):
         if required not in records:
             errors.append(f"Missing required Hero V2 part {required}")
     forbidden_exact = {
@@ -1843,7 +1852,7 @@ def validate_v2_result(
     if set(CLOTHING_RENDERER_REGIONS) != set(expected_atlas_material):
         errors.append("Clothing region table does not match the exact atlas renderer contract")
 
-    expected_bones = set((*v1.REQUIRED_BONES, *v1.REQUIRED_FACE_BONES, *v1.REQUIRED_SOCKET_BONES))
+    expected_bones = set((*common.REQUIRED_BONES, *common.REQUIRED_FACE_BONES, *common.REQUIRED_SOCKET_BONES))
     actual_bones = {bone.name for bone in result.rig.data.bones}
     if actual_bones != expected_bones:
         errors.append(
@@ -1857,7 +1866,7 @@ def validate_v2_result(
             f"missing={missing_actions}, extra={extra_actions}"
         )
     for name, record in result.actions.items():
-        curves = list(v1.iter_action_fcurves(record.action))
+        curves = list(common.iter_action_fcurves(record.action))
         if not curves:
             errors.append(f"Action {name} has no bone curves")
         if any(not curve.data_path.startswith('pose.bones["') for curve in curves):
@@ -1873,7 +1882,7 @@ def validate_v2_result(
     run_record = result.actions.get(RUN_ACTION_NAME)
     if run_record is not None:
         run_action = run_record.action
-        run_curves = list(v1.iter_action_fcurves(run_action))
+        run_curves = list(common.iter_action_fcurves(run_action))
         if (
             run_record.category != "locomotion"
             or not run_record.loop
@@ -1996,17 +2005,17 @@ def validate_v2_result(
                     break
         if obj.name != "GEO_FaceSurface":
             try:
-                v1.validate_manifold(obj)
+                common.validate_manifold(obj)
             except RuntimeError as error:
                 errors.append(str(error))
         mesh.calc_loop_triangles()
         triangle_count += len(mesh.loop_triangles)
-        minimum, maximum = v1.mesh_bounds_world(obj)
+        minimum, maximum = common.mesh_bounds_world(obj)
         all_minima.append(minimum)
         all_maxima.append(maximum)
 
-    if triangle_count > v1.MAX_TRIANGLES:
-        errors.append(f"Triangle budget exceeded: {triangle_count} > {v1.MAX_TRIANGLES}")
+    if triangle_count > common.MAX_TRIANGLES:
+        errors.append(f"Triangle budget exceeded: {triangle_count} > {common.MAX_TRIANGLES}")
     bounds_min = Vector((min(v.x for v in all_minima), min(v.y for v in all_minima), min(v.z for v in all_minima)))
     bounds_max = Vector((max(v.x for v in all_maxima), max(v.y for v in all_maxima), max(v.z for v in all_maxima)))
     measured_height = bounds_max.z - bounds_min.z
@@ -2015,7 +2024,7 @@ def validate_v2_result(
     if abs(measured_height - config.height) > config.height * 0.010:
         errors.append(f"Visible height is {measured_height:.4f} m, expected {config.height:.4f} m")
 
-    head_min, head_max = v1.mesh_bounds_world(records["GEO_Head"].obj)
+    head_min, head_max = common.mesh_bounds_world(records["GEO_Head"].obj)
     head_height = head_max.z - head_min.z
     head_ratio = measured_height / head_height
     head_width = head_max.x - head_min.x
@@ -2037,8 +2046,8 @@ def validate_v2_result(
     arm_ratio = (wrist - shoulder).length / config.height
     if not 0.25 <= arm_ratio <= 0.34:
         errors.append(f"Arm proportion is outside adult non-uncanny range: {arm_ratio:.3f}")
-    neck_min, neck_max = v1.mesh_bounds_world(records["GEO_Neck"].obj)
-    jacket_min, jacket_max = v1.mesh_bounds_world(records["CLO_JacketBody"].obj)
+    neck_min, neck_max = common.mesh_bounds_world(records["GEO_Neck"].obj)
+    jacket_min, jacket_max = common.mesh_bounds_world(records["CLO_JacketBody"].obj)
     jacket_obj = records["CLO_JacketBody"].obj
     visible_neck = measure_visual_neck_height(records)
     neck_base_width = neck_max.x - neck_min.x
@@ -2090,13 +2099,13 @@ def validate_v2_result(
             errors.append(f"Relaxed hand length landmark is implausible on {side.upper()}")
 
     hair_records = [record for name, record in records.items() if name.startswith("GEO_Hair")]
-    hair_min_x = min(v1.mesh_bounds_world(record.obj)[0].x for record in hair_records)
-    hair_max_x = max(v1.mesh_bounds_world(record.obj)[1].x for record in hair_records)
+    hair_min_x = min(common.mesh_bounds_world(record.obj)[0].x for record in hair_records)
+    hair_max_x = max(common.mesh_bounds_world(record.obj)[1].x for record in hair_records)
     if hair_max_x - hair_min_x > head_width + 0.012:
         errors.append("Hair silhouette expands beyond the adult skull envelope")
 
     for side in ("L", "R"):
-        foot_min, foot_max = v1.mesh_bounds_world(records[f"GEO_Foot.{side}"].obj)
+        foot_min, foot_max = common.mesh_bounds_world(records[f"GEO_Foot.{side}"].obj)
         foot_length = foot_max.y - foot_min.y
         foot_width = foot_max.x - foot_min.x
         if abs(foot_min.z) > 1e-6:
@@ -2139,7 +2148,7 @@ def validate_v2_result(
             errors.append("GEO_FaceSurface must face source -Y")
 
     bandage = bpy.data.objects.get("CLO_Bandage.L")
-    if bandage is None or v1.object_center_world(bandage).x <= 0:
+    if bandage is None or common.object_center_world(bandage).x <= 0:
         errors.append("Bandage must remain on physical left (+X)")
     for sleeve_name in ("CLO_JacketSleeve.L", "CLO_JacketSleeve.R"):
         sleeve = bpy.data.objects.get(sleeve_name)
@@ -2182,12 +2191,12 @@ def validate_v2_result(
 
     if errors:
         raise RuntimeError("Hero V2 validation failed:\n" + "\n".join(f"  - {error}" for error in errors))
-    return v1.ValidationReport(
+    return common.ValidationReport(
         object_count=len(result.export_objects),
         mesh_count=len(result.parts),
         triangle_count=triangle_count,
         action_count=len(result.actions),
-        socket_count=len(v1.REQUIRED_SOCKET_BONES),
+        socket_count=len(common.REQUIRED_SOCKET_BONES),
         bounds_min=tuple(round(value, 6) for value in bounds_min),
         bounds_max=tuple(round(value, 6) for value in bounds_max),
     )
@@ -2205,8 +2214,8 @@ def stable_vector(values: Sequence[float]) -> list[float]:
 
 
 def content_signature(
-    config: v1.BuildConfig,
-    result: v1.BuildResult,
+    config: common.BuildConfig,
+    result: common.BuildResult,
     face_atlas_sha256: str,
     clothing_atlas_sha256: str,
 ) -> str:
@@ -2296,7 +2305,7 @@ def content_signature(
     for name, record in sorted(result.actions.items()):
         curves = []
         for curve in sorted(
-            v1.iter_action_fcurves(record.action),
+            common.iter_action_fcurves(record.action),
             key=lambda item: (item.data_path, item.array_index),
         ):
             curves.append(
@@ -2390,9 +2399,9 @@ def action_face_keys(action_name: str) -> list[dict[str, float | str]] | None:
 
 def write_v2_manifest(
     path: Path,
-    config: v1.BuildConfig,
-    result: v1.BuildResult,
-    report: v1.ValidationReport,
+    config: common.BuildConfig,
+    result: common.BuildResult,
+    report: common.ValidationReport,
     face_atlas_path: Path,
     face_atlas_sha256: str,
     clothing_atlas_path: Path,
@@ -2400,13 +2409,13 @@ def write_v2_manifest(
     content_signature_sha256: str,
 ) -> None:
     # Start with the established model manifest contract, then add only V2 data.
-    v1.write_manifest(path, config, result, report)
+    common.write_manifest(path, config, result, report)
     payload = json.loads(path.read_text(encoding="utf-8"))
     records = {record.obj.name: record for record in result.parts}
-    head_min, head_max = v1.mesh_bounds_world(records["GEO_Head"].obj)
+    head_min, head_max = common.mesh_bounds_world(records["GEO_Head"].obj)
     head_height = head_max.z - head_min.z
     head_width = head_max.x - head_min.x
-    neck_min, neck_max = v1.mesh_bounds_world(records["GEO_Neck"].obj)
+    neck_min, neck_max = common.mesh_bounds_world(records["GEO_Neck"].obj)
     visible_neck_height = measure_visual_neck_height(records)
     shoulder_left = result.rig.data.bones["upper_arm.L"].head_local
     shoulder_right = result.rig.data.bones["upper_arm.R"].head_local
@@ -2422,7 +2431,7 @@ def write_v2_manifest(
     relaxed_landmarks = measure_relaxed_arm_landmarks(result)
     lower_body_metrics: dict[str, float] = {}
     for side, label in (("L", "left"), ("R", "right")):
-        foot_min, foot_max = v1.mesh_bounds_world(records[f"GEO_Foot.{side}"].obj)
+        foot_min, foot_max = common.mesh_bounds_world(records[f"GEO_Foot.{side}"].obj)
         thigh_obj = records[f"GEO_Thigh.{side}"].obj
         shin_obj = records[f"GEO_Shin.{side}"].obj
         lower_body_metrics.update(
@@ -2450,7 +2459,6 @@ def write_v2_manifest(
             "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
             "runtime_integrated": True,
             "content_signature_sha256": content_signature_sha256,
-            "parallel_to": "HeroV1",
             "material_palette": {
                 "MAT_FaceAtlas": "FFFFFF",
                 "MAT_JacketAtlas": "FFFFFF",
@@ -2590,8 +2598,8 @@ def write_v2_manifest(
 
 
 def print_report(
-    config: v1.BuildConfig,
-    report: v1.ValidationReport,
+    config: common.BuildConfig,
+    report: common.ValidationReport,
     face_atlas_path: Path,
     clothing_atlas_path: Path,
     expression_sheet_path: Path,
@@ -2604,8 +2612,8 @@ def print_report(
     print(f"  Blender: {bpy.app.version_string}")
     print(f"  Export objects: {report.object_count}")
     print(f"  Separate mesh parts: {report.mesh_count}")
-    print(f"  Triangles: {report.triangle_count}/{v1.MAX_TRIANGLES}")
-    print(f"  Bones: {len(v1.REQUIRED_BONES) + len(v1.REQUIRED_FACE_BONES) + len(v1.REQUIRED_SOCKET_BONES)}")
+    print(f"  Triangles: {report.triangle_count}/{common.MAX_TRIANGLES}")
+    print(f"  Bones: {len(common.REQUIRED_BONES) + len(common.REQUIRED_FACE_BONES) + len(common.REQUIRED_SOCKET_BONES)}")
     print(f"  Actions: {report.action_count}")
     print(f"  Bounds min: {report.bounds_min}")
     print(f"  Bounds max: {report.bounds_max}")
@@ -2624,7 +2632,7 @@ def print_report(
     print(f"  Preview: {config.preview}")
 
 
-def render_relaxed_preview(path: Path, result: v1.BuildResult) -> None:
+def render_relaxed_preview(path: Path, result: common.BuildResult) -> None:
     animation_data = result.rig.animation_data_create()
     previous_action = animation_data.action
     previous_frame = bpy.context.scene.frame_current
@@ -2632,7 +2640,7 @@ def render_relaxed_preview(path: Path, result: v1.BuildResult) -> None:
         animation_data.action = result.actions["Relaxed"].action
         bpy.context.scene.frame_set(0)
         bpy.context.view_layer.update()
-        v1.render_preview(path)
+        common.render_preview(path)
     finally:
         animation_data.action = previous_action
         bpy.context.scene.frame_set(previous_frame)
@@ -2647,7 +2655,7 @@ def render_relaxed_preview(path: Path, result: v1.BuildResult) -> None:
 
 def render_relaxed_study(
     path: Path,
-    result: v1.BuildResult,
+    result: common.BuildResult,
     camera_location: Vector,
     target: Vector,
     lens: float,
@@ -2662,7 +2670,7 @@ def render_relaxed_study(
     camera.location = camera_location
     camera_data.lens = lens
     camera_data.sensor_width = 36.0
-    v1.look_at(camera, target)
+    common.look_at(camera, target)
     animation_data = result.rig.animation_data_create()
     previous_action = animation_data.action
     previous_frame = scene.frame_current
@@ -2742,13 +2750,13 @@ def main() -> None:
         68.0,
     )
     if config.portrait is not None:
-        v1.render_inventory_portrait(config.portrait, result)
+        common.render_inventory_portrait(config.portrait, result)
     if config.glb is not None:
-        v1.export_glb(config.glb, result)
+        common.export_glb(config.glb, result)
     if config.fbx is not None:
-        v1.export_fbx(config.fbx, result)
+        common.export_fbx(config.fbx, result)
     if config.animation_fbx is not None:
-        v1.export_animation_fbx(config.animation_fbx, result)
+        common.export_animation_fbx(config.animation_fbx, result)
     if config.manifest is not None:
         write_v2_manifest(
             config.manifest,
@@ -2761,7 +2769,7 @@ def main() -> None:
             clothing_atlas_sha256,
             content_signature_sha256,
         )
-    v1.save_blend(config.output)
+    common.save_blend(config.output)
     print_report(
         config,
         report,

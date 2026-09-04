@@ -478,7 +478,7 @@ namespace BarPromenade.Tests.EditMode
                     parent.transform,
                     plan);
                 Player3DAssetRegistry hero = Player3DResources
-                    .LoadPrefab(Player3DVariant.ProductionV2)
+                    .LoadPrefab()
                     .GetComponent<Player3DAssetRegistry>();
                 Assert.That(hero.TryGetAnimation(
                     "SmokeLoop",

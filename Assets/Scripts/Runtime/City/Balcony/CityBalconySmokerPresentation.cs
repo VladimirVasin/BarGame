@@ -376,9 +376,7 @@ namespace BarPromenade
 
         private Animator CreatePoseDriver(Avatar heroAvatar)
         {
-            poseDriverRegistry = Player3DResources.Instantiate(
-                transform,
-                Player3DVariant.ProductionV2);
+            poseDriverRegistry = Player3DResources.Instantiate(transform);
             poseDriverRoot = poseDriverRegistry.gameObject;
             poseDriverRoot.name = "SmokeLoop Pose Driver";
             poseDriverRoot.transform.localPosition = Vector3.zero;

@@ -312,8 +312,7 @@ namespace BarPromenade.Tests.EditMode
 
             GameObject pedestrianPrefab =
                 Resources.Load<GameObject>(prefabResourcePath);
-            GameObject playerPrefab = Player3DResources.LoadPrefab(
-                Player3DVariant.ProductionV2);
+            GameObject playerPrefab = Player3DResources.LoadPrefab();
             Material sharedMaterial =
                 AssetDatabase.LoadAssetAtPath<Material>(SharedMaterialPath);
             Assert.That(pedestrianPrefab, Is.Not.Null);

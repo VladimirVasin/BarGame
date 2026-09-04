@@ -5,9 +5,8 @@ using UnityEngine;
 namespace BarPromenade.Editor
 {
     /// <summary>
-    /// Locks the V2 face/clothing atlases and portrait to deterministic import
-    /// contracts. The V2 portrait is the live production inventory portrait;
-    /// the original V1 portrait remains packaged beside it as a fallback.
+    /// Locks the production face/clothing atlases and inventory portrait to
+    /// deterministic import contracts.
     /// </summary>
     public sealed class Player3DV2TextureImporter : AssetPostprocessor
     {

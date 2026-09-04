@@ -10,9 +10,7 @@ using UnityEngine.Rendering;
 namespace BarPromenade.Editor
 {
     /// <summary>
-    /// Packages production Hero V2 beside retained Hero V1. This setup never
-    /// overwrites Player3D.prefab; V2 is the default while V1 remains an
-    /// explicit retained fallback.
+    /// Packages the production Hero V2 model, animation bank and prefab.
     /// </summary>
     [InitializeOnLoad]
     public static class Player3DV2AssetSetup
@@ -29,11 +27,10 @@ namespace BarPromenade.Editor
             Player3DV2StaticTextureContract.AssetPath;
         public const string ClothingMaterialPath =
             Player3DV2StaticTextureContract.MaterialPath;
-        // Dedicated production inventory portrait. Hero V1 keeps its own
-        // original portrait beside it as a complete fallback asset.
         public const string PortraitPath =
             "Assets/Resources/Player/Player3DV2Portrait.png";
-        public const string MaterialPath = Player3DAssetSetup.MaterialPath;
+        public const string MaterialPath =
+            "Assets/Player3D/Materials/Player3DLit.mat";
         public const string PrefabPath =
             "Assets/Resources/Player/Player3DV2.prefab";
 
@@ -188,11 +185,11 @@ namespace BarPromenade.Editor
             }
         }
 
-        [MenuItem("Bar Promenade/Player 3D/Build Hero V2 Preview Prefab")]
+        [MenuItem("Bar Promenade/Player 3D/Build Hero V2 Production Prefab")]
         public static void Run()
         {
             BuildOrThrow();
-            Debug.Log($"Hero V2 preview prefab rebuilt at '{PrefabPath}'.");
+            Debug.Log($"Hero V2 production prefab rebuilt at '{PrefabPath}'.");
         }
 
         /// <summary>
@@ -202,7 +199,7 @@ namespace BarPromenade.Editor
         public static void RunBatch()
         {
             BuildOrThrow();
-            Debug.Log($"Hero V2 preview prefab rebuilt at '{PrefabPath}'.");
+            Debug.Log($"Hero V2 production prefab rebuilt at '{PrefabPath}'.");
         }
 
         public static bool SourcesExist()
@@ -346,7 +343,7 @@ namespace BarPromenade.Editor
             catch (Exception exception)
             {
                 Debug.LogError(
-                    $"Could not build Hero V2 preview prefab: {exception}");
+                    $"Could not build Hero V2 production prefab: {exception}");
             }
         }
 
@@ -486,8 +483,8 @@ namespace BarPromenade.Editor
                     part.material == "MAT_BandageDark")
                 {
                     throw new InvalidOperationException(
-                        $"Hero V2 part '{part.name}' still uses legacy " +
-                        $"V1 clothing material '{part.material}'; jacket, " +
+                        $"Hero V2 part '{part.name}' still uses obsolete " +
+                        $"solid-colour material '{part.material}'; jacket, " +
                         "trousers and boots must use the full-colour atlas.");
                 }
 

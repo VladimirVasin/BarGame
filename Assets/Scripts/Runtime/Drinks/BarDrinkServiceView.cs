@@ -45,6 +45,7 @@ namespace BarPromenade
         public const float CarriedBottleGripHeightShare = 0.55f;
         public const float BottleHandSurfaceOffset = 0.06f;
         public const float MinimumBottleHandRadialClearance = 0.055f;
+        public const float BeerTapPourGap = 0.06f;
 
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
@@ -634,7 +635,7 @@ namespace BarPromenade
             SetActiveVesselLocalPose(plan.VesselHandPose);
         }
 
-        public bool SetActiveVesselAtBeerTap()
+        public bool SetActiveVesselAtBeerTap(float liftToSpout = 0f)
         {
             if (activeVessel == null || !HasBeerTapPresentation)
             {
@@ -643,6 +644,16 @@ namespace BarPromenade
 
             Pose pose = BeerTapVesselWorldPose;
             activeVessel.SetWorldPose(pose.position, pose.rotation);
+            float lift = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.Clamp01(liftToSpout));
+            Vector3 desiredPourTarget = Vector3.Lerp(
+                activeVessel.PourTargetWorldPosition,
+                BeerTapSpoutWorldPosition - transform.up * BeerTapPourGap,
+                lift);
+            activeVessel.transform.position +=
+                desiredPourTarget - activeVessel.PourTargetWorldPosition;
             return true;
         }
 

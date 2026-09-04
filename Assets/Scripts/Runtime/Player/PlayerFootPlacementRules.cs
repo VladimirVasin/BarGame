@@ -61,14 +61,25 @@ namespace BarPromenade
         /// A planted foot's target height may move this fast; a swinging
         /// foot's target is not limited at all, otherwise a <c>0.10 m</c>
         /// tread drop lags ten frames behind the boot.
+        ///
+        /// The rate has to clear one riser inside one tread. The walk clip
+        /// runs in place, so a stance boot slides across the stairwell's
+        /// <c>0.24 m</c> treads with the capsule — about eleven of them a
+        /// second at walking pace — and each nosing it crosses moves the
+        /// surface under it by the full <c>0.10 m</c> rise. At <c>0.6</c>
+        /// that took <c>0.167 s</c> against a tread every <c>0.092 s</c>,
+        /// so the sole was never out of the step: measured <c>9 cm</c> deep
+        /// in a tread climbing the lower flight. This clears a riser in
+        /// <c>0.083 s</c> and still filters the millimetre flicker at a
+        /// nosing that the smoothing is there for.
         /// </summary>
-        public const float DefaultPlantedTargetRateMetresPerSecond = 0.6f;
+        public const float DefaultPlantedTargetRateMetresPerSecond = 1.2f;
 
         /// <summary>
         /// Splits one locomotion cycle into a plant weight per foot.
         ///
         /// Walk contacts the LEFT heel at cycle <c>0</c> and the right at
-        /// <c>0.5</c> (<c>tools/build-player-3d-model.py</c> authors the
+        /// <c>0.5</c> (<c>tools/player_3d_model_common.py</c> authors the
         /// clip as <c>walk_left_contact, ..., walk_right_contact, ...</c>);
         /// Run keeps the same order with a short flight near <c>0.375</c>
         /// and <c>0.875</c>. <c>max(left, right)</c> reproduces the scalar
@@ -193,6 +204,89 @@ namespace BarPromenade
             }
 
             return Mathf.Clamp(delta, minimumDrop, maximumLift);
+        }
+
+        /// <summary>
+        /// How far the pelvis follows the walkable ground the ACTOR stands
+        /// on — the surface under his capsule — measured against the clip's
+        /// own ground plane.
+        ///
+        /// On a floor this is the same number <see cref="PelvisDrop"/>
+        /// takes from the boots: both of them probe the very surface the
+        /// capsule rests on, so every delta is the one below. A stair
+        /// flight is where they part. The controller walks one continuous
+        /// hidden ramp while the flat-authored stride straddles two or
+        /// three risers, so the leading boot's tread sits a quarter of a
+        /// metre under the trailing one; following the lower boot drops the
+        /// hips by that whole difference every step and the trailing knee
+        /// folds double to keep up. The capsule's own ground already
+        /// carries the descent — the pelvis only has to keep its height
+        /// above it.
+        /// </summary>
+        public static float PelvisPlaneDelta(
+            float groundY,
+            float soleClearance,
+            float referenceSole)
+        {
+            return groundY + soleClearance - referenceSole;
+        }
+
+        /// <summary>
+        /// How far a hip must come down for a foot to reach a target
+        /// <paramref name="planarDistance"/> away and
+        /// <paramref name="verticalDrop"/> below it on a leg of
+        /// <paramref name="reach"/>: nothing while the target is inside the
+        /// leg's cone, and never negative — a leg with slack does not pull
+        /// the body up after it.
+        /// </summary>
+        public static float ReachShortfall(
+            float planarDistance,
+            float verticalDrop,
+            float reach)
+        {
+            if (!(reach > 0f) || planarDistance >= reach)
+            {
+                return 0f;
+            }
+
+            float allowed = Mathf.Sqrt(
+                Mathf.Max(
+                    0f,
+                    (reach * reach) - (planarDistance * planarDistance)));
+            return Mathf.Max(0f, verticalDrop - allowed);
+        }
+
+        /// <summary>
+        /// How much of a boot's own reach the hips answer for: the leg
+        /// carrying the weight in full, the leg still swinging not at all,
+        /// and both while he stands with his weight shared between them.
+        ///
+        /// The plants a walk hands out never fall to zero (the clip's own
+        /// floor holds them well above it), so the stance foot is the one
+        /// planted HARDER, not the one over some absolute threshold.
+        /// Without that, a boot still swinging down a flight drags the
+        /// whole body a riser ahead of its own footfall.
+        ///
+        /// Equal plants mean the caller is not telling the two boots apart
+        /// at all — the backpedal and turn-in-place clips hand both feet
+        /// one scalar because they do not share Walk's contact order, and
+        /// so does every city pedestrian. Full and equal is a real stand
+        /// on both feet and answers for both; anything less is a gait
+        /// whose swing foot cannot be identified, and a body must not come
+        /// down for a boot that may be in the air.
+        /// </summary>
+        public static float StanceWeight(
+            float plant,
+            float lowestPlant,
+            float highestPlant)
+        {
+            float span = highestPlant - lowestPlant;
+            if (span <= 0.0001f)
+            {
+                return lowestPlant >= 0.999f ? 1f : 0f;
+            }
+
+            return Mathf.Clamp01((plant - lowestPlant) / span);
         }
 
         /// <summary>

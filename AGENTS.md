@@ -61,7 +61,7 @@ Rules:
   Seven of them are gameplay roots: City, BarInterior, SupermarketInterior,
   StairwellInterior, HomeInterior, MountainRoad and ChurchInterior. Each
   instantiates the same
-  `Resources/Player/Player3D.prefab` through `PlayerFactory`.
+  `Resources/Player/Player3DV2.prefab` through `PlayerFactory`.
 - `Assets/Scripts/Runtime/` owns gameplay, `Assets/Scripts/Editor/` owns
   authoring tools, and `Assets/Tests/{EditMode,PlayMode}/` owns verification
   over the shared `Assets/Tests/Infrastructure/` support assembly.

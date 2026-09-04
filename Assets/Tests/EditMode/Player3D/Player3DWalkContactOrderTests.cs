@@ -8,7 +8,7 @@ namespace BarPromenade.Tests.EditMode
     /// <see cref="PlayerFootPlacementRules.FootPlantAmounts"/>, and that rule
     /// assumes an authoring fact it cannot see: the LEFT heel contacts at
     /// cycle <c>0</c> and the right at <c>0.5</c>, for Walk and Run alike
-    /// (<c>Tools/build-player-3d-model.py</c> keys <c>walk_left_contact</c>
+    /// (<c>tools/player_3d_model_common.py</c> keys <c>walk_left_contact</c>
     /// at 0 and its mirror at 0.5; the V2 Run does the same). Nothing in
     /// Unity re-derives the order, so a re-authored clip with the other foot
     /// leading would leave every rules test green while the IK planted the

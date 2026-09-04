@@ -6,6 +6,168 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-04 — Hero V2 is the only packaged player
+
+By the user's explicit decision, the former Hero V1 rollback branch is removed
+completely. The unused `Player3D.prefab`, portrait, 73-part model, 37-action
+animation FBX, manifest and Blender source are gone together with their editor
+setup/import pipeline, selector API, generator and V1-only asset fixture. The
+existing `Player3DV2.prefab` remains the playable hero in all nine gameplay
+roots, the source of first-person subsets and the inventory portrait; the
+independent pedestrian bank remains at `37` Actions.
+
+Hero V2 keeps one runnable generator,
+`tools/build-player-3d-model-v2.py`. Its reusable rig, action, export and bed
+validation primitives now live in the non-runnable
+`tools/player_3d_model_common.py`, so deleting the old generator does not copy
+or weaken the production contracts. The common module was also stripped of the
+unused V1 geometry bodies; only abstract stubs consumed by V2 overrides and the
+shared production helpers remain. The V2 asset-pipeline fixture owns the
+remaining prefab, atlas, rig and topology checks and explicitly asserts that
+the five old V1 asset paths are absent. The accepted architecture decision
+preserves the three `2026-08-29` promotion entries as history and supersedes
+only their retained-fallback clauses.
+
+Verification: production generator `1.2.0` passed in Blender with `34` meshes,
+`1,984` triangles, `31` bones and `41` Actions. Focused EditMode
+`Player3DV2AssetPipelineTests.ProductionResources_ContainOnlyHeroV2` passed
+`1/1`. `git diff --check` passed; per fast mode, no broad Unity suite or
+player build was run.
+
+## 2026-09-04 — The hero walks the stairwell flight instead of squatting down it
+
+The user reported that under the new animation system the hero descends the
+staircase in the entrance hall of his own apartment block folding his knees
+very strongly and unnaturally. A PlayMode diagnostic run on the real stairwell,
+with five code analyses beside it, found two causes and exonerated everything
+else.
+
+The first was a frame of reference. `Player3DProceduralLocomotionLayer.ApplyLegs`
+smoothed each boot's probed surface as an ABSOLUTE WORLD HEIGHT, rate-limited
+to `0.6 m/s` whenever the foot counted as planted — and because the
+presentation floors the Walk's plants at `0.68`, in a walk both feet are always
+planted and always rate-limited. The controller descends the stairwell's hidden
+ramp at `2.6 m/s × tan 22.6° = 1.083 m/s`, so the targets fell behind at
+`0.48 m/s` and after one `16`-step flight sat `0.7..0.8 m` above the treads.
+Both pelvis deltas went positive, `PelvisDrop` pinned at its `+0.12 m` lift cap,
+and the solver folded both legs to reach ankles at hip height: knee interiors of
+`20..70°` (`180°` is straight) with the boots hanging `0.3..0.8 m` over the
+stairs — a man carried down in a sitting tuck. Climbing was the mirror image:
+targets `0.4 m` below the treads, the pelvis pinned at the `−0.35 m` drop cap
+and the boots sunk into the steps. The second cause was geometric: `PelvisDrop`
+took `min(leftDelta, rightDelta)` against the FLAT clip's ground plane, and the
+flat-authored stride spans nearly five `0.24 m` treads, so the boots straddle
+two or three risers and the pelvis dived to whichever boot found the lower
+tread while the capsule root already followed the ramp — double-counting the
+descent and dumping `0.20..0.30 m` on the trailing knee. Measurement cleared
+the rest: `LimbTwoBoneIk` returns exactly the law of cosines for the
+hip-to-target distance in `30/30` cases, the heel hits equal the analytic tread
+tops and `Flat`/`Edge` alternate at the nosings as designed, the capsule never
+leaves the ramp at `60` or `30 fps`, and the frame ordering is sound.
+
+Three runtime files carry the fix. Each foot's smoothed surface target is now
+held RELATIVE TO THE ACTOR ROOT (`Leg.SmoothedSoleAboveRoot`), so the body's own
+descent passes through unfiltered and only a real change under the boot — a
+nosing, a kerb — is rate-limited; `Calibrate` forgets the smoothed targets, so a
+rebind or a teleport cannot chase a target from another room. The pelvis follows
+the ground under the CAPSULE rather than the lower boot: a new
+`Player3DFootGroundProbe.TryProbeActorGround` casts one ray from the actor root
+that IGNORES triggers, so the render-only treads drop out and the hit is the
+surface the controller actually stands on — the hidden ramp on a flight, the
+floor everywhere else — and `PlayerFootPlacementRules.PelvisPlaneDelta` turns it
+into the pelvis delta. On a floor that is arithmetically the same number the old
+two-boot rule produced, so flat ground is unchanged; where no walkable ground is
+found (a pedestrian bound without a probe, a body over a gap) it falls back to
+the old `min(leftDelta, rightDelta)`. The drunk-only `GaitReachShortfall` became
+a general `ReachShortfall`: any boot out of its leg's reach from the hip the
+pelvis has ALREADY been moved to brings the hips down to it, weighted by
+`PlayerFootPlacementRules.StanceWeight` so the leg carrying the weight answers
+for its own tread while a boot still swinging down a flight does not drag the
+body a riser ahead of its footfall — a drunk gait's thrown-wide boot still
+counts in full, as it was tuned to, and the dip is off through a rise, where the
+Rise clip owns the pelvis. Finally
+`PlayerFootPlacementRules.DefaultPlantedTargetRateMetresPerSecond` went from
+`0.6` to `1.2 m/s`: the in-place clip's stance boot slides across a `0.24 m`
+tread every `0.092 s` at walking pace and each nosing moves its surface by a
+whole `0.10 m` riser, which `0.6 m/s` could not clear in time — measured as
+`9 cm` of boot inside a tread while climbing.
+
+Two refinements came out of reviewing the diff against every other path that
+shares this code, and both are about not answering a question the caller has
+not asked. The ground term is rate-limited exactly as a boot's surface is,
+because the ray reads the ground under the capsule's CENTRE, which crosses a
+kerb's edge several frames after the controller has already stepped the body up
+onto it — raw, that pair of frames dropped the hips a whole kerb and snapped
+them back, while a ramp is a constant in this term and is not filtered at all.
+And `StanceWeight` answers `0`, not `1`, when the two plants are equal but
+below full: the backpedal and turn-in-place clips hand both boots one scalar
+because they do not share Walk's contact order, and so does every city
+pedestrian, so equal-and-partial means the swing foot cannot be identified and
+the body must not come down for a boot that may be in the air. Full and equal
+is a real stand on both feet and still answers for both, which is what keeps a
+boot on a kerb from lifting the hips.
+
+Verification. The new PlayMode contract
+`Assets/Tests/PlayMode/Player3DStairwellFlightPlayModeTests.cs`
+(`StairwellFlight_KeepsTheBootsOnTheTreadsAndTheKneesOutOfACrouch`) builds the
+real stairwell and walks the hero down the apartment flight, up the lower flight
+and across the lobby under held `W` on a pinned `1/60` clock, asserting on every
+walking frame a knee interior of at least `70°`, a sole within `−0.08..+0.30 m`
+of the surface its own probe found, and a pelvis `0.60..0.98 m` above the root
+and never at a clamp; it writes `TestResults/stairwell-flight-diagnostic.csv`
+and the sheets `TestResults/stairwell-descent-sheet.png`,
+`stairwell-ascent-sheet.png` and `stairwell-flat-sheet.png`. Measured after the
+fix, descending: knee interiors (min/median/max) `78/126/166` left and
+`80/103/169` right, soles a median `0.0 m` over their probed surface and never
+below it, at most `0.23 m` up through a swing, the pelvis `0.704..0.854 m` above
+the root with a maximum `|drop|` of `0.131`. Climbing: `91/121/167` and
+`94/148/174`, soles `−0.014..0.280`, pelvis `0.756..0.854`, maximum `|drop|`
+`0.079`. The lobby control: `126/156/172` and `129/159/177`, the clip's own
+angles, with a maximum `|drop|` of `0.052` — the layer stays invisible on a
+floor. All six `Player3DFootIkPlayModeTests` remain green (flat ground, the
+walk's plant, the kerb, the tread probe layer, the block descent, the reapply
+idempotence), and `PlayerFootPlacementRulesTests` gained
+`PelvisPlaneDelta_MatchesTheBootRuleOnAFloor`,
+`ReachShortfall_OnlyCountsWhatTheLegCannotSpan` and
+`StanceWeight_PicksTheHarderPlantAndSharesAStand`, with the raised rate pinned
+in `MaximumTargetStep_IsUnboundedWhileSwinging`. Known and left: the walk clip
+is authored on a floor and its stride spans nearly five treads, so the trailing
+knee still folds to about `78°` interior at the deepest frame of a descent
+against `126°` at the median. A stair-stride clip or a slope-aware walking speed
+would close that; neither is in this change.
+
+## 2026-09-04 — Compact right-handed beer mug and corrected sip pose
+
+The user's visual correction replaces the oversized handleless bar pint
+with a smaller beer mug while retaining the compatibility-facing `Pint`
+enum/group identity. The bartender now docks it with the visible handle on the
+hero's right. Hero V2 grips that handle directly with the right hand; the drink
+pose solves the mug's rim to the mouth, takes the vessel to horizontal and
+raises the head and torso with it, following the already-corrected restrained
+bar-patron sip instead of the old left-hand attachment path.
+
+This is accepted world decision `41` in both bibles and supersedes only the
+vessel form, grip side and sip pose from decision `39`. The central-tap service,
+gaze gate, `2/3/2 s` action timing, deferred one-shot effects and empty vessel
+return remain the same, and the correction adds no story fact. Service props
+`1.4.0` now validate at `34` meshes / `4,136` triangles: the `0.145 m` mug has
+a `0.096 m` rim diameter, a `+X` handle and authored `Grip` and `drink_rim`
+anchors. Hero V2 `1.1.1` mirrors the bar-drink
+clips onto the right arm and gives the spine, chest, neck and head the measured
+patron-like sip. The runtime keeps the rim on the live mouth socket, the handle
+on the live right-hand socket and the opening horizontal throughout the drink.
+
+Both Blender generators and their validators completed; Unity rebuilt the bar
+service and Hero V2 prefabs. Focused PlayMode
+`BeerTapService_WaitsForGazeThenHeroDrinksFromRightHandledMug` passed `1/1` in
+`4.0303 s`, including a grounded tap dock before pickup, the restored `0.06 m`
+spout gap during pouring, right-handle placement under the mirrored
+rightmost-seat service route, right-hand contact, rim-to-mouth error below
+`1.5 cm`, horizontal error below `5°`, handle-right alignment above `0.95`,
+and visible chest/head motion. `git diff --check` also passed. Per fast mode,
+no full Unity suites or player build were run; the byte-frozen Hero V1
+generated artifacts stayed untouched.
+
 ## 2026-09-04 — Begotten mode: a rephotographed print inside the PS1 composite
 
 The user asked for a seventh graphics option reproducing the look of

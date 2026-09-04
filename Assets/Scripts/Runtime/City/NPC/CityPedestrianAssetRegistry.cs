@@ -294,8 +294,7 @@ namespace BarPromenade
         ///
         /// Optional by construction: a design that never calls this keeps a
         /// null binding, and `Player3DFaceAtlasPresenter.Apply` simply
-        /// returns false for it - which is exactly how the hero's own V1
-        /// rig falls through to its bone-driven face.
+        /// returns false for it.
         /// </summary>
         public void ConfigureFaceAtlas(Player3DFaceAtlasBinding binding)
         {

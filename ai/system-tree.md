@@ -93,8 +93,6 @@ Assets/
         smoking_theme.*  optional Home balcony-vignette loop supplied by user
         README.txt
     Player/
-      Player3D.prefab                   retained Hero V1 fallback prefab
-      Player3DPortrait.png              retained V1 fallback portrait
       Player3DV2.prefab                 production adult-proportion modular hero
       Player3DV2Portrait.png            live inventory portrait from production V2
     Pedestrians/
@@ -149,7 +147,7 @@ Assets/
     Bar/
       BarFacade3D.prefab            complete fixed-metre bar_exterior_v2 + door/sign anchors
       BarInterior3D.prefab          passive 174-mesh / 12,832-triangle bar_interior_v3 / generator 3.3.3 pub room + central-tap anchors
-      BarServiceProps3D.prefab      passive 34-mesh bottle/vessel/highlight/menu/stream library / 1.3.0
+      BarServiceProps3D.prefab      passive 34-mesh bottle/vessel/highlight/menu/stream library / 1.4.0
       BarBartenderProvider.asset    active ordinary + retained legacy six-arm links
       Textures/                     fifteen 512 px interior albedos (five used by service) + two exterior sheets
     Supermarket/
@@ -175,11 +173,6 @@ Assets/
       ru.json
       en.json
   Player3D/
-    Models/
-      PlayerCharacter3D.fbx             retained V1 fallback Generic model
-      PlayerCharacter3D.json            retained V1 parts/bones/actions manifest
-    Animations/
-      PlayerCharacter3DAnimations.fbx   retained V1 37-action fallback set
     Materials/
       Player3DLit.mat                   shared URP/Lit hero material
     V2/
@@ -248,7 +241,7 @@ Assets/
       BarFacade3D.json                  bar_exterior_v2 bounds, parts, door/sign anchors + signature
       BarInterior3D.fbx                 174-part / 12,832-triangle late-Victorian British-pub interior v3.3.3
       Bar3D.json                        v3.3.3 layout + standard entrance/three-tap bank/central service anchors/seat-axis MenuDock + signature
-      BarServiceProps3D.{fbx,json}      34-part bottles/vessels/highlights/menu/stream pack / 1.3.0
+      BarServiceProps3D.{fbx,json}      34-part bottles/vessels/highlights/menu/stream pack / 1.4.0
     Bartender/
       Models/BarBartenderOrdinary3D.{fbx,json}  active two-arm NpcHumanV2 / v3.0.0 / 39 meshes
       Models/BarBartender3D.{fbx,json}          retained six-arm legacy model / v2.0.0
@@ -293,7 +286,7 @@ Assets/
         StairwellCat.prefab             passive asset outside Resources
   Scripts/
     Runtime/
-      Core/          ten-scene bootstrap, gameplay roots, session, transitions
+      Core/          twelve-scene bootstrap, gameplay roots, session, transitions
         RuntimeSceneSetup.cs       shared camera/grade setup + 0.55 true-interior Gaussian cap
         GraphicsEffectsSettings.cs seven player graphics toggles over PlayerPrefs; polled Version counter
         CityGameRoot.cs           city composition + deferred debug-map arrival
@@ -774,7 +767,7 @@ Assets/
         PlayerFallAnimationTimeline.cs  14/36/50 authored phase mapping, 100 total (Fall/Down no longer played by the 3D hero)
       Player3D/
         Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
-        Player3DResources.cs            V2-default / explicit-V1 fallback instantiation
+        Player3DResources.cs            single packaged V2 prefab instantiation
         Player3DCharacterPresentation.cs Idle/Walk/Run gait + physics handoff + full-body Rise sampling
         Player3DFaceAtlasPresenter.cs    merge-safe MPB face-cell texture selection
         Player3DRagdollController.cs     bounded 13-body failed-balance physics started with the topple's motion; frozen lying pose blended into the rise
@@ -848,8 +841,9 @@ Assets/
       BarPatronWorldBuilder.cs      deterministic 6 booth + 2 counter + 3 table patrons with surface docks
       BarPatronDrinkingBehavior.cs  cafe sip + five surface rests, right-hand bind grips, support/head drift
       Bar/Bartender/                provider/registry + grounded world builder + shared-Wipe surface-contact presentation/service choreography
-      Drinks/        bar menu adapter, stable IDs, paid-order token, deferred consumption effects and physical service
+      Drinks/        bar menu adapter, stable IDs, paid-order token, deferred effects and physical service
         BarDrinkMenuPresentation.cs  four priced descriptive rows on an inset 2x2 grid + open-only 35 mm/f8 DOF + carried/resting booklet/outline
+        BarDrinkVesselView.cs  compact beer-mug grip/rim anchors + right-hand horizontal sip solve
       Supermarket/Cashier/  normal observing cashier + retained inactive Watcher asset
         SupermarketCashierProvider.cs      one addressable ref to the off-Resources prefab
         SupermarketCashierAssetRegistry.cs bones, ordinary head/eye + renderer bindings
@@ -906,7 +900,7 @@ Assets/
       City/NPC/CityArchShelterResidentAssetSetup.cs isolated three-model/atlas/loop prefab + provider pipeline
       MothersHouse/MothersHouseMotherAssetSetup.cs  her own pipeline: the shared descriptor reads clip names out of the ONE bank and demands a walk, and she has neither
       City/NPC/CityPedestrianTextureImporter.cs  routes pedestrian detail atlases to the Hero V2 atlas import contract (Point/Clamp/sRGB/256/no mip)
-      Player3D/       production V2 atlas/import/prefab pipeline + retained V1 setup
+      Player3D/       production V2 atlas/import/prefab pipeline
       City/NPC/       production/staged NpcHumanV2 import, Hero V2 Avatar copy + prefab setup
       City/Traffic/   bus/driver FBX import, shared materials + Resources prefab setup
   Tests/
@@ -936,9 +930,8 @@ Assets/
       InventoryConsumableCatalogTests.cs current food/alcohol value table
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, dedicated 3D portrait and item models
-      Player3D/Player3DAssetImportTests.cs  retained V1 model/Actions/prefab contract
-      Player3D/Player3DV2AssetPipelineTests.cs  production selection/prefab/atlas/rig/topology contract
-      Player3DFacialAtlasTests.cs       face-cell selection + V1 fallback/bootstrap
+      Player3D/Player3DV2AssetPipelineTests.cs  sole production prefab/atlas/rig/topology + removed-V1 absence contract
+      Player3DFacialAtlasTests.cs       production face-cell selection/bootstrap
       PlayerDoorActionPlanTests.cs explicit grounded dock/facing + independent poses
       CityStreetSurfacePlannerTests.cs  corridor split, zebra selection + dash exclusion
       CityTerrainSurfaceWorldBuilderTests.cs sampled mesh/collider/UV terrain contract
@@ -1047,7 +1040,7 @@ Assets/
       Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  seated renderer suppression + retained compatibility attachment root
-      BarDrinkPhysicalShopPlayModeTests.cs multi-seat menu E/Space order, Escape rest + central-tap beer/gaze drink/full-body return
+      BarDrinkPhysicalShopPlayModeTests.cs multi-seat order + compact mug/right-handle/rim-to-mouth drink and return
       BarInteriorSpawnPlayModeTests.cs real-scene inset menu/DOF release + grounded moving Wipe-to-counter contact
       MountainRoadCafePlayModeTests.cs  shipped-scene cup/saucer + hand/pot/counter contacts, silent phase idles and seat-camera restoration
       MountainRoadCafeMenuPlayModeTests.cs handoff, close/rest/reopen, stand restore + post-exit physical retrieval/no-effect contract
@@ -1060,7 +1053,6 @@ ArtSource/
     Blender/                    production/staged model sources, previews and animation contact sheets
   Player/
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
-    Blender/                    retained V1 .blend, preview and authoring notes
     BedSleep/                    retired player-sprite source history
     BalconySmoking/              retired player-sprite source history
     CatFeeding/                  retired player-sprite source history
@@ -1102,8 +1094,8 @@ tools/
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
   build-city-pedestrian-3d-model.py  compatible rig/model/export validator
   build-city-chess-set-3d-model.py   turned chessmen/draught meshes + height-ladder validator
-  build-player-3d-model.py          retained V1 generator + shared action/bed validators
-  build-player-3d-model-v2.py       production V2 anatomy/atlas/rig/export wrapper
+  player_3d_model_common.py         shared production rig/action/export/bed validators
+  build-player-3d-model-v2.py       sole runnable production V2 anatomy/atlas/rig/export generator
   build-player-puppet-atlas.py      retired 2D player source tooling
   extract-player-bed-sleep-frames.py      retired player-sprite source tooling
   build-player-bed-sleep-atlas.py         retired player-sprite source tooling
@@ -1123,7 +1115,7 @@ tools/
   city_building_parts.py         pure deterministic building geometry + surface/UV/attachment/window metadata
   atlas_kit.py                   shared PNG canvas/writer + rect-based atlas and UV helpers (Hero V2 + pedestrians)
   city_building_coplanarity.py   pure exact + <3 cm broad visible-layer audit with synthetic controls
-  build-bar-3d-model.py          v3.3.3 source: standard entrance/grounded bartender anchor/safe right stool/three-tap service anchors/seat-axis menu dock + v1.3.0 service pack
+  build-bar-3d-model.py          v3.3.3 source: standard entrance/grounded bartender anchor/safe right stool/three-tap service anchors/seat-axis menu dock + v1.4.0 service pack
   build-ordinary-bartender-3d-model.py active two-arm NpcHumanV2 bartender generator/validator
   bar_exterior.py                deterministic 38-part late-Victorian pub geometry
   build-bar-textures.py          fifteen measured interior/service albedos + exterior brick/plaster sheets
@@ -1452,8 +1444,6 @@ nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
                                          -> BusBoardEnter/BusRideLoop/BusAlightExit
                                          -> ChessSeatEnter/ChessSeatPlayLoop/ChessSeatExit
                                       -> real URP mesh shadows
-explicit fallback -> Player3DVariant.ProductionV1
-                  -> Resources/Player/Player3D.prefab + V1 portrait + frozen 37 Actions
 player input -> W / left stick forward -> 2.6 m/s walk
              -> either Shift or L3 held + positive forward -> 4.2 m/s run
              -> S / left stick backward -> 1.4 m/s backpedal
@@ -1683,11 +1673,12 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                -> retail catalog + paid-order token; effects commit after physical drink
                                -> BarDrinkServicePlan -> four centred physical bottle slots
                                -> BarDrinkServiceWorldBuilder
-                                  -> Blender service pack: 9 legacy-compatible bottle variants + 5 vessels + stream + 9-socket menu + central-tap anchors
+                                  -> Blender service pack: 9 legacy-compatible bottles + 5 vessels, including the compact handled mug + stream/menu/tap anchors
                                      -> runtime instantiates the visible four bottles and text sockets 00/04/05/08
                                -> BarDrinkServiceTimeline
                                   -> beer: walk to central tap -> take/pull/fill -> carry/place -> gaze-bound E
-                                  -> Hero V2 nested 2 s pickup -> 3 s sip -> 2 s return -> empty pint remains
+                                  -> Hero V2 right hand grips the right-side handle -> rim at mouth + horizontal mug with synchronized head/torso lift
+                                  -> nested 2 s pickup -> 3 s sip -> 2 s return -> empty mug remains
                                   -> seated world body stays visible; both camera-local arm meshes stay disabled
                                   -> closed menu remains through service -> completed stand/restore -> bartender retrieval
                                   -> later sit -> fresh delivery to the selected station

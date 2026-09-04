@@ -65,7 +65,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   entrance, carpet/plank and practical
   fixtures express a worn late-Victorian British pub without flag, name,
   brand, readable advertising or new lore. `bar_service_props_v1` is a second
-  passive `34`-mesh / `3,960`-triangle library at `1.3.0` for five reusable
+  passive `34`-mesh / `4,136`-triangle library at `1.4.0` for five reusable
   bottle silhouettes, five vessel forms with interaction-highlight shells,
   pour stream and two-page menu. Runtime now
   instantiates only the four bottles belonging to the visible menu. Unity continues to own stable
@@ -263,11 +263,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   world and soundscape are readers, so rendering never depends on audio to
   decide where an object exists.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
-  in eleven explicit build scenes; `MountainRoad`, `AreaLoading`,
-  `ChurchInterior` and `AlpineVillage` are appended at build indices `7`, `8`,
-  `9` and `10`.
+  in twelve explicit build scenes; `MountainRoad`, `AreaLoading`,
+  `ChurchInterior`, `AlpineVillage` and `MothersHouseInterior` are appended at
+  build indices `7`, `8`, `9`, `10` and `11`.
 - **Accepted:** City, Mountain Road, Alpine Village, Bar, Supermarket, Home,
-  Stairwell and Church instantiate one
+  Stairwell, Church and Mother's House instantiate one
   `Resources/Player/Player3DV2` modular hero prefab through `PlayerFactory`.
   Its Generic rig, independent mesh parts, in-place Actions, prefab-derived
   visible refrigerator arm, nested full-body seated bar-drinking actions,
@@ -3364,7 +3364,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   three centimetres inside the blanket, head twelve inside the pillow, and
   seated eight centimetres above the bedding with his boots off the floor.
   The bed now derives from measurement in both directions.
-  `validate_bed_support_contract` in `tools/build-player-3d-model.py` samples
+  `validate_bed_support_contract` in `tools/player_3d_model_common.py` samples
   the real posed meshes and reports how far the supine back, the back of the
   lifted head and the seated weight hang below the pelvis bone;
   `PlayerCharacterDimensions` mirrors those three numbers and
@@ -3654,8 +3654,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   blended against Walk by actual constrained Run weight. That weight
   progressively releases downward grounding; at full Run the correction may
   lift sole penetration but cannot drag both airborne boots onto the floor.
-  The byte-frozen Hero V1 and the independent
-  pedestrian locomotion bank remain at `37` Actions; neither receives this
+  At this decision point the byte-frozen Hero V1 and the independent
+  pedestrian locomotion bank remained at `37` Actions; neither received this
   production clip. This is an ordinary locomotion decision, not an exception
   to the contextual-animation standard.
 - **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
@@ -4459,8 +4459,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   layout. The world builder reserves the lower central shelf for exactly four
   stable visible-menu bottle roots and builds each with renderers, a solid collider,
   a larger selection trigger, a kinematic non-gravity Rigidbody and a mouth
-  anchor. Five shared low-poly vessel meshes cover tumbler, pint, wine glass,
-  shot glass and snifter; transparent glass and liquid resources are shared,
+  anchor. Five shared low-poly vessel meshes cover tumbler, the compatibility-
+  named `Pint` slot rendered as a compact handled beer mug, wine glass, shot
+  glass and snifter; transparent glass and liquid resources are shared,
   while per-drink colors and highlights use property blocks. A pure unscaled
   timeline owns camera approach, persistent browsing, pickup, vessel
   placement, pour/fill, bottle return, an exact three-second drink, empty
@@ -4492,18 +4493,31 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   clauses of the physical-retail decision above; the non-beer bottle branch
   remains available. `LightBeer` uses the middle of the three existing taps.
   After the paid order the ordinary bartender walks to its authored dock,
-  takes the pint, physically pulls the handle over it while the stream fills
-  it, walks to the selected stool and places the full glass directly before
-  the hero. `AwaitingDrink` has no timeout: the same gaze predicate owns both
+  takes the compact beer mug, physically pulls the handle over it while the
+  stream fills it, walks to the selected stool and places the full mug directly
+  before the hero. `AwaitingDrink` has no timeout: the same gaze predicate owns both
   the thin yellow contour and the localized `E` prompt. Accepting it runs
   `BarDrinkPickupEnter` (`2 s`) → `BarDrinkSipLoop` (`3 s`) →
   `BarDrinkReturnExit` (`2 s`) as a nested action on the visible seated Hero V2
-  rig. His hands lift, drink and replace the pint; it remains visibly empty on
-  the counter. Cash commits at order confirmation, while intoxication,
+  rig. His right hand grips the handle, lifts, drinks and replaces the mug; it
+  remains visibly empty on the counter. Cash commits at order confirmation,
+  while intoxication,
   last-drink, consumed-count and stress effects commit exactly once after the
   physical action completes. This follows the shared nested-action and cleanup
   rules in `ai/contextual-animation-standard.md`; it is an accepted architecture
   decision, not an exception to that standard or either world bible.
+- **Accepted by explicit user decision, 2026-09-04 — compact right-handed beer
+  mug and patron-aligned sip:** this supersedes only the vessel form, grip side
+  and drinking-pose clauses of the central-tap decision above. The stable
+  `Pint` enum/group identity remains for compatibility, while its visible mesh
+  is a smaller beer mug whose handle rests on the hero's right. The authored
+  grip sits directly on that handle and binds to Hero V2's right-hand anchor;
+  the vessel also exposes a drink-rim anchor and opening direction. During the
+  sip, the rim stays at the mouth, the mug reaches a horizontal pose and the
+  head and upper body rise with it, following the same restrained pose logic as
+  the corrected patron drink. The central tap, `2/3/2 s` timeline, payment and
+  deferred-effect boundaries, empty return and silent level-`0` meaning remain
+  unchanged; no new lore or contextual-animation exception is introduced.
 - **Accepted — Session wallet and paid bar orders:** A fresh runtime
   session starts with `$999` in integer cash and preserves that balance across
   city/bar/supermarket scene loads and city-seed changes. Every bar owns one
@@ -4830,6 +4844,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   ambient walkers the same rest-pelvis and Avatar contract; their per-archetype
   seated offsets remain independent so canonical silhouettes still clear the
   cabin.
+- **Accepted and implemented 2026-09-04 — Hero V2 is the sole packaged player;
+  the retained Hero V1 is removed:** by the user's explicit decision, the old
+  rollback route is deleted rather than carried beside production. All nine
+  gameplay roots, prefab-derived first-person subsets and inventory use the
+  existing `Resources/Player/Player3DV2` prefab and V2 portrait through the
+  no-variant `Player3DResources` / `PlayerFactory` path. The old prefab,
+  portrait, model, animation bank, Blender source, editor import/setup pipeline,
+  generator and V1-only test fixture are absent. The sole runnable hero
+  generator remains `tools/build-player-3d-model-v2.py`; reusable rig, action,
+  export and bed validation lives in the non-runnable
+  `tools/player_3d_model_common.py`. The V2 pipeline contract also pins the old
+  asset paths as absent. This supersedes only the retention, non-deletion and
+  selectable-fallback clauses of the three `2026-08-29` decisions above; those
+  entries remain the historical record of the staged promotion. Hero V2's
+  visible design, its `41` Actions and the independent pedestrian bank of `37`
+  Actions do not change, and this removal adds no world fact or lore.
 - **Accepted and implemented 2026-09-03 — the drunk hero is a continuous
   balance model, not a scheduled check; feet are solved onto the ground:** the
   modal arrow challenge (`BalanceChallengeModel`, `BalanceCheckView`, its
@@ -4867,6 +4897,50 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bus, every obstacle sweep in the project ignores triggers, and only the foot
   probes see it. City walkers adopt the legs-only layer with bones found by
   the shared names; airborne designs and seated riders keep their old paths.
+- **Accepted and implemented 2026-09-04 — Stairs: the pelvis follows the
+  capsule's ground, the boots follow the treads.** The rule above — pelvis to
+  the LOWER BOOT, each boot's probed surface smoothed as an absolute world
+  height — is correct on a floor and wrong on a slope, and the stairwell showed
+  both failures at once. Absolute smoothing rate-limits the body's own descent:
+  the presentation floors the Walk's plants at `0.68`, so in a walk both feet
+  always count as planted, the `0.6 m/s` cap fought a controller descending the
+  hidden ramp at `1.083 m/s`, and after one `16`-step flight the targets sat
+  `0.7..0.8 m` above the treads, `PelvisDrop` pinned at its `+0.12 m` lift cap
+  and both legs folded to `20..70°` interior to reach ankles at hip height. And
+  a two-boot MINIMUM double-counts a slope: the flat-authored stride spans
+  nearly five `0.24 m` treads, so the boots straddle two or three risers and the
+  pelvis dives to the lower tread while the capsule root has already followed
+  the ramp, `0.20..0.30 m` of it landing on the trailing knee. So the smoothed
+  target is now held RELATIVE TO THE ACTOR ROOT (`Leg.SmoothedSoleAboveRoot`) —
+  the body's descent passes through unfiltered and only a real change under the
+  boot, a nosing or a kerb, is rate-limited, at a raised `1.2 m/s` because a
+  stance boot crosses a `0.24 m` tread in `0.092 s` and each nosing moves its
+  surface a whole `0.10 m` riser (`0.6 m/s` left a measured `9 cm` of boot
+  inside a tread while climbing) — and the pelvis follows the walkable ground
+  under the CAPSULE: `Player3DFootGroundProbe.TryProbeActorGround` casts one ray
+  from the actor root that IGNORES triggers, so the render-only treads drop out
+  and the hit is the surface the controller stands on, and
+  `PlayerFootPlacementRules.PelvisPlaneDelta` turns it into the delta. On a
+  floor that is arithmetically the old two-boot number, so nothing flat changes,
+  and where no walkable ground is found — a pedestrian bound without a probe, a
+  body over a gap — it falls back to `min(leftDelta, rightDelta)`. The
+  drunk-only `GaitReachShortfall` generalises to `ReachShortfall`: any boot out
+  of its leg's reach from the hip the pelvis has ALREADY been moved to brings
+  the hips down to it, weighted by `PlayerFootPlacementRules.StanceWeight` so
+  the leg carrying the weight answers for its tread while a boot still swinging
+  down a flight cannot drag the body a riser ahead of its own footfall; a drunk
+  gait's thrown-wide boot still counts in full, as it was tuned to, and the dip
+  is off through a rise, where the Rise clip owns the pelvis. `Calibrate`
+  forgets the smoothed targets so a rebind or a teleport cannot chase a target
+  from another room. Alternatives not taken: a stair-stride clip, which is the
+  real answer to the residual `78°` trailing knee at the deepest frame of a
+  descent (`126°` median) but is an authoring change, not a runtime one; a
+  slope-aware walking speed, which would shorten the stride over a flight but
+  changes the motor and the gait blend for every slope in the city; and gating
+  the pelvis on an absolute plant threshold, which CANNOT work here — the walk's
+  plants never fall below `0.68`, so no absolute threshold can tell the stance
+  foot from the swinging one, which is why the shortfall dip is weighted by
+  relative stance instead.
 - **Accepted and implemented 2026-09-04 — drunk dolly zoom above 60:** the
   chase camera breathes a Vertigo zoom once the level passes the balance
   threshold. `IntoxicationProfile.DollyZoomStrength` is `0` through `60`,
@@ -5157,7 +5231,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Unity's `3 - r`), `CanonicalFaceCells` is nine, and an atlas without them
   falls back (`PlayerFacialExpressionRules.Fallback`: Drowsy → HalfBlink,
   Grimace → Tense, the rest → Neutral) so the runtime never depends on the
-  reimport having happened; the boned V1 rig gets bone-scale versions. The
+  reimport having happened. The
   head: `IntoxicationHeadModel` (seeded, `0x4E0D`) sums into the attention
   turn under its limits — droop `-Lerp(2, 12, t)` fading in over the first
   fifth, wander `±3/8/4°` at `0.15/0.10/0.12 Hz`, a `15°` nod every `6–14 s`

@@ -32,7 +32,7 @@ namespace BarPromenade
         // the longer one: he is seated from the half-crouch at 0.50 until his
         // weight goes over his feet at 0.88, with the legs leaving the bed one
         // at a time in between. These mirror the BedEnter and BedExit
-        // landmarks in tools/build-player-3d-model.py, which publishes them as
+        // landmarks in tools/player_3d_model_common.py, which publishes them as
         // `bed_contract` in the model manifest so drift fails a test rather
         // than silently sliding the hero across the mattress.
         internal const float EnterSeatArrivalProgress = 0.28f;

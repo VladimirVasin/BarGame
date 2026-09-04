@@ -163,7 +163,7 @@ shared library or the contact sheet.
 The generator validates each `1.75 m` grounded silhouette, its lightweight
 triangle budget, one source material, rigid weights, non-emissive and
 collider-free model exports, no model-local Actions, and the exact 31-bone
-Generic names, hierarchy and rest pose of `PlayerCharacter3D`. It writes the
+Generic names, hierarchy and rest pose of `PlayerCharacter3DV2`. It writes the
 production FBXs and manifests under `Assets/Pedestrians/Models/`.
 
 The Pipeback Roller takes a separate staged output branch:

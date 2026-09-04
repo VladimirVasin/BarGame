@@ -18,7 +18,7 @@ namespace BarPromenade
         // Contextual clips are pinned to the world by their pelvis bone and
         // nothing grounds the rig while one plays, so how far the hero's
         // weight hangs below that bone has to be a known quantity rather than
-        // a guessed clearance. tools/build-player-3d-model.py measures all
+        // a guessed clearance. tools/player_3d_model_common.py measures all
         // three against the real posed meshes on every rebuild and publishes
         // them as `bed_contract` in both model manifests; the focused player
         // asset tests fail if these copies drift. Take a new number from the

@@ -299,6 +299,16 @@ namespace BarPromenade
             presentation.Registry != null
                 ? presentation.Registry.Anchors.LeftVessel
                 : null;
+        public Transform RightVesselGripAnchor =>
+            player.Visual is Player3DCharacterPresentation presentation &&
+            presentation.Registry != null
+                ? presentation.Registry.Anchors.RightGrip
+                : null;
+        public Transform MouthAnchor =>
+            player.Visual is Player3DCharacterPresentation presentation &&
+            presentation.Registry != null
+                ? presentation.Registry.Anchors.Mouth
+                : null;
         public bool IsActive => isPositioning ||
                                 (timeline != null && timeline.IsActive);
         public float ExitDurationMultiplier => timeline != null

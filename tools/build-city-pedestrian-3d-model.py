@@ -11248,7 +11248,7 @@ def ferry_kick(
 
 # --- The ordinary citizen gait -------------------------------------------
 #
-# THIS IS THE HERO'S OWN WALK, TRANSPLANTED. `tools/build-player-3d-model.py`
+# THIS IS THE HERO'S OWN WALK, TRANSPLANTED. `tools/player_3d_model_common.py`
 # authors `Walk` as an eight-key cycle - contact, down, pass, up for each leg
 # - over `1.0 s` at `24` fps, and every leg, pelvis, spine, chest and head key
 # below is copied from it verbatim. It transfers without retargeting because

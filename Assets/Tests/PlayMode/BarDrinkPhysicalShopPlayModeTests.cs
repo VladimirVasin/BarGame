@@ -229,7 +229,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            BeerTapService_WaitsForGazeThenHeroReturnsEmptyPint()
+            BeerTapService_WaitsForGazeThenHeroDrinksFromRightHandledMug()
         {
             CounterSeatPlan seatPlan = CounterSeatPlan.FromService(
                 serviceView.transform,
@@ -247,7 +247,9 @@ namespace BarPromenade.Tests.PlayMode
                 controller,
                 player,
                 seatPlan,
-                cameraFollow);
+                cameraFollow,
+                Vector3.zero,
+                true);
             station.Interact(player.Interactor);
 
             float timeout = Time.realtimeSinceStartup + 5f;
@@ -279,6 +281,12 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarDrinkServicePhase.BeerWalkToTap));
             Assert.That(serviceView.HasBeerTapPresentation, Is.True);
             Assert.That(
+                serviceView.ActiveVessel.transform.position,
+                Is.EqualTo(serviceView.BeerTapVesselWorldPose.position)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance),
+                "The mug must remain on its tap dock until the bartender " +
+                "reaches and lifts it.");
+            Assert.That(
                 GameSessionState.CashBalance,
                 Is.EqualTo(cashBefore - controller.SelectedOffer.Price));
             Assert.That(
@@ -296,6 +304,14 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(serviceView.IsStreamVisible, Is.True);
             Assert.That(serviceView.BeerTapHandlePullAmount, Is.GreaterThan(0f));
             Assert.That(
+                Vector3.Distance(
+                    serviceView.BeerTapSpoutWorldPosition,
+                    serviceView.ActiveVessel.PourTargetWorldPosition),
+                Is.EqualTo(BarDrinkServiceView.BeerTapPourGap)
+                    .Within(0.002f),
+                "The compact mug must rise to the old short pour gap " +
+                "instead of leaving a thirty-centimetre stream.");
+            Assert.That(
                 serviceView.ActiveVessel.FillProgress,
                 Is.InRange(0.1f, 0.9f));
 
@@ -312,13 +328,24 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarDrinkServicePhase.AwaitingDrink));
             Assert.That(controller.IsServing, Is.True);
             Assert.That(serviceView.ActiveVessel.FillProgress, Is.EqualTo(1f));
+            Assert.That(
+                controller.PlayerVesselHandleRightAlignment,
+                Is.GreaterThan(0.95f),
+                "The mirrored rightmost service route must still place the " +
+                "mug handle toward the hero's right hand.");
             controller.AdvancePresentation(30f);
             Assert.That(controller.Phase,
                 Is.EqualTo(BarDrinkServicePhase.AwaitingDrink),
-                "A full pint must wait indefinitely for an explicit drink.");
+                "A full beer mug must wait indefinitely for an explicit drink.");
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
 
             BarDrinkVesselView vessel = serviceView.ActiveVessel;
+            var playerPresentation =
+                (Player3DCharacterPresentation)player.Visual;
+            Transform head = playerPresentation.Registry.Anchors.Head;
+            Transform chest = playerPresentation.Registry.Anchors.Chest;
+            Quaternion seatedHeadRotation = head.rotation;
+            Quaternion seatedChestRotation = chest.rotation;
             Vector3 lookDirection =
                 vessel.GlassRenderer.bounds.center - camera.transform.position;
             camera.transform.rotation = Quaternion.LookRotation(
@@ -356,12 +383,42 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(BarDrinkServicePhase.PlayerDrinking));
                 yield return null;
                 Assert.That(
-                    station.Seat.Controller.LeftVesselGripAnchor,
+                    station.Seat.Controller.RightVesselGripAnchor,
                     Is.Not.Null);
+                Assert.That(
+                    station.Seat.Controller.RightVesselGripAnchor,
+                    Is.SameAs(playerPresentation.Registry.Anchors.RightGrip));
+                Assert.That(vessel.DrinkRimAnchor, Is.Not.Null);
                 Assert.That(
                     controller.PlayerVesselGripError,
                     Is.LessThan(0.015f),
-                    "The pint must follow the real Hero V2 hand socket.");
+                    "The right hand must close on the mug's authored handle.");
+                Assert.That(
+                    Vector3.Distance(
+                        vessel.GripWorldPosition,
+                        station.Seat.Controller.LeftVesselGripAnchor.position),
+                    Is.GreaterThan(0.10f),
+                    "The left hand must stay clear of the beer-mug handle.");
+                Assert.That(
+                    controller.PlayerVesselDrinkRimError,
+                    Is.LessThan(0.015f),
+                    "The authored drinking edge must meet the live mouth socket.");
+                Assert.That(
+                    controller.PlayerVesselHorizontalErrorDegrees,
+                    Is.LessThan(5f),
+                    "The mug opening must rise to horizontal at the sip.");
+                Assert.That(
+                    controller.PlayerVesselHandleRightAlignment,
+                    Is.GreaterThan(0.95f),
+                    "The mug handle must stay on the hero's right side.");
+                Assert.That(
+                    Quaternion.Angle(seatedChestRotation, chest.rotation),
+                    Is.GreaterThan(8f),
+                    "The torso must lean back with the raised mug.");
+                Assert.That(
+                    Quaternion.Angle(seatedHeadRotation, head.rotation),
+                    Is.GreaterThan(12f),
+                    "The head must lift with the horizontal drinking pose.");
 
                 timeout = Time.realtimeSinceStartup + 3f;
                 while (controller.IsServing &&

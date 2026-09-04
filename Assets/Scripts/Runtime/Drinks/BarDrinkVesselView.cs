@@ -21,6 +21,7 @@ namespace BarPromenade
         [SerializeField] private Renderer liquidRenderer;
         [SerializeField] private Transform pourTarget;
         [SerializeField] private Transform gripAnchor;
+        [SerializeField] private Transform drinkRimAnchor;
         [SerializeField] private Renderer interactionHighlightRenderer;
 
         private MaterialPropertyBlock liquidProperties;
@@ -30,6 +31,10 @@ namespace BarPromenade
         private Quaternion originalLocalRotation;
         private Vector3 originalLocalScale;
         private Quaternion gripRotationInVessel = Quaternion.identity;
+        private Vector3 authoredGripLocalPosition;
+        private Vector3 authoredDrinkRimLocalPosition;
+        private Vector3 authoredOpeningLocalDirection = Vector3.up;
+        private Vector3 authoredHandleLocalDirection = Vector3.right;
         private float targetFill;
         private bool initialized;
 
@@ -39,12 +44,23 @@ namespace BarPromenade
         public Renderer LiquidRenderer => liquidRenderer;
         public Transform PourTarget => pourTarget;
         public Transform GripAnchor => gripAnchor;
+        public Transform DrinkRimAnchor => drinkRimAnchor;
         public Renderer InteractionHighlightRenderer =>
             interactionHighlightRenderer;
         public Vector3 PourTargetWorldPosition =>
             pourTarget != null ? pourTarget.position : transform.position;
         public Vector3 GripWorldPosition =>
             gripAnchor != null ? gripAnchor.position : transform.position;
+        public Vector3 DrinkRimWorldPosition =>
+            drinkRimAnchor != null
+                ? drinkRimAnchor.position
+                : transform.position;
+        public Vector3 OpeningDirection =>
+            transform.TransformDirection(authoredOpeningLocalDirection)
+                .normalized;
+        public Vector3 HandleDirection =>
+            transform.TransformDirection(authoredHandleLocalDirection)
+                .normalized;
         public bool IsInteractionHighlighted =>
             interactionHighlightRenderer != null &&
             interactionHighlightRenderer.enabled;
@@ -59,6 +75,7 @@ namespace BarPromenade
             Renderer newLiquidRenderer,
             Transform newPourTarget,
             Transform newGripAnchor,
+            Transform newDrinkRimAnchor,
             Renderer newInteractionHighlightRenderer = null)
         {
             if (newKind == BarDrinkVesselKind.None)
@@ -102,6 +119,14 @@ namespace BarPromenade
                     nameof(newGripAnchor));
             }
 
+            if (newDrinkRimAnchor == null ||
+                !newDrinkRimAnchor.IsChildOf(transform))
+            {
+                throw new ArgumentException(
+                    "The drinking-rim anchor must belong to the vessel root.",
+                    nameof(newDrinkRimAnchor));
+            }
+
             if (newInteractionHighlightRenderer != null &&
                 !newInteractionHighlightRenderer.transform
                     .IsChildOf(transform))
@@ -117,6 +142,7 @@ namespace BarPromenade
             liquidRenderer = newLiquidRenderer;
             pourTarget = newPourTarget;
             gripAnchor = newGripAnchor;
+            drinkRimAnchor = newDrinkRimAnchor;
             interactionHighlightRenderer =
                 newInteractionHighlightRenderer;
             liquidProperties = new MaterialPropertyBlock();
@@ -127,6 +153,22 @@ namespace BarPromenade
             originalLocalScale = transform.localScale;
             gripRotationInVessel = Quaternion.Inverse(transform.rotation) *
                                    gripAnchor.rotation;
+            authoredGripLocalPosition =
+                transform.InverseTransformPoint(gripAnchor.position);
+            authoredDrinkRimLocalPosition =
+                transform.InverseTransformPoint(drinkRimAnchor.position);
+            authoredOpeningLocalDirection = Vector3.up;
+            authoredHandleLocalDirection = Vector3.ProjectOnPlane(
+                authoredGripLocalPosition,
+                authoredOpeningLocalDirection);
+            if (authoredHandleLocalDirection.sqrMagnitude < 0.000001f)
+            {
+                throw new ArgumentException(
+                    "The vessel grip must identify a radial handle side.",
+                    nameof(newGripAnchor));
+            }
+
+            authoredHandleLocalDirection.Normalize();
             targetFill = 1f;
             initialized = true;
             SetInteractionHighlight(false);
@@ -206,6 +248,122 @@ namespace BarPromenade
         {
             return initialized && carrier != null && gripAnchor != null
                 ? Vector3.Distance(gripAnchor.position, carrier.position)
+                : float.PositiveInfinity;
+        }
+
+        /// <summary>
+        /// Resolves a measured mug pose independently from the wrist: the
+        /// authored drinking edge reaches the live mouth socket, the opening
+        /// tips from upright toward the hero, and the handle stays on the
+        /// anatomical right. The hand is solved to the handle afterwards.
+        /// </summary>
+        public bool TryResolveDrinkPose(
+            Transform mouthSocket,
+            Transform ownerRoot,
+            float tipAmount,
+            out Pose pose)
+        {
+            pose = default;
+            if (mouthSocket == null || drinkRimAnchor == null ||
+                !TryResolveDrinkRotation(
+                    ownerRoot,
+                    tipAmount,
+                    out Quaternion rotation))
+            {
+                return false;
+            }
+
+            Vector3 scaledRim = Vector3.Scale(
+                authoredDrinkRimLocalPosition,
+                transform.lossyScale);
+            pose = new Pose(
+                mouthSocket.position - rotation * scaledRim,
+                rotation);
+            return true;
+        }
+
+        /// <summary>
+        /// Keeps the authored vessel origin on the counter while orienting an
+        /// upright mug handle toward the hero's anatomical right. This must be
+        /// independent of the mirrored bartender-service layout.
+        /// </summary>
+        public bool TryResolveRightHandledUprightPose(
+            Vector3 rootPosition,
+            Transform ownerRoot,
+            out Pose pose)
+        {
+            pose = default;
+            if (!TryResolveDrinkRotation(
+                    ownerRoot,
+                    0f,
+                    out Quaternion rotation))
+            {
+                return false;
+            }
+
+            pose = new Pose(rootPosition, rotation);
+            return true;
+        }
+
+        private bool TryResolveDrinkRotation(
+            Transform ownerRoot,
+            float tipAmount,
+            out Quaternion rotation)
+        {
+            rotation = Quaternion.identity;
+            if (!initialized || ownerRoot == null || gripAnchor == null)
+            {
+                return false;
+            }
+
+            Vector3 upright = ownerRoot.up.normalized;
+            Vector3 towardMouth = -Vector3.ProjectOnPlane(
+                ownerRoot.forward,
+                upright);
+            if (towardMouth.sqrMagnitude < 0.000001f)
+            {
+                return false;
+            }
+
+            Vector3 worldOpening = Vector3.Slerp(
+                    upright,
+                    towardMouth.normalized,
+                    Mathf.Clamp01(tipAmount))
+                .normalized;
+            Vector3 worldHandle = Vector3.ProjectOnPlane(
+                ownerRoot.right,
+                worldOpening);
+            if (worldHandle.sqrMagnitude < 0.000001f)
+            {
+                return false;
+            }
+
+            worldHandle.Normalize();
+            Vector3 localForward = Vector3.Cross(
+                    authoredHandleLocalDirection,
+                    authoredOpeningLocalDirection)
+                .normalized;
+            Vector3 worldForward = Vector3.Cross(
+                    worldHandle,
+                    worldOpening)
+                .normalized;
+            rotation = Quaternion.LookRotation(
+                           worldForward,
+                           worldOpening) *
+                       Quaternion.Inverse(
+                           Quaternion.LookRotation(
+                               localForward,
+                               authoredOpeningLocalDirection));
+            return true;
+        }
+
+        public float ResolveDrinkRimError(Transform mouthSocket)
+        {
+            return initialized && mouthSocket != null &&
+                   drinkRimAnchor != null
+                ? Vector3.Distance(
+                    drinkRimAnchor.position,
+                    mouthSocket.position)
                 : float.PositiveInfinity;
         }
 

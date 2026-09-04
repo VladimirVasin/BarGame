@@ -175,8 +175,7 @@ namespace BarPromenade
             out AnimationClip smokeLoop,
             out Avatar heroAvatar)
         {
-            GameObject heroPrefab = Player3DResources.LoadPrefab(
-                Player3DVariant.ProductionV2);
+            GameObject heroPrefab = Player3DResources.LoadPrefab();
             Player3DAssetRegistry heroRegistry = heroPrefab != null
                 ? heroPrefab.GetComponent<Player3DAssetRegistry>()
                 : null;

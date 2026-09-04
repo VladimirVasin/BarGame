@@ -466,17 +466,25 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 PlayerFootPlacementRules.MaximumTargetStep(1f, deltaTime),
-                Is.EqualTo(0.01f).Within(0.000001f));
+                Is.EqualTo(0.02f).Within(0.000001f));
             Assert.That(
                 PlayerFootPlacementRules.MaximumTargetStep(0.5f, deltaTime),
-                Is.EqualTo(0.01f).Within(0.000001f));
+                Is.EqualTo(0.02f).Within(0.000001f));
             Assert.That(
                 PlayerFootPlacementRules.MaximumTargetStep(1f, 0.1f, 0.3f),
                 Is.EqualTo(0.03f).Within(0.000001f));
             Assert.That(
                 PlayerFootPlacementRules
                     .DefaultPlantedTargetRateMetresPerSecond,
-                Is.EqualTo(0.6f));
+                Is.EqualTo(1.2f));
+
+            // The rate has to carry a planted sole over one of the
+            // stairwell's risers inside one of its treads, or a stance boot
+            // sliding down a flight is never out of the step: 0.10 m of
+            // rise in the 0.092 s a 0.24 m tread lasts at walking pace.
+            Assert.That(
+                PlayerFootPlacementRules.MaximumTargetStep(1f, 0.092f),
+                Is.GreaterThanOrEqualTo(0.10f));
 
             // A negative clock or rate never moves the target backwards.
             Assert.That(
@@ -485,6 +493,126 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 PlayerFootPlacementRules.MaximumTargetStep(1f, 0.1f, -1f),
                 Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void PelvisPlaneDelta_MatchesTheBootRuleOnAFloor()
+        {
+            // Standing on a floor, the boot the pelvis rule takes its
+            // minimum from is the one with no lift of its own, so its
+            // delta is exactly surface + clearance - reference. The plane
+            // rule must give the same number from the ground under the
+            // capsule, or a floor would move under the new rule.
+            const float floor = 1.6f;
+            const float clearance = 0.04f;
+            const float referenceSole = 1.65f;
+            float bootDelta = PlayerFootPlacementRules.TargetSoleHeight(
+                                  floor,
+                                  clearance,
+                                  0f) -
+                              referenceSole;
+            Assert.That(
+                PlayerFootPlacementRules.PelvisPlaneDelta(
+                    floor,
+                    clearance,
+                    referenceSole),
+                Is.EqualTo(bootDelta).Within(Tolerance));
+
+            // A capsule riding higher above its ground than the clip's
+            // sole clearance assumes — the skin width on a slope — asks
+            // the pelvis DOWN by the difference, never up.
+            Assert.That(
+                PlayerFootPlacementRules.PelvisPlaneDelta(
+                    3.13f,
+                    0.04f,
+                    3.20f),
+                Is.EqualTo(-0.03f).Within(Tolerance));
+
+            // Ground above the clip's plane lifts it.
+            Assert.That(
+                PlayerFootPlacementRules.PelvisPlaneDelta(0.1f, 0.04f, 0f),
+                Is.EqualTo(0.14f).Within(Tolerance));
+        }
+
+        [Test]
+        public void ReachShortfall_OnlyCountsWhatTheLegCannotSpan()
+        {
+            const float reach = 0.7782f;
+
+            // A target further away than the whole leg is a lost cause,
+            // not an infinitely deep squat.
+            Assert.That(
+                PlayerFootPlacementRules.ReachShortfall(0.9f, 0.4f, reach),
+                Is.Zero);
+            Assert.That(
+                PlayerFootPlacementRules.ReachShortfall(0.2f, 0.4f, 0f),
+                Is.Zero);
+
+            // Straight down: the leg spans its own length and no more.
+            Assert.That(
+                PlayerFootPlacementRules.ReachShortfall(0f, reach, reach),
+                Is.EqualTo(0f).Within(Tolerance));
+            Assert.That(
+                PlayerFootPlacementRules.ReachShortfall(0f, reach + 0.1f, reach),
+                Is.EqualTo(0.1f).Within(Tolerance));
+
+            // A leg with slack never pulls the hips down.
+            Assert.That(
+                PlayerFootPlacementRules.ReachShortfall(0.27f, 0.5f, reach),
+                Is.Zero);
+
+            // The stairwell case: a boot 0.27 m ahead of the hip reaching
+            // for a tread 0.79 m below it is 6 cm short.
+            float allowed = Mathf.Sqrt((reach * reach) - (0.27f * 0.27f));
+            Assert.That(
+                PlayerFootPlacementRules.ReachShortfall(0.27f, 0.79f, reach),
+                Is.EqualTo(0.79f - allowed).Within(Tolerance));
+            Assert.That(
+                PlayerFootPlacementRules.ReachShortfall(0.27f, 0.79f, reach),
+                Is.InRange(0.05f, 0.07f));
+        }
+
+        [Test]
+        public void StanceWeight_PicksTheHarderPlantAndSharesAStand()
+        {
+            // The walk's plants never reach zero, so the stance foot is
+            // the one planted harder, not one over an absolute threshold.
+            Assert.That(
+                PlayerFootPlacementRules.StanceWeight(1f, 0.68f, 1f),
+                Is.EqualTo(1f).Within(Tolerance));
+            Assert.That(
+                PlayerFootPlacementRules.StanceWeight(0.68f, 0.68f, 1f),
+                Is.EqualTo(0f).Within(Tolerance));
+            Assert.That(
+                PlayerFootPlacementRules.StanceWeight(0.84f, 0.68f, 1f),
+                Is.EqualTo(0.5f).Within(0.0001f));
+
+            // Standing, his weight is fully on both: neither is a swing.
+            Assert.That(
+                PlayerFootPlacementRules.StanceWeight(1f, 1f, 1f),
+                Is.EqualTo(1f).Within(Tolerance));
+
+            // But equal-and-partial is a caller that cannot tell its boots
+            // apart — the backpedal and turn clips and every city
+            // pedestrian hand both feet one scalar — and a body must not
+            // come down for a boot that may be in the air.
+            Assert.That(
+                PlayerFootPlacementRules.StanceWeight(0.7f, 0.7f, 0.7f),
+                Is.EqualTo(0f).Within(Tolerance));
+            Assert.That(
+                PlayerFootPlacementRules.StanceWeight(0.25f, 0.25f, 0.25f),
+                Is.EqualTo(0f).Within(Tolerance));
+
+            // The two boots of one walking pair always share the whole
+            // weight between them: the harder plant takes it all.
+            const float left = 0.93f;
+            const float right = 0.71f;
+            float low = Mathf.Min(left, right);
+            float high = Mathf.Max(left, right);
+            Assert.That(
+                PlayerFootPlacementRules.StanceWeight(left, low, high) +
+                PlayerFootPlacementRules.StanceWeight(right, low, high),
+                Is.EqualTo(1f).Within(0.0001f));
         }
 
         [Test]

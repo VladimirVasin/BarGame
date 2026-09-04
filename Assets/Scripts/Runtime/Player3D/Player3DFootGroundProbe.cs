@@ -263,6 +263,30 @@ namespace BarPromenade
                 kind);
         }
 
+        /// <summary>
+        /// The walkable ground under the ACTOR himself: one ray from his
+        /// root that IGNORES triggers, so the render-only treads a boot
+        /// probe is asked to accept drop out of it and what comes back is
+        /// the surface the <c>CharacterController</c> actually stands on —
+        /// the hidden ramp on a stair flight, the floor everywhere else.
+        ///
+        /// The pelvis needs that plane. A boot probe answers "which tread
+        /// is under this foot", which on a flight is two or three risers
+        /// away from where the body's weight is.
+        /// </summary>
+        public bool TryProbeActorGround(
+            Vector3 actorPosition,
+            out float groundY,
+            out Vector3 normal)
+        {
+            return TryCast(
+                actorPosition,
+                actorPosition.y,
+                out groundY,
+                out normal,
+                QueryTriggerInteraction.Ignore);
+        }
+
         public void Dispose()
         {
             if (bakedSoleMesh == null)
@@ -284,7 +308,9 @@ namespace BarPromenade
             Vector3 planarPosition,
             float actorGroundY,
             out float surfaceY,
-            out Vector3 normal)
+            out Vector3 normal,
+            QueryTriggerInteraction triggers =
+                QueryTriggerInteraction.Collide)
         {
             surfaceY = 0f;
             normal = Vector3.up;
@@ -302,7 +328,7 @@ namespace BarPromenade
                 Hits,
                 ProbeDistance,
                 FootProbeSurface.ProbeMask,
-                QueryTriggerInteraction.Collide);
+                triggers);
             float closestDistance = float.PositiveInfinity;
             bool found = false;
             float ceiling = actorGroundY + MaximumRise;

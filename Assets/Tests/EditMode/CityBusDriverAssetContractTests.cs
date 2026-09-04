@@ -45,8 +45,7 @@ namespace BarPromenade.Tests.EditMode
                 "The driver FBX must stay animation-free.");
 
             GameObject prefab = CityBusDriverResources.LoadPrefab();
-            GameObject playerPrefab = Player3DResources.LoadPrefab(
-                Player3DVariant.ProductionV2);
+            GameObject playerPrefab = Player3DResources.LoadPrefab();
             Material sharedMaterial =
                 AssetDatabase.LoadAssetAtPath<Material>(SharedMaterialPath);
             Assert.That(prefab, Is.Not.Null);

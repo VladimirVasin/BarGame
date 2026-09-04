@@ -32,7 +32,7 @@ decision recorded as an accepted exception in `ai/architecture-notes.md`.
    smoking and cat feeding use the existing `Enter`, `Loop` and `Exit` actions
    serialized by `Player3DAssetRegistry`.
 5. A first-person arm or hand is a filtered instance of
-   `Resources/Player/Player3D.prefab`. It reuses the registered arm meshes,
+   `Resources/Player/Player3DV2.prefab`. It reuses the registered arm meshes,
    palette and grip socket; it may not introduce a different hero model.
 6. Do not manufacture opacity fades, alpha crossfades, ordered-dither
    dissolves, camera cuts or hidden teleports to conceal endpoint mismatch.

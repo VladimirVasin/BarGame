@@ -449,8 +449,7 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertHeroSmokeLoop(
             CityBalconySmokerPresentation presentation)
         {
-            GameObject heroPrefab = Player3DResources.LoadPrefab(
-                Player3DVariant.ProductionV2);
+            GameObject heroPrefab = Player3DResources.LoadPrefab();
             Assert.That(heroPrefab, Is.Not.Null);
             Player3DAssetRegistry hero =
                 heroPrefab.GetComponent<Player3DAssetRegistry>();
@@ -545,8 +544,7 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertEveryEligibleArchetypeReachesInhaleContact(
             Transform parent)
         {
-            GameObject heroPrefab = Player3DResources.LoadPrefab(
-                Player3DVariant.ProductionV2);
+            GameObject heroPrefab = Player3DResources.LoadPrefab();
             Player3DAssetRegistry hero = heroPrefab != null
                 ? heroPrefab.GetComponent<Player3DAssetRegistry>()
                 : null;

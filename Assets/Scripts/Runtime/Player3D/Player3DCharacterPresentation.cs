@@ -122,9 +122,7 @@ namespace BarPromenade
         private const float TurnInPlaceSpeedThreshold = 0.25f;
         private const float TurnInPlaceInputThreshold = 0.2f;
 
-        // The authored Run loop is 18 frames at 24 fps. Keeping this
-        // production cadence when V1 falls back to Walk makes the old rig
-        // visibly hurry instead of silently dropping the run request.
+        // The authored Run loop is 18 frames at 24 fps.
         private const float FullRunCycleSeconds = 0.75f;
 
         // Locomotion mixer layout: input 0 is Idle, the gaits follow.
@@ -317,6 +315,9 @@ namespace BarPromenade
 
         /// <summary>The pelvis offset the leg layer applied this frame.</summary>
         public float PelvisDrop => layer.LastPelvisDrop;
+
+        /// <summary>Test seam: the late procedural layer itself, for diagnostics that read its per-foot state.</summary>
+        internal Player3DProceduralLocomotionLayer Layer => layer;
         public PlayerFacialExpression CurrentFacialExpression =>
             visibleFacialExpression;
         public bool UsesFacialAtlas => faceAtlasPresenter.IsConfigured;
@@ -352,24 +353,16 @@ namespace BarPromenade
             if (!TryResolveAnimation("Idle", out idleBinding) ||
                 !TryResolveAnimation("Walk", out walkBinding) ||
                 !TryResolveAnimation("WalkBack", out walkBackBinding) ||
+                !TryResolveAnimation("Run", out runBinding) ||
                 !TryResolveAnimation("TurnLeft", out turnLeftBinding) ||
                 !TryResolveAnimation("TurnRight", out turnRightBinding))
             {
                 throw new InvalidOperationException(
                     "The Player3D registry requires the Idle, Walk, " +
-                    "WalkBack, TurnLeft and TurnRight clips.");
+                    "WalkBack, Run, TurnLeft and TurnRight clips.");
             }
 
-            hasAuthoredRunClip = TryResolveAnimation(
-                "Run",
-                out runBinding);
-            if (!hasAuthoredRunClip)
-            {
-                // Hero V1 is a byte-frozen fallback and deliberately keeps
-                // its original 37-action bank. Give it a separately timed
-                // Walk playable so the ordinary run state remains safe.
-                runBinding = walkBinding;
-            }
+            hasAuthoredRunClip = true;
 
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
@@ -2520,8 +2513,7 @@ namespace BarPromenade
                     rightBrow.RotateZ(-12f);
                     mouth.ScaleX(0.82f);
                     break;
-                // The drink's faces on the boned V1 rig: the same bones,
-                // pushed the way the atlas cells are drawn.
+                // Bone-faced registries use the same shapes as the atlas.
                 case PlayerFacialExpression.Drowsy:
                     leftEye.ScaleY(0.4f);
                     rightEye.ScaleY(0.4f);

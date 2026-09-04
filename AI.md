@@ -406,9 +406,8 @@ with `41` bone-only Actions. Holding either Shift or gamepad L3 while moving
 forward raises the `2.6 m/s` walk to a `4.2 m/s` run; backward movement stays
 at `1.4 m/s`, intoxication still scales movement, and scripted approaches stay
 at walking pace. The gait blend follows actual constrained speed rather than
-the input request. The former `Player3D` Hero V1 remains packaged with its
-frozen `37` Actions only as an explicit technical fallback and is never
-selected by ordinary gameplay; the pedestrian bank likewise remains at `37`.
+the input request. This Hero V2 is the sole packaged player model; the
+independent pedestrian bank remains at `37` Actions.
 Ordinary building masses use a separate `36-52 m` height
 profile whose roofs fall below one-percent visibility in the fixed City fog;
 the bar, the supermarket and the player home retain their original low-rise
@@ -605,13 +604,15 @@ returns. They spawn at randomly
   `CafeAttendantWipe`, `CafeAttendantWalk`, `CafeAttendantPour` and
   `CafeAttendantNotice` from `MountainRoadCafeCast`; a manually evaluated
   `PlayableGraph` reads `BarDrinkServiceTimeline`. For beer the bartender
-  walks to the central tap, takes and fills the pint, carries it to the
-  selected place and sets it directly before the hero; the right hand pulls
-  the tap handle while the left steadies the vessel. The full pint then waits
-  without a timeout: looking at it owns both the localized drink prompt and
-  the same thin yellow contour used by the closed menu. Accepting the prompt
-  runs a nested pickup, sip and return on the visible seated Hero V2 rig; the
-  pint follows its real left-hand socket and remains empty on the counter.
+  walks to the central tap, takes and fills the compact beer mug, carries it
+  to the selected place and sets it directly before the hero with its handle
+  on his right; the right hand pulls the tap handle while the left steadies
+  the vessel. The full mug then waits without a timeout: looking at it owns
+  both the localized drink prompt and the same thin yellow contour used by the
+  closed menu. Accepting the prompt runs a nested pickup, sip and return on the
+  visible seated Hero V2 rig. His right hand grips the handle; the rim stays at
+  his mouth while the mug reaches horizontal and the head and torso rise with
+  it, then the mug remains empty on the counter.
   Cash is paid at confirmation, while drinking effects commit exactly once
   only after that visible action completes. During the
   quiet shared Wipe, that grounded placement puts the towel against the real

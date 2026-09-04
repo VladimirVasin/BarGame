@@ -6,8 +6,8 @@ using UnityEngine;
 namespace BarPromenade.Editor
 {
     /// <summary>
-    /// Isolated importer for Hero V2. Its animation avatar always comes from
-    /// the V2 model because its production proportions differ from retained V1.
+    /// Imports Hero V2. Its animation avatar always comes from the production
+    /// model FBX.
     /// </summary>
     public sealed class Player3DV2ModelImporter : AssetPostprocessor
     {
@@ -116,7 +116,6 @@ namespace BarPromenade.Editor
             string[] movedFromAssetPaths)
         {
             if (Application.isBatchMode ||
-                Player3DAssetSetup.IsBuilding ||
                 Player3DV2AssetSetup.IsBuilding ||
                 CityPedestrianAssetSetup.IsBuilding)
             {

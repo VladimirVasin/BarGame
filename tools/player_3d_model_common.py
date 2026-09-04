@@ -1,42 +1,17 @@
 #!/usr/bin/env python3
-"""Generate an experimental low-poly 3D model of Bar Promenade's hero.
+"""Shared Blender authoring primitives for the production player generator.
 
-This script is meant to be executed by Blender, not regular CPython:
-
-    blender --background --factory-startup \
-      --python tools/build-player-3d-model.py -- \
-      --output ArtSource/Player/Blender/PlayerCharacter3D.blend
-
-The model follows the locked 2D character design while deliberately keeping
-its geometry modular. Every anatomical segment is an independent mesh object,
-and clothes/accessories remain separate as well. Objects are rigidly weighted
-to one armature bone instead of being joined, so the generated .blend, FBX and
-GLB retain editable body parts.
-
-Coordinate contract
--------------------
-
-* Blender Z is up and the character faces -Y.
-* Anatomical left is +X when the character faces the preview camera.
-* The bandage is therefore on .L/+X and the ochre patch is on .R/-X.
-* Canonical visible height is 1.75 m, matching 84 visible atlas pixels at
-  48 PPU. Shoulder, elbow, hip and knee heights follow the current puppet
-  pivots rather than realistic 7.5-head anatomy.
-
-The generator uses only Blender's bundled Python API and standard library.
-It avoids Subdivision, booleans and smoothing so the result stays angular,
-muted and appropriate for the project's restrained PS1 aesthetic.
+This module is imported by ``build-player-3d-model-v2.py``. It owns the stable
+rig, action, export and validation contracts, but deliberately has no command
+line entry point and cannot emit a second player model on its own.
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import math
 import os
 import random
-import sys
-import traceback
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -47,21 +22,13 @@ import bpy
 from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-GENERATOR_VERSION = "2.8.0"
+ACTION_LIBRARY_VERSION = "2.8.0"
 CANONICAL_HEIGHT = 1.75
 DEFAULT_SEED = 7301
 MAX_TRIANGLES = 4500
 ANIMATION_FPS = 24
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = (
-    REPO_ROOT
-    / "ArtSource"
-    / "Player"
-    / "Blender"
-    / "PlayerCharacter3D.blend"
-)
-
 # These values are approximated from the locked turntable/reference atlas.
 # They are kept here as readable sRGB hex values and converted to scene-linear
 # before entering Principled BSDF Base Color.
@@ -351,110 +318,6 @@ class ValidationReport:
     bounds_max: tuple[float, float, float]
 
 
-def parse_args() -> BuildConfig:
-    """Parse only arguments placed after Blender's conventional `--`."""
-
-    user_args: list[str] = []
-    if "--" in sys.argv:
-        user_args = sys.argv[sys.argv.index("--") + 1 :]
-
-    parser = argparse.ArgumentParser(
-        description=(
-            "Generate the modular low-poly Bar Promenade hero in Blender."
-        )
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=DEFAULT_OUTPUT,
-        help="Destination .blend file.",
-    )
-    parser.add_argument(
-        "--preview",
-        type=Path,
-        help="Optional PNG path; triggers a portrait render.",
-    )
-    parser.add_argument(
-        "--portrait",
-        type=Path,
-        help=(
-            "Optional transparent 192x256 head/upper-torso inventory "
-            "portrait rendered from the production rig."
-        ),
-    )
-    parser.add_argument(
-        "--manifest",
-        type=Path,
-        help="Optional JSON manifest with objects, mappings and bounds.",
-    )
-    parser.add_argument(
-        "--glb",
-        type=Path,
-        help="Optional selection-only GLB export path.",
-    )
-    parser.add_argument(
-        "--fbx",
-        type=Path,
-        help="Optional selection-only FBX export path.",
-    )
-    parser.add_argument(
-        "--animation-fbx",
-        type=Path,
-        help=(
-            "Optional armature-only FBX containing all generated Actions; "
-            "use --fbx for the animation-free model export."
-        ),
-    )
-    parser.add_argument(
-        "--height",
-        type=float,
-        default=CANONICAL_HEIGHT,
-        help="Visible crown-to-ground height in metres (default: 1.75).",
-    )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=DEFAULT_SEED,
-        help="Seed for restrained asymmetric hair variation.",
-    )
-    parser.add_argument(
-        "--pose",
-        choices=("relaxed", "apose"),
-        default="apose",
-        help=(
-            "Bind pose (default: apose). Relaxed remains a compatibility "
-            "preview; production exports should use apose."
-        ),
-    )
-    args = parser.parse_args(user_args)
-
-    if not 1.40 <= args.height <= 2.10:
-        parser.error("--height must be between 1.40 and 2.10 metres")
-
-    return BuildConfig(
-        output=resolve_path(args.output),
-        preview=resolve_optional_path(args.preview),
-        portrait=resolve_optional_path(args.portrait),
-        manifest=resolve_optional_path(args.manifest),
-        glb=resolve_optional_path(args.glb),
-        fbx=resolve_optional_path(args.fbx),
-        animation_fbx=resolve_optional_path(args.animation_fbx),
-        height=args.height,
-        seed=args.seed,
-        pose=args.pose,
-    )
-
-
-def resolve_path(path: Path) -> Path:
-    if not path.is_absolute():
-        path = REPO_ROOT / path
-    return path.resolve()
-
-
-def resolve_optional_path(path: Path | None) -> Path | None:
-    return resolve_path(path) if path is not None else None
-
-
 def srgb_channel_to_linear(value: float) -> float:
     if value <= 0.04045:
         return value / 12.92
@@ -487,7 +350,7 @@ def create_material(
     rgba = hex_to_linear_rgba(color_hex)
     material.diffuse_color = rgba
     material["bp_palette_hex"] = color_hex.upper()
-    material["bp_generator_version"] = GENERATOR_VERSION
+    material["bp_generator_version"] = ACTION_LIBRARY_VERSION
 
     principled = material.node_tree.nodes.get("Principled BSDF")
     if principled is None:
@@ -828,7 +691,7 @@ def look_at(obj: bpy.types.Object, target: Vector) -> None:
     obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
-class CharacterBuilder:
+class ProductionPlayerBuilderBase:
     def __init__(self, config: BuildConfig):
         self.config = config
         self.scale = config.height / CANONICAL_HEIGHT
@@ -845,37 +708,9 @@ class CharacterBuilder:
         return value * self.scale
 
     def build(self) -> BuildResult:
-        self.reset_scene()
-        collections = self.create_collections()
-        materials = {
-            name: create_material(name, color)
-            for name, color in PALETTE_HEX.items()
-        }
-        self.points = self.create_pose_points()
-        root = self.create_root(collections["export"])
-        bone_specs = self.create_bone_specs()
-        rig = self.create_armature(
-            collections["rig"],
-            root,
-            bone_specs,
+        raise NotImplementedError(
+            "The shared authoring base cannot build a standalone hero."
         )
-        self.bone_heads = {spec.name: spec.head for spec in bone_specs}
-        self.bone_specs = {spec.name: spec for spec in bone_specs}
-        self.result = BuildResult(
-            root=root,
-            rig=rig,
-            collections=collections,
-            materials=materials,
-        )
-
-        self.build_core_anatomy()
-        self.build_clothing()
-        self.build_face_and_hair()
-        self.build_asymmetric_details()
-        self.build_actions()
-        self.build_presentation()
-        self.configure_scene_metadata()
-        return self.result
 
     def reset_scene(self) -> None:
         bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -947,7 +782,7 @@ class CharacterBuilder:
         root.empty_display_type = "PLAIN_AXES"
         root.empty_display_size = self.d(0.16)
         root["bp_export"] = True
-        root["bp_generator_version"] = GENERATOR_VERSION
+        root["bp_generator_version"] = ACTION_LIBRARY_VERSION
         root["bp_design"] = "Bar Promenade locked player prototype"
         root["bp_forward_axis"] = "-Y"
         root["bp_anatomical_left_axis"] = "+X"
@@ -957,269 +792,14 @@ class CharacterBuilder:
         return root
 
     def create_pose_points(self) -> dict[str, Vector]:
-        # Heights are derived from the current 64x96/48-PPU puppet:
-        # shoulder 1.292, elbow .958, hip .750 and knee .354 metres.
-        points = {
-            "hip.L": self.v(0.083, 0.012, 0.750),
-            "hip.R": self.v(-0.083, -0.004, 0.750),
-            "knee.L": self.v(0.103, -0.012, 0.354),
-            "knee.R": self.v(-0.103, 0.012, 0.354),
-            "ankle.L": self.v(0.112, -0.026, 0.095),
-            "ankle.R": self.v(-0.112, 0.018, 0.095),
-            "toe.L": self.v(0.112, -0.230, 0.045),
-            "toe.R": self.v(-0.112, -0.188, 0.045),
-            "shoulder.L": self.v(0.208, -0.004, 1.292),
-            "shoulder.R": self.v(-0.208, 0.004, 1.292),
-        }
-        if self.config.pose == "apose":
-            points.update(
-                {
-                    "elbow.L": self.v(0.470, -0.010, 1.175),
-                    "wrist.L": self.v(0.680, -0.018, 1.075),
-                    "hand.L": self.v(0.755, -0.022, 1.035),
-                    "elbow.R": self.v(-0.470, -0.010, 1.175),
-                    "wrist.R": self.v(-0.680, -0.018, 1.075),
-                    "hand.R": self.v(-0.755, -0.022, 1.035),
-                }
-            )
-        else:
-            points.update(
-                {
-                    "elbow.L": self.v(0.267, -0.018, 0.958),
-                    "wrist.L": self.v(0.252, -0.050, 0.690),
-                    "hand.L": self.v(0.258, -0.064, 0.590),
-                    "elbow.R": self.v(-0.255, -0.006, 0.958),
-                    "wrist.R": self.v(-0.247, -0.042, 0.690),
-                    "hand.R": self.v(-0.252, -0.056, 0.590),
-                }
-            )
-        return points
+        raise NotImplementedError(
+            "The production subclass must define its own pose points."
+        )
 
     def create_bone_specs(self) -> list[BoneSpec]:
-        p = self.points
-        specs = [
-            BoneSpec("root", self.v(0, 0, 0), self.v(0, 0, 0.18), deform=False),
-            BoneSpec(
-                "pelvis",
-                self.v(0, 0.008, 0.700),
-                self.v(0, 0.004, 0.900),
-                "root",
-            ),
-            BoneSpec(
-                "spine",
-                self.v(0, 0.004, 0.900),
-                self.v(0, 0.000, 1.120),
-                "pelvis",
-                True,
-            ),
-            BoneSpec(
-                "chest",
-                self.v(0, 0.000, 1.120),
-                self.v(0, -0.010, 1.335),
-                "spine",
-                True,
-            ),
-            BoneSpec(
-                "neck",
-                self.v(0, -0.010, 1.335),
-                self.v(0, -0.025, 1.430),
-                "chest",
-                True,
-            ),
-            BoneSpec(
-                "head",
-                self.v(0, -0.025, 1.430),
-                self.v(0, -0.050, 1.675),
-                "neck",
-                True,
-            ),
-            BoneSpec(
-                "clavicle.L",
-                self.v(0, -0.008, 1.325),
-                p["shoulder.L"],
-                "chest",
-                deform=False,
-            ),
-            BoneSpec(
-                "upper_arm.L",
-                p["shoulder.L"],
-                p["elbow.L"],
-                "clavicle.L",
-                True,
-            ),
-            BoneSpec(
-                "forearm.L",
-                p["elbow.L"],
-                p["wrist.L"],
-                "upper_arm.L",
-                True,
-            ),
-            BoneSpec(
-                "hand.L",
-                p["wrist.L"],
-                p["hand.L"],
-                "forearm.L",
-                True,
-            ),
-            BoneSpec(
-                "clavicle.R",
-                self.v(0, -0.008, 1.325),
-                p["shoulder.R"],
-                "chest",
-                deform=False,
-            ),
-            BoneSpec(
-                "upper_arm.R",
-                p["shoulder.R"],
-                p["elbow.R"],
-                "clavicle.R",
-                True,
-            ),
-            BoneSpec(
-                "forearm.R",
-                p["elbow.R"],
-                p["wrist.R"],
-                "upper_arm.R",
-                True,
-            ),
-            BoneSpec(
-                "hand.R",
-                p["wrist.R"],
-                p["hand.R"],
-                "forearm.R",
-                True,
-            ),
-            BoneSpec(
-                "thigh.L",
-                p["hip.L"],
-                p["knee.L"],
-                "pelvis",
-            ),
-            BoneSpec(
-                "shin.L",
-                p["knee.L"],
-                p["ankle.L"],
-                "thigh.L",
-                True,
-            ),
-            BoneSpec(
-                "foot.L",
-                p["ankle.L"],
-                p["toe.L"],
-                "shin.L",
-                True,
-            ),
-            BoneSpec(
-                "thigh.R",
-                p["hip.R"],
-                p["knee.R"],
-                "pelvis",
-            ),
-            BoneSpec(
-                "shin.R",
-                p["knee.R"],
-                p["ankle.R"],
-                "thigh.R",
-                True,
-            ),
-            BoneSpec(
-                "foot.R",
-                p["ankle.R"],
-                p["toe.R"],
-                "shin.R",
-                True,
-            ),
-        ]
-
-        # Small deforming face controls keep expression Actions bone-only.
-        # Their names are stable import identifiers; no shape keys or object
-        # visibility curves are required for blink/watchful/tense states.
-        specs.extend(
-            (
-                BoneSpec(
-                    "face.eye.L",
-                    self.v(0.052, -0.147, 1.581),
-                    self.v(0.052, -0.147, 1.599),
-                    "head",
-                ),
-                BoneSpec(
-                    "face.eye.R",
-                    self.v(-0.052, -0.147, 1.581),
-                    self.v(-0.052, -0.147, 1.599),
-                    "head",
-                ),
-                BoneSpec(
-                    "face.brow.L",
-                    self.v(0.082, -0.154, 1.627),
-                    self.v(0.027, -0.157, 1.621),
-                    "head",
-                ),
-                BoneSpec(
-                    "face.brow.R",
-                    self.v(-0.082, -0.154, 1.625),
-                    self.v(-0.027, -0.157, 1.619),
-                    "head",
-                ),
-                BoneSpec(
-                    "face.mouth",
-                    self.v(-0.036, -0.151, 1.477),
-                    self.v(0.048, -0.151, 1.477),
-                    "head",
-                ),
-            )
+        raise NotImplementedError(
+            "The production subclass must define its own skeleton."
         )
-
-        # Non-deforming sockets are real bones rather than generated empties.
-        # They survive FBX axis conversion and inherit animation directly.
-        grip_l = p["wrist.L"].lerp(p["hand.L"], 0.72)
-        grip_r = p["wrist.R"].lerp(p["hand.R"], 0.72)
-        specs.extend(
-            (
-                BoneSpec(
-                    "SOCKET_Grip.L",
-                    grip_l,
-                    grip_l + self.v(0, -0.055, 0),
-                    "hand.L",
-                    deform=False,
-                ),
-                BoneSpec(
-                    "SOCKET_Grip.R",
-                    grip_r,
-                    grip_r + self.v(0, -0.055, 0),
-                    "hand.R",
-                    deform=False,
-                ),
-                BoneSpec(
-                    "SOCKET_Cigarette.R",
-                    grip_r + self.v(0, -0.010, 0.012),
-                    grip_r + self.v(0, -0.085, 0.012),
-                    "hand.R",
-                    deform=False,
-                ),
-                BoneSpec(
-                    "SOCKET_Bottle.R",
-                    grip_r,
-                    grip_r + self.v(0, 0, -0.085),
-                    "hand.R",
-                    deform=False,
-                ),
-                BoneSpec(
-                    "SOCKET_Vessel.L",
-                    grip_l,
-                    grip_l + self.v(0, 0, -0.085),
-                    "hand.L",
-                    deform=False,
-                ),
-                BoneSpec(
-                    "SOCKET_Mouth",
-                    self.v(0.006, -0.158, 1.477),
-                    self.v(0.006, -0.218, 1.477),
-                    "head",
-                    deform=False,
-                ),
-            )
-        )
-        return specs
 
     def create_armature(
         self,
@@ -1235,7 +815,7 @@ class CharacterBuilder:
         rig.display_type = "WIRE"
         armature_data.display_type = "OCTAHEDRAL"
         rig["bp_export"] = True
-        rig["bp_generator_version"] = GENERATOR_VERSION
+        rig["bp_generator_version"] = ACTION_LIBRARY_VERSION
         rig["bp_rig_style"] = "separate rigid meshes, one-bone weights"
 
         bpy.context.view_layer.objects.active = rig
@@ -1313,7 +893,7 @@ class CharacterBuilder:
         obj["bp_bone"] = bone
         obj["bp_sprite_part"] = sprite_part
         obj["bp_anatomical_side"] = side
-        obj["bp_generator_version"] = GENERATOR_VERSION
+        obj["bp_generator_version"] = ACTION_LIBRARY_VERSION
 
         self.result.parts.append(
             PartRecord(
@@ -1327,729 +907,23 @@ class CharacterBuilder:
         return obj
 
     def build_core_anatomy(self) -> None:
-        p = self.points
-
-        # Body core: deliberately top-heavy and angular like the atlas.
-        head_rings = tuple(
-            (
-                self.d(z),
-                self.d(rx),
-                self.d(ry),
-                self.d(y_offset),
-            )
-            for z, rx, ry, y_offset in (
-                (1.390, 0.072, 0.070, -0.005),
-                (1.445, 0.116, 0.100, -0.010),
-                (1.555, 0.148, 0.116, -0.015),
-                (1.660, 0.142, 0.111, -0.010),
-                (1.715, 0.086, 0.070, -0.003),
-            )
+        raise NotImplementedError(
+            "The production subclass must define its own anatomy."
         )
-        self.add_part(
-            "GEO_Head",
-            make_ringed_ellipsoid(self.v(0, -0.020, 0), head_rings, 10),
-            "Skin",
-            "core",
-            "head",
-            "Body",
-            "body_part",
-            origin=self.bone_heads["head"],
-        )
-        self.add_part(
-            "GEO_Neck",
-            make_frustum_between(
-                self.v(0, -0.008, 1.325),
-                self.v(0, -0.020, 1.455),
-                self.d(0.073),
-                self.d(0.066),
-                8,
-                0.84,
-            ),
-            "SkinShadow",
-            "core",
-            "neck",
-            "Body",
-            "body_part",
-        )
-        self.add_part(
-            "GEO_Torso",
-            make_tapered_box_between(
-                self.v(0, 0.010, 0.785),
-                self.v(0, -0.004, 1.330),
-                self.d(0.278),
-                self.d(0.170),
-                self.d(0.338),
-                self.d(0.185),
-            ),
-            "Shirt",
-            "core",
-            "chest",
-            "Body",
-            "body_part",
-        )
-        self.add_part(
-            "GEO_Pelvis",
-            make_tapered_box_between(
-                self.v(0, 0.014, 0.690),
-                self.v(0, 0.010, 0.835),
-                self.d(0.275),
-                self.d(0.165),
-                self.d(0.300),
-                self.d(0.175),
-            ),
-            "Jeans",
-            "core",
-            "pelvis",
-            "Body",
-            "body_part",
-        )
-
-        for side in ("L", "R"):
-            anatomical = "Left" if side == "L" else "Right"
-            upper_sprite = f"{anatomical}UpperArm"
-            lower_sprite = f"{anatomical}LowerArm"
-            upper_leg_sprite = f"{anatomical}UpperLeg"
-            lower_leg_sprite = f"{anatomical}LowerLeg"
-
-            shoulder = p[f"shoulder.{side}"]
-            elbow = p[f"elbow.{side}"]
-            wrist = p[f"wrist.{side}"]
-            hand_tail = p[f"hand.{side}"]
-            hip = p[f"hip.{side}"]
-            knee = p[f"knee.{side}"]
-            ankle = p[f"ankle.{side}"]
-
-            self.add_part(
-                f"GEO_UpperArm.{side}",
-                make_frustum_between(
-                    shoulder,
-                    elbow,
-                    self.d(0.052),
-                    self.d(0.044),
-                    8,
-                ),
-                "SkinShadow",
-                "core",
-                f"upper_arm.{side}",
-                upper_sprite,
-                "body_part",
-                anatomical,
-            )
-            self.add_part(
-                f"GEO_Forearm.{side}",
-                make_frustum_between(
-                    elbow,
-                    wrist,
-                    self.d(0.048),
-                    self.d(0.038),
-                    8,
-                ),
-                "Skin",
-                "core",
-                f"forearm.{side}",
-                lower_sprite,
-                "body_part",
-                anatomical,
-            )
-            hand_axis = hand_tail - wrist
-            hand_rotation = hand_axis.to_track_quat("Z", "Y")
-            self.add_part(
-                f"GEO_Hand.{side}",
-                make_ellipsoid_geometry(
-                    (wrist + hand_tail) * 0.5,
-                    self.v(0.043, 0.034, 0.064),
-                    8,
-                    4,
-                    hand_rotation,
-                ),
-                "Skin",
-                "core",
-                f"hand.{side}",
-                lower_sprite,
-                "body_part",
-                anatomical,
-            )
-            self.add_part(
-                f"GEO_Thigh.{side}",
-                make_frustum_between(
-                    hip,
-                    knee,
-                    self.d(0.092),
-                    self.d(0.078),
-                    8,
-                    0.82,
-                ),
-                "Jeans",
-                "core",
-                f"thigh.{side}",
-                upper_leg_sprite,
-                "body_part",
-                anatomical,
-            )
-            self.add_part(
-                f"GEO_Shin.{side}",
-                make_frustum_between(
-                    knee,
-                    ankle,
-                    self.d(0.080),
-                    self.d(0.067),
-                    8,
-                    0.82,
-                ),
-                "Jeans",
-                "core",
-                f"shin.{side}",
-                lower_leg_sprite,
-                "body_part",
-                anatomical,
-            )
-
-            center_x = ankle.x
-            foot_forward = p[f"toe.{side}"].y
-            back_y = ankle.y + self.d(0.072)
-            self.add_part(
-                f"GEO_Foot.{side}",
-                make_boot_wedge(
-                    center_x,
-                    back_y,
-                    foot_forward,
-                    self.d(0.018),
-                    self.d(0.175),
-                    self.d(0.095),
-                    self.d(0.145),
-                ),
-                "BootLeather",
-                "core",
-                f"foot.{side}",
-                lower_leg_sprite,
-                "body_part",
-                anatomical,
-                origin=ankle,
-            )
 
     def build_clothing(self) -> None:
-        p = self.points
-        self.add_part(
-            "CLO_JacketBody",
-            make_tapered_box_between(
-                self.v(0, 0.014, 0.800),
-                self.v(0, -0.001, 1.335),
-                self.d(0.322),
-                self.d(0.198),
-                self.d(0.392),
-                self.d(0.218),
-            ),
-            "Jacket",
-            "clothing",
-            "chest",
-            "Body",
-            "clothing",
-        )
-        self.add_part(
-            "CLO_ShirtFront",
-            make_box_geometry(
-                self.v(0, -0.118, 1.075),
-                self.v(0.174, 0.020, 0.465),
-            ),
-            "Shirt",
-            "clothing",
-            "chest",
-            "Body",
-            "clothing",
-        )
-        for side, sign in (("L", 1.0), ("R", -1.0)):
-            anatomical = "Left" if side == "L" else "Right"
-            upper_sprite = f"{anatomical}UpperArm"
-            lower_sprite = f"{anatomical}LowerArm"
-            shoulder = p[f"shoulder.{side}"]
-            elbow = p[f"elbow.{side}"]
-            sleeve_end = shoulder.lerp(elbow, 0.84)
-            cuff_start = shoulder.lerp(elbow, 0.76)
-
-            self.add_part(
-                f"CLO_JacketSleeve.{side}",
-                make_frustum_between(
-                    shoulder,
-                    sleeve_end,
-                    self.d(0.080),
-                    self.d(0.068),
-                    8,
-                    0.88,
-                ),
-                "Jacket",
-                "clothing",
-                f"upper_arm.{side}",
-                upper_sprite,
-                "clothing",
-                anatomical,
-            )
-            self.add_part(
-                f"CLO_JacketCuff.{side}",
-                make_frustum_between(
-                    cuff_start,
-                    elbow.lerp(p[f"wrist.{side}"], 0.06),
-                    self.d(0.073),
-                    self.d(0.067),
-                    8,
-                    0.88,
-                ),
-                "JacketEdge",
-                "clothing",
-                f"upper_arm.{side}",
-                upper_sprite,
-                "clothing",
-                anatomical,
-            )
-
-            # Open shirt panels and chest pockets remain individually editable.
-            panel_center = self.v(sign * 0.112, -0.125, 1.070)
-            self.add_part(
-                f"CLO_JacketPanel.{side}",
-                make_box_geometry(
-                    panel_center,
-                    self.v(0.105, 0.020, 0.490),
-                ),
-                "Jacket",
-                "clothing",
-                "chest",
-                "Body",
-                "clothing",
-                anatomical,
-            )
-            pocket_center = self.v(sign * 0.118, -0.140, 1.105)
-            self.add_part(
-                f"ACC_JacketPocket.{side}",
-                make_box_geometry(
-                    pocket_center,
-                    self.v(0.084, 0.014, 0.088),
-                ),
-                "JacketDark",
-                "details",
-                "chest",
-                "Body",
-                "clothing_detail",
-                anatomical,
-            )
-            self.add_part(
-                f"ACC_JacketPocketFlap.{side}",
-                make_box_geometry(
-                    pocket_center + self.v(0, -0.010, 0.046),
-                    self.v(0.092, 0.012, 0.022),
-                ),
-                "JacketEdge",
-                "details",
-                "chest",
-                "Body",
-                "clothing_detail",
-                anatomical,
-            )
-
-            # Jeans cuffs and boot soles make the heavy-work-boot silhouette.
-            ankle = p[f"ankle.{side}"]
-            knee = p[f"knee.{side}"]
-            cuff_top = ankle.lerp(knee, 0.18)
-            self.add_part(
-                f"ACC_JeansCuff.{side}",
-                make_frustum_between(
-                    ankle,
-                    cuff_top,
-                    self.d(0.073),
-                    self.d(0.080),
-                    8,
-                    0.82,
-                ),
-                "JeansEdge",
-                "details",
-                f"shin.{side}",
-                lower_sprite,
-                "clothing_detail",
-                anatomical,
-            )
-            toe = p[f"toe.{side}"]
-            sole_center_y = (toe.y + ankle.y + self.d(0.065)) * 0.5
-            sole_length = abs(toe.y - (ankle.y + self.d(0.065)))
-            self.add_part(
-                f"ACC_BootSole.{side}",
-                make_box_geometry(
-                    Vector((ankle.x, sole_center_y, self.d(0.010))),
-                    self.v(0.158, sole_length, 0.020),
-                ),
-                "BootSole",
-                "details",
-                f"foot.{side}",
-                lower_sprite,
-                "clothing_detail",
-                anatomical,
-                origin=ankle,
-            )
-
-        # Two angular lapels frame the charcoal undershirt.
-        self.add_part(
-            "CLO_Lapel.L",
-            make_tapered_box_between(
-                self.v(0.064, -0.143, 1.318),
-                self.v(0.105, -0.143, 1.105),
-                self.d(0.053),
-                self.d(0.012),
-                self.d(0.036),
-                self.d(0.012),
-            ),
-            "JacketEdge",
-            "clothing",
-            "chest",
-            "Body",
-            "clothing_detail",
-            "Left",
-        )
-        self.add_part(
-            "CLO_Lapel.R",
-            make_tapered_box_between(
-                self.v(-0.064, -0.143, 1.318),
-                self.v(-0.105, -0.143, 1.105),
-                self.d(0.053),
-                self.d(0.012),
-                self.d(0.036),
-                self.d(0.012),
-            ),
-            "JacketEdge",
-            "clothing",
-            "chest",
-            "Body",
-            "clothing_detail",
-            "Right",
+        raise NotImplementedError(
+            "The production subclass must define its own clothing."
         )
 
     def build_face_and_hair(self) -> None:
-        # All facial pieces are separate and head-weighted, making future
-        # Neutral/HalfBlink/ClosedBlink/Watchful/Tense shape work practical.
-        face_y = self.d(-0.147)
-        for side, sign in (("L", 1.0), ("R", -1.0)):
-            anatomical = "Left" if side == "L" else "Right"
-            eye_center = Vector((self.d(sign * 0.052), face_y, self.d(1.590)))
-            self.add_part(
-                f"GEO_Eye.{side}",
-                make_box_geometry(
-                    eye_center,
-                    self.v(0.047, 0.010, 0.018),
-                ),
-                "EyeWhite",
-                "details",
-                f"face.eye.{side}",
-                "Body",
-                "facial_detail",
-                anatomical,
-            )
-            self.add_part(
-                f"ACC_Pupil.{side}",
-                make_box_geometry(
-                    eye_center + self.v(0, -0.008, -0.001),
-                    self.v(0.014, 0.008, 0.014),
-                ),
-                "Eye",
-                "details",
-                f"face.eye.{side}",
-                "Body",
-                "facial_detail",
-                anatomical,
-            )
-            brow_z = 1.627 + (0.004 if side == "L" else -0.002)
-            self.add_part(
-                f"ACC_Brow.{side}",
-                make_tapered_box_between(
-                    self.v(sign * 0.082, -0.154, brow_z),
-                    self.v(sign * 0.027, -0.157, brow_z - 0.006),
-                    self.d(0.014),
-                    self.d(0.008),
-                    self.d(0.010),
-                    self.d(0.008),
-                ),
-                "Hair",
-                "details",
-                f"face.brow.{side}",
-                "Body",
-                "facial_detail",
-                anatomical,
-            )
-            self.add_part(
-                f"ACC_UnderEye.{side}",
-                make_box_geometry(
-                    self.v(sign * 0.052, -0.151, 1.568),
-                    self.v(0.052, 0.007, 0.012),
-                ),
-                "SkinShadow",
-                "details",
-                "head",
-                "Body",
-                "facial_detail",
-                anatomical,
-            )
-            self.add_part(
-                f"GEO_Ear.{side}",
-                make_ellipsoid_geometry(
-                    self.v(sign * 0.151, -0.022, 1.565),
-                    self.v(0.024, 0.020, 0.049),
-                    6,
-                    3,
-                ),
-                "SkinShadow",
-                "details",
-                "head",
-                "Body",
-                "body_detail",
-                anatomical,
-            )
-
-        nose_vertices = [
-            self.v(-0.025, -0.145, 1.590),
-            self.v(0.025, -0.145, 1.590),
-            self.v(0.022, -0.145, 1.525),
-            self.v(-0.022, -0.145, 1.525),
-            self.v(0.000, -0.188, 1.542),
-        ]
-        nose_faces = [
-            (4, 1, 0),
-            (4, 2, 1),
-            (4, 3, 2),
-            (4, 0, 3),
-            (1, 2, 3, 0),
-        ]
-        self.add_part(
-            "GEO_Nose",
-            (nose_vertices, nose_faces),
-            "SkinShadow",
-            "details",
-            "head",
-            "Body",
-            "facial_detail",
+        raise NotImplementedError(
+            "The production subclass must define its own face and hair."
         )
-        self.add_part(
-            "ACC_Mouth",
-            make_box_geometry(
-                self.v(0.006, -0.151, 1.477),
-                self.v(0.084, 0.008, 0.012),
-            ),
-            "SkinDark",
-            "details",
-            "face.mouth",
-            "Body",
-            "facial_detail",
-        )
-        self.add_part(
-            "ACC_Stubble",
-            make_tapered_box_between(
-                self.v(0, -0.136, 1.405),
-                self.v(0, -0.149, 1.492),
-                self.d(0.086),
-                self.d(0.010),
-                self.d(0.126),
-                self.d(0.010),
-            ),
-            "SkinShadow",
-            "details",
-            "head",
-            "Body",
-            "facial_detail",
-        )
-
-        hair_rings = tuple(
-            (
-                self.d(z),
-                self.d(rx),
-                self.d(ry),
-                self.d(y_offset),
-            )
-            for z, rx, ry, y_offset in (
-                (1.545, 0.145, 0.105, 0.018),
-                (1.625, 0.162, 0.126, 0.014),
-                (1.700, 0.145, 0.116, 0.010),
-                (1.742, 0.086, 0.072, 0.005),
-                (1.750, 0.018, 0.016, 0.002),
-            )
-        )
-        self.add_part(
-            "GEO_HairCap",
-            make_ringed_ellipsoid(self.v(0, -0.012, 0), hair_rings, 10),
-            "Hair",
-            "details",
-            "head",
-            "Body",
-            "hair",
-        )
-
-        # Fixed asymmetric anchors plus seeded millimetre-scale jitter make a
-        # messy silhouette without ever mirroring the completed character.
-        tuft_specs = (
-            ((-0.118, -0.095, 1.665), (-0.145, -0.135, 1.620), 0.030),
-            ((-0.070, -0.125, 1.705), (-0.082, -0.160, 1.650), 0.026),
-            ((-0.020, -0.135, 1.720), (-0.030, -0.172, 1.660), 0.028),
-            ((0.030, -0.132, 1.716), (0.020, -0.174, 1.642), 0.030),
-            ((0.082, -0.115, 1.690), (0.102, -0.158, 1.620), 0.030),
-            ((0.132, -0.070, 1.650), (0.159, -0.102, 1.590), 0.026),
-            ((-0.145, -0.020, 1.670), (-0.170, -0.012, 1.620), 0.026),
-            ((0.150, 0.012, 1.680), (0.176, 0.020, 1.625), 0.025),
-            ((-0.098, 0.088, 1.690), (-0.112, 0.125, 1.655), 0.028),
-            ((0.090, 0.095, 1.705), (0.105, 0.130, 1.660), 0.027),
-            ((-0.025, 0.112, 1.730), (-0.030, 0.145, 1.690), 0.026),
-            ((0.045, 0.105, 1.725), (0.060, 0.140, 1.680), 0.026),
-            ((-0.060, -0.015, 1.724), (-0.080, -0.025, 1.734), 0.025),
-            ((0.068, -0.010, 1.722), (0.085, -0.020, 1.734), 0.024),
-        )
-        for index, (base_tuple, tip_tuple, radius) in enumerate(tuft_specs, 1):
-            jitter = self.v(
-                self.rng.uniform(-0.004, 0.004),
-                self.rng.uniform(-0.003, 0.003),
-                self.rng.uniform(-0.002, 0.002),
-            )
-            base = self.v(*base_tuple) + jitter
-            tip = self.v(*tip_tuple) + jitter * 0.4
-            tip.z = min(tip.z, self.d(CANONICAL_HEIGHT))
-            self.add_part(
-                f"GEO_HairTuft.{index:02d}",
-                make_frustum_between(
-                    base,
-                    tip,
-                    self.d(radius),
-                    self.d(0.006),
-                    5,
-                    0.72,
-                    0.0,
-                ),
-                "HairHighlight" if index in (2, 7, 11) else "Hair",
-                "details",
-                "head",
-                "Body",
-                "hair",
-            )
 
     def build_asymmetric_details(self) -> None:
-        p = self.points
-
-        # Physical LEFT forearm (+X): one pale shell and five darker wrap bands.
-        bandage_start = p["elbow.L"].lerp(p["wrist.L"], 0.08)
-        bandage_end = p["elbow.L"].lerp(p["wrist.L"], 0.86)
-        self.add_part(
-            "CLO_Bandage.L",
-            make_frustum_between(
-                bandage_start,
-                bandage_end,
-                self.d(0.055),
-                self.d(0.045),
-                8,
-                0.89,
-            ),
-            "Bandage",
-            "clothing",
-            "forearm.L",
-            "LeftLowerArm",
-            "signature_detail",
-            "Left",
-        )
-        for index, fraction in enumerate((0.15, 0.31, 0.48, 0.66, 0.82), 1):
-            center = bandage_start.lerp(bandage_end, fraction)
-            axis = (bandage_end - bandage_start).normalized()
-            half_length = self.d(0.007)
-            self.add_part(
-                f"ACC_BandageWrap.{index:02d}.L",
-                make_frustum_between(
-                    center - axis * half_length,
-                    center + axis * half_length,
-                    self.d(0.057),
-                    self.d(0.057),
-                    8,
-                    0.89,
-                ),
-                "BandageDark",
-                "details",
-                "forearm.L",
-                "LeftLowerArm",
-                "signature_detail",
-                "Left",
-            )
-
-        # Physical RIGHT shoulder (-X): independently authored ochre patch.
-        patch_center = p["shoulder.R"].lerp(p["elbow.R"], 0.18)
-        patch_center += self.v(-0.032, -0.058, 0.006)
-        self.add_part(
-            "ACC_ShoulderPatch.R",
-            make_box_geometry(
-                patch_center,
-                self.v(0.066, 0.018, 0.072),
-            ),
-            "Patch",
-            "details",
-            "upper_arm.R",
-            "RightUpperArm",
-            "signature_detail",
-            "Right",
-            origin=p["shoulder.R"],
-        )
-
-        # The source guarantees a diagonal strap but not a large visible bag.
-        # Generate front/back ribbons and a small buckle, deliberately no pouch.
-        strap_front_start = self.v(0.145, -0.151, 1.315)
-        strap_front_end = self.v(-0.155, -0.126, 0.805)
-        self.add_part(
-            "ACC_StrapFront",
-            make_tapered_box_between(
-                strap_front_start,
-                strap_front_end,
-                self.d(0.045),
-                self.d(0.016),
-                self.d(0.050),
-                self.d(0.016),
-            ),
-            "Strap",
-            "details",
-            "chest",
-            "Body",
-            "signature_detail",
-        )
-        self.add_part(
-            "ACC_StrapBack",
-            make_tapered_box_between(
-                self.v(0.145, 0.126, 1.310),
-                self.v(-0.155, 0.112, 0.805),
-                self.d(0.045),
-                self.d(0.016),
-                self.d(0.050),
-                self.d(0.016),
-            ),
-            "Strap",
-            "details",
-            "chest",
-            "Body",
-            "signature_detail",
-        )
-        self.add_part(
-            "ACC_StrapShoulder",
-            make_tapered_box_between(
-                self.v(0.145, -0.145, 1.315),
-                self.v(0.145, 0.125, 1.310),
-                self.d(0.046),
-                self.d(0.020),
-                self.d(0.046),
-                self.d(0.020),
-            ),
-            "Strap",
-            "details",
-            "chest",
-            "Body",
-            "signature_detail",
-            "Left",
-        )
-        buckle_center = strap_front_start.lerp(strap_front_end, 0.52)
-        buckle_center += self.v(0, -0.012, 0)
-        self.add_part(
-            "ACC_StrapBuckle",
-            make_box_geometry(
-                buckle_center,
-                self.v(0.064, 0.018, 0.060),
-            ),
-            "Metal",
-            "details",
-            "chest",
-            "Body",
-            "accessory",
+        raise NotImplementedError(
+            "The production subclass must define its own asymmetric details."
         )
 
     @staticmethod
@@ -2194,7 +1068,7 @@ class CharacterBuilder:
         action["bp_source_frame_count"] = source_frame_count
         action["bp_source_fps"] = source_fps
         action["bp_root_motion"] = False
-        action["bp_generator_version"] = GENERATOR_VERSION
+        action["bp_generator_version"] = ACTION_LIBRARY_VERSION
 
         rig = self.result.rig
         animation_data = rig.animation_data_create()
@@ -4684,12 +3558,13 @@ class CharacterBuilder:
             ),
         )
 
-        # A seated drink is a child of BusRideLoop, not another seat. The
-        # left vessel socket is the physical contract: runtime aligns the
-        # glass's authored grip to it while these bones carry the hand from
-        # the counter to the mouth and back. All three seams use bus_seated so
-        # a nested action can yield the already occupied stool without a body
-        # swap or a camera-local pair of arms.
+        # A seated drink is a child of BusRideLoop, not another seat. All
+        # three seams use bus_seated so the nested action can yield the already
+        # occupied stool without a body swap or camera-local arms. The live
+        # mug handle is always held by the anatomical right hand.
+        drink_upper_arm = "upper_arm.R"
+        drink_forearm = "forearm.R"
+        drink_hand = "hand.R"
         bar_drink_reach = self.merge_pose(
             bus_seated,
             {
@@ -4697,13 +3572,14 @@ class CharacterBuilder:
                 "chest": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
                 "neck": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(8.0, 0.0, 2.0)),
-                "upper_arm.L": BonePose(
-                    armature_direction=(0.18, -0.72, -0.67)
+                drink_upper_arm: BonePose(
+                    armature_direction=(-0.18, -0.72, -0.67)
                 ),
-                "forearm.L": BonePose(
-                    armature_direction=(-0.15, -0.92, -0.36)
+                drink_forearm: BonePose(
+                    armature_direction=(0.15, -0.92, -0.36)
                 ),
-                "hand.L": BonePose(rotation_degrees=(8.0, 4.0, -10.0)),
+                drink_hand: BonePose(
+                    rotation_degrees=(8.0, -4.0, 10.0)),
             },
         )
         bar_drink_grasp = self.merge_pose(
@@ -4711,53 +3587,58 @@ class CharacterBuilder:
             {
                 "spine": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(10.0, 0.0, 2.0)),
-                "upper_arm.L": BonePose(
-                    armature_direction=(0.20, -0.78, -0.59)
+                drink_upper_arm: BonePose(
+                    armature_direction=(-0.20, -0.78, -0.59)
                 ),
-                "forearm.L": BonePose(
-                    armature_direction=(-0.18, -0.93, -0.32)
+                drink_forearm: BonePose(
+                    armature_direction=(0.18, -0.93, -0.32)
                 ),
-                "hand.L": BonePose(rotation_degrees=(4.0, 2.0, -13.0)),
+                drink_hand: BonePose(
+                    rotation_degrees=(4.0, -2.0, 13.0)),
             },
         )
         bar_drink_lift = self.merge_pose(
             bus_seated,
             {
-                "spine": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
                 "chest": BonePose(rotation_degrees=(-2.0, 0.0, 1.0)),
-                "head": BonePose(rotation_degrees=(4.0, 0.0, 1.0)),
-                "upper_arm.L": BonePose(
-                    armature_direction=(0.10, -0.76, -0.35)
+                "head": BonePose(rotation_degrees=(-1.0, 0.0, 1.0)),
+                drink_upper_arm: BonePose(
+                    armature_direction=(-0.10, -0.76, -0.35)
                 ),
-                "forearm.L": BonePose(
-                    armature_direction=(-0.40, -0.45, 0.80)
+                drink_forearm: BonePose(
+                    armature_direction=(0.40, -0.45, 0.80)
                 ),
-                "hand.L": BonePose(rotation_degrees=(-4.0, 18.0, -18.0)),
+                drink_hand: BonePose(
+                    rotation_degrees=(-4.0, -18.0, 18.0)),
             },
         )
         bar_drink_mouth = self.merge_pose(
             bus_seated,
             {
-                "spine": BonePose(rotation_degrees=(3.5, 0.0, 0.0)),
-                "chest": BonePose(rotation_degrees=(1.0, 0.0, 1.0)),
-                "neck": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
-                "head": BonePose(rotation_degrees=(-7.0, 0.0, 1.0)),
-                "upper_arm.L": BonePose(
-                    armature_direction=(0.08, -0.62, -0.20)
+                "spine": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-10.0, 0.0, 1.0)),
+                "neck": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-12.0, 0.0, 1.0)),
+                drink_upper_arm: BonePose(
+                    armature_direction=(-0.08, -0.62, -0.20)
                 ),
-                "forearm.L": BonePose(
-                    armature_direction=(-0.52, 0.02, 0.85)
+                drink_forearm: BonePose(
+                    armature_direction=(0.52, 0.02, 0.85)
                 ),
-                "hand.L": BonePose(rotation_degrees=(-12.0, 32.0, -22.0)),
+                drink_hand: BonePose(
+                    rotation_degrees=(-12.0, -32.0, 22.0)),
             },
         )
         bar_drink_swallow = self.merge_pose(
             bar_drink_mouth,
             {
-                "chest": BonePose(rotation_degrees=(3.0, 0.0, 1.0)),
-                "neck": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
-                "head": BonePose(rotation_degrees=(-10.0, 0.0, 1.0)),
-                "hand.L": BonePose(rotation_degrees=(-16.0, 37.0, -24.0)),
+                "spine": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-12.0, 0.0, 1.0)),
+                "neck": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-15.0, 0.0, 1.0)),
+                drink_hand: BonePose(
+                    rotation_degrees=(-16.0, -37.0, 24.0)),
             },
         )
         self._create_action(
@@ -5360,8 +4241,8 @@ class CharacterBuilder:
 
     def configure_scene_metadata(self) -> None:
         scene = bpy.context.scene
-        scene["bp_generator"] = "tools/build-player-3d-model.py"
-        scene["bp_generator_version"] = GENERATOR_VERSION
+        scene["bp_generator"] = "tools/player_3d_model_common.py"
+        scene["bp_generator_version"] = ACTION_LIBRARY_VERSION
         scene["bp_character_height_m"] = self.config.height
         scene["bp_pose"] = self.config.pose
         scene["bp_seed"] = self.config.seed
@@ -6331,7 +5212,7 @@ def validate_fall_recovery_dense(
     and no knee or elbow bends the wrong way or folds past a real joint's
     range. Everything else the full recovery validator asks (supports
     near the floor at each landmark, grips and knees on the floor) is
-    about the V1 hero's proportions; a rig that inherits these clips can
+    about one particular mesh's proportions; a rig that inherits these clips can
     still be held to these two.
     """
 
@@ -6400,7 +5281,7 @@ def validate_fall_recovery_dense(
                 if not floor_reported:
                     minimum, part = visible_minimum()
                     # Two centimetres: a sole's thickness, and under the
-                    # contact shadow; the V1 landmark checks use one.
+                    # contact shadow; the landmark checks use one.
                     if minimum < floor - DENSE_FLOOR_TOLERANCE_METRES:
                         culprit = f", part {part.role}/{part.bone}" if part is not None else ""
                         errors.append(
@@ -6825,264 +5706,6 @@ def validate_fall_recovery_pose(
     validate_fall_recovery_dense(result, errors)
 
 
-def validate_result(
-    config: BuildConfig,
-    result: BuildResult,
-) -> ValidationReport:
-    # Parenting and modifier relationships were created through the data API;
-    # force one dependency-graph update before reading world-space matrices.
-    bpy.context.view_layer.update()
-    errors: list[str] = []
-    records_by_name = {record.obj.name: record for record in result.parts}
-
-    if len(records_by_name) != len(result.parts):
-        errors.append("Export mesh object names are not unique")
-    for required_name in REQUIRED_BODY_OBJECTS:
-        if required_name not in records_by_name:
-            errors.append(f"Missing required body part {required_name}")
-    for name in records_by_name:
-        if name.endswith(".001"):
-            errors.append(f"Unexpected Blender numeric suffix on {name}")
-
-    required_meshes = [
-        records_by_name[name].obj
-        for name in REQUIRED_BODY_OBJECTS
-        if name in records_by_name
-    ]
-    unique_data = {obj.data.as_pointer() for obj in required_meshes}
-    if len(unique_data) != len(required_meshes):
-        errors.append("Required body parts share mesh datablocks")
-
-    rig_bones = result.rig.data.bones
-    for bone_name in (*REQUIRED_BONES, *REQUIRED_FACE_BONES, *REQUIRED_SOCKET_BONES):
-        bone = rig_bones.get(bone_name)
-        if bone is None:
-            errors.append(f"Missing required bone {bone_name}")
-        elif bone.length <= 1e-5:
-            errors.append(f"Bone {bone_name} has zero length")
-    for bone_name in REQUIRED_SOCKET_BONES:
-        bone = rig_bones.get(bone_name)
-        if bone is not None and bone.use_deform:
-            errors.append(f"Socket bone {bone_name} must not deform geometry")
-    for bone_name in REQUIRED_FACE_BONES:
-        bone = rig_bones.get(bone_name)
-        if bone is not None and not bone.use_deform:
-            errors.append(f"Face bone {bone_name} must deform its detail mesh")
-
-    if set(result.actions) != set(REQUIRED_ACTIONS):
-        missing_actions = sorted(set(REQUIRED_ACTIONS) - set(result.actions))
-        extra_actions = sorted(set(result.actions) - set(REQUIRED_ACTIONS))
-        if missing_actions:
-            errors.append(f"Missing required Actions: {', '.join(missing_actions)}")
-        if extra_actions:
-            errors.append(f"Unexpected Actions: {', '.join(extra_actions)}")
-    for name, record in result.actions.items():
-        action = record.action
-        curves = list(iter_action_fcurves(action))
-        if not curves:
-            errors.append(f"Action {name} has no bone curves")
-            continue
-        for fcurve in curves:
-            if not fcurve.data_path.startswith('pose.bones["'):
-                errors.append(
-                    f"Action {name} contains non-bone curve {fcurve.data_path}"
-                )
-                break
-        if abs(action.frame_start) > 1e-6:
-            errors.append(f"Action {name} must start at frame zero")
-        expected_end = max(1, round(record.duration_seconds * ANIMATION_FPS))
-        if abs(action.frame_end - expected_end) > 1e-6:
-            errors.append(
-                f"Action {name} has frame end {action.frame_end}, "
-                f"expected {expected_end}"
-            )
-        if bool(action.get("bp_root_motion", True)):
-            errors.append(f"Action {name} must declare root motion disabled")
-        if record.loop:
-            for fcurve in curves:
-                first = fcurve.evaluate(action.frame_start)
-                last = fcurve.evaluate(action.frame_end)
-                if abs(first - last) > 1e-4:
-                    errors.append(
-                        f"Loop Action {name} does not close on {fcurve.data_path}"
-                    )
-                    break
-
-    validate_bed_sleep_pose(result, errors)
-    validate_bed_support_contract(result, errors)
-    validate_smoking_pose(result, errors)
-    validate_door_use_pose(result, errors)
-    validate_interaction_pose(
-        result,
-        errors,
-        "BusBoardEnter",
-        "BusRideLoop",
-        "BusAlightExit",
-    )
-    validate_interaction_pose(
-        result,
-        errors,
-        "BarDrinkPickupEnter",
-        "BarDrinkSipLoop",
-        "BarDrinkReturnExit",
-        base_name="BusRideLoop",
-    )
-    # The car pair hangs off the bus's own seated loop rather than one of
-    # its own, so this call proves the four seams that matters most:
-    # Relaxed -> CarBoardEnter -> BusRideLoop -> CarAlightExit -> Relaxed.
-    # A car clip that drifted off that seated pose would also drift off the
-    # head clearance the car's roof height was chosen against.
-    validate_interaction_pose(
-        result,
-        errors,
-        "CarBoardEnter",
-        "BusRideLoop",
-        "CarAlightExit",
-    )
-    validate_interaction_pose(
-        result,
-        errors,
-        "ChessSeatEnter",
-        "ChessSeatPlayLoop",
-        "ChessSeatExit",
-    )
-    validate_fall_recovery_pose(result, errors)
-
-    triangle_count = 0
-    all_minima: list[Vector] = []
-    all_maxima: list[Vector] = []
-    for record in result.parts:
-        obj = record.obj
-        mesh = obj.data
-        if obj.type != "MESH" or not mesh.vertices or not mesh.polygons:
-            errors.append(f"{obj.name} is not a non-empty mesh")
-            continue
-        if obj.parent is not result.rig:
-            errors.append(f"{obj.name} is not parented to RIG_Player")
-        if record.sprite_part not in SPRITE_PARTS:
-            errors.append(f"{obj.name} has invalid sprite-part mapping")
-        if obj.get("bp_bone") != record.bone:
-            errors.append(f"{obj.name} lost its bp_bone metadata")
-        if len(mesh.materials) != 1 or mesh.materials[0] is None:
-            errors.append(f"{obj.name} must use exactly one material")
-
-        armature_modifiers = [
-            modifier
-            for modifier in obj.modifiers
-            if modifier.type == "ARMATURE"
-        ]
-        if (
-            len(armature_modifiers) != 1
-            or armature_modifiers[0].object is not result.rig
-        ):
-            errors.append(f"{obj.name} needs one RIG_Player armature modifier")
-
-        group = obj.vertex_groups.get(record.bone)
-        if group is None:
-            errors.append(f"{obj.name} has no {record.bone} vertex group")
-        else:
-            for vertex in mesh.vertices:
-                matching = [
-                    assignment
-                    for assignment in vertex.groups
-                    if assignment.group == group.index
-                ]
-                if len(matching) != 1 or abs(matching[0].weight - 1.0) > 1e-5:
-                    errors.append(
-                        f"{obj.name} vertex {vertex.index} is not rigidly weighted"
-                    )
-                    break
-
-        for vertex in mesh.vertices:
-            if not all(math.isfinite(value) for value in vertex.co):
-                errors.append(f"{obj.name} has non-finite vertex coordinates")
-                break
-        try:
-            validate_manifold(obj)
-        except RuntimeError as error:
-            errors.append(str(error))
-
-        mesh.calc_loop_triangles()
-        triangle_count += len(mesh.loop_triangles)
-        minimum, maximum = mesh_bounds_world(obj)
-        all_minima.append(minimum)
-        all_maxima.append(maximum)
-
-    if triangle_count > MAX_TRIANGLES:
-        errors.append(
-            f"Triangle budget exceeded: {triangle_count} > {MAX_TRIANGLES}"
-        )
-
-    if not all_minima:
-        errors.append("No export mesh bounds were produced")
-        bounds_min = Vector()
-        bounds_max = Vector()
-    else:
-        bounds_min = Vector(
-            (
-                min(value.x for value in all_minima),
-                min(value.y for value in all_minima),
-                min(value.z for value in all_minima),
-            )
-        )
-        bounds_max = Vector(
-            (
-                max(value.x for value in all_maxima),
-                max(value.y for value in all_maxima),
-                max(value.z for value in all_maxima),
-            )
-        )
-        measured_height = bounds_max.z - bounds_min.z
-        if abs(bounds_min.z) > config.height * 0.012:
-            errors.append(
-                f"Feet do not meet Z=0 (minimum is {bounds_min.z:.4f} m)"
-            )
-        if abs(measured_height - config.height) > config.height * 0.010:
-            errors.append(
-                "Generated visible height differs from requested height: "
-                f"{measured_height:.4f} m vs {config.height:.4f} m"
-            )
-        measured_width = bounds_max.x - bounds_min.x
-        if config.pose == "relaxed" and not (
-            config.height * 0.30 <= measured_width <= config.height * 0.50
-        ):
-            errors.append(
-                f"Relaxed silhouette width is implausible: {measured_width:.4f} m"
-            )
-
-    bandage = bpy.data.objects.get("CLO_Bandage.L")
-    patch = bpy.data.objects.get("ACC_ShoulderPatch.R")
-    strap = bpy.data.objects.get("ACC_StrapFront")
-    if bandage is None or object_center_world(bandage).x <= 0.0:
-        errors.append("Bandage must remain on anatomical left (+X)")
-    if patch is None or object_center_world(patch).x >= 0.0:
-        errors.append("Shoulder patch must remain on anatomical right (-X)")
-    if strap is None:
-        errors.append("Missing diagonal front strap")
-    else:
-        strap_min, strap_max = mesh_bounds_world(strap)
-        if not strap_min.x < 0.0 < strap_max.x:
-            errors.append("Front strap must cross the torso centre line")
-
-    for presentation in result.presentation_objects:
-        if presentation.get("bp_export", True):
-            errors.append(f"Presentation object {presentation.name} is exportable")
-
-    if errors:
-        formatted = "\n".join(f"  - {error}" for error in errors)
-        raise RuntimeError(f"Player 3D model validation failed:\n{formatted}")
-
-    return ValidationReport(
-        object_count=len(result.export_objects),
-        mesh_count=len(result.parts),
-        triangle_count=triangle_count,
-        action_count=len(result.actions),
-        socket_count=len(REQUIRED_SOCKET_BONES),
-        bounds_min=tuple(round(value, 6) for value in bounds_min),
-        bounds_max=tuple(round(value, 6) for value in bounds_max),
-    )
-
-
 def select_export_objects(result: BuildResult) -> None:
     if bpy.context.object is not None and bpy.context.object.mode != "OBJECT":
         bpy.ops.object.mode_set(mode="OBJECT")
@@ -7280,8 +5903,8 @@ def write_manifest(
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "generator": "tools/build-player-3d-model.py",
-        "generator_version": GENERATOR_VERSION,
+        "generator": "tools/player_3d_model_common.py",
+        "generator_version": ACTION_LIBRARY_VERSION,
         "blender_version": bpy.app.version_string,
         "design_source": "ArtSource/Player/PlayerDirectionalTurntable.png",
         "runtime_integrated": True,
@@ -7302,7 +5925,7 @@ def write_manifest(
         "sockets": list(REQUIRED_SOCKET_BONES),
         # The Unity runtime places the sleeper from these measurements and
         # times his seat from these windows. Publishing them is what lets
-        # Player3DAssetImportTests fail on drift instead of trusting a comment
+        # Player3DV2AssetPipelineTests fail on drift instead of trusting a comment
         # in two files to stay in step.
         "bed_contract": {
             "supine_pelvis_offset_m": BED_BODY_SUPPORT_OFFSET_M,
@@ -7348,62 +5971,3 @@ def write_manifest(
         encoding="utf-8",
     )
     os.replace(temporary, path)
-
-
-def print_report(
-    config: BuildConfig,
-    report: ValidationReport,
-) -> None:
-    print("BP3D BUILD OK")
-    print(f"  Blender: {bpy.app.version_string}")
-    print(f"  Pose: {config.pose}")
-    print(f"  Export objects: {report.object_count}")
-    print(f"  Separate mesh parts: {report.mesh_count}")
-    print(f"  Triangles: {report.triangle_count}/{MAX_TRIANGLES}")
-    print(f"  Actions: {report.action_count}")
-    print(f"  Non-deforming sockets: {report.socket_count}")
-    print(f"  Bounds min: {report.bounds_min}")
-    print(f"  Bounds max: {report.bounds_max}")
-    print(f"  Blend: {config.output}")
-    if config.preview is not None:
-        print(f"  Preview: {config.preview}")
-    if config.portrait is not None:
-        print(f"  Inventory portrait: {config.portrait}")
-    if config.manifest is not None:
-        print(f"  Manifest: {config.manifest}")
-    if config.glb is not None:
-        print(f"  GLB: {config.glb}")
-    if config.fbx is not None:
-        print(f"  FBX: {config.fbx}")
-    if config.animation_fbx is not None:
-        print(f"  Animation FBX: {config.animation_fbx}")
-
-
-def main() -> None:
-    config = parse_args()
-    builder = CharacterBuilder(config)
-    result = builder.build()
-    report = validate_result(config, result)
-
-    if config.preview is not None:
-        render_preview(config.preview)
-    if config.portrait is not None:
-        render_inventory_portrait(config.portrait, result)
-    if config.glb is not None:
-        export_glb(config.glb, result)
-    if config.fbx is not None:
-        export_fbx(config.fbx, result)
-    if config.animation_fbx is not None:
-        export_animation_fbx(config.animation_fbx, result)
-    if config.manifest is not None:
-        write_manifest(config.manifest, config, result, report)
-    save_blend(config.output)
-    print_report(config, report)
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except Exception:
-        traceback.print_exc()
-        raise

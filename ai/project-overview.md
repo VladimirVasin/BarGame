@@ -1321,19 +1321,17 @@ The vertical slice contains:
   entrance's own sidewalk arrival point rather than the road centerline;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
-- one production `Resources/Player/Player3DV2` prefab selected by all nine
+- the sole production `Resources/Player/Player3DV2` prefab selected by all nine
   gameplay roots, a visible prefab-derived refrigerator arm, nested full-body
-  seated bar-drinking actions and the inventory portrait. It keeps the `1.75 m`,
+  seated bar-drinking actions with a right-hand mug-handle grip and a
+  patron-aligned rim-to-mouth pose, and the inventory portrait. It keeps the
+  `1.75 m`,
   31-bone contract with 41 bone-only Actions
   in 34 mesh parts and 1,984 triangles, but uses adult `7.4946`-head
   proportions, an atlas-driven
   five-state face and a full-colour point-filtered clothing atlas. Its open
   olive field jacket has long sleeves and no strap; painted garment and boot
   construction replace protruding detail meshes;
-- one retained `Resources/Player/Player3D` Hero V1 prefab and its portrait.
-  `Player3DVariant.ProductionV1` can still select that byte-frozen burgundy,
-  strapped model and its `37` Actions explicitly for fallback and legacy
-  contract checks, but no ordinary gameplay or inventory route selects it;
 - one manual PlayableGraph presentation that damp-blends the in-place
   four-second `Idle`, one-second `Walk` and `0.75 s`/18-frame `Run` actions
   from actual constrained planar speed.
@@ -1343,8 +1341,8 @@ The vertical slice contains:
   arm swing, deeper knee lift and short flight phase. Start and stop use
   `0.14 s`/`0.20 s` smooth envelopes, and visible gait cadence follows the
   blended weight. Root motion stays disabled while
-  the face atlas drives neutral, half/closed blink, watchful and tense states;
-  V1 retains its bone fallback. A failed balance check may temporarily suspend
+  the face atlas drives neutral, half/closed blink, watchful and tense states.
+  A failed balance check may temporarily suspend
   this graph while the
   same registered bones are owned by the bounded ragdoll. Intoxication sway,
   arm spread, knee bend and balance lean are
@@ -2090,8 +2088,8 @@ The vertical slice contains:
   `CafeAttendantNotice`; `BarBartenderServiceChoreography` binds the hands to
   the physical menu, bottle, central tap or vessel while the service timeline
   remains authoritative. For beer he walks to the tap, pulls its handle over
-  the pint, carries the full glass to the selected stool and places it directly
-  before the hero. The active root and feet
+  the compact handled mug, carries the full mug to the selected stool and
+  places it directly before the hero. The active root and feet
   remain on the authored floor: the legacy `0.42 m` duckboard and matching
   actor lift are absent. During the quiet shared Wipe, that grounded placement
   puts the towel against the real `Y = 1.02 m` counter top and the clip carries
@@ -2137,9 +2135,9 @@ The vertical slice contains:
   clear of the counter return. Three closely spaced taps occupy the seat-free
   counter end beyond it. The world rig walks to the chosen stool and
   sits, then the bartender carries a booklet from the passive
-  `bar_service_props_v1` `1.3.0` library
-  (`34` meshes / `3,960` triangles, signature
-  `aeb5fb8d37ab3d590c39b76b5f9a9fee0db3aed6c4ba1d26b2eb56a974007148`)
+  `bar_service_props_v1` `1.4.0` library
+  (`34` meshes / `4,136` triangles, signature
+  `ea8995480c0eaf1b41579aab109b385582a4788dd1698ab8424ad84bbaa8717c`)
   to a dock exactly on that stool's lateral axis, directly before the hero.
   The shared model/input/page/focus/hint/prop-motion layer focuses
   the larger bar spread over `0.45 s` at `0.45 m` and FOV `72`, using a
@@ -2172,14 +2170,17 @@ The vertical slice contains:
   booklet on the counter and commits a pending order, but defers intoxication,
   last-drink, consumed-count and stress effects until the physical drink is
   finished. Beer uses the central tap: the bartender walks to it, takes the
-  pint, pulls the real handle, fills it with the world-space stream, carries it
-  to the selected place and sets it directly before the hero. While the full
-  glass waits, the same gaze predicate drives its thin yellow contour and the
-  localized `E` drink prompt. The seated world body remains authoritative and
-  runs `2 s` pickup, `3 s` sip and `2 s` return actions; its hands lift the
-  glass, drink and set the empty vessel back on the counter. The empty pint
-  remains there, and the pending order is consumed exactly once only after
-  that visible action completes. The old camera-local bar arm meshes remain
+  compact mug, pulls the real handle, fills it with the world-space stream,
+  carries it to the selected place and sets it directly before the hero with
+  its handle on his right. While the full mug waits, the same gaze predicate
+  drives its thin yellow contour and the localized `E` drink prompt. The seated
+  world body remains authoritative and runs `2 s` pickup, `3 s` sip and `2 s`
+  return actions. Its right hand grips the handle directly; during the sip the
+  drinking rim stays at the mouth, the mug reaches horizontal, and the head
+  and torso rise with it in the same restrained motion as the corrected bar
+  patrons. The empty mug returns to the counter and remains there, and the
+  pending order is consumed exactly once only after that visible action
+  completes. The old camera-local bar arm meshes remain
   disabled; only the seated camera hides the hero's head.
   Completing an order leaves the closed booklet available to reopen or to
   leave behind. Closing restores the exact seated camera; ordinary room DOF,

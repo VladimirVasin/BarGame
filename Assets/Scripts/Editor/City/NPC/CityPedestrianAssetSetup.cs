@@ -70,8 +70,6 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx";
         public const string AnimationManifestPath =
             "Assets/Pedestrians/Animations/CityPedestrianLocomotion.json";
-        public const string PlayerAnimationPath =
-            "Assets/Player3D/Animations/PlayerCharacter3DAnimations.fbx";
         public const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
         public const string PrefabPath =

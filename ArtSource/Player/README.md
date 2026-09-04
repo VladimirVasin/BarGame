@@ -24,22 +24,16 @@ It asserts that all nine neutral layers composite exactly to the corrected
 reference frame and that every facial edit stays on its direction-specific
 pixel whitelist while all rear views remain unchanged.
 
-The modular production 3D authoring source and Unity import FBXs can be rebuilt
-with Blender:
+The turntable remains the visual-lineage reference for the production Hero V2.
+Its dedicated authoring source and Unity imports can be rebuilt with Blender:
 
 ```powershell
 & 'C:\Program Files\Blender Foundation\Blender 5.0\blender.exe' `
   --background --factory-startup `
-  --python tools\build-player-3d-model.py -- `
-  --output ArtSource\Player\Blender\PlayerCharacter3D.blend `
-  --preview ArtSource\Player\Blender\PlayerCharacter3D.png `
-  --portrait Assets\Resources\Player\Player3DPortrait.png `
-  --manifest Assets\Player3D\Models\PlayerCharacter3D.json `
-  --fbx Assets\Player3D\Models\PlayerCharacter3D.fbx `
-  --animation-fbx Assets\Player3D\Animations\PlayerCharacter3DAnimations.fbx
+  --python tools\build-player-3d-model-v2.py
 ```
 
-It preserves independently rigged anatomical, clothing and signature-detail
-meshes, uses an A-pose bind skeleton, and emits 32 bone-only in-place Actions
-plus stable hand/mouth prop sockets. See `Blender/README.md` for the hierarchy,
-side convention, outputs and built-in validation.
+The V2 generator owns the only packaged hero model, its 41-action bank,
+inventory portrait, atlases and runtime prefab inputs. Shared action and bed
+validation helpers live in `tools/player_3d_model_common.py`, which has no
+standalone model entry point.

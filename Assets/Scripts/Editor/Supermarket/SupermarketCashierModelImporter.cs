@@ -83,7 +83,6 @@ namespace BarPromenade.Editor
             string[] movedFromAssetPaths)
         {
             if (NpcHumanV2AssetSetup.IsAnyPipelineBuilding ||
-                Player3DAssetSetup.IsBuilding ||
                 Player3DV2AssetSetup.IsBuilding)
             {
                 return;

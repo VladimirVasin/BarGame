@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "1.3.0",
+  "generator_version": "1.4.0",
   "blender_version": "5.0.1",
   "design_id": "bar_service_props_v1",
   "display_name": "Bar Promenade Authored Service Props",
@@ -34,7 +34,7 @@
     1.0
   ],
   "mesh_count": 34,
-  "triangle_count": 3960,
+  "triangle_count": 4136,
   "anchors": [
     {
       "name": "BarMenu.Origin",
@@ -469,12 +469,36 @@
       ]
     },
     {
+      "name": "PintDrinkRim",
+      "role": "service_vessel_drink_rim:Pint",
+      "local_position": [
+        0.0,
+        -0.048,
+        0.145
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
       "name": "PintGrip",
       "role": "service_vessel_grip:Pint",
       "local_position": [
-        0.17,
+        0.084,
         0.0,
-        0.21
+        0.074
       ],
       "unity_right": [
         1.0,
@@ -498,7 +522,7 @@
       "local_position": [
         0.0,
         0.0,
-        0.025
+        0.012
       ],
       "unity_right": [
         1.0,
@@ -522,7 +546,7 @@
       "local_position": [
         0.0,
         0.0,
-        0.365
+        0.12
       ],
       "unity_right": [
         1.0,
@@ -547,6 +571,30 @@
         0.0,
         0.0,
         0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "ShotGlassDrinkRim",
+      "role": "service_vessel_drink_rim:ShotGlass",
+      "local_position": [
+        0.0,
+        -0.09,
+        0.145
       ],
       "unity_right": [
         1.0,
@@ -637,6 +685,30 @@
       ]
     },
     {
+      "name": "SnifterDrinkRim",
+      "role": "service_vessel_drink_rim:Snifter",
+      "local_position": [
+        0.0,
+        -0.105,
+        0.32
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
       "name": "SnifterGrip",
       "role": "service_vessel_grip:Snifter",
       "local_position": [
@@ -691,6 +763,30 @@
         0.0,
         0.0,
         0.295
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "TumblerDrinkRim",
+      "role": "service_vessel_drink_rim:Tumbler",
+      "local_position": [
+        0.0,
+        -0.15,
+        0.3
       ],
       "unity_right": [
         1.0,
@@ -835,6 +931,30 @@
         0.0,
         0.0,
         0.82
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WineGlassDrinkRim",
+      "role": "service_vessel_drink_rim:WineGlass",
+      "local_position": [
+        0.0,
+        -0.13,
+        0.37
       ],
       "unity_right": [
         1.0,
@@ -1436,8 +1556,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 36,
-      "triangles": 68
+      "vertices": 126,
+      "triangles": 244
     },
     {
       "name": "Service Pint Liquid",
@@ -1845,5 +1965,5 @@
       "triangles": 28
     }
   ],
-  "build_signature": "aeb5fb8d37ab3d590c39b76b5f9a9fee0db3aed6c4ba1d26b2eb56a974007148"
+  "build_signature": "ea8995480c0eaf1b41579aab109b385582a4788dd1698ab8424ad84bbaa8717c"
 }
