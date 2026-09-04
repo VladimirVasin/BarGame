@@ -14,7 +14,7 @@ namespace BarPromenade
         private readonly Transform gripAnchor;
         private readonly Vector3 gripLocalPosition;
         private readonly Quaternion gripLocalRotation;
-        private readonly Pose dockPose;
+        private Pose dockPose;
 
         private Transform carrier;
         private Vector3 deliveryStartPosition;
@@ -57,6 +57,13 @@ namespace BarPromenade
         public Transform GripAnchor => gripAnchor;
         public Transform Carrier => carrier;
         public Pose DockPose => dockPose;
+
+        public void SetDockPose(Pose configuredDockPose)
+        {
+            dockPose = configuredDockPose;
+            hasDeliveryStart = false;
+            hasRetrievalStart = false;
+        }
 
         public void SetCarrier(Transform configuredCarrier)
         {

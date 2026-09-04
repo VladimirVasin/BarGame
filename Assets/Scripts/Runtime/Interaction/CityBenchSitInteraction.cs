@@ -59,6 +59,7 @@ namespace BarPromenade
         private PlayerContactShadow contactShadow;
         private bool contactShadowSuppressed;
         private bool previousContactShadowEnabled;
+        private ISeatedInteractionHandler seatedInteractionHandler;
 
         /// <summary>
         /// Raised when the hero settles onto this plank and again when
@@ -68,13 +69,14 @@ namespace BarPromenade
         /// bench in the city for a private flag.
         /// </summary>
         public event Action<CityBenchSitInteraction, bool> SeatedChanged;
+        public event Action<CityBenchSitInteraction> InteractionCompleted;
 
         public string PromptKey =>
             ownsActiveInteraction &&
             controller != null &&
             controller.Phase ==
             PlayerAnimatedInteractionPhase.Looping
-                ? StandPromptKey
+                ? seatedInteractionHandler?.SeatedPromptKey ?? StandPromptKey
                 : ResolveSeatPromptKey(plan);
         public Vector3 InteractionPosition =>
             plan.InteractionPosition;
@@ -85,6 +87,7 @@ namespace BarPromenade
         /// <summary>The hero is on this plank, in the seated loop
         /// rather than still walking in or standing up.</summary>
         public bool IsSeated => seated;
+        public bool OwnsActiveInteraction => ownsActiveInteraction;
 
         public void Initialize(
             PlayerRuntime player,
@@ -116,6 +119,8 @@ namespace BarPromenade
             {
                 CancelOwnedInteraction();
                 controller.PhaseChanged -= HandlePhaseChanged;
+                controller.InteractionCompleted -=
+                    HandleInteractionCompleted;
             }
 
             controller = interactionController;
@@ -124,6 +129,13 @@ namespace BarPromenade
             plan = interactionPlan;
             definition = CreateDefinition(plan.Kind);
             controller.PhaseChanged += HandlePhaseChanged;
+            controller.InteractionCompleted += HandleInteractionCompleted;
+        }
+
+        public void SetSeatedInteractionHandler(
+            ISeatedInteractionHandler handler)
+        {
+            seatedInteractionHandler = handler;
         }
 
         /// <summary>
@@ -218,11 +230,16 @@ namespace BarPromenade
 
             PlayerAnimatedInteractionPhase phase =
                 controller.Phase;
-            return phase ==
-                   PlayerAnimatedInteractionPhase.Idle ||
-                   (ownsActiveInteraction &&
-                    phase ==
-                    PlayerAnimatedInteractionPhase.Looping);
+            if (phase == PlayerAnimatedInteractionPhase.Idle)
+            {
+                return true;
+            }
+
+            return ownsActiveInteraction &&
+                   phase == PlayerAnimatedInteractionPhase.Looping &&
+                   (seatedInteractionHandler == null ||
+                    seatedInteractionHandler.CanHandleSeatedInteraction(
+                        interactor));
         }
 
         public void Interact(PlayerInteractor interactor)
@@ -236,11 +253,29 @@ namespace BarPromenade
                 controller.Phase ==
                 PlayerAnimatedInteractionPhase.Looping)
             {
-                controller.RequestExit();
+                if (seatedInteractionHandler != null)
+                {
+                    seatedInteractionHandler.HandleSeatedInteraction(
+                        interactor);
+                }
+                else
+                {
+                    RequestExit();
+                }
+
                 return;
             }
 
             BeginOwnedInteraction();
+        }
+
+        public bool RequestExit()
+        {
+            return ownsActiveInteraction &&
+                   controller != null &&
+                   controller.Phase ==
+                       PlayerAnimatedInteractionPhase.Looping &&
+                   controller.RequestExit();
         }
 
         private void BeginOwnedInteraction()
@@ -317,6 +352,14 @@ namespace BarPromenade
                 phase == PlayerAnimatedInteractionPhase.Looping);
         }
 
+        private void HandleInteractionCompleted()
+        {
+            if (ownsActiveInteraction)
+            {
+                InteractionCompleted?.Invoke(this);
+            }
+        }
+
         private void UpdateSeated(bool value)
         {
             if (seated == value)
@@ -339,7 +382,11 @@ namespace BarPromenade
             if (controller != null)
             {
                 controller.PhaseChanged -= HandlePhaseChanged;
+                controller.InteractionCompleted -=
+                    HandleInteractionCompleted;
             }
+
+            InteractionCompleted = null;
         }
 
         private void CancelOwnedInteraction()

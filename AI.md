@@ -219,20 +219,21 @@ hairpin; the first visible sip crosses the refill threshold and begins a Pour
 within one minute instead of expiring during the `620 m` approach. Completing
 the hero-stool sit switches to a bounded eye-level first-person view of the
 counter, hides head geometry, and restores the prior follow camera on exit.
-The attendant then silently carries and places the one physical open menu.
+The attendant then silently carries and places the physical open menu.
 Once `HeroMenuPlaced` is true, the same `MountainRoadCafeSeatView` blends its
 fixed camera over `0.45 s` to a `40`-degree close-up `0.50 m` from the page
 along the current seated sight line, keeps world-up with no roll, and blocks
 every look source. `W/S` or the D-pad still wraps through three
-localized items, `Space`/gamepad West confirms, and
-`E`/`Enter`/gamepad South still stands the hero up. Confirmation leaves a
-visible `X`, releases the close-up back to the saved seated view and
-idempotently queues retrieval; standing restores the exact pre-seat follow
-camera immediately and queues the same retrieval without a commit. The
-attendant serializes `WalkToMenu -> TakeMenu` (`2.5 s`) `-> CarryMenuBack`
-through the existing service timeline: the booklet stays in the world until
-the hand physically takes it, follows that hand back and is hidden only at its
-dock. Delivery and retrieval are one-shot per scene. They create no order,
+localized items and `Space`/gamepad West records the selection-only
+confirmation. Confirmation or the first `E`/`Enter`/gamepad South action closes
+the booklet on the counter and returns the saved seated view; neither starts
+retrieval or stands the hero. While it rests there, looking at it changes the
+same action to reopen the close-up, while looking away changes it to stand.
+Only after the visible stand-up animation completes does the attendant
+serialize `WalkToMenu -> TakeMenu` (`2.5 s`) `-> CarryMenuBack`: the closed
+booklet stays in the world until the hand physically takes it, follows that
+hand back and is hidden only at its dock. A later completed sit starts the
+delivery again. The cycle creates no order,
 product, payment, inventory item, food, drink, dialogue, reaction, sound or
 story state. The ten-clip cast (one sleeping loop plus one lone-patron
 interjection, four pair clips and four attendant clips) keeps the attendant
@@ -396,8 +397,9 @@ for locomotion and contextual actions, including a separate heavy, weary
 `0.75 s` Run with a short flight phase and a grounded lean/right-hand
 press before every ordinary location-door transition, hands failed balance falls from a
 directional clip into a bounded runtime ragdoll and back into an authored rise,
-and derives first-person arms and the inventory portrait from the same
-production model. That live model is `Resources/Player/Player3DV2`: the
+and derives the refrigerator's visible first-person arm, the bar's non-rendered
+vessel attachment rig and the inventory portrait from the same production
+model. That live model is `Resources/Player/Player3DV2`: the
 adult-proportion, atlas-faced Hero V2 in the canonical olive field jacket,
 with `38` bone-only Actions. Holding either Shift or gamepad L3 while moving
 forward raises the `2.6 m/s` walk to a `4.2 m/s` run; backward movement stays
@@ -601,7 +603,14 @@ returns. They spawn at randomly
   `PlayableGraph` reads `BarDrinkServiceTimeline`, while the right hand
   follows the selected bottle and the left steadies the vessel. The former
   six-arm cocktail chord was never implemented and belongs only to the
-  superseded legacy proposal, not the active delivery plan. The common adult
+  superseded legacy proposal, not the active delivery plan. All four bar
+  stools not occupied by patrons are usable, each with its own safe entry,
+  exit, camera and service offset; the rightmost is moved inward clear of the
+  counter return, and the former single-seat floor/sign marker is not shown.
+  Its physical menu uses the cafe's same close-on-first-action, resting-booklet
+  gaze reopen, look-away stand and post-exit staff retrieval lifecycle. A
+  successful bar purchase runs service while that booklet remains closed, and
+  a later completed sit receives a fresh delivery. The common adult
   substrate changes large anatomical proportions, not identity: the Long-Arm
   remains mouthless with ground-reaching forearms and heavy hands, the kettle
   and hopper silhouettes remain, the inactive legacy bartender alone keeps

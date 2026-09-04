@@ -433,6 +433,13 @@ MonoBehaviour:
     elbowPivot: {fileID: 3253727081470713562}
     wristPivot: {fileID: 8141571390530880451}
     gripPivot: {fileID: 8987309915003625082}
+  clipBindings: []
+  leftGripSocket: {fileID: 0}
+  leftVesselSocket: {fileID: 0}
+  rightGripSocket: {fileID: 0}
+  rightBottleSocket: {fileID: 0}
+  vesselGripAnchor: {fileID: 0}
+  bottleGripAnchor: {fileID: 0}
   localBounds:
     m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.03938289}
     m_Extent: {x: 0.8050516, y: 0.8749999, z: 0.17215146}

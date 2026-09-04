@@ -306,7 +306,7 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 1
     tint:
-      field:
+      field: 
       rgb: {r: 0.34, g: 0.095, b: 0.035, a: 1}
       scale: 1
       lerpField: 
@@ -323,7 +323,7 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 1
     tint:
-      field:
+      field: 
       rgb: {r: 0.48, g: 0.5, b: 0.43, a: 1}
       scale: 1
       lerpField: 
@@ -338,7 +338,7 @@ MonoBehaviour:
     emissive: 0
     castsShadows: 1
     tint:
-      field:
+      field: 
       rgb: {r: 0.48, g: 0.5, b: 0.43, a: 1}
       scale: 1
       lerpField: 

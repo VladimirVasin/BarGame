@@ -6,6 +6,175 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-04 — Counter menus fold instead of fading away
+
+User report: closing the counter menu only made it transparent, while the
+booklet was supposed to visibly collapse and expand. The previous resting
+presentation did not animate the authored spread: it disabled the open
+renderers and exposed one static cover-derived renderer, which also meant the
+bar could select the brass relief because it appeared first in renderer order.
+
+`CounterMenuPageView` now provides the same physical presentation in the bar
+and Mountain Road cafe. It derives opaque cover and page colours and measured
+leaf extents from the venue's authored spread, builds two leaves around a
+shared spine, and drives the fold or unfold over `0.40 s`. The moving/resting
+booklet never changes material alpha; the original authored spread becomes
+authoritative again only at the fully open endpoint. Combined leaf bounds keep
+the closed booklet available to the existing gaze-to-reopen action, while the
+state machine, staff handoff and post-exit retrieval remain unchanged.
+
+Fast-mode verification ran the two affected PlayMode journeys in one focused
+selection. The cafe journey passed end to end. The bar journey passed the new
+open, half-folded, closed, opaque-panel and reopened assertions, then reached
+its pre-existing final bit-exact exit-position comparison: Unity reports both
+rounded vectors as `(-1.15, 0.04, 3.77)` but NUnit still considers their hidden
+float components unequal. No broad suite or player build was run.
+
+## 2026-09-04 — The drunk holds his arms out, not against his ribs
+
+User report: in heavy intoxication the hero pressed his arms to his torso
+instead of spreading them to balance. Cause: `Player3DProceduralLocomotionLayer`
+spread the arms by turning `upper_arm.L/R` about their own local `forward`
+axis, on the assumption that it was the abduction axis. A throwaway EditMode
+probe on the production V2 prefab measured otherwise: no local axis of the
+imported upper-arm bone is anatomical (local `up` runs along the bone; `forward`
+and `right` sit at about 45° to the frontal plane), and the sign pair the
+presentation passed (`+` left, `−` right) sent both hands backward, down and
+inward. The old symmetric bend only asked for `9°+2°` and hid it; the balance
+model's extra `35°` made it obvious. The arms now swing in the actor's frame
+(`SwingArm`: abduction about the actor's planar forward through the shoulder,
+raise about the actor's right), the layer input carries outward/forward degrees
+per arm, and the presentation composes a tightrope pose: `40°` times the
+square of the status level (a light buzz barely shows, level 60 gives `14°`),
+up to `45°` more from the model's reaction, `0.3` of the spread as a forward
+raise, the arm away from the lean higher by `0.8°` per degree of roll, `±6°`
+forward/back hunting from the ambient stagger, clamped to `0..85°`. The arm
+reaching for a wall gives its spread back as the reach takes hold, and the
+layer scales both arms by its own `0.2 s` blend so they do not snap out on the
+frame a clip hands the body back. Pedestrians pass zeros; every term is
+exactly zero sober.
+
+The adversarial review of the change found a second bone-axis sign in the
+same layer, pre-existing from the locomotion merge: `RotateBone(pelvis,
+Vector3.right, +pitch)` tipped the torso BACKWARD for a positive
+`LeanPitchDegrees`, whose contract is "positive = forward" (the pelvis bone's
+local right points to the hero's left on the imported rig; a second EditMode
+probe measured the head moving 11 cm back for +10°, while roll was correct:
++10° moved it 11 cm right). The layer now negates the pitch, and
+`PlayerBalancePlayModeTests.BalancePose_LeanSignsFollowTheContract` pins both
+signs against the drawn head.
+
+Verification: new `Player3DDrunkArmsCapturePlayModeTests` renders a front
+sheet (`TestResults/drunk-arms-sheet.png`: sober, level 60, level 100, most
+unstable frame) and asserts the hand span grows with the level. Hand span went
+from `0.515 / 0.454 / 0.412 / 0.395 m` (sober / 60 / 100 / unstable) before the
+fix to `0.515 / 0.813 / 1.295 / 1.308 m` after. `PlayerBalancePlayModeTests.
+DrunkHero_LeansAndSpreadsArms` now also asserts the drawn hands sit at least
+`0.15 m` further apart than sober and that neither arm swings behind the torso
+(measured shoulder-to-hand in the torso bone's frame, because the model's
+backward pitch otherwise reads as arms behind the back — the first draft of
+that assert measured against the pelvis in world space and failed on a `-10°`
+lean). Focused PlayMode run: 27/28 across DrunkArms, PlayerBalance,
+Player3DOrdinaryPresentation, ProceduralLocomotionCapture, FootIk and
+CityPedestrianAirborneGrounding; the one red is the pre-existing
+`RiseClips_PassThroughGroundedAllFoursBeforeNeutral` (`0.146` vs `0.14`), a rise
+clip during which the procedural layer is disabled. Those runs were headless
+on `6000.5.10f1`, the version `ProjectVersion.txt` still carried, with the
+tree's packages already at the `6000.6.0f1` set (URP `17.6.0`). The project
+moved to `6000.6.0f1` the same day; the filter has NOT yet been repeated on
+that editor, because the interactive editor held the project when the move
+was announced.
+
+## 2026-09-04 — Seated bar view no longer draws the old hands
+
+The bar's seated first-person presentation no longer renders the two
+camera-local arm subsets that predated the physical stool and bartender
+service. The real seated world body remains authoritative, with only its head
+hidden by `CounterSeatView`. During the three-second drink,
+`BarDrinkFirstPersonArms` retains an active but non-rendered prefab-derived rig
+solely so the reusable vessel can follow its existing camera-relative path to
+the mouth and back; its arm renderer groups remain disabled for the complete
+seated bar flow. The refrigerator's separate visible right-arm interaction is
+unchanged.
+
+Focused PlayMode verification passed `1/1` in
+`BarDrinkFirstPersonArmsPlayModeTests.BarArms_UsePlayer3DPartsAndReleaseLocalRig`:
+both renderer groups stay disabled while the hidden attachment root remains
+live, tracks the camera and continues moving the vessel anchor. The production
+counter-seat test also passed the new suppression assertions, then hit its
+unrelated final exact exit-position comparison (the rounded expected and
+actual vectors are identical). No broad Unity suite or player build was
+requested for this fast-mode follow-up.
+
+## 2026-09-04 — Counter menus stay on the counter until the hero stands
+
+The bar's former single privileged seat has become four independent stations,
+one for every stool not occupied by a counter patron. Each station derives its
+own safe approach, grounded entry/exit, seated camera translation and service
+offset. The old blocked endpoint at local `z = 4.02` moved forward to `3.89`,
+failed positioning releases provisional shop ownership, and the rightmost stool
+moved inward to local `x = 4.00` so the stool, trigger and exit clear the solid
+counter return. The old green floor selector and yellow emissive order sign are
+not visible. Bartender root, menu, bottle and vessel service are translated to
+the chosen station; the rightmost service is mirrored and the legacy short
+duckboard is extended under the reachable rail.
+
+The shared `CounterMenu` state machine now separates a closed booklet resting
+on the counter from retrieval. After a completed sit, the bartender or cafe
+attendant carries the menu in and opens it at the dock. The first seated action
+from the open spread closes it and restores the ordinary seated view. While the
+thin closed booklet remains on the counter, a bounded gaze test changes both
+prompt and action between reopen and stand. Retrieval begins only after the
+shared animated interaction reports the completed visible exit; the booklet
+then remains visible through the physical take and carry home. A later sit
+resets the round trip and requests a new delivery.
+
+`MountainRoadCafeMenuController` now uses that same lifecycle at the existing
+cafe hero stool while preserving its three price-free, effect-free choices.
+The bar preserves failed-purchase feedback and atomic payment; a successful
+purchase closes the menu on the counter and runs the existing physical drink
+service before the player chooses whether to reopen it or stand.
+
+Fast-mode verification compiled both EditMode and PlayMode test assemblies
+with zero errors. Eight focused PlayMode scenarios are green: five passed in
+the first selection, two tests whose own input/assertion mechanics needed
+correction passed on the focused rerun, and the cancelled quick-reentry race
+passed `1/1` after the final audit. Together they cover all four bar seats, the
+complete bar menu round trip, bottle reach/contact and carried scale, both
+cafe exit-during-delivery paths, the matching normal cafe menu round trip, and
+the bar visual capture. The updated Blender generator also passes Python
+bytecode compilation. No broad Unity suite or player build was run.
+
+## 2026-09-03 — Bar drinkers gained a complete resting pose
+
+The five drinking patrons used a valid raise/sip/lower cadence but returned to
+an incomplete rest: `PlaceBottle` kept the bottle attached to the ordinary
+dangling hand, the standing overlay reset the head to one fixed base rotation,
+and the counter path had no free-hand surface support. Both counter patrons and
+all three high-table patrons now finish `Lower` with the bottle upright and its
+base on their actual counter or tabletop, retain the right-hand grip and rest
+the free hand on the same surface. The bottle dock at each round high table was
+also moved visibly inward from the rim. The right-hand target now meets the
+patron's anatomical right side of the bottle instead of its centre axis. The
+solver also writes the complete `hand.R` bind-space orientation, so the wrist
+keeps the authored right-hand roll and remains outside the mesh at rest and
+through the sip. The bottle and hand share one raise/lower trajectory, and the
+counter rest lean has the same endpoint as the action blend, removing its
+boundary snap. A small seeded head drift remains active through `Rest` and
+eases to the neutral endpoint before the next `Raise`; it is
+non-referential and adds no look target, dialogue, interaction, sound or story
+state. Booth patrons remain unchanged and carry no bottle.
+
+Fast-mode verification ran the explicit focused PlayMode capture
+`AreaCaptureFixture.Bar`: `1/1` passed in `18.65 s` after compiling the changed
+runtime and test assemblies. Its new `02-counter-rest` and `03-table-rest`
+frames plus the tighter `03-table-grip` close-up were inspected at native
+resolution: both bottles stand on their real surfaces with both hands
+supported, their right palms correctly oriented and wrists outside the bottle
+bodies, and the round-table bottle visibly clear of the rim. The readiness gates also proved
+non-zero head drift during `Rest`.
+No broad Unity suite or player build was run.
+
 ## 2026-09-03 — Feet on the treads and a drunk who really staggers
 
 The hero's grounding and his drunkenness are procedural now. One late layer

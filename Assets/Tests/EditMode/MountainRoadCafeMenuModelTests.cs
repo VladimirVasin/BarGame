@@ -185,6 +185,31 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void RestingMenu_CanReopenAndOnlyThenBeRetrieved()
+        {
+            MountainRoadCafeMenuModel model = CreateOpenModel();
+            model.MoveNext();
+
+            Assert.That(model.RestOnCounter(), Is.True);
+            Assert.That(
+                model.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Resting));
+            Assert.That(model.MoveNext(), Is.False);
+            Assert.That(model.Reopen(), Is.True);
+            Assert.That(
+                model.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Open));
+            Assert.That(
+                model.SelectedItemId,
+                Is.EqualTo(MountainRoadCafeMenuItemIds.CheeseSandwich));
+            Assert.That(model.RestOnCounter(), Is.True);
+            Assert.That(model.BeginRetrieval(), Is.True);
+            Assert.That(
+                model.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Retrieving));
+        }
+
+        [Test]
         public void RetrievalWithoutConfirmation_ClosesWithoutCommittedItem()
         {
             MountainRoadCafeMenuModel model = CreateOpenModel();

@@ -44,7 +44,7 @@ Rules:
 
 ## Current baseline
 
-- Unity `6000.5.10f1`, Universal Render Pipeline `17.5.0`, Input System `1.20.0`.
+- Unity `6000.6.0f1`, Universal Render Pipeline `17.6.0`, Input System `1.20.0`.
 - The playable MVP is implemented through runtime composition: scenes are
   near-empty containers and the world is built from validated pure plans.
 - Ten build scenes, in build order:

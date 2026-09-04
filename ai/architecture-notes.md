@@ -4,7 +4,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
-- **Accepted:** Unity `6000.5.10f1` with URP `17.5.0`.
+- **Accepted:** Unity `6000.6.0f1` with URP `17.6.0` (moved from `6000.5.10f1` / URP `17.5.0` on 2026-09-04; the package set — test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0` — came with the editor).
 - **Accepted:** New Input System is enabled.
 - **Corrected — balcony smokers are a local population, not a city-load
   tableau:** a production-seed walk exposed the failure of selecting one or two
@@ -85,29 +85,45 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   existing `PlayableGraph` and replace the cup with a bottle. A scene-local
   overlay visibly leans torso/head back, turns the bottle horizontal and solves
   its authored neck anchor to the mouth. Table patrons apply the same sip while
-  planting their left hand on the real tabletop.
+  planting their left hand on the real tabletop. After `Lower`, all five
+  drinkers place the bottle upright with its base on their actual counter or
+  table surface, keep the right hand at a side-surface grip outside the bottle
+  mesh and support the free hand on that same surface. The grip solves the
+  complete `hand.R` bind-space frame: it approaches from the patron's actual
+  right side and fixes wrist roll instead of positioning only the socket;
+  round-table bottles dock visibly inside the tabletop rather than on its rim.
+  A slight seeded,
+  non-referential head drift keeps the
+  resting pose alive until the next `Raise`; it targets neither the hero nor
+  another patron.
   World construction evaluates seating, action and prop attachment before the
   first visible frame. This changes only the existing bar tableau and action
   presentation: it adds no dialogue, interaction, character design or story
   state.
-- **Accepted — the bar seat is reusable and cafe/bar share one physical menu
-  substrate:** `CounterSeat{Plan,Interaction,View}` packages the bar's authored
-  approach, physical entry/loop/exit and exact camera restoration in the same
-  interaction grammar as the cafe seat. Both scenes consume
+- **Accepted — bar seats are reusable and cafe/bar share one physical menu
+  substrate:** `BarCounterSeatPlanner` creates a station for every stool not
+  occupied by a patron; each receives its own authored approach, entry/exit,
+  camera translation and staff-service offset through
+  `CounterSeat{Plan,Interaction,View}`. The rightmost position is `x = 4.00`,
+  clear of the counter return, and a failed approach releases its provisional
+  shop binding so it cannot poison the other stations. Both scenes consume
   `CounterMenu{Model,Input,PageView,HintView,PropMotion}` for the ordered
-  lifecycle, wrap navigation, upright page focus, world TMP/selection marker,
-  compact hint and grip-to-dock delivery/retrieval; their adapters supply only
-  rows and choreography. The bar adapter keeps the wider spread at `1.10 m` /
+  open/rest/reopen/post-exit lifecycle, wrap navigation, upright page focus,
+  world TMP/selection marker, the shared `0.40 s` opaque hinge fold/unfold,
+  contextual hint and grip-to-dock delivery/retrieval; their adapters supply
+  only rows and
+  choreography. The bar adapter keeps the wider spread at `1.10 m` /
   FOV `60` while the cafe retains `0.50 m` / FOV `40`. `BarAssetSetup`
   reapplies each manifest-declared Unity basis in prefab-root space because
   FBX Empty wrapper axes otherwise rotate the text sockets when the menu
   origin is aligned to its dock. The
   cafe keeps three price-free, effect-free entries; the bar supplies the nine
-  localized drink names/prices, leaves failed purchases open, and only after a
-  successful atomic purchase marks `X`, returns the booklet and enters the
-  existing one-bottle service timeline. This records the user's explicit
-  `2026-09-03` decision to reuse the cafe menu fully while changing the bar
-  entries, not to build a second parallel menu.
+  localized drink names/prices, leaves failed purchases open, and after a
+  successful atomic purchase closes the booklet on the counter while entering
+  the existing one-bottle service timeline. The former privileged-seat floor
+  marker and yellow emissive counter sign are absent from play. This records
+  the user's explicit `2026-09-03` shared-substrate decision and the
+  `2026-09-04` multi-seat/lifecycle extension, not a second parallel menu.
 - **Accepted by explicit user decision, 2026-09-03 — the active bartender is
   ordinary and two-armed:** `bar_bartender_v2` is a `1.75 m`, `39`-mesh /
   `1,136`-triangle NpcHumanV2 figure in a dark-green waistcoat, rolled sleeves
@@ -204,8 +220,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Stairwell and Church instantiate one
   `Resources/Player/Player3DV2` modular hero prefab through `PlayerFactory`.
   Its Generic rig, independent mesh parts, in-place Actions, prefab-derived
-  first-person subsets, dedicated 3D portrait, real mesh shadows and analytic
-  contact patch are the active player presentation. A runtime-composed
+  first-person interaction parts (a visible refrigerator arm and a non-rendered
+  bar-vessel attachment rig), dedicated 3D portrait, real mesh shadows and
+  analytic contact patch are the active player presentation. A runtime-composed
   13-body companion ragdoll temporarily owns those same bones during failed
   balance falls; no alternate hero or renderer swap is used.
 - **Accepted — The Kettle Hat boil is a declared per-archetype effect, not a
@@ -1568,7 +1585,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   clip the art build validates on posture and loop closure; separately, four
   files (`BarPatronDrinkingArmPose`, `BarBartenderPresentation`,
   `SupermarketCashierPresentation`, `HomeTeethBrushingArmPose`) carry a
-  recorded exception that solves bones in `LateUpdate`. The shout takes the
+  recorded exception that solves bones in an explicitly ordered runtime
+  presentation pass after the base pose. The shout takes the
   first. `CityPedestrianAssetRegistry` exposes only `Head`, `Pelvis` and the
   two feet, so an overlay would have had to find `neck` and `upper_arm.L` by
   name walk, and it would have left the one thing these two designs do out of
@@ -2379,6 +2397,35 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and localization contracts remain generator `1.2.1`, `61` meshes / `5,794`
   triangles / `52` anchors / seven dynamic props.
 
+  **Accepted architecture exception — 2026-09-04, explicit user request — a
+  closed menu remains with the seated hero in both venues:** this supersedes
+  the locked-first-choice, immediate-confirm/stand retrieval and one-shot
+  clauses of the two cafe menu exceptions above. `CounterMenuState.Resting`
+  separates closing the
+  readable spread from taking the physical object. While the spread is open,
+  the seated interaction first closes it and returns the saved seated camera;
+  the thin closed booklet then remains on the same authored dock. A bounded
+  viewer-ray test changes the shared prompt and action between
+  reopen while looking at the booklet and stand while looking away; reopening
+  restores ordinary menu navigation. Staff may
+  enter `Retrieving` only after the shared interaction reports the completed
+  visible exit, never on close, confirmation or the start of standing; the next
+  completed sit resets the physical round trip and delivers the menu again.
+  `MountainRoadCafeMenuController` implements this at the existing single hero
+  stool without adding a transaction. `BarCounterStation` applies it at every
+  unoccupied bar stool, using identity-safe provisional ownership and
+  station-relative service poses; the old single-seat marker and emissive sign
+  are not rendered. The bar's successful purchase still commits atomically and
+  runs its drink service while the booklet rests closed.
+  `CounterMenuPageView` owns one shared fold rig for both venues. Two opaque
+  cover/page leaves derive their dimensions, material and colour from each
+  venue's authored spread; the left leaf rotates over the stationary right
+  leaf about their common physical spine for `0.40 s`. The closed state never
+  uses material alpha. At the fully open
+  endpoint the original authored spread is authoritative again. The fold rig
+  adds no collider, Rigidbody or second menu authority, so the existing
+  bounded gaze target and lifecycle remain unchanged.
+
   **Accepted exception — role-staggered cafe drinking:** on `2026-09-01` the
   user explicitly replaced the earlier synchronized-pair beat. The pair stays
   grouped in the composition, but its two members own distinct visible fill
@@ -3167,9 +3214,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   intoxication/balance and authored fall sampling, including the full-body
   side-down-to-all-fours-to-stand Rise actions; the companion ragdoll owns only
   the bounded physics interval and its `0.16 s` return bridge. Bed, smoking and
-  cat feeding drive continuous full-body clips on that same rig; bar drinking
-  and refrigerator reach filter camera-local arms from the prefab, and
-  inventory loads the dedicated transparent 3D portrait. Real meshes cast URP
+  cat feeding drive continuous full-body clips on that same rig; refrigerator
+  reach exposes a visible camera-local right arm from the prefab, while bar
+  drinking uses a non-rendered prefab-derived vessel attachment rig and keeps
+  the seated world body. Inventory loads the dedicated transparent 3D portrait. Real meshes cast URP
   shadows while the analytic contact patch remains grounded and fall-aware.
   Guided approach,
   independent entry/action/exit poses, neutral settle, terminal hold, atomic
@@ -3557,7 +3605,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   target focus use deliberately weighty `0.20 s`, `0.18 s` and `0.18 s`
   damping; focus stays within `0.45 m` and snaps on jumps beyond `1.75 m`.
   Deterministic low-frequency idle drift and speed-driven bob affect only
-  focus, pitch and roll; requested yaw and FOV remain stable. Collision
+  focus, pitch and roll; requested yaw remains stable, and FOV is stable
+  below the balance threshold — above it the drunk dolly zoom (accepted
+  2026-09-04, below) owns the lens and the arm together. Collision
   shortens the arm immediately, restores it with `0.32 s` damping and fades
   cinematic motion during fullscreen modal ownership. Balance checks disable
   orbit input but deliberately retain cinematic motion so intoxication lean
@@ -4324,30 +4374,33 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   while per-drink colors and highlights use property blocks. A pure unscaled
   timeline owns camera approach, persistent browsing, pickup, vessel
   placement, pour/fill, bottle return, an exact three-second drink, empty
-  vessel return and the explicit-exit camera return. The player self-pours with
-  left/right camera-local arm subsets filtered from the production prefab,
-  deterministic kinematic poses and one reusable world-space liquid stream
-  rather than a free physics/fluid simulation. Their owned visibility lease
-  hides and restores the complete world presentation. Confirmation remains the
+  vessel return and the explicit-exit camera return. The bartender owns bottle
+  pickup, pour and return through deterministic kinematic poses and one
+  reusable world-space liquid stream rather than a free physics/fluid
+  simulation. During the hero's drink, a prefab-derived camera-local rig keeps
+  only the vessel attachment trajectory alive: both arm-subset renderer groups
+  stay disabled in seated gameplay. The seated world body remains authoritative
+  and the seat view hides only its head. Confirmation remains the
   sole transaction boundary: cash and
   drinking state commit exactly once before service and exit is then rejected
   until the empty vessel reaches the counter. Completing service clears only
-  that order and returns to the same seated browser so another purchase can be
-  made; only the dedicated Exit action starts camera return and releases the
-  modal presentation. Lifecycle cleanup never refunds but always restores the
+  that order and leaves the physical booklet closed on the counter. Looking at
+  it reopens the seated browser; looking away offers the shared animated exit,
+  whose completion alone permits bartender retrieval. Lifecycle cleanup never
+  refunds but always restores the
   selected bottle, vessel, camera, player presentation, controls and HUD. The
   F9 debug window may replace only pre-commit browsing and refuses to interrupt
   committed service. The validated seated framing keeps all bottle renderer
   bounds inside a 16:10 viewport, and every reusable vessel snapshots and
   restores its authored transform so repeated orders cannot compound scale.
   The camera is placed above the counter at seated eye height with a shallow
-  upward pitch. There is no floor order marker; the remaining emissive counter
-  sign participates in the controller's captured presentation state and stays
-  hidden through repeated orders until the explicit camera return finishes.
+  upward pitch. There is no floor order marker or visible emissive counter
+  sign.
 - **Accepted — Session wallet and immediate bar purchases:** A fresh runtime
   session starts with `$999` in integer cash and preserves that balance across
-  city/bar/supermarket scene loads and city-seed changes. Every bar owns one separate
-  counter station and localized nine-item retail modal. Pure purchase rules
+  city/bar/supermarket scene loads and city-seed changes. Every bar owns one
+  counter station at each of its four unoccupied stools and one shared
+  localized nine-item retail modal. Pure purchase rules
   validate the offer, affordability and maximum intoxication before one
   `GameSessionState` transaction deducts cash and immediately records the
   drink; failures mutate nothing and cash cannot become negative. Water costs
@@ -4365,18 +4418,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Parameters interpolate linearly between the 20-point boundaries instead of
   jumping only when a name changes:
 
-  | Range and stage | Speed | 3D bone sway | Camera roll | Vignette | Ghost | Warp |
-  | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-  | `1–20` Light Buzz | `1.00` | `0.5°` | `0°` | `0.03` | `0 px` | `0` |
-  | `21–40` Tipsy | `0.97` | `2°` | `0.15°` | `0.06` | `0.5 px` | `0.0005` |
-  | `41–60` Drunk | `0.92` | `4°` | `0.6°` | `0.12` | `1 px` | `0.0025` |
-  | `61–80` Unsteady | `0.82` | `7°` | `1.5°` | `0.20` | `2 px` | `0.009` |
-  | `81–100` Very Drunk | `0.70` | `10°` | `2.5°` | `0.28` | `3 px` | `0.015` |
+  | Range and stage | Speed | 3D bone sway | Camera roll | Vignette | Ghost | Warp | Dolly |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+  | `1–20` Light Buzz | `1.00` | `0.5°` | `0°` | `0.03` | `0 px` | `0` | `0` |
+  | `21–40` Tipsy | `0.97` | `2°` | `0.15°` | `0.06` | `0.5 px` | `0.0005` | `0` |
+  | `41–60` Drunk | `0.92` | `4°` | `0.6°` | `0.12` | `1 px` | `0.0025` | `0` |
+  | `61–80` Unsteady | `0.82` | `7°` | `1.5°` | `0.20` | `2 px` | `0.009` | `0.35` |
+  | `81–100` Very Drunk | `0.70` | `10°` | `2.5°` | `0.28` | `3 px` | `0.015` | `1.0` |
 
   Values shown are each range's upper-bound profile; the lower bound continues
   from the preceding row. Warmth rises to `0.10` and exposure pulse to `0.08`
   at 100. The 3D presentation progressively suppresses idle-only expressions,
-  spreads the registered arms and adds pelvis/chest sway plus knee bend before
+  spreads the registered arms out to the sides in the actor's frame (world-axis
+  turns through the shoulder — the imported bones' local axes are not
+  anatomical axes) and adds pelvis/chest sway plus a lowered pelvis before
   signed balance lean or fall clips are considered. Runtime presentation eases
   a full-scale change over about `0.7 s`. The HUD is hidden at zero and otherwise
   shows the localized
@@ -4643,4 +4698,37 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bus, every obstacle sweep in the project ignores triggers, and only the foot
   probes see it. City walkers adopt the legs-only layer with bones found by
   the shared names; airborne designs and seated riders keep their old paths.
-
+- **Accepted and implemented 2026-09-04 — drunk dolly zoom above 60:** the
+  chase camera breathes a Vertigo zoom once the level passes the balance
+  threshold. `IntoxicationProfile.DollyZoomStrength` is `0` through `60`,
+  `0.35` at `80` and `1` at `100` (the "Dolly" column above).
+  `IntoxicationDollyZoomModel` is a pure, seeded oscillator (step clamp
+  `0.1 s`, leftover carried across phase boundaries): each cycle leaves rest
+  for one side — wide/pushed-in with probability `0.65`, narrow/pulled-back
+  otherwise and only when the camera has `1.35×` its arm of room behind it —
+  with a reach of `0.55..1×` the strength, an out leg and a back leg drawn
+  separately from `3.2–6.5 s` at the threshold down to `0.8–2.6 s` at 100, a
+  per-leg time warp `t^k`, `k ∈ [0.65, 1.6]`, under a smootherstep (zero slope
+  at both ends, so every leg joins its holds without a kink), a hold at the
+  peak of `0.12..0.4×` the out leg and a hold at rest of `0.25..0.8×` the back
+  leg — the linger is a fraction of the leg that led into it, so a fast breath
+  lingers briefly and a slow one longer. A cycle finishes with the reach it
+  latched when the level drops; rest is bit-exactly zero. `PlayerCameraFollow`
+  maps the signed exponent onto the lens and the arm together:
+  `distance × tan(fov/2)` is held to the collision-resolved ordinary arm's
+  value, so the hero keeps his size while the world stretches (up to `100°`,
+  arm `×0.42`) or flattens (down to `34°`, arm `×1.63` exterior). The one
+  collision sweep now reaches the full pull-out and also measures the room
+  behind the camera; that room closes at once and reopens with the arm's own
+  `0.32 s` damping, and a blocked pull-out keeps the lens on the arm it got.
+  The layer has its own weight (`0.35 s`) driven by `CinematicMotionEnabled`
+  and the `graphics.intoxication_fx` toggle, never the cinematic weight that
+  `Snap()` zeroes, so a teleport keeps the running breath. A fixed pose
+  silences it — the model rests, and `Snap`, `ResolveFollowPose` and
+  `FollowFieldOfView` stay dolly-free — and on release the layer absorbs a
+  returned lens only when the owner came back to within `1.5°` of the lens it
+  took (the bar shop returns to the live pose it captured at entry), easing
+  it out over `0.45 s`; an authored shot lens cuts to base as it always did.
+  Seeded from the city seed; `ReseedDollyZoom` is the test seam, and
+  `IntoxicationDollyZoomCapturePlayModeTests` writes twelve seconds of the
+  city's own camera at level 100 to `Captures/DollyZoom` for the eye.

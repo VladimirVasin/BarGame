@@ -205,6 +205,12 @@ namespace BarPromenade.Tests.PlayMode
                         readyWhen: () => IsBarDrinkAtLips(
                             "counter-seat-left")),
                     Shot.At(
+                        "02-counter-rest",
+                        new Vector3(-6.5f, 1.55f, 3.85f),
+                        new Vector3(-4.2f, 1.25f, 5.05f), 45f,
+                        readyWhen: () => IsBarDrinkRestingOnSurface(
+                            "counter-seat-left")),
+                    Shot.At(
                         "03-booths-and-stage",
                         new Vector3(-2.5f, 1.8f, -2.2f),
                         new Vector3(-9.5f, 1.2f, 2.0f), 62f),
@@ -213,6 +219,18 @@ namespace BarPromenade.Tests.PlayMode
                         new Vector3(-3.8f, 1.75f, -6.1f),
                         new Vector3(-3.85f, 1.15f, -3.55f), 48f,
                         readyWhen: () => IsBarDrinkAtLips(
+                            "social-left-front")),
+                    Shot.At(
+                        "03-table-rest",
+                        new Vector3(-3.8f, 1.75f, -6.1f),
+                        new Vector3(-3.85f, 1.05f, -3.55f), 48f,
+                        readyWhen: () => IsBarDrinkRestingOnSurface(
+                            "social-left-front")),
+                    Shot.At(
+                        "03-table-grip",
+                        new Vector3(-3.55f, 1.32f, -4.85f),
+                        new Vector3(-3.80f, 1.00f, -3.70f), 36f,
+                        readyWhen: () => IsBarDrinkRestingOnSurface(
                             "social-left-front")),
                     Shot.At(
                         "04-activity-bay",
@@ -259,6 +277,15 @@ namespace BarPromenade.Tests.PlayMode
                     BarPatronDrinkingArmPose.BottleLipContactTolerance &&
                     drinking.BottleGripError <=
                     BarPatronDrinkingArmPose.BottleGripContactTolerance &&
+                    drinking.BottleHandRadialClearance >=
+                    BarPatronDrinkingArmPose
+                        .MinimumBottleHandRadialClearance &&
+                    drinking.BottleHandRightSideAlignment >=
+                    BarPatronDrinkingArmPose
+                        .MinimumRightHandSideAlignment &&
+                    drinking.BottleHandOrientationErrorDegrees <=
+                    BarPatronDrinkingArmPose
+                        .BottleHandOrientationToleranceDegrees &&
                     drinking.BottleSipAxisErrorDegrees <= 5f &&
                     drinking.BottleHorizontalErrorDegrees <= 5f &&
                     drinking.MeasuredTorsoLeanBackDegrees >=
@@ -278,14 +305,63 @@ namespace BarPromenade.Tests.PlayMode
 
                     if (patron.Anchor.Role == BarNpcRole.StandingPatron)
                     {
-                        return drinking.IsTableLean &&
-                               drinking.TableSupportError <=
-                               BarPatronDrinkingArmPose
-                                   .TableSupportContactTolerance;
+                        return drinking.IsTableLean;
                     }
 
                     return true;
                 }
+            }
+
+            return false;
+        }
+
+        private static bool IsBarDrinkRestingOnSurface(string anchorId)
+        {
+            BarInteriorRoot bar =
+                Object.FindAnyObjectByType<BarInteriorRoot>();
+            if (bar == null || bar.Patrons == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < bar.Patrons.Count; index++)
+            {
+                BarPatron patron = bar.Patrons[index];
+                BarPatronDrinkingArmPose drinking = patron.Drinking;
+                if (!string.Equals(
+                        patron.Anchor.Id,
+                        anchorId,
+                        StringComparison.Ordinal) ||
+                    drinking == null)
+                {
+                    continue;
+                }
+
+                return drinking.Timeline.Phase ==
+                           BarPatronDrinkPhase.Rest &&
+                       drinking.Timeline.CompletedDrinks > 0 &&
+                       drinking.BottleSurfaceContactError <=
+                           BarPatronDrinkingArmPose
+                               .BottleSurfaceContactTolerance &&
+                       drinking.BottleRestUprightErrorDegrees <=
+                           BarPatronDrinkingArmPose
+                               .BottleRestUprightToleranceDegrees &&
+                       drinking.BottleGripError <=
+                           BarPatronDrinkingArmPose
+                               .BottleGripContactTolerance &&
+                       drinking.BottleHandRadialClearance >=
+                           BarPatronDrinkingArmPose
+                               .MinimumBottleHandRadialClearance &&
+                       drinking.BottleHandRightSideAlignment >=
+                           BarPatronDrinkingArmPose
+                               .MinimumRightHandSideAlignment &&
+                       drinking.BottleHandOrientationErrorDegrees <=
+                           BarPatronDrinkingArmPose
+                               .BottleHandOrientationToleranceDegrees &&
+                       drinking.TableSupportError <=
+                           BarPatronDrinkingArmPose
+                               .TableSupportContactTolerance &&
+                       drinking.RestHeadMotionDegrees >= 0.35f;
             }
 
             return false;
@@ -386,6 +462,16 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(
                             patron.Drinking.IsTableLean,
                             Is.False);
+                        AssertBarSurfaceRestTargets(
+                            bar,
+                            patron,
+                            bar.Layout.CounterPosition.y +
+                            bar.Layout.CounterSize.y * 0.5f +
+                            BarPatronWorldBuilder.CounterTopBuildUp,
+                            BarPatronWorldBuilder.CounterBottleRestInset,
+                            BarPatronWorldBuilder.CounterSurfaceHandInset,
+                            BarPatronWorldBuilder
+                                .CounterSurfaceHandSideOffset);
                         if (patron.Drinking.Timeline.VesselTipWeight >= 0.95f)
                         {
                             Assert.That(
@@ -402,6 +488,29 @@ namespace BarPromenade.Tests.PlayMode
                                         .BottleGripContactTolerance),
                                 $"{patron.Anchor.Id} hand is detached from " +
                                 "the bottle grip.");
+                            Assert.That(
+                                patron.Drinking.BottleHandRadialClearance,
+                                Is.GreaterThanOrEqualTo(
+                                    BarPatronDrinkingArmPose
+                                        .MinimumBottleHandRadialClearance),
+                                $"{patron.Anchor.Id} wrist intersects the " +
+                                "bottle body.");
+                            Assert.That(
+                                patron.Drinking
+                                    .BottleHandRightSideAlignment,
+                                Is.GreaterThanOrEqualTo(
+                                    BarPatronDrinkingArmPose
+                                        .MinimumRightHandSideAlignment),
+                                $"{patron.Anchor.Id} right hand reaches the " +
+                                "bottle from its left side.");
+                            Assert.That(
+                                patron.Drinking
+                                    .BottleHandOrientationErrorDegrees,
+                                Is.LessThanOrEqualTo(
+                                    BarPatronDrinkingArmPose
+                                        .BottleHandOrientationToleranceDegrees),
+                                $"{patron.Anchor.Id} right wrist has the " +
+                                "wrong grip roll.");
                             Assert.That(
                                 patron.Drinking.BottleSipAxisErrorDegrees,
                                 Is.LessThanOrEqualTo(5f),
@@ -463,13 +572,13 @@ namespace BarPromenade.Tests.PlayMode
                     "silhouette for a standing pub pose.");
                 Assert.That(patron.Drinking, Is.Not.Null);
                 Assert.That(patron.Drinking.IsTableLean, Is.True);
-                Assert.That(
-                    patron.Drinking.TableSupportError,
-                    Is.LessThanOrEqualTo(
-                        BarPatronDrinkingArmPose
-                            .TableSupportContactTolerance),
-                    $"{patron.Anchor.Id} is not resting a hand on the " +
-                    "tabletop.");
+                AssertBarSurfaceRestTargets(
+                    bar,
+                    patron,
+                    BarPatronWorldBuilder.PubTableTopHeight,
+                    BarPatronWorldBuilder.PubTableBottleRestInset,
+                    BarPatronWorldBuilder.PubTableHandInset,
+                    BarPatronWorldBuilder.PubTableHandSideOffset);
                 if (patron.Drinking.Timeline.VesselTipWeight >= 0.95f)
                 {
                     Assert.That(
@@ -486,6 +595,27 @@ namespace BarPromenade.Tests.PlayMode
                                 .BottleGripContactTolerance),
                         $"{patron.Anchor.Id} hand is detached from the " +
                         "bottle grip.");
+                    Assert.That(
+                        patron.Drinking.BottleHandRadialClearance,
+                        Is.GreaterThanOrEqualTo(
+                            BarPatronDrinkingArmPose
+                                .MinimumBottleHandRadialClearance),
+                        $"{patron.Anchor.Id} wrist intersects the bottle " +
+                        "body.");
+                    Assert.That(
+                        patron.Drinking.BottleHandRightSideAlignment,
+                        Is.GreaterThanOrEqualTo(
+                            BarPatronDrinkingArmPose
+                                .MinimumRightHandSideAlignment),
+                        $"{patron.Anchor.Id} right hand reaches the bottle " +
+                        "from its left side.");
+                    Assert.That(
+                        patron.Drinking.BottleHandOrientationErrorDegrees,
+                        Is.LessThanOrEqualTo(
+                            BarPatronDrinkingArmPose
+                                .BottleHandOrientationToleranceDegrees),
+                        $"{patron.Anchor.Id} right wrist has the wrong " +
+                        "grip roll.");
                     Assert.That(
                         patron.Drinking.BottleSipAxisErrorDegrees,
                         Is.LessThanOrEqualTo(5f),
@@ -511,29 +641,108 @@ namespace BarPromenade.Tests.PlayMode
                         $"{patron.Anchor.Id} does not tip the head back for " +
                         "the bottle sip.");
                 }
-                Quaternion patronRotation = Quaternion.Euler(
-                    0f,
-                    patron.Anchor.YawDegrees,
-                    0f);
-                Vector3 expectedSupportLocal =
-                    patron.Anchor.Position +
-                    patronRotation * Vector3.forward *
-                    BarPatronWorldBuilder.PubTableHandInset +
-                    patronRotation * Vector3.left * 0.10f +
-                    Vector3.up *
-                    (BarPatronWorldBuilder.PubTableTopHeight + 0.015f);
-                Assert.That(
-                    Vector3.Distance(
-                        patron.Drinking.TableSupportPoint,
-                        bar.transform.TransformPoint(expectedSupportLocal)),
-                    Is.LessThanOrEqualTo(0.002f),
-                    $"{patron.Anchor.Id} uses a support point in the wrong " +
-                    "coordinate space.");
             }
 
             Assert.That(boothCount, Is.EqualTo(6));
             Assert.That(counterCount, Is.EqualTo(2));
             Assert.That(tableCount, Is.EqualTo(3));
+        }
+
+        private static void AssertBarSurfaceRestTargets(
+            BarInteriorRoot bar,
+            BarPatron patron,
+            float surfaceHeight,
+            float bottleForwardInset,
+            float supportForwardInset,
+            float sideOffset)
+        {
+            Quaternion patronRotation = Quaternion.Euler(
+                0f,
+                patron.Anchor.YawDegrees,
+                0f);
+            Vector3 localCenter =
+                patron.Anchor.Position +
+                Vector3.up * surfaceHeight;
+            Vector3 expectedBottlePoint =
+                localCenter +
+                patronRotation * Vector3.forward *
+                bottleForwardInset +
+                patronRotation * Vector3.right * sideOffset +
+                Vector3.up *
+                BarPatronWorldBuilder.BottleSurfaceClearance;
+            Vector3 expectedSupportPoint =
+                localCenter +
+                patronRotation * Vector3.forward *
+                supportForwardInset +
+                patronRotation * Vector3.left * sideOffset +
+                Vector3.up * BarPatronWorldBuilder.HandSurfaceClearance;
+
+            Assert.That(
+                Vector3.Distance(
+                    patron.Drinking.BottleRestPoint,
+                    bar.transform.TransformPoint(expectedBottlePoint)),
+                Is.LessThanOrEqualTo(0.002f),
+                $"{patron.Anchor.Id} uses a bottle dock in the wrong " +
+                "coordinate space.");
+            Assert.That(
+                Vector3.Distance(
+                    patron.Drinking.TableSupportPoint,
+                    bar.transform.TransformPoint(expectedSupportPoint)),
+                Is.LessThanOrEqualTo(0.002f),
+                $"{patron.Anchor.Id} uses a support point in the wrong " +
+                "coordinate space.");
+            if (patron.Drinking.Timeline.Phase != BarPatronDrinkPhase.Rest)
+            {
+                return;
+            }
+
+            Assert.That(
+                patron.Drinking.TableSupportError,
+                Is.LessThanOrEqualTo(
+                    BarPatronDrinkingArmPose.TableSupportContactTolerance),
+                $"{patron.Anchor.Id} is not resting the free hand on the " +
+                "surface between drinks.");
+
+            Assert.That(
+                patron.Drinking.BottleSurfaceContactError,
+                Is.LessThanOrEqualTo(
+                    BarPatronDrinkingArmPose
+                        .BottleSurfaceContactTolerance),
+                $"{patron.Anchor.Id} does not put the bottle base on the " +
+                "surface between drinks.");
+            Assert.That(
+                patron.Drinking.BottleRestUprightErrorDegrees,
+                Is.LessThanOrEqualTo(
+                    BarPatronDrinkingArmPose
+                        .BottleRestUprightToleranceDegrees),
+                $"{patron.Anchor.Id} leaves the resting bottle tilted.");
+            Assert.That(
+                patron.Drinking.BottleGripError,
+                Is.LessThanOrEqualTo(
+                    BarPatronDrinkingArmPose.BottleGripContactTolerance),
+                $"{patron.Anchor.Id} detaches the hand from the resting " +
+                "bottle.");
+            Assert.That(
+                patron.Drinking.BottleHandRadialClearance,
+                Is.GreaterThanOrEqualTo(
+                    BarPatronDrinkingArmPose
+                        .MinimumBottleHandRadialClearance),
+                $"{patron.Anchor.Id} wrist intersects the resting bottle " +
+                "body.");
+            Assert.That(
+                patron.Drinking.BottleHandRightSideAlignment,
+                Is.GreaterThanOrEqualTo(
+                    BarPatronDrinkingArmPose
+                        .MinimumRightHandSideAlignment),
+                $"{patron.Anchor.Id} right hand reaches the resting bottle " +
+                "from its left side.");
+            Assert.That(
+                patron.Drinking.BottleHandOrientationErrorDegrees,
+                Is.LessThanOrEqualTo(
+                    BarPatronDrinkingArmPose
+                        .BottleHandOrientationToleranceDegrees),
+                $"{patron.Anchor.Id} right wrist has the wrong resting " +
+                "grip roll.");
         }
 
         //  Every area below is photographed from the hero, because his

@@ -304,6 +304,21 @@ namespace BarPromenade
             registry.SetServiceTowelVisible(true);
         }
 
+        public void ApplyCounterTravelPose(
+            float elapsedSeconds,
+            bool leftHandCarriesMenu = false)
+        {
+            if (!isInitialized || !usesOrdinaryRig)
+            {
+                return;
+            }
+
+            SetOrdinaryClip(
+                BarBartenderClipKind.Walk,
+                Mathf.Max(0f, elapsedSeconds));
+            registry.SetServiceTowelVisible(!leftHandCarriesMenu);
+        }
+
         /// <summary>
         /// Public so EditMode tests can drive the pose without a
         /// player loop.

@@ -33,6 +33,7 @@ namespace BarPromenade
         private bool previousContactShadowEnabled;
 
         public event Action<CounterSeatInteraction, bool> SeatedChanged;
+        public event Action<CounterSeatInteraction> InteractionCompleted;
 
         public bool IsInitialized { get; private set; }
         public bool IsSeated => seated;
@@ -73,6 +74,8 @@ namespace BarPromenade
             if (controller != null)
             {
                 controller.PhaseChanged -= HandlePhaseChanged;
+                controller.InteractionCompleted -=
+                    HandleInteractionCompleted;
             }
 
             player = playerRuntime;
@@ -80,6 +83,7 @@ namespace BarPromenade
             plan = counterSeatPlan;
             definition = CreateDefinition();
             controller.PhaseChanged += HandlePhaseChanged;
+            controller.InteractionCompleted += HandleInteractionCompleted;
             IsInitialized = true;
         }
 
@@ -201,6 +205,14 @@ namespace BarPromenade
             SeatedChanged?.Invoke(this, value);
         }
 
+        private void HandleInteractionCompleted()
+        {
+            if (ownsActiveInteraction)
+            {
+                InteractionCompleted?.Invoke(this);
+            }
+        }
+
         private void SuppressContactShadow()
         {
             PlayerContactShadow shadow = player.ContactShadow;
@@ -240,9 +252,12 @@ namespace BarPromenade
             if (controller != null)
             {
                 controller.PhaseChanged -= HandlePhaseChanged;
+                controller.InteractionCompleted -=
+                    HandleInteractionCompleted;
             }
 
             SeatedChanged = null;
+            InteractionCompleted = null;
             IsInitialized = false;
         }
     }

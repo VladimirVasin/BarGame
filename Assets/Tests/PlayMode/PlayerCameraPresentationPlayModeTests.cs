@@ -755,6 +755,205 @@ namespace BarPromenade.Tests.PlayMode
 
 
 
+        [UnityTest]
+        public IEnumerator DollyZoom_AtFullIntoxication_KeepsHeroSizeAndBreathesSmoothly()
+        {
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject player = CreateObject("Dolly Zoom Camera Target");
+            player.transform.position = new Vector3(0f, 100f, 0f);
+            PlayerCameraFollow follow =
+                camera.gameObject.AddComponent<PlayerCameraFollow>();
+            follow.Initialize(camera, player.transform, false);
+            follow.ReseedDollyZoom(4242);
+            follow.SetOrbitInputEnabled(false);
+            bool previousLensFx =
+                GraphicsEffectsSettings.IntoxicationLensFxEnabled;
+            GraphicsEffectsSettings.IntoxicationLensFxEnabled = true;
+            try
+            {
+                follow.SetIntoxication(1f);
+                float sizeConstant = 2.6f * Mathf.Tan(26.5f * Mathf.Deg2Rad);
+                float maximumDeviation = 0f;
+                float previousFieldOfView = camera.fieldOfView;
+                float deadline = Time.realtimeSinceStartup + 10f;
+                while (Time.realtimeSinceStartup < deadline)
+                {
+                    float frameSeconds = Time.unscaledDeltaTime;
+                    yield return null;
+                    float fieldOfView = camera.fieldOfView;
+                    float distance = Vector3.Distance(
+                        camera.transform.position,
+                        follow.CurrentFocusPoint);
+                    Assert.That(
+                        fieldOfView,
+                        Is.InRange(34f - 0.01f, 100f + 0.01f),
+                        "The dolly zoom stays inside its lens limits.");
+                    Assert.That(
+                        distance * Mathf.Tan(fieldOfView * 0.5f * Mathf.Deg2Rad),
+                        Is.EqualTo(sizeConstant).Within(sizeConstant * 0.03f),
+                        "The dolly zoom must keep the hero's apparent size.");
+                    Assert.That(
+                        Mathf.Abs(fieldOfView - previousFieldOfView),
+                        Is.LessThanOrEqualTo(
+                            200f * Mathf.Max(frameSeconds, 0.001f) + 0.01f),
+                        "The lens must breathe smoothly, never jump.");
+                    previousFieldOfView = fieldOfView;
+                    maximumDeviation = Mathf.Max(
+                        maximumDeviation,
+                        Mathf.Abs(fieldOfView - 53f));
+                }
+
+                Assert.That(
+                    maximumDeviation,
+                    Is.GreaterThan(8f),
+                    "At the top level the breath must be a strong one.");
+
+                follow.SetIntoxication(0f);
+                deadline = Time.realtimeSinceStartup + 12f;
+                while (Time.realtimeSinceStartup < deadline &&
+                       Mathf.Abs(camera.fieldOfView - 53f) > 0.05f)
+                {
+                    yield return null;
+                }
+
+                Assert.That(
+                    camera.fieldOfView,
+                    Is.EqualTo(53f).Within(0.05f),
+                    "Sobering up must bring the lens back to base.");
+                float settleDeadline = Time.realtimeSinceStartup + 0.5f;
+                while (Time.realtimeSinceStartup < settleDeadline)
+                {
+                    yield return null;
+                    Assert.That(
+                        camera.fieldOfView,
+                        Is.EqualTo(53f).Within(0.05f),
+                        "A sober lens stays at base.");
+                }
+            }
+            finally
+            {
+                GraphicsEffectsSettings.IntoxicationLensFxEnabled =
+                    previousLensFx;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator DollyZoom_ReleasedLatchedFixedPose_AbsorbsTheFieldOfView()
+        {
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject player = CreateObject("Dolly Zoom Release Target");
+            player.transform.position = new Vector3(0f, 100f, 0f);
+            PlayerCameraFollow follow =
+                camera.gameObject.AddComponent<PlayerCameraFollow>();
+            follow.Initialize(camera, player.transform, false);
+            follow.ReseedDollyZoom(4242);
+            follow.SetOrbitInputEnabled(false);
+            bool previousLensFx =
+                GraphicsEffectsSettings.IntoxicationLensFxEnabled;
+            GraphicsEffectsSettings.IntoxicationLensFxEnabled = true;
+            try
+            {
+                follow.SetIntoxication(1f);
+                float deadline = Time.realtimeSinceStartup + 10f;
+                while (Time.realtimeSinceStartup < deadline &&
+                       Mathf.Abs(camera.fieldOfView - 53f) < 10f)
+                {
+                    yield return null;
+                }
+
+                Assert.That(
+                    Mathf.Abs(camera.fieldOfView - 53f),
+                    Is.GreaterThanOrEqualTo(10f),
+                    "The breath never reached a lens worth latching.");
+
+                // An owner takes the camera exactly where the drunk lens
+                // was, holds it, and gives it back on the same lens - the
+                // bar shop's return leg.
+                float latched = camera.fieldOfView;
+                follow.SetFixedPose(
+                    camera.transform.position,
+                    camera.transform.rotation,
+                    latched);
+                follow.SetIntoxication(0f);
+                yield return null;
+                Assert.That(
+                    camera.fieldOfView,
+                    Is.EqualTo(latched).Within(0.001f));
+                Assert.That(
+                    follow.DollyZoomExponent,
+                    Is.Zero,
+                    "A fixed pose silences the breath.");
+                float holdDeadline = Time.realtimeSinceStartup + 0.8f;
+                while (Time.realtimeSinceStartup < holdDeadline)
+                {
+                    yield return null;
+                }
+
+                follow.ClearFixedPose();
+                Assert.That(
+                    camera.fieldOfView,
+                    Is.EqualTo(latched).Within(0.5f),
+                    "The release must start on the lens the owner returned to.");
+
+                float previousFieldOfView = camera.fieldOfView;
+                deadline = Time.realtimeSinceStartup + 3f;
+                while (Time.realtimeSinceStartup < deadline)
+                {
+                    float frameSeconds = Time.unscaledDeltaTime;
+                    yield return null;
+                    Assert.That(
+                        Mathf.Abs(camera.fieldOfView - previousFieldOfView),
+                        Is.LessThanOrEqualTo(
+                            200f * Mathf.Max(frameSeconds, 0.001f) + 0.01f),
+                        "The absorbed lens must ease, never jump.");
+                    previousFieldOfView = camera.fieldOfView;
+                    if (Mathf.Abs(camera.fieldOfView - 53f) <= 0.05f)
+                    {
+                        break;
+                    }
+                }
+
+                Assert.That(
+                    camera.fieldOfView,
+                    Is.EqualTo(53f).Within(0.05f),
+                    "The absorbed lens must settle on base.");
+            }
+            finally
+            {
+                GraphicsEffectsSettings.IntoxicationLensFxEnabled =
+                    previousLensFx;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator DollyZoom_ReleasedAuthoredFixedPose_HardCutsAsBefore()
+        {
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject player = CreateObject("Authored Pose Release Target");
+            player.transform.position = new Vector3(0f, 100f, 0f);
+            PlayerCameraFollow follow =
+                camera.gameObject.AddComponent<PlayerCameraFollow>();
+            follow.Initialize(camera, player.transform, false);
+            follow.SetOrbitInputEnabled(false);
+            yield return null;
+
+            follow.SetFixedPose(
+                new Vector3(0f, 101f, -3f),
+                Quaternion.identity,
+                48f);
+            yield return null;
+            Assert.That(camera.fieldOfView, Is.EqualTo(48f).Within(0.001f));
+
+            follow.ClearFixedPose();
+            Assert.That(
+                camera.fieldOfView,
+                Is.EqualTo(53f).Within(0.001f),
+                "An authored shot lens is not absorbed: it cuts to base.");
+            yield return null;
+            Assert.That(camera.fieldOfView, Is.EqualTo(53f).Within(0.001f));
+            Assert.That(follow.DollyZoomExponent, Is.Zero);
+        }
+
         [UnityTearDown]
         public IEnumerator TearDown()
         {

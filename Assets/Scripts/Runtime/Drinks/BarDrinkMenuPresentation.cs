@@ -10,6 +10,7 @@ namespace BarPromenade
     /// selection, marker, focus and grip-to-dock motion live in generic code.
     /// </summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(330)]
     public sealed class BarDrinkMenuPresentation : MonoBehaviour
     {
         public const float CameraFocusDistanceMeters = 1.10f;
@@ -18,11 +19,14 @@ namespace BarPromenade
         private BarServicePropInstance authored;
         private CounterMenuPageView page;
         private CounterMenuPropMotion motion;
+        private Pose baseDockPose;
+        private bool followsCarrier;
 
         public bool IsConfigured { get; private set; }
         public bool IsVisible => page != null && page.IsPropVisible;
         public bool IsTextVisible => page != null && page.IsTextVisible;
         public bool IsPlaced { get; private set; }
+        public bool IsRestingOnCounter { get; private set; }
         public Transform PropRoot => authored != null
             ? authored.transform
             : null;
@@ -32,6 +36,27 @@ namespace BarPromenade
         public IReadOnlyList<TMPro.TMP_Text> ItemLines =>
             page?.ItemLines ?? Array.Empty<TMPro.TMP_Text>();
         public TMPro.TMP_Text SelectionMarker => page?.SelectionMarker;
+
+        public void ConfigureDockOffset(Vector3 serviceLocalOffset)
+        {
+            if (!IsConfigured)
+            {
+                throw new InvalidOperationException(
+                    "The bar menu must be configured before its dock.");
+            }
+
+            Transform reference = transform.parent;
+            Vector3 worldOffset = reference != null
+                ? reference.TransformVector(serviceLocalOffset)
+                : serviceLocalOffset;
+            motion.SetDockPose(new Pose(
+                baseDockPose.position + worldOffset,
+                baseDockPose.rotation));
+            if (!IsVisible)
+            {
+                motion.SnapToDock();
+            }
+        }
 
         public static BarDrinkMenuPresentation CreateAndBind(
             Transform parent,
@@ -75,7 +100,9 @@ namespace BarPromenade
             }
 
             IsPlaced = false;
-            page.SetVisible(true, false);
+            IsRestingOnCounter = false;
+            followsCarrier = true;
+            page.SetRestingVisible(true);
             motion.BeginDelivery();
         }
 
@@ -87,6 +114,7 @@ namespace BarPromenade
             }
 
             IsPlaced = false;
+            followsCarrier = false;
             page.SetVisible(true, false);
             motion.EvaluateDelivery(normalized);
         }
@@ -99,8 +127,46 @@ namespace BarPromenade
             }
 
             motion.SnapToDock();
+            followsCarrier = false;
             IsPlaced = true;
+            IsRestingOnCounter = false;
             page.SetVisible(true, true);
+        }
+
+        public bool RestOnCounter()
+        {
+            if (!IsConfigured || !IsPlaced)
+            {
+                return false;
+            }
+
+            motion.SnapToDock();
+            followsCarrier = false;
+            IsPlaced = true;
+            IsRestingOnCounter = true;
+            page.SetRestingVisible(true);
+            return true;
+        }
+
+        public bool ReopenOnCounter()
+        {
+            if (!IsConfigured || !IsPlaced || !IsRestingOnCounter)
+            {
+                return false;
+            }
+
+            motion.SnapToDock();
+            followsCarrier = false;
+            IsRestingOnCounter = false;
+            page.SetVisible(true, true);
+            return true;
+        }
+
+        public bool IsLookingAtRestingMenu(Camera camera)
+        {
+            return IsRestingOnCounter &&
+                   page != null &&
+                   page.IsLookingAtRestingProp(camera);
         }
 
         public void BeginRetrieval()
@@ -111,7 +177,15 @@ namespace BarPromenade
             }
 
             IsPlaced = false;
-            page.SetVisible(true, true);
+            followsCarrier = false;
+            if (IsRestingOnCounter)
+            {
+                page.SetRestingVisible(true);
+            }
+            else
+            {
+                page.SetVisible(true, true);
+            }
             motion.BeginRetrieval();
         }
 
@@ -123,11 +197,19 @@ namespace BarPromenade
             }
 
             IsPlaced = false;
-            page.SetVisible(true, true);
+            followsCarrier = false;
+            if (IsRestingOnCounter)
+            {
+                page.SetRestingVisible(true);
+            }
+            else
+            {
+                page.SetVisible(true, true);
+            }
             motion.EvaluateRetrieval(normalized);
         }
 
-        public void CompleteRetrieval()
+        public void CompleteRetrieval(bool keepVisibleOnCarrier = false)
         {
             if (!IsConfigured)
             {
@@ -136,7 +218,16 @@ namespace BarPromenade
 
             motion.AttachToCarrier();
             IsPlaced = false;
-            page.SetVisible(false, false);
+            IsRestingOnCounter = false;
+            followsCarrier = keepVisibleOnCarrier && motion.Carrier != null;
+            if (followsCarrier)
+            {
+                page.SetRestingVisible(true);
+            }
+            else
+            {
+                page.SetVisible(false, false);
+            }
         }
 
         public void SetSelection(int index, bool confirmed)
@@ -165,9 +256,19 @@ namespace BarPromenade
             }
 
             motion.SnapToDock();
+            followsCarrier = false;
             IsPlaced = false;
+            IsRestingOnCounter = false;
             page.SetSelection(0, false);
             page.SetVisible(false, false);
+        }
+
+        private void LateUpdate()
+        {
+            if (followsCarrier && motion?.Carrier != null)
+            {
+                motion.AttachToCarrier();
+            }
         }
 
         private void Configure(
@@ -188,6 +289,7 @@ namespace BarPromenade
                     transform.parent.rotation * plan.MenuPose.Rotation);
             AlignAnchorToPose(transform, origin, originDock);
             Pose rootDock = new Pose(transform.position, transform.rotation);
+            baseDockPose = rootDock;
 
             Transform pageOrigin = RequireAnchor(
                 BarServicePropFactory.MenuPageOriginRole);

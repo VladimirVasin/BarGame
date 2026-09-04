@@ -144,6 +144,22 @@ namespace BarPromenade.Tests.PlayMode
                 lensDriver.AppliedLensDistortion,
                 Is.EqualTo(-0.14f).Within(0.001f));
 
+            // The drunk dolly zoom rides the same level through the
+            // production stack: at one hundred the lens leaves its base.
+            Camera statusCamera = cameraObject.GetComponent<Camera>();
+            cameraFollow.ReseedDollyZoom(4242);
+            float dollyDeadline = Time.realtimeSinceStartup + 8f;
+            while (Mathf.Abs(statusCamera.fieldOfView - 53f) <= 5f &&
+                   Time.realtimeSinceStartup < dollyDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                Mathf.Abs(statusCamera.fieldOfView - 53f),
+                Is.GreaterThan(5f),
+                "At one hundred the drunk dolly zoom must move the lens.");
+
             GraphicsEffectsSettings.IntoxicationLensFxEnabled =
                 false;
             yield return null;
@@ -153,6 +169,20 @@ namespace BarPromenade.Tests.PlayMode
                 "Disabling the drunk lens toggle must collapse the " +
                 "aberration immediately.");
             Assert.That(lensDriver.AppliedLensDistortion, Is.Zero);
+
+            // The dolly zoom fades out under the same toggle rather than
+            // cutting, so it gets its own short wait.
+            float fadeDeadline = Time.realtimeSinceStartup + 2f;
+            while (Mathf.Abs(statusCamera.fieldOfView - 53f) > 0.05f &&
+                   Time.realtimeSinceStartup < fadeDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                statusCamera.fieldOfView,
+                Is.EqualTo(53f).Within(0.05f),
+                "The drunk lens toggle must fade the dolly zoom to base.");
             GraphicsEffectsSettings.IntoxicationLensFxEnabled =
                 previousLensFxEnabled;
         }

@@ -81,6 +81,14 @@ namespace BarPromenade
             MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor;
         public const float PubTableTopHeight = 0.82f;
         public const float PubTableHandInset = 0.28f;
+        public const float PubTableBottleRestInset = 0.42f;
+        public const float CounterTopBuildUp = 0.16f;
+        public const float CounterBottleRestInset = 0.68f;
+        public const float CounterSurfaceHandInset = 0.68f;
+        public const float CounterSurfaceHandSideOffset = 0.16f;
+        public const float PubTableHandSideOffset = 0.10f;
+        public const float HandSurfaceClearance = 0.015f;
+        public const float BottleSurfaceClearance = 0.002f;
 
         /// <summary>
         /// Shelf bottles are counter-scale showpieces; the same
@@ -93,8 +101,10 @@ namespace BarPromenade
 
         public const string BottleSocketName = "SOCKET_Bottle.R";
         public const string MouthSocketName = "SOCKET_Mouth";
+        public const string RightClavicleBoneName = "clavicle.R";
         public const string RightUpperArmBoneName = "upper_arm.R";
         public const string RightForearmBoneName = "forearm.R";
+        public const string RightHandBoneName = "hand.R";
         public const string LeftClavicleBoneName = "clavicle.L";
         public const string LeftUpperArmBoneName = "upper_arm.L";
         public const string LeftForearmBoneName = "forearm.L";
@@ -244,6 +254,7 @@ namespace BarPromenade
                         registry,
                         presentation,
                         counterDrinkClip,
+                        layout,
                         patronIndex);
                 }
                 else if (anchor.Role == BarNpcRole.StandingPatron)
@@ -310,6 +321,7 @@ namespace BarPromenade
             CityPedestrianAssetRegistry registry,
             CityPedestrianPresentation pedestrianPresentation,
             AnimationClip drinkClip,
+            BarInteriorLayoutPlan layout,
             int patronIndex)
         {
             Transform socket = FindDeep(
@@ -318,12 +330,30 @@ namespace BarPromenade
             Transform mouth = FindDeep(
                 registry.transform,
                 MouthSocketName);
+            Transform rightClavicle = FindDeep(
+                registry.transform,
+                RightClavicleBoneName);
             Transform rightUpperArm = FindDeep(
                 registry.transform,
                 RightUpperArmBoneName);
             Transform rightForearm = FindDeep(
                 registry.transform,
                 RightForearmBoneName);
+            Transform rightHand = FindDeep(
+                registry.transform,
+                RightHandBoneName);
+            Transform leftClavicle = FindDeep(
+                registry.transform,
+                LeftClavicleBoneName);
+            Transform leftUpperArm = FindDeep(
+                registry.transform,
+                LeftUpperArmBoneName);
+            Transform leftForearm = FindDeep(
+                registry.transform,
+                LeftForearmBoneName);
+            Transform leftSocket = FindDeep(
+                registry.transform,
+                LeftHandSocketName);
             Transform spine = FindDeep(
                 registry.transform,
                 SpineBoneName);
@@ -335,8 +365,14 @@ namespace BarPromenade
                 HeadBoneName);
             if (socket == null ||
                 mouth == null ||
+                rightClavicle == null ||
                 rightUpperArm == null ||
                 rightForearm == null ||
+                rightHand == null ||
+                leftClavicle == null ||
+                leftUpperArm == null ||
+                leftForearm == null ||
+                leftSocket == null ||
                 spine == null ||
                 chest == null ||
                 head == null)
@@ -351,7 +387,21 @@ namespace BarPromenade
                 seed,
                 out Transform bottleRoot,
                 out Transform bottleMouth,
-                out float gripToLipDistance);
+                out float gripToLipDistance,
+                out float gripToBaseDistance);
+            float counterSurfaceHeight =
+                layout.CounterPosition.y +
+                layout.CounterSize.y * 0.5f +
+                CounterTopBuildUp;
+            ResolveSurfaceRestPoints(
+                anchor,
+                registry,
+                counterSurfaceHeight,
+                CounterBottleRestInset,
+                CounterSurfaceHandInset,
+                CounterSurfaceHandSideOffset,
+                out Vector3 bottleRestPoint,
+                out Vector3 supportPoint);
             BarPatronDrinkingArmPose pose =
                 registry.gameObject.AddComponent<
                     BarPatronDrinkingArmPose>();
@@ -360,16 +410,25 @@ namespace BarPromenade
                 pedestrianPresentation,
                 drinkClip,
                 registry.transform,
+                rightClavicle,
                 rightUpperArm,
                 rightForearm,
+                rightHand,
                 socket,
+                leftClavicle,
+                leftUpperArm,
+                leftForearm,
+                leftSocket,
                 spine,
                 chest,
                 head,
                 mouth,
                 bottleRoot,
                 bottleMouth,
-                gripToLipDistance);
+                gripToLipDistance,
+                gripToBaseDistance,
+                bottleRestPoint,
+                supportPoint);
             return pose;
         }
 
@@ -384,12 +443,18 @@ namespace BarPromenade
             Transform mouth = FindDeep(
                 registry.transform,
                 MouthSocketName);
+            Transform rightClavicle = FindDeep(
+                registry.transform,
+                RightClavicleBoneName);
             Transform rightUpperArm = FindDeep(
                 registry.transform,
                 RightUpperArmBoneName);
             Transform rightForearm = FindDeep(
                 registry.transform,
                 RightForearmBoneName);
+            Transform rightHand = FindDeep(
+                registry.transform,
+                RightHandBoneName);
             Transform leftClavicle = FindDeep(
                 registry.transform,
                 LeftClavicleBoneName);
@@ -413,8 +478,10 @@ namespace BarPromenade
                 HeadBoneName);
             if (rightSocket == null ||
                 mouth == null ||
+                rightClavicle == null ||
                 rightUpperArm == null ||
                 rightForearm == null ||
+                rightHand == null ||
                 leftClavicle == null ||
                 leftUpperArm == null ||
                 leftForearm == null ||
@@ -433,26 +500,27 @@ namespace BarPromenade
                 seed,
                 out Transform bottleRoot,
                 out Transform bottleMouth,
-                out float gripToLipDistance);
-            Quaternion rotation =
-                Quaternion.Euler(0f, anchor.YawDegrees, 0f);
-            Vector3 localSupportPoint =
-                anchor.Position +
-                (rotation * Vector3.forward * PubTableHandInset) +
-                (rotation * Vector3.left * 0.10f) +
-                (Vector3.up * (PubTableTopHeight + 0.015f));
-            Transform layoutRoot = registry.transform.parent;
-            Vector3 supportPoint = layoutRoot != null
-                ? layoutRoot.TransformPoint(localSupportPoint)
-                : localSupportPoint;
+                out float gripToLipDistance,
+                out float gripToBaseDistance);
+            ResolveSurfaceRestPoints(
+                anchor,
+                registry,
+                PubTableTopHeight,
+                PubTableBottleRestInset,
+                PubTableHandInset,
+                PubTableHandSideOffset,
+                out Vector3 bottleRestPoint,
+                out Vector3 supportPoint);
             BarPatronDrinkingArmPose pose =
                 registry.gameObject.AddComponent<
                     BarPatronDrinkingArmPose>();
             pose.InitializeTable(
                 new BarPatronDrinkTimeline(seed),
                 registry.transform,
+                rightClavicle,
                 rightUpperArm,
                 rightForearm,
+                rightHand,
                 rightSocket,
                 leftClavicle,
                 leftUpperArm,
@@ -465,6 +533,8 @@ namespace BarPromenade
                 bottleRoot,
                 bottleMouth,
                 gripToLipDistance,
+                gripToBaseDistance,
+                bottleRestPoint,
                 supportPoint);
             return pose;
         }
@@ -474,7 +544,8 @@ namespace BarPromenade
             int seed,
             out Transform bottleRoot,
             out Transform bottleMouth,
-            out float gripToLipDistance)
+            out float gripToLipDistance,
+            out float gripToBaseDistance)
         {
             BarDrinkPresentation drink =
                 BarDrinkPresentationCatalog.Get(
@@ -509,6 +580,44 @@ namespace BarPromenade
                 bottleHeight *
                 BottlePropScale *
                 (1f - BottleGripHeightShare);
+            gripToBaseDistance =
+                bottleHeight *
+                BottlePropScale *
+                BottleGripHeightShare;
+        }
+
+        private static void ResolveSurfaceRestPoints(
+            BarNpcAnchor anchor,
+            CityPedestrianAssetRegistry registry,
+            float surfaceHeight,
+            float bottleForwardInset,
+            float supportForwardInset,
+            float sideOffset,
+            out Vector3 bottleRestPoint,
+            out Vector3 supportPoint)
+        {
+            Quaternion rotation =
+                Quaternion.Euler(0f, anchor.YawDegrees, 0f);
+            Vector3 localCenter =
+                anchor.Position +
+                Vector3.up * surfaceHeight;
+            Vector3 localBottlePoint =
+                localCenter +
+                rotation * Vector3.forward * bottleForwardInset +
+                rotation * Vector3.right * sideOffset +
+                Vector3.up * BottleSurfaceClearance;
+            Vector3 localSupportPoint =
+                localCenter +
+                rotation * Vector3.forward * supportForwardInset +
+                rotation * Vector3.left * sideOffset +
+                Vector3.up * HandSurfaceClearance;
+            Transform layoutRoot = registry.transform.parent;
+            bottleRestPoint = layoutRoot != null
+                ? layoutRoot.TransformPoint(localBottlePoint)
+                : localBottlePoint;
+            supportPoint = layoutRoot != null
+                ? layoutRoot.TransformPoint(localSupportPoint)
+                : localSupportPoint;
         }
 
         private static AnimationClip LoadCafeDrinkClip()

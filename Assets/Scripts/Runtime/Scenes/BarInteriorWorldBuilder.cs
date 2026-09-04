@@ -32,6 +32,19 @@ namespace BarPromenade
         private const string CeilingFanName = "Slow Ceiling Fan";
         private const string JukeboxName = "Bar Jukebox";
         private const string PracticalGroup = "prefab:Practical";
+        private const string BartenderDuckboardName =
+            "Bartender Duckboard";
+        private const float LegacyDuckboardSegmentWidth = 1.35f;
+        private const float LegacyRightmostStoolX = 4.25f;
+        private const float SafeRightmostStoolX = 4.00f;
+
+        private static readonly float[] LegacyDuckboardExtensionOffsets =
+        {
+            -LegacyDuckboardSegmentWidth,
+            LegacyDuckboardSegmentWidth,
+            LegacyDuckboardSegmentWidth * 2f,
+            LegacyDuckboardSegmentWidth * 3f
+        };
 
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
@@ -106,13 +119,107 @@ namespace BarPromenade
             ApplySurfaces(registry, plan);
             BuildPracticals(room, registry, plan);
             Organise(room, registry, plan, fanPivot, jukeboxPivot);
+            RepositionLegacyRightmostStool(room);
+            ExtendLegacyBartenderDuckboard(room);
 
             //  After `Organise`, so the sets it destroyed leave no
             //  collision behind, and so the boxes hang off the room
             //  rather than off a model part.
             AddColliders(room, registry);
+            EnsureRegularStoolSeatColliders(room);
             Object.DestroyImmediate(instance);
             return room;
+        }
+
+        private static void RepositionLegacyRightmostStool(Transform room)
+        {
+            float offset = SafeRightmostStoolX -
+                           LegacyRightmostStoolX;
+            foreach (string partName in new[]
+                     {
+                         "Bar Stool 6",
+                         "Bar Stool 6 Leg"
+                     })
+            {
+                Transform part = room.Find(partName);
+                Renderer renderer = part != null
+                    ? part.GetComponent<Renderer>()
+                    : null;
+                if (renderer == null ||
+                    CalculateRendererBoundsInSpace(renderer, room)
+                        .center.x < 4.10f)
+                {
+                    continue;
+                }
+
+                part.localPosition += Vector3.right * offset;
+            }
+        }
+
+        /// <summary>
+        /// Version 3.2.1 of the authored room has one short duckboard under
+        /// the former single service point. Until the next asset regeneration
+        /// lands the generator's continuous board, repeat that authored slat
+        /// module under every reachable staff position. This is placement of
+        /// existing authored geometry, not a runtime primitive substitute.
+        /// </summary>
+        private static void ExtendLegacyBartenderDuckboard(Transform room)
+        {
+            Transform source = room.Find(BartenderDuckboardName);
+            Renderer renderer = source != null
+                ? source.GetComponent<Renderer>()
+                : null;
+            if (renderer == null ||
+                CalculateRendererBoundsInSpace(renderer, room)
+                    .size.x > 3f)
+            {
+                return;
+            }
+
+            for (int index = 0;
+                 index < LegacyDuckboardExtensionOffsets.Length;
+                 index++)
+            {
+                Transform copy = Object.Instantiate(
+                    source.gameObject,
+                    room).transform;
+                copy.name = $"{BartenderDuckboardName} Extension " +
+                            $"{index + 1:00}";
+                copy.localPosition = source.localPosition +
+                    Vector3.right *
+                    LegacyDuckboardExtensionOffsets[index];
+                copy.localRotation = source.localRotation;
+                copy.localScale = source.localScale;
+            }
+        }
+
+        private static Bounds CalculateRendererBoundsInSpace(
+            Renderer renderer,
+            Transform space)
+        {
+            Bounds source = renderer.localBounds;
+            Vector3 minimum = source.min;
+            Vector3 maximum = source.max;
+            Matrix4x4 toSpace = space.worldToLocalMatrix *
+                                renderer.transform.localToWorldMatrix;
+            Vector3 first = toSpace.MultiplyPoint3x4(minimum);
+            var result = new Bounds(first, Vector3.zero);
+            for (int x = 0; x < 2; x++)
+            {
+                for (int y = 0; y < 2; y++)
+                {
+                    for (int z = 0; z < 2; z++)
+                    {
+                        result.Encapsulate(toSpace.MultiplyPoint3x4(
+                            new Vector3(
+                                x == 0 ? minimum.x : maximum.x,
+                                y == 0 ? minimum.y : maximum.y,
+                                z == 0 ? minimum.z : maximum.z)));
+                    }
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -279,6 +386,57 @@ namespace BarPromenade
                         holder.AddComponent<BoxCollider>();
                     collider.size = spec.Size;
                 }
+            }
+        }
+
+        /// <summary>
+        /// The 3.2.1 room gave collision only to the former privileged hero
+        /// stool. Keep that asset compatible while matching the generator's
+        /// current contract: every visually identical counter stool has the
+        /// same thin solid seat disk. The interaction dock remains 0.64 m in
+        /// front of the disk, so these colliders do not obstruct positioning.
+        /// </summary>
+        private static void EnsureRegularStoolSeatColliders(Transform room)
+        {
+            Transform[] children = room.GetComponentsInChildren<Transform>(
+                includeInactive: true);
+            for (int index = 0; index < children.Length; index++)
+            {
+                Transform stool = children[index];
+                if (stool.parent != room ||
+                    !stool.name.StartsWith(
+                        "Bar Stool ",
+                        StringComparison.Ordinal) ||
+                    stool.name.EndsWith(
+                        " Leg",
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                string collisionName = stool.name + " Collision";
+                if (room.Find(collisionName) != null)
+                {
+                    continue;
+                }
+
+                Renderer renderer = stool.GetComponent<Renderer>();
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                Bounds bounds = CalculateRendererBoundsInSpace(
+                    renderer,
+                    room);
+                var holder = new GameObject(collisionName);
+                holder.transform.SetParent(room, false);
+                holder.transform.localPosition = bounds.center;
+                BoxCollider collider = holder.AddComponent<BoxCollider>();
+                collider.size = new Vector3(
+                    MountainRoadCafeWorldBuilder.StoolSeatDiameter,
+                    MountainRoadCafeWorldBuilder.StoolSeatThickness,
+                    MountainRoadCafeWorldBuilder.StoolSeatDiameter);
             }
         }
 

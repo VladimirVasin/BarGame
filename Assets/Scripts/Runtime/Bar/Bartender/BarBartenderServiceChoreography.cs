@@ -26,9 +26,12 @@ namespace BarPromenade
 
         public const float TouchWeight = 0.65f;
         public const float CarryWeight = 1f;
+        public const float CounterTravelSpeed = 2.25f;
 
         private BarBartenderPresentation presentation;
         private BarDrinkShopController shop;
+        private Vector3 homeLocalPosition;
+        private float counterTravelElapsedSeconds;
         private bool isInitialized;
 
         public bool IsInitialized => isInitialized;
@@ -52,6 +55,27 @@ namespace BarPromenade
                 ? shopController
                 : throw new ArgumentNullException(
                     nameof(shopController));
+            if (presentation.UsesOrdinaryRig)
+            {
+                BarBartenderAssetRegistry registry = presentation.Registry;
+                shop.ConfigureBottleReachChain(
+                    transform,
+                    registry.RightUpperArm,
+                    registry.RightForearm,
+                    registry.RightHand,
+                    registry.BottleGripAnchor);
+                BarBartenderBottleGripPostSolve postSolve =
+                    GetComponent<BarBartenderBottleGripPostSolve>();
+                if (postSolve == null)
+                {
+                    postSolve = gameObject.AddComponent<
+                        BarBartenderBottleGripPostSolve>();
+                }
+
+                postSolve.Initialize(registry, shop);
+            }
+
+            homeLocalPosition = transform.localPosition;
             isInitialized = true;
         }
 
@@ -62,12 +86,39 @@ namespace BarPromenade
                 return;
             }
 
+            bool movingAlongCounter = UpdateCounterPosition(Time.deltaTime);
+            if (shop.IsReturningCounterMenuHome)
+            {
+                ReleaseAll();
+                if (movingAlongCounter)
+                {
+                    presentation.ApplyCounterTravelPose(
+                        counterTravelElapsedSeconds,
+                        leftHandCarriesMenu: true);
+                }
+                else
+                {
+                    shop.CompleteCounterMenuReturnHome();
+                    presentation.ResetServicePose();
+                }
+
+                return;
+            }
+
             if (!shop.IsOpen ||
                 shop.Timeline == null ||
                 shop.ServiceView == null)
             {
                 ReleaseAll();
-                presentation.ResetServicePose();
+                if (movingAlongCounter)
+                {
+                    presentation.ApplyCounterTravelPose(
+                        counterTravelElapsedSeconds);
+                }
+                else
+                {
+                    presentation.ResetServicePose();
+                }
                 return;
             }
 
@@ -82,6 +133,14 @@ namespace BarPromenade
             if (presentation.UsesOrdinaryRig)
             {
                 ApplyOrdinaryService(frame, menu, menuHandled);
+                if (movingAlongCounter &&
+                    shop.MenuState ==
+                        BarPromenade.Runtime.World.CounterMenuState.Delivering)
+                {
+                    presentation.ApplyCounterTravelPose(
+                        counterTravelElapsedSeconds,
+                        leftHandCarriesMenu: true);
+                }
                 return;
             }
 
@@ -90,25 +149,61 @@ namespace BarPromenade
             ApplyVesselGuide(frame);
         }
 
+        private bool UpdateCounterPosition(float deltaTime)
+        {
+            Vector3 target = homeLocalPosition;
+            bool targetsCounter = shop != null &&
+                shop.HasCounterServiceTarget;
+            if (targetsCounter)
+            {
+                target = shop.ResolveActiveServiceLocalPosition(
+                    homeLocalPosition);
+            }
+
+            float step = Mathf.Max(0f, deltaTime) * CounterTravelSpeed;
+            Vector3 previous = transform.localPosition;
+            transform.localPosition = Vector3.MoveTowards(
+                previous,
+                target,
+                step);
+            bool moving = (transform.localPosition - target).sqrMagnitude >
+                          0.000001f;
+            bool movedThisFrame =
+                (transform.localPosition - previous).sqrMagnitude >
+                0.000001f;
+            if (moving || movedThisFrame)
+            {
+                counterTravelElapsedSeconds += Mathf.Max(0f, deltaTime);
+            }
+            else
+            {
+                counterTravelElapsedSeconds = 0f;
+            }
+
+            shop?.ReportCounterServerAtTarget(
+                targetsCounter && !moving && !movedThisFrame);
+
+            return moving || movedThisFrame;
+        }
+
         private void ApplyOrdinaryService(
             BarDrinkServiceFrame frame,
             BarDrinkMenuPresentation menu,
             bool menuHandled)
         {
-            BarDrinkBottleView bottle =
-                shop.ServiceView.SelectedBottle;
             bool bottleHandled =
                 frame.Phase == BarDrinkServicePhase.BottlePickup ||
                 frame.Phase == BarDrinkServicePhase.VesselPlacement ||
                 frame.Phase == BarDrinkServicePhase.Pouring ||
-                frame.Phase == BarDrinkServicePhase.BottleReturn;
+                frame.Phase == BarDrinkServicePhase.BottleReturn ||
+                frame.Phase == BarDrinkServicePhase.Drinking ||
+                frame.Phase == BarDrinkServicePhase.VesselReturn;
             presentation.SetChainTarget(
                 BarBartenderPresentation.OrdinaryBottleHandIndex,
-                bottle != null && bottleHandled
-                    ? bottle.transform.position +
-                      bottle.transform.up * 0.30f
+                shop.ServiceView.IsCarriedBottleVisible && bottleHandled
+                    ? shop.ActiveBottleHandTarget
                     : Vector3.zero,
-                bottle != null &&
+                shop.ServiceView.IsCarriedBottleVisible &&
                 bottleHandled &&
                 shop.Timeline.IsCommitted
                     ? CarryWeight
@@ -179,15 +274,15 @@ namespace BarPromenade
         /// </summary>
         private void ApplyBottleCarry(BarDrinkServiceFrame frame)
         {
-            BarDrinkBottleView bottle =
-                shop.ServiceView.SelectedBottle;
-            bool inFlight =
+            bool bottleHandled =
                 frame.Phase == BarDrinkServicePhase.BottlePickup ||
                 frame.Phase == BarDrinkServicePhase.VesselPlacement ||
                 frame.Phase == BarDrinkServicePhase.Pouring ||
-                frame.Phase == BarDrinkServicePhase.BottleReturn;
-            if (bottle == null ||
-                !inFlight ||
+                frame.Phase == BarDrinkServicePhase.BottleReturn ||
+                frame.Phase == BarDrinkServicePhase.Drinking ||
+                frame.Phase == BarDrinkServicePhase.VesselReturn;
+            if (!shop.ServiceView.IsCarriedBottleVisible ||
+                !bottleHandled ||
                 !shop.Timeline.IsCommitted)
             {
                 presentation.SetChainTarget(
@@ -197,8 +292,7 @@ namespace BarPromenade
 
             presentation.SetChainTarget(
                 BottleChainIndex,
-                bottle.transform.position +
-                bottle.transform.up * 0.30f,
+                shop.ActiveBottleHandTarget,
                 CarryWeight);
         }
 
@@ -238,6 +332,82 @@ namespace BarPromenade
             {
                 presentation.SetChainTarget(chain, Vector3.zero, 0f);
             }
+        }
+    }
+
+    /// <summary>
+    /// Runs after the ordinary presentation's CCD pass. Point IK cannot choose
+    /// wrist roll, so this final visual pass gives the anatomical right palm a
+    /// bottle-relative frame and then re-seats the carried copy on the same
+    /// socket. It owns no timeline state and never moves the shelf source.
+    /// </summary>
+    [DisallowMultipleComponent]
+    [DefaultExecutionOrder(325)]
+    internal sealed class BarBartenderBottleGripPostSolve : MonoBehaviour
+    {
+        private BarBartenderAssetRegistry registry;
+        private BarDrinkShopController shop;
+        private Quaternion bottleSocketRotationInHand;
+        private bool initialized;
+
+        public void Initialize(
+            BarBartenderAssetRegistry assetRegistry,
+            BarDrinkShopController shopController)
+        {
+            registry = assetRegistry != null
+                ? assetRegistry
+                : throw new ArgumentNullException(nameof(assetRegistry));
+            shop = shopController != null
+                ? shopController
+                : throw new ArgumentNullException(nameof(shopController));
+            bottleSocketRotationInHand = Quaternion.Inverse(
+                registry.RightHand.rotation) *
+                registry.RightBottleSocket.rotation;
+            initialized = true;
+        }
+
+        private void LateUpdate()
+        {
+            BarDrinkServiceView service = shop != null
+                ? shop.ServiceView
+                : null;
+            if (!initialized ||
+                !shop.IsServing ||
+                service == null ||
+                !service.IsCarriedBottleVisible)
+            {
+                return;
+            }
+
+            Vector3 bottleUp =
+                shop.ActiveBottleWorldRotation * Vector3.up;
+            Vector3 radial = Vector3.ProjectOnPlane(
+                shop.ActiveBottleHandRadial,
+                bottleUp);
+            if (radial.sqrMagnitude < 0.000001f)
+            {
+                radial = Vector3.ProjectOnPlane(
+                    transform.right,
+                    bottleUp);
+            }
+
+            radial.Normalize();
+            Vector3 socketForward = Vector3.Cross(radial, bottleUp);
+            if (socketForward.sqrMagnitude < 0.000001f)
+            {
+                return;
+            }
+
+            Quaternion socketRotation = Quaternion.LookRotation(
+                socketForward.normalized,
+                -bottleUp.normalized);
+            registry.RightHand.rotation =
+                socketRotation *
+                Quaternion.Inverse(bottleSocketRotationInHand);
+            service.AlignCarriedBottleToCarrier(
+                registry.BottleGripAnchor,
+                shop.ActiveBottleWorldRotation,
+                registry.RightUpperArm.position);
         }
     }
 }

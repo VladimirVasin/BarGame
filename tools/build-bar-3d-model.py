@@ -53,7 +53,7 @@ import interior_kit as kit  # noqa: E402  (after the sys.path fix)
 import bar_parts as bp  # noqa: E402
 import bar_exterior as exterior  # noqa: E402
 
-INTERIOR_GENERATOR_VERSION = "3.2.1"
+INTERIOR_GENERATOR_VERSION = "3.2.2"
 DESIGN_ID = "bar_interior_v3"
 DISPLAY_NAME = "Bar Promenade Bar Interior"
 
@@ -77,9 +77,10 @@ COUNTER_SURFACE_Y = (
     COUNTER_POS[1] + COUNTER_SIZE[1] * 0.5 + 0.16)
 HERO_SEAT = (-1.15, 0.8175, 4.53)
 HERO_APPROACH = (-1.15, 0.0, 3.35)
-HERO_STAND = (-1.15, 0.0, 4.02)
+HERO_STAND = (-1.15, 0.0, 3.89)
 BARTENDER_POSITION = (-0.55, 0.0, 6.50)
-BARTENDER_DUCKBOARD_SIZE = (1.35, 0.42, 0.85)
+BARTENDER_DUCKBOARD_CENTER_X = 0.80
+BARTENDER_DUCKBOARD_SIZE = (6.75, 0.42, 0.85)
 ACTIVITY_STATION = (5.1, 0.9, -1.55)
 
 #: Mountain Road Cafe stool silhouette, dimensions and palette. Every Bar
@@ -735,7 +736,7 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
     # The regular stools leave the service bay clear. The hero stool occupies
     # that opening but otherwise uses the exact same cafe geometry.
     stool_z = cz - sz * 0.5 - 0.72
-    for index, x in enumerate((-4.25, -2.55, -0.85, 0.85, 2.55, 4.25)):
+    for index, x in enumerate((-4.25, -2.55, -0.85, 0.85, 2.55, 4.00)):
         dx = x - COUNTER_STATION[0]
         dz = stool_z - COUNTER_STATION[2]
         if dx * dx + dz * dz < 1.35 * 1.35:
@@ -752,7 +753,13 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
         add_part(
             asset, materials, name, seat,
             "stool_seat", bp.rgb(*CAFE_STOOL_SEAT_RGB),
-            sheet="PolishedWood")
+            sheet="PolishedWood",
+            colliders=[((x,
+                         HERO_SEAT[1] - CAFE_STOOL_SEAT_HALF_HEIGHT,
+                         stool_z),
+                        (CAFE_STOOL_SEAT_DIAMETER,
+                         CAFE_STOOL_SEAT_HALF_HEIGHT * 2.0,
+                         CAFE_STOOL_SEAT_DIAMETER))])
 
     hero_x, hero_top, hero_z = HERO_SEAT
     hero_pedestal, hero_foot, hero_seat = cafe_stool_geometry(
@@ -779,15 +786,18 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
                      CAFE_STOOL_SEAT_HALF_HEIGHT * 2.0,
                      CAFE_STOOL_SEAT_DIAMETER))])
 
-    duck_x, _, duck_z = BARTENDER_POSITION
+    duck_x = BARTENDER_DUCKBOARD_CENTER_X
+    duck_z = BARTENDER_POSITION[2]
     duck_sx, duck_sy, duck_sz = BARTENDER_DUCKBOARD_SIZE
+    slat_count = max(2, round((duck_sx - 0.30) / 0.265) + 1)
+    slat_step = (duck_sx - 0.30) / (slat_count - 1)
     slats = [
         bp.u_box(
-            (duck_x - duck_sx * 0.5 + 0.15 + index * 0.265,
+            (duck_x - duck_sx * 0.5 + 0.15 + index * slat_step,
              duck_sy - 0.055,
              duck_z),
             (0.23, 0.11, duck_sz), 0.01)
-        for index in range(5)
+        for index in range(slat_count)
     ]
     slats += [
         bp.u_box(
@@ -801,25 +811,6 @@ def build_counter(asset: AssetBuild, materials: dict) -> None:
         sheet="WornPlank",
         colliders=[((duck_x, duck_sy * 0.5, duck_z),
                     BARTENDER_DUCKBOARD_SIZE)])
-
-    add_part(
-        asset, materials, "Drink Order Sign Frame",
-        bp.u_box((COUNTER_STATION[0], COUNTER_SURFACE_Y + 0.01, cz - 0.58),
-                 (0.88, 0.44, 0.10), 0.018),
-        "drink_order_marker_frame", bp.ident("DarkWoodTint"),
-        sheet="DarkWood", shadows=False)
-    order_mark = kit.merge_all([
-        bp.u_plate((COUNTER_STATION[0], COUNTER_SURFACE_Y + 0.01, cz - 0.637),
-                   (0.66, 0.26, 0.025)),
-        bp.u_box((COUNTER_STATION[0] + 0.22,
-                  COUNTER_SURFACE_Y + 0.01,
-                  cz - 0.657),
-                 (0.12, 0.13, 0.025), 0.004),
-    ])
-    add_part(
-        asset, materials, "Drink Order Sign", order_mark,
-        "drink_order_marker", bp.ident("SignGlowColor", 0.72),
-        emissive=True, shadows=False)
 
     for index in range(5):
         x = -2.2 + index * 1.1

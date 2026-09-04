@@ -289,6 +289,12 @@ namespace BarPromenade
             return true;
         }
 
+        public bool TryResetHeroMenuRoundTrip()
+        {
+            return IsInitialized &&
+                   timeline.TryResetHeroMenuRoundTrip();
+        }
+
         /// <summary>
         /// Queues the attendant to collect the already placed physical menu.
         /// It shares the service clock with the pair refills, so no second

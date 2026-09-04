@@ -195,7 +195,8 @@ namespace BarPromenade
             Transform entryGroundAnchor,
             Transform exitGroundAnchor = null,
             Transform cameraAnchor = null,
-            Transform cameraLookAtAnchor = null)
+            Transform cameraLookAtAnchor = null,
+            string seatId = null)
         {
             if (serviceSpace == null)
             {
@@ -230,7 +231,8 @@ namespace BarPromenade
                 entry,
                 exit,
                 camera,
-                cameraLookAt);
+                cameraLookAt,
+                seatId);
         }
 
         /// <summary>
@@ -245,7 +247,8 @@ namespace BarPromenade
             Pose? authoredEntryGroundPose,
             Pose? authoredExitGroundPose,
             Pose? authoredCameraPose,
-            Vector3? authoredCameraLookAt)
+            Vector3? authoredCameraLookAt,
+            string seatId = null)
         {
             if (serviceSpace == null)
             {
@@ -348,7 +351,9 @@ namespace BarPromenade
             }
 
             return new CounterSeatPlan(
-                servicePlan.BarId + "-counter-seat",
+                string.IsNullOrWhiteSpace(seatId)
+                    ? servicePlan.BarId + "-counter-seat"
+                    : seatId,
                 seat.position,
                 entry,
                 actionHip,
@@ -504,6 +509,125 @@ namespace BarPromenade
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+    }
+
+    public readonly struct BarCounterSeatDescriptor
+    {
+        public BarCounterSeatDescriptor(
+            string stableId,
+            Vector3 seatTopLocalPosition,
+            Vector3 approachGroundLocalPosition,
+            Vector3 entryGroundLocalPosition,
+            Vector3 triggerLocalPosition,
+            Vector3 triggerSize,
+            Vector3 serviceLocalOffset,
+            bool mirrorServiceHorizontally)
+        {
+            StableId = stableId ?? string.Empty;
+            SeatTopLocalPosition = seatTopLocalPosition;
+            ApproachGroundLocalPosition = approachGroundLocalPosition;
+            EntryGroundLocalPosition = entryGroundLocalPosition;
+            TriggerLocalPosition = triggerLocalPosition;
+            TriggerSize = triggerSize;
+            ServiceLocalOffset = serviceLocalOffset;
+            MirrorServiceHorizontally = mirrorServiceHorizontally;
+        }
+
+        public string StableId { get; }
+        public Vector3 SeatTopLocalPosition { get; }
+        public Vector3 ApproachGroundLocalPosition { get; }
+        public Vector3 EntryGroundLocalPosition { get; }
+        public Vector3 TriggerLocalPosition { get; }
+        public Vector3 TriggerSize { get; }
+        public Vector3 ServiceLocalOffset { get; }
+        public bool MirrorServiceHorizontally { get; }
+    }
+
+    /// <summary>
+    /// Pure per-stool authoring for the bar counter. Occupied stools remain
+    /// scenery; every unoccupied stool receives its own safe approach, exit,
+    /// first-person camera translation and service-dock offset.
+    /// </summary>
+    public static class BarCounterSeatPlanner
+    {
+        public const float StoolZ = 4.53f;
+        public const float EntryZ = 3.89f;
+        public const float ApproachZ = 3.30f;
+        public const float RightReturnSafeSeatX = 4.00f;
+
+        private static readonly float[] StoolXPositions =
+        {
+            -1.15f,
+            -4.25f,
+            -2.55f,
+            0.85f,
+            2.55f,
+            RightReturnSafeSeatX
+        };
+
+        public static IReadOnlyList<BarCounterSeatDescriptor>
+            CreateAvailable(BarInteriorLayoutPlan layout)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            var available = new List<BarCounterSeatDescriptor>(4);
+            for (int index = 0; index < StoolXPositions.Length; index++)
+            {
+                float stoolX = StoolXPositions[index];
+                if (IsOccupied(layout.NpcAnchors, stoolX))
+                {
+                    continue;
+                }
+
+                float entryX = stoolX;
+                float triggerZ = (ApproachZ + EntryZ) * 0.5f;
+                available.Add(new BarCounterSeatDescriptor(
+                    $"{layout.BarId}-counter-seat-{index + 1:00}",
+                    new Vector3(
+                        stoolX,
+                        BarPatronWorldBuilder.CounterSeatHeight,
+                        StoolZ),
+                    new Vector3(entryX, 0f, ApproachZ),
+                    new Vector3(entryX, 0f, EntryZ),
+                    new Vector3(entryX, 0.9f, triggerZ),
+                    new Vector3(0.95f, 1.8f, 1.20f),
+                    new Vector3(
+                        stoolX - layout.CounterStationPosition.x,
+                        0f,
+                        0f),
+                    Mathf.Approximately(
+                        stoolX,
+                        RightReturnSafeSeatX)));
+            }
+
+            return available.AsReadOnly();
+        }
+
+        private static bool IsOccupied(
+            IReadOnlyList<BarNpcAnchor> npcAnchors,
+            float stoolX)
+        {
+            if (npcAnchors == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < npcAnchors.Count; index++)
+            {
+                BarNpcAnchor anchor = npcAnchors[index];
+                if (anchor.Role == BarNpcRole.CounterPatron &&
+                    Mathf.Abs(anchor.Position.x - stoolX) <= 0.30f &&
+                    Mathf.Abs(anchor.Position.z - StoolZ) <= 0.30f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

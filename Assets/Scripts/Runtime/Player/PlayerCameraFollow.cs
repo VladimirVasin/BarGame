@@ -59,9 +59,20 @@ namespace BarPromenade
         [SerializeField, Min(0f)] private float collisionPadding = 0.12f;
         [SerializeField] private LayerMask collisionMask = ~0;
 
-        private const float FixedReactionScale = 0.25f;
+        [Header("Drunk Dolly Zoom")]
+        [SerializeField, Range(60f, 120f)] private float dollyZoomWideFieldOfView = 100f;
+        [SerializeField, Range(20f, 50f)] private float dollyZoomNarrowFieldOfView = 34f;
+        [SerializeField, Min(0f)] private float dollyZoomBlendTime = 0.35f;
+        [SerializeField, Min(0f)] private float dollyZoomReleaseBlendTime = 0.45f;
+        [SerializeField, Min(0f)] private float dollyZoomClearanceRecoveryTime = 0.32f;
 
-        private readonly RaycastHit[] collisionHits = new RaycastHit[12];
+        private const float FixedReactionScale = 0.25f;
+        private const int DollyZoomSeedSalt = 0x5A17;
+        private const float DollyZoomNarrowRoomFactor = 1.35f;
+        private const float DollyZoomReleaseToleranceDegrees = 1.5f;
+        private const float MinimumDollyDistance = 0.02f;
+
+        private readonly RaycastHit[] collisionHits = new RaycastHit[24];
         private Camera controlledCamera;
         private Transform followTarget;
         private bool isInterior;
@@ -91,6 +102,18 @@ namespace BarPromenade
         private float balanceLean;
         private float fallDirection;
         private float fallAmount;
+        private IntoxicationDollyZoomModel dollyZoom;
+        private float dollyWeight;
+        private float releaseExponent;
+        private float releaseWeight;
+        private float releaseVelocity;
+        private float lastFreeDollyFieldOfView;
+        private float dollyClearance;
+        private float dollySmoothedClearance;
+        private float dollyClearanceVelocity;
+        private float dollyDistance;
+        private float dollyFieldOfView;
+        private float dollyAppliedExponent;
 
         public bool OrbitInputEnabled { get; private set; } = true;
         public bool CinematicMotionEnabled { get; private set; } = true;
@@ -107,6 +130,19 @@ namespace BarPromenade
         public float FollowFieldOfView => isInterior
             ? interiorFieldOfView
             : exteriorFieldOfView;
+
+        /// <summary>
+        /// The drunk dolly zoom's applied reach this frame, -1..1: positive
+        /// is the wide lens with the camera pushed in, negative the narrow
+        /// lens with the camera pulled back. Zero whenever a fixed pose
+        /// owns the camera.
+        /// </summary>
+        public float DollyZoomExponent => dollyAppliedExponent;
+        public IntoxicationDollyZoomPhase DollyZoomPhase =>
+            dollyZoom != null
+                ? dollyZoom.Phase
+                : IntoxicationDollyZoomPhase.Rest;
+        public float DollyZoomFieldOfView => dollyFieldOfView;
         public float CurrentOrbitPitch => currentPitch;
         public float TargetOrbitPitch => targetPitch;
         public float MinimumOrbitPitch => Mathf.Min(
@@ -131,6 +167,22 @@ namespace BarPromenade
             targetPitch = ClampOrbitPitch(
                 isInterior ? interiorPitch : exteriorPitch);
             currentPitch = targetPitch;
+            EnsureDollyZoom();
+            dollyZoom.Reset(IntoxicationDollyZoomModel.InitialRestSeconds);
+            dollyWeight = GetDollyZoomTargetWeight();
+            releaseExponent = 0f;
+            releaseWeight = 0f;
+            releaseVelocity = 0f;
+            dollyAppliedExponent = 0f;
+            float idealDistance = isInterior
+                ? interiorDistance
+                : exteriorDistance;
+            dollyClearance = idealDistance * GetDollyNarrowScale();
+            dollySmoothedClearance = dollyClearance;
+            dollyClearanceVelocity = 0f;
+            dollyDistance = idealDistance;
+            dollyFieldOfView = FollowFieldOfView;
+            lastFreeDollyFieldOfView = dollyFieldOfView;
             ConfigureCamera();
             Snap();
         }
@@ -164,6 +216,17 @@ namespace BarPromenade
             fallAmount = Mathf.Clamp01(normalizedFallAmount);
         }
 
+        /// <summary>
+        /// Test seam: restarts the drunk dolly zoom's random stream from
+        /// rest. Call it right after <see cref="Initialize"/>; mid-cycle
+        /// it cuts the lens back to its base.
+        /// </summary>
+        public void ReseedDollyZoom(int seed)
+        {
+            dollyZoom = new IntoxicationDollyZoomModel(seed);
+            dollyAppliedExponent = 0f;
+        }
+
         public void SetFixedPose(
             Vector3 position,
             Quaternion rotation,
@@ -192,6 +255,23 @@ namespace BarPromenade
                     "Fixed camera field of view must be between 20 and 100 degrees.");
             }
 
+            if (!fixedPoseActive)
+            {
+                // Handing the camera to an owner: remember the lens the
+                // drunk dolly zoom was on so the release can tell a pose
+                // that returns to it from an authored shot, and put the
+                // breath back to rest — it is silent for as long as the
+                // owner holds the camera.
+                lastFreeDollyFieldOfView = dollyFieldOfView;
+                EnsureDollyZoom();
+                dollyZoom.Reset(
+                    IntoxicationDollyZoomModel.InitialRestSeconds);
+                releaseExponent = 0f;
+                releaseWeight = 0f;
+                releaseVelocity = 0f;
+                dollyAppliedExponent = 0f;
+            }
+
             fixedBasePosition = position;
             fixedBaseRotation = Normalize(rotation);
             fixedBaseFieldOfView = fieldOfView;
@@ -211,6 +291,28 @@ namespace BarPromenade
             }
 
             fixedPoseActive = false;
+
+            // An owner that blended back to the very lens it took from the
+            // drunk camera (the bar shop returns to the live pose it
+            // captured) is absorbed: the dolly layer starts on that lens
+            // and eases it to base. An authored shot lens that merely
+            // differs from base cuts exactly as it always did.
+            releaseVelocity = 0f;
+            if (Mathf.Abs(
+                    fixedBaseFieldOfView - lastFreeDollyFieldOfView) <=
+                DollyZoomReleaseToleranceDegrees &&
+                Mathf.Abs(fixedBaseFieldOfView - FollowFieldOfView) > 0.01f)
+            {
+                releaseExponent = GetDollyExponentForFieldOfView(
+                    fixedBaseFieldOfView);
+                releaseWeight = 1f;
+            }
+            else
+            {
+                releaseExponent = 0f;
+                releaseWeight = 0f;
+            }
+
             Snap();
         }
 
@@ -364,6 +466,9 @@ namespace BarPromenade
             currentDistance = GetCollisionAdjustedDistance(
                 currentFocusPoint,
                 rotation);
+            dollySmoothedClearance = dollyClearance;
+            dollyClearanceVelocity = 0f;
+            ResolveDollyZoom();
             ApplyPose(currentFocusPoint, rotation);
             ConfigureCamera();
         }
@@ -448,6 +553,8 @@ namespace BarPromenade
                         deltaTime);
             }
 
+            AdvanceDollyZoom(deltaTime);
+            ResolveDollyZoom();
             ApplyPose(focusPoint, desiredRotation);
             ConfigureCamera();
         }
@@ -496,7 +603,7 @@ namespace BarPromenade
         private void ApplyPose(Vector3 focusPoint, Quaternion rotation)
         {
             controlledCamera.transform.SetPositionAndRotation(
-                focusPoint - rotation * Vector3.forward * currentDistance,
+                focusPoint - rotation * Vector3.forward * dollyDistance,
                 rotation);
         }
 
@@ -700,16 +807,21 @@ namespace BarPromenade
             Quaternion rotation)
         {
             float idealDistance = isInterior ? interiorDistance : exteriorDistance;
+            // The sweep reaches as far as a full pull-out would, so the
+            // one cast that shortens the ordinary arm also measures the
+            // room the drunk dolly zoom has behind the camera.
+            float reach = idealDistance * GetDollyNarrowScale();
             Vector3 direction = -(rotation * Vector3.forward);
             int hitCount = Physics.SphereCastNonAlloc(
                 focusPoint,
                 collisionRadius,
                 direction,
                 collisionHits,
-                idealDistance,
+                reach,
                 collisionMask,
                 QueryTriggerInteraction.Ignore);
             float allowedDistance = idealDistance;
+            float clearance = reach;
 
             for (int index = 0; index < hitCount; index++)
             {
@@ -719,11 +831,14 @@ namespace BarPromenade
                     continue;
                 }
 
-                allowedDistance = Mathf.Min(
-                    allowedDistance,
-                    Mathf.Max(0.01f, hit.distance - collisionPadding));
+                float limit = Mathf.Max(
+                    0.01f,
+                    hit.distance - collisionPadding);
+                allowedDistance = Mathf.Min(allowedDistance, limit);
+                clearance = Mathf.Min(clearance, limit);
             }
 
+            dollyClearance = clearance;
             return allowedDistance;
         }
 
@@ -758,9 +873,195 @@ namespace BarPromenade
             controlledCamera.orthographic = false;
             controlledCamera.fieldOfView = fixedPoseActive
                 ? fixedBaseFieldOfView
-                : isInterior
-                    ? interiorFieldOfView
-                    : exteriorFieldOfView;
+                : dollyFieldOfView;
+        }
+
+        private void EnsureDollyZoom()
+        {
+            if (dollyZoom == null)
+            {
+                dollyZoom = new IntoxicationDollyZoomModel(
+                    GameSessionState.CitySeed ^ DollyZoomSeedSalt);
+            }
+        }
+
+        private float GetDollyZoomTargetWeight()
+        {
+            return CinematicMotionEnabled &&
+                   GraphicsEffectsSettings.IntoxicationLensFxEnabled
+                ? 1f
+                : 0f;
+        }
+
+        private static float HalfAngleTangent(float fieldOfViewDegrees)
+        {
+            return Mathf.Tan(fieldOfViewDegrees * 0.5f * Mathf.Deg2Rad);
+        }
+
+        /// <summary>How far past the ideal arm a full pull-out reaches.</summary>
+        private float GetDollyNarrowScale()
+        {
+            return HalfAngleTangent(FollowFieldOfView) /
+                   HalfAngleTangent(dollyZoomNarrowFieldOfView);
+        }
+
+        /// <summary>
+        /// The signed reach at which the dolly layer would put the lens
+        /// on <paramref name="fieldOfView"/>; the inverse of the mapping
+        /// in <see cref="ResolveDollyZoom"/>, clamped to the full swing.
+        /// </summary>
+        private float GetDollyExponentForFieldOfView(float fieldOfView)
+        {
+            float baseTangent = HalfAngleTangent(FollowFieldOfView);
+            float tangent = HalfAngleTangent(
+                Mathf.Clamp(fieldOfView, 1f, 179f));
+            if (tangent > baseTangent)
+            {
+                float wideTangent =
+                    HalfAngleTangent(dollyZoomWideFieldOfView);
+                return wideTangent <= baseTangent
+                    ? 0f
+                    : Mathf.Clamp01(
+                        Mathf.Log(tangent / baseTangent) /
+                        Mathf.Log(wideTangent / baseTangent));
+            }
+
+            float narrowTangent =
+                HalfAngleTangent(dollyZoomNarrowFieldOfView);
+            return narrowTangent >= baseTangent
+                ? 0f
+                : -Mathf.Clamp01(
+                    Mathf.Log(baseTangent / tangent) /
+                    Mathf.Log(baseTangent / narrowTangent));
+        }
+
+        private void AdvanceDollyZoom(float deltaTime)
+        {
+            EnsureDollyZoom();
+            IntoxicationProfile intoxication =
+                IntoxicationStageRules.Evaluate(
+                    Mathf.RoundToInt(
+                        currentIntoxication *
+                        IntoxicationStageRules.MaximumLevel));
+            float pace = Mathf.InverseLerp(
+                IntoxicationStageRules.BalanceThreshold /
+                (float)IntoxicationStageRules.MaximumLevel,
+                1f,
+                currentIntoxication);
+            bool narrowAllowed =
+                dollyClearance >=
+                currentDistance * DollyZoomNarrowRoomFactor;
+            dollyZoom.Advance(
+                deltaTime,
+                intoxication.DollyZoomStrength,
+                pace,
+                narrowAllowed);
+
+            float targetWeight = GetDollyZoomTargetWeight();
+            dollyWeight = dollyZoomBlendTime <= 0f
+                ? targetWeight
+                : Mathf.MoveTowards(
+                    dollyWeight,
+                    targetWeight,
+                    deltaTime / dollyZoomBlendTime);
+
+            if (releaseWeight > 0f)
+            {
+                releaseWeight = dollyZoomReleaseBlendTime <= 0f
+                    ? 0f
+                    : Mathf.SmoothDamp(
+                        releaseWeight,
+                        0f,
+                        ref releaseVelocity,
+                        dollyZoomReleaseBlendTime,
+                        Mathf.Infinity,
+                        deltaTime);
+                if (releaseWeight < 0.002f)
+                {
+                    releaseWeight = 0f;
+                    releaseVelocity = 0f;
+                }
+            }
+
+            // The room behind the camera closes at once and opens again
+            // with the ordinary arm's damping, so a pillar leaving the
+            // sweep does not fling a pulled-back camera.
+            if (dollyClearance <= dollySmoothedClearance)
+            {
+                dollySmoothedClearance = dollyClearance;
+                dollyClearanceVelocity = 0f;
+            }
+            else
+            {
+                dollySmoothedClearance =
+                    dollyZoomClearanceRecoveryTime <= 0f
+                        ? dollyClearance
+                        : Mathf.SmoothDamp(
+                            dollySmoothedClearance,
+                            dollyClearance,
+                            ref dollyClearanceVelocity,
+                            dollyZoomClearanceRecoveryTime,
+                            Mathf.Infinity,
+                            deltaTime);
+            }
+        }
+
+        /// <summary>
+        /// Maps the breath onto the arm and the lens together. The hero's
+        /// apparent size is distance × tan(fov/2), so the arm is scaled by
+        /// the inverse of the lens change; the reference is the
+        /// collision-resolved ordinary arm, so whatever framing a wall
+        /// forced is what the zoom preserves. A pull-out stops at the
+        /// room behind the camera and the lens follows the arm it got.
+        /// Ticks nothing: two calls in one frame agree.
+        /// </summary>
+        private void ResolveDollyZoom()
+        {
+            float baseFieldOfView = FollowFieldOfView;
+            float exponent = Mathf.Clamp(
+                (dollyZoom != null ? dollyZoom.Exponent : 0f) *
+                dollyWeight +
+                releaseExponent * releaseWeight,
+                -1f,
+                1f);
+            dollyAppliedExponent = exponent;
+            if (exponent == 0f)
+            {
+                // At rest the layer is bit-exactly the ordinary camera:
+                // the arm is the arm, not the arm through a tangent and
+                // back, so a sober pose matches ResolveFollowPose to the
+                // last ulp.
+                dollyDistance = currentDistance;
+                dollyFieldOfView = baseFieldOfView;
+                return;
+            }
+
+            float baseTangent = HalfAngleTangent(baseFieldOfView);
+            float targetTangent = exponent >= 0f
+                ? baseTangent *
+                  Mathf.Pow(
+                      HalfAngleTangent(dollyZoomWideFieldOfView) /
+                      baseTangent,
+                      exponent)
+                : baseTangent *
+                  Mathf.Pow(
+                      HalfAngleTangent(dollyZoomNarrowFieldOfView) /
+                      baseTangent,
+                      -exponent);
+            float idealDistance =
+                currentDistance * baseTangent / targetTangent;
+            float room = Mathf.Min(
+                dollyClearance,
+                Mathf.Max(dollySmoothedClearance, currentDistance));
+            dollyDistance = Mathf.Max(
+                MinimumDollyDistance,
+                Mathf.Min(idealDistance, room));
+            dollyFieldOfView = Mathf.Clamp(
+                2f *
+                Mathf.Atan(currentDistance * baseTangent / dollyDistance) *
+                Mathf.Rad2Deg,
+                dollyZoomNarrowFieldOfView,
+                dollyZoomWideFieldOfView);
         }
 
         private static bool IsFinite(Vector3 value)

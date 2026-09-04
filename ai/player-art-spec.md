@@ -159,7 +159,23 @@ fallback and is not deleted.
   a lowered pelvis while both boots are held to the ground by the late leg
   layer, so they bend anatomically and asymmetrically on uneven ground. The
   balance model's lean, arm reaction, crouch, recovery steps and wall hand land
-  on the same layer additively; every ordinary clip therefore keeps its
+  on the same layer additively. The arms swing in the ACTOR's frame, never the
+  bone's: abduction is a turn about the actor's planar forward through the
+  shoulder, the raise to the front a turn about the actor's right, and the
+  raise goes on FIRST so the hands keep their forward reach at any spread
+  (raised after the abduction it degenerates into a roll of the upper arm
+  once the arm is out wide). Measured on
+  the V2 rig, no local axis of `upper_arm.L/R` is the abduction axis, and a
+  turn about local forward sent both hands backward into the ribs — the drunk
+  hugged himself instead of balancing. Blind drunk he now holds them out
+  tightrope fashion (`40°` times the SQUARE of the status level, so a light
+  buzz barely shows; up to `45°` more from the model's reaction; `0.3` of that
+  as a forward raise; the arm away from the lean higher by `0.8°` per degree
+  of roll; a `±6°` forward/back hunt from the ambient stagger; clamped to
+  `0..85°` so no arm rises above the shoulder line); the arm reaching for a
+  wall gives its spread back as the reach takes hold, both arms fade in with
+  the layer's `0.2 s` blend after a clip, and every term is exactly zero
+  sober. Every ordinary clip keeps its
   authored feet and the layer only corrects them to the probed surface (heel
   and toe rays under each boot, the lower boot leading the pelvis, the clip's
   own lift preserved relative to the other boot, run flight released with the

@@ -369,6 +369,18 @@
       "value": "E — открыть барное меню"
     },
     {
+      "key": "interaction.sit_at_counter",
+      "value": "E — сесть за стойку"
+    },
+    {
+      "key": "interaction.close_counter_menu",
+      "value": "E — закрыть меню"
+    },
+    {
+      "key": "interaction.open_counter_menu",
+      "value": "E — открыть меню"
+    },
+    {
       "key": "interaction.talk_cashier",
       "value": "E — заговорить с кассиром"
     },

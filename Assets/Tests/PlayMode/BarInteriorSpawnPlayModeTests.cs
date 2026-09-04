@@ -160,19 +160,78 @@ namespace BarPromenade.Tests.PlayMode
 
             BarCounterStation station = bar.CounterStation;
             Assert.That(station, Is.Not.Null);
+            Assert.That(bar.CounterStations, Has.Count.EqualTo(4));
             Assert.That(station.Seat, Is.Not.Null);
             Assert.That(station.SeatView, Is.Not.Null);
             CounterSeatPlan seatPlan = station.Seat.Plan;
             Assert.That(seatPlan, Is.Not.Null);
 
-            bar.Player.Motor.Teleport(seatPlan.EntryPose.RootPosition);
+            for (int index = 0; index < bar.CounterStations.Count; index++)
+            {
+                BarCounterStation available = bar.CounterStations[index];
+                Assert.That(
+                    available.Seat.Plan.ApproachWaypointCount,
+                    Is.GreaterThan(0));
+                bar.Player.Motor.Teleport(
+                    available.Seat.Plan.ApproachWaypoints[0]);
+                bar.Player.GameObject.transform.rotation =
+                    available.Seat.Plan.EntryPose.RootRotation;
+                Physics.SyncTransforms();
+                float focusDeadline = Time.realtimeSinceStartup + 1f;
+                while (Time.realtimeSinceStartup < focusDeadline &&
+                       !ReferenceEquals(
+                           bar.Player.Interactor.ActiveInteractable,
+                           available))
+                {
+                    yield return null;
+                }
+
+                Assert.That(
+                    bar.Player.Interactor.ActiveInteractable,
+                    Is.SameAs(available),
+                    $"free counter stool {index + 1} cannot be targeted " +
+                    "from its authored approach lane");
+                available.Interact(bar.Player.Interactor);
+
+                PlayerAnimatedInteractionController interaction =
+                    available.Seat.Controller;
+                float positioningDeadline =
+                    Time.realtimeSinceStartup + 2f;
+                while (Time.realtimeSinceStartup < positioningDeadline &&
+                       interaction.Phase ==
+                           PlayerAnimatedInteractionPhase.Positioning)
+                {
+                    yield return null;
+                }
+
+                Assert.That(
+                    interaction.Phase,
+                    Is.EqualTo(PlayerAnimatedInteractionPhase.Entering),
+                    $"free counter stool {index + 1} aborted before its " +
+                    "seating animation");
+                Assert.That(
+                    bar.DrinkShop.IsOpen,
+                    Is.False,
+                    "the menu must wait until the hero is actually seated");
+                Assert.That(available.Seat.Cancel(), Is.True);
+                yield return null;
+                Assert.That(
+                    interaction.Phase,
+                    Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+                Assert.That(bar.DrinkShop.IsOpen, Is.False);
+            }
+
+            Vector3 reportedBlockedPosition = bar.Room.TransformPoint(
+                new Vector3(-1.15f, 0f, 3.93f));
+            reportedBlockedPosition.y = seatPlan.EntryPose.RootPosition.y;
+            bar.Player.Motor.Teleport(reportedBlockedPosition);
             bar.Player.GameObject.transform.rotation =
                 seatPlan.EntryPose.RootRotation;
             Physics.SyncTransforms();
             Assert.That(
                 station.CanInteract(bar.Player.Interactor),
                 Is.True,
-                "the authored entry pose cannot start the counter seat");
+                "the reported blocked position cannot start the counter seat");
             station.Interact(bar.Player.Interactor);
 
             float deadline = Time.realtimeSinceStartup + 8f;
@@ -186,6 +245,10 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(station.Seat.IsSeated, Is.True);
+            Assert.That(
+                bar.Player.Motor.InteractionPoseMoveStalled,
+                Is.False,
+                "the safe entry dock still collides with the stool");
             Assert.That(
                 bar.DrinkShop.MenuState,
                 Is.EqualTo(

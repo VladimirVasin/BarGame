@@ -388,6 +388,18 @@ namespace BarPromenade
             return true;
         }
 
+        public bool TryResetHeroMenuRoundTrip()
+        {
+            if (!heroMenuRetrieved || heroMenuRequested ||
+                heroMenuPlaced || heroMenuRetrievalRequested)
+            {
+                return false;
+            }
+
+            heroMenuRetrieved = false;
+            return true;
+        }
+
         /// <summary>
         /// Queues the reverse handoff after the booklet is on the counter.
         /// Active drink, delivery and return phases finish first; the same

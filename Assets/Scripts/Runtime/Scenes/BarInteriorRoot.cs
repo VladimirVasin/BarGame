@@ -67,6 +67,11 @@ namespace BarPromenade
         }
         public BarActivityKind ActiveActivity { get; private set; }
         public BarCounterStation CounterStation { get; private set; }
+        public IReadOnlyList<BarCounterStation> CounterStations
+        {
+            get;
+            private set;
+        }
         public BarDrinkServicePlan DrinkServicePlan { get; private set; }
         public BarDrinkServiceView DrinkServiceView { get; private set; }
         public BarDrinkShopController DrinkShop { get; private set; }
@@ -369,10 +374,12 @@ namespace BarPromenade
                 Layout);
             if (Bartender != null && DrinkShop != null)
             {
-                if (DrinkShop.UsesPhysicalMenu)
+                if (DrinkShop.HasPhysicalMenuPresentation)
                 {
                     DrinkShop.ConfigureMenuCarrier(
                         Bartender.Registry.LeftGripSocket);
+                    DrinkShop.ConfigureBottleCarrier(
+                        Bartender.Registry.BottleGripAnchor);
                 }
 
                 BarBartenderServiceChoreography choreography =
@@ -424,35 +431,83 @@ namespace BarPromenade
 
         private void BuildCounterStation(PlayerCameraFollow follow)
         {
-            GameObject station =
-                new GameObject("Bar Drink Counter Station");
-            station.transform.SetParent(transform, false);
-            station.transform.localPosition =
-                Layout.CounterStationPosition;
-            BoxCollider trigger = station.AddComponent<BoxCollider>();
-            trigger.isTrigger = true;
-            trigger.size = Layout.CounterStationTriggerSize;
-            CounterStation =
-                station.AddComponent<BarCounterStation>();
-            CounterSeatPlan seatPlan =
-                CounterSeatPlan.FromServiceAnchors(
-                    DrinkServiceView.transform,
-                    DrinkServicePlan,
-                    Room.Find("HeroSeat"),
-                    Room.Find("HeroApproach"),
-                    Room.Find("HeroStand"),
-                    Room.Find("HeroStand"),
-                    Room.Find("HeroCamera"),
-                    Room.Find("HeroCameraLook"));
-            CounterStation.ConfigureSeated(
-                DrinkShop,
-                Player,
-                seatPlan,
-                follow);
+            IReadOnlyList<BarCounterSeatDescriptor> descriptors =
+                BarCounterSeatPlanner.CreateAvailable(Layout);
+            var stations = new List<BarCounterStation>(descriptors.Count);
+            Transform cameraAnchor = Room.Find("HeroCamera");
+            Transform cameraLookAnchor = Room.Find("HeroCameraLook");
+            for (int index = 0; index < descriptors.Count; index++)
+            {
+                BarCounterSeatDescriptor descriptor = descriptors[index];
+                GameObject station = new GameObject(
+                    $"Bar Counter Seat {index + 1:00}");
+                station.transform.SetParent(transform, false);
+                station.transform.SetPositionAndRotation(
+                    Room.TransformPoint(descriptor.TriggerLocalPosition),
+                    Room.rotation);
+                BoxCollider trigger = station.AddComponent<BoxCollider>();
+                trigger.isTrigger = true;
+                trigger.size = descriptor.TriggerSize;
 
-            var markers = new List<Renderer>(1);
-            AddAuthoredMarker(markers, "Drink Order Sign");
-            DrinkShop.ConfigureSceneMarkers(markers.ToArray());
+                Vector3 entryWorld = Room.TransformPoint(
+                    descriptor.EntryGroundLocalPosition);
+                Vector3 seatWorld = Room.TransformPoint(
+                    descriptor.SeatTopLocalPosition);
+                Vector3 facing = Vector3.ProjectOnPlane(
+                    seatWorld - entryWorld,
+                    Vector3.up).normalized;
+                Quaternion facingRotation = Quaternion.LookRotation(
+                    facing,
+                    Vector3.up);
+                Vector3 worldServiceOffset = Room.TransformVector(
+                    descriptor.ServiceLocalOffset);
+                Pose? cameraPose = cameraAnchor != null
+                    ? new Pose(
+                        cameraAnchor.position + worldServiceOffset,
+                        cameraAnchor.rotation)
+                    : (Pose?)null;
+                Vector3? cameraLook = cameraLookAnchor != null
+                    ? cameraLookAnchor.position + worldServiceOffset
+                    : (Vector3?)null;
+                CounterSeatPlan seatPlan =
+                    CounterSeatPlan.FromServicePoses(
+                        DrinkServiceView.transform,
+                        DrinkServicePlan,
+                        new Pose(seatWorld, facingRotation),
+                        Room.TransformPoint(
+                            descriptor.ApproachGroundLocalPosition),
+                        new Pose(entryWorld, facingRotation),
+                        new Pose(entryWorld, facingRotation),
+                        cameraPose,
+                        cameraLook,
+                        descriptor.StableId);
+                BarCounterStation counterStation =
+                    station.AddComponent<BarCounterStation>();
+                counterStation.ConfigureSeated(
+                    DrinkShop,
+                    Player,
+                    seatPlan,
+                    follow,
+                    descriptor.ServiceLocalOffset,
+                    descriptor.MirrorServiceHorizontally);
+                stations.Add(counterStation);
+            }
+
+            CounterStations = stations.AsReadOnly();
+            CounterStation = stations.Count > 0 ? stations[0] : null;
+
+            // The authored sign belonged to the former single privileged
+            // seat. Keep older generated prefabs loadable, but never render
+            // either the emissive slab or its frame.
+            SetAuthoredPartVisible(
+                "Drink Order Sign",
+                false,
+                allowMissing: true);
+            SetAuthoredPartVisible(
+                "Drink Order Sign Frame",
+                false,
+                allowMissing: true);
+            DrinkShop.ConfigureSceneMarkers();
         }
 
         private void BuildExit()
@@ -480,9 +535,10 @@ namespace BarPromenade
             }
         }
 
-        private void AddAuthoredMarker(
-            ICollection<Renderer> markers,
-            string partName)
+        private void SetAuthoredPartVisible(
+            string partName,
+            bool visible,
+            bool allowMissing = false)
         {
             Transform part = Room.Find(partName);
             Renderer renderer = part != null
@@ -490,13 +546,18 @@ namespace BarPromenade
                 : null;
             if (renderer != null)
             {
-                markers.Add(renderer);
+                renderer.enabled = visible;
+                return;
+            }
+
+            if (allowMissing)
+            {
                 return;
             }
 
             GameLog.Warning(
                 "bar",
-                "authored_service_marker_missing",
+                "authored_part_missing",
                 GameLog.Field("part", partName));
         }
 

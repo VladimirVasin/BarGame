@@ -28,7 +28,8 @@ namespace BarPromenade
             float exposurePulse,
             float balanceDifficulty,
             float chromaticAberration,
-            float lensDistortion)
+            float lensDistortion,
+            float dollyZoomStrength)
         {
             Level = level;
             Stage = stage;
@@ -45,6 +46,7 @@ namespace BarPromenade
             BalanceDifficulty = balanceDifficulty;
             ChromaticAberration = chromaticAberration;
             LensDistortion = lensDistortion;
+            DollyZoomStrength = dollyZoomStrength;
         }
 
         public int Level { get; }
@@ -62,6 +64,13 @@ namespace BarPromenade
         public float BalanceDifficulty { get; }
         public float ChromaticAberration { get; }
         public float LensDistortion { get; }
+
+        /// <summary>
+        /// How far the drunk dolly zoom may breathe, 0..1 of the camera's
+        /// wide/narrow limits. Exactly zero through the balance threshold,
+        /// then roughly doubling every ten points to the full swing at 100.
+        /// </summary>
+        public float DollyZoomStrength { get; }
         public bool BalanceEnabled =>
             Level > IntoxicationStageRules.BalanceThreshold;
     }
@@ -175,7 +184,18 @@ namespace BarPromenade
                     -0.02f,
                     -0.05f,
                     -0.09f,
-                    -0.14f));
+                    -0.14f),
+                // The dolly zoom only exists above the balance threshold:
+                // nothing at 60, a third of the swing at 80, all of it at
+                // 100, so the last stage is where the world comes apart.
+                Interpolate(
+                    clampedLevel,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0.35f,
+                    1f));
         }
 
         public static IntoxicationStage GetStage(int level)

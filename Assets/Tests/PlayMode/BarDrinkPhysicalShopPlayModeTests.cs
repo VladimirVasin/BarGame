@@ -174,18 +174,26 @@ namespace BarPromenade.Tests.PlayMode
                 Is.False,
                 "The seated shop must not hide the complete world hero.");
 
-            controller.Exit();
             controller.AdvancePresentation(
-                BarDrinkServiceTimeline.CameraReturnDurationSeconds);
-            yield return null;
-
-            Assert.That(controller.IsOpen, Is.False);
-            Assert.That(station.Seat.IsSeated, Is.False);
-            Assert.That(station.SeatView.IsFirstPerson, Is.False);
-            Assert.That(cameraFollow.FixedPoseActive, Is.False);
-            Assert.That(cameraFollow.CinematicMotionEnabled, Is.True);
-            Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
-            AssertPlayerVisualRestored();
+                BarDrinkServiceTimeline.CameraApproachDurationSeconds);
+            Assert.That(
+                controller.FirstPersonArms.IsVisible,
+                Is.False,
+                "The seated bar view must not draw legacy camera-local arms.");
+            Assert.That(
+                controller.FirstPersonArms.VisualsSuppressed,
+                Is.True);
+            Assert.That(
+                controller.FirstPersonArms.VisibilityAmount,
+                Is.Zero);
+            Assert.That(
+                controller.FirstPersonArms.PresentationRoot.gameObject.activeSelf,
+                Is.True,
+                "The hidden attachment rig must remain active for the vessel.");
+            Assert.That(controller.RestPhysicalMenuAtCounter(), Is.True);
+            Assert.That(station.Seat.IsSeated, Is.True,
+                "Closing the menu must not also stand the hero up.");
+            Assert.That(station.Seat.RequestExit(), Is.True);
 
             timeout = Time.realtimeSinceStartup + 5f;
             while (station.Seat.Controller.IsActive &&
@@ -195,8 +203,23 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(station.Seat.Controller.IsActive, Is.False);
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Retrieving));
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.01f);
+            yield return null;
+
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(station.Seat.IsSeated, Is.False);
+            Assert.That(station.SeatView.IsFirstPerson, Is.False);
+            Assert.That(cameraFollow.FixedPoseActive, Is.False);
+            Assert.That(cameraFollow.CinematicMotionEnabled, Is.True);
+            Assert.That(cameraFollow.OrbitInputEnabled, Is.True);
             Assert.That(player.Motor.InputEnabled, Is.True);
             Assert.That(player.Interactor.InputEnabled, Is.True);
+            AssertPlayerVisualRestored();
             Assert.That(
                 player.GameObject.transform.position,
                 Is.EqualTo(seatPlan.ExitPose.RootPosition)
@@ -274,8 +297,23 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     BarPromenade.Runtime.World.CounterMenuState.Delivering));
 
+            controller.ReportCounterServerAtTarget(true);
             controller.AdvancePresentation(
                 BarDrinkServiceTimeline.CameraApproachDurationSeconds);
+
+            CounterMenuPageView menuPage =
+                controller.MenuPresentation.Page;
+            Assert.That(menuPage, Is.Not.Null);
+            menuPage.AdvanceFold(CounterMenuPageView.FoldDurationSeconds);
+            Assert.That(menuPage.FoldAmount, Is.Zero.Within(0.0001f));
+            Assert.That(menuPage.IsFoldTransitionActive, Is.False);
+            Assert.That(menuPage.LeftFoldHinge, Is.Not.Null);
+            Assert.That(menuPage.RightFoldHinge, Is.Not.Null);
+            float openLeafAngle = menuPage.LeftLeafAngleDegrees;
+            Quaternion openLeftHingeRotation =
+                menuPage.LeftFoldHinge.localRotation;
+            Quaternion openRightHingeRotation =
+                menuPage.RightFoldHinge.localRotation;
 
             Assert.That(controller.IsBrowsing, Is.True);
             Assert.That(
@@ -358,10 +396,56 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
-                    BarPromenade.Runtime.World.CounterMenuState.Retrieving));
+                    BarPromenade.Runtime.World.CounterMenuState.Resting));
+            Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
+            Assert.That(controller.MenuPresentation.IsVisible, Is.True);
+            Assert.That(controller.MenuPresentation.IsTextVisible, Is.False);
             Assert.That(
-                controller.MenuPresentation.SelectionMarker.text,
-                Is.EqualTo("X"));
+                controller.MenuPresentation.IsRestingOnCounter,
+                Is.True);
+            Assert.That(
+                menuPage.FoldAmount,
+                Is.Zero.Within(0.0001f),
+                "Closing must begin from the fully open spread.");
+            Assert.That(menuPage.IsFoldTransitionActive, Is.True);
+            Assert.That(
+                Quaternion.Angle(
+                    openLeftHingeRotation,
+                    menuPage.LeftFoldHinge.localRotation),
+                Is.LessThan(0.001f));
+
+            menuPage.AdvanceFold(
+                CounterMenuPageView.FoldDurationSeconds * 0.5f);
+            float midpointLeafAngle = menuPage.LeftLeafAngleDegrees;
+            Assert.That(
+                menuPage.FoldAmount,
+                Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(menuPage.IsFoldTransitionActive, Is.True);
+            Assert.That(
+                midpointLeafAngle,
+                Is.GreaterThan(openLeafAngle + 30f),
+                "The left leaf must visibly rotate around its spine.");
+            Assert.That(
+                Quaternion.Angle(
+                    Quaternion.identity,
+                    menuPage.LeftFoldHinge.localRotation),
+                Is.EqualTo(midpointLeafAngle).Within(0.01f),
+                "Fold progress must drive the physical hinge rotation.");
+
+            menuPage.AdvanceFold(
+                CounterMenuPageView.FoldDurationSeconds * 0.5f);
+            Assert.That(menuPage.FoldAmount, Is.EqualTo(1f));
+            Assert.That(menuPage.IsFoldTransitionActive, Is.False);
+            Assert.That(
+                menuPage.LeftLeafAngleDegrees,
+                Is.GreaterThan(midpointLeafAngle + 30f));
+            Assert.That(
+                Quaternion.Angle(
+                    openRightHingeRotation,
+                    menuPage.RightFoldHinge.localRotation),
+                Is.LessThan(0.001f),
+                "The right leaf stays on the counter while the left closes.");
+            AssertClosedMenuUsesOpaqueFoldingPanels(menuPage);
 
             controller.AdvancePresentation(
                 BarDrinkServiceTimeline.ConfirmedPresentationDurationSeconds +
@@ -369,47 +453,56 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(controller.IsBrowsing, Is.False);
             Assert.That(controller.PurchaseCommitted, Is.False);
-            Assert.That(controller.SelectedIndex, Is.Zero);
-            Assert.That(
-                serviceView.SelectedDrinkId,
-                Is.EqualTo(DrinkId.Water),
-                "Repeat delivery must synchronize its reset selection " +
-                "before the next confirmation.");
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
-                    BarPromenade.Runtime.World.CounterMenuState.Delivering));
-            Assert.That(controller.MenuPresentation.IsPlaced, Is.False);
+                    BarPromenade.Runtime.World.CounterMenuState.Resting));
+            Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
             Assert.That(controller.MenuPresentation.IsVisible, Is.True);
             Assert.That(controller.MenuPresentation.IsTextVisible, Is.False);
-            float deliveryStartDistance = Vector3.Distance(
-                controller.MenuPresentation.PropRoot.position,
-                menuDockPose.position);
-            Assert.That(deliveryStartDistance, Is.GreaterThan(0.25f));
-
             controller.AdvancePresentation(
-                BarDrinkServiceTimeline.CameraApproachDurationSeconds * 0.5f);
+                BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.1f);
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
-                    BarPromenade.Runtime.World.CounterMenuState.Delivering));
-            float deliveryMidpointDistance = Vector3.Distance(
-                controller.MenuPresentation.PropRoot.position,
-                menuDockPose.position);
-            Assert.That(
-                deliveryMidpointDistance,
-                Is.InRange(0.01f, deliveryStartDistance - 0.01f));
+                    BarPromenade.Runtime.World.CounterMenuState.Resting),
+                "Staff must not retrieve a menu while the hero is seated.");
 
-            controller.AdvancePresentation(
-                BarDrinkServiceTimeline.CameraApproachDurationSeconds * 0.5f +
-                0.01f);
+            Vector3 restingCenter = controller.MenuPresentation.Page
+                .RestingWorldCenter;
+            camera.transform.rotation = Quaternion.LookRotation(
+                camera.transform.position - restingCenter,
+                Vector3.up);
+            yield return null;
+            camera.transform.rotation = Quaternion.LookRotation(
+                restingCenter - camera.transform.position,
+                Vector3.up);
+            Assert.That(controller.IsLookingAtRestingMenu, Is.True);
+            Assert.That(
+                station.PromptKey,
+                Is.EqualTo(
+                    MountainRoadCafeMenuController.OpenMenuPromptKey));
+            station.Interact(player.Interactor);
             Assert.That(controller.IsBrowsing, Is.True);
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
                     BarPromenade.Runtime.World.CounterMenuState.Open));
             Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
-            Assert.That(controller.MenuPresentation.IsTextVisible, Is.True);
+            Assert.That(controller.MenuPresentation.IsTextVisible, Is.False,
+                "Text must remain hidden while the booklet unfolds.");
+            Assert.That(menuPage.FoldAmount, Is.EqualTo(1f));
+            Assert.That(menuPage.IsFoldTransitionActive, Is.True);
+            menuPage.AdvanceFold(CounterMenuPageView.FoldDurationSeconds);
+            Assert.That(menuPage.FoldAmount, Is.Zero.Within(0.0001f));
+            Assert.That(menuPage.IsFoldTransitionActive, Is.False);
+            Assert.That(
+                Quaternion.Angle(
+                    openLeftHingeRotation,
+                    menuPage.LeftFoldHinge.localRotation),
+                Is.LessThan(0.001f));
+            Assert.That(controller.MenuPresentation.IsTextVisible, Is.True,
+                "Readable text appears only after the menu is open again.");
             Assert.That(
                 Vector3.Distance(
                     controller.MenuPresentation.PropRoot.position,
@@ -423,7 +516,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
             yield return null;
             Assert.That(station.Seat.IsSeated, Is.True);
-            Assert.That(controller.CanExitPhysicalMenu, Is.True);
+            Assert.That(controller.CanRestPhysicalMenu, Is.True);
             Assert.That(station.CanInteract(player.Interactor), Is.True);
             stationObject.transform.position =
                 player.Interactor.transform.position + Vector3.up * 0.8f;
@@ -445,21 +538,63 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
             inputFixture.Release(keyboard.eKey, queueEventOnly: true);
             Assert.That(
-                controller.Phase,
-                Is.EqualTo(BarDrinkServicePhase.CameraReturn));
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Resting));
+            Assert.That(station.Seat.IsSeated, Is.True,
+                "The first E closes the menu and must not stand the hero.");
+            Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
+            Assert.That(controller.MenuPresentation.IsTextVisible, Is.False);
+            Assert.That(controller.IsLookingAtRestingMenu, Is.False,
+                "Closing the close-up must disarm immediate gaze reopen.");
+            Assert.That(
+                station.PromptKey,
+                Is.EqualTo(CounterSeatInteraction.StandPromptKey),
+                "The close frame must offer standing, not reopen the menu.");
+
+            restingCenter = controller.MenuPresentation.Page
+                .RestingWorldCenter;
+            camera.transform.rotation = Quaternion.LookRotation(
+                camera.transform.position - restingCenter,
+                Vector3.up);
+            yield return null;
+            camera.transform.rotation = Quaternion.LookRotation(
+                restingCenter - camera.transform.position,
+                Vector3.up);
+            Assert.That(
+                station.PromptKey,
+                Is.EqualTo(
+                    MountainRoadCafeMenuController.OpenMenuPromptKey));
+            station.Interact(player.Interactor);
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
-                    BarPromenade.Runtime.World.CounterMenuState.Retrieving));
+                    BarPromenade.Runtime.World.CounterMenuState.Open));
+            Assert.That(station.Seat.IsSeated, Is.True);
 
-            controller.AdvancePresentation(
-                BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.01f);
+            Assert.That(controller.RestPhysicalMenuAtCounter(), Is.True);
+            Assert.That(controller.IsLookingAtRestingMenu, Is.False);
+            Assert.That(
+                station.PromptKey,
+                Is.EqualTo(CounterSeatInteraction.StandPromptKey));
+            camera.transform.rotation = Quaternion.LookRotation(
+                camera.transform.position -
+                controller.MenuPresentation.Page.RestingWorldCenter,
+                Vector3.up);
             yield return null;
-
-            Assert.That(controller.IsOpen, Is.False);
-            Assert.That(station.Seat.IsSeated, Is.False);
-            Assert.That(station.SeatView.IsFirstPerson, Is.False);
-            Assert.That(cameraFollow.FixedPoseActive, Is.False);
+            Assert.That(controller.IsLookingAtRestingMenu, Is.False);
+            Assert.That(
+                station.PromptKey,
+                Is.EqualTo(CounterSeatInteraction.StandPromptKey));
+            station.Interact(player.Interactor);
+            Assert.That(
+                station.Seat.Controller.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Resting),
+                "The booklet remains on the counter throughout stand-up.");
 
             timeout = Time.realtimeSinceStartup + 5f;
             while (station.Seat.Controller.IsActive &&
@@ -469,6 +604,29 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(station.Seat.Controller.IsActive, Is.False);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.CameraReturn));
+            Assert.That(
+                controller.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Retrieving),
+                "Retrieval starts only after the stand-up completes.");
+
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.01f);
+            yield return null;
+
+            Assert.That(controller.IsReturningCounterMenuHome, Is.True);
+            Assert.That(controller.IsOpen, Is.True,
+                "The carried booklet keeps the shared service occupied " +
+                "until the server reaches home.");
+            Assert.That(controller.CompleteCounterMenuReturnHome(), Is.True);
+            Assert.That(controller.IsOpen, Is.False);
+            Assert.That(station.Seat.IsSeated, Is.False);
+            Assert.That(station.SeatView.IsFirstPerson, Is.False);
+            Assert.That(cameraFollow.FixedPoseActive, Is.False);
+
             Assert.That(player.Motor.InputEnabled, Is.True);
             Assert.That(player.Interactor.InputEnabled, Is.True);
             AssertPlayerVisualRestored();
@@ -476,6 +634,63 @@ namespace BarPromenade.Tests.PlayMode
                 player.GameObject.transform.position,
                 Is.EqualTo(seatPlan.ExitPose.RootPosition)
                     .Using(Vector3ComparerWithEqualsOperator.Instance));
+        }
+
+        private static void AssertClosedMenuUsesOpaqueFoldingPanels(
+            CounterMenuPageView page)
+        {
+            Assert.That(page, Is.Not.Null);
+            Assert.That(page.LeftFoldHinge, Is.Not.Null);
+            Assert.That(page.RightFoldHinge, Is.Not.Null);
+            Assert.That(page.RestingPropRenderers.Count, Is.EqualTo(5));
+
+            int leftLeafPanels = 0;
+            int rightLeafPanels = 0;
+            int spinePanels = 0;
+            int baseColorId = Shader.PropertyToID("_BaseColor");
+            var properties = new MaterialPropertyBlock();
+            for (int index = 0;
+                 index < page.RestingPropRenderers.Count;
+                 index++)
+            {
+                Renderer renderer = page.RestingPropRenderers[index];
+                Assert.That(renderer, Is.Not.Null);
+                Assert.That(renderer.enabled, Is.True);
+                Assert.That(renderer.gameObject.activeInHierarchy, Is.True);
+                renderer.GetPropertyBlock(properties);
+                Assert.That(
+                    properties.GetColor(baseColorId).a,
+                    Is.EqualTo(1f).Within(0.0001f),
+                    $"Fold panel '{renderer.name}' must be opaque.");
+
+                if (renderer.transform.IsChildOf(page.LeftFoldHinge))
+                {
+                    leftLeafPanels++;
+                }
+                else if (renderer.transform.IsChildOf(page.RightFoldHinge))
+                {
+                    rightLeafPanels++;
+                }
+                else
+                {
+                    spinePanels++;
+                }
+            }
+
+            Assert.That(leftLeafPanels, Is.EqualTo(2));
+            Assert.That(rightLeafPanels, Is.EqualTo(2));
+            Assert.That(spinePanels, Is.EqualTo(1));
+
+            Collider[] colliders = page.LeftFoldHinge.parent
+                .GetComponentsInChildren<Collider>(true);
+            for (int index = 0; index < colliders.Length; index++)
+            {
+                Assert.That(
+                    colliders[index].enabled &&
+                    colliders[index].gameObject.activeInHierarchy,
+                    Is.False,
+                    "The folded menu must not add an active collider.");
+            }
         }
 
         [UnityTest]
@@ -577,6 +792,10 @@ namespace BarPromenade.Tests.PlayMode
 
             OpenBrowsing();
             Assert.That(controller.Select(offerIndex), Is.True);
+            Transform shelfParent = bottle.transform.parent;
+            Vector3 shelfLocalPosition = bottle.transform.localPosition;
+            Quaternion shelfLocalRotation = bottle.transform.localRotation;
+            Vector3 shelfLocalScale = bottle.transform.localScale;
             Assert.That(controller.ConfirmSelection(), Is.True);
 
             Assert.That(controller.IsOpen, Is.True);
@@ -586,6 +805,26 @@ namespace BarPromenade.Tests.PlayMode
                 controller.Phase,
                 Is.EqualTo(BarDrinkServicePhase.BottlePickup));
             Assert.That(controller.ConfirmSelection(), Is.False);
+            Assert.That(bottle.transform.parent, Is.SameAs(shelfParent));
+            Assert.That(bottle.transform.localPosition,
+                Is.EqualTo(shelfLocalPosition));
+            Assert.That(
+                Quaternion.Angle(
+                    bottle.transform.localRotation,
+                    shelfLocalRotation),
+                Is.LessThan(0.001f));
+            Assert.That(bottle.transform.localScale,
+                Is.EqualTo(shelfLocalScale));
+            Assert.That(serviceView.IsCarriedBottleVisible, Is.True);
+            for (int rendererIndex = 0;
+                 rendererIndex < bottle.Renderers.Count;
+                 rendererIndex++)
+            {
+                Assert.That(
+                    bottle.Renderers[rendererIndex].enabled,
+                    Is.False,
+                    "The shelf source stays fixed and hidden during carry.");
+            }
             Assert.That(
                 GameSessionState.CashBalance,
                 Is.EqualTo(cashBefore - offer.Price));
@@ -610,9 +849,18 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 controller.Phase,
                 Is.EqualTo(BarDrinkServicePhase.Pouring));
-            Assert.That(bottle.SolidCollider.enabled, Is.False);
-            Assert.That(bottle.SelectionTrigger.enabled, Is.False);
+            Assert.That(bottle.SolidCollider.enabled, Is.True);
+            Assert.That(bottle.SelectionTrigger.enabled, Is.True);
             Assert.That(bottle.Body.isKinematic, Is.True);
+            Assert.That(serviceView.IsCarriedBottleVisible, Is.True);
+            Assert.That(
+                serviceView.CarriedBottleRoot.GetComponentsInChildren<
+                    Collider>(true),
+                Is.Empty);
+            Assert.That(
+                serviceView.CarriedBottleRoot.GetComponentsInChildren<
+                    Rigidbody>(true),
+                Is.Empty);
             Assert.That(serviceView.ActiveVessel, Is.Not.Null);
             Assert.That(
                 serviceView.ActiveVessel.Kind,
@@ -660,6 +908,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(BarDrinkServicePhase.Drinking));
             Assert.That(controller.IsServing, Is.True);
             Assert.That(controller.PurchaseCommitted, Is.True);
+            Assert.That(serviceView.IsCarriedBottleVisible, Is.True);
             Assert.That(serviceView.ActiveVessel, Is.Not.Null);
             Assert.That(serviceView.ActiveVessel.gameObject.activeSelf, Is.True);
             Assert.That(controller.FirstPersonArms.IsVisible, Is.True);
@@ -798,6 +1047,102 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator BottleGripClamp_LeavesNearTargetsAndBoundsFarTargets()
+        {
+            Vector3 shoulder = new Vector3(-0.2f, 1.8f, 6.4f);
+            const float reach = 0.625f;
+            Vector3 near = shoulder + new Vector3(0.1f, -0.1f, -0.2f);
+            Vector3 far = shoulder + new Vector3(1f, -1f, -2f);
+
+            Assert.That(
+                BarDrinkShopController.ClampBottleGripToReach(
+                    shoulder,
+                    reach,
+                    near),
+                Is.EqualTo(near));
+            Vector3 clamped =
+                BarDrinkShopController.ClampBottleGripToReach(
+                    shoulder,
+                    reach,
+                    far);
+            Assert.That(
+                Vector3.Distance(shoulder, clamped),
+                Is.EqualTo(reach).Within(0.0001f));
+            Assert.That(
+                Vector3.Dot(
+                    (far - shoulder).normalized,
+                    (clamped - shoulder).normalized),
+                Is.GreaterThan(0.9999f));
+
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator
+            ConfiguredBottleCarrier_UsesReachSafeSurfaceContact()
+        {
+            var holderObject = new GameObject("Bottle Holder Root");
+            holderObject.transform.SetParent(worldObject.transform, false);
+            var shoulderObject = new GameObject("Right Shoulder");
+            shoulderObject.transform.SetParent(holderObject.transform, false);
+            shoulderObject.transform.position =
+                new Vector3(-0.55f, 1.84f, 6.50f);
+            var elbowObject = new GameObject("Right Elbow");
+            elbowObject.transform.SetParent(holderObject.transform, false);
+            elbowObject.transform.position =
+                shoulderObject.transform.position +
+                new Vector3(0.22f, -0.08f, -0.08f);
+            var wristObject = new GameObject("Right Wrist");
+            wristObject.transform.SetParent(holderObject.transform, false);
+            wristObject.transform.position =
+                elbowObject.transform.position +
+                new Vector3(0.20f, -0.08f, -0.10f);
+            var gripObject = new GameObject("Right Bottle Grip");
+            gripObject.transform.SetParent(holderObject.transform, false);
+            gripObject.transform.position =
+                wristObject.transform.position + Vector3.down * 0.08f;
+
+            controller.ConfigureBottleCarrier(gripObject.transform);
+            controller.ConfigureBottleReachChain(
+                holderObject.transform,
+                shoulderObject.transform,
+                elbowObject.transform,
+                wristObject.transform,
+                gripObject.transform);
+            OpenBrowsing();
+            Assert.That(
+                controller.Select(FindOfferIndex(DrinkId.RedWine)),
+                Is.True);
+            Assert.That(controller.ConfirmSelection(), Is.True);
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.BottlePickupDurationSeconds +
+                BarDrinkServiceTimeline.VesselPlacementDurationSeconds +
+                BarDrinkServiceTimeline.PouringDurationSeconds * 0.5f);
+
+            Assert.That(
+                serviceView.CarriedBottleRoot.parent,
+                Is.SameAs(serviceView.transform));
+            Assert.That(controller.BottleGripError, Is.LessThan(0.0001f));
+            Assert.That(
+                controller.BottleHandRadialClearance,
+                Is.GreaterThanOrEqualTo(
+                    BarDrinkServiceView.MinimumBottleHandRadialClearance));
+            Assert.That(
+                Vector3.Distance(
+                    shoulderObject.transform.position,
+                    controller.ActiveBottleHandTarget),
+                Is.LessThanOrEqualTo(
+                    controller.BottleGripReachLimit + 0.0001f));
+            Assert.That(
+                controller.ActiveBottleReachCorrection.magnitude,
+                Is.GreaterThan(0.05f),
+                "The authored counter pour requires the reachable grip " +
+                "choice instead of stretching this physical arm.");
+
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator
             DisableDuringCommittedPour_CleansPresentationWithoutRefund()
         {
@@ -879,6 +1224,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(controller.FirstPersonArms.VisibilityAmount, Is.Zero);
             Assert.That(serviceView.SelectedBottle, Is.Null);
             Assert.That(serviceView.ActiveVessel, Is.Null);
+            Assert.That(serviceView.IsCarriedBottleVisible, Is.False);
+            Assert.That(serviceView.CarriedBottleRoot, Is.Null);
             Assert.That(serviceView.IsStreamVisible, Is.False);
             for (int index = 0; index < serviceView.Vessels.Count; index++)
             {
@@ -920,10 +1267,16 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(visibleSceneMarker.enabled, Is.False);
             Assert.That(hiddenSceneMarker.enabled, Is.False);
             Assert.That(serviceView.ActiveVessel, Is.Null);
+            Assert.That(serviceView.IsCarriedBottleVisible, Is.False);
+            Assert.That(serviceView.CarriedBottleRoot, Is.Null);
             Assert.That(serviceView.IsStreamVisible, Is.False);
             Assert.That(serviceView.SelectedBottle, Is.SameAs(bottle));
             Assert.That(bottle.SolidCollider.enabled, Is.True);
             Assert.That(bottle.SelectionTrigger.enabled, Is.True);
+            for (int index = 0; index < bottle.Renderers.Count; index++)
+            {
+                Assert.That(bottle.Renderers[index].enabled, Is.True);
+            }
             Assert.That(BarMinigameModalLock.IsAnyLocked, Is.True);
             AssertPlayerVisualHidden();
         }

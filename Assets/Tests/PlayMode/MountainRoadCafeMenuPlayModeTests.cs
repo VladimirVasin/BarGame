@@ -17,6 +17,11 @@ namespace BarPromenade.Tests.PlayMode
         private const float PinnedFrameSeconds = 1f / 30f;
         private const float LoadTimeoutSeconds = 60f;
         private const int MaximumSeatFrames = 180;
+        private const float OpenMenuLeafAngleDegrees = 5.5f;
+        private const float MidFoldLeafAngleDegrees = 90f;
+        private const float ClosedMenuLeafAngleDegrees = 174.5f;
+        private static readonly int BaseColorId =
+            Shader.PropertyToID("_BaseColor");
         private static int teardownSequence;
 
         [SetUp]
@@ -390,7 +395,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(seat.IsSeated, Is.True,
                     "Space confirms the order and must not stand the hero.");
                 Assert.That(menu.State,
-                    Is.EqualTo(MountainRoadCafeMenuState.Retrieving));
+                    Is.EqualTo(MountainRoadCafeMenuState.Resting));
                 Assert.That(
                     menu.ConfirmedItemId,
                     Is.EqualTo(MountainRoadCafeMenuItemIds.BlackCoffee));
@@ -399,6 +404,41 @@ namespace BarPromenade.Tests.PlayMode
                     presentation.SelectionMarker.text,
                     Is.EqualTo("X"));
                 Assert.That(menu.IsInputActive, Is.False);
+                Assert.That(
+                    cast.ServiceFrame.HeroMenuRetrievalRequested,
+                    Is.False,
+                    "Confirming may close the booklet, but staff wait " +
+                    "until the hero has stood up.");
+                Assert.That(presentation.IsRestingOnCounter, Is.True);
+                Assert.That(presentation.IsVisible, Is.True);
+
+                Vector3 restingMenuDirection =
+                    presentation.Page.RestingWorldCenter -
+                    camera.transform.position;
+                camera.transform.rotation = Quaternion.LookRotation(
+                    -restingMenuDirection.normalized,
+                    Vector3.up);
+                seat.Interact(root.Player.Interactor);
+                Assert.That(
+                    seat.Controller.Phase,
+                    Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+                Assert.That(menu.State,
+                    Is.EqualTo(MountainRoadCafeMenuState.Resting));
+                Assert.That(
+                    cast.ServiceFrame.HeroMenuRetrievalRequested,
+                    Is.False,
+                    "The menu must remain on the counter during stand-up.");
+
+                float exitDeadline = Time.realtimeSinceStartup + 5f;
+                while (seat.Controller.IsActive &&
+                       Time.realtimeSinceStartup < exitDeadline)
+                {
+                    yield return null;
+                }
+
+                Assert.That(seat.Controller.IsActive, Is.False);
+                Assert.That(menu.State,
+                    Is.EqualTo(MountainRoadCafeMenuState.Retrieving));
                 Assert.That(
                     cast.ServiceFrame.HeroMenuRetrievalRequested,
                     Is.True);
@@ -510,39 +550,6 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(MountainRoadCafeMenuState.Closed));
                 Assert.That(presentation.IsVisible, Is.False);
 
-                float restoreDeadline = Time.realtimeSinceStartup + 2f;
-                while (root.CafeSeatView.IsMenuFocusLocked &&
-                       Time.realtimeSinceStartup < restoreDeadline)
-                {
-                    yield return null;
-                }
-
-                Assert.That(root.CafeSeatView.IsMenuFocusLocked, Is.False);
-                Assert.That(root.CafeSeatView.IsFirstPerson, Is.True);
-                Assert.That(
-                    camera.fieldOfView,
-                    Is.EqualTo(MountainRoadCafeSeatViewPlan.FieldOfView)
-                        .Within(0.1f));
-                Quaternion rotationBeforeRestoredLook =
-                    camera.transform.rotation;
-                inputFixture.Press(
-                    keyboard.upArrowKey,
-                    queueEventOnly: true);
-                yield return null;
-                inputFixture.Release(
-                    keyboard.upArrowKey,
-                    queueEventOnly: true);
-                yield return null;
-                Assert.That(
-                    Quaternion.Angle(
-                        rotationBeforeRestoredLook,
-                        camera.transform.rotation),
-                    Is.GreaterThan(0.1f),
-                    "Seated look must return after confirmation.");
-
-                seat.Interact(root.Player.Interactor);
-                yield return null;
-
                 Assert.That(seat.IsSeated, Is.False);
                 Assert.That(root.CafeSeatView.IsFirstPerson, Is.False);
                 Assert.That(menu.IsInputActive, Is.False);
@@ -614,9 +621,106 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(MountainRoadCafeMenuState.Open));
             Assert.That(root.CafeSeatView.IsMenuFocusComplete, Is.True);
             Assert.That(menu.ConfirmedItemId, Is.Null);
+            CounterMenuPageView page = presentation.Page;
+            page.AdvanceFold(CounterMenuPageView.FoldDurationSeconds);
+            Assert.That(page.FoldAmount, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(page.IsTextVisible, Is.True);
 
             seat.Interact(root.Player.Interactor);
+
+            Assert.That(seat.IsSeated, Is.True,
+                "The first E closes the menu without standing up.");
+            Assert.That(menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Resting));
+            Assert.That(presentation.IsRestingOnCounter, Is.True);
+            Assert.That(presentation.IsVisible, Is.True);
+            AssertMenuPhysicallyFoldsClosed(page);
+            Assert.That(
+                cast.ServiceFrame.HeroMenuRetrievalRequested,
+                Is.False);
             yield return null;
+
+            Camera camera = root.CameraFollow.GetComponent<Camera>();
+            Vector3 restingCenter = presentation.Page
+                .RestingWorldCenter;
+            Assert.That(
+                seat.PromptKey,
+                Is.EqualTo(CityBenchSitInteraction.StandPromptKey),
+                "Closing must expose stand before gaze-based reopening " +
+                "can re-arm.");
+
+            float focusReleaseDeadline = Time.realtimeSinceStartup + 2f;
+            while (root.CafeSeatView.IsMenuFocusLocked &&
+                   Time.realtimeSinceStartup < focusReleaseDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(root.CafeSeatView.IsMenuFocusLocked, Is.False);
+            InputTestFixture lookFixture = new InputTestFixture();
+            Keyboard lookKeyboard = null;
+            try
+            {
+                lookFixture.Setup();
+                lookKeyboard = InputSystem.AddDevice<Keyboard>();
+                lookFixture.Press(
+                    lookKeyboard.downArrowKey,
+                    queueEventOnly: true);
+                int lookFrames = 0;
+                while (seat.PromptKey !=
+                           MountainRoadCafeMenuController.OpenMenuPromptKey &&
+                       lookFrames++ < 60)
+                {
+                    yield return null;
+                }
+
+                lookFixture.Release(
+                    lookKeyboard.downArrowKey,
+                    queueEventOnly: true);
+                yield return null;
+            }
+            finally
+            {
+                if (lookKeyboard != null && lookKeyboard.added)
+                {
+                    InputSystem.RemoveDevice(lookKeyboard);
+                }
+
+                lookFixture.TearDown();
+            }
+
+            Assert.That(
+                seat.PromptKey,
+                Is.EqualTo(
+                    MountainRoadCafeMenuController.OpenMenuPromptKey));
+            seat.Interact(root.Player.Interactor);
+            Assert.That(menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Open));
+            Assert.That(seat.IsSeated, Is.True);
+            AssertMenuPhysicallyUnfoldsOpen(page);
+            seat.Interact(root.Player.Interactor);
+            Assert.That(menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Resting));
+
+            camera.transform.rotation = Quaternion.LookRotation(
+                -(restingCenter - camera.transform.position).normalized,
+                Vector3.up);
+            seat.Interact(root.Player.Interactor);
+            Assert.That(
+                seat.Controller.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Resting));
+            Assert.That(
+                cast.ServiceFrame.HeroMenuRetrievalRequested,
+                Is.False);
+
+            float exitDeadline = Time.realtimeSinceStartup + 5f;
+            while (seat.Controller.IsActive &&
+                   Time.realtimeSinceStartup < exitDeadline)
+            {
+                yield return null;
+            }
 
             Assert.That(seat.IsSeated, Is.False);
             Assert.That(root.CafeSeatView.IsFirstPerson, Is.False);
@@ -656,6 +760,315 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(MountainRoadCafeMenuState.Closed));
             Assert.That(menu.ConfirmedItemId, Is.Null);
             Assert.That(presentation.IsVisible, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator
+            CounterSeat_ForcedExitDuringDeliveryClosesBeforeRetrieval()
+        {
+            MountainRoadRoot root = null;
+            yield return LoadSceneAndWaitForRoot(value => root = value);
+            yield return null;
+
+            CityBenchSitInteraction seat = root.Seats.Single(candidate =>
+                string.Equals(
+                    candidate.Plan.Id,
+                    root.Plan.Terminal.Site.CounterSeat.StableId,
+                    StringComparison.Ordinal));
+            TeleportPlayer(
+                root.Player,
+                seat.Plan.EntryRootPosition,
+                seat.Plan.EntryRotation);
+            yield return null;
+            seat.Interact(root.Player.Interactor);
+            int seatFrames = 0;
+            while (!seat.IsSeated && seatFrames++ < MaximumSeatFrames)
+            {
+                yield return null;
+            }
+
+            Assert.That(seat.IsSeated, Is.True);
+            MountainRoadCafeCastController cast = root.World.Cafe.Cast;
+            MountainRoadCafeMenuController menu = root.CafeMenu;
+            MountainRoadCafeMenuPresentation presentation =
+                menu.Presentation;
+            Assert.That(
+                menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Delivering));
+
+            Assert.That(seat.RequestExit(), Is.True);
+            Assert.That(
+                seat.Controller.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+
+            int deliveryPhases = 0;
+            while (!cast.ServiceFrame.HeroMenuPlaced &&
+                   deliveryPhases++ < 12)
+            {
+                cast.Advance(Mathf.Max(
+                    0.001f,
+                    cast.ServiceFrame.PhaseDurationSeconds -
+                    cast.ServiceFrame.PhaseElapsedSeconds +
+                    PinnedFrameSeconds * 0.5f));
+                yield return null;
+            }
+
+            Assert.That(cast.ServiceFrame.HeroMenuPlaced, Is.True);
+            Assert.That(
+                seat.Controller.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting),
+                "The delivery was stepped before the stand-up finished.");
+            Assert.That(
+                menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Resting));
+            Assert.That(presentation.IsRestingOnCounter, Is.True);
+            Assert.That(presentation.IsVisible, Is.True);
+            Assert.That(
+                cast.ServiceFrame.HeroMenuRetrievalRequested,
+                Is.False,
+                "Staff must wait for the stand-up animation to finish.");
+
+            float exitDeadline = Time.realtimeSinceStartup + 5f;
+            while (seat.Controller.IsActive &&
+                   Time.realtimeSinceStartup < exitDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(seat.IsSeated, Is.False);
+            Assert.That(
+                menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Retrieving));
+            Assert.That(
+                cast.ServiceFrame.HeroMenuRetrievalRequested,
+                Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator
+            CounterSeat_CancelledQuickReentryRetrievesDeliveredMenu()
+        {
+            MountainRoadRoot root = null;
+            yield return LoadSceneAndWaitForRoot(value => root = value);
+            yield return null;
+
+            CityBenchSitInteraction seat = root.Seats.Single(candidate =>
+                string.Equals(
+                    candidate.Plan.Id,
+                    root.Plan.Terminal.Site.CounterSeat.StableId,
+                    StringComparison.Ordinal));
+            TeleportPlayer(
+                root.Player,
+                seat.Plan.EntryRootPosition,
+                seat.Plan.EntryRotation);
+            yield return null;
+            seat.Interact(root.Player.Interactor);
+            int seatFrames = 0;
+            while (!seat.IsSeated && seatFrames++ < MaximumSeatFrames)
+            {
+                yield return null;
+            }
+
+            Assert.That(seat.IsSeated, Is.True);
+            MountainRoadCafeCastController cast = root.World.Cafe.Cast;
+            MountainRoadCafeMenuController menu = root.CafeMenu;
+            MountainRoadCafeMenuPresentation presentation =
+                menu.Presentation;
+            Assert.That(
+                menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Delivering));
+
+            Assert.That(seat.RequestExit(), Is.True);
+            float exitDeadline = Time.realtimeSinceStartup + 5f;
+            while (seat.Controller.IsActive &&
+                   Time.realtimeSinceStartup < exitDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(seat.Controller.IsActive, Is.False);
+            Assert.That(cast.ServiceFrame.HeroMenuPlaced, Is.False,
+                "The exit must finish before this delayed delivery.");
+            Assert.That(
+                menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Delivering));
+
+            Assert.That(seat.CanInteract(root.Player.Interactor), Is.True);
+            seat.Interact(root.Player.Interactor);
+            Assert.That(seat.OwnsActiveInteraction, Is.True);
+            Assert.That(seat.IsSeated, Is.False);
+            Assert.That(
+                seat.Controller.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Positioning));
+
+            int deliveryPhases = 0;
+            while (!cast.ServiceFrame.HeroMenuPlaced &&
+                   deliveryPhases++ < 12)
+            {
+                cast.Advance(Mathf.Max(
+                    0.001f,
+                    cast.ServiceFrame.PhaseDurationSeconds -
+                    cast.ServiceFrame.PhaseElapsedSeconds +
+                    PinnedFrameSeconds * 0.5f));
+            }
+
+            Assert.That(cast.ServiceFrame.HeroMenuPlaced, Is.True);
+            yield return null;
+            Assert.That(
+                seat.Controller.Phase ==
+                    PlayerAnimatedInteractionPhase.Positioning ||
+                seat.Controller.Phase ==
+                    PlayerAnimatedInteractionPhase.Entering,
+                Is.True);
+            Assert.That(seat.IsSeated, Is.False);
+            Assert.That(
+                menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Open),
+                "The in-flight re-entry temporarily owns this delivery.");
+            Assert.That(
+                cast.ServiceFrame.HeroMenuRetrievalRequested,
+                Is.False);
+
+            Assert.That(
+                seat.Controller.CancelActiveInteraction(),
+                Is.True);
+            Assert.That(
+                seat.Controller.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+            Assert.That(seat.OwnsActiveInteraction, Is.False);
+            Assert.That(seat.IsSeated, Is.False);
+            Assert.That(
+                menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Retrieving));
+            Assert.That(presentation.IsRestingOnCounter, Is.True);
+            Assert.That(presentation.IsVisible, Is.True);
+            Assert.That(
+                cast.ServiceFrame.HeroMenuRetrievalRequested,
+                Is.True,
+                "Cancelling the reserved re-entry must not orphan an open " +
+                "booklet on the counter.");
+
+            int retrievalPhases = 0;
+            while (!cast.ServiceFrame.HeroMenuRetrieved &&
+                   retrievalPhases++ < 16)
+            {
+                cast.Advance(Mathf.Max(
+                    0.001f,
+                    cast.ServiceFrame.PhaseDurationSeconds -
+                    cast.ServiceFrame.PhaseElapsedSeconds));
+                yield return null;
+            }
+
+            Assert.That(cast.ServiceFrame.HeroMenuRetrieved, Is.True);
+            Assert.That(
+                menu.State,
+                Is.EqualTo(MountainRoadCafeMenuState.Closed));
+            Assert.That(presentation.IsVisible, Is.False);
+        }
+
+        private static void AssertMenuPhysicallyFoldsClosed(
+            CounterMenuPageView page)
+        {
+            Assert.That(page, Is.Not.Null);
+            Assert.That(page.LeftFoldHinge, Is.Not.Null);
+            Assert.That(page.RightFoldHinge, Is.Not.Null);
+            Assert.That(
+                page.LeftFoldHinge,
+                Is.Not.SameAs(page.RightFoldHinge));
+            Assert.That(
+                page.LeftFoldHinge.parent,
+                Is.SameAs(page.RightFoldHinge.parent));
+            Assert.That(
+                page.LeftFoldHinge.GetComponentsInChildren<Renderer>(true),
+                Has.Length.EqualTo(2));
+            Assert.That(
+                page.RightFoldHinge.GetComponentsInChildren<Renderer>(true),
+                Has.Length.EqualTo(2));
+            Assert.That(page.RestingPropRenderers, Has.Count.EqualTo(5));
+            Assert.That(page.IsFoldTransitionActive, Is.True);
+            Assert.That(page.FoldAmount, Is.EqualTo(0f).Within(0.001f));
+
+            page.AdvanceFold(
+                CounterMenuPageView.FoldDurationSeconds * 0.5f);
+
+            Assert.That(page.FoldAmount, Is.EqualTo(0.5f).Within(0.001f));
+            Assert.That(
+                page.LeftLeafAngleDegrees,
+                Is.EqualTo(MidFoldLeafAngleDegrees).Within(0.1f));
+            Assert.That(page.IsFoldTransitionActive, Is.True);
+            Assert.That(page.IsTextVisible, Is.False);
+            AssertOpaquePhysicalFold(page);
+
+            page.AdvanceFold(
+                CounterMenuPageView.FoldDurationSeconds * 0.5f);
+
+            Assert.That(page.FoldAmount, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(
+                page.LeftLeafAngleDegrees,
+                Is.EqualTo(ClosedMenuLeafAngleDegrees).Within(0.1f));
+            Assert.That(page.IsFoldTransitionActive, Is.False);
+            Assert.That(page.IsRestingVisible, Is.True);
+            Assert.That(page.IsTextVisible, Is.False);
+            AssertOpaquePhysicalFold(page);
+            Assert.That(
+                page.LeftFoldHinge.parent
+                    .GetComponentsInChildren<Collider>(true),
+                Is.Empty);
+        }
+
+        private static void AssertMenuPhysicallyUnfoldsOpen(
+            CounterMenuPageView page)
+        {
+            Assert.That(page.IsFoldTransitionActive, Is.True);
+            Assert.That(page.FoldAmount, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(page.IsTextVisible, Is.False,
+                "Text must remain hidden while the booklet unfolds.");
+
+            page.AdvanceFold(
+                CounterMenuPageView.FoldDurationSeconds * 0.5f);
+
+            Assert.That(page.FoldAmount, Is.EqualTo(0.5f).Within(0.001f));
+            Assert.That(
+                page.LeftLeafAngleDegrees,
+                Is.EqualTo(MidFoldLeafAngleDegrees).Within(0.1f));
+            Assert.That(page.IsFoldTransitionActive, Is.True);
+            Assert.That(page.IsTextVisible, Is.False);
+            AssertOpaquePhysicalFold(page);
+
+            page.AdvanceFold(
+                CounterMenuPageView.FoldDurationSeconds * 0.5f);
+
+            Assert.That(page.FoldAmount, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(
+                page.LeftLeafAngleDegrees,
+                Is.EqualTo(OpenMenuLeafAngleDegrees).Within(0.1f));
+            Assert.That(page.IsFoldTransitionActive, Is.False);
+            Assert.That(page.IsRestingVisible, Is.False);
+            Assert.That(page.IsTextVisible, Is.True,
+                "Readable text appears only after the booklet is open.");
+            Assert.That(
+                page.PropRenderers.All(renderer => renderer.enabled),
+                Is.True);
+        }
+
+        private static void AssertOpaquePhysicalFold(
+            CounterMenuPageView page)
+        {
+            Assert.That(
+                page.RestingPropRenderers.All(renderer =>
+                    renderer != null &&
+                    renderer.enabled &&
+                    renderer.gameObject.activeInHierarchy),
+                Is.True);
+            foreach (Renderer renderer in page.RestingPropRenderers)
+            {
+                var properties = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(properties);
+                Assert.That(
+                    properties.GetColor(BaseColorId).a,
+                    Is.EqualTo(1f).Within(0.001f),
+                    $"{renderer.name} must remain physically opaque.");
+            }
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot(

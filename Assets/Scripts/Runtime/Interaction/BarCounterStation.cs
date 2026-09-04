@@ -6,15 +6,44 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class BarCounterStation : MonoBehaviour, IInteractable
     {
+        public const string SitPromptKey = "interaction.sit_at_counter";
+
         private BarDrinkShopController controller;
         private PlayerRuntime player;
         private CounterSeatInteraction seat;
         private CounterSeatView seatView;
+        private Vector3 serviceLocalOffset;
+        private bool mirrorServiceHorizontally;
         private bool shuttingDown;
+        private bool preparingShopSession;
+        private bool ownsShopSession;
+        private bool waitingForSeatExit;
 
-        public string PromptKey => seat != null && seat.IsSeated
-            ? CounterSeatInteraction.StandPromptKey
-            : "interaction.buy_drink";
+        public string PromptKey
+        {
+            get
+            {
+                if (seat == null || !seat.IsSeated)
+                {
+                    return SitPromptKey;
+                }
+
+                if (controller != null && controller.CanRestPhysicalMenu)
+                {
+                    return MountainRoadCafeMenuController.CloseMenuPromptKey;
+                }
+
+                if (controller != null &&
+                    controller.CanStandAfterMenuRested)
+                {
+                    return controller.IsLookingAtRestingMenu
+                        ? MountainRoadCafeMenuController.OpenMenuPromptKey
+                        : CounterSeatInteraction.StandPromptKey;
+                }
+
+                return string.Empty;
+            }
+        }
         public Vector3 InteractionPosition => seat?.Plan != null
             ? seat.Plan.InteractionPosition
             : transform.position;
@@ -29,6 +58,11 @@ namespace BarPromenade
             seat = null;
             seatView = null;
             player = default;
+            serviceLocalOffset = Vector3.zero;
+            mirrorServiceHorizontally = false;
+            preparingShopSession = false;
+            ownsShopSession = false;
+            waitingForSeatExit = false;
             controller = shopController;
         }
 
@@ -41,7 +75,9 @@ namespace BarPromenade
             BarDrinkShopController shopController,
             PlayerRuntime playerRuntime,
             CounterSeatPlan seatPlan,
-            PlayerCameraFollow cameraFollow)
+            PlayerCameraFollow cameraFollow,
+            Vector3 counterServiceLocalOffset = default,
+            bool mirrorCounterServiceHorizontally = false)
         {
             if (shopController == null)
             {
@@ -81,6 +117,11 @@ namespace BarPromenade
             seat?.Cancel();
             controller = shopController;
             player = playerRuntime;
+            serviceLocalOffset = counterServiceLocalOffset;
+            mirrorServiceHorizontally = mirrorCounterServiceHorizontally;
+            preparingShopSession = false;
+            ownsShopSession = false;
+            waitingForSeatExit = false;
             seat = GetComponent<CounterSeatInteraction>();
             if (seat == null)
             {
@@ -98,12 +139,13 @@ namespace BarPromenade
             }
 
             seat.SeatedChanged += HandleSeatedChanged;
+            seat.InteractionCompleted += HandleSeatInteractionCompleted;
+            seat.Controller.PhaseChanged += HandleSeatPhaseChanged;
             seatView.Initialize(seat, playerRuntime, cameraFollow);
             // Subscription order is deliberate: the adapter acquires the
             // seated view before opening on entry, but closes the modal before
             // the view restores exact camera state on an external cancel.
             controller.Closed += HandleShopClosed;
-            controller.ConfigureSeatedView(seatView);
         }
 
         public bool CanInteract(PlayerInteractor interactor)
@@ -123,9 +165,13 @@ namespace BarPromenade
 
             if (seat.IsSeated)
             {
-                return controller.IsOpen
-                    ? controller.CanExitPhysicalMenu
-                    : true;
+                if (!ownsShopSession || !controller.IsOpen)
+                {
+                    return false;
+                }
+
+                return controller.CanRestPhysicalMenu ||
+                       controller.CanStandAfterMenuRested;
             }
 
             return !controller.IsOpen &&
@@ -143,18 +189,35 @@ namespace BarPromenade
                 }
                 else if (seat.IsSeated)
                 {
-                    if (controller.IsOpen)
+                    if (controller.CanRestPhysicalMenu)
                     {
-                        controller.Exit();
+                        controller.RestPhysicalMenuAtCounter();
+                    }
+                    else if (controller.IsLookingAtRestingMenu)
+                    {
+                        controller.ReopenPhysicalMenu();
                     }
                     else
                     {
-                        seat.RequestExit();
+                        waitingForSeatExit = true;
+                        if (!seat.RequestExit())
+                        {
+                            waitingForSeatExit = false;
+                        }
                     }
                 }
                 else
                 {
-                    seat.Begin();
+                    controller.ConfigureSeatedView(
+                        seatView,
+                        serviceLocalOffset,
+                        mirrorServiceHorizontally);
+                    preparingShopSession = true;
+                    if (!seat.Begin())
+                    {
+                        preparingShopSession = false;
+                        controller.TryReleaseSeatedView(seatView);
+                    }
                 }
             }
         }
@@ -170,7 +233,17 @@ namespace BarPromenade
 
             if (!isSeated)
             {
-                if (controller != null && controller.IsOpen)
+                seatView?.EndMenuFocus();
+                if (seat.Controller != null &&
+                    seat.Controller.Phase ==
+                        PlayerAnimatedInteractionPhase.Exiting)
+                {
+                    waitingForSeatExit = true;
+                    return;
+                }
+
+                if (ownsShopSession &&
+                    controller != null && controller.IsOpen)
                 {
                     shuttingDown = true;
                     try
@@ -186,12 +259,68 @@ namespace BarPromenade
                 return;
             }
 
+            preparingShopSession = false;
+            ownsShopSession = true;
             seatView?.BeginSeatedView();
             if (controller == null ||
                 player.Interactor == null ||
                 !controller.Open(player.Interactor))
             {
                 seat.RequestExit();
+            }
+        }
+
+        private void HandleSeatInteractionCompleted(
+            CounterSeatInteraction completedSeat)
+        {
+            if (shuttingDown || completedSeat != seat ||
+                !waitingForSeatExit || !ownsShopSession)
+            {
+                return;
+            }
+
+            waitingForSeatExit = false;
+            if (controller == null ||
+                !controller.FinishSeatedSessionAfterExit())
+            {
+                shuttingDown = true;
+                try
+                {
+                    controller?.Close();
+                }
+                finally
+                {
+                    shuttingDown = false;
+                }
+
+                ownsShopSession = false;
+            }
+        }
+
+        private void HandleSeatPhaseChanged(
+            PlayerAnimatedInteractionPhase phase)
+        {
+            if (shuttingDown || phase != PlayerAnimatedInteractionPhase.Idle)
+            {
+                return;
+            }
+
+            // BeginPositioned can be accepted and then abort because its
+            // final few centimetres are obstructed. No seated event is
+            // raised in that path, so release the shop's provisional seat
+            // binding explicitly instead of poisoning every other stool.
+            if (preparingShopSession)
+            {
+                preparingShopSession = false;
+                controller?.TryReleaseSeatedView(seatView);
+            }
+
+            // InteractionCompleted is deliberately normal-completion only.
+            // An external cancel still reaches Idle and must not leave a
+            // closed booklet/session orphaned forever.
+            if (waitingForSeatExit && ownsShopSession)
+            {
+                HandleSeatInteractionCompleted(seat);
             }
         }
 
@@ -202,7 +331,13 @@ namespace BarPromenade
                 return;
             }
 
-            seat?.RequestExit();
+            ownsShopSession = false;
+            preparingShopSession = false;
+            waitingForSeatExit = false;
+            if (seat != null && seat.IsSeated)
+            {
+                seat.RequestExit();
+            }
         }
 
         private void Unsubscribe()
@@ -210,6 +345,13 @@ namespace BarPromenade
             if (seat != null)
             {
                 seat.SeatedChanged -= HandleSeatedChanged;
+                seat.InteractionCompleted -=
+                    HandleSeatInteractionCompleted;
+                if (seat.Controller != null)
+                {
+                    seat.Controller.PhaseChanged -=
+                        HandleSeatPhaseChanged;
+                }
             }
 
             if (controller != null)
@@ -221,8 +363,18 @@ namespace BarPromenade
         private void OnDisable()
         {
             shuttingDown = true;
-            controller?.Close();
+            if (ownsShopSession)
+            {
+                controller?.Close();
+            }
+            else if (preparingShopSession)
+            {
+                controller?.TryReleaseSeatedView(seatView);
+            }
             seat?.Cancel();
+            preparingShopSession = false;
+            ownsShopSession = false;
+            waitingForSeatExit = false;
             shuttingDown = false;
         }
 
@@ -230,8 +382,18 @@ namespace BarPromenade
         {
             shuttingDown = true;
             Unsubscribe();
-            controller?.Close();
+            if (ownsShopSession)
+            {
+                controller?.Close();
+            }
+            else if (preparingShopSession)
+            {
+                controller?.TryReleaseSeatedView(seatView);
+            }
             seat?.Cancel();
+            preparingShopSession = false;
+            ownsShopSession = false;
+            waitingForSeatExit = false;
         }
     }
 }

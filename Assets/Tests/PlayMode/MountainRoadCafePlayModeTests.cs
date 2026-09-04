@@ -359,7 +359,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThan(0.99f),
                 "The first-person stool view does not face the counter.");
 
-            seat.Interact(root.Player.Interactor);
+            Assert.That(seat.RequestExit(), Is.True);
             yield return null;
             Assert.That(root.CafeSeatView.IsFirstPerson, Is.False);
             Assert.That(root.CameraFollow.FixedPoseActive, Is.False);

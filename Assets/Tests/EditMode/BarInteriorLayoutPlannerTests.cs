@@ -512,6 +512,9 @@ namespace BarPromenade.Tests.EditMode
                                 StringComparison.Ordinal) &&
                             !child.name.EndsWith(
                                 " Leg",
+                                StringComparison.Ordinal) &&
+                            !child.name.EndsWith(
+                                " Collision",
                                 StringComparison.Ordinal))
                     .ToArray();
 
@@ -534,6 +537,70 @@ namespace BarPromenade.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(host);
             }
+        }
+
+        [Test]
+        public void CounterSeats_ExposeEveryUnoccupiedStoolWithSafeDocks()
+        {
+            BarInteriorLayoutPlan plan =
+                BarInteriorLayoutPlanner.Generate(
+                    105,
+                    "bar-free-counter-seats",
+                    BarActivityKind.Cocktail);
+
+            IReadOnlyList<BarCounterSeatDescriptor> seats =
+                BarCounterSeatPlanner.CreateAvailable(plan);
+
+            Assert.That(seats, Has.Count.EqualTo(4));
+            Assert.That(
+                seats.Select(item => item.SeatTopLocalPosition.x),
+                Is.EquivalentTo(new[] { -2.55f, -1.15f, 0.85f, 4.00f }));
+            Assert.That(
+                seats.Select(item => item.StableId).Distinct().Count(),
+                Is.EqualTo(seats.Count));
+            for (int index = 0; index < seats.Count; index++)
+            {
+                BarCounterSeatDescriptor seat = seats[index];
+                Assert.That(
+                    seat.SeatTopLocalPosition.z -
+                    seat.EntryGroundLocalPosition.z,
+                    Is.GreaterThanOrEqualTo(0.63f));
+                Assert.That(
+                    seat.EntryGroundLocalPosition.z,
+                    Is.GreaterThan(
+                        seat.ApproachGroundLocalPosition.z));
+                Assert.That(
+                    seat.ServiceLocalOffset.x,
+                    Is.EqualTo(
+                        seat.SeatTopLocalPosition.x -
+                        plan.CounterStationPosition.x).Within(0.0001f));
+            }
+
+            BarCounterSeatDescriptor rightmost = seats.Single(
+                item => Mathf.Approximately(
+                    item.SeatTopLocalPosition.x,
+                    BarCounterSeatPlanner.RightReturnSafeSeatX));
+            Assert.That(
+                rightmost.EntryGroundLocalPosition.x,
+                Is.EqualTo(rightmost.SeatTopLocalPosition.x)
+                    .Within(0.0001f));
+            Assert.That(rightmost.MirrorServiceHorizontally, Is.True);
+            Assert.That(
+                rightmost.SeatTopLocalPosition.z -
+                rightmost.EntryGroundLocalPosition.z -
+                MountainRoadCafeWorldBuilder.StoolSeatDiameter * 0.5f,
+                Is.GreaterThan(0.32f),
+                "The entry root must leave the hero capsule clear of " +
+                "the solid stool seat.");
+            BarInteriorFurnitureFootprint counterReturn =
+                plan.FurnitureFootprints.Single(item =>
+                    item.Kind == BarInteriorFurnitureKind.CounterReturn);
+            Assert.That(
+                counterReturn.Bounds.xMin -
+                rightmost.EntryGroundLocalPosition.x,
+                Is.GreaterThanOrEqualTo(0.50f),
+                "The hero capsule must clear the counter-return body and " +
+                "its visible top overhang.");
         }
 
         [Test]

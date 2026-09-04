@@ -78,6 +78,7 @@ namespace BarPromenade.Tests.EditMode
             AdvanceToPhase(timeline, BarPatronDrinkPhase.Lower);
             AdvanceToPhase(timeline, BarPatronDrinkPhase.Rest);
             Assert.That(timeline.ArmWeight, Is.Zero);
+            Assert.That(timeline.CompletedDrinks, Is.EqualTo(1));
             Assert.That(
                 timeline.PhaseDuration,
                 Is.InRange(
@@ -100,6 +101,56 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(timeline.SipTilt, Is.Zero);
                 }
             }
+        }
+
+        [Test]
+        public void RestHeadMotion_IsSubtleMovingAndNeutralAtPhaseEdges()
+        {
+            var timeline = new BarPatronDrinkTimeline(23);
+            AdvanceToPhase(timeline, BarPatronDrinkPhase.Raise);
+            AdvanceToPhase(timeline, BarPatronDrinkPhase.Sip);
+            AdvanceToPhase(timeline, BarPatronDrinkPhase.Lower);
+            AdvanceToPhase(timeline, BarPatronDrinkPhase.Rest);
+
+            Assert.That(timeline.CompletedDrinks, Is.EqualTo(1));
+            Assert.That(timeline.RestHeadEulerDegrees, Is.EqualTo(Vector2.zero));
+
+            float largestMotion = 0f;
+            float largestStep = 0f;
+            Vector2 previous = timeline.RestHeadEulerDegrees;
+            for (int index = 0; index < 120; index++)
+            {
+                timeline.Advance(Step);
+                Vector2 current = timeline.RestHeadEulerDegrees;
+                largestMotion = Mathf.Max(largestMotion, current.magnitude);
+                largestStep = Mathf.Max(
+                    largestStep,
+                    Vector2.Distance(previous, current));
+                Assert.That(
+                    Mathf.Abs(current.x),
+                    Is.LessThanOrEqualTo(
+                        BarPatronDrinkTimeline
+                            .MaximumRestHeadPitchDegrees));
+                Assert.That(
+                    Mathf.Abs(current.y),
+                    Is.LessThanOrEqualTo(
+                        BarPatronDrinkTimeline
+                            .MaximumRestHeadYawDegrees));
+                previous = current;
+            }
+
+            Assert.That(timeline.Phase, Is.EqualTo(BarPatronDrinkPhase.Rest));
+            Assert.That(
+                largestMotion,
+                Is.GreaterThan(0.25f),
+                "The head must keep a faint visible drift between drinks.");
+            Assert.That(
+                largestStep,
+                Is.LessThan(0.20f),
+                "The rest drift must not snap from frame to frame.");
+
+            AdvanceToPhase(timeline, BarPatronDrinkPhase.Raise);
+            Assert.That(timeline.RestHeadEulerDegrees, Is.EqualTo(Vector2.zero));
         }
 
         [Test]
@@ -245,6 +296,28 @@ namespace BarPromenade.Tests.EditMode
                 Vector3.Angle(atSip * Vector3.forward, Vector3.right),
                 Is.LessThan(0.001f),
                 "The bottle roll reference must stay stable at full sip.");
+        }
+
+        [Test]
+        public void RightBottleSocket_UsesRightHandedGripFrame()
+        {
+            Quaternion socket = BarPatronDrinkingArmPose
+                .ResolveRightBottleSocketRotation(
+                    Vector3.right,
+                    Vector3.up);
+
+            Assert.That(
+                Vector3.Angle(socket * Vector3.right, Vector3.left),
+                Is.LessThan(0.001f),
+                "Socket X must point inward from the right-hand contact.");
+            Assert.That(
+                Vector3.Angle(socket * Vector3.up, Vector3.down),
+                Is.LessThan(0.001f),
+                "Socket Y must follow the bottle from grip toward base.");
+            Assert.That(
+                Vector3.Angle(socket * Vector3.forward, Vector3.forward),
+                Is.LessThan(0.001f),
+                "Socket roll must preserve the authored right-hand frame.");
         }
     }
 }

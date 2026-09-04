@@ -6,7 +6,7 @@ namespace BarPromenade.Runtime.World
     /// <summary>
     /// Domain-neutral lifecycle shared by physical counter menus. Delivery,
     /// input and prop motion stay in scene adapters; this class owns only the
-    /// ordered selection and the one-shot confirmation contract.
+    /// ordered selection and the explicit open/rest/retrieve contract.
     /// </summary>
     public enum CounterMenuState
     {
@@ -15,7 +15,8 @@ namespace BarPromenade.Runtime.World
         Open = 2,
         Confirmed = 3,
         Retrieving = 4,
-        Closed = 5
+        Closed = 5,
+        Resting = 6
     }
 
     public sealed class CounterMenuModel
@@ -121,11 +122,41 @@ namespace BarPromenade.Runtime.World
             return true;
         }
 
+        /// <summary>
+        /// Closes the readable spread but deliberately leaves the physical
+        /// booklet on the counter. Retrieval is a separate transition so a
+        /// seated guest can reopen it, and staff cannot take it before the
+        /// guest has stood up.
+        /// </summary>
+        public bool RestOnCounter()
+        {
+            if (State != CounterMenuState.Open &&
+                State != CounterMenuState.Confirmed)
+            {
+                return false;
+            }
+
+            State = CounterMenuState.Resting;
+            return true;
+        }
+
+        public bool Reopen()
+        {
+            if (State != CounterMenuState.Resting)
+            {
+                return false;
+            }
+
+            State = CounterMenuState.Open;
+            return true;
+        }
+
         public bool BeginRetrieval()
         {
             if (State != CounterMenuState.Delivering &&
                 State != CounterMenuState.Open &&
-                State != CounterMenuState.Confirmed)
+                State != CounterMenuState.Confirmed &&
+                State != CounterMenuState.Resting)
             {
                 return false;
             }

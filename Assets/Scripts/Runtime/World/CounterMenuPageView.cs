@@ -199,13 +199,29 @@ namespace BarPromenade
     /// <summary>
     /// Shared physical-page implementation. Scene adapters only resolve the
     /// authored prop, sockets and localized line values; this view creates
-    /// and places all world text, marker state, visibility and camera focus.
+    /// and places all world text, marker state, camera focus and the opaque
+    /// two-leaf hinge used while the booklet physically folds and unfolds.
     /// </summary>
     [DefaultExecutionOrder(110)]
     [DisallowMultipleComponent]
     public sealed class CounterMenuPageView : MonoBehaviour
     {
         private const float TextLiftMeters = 0.0015f;
+        private const float FoldEndpointTolerance = 0.0001f;
+        private const float OpenLeafAngleDegrees = 5.5f;
+        private const float ClosedLeftLeafAngleDegrees = 174.5f;
+        private const float RightLeafAngleDegrees = -5.5f;
+        private const float CoverThicknessMeters = 0.006f;
+        private const float PageThicknessMeters = 0.004f;
+        private const float CoverGapMeters = 0.006f;
+        private const float PageGapMeters = 0.010f;
+        private const float PageCoverClearanceMeters = 0.001f;
+
+        public const float FoldDurationSeconds = 0.40f;
+
+        private static readonly int BaseColorId =
+            Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
 
         [SerializeField] private Transform propRoot;
         [SerializeField] private Renderer[] propRenderers =
@@ -213,6 +229,10 @@ namespace BarPromenade
         [SerializeField] private TMP_Text[] itemLines =
             Array.Empty<TMP_Text>();
         [SerializeField] private TMP_Text selectionMarker;
+        [SerializeField] private Transform restingPropRoot;
+        [SerializeField] private Renderer restingPropRenderer;
+        [SerializeField] private Transform leftFoldHinge;
+        [SerializeField] private Transform rightFoldHinge;
 
         private Vector3[] rowLocalPositions = Array.Empty<Vector3>();
         private Vector3[] rowRightLocal = Array.Empty<Vector3>();
@@ -223,6 +243,12 @@ namespace BarPromenade
         private Vector3 focusUpLocal;
         private Vector3 focusNormalLocal;
         private CounterMenuPageStyle style;
+        private readonly List<Renderer> restingPropRenderers =
+            new List<Renderer>();
+        private float foldAmount = 1f;
+        private float foldTarget = 1f;
+        private bool requestedPropVisible;
+        private bool requestedTextVisible;
 
         public bool IsConfigured { get; private set; }
         public bool IsPropVisible { get; private set; }
@@ -232,6 +258,34 @@ namespace BarPromenade
         public IReadOnlyList<TMP_Text> ItemLines => itemLines;
         public TMP_Text SelectionMarker => selectionMarker;
         public Transform PropRoot => propRoot;
+        public IReadOnlyList<Renderer> PropRenderers => propRenderers;
+        public Renderer RestingPropRenderer => restingPropRenderer;
+        public IReadOnlyList<Renderer> RestingPropRenderers =>
+            restingPropRenderers;
+        public Transform LeftFoldHinge => leftFoldHinge;
+        public Transform RightFoldHinge => rightFoldHinge;
+        public float FoldAmount => foldAmount;
+        public float LeftLeafAngleDegrees => Mathf.Lerp(
+            OpenLeafAngleDegrees,
+            ClosedLeftLeafAngleDegrees,
+            SmootherStep(foldAmount));
+        public bool IsFoldTransitionActive => requestedPropVisible &&
+            Mathf.Abs(foldAmount - foldTarget) > FoldEndpointTolerance;
+        public Vector3 RestingWorldCenter
+        {
+            get
+            {
+                return TryResolveRestingBounds(out Bounds bounds)
+                    ? bounds.center
+                    : propRoot != null
+                        ? propRoot.position
+                        : transform.position;
+            }
+        }
+
+        public bool IsRestingVisible => requestedPropVisible &&
+            foldTarget > 0.5f && restingPropRoot != null &&
+            restingPropRoot.gameObject.activeSelf;
 
         public void Initialize(
             Transform configuredPropRoot,
@@ -333,6 +387,7 @@ namespace BarPromenade
                 .InverseTransformDirection(focusNormal).normalized;
             focusUpLocal = propRoot
                 .InverseTransformDirection(focusUp).normalized;
+            BuildFoldingProp(focusPosition, focusNormal, focusUp);
             BuildPageText(displayLines, selectionAnchor.name);
             IsConfigured = true;
             SetSelection(0, false);
@@ -398,22 +453,447 @@ namespace BarPromenade
 
         public void SetVisible(bool propVisible, bool textVisible)
         {
+            requestedPropVisible = propVisible;
+            requestedTextVisible = propVisible && textVisible;
+            if (!propVisible)
+            {
+                foldAmount = 1f;
+                foldTarget = 1f;
+            }
+            else
+            {
+                foldTarget = 0f;
+            }
+
+            ApplyFoldPose();
+            RefreshPresentationVisibility();
+        }
+
+        /// <summary>
+        /// Starts closing the readable spread around its physical spine. The
+        /// opaque cover and page leaves remain parented to the authored prop,
+        /// so delivery and post-stand retrieval carry the folded booklet too.
+        /// </summary>
+        public void SetRestingVisible(bool visible)
+        {
+            requestedPropVisible = visible;
+            requestedTextVisible = false;
+            foldTarget = 1f;
+            if (!visible)
+            {
+                foldAmount = 1f;
+            }
+
+            ApplyFoldPose();
+            RefreshPresentationVisibility();
+        }
+
+        public void AdvanceFold(float unscaledDeltaTime)
+        {
+            if (float.IsNaN(unscaledDeltaTime) ||
+                float.IsInfinity(unscaledDeltaTime) ||
+                unscaledDeltaTime < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(unscaledDeltaTime),
+                    unscaledDeltaTime,
+                    "Menu fold time must be finite and non-negative.");
+            }
+
+            if (!IsConfigured || !requestedPropVisible ||
+                !IsFoldTransitionActive)
+            {
+                return;
+            }
+
+            foldAmount = Mathf.MoveTowards(
+                foldAmount,
+                foldTarget,
+                unscaledDeltaTime / FoldDurationSeconds);
+            ApplyFoldPose();
+            RefreshPresentationVisibility();
+        }
+
+        public bool IsLookingAtRestingProp(
+            Camera camera,
+            float maximumDistance = 2.5f)
+        {
+            if (!IsRestingVisible || camera == null ||
+                restingPropRenderer == null)
+            {
+                return false;
+            }
+
+            if (!TryResolveRestingBounds(out Bounds bounds))
+            {
+                return false;
+            }
+
+            Vector3 toMenu = bounds.center - camera.transform.position;
+            float distance = toMenu.magnitude;
+            if (distance <= 0.001f || distance > maximumDistance)
+            {
+                return false;
+            }
+
+            float apparentRadius = Mathf.Asin(Mathf.Clamp01(
+                bounds.extents.magnitude / distance));
+            float gazeAllowance = apparentRadius + 3f * Mathf.Deg2Rad;
+            return Vector3.Dot(
+                       camera.transform.forward,
+                       toMenu / distance) >= Mathf.Cos(gazeAllowance);
+        }
+
+        private void Update()
+        {
+            AdvanceFold(Time.unscaledDeltaTime);
+        }
+
+        private void BuildFoldingProp(
+            Vector3 focusPosition,
+            Vector3 focusNormal,
+            Vector3 focusUp)
+        {
+            Vector3 normal = focusNormal.normalized;
+            if (Vector3.Dot(normal, Vector3.up) < 0f)
+            {
+                normal = -normal;
+            }
+
+            Vector3 up = Vector3.ProjectOnPlane(
+                focusUp,
+                normal).normalized;
+            Vector3 right = Vector3.Cross(normal, up).normalized;
+            Renderer coverSource = FindRenderer("cover") ??
+                propRenderers[0];
+            Renderer pageSource = FindRenderer("page") ?? coverSource;
+
+            float coverWidth = Mathf.Clamp(
+                ResolveProjectedSize(coverSource.bounds, right, 0.54f),
+                0.30f,
+                0.75f);
+            float coverDepth = Mathf.Clamp(
+                ResolveProjectedSize(coverSource.bounds, up, 0.32f),
+                0.18f,
+                0.60f);
+            float pageWidth = Mathf.Clamp(
+                ResolveProjectedSize(pageSource.bounds, right,
+                    coverWidth - 0.04f),
+                coverWidth * 0.72f,
+                coverWidth - 0.012f);
+            float pageDepth = Mathf.Clamp(
+                ResolveProjectedSize(pageSource.bounds, up,
+                    coverDepth - 0.03f),
+                coverDepth * 0.72f,
+                coverDepth - 0.012f);
+
+            float surfaceProjection = Mathf.Max(
+                ResolveProjectedMaximum(coverSource.bounds, normal),
+                ResolveProjectedMaximum(pageSource.bounds, normal));
+            Vector3 hingePosition = focusPosition + normal *
+                (surfaceProjection - Vector3.Dot(focusPosition, normal));
+
+            var foldRootObject = new GameObject(
+                "Physical Counter Menu Fold");
+            foldRootObject.layer = propRoot.gameObject.layer;
+            restingPropRoot = foldRootObject.transform;
+            restingPropRoot.SetPositionAndRotation(
+                hingePosition,
+                Quaternion.LookRotation(up, normal));
+            restingPropRoot.SetParent(propRoot, true);
+
+            leftFoldHinge = CreateFoldHinge("Left Leaf Hinge");
+            rightFoldHinge = CreateFoldHinge("Right Leaf Hinge");
+
+            Color coverColor = ResolveOpaqueColor(
+                coverSource,
+                new Color(0.11f, 0.045f, 0.025f, 1f));
+            Color pageColor = ResolveOpaqueColor(
+                pageSource,
+                new Color(0.74f, 0.66f, 0.47f, 1f));
+            float coverLeafWidth =
+                (coverWidth - CoverGapMeters) * 0.5f;
+            float pageLeafWidth =
+                (pageWidth - PageGapMeters) * 0.5f;
+
+            Renderer leftCover = CreateFoldPanel(
+                "Left Opaque Cover",
+                leftFoldHinge,
+                new Vector3(
+                    -(CoverGapMeters + coverLeafWidth) * 0.5f,
+                    -CoverThicknessMeters * 0.5f,
+                    0f),
+                new Vector3(
+                    coverLeafWidth,
+                    CoverThicknessMeters,
+                    coverDepth),
+                coverColor,
+                coverSource);
+            CreateFoldPanel(
+                "Right Opaque Cover",
+                rightFoldHinge,
+                new Vector3(
+                    (CoverGapMeters + coverLeafWidth) * 0.5f,
+                    -CoverThicknessMeters * 0.5f,
+                    0f),
+                new Vector3(
+                    coverLeafWidth,
+                    CoverThicknessMeters,
+                    coverDepth),
+                coverColor,
+                coverSource);
+            CreateFoldPanel(
+                "Left Opaque Pages",
+                leftFoldHinge,
+                new Vector3(
+                    -(PageGapMeters + pageLeafWidth) * 0.5f,
+                    PageCoverClearanceMeters +
+                    PageThicknessMeters * 0.5f,
+                    0f),
+                new Vector3(
+                    pageLeafWidth,
+                    PageThicknessMeters,
+                    pageDepth),
+                pageColor,
+                pageSource);
+            CreateFoldPanel(
+                "Right Opaque Pages",
+                rightFoldHinge,
+                new Vector3(
+                    (PageGapMeters + pageLeafWidth) * 0.5f,
+                    PageCoverClearanceMeters +
+                    PageThicknessMeters * 0.5f,
+                    0f),
+                new Vector3(
+                    pageLeafWidth,
+                    PageThicknessMeters,
+                    pageDepth),
+                pageColor,
+                pageSource);
+            CreateFoldPanel(
+                "Opaque Menu Spine",
+                restingPropRoot,
+                new Vector3(
+                    0f,
+                    -CoverThicknessMeters * 0.5f,
+                    0f),
+                new Vector3(
+                    CoverGapMeters + 0.006f,
+                    CoverThicknessMeters,
+                    coverDepth),
+                coverColor,
+                coverSource);
+
+            restingPropRenderer = leftCover;
+            foldAmount = 1f;
+            foldTarget = 1f;
+            ApplyFoldPose();
+            foldRootObject.SetActive(false);
+        }
+
+        private Transform CreateFoldHinge(string objectName)
+        {
+            var hinge = new GameObject(objectName);
+            hinge.layer = propRoot.gameObject.layer;
+            hinge.transform.SetParent(restingPropRoot, false);
+            return hinge.transform;
+        }
+
+        private Renderer CreateFoldPanel(
+            string objectName,
+            Transform parent,
+            Vector3 localPosition,
+            Vector3 size,
+            Color color,
+            Renderer source)
+        {
+            GameObject panel = RuntimePrimitiveFactory.CreateBox(
+                objectName,
+                parent,
+                localPosition,
+                size,
+                color,
+                source != null ? source.sharedMaterial : null,
+                false);
+            panel.layer = source != null
+                ? source.gameObject.layer
+                : propRoot.gameObject.layer;
+            Renderer renderer = panel.GetComponent<Renderer>();
+            if (source != null)
+            {
+                renderer.shadowCastingMode = source.shadowCastingMode;
+                renderer.receiveShadows = source.receiveShadows;
+                renderer.lightProbeUsage = source.lightProbeUsage;
+                renderer.reflectionProbeUsage = source.reflectionProbeUsage;
+            }
+
+            restingPropRenderers.Add(renderer);
+            return renderer;
+        }
+
+        private Renderer FindRenderer(string nameFragment)
+        {
             for (int index = 0; index < propRenderers.Length; index++)
             {
-                if (propRenderers[index] != null)
+                Renderer candidate = propRenderers[index];
+                if (candidate != null &&
+                    candidate.name.IndexOf(
+                        nameFragment,
+                        StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    propRenderers[index].enabled = propVisible;
+                    return candidate;
                 }
             }
 
-            IsPropVisible = propVisible;
-            IsTextVisible = propVisible && textVisible;
+            return null;
+        }
+
+        private void ApplyFoldPose()
+        {
+            if (leftFoldHinge == null || rightFoldHinge == null)
+            {
+                return;
+            }
+
+            leftFoldHinge.localPosition = Vector3.zero;
+            leftFoldHinge.localRotation = Quaternion.AngleAxis(
+                LeftLeafAngleDegrees,
+                Vector3.forward);
+            leftFoldHinge.localScale = Vector3.one;
+            rightFoldHinge.localPosition = Vector3.zero;
+            rightFoldHinge.localRotation = Quaternion.AngleAxis(
+                RightLeafAngleDegrees,
+                Vector3.forward);
+            rightFoldHinge.localScale = Vector3.one;
+        }
+
+        private void RefreshPresentationVisibility()
+        {
+            bool showAuthoredOpen = requestedPropVisible &&
+                foldTarget <= FoldEndpointTolerance &&
+                foldAmount <= FoldEndpointTolerance;
+            SetAuthoredRenderersEnabled(showAuthoredOpen);
+            if (restingPropRoot != null)
+            {
+                restingPropRoot.gameObject.SetActive(
+                    requestedPropVisible && !showAuthoredOpen);
+            }
+
+            IsPropVisible = requestedPropVisible;
+            IsTextVisible = showAuthoredOpen && requestedTextVisible;
             for (int index = 0; index < itemLines.Length; index++)
             {
                 SetTextRenderer(itemLines[index], IsTextVisible);
             }
 
             SetTextRenderer(selectionMarker, IsTextVisible);
+        }
+
+        private void SetAuthoredRenderersEnabled(bool enabled)
+        {
+            for (int index = 0; index < propRenderers.Length; index++)
+            {
+                if (propRenderers[index] != null)
+                {
+                    propRenderers[index].enabled = enabled;
+                }
+            }
+        }
+
+        private bool TryResolveRestingBounds(out Bounds bounds)
+        {
+            bounds = default;
+            bool found = false;
+            for (int index = 0; index < restingPropRenderers.Count; index++)
+            {
+                Renderer renderer = restingPropRenderers[index];
+                if (renderer == null || !renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                if (!found)
+                {
+                    bounds = renderer.bounds;
+                    found = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            return found;
+        }
+
+        private static float ResolveProjectedMaximum(
+            Bounds bounds,
+            Vector3 worldAxis)
+        {
+            Vector3 axis = worldAxis.normalized;
+            Vector3 extents = bounds.extents;
+            return Vector3.Dot(bounds.center, axis) +
+                Mathf.Abs(axis.x) * extents.x +
+                Mathf.Abs(axis.y) * extents.y +
+                Mathf.Abs(axis.z) * extents.z;
+        }
+
+        private static Color ResolveOpaqueColor(
+            Renderer source,
+            Color fallback)
+        {
+            Color result = fallback;
+            if (source != null)
+            {
+                var properties = new MaterialPropertyBlock();
+                source.GetPropertyBlock(properties);
+                if (properties.HasColor(BaseColorId))
+                {
+                    result = properties.GetColor(BaseColorId);
+                }
+                else if (properties.HasColor(ColorId))
+                {
+                    result = properties.GetColor(ColorId);
+                }
+                else if (source.sharedMaterial != null &&
+                         source.sharedMaterial.HasProperty(BaseColorId))
+                {
+                    result = source.sharedMaterial.GetColor(BaseColorId);
+                }
+                else if (source.sharedMaterial != null &&
+                         source.sharedMaterial.HasProperty(ColorId))
+                {
+                    result = source.sharedMaterial.GetColor(ColorId);
+                }
+            }
+
+            if (!IsFinite(result.r) || !IsFinite(result.g) ||
+                !IsFinite(result.b))
+            {
+                result = fallback;
+            }
+
+            result.a = 1f;
+            return result;
+        }
+
+        private static float ResolveProjectedSize(
+            Bounds bounds,
+            Vector3 worldAxis,
+            float fallback)
+        {
+            Vector3 axis = worldAxis.normalized;
+            Vector3 extents = bounds.extents;
+            float size = 2f * (
+                Mathf.Abs(axis.x) * extents.x +
+                Mathf.Abs(axis.y) * extents.y +
+                Mathf.Abs(axis.z) * extents.z);
+            return float.IsNaN(size) ||
+                   float.IsInfinity(size) ||
+                   size <= 0.0001f
+                ? fallback
+                : size;
         }
 
         private void BuildPageText(
@@ -578,6 +1058,13 @@ namespace BarPromenade
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private static float SmootherStep(float amount)
+        {
+            float clamped = Mathf.Clamp01(amount);
+            return clamped * clamped * clamped *
+                   (clamped * (clamped * 6f - 15f) + 10f);
         }
     }
 }

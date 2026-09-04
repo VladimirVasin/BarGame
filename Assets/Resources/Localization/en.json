@@ -369,6 +369,18 @@
       "value": "E — open the bar menu"
     },
     {
+      "key": "interaction.sit_at_counter",
+      "value": "E — sit at the counter"
+    },
+    {
+      "key": "interaction.close_counter_menu",
+      "value": "E — close the menu"
+    },
+    {
+      "key": "interaction.open_counter_menu",
+      "value": "E — open the menu"
+    },
+    {
       "key": "interaction.talk_cashier",
       "value": "E — Talk to the cashier"
     },

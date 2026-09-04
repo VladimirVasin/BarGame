@@ -4,9 +4,9 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Camera-local arms used by the seated bar drink presentation. Both arm
-    /// subsets come from the production Player3D prefab; bottle and vessel
-    /// visuals remain owned by the drink service.
+    /// Camera-local attachment rig used by the seated bar drink presentation.
+    /// Its Player3D arm subsets can be hidden while their grip transforms stay
+    /// active for drink-service vessel movement.
     /// </summary>
     [DefaultExecutionOrder(300)]
     [DisallowMultipleComponent]
@@ -46,11 +46,14 @@ namespace BarPromenade
         private Transform leftVesselGripAnchor;
         private Player3DFirstPersonSubset rightArmSubset;
         private Player3DFirstPersonSubset leftArmSubset;
+        private float poseVisibilityAmount;
 
         public bool IsInitialized { get; private set; }
         public bool IsVisible =>
+            !VisualsSuppressed &&
             presentationRoot != null &&
             presentationRoot.gameObject.activeSelf;
+        public bool VisualsSuppressed { get; private set; }
         public float VisibilityAmount { get; private set; }
         public float RightGripAmount { get; private set; }
         public float DrinkLiftAmount { get; private set; }
@@ -95,13 +98,18 @@ namespace BarPromenade
         public void ApplyPresentation(
             float visibility,
             float rightGrip,
-            float drinkLift)
+            float drinkLift,
+            bool renderVisuals = true)
         {
             RequireFinite(visibility, nameof(visibility));
             RequireFinite(rightGrip, nameof(rightGrip));
             RequireFinite(drinkLift, nameof(drinkLift));
 
-            VisibilityAmount = Mathf.Clamp01(visibility);
+            poseVisibilityAmount = Mathf.Clamp01(visibility);
+            VisualsSuppressed = !renderVisuals;
+            VisibilityAmount = renderVisuals
+                ? poseVisibilityAmount
+                : 0f;
             RightGripAmount = Mathf.Clamp01(rightGrip);
             DrinkLiftAmount = Mathf.Clamp01(drinkLift);
             if (!IsInitialized || presentationRoot == null)
@@ -109,11 +117,12 @@ namespace BarPromenade
                 return;
             }
 
-            bool shouldBeVisible =
-                VisibilityAmount > VisibilityThreshold &&
+            SetArmRenderersEnabled(renderVisuals);
+            bool shouldBeActive =
+                poseVisibilityAmount > VisibilityThreshold &&
                 targetCamera != null;
-            presentationRoot.gameObject.SetActive(shouldBeVisible);
-            if (shouldBeVisible)
+            presentationRoot.gameObject.SetActive(shouldBeActive);
+            if (shouldBeActive)
             {
                 RefreshPose();
             }
@@ -121,9 +130,12 @@ namespace BarPromenade
 
         public void Hide()
         {
+            poseVisibilityAmount = 0f;
             VisibilityAmount = 0f;
             RightGripAmount = 0f;
             DrinkLiftAmount = 0f;
+            VisualsSuppressed = false;
+            SetArmRenderersEnabled(true);
             if (presentationRoot == null)
             {
                 return;
@@ -145,7 +157,8 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            if (!IsVisible)
+            if (presentationRoot == null ||
+                !presentationRoot.gameObject.activeSelf)
             {
                 return;
             }
@@ -235,7 +248,7 @@ namespace BarPromenade
                 presentationRoot.SetParent(targetCamera.transform, false);
             }
 
-            float reveal = SmootherStep(VisibilityAmount);
+            float reveal = SmootherStep(poseVisibilityAmount);
             float grip = SmootherStep(RightGripAmount);
             float lift = SmootherStep(DrinkLiftAmount);
 
@@ -268,6 +281,30 @@ namespace BarPromenade
             leftArmRoot.localScale = Vector3.one;
         }
 
+        private void SetArmRenderersEnabled(bool enabled)
+        {
+            SetSubsetRenderersEnabled(rightArmSubset, enabled);
+            SetSubsetRenderersEnabled(leftArmSubset, enabled);
+        }
+
+        private static void SetSubsetRenderersEnabled(
+            Player3DFirstPersonSubset subset,
+            bool enabled)
+        {
+            if (subset == null)
+            {
+                return;
+            }
+
+            foreach (Renderer renderer in subset.VisibleRenderers)
+            {
+                if (renderer != null)
+                {
+                    renderer.enabled = enabled;
+                }
+            }
+        }
+
         private void ReleasePresentation()
         {
             rightArmSubset?.Dispose();
@@ -294,6 +331,11 @@ namespace BarPromenade
             leftArmRoot = null;
             rightBottleGripAnchor = null;
             leftVesselGripAnchor = null;
+            poseVisibilityAmount = 0f;
+            VisibilityAmount = 0f;
+            RightGripAmount = 0f;
+            DrinkLiftAmount = 0f;
+            VisualsSuppressed = false;
         }
 
         private static void RequireFinite(float value, string parameterName)

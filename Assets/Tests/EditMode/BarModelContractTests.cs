@@ -354,7 +354,12 @@ namespace BarPromenade.Tests.EditMode
                     new Vector3(-1.15f, 0f, 3.35f));
                 AssertAnchor(
                     registry, instance.transform, "hero_stand",
-                    new Vector3(-1.15f, 0f, 4.02f));
+                    new Vector3(
+                        -1.15f,
+                        0f,
+                        registry.SourceGeneratorVersion == "3.2.1"
+                            ? 4.02f
+                            : 3.89f));
                 AssertAnchor(
                     registry, instance.transform, "hero_camera",
                     new Vector3(-1.15f, 1.6175f, 4.65f));
@@ -391,7 +396,6 @@ namespace BarPromenade.Tests.EditMode
                 "Bar Drink Service Stool Footring",
                 "Bar Drink Service Stool",
                 "Bartender Duckboard",
-                "Drink Order Sign",
                 "Exit Header"
             };
 
@@ -402,6 +406,16 @@ namespace BarPromenade.Tests.EditMode
                         part.name == requiredParts[index]),
                     Is.True,
                     $"the pub redesign has no '{requiredParts[index]}'");
+            }
+
+            if (manifest.generator_version != "3.2.1")
+            {
+                Assert.That(
+                    manifest.parts.Any(part =>
+                        part.name == "Drink Order Sign" ||
+                        part.name == "Drink Order Sign Frame"),
+                    Is.False,
+                    "The retired single-seat marker returned to the model.");
             }
 
             BarManifestPart regularSeat = manifest.parts.Single(part =>
@@ -429,6 +443,14 @@ namespace BarPromenade.Tests.EditMode
                 heroStool.colliders,
                 Has.Length.EqualTo(1),
                 "the authored hero stool seat must keep its collider");
+            if (manifest.generator_version != "3.2.1")
+            {
+                Assert.That(
+                    regularSeat.colliders,
+                    Has.Length.EqualTo(1),
+                    "every current counter stool must share the same " +
+                    "solid seat contract");
+            }
 
             for (int index = 1; index <= 4; index++)
             {
@@ -799,15 +821,40 @@ namespace BarPromenade.Tests.EditMode
                 AssertPlaced(room, "HeroApproach",
                     new Vector3(-1.15f, 0f, 3.35f));
                 AssertPlaced(room, "HeroStand",
-                    new Vector3(-1.15f, 0f, 4.02f));
+                    new Vector3(
+                        -1.15f,
+                        0f,
+                        room.Find("HeroStand").localPosition.z < 3.95f
+                            ? 3.89f
+                            : 4.02f));
                 AssertPlaced(room, "HeroCamera",
                     new Vector3(-1.15f, 1.6175f, 4.65f));
                 AssertPlaced(room, "HeroCameraLook",
                     new Vector3(-1.15f, 1.7175f, 7.37f));
                 Assert.That(room.Find("Drink Order Point"), Is.Null);
-                Assert.That(room.Find("Drink Order Sign"), Is.Not.Null);
                 Assert.That(room.Find("Exit Header"), Is.Not.Null);
                 Assert.That(room.Find("Bartender Duckboard"), Is.Not.Null);
+
+                Transform rightmostStool = room.Find("Bar Stool 6");
+                Assert.That(rightmostStool, Is.Not.Null);
+                Assert.That(
+                    rightmostStool.GetComponent<Renderer>().bounds.center.x,
+                    Is.EqualTo(4.00f).Within(Tolerance));
+
+                Renderer[] duckboard = room
+                    .GetComponentsInChildren<Renderer>(true)
+                    .Where(item => item.name.StartsWith(
+                        "Bartender Duckboard",
+                        StringComparison.Ordinal))
+                    .ToArray();
+                Assert.That(duckboard, Is.Not.Empty);
+                Bounds duckboardBounds = duckboard[0].bounds;
+                for (int index = 1; index < duckboard.Length; index++)
+                {
+                    duckboardBounds.Encapsulate(duckboard[index].bounds);
+                }
+                Assert.That(duckboardBounds.min.x, Is.LessThanOrEqualTo(-2.53f));
+                Assert.That(duckboardBounds.max.x, Is.GreaterThanOrEqualTo(4.13f));
 
                 Transform regularStool = room.Find("Bar Stool 1");
                 Transform heroStool = room.Find(
@@ -841,6 +888,52 @@ namespace BarPromenade.Tests.EditMode
                     heroSeat.center.z,
                     Is.EqualTo(regularSeat.center.z).Within(Tolerance),
                     "The hero stool must sit in the same visual row.");
+
+                string[] regularStoolNames =
+                {
+                    "Bar Stool 1",
+                    "Bar Stool 2",
+                    "Bar Stool 4",
+                    "Bar Stool 5",
+                    "Bar Stool 6"
+                };
+                for (int index = 0;
+                     index < regularStoolNames.Length;
+                     index++)
+                {
+                    Transform collision = room.Find(
+                        regularStoolNames[index] + " Collision");
+                    Assert.That(
+                        collision,
+                        Is.Not.Null,
+                        regularStoolNames[index] +
+                        " has no physical seat disk");
+                    BoxCollider seatCollider =
+                        collision.GetComponent<BoxCollider>();
+                    Assert.That(seatCollider, Is.Not.Null);
+                    Transform visual = room.Find(
+                        regularStoolNames[index]);
+                    Assert.That(visual, Is.Not.Null);
+                    Renderer visualRenderer =
+                        visual.GetComponent<Renderer>();
+                    Assert.That(visualRenderer, Is.Not.Null);
+                    Assert.That(
+                        Vector3.Distance(
+                            seatCollider.bounds.center,
+                            visualRenderer.bounds.center),
+                        Is.LessThan(Tolerance),
+                        regularStoolNames[index] +
+                        " collision is not centered on its visible seat");
+                    Assert.That(
+                        seatCollider.size,
+                        Is.EqualTo(new Vector3(
+                            MountainRoadCafeWorldBuilder
+                                .StoolSeatDiameter,
+                            MountainRoadCafeWorldBuilder
+                                .StoolSeatThickness,
+                            MountainRoadCafeWorldBuilder
+                                .StoolSeatDiameter)));
+                }
 
                 //  One pendant per light anchor, hung where the plan says
                 //  and at the size it was authored - a lamp cloned from a
@@ -1128,6 +1221,7 @@ namespace BarPromenade.Tests.EditMode
         private sealed class BarManifest
         {
             public string design_id;
+            public string generator_version;
             public BarDimensionsManifest dimensions_m;
             public float wall_thickness_m;
             public BarOpeningManifest door_opening_m;

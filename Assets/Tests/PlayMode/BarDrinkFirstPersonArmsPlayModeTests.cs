@@ -73,6 +73,40 @@ namespace BarPromenade.Tests.PlayMode
                     arms.LeftVesselGripAnchor.position),
                 Is.GreaterThan(0.02f));
 
+            arms.ApplyPresentation(
+                1f,
+                0f,
+                0f,
+                renderVisuals: false);
+            yield return null;
+
+            Assert.That(arms.IsVisible, Is.False);
+            Assert.That(arms.VisualsSuppressed, Is.True);
+            Assert.That(arms.VisibilityAmount, Is.Zero);
+            Assert.That(
+                arms.PresentationRoot.gameObject.activeSelf,
+                Is.True,
+                "The hidden rig must remain active as the vessel attachment.");
+            AssertAllRenderersDisabled(arms.RightModelRegistry);
+            AssertAllRenderersDisabled(arms.LeftModelRegistry);
+            Vector3 hiddenLeftRestPosition =
+                arms.LeftVesselGripAnchor.position;
+
+            arms.ApplyPresentation(
+                1f,
+                0f,
+                1f,
+                renderVisuals: false);
+            yield return null;
+
+            Assert.That(arms.IsVisible, Is.False);
+            Assert.That(
+                Vector3.Distance(
+                    hiddenLeftRestPosition,
+                    arms.LeftVesselGripAnchor.position),
+                Is.GreaterThan(0.02f),
+                "Suppressing arm meshes must not freeze the vessel anchor.");
+
             camera.transform.SetPositionAndRotation(
                 new Vector3(2f, 1.5f, -3f),
                 Quaternion.Euler(8f, 37f, 0f));
@@ -235,6 +269,22 @@ namespace BarPromenade.Tests.PlayMode
             for (int index = 0; index < lights.Length; index++)
             {
                 Assert.That(lights[index].enabled, Is.False);
+            }
+        }
+
+        private static void AssertAllRenderersDisabled(
+            Player3DAssetRegistry registry)
+        {
+            Assert.That(registry, Is.Not.Null);
+            Renderer[] renderers =
+                registry.GetComponentsInChildren<Renderer>(true);
+            Assert.That(renderers, Is.Not.Empty);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Assert.That(
+                    renderers[index].enabled,
+                    Is.False,
+                    $"Renderer '{renderers[index].name}' must stay hidden.");
             }
         }
 

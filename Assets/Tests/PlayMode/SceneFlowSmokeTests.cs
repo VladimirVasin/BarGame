@@ -1252,7 +1252,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.CounterStation, Is.Not.Null);
             Assert.That(interiorRoot.DrinkShop, Is.Not.Null);
             Assert.That(interiorRoot.CounterStation.UsesPhysicalSeat, Is.True);
-            Assert.That(interiorRoot.DrinkShop.UsesPhysicalMenu, Is.True);
+            Assert.That(
+                interiorRoot.DrinkShop.HasPhysicalMenuPresentation,
+                Is.True);
             Assert.That(
                 interiorRoot.DrinkShop.MenuPresentation.Carrier,
                 Is.SameAs(
@@ -1263,7 +1265,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.CounterStation.SeatView, Is.Not.Null);
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Has.Length.EqualTo(1));
+                Has.Length.EqualTo(4));
+            Assert.That(interiorRoot.CounterStations, Has.Count.EqualTo(4));
             Transform drinkOrderPoint =
                 interiorRoot.Room.Find("Drink Order Point");
             Transform drinkOrderSign =
@@ -1272,10 +1275,14 @@ namespace BarPromenade.Tests.PlayMode
                 drinkOrderPoint,
                 Is.Null,
                 "The hero stool must not have a unique floor marker.");
-            Assert.That(drinkOrderSign, Is.Not.Null);
-            Renderer drinkOrderSignRenderer =
-                drinkOrderSign.GetComponent<Renderer>();
-            Assert.That(drinkOrderSignRenderer.enabled, Is.True);
+            Renderer drinkOrderSignRenderer = drinkOrderSign != null
+                ? drinkOrderSign.GetComponent<Renderer>()
+                : null;
+            Assert.That(
+                drinkOrderSignRenderer == null ||
+                !drinkOrderSignRenderer.enabled,
+                Is.True,
+                "The former single-seat attraction sign stays absent.");
             BoxCollider counterStationTrigger =
                 interiorRoot.CounterStation.GetComponent<BoxCollider>();
             Assert.That(counterStationTrigger, Is.Not.Null);
@@ -1313,7 +1320,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(interiorRoot.CounterStation));
             Assert.That(
                 interiorRoot.CounterStation.PromptKey,
-                Is.EqualTo("interaction.buy_drink"));
+                Is.EqualTo(BarCounterStation.SitPromptKey));
 
             int cashBefore = GameSessionState.CashBalance;
             int drinksBefore = GameSessionState.DrinksConsumed;
@@ -1331,15 +1338,20 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.CounterStation.SeatView.IsFirstPerson,
                 Is.True);
-            Assert.That(drinkOrderSignRenderer.enabled, Is.False);
+            Assert.That(
+                drinkOrderSignRenderer == null ||
+                !drinkOrderSignRenderer.enabled,
+                Is.True);
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
             Assert.That(
                 interiorRoot.Player.Interactor.InputEnabled,
                 Is.True,
                 "The seated interaction must retain E/Enter/South for " +
                 "standing, as in the mountain cafe.");
-            interiorRoot.DrinkShop.AdvancePresentation(
-                BarDrinkServiceTimeline.CameraApproachDurationSeconds);
+            yield return WaitUntil(
+                () => interiorRoot.DrinkShop.MenuState ==
+                    BarPromenade.Runtime.World.CounterMenuState.Open,
+                "The bartender did not carry and place the menu.");
             Assert.That(
                 interiorRoot.DrinkShop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.Browsing));
@@ -1350,7 +1362,10 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(interiorRoot.DrinkShop.IsOpen, Is.True);
             Assert.That(interiorRoot.DrinkShop.IsServing, Is.True);
-            Assert.That(drinkOrderSignRenderer.enabled, Is.False);
+            Assert.That(
+                drinkOrderSignRenderer == null ||
+                !drinkOrderSignRenderer.enabled,
+                Is.True);
             Assert.That(
                 interiorRoot.DrinkShop.PurchaseCommitted,
                 Is.True);
@@ -1370,20 +1385,23 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.DrinkShop.MenuState,
                 Is.EqualTo(
-                    BarPromenade.Runtime.World.CounterMenuState.Delivering));
-            interiorRoot.DrinkShop.AdvancePresentation(
-                BarDrinkServiceTimeline.CameraApproachDurationSeconds +
-                0.01f);
-            Assert.That(interiorRoot.DrinkShop.IsBrowsing, Is.True);
+                    BarPromenade.Runtime.World.CounterMenuState.Resting));
             Assert.That(interiorRoot.DrinkShop.IsServing, Is.False);
             Assert.That(
                 interiorRoot.DrinkShop.PurchaseCommitted,
                 Is.False);
             Assert.That(
                 interiorRoot.DrinkShop.FirstPersonArms.IsVisible,
+                Is.False,
+                "The seated bar view must not draw legacy camera-local arms.");
+            Assert.That(
+                interiorRoot.DrinkShop.FirstPersonArms.VisualsSuppressed,
                 Is.True);
             Assert.That(follow.FixedPoseActive, Is.True);
-            Assert.That(drinkOrderSignRenderer.enabled, Is.False);
+            Assert.That(
+                drinkOrderSignRenderer == null ||
+                !drinkOrderSignRenderer.enabled,
+                Is.True);
             Assert.That(
                 GameSessionState.CashBalance,
                 Is.EqualTo(cashBefore - selectedOffer.Price));
@@ -1396,48 +1414,35 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(follow.OrbitInputEnabled, Is.False);
 
+            Assert.That(interiorRoot.CounterStation.Seat.RequestExit(), Is.True);
             Assert.That(
-                interiorRoot.DrinkShop.ConfirmSelection(),
+                interiorRoot.DrinkShop.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Resting));
+            Assert.That(
+                drinkOrderSignRenderer == null ||
+                !drinkOrderSignRenderer.enabled,
                 Is.True);
-            Assert.That(
-                interiorRoot.DrinkShop.ConfirmSelection(),
-                Is.False,
-                "One repeated confirmation may commit only one order.");
-            Assert.That(
-                GameSessionState.CashBalance,
-                Is.EqualTo(cashBefore - selectedOffer.Price * 2));
-            Assert.That(
-                GameSessionState.DrinksConsumed,
-                Is.EqualTo(drinksBefore + 2));
-            interiorRoot.DrinkShop.AdvancePresentation(
-                BarDrinkServiceTimeline.ConfirmedPresentationDurationSeconds +
-                0.01f);
-            Assert.That(interiorRoot.DrinkShop.IsBrowsing, Is.False);
-            interiorRoot.DrinkShop.AdvancePresentation(
-                BarDrinkServiceTimeline.CameraApproachDurationSeconds +
-                0.01f);
-            Assert.That(interiorRoot.DrinkShop.IsBrowsing, Is.True);
-            Assert.That(drinkOrderSignRenderer.enabled, Is.False);
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
-            Assert.That(
-                interiorRoot.Player.Interactor.InputEnabled,
-                Is.True);
-
-            interiorRoot.DrinkShop.Exit();
-            Assert.That(
-                interiorRoot.DrinkShop.Phase,
-                Is.EqualTo(BarDrinkServicePhase.CameraReturn));
-            Assert.That(drinkOrderSignRenderer.enabled, Is.False);
-            Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
-            interiorRoot.DrinkShop.AdvancePresentation(
-                BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.01f);
-            Assert.That(interiorRoot.DrinkShop.IsOpen, Is.False);
-            Assert.That(drinkOrderSignRenderer.enabled, Is.True);
-            Assert.That(follow.FixedPoseActive, Is.False);
             yield return WaitUntil(
                 () => interiorRoot.CounterStation.Seat.Controller.Phase ==
                     PlayerAnimatedInteractionPhase.Idle,
                 "The hero did not finish the visible counter stand-up.");
+            Assert.That(
+                interiorRoot.DrinkShop.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Retrieving));
+            interiorRoot.DrinkShop.AdvancePresentation(
+                BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.01f);
+            yield return WaitUntil(
+                () => !interiorRoot.DrinkShop.IsOpen,
+                "The bartender did not carry the closed menu home.");
+            Assert.That(interiorRoot.DrinkShop.IsOpen, Is.False);
+            Assert.That(
+                drinkOrderSignRenderer == null ||
+                !drinkOrderSignRenderer.enabled,
+                Is.True);
+            Assert.That(follow.FixedPoseActive, Is.False);
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.True);
             Assert.That(
                 interiorRoot.Player.Interactor.InputEnabled,
@@ -1474,7 +1479,7 @@ namespace BarPromenade.Tests.PlayMode
                 "The beer pong table survives as dressing.");
             Assert.That(
                 interiorRoot.GetComponentsInChildren<BarCounterStation>(true),
-                Has.Length.EqualTo(1));
+                Has.Length.EqualTo(4));
         }
 
         [UnityTest]

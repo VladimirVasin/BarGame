@@ -70,6 +70,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     current.LensDistortion,
                     Is.LessThanOrEqualTo(previous.LensDistortion));
+                Assert.That(
+                    current.DollyZoomStrength,
+                    Is.GreaterThanOrEqualTo(previous.DollyZoomStrength));
 
                 previous = current;
             }
@@ -95,6 +98,22 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 blackout.LensDistortion,
                 Is.EqualTo(-0.14f).Within(0.001f));
+
+            // The dolly zoom is silent through the balance threshold and
+            // reaches its full swing only at the top of the last stage.
+            Assert.That(sober.DollyZoomStrength, Is.Zero);
+            Assert.That(
+                IntoxicationStageRules.Evaluate(60).DollyZoomStrength,
+                Is.Zero);
+            Assert.That(
+                IntoxicationStageRules.Evaluate(61).DollyZoomStrength,
+                Is.GreaterThan(0f));
+            Assert.That(
+                IntoxicationStageRules.Evaluate(80).DollyZoomStrength,
+                Is.EqualTo(0.35f).Within(0.001f));
+            Assert.That(
+                blackout.DollyZoomStrength,
+                Is.EqualTo(1f).Within(0.001f));
         }
 
         [Test]

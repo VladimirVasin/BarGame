@@ -70,6 +70,7 @@ namespace BarPromenade
         public bool IsConfigured { get; private set; }
         public bool IsVisible { get; private set; }
         public bool IsPlaced { get; private set; }
+        public bool IsRestingOnCounter { get; private set; }
         public int SelectedIndex { get; private set; }
         public bool IsConfirmed { get; private set; }
         public IReadOnlyList<TMP_Text> ItemLines => itemLines;
@@ -77,6 +78,51 @@ namespace BarPromenade
         public Transform PropRoot => propRoot;
         public Transform GripAnchor => gripAnchor;
         public Transform DockAnchor => dockAnchor;
+        public CounterMenuPageView Page => pageView;
+
+        public bool RestOnCounter()
+        {
+            if (!IsConfigured || !IsPlaced)
+            {
+                return false;
+            }
+
+            SnapToDock();
+            IsPlaced = true;
+            IsRestingOnCounter = true;
+            if (pageView != null)
+            {
+                pageView.SetRestingVisible(true);
+                IsVisible = true;
+                textVisible = false;
+            }
+            else
+            {
+                SetVisible(true, false);
+            }
+
+            return true;
+        }
+
+        public bool ReopenOnCounter()
+        {
+            if (!IsConfigured || !IsPlaced || !IsRestingOnCounter)
+            {
+                return false;
+            }
+
+            SnapToDock();
+            IsRestingOnCounter = false;
+            SetVisible(true, true);
+            return true;
+        }
+
+        public bool IsLookingAtRestingMenu(Camera camera)
+        {
+            return IsRestingOnCounter &&
+                   pageView != null &&
+                   pageView.IsLookingAtRestingProp(camera);
+        }
 
         public Pose ResolveCameraFocusPose(Vector3 viewerPosition)
         {
@@ -437,7 +483,7 @@ namespace BarPromenade
             {
                 case MountainRoadCafeServicePhase.WalkToHero:
                     IsPlaced = false;
-                    SetVisible(true, false);
+                    SetCarriedClosedVisible();
                     AttachToHand();
                     RememberPlacementStart();
                     break;
@@ -448,12 +494,12 @@ namespace BarPromenade
                     break;
                 case MountainRoadCafeServicePhase.TakeMenu:
                     IsPlaced = false;
-                    SetVisible(true, true);
+                    SetRestingOrOpenVisible();
                     TakeToHand(frame.PhaseNormalized);
                     break;
                 case MountainRoadCafeServicePhase.CarryMenuBack:
                     IsPlaced = false;
-                    SetVisible(true, false);
+                    SetRestingOrOpenVisible();
                     AttachToHand();
                     break;
                 default:
@@ -461,17 +507,44 @@ namespace BarPromenade
                     {
                         IsPlaced = true;
                         SnapToDock();
-                        SetVisible(true, true);
+                        SetRestingOrOpenVisible();
                     }
                     else
                     {
                         IsPlaced = false;
+                        IsRestingOnCounter = false;
                         hasPlacementStart = false;
                         SnapToDock();
                         SetVisible(false, false);
                     }
                     break;
             }
+        }
+
+        private void SetRestingOrOpenVisible()
+        {
+            if (IsRestingOnCounter && pageView != null)
+            {
+                pageView.SetRestingVisible(true);
+                IsVisible = true;
+                textVisible = false;
+                return;
+            }
+
+            SetVisible(true, !IsRestingOnCounter);
+        }
+
+        private void SetCarriedClosedVisible()
+        {
+            if (pageView != null)
+            {
+                pageView.SetRestingVisible(true);
+                IsVisible = true;
+                textVisible = false;
+                return;
+            }
+
+            SetVisible(true, false);
         }
 
         private void AttachToHand()
@@ -697,7 +770,14 @@ namespace BarPromenade
             }
 
             SnapToDock();
-            SetVisible(IsPlaced, IsPlaced);
+            if (IsPlaced)
+            {
+                SetRestingOrOpenVisible();
+            }
+            else
+            {
+                SetVisible(false, false);
+            }
         }
     }
 }

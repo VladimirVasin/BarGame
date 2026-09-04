@@ -358,14 +358,14 @@ Assets/
         MountainRoadCafe{AssetRegistry,ModelResources,SurfaceAppearance}.cs
                                       passive authored cafe presentation bridge
         MountainRoadCafeCollisionWorldBuilder.cs  exact 17-collider plan-owned shell
-        MountainRoadCafe{ServiceTimeline,ServicePresentation,CupView}.cs role-staggered drink/fill/refill + serialized menu handoff/retrieval
+        MountainRoadCafe{ServiceTimeline,ServicePresentation,CupView}.cs role-staggered drink/fill/refill + repeatable seated menu handoff/post-exit retrieval
                                        hand/mouth-fitted cups, exact saucer return, counter-clear carry + per-frame spout-to-target stream
         MountainRoadCafeCigaretteEffect.cs woman idle phase -> separate ember glow + world-space SOCKET_Mouth exhale
                                        no separate clock, Light or AudioSource
         MountainRoadCafeConversation{Lines,Timeline,Controller,Look}.cs fixed ten-pair RU/EN bubble loop, cafe-volume gate + action-safe queue/head turns
         MountainRoadCafeSeatView.cs   cafe-stool first-person lifecycle + upright viewer-ray page focus/all-look lock/exact restore
-        CounterSeat{Plan,View}.cs     reusable bar counter-seat camera/entry/exit plan
-        CounterMenu{Model,PageView,PropMotion}.cs shared selection lifecycle, page/focus and grip-to-dock motion
+        CounterSeat{Plan,Interaction,View}.cs reusable counter-seat camera/entry/exit ownership
+        CounterMenu{Model,PageView,PropMotion}.cs shared open/rest/reopen/post-exit retrieval + opaque 0.40 s hinge fold/page/focus/grip motion
         BarServicePropFactory.cs     imported bottle/vessel/menu/stream role bridge
         MountainRoadCafeMenu{Model,Controller,Presentation}.cs three-item selection-only adapter over shared CounterMenu
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
@@ -822,11 +822,11 @@ Assets/
         SupermarketInteriorRoot.cs    layout/world/player/shop/UI composition
         SupermarketInteriorAtmosphere.cs  six shadowless practicals + flickering row
       BarInteriorRoot.cs            bar layout/world/patrons/drink-shop composition
-      BarPatronWorldBuilder.cs      deterministic 6 booth + 2 counter + 3 table patrons bound to furniture
-      BarPatronDrinkingBehavior.cs  exact cafe drink action at counter + bottle/table-support pose
+      BarPatronWorldBuilder.cs      deterministic 6 booth + 2 counter + 3 table patrons with surface docks
+      BarPatronDrinkingBehavior.cs  cafe sip + five surface rests, right-hand bind grips, support/head drift
       Bar/Bartender/                provider, registry, world builder, presentation + service choreography
       Drinks/        bar menu adapter, stable IDs, atomic purchases and physical service
-        BarDrinkMenuPresentation.cs  nine priced rows over shared physical CounterMenu
+        BarDrinkMenuPresentation.cs  nine priced rows + carried/open/resting booklet over shared CounterMenu
       Supermarket/Cashier/  normal observing cashier + retained inactive Watcher asset
         SupermarketCashierProvider.cs      one addressable ref to the off-Resources prefab
         SupermarketCashierAssetRegistry.cs bones, ordinary head/eye + renderer bindings
@@ -937,7 +937,7 @@ Assets/
       MountainRoadTerminalTests.cs       apron, landmarks, terrain blend + cabin clearance
       MountainRoadCafeCastTests.cs       roles/gaps/v2 atlas density/clip blend/world ownership
       MountainRoadCafeConversationTests.cs fixed RU/EN pair loop, every-third completed-exchange husband interruption, wrap-safe queue + partner-only look
-      MountainRoadCafeMenuModelTests.cs  viewer-ray/no-roll focus plan + delivery/open/selection/confirm/retrieval/close contracts
+      MountainRoadCafeMenuModelTests.cs  viewer-ray/no-roll + delivery/open/rest/reopen/retrieval/close contracts
       CounterSeatPlanTests.cs       authored/fallback physical counter-seat geometry contracts
       MountainCablewayTests.cs            loop continuity, world ownership and causal audio
       MountainCablewayRideTests.cs        exact docking, boarding step, treads, return station
@@ -1020,10 +1020,10 @@ Assets/
       MothersHouseInteriorPlayModeTests.cs room/kettle/light + real stair/two rooms + village-door round trip
       Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
-      BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
-      BarDrinkPhysicalShopPlayModeTests.cs physical seat/menu/purchase/service/exit lifecycle
+      BarDrinkFirstPersonArmsPlayModeTests.cs  seated renderer suppression + live hidden vessel attachment
+      BarDrinkPhysicalShopPlayModeTests.cs multi-seat menu rest/reopen/purchase/service/post-exit retrieval lifecycle
       MountainRoadCafePlayModeTests.cs  shipped-scene cup/saucer + hand/pot/counter contacts, silent phase idles and seat-camera restoration
-      MountainRoadCafeMenuPlayModeTests.cs physical handoff, upright viewer-ray focus, confirm/stand camera restore + physical retrieval/no-effect contract
+      MountainRoadCafeMenuPlayModeTests.cs handoff, close/rest/reopen, stand restore + post-exit physical retrieval/no-effect contract
 ArtSource/
   Environment/Clouds/Blender/    generated cloud-dome `.blend` and deterministic density preview
   Vehicles/
@@ -1096,7 +1096,7 @@ tools/
   city_building_parts.py         pure deterministic building geometry + surface/UV/attachment/window metadata
   atlas_kit.py                   shared PNG canvas/writer + rect-based atlas and UV helpers (Hero V2 + pedestrians)
   city_building_coplanarity.py   pure exact + <3 cm broad visible-layer audit with synthetic controls
-  build-bar-3d-model.py          v3.2.1 178-mesh / 12,940-triangle pub + exact cafe stools + v1.2.0 service pack
+  build-bar-3d-model.py          v3.2.2 source: safe right stool/continuous service board/no single-seat sign + v1.2.0 service pack
   build-ordinary-bartender-3d-model.py active two-arm NpcHumanV2 bartender generator/validator
   bar_exterior.py                deterministic 38-part late-Victorian pub geometry
   build-bar-textures.py          fifteen measured interior/service albedos + exterior brick/plaster sheets
@@ -1164,9 +1164,11 @@ MountainRoadRoot -> MountainRoadPlanner -> validated 620 m continuous climb
                                          -> enterable five-sided glass cafe on left
                                             -> imported 61-mesh shell / 7 stools / four-role tableau
                                             -> passive kitchen + undriven hinge-ready FridgeDoor
-                                            -> one open Menu.Hero handoff -> 0.45 s locked upright viewer-ray focus at 0.50 m/FOV40
-                                               -> W/S or D-pad -> Space/West no-op confirm or E stand
-                                               -> WalkToMenu/TakeMenu/CarryMenuBack -> hidden at service dock
+                                            -> Menu.Hero handoff -> 0.45 s locked upright viewer-ray focus at 0.50 m/FOV40
+                                               -> W/S or D-pad -> Space/West no-op confirm or E close
+                                               -> 0.40 s opaque hinge fold -> closed booklet: gaze to unfold / look away to stand
+                                               -> completed exit -> WalkToMenu/TakeMenu/CarryMenuBack -> hidden at service dock
+                                               -> later completed sit -> fresh handoff
                                             -> warm practical + cold stove task fixture + technical wash
                                          -> 230 m / 9-support / 8-cabin cableway on right
                                             -> boarding open; line brakes to a dock on request
@@ -1628,25 +1630,29 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                    -> district palette/wall motif
                                    -> practical light/audio/NPC anchors
        -> BarInteriorAtmosphere -> six shadowless lights + grade + dust
-       -> BarPatronWorldBuilder -> deterministic 11-person furniture-bound cast
+       -> BarPatronWorldBuilder -> deterministic 11-person furniture/surface-bound cast
                                 -> 6 booth seats at 0.48 m + 2 cafe stools at 0.8175 m
                                 -> 3 standing table leans + bottles; no Babushka/Chess/Checkers
        -> BarSoundscape -> spatial crowd bed + rare bar cues
        -> BarArrivalPresentation -> skippable Bezier camera reveal
-       -> BarCounterStation -> CounterSeatPlan/View/Interaction
-                            -> authored approach -> 0.8175 m stool -> physical sit -> 1.6175 m eye
+       -> four BarCounterStations -> CounterSeatPlan/View/Interaction
+                            -> per-free-stool safe approach/exit -> physical sit -> 1.6175 m eye
+                            -> rightmost x4.00 clears counter return; no floor/sign selector
                             -> shared CounterMenu model/input/page/hint/prop motion
                                -> bar adapter: 5 + 4 localized priced rows at 1.10 m / FOV 60
                                -> failed purchase stays open
-                               -> success marks X + physical menu return
+                               -> E or success drives 0.40 s opaque hinge fold/rest
+                               -> closed gaze unfolds / look-away stands
                             -> BarDrinkShop
                                -> retail catalog + atomic cash/drink transaction
                                -> BarDrinkServicePlan -> nine physical bottle slots
                                -> BarDrinkServiceWorldBuilder
                                   -> Blender service pack: 9 bottles + 5 vessels + stream + menu
                                -> BarDrinkServiceTimeline
-                                  -> bartender pickup -> pour -> 3 s drink -> vessel return
-                                  -> repeated physical menu -> explicit stand/restore
+                                  -> bartender pickup -> pour -> 3 s drink on hidden vessel attachment -> return
+                                  -> seated world body stays visible; both camera-local arm meshes stay disabled
+                                  -> closed menu remains through service -> completed stand/restore -> bartender retrieval
+                                  -> later sit -> fresh delivery to the selected station
                                -> GameSessionState wallet + drinking progress
        -> SupermarketInteriorLayoutPlanner -> validated 16x11x3.6 shop
                                              -> three physical shelf views

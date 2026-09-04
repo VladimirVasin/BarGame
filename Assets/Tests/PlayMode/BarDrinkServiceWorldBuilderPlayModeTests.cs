@@ -198,6 +198,157 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
+            CarriedBottle_UsesSurfaceGripAndLeavesShelfSourceExact()
+        {
+            BarDrinkPresentation presentation =
+                BarDrinkPresentationCatalog.Get(DrinkId.RedWine);
+            Assert.That(view.SelectBottle(presentation.DrinkId), Is.True);
+            BarDrinkBottleView source = view.SelectedBottle;
+            Transform sourceParent = source.transform.parent;
+            Vector3 sourceLocalPosition = source.transform.localPosition;
+            Quaternion sourceLocalRotation = source.transform.localRotation;
+            Vector3 sourceLocalScale = source.transform.localScale;
+            Vector3 originalLocalPosition = source.OriginalLocalPosition;
+            Quaternion originalLocalRotation = source.OriginalLocalRotation;
+            Vector3 originalLocalScale = source.OriginalLocalScale;
+
+            var carrierObject = new GameObject("Bottle Grip Test Carrier");
+            carrierObject.transform.SetParent(owner.transform, false);
+            carrierObject.transform.position = new Vector3(1.2f, 1.4f, 0.8f);
+            carrierObject.transform.localScale = Vector3.one * 100f;
+            Assert.That(
+                view.ShowCarriedBottle(
+                    presentation,
+                    carrierObject.transform),
+                Is.True);
+            view.AlignCarriedBottleToCarrier(
+                carrierObject.transform,
+                Quaternion.identity,
+                carrierObject.transform.position + Vector3.back);
+
+            Assert.That(view.IsCarriedBottleVisible, Is.True);
+            Assert.That(
+                view.CarriedBottleRoot.parent,
+                Is.SameAs(view.transform),
+                "The prop must not inherit the imported socket's 100x scale.");
+            Assert.That(
+                view.CarriedBottleRoot.lossyScale,
+                Is.EqualTo(Vector3.one *
+                    BarDrinkServiceView.CarriedBottleScale));
+            Assert.That(
+                view.CarriedBottleRoot.GetComponentsInChildren<Collider>(true),
+                Is.Empty);
+            Assert.That(
+                view.CarriedBottleRoot.GetComponentsInChildren<Rigidbody>(true),
+                Is.Empty);
+            Assert.That(
+                view.CarriedBottleRoot.GetComponentsInChildren<
+                    BarDrinkBottleView>(true),
+                Is.Empty);
+            Assert.That(
+                Vector3.Distance(
+                    view.CarriedBottleHandContactWorldPosition,
+                    carrierObject.transform.position),
+                Is.LessThan(0.0001f));
+            Assert.That(
+                view.CarriedBottleHandRadialClearance,
+                Is.EqualTo(BarDrinkServiceView.BottleHandSurfaceOffset)
+                    .Within(0.0001f));
+            Assert.That(
+                view.CarriedBottleHandRadialClearance,
+                Is.GreaterThanOrEqualTo(
+                    BarDrinkServiceView.MinimumBottleHandRadialClearance));
+
+            Vector3 mouthBeforeCarrierMove =
+                view.CarriedBottleMouthWorldPosition;
+            Vector3 carrierMove = new Vector3(0.18f, -0.04f, 0.11f);
+            carrierObject.transform.position += carrierMove;
+            view.AlignCarriedBottleToCarrier(
+                carrierObject.transform,
+                Quaternion.identity,
+                carrierObject.transform.position + Vector3.back);
+            Assert.That(
+                Vector3.Distance(
+                    view.CarriedBottleHandContactWorldPosition,
+                    carrierObject.transform.position),
+                Is.LessThan(0.0001f));
+            Assert.That(
+                Vector3.Distance(
+                    view.CarriedBottleMouthWorldPosition -
+                    mouthBeforeCarrierMove,
+                    carrierMove),
+                Is.LessThan(0.0001f));
+
+            Quaternion horizontal = Quaternion.Euler(0f, 0f, 90f);
+            view.AlignCarriedBottleToCarrier(
+                carrierObject.transform,
+                horizontal,
+                carrierObject.transform.position + Vector3.back);
+            Vector3 horizontalRadial =
+                view.CarriedBottleHandContactWorldPosition -
+                view.CarriedBottleGripCenterWorldPosition;
+            Assert.That(
+                Vector3.Dot(horizontalRadial.normalized, Vector3.down),
+                Is.GreaterThan(0.99f),
+                "A horizontal bottle belongs above the supporting palm.");
+
+            Assert.That(source.transform.parent, Is.SameAs(sourceParent));
+            Assert.That(source.transform.localPosition,
+                Is.EqualTo(sourceLocalPosition));
+            Assert.That(
+                Quaternion.Angle(
+                    source.transform.localRotation,
+                    sourceLocalRotation),
+                Is.LessThan(0.001f));
+            Assert.That(source.transform.localScale,
+                Is.EqualTo(sourceLocalScale));
+            Assert.That(source.SolidCollider.enabled, Is.True);
+            Assert.That(source.SelectionTrigger.enabled, Is.True);
+            for (int index = 0; index < source.Renderers.Count; index++)
+            {
+                Assert.That(source.Renderers[index].enabled, Is.False);
+            }
+
+            Assert.That(
+                view.ShowVesselForDrink(presentation.DrinkId),
+                Is.True);
+            Assert.That(
+                view.SetPourStreamFromCarriedBottle(
+                    presentation.LiquidColor),
+                Is.True);
+            Assert.That(view.IsStreamVisible, Is.True);
+            Assert.That(
+                Vector3.Distance(
+                    view.StreamRoot.TransformPoint(Vector3.down),
+                    view.CarriedBottleMouthWorldPosition),
+                Is.LessThan(0.0001f),
+                "The pour stream must start at the carried mouth anchor.");
+
+            view.ResetPresentation();
+            Assert.That(view.IsCarriedBottleVisible, Is.False);
+            Assert.That(view.CarriedBottleRoot, Is.Null);
+            Assert.That(source.transform.parent, Is.SameAs(sourceParent));
+            Assert.That(source.transform.localPosition,
+                Is.EqualTo(originalLocalPosition));
+            Assert.That(
+                Quaternion.Angle(
+                    source.transform.localRotation,
+                    originalLocalRotation),
+                Is.LessThan(0.001f));
+            Assert.That(source.transform.localScale,
+                Is.EqualTo(originalLocalScale));
+            Assert.That(source.SolidCollider.enabled, Is.True);
+            Assert.That(source.SelectionTrigger.enabled, Is.True);
+            for (int index = 0; index < source.Renderers.Count; index++)
+            {
+                Assert.That(source.Renderers[index].enabled, Is.True);
+            }
+
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator
             VesselMapping_StreamFillAndReset_UseRealThreeDimensionalObjects()
         {
             var vesselKinds = new HashSet<BarDrinkVesselKind>();

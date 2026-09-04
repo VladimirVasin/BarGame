@@ -3,8 +3,8 @@
 ## Current
 
 - Product name: **Барный Променад** (Bar Promenade).
-- Engine: Unity `6000.5.10f1`.
-- Rendering: Universal Render Pipeline package `17.5.0` with one PC quality
+- Engine: Unity `6000.6.0f1`.
+- Rendering: Universal Render Pipeline package `17.6.0` with one PC quality
   level and one PC render-pipeline profile. PC is the current and default
   quality at index `0` for every serialized platform key, has no platform
   exclusions, and applies the PS1 composite after URP post-processing.
@@ -25,9 +25,9 @@
   build indices `7`, `8`, `9`, `10` and `11`, preserving every previous index.
 - Runtime assembly: `BarPromenade.Runtime`.
 - Player presentation: one modular `Player3DV2.prefab` in all nine gameplay
-  roots, with independent mesh parts, a Generic in-place action set,
-  same-prefab first-person subsets, a dedicated portrait, real mesh shadows
-  and an analytic contact patch.
+  roots, with independent mesh parts, a Generic in-place action set, a visible
+  first-person refrigerator subset, a non-rendered bar-vessel attachment rig,
+  a dedicated portrait, real mesh shadows and an analytic contact patch.
 - Test assemblies: shared `BarPromenade.TestSupport` infrastructure plus
   `BarPromenade.EditModeTests` and `BarPromenade.PlayModeTests`. A run-level
   callback silences listener output for every automated test and restores the
@@ -1309,8 +1309,9 @@ The vertical slice contains:
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one production `Resources/Player/Player3DV2` prefab selected by all nine
-  gameplay roots, prefab-derived first-person subsets and the inventory
-  portrait. It keeps the `1.75 m`, 31-bone contract with 38 bone-only Actions
+  gameplay roots, a visible prefab-derived refrigerator arm, a non-rendered
+  bar-vessel attachment rig and the inventory portrait. It keeps the `1.75 m`,
+  31-bone contract with 38 bone-only Actions
   in 34 mesh parts and 1,984 triangles, but uses adult `7.4946`-head
   proportions, an atlas-driven
   five-state face and a full-colour point-filtered clothing atlas. Its open
@@ -1536,16 +1537,20 @@ The vertical slice contains:
   blends the fixed camera over `0.45 s` along the current seated sight line
   to a `40`-degree view `0.50 m` from the page. The close-up preserves
   world-up without roll and suppresses every look source. `W/S` (or the D-pad)
-  still wraps
-  through the three items and `Space`/gamepad West confirms; the ordinary
-  `E`/`Enter`/gamepad South interaction remains available for standing.
-  Confirmation keeps the visible `X`, releases focus back to the saved seated
-  view and idempotently requests retrieval. Standing instead restores the
-  exact pre-seat follow-camera state immediately and requests retrieval with
-  no committed item. The shared attendant timeline serializes that return as
-  `WalkToMenu -> TakeMenu` (`2.5 s`) `-> CarryMenuBack`; the booklet remains
-  at the counter until the physical take, follows the hand and is hidden at
-  its service dock. The handoff/return is one-shot for the scene and creates
+  still wraps through the three items and `Space`/gamepad West records the
+  selection-only confirmation. Confirmation or the first
+  `E`/`Enter`/gamepad South action drives a `0.40 s` opaque hinge fold from
+  the spread into a thin booklet resting on the counter and releases focus
+  back to the saved seated view;
+  neither stands the hero or requests retrieval. Looking at that booklet makes
+  the same interaction physically unfold it over the same interval, while
+  looking away makes it request the authored stand-up. Only after that visible
+  exit completes does the shared
+  attendant timeline serialize the return as `WalkToMenu -> TakeMenu`
+  (`2.5 s`) `-> CarryMenuBack`; the closed booklet remains at the counter until
+  the physical take, follows the hand and is hidden at its service dock. A
+  later completed sit resets the round trip and receives the menu again. The
+  cycle creates
   no order, product, payment, inventory item, food, drink, dialogue, reaction,
   sound or story state. The
   ten-clip cast (`2` lone-patron clips, `2 + 2` pair clips, `4` attendant
@@ -1718,9 +1723,12 @@ The vertical slice contains:
   `1.02 m` rather than `1.56 m`, matching the plan's `0.43 m` centre /
   `0.86 m` height. Every regular and hero counter stool uses the exact Mountain
   Road cafe geometry: `0.8175 m` top, `0.48 m` seat diameter and `0.055 m`
-  thickness. The hero stool shares the regular row at local `z = 4.53`; its
-  interaction trigger and approach remain authored, but the floor marker was
-  removed. The authored eye/look heights are `1.6175 / 1.7175 m`, and the
+  thickness. Two stools are occupied by counter patrons and all four
+  unoccupied stools receive independent interaction stations, safe approach /
+  exit poses and matching camera/service offsets at local `z = 4.53`. The
+  rightmost stool is held at local `x = 4.00`, clear of the counter return; the
+  former single-seat floor marker and yellow emissive counter sign are absent
+  from play. The authored eye/look heights are `1.6175 / 1.7175 m`, and the
   menu/vessel docks track the surface at `1.045 / 1.035 m`. Fifteen
   deterministic `1024 px` source albedo families import at `512 px`; ordinary
   non-emissive interior parts use recognized bar sheets, while the stool metal
@@ -2038,7 +2046,14 @@ The vertical slice contains:
   `CafeManDrink` authored clip and hold bottles; its bottle-specific overlay
   leans torso and head back, keeps the bottle horizontal and places its actual
   neck anchor at the mouth. Table patrons use the same sip while standing and
-  keeping their left hands planted on the tabletop.
+  keeping their left hands planted on the tabletop. After every `Lower`, all five
+  drinkers return the bottle upright with its base on the real counter or table,
+  retain a right-side grip whose complete `hand.R` bind-space rotation keeps
+  the palm and wrist outside the bottle mesh, and support the free hand on the
+  same surface. Round-table bottle docks sit
+  clearly inside the tabletop instead of on its rim. Their heads keep a slight
+  deterministic, non-referential drift until
+  the next `Raise` rather than freezing in one terminal sample.
   Seating, action and prop pose are evaluated before the first
   visible frame, so no patron begins suspended or embedded in furniture;
 - one dedicated full-body `bar_bartender_v2` occupies the authored bartender
@@ -2080,36 +2095,47 @@ The vertical slice contains:
   `Shift+F8` opens the log directory;
 - a session-only cash wallet starting at `$999`, shared by finite supermarket
   stock and the bar's nine-item drink catalog. The bar now uses the same
-  physical counter-seat and `CounterMenu` behavior as the Mountain Road cafe:
-  the world rig walks to the authored stool and sits, the bartender carries an
-  open booklet from the passive `bar_service_props_v1` `1.2.0` library
+  physical counter-seat and `CounterMenu` behavior as the Mountain Road cafe.
+  `BarCounterSeatPlanner` exposes all four stools not occupied by patrons; each
+  owns a collision-safe entry/exit, and the rightmost sits at local `x = 4.00`
+  clear of the counter return. The world rig walks to the chosen stool and
+  sits, then the bartender carries a booklet from the passive
+  `bar_service_props_v1` `1.2.0` library
   (`29` meshes / `2,280` triangles, signature
   `4c98dce2cdfd017922c236f88849862f8823bd000380b62a26601dbc744c0026`)
-  to its dock. The shared model/input/page/focus/hint/prop-motion layer opens
+  to its dock. The shared model/input/page/focus/hint/prop-motion layer focuses
   the bar spread over `0.45 s` at `1.10 m` and FOV `60`; the cafe keeps its
-  independent `0.50 m`, FOV-40 framing.
-  `W/S` or D-pad wraps selection and `Space`/West confirms; `E`/`Enter`/South
-  leaves the seat through the physical exit. The bar adapter fills five rows
+  independent `0.50 m`, FOV-40 framing. In both venues the page view uses an
+  opaque two-leaf hinge rig for the `0.40 s` close/open motion; no material
+  alpha fade represents the closed state.
+  `W/S` or D-pad wraps selection and `Space`/West confirms. The first
+  `E`/`Enter`/South physically folds the menu on the counter. Looking at that
+  closed booklet changes the contextual action to unfold it; looking away
+  changes it to stand. The bar adapter fills five rows
   on the left page and four on the right with the nine localized drink names
   and their fixed prices, while the cafe adapter remains three selection-only
   item names. A rejected bar purchase leaves the booklet open with the existing
   failure feedback. A successful confirmation atomically deducts the price,
-  leaves `X`, restores the seated view and physically returns the menu before
-  the existing one-bottle service: the right hand picks up and tilts that exact
-  bottle, a world-space stream fills the matching reusable 3D tumbler, pint,
-  wine glass, shot glass or snifter, and the hero's left hand holds it at the
-  mouth for an exact three-second drink before returning the empty vessel.
-  Completing an order reopens the same physical menu for another selection;
-  exiting restores the exact pre-seat camera and world rig.
+  closes the booklet on the counter and enters the existing one-bottle service:
+  the bartender's right hand picks up and tilts that exact bottle, a world-space
+  stream fills the matching reusable 3D tumbler, pint, wine glass, shot glass
+  or snifter, and a non-rendered camera-local attachment carries the vessel to
+  the hero's mouth for an exact three-second drink before returning it empty.
+  Both old camera-local arm meshes stay disabled in the seated bar view; the
+  seated world body remains authoritative and only its head is hidden by the
+  seat camera.
+  Completing an order leaves the closed booklet available to reopen or to
+  leave behind. Exiting restores the exact pre-seat camera and world rig; only
+  after the visible stand-up completes does the bartender take the booklet and
+  carry it home, and a later sit starts a fresh delivery.
   Water costs `$2`, counts as consumed, does not sober the player and preserves
   the last-alcohol context; lifecycle teardown restores every transform,
   collider, camera, world-presentation, shadow, input and HUD state without refunding an
   already committed purchase. The whole bottle row remains inside the seated
   shot at 16:9 and 16:10, and repeated orders restore reusable vessels to their
   authored scale. The service camera sits above the counter at natural seated
-  eye height. There is no green floor marker; the remaining emissive counter
-  sign stays hidden across repeated orders until the explicit camera return
-  completes.
+  eye height. There is no green floor marker or visible emissive single-seat
+  sign.
 
 ## Deferred
 

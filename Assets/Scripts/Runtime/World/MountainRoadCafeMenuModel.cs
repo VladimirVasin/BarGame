@@ -10,7 +10,8 @@ namespace BarPromenade.Runtime.World
         Open = (int)CounterMenuState.Open,
         Confirmed = (int)CounterMenuState.Confirmed,
         Retrieving = (int)CounterMenuState.Retrieving,
-        Closed = (int)CounterMenuState.Closed
+        Closed = (int)CounterMenuState.Closed,
+        Resting = (int)CounterMenuState.Resting
     }
 
     /// <summary>
@@ -81,6 +82,16 @@ namespace BarPromenade.Runtime.World
         public bool Confirm()
         {
             return core.Confirm();
+        }
+
+        public bool RestOnCounter()
+        {
+            return core.RestOnCounter();
+        }
+
+        public bool Reopen()
+        {
+            return core.Reopen();
         }
 
         public bool BeginRetrieval()
