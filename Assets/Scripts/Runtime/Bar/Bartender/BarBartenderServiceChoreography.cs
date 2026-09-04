@@ -204,7 +204,12 @@ namespace BarPromenade
                     ? Quaternion.Inverse(parent.rotation) * tapPose.rotation
                     : tapPose.rotation;
             }
-            else if (targetsBeerGuest || targetsCounter)
+            else if (targetsBeerGuest)
+            {
+                target = shop.ResolveBeerGuestServerLocalPosition(
+                    homeLocalPosition);
+            }
+            else if (targetsCounter)
             {
                 target = shop.ResolveActiveServiceLocalPosition(
                     homeLocalPosition);
@@ -337,6 +342,7 @@ namespace BarPromenade
             BarDrinkMenuPresentation menu,
             bool menuHandled)
         {
+            presentation.SetCounterReachLean(Vector3.zero, 0f);
             if (shop.Timeline.IsBeerService &&
                 IsBeerBartenderServicePhase(frame.Phase))
             {
@@ -390,6 +396,13 @@ namespace BarPromenade
         {
             BarDrinkServiceView service = shop.ServiceView;
             BarDrinkVesselView vessel = service.ActiveVessel;
+            bool placesVessel = vessel != null &&
+                frame.Phase == BarDrinkServicePhase.BeerGlassPlacement;
+            presentation.SetCounterReachLean(
+                placesVessel ? vessel.GripWorldPosition : Vector3.zero,
+                placesVessel
+                    ? Mathf.InverseLerp(0f, 0.55f, frame.PhaseProgress)
+                    : 0f);
             service.SetBeerTapHandlePull(frame.TapHandlePull);
             bool carriesVessel =
                 frame.Phase == BarDrinkServicePhase.BeerCarryToGuest;
@@ -530,6 +543,7 @@ namespace BarPromenade
 
         private void ReleaseAll()
         {
+            presentation?.SetCounterReachLean(Vector3.zero, 0f);
             shop?.ServiceView?.SetBeerTapBartenderContact(
                 false,
                 0f,
@@ -597,8 +611,11 @@ namespace BarPromenade
                 return;
             }
 
-            service.AlignActiveVesselGripTo(
-                registry.VesselGripAnchor);
+            Pose counter = shop.ResolveBeerCounterWorldPose(
+                service.ActiveVessel);
+            service.AlignActiveVesselGripPositionTo(
+                registry.VesselGripAnchor,
+                counter.rotation);
         }
     }
 

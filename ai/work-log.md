@@ -20,7 +20,13 @@ the `34`-mesh / `4,136`-triangle service pack advances to `1.4.1`, signature
 The bartender's former counter motion sampled the cafe attendant's short
 service step while translating an arbitrarily oriented root, which read as a
 sideways glide. The ordinary asset is now generator `3.1.0` with five bindings:
-four restrained cafe service clips plus the compatible complete Hero V2 `Walk`.
+four restrained cafe service clips plus `BarBartenderWalk`, a deterministic
+copy of the complete Hero V2 `Walk` with every `ROOT_PlayerV2/...` binding
+remapped to the ordinary rig's actual `ROOT_Player/...` hierarchy. The first
+attempt referenced the source Generic clip directly; its clock advanced, but
+Unity resolved none of those differently rooted Transform curves, so the
+model still slid with static legs. Prefab validation now rejects any clip path
+that does not exist below the live Animator.
 Counter travel first turns toward the route, translates only within `8°` of it
 with the complete stride, uses the short step for handling and in-place turns,
 then restores the authored work orientation. The carried-vessel target is kept
@@ -28,6 +34,15 @@ in bartender-local space, so the hand and mug advance with the root rather than
 chasing the previous frame's world point. The rebuilt `39`-mesh /
 `1,136`-triangle asset has signature
 `dd18e47a5bbf5709b74343f6318773117dbc76c8b4aed0801b2d76decb922b02`.
+
+The same production route exposed why the last `0.70 s` still read as a throw.
+The mug inherited the walking wrist's roll until placement, then interpolated
+that tilted pose back to upright while its guest dock sat beyond the arm's
+reach. Carry now locks the already resolved upright/right-handled rotation.
+At the guest the bartender aligns opposite the service point, remains behind
+the inner counter edge, bends from the spine and runs the bounded hand solve
+from that pose. The mug follows one smooth, monotonic line onto the counter and
+the left palm remains within `0.04 m` of its handle until it rests.
 
 For the hero, the locked seated camera previously copied only head translation
 while the mouth inherited the complete animated head pose. At the sip the face,
@@ -43,7 +58,12 @@ inside the closed entrance plane.
 
 Verification: both Blender generators passed their own geometry, rig, socket
 and manifest validators; `BarBartenderV2AssetSetup` and `BarAssetSetup` rebuilt
-and validated the Unity prefabs. Focused PlayMode
+and validated the Unity prefabs. Focused EditMode sampling passed `1/1` and
+proved both feet move under the remapped registered Walk. The production-scene
+beer regression passed `1/1` after driving real menu delivery, tap travel,
+pour, guest travel and placement without direct arrival reports; it checks
+Walk/root correlation, changing local foot travel, upright carry, monotonic
+placement and continuous handle contact. Focused PlayMode
 `BeerTapService_WaitsForGazeThenHeroDrinksFromRightHandledMug` passed `1/1`,
 including right-handle grip, rim-to-mouth alignment, horizontal sip, live head
 camera motion and full mug bounds in frame. Focused arrival coverage passed

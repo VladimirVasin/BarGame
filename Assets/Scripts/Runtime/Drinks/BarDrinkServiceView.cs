@@ -674,6 +674,16 @@ namespace BarPromenade
                    activeVessel.AlignGripTo(carrier);
         }
 
+        public bool AlignActiveVesselGripPositionTo(
+            Transform carrier,
+            Quaternion vesselRotation)
+        {
+            return activeVessel != null &&
+                   activeVessel.AlignGripPositionTo(
+                       carrier,
+                       vesselRotation);
+        }
+
         public float ResolveActiveVesselGripError(Transform carrier)
         {
             return activeVessel != null

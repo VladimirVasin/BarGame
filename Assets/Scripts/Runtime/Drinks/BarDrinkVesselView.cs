@@ -237,6 +237,23 @@ namespace BarPromenade
 
             Quaternion vesselRotation = carrier.rotation *
                 Quaternion.Inverse(gripRotationInVessel);
+            return AlignGripPositionTo(carrier, vesselRotation);
+        }
+
+        /// <summary>
+        /// Seats the grip on a carrier while preserving a caller-owned vessel
+        /// orientation. A filled mug uses this during bartender travel so arm
+        /// swing cannot roll the open liquid vessel before it is set down.
+        /// </summary>
+        public bool AlignGripPositionTo(
+            Transform carrier,
+            Quaternion vesselRotation)
+        {
+            if (!initialized || carrier == null || gripAnchor == null)
+            {
+                return false;
+            }
+
             transform.SetPositionAndRotation(
                 carrier.position,
                 vesselRotation);

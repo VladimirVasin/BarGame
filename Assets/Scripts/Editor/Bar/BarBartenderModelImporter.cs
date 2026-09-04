@@ -103,7 +103,7 @@ namespace BarPromenade.Editor
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,
-                        BarBartenderV2AssetSetup.WalkAnimationPath,
+                        BarBartenderV2AssetSetup.WalkAnimationSourcePath,
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,

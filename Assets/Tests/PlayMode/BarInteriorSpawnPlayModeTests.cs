@@ -85,6 +85,8 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
 
+            GameSessionState.ResetEconomyState();
+            GameSessionState.ResetDrinkingState();
             GameSessionState.ClearRoute();
             yield return null;
         }
@@ -255,6 +257,235 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Object.DestroyImmediate(scratch);
             }
+        }
+
+        [UnityTest]
+        public IEnumerator
+            BeerService_BartenderWalksAndPlacesMugWithoutThrowingIt()
+        {
+            GameSessionState.ResetEconomyState();
+            GameSessionState.ResetDrinkingState();
+            BarInteriorRoot bar = null;
+            yield return LoadBar(result => bar = result);
+            bar.ArrivalPresentation.Skip();
+            yield return null;
+
+            BarBartenderPresentation bartender = bar.Bartender;
+            BarDrinkShopController shop = bar.DrinkShop;
+            BarDrinkServiceView service = bar.DrinkServiceView;
+            BarCounterStation station = bar.CounterStations[
+                bar.CounterStations.Count - 1];
+            Assert.That(bartender, Is.Not.Null);
+            Assert.That(shop, Is.Not.Null);
+            Assert.That(service, Is.Not.Null);
+            Assert.That(station, Is.Not.Null);
+            Assert.That(
+                bartender.GetComponent<
+                    BarBartenderServiceChoreography>(),
+                Is.Not.Null.And.Property("IsInitialized").True,
+                "The production bar must own the real choreography.");
+            bartender.Registry.Animator.cullingMode =
+                AnimatorCullingMode.AlwaysAnimate;
+
+            Transform leftFoot = FindRequiredDescendant(
+                bartender.Registry.ModelRoot,
+                "foot.L");
+            Transform rightFoot = FindRequiredDescendant(
+                bartender.Registry.ModelRoot,
+                "foot.R");
+
+            CounterSeatPlan seatPlan = station.Seat.Plan;
+            bar.Player.Motor.Teleport(seatPlan.EntryPose.RootPosition);
+            bar.Player.GameObject.transform.rotation =
+                seatPlan.EntryPose.RootRotation;
+            Physics.SyncTransforms();
+            station.Interact(bar.Player.Interactor);
+
+            float timeout = Time.realtimeSinceStartup + 5f;
+            while (!station.Seat.IsSeated &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            Assert.That(station.Seat.IsSeated, Is.True);
+            Assert.That(shop.ActiveServiceMirrored, Is.True,
+                "The production regression must exercise the mirrored " +
+                "rightmost service route.");
+            timeout = Time.realtimeSinceStartup + 6f;
+            while (!shop.IsBrowsing &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            Assert.That(shop.IsBrowsing, Is.True,
+                "The real bartender never completed menu delivery.");
+            Assert.That(
+                shop.Select(FindOfferIndex(shop, DrinkId.LightBeer)),
+                Is.True);
+            station.Interact(bar.Player.Interactor);
+            Assert.That(
+                shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerWalkToTap));
+
+            var travel = new BartenderTravelProbe(
+                bartender,
+                leftFoot,
+                rightFoot);
+            timeout = Time.realtimeSinceStartup + 8f;
+            while (shop.Phase ==
+                       BarDrinkServicePhase.BeerWalkToTap &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                travel.Observe("walk to beer tap");
+            }
+
+            Assert.That(
+                shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerGlassPickup),
+                "The choreography never reported its real tap arrival.");
+            timeout = Time.realtimeSinceStartup + 5f;
+            while (shop.Phase !=
+                       BarDrinkServicePhase.BeerCarryToGuest &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                travel.Observe("beer pickup and pour");
+            }
+
+            Assert.That(
+                shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerCarryToGuest));
+            BarDrinkVesselView vessel = service.ActiveVessel;
+            Assert.That(vessel, Is.Not.Null);
+            Pose counterPose = shop.ResolveBeerCounterWorldPose(vessel);
+            int carriedFrames = 0;
+            int carryTranslationFrames = 0;
+            Vector3 carryStartPosition = bartender.transform.position;
+            timeout = Time.realtimeSinceStartup + 8f;
+            while (shop.Phase ==
+                       BarDrinkServicePhase.BeerCarryToGuest &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                bool translated = travel.Observe("carry beer to guest");
+                if (shop.Phase !=
+                    BarDrinkServicePhase.BeerCarryToGuest)
+                {
+                    break;
+                }
+
+                Assert.That(
+                    service.IsBeerTapVesselCarriedByBartender,
+                    Is.True,
+                    "The bartender released the mug during guest travel.");
+                carriedFrames++;
+                if (translated)
+                {
+                    carryTranslationFrames++;
+                }
+
+                Assert.That(
+                    service.ResolveActiveVesselGripError(
+                        bartender.Registry.VesselGripAnchor),
+                    Is.LessThan(0.01f),
+                    "The walking hand released the mug before the counter.");
+                Assert.That(
+                    Vector3.Angle(
+                        vessel.OpeningDirection,
+                        service.transform.up),
+                    Is.LessThan(2f),
+                    "The filled mug rolled with the walking wrist.");
+            }
+
+            Assert.That(carriedFrames, Is.GreaterThan(2));
+            Assert.That(carryTranslationFrames, Is.GreaterThan(2));
+            Vector3 guestTravel =
+                bartender.transform.position - carryStartPosition;
+            guestTravel.y = 0f;
+            Assert.That(
+                guestTravel.magnitude,
+                Is.GreaterThan(0.5f),
+                "The mug route reached placement without a real approach " +
+                "to the selected guest.");
+            Assert.That(
+                shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerGlassPlacement),
+                "The choreography never reported its real guest arrival.");
+
+            float previousCounterDistance = Vector3.Distance(
+                vessel.transform.position,
+                counterPose.position);
+            int placementContactFrames = 0;
+            timeout = Time.realtimeSinceStartup + 3f;
+            while (shop.Phase ==
+                       BarDrinkServicePhase.BeerGlassPlacement &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                travel.Observe("place beer on counter");
+                if (shop.Phase !=
+                    BarDrinkServicePhase.BeerGlassPlacement)
+                {
+                    break;
+                }
+
+                float counterDistance = Vector3.Distance(
+                    vessel.transform.position,
+                    counterPose.position);
+                Assert.That(
+                    counterDistance,
+                    Is.LessThanOrEqualTo(
+                        previousCounterDistance + 0.002f),
+                    "The mug moved away from the counter like a throw.");
+                Assert.That(
+                    Vector3.Angle(
+                        vessel.OpeningDirection,
+                        service.transform.up),
+                    Is.LessThan(2f),
+                    "The mug flipped while the bartender set it down.");
+                if (counterDistance > 0.03f)
+                {
+                    placementContactFrames++;
+                    Assert.That(
+                        service.ResolveActiveVesselGripError(
+                            bartender.Registry.VesselGripAnchor),
+                        Is.LessThan(0.04f),
+                        "The hand left the mug before it reached the top " +
+                        $"at progress " +
+                        $"{shop.Timeline.CurrentFrame.PhaseProgress:F2}.");
+                }
+
+                previousCounterDistance = counterDistance;
+            }
+
+            Assert.That(
+                shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.AwaitingDrink));
+            Assert.That(
+                Vector3.Distance(
+                    vessel.transform.position,
+                    counterPose.position),
+                Is.LessThan(0.005f));
+            Assert.That(
+                Quaternion.Angle(
+                    vessel.transform.rotation,
+                    counterPose.rotation),
+                Is.LessThan(1f),
+                "The served mug did not finish upright on the counter.");
+            Assert.That(placementContactFrames, Is.GreaterThan(2));
+            AssertVesselRestsOnPhysicalCounter(bar, service, vessel);
+            Assert.That(
+                travel.TranslationFrameCount,
+                Is.GreaterThan(10),
+                "The fixture never exercised real bartender travel.");
+            Assert.That(
+                travel.MaximumLocalFootTravel,
+                Is.GreaterThan(0.05f),
+                "Walk was selected, but the bartender's local foot pose " +
+                "stayed static while his root translated.");
         }
 
         [UnityTest]
@@ -713,6 +944,75 @@ namespace BarPromenade.Tests.PlayMode
             return centre;
         }
 
+        private static int FindOfferIndex(
+            BarDrinkShopController shop,
+            DrinkId drinkId)
+        {
+            for (int index = 0; index < shop.Offers.Count; index++)
+            {
+                if (shop.Offers[index].DrinkId == drinkId)
+                {
+                    return index;
+                }
+            }
+
+            Assert.Fail($"Missing retail offer for {drinkId}.");
+            return -1;
+        }
+
+        private static Transform FindRequiredDescendant(
+            Transform root,
+            string objectName)
+        {
+            Transform[] descendants =
+                root.GetComponentsInChildren<Transform>(true);
+            for (int index = 0; index < descendants.Length; index++)
+            {
+                if (descendants[index].name == objectName)
+                {
+                    return descendants[index];
+                }
+            }
+
+            Assert.Fail($"Missing bartender transform '{objectName}'.");
+            return null;
+        }
+
+        private static void AssertVesselRestsOnPhysicalCounter(
+            BarInteriorRoot bar,
+            BarDrinkServiceView service,
+            BarDrinkVesselView vessel)
+        {
+            Assert.That(
+                bar.Layout.TryGetFurniture(
+                    BarInteriorFurnitureKind.Counter,
+                    out BarInteriorFurnitureFootprint counter),
+                Is.True);
+            Bounds worldBounds = vessel.GlassRenderer.bounds;
+            Vector3 localMinimum = bar.Room.InverseTransformPoint(
+                worldBounds.min);
+            Vector3 localMaximum = bar.Room.InverseTransformPoint(
+                worldBounds.max);
+            Assert.That(localMinimum.x,
+                Is.GreaterThanOrEqualTo(counter.Bounds.xMin));
+            Assert.That(localMaximum.x,
+                Is.LessThanOrEqualTo(counter.Bounds.xMax));
+            Assert.That(localMinimum.z,
+                Is.GreaterThanOrEqualTo(counter.Bounds.yMin));
+            Assert.That(localMaximum.z,
+                Is.LessThanOrEqualTo(counter.Bounds.yMax));
+
+            float counterTop = bar.Layout.CounterPosition.y +
+                counter.Height * 0.5f +
+                BarPatronWorldBuilder.CounterTopBuildUp;
+            float vesselBottom = service.transform.InverseTransformPoint(
+                worldBounds.min).y;
+            Assert.That(
+                vesselBottom,
+                Is.EqualTo(counterTop).Within(0.02f),
+                "The final mug pose must rest on the physical counter top.");
+        }
+
         private static void AdvanceWipeToPhase(
             BarBartenderPresentation bartender,
             float clipLength,
@@ -803,6 +1103,78 @@ namespace BarPromenade.Tests.PlayMode
                 return $"x={MinimumX:F3}..{MaximumX:F3}, " +
                        $"y={MinimumY:F3}..{MaximumY:F3}, " +
                        $"zMin={MinimumDepth:F3}";
+            }
+        }
+
+        private sealed class BartenderTravelProbe
+        {
+            private const float PositionToleranceSquared = 0.000001f;
+
+            private readonly BarBartenderPresentation bartender;
+            private readonly Transform leftFoot;
+            private readonly Transform rightFoot;
+            private Vector3 previousPosition;
+            private Vector3 firstLeftFootLocalPosition;
+            private Vector3 firstRightFootLocalPosition;
+            private bool hasFootSample;
+
+            public BartenderTravelProbe(
+                BarBartenderPresentation bartenderPresentation,
+                Transform leftFootTransform,
+                Transform rightFootTransform)
+            {
+                bartender = bartenderPresentation;
+                leftFoot = leftFootTransform;
+                rightFoot = rightFootTransform;
+                previousPosition = bartender.transform.position;
+            }
+
+            public int TranslationFrameCount { get; private set; }
+            public float MaximumLocalFootTravel { get; private set; }
+
+            public bool Observe(string step)
+            {
+                Vector3 movement =
+                    bartender.transform.position - previousPosition;
+                movement.y = 0f;
+                bool translated =
+                    movement.sqrMagnitude > PositionToleranceSquared;
+                bool fullWalkSelected =
+                    bartender.CurrentClipKind ==
+                    BarBartenderClipKind.Walk;
+                Assert.That(
+                    fullWalkSelected,
+                    Is.EqualTo(translated),
+                    $"During {step}, root translation and the full Walk " +
+                    "clip diverged.");
+                if (translated)
+                {
+                    TranslationFrameCount++;
+                    Vector3 leftLocal =
+                        bartender.transform.InverseTransformPoint(
+                            leftFoot.position);
+                    Vector3 rightLocal =
+                        bartender.transform.InverseTransformPoint(
+                            rightFoot.position);
+                    if (!hasFootSample)
+                    {
+                        firstLeftFootLocalPosition = leftLocal;
+                        firstRightFootLocalPosition = rightLocal;
+                        hasFootSample = true;
+                    }
+
+                    MaximumLocalFootTravel = Mathf.Max(
+                        MaximumLocalFootTravel,
+                        Vector3.Distance(
+                            firstLeftFootLocalPosition,
+                            leftLocal) +
+                        Vector3.Distance(
+                            firstRightFootLocalPosition,
+                            rightLocal));
+                }
+
+                previousPosition = bartender.transform.position;
+                return translated;
             }
         }
 

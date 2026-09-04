@@ -93,6 +93,8 @@ namespace BarPromenade
         /// this remains a short flat slide, never a spawn at the guest.
         /// </summary>
         public const float VesselSlideEntryDistance = 0.50f;
+        public const float BeerGuestServerSetback = 1.02f;
+        public const float BeerVesselServerwardOffset = 0.18f;
         private int inputUnlockFrame;
         private bool hasPhysicalPresentation;
         private bool playerVisualStateCaptured;
@@ -490,6 +492,31 @@ namespace BarPromenade
                 ResolveActiveServiceLocalPosition(
                     canonicalLocalPose.Position),
                 rotation);
+        }
+
+        /// <summary>
+        /// Brings the beer server to the inner counter lip before placement.
+        /// The ordinary home line is too far from the guest-side mug pose for
+        /// a human arm, which previously made the final movement read as a
+        /// throw across the bar.
+        /// </summary>
+        public Vector3 ResolveBeerGuestServerLocalPosition(
+            Vector3 canonicalLocalPosition)
+        {
+            Vector3 positioned = ResolveActiveServiceLocalPosition(
+                canonicalLocalPosition);
+            if (servicePlan == null)
+            {
+                return positioned;
+            }
+
+            BarDrinkServicePose counter = ResolveActiveServiceLocalPose(
+                servicePlan.VesselCounterPose);
+            positioned.x = counter.Position.x;
+            positioned.z = Mathf.Min(
+                positioned.z,
+                counter.Position.z + BeerGuestServerSetback);
+            return positioned;
         }
 
         /// <summary>
@@ -2268,7 +2295,7 @@ namespace BarPromenade
             vessel.SetWorldPose(counter.position, counter.rotation);
         }
 
-        private Pose ResolveBeerCounterWorldPose(
+        internal Pose ResolveBeerCounterWorldPose(
             BarDrinkVesselView vessel)
         {
             BarDrinkServicePose localCounter =
@@ -2276,7 +2303,8 @@ namespace BarPromenade
                     servicePlan.VesselCounterPose);
             Pose counter = new Pose(
                 serviceView.transform.TransformPoint(
-                    localCounter.Position),
+                    localCounter.Position +
+                    Vector3.forward * BeerVesselServerwardOffset),
                 serviceView.transform.rotation * localCounter.Rotation);
             return playerDrinkRigConfigured &&
                    vessel.TryResolveRightHandledUprightPose(

@@ -244,6 +244,7 @@ Assets/
       BarServiceProps3D.{fbx,json}      34-part bottles/vessels/highlights/menu/stream pack / 1.4.1
     Bartender/
       Models/BarBartenderOrdinary3D.{fbx,json}  active two-arm NpcHumanV2 / v3.1.0 / 39 meshes / cafe service + Hero V2 Walk banks
+      Animations/BarBartenderWalk.anim           Hero V2 Walk with ROOT_Player paths remapped for the ordinary Generic rig
       Models/BarBartender3D.{fbx,json}          retained six-arm legacy model / v2.0.0
       Prefabs/BarBartenderOrdinary.prefab       provider-selected active bartender
       Prefabs/BarBartender.prefab               retained inactive six-arm asset
@@ -1041,7 +1042,7 @@ Assets/
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  seated renderer suppression + retained compatibility attachment root
       BarDrinkPhysicalShopPlayModeTests.cs multi-seat order + handled mug/right-hand grip/head-follow camera/sip visibility and return
-      BarInteriorSpawnPlayModeTests.cs real-scene arrival camera/inset menu/DOF release + grounded moving Wipe-to-counter contact
+      BarInteriorSpawnPlayModeTests.cs real-scene arrival camera/inset menu/DOF release + grounded Wipe and full bartender beer walk/place contact
       MountainRoadCafePlayModeTests.cs  shipped-scene cup/saucer + hand/pot/counter contacts, silent phase idles and seat-camera restoration
       MountainRoadCafeMenuPlayModeTests.cs handoff, close/rest/reopen, stand restore + post-exit physical retrieval/no-effect contract
 ArtSource/

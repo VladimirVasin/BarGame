@@ -341,7 +341,7 @@ MonoBehaviour:
     clip: {fileID: -2869807845820341257, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
     loop: 1
   - kind: 1
-    clip: {fileID: -227416529858450933, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    clip: {fileID: 7400000, guid: da90eb7fbc8ec5644958189e76035916, type: 2}
     loop: 1
   - kind: 4
     clip: {fileID: -7226570737868844738, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}

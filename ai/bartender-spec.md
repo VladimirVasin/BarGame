@@ -46,8 +46,10 @@ state and `BarDrinkServiceTimeline` remain the source of gameplay truth.
 
 The model FBX itself remains animation-free. Its registry references four
 service clips in `Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx` and
-the full `Walk` in Hero V2's compatible animation bank instead of duplicating
-them.
+`Assets/Bar/Bartender/Animations/BarBartenderWalk.anim`. The latter is a
+deterministic derived copy of Hero V2's full `Walk`: editor setup remaps the
+source `ROOT_PlayerV2/...` bindings to this rig's real `ROOT_Player/...`
+hierarchy before the prefab can accept it.
 
 ## 3. Hands, sockets and authored anchors
 
@@ -80,14 +82,18 @@ compatible full Hero V2 walk:
 | Bar role | Shared clip | Import contract |
 | --- | --- | --- |
 | quiet default | `CafeAttendantWipe` | `9 s`, looping |
-| counter travel | Hero V2 `Walk` | `1 s`, looping |
+| counter travel | derived `BarBartenderWalk` | `1 s`, looping |
 | handling and turns | `CafeAttendantWalk` | `1.25 s`, looping |
 | pour | `CafeAttendantPour` | `3.5 s`, one-shot |
 | acknowledge the service start | `CafeAttendantNotice` | `2.5 s`, one-shot |
 
-The four service clips remain in `MountainRoadCafeCast`; locomotion comes
+The four service clips remain in `MountainRoadCafeCast`; locomotion is derived
 from the compatible Hero V2 animation bank so counter travel uses a complete
-stride instead of the cafe attendant's short service step. The choreography
+stride instead of the cafe attendant's short service step. Directly binding
+the source clip is forbidden because its exported root name differs and Unity
+Generic animation would silently leave every bartender bone static. The setup
+also validates that every Transform curve resolves below the live Animator.
+The choreography
 turns the root toward the path before translation and restores the authored
 working orientation after arrival. `BarBartenderPresentation` evaluates the
 clips through a manually driven
@@ -108,8 +114,11 @@ must physically reach `BeerTapServerDock` before pickup/pour can advance, then
 reach the selected guest dock before placement. The world presentation moves
 the pint between `BeerTapVesselDock`, the left grip and the service point,
 pulls `BeerTapHandlePivot` through the right grip, and emits the stream from
-`BeerTapSpout`. A bounded reach overlay brings each hand to its current target,
-then blends both hands back out when service ends or the shop closes.
+`BeerTapSpout`. The filled mug remains in its final upright/right-handled
+rotation during travel. At the guest the root aligns laterally with the mug,
+stays behind the inner counter edge and leans from the spine while the bounded
+reach overlay keeps the left palm on the handle through the complete smooth
+placement. Both hands blend back out when service ends or the shop closes.
 
 ## 5. Verification contract
 
@@ -133,7 +142,9 @@ then blends both hands back out when service ends or the shop closes.
 - `BarInteriorSpawnPlayModeTests` requires the active root to remain grounded,
   keeps the arrival camera inside the entrance door and samples changing
   points of Wipe to prove that the towel both contacts and travels across the
-  real counter top.
+  real counter top. Its production beer-service regression also drives the
+  unshortened menu/tap/carry/place choreography and checks live Walk foot
+  travel, an upright mug, monotonic placement and continuous hand contact.
 - `SceneFlowSmokeTests` requires the spawned bar worker to use the ordinary
   rig at the authored bartender anchor.
 - The Blender validator owns the measured `39`-mesh / `1,136`-triangle,

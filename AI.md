@@ -601,15 +601,19 @@ returns. They spawn at randomly
   former `0.42 m` duckboard and matching root lift belonged to the superseded
   six-arm presentation and are absent from the active world. The active
   registry reuses the four `CafeAttendant*` service clips from
-  `MountainRoadCafeCast`, plus the complete `Walk` cycle from the compatible
-  Hero V2 bank; a manually evaluated
+  `MountainRoadCafeCast`, plus a deterministic copy of the complete Hero V2
+  `Walk` whose `ROOT_PlayerV2/...` curve paths are remapped onto the
+  bartender's real `ROOT_Player/...` hierarchy; a manually evaluated
   `PlayableGraph` reads `BarDrinkServiceTimeline`. During counter travel the
   root first faces its path, then advances with that full leg cycle before
   turning back to the authored working orientation. For beer the bartender
   walks to the central tap, takes and fills the slightly enlarged handled beer
-  mug, carries it to the selected place and sets it directly before the hero
-  with its handle on his right; the right hand pulls the tap handle while the
-  left steadies the vessel. The full mug then waits without a timeout: looking at it owns
+  mug, carries it upright to the selected place, steps opposite its service
+  point and bends from the spine while the left palm follows the handle all
+  the way onto the counter. It finishes directly before the hero with its
+  handle on his right instead of being thrown or rolled; the right hand pulls
+  the tap handle while the left steadies the vessel. The full mug then waits
+  without a timeout: looking at it owns
   both the localized drink prompt and the same thin yellow contour used by the
   closed menu. Accepting the prompt runs a nested pickup, sip and return on the
   visible seated Hero V2 rig. His right hand grips the handle; the seated

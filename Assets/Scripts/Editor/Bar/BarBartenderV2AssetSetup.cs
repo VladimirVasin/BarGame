@@ -12,8 +12,9 @@ namespace BarPromenade.Editor
     /// <summary>
     /// Builds the active ordinary bartender beside, never over, the retained
     /// six-armed prefab. The model remains animation-free; four bone-only
-    /// service clips come from the cafe bank and its full walk comes from the
-    /// compatible Hero V2 bank.
+    /// service clips come from the cafe bank. Its full walk is a deterministic
+    /// path-remapped copy of Hero V2's clip because both Generic rigs share
+    /// bones but their exported root object names differ.
     /// </summary>
     [InitializeOnLoad]
     public static class BarBartenderV2AssetSetup
@@ -35,9 +36,11 @@ namespace BarPromenade.Editor
             "Assets/Player3D/Materials/Player3DLit.mat";
         public const string AnimationPath =
             "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx";
-        public const string WalkAnimationPath =
+        public const string WalkAnimationSourcePath =
             "Assets/Player3D/V2/Animations/" +
             "PlayerCharacter3DV2Animations.fbx";
+        public const string WalkAnimationPath =
+            "Assets/Bar/Bartender/Animations/BarBartenderWalk.anim";
         public const string ProviderPath =
             "Assets/Resources/Bar/BarBartenderProvider.asset";
 
@@ -53,6 +56,10 @@ namespace BarPromenade.Editor
         private const float ExpectedHeight = 1.75f;
         private const int MinimumTriangleCount = 900;
         private const int MaximumTriangleCount = 2600;
+        private const string SourceWalkClipName = "Walk";
+        private const string WalkClipName = "BarBartenderWalk";
+        private const string SourceWalkRootPath = "ROOT_PlayerV2";
+        private const string BartenderWalkRootPath = "ROOT_Player";
 
         private static readonly string[] ExpectedAnchors =
         {
@@ -79,7 +86,7 @@ namespace BarPromenade.Editor
             new ClipDescriptor(
                 BarBartenderClipKind.Walk,
                 WalkAnimationPath,
-                "Walk",
+                WalkClipName,
                 1f,
                 true),
             new ClipDescriptor(
@@ -145,7 +152,7 @@ namespace BarPromenade.Editor
                 File.Exists(PlayerModelPath) &&
                 File.Exists(SharedMaterialPath) &&
                 File.Exists(AnimationPath) &&
-                File.Exists(WalkAnimationPath);
+                File.Exists(WalkAnimationSourcePath);
         }
 
         public static void QueueBuildWhenSourcesExist()
@@ -187,9 +194,10 @@ namespace BarPromenade.Editor
                     ImportAssetOptions.ForceUpdate |
                     ImportAssetOptions.ForceSynchronousImport);
                 AssetDatabase.ImportAsset(
-                    WalkAnimationPath,
+                    WalkAnimationSourcePath,
                     ImportAssetOptions.ForceUpdate |
                     ImportAssetOptions.ForceSynchronousImport);
+                BuildWalkClip();
                 AssetDatabase.ImportAsset(
                     ModelPath,
                     ImportAssetOptions.ForceUpdate |
@@ -560,6 +568,42 @@ namespace BarPromenade.Editor
                         $"Ordinary bartender clip binding {index} " +
                         "differs from the authored service contract.");
                 }
+
+                ValidateClipPaths(
+                    registry.Animator.transform,
+                    binding.Clip,
+                    expected.Name);
+            }
+        }
+
+        private static void ValidateClipPaths(
+            Transform animatorRoot,
+            AnimationClip clip,
+            string clipName)
+        {
+            EditorCurveBinding[] bindings =
+                AnimationUtility.GetCurveBindings(clip);
+            if (bindings.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Bartender clip '{clipName}' has no animation curves.");
+            }
+
+            foreach (string path in bindings
+                         .Where(binding =>
+                             binding.type == typeof(Transform))
+                         .Select(binding => binding.path)
+                         .Distinct(StringComparer.Ordinal))
+            {
+                if (string.IsNullOrEmpty(path) ||
+                    animatorRoot.Find(path) != null)
+                {
+                    continue;
+                }
+
+                throw new InvalidOperationException(
+                    $"Bartender clip '{clipName}' targets missing path " +
+                    $"'{path}'.");
             }
         }
 
@@ -626,12 +670,11 @@ namespace BarPromenade.Editor
                     StringComparer.Ordinal) ||
                 !string.Equals(
                     manifest.locomotion_animation_asset,
-                    WalkAnimationPath,
+                    WalkAnimationSourcePath,
                     StringComparison.Ordinal) ||
                 !string.Equals(
                     manifest.locomotion_clip,
-                    Clips.Single(clip => clip.Kind ==
-                        BarBartenderClipKind.Walk).Name,
+                    SourceWalkClipName,
                     StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
@@ -737,6 +780,134 @@ namespace BarPromenade.Editor
             return clip;
         }
 
+        private static void BuildWalkClip()
+        {
+            AnimationClip source = AssetDatabase
+                .LoadAllAssetsAtPath(WalkAnimationSourcePath)
+                .OfType<AnimationClip>()
+                .FirstOrDefault(candidate =>
+                    !candidate.name.StartsWith(
+                        "__preview__",
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        NormalizeClipName(candidate.name),
+                        SourceWalkClipName,
+                        StringComparison.Ordinal));
+            if (source == null)
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 Walk is missing; the bartender travel clip " +
+                    "cannot be derived.");
+            }
+
+            string directory = Path.GetDirectoryName(WalkAnimationPath)
+                ?.Replace('\\', '/');
+            if (string.IsNullOrEmpty(directory))
+            {
+                throw new InvalidOperationException(
+                    "The bartender walk asset path has no directory.");
+            }
+
+            EnsureAssetDirectory(directory);
+            AnimationClip target =
+                AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                    WalkAnimationPath);
+            if (target == null)
+            {
+                target = new AnimationClip();
+                AssetDatabase.CreateAsset(target, WalkAnimationPath);
+            }
+
+            target.ClearCurves();
+            EditorCurveBinding[] floatBindings =
+                AnimationUtility.GetCurveBindings(source);
+            if (floatBindings.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 Walk contains no transform curves.");
+            }
+
+            for (int index = 0; index < floatBindings.Length; index++)
+            {
+                EditorCurveBinding sourceBinding = floatBindings[index];
+                EditorCurveBinding targetBinding = sourceBinding;
+                targetBinding.path = RemapWalkPath(sourceBinding.path);
+                AnimationUtility.SetEditorCurve(
+                    target,
+                    targetBinding,
+                    AnimationUtility.GetEditorCurve(source, sourceBinding));
+            }
+
+            EditorCurveBinding[] objectBindings =
+                AnimationUtility.GetObjectReferenceCurveBindings(source);
+            for (int index = 0; index < objectBindings.Length; index++)
+            {
+                EditorCurveBinding sourceBinding = objectBindings[index];
+                EditorCurveBinding targetBinding = sourceBinding;
+                targetBinding.path = RemapWalkPath(sourceBinding.path);
+                AnimationUtility.SetObjectReferenceCurve(
+                    target,
+                    targetBinding,
+                    AnimationUtility.GetObjectReferenceCurve(
+                        source,
+                        sourceBinding));
+            }
+
+            target.name = WalkClipName;
+            target.frameRate = source.frameRate;
+            target.wrapMode = WrapMode.Loop;
+            target.legacy = false;
+            AnimationUtility.SetAnimationClipSettings(
+                target,
+                AnimationUtility.GetAnimationClipSettings(source));
+            AnimationUtility.SetAnimationEvents(
+                target,
+                AnimationUtility.GetAnimationEvents(source));
+            target.EnsureQuaternionContinuity();
+            EditorUtility.SetDirty(target);
+            AssetDatabase.SaveAssetIfDirty(target);
+        }
+
+        private static string RemapWalkPath(string sourcePath)
+        {
+            if (string.Equals(
+                    sourcePath,
+                    SourceWalkRootPath,
+                    StringComparison.Ordinal))
+            {
+                return BartenderWalkRootPath;
+            }
+
+            string sourcePrefix = SourceWalkRootPath + "/";
+            if (sourcePath.StartsWith(
+                    sourcePrefix,
+                    StringComparison.Ordinal))
+            {
+                return BartenderWalkRootPath +
+                       sourcePath.Substring(SourceWalkRootPath.Length);
+            }
+
+            throw new InvalidOperationException(
+                $"Hero V2 Walk curve '{sourcePath}' is outside the " +
+                $"expected '{SourceWalkRootPath}' hierarchy.");
+        }
+
+        private static void EnsureAssetDirectory(string directory)
+        {
+            string[] parts = directory.Split('/');
+            string current = parts[0];
+            for (int index = 1; index < parts.Length; index++)
+            {
+                string next = current + "/" + parts[index];
+                if (!AssetDatabase.IsValidFolder(next))
+                {
+                    AssetDatabase.CreateFolder(current, parts[index]);
+                }
+
+                current = next;
+            }
+        }
+
         private static string NormalizeClipName(string name)
         {
             int separator = name.LastIndexOf('|');
@@ -762,7 +933,9 @@ namespace BarPromenade.Editor
                     !string.Equals(
                         registry.BuildSignature,
                         manifest.build_signature,
-                        StringComparison.Ordinal))
+                        StringComparison.Ordinal) ||
+                    AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                        WalkAnimationPath) == null)
                 {
                     QueueBuildWhenSourcesExist();
                 }

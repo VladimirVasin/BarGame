@@ -25,10 +25,13 @@ namespace BarPromenade
         public const float ElbowSwayDegrees = 7f;
         public const float HeadSwayDegrees = 9f;
         public const float ReachBlendSeconds = 0.28f;
+        public const float BeerPlacementTorsoLeanDegrees = 38f;
+        public const float BeerPlacementTorsoBlendSeconds = 0.18f;
         public const int OrdinaryHandCount = 2;
         public const int OrdinaryVesselHandIndex = 0;
         public const int OrdinaryBottleHandIndex = 1;
         private const int SolveIterations = 3;
+        private const int OrdinarySolveIterations = 8;
 
         // Root-local rest points retained for the inspectable legacy
         // six-arm path. The active ordinary bartender stays ground-level and
@@ -74,6 +77,9 @@ namespace BarPromenade
             BarBartenderClipKind.Wipe;
         private float currentClipTimeSeconds;
         private float ordinaryIdleElapsedSeconds;
+        private Vector3 ordinaryTorsoLeanTarget;
+        private float ordinaryTorsoLeanWeight;
+        private float ordinaryTorsoLeanGoalWeight;
         private bool hasGraph;
         private bool hasActionPlayable;
         private bool usesOrdinaryRig;
@@ -211,6 +217,23 @@ namespace BarPromenade
 
             chainTargets[chainIndex] = worldPosition;
             chainGoalWeights[chainIndex] = Mathf.Clamp01(weight);
+        }
+
+        /// <summary>
+        /// Bends the ordinary service rig from the spine toward a reachable
+        /// counter contact. The hand solver then runs from that leaned pose,
+        /// so a placed mug remains in the palm instead of finishing the route
+        /// as an independently moving prop.
+        /// </summary>
+        public void SetCounterReachLean(
+            Vector3 worldTarget,
+            float weight)
+        {
+            ordinaryTorsoLeanGoalWeight = Mathf.Clamp01(weight);
+            if (ordinaryTorsoLeanGoalWeight > 0.0001f)
+            {
+                ordinaryTorsoLeanTarget = worldTarget;
+            }
         }
 
         public float GetChainWeight(int chainIndex)
@@ -390,6 +413,12 @@ namespace BarPromenade
             }
 
             EvaluateOrdinaryAnimation();
+            ordinaryTorsoLeanWeight = Mathf.MoveTowards(
+                ordinaryTorsoLeanWeight,
+                ordinaryTorsoLeanGoalWeight,
+                Mathf.Max(0f, deltaTime) /
+                BeerPlacementTorsoBlendSeconds);
+            ApplyOrdinaryTorsoLean();
             for (int index = 0; index < ChainCount; index++)
             {
                 chainWeights[index] = Mathf.MoveTowards(
@@ -403,6 +432,44 @@ namespace BarPromenade
                     SolveOrdinaryReach(index);
                 }
             }
+        }
+
+        private void ApplyOrdinaryTorsoLean()
+        {
+            if (ordinaryTorsoLeanWeight <= 0.0001f ||
+                registry.Spine == null || registry.Chest == null)
+            {
+                return;
+            }
+
+            Vector3 torsoDirection =
+                registry.Chest.position - registry.Spine.position;
+            Vector3 targetDirection = Vector3.ProjectOnPlane(
+                ordinaryTorsoLeanTarget - registry.Spine.position,
+                transform.up);
+            if (torsoDirection.sqrMagnitude < 0.000001f ||
+                targetDirection.sqrMagnitude < 0.000001f)
+            {
+                return;
+            }
+
+            torsoDirection.Normalize();
+            targetDirection.Normalize();
+            Vector3 axis = Vector3.Cross(
+                torsoDirection,
+                targetDirection);
+            if (axis.sqrMagnitude < 0.000001f)
+            {
+                return;
+            }
+
+            float angle = Mathf.Min(
+                Vector3.Angle(torsoDirection, targetDirection),
+                BeerPlacementTorsoLeanDegrees *
+                Mathf.SmoothStep(0f, 1f, ordinaryTorsoLeanWeight));
+            registry.Spine.rotation = Quaternion.AngleAxis(
+                angle,
+                axis.normalized) * registry.Spine.rotation;
         }
 
         private void SetOrdinaryClip(
@@ -470,7 +537,7 @@ namespace BarPromenade
             Quaternion shoulderBase = shoulder.rotation;
             Quaternion elbowBase = elbow.rotation;
             for (int iteration = 0;
-                 iteration < SolveIterations;
+                 iteration < OrdinarySolveIterations;
                  iteration++)
             {
                 RotateTowards(elbow, grip, chainTargets[index]);

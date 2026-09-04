@@ -2084,14 +2084,16 @@ The vertical slice contains:
   former six-armed prefab only as an inactive legacy reference. The active
   `1.75 m`, `39`-mesh / `1,136`-triangle ordinary two-armed publican wears a
   dark-green waistcoat, rolled sleeves and apron. It reuses all four
-  `CafeAttendant*` service clips, while counter locomotion uses the compatible
-  Hero V2 `Walk` cycle;
+  `CafeAttendant*` service clips, while counter locomotion uses a deterministic
+  copy of the compatible Hero V2 `Walk` cycle with its exported root paths
+  remapped onto the bartender hierarchy;
   `BarBartenderServiceChoreography` turns the root into its path, advances it
   with that complete stride and then restores its working orientation while
   binding the hands to the physical menu, bottle, central tap or vessel. For
   beer he walks to the tap, pulls its handle over the slightly enlarged
-  handled mug, carries the full mug to the selected stool and places it
-  directly before the hero. The active root and feet
+  handled mug, carries the full mug upright to the selected stool, aligns his
+  body opposite it and leans over the counter while the left palm follows the
+  handle through a smooth placement directly before the hero. The active root and feet
   remain on the authored floor: the legacy `0.42 m` duckboard and matching
   actor lift are absent. During the quiet shared Wipe, that grounded placement
   puts the towel against the real `Y = 1.02 m` counter top and the clip carries
@@ -2173,8 +2175,11 @@ The vertical slice contains:
   last-drink, consumed-count and stress effects until the physical drink is
   finished. Beer uses the central tap: the bartender walks to it, takes the
   `155 mm`-high mug, pulls the real handle, fills it with the world-space stream,
-  carries it to the selected place and sets it directly before the hero with
-  its handle on his right. While the full mug waits, the same gaze predicate
+  carries it upright to the selected place and sets it directly before the
+  hero with its handle on his right. The bartender approaches the reachable
+  guest-side line, bends from the spine and keeps his palm on the handle until
+  the mug is resting, so the last part of the path has no throw or roll. While
+  the full mug waits, the same gaze predicate
   drives its thin yellow contour and the localized `E` drink prompt. The seated
   world body remains authoritative and runs `2 s` pickup, `3 s` sip and `2 s`
   return actions. Its right hand grips the handle directly. The seated

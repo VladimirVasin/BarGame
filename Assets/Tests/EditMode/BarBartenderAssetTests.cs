@@ -13,8 +13,7 @@ namespace BarPromenade.Tests.EditMode
         private const string ServiceAnimationPath =
             "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx";
         private const string WalkAnimationPath =
-            "Assets/Player3D/V2/Animations/" +
-            "PlayerCharacter3DV2Animations.fbx";
+            "Assets/Bar/Bartender/Animations/BarBartenderWalk.anim";
 
         [Test]
         public void Provider_SelectsOrdinaryPrefab_AndRetainsLegacy()
@@ -56,7 +55,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 AssetDatabase.GetAssetPath(walk.Clip),
                 Is.EqualTo(WalkAnimationPath));
-            Assert.That(walk.Clip.name, Is.EqualTo("Walk"));
+            Assert.That(walk.Clip.name, Is.EqualTo("BarBartenderWalk"));
             Assert.That(walk.Clip.length, Is.EqualTo(1f).Within(0.002f));
             Assert.That(walk.Loop, Is.True);
             BarBartenderClipBinding serviceStep =
@@ -241,6 +240,49 @@ namespace BarPromenade.Tests.EditMode
                     presentation.CurrentClipKind,
                     Is.EqualTo(BarBartenderClipKind.Wipe));
                 Assert.That(serviceTowel.enabled, Is.True);
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void OrdinaryWalkClip_ContainsVisibleFootTravel()
+        {
+            BarBartenderProvider provider = BarBartenderProvider.Load();
+            BarBartenderAssetRegistry registry =
+                provider.BartenderPrefab.GetComponent<
+                    BarBartenderAssetRegistry>();
+            BarBartenderClipBinding walk = registry.ClipBindings.Single(
+                binding => binding.Kind == BarBartenderClipKind.Walk);
+            GameObject instance = Object.Instantiate(
+                provider.BartenderPrefab);
+            try
+            {
+                BarBartenderAssetRegistry instanceRegistry =
+                    instance.GetComponent<BarBartenderAssetRegistry>();
+                Transform leftFoot = instance
+                    .GetComponentsInChildren<Transform>(true)
+                    .Single(transform => transform.name == "foot.L");
+                Transform rightFoot = instance
+                    .GetComponentsInChildren<Transform>(true)
+                    .Single(transform => transform.name == "foot.R");
+                walk.Clip.SampleAnimation(
+                    instanceRegistry.Animator.gameObject,
+                    0f);
+                Vector3 leftStart = leftFoot.position;
+                Vector3 rightStart = rightFoot.position;
+                walk.Clip.SampleAnimation(
+                    instanceRegistry.Animator.gameObject,
+                    0.25f);
+
+                float travel = Vector3.Distance(
+                    leftStart,
+                    leftFoot.position) + Vector3.Distance(
+                    rightStart,
+                    rightFoot.position);
+                Assert.That(travel, Is.GreaterThan(0.08f));
             }
             finally
             {
