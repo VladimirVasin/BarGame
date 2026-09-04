@@ -503,18 +503,58 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator DrunkHero_LeansAndSpreadsArms()
         {
+            // The sober hands, as drawn: the drunk ones are measured
+            // against them, because "the arms rotate" is not the same
+            // claim as "the arms go OUT" — the first version of this pose
+            // rotated them by the right number of degrees straight back
+            // into his ribs.
+            // The idle is a four-second breathing loop, so the sober
+            // reference is its widest span and its furthest-back reach
+            // over one whole loop, not one phase of it.
+            CaptureTorsoForward();
+            float soberSpan = 0f;
+            float soberReach = float.MaxValue;
+            for (int frame = 0; frame < 4 * FramesPerSecond; frame++)
+            {
+                yield return null;
+                presentation.ReapplyLatePresentationPose();
+                soberSpan = Mathf.Max(soberSpan, HandSpan());
+                soberReach = Mathf.Min(soberReach, LowestHandForwardReach());
+            }
+
             yield return Prepare(100, ModelGraceSeconds);
             float maxLean = 0f;
             float maxArm = 0f;
             float maxWeight = 0f;
+            float maxSpan = 0f;
+            float minSpan = float.MaxValue;
+            float minReach = float.MaxValue;
+            int drunkFrames = 0;
             for (int frame = 0; frame < 15 * FramesPerSecond; frame++)
             {
                 yield return null;
+                presentation.ReapplyLatePresentationPose();
                 PlayerBalancePose pose = presentation.BalancePose;
                 maxLean = Mathf.Max(maxLean, Mathf.Abs(pose.LeanRollDegrees));
                 maxArm = Mathf.Max(maxArm, pose.ArmReaction);
                 maxWeight = Mathf.Max(maxWeight, pose.Weight);
+                // The status recovers on REAL time even under a pinned
+                // clock, so the amount may already sit a point under
+                // full: the gate only excludes the blend-in.
+                if (presentation.IntoxicationAmount >= 0.9f)
+                {
+                    drunkFrames++;
+                    float span = HandSpan();
+                    maxSpan = Mathf.Max(maxSpan, span);
+                    minSpan = Mathf.Min(minSpan, span);
+                    minReach = Mathf.Min(minReach, LowestHandForwardReach());
+                }
             }
+
+            Assert.That(
+                drunkFrames,
+                Is.GreaterThan(10 * FramesPerSecond),
+                "The hands were sampled across most of the drunk window.");
 
             Assert.That(
                 maxWeight,
@@ -528,6 +568,129 @@ namespace BarPromenade.Tests.PlayMode
                 maxArm,
                 Is.GreaterThan(0.05f),
                 $"A blind-drunk hero must spread his arms (max {maxArm:F3}).");
+            Assert.That(
+                minSpan,
+                Is.GreaterThan(soberSpan + 0.15f),
+                "A blind-drunk hero holds his arms OUT for balance, not " +
+                $"against his ribs: hands {minSpan:F3}-{maxSpan:F3} m apart " +
+                $"against {soberSpan:F3} m sober.");
+            Assert.That(
+                minReach,
+                Is.GreaterThan(soberReach - 0.05f),
+                "Neither arm may swing behind the torso from where it " +
+                $"hangs sober (lowest forward reach {minReach:F3} m " +
+                $"against {soberReach:F3} m sober). The bug this guards " +
+                "sent the hands 0.3 m back.");
+        }
+
+        [UnityTest]
+        public IEnumerator BalancePose_LeanSignsFollowTheContract()
+        {
+            // Positive roll is a lean to the RIGHT and positive pitch a
+            // lean FORWARD (PlayerBalancePose), whatever the imported
+            // bones' local axes happen to point at. The pitch was wrong
+            // for a day: the pelvis bone's local right points to the
+            // hero's left, so a positive turn about it tipped him back.
+            Vector3 forward = root.forward;
+            forward.y = 0f;
+            forward.Normalize();
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Transform head = HandBone(Player3DAnatomicalPart.Head);
+            Transform pelvis = HandBone(Player3DAnatomicalPart.Pelvis);
+            yield return null;
+
+            presentation.SetBalance(PlayerBalancePose.Neutral);
+            presentation.ReapplyLatePresentationPose();
+            Vector3 neutral = head.position - pelvis.position;
+
+            presentation.SetBalance(LeanPose(0f, 10f));
+            presentation.ReapplyLatePresentationPose();
+            Vector3 pitched = head.position - pelvis.position;
+            Assert.That(
+                Vector3.Dot(pitched - neutral, forward),
+                Is.GreaterThan(0.05f),
+                "A positive pitch leans the torso FORWARD.");
+
+            presentation.SetBalance(LeanPose(10f, 0f));
+            presentation.ReapplyLatePresentationPose();
+            Vector3 rolled = head.position - pelvis.position;
+            Assert.That(
+                Vector3.Dot(rolled - neutral, right),
+                Is.GreaterThan(0.05f),
+                "A positive roll leans the torso to the RIGHT.");
+
+            presentation.SetBalance(PlayerBalancePose.Neutral);
+            presentation.ReapplyLatePresentationPose();
+        }
+
+        private static PlayerBalancePose LeanPose(float roll, float pitch)
+        {
+            return new PlayerBalancePose(
+                1f,
+                roll,
+                pitch,
+                0f,
+                0f,
+                0f,
+                PlayerBalanceStepPose.None,
+                PlayerWallReachPose.None,
+                PlayerBalanceModel.DefaultLeftFoot,
+                PlayerBalanceModel.DefaultRightFoot);
+        }
+
+        /// <summary>Distance between the two hands, metres.</summary>
+        private float HandSpan()
+        {
+            return Vector3.Distance(
+                HandBone(Player3DAnatomicalPart.LeftHand).position,
+                HandBone(Player3DAnatomicalPart.RightHand).position);
+        }
+
+        private Vector3 torsoForwardLocal;
+
+        /// <summary>
+        /// Pins the actor's planar heading in the torso bone's own frame
+        /// while he stands sober, so the reach below follows the torso
+        /// through the model's pitch and roll instead of reading a
+        /// backward lean as arms swung behind the back.
+        /// </summary>
+        private void CaptureTorsoForward()
+        {
+            Vector3 forward = root.forward;
+            forward.y = 0f;
+            forward.Normalize();
+            torsoForwardLocal = HandBone(Player3DAnatomicalPart.Torso)
+                .InverseTransformDirection(forward);
+        }
+
+        /// <summary>
+        /// How far ahead of its own shoulder the further-back hand sits
+        /// along the torso's pinned heading, metres (negative = behind).
+        /// </summary>
+        private float LowestHandForwardReach()
+        {
+            Transform torso = HandBone(Player3DAnatomicalPart.Torso);
+            float left = Vector3.Dot(
+                torso.InverseTransformDirection(
+                    HandBone(Player3DAnatomicalPart.LeftHand).position -
+                    HandBone(Player3DAnatomicalPart.LeftUpperArm).position),
+                torsoForwardLocal);
+            float right = Vector3.Dot(
+                torso.InverseTransformDirection(
+                    HandBone(Player3DAnatomicalPart.RightHand).position -
+                    HandBone(Player3DAnatomicalPart.RightUpperArm).position),
+                torsoForwardLocal);
+            return Mathf.Min(left, right);
+        }
+
+        private Transform HandBone(Player3DAnatomicalPart part)
+        {
+            Assert.That(
+                registry.TryGetPart(part, out var binding) && binding != null,
+                Is.True,
+                $"The hero rig binds {part}.");
+            Assert.That(binding.Bone, Is.Not.Null);
+            return binding.Bone;
         }
 
         [UnityTest]

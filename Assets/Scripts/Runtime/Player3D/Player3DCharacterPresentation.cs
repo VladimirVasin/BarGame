@@ -57,10 +57,24 @@ namespace BarPromenade
         // IK-held boots: the "heavy knees" of the old symmetric bend.
         private const float IntoxicationCrouchMetres = 0.03f;
 
-        // The balance model's arm reaction at full instability, and how
-        // much of its pelvis roll the chest counters so the head stays
-        // nearer level than the hips.
-        private const float BalanceArmReactionDegrees = 35f;
+        // The drunk holds his arms out for balance, tightrope fashion:
+        // abduction (degrees out from the hanging arm) grows with the
+        // SQUARE of the status level so a light buzz barely shows and
+        // blind drunk is unmistakable, the balance model's reaction
+        // raises them further at full instability, part of every degree
+        // of spread is a raise to the front so the hands sit ahead of the
+        // hips rather than in a stiff T, the arm on the side he is
+        // falling AWAY from rises by this much per degree of lean, and
+        // the ambient stagger hunts the hands forward and back against
+        // each other. Neither arm goes above the shoulder line. The chest
+        // counters part of the pelvis roll so the head stays nearer level
+        // than the hips.
+        private const float IntoxicationArmSpreadDegrees = 40f;
+        private const float BalanceArmReactionDegrees = 45f;
+        private const float ArmForwardRaiseFraction = 0.3f;
+        private const float BalanceArmLeanCoupling = 0.8f;
+        private const float IntoxicationArmHuntDegrees = 6f;
+        private const float MaximumArmOutwardDegrees = 85f;
         private const float BalanceChestCounterRoll = -0.35f;
 
         // Turn-in-place engages only while the feet are effectively
@@ -1283,17 +1297,58 @@ namespace BarPromenade
             float stagger = Mathf.Cos(statusSwayPhase * 0.73f) *
                             intoxicationAmount;
             float lean = balanceLean * 13f;
-            float armSpread = intoxicationAmount * 9f;
 
             // The balance model's lean lands on top: the pelvis rolls
             // toward the capture point, the chest counters a little so
-            // the head stays nearer level, and the arms go out as the
-            // stagger gets worse.
+            // the head stays nearer level.
             float modelWeight = balancePose.Weight;
             float modelRoll = balancePose.LeanRollDegrees * modelWeight;
             float modelPitch = balancePose.LeanPitchDegrees * modelWeight;
-            float modelArms = balancePose.ArmReaction * modelWeight *
+
+            // The arms go OUT, tightrope fashion: the status level spreads
+            // them, the model's reaction throws them wider as the stagger
+            // gets worse, a share of the spread is a raise to the front,
+            // the arm away from the lean rises higher than the one over
+            // it, and the ambient stagger hunts them forward and back
+            // against each other. A hand reaching for a wall gives its
+            // spread back as the reach takes hold, so the IK blends from
+            // a hanging arm and not from a flung one. Every term is
+            // exactly zero sober.
+            float armSpread = intoxicationAmount * intoxicationAmount *
+                              IntoxicationArmSpreadDegrees +
+                              balancePose.ArmReaction * modelWeight *
                               BalanceArmReactionDegrees;
+            // Only the model's roll steers the asymmetry: it is already
+            // weight-gated, whereas the legacy scalar lean is not tied to
+            // the status at all.
+            float armLean = modelRoll * BalanceArmLeanCoupling;
+            float armForward = armSpread * ArmForwardRaiseFraction;
+            float armHunt = stagger * IntoxicationArmHuntDegrees;
+            float leftArmOutward = Mathf.Clamp(
+                armSpread + armLean,
+                0f,
+                MaximumArmOutwardDegrees);
+            float rightArmOutward = Mathf.Clamp(
+                armSpread - armLean,
+                0f,
+                MaximumArmOutwardDegrees);
+            float leftArmForward = armForward + armHunt;
+            float rightArmForward = armForward - armHunt;
+            PlayerWallReachPose wallReach = balancePose.WallReach;
+            if (wallReach.Active && modelWeight > 0f)
+            {
+                float free = 1f - wallReach.Weight * modelWeight;
+                if (wallReach.RightHand)
+                {
+                    rightArmOutward *= free;
+                    rightArmForward *= free;
+                }
+                else
+                {
+                    leftArmOutward *= free;
+                    leftArmForward *= free;
+                }
+            }
 
             // Heavy knees come from lowering the pelvis while both boots
             // are held by the leg solve, so they bend anatomically and
@@ -1308,8 +1363,10 @@ namespace BarPromenade
                     (lean * -0.42f) + (sway * 0.55f) +
                     (modelRoll * BalanceChestCounterRoll),
                     modelPitch,
-                    armSpread + (stagger * 2f) + modelArms,
-                    -armSpread + (stagger * 2f) - modelArms,
+                    leftArmOutward,
+                    leftArmForward,
+                    rightArmOutward,
+                    rightArmForward,
                     crouch,
                     footPlantLeft,
                     footPlantRight,

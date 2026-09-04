@@ -14,8 +14,10 @@ namespace BarPromenade
             float pelvisRollDegrees,
             float chestRollDegrees,
             float pelvisPitchDegrees,
-            float leftArmSpreadDegrees,
-            float rightArmSpreadDegrees,
+            float leftArmOutwardDegrees,
+            float leftArmForwardDegrees,
+            float rightArmOutwardDegrees,
+            float rightArmForwardDegrees,
             float crouchMetres,
             float plantLeft,
             float plantRight,
@@ -28,8 +30,10 @@ namespace BarPromenade
             PelvisRollDegrees = pelvisRollDegrees;
             ChestRollDegrees = chestRollDegrees;
             PelvisPitchDegrees = pelvisPitchDegrees;
-            LeftArmSpreadDegrees = leftArmSpreadDegrees;
-            RightArmSpreadDegrees = rightArmSpreadDegrees;
+            LeftArmOutwardDegrees = leftArmOutwardDegrees;
+            LeftArmForwardDegrees = leftArmForwardDegrees;
+            RightArmOutwardDegrees = rightArmOutwardDegrees;
+            RightArmForwardDegrees = rightArmForwardDegrees;
             CrouchMetres = Mathf.Max(0f, crouchMetres);
             PlantLeft = Mathf.Clamp01(plantLeft);
             PlantRight = Mathf.Clamp01(plantRight);
@@ -50,8 +54,16 @@ namespace BarPromenade
 
         /// <summary>Forward pitch of the pelvis, degrees.</summary>
         public float PelvisPitchDegrees { get; }
-        public float LeftArmSpreadDegrees { get; }
-        public float RightArmSpreadDegrees { get; }
+
+        /// <summary>
+        /// Each arm's swing in the ACTOR's frame, degrees: out to the
+        /// side (abduction, positive = away from the body's midline) and
+        /// raised to the front. Both are zero for a hanging arm.
+        /// </summary>
+        public float LeftArmOutwardDegrees { get; }
+        public float LeftArmForwardDegrees { get; }
+        public float RightArmOutwardDegrees { get; }
+        public float RightArmForwardDegrees { get; }
         public float CrouchMetres { get; }
         public float PlantLeft { get; }
         public float PlantRight { get; }
@@ -452,17 +464,83 @@ namespace BarPromenade
             // Keep the authored horizontal pelvis anchor: rotations only.
             // Procedural translation here would move the whole scale-100
             // imported rig by a hundred times the intended metres.
+            // Roll about the spine chain's local forward is a lean to the
+            // RIGHT for a positive angle, as the contract says. Its local
+            // right, though, points to the hero's LEFT on the imported
+            // rig (measured: +10° about it moved the head 11 cm BACK), so
+            // the forward pitch is the negative turn.
             RotateBone(pelvis, Vector3.forward, input.PelvisRollDegrees);
-            RotateBone(pelvis, Vector3.right, input.PelvisPitchDegrees);
+            RotateBone(pelvis, Vector3.right, -input.PelvisPitchDegrees);
             RotateBone(chest, Vector3.forward, input.ChestRollDegrees);
-            RotateBone(
+
+            // The arms swing in the actor's frame, never the bone's. An
+            // imported upper-arm bone's local axes sit at whatever roll
+            // Blender gave them — measured on the V2 rig, no local axis
+            // is the abduction axis, and a turn about local forward sent
+            // both hands backward and into the ribs. Abduction is a turn
+            // about the actor's planar forward through the shoulder; a
+            // raise to the front is a turn about the actor's right. Both
+            // fade in with the layer's own blend so the arms do not snap
+            // out on the first frame after a clip hands the body back.
+            Vector3 forward = PlanarForward();
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            SwingArm(
                 leftUpperArm,
-                Vector3.forward,
-                input.LeftArmSpreadDegrees);
-            RotateBone(
+                forward,
+                right,
+                -1f,
+                input.LeftArmOutwardDegrees * ikBlend,
+                input.LeftArmForwardDegrees * ikBlend);
+            SwingArm(
                 rightUpperArm,
-                Vector3.forward,
-                input.RightArmSpreadDegrees);
+                forward,
+                right,
+                1f,
+                input.RightArmOutwardDegrees * ikBlend,
+                input.RightArmForwardDegrees * ikBlend);
+        }
+
+        /// <summary>
+        /// Turns an upper arm about world axes through its own pivot.
+        /// A hanging arm turned by a positive angle about the actor's
+        /// forward moves toward the actor's right (left-handed
+        /// <see cref="Quaternion.AngleAxis"/>), so the left arm's outward
+        /// is the negative turn; a positive turn about the actor's right
+        /// swings a hanging arm backward, so the raise is the negative
+        /// turn for both. The raise goes on FIRST, while the arm still
+        /// hangs, and the abduction turns the raised arm about the very
+        /// axis the raise moved it along — so the hands keep their
+        /// forward reach whatever the spread, instead of the raise
+        /// degenerating into a roll of the arm once it is out wide.
+        /// </summary>
+        private static void SwingArm(
+            Transform upper,
+            Vector3 actorForward,
+            Vector3 actorRight,
+            float outwardSign,
+            float outwardDegrees,
+            float forwardDegrees)
+        {
+            if (upper == null)
+            {
+                return;
+            }
+
+            if (Mathf.Abs(forwardDegrees) > 0.00001f)
+            {
+                upper.rotation =
+                    Quaternion.AngleAxis(-forwardDegrees, actorRight) *
+                    upper.rotation;
+            }
+
+            if (Mathf.Abs(outwardDegrees) > 0.00001f)
+            {
+                upper.rotation =
+                    Quaternion.AngleAxis(
+                        outwardDegrees * outwardSign,
+                        actorForward) *
+                    upper.rotation;
+            }
         }
 
         private void ApplyLegs(
