@@ -215,8 +215,44 @@ namespace BarPromenade
                 return;
             }
 
-            chainTargets[chainIndex] = worldPosition;
-            chainGoalWeights[chainIndex] = Mathf.Clamp01(weight);
+            float goalWeight = Mathf.Clamp01(weight);
+            // A released chain still blends out for ReachBlendSeconds. Keep
+            // its last meaningful target during that fade instead of aiming
+            // the partly weighted arm at the world origin.
+            if (goalWeight > 0.0001f ||
+                chainWeights[chainIndex] <= 0.0001f ||
+                worldPosition != Vector3.zero)
+            {
+                chainTargets[chainIndex] = worldPosition;
+            }
+
+            chainGoalWeights[chainIndex] = goalWeight;
+        }
+
+        internal bool ResolveOrdinaryGripContactAfterWristRoll(
+            int chainIndex,
+            Vector3 worldPosition)
+        {
+            if (!isInitialized || !usesOrdinaryRig ||
+                chainIndex < 0 || chainIndex >= ChainCount ||
+                chainWeights[chainIndex] < 0.95f ||
+                worldPosition == Vector3.zero)
+            {
+                return false;
+            }
+
+            Transform shoulder = chainShoulders[chainIndex];
+            Transform elbow = chainElbows[chainIndex];
+            Transform grip = chainGrips[chainIndex];
+            for (int iteration = 0;
+                 iteration < OrdinarySolveIterations;
+                 iteration++)
+            {
+                RotateTowards(elbow, grip, worldPosition);
+                RotateTowards(shoulder, grip, worldPosition);
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -277,6 +313,11 @@ namespace BarPromenade
                         ResolveClipLength(BarBartenderClipKind.Notice));
                     break;
                 case BarDrinkServicePhase.BottlePickup:
+                case BarDrinkServicePhase.BottleWalkToShelf:
+                case BarDrinkServicePhase.BottleCarryToPour:
+                case BarDrinkServicePhase.BottleCarryToGuest:
+                case BarDrinkServicePhase.BottleVesselPlacement:
+                case BarDrinkServicePhase.BottleWalkToShelfReturn:
                 case BarDrinkServicePhase.BeerWalkToTap:
                 case BarDrinkServicePhase.BeerCarryToGuest:
                 case BarDrinkServicePhase.VesselPlacement:
@@ -310,7 +351,11 @@ namespace BarPromenade
                 frame.Phase == BarDrinkServicePhase.BeerGlassPickup ||
                 frame.Phase == BarDrinkServicePhase.BeerPouring ||
                 frame.Phase == BarDrinkServicePhase.BeerCarryToGuest ||
-                frame.Phase == BarDrinkServicePhase.BeerGlassPlacement;
+                frame.Phase == BarDrinkServicePhase.BeerGlassPlacement ||
+                frame.Phase ==
+                    BarDrinkServicePhase.BottleCarryToGuest ||
+                frame.Phase ==
+                    BarDrinkServicePhase.BottleVesselPlacement;
             registry.SetServiceTowelVisible(!leftHandServing);
         }
 

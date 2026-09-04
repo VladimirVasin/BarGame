@@ -163,6 +163,8 @@ namespace BarPromenade
         public BarDrinkServicePose MenuPose { get; }
         public BarDrinkServicePose VesselCounterPose { get; }
         public BarDrinkServicePose VesselHandPose { get; }
+        public BarDrinkServicePose BottlePreparationVesselPose =>
+            VesselHandPose;
         public BarDrinkServicePose BottleHandPose { get; }
         public BarDrinkServicePose BottlePourPose { get; }
         public BarBeerTapServicePlan BeerTap { get; }
@@ -236,6 +238,10 @@ namespace BarPromenade
                 serviceX,
                 counterSurfaceY + 0.015f,
                 counter.Bounds.yMin + MaximumServiceVesselRadius);
+            Vector3 bottlePreparationVesselPosition = new Vector3(
+                serviceX,
+                counterSurfaceY + 0.015f,
+                counter.Bounds.yMax - MaximumServiceVesselRadius);
             var plan = new BarDrinkServicePlan(
                 layout.BarId,
                 layout.StableSeed,
@@ -258,11 +264,8 @@ namespace BarPromenade
                     vesselPosition,
                     Quaternion.identity),
                 new BarDrinkServicePose(
-                    new Vector3(
-                        serviceX - 0.28f,
-                        counterSurfaceY + 0.08f,
-                        customerZ + 0.43f),
-                    Quaternion.Euler(-8f, 0f, 3f)),
+                    bottlePreparationVesselPosition,
+                    Quaternion.identity),
                 new BarDrinkServicePose(
                     new Vector3(
                         serviceX + 0.43f,
@@ -270,7 +273,8 @@ namespace BarPromenade
                         customerZ + 0.45f),
                     Quaternion.Euler(3f, 0f, -9f)),
                 new BarDrinkServicePose(
-                    vesselPosition + new Vector3(0.72f, 0.66f, 0.02f),
+                    bottlePreparationVesselPosition +
+                        new Vector3(0.72f, 0.66f, 0.02f),
                     Quaternion.Euler(0f, 0f, 111f)),
                 slots);
             plan.ValidateOrThrow(layout);
@@ -391,6 +395,25 @@ namespace BarPromenade
                 counter,
                 counterSurfaceY,
                 nameof(VesselCounterPose));
+            ValidateCounterAnchor(
+                BottlePreparationVesselPose.Position,
+                counter,
+                counterSurfaceY,
+                nameof(BottlePreparationVesselPose));
+
+            float preparationFrontEdge =
+                BottlePreparationVesselPose.Position.z -
+                MaximumServiceVesselRadius;
+            float preparationBackEdge =
+                BottlePreparationVesselPose.Position.z +
+                MaximumServiceVesselRadius;
+            if (preparationFrontEdge < counter.Bounds.yMin - 0.001f ||
+                preparationBackEdge > counter.Bounds.yMax + 0.001f)
+            {
+                throw new InvalidOperationException(
+                    "The bottle-service preparation vessel must remain " +
+                    "fully inside the counter top bounds.");
+            }
 
             float vesselFrontEdge =
                 VesselCounterPose.Position.z - MaximumServiceVesselRadius;

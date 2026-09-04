@@ -490,6 +490,433 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
+            RedWineService_FetchesPoursCarriesAndWaitsForExplicitDrink()
+        {
+            GameSessionState.ResetEconomyState();
+            GameSessionState.ResetDrinkingState();
+            BarInteriorRoot bar = null;
+            yield return LoadBar(result => bar = result);
+            bar.ArrivalPresentation.Skip();
+            yield return null;
+
+            BarBartenderPresentation bartender = bar.Bartender;
+            BarDrinkShopController shop = bar.DrinkShop;
+            BarDrinkServiceView service = bar.DrinkServiceView;
+            BarCounterStation station = bar.CounterStations[
+                bar.CounterStations.Count - 1];
+            bartender.Registry.Animator.cullingMode =
+                AnimatorCullingMode.AlwaysAnimate;
+            Transform leftFoot = FindRequiredDescendant(
+                bartender.Registry.ModelRoot, "foot.L");
+            Transform rightFoot = FindRequiredDescendant(
+                bartender.Registry.ModelRoot, "foot.R");
+            Assert.That(
+                service.TryGetBottle(
+                    DrinkId.RedWine,
+                    out BarDrinkBottleView shelfBottle),
+                Is.True);
+            Transform restingShelfParent = shelfBottle.transform.parent;
+            Vector3 restingShelfPosition =
+                shelfBottle.transform.localPosition;
+            Quaternion restingShelfRotation =
+                shelfBottle.transform.localRotation;
+            Vector3 restingShelfScale = shelfBottle.transform.localScale;
+
+            CounterSeatPlan seatPlan = station.Seat.Plan;
+            bar.Player.Motor.Teleport(seatPlan.EntryPose.RootPosition);
+            bar.Player.GameObject.transform.rotation =
+                seatPlan.EntryPose.RootRotation;
+            Physics.SyncTransforms();
+            station.Interact(bar.Player.Interactor);
+            float timeout = Time.realtimeSinceStartup + 5f;
+            while (!station.Seat.IsSeated &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            timeout = Time.realtimeSinceStartup + 6f;
+            while (!shop.IsBrowsing &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            Assert.That(shop.IsBrowsing, Is.True);
+            Assert.That(
+                shop.Select(FindOfferIndex(shop, DrinkId.RedWine)),
+                Is.True);
+            Transform shelfParent = shelfBottle.transform.parent;
+            Vector3 shelfPosition = shelfBottle.transform.localPosition;
+            Quaternion shelfRotation = shelfBottle.transform.localRotation;
+            Vector3 shelfScale = shelfBottle.transform.localScale;
+            AssertBottleShelfState(
+                shelfBottle,
+                shelfParent,
+                shelfPosition,
+                shelfRotation,
+                shelfScale,
+                true);
+            int cashBefore = GameSessionState.CashBalance;
+            int intoxicationBefore = GameSessionState.IntoxicationLevel;
+            int drinksBefore = GameSessionState.DrinksConsumed;
+            station.Interact(bar.Player.Interactor);
+            Assert.That(shop.SelectedOffer.DrinkId, Is.EqualTo(DrinkId.RedWine));
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleWalkToShelf));
+            Assert.That(service.SelectedBottle, Is.SameAs(shelfBottle));
+            Assert.That(service.ActiveVessel.Kind,
+                Is.EqualTo(BarDrinkVesselKind.WineGlass));
+            Assert.That(service.ActiveVessel.gameObject.activeSelf, Is.False);
+            Assert.That(service.IsCarriedBottleVisible, Is.False);
+            Assert.That(GameSessionState.CashBalance,
+                Is.EqualTo(cashBefore - shop.SelectedOffer.Price));
+            Assert.That(GameSessionState.IntoxicationLevel,
+                Is.EqualTo(intoxicationBefore));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
+
+            var travel = new BartenderTravelProbe(
+                bartender, leftFoot, rightFoot);
+            int shelfTravelFrames = 0;
+            timeout = Time.realtimeSinceStartup + 8f;
+            while (shop.Phase ==
+                       BarDrinkServicePhase.BottleWalkToShelf &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                if (travel.Observe("walk to selected wine shelf"))
+                {
+                    shelfTravelFrames++;
+                }
+
+                if (shop.Phase ==
+                    BarDrinkServicePhase.BottleWalkToShelf)
+                {
+                    AssertBottleShelfState(
+                        shelfBottle,
+                        shelfParent,
+                        shelfPosition,
+                        shelfRotation,
+                        shelfScale,
+                        true);
+                    Assert.That(service.IsCarriedBottleVisible, Is.False);
+                }
+            }
+
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottlePickup));
+            Assert.That(shelfTravelFrames, Is.GreaterThan(2));
+            AssertBottleShelfState(
+                shelfBottle,
+                shelfParent,
+                shelfPosition,
+                shelfRotation,
+                shelfScale,
+                false);
+            Assert.That(service.IsCarriedBottleVisible, Is.True);
+            bool sawAttachedBottle = false;
+            Vector3 previousBottlePosition =
+                service.CarriedBottleRoot.position;
+            timeout = Time.realtimeSinceStartup + 3f;
+            while (shop.Phase == BarDrinkServicePhase.BottlePickup &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                travel.Observe("pick up selected wine bottle");
+                if (shop.Phase == BarDrinkServicePhase.BottlePickup &&
+                    shop.IsBottleGripAttached)
+                {
+                    if (!sawAttachedBottle)
+                    {
+                        Assert.That(
+                            Vector3.Distance(
+                                previousBottlePosition,
+                                service.CarriedBottleRoot.position),
+                            Is.LessThan(0.04f),
+                            "The carried copy must meet the hand at the shelf " +
+                            "without a visible pickup jump.");
+                    }
+
+                    sawAttachedBottle = true;
+                    Assert.That(shop.BottleGripError, Is.LessThan(0.015f));
+                }
+
+                previousBottlePosition =
+                    service.CarriedBottleRoot.position;
+            }
+
+            Assert.That(sawAttachedBottle, Is.True);
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleCarryToPour));
+            int pourTravelFrames = 0;
+            timeout = Time.realtimeSinceStartup + 8f;
+            while (shop.Phase ==
+                       BarDrinkServicePhase.BottleCarryToPour &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                if (travel.Observe("carry wine bottle to pour point"))
+                {
+                    pourTravelFrames++;
+                }
+
+                if (shop.Phase ==
+                    BarDrinkServicePhase.BottleCarryToPour)
+                {
+                    Assert.That(service.IsCarriedBottleVisible, Is.True);
+                    Assert.That(shop.BottleGripError, Is.LessThan(0.015f));
+                }
+            }
+
+            Assert.That(pourTravelFrames, Is.GreaterThan(2));
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.VesselPlacement));
+            timeout = Time.realtimeSinceStartup + 4f;
+            while ((shop.Phase == BarDrinkServicePhase.VesselPlacement ||
+                    (shop.Phase == BarDrinkServicePhase.Pouring &&
+                     shop.Timeline.PhaseProgress < 0.40f)) &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                travel.Observe("place wine glass and begin pour");
+            }
+
+            // The bottle is seated on the anatomical hand by a post-IK
+            // LateUpdate pass. FixedUpdate resumes before the next service
+            // Update, so this samples the pose that was actually rendered.
+            yield return new WaitForFixedUpdate();
+            BarDrinkVesselView vessel = service.ActiveVessel;
+            Assert.That(shop.Phase, Is.EqualTo(BarDrinkServicePhase.Pouring));
+            Assert.That(vessel.Kind, Is.EqualTo(BarDrinkVesselKind.WineGlass));
+            Assert.That(vessel.FillProgress, Is.InRange(0.05f, 0.95f));
+            Assert.That(service.IsStreamVisible, Is.True);
+            Vector3 pourDelta =
+                service.CarriedBottleMouthWorldPosition -
+                vessel.PourTargetWorldPosition;
+            Assert.That(
+                Vector3.ProjectOnPlane(
+                    pourDelta,
+                    service.transform.up).magnitude,
+                Is.LessThan(0.025f),
+                "The selected bottle mouth must be directly above the " +
+                "matching vessel, not connected by a diagonal stream. " +
+                $"Reach correction: {shop.ActiveBottleReachCorrection}; " +
+                $"grip error: {shop.BottleGripError:0.0000}.");
+            Assert.That(
+                Vector3.Dot(pourDelta, service.transform.up),
+                Is.InRange(0.035f, 0.16f));
+            Assert.That(
+                Vector3.Distance(
+                    service.StreamRoot.TransformPoint(Vector3.down),
+                    service.CarriedBottleMouthWorldPosition),
+                Is.LessThan(0.003f));
+            Assert.That(
+                Vector3.Distance(
+                    service.StreamRoot.TransformPoint(Vector3.up),
+                    vessel.PourTargetWorldPosition),
+                Is.LessThan(0.003f));
+
+            timeout = Time.realtimeSinceStartup + 4f;
+            while (shop.Phase == BarDrinkServicePhase.Pouring &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                travel.Observe("pour red wine");
+            }
+
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleCarryToGuest));
+            Assert.That(vessel.FillProgress, Is.EqualTo(1f));
+            Pose counterPose = shop.ResolveServedCounterWorldPose(vessel);
+            int guestTravelFrames = 0;
+            timeout = Time.realtimeSinceStartup + 8f;
+            while (shop.Phase ==
+                       BarDrinkServicePhase.BottleCarryToGuest &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                if (travel.Observe("carry full wine glass to guest"))
+                {
+                    guestTravelFrames++;
+                }
+
+                if (shop.Phase !=
+                    BarDrinkServicePhase.BottleCarryToGuest)
+                {
+                    continue;
+                }
+
+                Assert.That(service.IsActiveVesselCarriedByBartender, Is.True);
+                Assert.That(
+                    service.ResolveActiveVesselGripError(
+                        bartender.Registry.VesselGripAnchor),
+                    Is.LessThan(0.01f));
+                Assert.That(
+                    Vector3.Distance(
+                        vessel.GripWorldPosition,
+                        bartender.Registry.LeftHand.position),
+                    Is.LessThan(Vector3.Distance(
+                        vessel.GripWorldPosition,
+                        bartender.Registry.RightHand.position)),
+                    "The full wine glass must travel in the left hand.");
+                Assert.That(Vector3.Angle(
+                        vessel.OpeningDirection,
+                        service.transform.up),
+                    Is.LessThan(2f));
+            }
+
+            Assert.That(guestTravelFrames, Is.GreaterThan(2));
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleVesselPlacement));
+            float previousDistance = Vector3.Distance(
+                vessel.transform.position, counterPose.position);
+            int placementContactFrames = 0;
+            timeout = Time.realtimeSinceStartup + 3f;
+            while (shop.Phase ==
+                       BarDrinkServicePhase.BottleVesselPlacement &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                travel.Observe("place wine glass on counter");
+                if (shop.Phase !=
+                    BarDrinkServicePhase.BottleVesselPlacement)
+                {
+                    break;
+                }
+
+                float distance = Vector3.Distance(
+                    vessel.transform.position, counterPose.position);
+                Assert.That(distance,
+                    Is.LessThanOrEqualTo(previousDistance + 0.002f));
+                Assert.That(Vector3.Angle(
+                        vessel.OpeningDirection,
+                        service.transform.up),
+                    Is.LessThan(2f));
+                if (distance > 0.03f)
+                {
+                    placementContactFrames++;
+                    Assert.That(service.ResolveActiveVesselGripError(
+                            bartender.Registry.VesselGripAnchor),
+                        Is.LessThan(0.04f));
+                }
+
+                previousDistance = distance;
+            }
+
+            Assert.That(placementContactFrames, Is.GreaterThan(2));
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleWalkToShelfReturn));
+            Assert.That(Vector3.Distance(
+                    vessel.transform.position, counterPose.position),
+                Is.LessThan(0.005f));
+            AssertVesselRestsOnPhysicalCounter(bar, service, vessel);
+            int returnTravelFrames = 0;
+            timeout = Time.realtimeSinceStartup + 8f;
+            while (shop.Phase ==
+                       BarDrinkServicePhase.BottleWalkToShelfReturn &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                if (travel.Observe("return wine bottle to shelf"))
+                {
+                    returnTravelFrames++;
+                }
+
+                if (shop.Phase ==
+                    BarDrinkServicePhase.BottleWalkToShelfReturn)
+                {
+                    Assert.That(service.IsCarriedBottleVisible, Is.True);
+                    Assert.That(shop.BottleGripError, Is.LessThan(0.015f));
+                    Assert.That(vessel.FillProgress, Is.EqualTo(1f));
+                    Assert.That(Vector3.Distance(
+                            vessel.transform.position,
+                            counterPose.position),
+                        Is.LessThan(0.005f));
+                }
+            }
+
+            Assert.That(returnTravelFrames, Is.GreaterThan(2));
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleReturn));
+            timeout = Time.realtimeSinceStartup + 3f;
+            while (shop.Phase == BarDrinkServicePhase.BottleReturn &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+                travel.Observe("set wine bottle back on shelf");
+            }
+
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.AwaitingDrink));
+            Assert.That(service.IsCarriedBottleVisible, Is.False);
+            AssertBottleShelfState(
+                shelfBottle,
+                restingShelfParent,
+                restingShelfPosition,
+                restingShelfRotation,
+                restingShelfScale,
+                true);
+            Assert.That(travel.TranslationFrameCount, Is.GreaterThan(10));
+            Assert.That(travel.MaximumLocalFootTravel, Is.GreaterThan(0.05f));
+            Assert.That(GameSessionState.IntoxicationLevel,
+                Is.EqualTo(intoxicationBefore));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
+            Assert.That(GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.None));
+            shop.AdvancePresentation(30f);
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.AwaitingDrink));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
+
+            Camera camera = Camera.main;
+            Vector3 lookDirection =
+                vessel.GlassRenderer.bounds.center - camera.transform.position;
+            camera.transform.rotation = Quaternion.LookRotation(
+                lookDirection.normalized, Vector3.up);
+            shop.RefreshServedDrinkAffordance();
+            Assert.That(shop.IsLookingAtServedVessel, Is.True);
+            Assert.That(shop.BeginServedDrink(), Is.True);
+            Assert.That(GameSessionState.IntoxicationLevel,
+                Is.EqualTo(intoxicationBefore));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
+            float previousTimeScale = Time.timeScale;
+            try
+            {
+                Time.timeScale = 20f;
+                timeout = Time.realtimeSinceStartup + 4f;
+                while (shop.IsServing &&
+                       Time.realtimeSinceStartup < timeout)
+                {
+                    yield return null;
+                }
+            }
+            finally
+            {
+                Time.timeScale = previousTimeScale;
+            }
+
+            Assert.That(shop.IsServing, Is.False);
+            Assert.That(shop.Phase,
+                Is.EqualTo(BarDrinkServicePhase.EmptyOnCounter));
+            Assert.That(GameSessionState.IntoxicationLevel,
+                Is.EqualTo(intoxicationBefore +
+                    DrinkRules.GetIntoxicationGain(DrinkId.RedWine)));
+            Assert.That(GameSessionState.DrinksConsumed,
+                Is.EqualTo(drinksBefore + 1));
+            Assert.That(GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.RedWine));
+            int appliedIntoxication = GameSessionState.IntoxicationLevel;
+            Assert.That(shop.BeginServedDrink(), Is.False);
+            shop.AdvancePresentation(30f);
+            yield return null;
+            Assert.That(GameSessionState.IntoxicationLevel,
+                Is.EqualTo(appliedIntoxication));
+            Assert.That(GameSessionState.DrinksConsumed,
+                Is.EqualTo(drinksBefore + 1));
+        }
+
+        [UnityTest]
+        public IEnumerator
             SeatedCounterMenu_ClearsCounterAndFitsReadableViewport()
         {
             BarInteriorRoot bar = null;
@@ -1011,6 +1438,29 @@ namespace BarPromenade.Tests.PlayMode
                 vesselBottom,
                 Is.EqualTo(counterTop).Within(0.02f),
                 "The final mug pose must rest on the physical counter top.");
+        }
+
+        private static void AssertBottleShelfState(
+            BarDrinkBottleView bottle,
+            Transform parent,
+            Vector3 localPosition,
+            Quaternion localRotation,
+            Vector3 localScale,
+            bool renderersEnabled)
+        {
+            Assert.That(bottle.transform.parent, Is.SameAs(parent));
+            Assert.That(bottle.transform.localPosition,
+                Is.EqualTo(localPosition));
+            Assert.That(Quaternion.Angle(
+                    bottle.transform.localRotation, localRotation),
+                Is.LessThan(0.001f));
+            Assert.That(bottle.transform.localScale,
+                Is.EqualTo(localScale));
+            for (int index = 0; index < bottle.Renderers.Count; index++)
+            {
+                Assert.That(bottle.Renderers[index].enabled,
+                    Is.EqualTo(renderersEnabled));
+            }
         }
 
         private static void AdvanceWipeToPhase(

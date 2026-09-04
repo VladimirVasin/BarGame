@@ -844,7 +844,7 @@ Assets/
       Bar/Bartender/                provider/registry + grounded world builder + shared-Wipe surface-contact presentation/service choreography
       Drinks/        bar menu adapter, stable IDs, paid-order token, deferred effects and physical service
         BarDrinkMenuPresentation.cs  four priced descriptive rows on an inset 2x2 grid + open-only 35 mm/f8 DOF + carried/resting booklet/outline
-        BarDrinkVesselView.cs  compact beer-mug grip/rim anchors + right-hand horizontal sip solve
+        BarDrinkVesselView.cs  five vessel grip/rim contracts + visible right-hand sip solve
       Supermarket/Cashier/  normal observing cashier + retained inactive Watcher asset
         SupermarketCashierProvider.cs      one addressable ref to the off-Resources prefab
         SupermarketCashierAssetRegistry.cs bones, ordinary head/eye + renderer bindings
@@ -1041,7 +1041,7 @@ Assets/
       Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  seated renderer suppression + retained compatibility attachment root
-      BarDrinkPhysicalShopPlayModeTests.cs multi-seat order + handled mug/right-hand grip/head-follow camera/sip visibility and return
+      BarDrinkPhysicalShopPlayModeTests.cs multi-seat order + bottle vessel selection + handled mug/right-hand grip/head-follow camera/sip visibility and return
       BarInteriorSpawnPlayModeTests.cs real-scene arrival camera/inset menu/DOF release + grounded Wipe and full bartender beer walk/place contact
       MountainRoadCafePlayModeTests.cs  shipped-scene cup/saucer + hand/pot/counter contacts, silent phase idles and seat-camera restoration
       MountainRoadCafeMenuPlayModeTests.cs handoff, close/rest/reopen, stand restore + post-exit physical retrieval/no-effect contract
@@ -1678,8 +1678,10 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                      -> runtime instantiates the visible four bottles and text sockets 00/04/05/08
                                -> BarDrinkServiceTimeline
                                   -> beer: walk to central tap -> take/pull/fill -> carry/place -> gaze-bound E
-                                  -> Hero V2 right hand grips the right-side handle -> rim at mouth + horizontal mug with synchronized head/torso lift
-                                  -> nested 2 s pickup -> 3 s sip -> 2 s return -> empty mug remains
+                                  -> wine/cognac/vodka: Walk to selected live shelf bottle -> contact pickup -> server-edge pour into WineGlass/Snifter/ShotGlass
+                                  -> carry full vessel/place at selected station -> Walk bottle back/exact shelf return
+                                  -> Hero V2 right hand grips the served vessel -> rim at mouth; beer mug stays horizontal with synchronized head/torso lift
+                                  -> nested 2 s pickup -> 3 s sip -> 2 s return -> empty vessel remains/effects commit once
                                   -> seated world body stays visible; both camera-local arm meshes stay disabled
                                   -> closed menu remains through service -> completed stand/restore -> bartender retrieval
                                   -> later sit -> fresh delivery to the selected station

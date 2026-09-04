@@ -16,9 +16,13 @@ state and `BarDrinkServiceTimeline` remain the source of gameplay truth.
   service towel. The model also carries the restrained flat cap and moustache
   already declared by its measured parts.
 - Service roles: bottle drinks keep the right-hand bottle / left-hand vessel
-  roles. For beer he walks to the central tap, takes the pint, steadies it with
-  the left hand and pulls the middle handle with the right before carrying and
-  placing the glass. Outside those windows he returns to the quiet wiping loop.
+  roles. For wine, cognac and vodka he walks to the selected live shelf bottle,
+  takes it only at hand contact, carries it to the server-edge preparation
+  point, pours into the matching `WineGlass`, `Snifter` or `ShotGlass`, carries
+  and places the full vessel, then restores the bottle to its exact shelf pose.
+  For beer he walks to the central tap, takes the mug, steadies it with the left
+  hand and pulls the middle handle with the right before carrying and placing
+  it. Outside those windows he returns to the quiet wiping loop.
 - World meaning: he is not an oddity, never comments on the hero and gains no
   replacement supernatural trait.
 
@@ -109,16 +113,26 @@ towel against the `Y = 1.02 m` bar top and the clip moves it along the surface
 instead of hovering above it.
 
 `BarBartenderServiceChoreography` is still a reader, never a transaction
-driver. The timeline and position reports own progress. For beer the actor
-must physically reach `BeerTapServerDock` before pickup/pour can advance, then
-reach the selected guest dock before placement. The world presentation moves
-the pint between `BeerTapVesselDock`, the left grip and the service point,
+driver. The timeline and position reports own progress. For bottle service the
+actor must physically reach the selected bottle's current shelf position before
+pickup, reach the server-edge preparation point before vessel placement and
+pouring, reach the selected guest dock before placement, and return to the
+shelf before replacing the bottle. The shelf source stays visible until hand
+contact; the carried copy has the same scale, and the exact source pose is
+restored on return. The correct `WineGlass`, `Snifter` or `ShotGlass` stands
+upright on the counter during the pour and follows the left grip during carry.
+For beer the actor must physically reach `BeerTapServerDock` before pickup/pour
+can advance, then reach the selected guest dock before placement. The world
+presentation moves the mug between `BeerTapVesselDock`, the left grip and the service point,
 pulls `BeerTapHandlePivot` through the right grip, and emits the stream from
 `BeerTapSpout`. The filled mug remains in its final upright/right-handled
 rotation during travel. At the guest the root aligns laterally with the mug,
 stays behind the inner counter edge and leans from the spine while the bounded
 reach overlay keeps the left palm on the handle through the complete smooth
 placement. Both hands blend back out when service ends or the shop closes.
+All four served vessels enter the persistent explicit-drink branch. The visible
+seated Hero V2 picks up, drinks from and returns the vessel with his right hand;
+the paid order's effects commit only after that action finishes.
 
 ## 5. Verification contract
 
@@ -132,6 +146,9 @@ placement. Both hands blend back out when service ends or the shop closes.
 - `BarDrinkServiceTimelineTests.BeerService_WaitsForPhysicalArrivalAndExplicitDrink`
   checks both position gates, the indefinite `AwaitingDrink` hold and the
   explicit `2/3/2 s` pickup/sip/return branch.
+- `BarDrinkServiceTimelineTests.BottleService_WaitsForEveryArrivalAndExplicitDrink`
+  checks shelf, preparation, guest and shelf-return gates, followed by the same
+  persistent explicit-drink branch.
 - `BarDrinkPhysicalShopPlayModeTests.BeerTapService_WaitsForGazeThenHeroDrinksFromRightHandledMug`
   checks the central handle and stream, delayed gameplay effects, gaze-bound
   prompt/outline, nested Hero V2 action, direct right-hand grip, first-person
@@ -169,5 +186,5 @@ Its former multi-ingredient cocktail proposal — mix affordance, mixture state,
 one bottle per extra hand and a simultaneous bottle-return chord — was never
 implemented and is now superseded together with the active six-arm concept.
 It is not current behaviour or an active delivery plan; the ordinary bartender
-continues to serve the existing single selected drink through the unchanged
+continues to serve one selected drink at a time through the current physical
 timeline.

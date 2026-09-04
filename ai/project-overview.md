@@ -2093,13 +2093,18 @@ The vertical slice contains:
   beer he walks to the tap, pulls its handle over the slightly enlarged
   handled mug, carries the full mug upright to the selected stool, aligns his
   body opposite it and leans over the counter while the left palm follows the
-  handle through a smooth placement directly before the hero. The active root and feet
+  handle through a smooth placement directly before the hero. For wine,
+  cognac and vodka he uses the same full Walk to reach the selected live shelf
+  bottle, takes it only at right-hand contact, carries it to the server-edge
+  preparation vessel, pours into the matching `WineGlass`, `Snifter` or
+  `ShotGlass`, carries the full vessel to the selected stool and sets it down,
+  then walks the bottle back to its exact shelf pose. The active root and feet
   remain on the authored floor: the legacy `0.42 m` duckboard and matching
   actor lift are absent. During the quiet shared Wipe, that grounded placement
   puts the towel against the real `Y = 1.02 m` counter top and the clip carries
-  it along the surface instead of through the air. Ordinary central-tap beer
-  and one-bottle service are live; multi-ingredient mixing and multi-bottle choreography remain
-  deferred;
+  it along the surface instead of through the air. Central-tap beer and all
+  three single-bottle routes are live; multi-ingredient mixing and simultaneous
+  multi-bottle choreography remain deferred;
 - the soundscape keeps one diffuse occupied-room bed, then places two
   independent `8 s` mono murmur pockets at the real booth and social-table
   groups. One fully spatial World voice moves between those groups and the
@@ -2178,20 +2183,27 @@ The vertical slice contains:
   carries it upright to the selected place and sets it directly before the
   hero with its handle on his right. The bartender approaches the reachable
   guest-side line, bends from the spine and keeps his palm on the handle until
-  the mug is resting, so the last part of the path has no throw or roll. While
-  the full mug waits, the same gaze predicate
+  the mug is resting, so the last part of the path has no throw or roll. Wine,
+  cognac and vodka use the selected shelf bottle. The bartender reaches its
+  live position with the full Walk, takes it only when the right hand makes
+  contact, then walks to a stable upright preparation vessel at the server edge
+  of the counter. He pours into the matching `WineGlass`, `Snifter` or
+  `ShotGlass`, carries the full vessel to the selected place and sets it down,
+  then returns the bottle to its exact shelf pose. While every full vessel
+  waits, the same gaze predicate
   drives its thin yellow contour and the localized `E` drink prompt. The seated
   world body remains authoritative and runs `2 s` pickup, `3 s` sip and `2 s`
-  return actions. Its right hand grips the handle directly. The seated
+  return actions. For beer its right hand grips the handle directly. The seated
   first-person camera starts from the gaze that accepted the mug and keeps its
   captured eye-space offset through the animated head's complete pose. It eases
   `0.02 m` back along that gaze at the mouth and temporarily uses a `0.03 m`
   near plane. During the sip the drinking rim stays at the
   mouth, the mug reaches horizontal and remains in frame, and the head and
   torso rise with it in the same restrained motion as the corrected bar
-  patrons. The empty mug returns to the counter and remains there, and the
-  pending order is consumed exactly once only after that visible action
-  completes. The old camera-local bar arm meshes remain
+  patrons. Every other served vessel likewise uses an explicit visible Hero V2
+  pickup, sip and return with the right hand. The empty vessel remains on the
+  counter, and the pending order is consumed exactly once only after that
+  visible action completes. The old camera-local bar arm meshes remain
   disabled; only the seated camera hides the hero's head.
   Completing an order leaves the closed booklet available to reopen or to
   leave behind. Closing restores the exact seated camera; ordinary room DOF,
@@ -2240,7 +2252,7 @@ The vertical slice contains:
   surviving `BarMinigameModalLock` rather than the removed catalog.
 - Multi-ingredient cocktail ordering, mixture state/UI and multi-bottle
   choreography. The active ordinary bartender, physical menu, central-tap beer
-  service and ordinary one-bottle branch are already present; the former six-arm return chord is a
+  service and all three single-bottle routes are already present; the former six-arm return chord is a
   superseded legacy proposal, not the upgrade path.
 
 South City Rollers/Skaters is a design reference only for procedural-world and sprite-character approaches; its code and assets are not present in this repository.

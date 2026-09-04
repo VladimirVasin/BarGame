@@ -727,6 +727,28 @@ namespace BarPromenade.Tests.PlayMode
                     "bar-menu-focused-test"),
                 Is.True);
             Assert.That(controller.Select(servedOfferIndex), Is.True);
+            BarDrinkBottleView servedBottle = serviceView.SelectedBottle;
+            Assert.That(servedBottle, Is.Not.Null);
+            Assert.That(servedBottle.DrinkId, Is.EqualTo(DrinkId.RedWine));
+            Vector3 selectedBottleLocalPosition =
+                servedBottle.transform.localPosition;
+            Quaternion selectedBottleLocalRotation =
+                servedBottle.transform.localRotation;
+            Assert.That(
+                Vector3.Distance(
+                    selectedBottleLocalPosition,
+                    servedBottle.OriginalLocalPosition),
+                Is.GreaterThan(0.10f),
+                "The selected wine bottle must be visibly pulled forward.");
+            Renderer servedBottleRenderer = servedBottle.Renderers[0];
+            int bottleBaseColorId = Shader.PropertyToID("_BaseColor");
+            var bottleProperties = new MaterialPropertyBlock();
+            servedBottleRenderer.GetPropertyBlock(bottleProperties);
+            Color selectedBottleColor =
+                bottleProperties.GetColor(bottleBaseColorId);
+            int intoxicationBeforeService =
+                GameSessionState.IntoxicationLevel;
+            int drinksBeforeService = GameSessionState.DrinksConsumed;
             Assert.That(controller.ConfirmSelection(), Is.True);
             Assert.That(controller.IsServing, Is.True);
             Assert.That(controller.PurchaseCommitted, Is.True);
@@ -735,7 +757,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(DrinkId.RedWine));
             Assert.That(
                 controller.Phase,
-                Is.EqualTo(BarDrinkServicePhase.BottlePickup));
+                Is.EqualTo(BarDrinkServicePhase.BottleWalkToShelf));
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
@@ -801,12 +823,97 @@ namespace BarPromenade.Tests.PlayMode
                 "The right leaf stays on the counter while the left closes.");
             AssertClosedMenuUsesOpaqueFoldingPanels(menuPage);
 
+            Assert.That(controller.ReportBottleServerAtShelf(true), Is.True);
             controller.AdvancePresentation(
-                BarDrinkServiceTimeline.ConfirmedPresentationDurationSeconds +
-                0.01f);
+                BarDrinkServiceTimeline.BottlePickupDurationSeconds + 0.01f);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleCarryToPour));
+
+            Assert.That(controller.ReportBottleServerAtPour(true), Is.True);
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.VesselPlacementDurationSeconds +
+                BarDrinkServiceTimeline.PouringDurationSeconds + 0.01f);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleCarryToGuest));
+
+            Assert.That(controller.ReportBottleServerAtGuest(true), Is.True);
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline
+                    .BottleVesselPlacementDurationSeconds + 0.01f);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(
+                    BarDrinkServicePhase.BottleWalkToShelfReturn));
+
+            Assert.That(
+                controller.ReportBottleServerAtShelfReturn(true),
+                Is.True);
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.BottleReturnDurationSeconds + 0.01f);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.AwaitingDrink));
+            Assert.That(controller.PurchaseCommitted, Is.True);
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(intoxicationBeforeService));
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.EqualTo(drinksBeforeService));
+            controller.AdvancePresentation(30f);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.AwaitingDrink),
+                "The wine must wait for an explicit drink action.");
+
+            BarDrinkVesselView servedVessel = serviceView.ActiveVessel;
+            Vector3 servedVesselLookDirection =
+                servedVessel.GlassRenderer.bounds.center -
+                camera.transform.position;
+            camera.transform.rotation = Quaternion.LookRotation(
+                servedVesselLookDirection.normalized,
+                Vector3.up);
+            controller.RefreshServedDrinkAffordance();
+            Assert.That(controller.IsLookingAtServedVessel, Is.True);
+            Assert.That(controller.BeginServedDrink(), Is.True);
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.EqualTo(drinksBeforeService));
+
+            float previousTimeScale = Time.timeScale;
+            try
+            {
+                Time.timeScale = 20f;
+                timeout = Time.realtimeSinceStartup + 4f;
+                while (controller.IsServing &&
+                       Time.realtimeSinceStartup < timeout)
+                {
+                    yield return null;
+                }
+            }
+            finally
+            {
+                Time.timeScale = previousTimeScale;
+            }
 
             Assert.That(controller.IsBrowsing, Is.False);
             Assert.That(controller.PurchaseCommitted, Is.False);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.EmptyOnCounter));
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(
+                    intoxicationBeforeService +
+                    DrinkRules.GetIntoxicationGain(DrinkId.RedWine)));
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.EqualTo(drinksBeforeService + 1));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.RedWine));
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
@@ -846,6 +953,26 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(controller.IsBrowsing, Is.True);
             Assert.That(menuPage.IsRestingHighlighted, Is.False,
                 "Opening must disable the closed-menu outline immediately.");
+            Assert.That(serviceView.SelectedBottle, Is.SameAs(servedBottle));
+            Assert.That(
+                servedBottle.transform.localPosition,
+                Is.EqualTo(selectedBottleLocalPosition)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance),
+                "Reopening must visibly pull the selected wine bottle " +
+                "forward again.");
+            Assert.That(
+                Quaternion.Angle(
+                    servedBottle.transform.localRotation,
+                    selectedBottleLocalRotation),
+                Is.LessThan(0.001f));
+            bottleProperties.Clear();
+            servedBottleRenderer.GetPropertyBlock(bottleProperties);
+            Assert.That(
+                Vector4.Distance(
+                    bottleProperties.GetColor(bottleBaseColorId),
+                    selectedBottleColor),
+                Is.LessThan(0.001f),
+                "Reopening must restore the selected wine bottle highlight.");
             Object.Destroy(aimDriver);
             Assert.That(
                 controller.MenuState,

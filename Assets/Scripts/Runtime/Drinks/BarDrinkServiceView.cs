@@ -176,8 +176,12 @@ namespace BarPromenade
         public Transform BeerTapHandleGripTarget =>
             beerTapDynamicHandleGrip;
         public float BeerTapHandlePullAmount { get; private set; }
-        public bool IsBeerTapVesselCarriedByBartender { get; private set; }
-        public float BeerTapVesselHandWeight { get; private set; }
+        public bool IsActiveVesselCarriedByBartender { get; private set; }
+        public float BartenderVesselHandWeight { get; private set; }
+        public bool IsBeerTapVesselCarriedByBartender =>
+            IsActiveVesselCarriedByBartender;
+        public float BeerTapVesselHandWeight =>
+            BartenderVesselHandWeight;
         public float BeerTapHandleHandWeight { get; private set; }
 
         internal void Initialize(
@@ -561,6 +565,18 @@ namespace BarPromenade
                    radial.normalized * BottleHandSurfaceOffset;
         }
 
+        public Vector3 ResolveCarriedBottleRootPositionForMouth(
+            Vector3 mouthWorldPosition,
+            Quaternion bottleWorldRotation)
+        {
+            float mouthDistance = carriedBottleRoot != null
+                ? carriedBottleRoot.TransformVector(
+                    Vector3.up * carriedBottleHeight).magnitude
+                : carriedBottleHeight * CarriedBottleScale;
+            return mouthWorldPosition -
+                   bottleWorldRotation * Vector3.up * mouthDistance;
+        }
+
         public bool SetPourStreamFromCarriedBottle(
             Color color,
             float width = 0.018f)
@@ -657,14 +673,21 @@ namespace BarPromenade
             return true;
         }
 
+        public void SetBartenderVesselContact(
+            bool carryVessel,
+            float vesselHandWeight)
+        {
+            IsActiveVesselCarriedByBartender =
+                carryVessel && activeVessel != null;
+            BartenderVesselHandWeight = Mathf.Clamp01(vesselHandWeight);
+        }
+
         public void SetBeerTapBartenderContact(
             bool carryVessel,
             float vesselHandWeight,
             float handleHandWeight)
         {
-            IsBeerTapVesselCarriedByBartender =
-                carryVessel && activeVessel != null;
-            BeerTapVesselHandWeight = Mathf.Clamp01(vesselHandWeight);
+            SetBartenderVesselContact(carryVessel, vesselHandWeight);
             BeerTapHandleHandWeight = Mathf.Clamp01(handleHandWeight);
         }
 

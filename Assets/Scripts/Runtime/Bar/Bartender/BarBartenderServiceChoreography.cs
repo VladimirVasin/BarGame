@@ -81,15 +81,15 @@ namespace BarPromenade
 
                 postSolve.Initialize(registry, shop);
 
-                BarBartenderBeerVesselGripPostSolve beerPostSolve =
-                    GetComponent<BarBartenderBeerVesselGripPostSolve>();
-                if (beerPostSolve == null)
+                BarBartenderVesselGripPostSolve vesselPostSolve =
+                    GetComponent<BarBartenderVesselGripPostSolve>();
+                if (vesselPostSolve == null)
                 {
-                    beerPostSolve = gameObject.AddComponent<
-                        BarBartenderBeerVesselGripPostSolve>();
+                    vesselPostSolve = gameObject.AddComponent<
+                        BarBartenderVesselGripPostSolve>();
                 }
 
-                beerPostSolve.Initialize(registry, shop);
+                vesselPostSolve.Initialize(registry, shop);
                 vesselCarryTargetLocalPosition =
                     transform.InverseTransformPoint(
                         registry.VesselGripAnchor.position);
@@ -182,6 +182,20 @@ namespace BarPromenade
             bool targetsBeerGuest =
                 phase == BarDrinkServicePhase.BeerCarryToGuest ||
                 phase == BarDrinkServicePhase.BeerGlassPlacement;
+            bool targetsBottleShelf =
+                phase == BarDrinkServicePhase.BottleWalkToShelf ||
+                phase == BarDrinkServicePhase.BottlePickup ||
+                phase ==
+                    BarDrinkServicePhase.BottleWalkToShelfReturn ||
+                phase == BarDrinkServicePhase.BottleReturn;
+            bool targetsBottlePreparation =
+                phase == BarDrinkServicePhase.BottleCarryToPour ||
+                phase == BarDrinkServicePhase.VesselPlacement ||
+                phase == BarDrinkServicePhase.Pouring;
+            bool targetsBottleGuest =
+                phase == BarDrinkServicePhase.BottleCarryToGuest ||
+                phase ==
+                    BarDrinkServicePhase.BottleVesselPlacement;
             bool waitsAwayFromGuest =
                 phase == BarDrinkServicePhase.AwaitingDrink ||
                 phase == BarDrinkServicePhase.PlayerPickup ||
@@ -191,6 +205,8 @@ namespace BarPromenade
             bool targetsCounter = shop != null &&
                 shop.HasCounterServiceTarget &&
                 !targetsBeerTap && !targetsBeerGuest &&
+                !targetsBottleShelf && !targetsBottlePreparation &&
+                !targetsBottleGuest &&
                 !waitsAwayFromGuest;
             if (targetsBeerTap && shop.ServiceView != null &&
                 shop.ServiceView.HasBeerTapPresentation)
@@ -205,6 +221,25 @@ namespace BarPromenade
                     : tapPose.rotation;
             }
             else if (targetsBeerGuest)
+            {
+                target = shop.ResolveBeerGuestServerLocalPosition(
+                    homeLocalPosition);
+            }
+            else if (targetsBottleShelf)
+            {
+                ResolveWorldTarget(
+                    shop.ResolveBottleShelfServerWorldPose(),
+                    ref target,
+                    ref targetRotation);
+            }
+            else if (targetsBottlePreparation)
+            {
+                ResolveWorldTarget(
+                    shop.ResolveBottlePreparationServerWorldPose(),
+                    ref target,
+                    ref targetRotation);
+            }
+            else if (targetsBottleGuest)
             {
                 target = shop.ResolveBeerGuestServerLocalPosition(
                     homeLocalPosition);
@@ -290,11 +325,42 @@ namespace BarPromenade
                 shop.ReportBeerServerAtGuest(
                     phase == BarDrinkServicePhase.BeerCarryToGuest &&
                     arrived);
+                shop.ReportBottleServerAtShelf(
+                    phase ==
+                        BarDrinkServicePhase.BottleWalkToShelf &&
+                    arrived);
+                shop.ReportBottleServerAtPour(
+                    phase ==
+                        BarDrinkServicePhase.BottleCarryToPour &&
+                    arrived);
+                shop.ReportBottleServerAtGuest(
+                    phase ==
+                        BarDrinkServicePhase.BottleCarryToGuest &&
+                    arrived);
+                shop.ReportBottleServerAtShelfReturn(
+                    phase ==
+                        BarDrinkServicePhase.BottleWalkToShelfReturn &&
+                    arrived);
             }
 
             return new CounterTravelFrame(
                 !arrived || movedThisFrame,
                 translatedThisFrame);
+        }
+
+        private void ResolveWorldTarget(
+            Pose worldPose,
+            ref Vector3 localPosition,
+            ref Quaternion localRotation)
+        {
+            Transform parent = transform.parent;
+            localPosition = parent != null
+                ? parent.InverseTransformPoint(worldPose.position)
+                : worldPose.position;
+            localPosition.y = homeLocalPosition.y;
+            localRotation = parent != null
+                ? Quaternion.Inverse(parent.rotation) * worldPose.rotation
+                : worldPose.rotation;
         }
 
         private void ApplyCounterMotionPose(
@@ -334,7 +400,11 @@ namespace BarPromenade
                    frame.Phase == BarDrinkServicePhase.BeerGlassPickup ||
                    frame.Phase == BarDrinkServicePhase.BeerPouring ||
                    frame.Phase == BarDrinkServicePhase.BeerCarryToGuest ||
-                   frame.Phase == BarDrinkServicePhase.BeerGlassPlacement;
+                   frame.Phase == BarDrinkServicePhase.BeerGlassPlacement ||
+                   frame.Phase ==
+                       BarDrinkServicePhase.BottleCarryToGuest ||
+                   frame.Phase ==
+                       BarDrinkServicePhase.BottleVesselPlacement;
         }
 
         private void ApplyOrdinaryService(
@@ -347,6 +417,13 @@ namespace BarPromenade
                 IsBeerBartenderServicePhase(frame.Phase))
             {
                 ApplyOrdinaryBeerService(frame);
+                return;
+            }
+
+            if (shop.Timeline.IsBottleService &&
+                IsBottleBartenderServicePhase(frame.Phase))
+            {
+                ApplyOrdinaryBottleService(frame);
                 return;
             }
 
@@ -389,6 +466,86 @@ namespace BarPromenade
                  vesselHandled &&
                  vessel.gameObject.activeInHierarchy)
                     ? CarryWeight
+                    : 0f);
+        }
+
+        private void ApplyOrdinaryBottleService(
+            BarDrinkServiceFrame frame)
+        {
+            BarDrinkServiceView service = shop.ServiceView;
+            BarDrinkVesselView vessel = service.ActiveVessel;
+            service.SetBeerTapBartenderContact(false, 0f, 0f);
+            service.SetBeerTapHandlePull(0f);
+
+            bool carriesVessel =
+                frame.Phase ==
+                    BarDrinkServicePhase.BottleCarryToGuest;
+            bool guidesVessel = vessel != null &&
+                (frame.Phase == BarDrinkServicePhase.VesselPlacement ||
+                 frame.Phase == BarDrinkServicePhase.Pouring ||
+                 carriesVessel ||
+                 frame.Phase ==
+                     BarDrinkServicePhase.BottleVesselPlacement);
+            float vesselWeight = guidesVessel ? CarryWeight : 0f;
+            service.SetBartenderVesselContact(
+                carriesVessel,
+                vesselWeight);
+            Vector3 vesselTarget = Vector3.zero;
+            if (guidesVessel && vessel.gameObject.activeInHierarchy)
+            {
+                vesselTarget = carriesVessel
+                    ? transform.TransformPoint(
+                        vesselCarryTargetLocalPosition)
+                    : vessel.GripWorldPosition;
+            }
+
+            presentation.SetChainTarget(
+                BarBartenderPresentation.OrdinaryVesselHandIndex,
+                vesselTarget,
+                vesselTarget != Vector3.zero ? vesselWeight : 0f);
+
+            float bottleWeight = 0f;
+            switch (frame.Phase)
+            {
+                case BarDrinkServicePhase.BottlePickup:
+                    bottleWeight = 1f - Mathf.SmoothStep(
+                        0f,
+                        1f,
+                        Mathf.InverseLerp(
+                            BarDrinkShopController
+                                .BottleGripAttachProgress,
+                            0.82f,
+                            frame.PhaseProgress));
+                    break;
+                case BarDrinkServicePhase.Pouring:
+                    bottleWeight = Mathf.Max(
+                        frame.BottleTilt,
+                        frame.StreamVisibility * 0.65f);
+                    break;
+                case BarDrinkServicePhase.BottleReturn:
+                    bottleWeight = CarryWeight;
+                    break;
+            }
+
+            bool placesVessel = vessel != null &&
+                frame.Phase ==
+                    BarDrinkServicePhase.BottleVesselPlacement;
+            presentation.SetCounterReachLean(
+                placesVessel ? vessel.GripWorldPosition : Vector3.zero,
+                placesVessel
+                    ? Mathf.InverseLerp(
+                        0f,
+                        0.55f,
+                        frame.PhaseProgress)
+                    : 0f);
+            presentation.SetChainTarget(
+                BarBartenderPresentation.OrdinaryBottleHandIndex,
+                service.IsCarriedBottleVisible && bottleWeight > 0f
+                    ? shop.ActiveBottleHandTarget
+                    : Vector3.zero,
+                service.IsCarriedBottleVisible &&
+                shop.Timeline.IsCommitted
+                    ? bottleWeight
                     : 0f);
         }
 
@@ -446,6 +603,22 @@ namespace BarPromenade
                    phase == BarDrinkServicePhase.BeerPouring ||
                    phase == BarDrinkServicePhase.BeerCarryToGuest ||
                    phase == BarDrinkServicePhase.BeerGlassPlacement;
+        }
+
+        private static bool IsBottleBartenderServicePhase(
+            BarDrinkServicePhase phase)
+        {
+            return phase == BarDrinkServicePhase.BottleWalkToShelf ||
+                   phase == BarDrinkServicePhase.BottlePickup ||
+                   phase == BarDrinkServicePhase.BottleCarryToPour ||
+                   phase == BarDrinkServicePhase.VesselPlacement ||
+                   phase == BarDrinkServicePhase.Pouring ||
+                   phase == BarDrinkServicePhase.BottleCarryToGuest ||
+                   phase ==
+                       BarDrinkServicePhase.BottleVesselPlacement ||
+                   phase ==
+                       BarDrinkServicePhase.BottleWalkToShelfReturn ||
+                   phase == BarDrinkServicePhase.BottleReturn;
         }
 
         /// <summary>
@@ -544,10 +717,8 @@ namespace BarPromenade
         private void ReleaseAll()
         {
             presentation?.SetCounterReachLean(Vector3.zero, 0f);
-            shop?.ServiceView?.SetBeerTapBartenderContact(
-                false,
-                0f,
-                0f);
+            shop?.ServiceView?.SetBartenderVesselContact(false, 0f);
+            shop?.ServiceView?.SetBeerTapBartenderContact(false, 0f, 0f);
             shop?.ServiceView?.SetBeerTapHandlePull(0f);
             for (int chain = 0;
                  chain < presentation.ChainCount;
@@ -579,7 +750,7 @@ namespace BarPromenade
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(326)]
-    internal sealed class BarBartenderBeerVesselGripPostSolve : MonoBehaviour
+    internal sealed class BarBartenderVesselGripPostSolve : MonoBehaviour
     {
         private BarBartenderAssetRegistry registry;
         private BarDrinkShopController shop;
@@ -604,14 +775,14 @@ namespace BarPromenade
                 ? shop.ServiceView
                 : null;
             if (!initialized || service == null ||
-                !service.IsBeerTapVesselCarriedByBartender ||
+                !service.IsActiveVesselCarriedByBartender ||
                 service.ActiveVessel == null ||
                 registry.VesselGripAnchor == null)
             {
                 return;
             }
 
-            Pose counter = shop.ResolveBeerCounterWorldPose(
+            Pose counter = shop.ResolveServedCounterWorldPose(
                 service.ActiveVessel);
             service.AlignActiveVesselGripPositionTo(
                 registry.VesselGripAnchor,
@@ -631,6 +802,7 @@ namespace BarPromenade
     {
         private BarBartenderAssetRegistry registry;
         private BarDrinkShopController shop;
+        private BarBartenderPresentation presentation;
         private Quaternion bottleSocketRotationInHand;
         private bool initialized;
 
@@ -644,6 +816,7 @@ namespace BarPromenade
             shop = shopController != null
                 ? shopController
                 : throw new ArgumentNullException(nameof(shopController));
+            presentation = GetComponent<BarBartenderPresentation>();
             bottleSocketRotationInHand = Quaternion.Inverse(
                 registry.RightHand.rotation) *
                 registry.RightBottleSocket.rotation;
@@ -658,21 +831,37 @@ namespace BarPromenade
             if (!initialized ||
                 !shop.IsServing ||
                 service == null ||
-                !service.IsCarriedBottleVisible)
+                !service.IsCarriedBottleVisible ||
+                (shop.Timeline.IsBottleService &&
+                 !shop.IsBottleGripAttached))
             {
                 return;
             }
 
+            // Rebuild the bottle-side contact after root travel and turning.
+            // The previous frame's world-space radial is no longer valid once
+            // the bartender has changed orientation.
+            service.AlignCarriedBottleToCarrier(
+                registry.BottleGripAnchor,
+                shop.ActiveBottleWorldRotation,
+                registry.RightUpperArm.position);
             Vector3 bottleUp =
                 shop.ActiveBottleWorldRotation * Vector3.up;
             Vector3 radial = Vector3.ProjectOnPlane(
-                shop.ActiveBottleHandRadial,
+                service.CarriedBottleHandContactWorldPosition -
+                service.CarriedBottleGripCenterWorldPosition,
                 bottleUp);
             if (radial.sqrMagnitude < 0.000001f)
             {
                 radial = Vector3.ProjectOnPlane(
-                    transform.right,
+                    shop.ActiveBottleHandRadial,
                     bottleUp);
+                if (radial.sqrMagnitude < 0.000001f)
+                {
+                    radial = Vector3.ProjectOnPlane(
+                        transform.right,
+                        bottleUp);
+                }
             }
 
             radial.Normalize();
@@ -688,10 +877,14 @@ namespace BarPromenade
             registry.RightHand.rotation =
                 socketRotation *
                 Quaternion.Inverse(bottleSocketRotationInHand);
+            presentation?.ResolveOrdinaryGripContactAfterWristRoll(
+                BarBartenderPresentation.OrdinaryBottleHandIndex,
+                shop.ActiveBottleHandTarget);
             service.AlignCarriedBottleToCarrier(
                 registry.BottleGripAnchor,
                 shop.ActiveBottleWorldRotation,
                 registry.RightUpperArm.position);
+            shop.RefreshBottlePourStreamAfterGrip();
         }
     }
 }

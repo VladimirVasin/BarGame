@@ -612,19 +612,26 @@ returns. They spawn at randomly
   point and bends from the spine while the left palm follows the handle all
   the way onto the counter. It finishes directly before the hero with its
   handle on his right instead of being thrown or rolled; the right hand pulls
-  the tap handle while the left steadies the vessel. The full mug then waits
-  without a timeout: looking at it owns
+  the tap handle while the left steadies the vessel. For wine, cognac and
+  vodka he walks with the same full stride to the selected shelf bottle,
+  takes it only when his right hand reaches it, carries it to the stable
+  server-edge preparation point and pours into the matching `WineGlass`,
+  `Snifter` or `ShotGlass`. He carries the full vessel to the selected place,
+  sets it down, then walks the bottle back and restores it to its shelf pose.
+  Every full vessel then waits without a timeout: looking at it owns
   both the localized drink prompt and the same thin yellow contour used by the
   closed menu. Accepting the prompt runs a nested pickup, sip and return on the
-  visible seated Hero V2 rig. His right hand grips the handle; the seated
+  visible seated Hero V2 rig. For beer his right hand grips the handle; the seated
   first-person camera begins from the accepted gaze and keeps its captured eye
   offset through the animated head's complete reach-and-sip pose. It eases only
   `0.02 m` back along that gaze as the rim reaches the mouth. The
   rim stays at his mouth while the mug reaches horizontal and the head and
   torso rise with it, and the close-action clip plane keeps the vessel visible;
   then the mug remains empty on the counter.
-  Cash is paid at confirmation, while drinking effects commit exactly once
-  only after that visible action completes. During the
+  Every served vessel uses an explicit visible Hero V2 pickup, sip and return
+  with his right hand. Cash is paid at confirmation for all four offers, while
+  drinking effects commit exactly once only after that visible action
+  completes. During the
   quiet shared Wipe, that grounded placement puts the towel against the real
   `Y = 1.02 m` counter top and the clip carries it along the surface instead
   of through the air. The former six-arm cocktail chord was never implemented

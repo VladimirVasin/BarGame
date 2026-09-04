@@ -6,6 +6,28 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-04 — All four bar drinks have physical service
+
+The visible menu remains exactly four offers. Beer keeps the central tap and
+handled mug. Wine, cognac and vodka now send the ordinary bartender in a full
+Walk to the selected live shelf bottle; he takes it only at hand contact,
+carries it to the stable server-edge preparation vessel and pours into the
+matching `WineGlass`, `Snifter` or `ShotGlass`. He carries and places the full
+vessel at the selected station, then walks the bottle back to its exact shelf
+pose. Shelf and carried bottles now share one scale, so the contact swap has no
+size jump.
+
+All four routes finish through the same persistent explicit-drink branch. The
+visible seated Hero V2 picks up, drinks from and returns the vessel with his
+right hand. Cash commits at confirmation; intoxication, last-drink,
+consumed-count and stress effects commit exactly once only after drinking.
+No offer, localized text or brand was added.
+
+Verification: Runtime build passed; focused EditMode
+`BarDrinkServiceTimelineTests.BottleService_WaitsForEveryArrivalAndExplicitDrink`
+— 1/1 passed. Focused PlayMode coverage for the production RedWine route and
+the physical-menu reopen lifecycle — 2/2 passed.
+
 ## 2026-09-04 — Beer service follows the bartender, hero and camera
 
 The follow-up pass corrected four visible staging faults in the bar. The handled

@@ -301,10 +301,10 @@ namespace BarPromenade
 
         /// <summary>
         /// Keeps the authored vessel origin on the counter while orienting an
-        /// upright mug handle toward the hero's anatomical right. This must be
+        /// upright vessel grip toward the owner's anatomical right. This must
         /// independent of the mirrored bartender-service layout.
         /// </summary>
-        public bool TryResolveRightHandledUprightPose(
+        public bool TryResolveRightHandUprightPose(
             Vector3 rootPosition,
             Transform ownerRoot,
             out Pose pose)
@@ -320,6 +320,17 @@ namespace BarPromenade
 
             pose = new Pose(rootPosition, rotation);
             return true;
+        }
+
+        public bool TryResolveRightHandledUprightPose(
+            Vector3 rootPosition,
+            Transform ownerRoot,
+            out Pose pose)
+        {
+            return TryResolveRightHandUprightPose(
+                rootPosition,
+                ownerRoot,
+                out pose);
         }
 
         private bool TryResolveDrinkRotation(

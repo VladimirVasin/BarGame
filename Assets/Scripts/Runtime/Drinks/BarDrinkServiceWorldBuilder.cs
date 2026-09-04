@@ -126,6 +126,8 @@ namespace BarPromenade
             bottleObject.name =
                 $"Bar Drink Bottle {presentation.StableId}";
             Transform bottleRoot = bottleObject.transform;
+            bottleRoot.localScale = Vector3.one *
+                BarDrinkServiceView.CarriedBottleScale;
             var renderers = new List<Renderer>();
             var colors = new List<Color>();
             ConfigureBottleAppearance(

@@ -23,7 +23,12 @@ namespace BarPromenade
         PlayerPickup = 16,
         PlayerDrinking = 17,
         PlayerVesselReturn = 18,
-        EmptyOnCounter = 19
+        EmptyOnCounter = 19,
+        BottleWalkToShelf = 20,
+        BottleCarryToPour = 21,
+        BottleCarryToGuest = 22,
+        BottleVesselPlacement = 23,
+        BottleWalkToShelfReturn = 24
     }
 
     /// <summary>
@@ -104,9 +109,12 @@ namespace BarPromenade
         public const float BeerGlassPickupDurationSeconds = 0.70f;
         public const float BeerPouringDurationSeconds = 2.35f;
         public const float BeerGlassPlacementDurationSeconds = 0.70f;
+        public const float BottleVesselPlacementDurationSeconds = 0.70f;
         public const float PlayerPickupDurationSeconds = 2f;
         public const float PlayerVesselReturnDurationSeconds = 2f;
 
+        // Legacy camera-only callers have no physical arrival gates. Seated
+        // beer and bottle service intentionally have no fixed total duration.
         public const float ConfirmedPresentationDurationSeconds =
             BottlePickupDurationSeconds +
             VesselPlacementDurationSeconds +
@@ -131,6 +139,7 @@ namespace BarPromenade
             Phase == BarDrinkServicePhase.EmptyOnCounter;
         public bool IsCommitted { get; private set; }
         public bool IsBeerService { get; private set; }
+        public bool IsBottleService { get; private set; }
         public bool IsAwaitingDrink =>
             Phase == BarDrinkServicePhase.AwaitingDrink;
         public bool HasEmptyVessel =>
@@ -157,6 +166,7 @@ namespace BarPromenade
 
             IsCommitted = false;
             IsBeerService = false;
+            IsBottleService = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
             SetPhase(BarDrinkServicePhase.CameraApproach);
@@ -177,10 +187,62 @@ namespace BarPromenade
 
             IsCommitted = true;
             IsBeerService = drinkId == DrinkId.LightBeer;
+            IsBottleService =
+                drinkId != DrinkId.None && !IsBeerService;
             SetPhase(
                 IsBeerService
                     ? BarDrinkServicePhase.BeerWalkToTap
-                    : BarDrinkServicePhase.BottlePickup);
+                    : IsBottleService
+                        ? BarDrinkServicePhase.BottleWalkToShelf
+                        : BarDrinkServicePhase.BottlePickup);
+            return true;
+        }
+
+        public bool ReportBottleServerAtShelf(bool atTarget)
+        {
+            if (!atTarget || !IsBottleService ||
+                Phase != BarDrinkServicePhase.BottleWalkToShelf)
+            {
+                return false;
+            }
+
+            SetPhase(BarDrinkServicePhase.BottlePickup);
+            return true;
+        }
+
+        public bool ReportBottleServerAtPour(bool atTarget)
+        {
+            if (!atTarget || !IsBottleService ||
+                Phase != BarDrinkServicePhase.BottleCarryToPour)
+            {
+                return false;
+            }
+
+            SetPhase(BarDrinkServicePhase.VesselPlacement);
+            return true;
+        }
+
+        public bool ReportBottleServerAtGuest(bool atTarget)
+        {
+            if (!atTarget || !IsBottleService ||
+                Phase != BarDrinkServicePhase.BottleCarryToGuest)
+            {
+                return false;
+            }
+
+            SetPhase(BarDrinkServicePhase.BottleVesselPlacement);
+            return true;
+        }
+
+        public bool ReportBottleServerAtShelfReturn(bool atTarget)
+        {
+            if (!atTarget || !IsBottleService ||
+                Phase != BarDrinkServicePhase.BottleWalkToShelfReturn)
+            {
+                return false;
+            }
+
+            SetPhase(BarDrinkServicePhase.BottleReturn);
             return true;
         }
 
@@ -237,6 +299,7 @@ namespace BarPromenade
         {
             IsCommitted = false;
             IsBeerService = false;
+            IsBottleService = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
             SetPhase(BarDrinkServicePhase.Closed);
@@ -301,18 +364,25 @@ namespace BarPromenade
                     break;
                 case BarDrinkServicePhase.BottlePickup:
                     cameraBlend = 1f;
-                    armsVisibility = 1f;
+                    armsVisibility = IsBottleService ? 0f : 1f;
                     bottleTravel = SmootherStep(progress);
+                    break;
+                case BarDrinkServicePhase.BottleWalkToShelf:
+                    cameraBlend = 1f;
+                    break;
+                case BarDrinkServicePhase.BottleCarryToPour:
+                    cameraBlend = 1f;
+                    bottleTravel = 1f;
                     break;
                 case BarDrinkServicePhase.VesselPlacement:
                     cameraBlend = 1f;
-                    armsVisibility = 1f;
+                    armsVisibility = IsBottleService ? 0f : 1f;
                     bottleTravel = 1f;
                     vesselVisibility = SmootherStep(progress);
                     break;
                 case BarDrinkServicePhase.Pouring:
                     cameraBlend = 1f;
-                    armsVisibility = 1f;
+                    armsVisibility = IsBottleService ? 0f : 1f;
                     bottleTravel = 1f;
                     bottleTilt = Pulse(
                         progress,
@@ -332,16 +402,44 @@ namespace BarPromenade
                         0.18f,
                         0.84f);
                     break;
+                case BarDrinkServicePhase.BottleCarryToGuest:
+                    cameraBlend = 1f;
+                    bottleTravel = 1f;
+                    vesselVisibility = 1f;
+                    vesselFill = 1f;
+                    serviceVesselTravel = 1f;
+                    break;
+                case BarDrinkServicePhase.BottleVesselPlacement:
+                    cameraBlend = 1f;
+                    bottleTravel = 1f;
+                    vesselVisibility = 1f;
+                    vesselFill = 1f;
+                    serviceVesselTravel = SmootherStep(progress);
+                    break;
+                case BarDrinkServicePhase.BottleWalkToShelfReturn:
+                    cameraBlend = 1f;
+                    bottleTravel = 1f;
+                    vesselVisibility = 1f;
+                    vesselFill = 1f;
+                    serviceVesselTravel = 1f;
+                    break;
                 case BarDrinkServicePhase.BottleReturn:
                     cameraBlend = 1f;
-                    armsVisibility = 1f;
+                    armsVisibility = IsBottleService ? 0f : 1f;
                     bottleTravel = 1f - SmootherStep(progress);
                     vesselVisibility = 1f;
                     vesselFill = 1f;
-                    drinkLift = SmootherRange(
-                        progress,
-                        0.35f,
-                        1f);
+                    if (IsBottleService)
+                    {
+                        serviceVesselTravel = 1f;
+                    }
+                    else
+                    {
+                        drinkLift = SmootherRange(
+                            progress,
+                            0.35f,
+                            1f);
+                    }
                     break;
                 case BarDrinkServicePhase.Drinking:
                     cameraBlend = 1f;
@@ -478,7 +576,9 @@ namespace BarPromenade
                     break;
                 case BarDrinkServicePhase.BottlePickup:
                     SetPhaseWithoutClearingElapsed(
-                        BarDrinkServicePhase.VesselPlacement);
+                        IsBottleService
+                            ? BarDrinkServicePhase.BottleCarryToPour
+                            : BarDrinkServicePhase.VesselPlacement);
                     break;
                 case BarDrinkServicePhase.VesselPlacement:
                     SetPhaseWithoutClearingElapsed(
@@ -486,11 +586,19 @@ namespace BarPromenade
                     break;
                 case BarDrinkServicePhase.Pouring:
                     SetPhaseWithoutClearingElapsed(
-                        BarDrinkServicePhase.BottleReturn);
+                        IsBottleService
+                            ? BarDrinkServicePhase.BottleCarryToGuest
+                            : BarDrinkServicePhase.BottleReturn);
+                    break;
+                case BarDrinkServicePhase.BottleVesselPlacement:
+                    SetPhaseWithoutClearingElapsed(
+                        BarDrinkServicePhase.BottleWalkToShelfReturn);
                     break;
                 case BarDrinkServicePhase.BottleReturn:
                     SetPhaseWithoutClearingElapsed(
-                        BarDrinkServicePhase.Drinking);
+                        IsBottleService
+                            ? BarDrinkServicePhase.AwaitingDrink
+                            : BarDrinkServicePhase.Drinking);
                     break;
                 case BarDrinkServicePhase.Drinking:
                     SetPhaseWithoutClearingElapsed(
@@ -584,6 +692,8 @@ namespace BarPromenade
                     return BeerPouringDurationSeconds;
                 case BarDrinkServicePhase.BeerGlassPlacement:
                     return BeerGlassPlacementDurationSeconds;
+                case BarDrinkServicePhase.BottleVesselPlacement:
+                    return BottleVesselPlacementDurationSeconds;
                 case BarDrinkServicePhase.PlayerPickup:
                     return PlayerPickupDurationSeconds;
                 case BarDrinkServicePhase.PlayerDrinking:
@@ -601,6 +711,11 @@ namespace BarPromenade
             return phase == BarDrinkServicePhase.Browsing ||
                    phase == BarDrinkServicePhase.BeerWalkToTap ||
                    phase == BarDrinkServicePhase.BeerCarryToGuest ||
+                   phase == BarDrinkServicePhase.BottleWalkToShelf ||
+                   phase == BarDrinkServicePhase.BottleCarryToPour ||
+                   phase == BarDrinkServicePhase.BottleCarryToGuest ||
+                   phase ==
+                       BarDrinkServicePhase.BottleWalkToShelfReturn ||
                    phase == BarDrinkServicePhase.AwaitingDrink ||
                    phase == BarDrinkServicePhase.EmptyOnCounter;
         }

@@ -267,6 +267,154 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void BottleService_WaitsForEveryArrivalAndExplicitDrink()
+        {
+            BarDrinkServiceTimeline timeline = CreateBrowsingTimeline();
+
+            Assert.That(timeline.Confirm(DrinkId.RedWine), Is.True);
+            Assert.That(timeline.IsBottleService, Is.True);
+            Assert.That(timeline.IsBeerService, Is.False);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleWalkToShelf));
+            Assert.That(timeline.BeginDrink(), Is.False);
+
+            timeline.Advance(100f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleWalkToShelf));
+            Assert.That(timeline.ReportBottleServerAtShelf(false), Is.False);
+            Assert.That(timeline.ReportBottleServerAtPour(true), Is.False);
+            Assert.That(timeline.ReportBottleServerAtShelf(true), Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottlePickup));
+
+            timeline.Advance(
+                BarDrinkServiceTimeline.BottlePickupDurationSeconds);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleCarryToPour));
+            Assert.That(timeline.CurrentFrame.BottleTravel, Is.EqualTo(1f));
+            timeline.Advance(100f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleCarryToPour));
+            Assert.That(timeline.ReportBottleServerAtPour(false), Is.False);
+            Assert.That(timeline.ReportBottleServerAtGuest(true), Is.False);
+            Assert.That(timeline.ReportBottleServerAtPour(true), Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.VesselPlacement));
+
+            timeline.Advance(
+                BarDrinkServiceTimeline.VesselPlacementDurationSeconds);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.Pouring));
+            timeline.Advance(
+                BarDrinkServiceTimeline.PouringDurationSeconds * 0.5f);
+            Assert.That(timeline.CurrentFrame.BottleTilt, Is.EqualTo(1f));
+            Assert.That(timeline.CurrentFrame.StreamVisibility, Is.EqualTo(1f));
+            Assert.That(
+                timeline.CurrentFrame.VesselFill,
+                Is.InRange(0.01f, 0.99f));
+            timeline.Advance(
+                BarDrinkServiceTimeline.PouringDurationSeconds * 0.5f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleCarryToGuest));
+            Assert.That(timeline.CurrentFrame.VesselFill, Is.EqualTo(1f));
+            Assert.That(
+                timeline.CurrentFrame.ServiceVesselTravel,
+                Is.EqualTo(1f));
+
+            timeline.Advance(100f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleCarryToGuest));
+            Assert.That(timeline.ReportBottleServerAtGuest(false), Is.False);
+            Assert.That(
+                timeline.ReportBottleServerAtShelfReturn(true),
+                Is.False);
+            Assert.That(timeline.ReportBottleServerAtGuest(true), Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleVesselPlacement));
+
+            timeline.Advance(
+                BarDrinkServiceTimeline
+                    .BottleVesselPlacementDurationSeconds * 0.5f);
+            Assert.That(
+                timeline.CurrentFrame.ServiceVesselTravel,
+                Is.InRange(0.01f, 0.99f));
+            timeline.Advance(
+                BarDrinkServiceTimeline
+                    .BottleVesselPlacementDurationSeconds * 0.5f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(
+                    BarDrinkServicePhase.BottleWalkToShelfReturn));
+
+            timeline.Advance(100f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(
+                    BarDrinkServicePhase.BottleWalkToShelfReturn));
+            Assert.That(
+                timeline.ReportBottleServerAtShelfReturn(false),
+                Is.False);
+            Assert.That(timeline.ReportBottleServerAtShelf(true), Is.False);
+            Assert.That(
+                timeline.ReportBottleServerAtShelfReturn(true),
+                Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BottleReturn));
+
+            timeline.Advance(
+                BarDrinkServiceTimeline.BottleReturnDurationSeconds * 0.5f);
+            Assert.That(
+                timeline.CurrentFrame.BottleTravel,
+                Is.InRange(0.01f, 0.99f));
+            Assert.That(timeline.CurrentFrame.VesselFill, Is.EqualTo(1f));
+            Assert.That(
+                timeline.CurrentFrame.ServiceVesselTravel,
+                Is.EqualTo(1f));
+            timeline.Advance(
+                BarDrinkServiceTimeline.BottleReturnDurationSeconds * 0.5f);
+            Assert.That(timeline.IsAwaitingDrink, Is.True);
+            Assert.That(timeline.CanBeginDrink, Is.True);
+            Assert.That(timeline.CurrentFrame.VesselFill, Is.EqualTo(1f));
+            timeline.Advance(100f);
+            Assert.That(timeline.IsAwaitingDrink, Is.True);
+            Assert.That(timeline.BeginDrink(), Is.True);
+            Assert.That(timeline.BeginDrink(), Is.False);
+
+            timeline.Advance(
+                BarDrinkServiceTimeline.PlayerPickupDurationSeconds);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.PlayerDrinking));
+            timeline.Advance(
+                BarDrinkServiceTimeline.DrinkingDurationSeconds);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.PlayerVesselReturn));
+            timeline.Advance(
+                BarDrinkServiceTimeline.PlayerVesselReturnDurationSeconds);
+
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.EmptyOnCounter));
+            Assert.That(timeline.HasEmptyVessel, Is.True);
+            Assert.That(timeline.IsCommitted, Is.False);
+            Assert.That(timeline.IsBrowsing, Is.True);
+            Assert.That(timeline.CurrentFrame.VesselVisibility, Is.EqualTo(1f));
+            Assert.That(timeline.CurrentFrame.VesselFill, Is.Zero);
+        }
+
+        [Test]
         public void CompletedService_ReturnsToBrowsingAndCanConfirmAgain()
         {
             Assert.That(
