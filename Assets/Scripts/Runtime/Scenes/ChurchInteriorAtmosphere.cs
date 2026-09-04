@@ -877,11 +877,10 @@ namespace BarPromenade
             vignette.intensity.Override(0.08f);
             vignette.smoothness.Override(0.42f);
 
-            RuntimeSceneSetup.AddGaussianDepthOfField(
+            RuntimeSceneSetup.AddIndoorGaussianDepthOfField(
                 RuntimeProfile,
                 7f,
-                26f,
-                1.1f);
+                26f);
             volumeObject
                 .AddComponent<DepthOfFieldSettingsBinder>()
                 .Initialize(RuntimeProfile);

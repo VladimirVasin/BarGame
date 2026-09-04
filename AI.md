@@ -397,11 +397,12 @@ for locomotion and contextual actions, including a separate heavy, weary
 `0.75 s` Run with a short flight phase and a grounded lean/right-hand
 press before every ordinary location-door transition, hands failed balance falls from a
 directional clip into a bounded runtime ragdoll and back into an authored rise,
-and derives the refrigerator's visible first-person arm, the bar's non-rendered
-vessel attachment rig and the inventory portrait from the same production
-model. That live model is `Resources/Player/Player3DV2`: the
+and derives the refrigerator's visible first-person arm and the inventory
+portrait from the same production model. Bar drinking instead keeps that
+seated world rig and runs a nested full-body pickup/sip/return action on it.
+That live model is `Resources/Player/Player3DV2`: the
 adult-proportion, atlas-faced Hero V2 in the canonical olive field jacket,
-with `38` bone-only Actions. Holding either Shift or gamepad L3 while moving
+with `41` bone-only Actions. Holding either Shift or gamepad L3 while moving
 forward raises the `2.6 m/s` walk to a `4.2 m/s` run; backward movement stays
 at `1.4 m/s`, intoxication still scales movement, and scripted approaches stay
 at walking pace. The gait blend follows actual constrained speed rather than
@@ -597,20 +598,64 @@ returns. They spawn at randomly
   waistcoat, rolled sleeves and an apron, with a service towel in his idle
   hand. `BarBartenderProvider` selects `bar_bartender_v2` at the authored
   counter anchor and retains `six_armed_bartender_v1` only through its
-  inactive legacy reference. The active registry reuses
+  inactive legacy reference. The active root stands on the bar floor: the
+  former `0.42 m` duckboard and matching root lift belonged to the superseded
+  six-arm presentation and are absent from the active world. The active
+  registry reuses
   `CafeAttendantWipe`, `CafeAttendantWalk`, `CafeAttendantPour` and
   `CafeAttendantNotice` from `MountainRoadCafeCast`; a manually evaluated
-  `PlayableGraph` reads `BarDrinkServiceTimeline`, while the right hand
-  follows the selected bottle and the left steadies the vessel. The former
-  six-arm cocktail chord was never implemented and belongs only to the
-  superseded legacy proposal, not the active delivery plan. All four bar
+  `PlayableGraph` reads `BarDrinkServiceTimeline`. For beer the bartender
+  walks to the central tap, takes and fills the pint, carries it to the
+  selected place and sets it directly before the hero; the right hand pulls
+  the tap handle while the left steadies the vessel. The full pint then waits
+  without a timeout: looking at it owns both the localized drink prompt and
+  the same thin yellow contour used by the closed menu. Accepting the prompt
+  runs a nested pickup, sip and return on the visible seated Hero V2 rig; the
+  pint follows its real left-hand socket and remains empty on the counter.
+  Cash is paid at confirmation, while drinking effects commit exactly once
+  only after that visible action completes. During the
+  quiet shared Wipe, that grounded placement puts the towel against the real
+  `Y = 1.02 m` counter top and the clip carries it along the surface instead
+  of through the air. The former six-arm cocktail chord was never implemented
+  and belongs only to the superseded legacy proposal, not the active delivery
+  plan. All four bar
   stools not occupied by patrons are usable, each with its own safe entry,
   exit, camera and service offset; the rightmost is moved inward clear of the
   counter return, and the former single-seat floor/sign marker is not shown.
-  Its physical menu uses the cafe's same close-on-first-action, resting-booklet
-  gaze reopen, look-away stand and post-exit staff retrieval lifecycle. A
+  Exactly three beer taps form a compact `0.33 m`-spaced bank at the seat-free
+  right end of the counter, beyond that last stool. The menu dock shares the
+  selected seat's lateral axis, so the bartender puts the booklet directly
+  before the hero just as the Mountain Road cafe attendant does.
+  Its physical menu keeps the cafe's resting-booklet gaze reopen, look-away
+  stand and post-exit staff retrieval lifecycle, but not the cafe's input
+  semantics. The cafe remains selection-only: Space/gamepad West records its
+  placeholder choice, while E/Enter/gamepad South rests the booklet. In the
+  bar, either E/Enter/gamepad South or Space/gamepad West orders the selected
+  drink, while Escape rests the booklet without ordering. A
+  thin yellow contour surrounds the closed booklet only while that same gaze
+  predicate changes the contextual prompt to "open menu"; looking away or
+  beginning the unfold clears it, so the open spread is never highlighted. A
   successful bar purchase runs service while that booklet remains closed, and
-  a later completed sit receives a fresh delivery. The common adult
+  a later completed sit receives a fresh delivery. The four visible offers
+  occupy one readable inset `2 x 2` grid across the spread, with safe inner
+  margins that keep every name, price and description inside its cell. Long
+  copy wraps by words instead of shrinking the whole block, so all four use
+  the same visible type scale. The
+  spread focuses at `0.45 m` / FOV `72` from a near-overhead pose whose
+  projection stays close to the booklet centre. Its bar-only page style uses
+  larger bold, near-black type. Each block shows a dry low-grade product name,
+  price and two-line description without truncation.
+  The visible order is flat house beer, cheap fortified wine, unaged distillate and
+  bottom-shelf vodka; four matching bottles are centred on the back bar. It
+  restores the exact seated pose when it closes. Bar-menu cinematic DOF does
+  not begin during seating or delivery: only the fully open menu starts the
+  page-focused `35 mm`, `f/8` profile. Resting the menu, confirming service or
+  beginning exit clears it immediately. Its left leaf folds over the upper arc
+  into a separated opaque stack. Independently, true-interior post-processing
+  uses restrained Gaussian depth of field with a maximum radius of `0.55`, so
+  nearby characters remain readable instead of acquiring close-range bokeh.
+  The interior entrance is the facade-matched standard `1.45 x 2.34 m`
+  panelled door, not the former room-height curtained portal. The common adult
   substrate changes large anatomical proportions, not identity: the Long-Arm
   remains mouthless with ground-reaching forearms and heavy hands, the kettle
   and hopper silhouettes remain, the inactive legacy bartender alone keeps

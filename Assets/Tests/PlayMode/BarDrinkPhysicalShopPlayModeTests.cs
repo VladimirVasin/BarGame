@@ -4,6 +4,7 @@ using BarPromenade.Rendering;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 using UnityEngine.TestTools;
 using UnityEngine.TestTools.Utils;
 
@@ -228,7 +229,171 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            PhysicalCounterMenu_ListsNinePricesRejectsThenServesAndRestores()
+            BeerTapService_WaitsForGazeThenHeroReturnsEmptyPint()
+        {
+            CounterSeatPlan seatPlan = CounterSeatPlan.FromService(
+                serviceView.transform,
+                servicePlan);
+            player.Motor.Teleport(seatPlan.EntryPose.RootPosition);
+            player.GameObject.transform.rotation =
+                seatPlan.EntryPose.RootRotation;
+            Physics.SyncTransforms();
+
+            var stationObject = new GameObject("Beer Tap Test Station");
+            stationObject.transform.SetParent(worldObject.transform, false);
+            BarCounterStation station =
+                stationObject.AddComponent<BarCounterStation>();
+            station.ConfigureSeated(
+                controller,
+                player,
+                seatPlan,
+                cameraFollow);
+            station.Interact(player.Interactor);
+
+            float timeout = Time.realtimeSinceStartup + 5f;
+            while (!station.Seat.IsSeated &&
+                   Time.realtimeSinceStartup < timeout)
+            {
+                yield return null;
+            }
+
+            Assert.That(station.Seat.IsSeated, Is.True);
+            controller.ReportCounterServerAtTarget(true);
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.CameraApproachDurationSeconds);
+            Assert.That(controller.IsBrowsing, Is.True);
+            Assert.That(
+                controller.Select(FindOfferIndex(DrinkId.LightBeer)),
+                Is.True);
+
+            int cashBefore = GameSessionState.CashBalance;
+            int intoxicationBefore = GameSessionState.IntoxicationLevel;
+            int drinksBefore = GameSessionState.DrinksConsumed;
+            Assert.That(
+                station.PromptKey,
+                Is.EqualTo(BarCounterStation.OrderPromptKey),
+                "The ordinary E prompt must confirm the open bar menu.");
+            station.Interact(player.Interactor);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerWalkToTap));
+            Assert.That(serviceView.HasBeerTapPresentation, Is.True);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(cashBefore - controller.SelectedOffer.Price));
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(intoxicationBefore));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
+
+            Assert.That(controller.ReportBeerServerAtTap(true), Is.True);
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.BeerGlassPickupDurationSeconds +
+                BarDrinkServiceTimeline.BeerPouringDurationSeconds * 0.5f);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerPouring));
+            Assert.That(serviceView.IsStreamVisible, Is.True);
+            Assert.That(serviceView.BeerTapHandlePullAmount, Is.GreaterThan(0f));
+            Assert.That(
+                serviceView.ActiveVessel.FillProgress,
+                Is.InRange(0.1f, 0.9f));
+
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.BeerPouringDurationSeconds * 0.5f);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerCarryToGuest));
+            Assert.That(controller.ReportBeerServerAtGuest(true), Is.True);
+            controller.AdvancePresentation(
+                BarDrinkServiceTimeline.BeerGlassPlacementDurationSeconds);
+
+            Assert.That(controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.AwaitingDrink));
+            Assert.That(controller.IsServing, Is.True);
+            Assert.That(serviceView.ActiveVessel.FillProgress, Is.EqualTo(1f));
+            controller.AdvancePresentation(30f);
+            Assert.That(controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.AwaitingDrink),
+                "A full pint must wait indefinitely for an explicit drink.");
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
+
+            BarDrinkVesselView vessel = serviceView.ActiveVessel;
+            Vector3 lookDirection =
+                vessel.GlassRenderer.bounds.center - camera.transform.position;
+            camera.transform.rotation = Quaternion.LookRotation(
+                lookDirection.normalized,
+                Vector3.up);
+            controller.RefreshServedDrinkAffordance();
+            Assert.That(controller.IsLookingAtServedVessel, Is.True);
+            Assert.That(vessel.IsInteractionHighlighted, Is.True);
+            Assert.That(
+                station.PromptKey,
+                Is.EqualTo(BarCounterStation.DrinkPromptKey));
+
+            station.Interact(player.Interactor);
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.PlayerPickup));
+            Assert.That(station.Seat.Controller.IsNestedLoopActionActive, Is.True);
+            Assert.That(station.SeatView.IsActionLookLocked, Is.True);
+            Assert.That(vessel.IsInteractionHighlighted, Is.False);
+
+            float previousTimeScale = Time.timeScale;
+            try
+            {
+                Time.timeScale = 20f;
+                timeout = Time.realtimeSinceStartup + 3f;
+                while (controller.Phase !=
+                           BarDrinkServicePhase.PlayerDrinking &&
+                       controller.IsServing &&
+                       Time.realtimeSinceStartup < timeout)
+                {
+                    yield return null;
+                }
+
+                Assert.That(controller.Phase,
+                    Is.EqualTo(BarDrinkServicePhase.PlayerDrinking));
+                yield return null;
+                Assert.That(
+                    station.Seat.Controller.LeftVesselGripAnchor,
+                    Is.Not.Null);
+                Assert.That(
+                    controller.PlayerVesselGripError,
+                    Is.LessThan(0.015f),
+                    "The pint must follow the real Hero V2 hand socket.");
+
+                timeout = Time.realtimeSinceStartup + 3f;
+                while (controller.IsServing &&
+                       Time.realtimeSinceStartup < timeout)
+                {
+                    yield return null;
+                }
+            }
+            finally
+            {
+                Time.timeScale = previousTimeScale;
+            }
+
+            Assert.That(controller.IsServing, Is.False);
+            Assert.That(controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.EmptyOnCounter));
+            Assert.That(vessel.gameObject.activeSelf, Is.True);
+            Assert.That(vessel.FillProgress, Is.Zero);
+            Assert.That(station.SeatView.IsActionLookLocked, Is.False);
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(
+                    intoxicationBefore +
+                    DrinkRules.GetIntoxicationGain(DrinkId.LightBeer)));
+            Assert.That(
+                GameSessionState.DrinksConsumed,
+                Is.EqualTo(drinksBefore + 1));
+        }
+
+        [UnityTest]
+        public IEnumerator
+            PhysicalCounterMenu_ListsFourDescriptionsThenServesAndRestores()
         {
             inputFixture = new InputTestFixture();
             inputFixture.Setup();
@@ -296,6 +461,11 @@ namespace BarPromenade.Tests.PlayMode
                 controller.MenuState,
                 Is.EqualTo(
                     BarPromenade.Runtime.World.CounterMenuState.Delivering));
+            Assert.That(
+                CinematicDepthOfField.IsActive,
+                Is.False,
+                "Seating and the bartender's delivery must keep nearby " +
+                "people on the restrained room grade.");
 
             controller.ReportCounterServerAtTarget(true);
             controller.AdvancePresentation(
@@ -320,14 +490,37 @@ namespace BarPromenade.Tests.PlayMode
                 controller.MenuState,
                 Is.EqualTo(
                     BarPromenade.Runtime.World.CounterMenuState.Open));
+            Assert.That(
+                CinematicDepthOfField.IsActive,
+                Is.True,
+                "Only the actual menu close-up engages cinematic DOF.");
+            Volume cinematicVolume = FindCinematicDepthOfFieldVolume();
+            Assert.That(cinematicVolume, Is.Not.Null);
+            Assert.That(
+                cinematicVolume.profile.TryGet(
+                    out UnityEngine.Rendering.Universal.DepthOfField
+                        menuDepthOfField),
+                Is.True);
+            Assert.That(
+                menuDepthOfField.aperture.value,
+                Is.EqualTo(
+                    BarDrinkShopController
+                        .CounterMenuDepthOfFieldAperture));
+            Assert.That(
+                menuDepthOfField.focalLength.value,
+                Is.EqualTo(
+                    BarDrinkShopController
+                        .CounterMenuDepthOfFieldFocalLength));
             Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
             Assert.That(controller.MenuPresentation.IsTextVisible, Is.True);
             Assert.That(
                 controller.MenuPresentation.ItemLines.Count,
-                Is.EqualTo(9));
-            Assert.That(controller.Offers.Count, Is.EqualTo(9));
-            Assert.That(controller.Offers[0].DrinkId, Is.EqualTo(DrinkId.Water));
-            Assert.That(controller.Offers[0].Price, Is.EqualTo(2));
+                Is.EqualTo(4));
+            Assert.That(controller.Offers.Count, Is.EqualTo(4));
+            Assert.That(
+                controller.Offers[0].DrinkId,
+                Is.EqualTo(DrinkId.LightBeer));
+            Assert.That(controller.Offers[0].Price, Is.EqualTo(8));
 
             for (int index = 0; index < controller.Offers.Count; index++)
             {
@@ -335,27 +528,43 @@ namespace BarPromenade.Tests.PlayMode
                 string expectedPrice = string.Format(
                     LocalizationService.Get("drink_shop.price"),
                     offer.Price);
+                string expectedDescription = LocalizationService.Get(
+                    offer.DescriptionKey);
+                TMPro.TMP_Text itemLine =
+                    controller.MenuPresentation.ItemLines[index];
                 Assert.That(
-                    controller.MenuPresentation.ItemLines[index].text,
+                    itemLine.text,
                     Is.EqualTo(
                         LocalizationService.Get(offer.NameKey) +
-                        "   " +
-                        expectedPrice));
+                        "\n" + expectedPrice + "\n" +
+                        expectedDescription));
+                itemLine.ForceMeshUpdate();
+                Assert.That(
+                    itemLine.isTextOverflowing,
+                    Is.False,
+                    $"The description for menu row {index + 1} is cut off.");
+                Assert.That(
+                    itemLine.enableAutoSizing,
+                    Is.False,
+                    $"The menu row {index + 1} may not shrink independently.");
+                Assert.That(
+                    itemLine.fontSize,
+                    Is.EqualTo(CounterMenuPageStyle.Bar.ItemFontSize)
+                        .Within(0.0001f),
+                    $"The menu row {index + 1} does not use the shared size.");
 
                 float localX = controller.MenuPresentation.PropRoot
                     .InverseTransformPoint(
-                        controller.MenuPresentation.ItemLines[index]
-                            .transform.position).x;
+                        itemLine.transform.position).x;
                 Assert.That(
                     localX,
-                    index < 5
+                    index < 2
                         ? Is.LessThan(-0.01f)
                         : Is.GreaterThan(0.01f),
-                    "The authored booklet must keep five rows on the left " +
-                    "page and four on the right.");
+                    "The bar booklet must keep two offers on each page.");
             }
 
-            int expensiveOfferIndex = FindOfferIndex(DrinkId.CognacVsop);
+            int expensiveOfferIndex = FindOfferIndex(DrinkId.CognacVs);
             Assert.That(controller.Select(expensiveOfferIndex), Is.True);
             int drinksBeforeFailure = GameSessionState.DrinksConsumed;
             Assert.That(controller.ConfirmSelection(), Is.False);
@@ -400,6 +609,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
             Assert.That(controller.MenuPresentation.IsVisible, Is.True);
             Assert.That(controller.MenuPresentation.IsTextVisible, Is.False);
+            Assert.That(CinematicDepthOfField.IsActive, Is.False,
+                "Service must not leave the bartender behind menu Bokeh.");
+            Assert.That(cinematicVolume.weight, Is.Zero.Within(0.0001f));
             Assert.That(
                 controller.MenuPresentation.IsRestingOnCounter,
                 Is.True);
@@ -423,14 +635,22 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(menuPage.IsFoldTransitionActive, Is.True);
             Assert.That(
                 midpointLeafAngle,
-                Is.GreaterThan(openLeafAngle + 30f),
-                "The left leaf must visibly rotate around its spine.");
+                Is.LessThan(openLeafAngle - 30f),
+                "The left leaf must rotate over, not under, its spine.");
             Assert.That(
                 Quaternion.Angle(
                     Quaternion.identity,
                     menuPage.LeftFoldHinge.localRotation),
-                Is.EqualTo(midpointLeafAngle).Within(0.01f),
+                Is.EqualTo(Mathf.Abs(midpointLeafAngle)).Within(0.01f),
                 "Fold progress must drive the physical hinge rotation.");
+            Assert.That(
+                Vector3.Dot(
+                    FindRestingRenderer(menuPage, "Left Opaque Pages")
+                        .bounds.center -
+                    menuPage.LeftFoldHinge.parent.position,
+                    menuPage.LeftFoldHinge.parent.up),
+                Is.GreaterThan(0.10f),
+                "The moving leaf must arc above the counter.");
 
             menuPage.AdvanceFold(
                 CounterMenuPageView.FoldDurationSeconds * 0.5f);
@@ -438,7 +658,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(menuPage.IsFoldTransitionActive, Is.False);
             Assert.That(
                 menuPage.LeftLeafAngleDegrees,
-                Is.GreaterThan(midpointLeafAngle + 30f));
+                Is.LessThan(midpointLeafAngle - 30f));
             Assert.That(
                 Quaternion.Angle(
                     openRightHingeRotation,
@@ -460,6 +680,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
             Assert.That(controller.MenuPresentation.IsVisible, Is.True);
             Assert.That(controller.MenuPresentation.IsTextVisible, Is.False);
+            Assert.That(menuPage.IsRestingHighlighted, Is.False,
+                "Closing the menu must not leave an open-state outline.");
             controller.AdvancePresentation(
                 BarDrinkServiceTimeline.CameraReturnDurationSeconds + 0.1f);
             Assert.That(
@@ -470,20 +692,27 @@ namespace BarPromenade.Tests.PlayMode
 
             Vector3 restingCenter = controller.MenuPresentation.Page
                 .RestingWorldCenter;
-            camera.transform.rotation = Quaternion.LookRotation(
-                camera.transform.position - restingCenter,
-                Vector3.up);
+            BarMenuTestCameraAimDriver aimDriver =
+                camera.gameObject.AddComponent<BarMenuTestCameraAimDriver>();
+            aimDriver.Target = restingCenter;
+            aimDriver.LookAway = true;
+            aimDriver.IsAiming = true;
             yield return null;
-            camera.transform.rotation = Quaternion.LookRotation(
-                restingCenter - camera.transform.position,
-                Vector3.up);
+            Assert.That(menuPage.IsRestingHighlighted, Is.False,
+                "Looking away must leave the closed booklet unoutlined.");
+            aimDriver.LookAway = false;
+            yield return null;
             Assert.That(controller.IsLookingAtRestingMenu, Is.True);
             Assert.That(
                 station.PromptKey,
                 Is.EqualTo(
                     MountainRoadCafeMenuController.OpenMenuPromptKey));
+            AssertRestingMenuHighlight(menuPage);
             station.Interact(player.Interactor);
             Assert.That(controller.IsBrowsing, Is.True);
+            Assert.That(menuPage.IsRestingHighlighted, Is.False,
+                "Opening must disable the closed-menu outline immediately.");
+            Object.Destroy(aimDriver);
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
@@ -533,18 +762,23 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 player.Interactor.ActiveInteractable,
                 Is.SameAs(station),
-                "The real E path must resolve the seated station.");
-            inputFixture.Press(keyboard.eKey, queueEventOnly: true);
+                "The seated station must remain the active interaction.");
+            Assert.That(
+                station.PromptKey,
+                Is.EqualTo(BarCounterStation.OrderPromptKey),
+                "E must advertise ordering, never silently close the menu.");
+            inputFixture.Press(keyboard.escapeKey, queueEventOnly: true);
             yield return null;
-            inputFixture.Release(keyboard.eKey, queueEventOnly: true);
+            inputFixture.Release(keyboard.escapeKey, queueEventOnly: true);
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
                     BarPromenade.Runtime.World.CounterMenuState.Resting));
             Assert.That(station.Seat.IsSeated, Is.True,
-                "The first E closes the menu and must not stand the hero.");
+                "Escape closes the menu and must not stand the hero.");
             Assert.That(controller.MenuPresentation.IsPlaced, Is.True);
             Assert.That(controller.MenuPresentation.IsTextVisible, Is.False);
+            Assert.That(menuPage.IsRestingHighlighted, Is.False);
             Assert.That(controller.IsLookingAtRestingMenu, Is.False,
                 "Closing the close-up must disarm immediate gaze reopen.");
             Assert.That(
@@ -571,6 +805,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     BarPromenade.Runtime.World.CounterMenuState.Open));
             Assert.That(station.Seat.IsSeated, Is.True);
+            Assert.That(CinematicDepthOfField.IsActive, Is.True,
+                "Reopening the close-up must reacquire page-focused DOF.");
 
             Assert.That(controller.RestPhysicalMenuAtCounter(), Is.True);
             Assert.That(controller.IsLookingAtRestingMenu, Is.False);
@@ -586,10 +822,23 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 station.PromptKey,
                 Is.EqualTo(CounterSeatInteraction.StandPromptKey));
+            Assert.That(
+                CinematicDepthOfField.IsActive,
+                Is.False,
+                "The resting booklet must release close-up Bokeh.");
+            Assert.That(cinematicVolume.weight, Is.Zero.Within(0.0001f));
             station.Interact(player.Interactor);
             Assert.That(
                 station.Seat.Controller.Phase,
                 Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(
+                CinematicDepthOfField.IsActive,
+                Is.False,
+                "Standing must release Bokeh before third-person returns.");
+            Assert.That(
+                cinematicVolume.weight,
+                Is.Zero.Within(0.0001f),
+                "The chase camera must not inherit a DOF blend-out tail.");
             Assert.That(
                 controller.MenuState,
                 Is.EqualTo(
@@ -631,9 +880,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(player.Interactor.InputEnabled, Is.True);
             AssertPlayerVisualRestored();
             Assert.That(
-                player.GameObject.transform.position,
-                Is.EqualTo(seatPlan.ExitPose.RootPosition)
-                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+                Vector3.Distance(
+                    player.GameObject.transform.position,
+                    seatPlan.ExitPose.RootPosition),
+                Is.LessThan(0.001f),
+                "The visible exit may accumulate only sub-millimetre " +
+                "floating-point drift.");
         }
 
         private static void AssertClosedMenuUsesOpaqueFoldingPanels(
@@ -681,6 +933,32 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(rightLeafPanels, Is.EqualTo(2));
             Assert.That(spinePanels, Is.EqualTo(1));
 
+            Renderer rightCover = FindRestingRenderer(
+                page,
+                "Right Opaque Cover");
+            Renderer rightPages = FindRestingRenderer(
+                page,
+                "Right Opaque Pages");
+            Renderer leftPages = FindRestingRenderer(
+                page,
+                "Left Opaque Pages");
+            Renderer leftCover = FindRestingRenderer(
+                page,
+                "Left Opaque Cover");
+            Vector3 stackAxis = page.RightFoldHinge.up;
+            Assert.That(
+                ProjectedMinimum(rightPages, stackAxis),
+                Is.GreaterThan(ProjectedMaximum(rightCover, stackAxis)),
+                "The stationary pages intersect their cover.");
+            Assert.That(
+                ProjectedMinimum(leftPages, stackAxis),
+                Is.GreaterThan(ProjectedMaximum(rightPages, stackAxis)),
+                "The folded pages intersect the stationary pages.");
+            Assert.That(
+                ProjectedMinimum(leftCover, stackAxis),
+                Is.GreaterThan(ProjectedMaximum(leftPages, stackAxis)),
+                "The closed cover intersects the folded pages.");
+
             Collider[] colliders = page.LeftFoldHinge.parent
                 .GetComponentsInChildren<Collider>(true);
             for (int index = 0; index < colliders.Length; index++)
@@ -691,6 +969,111 @@ namespace BarPromenade.Tests.PlayMode
                     Is.False,
                     "The folded menu must not add an active collider.");
             }
+        }
+
+        private static void AssertRestingMenuHighlight(
+            CounterMenuPageView page)
+        {
+            Assert.That(page.IsRestingHighlighted, Is.True,
+                "The yellow outline must share the open-menu prompt state.");
+            Assert.That(page.RestingHighlightRenderers, Has.Count.EqualTo(4));
+            int baseColorId = Shader.PropertyToID("_BaseColor");
+            var properties = new MaterialPropertyBlock();
+            for (int index = 0;
+                 index < page.RestingHighlightRenderers.Count;
+                 index++)
+            {
+                Renderer renderer = page.RestingHighlightRenderers[index];
+                Assert.That(renderer, Is.Not.Null);
+                Assert.That(renderer.gameObject.activeInHierarchy, Is.True);
+                Assert.That(renderer.shadowCastingMode,
+                    Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.Off));
+                renderer.GetPropertyBlock(properties);
+                Color colour = properties.GetColor(baseColorId);
+                Assert.That(colour.r, Is.GreaterThan(0.9f));
+                Assert.That(colour.g, Is.InRange(0.6f, 0.85f));
+                Assert.That(colour.b, Is.LessThan(0.15f));
+                properties.Clear();
+            }
+        }
+
+        private static Renderer FindRestingRenderer(
+            CounterMenuPageView page,
+            string objectName)
+        {
+            for (int index = 0;
+                 index < page.RestingPropRenderers.Count;
+                 index++)
+            {
+                Renderer renderer = page.RestingPropRenderers[index];
+                if (renderer != null && renderer.name == objectName)
+                {
+                    return renderer;
+                }
+            }
+
+            Assert.Fail($"The physical fold has no '{objectName}'.");
+            return null;
+        }
+
+        private static float ProjectedMinimum(
+            Renderer renderer,
+            Vector3 axis)
+        {
+            return ProjectRenderer(renderer, axis, false);
+        }
+
+        private static float ProjectedMaximum(
+            Renderer renderer,
+            Vector3 axis)
+        {
+            return ProjectRenderer(renderer, axis, true);
+        }
+
+        private static float ProjectRenderer(
+            Renderer renderer,
+            Vector3 axis,
+            bool maximum)
+        {
+            Bounds local = renderer.localBounds;
+            float result = maximum
+                ? float.NegativeInfinity
+                : float.PositiveInfinity;
+            for (int x = -1; x <= 1; x += 2)
+            {
+                for (int y = -1; y <= 1; y += 2)
+                {
+                    for (int z = -1; z <= 1; z += 2)
+                    {
+                        Vector3 corner = local.center + Vector3.Scale(
+                            local.extents,
+                            new Vector3(x, y, z));
+                        float projection = Vector3.Dot(
+                            renderer.transform.TransformPoint(corner),
+                            axis);
+                        result = maximum
+                            ? Mathf.Max(result, projection)
+                            : Mathf.Min(result, projection);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private static Volume FindCinematicDepthOfFieldVolume()
+        {
+            Volume[] volumes = Resources.FindObjectsOfTypeAll<Volume>();
+            for (int index = 0; index < volumes.Length; index++)
+            {
+                if (volumes[index] != null &&
+                    volumes[index].name == "Cinematic Depth Of Field")
+                {
+                    return volumes[index];
+                }
+            }
+
+            return null;
         }
 
         [UnityTest]
@@ -1390,6 +1773,37 @@ namespace BarPromenade.Tests.PlayMode
             if (value != null)
             {
                 Object.Destroy(value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Keeps an explicit test gaze after the seated view applies its own
+    /// LateUpdate pose. Runtime input normally supplies this last look offset;
+    /// batchmode has neither a rendered end-of-frame yield nor a physical
+    /// mouse, so focused gaze contracts use this test-only equivalent.
+    /// </summary>
+    [DefaultExecutionOrder(1000)]
+    internal sealed class BarMenuTestCameraAimDriver : MonoBehaviour
+    {
+        public Vector3 Target { get; set; }
+        public bool LookAway { get; set; }
+        public bool IsAiming { get; set; }
+
+        private void LateUpdate()
+        {
+            if (!IsAiming)
+            {
+                return;
+            }
+
+            Vector3 towardTarget = Target - transform.position;
+            Vector3 direction = LookAway ? -towardTarget : towardTarget;
+            if (direction.sqrMagnitude > 0.000001f)
+            {
+                transform.rotation = Quaternion.LookRotation(
+                    direction,
+                    Vector3.up);
             }
         }
     }

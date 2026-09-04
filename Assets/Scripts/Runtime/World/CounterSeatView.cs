@@ -33,6 +33,7 @@ namespace BarPromenade
         private float menuFocusFieldOfView =
             CounterMenuCameraPlan.FocusFieldOfView;
         private bool menuFocusRequested;
+        private bool actionLookLocked;
 
         public bool IsInitialized { get; private set; }
         public bool IsFirstPerson { get; private set; }
@@ -44,6 +45,7 @@ namespace BarPromenade
             menuFocusWeight > 0.0001f;
         public bool IsMenuFocusComplete => menuFocusRequested &&
             menuFocusWeight >= 0.9999f;
+        public bool IsActionLookLocked => actionLookLocked;
         public float MenuFocusWeight => menuFocusWeight;
         public Pose MenuFocusPose => menuFocusPose;
         public float MenuFocusFieldOfView => menuFocusFieldOfView;
@@ -105,6 +107,11 @@ namespace BarPromenade
         public void EndMenuFocus()
         {
             menuFocusRequested = false;
+        }
+
+        public void SetActionLookLocked(bool locked)
+        {
+            actionLookLocked = IsFirstPerson && locked;
         }
 
         public void Initialize(
@@ -173,7 +180,9 @@ namespace BarPromenade
                     CounterMenuCameraPlan.FocusBlendSeconds)
                 : focusTarget;
 
-            if (!PauseMenuController.IsAnyPaused && !IsMenuFocusLocked)
+            if (!PauseMenuController.IsAnyPaused &&
+                !IsMenuFocusLocked &&
+                !actionLookLocked)
             {
                 Vector2 look = cameraFollow.SampleOrbitInputDegrees(
                     Time.unscaledDeltaTime);
@@ -232,6 +241,7 @@ namespace BarPromenade
             menuFocusFieldOfView =
                 CounterMenuCameraPlan.FocusFieldOfView;
             menuFocusRequested = false;
+            actionLookLocked = false;
             hiddenHead = Player3DHeadVisibility.Hide(playerRegistry);
             IsFirstPerson = true;
             ApplyView();
@@ -292,6 +302,7 @@ namespace BarPromenade
 
             IsFirstPerson = false;
             menuFocusRequested = false;
+            actionLookLocked = false;
             menuFocusWeight = 0f;
             menuFocusFieldOfView =
                 CounterMenuCameraPlan.FocusFieldOfView;

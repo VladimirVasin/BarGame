@@ -40,13 +40,19 @@ fallback and is not deleted.
   boots and one flush bandage shell. A full-colour `256 x 256` point-filtered
   clothing atlas paints the open jacket edges, pockets, seams, patch, bandage
   wraps, cuffs and boot construction. The result has `34` mesh parts and
-  `1,984` triangles, with the same `31` bones, six sockets and `38` bone-only
+  `1,984` triangles, with the same `31` bones, six sockets and `41` bone-only
   production actions.
-- One curved head surface uses a `4 x 4` face atlas. `Neutral`, `HalfBlink`,
-  `ClosedBlink`, `Watchful` and `Tense` remain readable without separate 3D
-  features. Neutral is weary, flat and predominantly depressive, never guilty,
-  tearful or theatrical; the smaller cranium preserves extra vertical room for
-  the existing nose, mouth, jaw and chin identity.
+- One curved head surface uses a `4 x 4` face atlas with nine cells. The five
+  sober faces `Neutral`, `HalfBlink`, `ClosedBlink`, `Watchful` and `Tense`
+  (Unity cells `c0r3`, `c1r3`, `c2r3`, `c0r2`, `c1r2`) remain readable without
+  separate 3D features, and the drink's four sit beside them: `Drowsy` (`c2r2`,
+  lids a pixel high, brows down, the mouth let go), `Glazed` (`c3r2`, one lid
+  lower, the pupils drifted apart), `Slack` (`c0r1`, one brow up and one down,
+  a dark slit of open mouth) and `Grimace` (`c1r1`, brows knitted, the corners
+  of the mouth pulled down). Python draws rows from the top, so a manifest
+  row is `3 - r`. Neutral is weary, flat and predominantly depressive, never
+  guilty, tearful or theatrical; the smaller cranium preserves extra vertical
+  room for the existing nose, mouth, jaw and chin identity.
 
 ## Production model and prefab
 
@@ -107,21 +113,37 @@ fallback and is not deleted.
   reach it a few frames later. Both endpoints still key the whole rig.
 - `Face_Neutral`, `Face_HalfBlink`, `Face_ClosedBlink`, `Face_Watchful` and
   `Face_Tense` preserve deterministic facial timing. Hero V2 resolves authored
-  clip keys through its five-cell atlas; the retained V1 resolves the same
-  states through registered face bones.
-- Left and right balance failures use `FallLeft/Right`, `DownLeft/Right` and
-  `RiseLeft/Right`. Negative status direction selects Left; positive selects
-  Right. The Fall clip supplies the directional lead-in, the current pose then
-  transfers to the runtime ragdoll for impact/down, and a short kinematic blend
-  reaches the exact side-down first Rise sample before authored recovery. Each
-  physical side owns a distinct full-body, `50`-source-frame (`1.67 s`)
-  `Rise` action: the hero braces and rolls prone, holds on both hands and knees,
-  steps one lead foot under the body, passes through a low crouch and settles
-  into the exact `Relaxed` seam. Every landmark authors the complete body pose,
-  so no limb can fall back to a Generic bind/A/T-like pose between keys;
-  neither side is produced by runtime mirroring. These are samples inside the
-  existing `Rising` phase, not new gameplay states. The physical player root
-  remains upright and fixed throughout.
+  clip keys through its atlas; the retained V1 resolves the same states
+  through registered face bones (the drink's four faces get bone-scale
+  stand-ins there). The fall's clips (`Fall`, `Down`, `Rise`) no longer own
+  the face at all: the presentation reads the moment — the fight for balance,
+  the floor, the stir, the crawl — and the level, and draws it, under the
+  ragdoll too.
+- The Rise keys obey one rule the generator now enforces frame by frame for
+  Hero V2: every shin's `armature_direction` runs KNEE TO ANKLE so the knee
+  bends toward the character's front (`cross(thigh, shin).x >= 0`), no knee or
+  elbow opens more than `8°` past straight or folds past `130°`, and no visible
+  vertex of the lie or the rise passes more than `2 cm` under the neutral
+  floor. Foot turns between two keys are quarter turns, never half turns.
+- Left and right balance failures use `RiseLeft/Right`; `FallLeft/Right` and
+  `DownLeft/Right` remain authored and registered but the 3D hero no longer
+  plays them — the balance model's own topple (the lunge, the arms out for the
+  ground, the pelvis on the pendulum's arc) is the lead-in, and the runtime
+  ragdoll takes the bones from that pose with the topple's motion. The SIDE of
+  the rise is chosen where he lies (the lower shoulder), not where he fell;
+  negative selects Left, positive Right. Each physical side owns a distinct
+  full-body, `50`-source-frame (`1.67 s`) `Rise` action: the hero braces and
+  rolls prone, holds on both hands and knees, steps one lead foot under the
+  body, passes through a low crouch and settles into the exact `Relaxed` seam.
+  Every landmark authors the complete body pose, so no limb can fall back to a
+  Generic bind/A/T-like pose between keys; neither side is produced by runtime
+  mirroring. At runtime the clip is not played at its authored rate:
+  `PlayerRiseModel` scrubs it stage by stage (`0 → 0.10` while he stirs,
+  `0.10 → 0.38` pushing up, with slumps that run it back, `0.38 → 0.64`
+  kneeling, `0.64 → 1` standing), and the late layer draws the hands on the
+  probed floor, one hand on the knee, the lead boot on its step and the head's
+  lift on top of it. The physical player root is brought under the lying body
+  and turned to match it before he stirs, and stays upright.
 - Bed uses a `3.75 s` `BedEnter` and a `6.0 s` `BedExit` around the persistent
   `BedSleepLoop`. The hero sits on the long edge nearest the apartment door,
   swings both legs onto the mattress and lowers through a supported side pose
@@ -147,12 +169,17 @@ fallback and is not deleted.
   `CatFeedExit`. Ordinary location doors use the planted
   `DoorUseEnter`, `DoorUseLoop`, `DoorUseExit` trio: the chest inclines toward
   the door while the physical right hand makes one short press, both feet stay
-  fixed, and the exit returns to the exact `Relaxed` seam.
+  fixed, and the exit returns to the exact `Relaxed` seam. After an exterior
+  scene handoff, the destination door's same authored axis is reversed before
+  camera initialization: the relaxed hero starts with his back to the leaf and
+  the chase camera behind his shoulder.
 - Every production action is bone-only and in-place. Gameplay owns normalized
   clip sampling, pelvis alignment and terminal holds; root motion and Animation
   Events remain disabled. The ragdoll is a procedural runtime phase rather than
   an Action; its ownership flag prevents the manual PlayableGraph and additive
-  late pose from writing the same bones until recovery.
+  late pose from writing the same bones until the body stirs, when the frozen
+  lying pose is blended into the clip while the late pass draws the rise's
+  limbs.
 - Intoxication sway and arm spread are additive bone presentation over ordinary
   locomotion, on the game clock, and reset to neutral through the shared
   lifecycle cleanup. The old symmetric knee bend is gone: heavy knees come from
@@ -192,11 +219,14 @@ fallback and is not deleted.
 
 ## Derived player representations
 
-- Bar drinking and refrigerator reach use camera-local arm subsets instantiated
-  from the same production prefab. `Player3DFirstPersonSubset` enables only the
-  registered side's upper-arm, forearm, hand, clothing/detail meshes and grip
-  socket, disables unused renderers/colliders/lights and never creates a second
-  hero design.
+- Refrigerator reach uses a camera-local arm subset instantiated from the same
+  production prefab. `Player3DFirstPersonSubset` enables only the registered
+  side's upper-arm, forearm, hand, clothing/detail meshes and grip socket,
+  disables unused renderers/colliders/lights and never creates a second hero
+  design. Bar drinking keeps the seated world body and uses three nested
+  full-body actions on that rig: `BarDrinkPickupEnter` (`2 s`),
+  `BarDrinkSipLoop` (`3 s`) and `BarDrinkReturnExit` (`2 s`). The vessel follows
+  the world hands, and completion returns control to the owning seated loop.
 - The inventory portrait is the dedicated transparent render
   `Assets/Resources/Player/Player3DV2Portrait.png`; UI uses its full UV rectangle
   rather than cropping a directional sprite atlas.

@@ -113,6 +113,8 @@ namespace BarPromenade
         private static readonly PlayerNeedsProgressionState needsProgression =
             new PlayerNeedsProgressionState();
         private static float intoxicationRecoveryElapsed;
+        private static int sessionGeneration;
+        private static long nextDrinkOrderSequence;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
         public static string CityBlueprintId { get; private set; } =
@@ -431,6 +433,10 @@ namespace BarPromenade
 
         private static void ResetToDefaults()
         {
+            sessionGeneration = sessionGeneration == int.MaxValue
+                ? 1
+                : sessionGeneration + 1;
+            nextDrinkOrderSequence = 0L;
             CityWetSurfaceRegistry.ResetForNewSession();
             CitySeed = DefaultCitySeed;
             CityBlueprintId = DefaultCityBlueprintId;
@@ -1757,6 +1763,29 @@ namespace BarPromenade
         public static DrinkPurchaseResult TryPurchaseDrink(
             DrinkId drinkId)
         {
+            DrinkPurchaseResult result = TryOrderDrink(
+                drinkId,
+                out DrinkOrderToken order);
+            if (result.Succeeded && !TryConsumeOrderedDrink(order))
+            {
+                throw new InvalidOperationException(
+                    "A newly paid drink could not be consumed.");
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Validates and pays for a drink without applying any drinking
+        /// effects. Physical service owns the returned token until a real sip
+        /// reaches its deterministic completion point. The result's *After
+        /// fields remain the validated projection of eventual consumption;
+        /// current session state changes only by the paid cash amount.
+        /// </summary>
+        public static DrinkPurchaseResult TryOrderDrink(
+            DrinkId drinkId,
+            out DrinkOrderToken order)
+        {
             DrinkPurchaseResult result =
                 DrinkPurchaseRules.Evaluate(
                     drinkId,
@@ -1764,18 +1793,62 @@ namespace BarPromenade
                     IntoxicationLevel,
                     LastAlcoholicDrink,
                     DrinksConsumed);
+            order = null;
             if (result.Succeeded)
             {
                 CashBalance = result.CashAfter;
-                CommitDrinkingProgress(
-                    result.IntoxicationAfter,
-                    result.LastAlcoholicDrinkAfter,
-                    result.DrinksConsumedAfter,
-                    DrinkRules.GetStressRelief(drinkId));
+                order = new DrinkOrderToken(
+                    sessionGeneration,
+                    ++nextDrinkOrderSequence,
+                    drinkId);
             }
 
             LogDrinkPurchase(result);
             return result;
+        }
+
+        /// <summary>
+        /// Applies a paid drink to the current recovered state exactly once.
+        /// This deliberately recomputes the delta rather than replaying the
+        /// order-time snapshot because intoxication may recover while a full
+        /// glass waits on the counter.
+        /// </summary>
+        public static bool TryConsumeOrderedDrink(DrinkOrderToken order)
+        {
+            if (order == null || order.IsConsumed ||
+                order.SessionGeneration != sessionGeneration ||
+                DrinksConsumed == int.MaxValue)
+            {
+                return false;
+            }
+
+            int intoxication = IntoxicationLevel;
+            DrinkId lastDrink = LastAlcoholicDrink;
+            if (DrinkRules.IsAlcoholic(order.DrinkId))
+            {
+                intoxication = Math.Min(
+                    IntoxicationStageRules.MaximumLevel,
+                    intoxication +
+                    DrinkRules.GetIntoxicationGain(order.DrinkId));
+                lastDrink = order.DrinkId;
+            }
+
+            if (!order.TryMarkConsumed(sessionGeneration))
+            {
+                return false;
+            }
+
+            CommitAcceptedDrinkingProgress(
+                intoxication,
+                lastDrink,
+                DrinksConsumed + 1,
+                DrinkRules.GetStressRelief(order.DrinkId));
+            GameLog.Info(
+                "session",
+                "paid_drink_consumed",
+                GameLog.Field("order_sequence", order.Sequence),
+                GameLog.Field("drink", order.DrinkId.ToString()));
+            return true;
         }
 
         public static void SetBalanceCheckDelay(float seconds)

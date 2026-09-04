@@ -12,7 +12,7 @@
   "object_count": 36,
   "mesh_count": 34,
   "triangle_count": 1984,
-  "action_count": 38,
+  "action_count": 41,
   "socket_count": 6,
   "bounds_min": [
     -0.778674,
@@ -87,6 +87,42 @@
     "exit_seat_departure": 0.88
   },
   "actions": [
+    {
+      "name": "BarDrinkPickupEnter",
+      "category": "bar_drink",
+      "duration_seconds": 2.0,
+      "loop": false,
+      "source_frame_count": 24,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 48.0,
+      "root_motion": false,
+      "event_count": 0
+    },
+    {
+      "name": "BarDrinkReturnExit",
+      "category": "bar_drink",
+      "duration_seconds": 2.0,
+      "loop": false,
+      "source_frame_count": 24,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 48.0,
+      "root_motion": false,
+      "event_count": 0
+    },
+    {
+      "name": "BarDrinkSipLoop",
+      "category": "bar_drink",
+      "duration_seconds": 3.0,
+      "loop": true,
+      "source_frame_count": 24,
+      "source_fps": 8,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false,
+      "event_count": 0
+    },
     {
       "name": "BedEnter",
       "category": "bed",
@@ -1009,7 +1045,7 @@
   ],
   "design_version": "HeroV2",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
-  "content_signature_sha256": "e035e5a7ad4291b35627de5012c94b070ad1881482b1f388eebd9e8ddbb051bf",
+  "content_signature_sha256": "98f348c139677987fece49ca52eb055dbe0ba96dcf586c8ea68358558a0bae0b",
   "parallel_to": "HeroV1",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
@@ -1035,7 +1071,7 @@
     "cell_size_px": 64,
     "uv_origin": "bottom_left",
     "filter_mode": "Point",
-    "sha256": "bf1106d69180097035fddec0b54a71b1161b175f2b2cb7a892c024be99a18b30",
+    "sha256": "3523d98754f38b13da431ba69988c9e1c6a6d2f4cef548f570855e811d66e53d",
     "cells": [
       {
         "expression": "Neutral",
@@ -1061,6 +1097,26 @@
         "expression": "Tense",
         "column": 1,
         "row": 2
+      },
+      {
+        "expression": "Drowsy",
+        "column": 2,
+        "row": 2
+      },
+      {
+        "expression": "Glazed",
+        "column": 3,
+        "row": 2
+      },
+      {
+        "expression": "Slack",
+        "column": 0,
+        "row": 1
+      },
+      {
+        "expression": "Grimace",
+        "column": 1,
+        "row": 1
       }
     ]
   },

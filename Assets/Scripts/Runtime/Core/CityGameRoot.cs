@@ -377,6 +377,7 @@ namespace BarPromenade
             string returnBarId = string.Empty;
             bool spawnOnSidewalk = false;
             Vector3 arrivalForward = Vector3.zero;
+            PlayerDoorArrivalPose? exteriorDoorArrival = null;
             bool hasAreaArrival = AreaTravelService.TryConsumeArrival(
                 GameAreaId.City,
                 out AreaArrivalToken areaArrivalToken,
@@ -436,6 +437,11 @@ namespace BarPromenade
                 if (World.TryGetBar(barId, out BarEntrance entrance))
                 {
                     spawnPosition = entrance.ReturnPosition;
+                    exteriorDoorArrival =
+                        PlayerDoorArrivalPose.FromDestinationDoor(
+                            spawnPosition,
+                            entrance.GetComponent<
+                                PlayerDoorActionTarget>());
                     spawnSource = "bar_return";
                     spawnOnSidewalk = true;
                 }
@@ -457,6 +463,11 @@ namespace BarPromenade
                 {
                     spawnPosition =
                         World.PlayerHome.ReturnPosition;
+                    exteriorDoorArrival =
+                        PlayerDoorArrivalPose.FromDestinationDoor(
+                            spawnPosition,
+                            World.PlayerHome.GetComponent<
+                                PlayerDoorActionTarget>());
                     spawnSource = "home_return";
                     spawnOnSidewalk = true;
                 }
@@ -478,6 +489,11 @@ namespace BarPromenade
                 {
                     spawnPosition =
                         World.Supermarket.ReturnPosition;
+                    exteriorDoorArrival =
+                        PlayerDoorArrivalPose.FromDestinationDoor(
+                            spawnPosition,
+                            World.Supermarket.GetComponent<
+                                PlayerDoorActionTarget>());
                     spawnSource = "supermarket_return";
                     spawnOnSidewalk = true;
                 }
@@ -499,6 +515,10 @@ namespace BarPromenade
                     // The exterior plan owns this point. No raw scene
                     // coordinate survives a round trip through the church.
                     spawnPosition = World.ChurchPlan.ReturnPosition;
+                    exteriorDoorArrival =
+                        PlayerDoorArrivalPose.FromDestinationDoor(
+                            spawnPosition,
+                            World.ChurchPlan.DoorAction);
                     spawnSource = "church_return";
                     spawnOnSidewalk = true;
                 }
@@ -534,7 +554,15 @@ namespace BarPromenade
                 camera,
                 World.WalkableArea,
                 prompt);
-            if (arrivalForward.sqrMagnitude > 0.001f)
+            if (exteriorDoorArrival.HasValue)
+            {
+                // This must happen before the follow camera initializes:
+                // it seeds its yaw from the hero and therefore snaps behind
+                // the same outward heading on the first visible frame.
+                exteriorDoorArrival.Value.ApplyTo(
+                    Player.GameObject.transform);
+            }
+            else if (arrivalForward.sqrMagnitude > 0.001f)
             {
                 arrivalForward.y = 0f;
                 Player.GameObject.transform.rotation =

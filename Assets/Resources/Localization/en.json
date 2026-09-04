@@ -73,6 +73,10 @@
       "value": "POLYGON JITTER"
     },
     {
+      "key": "options.begotten",
+      "value": "BEGOTTEN MODE"
+    },
+    {
       "key": "options.back",
       "value": "BACK"
     },
@@ -369,6 +373,14 @@
       "value": "E — open the bar menu"
     },
     {
+      "key": "interaction.drink_beverage",
+      "value": "E — drink the beverage"
+    },
+    {
+      "key": "interaction.order_selected_drink",
+      "value": "E — order the selected drink"
+    },
+    {
       "key": "interaction.sit_at_counter",
       "value": "E — sit at the counter"
     },
@@ -486,7 +498,11 @@
     },
     {
       "key": "drink.light_beer",
-      "value": "Light beer"
+      "value": "Flat house beer"
+    },
+    {
+      "key": "drink.light_beer.description",
+      "value": "The foam falls at once.\nThe bitterness lingers."
     },
     {
       "key": "drink.dark_beer",
@@ -498,11 +514,19 @@
     },
     {
       "key": "drink.red_wine",
-      "value": "Red wine"
+      "value": "Cheap fortified wine"
+    },
+    {
+      "key": "drink.red_wine.description",
+      "value": "Sickly sweet.\nIt leaves a sour taste."
     },
     {
       "key": "drink.vodka",
-      "value": "Vodka"
+      "value": "Bottom-shelf vodka"
+    },
+    {
+      "key": "drink.vodka.description",
+      "value": "It smells of alcohol.\nThe first sip burns."
     },
     {
       "key": "drink.pepper_vodka",
@@ -510,7 +534,11 @@
     },
     {
       "key": "drink.cognac_vs",
-      "value": "Cognac VS"
+      "value": "Unaged distillate"
+    },
+    {
+      "key": "drink.cognac_vs.description",
+      "value": "It reeks of alcohol.\nIt burns the throat."
     },
     {
       "key": "drink.cognac_vsop",
@@ -1571,6 +1599,10 @@
     {
       "key": "mountain.cafe.menu.order_hint",
       "value": "Space — order"
+    },
+    {
+      "key": "bar.menu.order_hint",
+      "value": "E / Space — order"
     },
     {
       "key": "park.quarrel.chess.line.01",

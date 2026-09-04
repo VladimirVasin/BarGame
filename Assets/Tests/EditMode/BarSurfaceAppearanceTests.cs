@@ -424,6 +424,65 @@ namespace BarPromenade.Tests.EditMode
                     interaction.PromptKey,
                     Is.EqualTo(BarJukeboxInteraction.PromptKeyName));
                 Assert.That(
+                    interaction.LightRenderers,
+                    Has.Count.EqualTo(
+                        BarJukeboxInteraction.LightChannelCount));
+                Assert.That(
+                    interaction.LightRenderers[0].name,
+                    Is.EqualTo("Jukebox Glow Panel"));
+                Assert.That(
+                    interaction.LightRenderers[1].name,
+                    Is.EqualTo("Jukebox Glow Tube -1"));
+                Assert.That(
+                    interaction.LightRenderers[2].name,
+                    Is.EqualTo("Jukebox Glow Tube 1"));
+                Assert.That(
+                    jukebox.GetComponentsInChildren<Light>(true),
+                    Is.Empty,
+                    "The jukebox glow remains emissive and never adds " +
+                    "three realtime lights to the room.");
+                int sentinelId = Shader.PropertyToID(
+                    "_JukeboxPresentationSentinel");
+                var sentinelProperties = new MaterialPropertyBlock();
+                interaction.LightRenderers[0].GetPropertyBlock(
+                    sentinelProperties);
+                sentinelProperties.SetFloat(sentinelId, 0.37f);
+                interaction.LightRenderers[0].SetPropertyBlock(
+                    sentinelProperties);
+                float firstPanelIntensity =
+                    interaction.LightIntensities[0];
+                interaction.AdvancePresentation(0.73f);
+                Assert.That(
+                    Mathf.Abs(
+                        interaction.LightIntensities[0] -
+                        firstPanelIntensity),
+                    Is.GreaterThan(0.001f));
+                Assert.That(
+                    Mathf.Abs(
+                        interaction.LightIntensities[1] -
+                        interaction.LightIntensities[2]),
+                    Is.GreaterThan(0.001f),
+                    "The two tubes must not blink in lockstep.");
+                Assert.That(
+                    BarJukeboxInteraction.EvaluateLightIntensity(
+                        0,
+                        0f,
+                        0f),
+                    Is.EqualTo(
+                        BarJukeboxInteraction.EvaluateLightIntensity(
+                            0,
+                            4f,
+                            0f)).Within(0.0001f),
+                    "A silent jukebox keeps a steady pilot glow.");
+                sentinelProperties.Clear();
+                interaction.LightRenderers[0].GetPropertyBlock(
+                    sentinelProperties);
+                Assert.That(
+                    sentinelProperties.GetFloat(sentinelId),
+                    Is.EqualTo(0.37f).Within(0.0001f),
+                    "The light animation must preserve unrelated MPB " +
+                    "state such as authored texture transforms.");
+                Assert.That(
                     jukebox.GetComponentsInChildren<Collider>(true),
                     Has.Length.GreaterThanOrEqualTo(2),
                     "The jukebox needs its solid and trigger.");

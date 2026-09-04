@@ -726,6 +726,9 @@ namespace BarPromenade.Editor
                     transformsByName,
                     "SOCKET_Grip.R",
                     "hand.R");
+                Transform leftVessel = RequireTransform(
+                    transformsByName,
+                    "SOCKET_Vessel.L");
                 Transform rightCigarette = RequireTransform(
                     transformsByName,
                     "SOCKET_Cigarette.R");
@@ -759,6 +762,7 @@ namespace BarPromenade.Editor
                         rightFoot,
                         leftGrip,
                         rightGrip,
+                        leftVessel,
                         rightCigarette,
                         mouth),
                     new Player3DMetrics(

@@ -10,16 +10,17 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class BarDrinkShopView : MonoBehaviour
     {
-        public const int RowCount = 9;
+        public const int RowCount = 4;
 
         private static readonly Rect HeaderRect =
-            new Rect(14f, 12f, 612f, 48f);
+            new Rect(14f, 12f, 612f, 82f);
         private static readonly Rect FooterRect =
             new Rect(14f, 286f, 612f, 60f);
 
         private BarDrinkShopController controller;
         private GUIStyle titleStyle;
         private GUIStyle nameStyle;
+        private GUIStyle descriptionStyle;
         private GUIStyle balanceStyle;
         private GUIStyle previewStyle;
         private GUIStyle feedbackStyle;
@@ -76,6 +77,11 @@ namespace BarPromenade
                 new Rect(26f, 34f, 350f, 21f),
                 LocalizationService.Get(controller.SelectedOffer.NameKey),
                 nameStyle);
+            GUI.Label(
+                new Rect(26f, 54f, 350f, 34f),
+                LocalizationService.Get(
+                    controller.SelectedOffer.DescriptionKey),
+                descriptionStyle);
             GUI.Label(
                 new Rect(388f, 18f, 198f, 30f),
                 string.Format(
@@ -202,6 +208,12 @@ namespace BarPromenade
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Text,
                 true);
+            descriptionStyle = RetroUiTheme.CreateLabelStyle(
+                10,
+                TextAnchor.UpperLeft,
+                RetroUiTheme.Muted,
+                false);
+            descriptionStyle.wordWrap = true;
             balanceStyle = RetroUiTheme.CreateLabelStyle(
                 13,
                 TextAnchor.MiddleRight,

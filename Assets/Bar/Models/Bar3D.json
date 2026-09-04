@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "3.2.1",
+  "generator_version": "3.3.3",
   "blender_version": "5.0.1",
   "design_id": "bar_interior_v3",
   "display_name": "Bar Promenade Bar Interior",
@@ -11,8 +11,8 @@
   },
   "wall_thickness_m": 0.3,
   "door_opening_m": {
-    "width": 3.2,
-    "height": 4.8
+    "width": 1.45,
+    "height": 2.34
   },
   "blender_forward_axis": "-Y",
   "unity_entrance_outward_axis": "-Z",
@@ -35,7 +35,7 @@
   ],
   "bounds_min": [
     -11.15,
-    -8.17,
+    -8.15,
     -0.28
   ],
   "bounds_max": [
@@ -43,8 +43,8 @@
     8.15,
     5.0
   ],
-  "mesh_count": 178,
-  "triangle_count": 12940,
+  "mesh_count": 174,
+  "triangle_count": 12832,
   "anchors": [
     {
       "name": "ActivityStation",
@@ -76,7 +76,127 @@
       "local_position": [
         -0.55,
         6.5,
-        0.42
+        0.0
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "BeerTapHandleGrip",
+      "role": "beer_tap_handle_grip",
+      "local_position": [
+        5.08,
+        5.75,
+        1.796
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "BeerTapHandlePivot",
+      "role": "beer_tap_handle_pivot",
+      "local_position": [
+        5.08,
+        5.75,
+        1.58
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "BeerTapServerDock",
+      "role": "beer_tap_server_dock",
+      "local_position": [
+        5.08,
+        6.72,
+        0.0
+      ],
+      "unity_right": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "name": "BeerTapSpout",
+      "role": "beer_tap_spout",
+      "local_position": [
+        5.08,
+        6.13,
+        1.45
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_forward": [
+        0.0,
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "BeerTapVesselDock",
+      "role": "beer_tap_vessel_dock",
+      "local_position": [
+        5.08,
+        6.13,
+        1.025
       ],
       "unity_right": [
         1.0,
@@ -267,7 +387,7 @@
       "role": "hero_stand",
       "local_position": [
         -1.15,
-        4.02,
+        3.89,
         0.0
       ],
       "unity_right": [
@@ -314,8 +434,8 @@
       "name": "MenuDock",
       "role": "service_menu_dock",
       "local_position": [
-        -0.38,
-        5.44,
+        -1.15,
+        5.96,
         1.045
       ],
       "unity_right": [
@@ -339,7 +459,7 @@
       "role": "service_pour_target",
       "local_position": [
         -1.15,
-        5.5,
+        5.43,
         1.035
       ],
       "unity_right": [
@@ -411,7 +531,7 @@
       "role": "service_vessel_dock",
       "local_position": [
         -1.15,
-        5.5,
+        5.43,
         1.035
       ],
       "unity_right": [
@@ -525,31 +645,43 @@
       "colliders": [
         {
           "center": [
-            -6.3,
+            -5.8625,
             2.4,
             -8.0
           ],
           "size": [
-            9.4,
+            10.275,
             4.8,
             0.3
           ]
         },
         {
           "center": [
-            6.3,
+            5.8625,
             2.4,
             -8.0
           ],
           "size": [
-            9.4,
+            10.275,
             4.8,
+            0.3
+          ]
+        },
+        {
+          "center": [
+            0.0,
+            3.57,
+            -8.0
+          ],
+          "size": [
+            1.45,
+            2.46,
             0.3
           ]
         }
       ],
-      "vertices": 32,
-      "triangles": 56
+      "vertices": 48,
+      "triangles": 84
     },
     {
       "name": "Back Wall",
@@ -695,18 +827,45 @@
         "lerp_t": 0.0
       },
       "colliders": [],
+      "vertices": 60,
+      "triangles": 100
+    },
+    {
+      "name": "Entrance Door Frame",
+      "role": "entrance_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
       "vertices": 48,
-      "triangles": 80
+      "triangles": 84
     },
     {
-      "name": "Entrance Left Post",
-      "role": "entrance_frame",
+      "name": "Entrance Door",
+      "role": "entrance_door",
       "group": "fixed",
-      "sheet": "PolishedWood",
+      "sheet": "DarkWood",
       "emissive": false,
       "shadows": true,
       "tint": {
-        "field": "MetalTint",
+        "field": "DarkWoodTint",
         "rgb": [
           0.0,
           0.0,
@@ -726,14 +885,41 @@
       "triangles": 28
     },
     {
-      "name": "Entrance Right Post",
-      "role": "entrance_frame",
+      "name": "Entrance Door Panels",
+      "role": "entrance_door_panel",
       "group": "fixed",
-      "sheet": "PolishedWood",
+      "sheet": "DarkWood",
       "emissive": false,
-      "shadows": true,
+      "shadows": false,
       "tint": {
-        "field": "MetalTint",
+        "field": "SignAccentColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112
+    },
+    {
+      "name": "Entrance Door Transom Glass",
+      "role": "entrance_door_glass",
+      "group": "fixed",
+      "sheet": "PatternedGlass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "GlassTint",
         "rgb": [
           0.0,
           0.0,
@@ -753,12 +939,12 @@
       "triangles": 28
     },
     {
-      "name": "Entrance Lintel",
-      "role": "entrance_frame",
+      "name": "Entrance Door Furniture",
+      "role": "entrance_door_furniture",
       "group": "fixed",
-      "sheet": "PolishedWood",
+      "sheet": "AgedBrass",
       "emissive": false,
-      "shadows": true,
+      "shadows": false,
       "tint": {
         "field": "MetalTint",
         "rgb": [
@@ -776,8 +962,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 36,
+      "triangles": 64
     },
     {
       "name": "Wall Wainscot",
@@ -1179,7 +1365,20 @@
         ],
         "lerp_t": 0.0
       },
-      "colliders": [],
+      "colliders": [
+        {
+          "center": [
+            -4.25,
+            0.79,
+            4.53
+          ],
+          "size": [
+            0.48,
+            0.055,
+            0.48
+          ]
+        }
+      ],
       "vertices": 28,
       "triangles": 52
     },
@@ -1233,7 +1432,20 @@
         ],
         "lerp_t": 0.0
       },
-      "colliders": [],
+      "colliders": [
+        {
+          "center": [
+            -2.55,
+            0.79,
+            4.53
+          ],
+          "size": [
+            0.48,
+            0.055,
+            0.48
+          ]
+        }
+      ],
       "vertices": 28,
       "triangles": 52
     },
@@ -1287,7 +1499,20 @@
         ],
         "lerp_t": 0.0
       },
-      "colliders": [],
+      "colliders": [
+        {
+          "center": [
+            0.85,
+            0.79,
+            4.53
+          ],
+          "size": [
+            0.48,
+            0.055,
+            0.48
+          ]
+        }
+      ],
       "vertices": 28,
       "triangles": 52
     },
@@ -1341,7 +1566,20 @@
         ],
         "lerp_t": 0.0
       },
-      "colliders": [],
+      "colliders": [
+        {
+          "center": [
+            2.55,
+            0.79,
+            4.53
+          ],
+          "size": [
+            0.48,
+            0.055,
+            0.48
+          ]
+        }
+      ],
       "vertices": 28,
       "triangles": 52
     },
@@ -1395,7 +1633,20 @@
         ],
         "lerp_t": 0.0
       },
-      "colliders": [],
+      "colliders": [
+        {
+          "center": [
+            4.0,
+            0.79,
+            4.53
+          ],
+          "size": [
+            0.48,
+            0.055,
+            0.48
+          ]
+        }
+      ],
       "vertices": 28,
       "triangles": 52
     },
@@ -1494,100 +1745,6 @@
       "triangles": 52
     },
     {
-      "name": "Bartender Duckboard",
-      "role": "bartender_duckboard",
-      "group": "fixed",
-      "sheet": "WornPlank",
-      "emissive": false,
-      "shadows": true,
-      "tint": {
-        "field": "",
-        "rgb": [
-          0.16,
-          0.11,
-          0.07
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [
-        {
-          "center": [
-            -0.55,
-            0.21,
-            6.5
-          ],
-          "size": [
-            1.35,
-            0.42,
-            0.85
-          ]
-        }
-      ],
-      "vertices": 112,
-      "triangles": 196
-    },
-    {
-      "name": "Drink Order Sign Frame",
-      "role": "drink_order_marker_frame",
-      "group": "fixed",
-      "sheet": "DarkWood",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "DarkWoodTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "Drink Order Sign",
-      "role": "drink_order_marker",
-      "group": "fixed",
-      "sheet": "",
-      "emissive": true,
-      "shadows": false,
-      "tint": {
-        "field": "SignGlowColor",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 0.72,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 32,
-      "triangles": 56
-    },
-    {
       "name": "Beer Tap Stem 1",
       "role": "tap_stem",
       "group": "fixed",
@@ -1611,8 +1768,35 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Beer Tap Spout 1",
+      "role": "tap_spout",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 88
     },
     {
       "name": "Beer Tap Handle 1",
@@ -1638,8 +1822,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "Beer Tap Stem 2",
@@ -1665,8 +1849,35 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Beer Tap Spout 2",
+      "role": "tap_spout",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 88
     },
     {
       "name": "Beer Tap Handle 2",
@@ -1692,8 +1903,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "Beer Tap Stem 3",
@@ -1719,8 +1930,35 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Beer Tap Spout 3",
+      "role": "tap_spout",
+      "group": "fixed",
+      "sheet": "AgedBrass",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 88
     },
     {
       "name": "Beer Tap Handle 3",
@@ -1746,116 +1984,8 @@
         "lerp_t": 0.0
       },
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "Beer Tap Stem 4",
-      "role": "tap_stem",
-      "group": "fixed",
-      "sheet": "AgedBrass",
-      "emissive": false,
-      "shadows": true,
-      "tint": {
-        "field": "MetalTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "Beer Tap Handle 4",
-      "role": "tap_handle",
-      "group": "fixed",
-      "sheet": "Ceramic",
-      "emissive": false,
-      "shadows": true,
-      "tint": {
-        "field": "GlassTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "Beer Tap Stem 5",
-      "role": "tap_stem",
-      "group": "fixed",
-      "sheet": "AgedBrass",
-      "emissive": false,
-      "shadows": true,
-      "tint": {
-        "field": "MetalTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "Beer Tap Handle 5",
-      "role": "tap_handle",
-      "group": "fixed",
-      "sheet": "Ceramic",
-      "emissive": false,
-      "shadows": true,
-      "tint": {
-        "field": "UpholsteryTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "Backbar Cabinet",
@@ -3884,60 +4014,6 @@
       "triangles": 28
     },
     {
-      "name": "Entrance Heavy Curtains",
-      "role": "entrance_curtain",
-      "group": "fixed",
-      "sheet": "WornFabric",
-      "emissive": false,
-      "shadows": true,
-      "tint": {
-        "field": "UpholsteryTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 128,
-      "triangles": 224
-    },
-    {
-      "name": "Entrance Curtain Brass Rail",
-      "role": "entrance_curtain_rail",
-      "group": "fixed",
-      "sheet": "AgedBrass",
-      "emissive": false,
-      "shadows": false,
-      "tint": {
-        "field": "MetalTint",
-        "rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "scale": 1.0,
-        "lerp_field": "",
-        "lerp_rgb": [
-          0.0,
-          0.0,
-          0.0
-        ],
-        "lerp_t": 0.0
-      },
-      "colliders": [],
-      "vertices": 72,
-      "triangles": 132
-    },
-    {
       "name": "Exit Header Frame",
       "role": "exit_header_frame",
       "group": "fixed",
@@ -5797,5 +5873,5 @@
       "triangles": 168
     }
   ],
-  "build_signature": "efad807bda9314094e97562288f11f55bf82efb94b55bcaaa08ed5015df60c36"
+  "build_signature": "cc252752752c27aa69d0fa57de8ab8222bd3f265bef92e145bd3fe1989c6b512"
 }

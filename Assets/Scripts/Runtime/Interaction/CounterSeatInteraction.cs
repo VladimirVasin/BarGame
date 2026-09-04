@@ -22,6 +22,14 @@ namespace BarPromenade
         public const float TransferFramesPerSecond = 12f;
         public const int LoopFrameCount = 16;
         public const float LoopFramesPerSecond = 8f;
+        public const string BarDrinkEnterClipName =
+            "BarDrinkPickupEnter";
+        public const string BarDrinkLoopClipName = "BarDrinkSipLoop";
+        public const string BarDrinkExitClipName =
+            "BarDrinkReturnExit";
+        public const int BarDrinkPhaseFrameCount = 24;
+        public const float BarDrinkTransferFramesPerSecond = 12f;
+        public const float BarDrinkLoopFramesPerSecond = 8f;
 
         private PlayerRuntime player;
         private PlayerAnimatedInteractionController controller;
@@ -99,6 +107,23 @@ namespace BarPromenade
                 loopFramesPerSecond: LoopFramesPerSecond,
                 exitFrameCount: TransferFrameCount,
                 exitFramesPerSecond: TransferFramesPerSecond);
+        }
+
+        public static PlayerAnimatedInteractionDefinition
+            CreateBarDrinkDefinition()
+        {
+            return new PlayerAnimatedInteractionDefinition(
+                BarDrinkEnterClipName,
+                BarDrinkLoopClipName,
+                BarDrinkExitClipName,
+                enterFrameCount: BarDrinkPhaseFrameCount,
+                enterFramesPerSecond:
+                    BarDrinkTransferFramesPerSecond,
+                loopFrameCount: BarDrinkPhaseFrameCount,
+                loopFramesPerSecond: BarDrinkLoopFramesPerSecond,
+                exitFrameCount: BarDrinkPhaseFrameCount,
+                exitFramesPerSecond:
+                    BarDrinkTransferFramesPerSecond);
         }
 
         public bool CanBegin()

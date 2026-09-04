@@ -24,12 +24,30 @@ namespace BarPromenade
             float runBlend,
             bool hasRunClip,
             bool forwardGait,
-            PlayerWallReachPose wallReach = default)
+            PlayerWallReachPose wallReach = default,
+            float chestPitchDegrees = 0f,
+            PlayerArmReachPose leftReach = default,
+            PlayerArmReachPose rightReach = default,
+            Vector2 leftFootOffsetLocal = default,
+            Vector2 rightFootOffsetLocal = default,
+            float leftFootYawDegrees = 0f,
+            float rightFootYawDegrees = 0f,
+            float leftFootLift = 0f,
+            float rightFootLift = 0f)
         {
             Enabled = enabled;
+            LeftFootOffsetLocal = leftFootOffsetLocal;
+            RightFootOffsetLocal = rightFootOffsetLocal;
+            LeftFootYawDegrees = leftFootYawDegrees;
+            RightFootYawDegrees = rightFootYawDegrees;
+            LeftFootLift = Mathf.Max(0f, leftFootLift);
+            RightFootLift = Mathf.Max(0f, rightFootLift);
             PelvisRollDegrees = pelvisRollDegrees;
             ChestRollDegrees = chestRollDegrees;
             PelvisPitchDegrees = pelvisPitchDegrees;
+            ChestPitchDegrees = chestPitchDegrees;
+            LeftReach = leftReach;
+            RightReach = rightReach;
             LeftArmOutwardDegrees = leftArmOutwardDegrees;
             LeftArmForwardDegrees = leftArmForwardDegrees;
             RightArmOutwardDegrees = rightArmOutwardDegrees;
@@ -46,6 +64,14 @@ namespace BarPromenade
         /// <summary>A hand reaching for a wall, if any.</summary>
         public PlayerWallReachPose WallReach { get; }
 
+        /// <summary>
+        /// Each hand reaching for something else — the ground he is
+        /// falling toward, a knee — if it is. Where a wall and one of
+        /// these want the same arm, the heavier reach wins.
+        /// </summary>
+        public PlayerArmReachPose LeftReach { get; }
+        public PlayerArmReachPose RightReach { get; }
+
         public static Player3DProceduralLayerInput Disabled => default;
 
         public bool Enabled { get; }
@@ -54,6 +80,9 @@ namespace BarPromenade
 
         /// <summary>Forward pitch of the pelvis, degrees.</summary>
         public float PelvisPitchDegrees { get; }
+
+        /// <summary>Forward pitch of the chest on top of the pelvis, degrees.</summary>
+        public float ChestPitchDegrees { get; }
 
         /// <summary>
         /// Each arm's swing in the ACTOR's frame, degrees: out to the
@@ -70,6 +99,113 @@ namespace BarPromenade
         public float RunBlend { get; }
         public bool HasRunClip { get; }
         public bool ForwardGait { get; }
+
+        /// <summary>
+        /// The drunk walk's disorder of each boot, applied only in a
+        /// forward gait to a boot no step or lock owns: where it lands
+        /// relative to the clip (hero frame, x right, y forward), how far
+        /// its toes turn out (degrees about up), and how much higher it
+        /// swings.
+        /// </summary>
+        public Vector2 LeftFootOffsetLocal { get; }
+        public Vector2 RightFootOffsetLocal { get; }
+        public float LeftFootYawDegrees { get; }
+        public float RightFootYawDegrees { get; }
+        public float LeftFootLift { get; }
+        public float RightFootLift { get; }
+
+        /// <summary>Whether the drunk walk asks anything of this boot.</summary>
+        public bool HasGaitDisorder(int legIndex)
+        {
+            return legIndex == 0
+                ? LeftFootOffsetLocal.sqrMagnitude > 0.00000001f ||
+                  LeftFootLift > 0.00001f ||
+                  Mathf.Abs(LeftFootYawDegrees) > 0.001f
+                : RightFootOffsetLocal.sqrMagnitude > 0.00000001f ||
+                  RightFootLift > 0.00001f ||
+                  Mathf.Abs(RightFootYawDegrees) > 0.001f;
+        }
+    }
+
+    /// <summary>
+    /// What the late layer is asked to do on top of the authored Rise
+    /// clip: the hands to the floor (or one to the knee), the lead boot
+    /// stepping forward, a dip and a wobble of the pelvis, the head
+    /// lifting, and — as he stands — the ordinary leg solve fading in.
+    /// </summary>
+    internal readonly struct Player3DRiseLayerInput
+    {
+        public Player3DRiseLayerInput(
+            bool enabled,
+            PlayerArmReachPose leftHand,
+            PlayerArmReachPose rightHand,
+            bool stepActive,
+            FootSide stepSide,
+            Vector3 stepWorldPosition,
+            float stepLift,
+            float stepWeight,
+            float pelvisOffsetMetres,
+            float pelvisRollDegrees,
+            float pelvisPitchDegrees,
+            float headLiftDegrees,
+            float legsWeight,
+            bool leftKneeActive = false,
+            Vector3 leftKneeWorldPosition = default,
+            float leftKneeWeight = 0f,
+            bool rightKneeActive = false,
+            Vector3 rightKneeWorldPosition = default,
+            float rightKneeWeight = 0f)
+        {
+            Enabled = enabled;
+            LeftHand = leftHand;
+            RightHand = rightHand;
+            LeftKneeActive = leftKneeActive;
+            LeftKneeWorldPosition = leftKneeWorldPosition;
+            LeftKneeWeight = Mathf.Clamp01(leftKneeWeight);
+            RightKneeActive = rightKneeActive;
+            RightKneeWorldPosition = rightKneeWorldPosition;
+            RightKneeWeight = Mathf.Clamp01(rightKneeWeight);
+            StepActive = stepActive;
+            StepSide = stepSide;
+            StepWorldPosition = stepWorldPosition;
+            StepLift = Mathf.Max(0f, stepLift);
+            StepWeight = Mathf.Clamp01(stepWeight);
+            PelvisOffsetMetres = pelvisOffsetMetres;
+            PelvisRollDegrees = pelvisRollDegrees;
+            PelvisPitchDegrees = pelvisPitchDegrees;
+            HeadLiftDegrees = headLiftDegrees;
+            LegsWeight = Mathf.Clamp01(legsWeight);
+        }
+
+        public static Player3DRiseLayerInput Disabled => default;
+
+        public bool Enabled { get; }
+        public PlayerArmReachPose LeftHand { get; }
+        public PlayerArmReachPose RightHand { get; }
+        public bool StepActive { get; }
+        public FootSide StepSide { get; }
+
+        /// <summary>Where the stepping sole goes, world space, on the ground.</summary>
+        public Vector3 StepWorldPosition { get; }
+        public float StepLift { get; }
+        public float StepWeight { get; }
+        public float PelvisOffsetMetres { get; }
+        public float PelvisRollDegrees { get; }
+        public float PelvisPitchDegrees { get; }
+        public float HeadLiftDegrees { get; }
+        public float LegsWeight { get; }
+
+        /// <summary>
+        /// A crawl's knees: each thigh is aimed so the knee goes to its
+        /// world point (on the floor, or arcing to its next spot), and
+        /// the shin is laid flat behind it.
+        /// </summary>
+        public bool LeftKneeActive { get; }
+        public Vector3 LeftKneeWorldPosition { get; }
+        public float LeftKneeWeight { get; }
+        public bool RightKneeActive { get; }
+        public Vector3 RightKneeWorldPosition { get; }
+        public float RightKneeWeight { get; }
     }
 
     /// <summary>
@@ -97,8 +233,46 @@ namespace BarPromenade
         public const float KneeHintForward = 0.45f;
         public const float KneeHintUp = 0.05f;
 
+        /// <summary>
+        /// How far behind the elbow its bend hint sits, along the upper
+        /// arm's calibrated back. Relative to the elbow, not the shoulder:
+        /// an elbow already roughly back keeps its azimuth, one that is
+        /// clearly forward is swung across.
+        /// </summary>
+        public const float ElbowHintBackMetres = 0.35f;
+
+        /// <summary>The elbow's back is mostly behind and a little below the hanging arm.</summary>
+        public const float ElbowBackShare = 0.85f;
+
         /// <summary>A ramp tilts the sole at most this much.</summary>
         public const float MaximumSoleTiltDegrees = 18f;
+
+        /// <summary>
+        /// The head lift of the rise, shared down the neck. In-game check:
+        /// a positive local-X turn on the imported neck and head bones
+        /// pitches the face UP (the attention head's finding), so the lift
+        /// is the positive turn.
+        /// </summary>
+        public const float HeadLiftSign = 1f;
+        public const float HeadLiftNeckShare = 0.4f;
+        public const float HeadLiftHeadShare = 0.6f;
+
+        private static readonly Player3DProceduralLayerInput StandingRiseInput =
+            new Player3DProceduralLayerInput(
+                true,
+                0f,
+                0f,
+                0f,
+                0f,
+                0f,
+                0f,
+                0f,
+                0f,
+                1f,
+                1f,
+                0f,
+                false,
+                false);
 
         private readonly Leg[] legs = { new Leg(), new Leg() };
         private readonly Arm[] arms = { new Arm(), new Arm() };
@@ -113,6 +287,8 @@ namespace BarPromenade
         private Transform chest;
         private Transform leftUpperArm;
         private Transform rightUpperArm;
+        private Transform neck;
+        private Transform head;
         private Player3DFootGroundProbe probe;
         private bool baseCaptured;
         private float ikBlend;
@@ -229,8 +405,8 @@ namespace BarPromenade
             }
 
             Vector3 actorRight = Vector3.Cross(Vector3.up, actorForward);
-            arms[0].Calibrate(actorRight);
-            arms[1].Calibrate(-actorRight);
+            arms[0].Calibrate(actorRight, actorForward);
+            arms[1].Calibrate(-actorRight, actorForward);
 
             groundedOffsetCaptured = false;
             soleClearanceCaptured = false;
@@ -267,6 +443,16 @@ namespace BarPromenade
         public void ResetBlend()
         {
             ikBlend = 0f;
+        }
+
+        /// <summary>
+        /// Keeps what the layer wrote: the next <see cref="Restore"/> puts
+        /// nothing back. For the moment the ragdoll takes the bones as
+        /// they are — the brace pose, not the clip under it.
+        /// </summary>
+        public void ForgetBase()
+        {
+            baseCaptured = false;
         }
 
         /// <summary>
@@ -329,21 +515,70 @@ namespace BarPromenade
             arms[1].Bind(rightUpperArm, rightForearm, rightHand);
         }
 
-        /// <summary>
-        /// The wall hand: the palm goes to the wall point at the pose's
-        /// weight, elbow hanging down and back, palm turned to the wall.
-        /// Runs after the legs so the shoulder it reaches from is where
-        /// the lean put it.
-        /// </summary>
-        private void ApplyWallHand(in Player3DProceduralLayerInput input)
+        /// <summary>The neck and head the rise lifts. Optional.</summary>
+        public void BindHead(Transform neckBone, Transform headBone)
         {
-            PlayerWallReachPose reach = input.WallReach;
+            neck = neckBone;
+            head = headBone;
+        }
+
+        /// <summary>
+        /// The reaching hands: the wall hand, and each hand's own target
+        /// (the ground in a topple). Where two reaches want one arm the
+        /// heavier one is solved. Runs after the legs so the shoulder it
+        /// reaches from is where the lean put it.
+        /// </summary>
+        private void ApplyArmReaches(in Player3DProceduralLayerInput input)
+        {
+            PlayerArmReachPose wall = input.WallReach.ToArmReach();
+            PlayerArmReachPose left = input.LeftReach;
+            PlayerArmReachPose right = input.RightReach;
+            if (wall.Active)
+            {
+                if (wall.RightHand)
+                {
+                    right = Heavier(wall, right);
+                }
+                else
+                {
+                    left = Heavier(wall, left);
+                }
+            }
+
+            ApplyArmReach(left, false);
+            ApplyArmReach(right, true);
+        }
+
+        private static PlayerArmReachPose Heavier(
+            in PlayerArmReachPose first,
+            in PlayerArmReachPose second)
+        {
+            if (!second.Active)
+            {
+                return first;
+            }
+
+            if (!first.Active)
+            {
+                return second;
+            }
+
+            return second.Weight > first.Weight ? second : first;
+        }
+
+        /// <summary>
+        /// One hand to its target: the palm goes to the point at the
+        /// pose's weight, elbow hinted below and behind the shoulder by
+        /// the pose's own amounts, palm turned to the surface.
+        /// </summary>
+        private void ApplyArmReach(in PlayerArmReachPose reach, bool rightArm)
+        {
             if (!reach.Active || reach.Weight <= 0.0001f)
             {
                 return;
             }
 
-            Arm arm = arms[reach.RightHand ? 1 : 0];
+            Arm arm = arms[rightArm ? 1 : 0];
             if (!arm.IsComplete)
             {
                 return;
@@ -365,10 +600,17 @@ namespace BarPromenade
                                handRotation;
             }
 
-            Vector3 back = -PlanarForward();
-            Vector3 hint = shoulder +
-                           Vector3.down * 0.3f +
-                           back * 0.2f;
+            // The elbow points the way the upper arm's back will face
+            // once the arm is swung onto its target by the least
+            // rotation — the same rule as the knee: no twist asked of
+            // the shoulder, and the actor's planar back (meaningless to
+            // an arm on a lying body) never consulted.
+            Vector3 elbowBack = Quaternion.FromToRotation(
+                                    arm.Hand.position - shoulder,
+                                    target - shoulder) *
+                                arm.ElbowBack();
+            Vector3 hint = arm.Forearm.position +
+                           elbowBack * ElbowHintBackMetres;
             LimbTwoBoneIk.Solve(
                 arm.Upper,
                 arm.Forearm,
@@ -379,11 +621,25 @@ namespace BarPromenade
                 reach.Weight * ikBlend,
                 float.PositiveInfinity,
                 true);
+            AlignHingeRoll(arm.Upper, arm.Forearm, arm.Hand, arm.ElbowBack(), reach.Weight * ikBlend);
+        }
+
+        /// <summary>The calibrated knee-forward direction of one leg, for probes.</summary>
+        internal Vector3 DebugKneeForward(FootSide side)
+        {
+            return legs[(int)side].KneeForward();
+        }
+
+        /// <summary>The calibrated elbow-back direction of one arm, for probes.</summary>
+        internal Vector3 DebugElbowBack(bool rightArm)
+        {
+            return arms[rightArm ? 1 : 0].ElbowBack();
         }
 
         private sealed class Arm
         {
             private Vector3 palmLocal = Vector3.forward;
+            private Vector3 elbowBackLocal = Vector3.back;
 
             public Transform Upper { get; private set; }
             public Transform Forearm { get; private set; }
@@ -403,9 +659,11 @@ namespace BarPromenade
             /// <summary>
             /// In the neutral pose the arms hang with the palms toward the
             /// body, so the palm direction is captured as the actor's
-            /// inward side in the hand's own space.
+            /// inward side in the hand's own space; and the elbow's
+            /// anatomical back — mostly behind, a little below — in the
+            /// upper arm's, so it turns with the arm wherever it points.
             /// </summary>
-            public void Calibrate(Vector3 inwardWorld)
+            public void Calibrate(Vector3 inwardWorld, Vector3 actorForward)
             {
                 if (!IsComplete)
                 {
@@ -414,6 +672,10 @@ namespace BarPromenade
 
                 Length = LimbTwoBoneIk.ChainLength(Upper, Forearm, Hand);
                 palmLocal = Quaternion.Inverse(Hand.rotation) * inwardWorld;
+                Vector3 back = -actorForward * ElbowBackShare +
+                               Vector3.down * (1f - ElbowBackShare);
+                elbowBackLocal = Quaternion.Inverse(Upper.rotation) *
+                                 back.normalized;
             }
 
             public Vector3 PalmDirection()
@@ -421,6 +683,14 @@ namespace BarPromenade
                 return Hand != null
                     ? Hand.rotation * palmLocal
                     : Vector3.forward;
+            }
+
+            /// <summary>Where the elbow should point, in the upper arm's current frame.</summary>
+            public Vector3 ElbowBack()
+            {
+                return Upper != null
+                    ? Upper.rotation * elbowBackLocal
+                    : Vector3.back;
             }
         }
 
@@ -447,7 +717,259 @@ namespace BarPromenade
 
             ApplyBodyPose(input);
             ApplyLegs(input, clampedDelta);
-            ApplyWallHand(input);
+            ApplyArmReaches(input);
+        }
+
+        /// <summary>
+        /// The rise's late pass, on top of the authored Rise clip: the
+        /// pelvis dips (a slump) and wobbles (the top), the head lifts,
+        /// the lead boot is solved to its step target while he kneels,
+        /// the ordinary leg solve fades in as he stands, and the hands go
+        /// to the floor or the knee. No blend-in of its own — the clip
+        /// owns the base and the weights come from the rise model.
+        /// </summary>
+        public void ApplyRise(in Player3DRiseLayerInput input, float deltaTime)
+        {
+            Restore();
+            if (!input.Enabled || !IsBound)
+            {
+                ikBlend = 0f;
+                lastPelvisDrop = 0f;
+                return;
+            }
+
+            CaptureBase();
+            lastPelvisDrop = 0f;
+            if (pelvis != null)
+            {
+                if (Mathf.Abs(input.PelvisOffsetMetres) > 0.00001f)
+                {
+                    pelvis.position += Vector3.up * input.PelvisOffsetMetres;
+                    lastPelvisDrop = input.PelvisOffsetMetres;
+                }
+
+                RotateBone(pelvis, Vector3.forward, input.PelvisRollDegrees);
+                RotateBone(pelvis, Vector3.right, -input.PelvisPitchDegrees);
+            }
+
+            if (Mathf.Abs(input.HeadLiftDegrees) > 0.00001f)
+            {
+                RotateBone(
+                    neck,
+                    Vector3.right,
+                    HeadLiftSign * HeadLiftNeckShare * input.HeadLiftDegrees);
+                RotateBone(
+                    head,
+                    Vector3.right,
+                    HeadLiftSign * HeadLiftHeadShare * input.HeadLiftDegrees);
+            }
+
+            if (input.LegsWeight > 0.0001f)
+            {
+                // Standing: the boots find the floor under them as the
+                // clip brings him up, at the model's weight.
+                ikBlend = input.LegsWeight;
+                plants[0] = 1f;
+                plants[1] = 1f;
+                ApplyLegs(StandingRiseInput, Mathf.Max(0f, deltaTime));
+            }
+            else if (input.StepActive && input.StepWeight > 0.0001f)
+            {
+                SolveRiseStep(input);
+            }
+
+            if (input.LeftKneeActive)
+            {
+                PlaceKnee(legs[0], input.LeftKneeWorldPosition, input.LeftKneeWeight);
+            }
+
+            if (input.RightKneeActive)
+            {
+                PlaceKnee(legs[1], input.RightKneeWorldPosition, input.RightKneeWeight);
+            }
+
+            ikBlend = 1f;
+            ApplyArmReach(input.LeftHand, false);
+            ApplyArmReach(input.RightHand, true);
+        }
+
+        /// <summary>
+        /// A crawling knee: the thigh is turned from the hip so the knee
+        /// points at its spot (the thigh's length decides where it lands;
+        /// the presentation brings the hips down so that is on the
+        /// floor), and the shin is laid flat behind it along the floor,
+        /// trailing.
+        /// </summary>
+        private void PlaceKnee(Leg leg, Vector3 kneeWorld, float weight)
+        {
+            if (!leg.IsComplete || weight <= 0.0001f)
+            {
+                return;
+            }
+
+            // A thigh has one length: aimed at a spot nearer the hip than
+            // that, the knee would overshoot it — into the floor. The
+            // spot's HEIGHT is what matters (the floor, or the arc over
+            // it), so the spot is pushed out along its own planar
+            // direction until the thigh reaches it at that height; a
+            // spot the hips are too high for is taken straight below.
+            Vector3 hip = leg.Thigh.position;
+            float thighLength = Vector3.Distance(hip, leg.Shin.position);
+            Vector3 planar = kneeWorld - hip;
+            planar.y = 0f;
+            float vertical = hip.y - kneeWorld.y;
+            if (vertical >= thighLength * 0.98f)
+            {
+                kneeWorld = new Vector3(hip.x, hip.y - thighLength, hip.z);
+            }
+            else
+            {
+                float needed = Mathf.Sqrt(Mathf.Max(0f, thighLength * thighLength - vertical * vertical));
+                Vector3 direction = planar.sqrMagnitude > 0.000001f
+                    ? planar.normalized
+                    : PlanarForwardStatic(leg);
+                kneeWorld = new Vector3(
+                    hip.x + direction.x * needed,
+                    kneeWorld.y,
+                    hip.z + direction.z * needed);
+            }
+
+            AimBone(leg.Thigh, leg.Shin.position, kneeWorld, weight);
+            float shinLength = Vector3.Distance(leg.Shin.position, leg.Foot.position);
+            Vector3 back = -PlanarForward();
+            Vector3 footTarget = leg.Shin.position + back * shinLength;
+            AimBone(leg.Shin, leg.Foot.position, footTarget, weight);
+        }
+
+        /// <summary>The way the leg's kneecap points, flattened: where a knee with no planar spot goes.</summary>
+        private static Vector3 PlanarForwardStatic(Leg leg)
+        {
+            Vector3 forward = leg.KneeForward();
+            forward.y = 0f;
+            return forward.sqrMagnitude > 0.0001f ? forward.normalized : Vector3.forward;
+        }
+
+        /// <summary>Turns a bone from its pivot by the least rotation that carries <paramref name="endNow"/> onto the ray to <paramref name="target"/>, blended.</summary>
+        private static void AimBone(Transform joint, Vector3 endNow, Vector3 target, float weight)
+        {
+            Vector3 from = endNow - joint.position;
+            Vector3 to = target - joint.position;
+            if (from.sqrMagnitude < 0.000001f || to.sqrMagnitude < 0.000001f)
+            {
+                return;
+            }
+
+            Quaternion delta = Quaternion.FromToRotation(from, to);
+            joint.rotation = Quaternion.Slerp(Quaternion.identity, delta, Mathf.Clamp01(weight)) *
+                             joint.rotation;
+        }
+
+        /// <summary>The lead boot to its step target, arcing by the lift.</summary>
+        private void SolveRiseStep(in Player3DRiseLayerInput input)
+        {
+            Leg leg = legs[(int)input.StepSide];
+            if (!leg.IsComplete)
+            {
+                return;
+            }
+
+            Vector3 target = input.StepWorldPosition + Vector3.up * input.StepLift;
+            Vector3 hip = leg.Thigh.position;
+            float reach = Mathf.Max(
+                leg.Length * PlayerFootPlacementRules.DefaultReachFraction,
+                Vector3.Distance(hip, leg.Foot.position));
+            Vector3 clamped = ClampToReach(hip, target, reach);
+            Vector3 hint = KneeHint(leg, hip, clamped);
+            LimbTwoBoneIk.Solve(
+                leg.Thigh,
+                leg.Shin,
+                leg.Foot,
+                clamped,
+                leg.Foot.rotation,
+                hint,
+                input.StepWeight,
+                float.PositiveInfinity,
+                false);
+            AlignHingeRoll(leg.Thigh, leg.Shin, leg.Foot, leg.KneeForward(), input.StepWeight);
+        }
+
+        /// <summary>
+        /// A knee is a hinge: the shin folds in the thigh's own sagittal
+        /// plane, the kneecap facing the way the shin bends away from
+        /// straight. The two-bone solve aims the thigh and the shin
+        /// independently, so a foot pulled off to the side can leave the
+        /// shin swung ROUND the thigh — a knee turned ninety degrees,
+        /// which the ragdoll's hinge then snaps back. This rolls the
+        /// upper bone about its own length until its bend reference
+        /// (the kneecap, the elbow's back) faces the lower bone's fold,
+        /// holding the lower bone's world rotation so the tip stays put:
+        /// the twist becomes rotation in the hip or the shoulder, where
+        /// a body has it. Nothing to do while the joint is nearly
+        /// straight.
+        /// </summary>
+        private static void AlignHingeRoll(
+            Transform upper,
+            Transform lower,
+            Transform tip,
+            Vector3 bendReference,
+            float weight)
+        {
+            if (upper == null || lower == null || tip == null || weight <= 0.0001f)
+            {
+                return;
+            }
+
+            Vector3 axis = lower.position - upper.position;
+            if (axis.sqrMagnitude < 0.000001f)
+            {
+                return;
+            }
+
+            axis.Normalize();
+            // The lower bone folds AWAY from the reference: the shin goes
+            // back behind the kneecap, the forearm forward of the elbow.
+            Vector3 fold = -Vector3.ProjectOnPlane(tip.position - lower.position, axis);
+            Vector3 facing = Vector3.ProjectOnPlane(bendReference, axis);
+            if (fold.magnitude < HingeAlignMinimumFoldMetres ||
+                facing.sqrMagnitude < 0.000001f)
+            {
+                return;
+            }
+
+            float roll = Vector3.SignedAngle(facing, fold, axis) * Mathf.Clamp01(weight);
+            if (Mathf.Abs(roll) < 0.01f)
+            {
+                return;
+            }
+
+            Quaternion lowerWorld = lower.rotation;
+            upper.rotation = Quaternion.AngleAxis(roll, axis) * upper.rotation;
+            lower.rotation = lowerWorld;
+        }
+
+        /// <summary>Below this fold off straight a hinge has no plane to align to.</summary>
+        public const float HingeAlignMinimumFoldMetres = 0.02f;
+
+        /// <summary>
+        /// Where the knee should point: the way the kneecap will face
+        /// once the thigh has been swung to aim the leg at its target by
+        /// the least rotation — not the way it faces now, and not the
+        /// actor's forward. A hint fixed in the world makes the solver
+        /// TWIST the femur to reach it; a leg swung far to the side was
+        /// being screwed half a turn in the hip, the mesh with it, and
+        /// read as a backward knee. Aiming the hint along the kneecap
+        /// asks for no twist at all, and a knee authored backward is
+        /// still swung across by the solver's side guard.
+        /// </summary>
+        private static Vector3 KneeHint(Leg leg, Vector3 hip, Vector3 target)
+        {
+            Vector3 kneecap = Quaternion.FromToRotation(
+                                  leg.Foot.position - hip,
+                                  target - hip) *
+                              leg.KneeForward();
+            return leg.Shin.position +
+                   kneecap * KneeHintForward +
+                   Vector3.up * KneeHintUp;
         }
 
         public void Dispose()
@@ -472,6 +994,10 @@ namespace BarPromenade
             RotateBone(pelvis, Vector3.forward, input.PelvisRollDegrees);
             RotateBone(pelvis, Vector3.right, -input.PelvisPitchDegrees);
             RotateBone(chest, Vector3.forward, input.ChestRollDegrees);
+            // The chest shares the spine chain's axes, so its forward
+            // pitch is the same negative turn about local right as the
+            // pelvis's (pinned by a probe in PlayerBalancePlayModeTests).
+            RotateBone(chest, Vector3.right, -input.ChestPitchDegrees);
 
             // The arms swing in the actor's frame, never the bone's. An
             // imported upper-arm bone's local axes sit at whatever roll
@@ -660,6 +1186,11 @@ namespace BarPromenade
                 input.RunBlend,
                 input.HasRunClip);
             pelvisDrop -= input.CrouchMetres;
+            // A boot the drunk walk has put wide or long may be out of its
+            // leg's reach from where the hips are; the hips come down to
+            // it (a wide stance is a squat), never the sole up off the
+            // floor.
+            pelvisDrop -= GaitReachShortfall(input, actorForward);
             lastPelvisDrop = pelvisDrop;
             if (Mathf.Abs(pelvisDrop) > 0.00001f)
             {
@@ -675,12 +1206,24 @@ namespace BarPromenade
                 }
 
                 bool stepping = stepActive && stepSide == (FootSide)index;
+                // The drunk walk's boot is placed by the layer through
+                // its whole cycle, swing and stance alike; the sober
+                // boot keeps the clip's swing untouched as before.
+                bool disordered = input.ForwardGait &&
+                                  !stepping &&
+                                  !leg.Locked &&
+                                  input.HasGaitDisorder(index);
                 float weight = stepping
                     ? ikBlend
                     : PlayerFootPlacementRules.IkWeight(
                         ikBlend,
                         input.RunBlend,
                         plants[index]);
+                if (disordered)
+                {
+                    weight = Mathf.Max(weight, ikBlend);
+                }
+
                 if (weight <= 0.0001f)
                 {
                     continue;
@@ -691,6 +1234,7 @@ namespace BarPromenade
                     footPosition.x,
                     leg.TargetBoneY,
                     footPosition.z);
+                float gaitYaw = 0f;
                 if (stepping)
                 {
                     // The balance model owns this boot: it goes where the
@@ -705,9 +1249,23 @@ namespace BarPromenade
                     target.x = leg.LockPosition.x;
                     target.z = leg.LockPosition.z;
                 }
+                else if (disordered)
+                {
+                    Vector2 offsetLocal = index == 0
+                        ? input.LeftFootOffsetLocal
+                        : input.RightFootOffsetLocal;
+                    Vector3 offsetWorld =
+                        Vector3.Cross(Vector3.up, actorForward) * offsetLocal.x +
+                        actorForward * offsetLocal.y;
+                    target.x += offsetWorld.x;
+                    target.z += offsetWorld.z;
+                    target.y += index == 0 ? input.LeftFootLift : input.RightFootLift;
+                    gaitYaw = index == 0 ? input.LeftFootYawDegrees : input.RightFootYawDegrees;
+                }
 
                 if (!stepping &&
                     !leg.Locked &&
+                    !disordered &&
                     Mathf.Abs(target.y - footPosition.y) < 0.001f)
                 {
                     // The clip already has this boot where the ground is:
@@ -739,6 +1297,12 @@ namespace BarPromenade
                 }
 
                 Quaternion footRotation = leg.ClipFootRotation;
+                if (Mathf.Abs(gaitYaw) > 0.001f)
+                {
+                    // The toes turn out about up, before any ramp tilt.
+                    footRotation = Quaternion.AngleAxis(gaitYaw, Vector3.up) * footRotation;
+                }
+
                 FootGroundSample sample = samples[index];
                 if (sample.HasSurface &&
                     sample.Kind == FootSurfaceKind.Ramp)
@@ -765,9 +1329,7 @@ namespace BarPromenade
                         plants[index]);
                 }
 
-                Vector3 hint = leg.Shin.position +
-                               actorForward * KneeHintForward +
-                               Vector3.up * KneeHintUp;
+                Vector3 hint = KneeHint(leg, hip, clamped);
                 LimbTwoBoneIk.Solve(
                     leg.Thigh,
                     leg.Shin,
@@ -778,9 +1340,61 @@ namespace BarPromenade
                     weight,
                     float.PositiveInfinity,
                     true);
+                AlignHingeRoll(leg.Thigh, leg.Shin, leg.Foot, leg.KneeForward(), weight);
                 leg.LastAnklePosition = leg.Foot.position;
                 leg.HasLastAnklePosition = true;
             }
+        }
+
+        /// <summary>
+        /// How far the hips must come down for every disordered boot to
+        /// reach its target: the largest shortfall of any leg whose
+        /// target lies beyond its reach from the hip.
+        /// </summary>
+        private float GaitReachShortfall(
+            in Player3DProceduralLayerInput input,
+            Vector3 actorForward)
+        {
+            float shortfall = 0f;
+            Vector3 right = Vector3.Cross(Vector3.up, actorForward);
+            for (int index = 0; index < legs.Length; index++)
+            {
+                Leg leg = legs[index];
+                bool stepping = stepActive && stepSide == (FootSide)index;
+                if (!leg.Prepared ||
+                    stepping ||
+                    leg.Locked ||
+                    !input.ForwardGait ||
+                    !input.HasGaitDisorder(index))
+                {
+                    continue;
+                }
+
+                Vector2 offsetLocal = index == 0
+                    ? input.LeftFootOffsetLocal
+                    : input.RightFootOffsetLocal;
+                Vector3 offsetWorld = right * offsetLocal.x + actorForward * offsetLocal.y;
+                Vector3 hip = leg.Thigh.position;
+                Vector3 ankle = leg.Foot.position;
+                Vector3 planar = new Vector3(
+                    ankle.x + offsetWorld.x - hip.x,
+                    0f,
+                    ankle.z + offsetWorld.z - hip.z);
+                float reach = Mathf.Max(
+                    leg.Length * PlayerFootPlacementRules.DefaultReachFraction,
+                    Vector3.Distance(hip, ankle));
+                float planarDistance = planar.magnitude;
+                if (planarDistance >= reach)
+                {
+                    continue;
+                }
+
+                float vertical = hip.y - leg.TargetBoneY;
+                float allowed = Mathf.Sqrt(reach * reach - planarDistance * planarDistance);
+                shortfall = Mathf.Max(shortfall, vertical - allowed);
+            }
+
+            return Mathf.Max(0f, shortfall);
         }
 
         private void CaptureBase()
@@ -799,8 +1413,8 @@ namespace BarPromenade
             basePoses[11] = new BoneLocalPose(arms[0].Hand);
             basePoses[12] = new BoneLocalPose(arms[1].Forearm);
             basePoses[13] = new BoneLocalPose(arms[1].Hand);
-            basePoses[14] = default;
-            basePoses[15] = default;
+            basePoses[14] = new BoneLocalPose(neck);
+            basePoses[15] = new BoneLocalPose(head);
             baseCaptured = true;
         }
 
@@ -913,6 +1527,7 @@ namespace BarPromenade
         {
             private Vector3 footForwardLocal = Vector3.forward;
             private Vector3 soleUpLocal = Vector3.up;
+            private Vector3 kneeForwardLocal = Vector3.forward;
 
             public Transform Thigh { get; private set; }
             public Transform Shin { get; private set; }
@@ -956,6 +1571,20 @@ namespace BarPromenade
                 Quaternion inverse = Quaternion.Inverse(Foot.rotation);
                 footForwardLocal = inverse * actorForward;
                 soleUpLocal = inverse * Vector3.up;
+                kneeForwardLocal = Quaternion.Inverse(Thigh.rotation) *
+                                   actorForward;
+            }
+
+            /// <summary>
+            /// The way the knee bends, in the thigh's current frame: the
+            /// actor's forward while he stands, up when the thigh is
+            /// horizontal, wherever the thigh carries it when he lies.
+            /// </summary>
+            public Vector3 KneeForward()
+            {
+                return Thigh != null
+                    ? Thigh.rotation * kneeForwardLocal
+                    : Vector3.forward;
             }
 
             public Vector3 FootForward()

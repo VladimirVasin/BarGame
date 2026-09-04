@@ -1241,7 +1241,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(interiorRoot.Music.Source, Is.Not.Null);
             Assert.That(interiorRoot.Music.Source.loop, Is.True);
             Assert.That(interiorRoot.Music.Source.playOnAwake, Is.False);
-            Assert.That(interiorRoot.Music.Source.spatialBlend, Is.Zero);
+            Assert.That(
+                interiorRoot.Music.Source.spatialBlend,
+                Is.EqualTo(BarMusicPlayer.SpatialBlend));
+            Assert.That(
+                interiorRoot.Music.Source.rolloffMode,
+                Is.EqualTo(AudioRolloffMode.Linear));
+            Assert.That(
+                interiorRoot.Music.ToneFilter.cutoffFrequency,
+                Is.EqualTo(
+                    BarMusicPlayer.SpeakerLowPassFrequency).Within(1f));
+            Assert.That(interiorRoot.Music.SpeakerHighPass, Is.Not.Null);
+            Assert.That(interiorRoot.Music.SpeakerDistortion, Is.Not.Null);
+            Assert.That(interiorRoot.Music.CabinetSource, Is.Not.Null);
             Assert.That(interiorRoot.Music.ActiveClip, Is.Not.Null);
             Assert.That(
                 interiorRoot.Music.ActiveClip.name,
@@ -1249,6 +1261,38 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.Music.transform.IsChildOf(interiorRoot.transform),
                 Is.True);
+            Transform jukebox =
+                interiorRoot.Room.Find("Bar Jukebox");
+            Transform grille = jukebox != null
+                ? jukebox.Find("Jukebox Grille")
+                : null;
+            Renderer grilleRenderer = grille != null
+                ? grille.GetComponent<Renderer>()
+                : null;
+            Assert.That(jukebox, Is.Not.Null);
+            Assert.That(grilleRenderer, Is.Not.Null);
+            Assert.That(
+                interiorRoot.Music.transform.parent,
+                Is.SameAs(jukebox));
+            Assert.That(
+                Vector3.Distance(
+                    interiorRoot.Music.transform.position,
+                    grilleRenderer.bounds.center),
+                Is.LessThan(0.001f));
+            BarJukeboxInteraction jukeboxInteraction =
+                jukebox.GetComponentInChildren<
+                    BarJukeboxInteraction>(true);
+            Assert.That(jukeboxInteraction, Is.Not.Null);
+            Assert.That(
+                jukeboxInteraction.MusicPlayer,
+                Is.SameAs(interiorRoot.Music));
+            Assert.That(
+                jukeboxInteraction.LightRenderers,
+                Has.Count.EqualTo(
+                    BarJukeboxInteraction.LightChannelCount));
+            Assert.That(
+                jukebox.GetComponentsInChildren<Light>(true),
+                Is.Empty);
             Assert.That(interiorRoot.CounterStation, Is.Not.Null);
             Assert.That(interiorRoot.DrinkShop, Is.Not.Null);
             Assert.That(interiorRoot.CounterStation.UsesPhysicalSeat, Is.True);

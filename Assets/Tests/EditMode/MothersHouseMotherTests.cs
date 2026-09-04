@@ -113,7 +113,10 @@ namespace BarPromenade.Tests.EditMode
 
             foreach (PlayerFacialExpression expression in
                      System.Enum.GetValues(typeof(PlayerFacialExpression))
-                         .Cast<PlayerFacialExpression>())
+                         .Cast<PlayerFacialExpression>()
+                         // The drink's four faces are the hero's; every
+                         // rig carries the five sober ones.
+                         .Where(PlayerFacialExpressionRules.IsCanonical))
             {
                 Assert.That(
                     atlas.TryGetTextureTransform(expression, out _),

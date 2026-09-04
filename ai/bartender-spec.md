@@ -6,19 +6,19 @@ inactive legacy asset and is never selected by the bar world builder.
 
 ## 1. Active character contract
 
-The bartender is an ordinary, silent publican. His replacement changes only
-his appearance and working motion; the existing drink catalogue, prices,
-payment, intoxication, closing state and `BarDrinkServiceTimeline` remain the
-source of gameplay truth.
+The bartender is an ordinary, silent publican. The four-offer drink menu,
+prices, descriptions, paid-order state, deferred consumption effects, closing
+state and `BarDrinkServiceTimeline` remain the source of gameplay truth.
 
 - Silhouette: a believable full-body adult at `1.75 m`, with two arms and no
   signature-anatomy overlay.
 - Work clothes: dark-green waistcoat, rolled shirt sleeves, dark apron and a
   service towel. The model also carries the restrained flat cap and moustache
   already declared by its measured parts.
-- Service roles: the right hand handles the selected bottle and the left hand
-  steadies the vessel. Outside those windows he returns to the quiet wiping
-  loop.
+- Service roles: bottle drinks keep the right-hand bottle / left-hand vessel
+  roles. For beer he walks to the central tap, takes the pint, steadies it with
+  the left hand and pulls the middle handle with the right before carrying and
+  placing the glass. Outside those windows he returns to the quiet wiping loop.
 - World meaning: he is not an oddity, never comments on the hero and gains no
   replacement supernatural trait.
 
@@ -62,9 +62,15 @@ The role sockets remain on the canonical hand bones. The two authored anchors
 give the procedural reach layer stable grip transforms without adding bones or
 extra limbs to the shared retarget contract.
 
-The visible `0.42 m` service duckboard belongs to the Blender-authored bar
-interior. Runtime creates no replacement platform; `BarBartenderWorldBuilder`
-only applies the matching `0.42 m` root offset at the planned bartender anchor.
+The active ordinary bartender stands with his root and feet on the authored
+bar floor. The `0.42 m` service duckboard and matching root lift belonged to
+the superseded six-armed presentation; the active interior contains no such
+platform and `BarBartenderWorldBuilder` applies no offset to the actor. Counter
+contact is solved in the working pose against the real top at `Y = 1.02 m`,
+not by raising the complete body.
+The separate menu handoff keeps its existing left-grip motion, but its dock is
+collinear with the selected stool: the booklet lands directly before the hero,
+matching the Mountain Road cafe placement.
 
 ## 4. Reused waiter animation
 
@@ -80,16 +86,24 @@ Plateau Café:
 
 `BarBartenderPresentation` evaluates those clips through a manually driven
 `PlayableGraph`. It reads the current `BarDrinkServiceTimeline` frame: Notice
-during `CameraApproach`, Walk during `BottlePickup`, `VesselPlacement` and
-`BottleReturn`, Pour during `Pouring`, and Wipe in the remaining phases. The
+during `CameraApproach`; Walk during bottle travel,
+`BeerWalkToTap`, `BeerGlassPickup`, `BeerCarryToGuest` and
+`BeerGlassPlacement`; Pour during `Pouring` and `BeerPouring`; and Wipe in the
+remaining phases. The
 service towel is hidden while the left hand is working with the vessel and is
-restored on return to idle.
+restored on return to idle. In that idle phase the shared
+`CafeAttendantWipe` is visibly sampled; the grounded actor placement puts its
+towel against the `Y = 1.02 m` bar top and the clip moves it along the surface
+instead of hovering above it.
 
 `BarBartenderServiceChoreography` is still a reader, never a transaction
-driver. The existing timeline continues to move the bottle and vessel. A
-bounded reach overlay brings the right grip to the committed bottle and the
-left grip to the visible vessel, then blends both hands back out when service
-ends or the shop closes.
+driver. The timeline and position reports own progress. For beer the actor
+must physically reach `BeerTapServerDock` before pickup/pour can advance, then
+reach the selected guest dock before placement. The world presentation moves
+the pint between `BeerTapVesselDock`, the left grip and the service point,
+pulls `BeerTapHandlePivot` through the right grip, and emits the stream from
+`BeerTapSpout`. A bounded reach overlay brings each hand to its current target,
+then blends both hands back out when service ends or the shop closes.
 
 ## 5. Verification contract
 
@@ -98,7 +112,21 @@ ends or the shop closes.
   V2 Avatar, has no extra-arm chains, and exposes four waiter clips plus all
   required sockets and anchors.
 - The same fixture drives a real `BarDrinkServiceTimeline` through Notice,
-  Walk, Pour and Wipe and checks the two-hand reach contract.
+  Walk, Pour and Wipe and checks the two-hand reach contract, including beer
+  walk/pour/carry phases.
+- `BarDrinkServiceTimelineTests.BeerService_WaitsForPhysicalArrivalAndExplicitDrink`
+  checks both position gates, the indefinite `AwaitingDrink` hold and the
+  explicit `2/3/2 s` pickup/sip/return branch.
+- `BarDrinkPhysicalShopPlayModeTests.BeerTapService_WaitsForGazeThenHeroReturnsEmptyPint`
+  checks the central handle and stream, delayed gameplay effects, gaze-bound
+  prompt/outline, nested Hero V2 action, hand-to-pint contact and persistent
+  empty vessel.
+- `GameSessionStateTests.PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce`
+  checks that cash commits at order confirmation while intoxication,
+  last-drink, count and stress commit exactly once on consumption.
+- `BarInteriorSpawnPlayModeTests` requires the active root to remain grounded
+  and samples changing points of Wipe to prove that the towel both contacts and
+  travels across the real counter top.
 - `SceneFlowSmokeTests` requires the spawned bar worker to use the ordinary
   rig at the authored bartender anchor.
 - The Blender validator owns the measured `39`-mesh / `1,136`-triangle,

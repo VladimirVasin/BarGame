@@ -185,7 +185,11 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(registry.FaceAtlas.Texture, Is.SameAs(atlas));
                 Assert.That(registry.FaceAtlas.Columns, Is.EqualTo(4));
                 Assert.That(registry.FaceAtlas.Rows, Is.EqualTo(4));
-                Assert.That(registry.FaceAtlas.Cells.Count, Is.EqualTo(5));
+                Assert.That(registry.FaceAtlas.Cells.Count, Is.EqualTo(9));
+                Assert.That(registry.Anchors.LeftVessel, Is.Not.Null);
+                Assert.That(
+                    registry.Anchors.LeftVessel.name,
+                    Is.EqualTo("SOCKET_Vessel.L"));
 
                 AssertAtlasTransform(
                     registry.FaceAtlas,
@@ -212,6 +216,26 @@ namespace BarPromenade.Tests.EditMode
                     PlayerFacialExpression.Tense,
                     1,
                     2);
+                AssertAtlasTransform(
+                    registry.FaceAtlas,
+                    PlayerFacialExpression.Drowsy,
+                    2,
+                    2);
+                AssertAtlasTransform(
+                    registry.FaceAtlas,
+                    PlayerFacialExpression.Glazed,
+                    3,
+                    2);
+                AssertAtlasTransform(
+                    registry.FaceAtlas,
+                    PlayerFacialExpression.Slack,
+                    0,
+                    1);
+                AssertAtlasTransform(
+                    registry.FaceAtlas,
+                    PlayerFacialExpression.Grimace,
+                    1,
+                    1);
 
                 Player3DMeshBinding faceBinding =
                     FindBinding(registry, "GEO_FaceSurface");
@@ -281,8 +305,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest, Is.Not.Null);
             Assert.That(manifest.design_version, Is.EqualTo("HeroV2"));
             Assert.That(manifest.runtime_integrated, Is.True);
-            Assert.That(manifest.action_count, Is.EqualTo(38));
-            Assert.That(manifest.actions, Has.Length.EqualTo(38));
+            Assert.That(manifest.action_count, Is.EqualTo(41));
+            Assert.That(manifest.actions, Has.Length.EqualTo(41));
             Assert.That(manifest.face_atlas, Is.Not.Null);
             Assert.That(
                 manifest.face_atlas.texture_asset,
@@ -293,7 +317,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.face_atlas.cell_size_px, Is.EqualTo(64));
             Assert.That(manifest.face_atlas.uv_origin, Is.EqualTo("bottom_left"));
             Assert.That(manifest.face_atlas.filter_mode, Is.EqualTo("Point"));
-            Assert.That(manifest.face_atlas.cells, Has.Length.EqualTo(5));
+            Assert.That(manifest.face_atlas.cells, Has.Length.EqualTo(9));
             Assert.That(manifest.design_metrics, Is.Not.Null);
             Assert.That(
                 manifest.design_metrics.pelvis_height_m,
@@ -306,7 +330,12 @@ namespace BarPromenade.Tests.EditMode
             AssertCell(manifest, "ClosedBlink", 2, 3);
             AssertCell(manifest, "Watchful", 0, 2);
             AssertCell(manifest, "Tense", 1, 2);
+            AssertCell(manifest, "Drowsy", 2, 2);
+            AssertCell(manifest, "Glazed", 3, 2);
+            AssertCell(manifest, "Slack", 0, 1);
+            AssertCell(manifest, "Grimace", 1, 1);
             AssertRunManifestContract(manifest);
+            AssertBarDrinkManifestContract(manifest);
             AssertStaticTextureManifestContract(manifest);
 
             V2Part facePart = Array.Find(
@@ -344,6 +373,52 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(run.gait_style, Is.EqualTo("heavy_weary"));
             Assert.That(run.landmark_count, Is.EqualTo(8));
             Assert.That(run.short_flight, Is.True);
+        }
+
+        private static void AssertBarDrinkManifestContract(
+            V2Manifest manifest)
+        {
+            AssertBarDrinkAction(
+                manifest,
+                "BarDrinkPickupEnter",
+                expectedDuration: 2f,
+                expectedFramesPerSecond: 12f,
+                expectedLoop: false);
+            AssertBarDrinkAction(
+                manifest,
+                "BarDrinkSipLoop",
+                expectedDuration: 3f,
+                expectedFramesPerSecond: 8f,
+                expectedLoop: true);
+            AssertBarDrinkAction(
+                manifest,
+                "BarDrinkReturnExit",
+                expectedDuration: 2f,
+                expectedFramesPerSecond: 12f,
+                expectedLoop: false);
+        }
+
+        private static void AssertBarDrinkAction(
+            V2Manifest manifest,
+            string name,
+            float expectedDuration,
+            float expectedFramesPerSecond,
+            bool expectedLoop)
+        {
+            V2Action action = Array.Find(
+                manifest.actions,
+                candidate => candidate.name == name);
+            Assert.That(action, Is.Not.Null, $"Missing Hero V2 action {name}.");
+            Assert.That(action.category, Is.EqualTo("bar_drink"));
+            Assert.That(
+                action.duration_seconds,
+                Is.EqualTo(expectedDuration).Within(0.0001f));
+            Assert.That(action.loop, Is.EqualTo(expectedLoop));
+            Assert.That(action.source_frame_count, Is.EqualTo(24));
+            Assert.That(
+                action.source_fps,
+                Is.EqualTo(expectedFramesPerSecond).Within(0.0001f));
+            Assert.That(action.root_motion, Is.False);
         }
 
         private static void AssertCell(
@@ -684,6 +759,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(runSettings, Is.Not.Null);
             Assert.That(runSettings.loopTime, Is.True);
             Assert.That(runSettings.loopPose, Is.True);
+
+            ModelImporterClipAnimation sipSettings = Array.Find(
+                importer.clipAnimations,
+                clip => clip.name == "BarDrinkSipLoop");
+            Assert.That(sipSettings, Is.Not.Null);
+            Assert.That(sipSettings.loopTime, Is.True);
 
             AnimationClip runClip = null;
             int clipCount = 0;

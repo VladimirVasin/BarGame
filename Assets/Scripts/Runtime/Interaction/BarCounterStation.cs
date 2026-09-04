@@ -7,6 +7,9 @@ namespace BarPromenade
     public sealed class BarCounterStation : MonoBehaviour, IInteractable
     {
         public const string SitPromptKey = "interaction.sit_at_counter";
+        public const string OrderPromptKey =
+            "interaction.order_selected_drink";
+        public const string DrinkPromptKey = "interaction.drink_beverage";
 
         private BarDrinkShopController controller;
         private PlayerRuntime player;
@@ -30,7 +33,14 @@ namespace BarPromenade
 
                 if (controller != null && controller.CanRestPhysicalMenu)
                 {
-                    return MountainRoadCafeMenuController.CloseMenuPromptKey;
+                    return OrderPromptKey;
+                }
+
+                if (controller != null &&
+                    controller.CanDrinkServedVessel &&
+                    controller.IsLookingAtServedVessel)
+                {
+                    return DrinkPromptKey;
                 }
 
                 if (controller != null &&
@@ -170,7 +180,9 @@ namespace BarPromenade
                     return false;
                 }
 
-                return controller.CanRestPhysicalMenu ||
+                return (controller.CanDrinkServedVessel &&
+                        controller.IsLookingAtServedVessel) ||
+                       controller.CanRestPhysicalMenu ||
                        controller.CanStandAfterMenuRested;
             }
 
@@ -189,9 +201,14 @@ namespace BarPromenade
                 }
                 else if (seat.IsSeated)
                 {
-                    if (controller.CanRestPhysicalMenu)
+                    if (controller.CanDrinkServedVessel &&
+                        controller.IsLookingAtServedVessel)
                     {
-                        controller.RestPhysicalMenuAtCounter();
+                        controller.BeginServedDrink();
+                    }
+                    else if (controller.CanRestPhysicalMenu)
+                    {
+                        controller.ConfirmSelection();
                     }
                     else if (controller.IsLookingAtRestingMenu)
                     {
@@ -233,6 +250,10 @@ namespace BarPromenade
 
             if (!isSeated)
             {
+                // This subscription runs before CounterSeatView's. Release
+                // the bar's Bokeh first so the same frame cannot show the
+                // restored third-person camera through a close-up volume.
+                controller?.TryReleaseSeatedCameraEffects(seatView);
                 seatView?.EndMenuFocus();
                 if (seat.Controller != null &&
                     seat.Controller.Phase ==

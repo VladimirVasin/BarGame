@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
@@ -135,6 +136,114 @@ namespace BarPromenade.Tests.EditMode
                         .InitialBlinkDelaySeconds + 0.01f,
                     false),
                 Is.EqualTo(PlayerFacialExpression.HalfBlink));
+        }
+
+        [Test]
+        public void Blink_LengthensWithTheDrinkAndSoberIsUnchanged()
+        {
+            int ClosedFrames(float intoxication)
+            {
+                var state = new PlayerFacialAnimationState();
+                int longest = 0;
+                int run = 0;
+                for (int frame = 0; frame < 20 * 60; frame++)
+                {
+                    PlayerFacialExpression expression = state.Advance(1f / 60f, false, intoxication);
+                    if (expression == PlayerFacialExpression.ClosedBlink)
+                    {
+                        run++;
+                        longest = Mathf.Max(longest, run);
+                    }
+                    else
+                    {
+                        run = 0;
+                    }
+                }
+
+                return longest;
+            }
+
+            int sober = ClosedFrames(0f);
+            int drunk = ClosedFrames(1f);
+            Assert.That(sober, Is.EqualTo(Mathf.RoundToInt(PlayerFacialAnimationState.ClosedBlinkDurationSeconds * 60f)).Within(1));
+            Assert.That(drunk, Is.EqualTo(Mathf.RoundToInt(PlayerFacialAnimationState.DrunkClosedBlinkDurationSeconds * 60f)).Within(1));
+            Assert.That(PlayerFacialAnimationState.BlinkSeconds(0f), Is.EqualTo(PlayerFacialAnimationState.BlinkDurationSeconds));
+            Assert.That(PlayerFacialAnimationState.BlinkIntervalScale(0f), Is.EqualTo(1f));
+
+            // The sober schedule with the new arguments is the old schedule.
+            var oldStyle = new PlayerFacialAnimationState();
+            var newStyle = new PlayerFacialAnimationState();
+            for (int frame = 0; frame < 30 * 60; frame++)
+            {
+                Assert.That(
+                    newStyle.Advance(1f / 60f, true, 0f, PlayerFacialMood.None),
+                    Is.EqualTo(oldStyle.Advance(1f / 60f, true)));
+            }
+        }
+
+        [Test]
+        public void RestingFace_FollowsTheLevel()
+        {
+            Assert.That(PlayerFacialAnimationState.RestingExpression(0f), Is.EqualTo(PlayerFacialExpression.Neutral));
+            Assert.That(PlayerFacialAnimationState.RestingExpression(0.5f), Is.EqualTo(PlayerFacialExpression.Neutral));
+            Assert.That(PlayerFacialAnimationState.RestingExpression(0.7f), Is.EqualTo(PlayerFacialExpression.Glazed));
+            Assert.That(PlayerFacialAnimationState.RestingExpression(1f), Is.EqualTo(PlayerFacialExpression.Slack));
+
+            var state = new PlayerFacialAnimationState();
+            var seen = new System.Collections.Generic.HashSet<PlayerFacialExpression>();
+            for (int frame = 0; frame < 30 * 60; frame++)
+            {
+                seen.Add(state.Advance(1f / 60f, false, 0.5f));
+            }
+
+            Assert.That(seen, Has.Member(PlayerFacialExpression.Drowsy), "half drunk the lids droop in spells");
+            Assert.That(seen, Has.Member(PlayerFacialExpression.Neutral), "and lift again between them");
+            Assert.That(seen, Has.No.Member(PlayerFacialExpression.Glazed));
+
+            seen.Clear();
+            state.Reset();
+            for (int frame = 0; frame < 30 * 60; frame++)
+            {
+                seen.Add(state.Advance(1f / 60f, true, 1f));
+            }
+
+            Assert.That(seen, Has.Member(PlayerFacialExpression.Slack), "blind drunk the jaw hangs");
+            Assert.That(seen, Has.Member(PlayerFacialExpression.Drowsy));
+            Assert.That(seen, Has.Member(PlayerFacialExpression.ClosedBlink));
+            Assert.That(seen, Has.No.Member(PlayerFacialExpression.Watchful), "the idle glances are the sober man's");
+        }
+
+        [Test]
+        public void Mood_OverridesTheRestAndOutShutsTheEyes()
+        {
+            var state = new PlayerFacialAnimationState();
+            var seen = new System.Collections.Generic.HashSet<PlayerFacialExpression>();
+            for (int frame = 0; frame < 10 * 60; frame++)
+            {
+                seen.Add(state.Advance(1f / 60f, true, 1f, PlayerFacialMood.Grimace));
+            }
+
+            Assert.That(seen, Has.Member(PlayerFacialExpression.Grimace));
+            Assert.That(seen, Has.Member(PlayerFacialExpression.ClosedBlink), "he still blinks through a grimace");
+            Assert.That(seen, Has.No.Member(PlayerFacialExpression.Slack));
+            Assert.That(seen, Has.No.Member(PlayerFacialExpression.Tense));
+
+            seen.Clear();
+            for (int frame = 0; frame < 10 * 60; frame++)
+            {
+                seen.Add(state.Advance(1f / 60f, true, 1f, PlayerFacialMood.Tense));
+            }
+
+            Assert.That(seen, Has.Member(PlayerFacialExpression.Tense));
+            Assert.That(seen, Has.No.Member(PlayerFacialExpression.Grimace));
+
+            seen.Clear();
+            for (int frame = 0; frame < 10 * 60; frame++)
+            {
+                seen.Add(state.Advance(1f / 60f, true, 1f, PlayerFacialMood.Out));
+            }
+
+            Assert.That(seen, Is.EquivalentTo(new[] { PlayerFacialExpression.ClosedBlink }), "out cold the eyes stay shut");
         }
 
         [Test]

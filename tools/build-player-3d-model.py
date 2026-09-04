@@ -251,6 +251,9 @@ REQUIRED_ACTIONS = (
     "BusBoardEnter",
     "BusRideLoop",
     "BusAlightExit",
+    "BarDrinkPickupEnter",
+    "BarDrinkSipLoop",
+    "BarDrinkReturnExit",
     "CarBoardEnter",
     "CarAlightExit",
     "ChessSeatEnter",
@@ -2798,6 +2801,9 @@ class CharacterBuilder:
                     "head": BonePose(
                         rotation_degrees=(-8.0, 0.0, -sign * 7.0)
                     ),
+                    # The arm he lies on is pinned under the torso; its
+                    # forearm folds FORWARD toward his belly (an elbow
+                    # bent the other way was a 36-degree hyperextension).
                     f"upper_arm.{lead_suffix}": BonePose(
                         armature_direction=(
                             -lead_sign * 0.12,
@@ -2808,12 +2814,12 @@ class CharacterBuilder:
                     f"forearm.{lead_suffix}": BonePose(
                         armature_direction=(
                             lead_sign * 0.02,
-                            0.10,
-                            -0.14,
+                            -0.03,
+                            -0.16,
                         )
                     ),
                     f"hand.{lead_suffix}": BonePose(
-                        armature_direction=(lead_sign * 0.06, 0.03, 0.02)
+                        armature_direction=(lead_sign * 0.06, -0.03, 0.02)
                     ),
                     f"upper_arm.{trail_suffix}": BonePose(
                         armature_direction=(
@@ -3005,7 +3011,7 @@ class CharacterBuilder:
                 {
                     "pelvis": BonePose(
                         rotation_degrees=(68.0, 0.0, sign * 2.0),
-                        armature_location_m=(sign * 0.015, 0.03, -0.38),
+                        armature_location_m=(sign * 0.015, 0.03, -0.39),
                     ),
                     "spine": BonePose(
                         rotation_degrees=(-10.0, 0.0, -sign * 1.0)
@@ -3058,7 +3064,7 @@ class CharacterBuilder:
                 {
                     "pelvis": BonePose(
                         rotation_degrees=(66.0, 0.0, -sign * 3.0),
-                        armature_location_m=(-sign * 0.018, 0.025, -0.375),
+                        armature_location_m=(-sign * 0.018, 0.025, -0.385),
                     ),
                     "spine": BonePose(
                         rotation_degrees=(-8.0, 0.0, sign * 2.0)
@@ -3096,9 +3102,13 @@ class CharacterBuilder:
             foot_lift = self.merge_pose(
                 all_fours_shift,
                 {
+                    # The hips come up off the knees first — onto the
+                    # trailing toes, hands still down — so the lead leg
+                    # can swing through folded without the foot sweeping
+                    # the floor: a knee swung under hips this low would.
                     "pelvis": BonePose(
                         rotation_degrees=(48.0, 0.0, -sign * 4.0),
-                        armature_location_m=(-sign * 0.022, 0.02, -0.295),
+                        armature_location_m=(-sign * 0.022, 0.02, -0.20),
                     ),
                     "spine": BonePose(
                         rotation_degrees=(5.0, 0.0, sign * 2.0)
@@ -3108,18 +3118,45 @@ class CharacterBuilder:
                     ),
                     "neck": BonePose(rotation_degrees=(-20.0, 0.0, 0.0)),
                     "head": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+                    # The lead leg swings through: the knee comes up and
+                    # forward, the shin hangs down and back from it and
+                    # the toes point down. Shin directions run KNEE TO
+                    # ANKLE — a shin aimed up and forward from the knee
+                    # (the old key) folds the knee backward like a
+                    # grasshopper's; the generator now refuses that.
+                    # The lead knee comes forward and up with the shin
+                    # folded flat behind it (heel toward the seat) and
+                    # the toes pointing down: from here the shin drops to
+                    # plant the boot ahead. Every foot turn on the way is
+                    # a quarter turn — a half turn between two keys has no
+                    # path the interpolation can be trusted with, and
+                    # the toes went through the floor on it.
                     f"thigh.{lead_suffix}": BonePose(
                         armature_direction=(
                             lead_sign * 0.04,
-                            0.10,
-                            -0.30,
+                            -0.26,
+                            -0.22,
                         )
                     ),
                     f"shin.{lead_suffix}": BonePose(
-                        armature_direction=(lead_sign * 0.01, -0.20, 0.10)
+                        armature_direction=(lead_sign * 0.01, 0.28, -0.06)
                     ),
                     f"foot.{lead_suffix}": BonePose(
-                        armature_direction=(0.0, -0.20, 0.0)
+                        armature_direction=(0.0, -0.02, -0.20)
+                    ),
+                    # The trailing leg stretches back onto its toes.
+                    f"thigh.{trail_suffix}": BonePose(
+                        armature_direction=(
+                            -lead_sign * 0.035,
+                            0.32,
+                            -0.22,
+                        )
+                    ),
+                    f"shin.{trail_suffix}": BonePose(
+                        armature_direction=(-lead_sign * 0.01, 0.30, -0.24)
+                    ),
+                    f"foot.{trail_suffix}": BonePose(
+                        armature_direction=(0.0, 0.14, -0.14)
                     ),
                 },
             )
@@ -3156,18 +3193,25 @@ class CharacterBuilder:
                     "hand.R": BonePose(
                         armature_direction=(-0.01, -0.08, -0.04)
                     ),
+                    # The lead thigh is nearly level and the shin stands
+                    # upright under the knee, boot flat on the floor.
                     f"thigh.{lead_suffix}": BonePose(
                         armature_direction=(
                             lead_sign * 0.04,
-                            -0.25,
-                            -0.28,
+                            -0.30,
+                            -0.10,
                         )
                     ),
                     f"shin.{lead_suffix}": BonePose(
-                        armature_direction=(lead_sign * 0.01, -0.18, -0.06)
+                        armature_direction=(lead_sign * 0.01, 0.02, -0.27)
                     ),
+                    # Heel down first, toes a touch up: the boot has just
+                    # landed, and the turn from toes-down passes the toes
+                    # straight down while the ankle is still high. The
+                    # boot floats a little here; the rise's lead-boot IK
+                    # plants it on the probed floor at runtime.
                     f"foot.{lead_suffix}": BonePose(
-                        armature_direction=(0.0, -0.20, 0.0)
+                        armature_direction=(0.0, -0.20, 0.03)
                     ),
                     f"thigh.{trail_suffix}": BonePose(
                         armature_direction=(
@@ -3179,8 +3223,11 @@ class CharacterBuilder:
                     f"shin.{trail_suffix}": BonePose(
                         armature_direction=(-lead_sign * 0.01, 0.24, 0.10)
                     ),
+                    # Toes tucked under, ready to push: half way between
+                    # the sole-up foot behind him and the boot he will
+                    # stand on next.
                     f"foot.{trail_suffix}": BonePose(
-                        armature_direction=(0.0, 0.20, -0.02)
+                        armature_direction=(0.0, 0.06, -0.19)
                     ),
                 },
             )
@@ -3242,7 +3289,7 @@ class CharacterBuilder:
                 {
                     "pelvis": BonePose(
                         rotation_degrees=(20.0, 0.0, -sign * 4.0),
-                        armature_location_m=(-sign * 0.02, 0.008, -0.275),
+                        armature_location_m=(-sign * 0.02, 0.008, -0.26),
                     ),
                     "spine": BonePose(
                         rotation_degrees=(20.0, 0.0, sign * 2.0)
@@ -3252,17 +3299,20 @@ class CharacterBuilder:
                     ),
                     "neck": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
                     "head": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+                    # Both boots under him now, the knees well forward
+                    # and the shins leaning back to the floor: the deep
+                    # squat's legs one step before the squat.
                     "thigh.L": BonePose(
-                        armature_direction=(0.03, -0.10, -0.32)
+                        armature_direction=(0.03, -0.28, -0.22)
                     ),
                     "thigh.R": BonePose(
-                        armature_direction=(-0.03, -0.10, -0.32)
+                        armature_direction=(-0.03, -0.28, -0.22)
                     ),
                     "shin.L": BonePose(
-                        armature_direction=(0.01, -0.20, 0.10)
+                        armature_direction=(0.01, 0.26, -0.22)
                     ),
                     "shin.R": BonePose(
-                        armature_direction=(-0.01, -0.20, 0.10)
+                        armature_direction=(-0.01, 0.26, -0.22)
                     ),
                     "foot.L": BonePose(
                         armature_direction=(0.0, -0.20, 0.0)
@@ -4634,6 +4684,114 @@ class CharacterBuilder:
             ),
         )
 
+        # A seated drink is a child of BusRideLoop, not another seat. The
+        # left vessel socket is the physical contract: runtime aligns the
+        # glass's authored grip to it while these bones carry the hand from
+        # the counter to the mouth and back. All three seams use bus_seated so
+        # a nested action can yield the already occupied stool without a body
+        # swap or a camera-local pair of arms.
+        bar_drink_reach = self.merge_pose(
+            bus_seated,
+            {
+                "spine": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-2.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(8.0, 0.0, 2.0)),
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.18, -0.72, -0.67)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(-0.15, -0.92, -0.36)
+                ),
+                "hand.L": BonePose(rotation_degrees=(8.0, 4.0, -10.0)),
+            },
+        )
+        bar_drink_grasp = self.merge_pose(
+            bar_drink_reach,
+            {
+                "spine": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(10.0, 0.0, 2.0)),
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.20, -0.78, -0.59)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(-0.18, -0.93, -0.32)
+                ),
+                "hand.L": BonePose(rotation_degrees=(4.0, 2.0, -13.0)),
+            },
+        )
+        bar_drink_lift = self.merge_pose(
+            bus_seated,
+            {
+                "spine": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-2.0, 0.0, 1.0)),
+                "head": BonePose(rotation_degrees=(4.0, 0.0, 1.0)),
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.10, -0.76, -0.35)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(-0.40, -0.45, 0.80)
+                ),
+                "hand.L": BonePose(rotation_degrees=(-4.0, 18.0, -18.0)),
+            },
+        )
+        bar_drink_mouth = self.merge_pose(
+            bus_seated,
+            {
+                "spine": BonePose(rotation_degrees=(3.5, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(1.0, 0.0, 1.0)),
+                "neck": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-7.0, 0.0, 1.0)),
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.08, -0.62, -0.20)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(-0.52, 0.02, 0.85)
+                ),
+                "hand.L": BonePose(rotation_degrees=(-12.0, 32.0, -22.0)),
+            },
+        )
+        bar_drink_swallow = self.merge_pose(
+            bar_drink_mouth,
+            {
+                "chest": BonePose(rotation_degrees=(3.0, 0.0, 1.0)),
+                "neck": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(-10.0, 0.0, 1.0)),
+                "hand.L": BonePose(rotation_degrees=(-16.0, 37.0, -24.0)),
+            },
+        )
+        self._create_action(
+            "BarDrinkPickupEnter", "bar_drink", 2.0, False, 24, 12,
+            (
+                (0.0, bus_seated),
+                (0.22, bar_drink_reach),
+                (0.48, bar_drink_grasp),
+                (0.68, bar_drink_lift),
+                (0.90, bar_drink_mouth),
+                (1.0, bar_drink_mouth),
+            ),
+        )
+        self._create_action(
+            "BarDrinkSipLoop", "bar_drink", 3.0, True, 24, 8,
+            (
+                (0.0, bar_drink_mouth),
+                (0.22, bar_drink_swallow),
+                (0.58, bar_drink_swallow),
+                (0.84, bar_drink_mouth),
+                (1.0, bar_drink_mouth),
+            ),
+        )
+        self._create_action(
+            "BarDrinkReturnExit", "bar_drink", 2.0, False, 24, 12,
+            (
+                (0.0, bar_drink_mouth),
+                (0.25, bar_drink_lift),
+                (0.62, bar_drink_grasp),
+                (0.78, bar_drink_reach),
+                (1.0, bus_seated),
+            ),
+        )
+
         # And the same body getting into a CAR, which is not a bus with a
         # narrower door. The Ferryman has had this beat since he was given
         # somewhere to go - reach, pull, in under the roofline, down into
@@ -5842,11 +6000,12 @@ def validate_interaction_pose(
     enter_name: str,
     loop_name: str,
     exit_name: str,
+    base_name: str = "Relaxed",
 ) -> None:
     """Verify one fixed-root interaction family and its full-rig seams."""
 
     action_names = (
-        "Relaxed",
+        base_name,
         enter_name,
         loop_name,
         exit_name,
@@ -5892,8 +6051,8 @@ def validate_interaction_pose(
         }
         seam_samples = (
             (
-                f"Relaxed->{enter_name}",
-                sample(records["Relaxed"], 0.0),
+                f"{base_name}->{enter_name}",
+                sample(records[base_name], 0.0),
                 sample(records[enter_name], 0.0),
             ),
             (
@@ -5912,9 +6071,9 @@ def validate_interaction_pose(
                 sample(records[exit_name], 0.0),
             ),
             (
-                f"{exit_name}->Relaxed",
+                f"{exit_name}->{base_name}",
                 sample(records[exit_name], 1.0),
-                sample(records["Relaxed"], 1.0),
+                sample(records[base_name], 1.0),
             ),
         )
         for seam_name, first_pose, second_pose in seam_samples:
@@ -6085,6 +6244,186 @@ def validate_door_use_pose(
                 else:
                     continue
                 break
+    finally:
+        animation_data.action = previous_action
+        scene.frame_set(previous_frame)
+        for bone_name, matrix_basis in previous_basis.items():
+            rig.pose.bones[bone_name].matrix_basis = matrix_basis
+        bpy.context.view_layer.update()
+
+
+# A knee or elbow may open this far past straight (the ragdoll's hinges
+# allow five degrees) and fold this far (the deepest squat key).
+HINGE_HYPEREXTENSION_DEGREES = 8.0
+HINGE_MAXIMUM_FLEXION_DEGREES = 130.0
+
+# How far below the neutral floor any visible vertex may pass on a baked
+# frame of the fall, the lie or the rise.
+DENSE_FLOOR_TOLERANCE_METRES = 0.02
+
+# The four hinges: root bone, hinge bone, tip bone, and the bone whose
+# frame carries the side reference.
+HINGES = (
+    ("left knee", "thigh.L", "shin.L", "foot.L"),
+    ("right knee", "thigh.R", "shin.R", "foot.R"),
+    ("left elbow", "upper_arm.L", "forearm.L", "hand.L"),
+    ("right elbow", "upper_arm.R", "forearm.R", "hand.R"),
+)
+
+
+def calibrate_hinge_references(rig: bpy.types.Object) -> dict[str, Vector]:
+    """Capture, on the neutral pose, which way each hinge bends.
+
+    The knee bends toward the character's front, the elbow toward his
+    back (a little downward); each is stored in its root bone's own
+    frame so it turns with the limb — the same calibration the runtime's
+    procedural layer makes on the idle pose.
+    """
+
+    forward = Vector((0.0, -1.0, 0.0))
+    back_down = (Vector((0.0, 0.85, 0.0)) + Vector((0.0, 0.0, -0.15))).normalized()
+    references: dict[str, Vector] = {}
+    for hinge_name, root, _hinge, _tip in HINGES:
+        root_rotation = (rig.matrix_world @ rig.pose.bones[root].matrix).to_3x3()
+        bend = forward if "knee" in hinge_name else back_down
+        references[hinge_name] = root_rotation.inverted() @ bend
+    return references
+
+
+def measure_hinges(
+    rig: bpy.types.Object,
+    references: dict[str, Vector],
+) -> list[tuple[str, float]]:
+    """Each hinge's fold from straight, negative when it bends the wrong way."""
+
+    def world(bone: str, point: Vector) -> Vector:
+        return rig.matrix_world @ point
+
+    measured: list[tuple[str, float]] = []
+    for hinge_name, root, hinge, tip in HINGES:
+        root_point = world(root, rig.pose.bones[root].head)
+        hinge_point = world(hinge, rig.pose.bones[hinge].head)
+        tip_point = world(tip, rig.pose.bones[tip].head)
+        upper = hinge_point - root_point
+        lower = tip_point - hinge_point
+        if upper.length < 1e-6 or lower.length < 1e-6:
+            measured.append((hinge_name, 0.0))
+            continue
+        flexion = math.degrees(upper.angle(lower))
+        axis = (tip_point - root_point).normalized()
+        offset = (hinge_point - root_point)
+        offset = offset - axis * offset.dot(axis)
+        reference = (rig.matrix_world @ rig.pose.bones[root].matrix).to_3x3() @ references[hinge_name]
+        reference = reference - axis * reference.dot(axis)
+        if offset.length > 1e-6 and reference.length > 1e-6 and offset.dot(reference) < 0.0:
+            flexion = -flexion
+        measured.append((hinge_name, flexion))
+    return measured
+
+
+def validate_fall_recovery_dense(
+    result: BuildResult,
+    errors: list[str],
+) -> None:
+    """The two frame-by-frame guarantees of the fall, the lie and the rise.
+
+    Nothing visible passes below the neutral floor on any baked frame,
+    and no knee or elbow bends the wrong way or folds past a real joint's
+    range. Everything else the full recovery validator asks (supports
+    near the floor at each landmark, grips and knees on the floor) is
+    about the V1 hero's proportions; a rig that inherits these clips can
+    still be held to these two.
+    """
+
+    action_names = (
+        "Relaxed",
+        "FallLeft",
+        "DownLeft",
+        "RiseLeft",
+        "FallRight",
+        "DownRight",
+        "RiseRight",
+    )
+    if any(result.actions.get(name) is None for name in action_names):
+        return
+
+    rig = result.rig
+    scene = bpy.context.scene
+    animation_data = rig.animation_data_create()
+    previous_action = animation_data.action
+    previous_frame = scene.frame_current
+    previous_basis = {
+        bone.name: bone.matrix_basis.copy()
+        for bone in rig.pose.bones
+    }
+
+    def visible_minimum() -> tuple[float, PartRecord | None]:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        minimum = math.inf
+        minimum_part = None
+        for part in result.parts:
+            evaluated = part.obj.evaluated_get(depsgraph)
+            mesh = evaluated.to_mesh()
+            try:
+                if mesh is None:
+                    continue
+                for vertex in mesh.vertices:
+                    height = (evaluated.matrix_world @ vertex.co).z
+                    if height < minimum:
+                        minimum = height
+                        minimum_part = part
+            finally:
+                evaluated.to_mesh_clear()
+        return minimum, minimum_part
+
+    try:
+        animation_data.action = result.actions["Relaxed"].action
+        scene.frame_set(round(result.actions["Relaxed"].action.frame_end * 0.0))
+        bpy.context.view_layer.update()
+        floor, _ = visible_minimum()
+        hinge_references = calibrate_hinge_references(rig)
+        for action_name in action_names[1:]:
+            record = result.actions[action_name]
+            animation_data.action = record.action
+            # The Fall clips are never shown: the ragdoll has the body from
+            # the moment balance is lost. Their swing from standing to
+            # lying sweeps a boot through the floor and always did; only
+            # their hinges are held to account.
+            floor_reported = action_name.startswith("Fall")
+            hinge_reported: set[str] = set()
+            for frame in range(
+                math.ceil(record.action.frame_start),
+                math.floor(record.action.frame_end) + 1,
+            ):
+                scene.frame_set(frame)
+                bpy.context.view_layer.update()
+                if not floor_reported:
+                    minimum, part = visible_minimum()
+                    # Two centimetres: a sole's thickness, and under the
+                    # contact shadow; the V1 landmark checks use one.
+                    if minimum < floor - DENSE_FLOOR_TOLERANCE_METRES:
+                        culprit = f", part {part.role}/{part.bone}" if part is not None else ""
+                        errors.append(
+                            f"{action_name} frame {frame} visible silhouette must "
+                            f"not pass below the neutral floor (minimum "
+                            f"{minimum:.4f} m, floor {floor:.4f} m{culprit})"
+                        )
+                        floor_reported = True
+                for hinge_name, flexion in measure_hinges(rig, hinge_references):
+                    if hinge_name in hinge_reported:
+                        continue
+                    if flexion < -HINGE_HYPEREXTENSION_DEGREES:
+                        errors.append(
+                            f"{action_name} frame {frame} bends the {hinge_name} "
+                            f"the wrong way by {-flexion:.1f} degrees"
+                        )
+                        hinge_reported.add(hinge_name)
+                    elif flexion > HINGE_MAXIMUM_FLEXION_DEGREES:
+                        errors.append(
+                            f"{action_name} frame {frame} folds the {hinge_name} "
+                            f"{flexion:.1f} degrees"
+                        )
+                        hinge_reported.add(hinge_name)
     finally:
         animation_data.action = previous_action
         scene.frame_set(previous_frame)
@@ -6474,12 +6813,16 @@ def validate_fall_recovery_pose(
                     f"{visible_foot_minimum:.4f} m, floor "
                     f"{visible_ground_height:.4f} m)"
                 )
+
     finally:
         animation_data.action = previous_action
         scene.frame_set(previous_frame)
         for bone_name, matrix_basis in previous_basis.items():
             rig.pose.bones[bone_name].matrix_basis = matrix_basis
         bpy.context.view_layer.update()
+
+    # Frame by frame: nothing through the floor, no hinge the wrong way.
+    validate_fall_recovery_dense(result, errors)
 
 
 def validate_result(
@@ -6575,6 +6918,14 @@ def validate_result(
         "BusBoardEnter",
         "BusRideLoop",
         "BusAlightExit",
+    )
+    validate_interaction_pose(
+        result,
+        errors,
+        "BarDrinkPickupEnter",
+        "BarDrinkSipLoop",
+        "BarDrinkReturnExit",
+        base_name="BusRideLoop",
     )
     # The car pair hangs off the bus's own seated loop rather than one of
     # its own, so this call proves the four seams that matters most:

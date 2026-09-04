@@ -69,7 +69,8 @@ Assets/
       HomeOccluderDither.shader   Forward+ grouped cutaway with shadow/depth/normals
       HomeWindowGlass.shader      shared transparent Home window/door glass
       StairwellCatGrin.shader     arc-length reveal of the Cheshire grin, shader teeth seams
-      Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale
+      Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale; Begotten soft/glow/print passes
+      BegottenFilm.hlsl           the stock of the Begotten print: hash, grain octaves, dust, hairs, scratches
     Audio/
       Mixers/
         BarPromenadeAudio.mixer  shared groups, DSP returns and five scene snapshots
@@ -77,7 +78,7 @@ Assets/
         city_theme.*  looping City theme
         README.txt
       BarMusic/
-        bar_theme.*   looping BarInterior theme
+        bar_theme.*   looping full-3D jukebox theme
         README.txt
       SupermarketMusic/
         supermarket_theme.*  optional looping SupermarketInterior theme
@@ -147,8 +148,8 @@ Assets/
         NightlifePrototype01.prefab   passive fixed-metre wrapper + semantic registry
     Bar/
       BarFacade3D.prefab            complete fixed-metre bar_exterior_v2 + door/sign anchors
-      BarInterior3D.prefab          passive 178-mesh / 12,940-triangle bar_interior_v3 / generator 3.2.1 pub room
-      BarServiceProps3D.prefab      passive 29-mesh bottle/vessel/menu/stream library / 1.2.0
+      BarInterior3D.prefab          passive 174-mesh / 12,832-triangle bar_interior_v3 / generator 3.3.3 pub room + central-tap anchors
+      BarServiceProps3D.prefab      passive 34-mesh bottle/vessel/highlight/menu/stream library / 1.3.0
       BarBartenderProvider.asset    active ordinary + retained legacy six-arm links
       Textures/                     fifteen 512 px interior albedos (five used by service) + two exterior sheets
     Supermarket/
@@ -183,7 +184,7 @@ Assets/
       Player3DLit.mat                   shared URP/Lit hero material
     V2/
       Models/PlayerCharacter3DV2.{fbx,json}  production 34-part model + deterministic metrics
-      Animations/PlayerCharacter3DV2Animations.fbx  production 38-action V2 rig, including Run
+      Animations/PlayerCharacter3DV2Animations.fbx  production 41-action V2 rig, including Run and seated drink 2/3/2
       Textures/PlayerFaceAtlas.png       4x4 five-expression point-filtered atlas
       Textures/PlayerClothingAtlas.png   full-colour open-jacket/trouser/boot atlas
       Materials/Player3DV2Clothing.mat  shared white-tint atlas material
@@ -245,9 +246,9 @@ Assets/
     Models/
       BarFacade3D.fbx                   38-part complete old-neighbourhood pub exterior
       BarFacade3D.json                  bar_exterior_v2 bounds, parts, door/sign anchors + signature
-      BarInterior3D.fbx                 178-part / 12,940-triangle late-Victorian British-pub interior v3.2.1
-      Bar3D.json                        v3.2.1 layout + 1.02 m counter/0.8175 m cafe stools/1.6175 m eye + signature
-      BarServiceProps3D.{fbx,json}      29-part bottles/vessels/open menu/pour-stream pack / 1.2.0
+      BarInterior3D.fbx                 174-part / 12,832-triangle late-Victorian British-pub interior v3.3.3
+      Bar3D.json                        v3.3.3 layout + standard entrance/three-tap bank/central service anchors/seat-axis MenuDock + signature
+      BarServiceProps3D.{fbx,json}      34-part bottles/vessels/highlights/menu/stream pack / 1.3.0
     Bartender/
       Models/BarBartenderOrdinary3D.{fbx,json}  active two-arm NpcHumanV2 / v3.0.0 / 39 meshes
       Models/BarBartender3D.{fbx,json}          retained six-arm legacy model / v2.0.0
@@ -293,6 +294,8 @@ Assets/
   Scripts/
     Runtime/
       Core/          ten-scene bootstrap, gameplay roots, session, transitions
+        RuntimeSceneSetup.cs       shared camera/grade setup + 0.55 true-interior Gaussian cap
+        GraphicsEffectsSettings.cs seven player graphics toggles over PlayerPrefs; polled Version counter
         CityGameRoot.cs           city composition + deferred debug-map arrival
         AreaTravelTypes.cs        stable City/MountainRoad IDs + arrival token
         AreaTravelService.cs      guarded Single-load area handoff through AreaLoading
@@ -301,6 +304,7 @@ Assets/
         GameDaySchedule.cs        pure event -> first-day table, looked up by id; FeedTheCatOpens = day 2
         GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed delta + one-based day
         GameTimeRuntime.cs        persistent scaled-delta driver + day-announcement owner
+        SecondOrderFilter.cs      pure sub-stepped mass-spring-damper: limb inertia, exactly zero at rest
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
         GameWeatherRules.cs       seeded 90-minute clear/light-rain/heavy-rain slots
         RuntimePrimitiveFactory.cs shared material primitives, oriented batches + opt-in XZ planar UVs
@@ -324,10 +328,12 @@ Assets/
         MountainRoadSoundscape.cs          five causal positioned mountain emitters
         MountainRoadCafeSoundscape.cs      three visible-appliance cafe voices
         SceneMusicPlayer.cs                unscaled entry/exit fade and pause envelope
+        BarMusicPlayer.cs                  spatial jukebox tone + cabinet texture
         SupermarketMusicPlayer.cs          optional SupermarketInterior theme
         HomeMusicPlayer.cs                 Home theme + Balcony shot pause/resume
         HomeSmokingMusicPlayer.cs          optional interaction-local loop + gain envelope
         HomeAlarmClockSynthesis.cs         generated 22050 Hz mechanical ring
+        RetroAmbience.cs                   diffuse scene beds including occupied bar air
         InteriorSoundscapeSynthesis.cs    quantized PCM, fridge hum + lamp crackle
         InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
       Ambient/       scene-neutral outdoor raven roosts over the cemetery raven family
@@ -339,6 +345,9 @@ Assets/
         (Audio) RavenCallClipCache.cs  static refcounted lease over the three shared caw clips
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
+        BegottenFilmModel.cs        seeded 24 fps projector: held/new picture, flicker, weave, slips, scratches
+        DepthOfFieldSettingsBinder.cs player setting -> authored Gaussian grades
+        CinematicDepthOfField.cs priority-10 modal Bokeh; immediate release for camera handoffs
       Games/         pure rules and engines for the two park boards, no Unity
         BoardGameContracts.cs  side/status/placement/action/turn contract both games answer
         ChessRules.cs          legal chess: make/unmake, castling, en passant, promotion, attack map
@@ -365,7 +374,7 @@ Assets/
         MountainRoadCafeConversation{Lines,Timeline,Controller,Look}.cs fixed ten-pair RU/EN bubble loop, cafe-volume gate + action-safe queue/head turns
         MountainRoadCafeSeatView.cs   cafe-stool first-person lifecycle + upright viewer-ray page focus/all-look lock/exact restore
         CounterSeat{Plan,Interaction,View}.cs reusable counter-seat camera/entry/exit ownership
-        CounterMenu{Model,PageView,PropMotion}.cs shared open/rest/reopen/post-exit retrieval + opaque 0.40 s hinge fold/page/focus/grip motion
+        CounterMenu{Model,PageView,PropMotion}.cs shared open/rest/reopen/post-exit retrieval + opaque 0.40 s hinge fold/page/focus/grip motion + optional gaze-bound resting outline
         BarServicePropFactory.cs     imported bottle/vessel/menu/stream role bridge
         MountainRoadCafeMenu{Model,Controller,Presentation}.cs three-item selection-only adapter over shared CounterMenu
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
@@ -753,14 +762,23 @@ Assets/
         PlayerNeedsProgressionState.cs  fractional clock-driven hunger/fatigue
         PlayerNeedsRules.cs        shared 0-100 need bounds + hunger/stress relief
         IntoxicationStageRules.cs   five ranges and interpolated profiles
-        BalanceChallengeModel.cs    seeded schedule and fixed-step arrow model
-        PlayerFallAnimationTimeline.cs  14/36/50 authored phase mapping, 100 total
+        PlayerBalanceModel.cs       seeded LIP + torso flywheel + steps; Steady/Recovering/Toppling/Fallen with lunges, brace and the fall's motion
+        PlayerBalanceRules.cs       support polygon, tuning table, capture point, lunge/flywheel/brace formulas
+        PlayerBalanceController.cs  feeds the model, drifts the motor, probes walls and the brace floor, builds the ragdoll handoff
+        PlayerRiseModel.cs          seeded staged rise: settle, stun, stir, push up with slumps, crawl while a key is held, kneel, stand and wobble; scrubs the Rise clip
+        PlayerDrunkGaitModel.cs     seeded disorder of the walk: per-swing boot landings (wide, crossed, short/long, toes out, lifted), half-step cadence jitter, pelvis roll; exactly nothing sober
+        PlayerDirectionalInput.cs   the one WASD/left-stick read; camera-relative and body-local conversions for a body on the floor
+        PlayerFacialMood.cs         the moment's face (Tense/Grimace/Out/Drowsy) as pure rules over the balance phase, the ragdoll and the rise stage
+        PlayerFacialExpressionRules.cs  fallbacks from the drink's four atlas faces to the five every rig has
+        IntoxicationHeadModel.cs    seeded drunk head: chin droop by level, slow wander, nods when far gone, lagging the lean on a loose spring
+        PlayerFallAnimationTimeline.cs  14/36/50 authored phase mapping, 100 total (Fall/Down no longer played by the 3D hero)
       Player3D/
         Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
         Player3DResources.cs            V2-default / explicit-V1 fallback instantiation
         Player3DCharacterPresentation.cs Idle/Walk/Run gait + physics handoff + full-body Rise sampling
         Player3DFaceAtlasPresenter.cs    merge-safe MPB face-cell texture selection
-        Player3DRagdollController.cs     bounded 13-body failed-balance physics + pose recovery
+        Player3DRagdollController.cs     bounded 13-body failed-balance physics started with the topple's motion; frozen lying pose blended into the rise
+        PlayerRagdollHandoff.cs          the fall's rigid rotation about the boot under the pressure, as a velocity field
         Player3DFirstPersonSubset.cs     prefab-derived camera-local arm filtering
         Player3DHeadVisibility.cs        the whole head off by bone rule, for a camera inside it
       Inventory/     pure item catalog, ordered session stacks and menu state
@@ -775,10 +793,12 @@ Assets/
       Interaction/   reusable CounterSeat + shared CounterMenu input, shops and location doors
         CounterSeatInteraction.cs    physical authored approach/sit/loop/stand lifecycle
         CounterMenuInput.cs          shared W/S/D-pad selection and Space/West confirmation
+        BarCounterStation.cs         seated bar E/Enter/South order + Escape-only rest dispatch
+        BarJukeboxInteraction.cs     prompt + single-writer three-channel emissive pulse/flash
         CityTunnelTravel{Plan,Planner,Controller}.cs automatic unavailable crossing + visible return
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
         PlayerAnimatedInteraction*.cs  positioning, static/moving pelvis targets + independent exit
-        PlayerDoorAction{Controller,Target}.cs  guided door gesture, terminal commit + owned cleanup
+        PlayerDoorAction{Plan,Controller,Target}.cs  guided door gesture, destination-owned outward arrival + terminal cleanup
         HomeBedInteraction.cs          first-E sleep, persistent loop, completed-wake fatigue reset
         HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
         HomeRefrigeratorInteraction*.cs  outer modal first-person open/inspect/close timeline
@@ -793,6 +813,7 @@ Assets/
         MothersHouse{Entrance,Exit}.cs existing village leaf -> room -> one-shot safe return
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
       Scenes/        startup/loading plus nine gameplay roots, including AlpineVillage and MothersHouseInterior
+        {Bar,Supermarket,Stairwell,Home,Church,MothersHouse}InteriorAtmosphere.cs  six room grades -> shared 0.55 Gaussian cap
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         AreaLoadingRoot.cs              black unscaled progress-bar area transfer
         MountainRoadRoot.cs             standalone mountain world/player/UI composition
@@ -821,12 +842,14 @@ Assets/
         StairwellInteriorAtmosphere.cs flickering practicals, grade and dust
         SupermarketInteriorRoot.cs    layout/world/player/shop/UI composition
         SupermarketInteriorAtmosphere.cs  six shadowless practicals + flickering row
-      BarInteriorRoot.cs            bar layout/world/patrons/drink-shop composition
+      BarInteriorRoot.cs            bar layout/world/patrons/drink-shop/audio composition
+      BarSoundscape.cs              two spatial crowd pockets + one moving cue voice
+      BarSoundscapeSchedule.cs      deterministic 4.5-8 s four-cue sequence
       BarPatronWorldBuilder.cs      deterministic 6 booth + 2 counter + 3 table patrons with surface docks
       BarPatronDrinkingBehavior.cs  cafe sip + five surface rests, right-hand bind grips, support/head drift
-      Bar/Bartender/                provider, registry, world builder, presentation + service choreography
-      Drinks/        bar menu adapter, stable IDs, atomic purchases and physical service
-        BarDrinkMenuPresentation.cs  nine priced rows + carried/open/resting booklet over shared CounterMenu
+      Bar/Bartender/                provider/registry + grounded world builder + shared-Wipe surface-contact presentation/service choreography
+      Drinks/        bar menu adapter, stable IDs, paid-order token, deferred consumption effects and physical service
+        BarDrinkMenuPresentation.cs  four priced descriptive rows on an inset 2x2 grid + open-only 35 mm/f8 DOF + carried/resting booklet/outline
       Supermarket/Cashier/  normal observing cashier + retained inactive Watcher asset
         SupermarketCashierProvider.cs      one addressable ref to the off-Resources prefab
         SupermarketCashierAssetRegistry.cs bones, ordinary head/eye + renderer bindings
@@ -896,6 +919,7 @@ Assets/
       CityBuildingSurfaceAppearanceTests.cs 24-sheet resource/import/shared-material + MPB contract
       CityBuildingPrototypeRuntimeTests.cs City/Home placement, six opaque bindings, inset foundation, slot shader + half-space policy
       BarModelContractTests.cs    pub v3/service-pack/exterior manifest and runtime contract
+      BarBartenderAssetTests.cs  active/legacy provider, rig/clip/socket + service-reach contract
       SupermarketExteriorModelContractTests.cs dimensions, sheets, clearance, passive importer + prefab registry contract
       SupermarketInteriorModelContractTests.cs fixed metres, semantic/product anchors, sheets, passive prefab + layout parity
       SupermarketProductModelContractTests.cs six-item manifest/import/prefab/passivity/bounds contract
@@ -904,6 +928,7 @@ Assets/
       CityParkSurfaceAppearanceTests.cs  eight park sheets: recipes/import/source contract, UV mode, textured lawn/park build + landmark-only decoration texturing
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
+      BegottenFilmModelTests.cs            24 fps cadence with stutters, roll bounds, seed determinism, forced picture
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
       PlayerNeedsRulesTests.cs        relief floors, clamping and drink fractions
       PlayerNeedsProgressionStateTests.cs  rates, chunking, cap and fractional reset
@@ -938,7 +963,7 @@ Assets/
       MountainRoadCafeCastTests.cs       roles/gaps/v2 atlas density/clip blend/world ownership
       MountainRoadCafeConversationTests.cs fixed RU/EN pair loop, every-third completed-exchange husband interruption, wrap-safe queue + partner-only look
       MountainRoadCafeMenuModelTests.cs  viewer-ray/no-roll + delivery/open/rest/reopen/retrieval/close contracts
-      CounterSeatPlanTests.cs       authored/fallback physical counter-seat geometry contracts
+      CounterSeatPlanTests.cs       authored/fallback seat geometry + bar menu inset-grid contract
       MountainCablewayTests.cs            loop continuity, world ownership and causal audio
       MountainCablewayRideTests.cs        exact docking, boarding step, treads, return station
       AlpineVillageTests.cs               lane grade, OBB seed sweep, looming bowl, shared-edge two-submesh ground/brink, weather + teleport ground
@@ -994,6 +1019,7 @@ Assets/
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
+      BegottenFilmRenderGraphPlayModeTests.cs  soot-and-bone print, forced 4:3 gate, held vs boiling frames, marked cameras, begotten-sheet.png
       CityKettleHatBoilPlayModeTests.cs    lid rides the head in idle/walk/seated, steam on the spout, pool release, cabin clamp
       CityKettleHatVisualCapturePlayModeTests.cs  [Explicit] 3/6/12 m boil strips into Captures/KettleHat
       AlpineVillageStormVisibilityPlayModeTests.cs  600 running frames: far plane 110, fog == pure wave function, ridge density == fog, trough + crest reached; run alone
@@ -1020,8 +1046,9 @@ Assets/
       MothersHouseInteriorPlayModeTests.cs room/kettle/light + real stair/two rooms + village-door round trip
       Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
-      BarDrinkFirstPersonArmsPlayModeTests.cs  seated renderer suppression + live hidden vessel attachment
-      BarDrinkPhysicalShopPlayModeTests.cs multi-seat menu rest/reopen/purchase/service/post-exit retrieval lifecycle
+      BarDrinkFirstPersonArmsPlayModeTests.cs  seated renderer suppression + retained compatibility attachment root
+      BarDrinkPhysicalShopPlayModeTests.cs multi-seat menu E/Space order, Escape rest + central-tap beer/gaze drink/full-body return
+      BarInteriorSpawnPlayModeTests.cs real-scene inset menu/DOF release + grounded moving Wipe-to-counter contact
       MountainRoadCafePlayModeTests.cs  shipped-scene cup/saucer + hand/pot/counter contacts, silent phase idles and seat-camera restoration
       MountainRoadCafeMenuPlayModeTests.cs handoff, close/rest/reopen, stand restore + post-exit physical retrieval/no-effect contract
 ArtSource/
@@ -1096,7 +1123,7 @@ tools/
   city_building_parts.py         pure deterministic building geometry + surface/UV/attachment/window metadata
   atlas_kit.py                   shared PNG canvas/writer + rect-based atlas and UV helpers (Hero V2 + pedestrians)
   city_building_coplanarity.py   pure exact + <3 cm broad visible-layer audit with synthetic controls
-  build-bar-3d-model.py          v3.2.2 source: safe right stool/continuous service board/no single-seat sign + v1.2.0 service pack
+  build-bar-3d-model.py          v3.3.3 source: standard entrance/grounded bartender anchor/safe right stool/three-tap service anchors/seat-axis menu dock + v1.3.0 service pack
   build-ordinary-bartender-3d-model.py active two-arm NpcHumanV2 bartender generator/validator
   bar_exterior.py                deterministic 38-part late-Victorian pub geometry
   build-bar-textures.py          fifteen measured interior/service albedos + exterior brick/plaster sheets
@@ -1165,7 +1192,7 @@ MountainRoadRoot -> MountainRoadPlanner -> validated 620 m continuous climb
                                             -> imported 61-mesh shell / 7 stools / four-role tableau
                                             -> passive kitchen + undriven hinge-ready FridgeDoor
                                             -> Menu.Hero handoff -> 0.45 s locked upright viewer-ray focus at 0.50 m/FOV40
-                                               -> W/S or D-pad -> Space/West no-op confirm or E close
+                                               -> W/S or D-pad -> Space/West no-op confirm or E/Enter/South close
                                                -> 0.40 s opaque hinge fold -> closed booklet: gaze to unfold / look away to stand
                                                -> completed exit -> WalkToMenu/TakeMenu/CarryMenuBack -> hidden at service dock
                                                -> later completed sit -> fresh handoff
@@ -1418,7 +1445,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> below darker bone-toned player route; no live bus marker
 nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
                                       -> 34 mesh bindings + 16 core parts
-                                      -> 38 Generic in-place Actions
+                                      -> 41 Generic in-place Actions
                                          -> Idle/Walk/Run/atlas-face/status/fall
                                          -> 50-frame full-body Rise via all fours
                                          -> DoorUseEnter/DoorUseLoop/DoorUseExit
@@ -1633,23 +1660,34 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
        -> BarPatronWorldBuilder -> deterministic 11-person furniture/surface-bound cast
                                 -> 6 booth seats at 0.48 m + 2 cafe stools at 0.8175 m
                                 -> 3 standing table leans + bottles; no Babushka/Chess/Checkers
-       -> BarSoundscape -> spatial crowd bed + rare bar cues
+       -> BarMusicPlayer -> theme at visible jukebox grille
+                         -> 120 Hz-5.6 kHz cabinet band + light saturation
+                         -> local generated motor/record/crackle texture
+                         -> panel + two tube emission pulses follow theme gain
+                            through the jukebox interaction's single MPB writer
+       -> BarSoundscape -> two spatial wordless crowd pockets
+                        -> one counter/booth/table cue voice every 4.5-8 s
        -> BarArrivalPresentation -> skippable Bezier camera reveal
+       -> BarBartenderWorldBuilder -> active ordinary root/feet on floor; no legacy duckboard/0.42 m lift
+                                   -> CafeAttendantWipe towel follows the real Y=1.02 m top
        -> four BarCounterStations -> CounterSeatPlan/View/Interaction
                             -> per-free-stool safe approach/exit -> physical sit -> 1.6175 m eye
                             -> rightmost x4.00 clears counter return; no floor/sign selector
                             -> shared CounterMenu model/input/page/hint/prop motion
-                               -> bar adapter: 5 + 4 localized priced rows at 1.10 m / FOV 60
-                               -> failed purchase stays open
-                               -> E or success drives 0.40 s opaque hinge fold/rest
-                               -> closed gaze unfolds / look-away stands
+                               -> bar adapter: inset 2x2 bold blocks at 0.45 m/FOV72; open-only 35 mm/f8 page DOF
+                               -> open E/Enter/South or Space/West orders; failure stays open; Escape rests
+                               -> success/Escape drives upper-arc 0.40 s opaque, separated-stack fold/rest
+                               -> rest/service/exit ends bar DOF immediately; close restores seated camera
+                               -> closed gaze enables yellow contour + unfolds / look-away clears it + stands
                             -> BarDrinkShop
-                               -> retail catalog + atomic cash/drink transaction
-                               -> BarDrinkServicePlan -> nine physical bottle slots
+                               -> retail catalog + paid-order token; effects commit after physical drink
+                               -> BarDrinkServicePlan -> four centred physical bottle slots
                                -> BarDrinkServiceWorldBuilder
-                                  -> Blender service pack: 9 bottles + 5 vessels + stream + menu
+                                  -> Blender service pack: 9 legacy-compatible bottle variants + 5 vessels + stream + 9-socket menu + central-tap anchors
+                                     -> runtime instantiates the visible four bottles and text sockets 00/04/05/08
                                -> BarDrinkServiceTimeline
-                                  -> bartender pickup -> pour -> 3 s drink on hidden vessel attachment -> return
+                                  -> beer: walk to central tap -> take/pull/fill -> carry/place -> gaze-bound E
+                                  -> Hero V2 nested 2 s pickup -> 3 s sip -> 2 s return -> empty pint remains
                                   -> seated world body stays visible; both camera-local arm meshes stay disabled
                                   -> closed menu remains through service -> completed stand/restore -> bartender retrieval
                                   -> later sit -> fresh delivery to the selected station
@@ -1696,7 +1734,9 @@ scene root -> GameAudioMixer -> City/Bar/Stairwell/Home/DoorTransition snapshot
            -> invariant gains: Music -5.5 / Beds -4 / Details +0.5 dB
                                World +2 / Gameplay +2.5 / UI +1.5 dB
 scene transition -> preload -> outgoing theme fade-out -> activate destination
-six present themes -> per-track EBU trim -> 12 kHz tone ----------> Music
+ordinary themes -> per-track EBU trim -> 12 kHz tone ------------> Music
+Bar theme -> jukebox grille -> 3D attenuation + cabinet tone ----> Music
+           -> local motor/record texture ------------------------> Ambience/Details
 City/Bar/Supermarket/Stairwell/Home -> scene fades ----------------^
 Home smoking interaction -> smoking_theme + gain envelope --------^
 scene root -> matching procedural ambience -----------------------> Ambience/Beds
@@ -1705,7 +1745,7 @@ City plans -> physical sound anchors -> CitySoundscapeDirector
            -> carpet/scale owner events --------------------------> SFX/World
 coast -> nearest finite waterline -> one spatial surf voice ------> Ambience/Details
 lightning azimuth + distance -> delayed spatial thunder ----------> SFX/World
-Home/Stairwell root -> spatial soundscape ------------------------> Ambience/Details
+Bar/Home/Stairwell root -> spatial soundscape --------------------> Ambience/Details
 Home opening -> HomeAlarmClock -> spatial mechanical ring --------> SFX/Gameplay
 input/gameplay events -> RetroAudioService -> pooled SFX/UI groups
 music + compensated details/world sends -> reverb/echo -> Master compressor

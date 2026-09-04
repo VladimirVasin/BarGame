@@ -37,14 +37,31 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Shows the cell for <paramref name="expression"/>, or the cell
+        /// of the nearest face the atlas does have when this one is
+        /// missing (an atlas built before the drink's faces existed).
+        /// </summary>
         public bool Apply(PlayerFacialExpression expression)
         {
-            if (!IsConfigured ||
-                !binding.TryGetTextureTransform(
+            if (!IsConfigured)
+            {
+                return false;
+            }
+
+            if (!binding.TryGetTextureTransform(
                     expression,
                     out Vector4 textureTransform))
             {
-                return false;
+                PlayerFacialExpression fallback =
+                    PlayerFacialExpressionRules.Fallback(expression);
+                if (fallback == expression ||
+                    !binding.TryGetTextureTransform(
+                        fallback,
+                        out textureTransform))
+                {
+                    return false;
+                }
             }
 
             properties ??= new MaterialPropertyBlock();

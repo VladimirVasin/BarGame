@@ -431,6 +431,49 @@ namespace BarPromenade
             return degrees;
         }
 
+        /// <summary>
+        /// The target was moved on purpose by less than a teleport's
+        /// worth (the root brought back under a lying body): forget the
+        /// jump so it is not read as a burst of walking speed, and let
+        /// the focus smooth over to it as it would to a step.
+        /// </summary>
+        public void AbsorbTargetShift()
+        {
+            if (followTarget != null)
+            {
+                previousTargetPosition = followTarget.position;
+            }
+        }
+
+        /// <summary>
+        /// Height above a focus-override point the camera looks at: a
+        /// lying body's pelvis is on the floor, and a shot at the floor
+        /// itself tips the horizon.
+        /// </summary>
+        public const float FocusOverrideHeight = 0.35f;
+
+        /// <summary>Where the focus is being pulled to, and how much.</summary>
+        public Vector3 FocusOverridePoint { get; private set; }
+        public float FocusOverrideWeight { get; private set; }
+
+        /// <summary>
+        /// Pulls the focus from the root toward <paramref name="worldPoint"/>
+        /// (plus <see cref="FocusOverrideHeight"/>) by <paramref name="weight"/>:
+        /// the camera follows the body where it lies rather than the
+        /// capsule left standing where it fell. The ordinary damping and
+        /// lag clamp still apply, so the pull is a pan, not a cut.
+        /// </summary>
+        public void SetFocusOverride(Vector3 worldPoint, float weight)
+        {
+            FocusOverridePoint = worldPoint;
+            FocusOverrideWeight = Mathf.Clamp01(weight);
+        }
+
+        public void ClearFocusOverride()
+        {
+            FocusOverrideWeight = 0f;
+        }
+
         public void Snap()
         {
             if (controlledCamera == null)
@@ -632,7 +675,16 @@ namespace BarPromenade
         private Vector3 GetTargetFocusPoint()
         {
             float focusHeight = isInterior ? interiorFocusHeight : exteriorFocusHeight;
-            return followTarget.position + Vector3.up * focusHeight;
+            Vector3 rootFocus = followTarget.position + Vector3.up * focusHeight;
+            if (FocusOverrideWeight <= 0f)
+            {
+                return rootFocus;
+            }
+
+            return Vector3.Lerp(
+                rootFocus,
+                FocusOverridePoint + Vector3.up * FocusOverrideHeight,
+                FocusOverrideWeight);
         }
 
         private bool ShouldSnapForTeleport()

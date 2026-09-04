@@ -94,7 +94,8 @@ namespace BarPromenade
         {
             float roomBreath =
                 0.78f +
-                Mathf.Sin(phase * 2f + 0.6f) * 0.09f;
+                Mathf.Sin(phase * 2f + 0.6f) * 0.09f +
+                Mathf.Sin(phase * 5f + 2.2f) * 0.035f;
             float ventilation =
                 Mathf.Sin(phase * 61f + 0.8f) * 0.075f +
                 Mathf.Sin(phase * 127f + 2.6f) * 0.045f +
@@ -104,7 +105,17 @@ namespace BarPromenade
                 Mathf.Sin(phase * 400f + 0.25f) * 0.022f;
             float refrigerator =
                 Mathf.Sin(phase * 288f + 1.1f) * 0.026f;
-            return ventilation * roomBreath + mains + refrigerator;
+            // A broad, quiet room-air band gives the two positioned crowd
+            // pockets something to sit inside. It remains abstract room
+            // pressure, not a third disembodied group of voices.
+            float occupiedAir =
+                Mathf.Sin(phase * 673f + 0.25f) * 0.018f +
+                Mathf.Sin(phase * 997f + 2.4f) * 0.013f +
+                Mathf.Sin(phase * 1481f + 4.7f) * 0.008f;
+            return ventilation * roomBreath +
+                   mains +
+                   refrigerator +
+                   occupiedAir;
         }
 
         private static float GenerateHomeSample(float phase)
@@ -219,7 +230,7 @@ namespace BarPromenade
     {
         protected override RetroAmbienceKind AmbienceKind =>
             RetroAmbienceKind.Bar;
-        protected override float OutputVolume => 0.065f;
+        protected override float OutputVolume => 0.09f;
         protected override float CutoffFrequency => 4300f;
     }
 

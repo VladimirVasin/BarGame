@@ -96,6 +96,7 @@ namespace BarPromenade
         public const float PlayerMeshShadowBias = 0.04f;
         public const float PlayerMeshShadowNormalBias = 0.25f;
         public const float PlayerMeshShadowNearPlane = 0.10f;
+        public const float IndoorGaussianMaxRadius = 0.55f;
 
         public static Camera EnsureCityNight()
         {
@@ -571,6 +572,23 @@ namespace BarPromenade
             depthOfField.active =
                 GraphicsEffectsSettings.DepthOfFieldEnabled;
             return depthOfField;
+        }
+
+        /// <summary>
+        /// Adds the restrained far-field blur shared by true interiors.
+        /// Exterior profiles deliberately keep their broader Gaussian radius;
+        /// rooms must preserve nearby faces, furniture and service gestures.
+        /// </summary>
+        public static DepthOfField AddIndoorGaussianDepthOfField(
+            VolumeProfile profile,
+            float gaussianStart,
+            float gaussianEnd)
+        {
+            return AddGaussianDepthOfField(
+                profile,
+                gaussianStart,
+                gaussianEnd,
+                IndoorGaussianMaxRadius);
         }
 
         public static Camera EnsureStairwellInterior()

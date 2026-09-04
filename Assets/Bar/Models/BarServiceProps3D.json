@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-bar-3d-model.py",
-  "generator_version": "1.2.0",
+  "generator_version": "1.3.0",
   "blender_version": "5.0.1",
   "design_id": "bar_service_props_v1",
   "display_name": "Bar Promenade Authored Service Props",
@@ -33,8 +33,8 @@
     0.25,
     1.0
   ],
-  "mesh_count": 29,
-  "triangle_count": 2280,
+  "mesh_count": 34,
+  "triangle_count": 3960,
   "anchors": [
     {
       "name": "BarMenu.Origin",
@@ -469,6 +469,30 @@
       ]
     },
     {
+      "name": "PintGrip",
+      "role": "service_vessel_grip:Pint",
+      "local_position": [
+        0.17,
+        0.0,
+        0.21
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
       "name": "PintLiquidBase",
       "role": "service_vessel_liquid_base:Pint",
       "local_position": [
@@ -541,6 +565,30 @@
       ]
     },
     {
+      "name": "ShotGlassGrip",
+      "role": "service_vessel_grip:ShotGlass",
+      "local_position": [
+        0.085,
+        0.0,
+        0.075
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
       "name": "ShotGlassLiquidBase",
       "role": "service_vessel_liquid_base:ShotGlass",
       "local_position": [
@@ -589,6 +637,30 @@
       ]
     },
     {
+      "name": "SnifterGrip",
+      "role": "service_vessel_grip:Snifter",
+      "local_position": [
+        0.155,
+        0.0,
+        0.19
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
       "name": "SnifterLiquidBase",
       "role": "service_vessel_liquid_base:Snifter",
       "local_position": [
@@ -619,6 +691,30 @@
         0.0,
         0.0,
         0.295
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "TumblerGrip",
+      "role": "service_vessel_grip:Tumbler",
+      "local_position": [
+        0.145,
+        0.0,
+        0.16
       ],
       "unity_right": [
         1.0,
@@ -739,6 +835,30 @@
         0.0,
         0.0,
         0.82
+      ],
+      "unity_right": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_up": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "unity_forward": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "WineGlassGrip",
+      "role": "service_vessel_grip:WineGlass",
+      "local_position": [
+        0.027,
+        0.0,
+        0.085
       ],
       "unity_right": [
         1.0,
@@ -1266,6 +1386,33 @@
       "triangles": 44
     },
     {
+      "name": "Service Tumbler Highlight",
+      "role": "service_vessel_highlight",
+      "group": "service:vessel:Tumbler",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          0.72,
+          0.05
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 336
+    },
+    {
       "name": "Service Pint Shell",
       "role": "service_vessel_shell",
       "group": "service:vessel:Pint",
@@ -1318,6 +1465,33 @@
       "colliders": [],
       "vertices": 24,
       "triangles": 44
+    },
+    {
+      "name": "Service Pint Highlight",
+      "role": "service_vessel_highlight",
+      "group": "service:vessel:Pint",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          0.72,
+          0.05
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 336
     },
     {
       "name": "Service WineGlass Shell",
@@ -1374,6 +1548,33 @@
       "triangles": 68
     },
     {
+      "name": "Service WineGlass Highlight",
+      "role": "service_vessel_highlight",
+      "group": "service:vessel:WineGlass",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          0.72,
+          0.05
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 336
+    },
+    {
       "name": "Service ShotGlass Shell",
       "role": "service_vessel_shell",
       "group": "service:vessel:ShotGlass",
@@ -1428,6 +1629,33 @@
       "triangles": 44
     },
     {
+      "name": "Service ShotGlass Highlight",
+      "role": "service_vessel_highlight",
+      "group": "service:vessel:ShotGlass",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          0.72,
+          0.05
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 336
+    },
+    {
       "name": "Service Snifter Shell",
       "role": "service_vessel_shell",
       "group": "service:vessel:Snifter",
@@ -1480,6 +1708,33 @@
       "colliders": [],
       "vertices": 36,
       "triangles": 68
+    },
+    {
+      "name": "Service Snifter Highlight",
+      "role": "service_vessel_highlight",
+      "group": "service:vessel:Snifter",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          0.72,
+          0.05
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 336
     },
     {
       "name": "Service Menu Cover",
@@ -1590,5 +1845,5 @@
       "triangles": 28
     }
   ],
-  "build_signature": "4c98dce2cdfd017922c236f88849862f8823bd000380b62a26601dbc744c0026"
+  "build_signature": "aeb5fb8d37ab3d590c39b76b5f9a9fee0db3aed6c4ba1d26b2eb56a974007148"
 }

@@ -229,6 +229,8 @@ namespace BarPromenade
         private PlayerRuntime player;
         private IPlayerClipPresentation clipPresentation;
         private PlayerAnimatedInteractionTimeline timeline;
+        private PlayerAnimatedInteractionTimeline nestedLoopAction;
+        private int nestedLoopActionSettleFrame = -1;
         private Vector3 standHip;
         private Vector3 actionHip;
         private Transform actionPelvisTarget;
@@ -247,6 +249,9 @@ namespace BarPromenade
         private bool previousInteractorInput;
 
         public event Action<PlayerAnimatedInteractionPhase> PhaseChanged;
+        public event Action<PlayerAnimatedInteractionPhase>
+            NestedLoopActionPhaseChanged;
+        public event Action NestedLoopActionCompleted;
 
         /// <summary>
         /// Raised after a terminal exit clip completes normally. Cancellation
@@ -278,6 +283,22 @@ namespace BarPromenade
         public float PhaseProgress => !isPositioning && timeline != null
             ? timeline.PhaseProgress
             : 0f;
+        public bool IsNestedLoopActionActive =>
+            nestedLoopAction != null && nestedLoopAction.IsActive;
+        public PlayerAnimatedInteractionPhase NestedLoopActionPhase =>
+            IsNestedLoopActionActive ? nestedLoopAction.Phase :
+                PlayerAnimatedInteractionPhase.Idle;
+        public float NestedLoopActionPhaseProgress =>
+            IsNestedLoopActionActive ? nestedLoopAction.PhaseProgress : 0f;
+        public float NestedLoopActionClipProgress =>
+            IsNestedLoopActionActive ? nestedLoopAction.ClipProgress : 0f;
+        public int NestedLoopActionFrameIndex => IsNestedLoopActionActive
+            ? nestedLoopAction.FrameIndex : -1;
+        public Transform LeftVesselGripAnchor =>
+            player.Visual is Player3DCharacterPresentation presentation &&
+            presentation.Registry != null
+                ? presentation.Registry.Anchors.LeftVessel
+                : null;
         public bool IsActive => isPositioning ||
                                 (timeline != null && timeline.IsActive);
         public float ExitDurationMultiplier => timeline != null
@@ -601,6 +622,59 @@ namespace BarPromenade
             return true;
         }
 
+        public bool CanBeginNestedLoopAction(
+            PlayerAnimatedInteractionDefinition definition)
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException(
+                    "Initialize the animated interaction controller first.");
+            }
+            if (definition == null)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
+            return isActiveAndEnabled &&
+                   !isPositioning &&
+                   stateCaptured &&
+                   timeline != null &&
+                   timeline.Phase ==
+                       PlayerAnimatedInteractionPhase.Looping &&
+                   !IsNestedLoopActionActive &&
+                   HasRequiredClips(definition);
+        }
+
+        // Plays enter, one loop and exit without releasing the seated parent.
+        public bool BeginNestedLoopAction(
+            PlayerAnimatedInteractionDefinition definition)
+        {
+            if (!CanBeginNestedLoopAction(definition))
+            {
+                return false;
+            }
+            timeline.RestartLoopCycle();
+            ApplyTimelinePresentation(timeline, GetCurrentPelvisPosition());
+            nestedLoopAction = new PlayerAnimatedInteractionTimeline(
+                definition,
+                exitAfterOneLoopCycle: true);
+            if (!nestedLoopAction.Begin())
+            {
+                nestedLoopAction = null;
+                return false;
+            }
+            nestedLoopActionSettleFrame = Time.frameCount;
+            player.Motor?.SetInputEnabled(false);
+            player.Interactor?.SetInputEnabled(false);
+            NestedLoopActionPhaseChanged?.Invoke(
+                nestedLoopAction.Phase);
+            return true;
+        }
+
+        public bool CancelNestedLoopAction()
+        {
+            return FinishNestedLoopAction(completedNormally: false);
+        }
+
         public bool RequestExit()
         {
             return RequestExit(1f);
@@ -609,7 +683,7 @@ namespace BarPromenade
         public bool RequestExit(float durationMultiplier)
         {
             Vector3 frozenActionHip = GetResolvedActionHipPosition();
-            if (timeline == null ||
+            if (IsNestedLoopActionActive || timeline == null ||
                 !timeline.RequestExit(durationMultiplier))
             {
                 return false;
@@ -637,7 +711,8 @@ namespace BarPromenade
             authoredExitPose.Validate(nameof(authoredExitPose));
             ValidateActionHipPosition(currentActionHipPosition);
             transition?.Validate(nameof(transition));
-            if (!placeAtExitOnCompletion ||
+            if (IsNestedLoopActionActive ||
+                !placeAtExitOnCompletion ||
                 timeline == null ||
                 !timeline.RequestExit(durationMultiplier))
             {
@@ -816,6 +891,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (IsNestedLoopActionActive)
+            {
+                UpdateNestedLoopAction();
+                return;
+            }
+
             PlayerAnimatedInteractionPhase previousPhase =
                 timeline.Phase;
             timeline.Advance(Time.deltaTime);
@@ -850,6 +931,30 @@ namespace BarPromenade
             CompleteInteraction();
             PhaseChanged = null;
             InteractionCompleted = null;
+            NestedLoopActionPhaseChanged = null;
+            NestedLoopActionCompleted = null;
+        }
+
+        private void UpdateNestedLoopAction()
+        {
+            if (Time.frameCount <= nestedLoopActionSettleFrame)
+            {
+                return;
+            }
+            PlayerAnimatedInteractionPhase previousPhase =
+                nestedLoopAction.Phase;
+            nestedLoopAction.Advance(Time.deltaTime);
+            if (!nestedLoopAction.IsActive)
+            {
+                FinishNestedLoopAction(completedNormally: true);
+                return;
+            }
+            ApplyCurrentPresentation();
+            if (nestedLoopAction.Phase != previousPhase)
+            {
+                NestedLoopActionPhaseChanged?.Invoke(
+                    nestedLoopAction.Phase);
+            }
         }
 
         private void UpdatePositioning()
@@ -976,13 +1081,31 @@ namespace BarPromenade
                 return;
             }
 
+            PlayerAnimatedInteractionTimeline presentationTimeline =
+                IsNestedLoopActionActive ? nestedLoopAction : timeline;
+            Vector3 pelvis = IsNestedLoopActionActive
+                ? GetResolvedActionHipPosition()
+                : GetCurrentPelvisPosition();
+            ApplyTimelinePresentation(presentationTimeline, pelvis);
+        }
+
+        private void ApplyTimelinePresentation(
+            PlayerAnimatedInteractionTimeline presentationTimeline,
+            Vector3 pelvisPosition)
+        {
+            if (presentationTimeline == null ||
+                !presentationTimeline.IsActive)
+            {
+                return;
+            }
             string clipName = GetCurrentClipName(
-                timeline.Definition,
-                timeline.Phase);
+                presentationTimeline.Definition,
+                presentationTimeline.Phase);
             if (string.IsNullOrEmpty(clipName))
             {
                 throw new InvalidOperationException(
-                    $"The {timeline.Phase} phase has no Player 3D clip.");
+                    $"The {presentationTimeline.Phase} phase has no " +
+                    "Player 3D clip.");
             }
 
             if (!clipPresentation.IsClipActive ||
@@ -999,15 +1122,41 @@ namespace BarPromenade
             }
 
             clipPresentation.SampleActiveClip(
-                timeline.ClipProgress);
+                presentationTimeline.ClipProgress);
             ownsClipPresentation = true;
             clipPresentation.AlignActiveClipAnchor(
-                GetCurrentPelvisPosition());
+                pelvisPosition);
+        }
+
+        private bool FinishNestedLoopAction(bool completedNormally)
+        {
+            if (nestedLoopAction == null)
+            {
+                return false;
+            }
+            nestedLoopAction.Reset();
+            nestedLoopAction = null;
+            nestedLoopActionSettleFrame = -1;
+            if (timeline != null &&
+                timeline.Phase == PlayerAnimatedInteractionPhase.Looping)
+            {
+                timeline.RestartLoopCycle();
+                ApplyInputForPhase(timeline.Phase);
+                ApplyCurrentPresentation();
+            }
+            NestedLoopActionPhaseChanged?.Invoke(
+                PlayerAnimatedInteractionPhase.Idle);
+            if (completedNormally)
+            {
+                NestedLoopActionCompleted?.Invoke();
+            }
+            return true;
         }
 
         private void CompleteInteraction(
             bool completedNormally = false)
         {
+            bool hadNestedLoopAction = IsNestedLoopActionActive;
             bool shouldNotify =
                 isPositioning ||
                 (timeline != null && timeline.IsActive) ||
@@ -1023,6 +1172,9 @@ namespace BarPromenade
             entryPoseSettledFrame = -1;
             approachWaypoints.Clear();
             approachWaypointIndex = 0;
+            nestedLoopAction?.Reset();
+            nestedLoopAction = null;
+            nestedLoopActionSettleFrame = -1;
             timeline?.Reset();
 
             if (shouldPlaceAtExit)
@@ -1061,6 +1213,12 @@ namespace BarPromenade
             if (shouldNotify)
             {
                 PhaseChanged?.Invoke(
+                    PlayerAnimatedInteractionPhase.Idle);
+            }
+
+            if (hadNestedLoopAction)
+            {
+                NestedLoopActionPhaseChanged?.Invoke(
                     PlayerAnimatedInteractionPhase.Idle);
             }
         }

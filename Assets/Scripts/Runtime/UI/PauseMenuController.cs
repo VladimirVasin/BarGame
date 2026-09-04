@@ -51,6 +51,7 @@ namespace BarPromenade
                 (PauseMenuOptionsRow.AspectRatio43, "options.aspect_4_3"),
                 (PauseMenuOptionsRow.VertexJitter,
                     "options.vertex_jitter"),
+                (PauseMenuOptionsRow.Begotten, "options.begotten"),
                 (PauseMenuOptionsRow.Back, "options.back")
             };
 
@@ -629,6 +630,11 @@ namespace BarPromenade
                         !GraphicsEffectsSettings
                             .VertexJitterEnabled;
                     return;
+                case PauseMenuOptionsRow.Begotten:
+                    GraphicsEffectsSettings.BegottenModeEnabled =
+                        !GraphicsEffectsSettings
+                            .BegottenModeEnabled;
+                    return;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(row),
@@ -659,6 +665,9 @@ namespace BarPromenade
                 case PauseMenuOptionsRow.VertexJitter:
                     return GraphicsEffectsSettings
                         .VertexJitterEnabled;
+                case PauseMenuOptionsRow.Begotten:
+                    return GraphicsEffectsSettings
+                        .BegottenModeEnabled;
                 default:
                     return false;
             }

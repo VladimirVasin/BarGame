@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
@@ -21,6 +22,16 @@ namespace BarPromenade.Tests.PlayMode
             atmosphere.Initialize(
                 Array.Empty<BarPracticalLightSpec>());
             yield return null;
+
+            Assert.That(
+                atmosphere.PostProcessVolume.profile.TryGet(
+                    out DepthOfField depthOfField),
+                Is.True);
+            Assert.That(
+                depthOfField.gaussianMaxRadius.value,
+                Is.EqualTo(RuntimeSceneSetup.IndoorGaussianMaxRadius)
+                    .Within(0.0001f),
+                "The ordinary bar grade must keep nearby people readable.");
 
             ParticleSystem.VelocityOverLifetimeModule velocity =
                 atmosphere.Dust.velocityOverLifetime;

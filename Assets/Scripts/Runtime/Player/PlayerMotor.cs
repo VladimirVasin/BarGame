@@ -144,6 +144,22 @@ namespace BarPromenade
                 : Mathf.Clamp(scale, 0.2f, 1f);
         }
 
+        /// <summary>
+        /// The balance model's slow weave of the heading, degrees: the
+        /// DIRECTION the walk is asked for is turned by this, not the
+        /// hero's yaw, so a drunk walks a snaking line while facing the
+        /// way he means to go. Zero sober, and the sober path is then
+        /// bit for bit what it was.
+        /// </summary>
+        public void SetBalanceHeadingWeave(float degrees)
+        {
+            balanceHeadingWeaveDegrees = float.IsNaN(degrees) || float.IsInfinity(degrees)
+                ? 0f
+                : Mathf.Clamp(degrees, -45f, 45f);
+        }
+
+        private float balanceHeadingWeaveDegrees;
+
         public void Teleport(Vector3 position)
         {
             bool wasEnabled = controller != null && controller.enabled;
@@ -161,6 +177,34 @@ namespace BarPromenade
             {
                 controller.enabled = wasEnabled;
             }
+        }
+
+        /// <summary>
+        /// Puts the capsule at a planar position and heading without
+        /// leaving the walkable area: the destination is constrained the
+        /// way a move is, the height is kept, and what the constraint
+        /// refused is returned so the caller can absorb it. Used to bring
+        /// the root back under a body the ragdoll left lying elsewhere.
+        /// </summary>
+        public Vector3 TeleportPlanar(Vector3 planarPosition, float yawDegrees)
+        {
+            Vector3 current = transform.position;
+            Vector3 desired = new Vector3(planarPosition.x, current.y, planarPosition.z);
+            if (!IsFinite(desired))
+            {
+                return Vector3.zero;
+            }
+
+            float radius = controller != null ? controller.radius : 0f;
+            Vector3 constrained = walkableArea != null
+                ? walkableArea.Constrain(current, desired, radius)
+                : desired;
+            constrained.y = current.y;
+            Teleport(constrained);
+            transform.rotation = Quaternion.Euler(0f, yawDegrees, 0f);
+            Vector3 residual = desired - constrained;
+            residual.y = 0f;
+            return residual;
         }
 
         public void CancelInteractionPoseMove()
@@ -393,8 +437,12 @@ namespace BarPromenade
             float desiredSpeed = input.y >= 0f
                 ? input.y * (sprintRequested ? RunSpeed : MoveSpeed)
                 : input.y * BackwardMoveSpeed;
+            Vector3 heading = Mathf.Abs(balanceHeadingWeaveDegrees) > 0.0001f
+                ? Quaternion.AngleAxis(balanceHeadingWeaveDegrees, Vector3.up) *
+                  transform.forward
+                : transform.forward;
             Vector3 desiredPlanarVelocity =
-                transform.forward * (desiredSpeed * speedMultiplier);
+                heading * (desiredSpeed * speedMultiplier);
             // Tank steering rotates the already-earned forward momentum with
             // the actor. Otherwise changing the velocity direction would
             // consume the same bounded acceleration that raises its speed;
@@ -749,34 +797,55 @@ namespace BarPromenade
                 Vector3.up);
         }
 
+        /// <summary>
+        /// WASD only (the arrow keys belong to the camera orbit) or the
+        /// left stick, as two independent channels: X is yaw, Y is
+        /// travel. Shared with the fall, which reads the same keys
+        /// relative to the camera while he lies.
+        /// </summary>
         private static Vector2 ReadMovement()
         {
-            Vector2 movement = Vector2.zero;
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null)
+            return PlayerDirectionalInput.ReadRaw();
+        }
+
+        /// <summary>
+        /// A move made for him while his input is off: a crawl on all
+        /// fours, whose yaw and world velocity the rise model decides.
+        /// Goes through the walkable area and the controller like any
+        /// other move, with the drift's hair of downward push so the
+        /// capsule keeps its ground; touches neither the momentum nor
+        /// the read-back velocity, which belong to his own walking.
+        /// </summary>
+        public void ApplyDownedMove(
+            Vector3 worldPlanarVelocity,
+            float yawDeltaDegrees,
+            float deltaTime)
+        {
+            if (controller == null || deltaTime <= 0f)
             {
-                // WASD only: the arrow keys belong to the camera
-                // orbit (PlayerCameraFollow), not to walking.
-                movement.x =
-                    (keyboard.dKey.isPressed ? 1f : 0f) -
-                    (keyboard.aKey.isPressed ? 1f : 0f);
-                movement.y =
-                    (keyboard.wKey.isPressed ? 1f : 0f) -
-                    (keyboard.sKey.isPressed ? 1f : 0f);
+                return;
             }
 
-            Gamepad gamepad = Gamepad.current;
-            if (gamepad != null && gamepad.leftStick.ReadValue().sqrMagnitude > movement.sqrMagnitude)
+            if (Mathf.Abs(yawDeltaDegrees) > 0.00001f)
             {
-                movement = gamepad.leftStick.ReadValue();
+                transform.Rotate(0f, yawDeltaDegrees, 0f);
             }
 
-            // The axes are independent channels now: X is yaw, Y is
-            // travel. A combined W+A must keep full forward speed, so
-            // no vector clamp across the pair.
-            movement.x = Mathf.Clamp(movement.x, -1f, 1f);
-            movement.y = Mathf.Clamp(movement.y, -1f, 1f);
-            return movement;
+            Vector3 velocity = worldPlanarVelocity;
+            velocity.y = 0f;
+            if (velocity.sqrMagnitude < 0.00000001f)
+            {
+                return;
+            }
+
+            Vector3 current = transform.position;
+            Vector3 desired = current + velocity * deltaTime;
+            Vector3 constrained = walkableArea == null
+                ? desired
+                : walkableArea.Constrain(current, desired, controller.radius);
+            Vector3 delta = constrained - current;
+            delta.y = 0f;
+            controller.Move(delta + Vector3.down * DriftGroundBias);
         }
 
         private static bool IsSprintRequested()

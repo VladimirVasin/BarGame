@@ -82,7 +82,7 @@ namespace BarPromenade
         public const string VesselGroupPrefix = "service:vessel:";
         public const string MenuGroup = "service:menu";
         public const string PourStreamGroup = "service:pour_stream";
-        public const int MenuItemCount = 9;
+        public const int MenuItemCount = 4;
         public const string MenuOriginRole = "service_menu_origin";
         public const string MenuGripRole = "service_menu_grip";
         public const string MenuPageOriginRole =
@@ -102,6 +102,18 @@ namespace BarPromenade
         private static readonly int ColorId =
             Shader.PropertyToID("_Color");
 
+        // The passive service asset retains its original nine anchor slots.
+        // Four logical rows reuse the outer pair on each page as stable source
+        // roles. BarDrinkMenuPresentation moves those private cloned anchors
+        // onto its inset readable grid before it builds the visible text.
+        private static readonly int[] AuthoredMenuTextRowIndices =
+        {
+            0,
+            4,
+            5,
+            8
+        };
+
         public static string MenuTextItemRole(int index)
         {
             if (index < 0 || index >= MenuItemCount)
@@ -109,7 +121,8 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            return MenuTextItemRolePrefix + index.ToString("00");
+            return MenuTextItemRolePrefix +
+                   AuthoredMenuTextRowIndices[index].ToString("00");
         }
 
         public static BarServicePropInstance CreateBottle(

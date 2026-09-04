@@ -29,11 +29,11 @@ namespace BarPromenade
         public const int OrdinaryBottleHandIndex = 1;
         private const int SolveIterations = 3;
 
-        // Root-local rest points the canonical hands hold ON the
-        // counter top (root rides the 0.42 m duckboard, so local
-        // 1.16 lands at the ~1.56 m brass). World-space aiming is
-        // deliberate — imported FBX bone axes are not trustworthy
-        // for local Euler folds.
+        // Root-local rest points retained for the inspectable legacy
+        // six-arm path. The active ordinary bartender stays ground-level and
+        // uses the shared authored waiter clips. World-space aiming is
+        // deliberate — imported FBX bone axes are not trustworthy for local
+        // Euler folds.
         private static readonly Vector3 LeftHandRestLocal =
             new Vector3(0.27f, 1.16f, 0.42f);
         private static readonly Vector3 RightHandRestLocal =
@@ -253,6 +253,8 @@ namespace BarPromenade
                         ResolveClipLength(BarBartenderClipKind.Notice));
                     break;
                 case BarDrinkServicePhase.BottlePickup:
+                case BarDrinkServicePhase.BeerWalkToTap:
+                case BarDrinkServicePhase.BeerCarryToGuest:
                     SetOrdinaryClip(
                         BarBartenderClipKind.Walk,
                         frame.PhaseElapsedSeconds);
@@ -265,12 +267,15 @@ namespace BarPromenade
                         frame.PhaseElapsedSeconds);
                     break;
                 case BarDrinkServicePhase.Pouring:
+                case BarDrinkServicePhase.BeerPouring:
                     SetOrdinaryClip(
                         BarBartenderClipKind.Pour,
                         frame.PhaseProgress *
                         ResolveClipLength(BarBartenderClipKind.Pour));
                     break;
                 case BarDrinkServicePhase.BottleReturn:
+                case BarDrinkServicePhase.BeerGlassPickup:
+                case BarDrinkServicePhase.BeerGlassPlacement:
                     SetOrdinaryClip(
                         BarBartenderClipKind.Walk,
                         frame.PhaseElapsedSeconds);
@@ -287,7 +292,11 @@ namespace BarPromenade
                 frame.Phase ==
                     BarDrinkServicePhase.VesselPlacement ||
                 frame.Phase == BarDrinkServicePhase.Pouring ||
-                frame.Phase == BarDrinkServicePhase.BottleReturn;
+                frame.Phase == BarDrinkServicePhase.BottleReturn ||
+                frame.Phase == BarDrinkServicePhase.BeerGlassPickup ||
+                frame.Phase == BarDrinkServicePhase.BeerPouring ||
+                frame.Phase == BarDrinkServicePhase.BeerCarryToGuest ||
+                frame.Phase == BarDrinkServicePhase.BeerGlassPlacement;
             registry.SetServiceTowelVisible(!leftHandServing);
         }
 

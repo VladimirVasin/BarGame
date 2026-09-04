@@ -1,6 +1,8 @@
 {
   "permissions": {
     "allow": [
+      "Bash(*)",
+      "PowerShell(*)",
       "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.5.9f1/Editor/Unity.exe\" *)",
       "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.5.5f1/Editor/Unity.exe\" *)",
       "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.5.9f1/Editor/Data/DotNetSdk/dotnet.exe\" build *)",

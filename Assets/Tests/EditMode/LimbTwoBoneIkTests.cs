@@ -414,6 +414,111 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Solve_CorrectsAKneeBentTheWrongWay()
+        {
+            // A knee folded 90 degrees BACKWARD — the thigh swung back,
+            // the shin swung forward under it — with the foot straight
+            // below the hip. A positive turn about right carries a
+            // hanging bone backward.
+            upper.rotation = Quaternion.AngleAxis(45f, Vector3.right);
+            lower.rotation = upper.rotation *
+                             Quaternion.AngleAxis(-90f, Vector3.right);
+            Vector3 target = tip.position;
+            Assert.That(target.z, Is.EqualTo(0f).Within(0.001f));
+            Assert.That(KneeSide(target, ForwardHint), Is.LessThan(-0.9f));
+
+            LimbTwoBoneIk.Solve(
+                upper,
+                lower,
+                tip,
+                target,
+                Quaternion.identity,
+                ForwardHint,
+                1f,
+                float.PositiveInfinity,
+                false);
+
+            // The foot stays where it was; the knee is in front of the
+            // hip-to-foot line; and both bones simply swung in the bend
+            // plane — the mirror image of the start, no roll about the
+            // leg's own length that would twist the mesh.
+            Assert.That(Vector3.Distance(tip.position, target), Is.LessThan(0.001f));
+            Assert.That(KneeSide(target, ForwardHint), Is.GreaterThan(0.9f));
+            Assert.That(
+                Quaternion.Angle(
+                    upper.rotation,
+                    Quaternion.AngleAxis(-45f, Vector3.right)),
+                Is.LessThan(1f));
+            Assert.That(
+                Quaternion.Angle(
+                    lower.rotation,
+                    Quaternion.AngleAxis(45f, Vector3.right)),
+                Is.LessThan(1f));
+        }
+
+        [Test]
+        public void Solve_KeepsARightSidedKneeUntouched()
+        {
+            upper.rotation = Quaternion.AngleAxis(-45f, Vector3.right);
+            lower.rotation = upper.rotation *
+                             Quaternion.AngleAxis(90f, Vector3.right);
+            Vector3 target = tip.position;
+            Quaternion upperBefore = upper.rotation;
+            Quaternion lowerBefore = lower.rotation;
+            Assert.That(KneeSide(target, ForwardHint), Is.GreaterThan(0.9f));
+
+            LimbTwoBoneIk.Solve(
+                upper,
+                lower,
+                tip,
+                target,
+                Quaternion.identity,
+                ForwardHint,
+                1f,
+                float.PositiveInfinity,
+                false);
+
+            Assert.That(Vector3.Distance(tip.position, target), Is.LessThan(0.001f));
+            Assert.That(Quaternion.Angle(upperBefore, upper.rotation), Is.LessThan(0.5f));
+            Assert.That(Quaternion.Angle(lowerBefore, lower.rotation), Is.LessThan(0.5f));
+        }
+
+        [Test]
+        public void Solve_NearlyStraightLegStillFollowsTheHint()
+        {
+            // Six millimetres of knee behind the line: past the side
+            // epsilon, well under the hint's full-bend distance. The old
+            // hint alone would have left it there.
+            const float degrees = 0.764f;
+            upper.rotation = Quaternion.AngleAxis(degrees, Vector3.right);
+            lower.rotation = upper.rotation *
+                             Quaternion.AngleAxis(-2f * degrees, Vector3.right);
+            Vector3 target = tip.position;
+            Assert.That(lower.position.z, Is.EqualTo(-0.006f).Within(0.0005f));
+
+            LimbTwoBoneIk.Solve(
+                upper,
+                lower,
+                tip,
+                target,
+                Quaternion.identity,
+                ForwardHint,
+                1f,
+                float.PositiveInfinity,
+                false);
+
+            Assert.That(Vector3.Distance(tip.position, target), Is.LessThan(0.001f));
+            // Six millimetres in front now, still straight below the hip.
+            Assert.That(lower.position.z, Is.GreaterThan(0.004f));
+            Assert.That(Mathf.Abs(lower.position.x), Is.LessThan(0.0005f));
+            Assert.That(
+                Quaternion.Angle(
+                    upper.rotation,
+                    Quaternion.AngleAxis(-degrees, Vector3.right)),
+                Is.LessThan(0.2f));
+        }
+
+        [Test]
         public void Solve_IgnoresMissingJoints()
         {
             Quaternion upperBefore = upper.rotation;

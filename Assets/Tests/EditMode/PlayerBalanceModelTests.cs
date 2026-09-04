@@ -688,13 +688,25 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void ShoveBeyondReach_LatchesFallImmediately()
+        public void ShoveBeyondReach_TopplesAndFallsWithinASecondAndAHalf()
         {
+            // A shove past any step no longer latches on the spot: it
+            // starts a topple (a lunge, the torso, the root going with
+            // him) that is lost inside a second and a half. The topple's
+            // own contract is PlayerBalanceToppleTests; here only the
+            // outcome and its side.
             PlayerBalanceInput input = PlayerBalanceInput.Quiet(1f);
 
             PlayerBalanceModel right = new PlayerBalanceModel(Seed);
             right.InjectPerturbation(new Vector2(3f, 0f));
             right.Advance(Frame, input);
+            Assert.That(right.LostBalance, Is.False, "the first frame is a topple, not a latch");
+            Assert.That(right.Phase, Is.EqualTo(BalancePhase.Toppling));
+            for (int frame = 1; frame < 90 && !right.LostBalance; frame++)
+            {
+                right.Advance(Frame, input);
+            }
+
             Assert.That(right.LostBalance, Is.True);
             Assert.That(right.FallDirection, Is.EqualTo(1f));
             Assert.That(right.Output.LostBalance, Is.True);
@@ -702,15 +714,24 @@ namespace BarPromenade.Tests.EditMode
 
             PlayerBalanceModel left = new PlayerBalanceModel(Seed);
             left.InjectPerturbation(new Vector2(-3f, 0f));
-            left.Advance(Frame, input);
+            for (int frame = 0; frame < 90 && !left.LostBalance; frame++)
+            {
+                left.Advance(Frame, input);
+            }
+
             Assert.That(left.LostBalance, Is.True);
             Assert.That(left.FallDirection, Is.EqualTo(-1f));
 
             // The same shove with falls disallowed is pinned instead.
             PlayerBalanceModel pinned = new PlayerBalanceModel(Seed);
             pinned.InjectPerturbation(new Vector2(3f, 0f));
-            pinned.Advance(Frame, PlayerBalanceInput.Quiet(1f, fallAllowed: false));
+            for (int frame = 0; frame < 90; frame++)
+            {
+                pinned.Advance(Frame, PlayerBalanceInput.Quiet(1f, fallAllowed: false));
+            }
+
             Assert.That(pinned.LostBalance, Is.False);
+            Assert.That(pinned.Phase, Is.EqualTo(BalancePhase.Steady));
         }
 
         [Test]

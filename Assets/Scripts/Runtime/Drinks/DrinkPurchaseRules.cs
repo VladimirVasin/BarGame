@@ -55,6 +55,39 @@ namespace BarPromenade
         public int DrinksConsumedAfter { get; }
     }
 
+    /// <summary>
+    /// One paid drink that has not necessarily been consumed yet. The token is
+    /// session-bound and can commit its effects at most once.
+    /// </summary>
+    public sealed class DrinkOrderToken
+    {
+        internal DrinkOrderToken(
+            int sessionGeneration,
+            long sequence,
+            DrinkId drinkId)
+        {
+            SessionGeneration = sessionGeneration;
+            Sequence = sequence;
+            DrinkId = drinkId;
+        }
+
+        internal int SessionGeneration { get; }
+        internal long Sequence { get; }
+        public DrinkId DrinkId { get; }
+        public bool IsConsumed { get; private set; }
+
+        internal bool TryMarkConsumed(int currentSessionGeneration)
+        {
+            if (IsConsumed || SessionGeneration != currentSessionGeneration)
+            {
+                return false;
+            }
+
+            IsConsumed = true;
+            return true;
+        }
+    }
+
     public static class DrinkPurchaseRules
     {
         public static DrinkPurchaseResult Evaluate(

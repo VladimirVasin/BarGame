@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
@@ -43,7 +45,14 @@ namespace BarPromenade.Tests.PlayMode
         //  Below this cosine the page is less than 17.5 degrees above an
         //  edge-on view. Text may still own valid meshes and screen bounds,
         //  but its glyphs collapse into an unreadable strip.
-        private const float MinimumReadablePageFacing = 0.30f;
+        private const float MinimumReadablePageFacing = 0.72f;
+        private const float MinimumOverheadSurfaceFacing = 0.97f;
+        private const float MaximumCameraPlanarOffset = 0.14f;
+        private const float MaximumWipePenetration = 0.015f;
+        private const float MaximumWipeGap = 0.03f;
+        private const float MinimumVisibleWipeTravel = 0.04f;
+        private const float MaximumWipeReturnError = 0.04f;
+        private const float WipeSurfaceMargin = 0.02f;
 
         //  Keep the physical booklet clear of the shared bottom hint. The
         //  hint occupies BottomMargin + Height logical pixels; four pixels of
@@ -142,6 +151,97 @@ namespace BarPromenade.Tests.PlayMode
                 $"the camera sits {distance:F2} m from the hero's head - " +
                 "inside him. Its collision probe is starting inside a " +
                 "collider, so the chase distance collapsed to nothing.");
+        }
+
+        [UnityTest]
+        public IEnumerator Bartender_WipeTouchesAndTravelsAcrossCounter()
+        {
+            BarInteriorRoot bar = null;
+            yield return LoadBar(result => bar = result);
+            bar.ArrivalPresentation.Skip();
+            yield return null;
+
+            BarBartenderPresentation bartender = bar.Bartender;
+            Assert.That(bartender, Is.Not.Null);
+            Assert.That(bartender.UsesOrdinaryRig, Is.True);
+            Assert.That(
+                bartender.CurrentClipKind,
+                Is.EqualTo(BarBartenderClipKind.Wipe));
+            Assert.That(
+                bar.transform.InverseTransformPoint(
+                    bartender.transform.position).y,
+                Is.Zero.Within(0.001f),
+                "The ordinary bartender must stand at the same ground level " +
+                "for which CafeAttendantWipe was authored.");
+
+            Transform counterTop = bar.Room.Find("Counter Top");
+            Assert.That(counterTop, Is.Not.Null);
+            Renderer counterRenderer = counterTop.GetComponent<Renderer>();
+            Assert.That(counterRenderer, Is.Not.Null);
+
+            SkinnedMeshRenderer towel = null;
+            for (int index = 0;
+                 index < bartender.Registry.RendererBindings.Count;
+                 index++)
+            {
+                BarBartenderRendererBinding binding =
+                    bartender.Registry.RendererBindings[index];
+                if (binding != null &&
+                    binding.RendererName == "ACC_ServiceTowel")
+                {
+                    towel = binding.Renderer as SkinnedMeshRenderer;
+                    break;
+                }
+            }
+
+            Assert.That(towel, Is.Not.Null);
+            Assert.That(towel.enabled, Is.True);
+            Assert.That(
+                bartender.Registry.TryGetClip(
+                    BarBartenderClipKind.Wipe,
+                    out AnimationClip wipeClip,
+                    out bool wipeLoops),
+                Is.True);
+            Assert.That(wipeLoops, Is.True);
+            var scratch = new Mesh();
+            try
+            {
+                AdvanceWipeToPhase(bartender, wipeClip.length, 0.12f);
+                Vector3 first = MeasureWipeTowel(
+                    towel,
+                    scratch,
+                    counterRenderer.bounds);
+                AdvanceWipeToPhase(bartender, wipeClip.length, 0.28f);
+                Vector3 second = MeasureWipeTowel(
+                    towel,
+                    scratch,
+                    counterRenderer.bounds);
+                AdvanceWipeToPhase(bartender, wipeClip.length, 0.44f);
+                Vector3 third = MeasureWipeTowel(
+                    towel,
+                    scratch,
+                    counterRenderer.bounds);
+
+                first.y = 0f;
+                second.y = 0f;
+                third.y = 0f;
+                Assert.That(
+                    Vector3.Distance(first, second),
+                    Is.GreaterThanOrEqualTo(MinimumVisibleWipeTravel),
+                    "The first Wipe stroke is not visible across the top.");
+                Assert.That(
+                    Vector3.Distance(second, third),
+                    Is.GreaterThanOrEqualTo(MinimumVisibleWipeTravel),
+                    "The return Wipe stroke is not visible across the top.");
+                Assert.That(
+                    Vector3.Distance(first, third),
+                    Is.LessThanOrEqualTo(MaximumWipeReturnError),
+                    "CafeAttendantWipe does not return across the same patch.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(scratch);
+            }
         }
 
         [UnityTest]
@@ -281,7 +381,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(menu, Is.Not.Null);
             Assert.That(menu.IsPlaced, Is.True);
             Assert.That(menu.IsTextVisible, Is.True);
-            Assert.That(menu.ItemLines.Count, Is.EqualTo(9));
+            Assert.That(
+                menu.ItemLines.Count,
+                Is.EqualTo(BarServicePropFactory.MenuItemCount));
+
+            Vector3 menuInRoom = bar.Room.InverseTransformPoint(
+                menu.PropRoot.position);
+            Vector3 heroInRoom = bar.Room.InverseTransformPoint(
+                seatPlan.ActionHipPosition);
+            Assert.That(
+                menuInRoom.x,
+                Is.EqualTo(heroInRoom.x).Within(0.01f),
+                "the bartender did not put the menu directly before the " +
+                "seated hero");
 
             BarServicePropInstance prop =
                 menu.PropRoot.GetComponent<BarServicePropInstance>();
@@ -303,6 +415,14 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Vector3 authoredPageNormal =
                 (pageNormal.position - pageOrigin.position).normalized;
+            Vector3 cameraFromPage =
+                camera.transform.position - pageOrigin.position;
+            float overheadSurfaceFacing = Vector3.Dot(
+                authoredPageNormal,
+                cameraFromPage.normalized);
+            float cameraPlanarOffset = Vector3.ProjectOnPlane(
+                cameraFromPage,
+                authoredPageNormal).magnitude;
             float closestMenuDistance = float.PositiveInfinity;
             for (int index = 0; index < prop.Renderers.Count; index++)
             {
@@ -315,6 +435,7 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             float minimumPageFacing = 1f;
+            float minimumRenderedFontSize = float.PositiveInfinity;
             Vector3 firstPageOutward = Vector3.zero;
             Vector3 firstTowardCamera = Vector3.zero;
             for (int index = 0; index < menu.ItemLines.Count; index++)
@@ -322,6 +443,17 @@ namespace BarPromenade.Tests.PlayMode
                 TMPro.TMP_Text line = menu.ItemLines[index];
                 Assert.That(line, Is.Not.Null);
                 line.ForceMeshUpdate();
+                Assert.That(
+                    line.isTextOverflowing,
+                    Is.False,
+                    $"bar menu row {index + 1} is truncated");
+                Assert.That(
+                    line.enableAutoSizing,
+                    Is.False,
+                    $"bar menu row {index + 1} may not shrink independently");
+                minimumRenderedFontSize = Mathf.Min(
+                    minimumRenderedFontSize,
+                    line.fontSize);
                 Vector3 outward = -line.transform.forward.normalized;
                 Vector3 towardCamera =
                     (camera.transform.position -
@@ -350,9 +482,12 @@ namespace BarPromenade.Tests.PlayMode
                 $"{closestMenuDistance:F3}, pageFacing=" +
                 $"{minimumPageFacing:F3}, firstOutward=" +
                 $"{firstPageOutward:F3}, firstTowardCamera=" +
-                $"{firstTowardCamera:F3}, camera=" +
+                $"{firstTowardCamera:F3}, minFont=" +
+                $"{minimumRenderedFontSize:F3}, camera=" +
                 $"{camera.transform.position:F3}, authoredPageNormal=" +
-                $"{authoredPageNormal:F3}, rowAxes=" +
+                $"{authoredPageNormal:F3}, overheadFacing=" +
+                $"{overheadSurfaceFacing:F3}, planarOffset=" +
+                $"{cameraPlanarOffset:F3}, rowAxes=" +
                 $"{firstRow.right:F3}/{firstRow.up:F3}/" +
                 $"{firstRow.forward:F3}, viewport={viewport}.");
 
@@ -373,6 +508,43 @@ namespace BarPromenade.Tests.PlayMode
                 minimumPageFacing,
                 Is.GreaterThanOrEqualTo(MinimumReadablePageFacing),
                 "the camera sees the menu text almost edge-on");
+            Assert.That(
+                minimumRenderedFontSize,
+                Is.EqualTo(CounterMenuPageStyle.Bar.ItemFontSize)
+                    .Within(0.0001f),
+                "the descriptive bar menu does not use one fixed type size");
+            Assert.That(
+                overheadSurfaceFacing,
+                Is.GreaterThanOrEqualTo(MinimumOverheadSurfaceFacing),
+                "the camera does not hang steeply enough over the menu");
+            Assert.That(
+                cameraPlanarOffset,
+                Is.LessThanOrEqualTo(MaximumCameraPlanarOffset),
+                "the camera projection lands beyond the menu footprint");
+
+            Volume cinematicVolume = FindCinematicDepthOfFieldVolume();
+            Assert.That(cinematicVolume, Is.Not.Null);
+            Assert.That(
+                cinematicVolume.profile.TryGet(
+                    out DepthOfField cinematicDepthOfField),
+                Is.True);
+            Assert.That(
+                cinematicDepthOfField.focusDistance.value,
+                Is.EqualTo(Vector3.Distance(
+                        camera.transform.position,
+                        menu.CameraFocusWorldPosition))
+                    .Within(0.01f),
+                "the close-up DOF is focused behind the menu");
+            Assert.That(
+                cinematicDepthOfField.aperture.value,
+                Is.EqualTo(
+                    BarDrinkShopController.CounterMenuDepthOfFieldAperture),
+                "the menu close-up uses the restrained indoor aperture");
+            Assert.That(
+                cinematicDepthOfField.focalLength.value,
+                Is.EqualTo(
+                    BarDrinkShopController.CounterMenuDepthOfFieldFocalLength),
+                "the menu close-up uses the restrained indoor focal length");
             Assert.That(viewport.HasPoints, Is.True);
             Assert.That(
                 viewport.MinimumDepth,
@@ -394,6 +566,61 @@ namespace BarPromenade.Tests.PlayMode
                 viewport.MaximumY,
                 Is.LessThanOrEqualTo(0.95f),
                 "the menu is cropped at the top edge");
+
+            PlayerCameraFollow cameraFollow =
+                station.SeatView.CameraFollow;
+            Assert.That(cameraFollow, Is.Not.Null);
+            var heroPresentation =
+                bar.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(heroPresentation, Is.Not.Null);
+            Assert.That(heroPresentation.Registry, Is.Not.Null);
+            seatPlan.EvaluateCamera(
+                heroPresentation.Registry.Anchors.Pelvis.position,
+                0f,
+                0f,
+                out Vector3 returnedPosition,
+                out Quaternion returnedRotation);
+            Assert.That(
+                Vector3.Distance(
+                    cameraFollow.FixedBasePosition,
+                    returnedPosition),
+                Is.GreaterThan(0.15f),
+                "The menu close-up is not visibly closer than the seated " +
+                "view.");
+            Assert.That(
+                cameraFollow.FixedBaseFieldOfView,
+                Is.EqualTo(BarDrinkMenuPresentation.CameraFocusFieldOfView)
+                    .Within(0.001f));
+
+            Assert.That(bar.DrinkShop.RestPhysicalMenuAtCounter(), Is.True);
+            deadline = Time.realtimeSinceStartup + 2f;
+            while (station.SeatView.IsMenuFocusLocked &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                station.SeatView.IsMenuFocusLocked,
+                Is.False,
+                "Closing the menu never released its camera focus.");
+            Assert.That(
+                station.SeatView.MenuFocusWeight,
+                Is.Zero.Within(0.0001f));
+            Assert.That(
+                Vector3.Distance(
+                    cameraFollow.FixedBasePosition,
+                    returnedPosition),
+                Is.LessThan(0.002f),
+                "The camera did not return to the seated pose.");
+            Assert.That(
+                Quaternion.Angle(
+                    cameraFollow.FixedBaseRotation,
+                    returnedRotation),
+                Is.LessThan(0.1f));
+            Assert.That(
+                cameraFollow.FixedBaseFieldOfView,
+                Is.EqualTo(seatPlan.CameraFieldOfView).Within(0.001f));
         }
 
         private static ViewportEnvelope MeasureMenuViewport(
@@ -433,6 +660,64 @@ namespace BarPromenade.Tests.PlayMode
             return envelope;
         }
 
+        private static Vector3 MeasureWipeTowel(
+            SkinnedMeshRenderer towel,
+            Mesh scratch,
+            Bounds counter)
+        {
+            scratch.Clear();
+            towel.BakeMesh(scratch, true);
+            Vector3[] vertices = scratch.vertices;
+            Assert.That(vertices, Is.Not.Empty);
+            Matrix4x4 localToWorld = towel.localToWorldMatrix;
+            float lowest = float.PositiveInfinity;
+            Vector3 centre = Vector3.zero;
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                Vector3 world = localToWorld.MultiplyPoint3x4(vertices[index]);
+                lowest = Mathf.Min(lowest, world.y);
+                centre += world;
+            }
+
+            centre /= vertices.Length;
+            float gap = lowest - counter.max.y;
+            Assert.That(
+                gap,
+                Is.InRange(-MaximumWipePenetration, MaximumWipeGap),
+                $"The towel is wiping air ({gap:F3} m from the counter). ");
+            Assert.That(
+                centre.x,
+                Is.InRange(
+                    counter.min.x - WipeSurfaceMargin,
+                    counter.max.x + WipeSurfaceMargin),
+                "The towel left the counter width.");
+            Assert.That(
+                centre.z,
+                Is.InRange(
+                    counter.min.z - WipeSurfaceMargin,
+                    counter.max.z + WipeSurfaceMargin),
+                "The towel left the counter depth.");
+            return centre;
+        }
+
+        private static void AdvanceWipeToPhase(
+            BarBartenderPresentation bartender,
+            float clipLength,
+            float normalizedPhase)
+        {
+            float current = Mathf.Repeat(
+                bartender.CurrentClipTimeSeconds,
+                clipLength);
+            float target = normalizedPhase * clipLength;
+            float delta = target - current;
+            if (delta < 0f)
+            {
+                delta += clipLength;
+            }
+
+            bartender.Advance(delta);
+        }
+
         private static void IncludeLocalBounds(
             Camera camera,
             ViewportEnvelope envelope,
@@ -457,6 +742,21 @@ namespace BarPromenade.Tests.PlayMode
                     }
                 }
             }
+        }
+
+        private static Volume FindCinematicDepthOfFieldVolume()
+        {
+            Volume[] volumes = Resources.FindObjectsOfTypeAll<Volume>();
+            for (int index = 0; index < volumes.Length; index++)
+            {
+                if (volumes[index] != null &&
+                    volumes[index].name == "Cinematic Depth Of Field")
+                {
+                    return volumes[index];
+                }
+            }
+
+            return null;
         }
 
         private sealed class ViewportEnvelope

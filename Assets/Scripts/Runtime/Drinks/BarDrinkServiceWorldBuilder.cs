@@ -42,7 +42,7 @@ namespace BarPromenade
                 BarDrinkServicePlan.RequiredBottleCount)
             {
                 throw new ArgumentException(
-                    "Bar drink world requires exactly nine bottle slots.",
+                    "Bar drink world requires exactly four bottle slots.",
                     nameof(plan));
             }
 
@@ -91,13 +91,19 @@ namespace BarPromenade
             RuntimePrimitiveFactory.SetColor(streamRenderer, Color.white);
             SetTransparentRenderer(streamRenderer);
 
+            BarBeerTapRuntimeBinding beerTap = BindBeerTap(
+                parent,
+                serviceRoot,
+                plan.BeerTap);
+
             serviceView.Initialize(
                 plan,
                 bottles,
                 vessels,
                 stream.transform,
                 streamRenderer,
-                menu);
+                menu,
+                beerTap);
             return serviceView;
         }
 
@@ -317,6 +323,24 @@ namespace BarPromenade
                 authored,
                 "service_vessel_target:" + kind);
             pourTarget.name = "Pour Target";
+            Transform gripAnchor = RequireAnchor(
+                authored,
+                "service_vessel_grip:" + kind);
+            gripAnchor.name = "Vessel Grip Anchor";
+
+            Renderer highlightRenderer = null;
+            if (authored.TryGetRenderer(
+                    "service_vessel_highlight",
+                    out Renderer authoredHighlight))
+            {
+                highlightRenderer = authoredHighlight;
+                RuntimePrimitiveFactory.SetColor(
+                    highlightRenderer,
+                    new Color(1f, 0.72f, 0.04f, 1f));
+                highlightRenderer.shadowCastingMode = ShadowCastingMode.Off;
+                highlightRenderer.receiveShadows = false;
+                highlightRenderer.enabled = false;
+            }
 
             BarDrinkVesselView view =
                 vesselObject.AddComponent<BarDrinkVesselView>();
@@ -325,8 +349,82 @@ namespace BarPromenade
                 glassRenderer,
                 liquidObject.transform,
                 liquidRenderer,
-                pourTarget);
+                pourTarget,
+                gripAnchor,
+                highlightRenderer);
             return view;
+        }
+
+        private static BarBeerTapRuntimeBinding BindBeerTap(
+            Transform room,
+            Transform serviceRoot,
+            BarBeerTapServicePlan plan)
+        {
+            bool authored = true;
+            Transform serverDock = ResolveTapAnchor(
+                room,
+                serviceRoot,
+                BarBeerTapServicePlan.ServerDockAnchorName,
+                plan.ServerPose,
+                ref authored);
+            Transform vesselDock = ResolveTapAnchor(
+                room,
+                serviceRoot,
+                BarBeerTapServicePlan.VesselDockAnchorName,
+                plan.VesselPose,
+                ref authored);
+            Transform spout = ResolveTapAnchor(
+                room,
+                serviceRoot,
+                BarBeerTapServicePlan.SpoutAnchorName,
+                plan.SpoutPose,
+                ref authored);
+            Transform handlePivot = ResolveTapAnchor(
+                room,
+                serviceRoot,
+                BarBeerTapServicePlan.HandlePivotAnchorName,
+                plan.HandlePivotPose,
+                ref authored);
+            Transform handleGrip = ResolveTapAnchor(
+                room,
+                serviceRoot,
+                BarBeerTapServicePlan.HandleGripAnchorName,
+                plan.HandleGripPose,
+                ref authored);
+            Transform handleRoot = room.Find(
+                BarBeerTapServicePlan.HandlePartName);
+            authored &= handleRoot != null;
+            return new BarBeerTapRuntimeBinding(
+                serverDock,
+                vesselDock,
+                spout,
+                handlePivot,
+                handleGrip,
+                handleRoot,
+                authored);
+        }
+
+        private static Transform ResolveTapAnchor(
+            Transform room,
+            Transform serviceRoot,
+            string anchorName,
+            BarDrinkServicePose fallback,
+            ref bool authored)
+        {
+            Transform anchor = room.Find(anchorName);
+            if (anchor != null)
+            {
+                return anchor;
+            }
+
+            authored = false;
+            var fallbackObject = new GameObject(
+                anchorName + " Runtime Fallback");
+            Transform fallbackAnchor = fallbackObject.transform;
+            fallbackAnchor.SetParent(serviceRoot, false);
+            fallbackAnchor.localPosition = fallback.Position;
+            fallbackAnchor.localRotation = fallback.Rotation;
+            return fallbackAnchor;
         }
 
         private static BarDrinkMenuPresentation BuildMenu(

@@ -32,19 +32,8 @@ namespace BarPromenade
         private const string CeilingFanName = "Slow Ceiling Fan";
         private const string JukeboxName = "Bar Jukebox";
         private const string PracticalGroup = "prefab:Practical";
-        private const string BartenderDuckboardName =
-            "Bartender Duckboard";
-        private const float LegacyDuckboardSegmentWidth = 1.35f;
         private const float LegacyRightmostStoolX = 4.25f;
         private const float SafeRightmostStoolX = 4.00f;
-
-        private static readonly float[] LegacyDuckboardExtensionOffsets =
-        {
-            -LegacyDuckboardSegmentWidth,
-            LegacyDuckboardSegmentWidth,
-            LegacyDuckboardSegmentWidth * 2f,
-            LegacyDuckboardSegmentWidth * 3f
-        };
 
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
@@ -120,7 +109,6 @@ namespace BarPromenade
             BuildPracticals(room, registry, plan);
             Organise(room, registry, plan, fanPivot, jukeboxPivot);
             RepositionLegacyRightmostStool(room);
-            ExtendLegacyBartenderDuckboard(room);
 
             //  After `Organise`, so the sets it destroyed leave no
             //  collision behind, and so the boxes hang off the room
@@ -153,43 +141,6 @@ namespace BarPromenade
                 }
 
                 part.localPosition += Vector3.right * offset;
-            }
-        }
-
-        /// <summary>
-        /// Version 3.2.1 of the authored room has one short duckboard under
-        /// the former single service point. Until the next asset regeneration
-        /// lands the generator's continuous board, repeat that authored slat
-        /// module under every reachable staff position. This is placement of
-        /// existing authored geometry, not a runtime primitive substitute.
-        /// </summary>
-        private static void ExtendLegacyBartenderDuckboard(Transform room)
-        {
-            Transform source = room.Find(BartenderDuckboardName);
-            Renderer renderer = source != null
-                ? source.GetComponent<Renderer>()
-                : null;
-            if (renderer == null ||
-                CalculateRendererBoundsInSpace(renderer, room)
-                    .size.x > 3f)
-            {
-                return;
-            }
-
-            for (int index = 0;
-                 index < LegacyDuckboardExtensionOffsets.Length;
-                 index++)
-            {
-                Transform copy = Object.Instantiate(
-                    source.gameObject,
-                    room).transform;
-                copy.name = $"{BartenderDuckboardName} Extension " +
-                            $"{index + 1:00}";
-                copy.localPosition = source.localPosition +
-                    Vector3.right *
-                    LegacyDuckboardExtensionOffsets[index];
-                copy.localRotation = source.localRotation;
-                copy.localScale = source.localScale;
             }
         }
 
@@ -768,17 +719,36 @@ namespace BarPromenade
             triggerCollider.size = new Vector3(1.2f, 1.8f, 1.5f);
 
             Transform panel = jukebox.Find("Jukebox Glow Panel");
-            if (panel == null)
+            Transform leftTube =
+                jukebox.Find("Jukebox Glow Tube -1");
+            Transform rightTube =
+                jukebox.Find("Jukebox Glow Tube 1");
+            Renderer panelRenderer = panel != null
+                ? panel.GetComponent<Renderer>()
+                : null;
+            Renderer leftTubeRenderer = leftTube != null
+                ? leftTube.GetComponent<Renderer>()
+                : null;
+            Renderer rightTubeRenderer = rightTube != null
+                ? rightTube.GetComponent<Renderer>()
+                : null;
+            if (panelRenderer == null ||
+                leftTubeRenderer == null ||
+                rightTubeRenderer == null)
             {
                 throw new InvalidOperationException(
-                    "The bar jukebox model has no glow panel to light.");
+                    "The bar jukebox model needs its glow panel and " +
+                    "both glow tubes for the light presentation.");
             }
 
             BarJukeboxInteraction interaction =
                 trigger.AddComponent<BarJukeboxInteraction>();
             interaction.Initialize(
-                panel.GetComponent<Renderer>(),
-                new Color(1.35f, 0.78f, 0.30f, 1f));
+                panelRenderer,
+                new Color(1.35f, 0.78f, 0.30f, 1f),
+                leftTubeRenderer,
+                rightTubeRenderer,
+                new Color(1.30f, 0.34f, 0.42f, 1f));
         }
 
         /// <summary>

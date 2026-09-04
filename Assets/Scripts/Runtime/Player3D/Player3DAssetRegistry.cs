@@ -317,6 +317,7 @@ namespace BarPromenade
         [SerializeField] private Transform rightFoot;
         [SerializeField] private Transform leftGrip;
         [SerializeField] private Transform rightGrip;
+        [SerializeField] private Transform leftVessel;
         [SerializeField] private Transform rightCigarette;
         [SerializeField] private Transform mouth;
 
@@ -328,6 +329,7 @@ namespace BarPromenade
             Transform rightFoot,
             Transform leftGrip,
             Transform rightGrip,
+            Transform leftVessel,
             Transform rightCigarette,
             Transform mouth)
         {
@@ -338,6 +340,7 @@ namespace BarPromenade
             this.rightFoot = rightFoot;
             this.leftGrip = leftGrip;
             this.rightGrip = rightGrip;
+            this.leftVessel = leftVessel;
             this.rightCigarette = rightCigarette;
             this.mouth = mouth;
         }
@@ -349,6 +352,7 @@ namespace BarPromenade
         public Transform RightFoot => rightFoot;
         public Transform LeftGrip => leftGrip;
         public Transform RightGrip => rightGrip;
+        public Transform LeftVessel => leftVessel;
         public Transform RightCigarette => rightCigarette;
         public Transform Mouth => mouth;
     }

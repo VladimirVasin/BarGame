@@ -972,6 +972,51 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void PaidDrinkOrder_DefersEffectsAndConsumesExactlyOnce()
+        {
+            GameSessionState.UpdateDrinkingProgress(
+                40,
+                DrinkId.RedWine,
+                2);
+            GameSessionState.UpdateNeeds(0, 20);
+
+            DrinkPurchaseResult result = GameSessionState.TryOrderDrink(
+                DrinkId.LightBeer,
+                out DrinkOrderToken order);
+
+            Assert.That(result.Succeeded, Is.True);
+            Assert.That(order, Is.Not.Null);
+            Assert.That(order.IsConsumed, Is.False);
+            Assert.That(GameSessionState.CashBalance, Is.EqualTo(991));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(40));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(2));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(20));
+
+            // Consumption uses the current state, not the stale order-time
+            // snapshot, because a full served drink may wait on the counter.
+            GameSessionState.UpdateDrinkingProgress(
+                39,
+                DrinkId.RedWine,
+                2);
+            Assert.That(
+                GameSessionState.TryConsumeOrderedDrink(order),
+                Is.True);
+            Assert.That(order.IsConsumed, Is.True);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(47));
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.LightBeer));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(3));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(14));
+
+            Assert.That(
+                GameSessionState.TryConsumeOrderedDrink(order),
+                Is.False);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(47));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(3));
+        }
+
+        [Test]
         public void IntoxicationRecovery_ConsumesTimeAndStopsAtSober()
         {
             GameSessionState.UpdateDrinkingProgress(

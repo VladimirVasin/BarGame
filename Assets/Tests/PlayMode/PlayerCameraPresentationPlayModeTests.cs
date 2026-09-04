@@ -1023,6 +1023,88 @@ namespace BarPromenade.Tests.PlayMode
 
 
 
+        [UnityTest]
+        public IEnumerator FocusOverride_FollowsThePointAndBlendsBack()
+        {
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject player = CreateObject("Focus Override Camera Target");
+            player.transform.position = new Vector3(0f, 100f, 0f);
+            PlayerCameraFollow follow =
+                camera.gameObject.AddComponent<PlayerCameraFollow>();
+            follow.Initialize(camera, player.transform, false);
+            follow.SetOrbitInputEnabled(false);
+            follow.SetCinematicMotionEnabled(false);
+            follow.Snap();
+            yield return null;
+
+            Vector3 rootFocus = player.transform.position + Vector3.up * 1.4f;
+            Assert.That(AimError(camera, rootFocus), Is.LessThan(0.5f));
+
+            // A body lying a stride to the side: the focus pans over to
+            // it, damped, and never cuts.
+            Vector3 lying = player.transform.position + new Vector3(0.7f, 0f, 0.3f);
+            Vector3 lyingFocus = lying + Vector3.up * PlayerCameraFollow.FocusOverrideHeight;
+            follow.SetFocusOverride(lying, 1f);
+            Assert.That(follow.FocusOverrideWeight, Is.EqualTo(1f));
+            float largestStep = 0f;
+            Vector3 previousForward = camera.transform.forward;
+            float deadline = Time.realtimeSinceStartup + 4f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                largestStep = Mathf.Max(
+                    largestStep,
+                    Vector3.Angle(previousForward, camera.transform.forward));
+                previousForward = camera.transform.forward;
+                if (AimError(camera, lyingFocus) < 0.5f)
+                {
+                    break;
+                }
+            }
+
+            Assert.That(
+                AimError(camera, lyingFocus),
+                Is.LessThan(0.5f),
+                "the camera must come to aim at the overridden focus");
+            Assert.That(
+                largestStep,
+                Is.LessThan(6f),
+                "the pan to the body is damped, not a cut");
+
+            // Half weight lands half way; clearing returns to the root.
+            follow.SetFocusOverride(lying, 0.5f);
+            deadline = Time.realtimeSinceStartup + 4f;
+            Vector3 halfFocus = Vector3.Lerp(rootFocus, lyingFocus, 0.5f);
+            while (Time.realtimeSinceStartup < deadline &&
+                   AimError(camera, halfFocus) >= 0.5f)
+            {
+                yield return null;
+            }
+
+            Assert.That(AimError(camera, halfFocus), Is.LessThan(0.5f));
+
+            follow.ClearFocusOverride();
+            Assert.That(follow.FocusOverrideWeight, Is.Zero);
+            deadline = Time.realtimeSinceStartup + 4f;
+            while (Time.realtimeSinceStartup < deadline &&
+                   AimError(camera, rootFocus) >= 0.5f)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                AimError(camera, rootFocus),
+                Is.LessThan(0.5f),
+                "clearing the override returns the focus to the root");
+        }
+
+        private static float AimError(Camera camera, Vector3 focus)
+        {
+            return Vector3.Angle(
+                camera.transform.forward,
+                (focus - camera.transform.position).normalized);
+        }
+
         private Camera CreateCamera(Vector3 position)
         {
             GameObject cameraObject = CreateObject("Presentation Test Camera");

@@ -52,7 +52,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Build_CreatesNinePhysicalSelectableBottles()
+        public IEnumerator Build_CreatesFourPhysicalSelectableBottles()
         {
             Assert.That(view, Is.Not.Null);
             Assert.That(view.Plan, Is.SameAs(plan));
@@ -404,11 +404,12 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 originalLocalScale = finalBottle.transform.localScale;
 
             for (int index = 0;
-                 index < BarDrinkPresentationCatalog.Presentations.Count;
+                 index < BarDrinkCatalog.Offers.Count;
                  index++)
             {
                 BarDrinkPresentation presentation =
-                    BarDrinkPresentationCatalog.Presentations[index];
+                    BarDrinkPresentationCatalog.Get(
+                        BarDrinkCatalog.Offers[index].DrinkId);
                 Assert.That(
                     view.SelectBottle(presentation.DrinkId),
                     Is.True,

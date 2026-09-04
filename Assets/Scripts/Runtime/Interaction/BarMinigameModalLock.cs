@@ -7,22 +7,31 @@ namespace BarPromenade
         private BarMinigameModalLockOptions(
             bool disableMotorInput,
             bool disableCinematicMotion,
-            bool hideHud)
+            bool hideHud,
+            bool disableOrbitInput)
         {
             DisableMotorInput = disableMotorInput;
             DisableCinematicMotion = disableCinematicMotion;
             HideHud = hideHud;
+            DisableOrbitInput = disableOrbitInput;
         }
 
         public bool DisableMotorInput { get; }
         public bool DisableCinematicMotion { get; }
         public bool HideHud { get; }
 
+        /// <summary>
+        /// Whether the orbit camera stops listening. A full-screen
+        /// minigame owns the screen; a fall does not — the player keeps
+        /// the camera while he lies there.
+        /// </summary>
+        public bool DisableOrbitInput { get; }
+
         public static BarMinigameModalLockOptions Fullscreen =>
-            new BarMinigameModalLockOptions(true, true, true);
+            new BarMinigameModalLockOptions(true, true, true, true);
 
         public static BarMinigameModalLockOptions BalanceCheck =>
-            new BarMinigameModalLockOptions(false, false, false);
+            new BarMinigameModalLockOptions(false, false, false, false);
     }
 
     public sealed class BarMinigameModalLock
@@ -135,7 +144,11 @@ namespace BarPromenade
             }
 
             interactor.SetInputEnabled(false);
-            cameraFollow?.SetOrbitInputEnabled(false);
+            if (options.DisableOrbitInput)
+            {
+                cameraFollow?.SetOrbitInputEnabled(false);
+            }
+
             if (options.DisableCinematicMotion)
             {
                 cameraFollow?.SetCinematicMotionEnabled(false);

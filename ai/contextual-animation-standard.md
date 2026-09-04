@@ -54,23 +54,27 @@ decision recorded as an accepted exception in `ai/architecture-notes.md`.
    timeline owns normalized clip time, loop holds and terminal sampling;
    Animator transitions, root motion and Animation Events do not own gameplay
    transactions.
-5. Sample the active clip first, then align its registered pelvis anchor to the
+5. An interaction already holding a loop may run a nested
+   `enter → loop → exit` action on the same rig. The nested action owns its
+   temporary look/input lock and completion callback, then returns to the
+   exact parent loop without replacing that interaction's lifecycle or cleanup.
+6. Sample the active clip first, then align its registered pelvis anchor to the
    authored world target. Reset that spatial offset on normal completion,
    cancellation, disable, destroy and failed preparation.
-6. A camera-local first-person subset acquires an owner-scoped world-visibility
+7. A camera-local first-person subset acquires an owner-scoped world-visibility
    lease only when the subset becomes visible. The final lease release restores
    the exact world renderer and contact-shadow states.
-7. The authored exit carries the visible hero to the independent exit pose.
+8. The authored exit carries the visible hero to the independent exit pose.
    Present the terminal pose for at least one rendered frame even when a hitch
    crosses the nominal phase duration. Restore root, facing and neutral
    presentation at that endpoint, then defer input unlock until the final
    presentation `LateUpdate` completes.
-8. Failed preparation, stale inventory requirements, scene transition,
+9. Failed preparation, stale inventory requirements, scene transition,
    cancellation, disable and destroy use owned idempotent cleanup. Restore
    input, hero presentation, spatial offsets, visibility leases, contact
    shadow, camera, HUD, props and prepared partner animation without consuming
    a resource before every required presentation asset is ready.
-9. Reuse `PlayerAnimatedInteractionController.BeginPositioned` and the shared
+10. Reuse `PlayerAnimatedInteractionController.BeginPositioned` and the shared
    positioning/timeline/cleanup path, or extend that path generically. Do not
    add a one-off interaction that bypasses this standard.
 

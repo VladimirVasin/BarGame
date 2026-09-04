@@ -20,6 +20,8 @@ namespace BarPromenade
         [SerializeField] private Transform liquidRoot;
         [SerializeField] private Renderer liquidRenderer;
         [SerializeField] private Transform pourTarget;
+        [SerializeField] private Transform gripAnchor;
+        [SerializeField] private Renderer interactionHighlightRenderer;
 
         private MaterialPropertyBlock liquidProperties;
         private Vector3 liquidFullScale;
@@ -27,6 +29,7 @@ namespace BarPromenade
         private Vector3 originalLocalPosition;
         private Quaternion originalLocalRotation;
         private Vector3 originalLocalScale;
+        private Quaternion gripRotationInVessel = Quaternion.identity;
         private float targetFill;
         private bool initialized;
 
@@ -35,8 +38,16 @@ namespace BarPromenade
         public Transform LiquidRoot => liquidRoot;
         public Renderer LiquidRenderer => liquidRenderer;
         public Transform PourTarget => pourTarget;
+        public Transform GripAnchor => gripAnchor;
+        public Renderer InteractionHighlightRenderer =>
+            interactionHighlightRenderer;
         public Vector3 PourTargetWorldPosition =>
             pourTarget != null ? pourTarget.position : transform.position;
+        public Vector3 GripWorldPosition =>
+            gripAnchor != null ? gripAnchor.position : transform.position;
+        public bool IsInteractionHighlighted =>
+            interactionHighlightRenderer != null &&
+            interactionHighlightRenderer.enabled;
         public float TargetFill => targetFill;
         public float FillProgress { get; private set; }
         public float DisplayedFill => FillProgress * targetFill;
@@ -46,7 +57,9 @@ namespace BarPromenade
             Renderer newGlassRenderer,
             Transform newLiquidRoot,
             Renderer newLiquidRenderer,
-            Transform newPourTarget)
+            Transform newPourTarget,
+            Transform newGripAnchor,
+            Renderer newInteractionHighlightRenderer = null)
         {
             if (newKind == BarDrinkVesselKind.None)
             {
@@ -81,19 +94,42 @@ namespace BarPromenade
                     nameof(newPourTarget));
             }
 
+            if (newGripAnchor == null ||
+                !newGripAnchor.IsChildOf(transform))
+            {
+                throw new ArgumentException(
+                    "The grip anchor must belong to the vessel root.",
+                    nameof(newGripAnchor));
+            }
+
+            if (newInteractionHighlightRenderer != null &&
+                !newInteractionHighlightRenderer.transform
+                    .IsChildOf(transform))
+            {
+                throw new ArgumentException(
+                    "The interaction highlight must belong to the vessel root.",
+                    nameof(newInteractionHighlightRenderer));
+            }
+
             kind = newKind;
             glassRenderer = newGlassRenderer;
             liquidRoot = newLiquidRoot;
             liquidRenderer = newLiquidRenderer;
             pourTarget = newPourTarget;
+            gripAnchor = newGripAnchor;
+            interactionHighlightRenderer =
+                newInteractionHighlightRenderer;
             liquidProperties = new MaterialPropertyBlock();
             liquidFullScale = liquidRoot.localScale;
             originalParent = transform.parent;
             originalLocalPosition = transform.localPosition;
             originalLocalRotation = transform.localRotation;
             originalLocalScale = transform.localScale;
+            gripRotationInVessel = Quaternion.Inverse(transform.rotation) *
+                                   gripAnchor.rotation;
             targetFill = 1f;
             initialized = true;
+            SetInteractionHighlight(false);
             SetFillProgress(0f);
         }
 
@@ -145,6 +181,74 @@ namespace BarPromenade
             transform.SetPositionAndRotation(position, rotation);
         }
 
+        /// <summary>
+        /// Keeps the authored glass grip exactly on an animated hand socket.
+        /// The vessel stays under the scale-free service root; parenting it
+        /// to an imported FBX bone would inherit that hierarchy's 100x scale.
+        /// </summary>
+        public bool AlignGripTo(Transform carrier)
+        {
+            if (!initialized || carrier == null || gripAnchor == null)
+            {
+                return false;
+            }
+
+            Quaternion vesselRotation = carrier.rotation *
+                Quaternion.Inverse(gripRotationInVessel);
+            transform.SetPositionAndRotation(
+                carrier.position,
+                vesselRotation);
+            transform.position += carrier.position - gripAnchor.position;
+            return true;
+        }
+
+        public float ResolveGripError(Transform carrier)
+        {
+            return initialized && carrier != null && gripAnchor != null
+                ? Vector3.Distance(gripAnchor.position, carrier.position)
+                : float.PositiveInfinity;
+        }
+
+        /// <summary>
+        /// Uses the same angular-bounds gaze rule as the folded counter menu.
+        /// The caller owns interaction priority and drives prompt/highlight
+        /// from this single predicate.
+        /// </summary>
+        public bool IsLookingAt(
+            Camera camera,
+            float maximumDistance = 2.5f)
+        {
+            if (!initialized || !gameObject.activeInHierarchy ||
+                camera == null || glassRenderer == null ||
+                maximumDistance <= 0f)
+            {
+                return false;
+            }
+
+            Bounds bounds = glassRenderer.bounds;
+            Vector3 toVessel = bounds.center - camera.transform.position;
+            float distance = toVessel.magnitude;
+            if (distance <= 0.001f || distance > maximumDistance)
+            {
+                return false;
+            }
+
+            float apparentRadius = Mathf.Asin(Mathf.Clamp01(
+                bounds.extents.magnitude / distance));
+            float gazeAllowance = apparentRadius + 3f * Mathf.Deg2Rad;
+            return Vector3.Dot(
+                       camera.transform.forward,
+                       toVessel / distance) >= Mathf.Cos(gazeAllowance);
+        }
+
+        public void SetInteractionHighlight(bool highlighted)
+        {
+            if (interactionHighlightRenderer != null)
+            {
+                interactionHighlightRenderer.enabled = highlighted;
+            }
+        }
+
         public void SetLocalPose(
             BarDrinkServicePose pose,
             Transform referenceSpace)
@@ -173,6 +277,7 @@ namespace BarPromenade
             }
 
             ResetFill();
+            SetInteractionHighlight(false);
             if (transform.parent != originalParent &&
                 originalParent != null &&
                 gameObject.activeInHierarchy &&

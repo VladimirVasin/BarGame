@@ -77,6 +77,16 @@ namespace BarPromenade
         protected virtual float OutputVolume =>
             MusicMix.DefaultOutputVolume;
 
+        /// <summary>
+        /// Lets a scene-specific carrier prepare its sound before the
+        /// shared music tail leaves the scene. Ordinary score sources need
+        /// no preparation; a diegetic source can preserve its audible level
+        /// when the next scene moves the listener elsewhere.
+        /// </summary>
+        protected virtual void PrepareForSceneExitFade()
+        {
+        }
+
         protected virtual void Awake()
         {
             audioSource = GetComponent<AudioSource>();
@@ -136,6 +146,7 @@ namespace BarPromenade
 
             // The tail outlives the scene that owns it, so a location change
             // hears the whole fade-out instead of standing still for it.
+            PrepareForSceneExitFade();
             detachedForSceneExit =
                 MusicMix.BeginDetachedFadeOut(audioSource);
             BeginFade(0f, durationSeconds, false);

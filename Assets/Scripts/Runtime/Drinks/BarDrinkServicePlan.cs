@@ -36,14 +36,73 @@ namespace BarPromenade
     }
 
     /// <summary>
+    /// Authored local-space contract for the centre beer tap. The five named
+    /// anchors are emitted by the deterministic bar model generator; these
+    /// poses keep isolated service-view tests usable without a placed room.
+    /// </summary>
+    public readonly struct BarBeerTapServicePlan
+    {
+        public const string ServerDockAnchorName = "BeerTapServerDock";
+        public const string VesselDockAnchorName = "BeerTapVesselDock";
+        public const string SpoutAnchorName = "BeerTapSpout";
+        public const string HandlePivotAnchorName = "BeerTapHandlePivot";
+        public const string HandleGripAnchorName = "BeerTapHandleGrip";
+        public const string HandlePartName = "Beer Tap Handle 2";
+        public const float HandlePullDegrees = 28f;
+
+        public BarBeerTapServicePlan(
+            BarDrinkServicePose serverPose,
+            BarDrinkServicePose vesselPose,
+            BarDrinkServicePose spoutPose,
+            BarDrinkServicePose handlePivotPose,
+            BarDrinkServicePose handleGripPose)
+        {
+            ServerPose = serverPose;
+            VesselPose = vesselPose;
+            SpoutPose = spoutPose;
+            HandlePivotPose = handlePivotPose;
+            HandleGripPose = handleGripPose;
+        }
+
+        public BarDrinkServicePose ServerPose { get; }
+        public BarDrinkServicePose VesselPose { get; }
+        public BarDrinkServicePose SpoutPose { get; }
+        public BarDrinkServicePose HandlePivotPose { get; }
+        public BarDrinkServicePose HandleGripPose { get; }
+
+        public static BarBeerTapServicePlan CreateDefault()
+        {
+            return new BarBeerTapServicePlan(
+                new BarDrinkServicePose(
+                    new Vector3(5.08f, 0f, 6.72f),
+                    Quaternion.Euler(0f, 180f, 0f)),
+                new BarDrinkServicePose(
+                    new Vector3(5.08f, 1.025f, 6.13f),
+                    Quaternion.identity),
+                new BarDrinkServicePose(
+                    new Vector3(5.08f, 1.45f, 6.13f),
+                    Quaternion.Euler(90f, 0f, 0f)),
+                new BarDrinkServicePose(
+                    new Vector3(5.08f, 1.58f, 5.75f),
+                    Quaternion.identity),
+                new BarDrinkServicePose(
+                    new Vector3(5.08f, 1.796f, 5.75f),
+                    Quaternion.identity));
+        }
+    }
+
+    /// <summary>
     /// Local-space staging contract for the seated counter service. All poses
     /// are relative to the room transform passed to BarDrinkServiceWorldBuilder.
     /// </summary>
     public sealed class BarDrinkServicePlan
     {
-        public const int RequiredBottleCount = 9;
+        public const int RequiredBottleCount = 4;
         public const float MinimumCameraFieldOfView = 35f;
         public const float MaximumCameraFieldOfView = 75f;
+        public const float ClosedMenuHalfDepth = 0.25f;
+        public const float MaximumServiceVesselRadius = 0.18f;
+        public const float MinimumMenuVesselClearance = 0.08f;
 
         private readonly IReadOnlyList<BarDrinkBottleSlotPlan> bottleSlots;
 
@@ -60,7 +119,8 @@ namespace BarPromenade
             BarDrinkServicePose vesselHandPose,
             BarDrinkServicePose bottleHandPose,
             BarDrinkServicePose bottlePourPose,
-            IReadOnlyList<BarDrinkBottleSlotPlan> slots)
+            IReadOnlyList<BarDrinkBottleSlotPlan> slots,
+            BarBeerTapServicePlan? beerTap = null)
         {
             BarId = barId ?? string.Empty;
             StableSeed = stableSeed;
@@ -74,6 +134,7 @@ namespace BarPromenade
             VesselHandPose = vesselHandPose;
             BottleHandPose = bottleHandPose;
             BottlePourPose = bottlePourPose;
+            BeerTap = beerTap ?? BarBeerTapServicePlan.CreateDefault();
 
             if (slots == null)
             {
@@ -104,6 +165,7 @@ namespace BarPromenade
         public BarDrinkServicePose VesselHandPose { get; }
         public BarDrinkServicePose BottleHandPose { get; }
         public BarDrinkServicePose BottlePourPose { get; }
+        public BarBeerTapServicePlan BeerTap { get; }
         public IReadOnlyList<BarDrinkBottleSlotPlan> BottleSlots =>
             bottleSlots;
 
@@ -132,7 +194,7 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     $"Bar drink service requires exactly {RequiredBottleCount} " +
-                    "retail drink offers.");
+                    "visible menu offers.");
             }
 
             float serviceX = layout.CounterStationPosition.x;
@@ -146,7 +208,8 @@ namespace BarPromenade
                 0.80f;
             var slots = new BarDrinkBottleSlotPlan[RequiredBottleCount];
             const float spacing = 0.62f;
-            float firstX = serviceX - spacing * 4f;
+            float firstX = serviceX -
+                           spacing * (slots.Length - 1) * 0.5f;
             // Match the front lip of the first shelf generated by
             // BarInteriorWorldBuilder. This keeps the physical bottles
             // visibly supported instead of floating in the service gap.
@@ -172,7 +235,7 @@ namespace BarPromenade
             Vector3 vesselPosition = new Vector3(
                 serviceX,
                 counterSurfaceY + 0.015f,
-                counter.Bounds.yMin + 0.25f);
+                counter.Bounds.yMin + MaximumServiceVesselRadius);
             var plan = new BarDrinkServicePlan(
                 layout.BarId,
                 layout.StableSeed,
@@ -187,9 +250,9 @@ namespace BarPromenade
                 new Vector3(serviceX, 0f, customerZ + 0.03f),
                 new BarDrinkServicePose(
                     new Vector3(
-                        serviceX + 0.77f,
+                        serviceX,
                         counterSurfaceY + 0.025f,
-                        counter.Bounds.yMin + 0.19f),
+                        counter.Bounds.yMin + 0.71f),
                     Quaternion.Euler(8f, 0f, 0f)),
                 new BarDrinkServicePose(
                     vesselPosition,
@@ -262,9 +325,32 @@ namespace BarPromenade
             ValidatePose(VesselHandPose, nameof(VesselHandPose));
             ValidatePose(BottleHandPose, nameof(BottleHandPose));
             ValidatePose(BottlePourPose, nameof(BottlePourPose));
+            ValidatePose(BeerTap.ServerPose, nameof(BeerTap.ServerPose));
+            ValidatePose(BeerTap.VesselPose, nameof(BeerTap.VesselPose));
+            ValidatePose(BeerTap.SpoutPose, nameof(BeerTap.SpoutPose));
+            ValidatePose(
+                BeerTap.HandlePivotPose,
+                nameof(BeerTap.HandlePivotPose));
+            ValidatePose(
+                BeerTap.HandleGripPose,
+                nameof(BeerTap.HandleGripPose));
             ValidateVector(CameraPosition, nameof(CameraPosition));
             ValidateVector(CameraLookAt, nameof(CameraLookAt));
             ValidateVector(ServiceStoolPosition, nameof(ServiceStoolPosition));
+            if (Mathf.Abs(MenuPose.Position.x - SeatPose.Position.x) > 0.001f)
+            {
+                throw new InvalidOperationException(
+                    "The bar menu must be centred directly before the hero.");
+            }
+
+            if (Mathf.Abs(
+                    VesselCounterPose.Position.x - SeatPose.Position.x) >
+                0.001f)
+            {
+                throw new InvalidOperationException(
+                    "The served vessel must be centred directly before the hero.");
+            }
+
             if ((CameraLookAt - CameraPosition).sqrMagnitude < 0.25f)
             {
                 throw new InvalidOperationException(
@@ -306,6 +392,50 @@ namespace BarPromenade
                 counterSurfaceY,
                 nameof(VesselCounterPose));
 
+            float vesselFrontEdge =
+                VesselCounterPose.Position.z - MaximumServiceVesselRadius;
+            float vesselBackEdge =
+                VesselCounterPose.Position.z + MaximumServiceVesselRadius;
+            float menuFrontEdge =
+                MenuPose.Position.z - ClosedMenuHalfDepth;
+            float menuBackEdge =
+                MenuPose.Position.z + ClosedMenuHalfDepth;
+            if (vesselFrontEdge < counter.Bounds.yMin - 0.001f ||
+                menuBackEdge > counter.Bounds.yMax + 0.001f)
+            {
+                throw new InvalidOperationException(
+                    "The served vessel and closed menu must remain fully " +
+                    "inside the counter top bounds.");
+            }
+
+            float menuVesselClearance = menuFrontEdge - vesselBackEdge;
+            if (menuVesselClearance < MinimumMenuVesselClearance - 0.001f)
+            {
+                throw new InvalidOperationException(
+                    "The closed menu must leave at least " +
+                    $"{MinimumMenuVesselClearance:0.00}m clear of the " +
+                    "served vessel.");
+            }
+
+            Vector3 tapVessel = BeerTap.VesselPose.Position;
+            Vector3 tapSpout = BeerTap.SpoutPose.Position;
+            if (tapSpout.y <= tapVessel.y + 0.10f ||
+                Vector2.Distance(
+                    new Vector2(tapSpout.x, tapSpout.z),
+                    new Vector2(tapVessel.x, tapVessel.z)) > 0.05f)
+            {
+                throw new InvalidOperationException(
+                    "The beer tap spout must stand directly above its glass dock.");
+            }
+
+            if (!layout.WalkableBounds.Contains(new Vector2(
+                    BeerTap.ServerPose.Position.x,
+                    BeerTap.ServerPose.Position.z)))
+            {
+                throw new InvalidOperationException(
+                    "The beer tap server dock must remain inside walkable bounds.");
+            }
+
             if (bottleSlots.Count != RequiredBottleCount)
             {
                 throw new InvalidOperationException(
@@ -323,13 +453,12 @@ namespace BarPromenade
                         "Every bar drink bottle slot needs a stable unique ID.");
                 }
 
-                if (slot.DrinkId == DrinkId.None ||
-                    slot.DrinkId == DrinkId.Moonshine ||
-                    !drinks.Add(slot.DrinkId) ||
-                    !BarDrinkCatalog.TryGetOffer(slot.DrinkId, out _))
+                if (!drinks.Add(slot.DrinkId) ||
+                    slot.DrinkId !=
+                        BarDrinkCatalog.Offers[index].DrinkId)
                 {
                     throw new InvalidOperationException(
-                        "Bottle slots must map one-to-one to retail drinks.");
+                        "Bottle slots must match the visible menu order.");
                 }
 
                 ValidatePose(slot.Pose, slot.Id);

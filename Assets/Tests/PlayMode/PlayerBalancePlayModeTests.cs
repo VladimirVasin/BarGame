@@ -544,6 +544,18 @@ namespace BarPromenade.Tests.PlayMode
                 if (presentation.IntoxicationAmount >= 0.9f)
                 {
                     drunkFrames++;
+                    // The arms have inertia: they take the better part of
+                    // a second to swing out after the drink lands, so the
+                    // first second is the springs, not the pose. A topple
+                    // past the brace lean sends the hands DOWN for the
+                    // ground on purpose; the tightrope contract is about
+                    // the stagger, so those frames are the capture
+                    // sheet's to judge, not this measure's.
+                    if (drunkFrames <= FramesPerSecond || pose.BraceWeight > 0f)
+                    {
+                        continue;
+                    }
+
                     float span = HandSpan();
                     maxSpan = Mathf.Max(maxSpan, span);
                     minSpan = Mathf.Min(minSpan, span);
@@ -599,12 +611,14 @@ namespace BarPromenade.Tests.PlayMode
             Transform pelvis = HandBone(Player3DAnatomicalPart.Pelvis);
             yield return null;
 
+            // The lean has inertia now: a pose set this frame is where
+            // the pelvis is GOING, so each read settles the springs first.
             presentation.SetBalance(PlayerBalancePose.Neutral);
-            presentation.ReapplyLatePresentationPose();
+            presentation.SettleLatePresentationPose(1f);
             Vector3 neutral = head.position - pelvis.position;
 
             presentation.SetBalance(LeanPose(0f, 10f));
-            presentation.ReapplyLatePresentationPose();
+            presentation.SettleLatePresentationPose(1f);
             Vector3 pitched = head.position - pelvis.position;
             Assert.That(
                 Vector3.Dot(pitched - neutral, forward),
@@ -612,7 +626,7 @@ namespace BarPromenade.Tests.PlayMode
                 "A positive pitch leans the torso FORWARD.");
 
             presentation.SetBalance(LeanPose(10f, 0f));
-            presentation.ReapplyLatePresentationPose();
+            presentation.SettleLatePresentationPose(1f);
             Vector3 rolled = head.position - pelvis.position;
             Assert.That(
                 Vector3.Dot(rolled - neutral, right),
@@ -620,7 +634,7 @@ namespace BarPromenade.Tests.PlayMode
                 "A positive roll leans the torso to the RIGHT.");
 
             presentation.SetBalance(PlayerBalancePose.Neutral);
-            presentation.ReapplyLatePresentationPose();
+            presentation.SettleLatePresentationPose(1f);
         }
 
         private static PlayerBalancePose LeanPose(float roll, float pitch)
@@ -930,7 +944,10 @@ namespace BarPromenade.Tests.PlayMode
             // The fall timeline runs on unscaled time, which the pinned
             // clock leaves alone: batch frames can be a millisecond apart,
             // so a frame budget is not a duration. Wait on the real clock.
-            float fallDeadline = Time.realtimeSinceStartup + 10f;
+            // The ragdoll settles, the drunk lies stunned, and the staged
+            // rise takes three to five seconds on top: a fall is a good
+            // ten seconds of real time now.
+            float fallDeadline = Time.realtimeSinceStartup + 18f;
             while (status.IsFalling &&
                    Time.realtimeSinceStartup < fallDeadline)
             {

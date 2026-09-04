@@ -1059,6 +1059,7 @@ MonoBehaviour:
     rightFoot: {fileID: 6573327319703478227}
     leftGrip: {fileID: 8099279279902623797}
     rightGrip: {fileID: 3714148386453440383}
+    leftVessel: {fileID: 7183246214390973499}
     rightCigarette: {fileID: 538304897831458971}
     mouth: {fileID: 8289414202601138747}
   metrics:
@@ -1070,7 +1071,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.8.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: 6a5a4ed8bc953095c7368fc828feb35d
+  buildSignature: 82f84ea1ddfed8ee2bf268e3b72c35bf
   faceAtlas:
     renderer: {fileID: 0}
     texture: {fileID: 0}
@@ -1815,6 +1816,11 @@ SkinnedMeshRenderer:
 --- !u!137 &7120347112594247970 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4909098274808759875, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_PrefabInstance: {fileID: 6417608413615941791}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7183246214390973499 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4233357837911420068, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
   m_PrefabInstance: {fileID: 6417608413615941791}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &7197877553379636881 stripped

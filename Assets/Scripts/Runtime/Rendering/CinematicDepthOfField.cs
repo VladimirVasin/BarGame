@@ -71,6 +71,19 @@ namespace BarPromenade.Rendering
                 owner.Disengage();
             }
         }
+
+        /// <summary>
+        /// Releases the modal override in the same frame. Use only when the
+        /// owning shot has already handed the camera back to ordinary play;
+        /// a blend-out there would leave cinematic blur on the chase camera.
+        /// </summary>
+        public static void EndImmediately()
+        {
+            if (owner != null)
+            {
+                owner.DisengageImmediately();
+            }
+        }
     }
 
     internal sealed class CinematicDepthOfFieldOwner : MonoBehaviour
@@ -130,6 +143,13 @@ namespace BarPromenade.Rendering
         public void Disengage()
         {
             IsEngaged = false;
+        }
+
+        public void DisengageImmediately()
+        {
+            IsEngaged = false;
+            volume.weight = 0f;
+            gameObject.SetActive(false);
         }
 
         private void Update()

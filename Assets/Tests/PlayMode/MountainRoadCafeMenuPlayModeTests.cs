@@ -18,8 +18,8 @@ namespace BarPromenade.Tests.PlayMode
         private const float LoadTimeoutSeconds = 60f;
         private const int MaximumSeatFrames = 180;
         private const float OpenMenuLeafAngleDegrees = 5.5f;
-        private const float MidFoldLeafAngleDegrees = 90f;
-        private const float ClosedMenuLeafAngleDegrees = 174.5f;
+        private const float MidFoldLeafAngleDegrees = -90f;
+        private const float ClosedMenuLeafAngleDegrees = -185.5f;
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
         private static int teardownSequence;
@@ -998,6 +998,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(page.IsFoldTransitionActive, Is.True);
             Assert.That(page.IsTextVisible, Is.False);
             AssertOpaquePhysicalFold(page);
+            Assert.That(
+                Vector3.Dot(
+                    page.LeftFoldHinge
+                        .GetComponentsInChildren<Renderer>(true)[0]
+                        .bounds.center -
+                    page.LeftFoldHinge.parent.position,
+                    page.LeftFoldHinge.parent.up),
+                Is.GreaterThan(0.08f),
+                "The booklet leaf must fold over the counter, not under it.");
 
             page.AdvanceFold(
                 CounterMenuPageView.FoldDurationSeconds * 0.5f);

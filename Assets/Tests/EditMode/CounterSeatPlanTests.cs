@@ -240,12 +240,19 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void BarMenuFocus_PreservesCafeDefaultsAndUsesReadableFraming()
+        public void BarMenuFocus_AdaptsTheCafeCloseUpToTheLargerBooklet()
         {
-            var menu = new Vector3(-0.38f, 1.0889f, 5.44f);
+            var menu = new Vector3(-1.15f, 1.0889f, 5.44f);
             var viewer = new Vector3(-1.15f, 1.6175f, 4.65f);
             Vector3 target = menu +
                 Vector3.up * CounterMenuCameraPlan.SurfaceLiftMeters;
+            Vector3 planarTowardViewer = Vector3.ProjectOnPlane(
+                viewer - target,
+                Vector3.up).normalized;
+            Vector3 barTarget = target +
+                planarTowardViewer *
+                BarDrinkMenuPresentation
+                    .CameraFocusTargetTowardViewerMeters;
 
             CounterMenuCameraPlan.Evaluate(
                 menu,
@@ -254,15 +261,17 @@ namespace BarPromenade.Tests.EditMode
                 viewer,
                 out Vector3 cafePosition,
                 out _);
-            CounterMenuCameraPlan.Evaluate(
+            CounterMenuCameraPlan.EvaluateOverhead(
                 menu,
                 Vector3.up,
                 Vector3.forward,
                 viewer,
                 BarDrinkMenuPresentation.CameraFocusDistanceMeters,
+                BarDrinkMenuPresentation.CameraFocusSurfaceFacing,
+                BarDrinkMenuPresentation
+                    .CameraFocusTargetTowardViewerMeters,
                 out Vector3 barPosition,
-                out _);
-
+                out Quaternion barRotation);
             Assert.That(
                 Vector3.Distance(cafePosition, target),
                 Is.EqualTo(CounterMenuCameraPlan.FocusDistanceMeters)
@@ -272,21 +281,102 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(40f),
                 "The mountain-cafe menu keeps its existing shared default.");
             Assert.That(
-                Vector3.Distance(barPosition, target),
+                Vector3.Distance(barPosition, barTarget),
                 Is.EqualTo(
                     BarDrinkMenuPresentation.CameraFocusDistanceMeters)
                     .Within(0.0001f));
             Assert.That(
-                Vector3.Distance(barPosition, viewer),
-                Is.LessThan(0.20f));
+                Vector3.Dot(
+                    (barPosition - barTarget).normalized,
+                    Vector3.up),
+                Is.EqualTo(
+                    BarDrinkMenuPresentation.CameraFocusSurfaceFacing)
+                    .Within(0.0001f),
+                "The bar camera must hang almost over the page normal.");
             Assert.That(
-                barPosition.y,
-                Is.GreaterThanOrEqualTo(1.20f),
-                "The focused lens must remain visibly above the " +
-                "1.02 m counter top.");
+                Vector3.Dot(
+                    barRotation * Vector3.forward,
+                    (barTarget - barPosition).normalized),
+                Is.GreaterThan(0.9999f));
+            Assert.That(
+                Vector3.ProjectOnPlane(
+                    barPosition - target,
+                    Vector3.up).magnitude,
+                Is.LessThan(0.14f),
+                "The camera projection must land over the menu footprint.");
             Assert.That(
                 BarDrinkMenuPresentation.CameraFocusFieldOfView,
-                Is.EqualTo(60f));
+                Is.GreaterThan(CounterMenuCameraPlan.FocusFieldOfView),
+                "The wider descriptive booklet needs a wider lens.");
+            Assert.That(
+                BarDrinkMenuPresentation.CameraFocusDistanceMeters,
+                Is.LessThan(0.75f),
+                "The former distant bar camera position must not return.");
+        }
+
+        [Test]
+        public void BarMenuText_UsesInsetTwoByTwoGrid()
+        {
+            CounterMenuPageStyle style = CounterMenuPageStyle.Bar;
+            Vector2 leftTop =
+                BarDrinkMenuPresentation.ResolveTextBlockPageOffset(0);
+            Vector2 leftBottom =
+                BarDrinkMenuPresentation.ResolveTextBlockPageOffset(1);
+            Vector2 rightTop =
+                BarDrinkMenuPresentation.ResolveTextBlockPageOffset(2);
+            Vector2 rightBottom =
+                BarDrinkMenuPresentation.ResolveTextBlockPageOffset(3);
+
+            Assert.That(leftTop.x, Is.EqualTo(leftBottom.x));
+            Assert.That(rightTop.x, Is.EqualTo(rightBottom.x));
+            Assert.That(leftTop.x, Is.LessThan(0f));
+            Assert.That(rightTop.x, Is.GreaterThan(0f));
+            Assert.That(leftTop.y, Is.EqualTo(rightTop.y));
+            Assert.That(leftBottom.y, Is.EqualTo(rightBottom.y));
+
+            float verticalGap = leftTop.y - leftBottom.y -
+                                style.ItemBoxSize.y;
+            Assert.That(
+                verticalGap,
+                Is.GreaterThanOrEqualTo(0.03f),
+                "The two descriptions need a compact but distinct gap.");
+
+            const float pageRuleInnerEdge = 0.2015f;
+            float verticalExtent = leftTop.y +
+                                   style.ItemBoxSize.y * 0.5f;
+            Assert.That(
+                verticalExtent,
+                Is.LessThanOrEqualTo(pageRuleInnerEdge - 0.02f),
+                "Text boxes must stay clear of the page-head/foot rules.");
+
+            const float spineOuterEdge = 0.007f;
+            const float outerRailInnerEdge = 0.2485f;
+            const float minimumMargin = 0.005f;
+            float halfTextWidth = style.ItemBoxSize.x * 0.5f;
+            float halfMarkerWidth = style.MarkerBoxSize.x * 0.5f;
+            float leftMarkerOuter = leftTop.x - halfTextWidth -
+                                    style.MarkerGapMeters - halfMarkerWidth;
+            float rightMarkerInner = rightTop.x - halfTextWidth -
+                                     style.MarkerGapMeters - halfMarkerWidth;
+
+            Assert.That(
+                leftMarkerOuter,
+                Is.GreaterThanOrEqualTo(
+                    -outerRailInnerEdge + minimumMargin),
+                "The left-page marker must not collide with its outer rail.");
+            Assert.That(
+                leftTop.x + halfTextWidth,
+                Is.LessThanOrEqualTo(-spineOuterEdge - minimumMargin),
+                "The left text block must stay clear of the spine.");
+            Assert.That(
+                rightMarkerInner,
+                Is.GreaterThanOrEqualTo(spineOuterEdge + minimumMargin),
+                "The right-page marker must stay clear of the spine.");
+            Assert.That(
+                rightTop.x + halfTextWidth,
+                Is.LessThanOrEqualTo(
+                    outerRailInnerEdge - minimumMargin),
+                "The right text block must stay clear of its outer rail.");
         }
 
         private Transform CreateServiceSpace()

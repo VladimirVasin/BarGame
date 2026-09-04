@@ -248,8 +248,153 @@ namespace BarPromenade.Tests.PlayMode
                         "07-jukebox-and-entrance",
                         new Vector3(1.0f, 1.6f, -2.6f),
                         new Vector3(6.6f, 1.1f, -6.9f), 58f),
+                    Shot.At(
+                        "08-standard-entrance-door",
+                        new Vector3(0f, 1.62f, -4.55f),
+                        new Vector3(0f, 1.20f, -7.82f), 45f),
                 });
             AssertBarPatronPlacement();
+        }
+
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator BarMenu()
+        {
+            GameSessionState.EnterBar("bar-menu-capture");
+            AsyncOperation operation = SceneManager.LoadSceneAsync(
+                SceneIds.BarInterior,
+                LoadSceneMode.Single);
+            Assert.That(operation, Is.Not.Null);
+
+            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            while (!operation.isDone &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(operation.isDone, Is.True);
+            BarInteriorRoot bar = null;
+            deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            while (bar == null && Time.realtimeSinceStartup < deadline)
+            {
+                bar = Object.FindAnyObjectByType<BarInteriorRoot>();
+                yield return null;
+            }
+
+            Assert.That(bar, Is.Not.Null);
+            bar.ArrivalPresentation.Skip();
+
+            Camera camera = Camera.main;
+            Assert.That(camera, Is.Not.Null);
+            camera.aspect = (float)Width / Height;
+            PlayerCameraFollow cameraFollow =
+                camera.GetComponent<PlayerCameraFollow>();
+            Assert.That(cameraFollow, Is.Not.Null);
+
+            BarBartenderPresentation bartender = bar.Bartender;
+            Assert.That(bartender, Is.Not.Null);
+            Assert.That(
+                bartender.Registry.TryGetClip(
+                    BarBartenderClipKind.Wipe,
+                    out AnimationClip wipeClip,
+                    out bool wipeLoops),
+                Is.True);
+            Assert.That(wipeLoops, Is.True);
+            float currentWipeTime = Mathf.Repeat(
+                bartender.CurrentClipTimeSeconds,
+                wipeClip.length);
+            float targetWipeTime = wipeClip.length * 0.28f;
+            float wipeAdvance = targetWipeTime - currentWipeTime;
+            if (wipeAdvance < 0f)
+            {
+                wipeAdvance += wipeClip.length;
+            }
+
+            cameraFollow.enabled = false;
+            bartender.enabled = false;
+            bartender.Advance(wipeAdvance);
+            camera.transform.SetPositionAndRotation(
+                bar.Room.TransformPoint(new Vector3(-1.6f, 1.55f, 3.75f)),
+                Quaternion.LookRotation(
+                    bar.Room.TransformPoint(
+                        new Vector3(-0.55f, 1.04f, 6.28f)) -
+                    bar.Room.TransformPoint(
+                        new Vector3(-1.6f, 1.55f, 3.75f)),
+                    Vector3.up));
+            camera.fieldOfView = 48f;
+            CaptureCurrentCamera(
+                camera,
+                SceneIds.BarInterior,
+                "09-bartender-wipe-contact");
+            bartender.enabled = true;
+            cameraFollow.enabled = true;
+
+            BarCounterStation station = bar.CounterStation;
+            Assert.That(station, Is.Not.Null);
+            CounterSeatPlan seatPlan = station.Seat.Plan;
+            Vector3 entry = bar.Room.TransformPoint(
+                new Vector3(-1.15f, 0f, 3.93f));
+            entry.y = seatPlan.EntryPose.RootPosition.y;
+            bar.Player.Motor.Teleport(entry);
+            bar.Player.GameObject.transform.rotation =
+                seatPlan.EntryPose.RootRotation;
+            Physics.SyncTransforms();
+            Assert.That(station.CanInteract(bar.Player.Interactor), Is.True);
+            station.Interact(bar.Player.Interactor);
+
+            deadline = Time.realtimeSinceStartup + 8f;
+            while (Time.realtimeSinceStartup < deadline &&
+                   (!station.Seat.IsSeated ||
+                    bar.DrinkShop.MenuState !=
+                        BarPromenade.Runtime.World.CounterMenuState.Open ||
+                    !station.SeatView.IsMenuFocusComplete))
+            {
+                yield return null;
+            }
+
+            Assert.That(station.Seat.IsSeated, Is.True);
+            Assert.That(
+                bar.DrinkShop.MenuState,
+                Is.EqualTo(
+                    BarPromenade.Runtime.World.CounterMenuState.Open));
+            Assert.That(station.SeatView.IsMenuFocusComplete, Is.True);
+            yield return null;
+
+            CaptureCurrentCamera(
+                camera,
+                SceneIds.BarInterior,
+                "09-menu-close-up");
+
+            Assert.That(bar.DrinkShop.RestPhysicalMenuAtCounter(), Is.True);
+            CounterMenuPageView menuPage =
+                bar.DrinkShop.MenuPresentation.Page;
+            deadline = Time.realtimeSinceStartup + 4f;
+            while (Time.realtimeSinceStartup < deadline &&
+                   (station.SeatView.IsMenuFocusLocked ||
+                    menuPage.FoldAmount < 0.999f))
+            {
+                yield return null;
+            }
+
+            Assert.That(station.SeatView.IsMenuFocusLocked, Is.False);
+            Assert.That(menuPage.FoldAmount, Is.EqualTo(1f).Within(0.001f));
+            Vector3 restingCentre = menuPage.RestingWorldCenter;
+            BarMenuTestCameraAimDriver aimDriver =
+                camera.gameObject.AddComponent<BarMenuTestCameraAimDriver>();
+            aimDriver.Target = restingCentre;
+            aimDriver.LookAway = true;
+            aimDriver.IsAiming = true;
+            yield return null;
+            aimDriver.LookAway = false;
+            yield return null;
+            Assert.That(bar.DrinkShop.IsLookingAtRestingMenu, Is.True);
+            Assert.That(menuPage.IsRestingHighlighted, Is.True);
+            CaptureCurrentCamera(
+                camera,
+                SceneIds.BarInterior,
+                "10-menu-reopen-highlight");
+            Object.Destroy(aimDriver);
         }
 
         private static bool IsBarDrinkAtLips(string anchorId)
@@ -3688,6 +3833,54 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             return true;
+        }
+
+        private static void CaptureCurrentCamera(
+            Camera camera,
+            string sceneName,
+            string shotName)
+        {
+            string folder = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "Captures",
+                sceneName);
+            Directory.CreateDirectory(folder);
+
+            var target = new RenderTexture(Width, Height, 24);
+            var frameBuffer = new Texture2D(
+                Width,
+                Height,
+                TextureFormat.RGB24,
+                false);
+            RenderTexture previousTarget = camera.targetTexture;
+            RenderTexture previousActive = RenderTexture.active;
+            try
+            {
+                camera.targetTexture = target;
+                camera.Render();
+                RenderTexture.active = target;
+                frameBuffer.ReadPixels(
+                    new Rect(0f, 0f, Width, Height),
+                    0,
+                    0);
+                frameBuffer.Apply();
+
+                string path = Path.Combine(folder, $"{shotName}.png");
+                File.WriteAllBytes(path, frameBuffer.EncodeToPNG());
+                Debug.Log($"Area capture wrote {path}");
+                Assert.That(
+                    IsBlank(frameBuffer),
+                    Is.False,
+                    $"'{sceneName}/{shotName}' came out blank.");
+            }
+            finally
+            {
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+                Object.DestroyImmediate(frameBuffer);
+                target.Release();
+                Object.DestroyImmediate(target);
+            }
         }
     }
 }

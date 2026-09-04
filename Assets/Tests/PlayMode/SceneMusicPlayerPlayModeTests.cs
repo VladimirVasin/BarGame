@@ -134,6 +134,47 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator BarExitTail_PreservesBothSpatialLevels()
+        {
+            musicObject = new GameObject("Bar Exit Tail Test");
+            BarMusicPlayer player =
+                musicObject.AddComponent<BarMusicPlayer>();
+            yield return WaitForThemeReady(player);
+            player.AdvanceFade(MusicMix.FadeInSeconds);
+
+            Vector3 listenerPosition = Vector3.right * 6.4f;
+            float expectedThemeAttenuation =
+                1f -
+                (6.4f - BarMusicPlayer.MinimumDistance) /
+                (BarMusicPlayer.DefaultMaximumDistance -
+                 BarMusicPlayer.MinimumDistance);
+            float expectedCabinetAttenuation =
+                1f -
+                (6.4f - player.CabinetSource.minDistance) /
+                (BarMusicPlayer.CabinetMaximumDistance -
+                 player.CabinetSource.minDistance);
+
+            player.PrepareSpatialExitTail(listenerPosition);
+
+            Assert.That(player.Source.spatialBlend, Is.Zero);
+            Assert.That(player.CabinetSource.spatialBlend, Is.Zero);
+            Assert.That(
+                player.Source.volume,
+                Is.EqualTo(
+                    BarMusicPlayer.ThemeOutputVolume *
+                    expectedThemeAttenuation).Within(0.0001f));
+            Assert.That(
+                player.CabinetSource.volume,
+                Is.EqualTo(
+                    BarMusicPlayer.CabinetOutputVolume *
+                    expectedCabinetAttenuation).Within(0.0001f));
+            Assert.That(
+                expectedCabinetAttenuation,
+                Is.LessThan(expectedThemeAttenuation),
+                "The close cabinet texture must retain its own rolloff.");
+        }
+
+        [UnityTest]
         public IEnumerator MissingClip_CompletesSceneExitWithoutWaiting()
         {
             CityMusicPlayer player = CreatePlayer();

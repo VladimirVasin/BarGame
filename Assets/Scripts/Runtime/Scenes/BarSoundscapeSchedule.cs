@@ -5,7 +5,9 @@ namespace BarPromenade
     public enum BarSoundscapeCueKind
     {
         GlassClink = 0,
-        ChairScrape
+        ChairScrape = 1,
+        BottleSetDown = 2,
+        CrowdReaction = 3
     }
 
     public readonly struct BarSoundscapeCue
@@ -30,8 +32,8 @@ namespace BarPromenade
 
     public static class BarSoundscapeSchedule
     {
-        public const float MinimumDelaySeconds = 7f;
-        public const float MaximumDelaySeconds = 12f;
+        public const float MinimumDelaySeconds = 4.5f;
+        public const float MaximumDelaySeconds = 8f;
         public const float MinimumPitch = 0.94f;
         public const float MaximumPitch = 1.06f;
         public const float MinimumVolumeScale = 0.72f;
@@ -53,9 +55,7 @@ namespace BarPromenade
                 MaximumDelaySeconds,
                 ToUnitFloat(hash));
             BarSoundscapeCueKind kind =
-                (hash & 1u) == 0u
-                    ? BarSoundscapeCueKind.GlassClink
-                    : BarSoundscapeCueKind.ChairScrape;
+                (BarSoundscapeCueKind)(hash & 3u);
             float pitch = Mathf.Lerp(
                 MinimumPitch,
                 MaximumPitch,

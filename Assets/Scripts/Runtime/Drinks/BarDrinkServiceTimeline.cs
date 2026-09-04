@@ -13,7 +13,17 @@ namespace BarPromenade
         BottleReturn = 6,
         Drinking = 7,
         VesselReturn = 8,
-        CameraReturn = 9
+        CameraReturn = 9,
+        BeerWalkToTap = 10,
+        BeerGlassPickup = 11,
+        BeerPouring = 12,
+        BeerCarryToGuest = 13,
+        BeerGlassPlacement = 14,
+        AwaitingDrink = 15,
+        PlayerPickup = 16,
+        PlayerDrinking = 17,
+        PlayerVesselReturn = 18,
+        EmptyOnCounter = 19
     }
 
     /// <summary>
@@ -34,7 +44,9 @@ namespace BarPromenade
             float vesselVisibility,
             float streamVisibility,
             float vesselFill,
-            float drinkLift)
+            float drinkLift,
+            float tapHandlePull,
+            float serviceVesselTravel)
         {
             Phase = phase;
             PhaseElapsedSeconds = phaseElapsedSeconds;
@@ -48,6 +60,8 @@ namespace BarPromenade
             StreamVisibility = streamVisibility;
             VesselFill = vesselFill;
             DrinkLift = drinkLift;
+            TapHandlePull = tapHandlePull;
+            ServiceVesselTravel = serviceVesselTravel;
         }
 
         public BarDrinkServicePhase Phase { get; }
@@ -62,16 +76,18 @@ namespace BarPromenade
         public float StreamVisibility { get; }
         public float VesselFill { get; }
         public float DrinkLift { get; }
+        public float TapHandlePull { get; }
+        public float ServiceVesselTravel { get; }
     }
 
     /// <summary>
-    /// Pure state for the seated first-person drink-service sequence. Advance
-    /// receives unscaled time and consumes it independently of frame chunks.
-    /// Browsing is persistent. Confirm marks one service presentation committed
-    /// and makes ordinary cancellation unavailable until the empty vessel has
-    /// returned. Successful service returns to Browsing without moving the
-    /// camera; only explicit Cancel enters CameraReturn. Reset remains available
-    /// for lifecycle teardown and never changes the external transaction.
+    /// Pure state for the seated drink-service sequence. Advance consumes its
+    /// caller-supplied clock independently of frame chunks. Browsing, physical
+    /// bartender-arrival waits, the full served glass and the final empty glass
+    /// are persistent phases. Confirm marks one presentation committed and
+    /// makes ordinary cancellation unavailable until the empty vessel returns.
+    /// Only explicit Cancel enters CameraReturn. Reset remains available for
+    /// lifecycle teardown and never changes the external transaction.
     /// </summary>
     public sealed class BarDrinkServiceTimeline
     {
@@ -85,6 +101,11 @@ namespace BarPromenade
         public const float DrinkingDurationSeconds = 3f;
         public const float VesselReturnDurationSeconds = 0.65f;
         public const float CameraReturnDurationSeconds = 0.70f;
+        public const float BeerGlassPickupDurationSeconds = 0.70f;
+        public const float BeerPouringDurationSeconds = 2.35f;
+        public const float BeerGlassPlacementDurationSeconds = 0.70f;
+        public const float PlayerPickupDurationSeconds = 2f;
+        public const float PlayerVesselReturnDurationSeconds = 2f;
 
         public const float ConfirmedPresentationDurationSeconds =
             BottlePickupDurationSeconds +
@@ -105,8 +126,16 @@ namespace BarPromenade
             BarDrinkServicePhase.Closed;
 
         public bool IsActive => Phase != BarDrinkServicePhase.Closed;
-        public bool IsBrowsing => Phase == BarDrinkServicePhase.Browsing;
+        public bool IsBrowsing =>
+            Phase == BarDrinkServicePhase.Browsing ||
+            Phase == BarDrinkServicePhase.EmptyOnCounter;
         public bool IsCommitted { get; private set; }
+        public bool IsBeerService { get; private set; }
+        public bool IsAwaitingDrink =>
+            Phase == BarDrinkServicePhase.AwaitingDrink;
+        public bool HasEmptyVessel =>
+            Phase == BarDrinkServicePhase.EmptyOnCounter;
+        public bool CanBeginDrink => IsCommitted && IsAwaitingDrink;
         public bool CanBeginOpen => Phase == BarDrinkServicePhase.Closed;
         public bool CanConfirm => IsBrowsing && !IsCommitted;
         public bool CanCancel =>
@@ -127,6 +156,7 @@ namespace BarPromenade
             }
 
             IsCommitted = false;
+            IsBeerService = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
             SetPhase(BarDrinkServicePhase.CameraApproach);
@@ -135,13 +165,57 @@ namespace BarPromenade
 
         public bool Confirm()
         {
+            return Confirm(DrinkId.None);
+        }
+
+        public bool Confirm(DrinkId drinkId)
+        {
             if (!CanConfirm)
             {
                 return false;
             }
 
             IsCommitted = true;
-            SetPhase(BarDrinkServicePhase.BottlePickup);
+            IsBeerService = drinkId == DrinkId.LightBeer;
+            SetPhase(
+                IsBeerService
+                    ? BarDrinkServicePhase.BeerWalkToTap
+                    : BarDrinkServicePhase.BottlePickup);
+            return true;
+        }
+
+        public bool ReportBeerServerAtTap(bool atTarget)
+        {
+            if (!atTarget || !IsBeerService ||
+                Phase != BarDrinkServicePhase.BeerWalkToTap)
+            {
+                return false;
+            }
+
+            SetPhase(BarDrinkServicePhase.BeerGlassPickup);
+            return true;
+        }
+
+        public bool ReportBeerServerAtGuest(bool atTarget)
+        {
+            if (!atTarget || !IsBeerService ||
+                Phase != BarDrinkServicePhase.BeerCarryToGuest)
+            {
+                return false;
+            }
+
+            SetPhase(BarDrinkServicePhase.BeerGlassPlacement);
+            return true;
+        }
+
+        public bool BeginDrink()
+        {
+            if (!CanBeginDrink)
+            {
+                return false;
+            }
+
+            SetPhase(BarDrinkServicePhase.PlayerPickup);
             return true;
         }
 
@@ -162,6 +236,7 @@ namespace BarPromenade
         public void Reset()
         {
             IsCommitted = false;
+            IsBeerService = false;
             returnStartCameraBlend = 0f;
             returnStartArmsVisibility = 0f;
             SetPhase(BarDrinkServicePhase.Closed);
@@ -176,12 +251,12 @@ namespace BarPromenade
             }
 
             phaseElapsedSeconds += unscaledDeltaTime;
-            if (IsBrowsing)
+            if (IsPersistentPhase(Phase))
             {
                 return;
             }
 
-            while (IsActive && !IsBrowsing)
+            while (IsActive && !IsPersistentPhase(Phase))
             {
                 double duration = GetPhaseDurationSeconds(Phase);
                 if (phaseElapsedSeconds + PhaseBoundaryEpsilonSeconds <
@@ -208,6 +283,8 @@ namespace BarPromenade
             float streamVisibility = 0f;
             float vesselFill = 0f;
             float drinkLift = 0f;
+            float tapHandlePull = 0f;
+            float serviceVesselTravel = 0f;
 
             switch (Phase)
             {
@@ -279,6 +356,76 @@ namespace BarPromenade
                     vesselVisibility = 1f;
                     drinkLift = 1f - SmootherStep(progress);
                     break;
+                case BarDrinkServicePhase.BeerWalkToTap:
+                    cameraBlend = 1f;
+                    break;
+                case BarDrinkServicePhase.BeerGlassPickup:
+                    cameraBlend = 1f;
+                    vesselVisibility = SmootherStep(progress);
+                    break;
+                case BarDrinkServicePhase.BeerPouring:
+                    cameraBlend = 1f;
+                    vesselVisibility = 1f;
+                    tapHandlePull = Pulse(
+                        progress,
+                        0.02f,
+                        0.16f,
+                        0.84f,
+                        0.98f);
+                    streamVisibility = Pulse(
+                        progress,
+                        0.12f,
+                        0.22f,
+                        0.78f,
+                        0.90f);
+                    vesselFill = SmootherRange(
+                        progress,
+                        0.16f,
+                        0.86f);
+                    break;
+                case BarDrinkServicePhase.BeerCarryToGuest:
+                    cameraBlend = 1f;
+                    vesselVisibility = 1f;
+                    vesselFill = 1f;
+                    serviceVesselTravel = 1f;
+                    break;
+                case BarDrinkServicePhase.BeerGlassPlacement:
+                    cameraBlend = 1f;
+                    vesselVisibility = 1f;
+                    vesselFill = 1f;
+                    serviceVesselTravel = SmootherStep(progress);
+                    break;
+                case BarDrinkServicePhase.AwaitingDrink:
+                    cameraBlend = 1f;
+                    vesselVisibility = 1f;
+                    vesselFill = 1f;
+                    serviceVesselTravel = 1f;
+                    break;
+                case BarDrinkServicePhase.PlayerPickup:
+                    cameraBlend = 1f;
+                    vesselVisibility = 1f;
+                    vesselFill = 1f;
+                    drinkLift = SmootherStep(progress);
+                    serviceVesselTravel = 1f;
+                    break;
+                case BarDrinkServicePhase.PlayerDrinking:
+                    cameraBlend = 1f;
+                    vesselVisibility = 1f;
+                    vesselFill = 1f - SmootherStep(progress);
+                    drinkLift = 1f;
+                    serviceVesselTravel = 1f;
+                    break;
+                case BarDrinkServicePhase.PlayerVesselReturn:
+                    cameraBlend = 1f;
+                    vesselVisibility = 1f;
+                    drinkLift = 1f - SmootherStep(progress);
+                    serviceVesselTravel = 1f;
+                    break;
+                case BarDrinkServicePhase.EmptyOnCounter:
+                    cameraBlend = 1f;
+                    vesselVisibility = 1f;
+                    serviceVesselTravel = 1f;
+                    break;
                 case BarDrinkServicePhase.CameraReturn:
                     float returnAmount = 1f - SmootherStep(progress);
                     cameraBlend =
@@ -300,7 +447,9 @@ namespace BarPromenade
                 vesselVisibility,
                 streamVisibility,
                 vesselFill,
-                drinkLift);
+                drinkLift,
+                tapHandlePull,
+                serviceVesselTravel);
         }
 
         private float GetPhaseProgress()
@@ -310,7 +459,7 @@ namespace BarPromenade
                 return 0f;
             }
 
-            if (Phase == BarDrinkServicePhase.Browsing)
+            if (IsPersistentPhase(Phase))
             {
                 return 1f;
             }
@@ -351,6 +500,31 @@ namespace BarPromenade
                     IsCommitted = false;
                     SetPhaseWithoutClearingElapsed(
                         BarDrinkServicePhase.Browsing);
+                    break;
+                case BarDrinkServicePhase.BeerGlassPickup:
+                    SetPhaseWithoutClearingElapsed(
+                        BarDrinkServicePhase.BeerPouring);
+                    break;
+                case BarDrinkServicePhase.BeerPouring:
+                    SetPhaseWithoutClearingElapsed(
+                        BarDrinkServicePhase.BeerCarryToGuest);
+                    break;
+                case BarDrinkServicePhase.BeerGlassPlacement:
+                    SetPhaseWithoutClearingElapsed(
+                        BarDrinkServicePhase.AwaitingDrink);
+                    break;
+                case BarDrinkServicePhase.PlayerPickup:
+                    SetPhaseWithoutClearingElapsed(
+                        BarDrinkServicePhase.PlayerDrinking);
+                    break;
+                case BarDrinkServicePhase.PlayerDrinking:
+                    SetPhaseWithoutClearingElapsed(
+                        BarDrinkServicePhase.PlayerVesselReturn);
+                    break;
+                case BarDrinkServicePhase.PlayerVesselReturn:
+                    IsCommitted = false;
+                    SetPhaseWithoutClearingElapsed(
+                        BarDrinkServicePhase.EmptyOnCounter);
                     break;
                 case BarDrinkServicePhase.CameraReturn:
                     Reset();
@@ -404,9 +578,31 @@ namespace BarPromenade
                     return VesselReturnDurationSeconds;
                 case BarDrinkServicePhase.CameraReturn:
                     return CameraReturnDurationSeconds;
+                case BarDrinkServicePhase.BeerGlassPickup:
+                    return BeerGlassPickupDurationSeconds;
+                case BarDrinkServicePhase.BeerPouring:
+                    return BeerPouringDurationSeconds;
+                case BarDrinkServicePhase.BeerGlassPlacement:
+                    return BeerGlassPlacementDurationSeconds;
+                case BarDrinkServicePhase.PlayerPickup:
+                    return PlayerPickupDurationSeconds;
+                case BarDrinkServicePhase.PlayerDrinking:
+                    return DrinkingDurationSeconds;
+                case BarDrinkServicePhase.PlayerVesselReturn:
+                    return PlayerVesselReturnDurationSeconds;
                 default:
                     return 0f;
             }
+        }
+
+        private static bool IsPersistentPhase(
+            BarDrinkServicePhase phase)
+        {
+            return phase == BarDrinkServicePhase.Browsing ||
+                   phase == BarDrinkServicePhase.BeerWalkToTap ||
+                   phase == BarDrinkServicePhase.BeerCarryToGuest ||
+                   phase == BarDrinkServicePhase.AwaitingDrink ||
+                   phase == BarDrinkServicePhase.EmptyOnCounter;
         }
 
         private static void ValidateDeltaTime(float unscaledDeltaTime)

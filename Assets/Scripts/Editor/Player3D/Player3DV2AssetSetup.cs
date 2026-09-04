@@ -118,6 +118,9 @@ namespace BarPromenade.Editor
                 { "BusAlightExit", new ActionContract("bus_ride", false) },
                 { "BusBoardEnter", new ActionContract("bus_ride", false) },
                 { "BusRideLoop", new ActionContract("bus_ride", true) },
+                { "BarDrinkPickupEnter", new ActionContract("bar_drink", false) },
+                { "BarDrinkReturnExit", new ActionContract("bar_drink", false) },
+                { "BarDrinkSipLoop", new ActionContract("bar_drink", true) },
                 { "CarAlightExit", new ActionContract("car_ride", false) },
                 { "CarBoardEnter", new ActionContract("car_ride", false) },
                 { "CatFeedEnter", new ActionContract("cat_feeding", false) },
@@ -165,7 +168,11 @@ namespace BarPromenade.Editor
             new CanonicalFaceCell(PlayerFacialExpression.HalfBlink, 1, 3),
             new CanonicalFaceCell(PlayerFacialExpression.ClosedBlink, 2, 3),
             new CanonicalFaceCell(PlayerFacialExpression.Watchful, 0, 2),
-            new CanonicalFaceCell(PlayerFacialExpression.Tense, 1, 2)
+            new CanonicalFaceCell(PlayerFacialExpression.Tense, 1, 2),
+            new CanonicalFaceCell(PlayerFacialExpression.Drowsy, 2, 2),
+            new CanonicalFaceCell(PlayerFacialExpression.Glazed, 3, 2),
+            new CanonicalFaceCell(PlayerFacialExpression.Slack, 0, 1),
+            new CanonicalFaceCell(PlayerFacialExpression.Grimace, 1, 1)
         };
 
         private static bool isBuilding;
@@ -1029,6 +1036,9 @@ namespace BarPromenade.Editor
                     transformsByName,
                     "SOCKET_Grip.R",
                     "hand.R");
+                Transform leftVessel = RequireTransform(
+                    transformsByName,
+                    "SOCKET_Vessel.L");
                 Transform rightCigarette = RequireTransform(
                     transformsByName,
                     "SOCKET_Cigarette.R");
@@ -1079,6 +1089,7 @@ namespace BarPromenade.Editor
                         rightFoot,
                         leftGrip,
                         rightGrip,
+                        leftVessel,
                         rightCigarette,
                         mouth),
                     new Player3DMetrics(

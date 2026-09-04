@@ -288,16 +288,30 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(status.FallDirection, Is.EqualTo(1f));
             Assert.That(motor.InputEnabled, Is.False);
             Assert.That(interactor.InputEnabled, Is.False);
+            // The fall takes the interactor and the motor, never the
+            // camera: he may look around while he goes down and lies
+            // there, and the shot follows the body, not the capsule.
+            Assert.That(
+                cameraFollow.OrbitInputEnabled,
+                Is.True,
+                "a fall must not lock the orbit camera");
+            Assert.That(cameraFollow.FocusOverrideWeight, Is.EqualTo(1f));
+            Assert.That(
+                Vector3.Distance(
+                    cameraFollow.FocusOverridePoint,
+                    ragdoll.PelvisBody.transform.position),
+                Is.LessThan(0.001f),
+                "the focus follows the ragdoll's pelvis while he falls");
             Assert.That(
                 status.Balance.IsActive,
                 Is.False,
                 "The model is frozen while the fall plays.");
             Assert.That(ragdoll, Is.Not.Null);
-            Assert.That(ragdoll.IsSimulating, Is.False);
-            Assert.That(presentation.RagdollPoseActive, Is.False);
-            Assert.That(
-                presentation.ActiveClipName,
-                Does.StartWith("Fall"));
+            // No Fall clip leads in any more: the ragdoll has the body
+            // from the first frame, from the pose the late layer wrote.
+            Assert.That(ragdoll.IsSimulating, Is.True);
+            Assert.That(presentation.RagdollPoseActive, Is.True);
+            Assert.That(presentation.IsClipActive, Is.False);
 
             Vector3 rootAtFall = playerObject.transform.position;
             float ragdollDeadline = Time.realtimeSinceStartup + 1f;
@@ -325,12 +339,20 @@ namespace BarPromenade.Tests.PlayMode
                     pelvisAtHandoff,
                     ragdoll.PelvisBody.position),
                 Is.LessThan(0.75f));
+            Assert.That(
+                Vector3.Dot(
+                    ragdoll.ChestBody.linearVelocity,
+                    playerObject.transform.right),
+                Is.GreaterThan(0.1f),
+                "The ragdoll starts with the topple's motion toward the " +
+                "fall side, not from a standstill.");
 
             CharacterController primaryCollider =
                 playerObject.GetComponent<CharacterController>();
             Collider[] playerColliders =
                 playerObject.GetComponentsInChildren<Collider>(true);
             int enabledRagdollColliders = 0;
+            int collidingPairs = 0;
             for (int first = 0; first < playerColliders.Length; first++)
             {
                 Collider current = playerColliders[first];
@@ -353,21 +375,29 @@ namespace BarPromenade.Tests.PlayMode
                         current,
                         primaryCollider),
                     Is.True);
+                // Only the two halves of a joint ignore each other; every
+                // other pair of bones collides, so no limb passes through
+                // the body or another limb.
+                Rigidbody currentBody = current.GetComponentInParent<Rigidbody>();
                 for (int second = first + 1;
                      second < playerColliders.Length;
                      second++)
                 {
                     Collider other = playerColliders[second];
-                    if (other.isTrigger)
+                    if (other.isTrigger || other == primaryCollider)
                     {
                         continue;
                     }
 
-                    if (other != primaryCollider)
+                    Rigidbody otherBody = other.GetComponentInParent<Rigidbody>();
+                    bool jointed = AreJointed(currentBody, otherBody);
+                    Assert.That(
+                        Physics.GetIgnoreCollision(current, other),
+                        Is.EqualTo(jointed),
+                        $"{current.name} vs {other.name} (jointed: {jointed})");
+                    if (!jointed)
                     {
-                        Assert.That(
-                            Physics.GetIgnoreCollision(current, other),
-                            Is.True);
+                        collidingPairs++;
                     }
                 }
             }
@@ -375,6 +405,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 enabledRagdollColliders,
                 Is.EqualTo(ragdoll.BodyCount));
+            Assert.That(collidingPairs, Is.GreaterThan(40), "the limbs must collide with one another");
             Assert.That(
                 playerObject.transform.position.x,
                 Is.EqualTo(rootAtFall.x).Within(0.001f));
@@ -382,7 +413,10 @@ namespace BarPromenade.Tests.PlayMode
                 playerObject.transform.position.z,
                 Is.EqualTo(rootAtFall.z).Within(0.001f));
 
-            float risingDeadline = Time.realtimeSinceStartup + 3f;
+            // The ragdoll lies until it is still and the stun passes (up
+            // to ~4.5 s real); then the rise begins with the frozen body
+            // blending into the clip while he stirs.
+            float risingDeadline = Time.realtimeSinceStartup + 9f;
             while (status.BalanceStateName != "Rising" &&
                    Time.realtimeSinceStartup < risingDeadline)
             {
@@ -390,16 +424,38 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(status.BalanceStateName, Is.EqualTo("Rising"));
-            Assert.That(ragdoll.IsActive, Is.False);
             Assert.That(presentation.RagdollPoseActive, Is.False);
+            Assert.That(ragdoll.IsSimulating, Is.False);
             Assert.That(ragdoll.PelvisBody.isKinematic, Is.True);
             Assert.That(ragdoll.ChestBody.isKinematic, Is.True);
             Assert.That(
                 presentation.ActiveClipName,
                 Does.StartWith("Rise"));
+            Assert.That(
+                Vector2.Distance(
+                    new Vector2(playerObject.transform.position.x, playerObject.transform.position.z),
+                    new Vector2(ragdoll.PelvisBody.position.x, ragdoll.PelvisBody.position.z)),
+                Is.LessThan(0.5f),
+                "The root was brought back under the lying pelvis.");
+
+            // Once he is pushing up the frozen pose has been let go.
+            float pushDeadline = Time.realtimeSinceStartup + 4f;
+            while (status.RiseStageName != "PushingUp" &&
+                   status.BalanceStateName == "Rising" &&
+                   Time.realtimeSinceStartup < pushDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(status.RiseStageName, Is.EqualTo("PushingUp"));
+            Assert.That(ragdoll.IsActive, Is.False);
+            Assert.That(presentation.RisePose.Active, Is.True);
+            Assert.That(
+                presentation.ActiveClipName,
+                Does.StartWith("Rise"));
 
             float recoveryDeadline =
-                Time.realtimeSinceStartup + 4f;
+                Time.realtimeSinceStartup + 10f;
             bool sawTerminalRisePresentationFrame = false;
             while (status.IsFalling &&
                    Time.realtimeSinceStartup < recoveryDeadline)
@@ -452,6 +508,33 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.EnterBar(null);
             GameSessionState.CompleteCityReturn();
             GameSessionState.ResetDrinkingState();
+        }
+
+        /// <summary>Whether a joint connects the two bodies directly, either way round.</summary>
+        private static bool AreJointed(Rigidbody first, Rigidbody second)
+        {
+            if (first == null || second == null || first == second)
+            {
+                return false;
+            }
+
+            foreach (ConfigurableJoint joint in first.GetComponents<ConfigurableJoint>())
+            {
+                if (joint.connectedBody == second)
+                {
+                    return true;
+                }
+            }
+
+            foreach (ConfigurableJoint joint in second.GetComponents<ConfigurableJoint>())
+            {
+                if (joint.connectedBody == first)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

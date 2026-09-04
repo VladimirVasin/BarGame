@@ -316,15 +316,18 @@ namespace BarPromenade
     public sealed class PlayerAnimatedInteractionTimeline
     {
         private readonly PlayerAnimatedInteractionDefinition definition;
+        private readonly bool exitAfterOneLoopCycle;
         private double phaseElapsedSeconds;
         private float exitDurationMultiplier = 1f;
         private bool exitEndpointPresented;
 
         public PlayerAnimatedInteractionTimeline(
-            PlayerAnimatedInteractionDefinition definition)
+            PlayerAnimatedInteractionDefinition definition,
+            bool exitAfterOneLoopCycle = false)
         {
             this.definition = definition ??
                 throw new ArgumentNullException(nameof(definition));
+            this.exitAfterOneLoopCycle = exitAfterOneLoopCycle;
             Reset();
         }
 
@@ -334,6 +337,7 @@ namespace BarPromenade
         public int FrameIndex { get; private set; }
         public bool IsActive =>
             Phase != PlayerAnimatedInteractionPhase.Idle;
+        public bool ExitsAfterOneLoopCycle => exitAfterOneLoopCycle;
         public float ExitDurationMultiplier =>
             exitDurationMultiplier;
         public double ExitDurationSeconds =>
@@ -453,6 +457,23 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// Returns a persistent loop to its authored seam without ending it.
+        /// Nested seated actions use the seam before taking clip ownership and
+        /// again when returning it to the parent interaction.
+        /// </summary>
+        public bool RestartLoopCycle()
+        {
+            if (Phase != PlayerAnimatedInteractionPhase.Looping)
+            {
+                return false;
+            }
+
+            phaseElapsedSeconds = 0d;
+            FrameIndex = definition.LoopStartFrame;
+            return true;
+        }
+
         public void Reset()
         {
             Phase = PlayerAnimatedInteractionPhase.Idle;
@@ -485,6 +506,17 @@ namespace BarPromenade
         {
             double duration =
                 definition.LoopDurationSeconds;
+            if (exitAfterOneLoopCycle && phaseElapsedSeconds >= duration)
+            {
+                phaseElapsedSeconds -= duration;
+                exitDurationMultiplier = 1f;
+                exitEndpointPresented = false;
+                Phase = PlayerAnimatedInteractionPhase.Exiting;
+                FrameIndex = definition.ExitStartFrame;
+                AdvanceExiting();
+                return;
+            }
+
             phaseElapsedSeconds %= duration;
             FrameIndex = definition.LoopStartFrame +
                 GetLoopLocalFrame();

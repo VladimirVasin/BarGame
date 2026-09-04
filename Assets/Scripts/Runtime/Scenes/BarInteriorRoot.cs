@@ -162,10 +162,7 @@ namespace BarPromenade
             phaseTimer.Restart();
             BuildRoom();
             BuildAtmosphere();
-
-            GameObject musicObject = new GameObject("Bar Music");
-            musicObject.transform.SetParent(transform, false);
-            Music = musicObject.AddComponent<BarMusicPlayer>();
+            BuildMusic();
             GameObject ambienceObject =
                 new GameObject("Bar Ambience");
             ambienceObject.transform.SetParent(transform, false);
@@ -319,14 +316,75 @@ namespace BarPromenade
             Atmosphere.Initialize(lights);
         }
 
+        private void BuildMusic()
+        {
+            Vector3 fallbackPosition =
+                new Vector3(6.4f, 0.5f, -6.5f);
+            float maximumDistance =
+                BarMusicPlayer.DefaultMaximumDistance;
+            float gain = 1f;
+            for (int index = 0;
+                 index < Layout.AudioAnchors.Count;
+                 index++)
+            {
+                BarInteriorAudioAnchor anchor =
+                    Layout.AudioAnchors[index];
+                if (anchor.Kind != BarInteriorAudioKind.Music)
+                {
+                    continue;
+                }
+
+                fallbackPosition = anchor.Position;
+                maximumDistance = anchor.Radius;
+                gain = anchor.Gain;
+                break;
+            }
+
+            GameObject musicObject = new GameObject("Bar Music");
+            Transform jukebox = Room.Find("Bar Jukebox");
+            if (jukebox != null)
+            {
+                musicObject.transform.SetParent(jukebox, false);
+                Transform grille = jukebox.Find("Jukebox Grille");
+                Renderer grilleRenderer = grille != null
+                    ? grille.GetComponent<Renderer>()
+                    : null;
+                musicObject.transform.position = grilleRenderer != null
+                    ? grilleRenderer.bounds.center
+                    : transform.TransformPoint(fallbackPosition);
+            }
+            else
+            {
+                musicObject.transform.SetParent(transform, false);
+                musicObject.transform.position =
+                    transform.TransformPoint(fallbackPosition);
+            }
+
+            Music = musicObject.AddComponent<BarMusicPlayer>();
+            Music.ConfigureJukebox(maximumDistance, gain);
+            if (jukebox != null)
+            {
+                BarJukeboxInteraction interaction =
+                    jukebox.GetComponentInChildren<
+                        BarJukeboxInteraction>(true);
+                interaction?.BindMusic(Music);
+            }
+        }
+
         private void BuildSoundscape()
         {
-            Vector3 crowdPosition = new Vector3(0f, 1.4f, 1f);
+            Vector3 firstCrowdPosition =
+                new Vector3(-6.8f, 1.35f, 0.5f);
+            Vector3 secondCrowdPosition =
+                new Vector3(3.4f, 1.35f, -1.2f);
             Vector3 cuePosition = Layout.CounterPosition;
-            float crowdRadius = 12f;
-            float crowdGain = 1f;
-            float cueRadius = 8f;
+            float firstCrowdRadius = 16f;
+            float secondCrowdRadius = 16f;
+            float firstCrowdGain = 0.8f;
+            float secondCrowdGain = 0.8f;
+            float cueRadius = 11f;
             float cueGain = 1f;
+            int crowdAnchorCount = 0;
             for (int index = 0;
                  index < Layout.AudioAnchors.Count;
                  index++)
@@ -335,9 +393,20 @@ namespace BarPromenade
                     Layout.AudioAnchors[index];
                 if (anchor.Kind == BarInteriorAudioKind.CrowdBed)
                 {
-                    crowdPosition = anchor.Position;
-                    crowdRadius = anchor.Radius;
-                    crowdGain = anchor.Gain;
+                    if (crowdAnchorCount == 0)
+                    {
+                        firstCrowdPosition = anchor.Position;
+                        firstCrowdRadius = anchor.Radius;
+                        firstCrowdGain = anchor.Gain;
+                    }
+                    else if (crowdAnchorCount == 1)
+                    {
+                        secondCrowdPosition = anchor.Position;
+                        secondCrowdRadius = anchor.Radius;
+                        secondCrowdGain = anchor.Gain;
+                    }
+
+                    crowdAnchorCount++;
                 }
                 else if (
                     anchor.Kind == BarInteriorAudioKind.BarService)
@@ -355,10 +424,13 @@ namespace BarPromenade
                 soundscapeObject.AddComponent<BarSoundscape>();
             Soundscape.Initialize(
                 unchecked((int)Layout.StableSeed),
-                transform.TransformPoint(crowdPosition),
+                transform.TransformPoint(firstCrowdPosition),
+                transform.TransformPoint(secondCrowdPosition),
                 transform.TransformPoint(cuePosition),
-                crowdRadius,
-                crowdGain,
+                firstCrowdRadius,
+                firstCrowdGain,
+                secondCrowdRadius,
+                secondCrowdGain,
                 cueRadius,
                 cueGain);
         }

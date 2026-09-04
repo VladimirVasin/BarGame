@@ -293,6 +293,76 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Presenter_FallsBackWhenACellIsMissing()
+        {
+            GameObject face = new GameObject("Face Surface");
+            Texture2D texture = new Texture2D(256, 256);
+            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
+            Assert.That(shader, Is.Not.Null);
+            Material material = new Material(shader);
+            try
+            {
+                Renderer renderer = face.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial = material;
+                // An atlas built before the drink's faces: the five cells
+                // the runtime always had and nothing else.
+                Player3DFaceAtlasCell[] all = CreateCanonicalCells();
+                var five = new Player3DFaceAtlasCell[5];
+                Array.Copy(all, five, 5);
+                var presenter = new Player3DFaceAtlasPresenter();
+                presenter.Configure(new Player3DFaceAtlasBinding(
+                    renderer,
+                    texture,
+                    4,
+                    4,
+                    five));
+
+                // Grimace stands in as Tense (cell 0,1), Drowsy as HalfBlink
+                // (cell 1,0), Slack and Glazed as Neutral (cell 0,0).
+                Assert.That(presenter.Apply(PlayerFacialExpression.Grimace), Is.True);
+                var properties = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(properties);
+                Assert.That(
+                    properties.GetVector(BaseMapTransformId),
+                    Is.EqualTo(new Vector4(0.25f, 0.25f, 0f, 0.25f)));
+                Assert.That(presenter.Apply(PlayerFacialExpression.Drowsy), Is.True);
+                renderer.GetPropertyBlock(properties);
+                Assert.That(
+                    properties.GetVector(BaseMapTransformId),
+                    Is.EqualTo(new Vector4(0.25f, 0.25f, 0.25f, 0f)));
+                Assert.That(presenter.Apply(PlayerFacialExpression.Slack), Is.True);
+                renderer.GetPropertyBlock(properties);
+                Assert.That(
+                    properties.GetVector(BaseMapTransformId),
+                    Is.EqualTo(new Vector4(0.25f, 0.25f, 0f, 0f)));
+
+                // With the full atlas the drink's own cell is used.
+                presenter.Configure(new Player3DFaceAtlasBinding(
+                    renderer,
+                    texture,
+                    4,
+                    4,
+                    all));
+                Assert.That(presenter.Apply(PlayerFacialExpression.Grimace), Is.True);
+                renderer.GetPropertyBlock(properties);
+                Assert.That(
+                    properties.GetVector(BaseMapTransformId),
+                    Is.EqualTo(new Vector4(0.25f, 0.25f, 0f, 0.5f)));
+                Assert.That(
+                    PlayerFacialExpressionRules.Fallback(PlayerFacialExpression.Tense),
+                    Is.EqualTo(PlayerFacialExpression.Neutral));
+                Assert.That(PlayerFacialExpressionRules.IsCanonical(PlayerFacialExpression.Tense), Is.True);
+                Assert.That(PlayerFacialExpressionRules.IsCanonical(PlayerFacialExpression.Glazed), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(face);
+            }
+        }
+
         private static Player3DFaceAtlasCell[] CreateCanonicalCells()
         {
             return new[]
@@ -306,7 +376,15 @@ namespace BarPromenade.Tests.EditMode
                 new Player3DFaceAtlasCell(
                     PlayerFacialExpression.Watchful, 3, 0),
                 new Player3DFaceAtlasCell(
-                    PlayerFacialExpression.Tense, 0, 1)
+                    PlayerFacialExpression.Tense, 0, 1),
+                new Player3DFaceAtlasCell(
+                    PlayerFacialExpression.Drowsy, 1, 1),
+                new Player3DFaceAtlasCell(
+                    PlayerFacialExpression.Glazed, 2, 1),
+                new Player3DFaceAtlasCell(
+                    PlayerFacialExpression.Slack, 3, 1),
+                new Player3DFaceAtlasCell(
+                    PlayerFacialExpression.Grimace, 0, 2)
             };
         }
 

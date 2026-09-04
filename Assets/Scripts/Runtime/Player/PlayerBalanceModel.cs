@@ -151,6 +151,49 @@ namespace BarPromenade
         public float Lift { get; }
     }
 
+    /// <summary>
+    /// Where the model is in the fight for balance. <c>Steady</c> and
+    /// <c>Recovering</c> are the ordinary stagger (the latter with the
+    /// brace arms still coming down after a save); <c>Toppling</c> is the
+    /// half second to a second and a half in which the ankles have given
+    /// up and only a lunge or the torso can still catch him; <c>Fallen</c>
+    /// is the latch the ragdoll takes over from.
+    /// </summary>
+    public enum BalancePhase
+    {
+        Steady = 0,
+        Recovering,
+        Toppling,
+        Fallen
+    }
+
+    /// <summary>Why a topple ended in a fall.</summary>
+    public enum BalanceFallCause
+    {
+        None = 0,
+
+        /// <summary>The body leaned past the point of no return.</summary>
+        PointOfNoReturn,
+
+        /// <summary>The topple went on longer than any save takes.</summary>
+        ToppleTimeout,
+
+        /// <summary>Pinned against a wall the hand never caught.</summary>
+        Blocked,
+
+        /// <summary>The capsule hit something mid-topple.</summary>
+        Stopped,
+
+        /// <summary>Both lunges landed and he was still going.</summary>
+        LungesSpent,
+
+        /// <summary>After a lunge the capture point was beyond even a lunge.</summary>
+        BeyondLunge,
+
+        /// <summary>A test or debug seam latched it.</summary>
+        Forced
+    }
+
     /// <summary>What the presentation, motor and camera read from the model.</summary>
     public readonly struct PlayerBalanceOutput
     {
@@ -168,8 +211,18 @@ namespace BarPromenade
             float headingWeaveDegrees,
             Vector2 leftFoot,
             Vector2 rightFoot,
-            Vector2 capturePoint)
+            Vector2 capturePoint,
+            Vector2 torsoReactionDegrees = default,
+            BalancePhase phase = BalancePhase.Steady,
+            float braceWeight = 0f,
+            Vector2 fallAxis = default,
+            Vector2 fallVelocity = default,
+            float fallLeanDegrees = 0f,
+            float fallAngularVelocity = 0f,
+            Vector2 supportCentre = default,
+            Vector2 centreOfPressure = default)
         {
+            CentreOfPressure = centreOfPressure;
             DriftVelocity = driftVelocity;
             LeanRollDegrees = leanRollDegrees;
             LeanPitchDegrees = leanPitchDegrees;
@@ -184,6 +237,14 @@ namespace BarPromenade
             LeftFoot = leftFoot;
             RightFoot = rightFoot;
             CapturePoint = capturePoint;
+            TorsoReactionDegrees = torsoReactionDegrees;
+            Phase = phase;
+            BraceWeight = Mathf.Clamp01(braceWeight);
+            FallAxis = fallAxis;
+            FallVelocity = fallVelocity;
+            FallLeanDegrees = fallLeanDegrees;
+            FallAngularVelocity = fallAngularVelocity;
+            SupportCentre = supportCentre;
         }
 
         public static PlayerBalanceOutput Still =>
@@ -224,6 +285,35 @@ namespace BarPromenade
         public Vector2 LeftFoot { get; }
         public Vector2 RightFoot { get; }
         public Vector2 CapturePoint { get; }
+
+        /// <summary>
+        /// The torso's hip-strategy whip, degrees off the legs: <c>x</c> a
+        /// roll (positive right), <c>y</c> a pitch (positive forward) —
+        /// in the sense of the fall it is fighting.
+        /// </summary>
+        public Vector2 TorsoReactionDegrees { get; }
+        public BalancePhase Phase { get; }
+
+        /// <summary>How far the hands have gone out toward the ground (<c>0..1</c>).</summary>
+        public float BraceWeight { get; }
+
+        /// <summary>Planar unit direction of the fall, hero frame; valid once <see cref="Phase"/> is past Steady.</summary>
+        public Vector2 FallAxis { get; }
+
+        /// <summary>COM velocity at the moment of the fall, hero frame, m/s.</summary>
+        public Vector2 FallVelocity { get; }
+
+        /// <summary>Body lean at the moment of the fall, degrees.</summary>
+        public float FallLeanDegrees { get; }
+
+        /// <summary>Angular speed about the support edge at the fall, rad/s.</summary>
+        public float FallAngularVelocity { get; }
+
+        /// <summary>Midpoint of the two boots, hero frame.</summary>
+        public Vector2 SupportCentre { get; }
+
+        /// <summary>Where the weight is on the ground, hero frame: the pivot of a topple.</summary>
+        public Vector2 CentreOfPressure { get; }
     }
 
     /// <summary>
@@ -232,6 +322,19 @@ namespace BarPromenade
     /// and imprecisely, a seeded disturbance that grows with the drink,
     /// and a capture point that tells the model when a step is needed,
     /// where it must land, and when nothing can save him.
+    ///
+    /// Three strategies fight the disturbance, in the order a body uses
+    /// them: the ankles (the centre of pressure chasing the capture
+    /// point inside the boots), the hips (a torso-and-arms flywheel spun
+    /// in the sense of the fall, worth a bounded extra centre of
+    /// pressure), and the feet (a recovery step past the capture point).
+    /// When the capture point escapes even a step, the model does not
+    /// give up: it enters a topple, in which the root follows the falling
+    /// centre of mass, the torso whips at its full budget, and one or two
+    /// lunges — longer, slower, and aimed with a drunk's error — try to
+    /// get a boot under him. Only past the point of no return, or when
+    /// the lunges are spent, does it latch a fall, and then it hands the
+    /// ragdoll the velocity the body had.
     ///
     /// Pure C#, fixed step, seeded: two models with the same seed and the
     /// same inputs produce the same steps and the same fall. Sober is
@@ -247,9 +350,6 @@ namespace BarPromenade
         /// <summary>COM offset below which no root creep is emitted.</summary>
         public const float CreepDeadZone = 0.04f;
 
-        /// <summary>The COM lean the pelvis roll is clamped to.</summary>
-        public const float MaximumLeanRollDegrees = 16f;
-        public const float MaximumLeanPitchDegrees = 10f;
 
         /// <summary>How long a step waits for the clip to lift the stance foot.</summary>
         public const float StanceFootWaitSeconds = 0.12f;
@@ -290,6 +390,7 @@ namespace BarPromenade
         private float stepElapsed;
         private float stepLift;
         private Vector2 stepDrift;
+        private bool stepIsLunge;
         private float graceSeconds;
         private float reactionTimer;
         private float stanceWaitTimer;
@@ -306,6 +407,27 @@ namespace BarPromenade
         private Vector2 pendingImpulse;
         private int stepsTaken;
         private int stumbles;
+        private Vector2 flywheelAngle;
+        private Vector2 flywheelVelocity;
+        private Vector2 flywheelCommand;
+        private bool flywheelSpent;
+        private Vector2 leanReference;
+        private BalancePhase phase = BalancePhase.Steady;
+        private float toppleElapsed;
+        private int lungesTaken;
+        private float recoveringTimer;
+        private float braceWeight;
+        private Vector2 leanVector;
+        private float leanDegrees;
+        private Vector2 supportCentre;
+        private Vector2 fallAxis = Vector2.right;
+        private Vector2 fallVelocity;
+        private float fallLeanDegrees;
+        private float fallAngularVelocity;
+        private BalanceFallCause fallCause;
+        private int topples;
+        private PlayerBalanceSettings lastSettings =
+            PlayerBalanceSettings.FromIntoxication(0f);
         private PlayerBalanceOutput output = PlayerBalanceOutput.Still;
 
         public PlayerBalanceModel(int seed)
@@ -338,6 +460,40 @@ namespace BarPromenade
         public Vector2 LeftFoot => leftFoot - rootShift;
         public Vector2 RightFoot => rightFoot - rootShift;
 
+        /// <summary>The torso flywheel, radians off the legs (x roll, y pitch).</summary>
+        public Vector2 FlywheelAngle => flywheelAngle;
+        public Vector2 FlywheelVelocity => flywheelVelocity;
+        public BalancePhase Phase => phase;
+
+        /// <summary>Seconds spent in the current topple.</summary>
+        public float ToppleElapsed => toppleElapsed;
+
+        /// <summary>Lunges taken in the current topple.</summary>
+        public int LungesTaken => lungesTaken;
+
+        /// <summary>The step in flight is a lunge.</summary>
+        public bool StepIsLunge => stepActive && stepIsLunge;
+
+        /// <summary>Topples entered since the last reset, recovered or not.</summary>
+        public int Topples => topples;
+        public float BraceWeight => braceWeight;
+        public Vector2 FallAxis => fallAxis;
+        public Vector2 FallVelocity => fallVelocity;
+        public float FallLeanDegrees => fallLeanDegrees;
+        public float FallAngularVelocity => fallAngularVelocity;
+        public BalanceFallCause FallCause => fallCause;
+        public Vector2 SupportCentre => supportCentre;
+
+        /// <summary>Body lean from what is holding him up, degrees.</summary>
+        public float LeanDegrees => leanDegrees;
+
+        /// <summary>
+        /// The point the lean is measured from, hero frame: the boots'
+        /// midpoint in a stance, the boot under the pressure once they
+        /// are split.
+        /// </summary>
+        public Vector2 LeanReference => leanReference;
+
         /// <summary>Balance cannot be lost for this long (after a fall, a modal).</summary>
         public void ArmGrace(float seconds)
         {
@@ -350,12 +506,35 @@ namespace BarPromenade
             pendingImpulse += velocity;
         }
 
-        /// <summary>Test and debug seam: the next advance latches a fall.</summary>
+        /// <summary>
+        /// Test and debug seam: latches a fall at once, with the inertia
+        /// a modest sideways topple would have carried so the ragdoll
+        /// still starts moving.
+        /// </summary>
         public void ForceLoseBalance(float direction)
         {
+            float sign = direction < 0f ? -1f : 1f;
+            phase = BalancePhase.Fallen;
             lostBalance = true;
-            fallDirection = direction < 0f ? -1f : 1f;
+            fallDirection = sign;
+            fallAxis = new Vector2(sign, 0f);
+            fallVelocity = new Vector2(
+                sign * PlayerBalanceRules.ForcedFallVelocity,
+                0f);
+            fallLeanDegrees = PlayerBalanceRules.ForcedFallLeanDegrees;
+            fallAngularVelocity = PlayerBalanceRules.FallAngularVelocity(
+                PlayerBalanceRules.ForcedFallVelocity,
+                fallLeanDegrees,
+                lastSettings.ComHeight);
+            leanVector = fallAxis * (
+                Mathf.Tan(fallLeanDegrees * Mathf.Deg2Rad) *
+                lastSettings.ComHeight);
+            leanDegrees = fallLeanDegrees;
+            fallCause = BalanceFallCause.Forced;
+            braceWeight = 1f;
             instability = 1f;
+            stepActive = false;
+            stepDrift = Vector2.zero;
             output = BuildOutput(Vector2.zero, 0f);
         }
 
@@ -374,6 +553,7 @@ namespace BarPromenade
             stepActive = false;
             stepElapsed = 0f;
             stepDrift = Vector2.zero;
+            stepIsLunge = false;
             reactionTimer = 0f;
             stanceWaitTimer = 0f;
             gatherTimer = 0f;
@@ -386,19 +566,51 @@ namespace BarPromenade
             fallDirection = 1f;
             previousSideContact = false;
             pendingImpulse = Vector2.zero;
+            flywheelAngle = Vector2.zero;
+            flywheelVelocity = Vector2.zero;
+            flywheelCommand = Vector2.zero;
+            flywheelSpent = false;
+            phase = BalancePhase.Steady;
+            toppleElapsed = 0f;
+            lungesTaken = 0;
+            recoveringTimer = 0f;
+            braceWeight = 0f;
+            leanVector = Vector2.zero;
+            leanReference = Vector2.zero;
+            leanDegrees = 0f;
+            supportCentre = Vector2.zero;
+            fallAxis = Vector2.right;
+            fallVelocity = Vector2.zero;
+            fallLeanDegrees = 0f;
+            fallAngularVelocity = 0f;
+            fallCause = BalanceFallCause.None;
+            topples = 0;
             output = PlayerBalanceOutput.Still;
         }
 
         public void Advance(float deltaTime, in PlayerBalanceInput input)
+        {
+            Advance(
+                deltaTime,
+                input,
+                PlayerBalanceSettings.FromIntoxication(input.Intoxication));
+        }
+
+        /// <summary>
+        /// The same advance with an explicit tuning row — the seam the
+        /// tests and the offline simulation use to vary one knob.
+        /// </summary>
+        public void Advance(
+            float deltaTime,
+            in PlayerBalanceInput input,
+            in PlayerBalanceSettings settings)
         {
             if (deltaTime <= 0f || float.IsNaN(deltaTime))
             {
                 return;
             }
 
-            PlayerBalanceSettings settings =
-                PlayerBalanceSettings.FromIntoxication(input.Intoxication);
-            lastIntoxication = settings.Intoxication;
+            lastSettings = settings;
             accumulator += Mathf.Min(deltaTime, 0.25f);
             Vector2 drift = output.DriftVelocity;
             float weave = output.HeadingWeaveDegrees;
@@ -426,7 +638,7 @@ namespace BarPromenade
             drift = Vector2.zero;
             weave = 0f;
 
-            if (!input.Grounded || lostBalance)
+            if (!input.Grounded || phase == BalancePhase.Fallen)
             {
                 comVelocity *= Mathf.Max(0f, 1f - 4f * h);
                 com *= Mathf.Max(0f, 1f - 4f * h);
@@ -453,8 +665,23 @@ namespace BarPromenade
                 RecentreFeet();
                 pendingImpulse = Vector2.zero;
                 previousSideContact = input.SideContact;
+                flywheelAngle = Vector2.zero;
+                flywheelVelocity = Vector2.zero;
+                flywheelCommand = Vector2.zero;
+                flywheelSpent = false;
+                phase = BalancePhase.Steady;
+                toppleElapsed = 0f;
+                lungesTaken = 0;
+                recoveringTimer = 0f;
+                braceWeight = 0f;
+                leanVector = Vector2.zero;
+                leanReference = Vector2.zero;
+                leanDegrees = 0f;
+                supportCentre = Vector2.zero;
                 return;
             }
+
+            bool toppling = phase == BalancePhase.Toppling;
 
             // Disturbance: two slow seeded sways per axis plus a little
             // filtered white noise, all scaled by the level and by running.
@@ -509,6 +736,57 @@ namespace BarPromenade
                                        input.TurnInput * settings.InputCopShift,
                                        0f);
 
+            // Hip strategy: the torso and arms are a flywheel. Spun in the
+            // sense of the fall they push the hips back under him, worth
+            // an extra centre of pressure of I·α/(m·g), until the angle
+            // stop; then a slow spring unwinds them. The command lags by
+            // the reaction delay — except in a topple, where there is no
+            // time left to be slow about it.
+            Vector2 flywheelTarget = PlayerBalanceRules.FlywheelCommand(
+                capturePoint,
+                support,
+                settings.CaptureMargin,
+                settings.FlywheelAcceleration);
+            // Slow to start, quick to let go: the onset lags by the
+            // reaction delay, the release is immediate. A torso at its
+            // stop is spent — holding it there buys nothing — so it
+            // unwinds even while the point is still out, and re-arms
+            // once it has come most of the way back.
+            if (flywheelSpent &&
+                flywheelAngle.magnitude <
+                PlayerBalanceRules.FlywheelMaximumRadians *
+                PlayerBalanceRules.FlywheelRearmFraction)
+            {
+                flywheelSpent = false;
+            }
+
+            if (flywheelTarget.sqrMagnitude <= 0f || flywheelSpent)
+            {
+                flywheelCommand = Vector2.zero;
+            }
+            else if (toppling)
+            {
+                flywheelCommand = flywheelTarget;
+            }
+            else
+            {
+                flywheelCommand += (flywheelTarget - flywheelCommand) *
+                                   Mathf.Min(1f, h / settings.FlywheelReactionDelay);
+            }
+
+            Vector2 flywheelAcceleration = flywheelCommand.sqrMagnitude > 0f
+                ? flywheelCommand
+                : PlayerBalanceRules.FlywheelReturn(flywheelAngle, flywheelVelocity);
+            flywheelVelocity += flywheelAcceleration * h;
+            flywheelAngle += flywheelVelocity * h;
+            if (PlayerBalanceRules.ClampFlywheel(
+                    ref flywheelAngle,
+                    ref flywheelVelocity,
+                    ref flywheelAcceleration))
+            {
+                flywheelSpent = true;
+            }
+
             // Contacts: a wall met this step absorbs or bounces the COM.
             if (input.SideContact && !previousSideContact &&
                 input.ContactNormal.sqrMagnitude > 0.0001f)
@@ -551,7 +829,9 @@ namespace BarPromenade
                 (com - effectiveCop) * (omega * omega) +
                 disturbance +
                 input.SlopeDownhill *
-                (PlayerBalanceSettings.Gravity * settings.SlopeBias);
+                (PlayerBalanceSettings.Gravity * settings.SlopeBias) -
+                flywheelAcceleration *
+                (PlayerBalanceRules.FlywheelCopGain * omega * omega);
             if (tripTimer > 0f)
             {
                 tripTimer -= h;
@@ -570,87 +850,34 @@ namespace BarPromenade
                 omega);
 
             // Steps.
-            if (stepActive)
+            if (toppling)
             {
-                stepElapsed += h;
-                float progress = Mathf.Clamp01(stepElapsed / stepDuration);
-                Vector2 footNow = Vector2.Lerp(
-                    stepFrom,
-                    stepTo,
-                    Mathf.SmoothStep(0f, 1f, progress));
-                if (stepSide == FootSide.Left)
-                {
-                    leftFoot = footNow;
-                }
-                else
-                {
-                    rightFoot = footNow;
-                }
-
-                drift = stepDrift;
-                rootShift += stepDrift * h;
-                com -= stepDrift * h;
-                if (progress >= 1f)
-                {
-                    FinishStep(settings);
-                }
+                AdvanceTopplingSteps(h, input, settings, capturePoint, support, out drift);
             }
             else
             {
-                if (gatherTimer > 0f)
-                {
-                    gatherTimer -= h;
-                    if (gatherTimer <= 0f)
-                    {
-                        PlanGatherStep(settings);
-                    }
-                }
+                AdvanceOrdinarySteps(h, input, settings, capturePoint, support, out drift);
+            }
 
-                if (!stepActive &&
-                    reactionTimer <= 0f &&
-                    PlayerBalanceRules.NeedsStep(
-                        capturePoint,
-                        support,
-                        settings.CaptureMargin))
+            // A landing this step moved the root, the boots and half the
+            // momentum: the capture point and the polygon the phase is
+            // judged against are the ones AFTER it, or a boot that has
+            // just caught him reads as a lost cause for a step.
+            capturePoint = PlayerBalanceRules.CapturePoint(
+                com,
+                comVelocity,
+                omega);
+            if (!stepActive)
+            {
+                support = BalanceSupportPolygon.FromFeet(
+                    leftFoot - rootShift,
+                    rightFoot - rootShift,
+                    settings);
+                if (handHolding && input.WallNormal.sqrMagnitude > 0.0001f)
                 {
-                    FootSide swingPreference = input.PlantLeft <= input.PlantRight
-                        ? FootSide.Left
-                        : FootSide.Right;
-                    FootSide side = PlayerBalanceRules.StepSide(
-                        capturePoint,
-                        support,
-                        swingPreference);
-                    float plantOfSide = side == FootSide.Left
-                        ? input.PlantLeft
-                        : input.PlantRight;
-                    float plantOfOther = side == FootSide.Left
-                        ? input.PlantRight
-                        : input.PlantLeft;
-                    float urgency = support.Excursion(capturePoint) /
-                                    Mathf.Max(0.01f, settings.MaximumStepReach * 0.5f);
-                    bool clipHoldsThatFoot =
-                        plantOfSide > 0.6f && plantOfOther < 0.6f;
-                    if (clipHoldsThatFoot &&
-                        urgency < StanceFootWaitUrgency &&
-                        stanceWaitTimer < StanceFootWaitSeconds)
-                    {
-                        stanceWaitTimer += h;
-                    }
-                    else
-                    {
-                        PlanStep(side, capturePoint, urgency, settings);
-                    }
-                }
-                else
-                {
-                    stanceWaitTimer = 0f;
-                }
-
-                if (!stepActive && com.magnitude > CreepDeadZone)
-                {
-                    drift = Vector2.ClampMagnitude(
-                        com * settings.DriftGain,
-                        settings.CreepLimit);
+                    support = support.ExtendedToward(
+                        -input.WallNormal,
+                        PlayerBalanceRules.WallSupportReach);
                 }
             }
 
@@ -668,9 +895,24 @@ namespace BarPromenade
                 }
             }
 
-            // Lean and instability.
-            float leanRaw = PlayerBalanceRules.LeanDegrees(
-                com.magnitude,
+            // Lean and instability. The lean is the centre of mass over
+            // what is holding him up: the midpoint of the boots in a
+            // stance, and — as the boots split into a lunge — the boot
+            // the pressure is on, because a man in a wide split stands
+            // over the foot that has his weight, not over the empty
+            // ground between his feet. In a topple the root travels with
+            // the centre of mass while the boots stay, so this is the
+            // strut angle of the stance leg.
+            left = leftFoot - rootShift;
+            right = rightFoot - rootShift;
+            supportCentre = (left + right) * 0.5f;
+            float split = Mathf.Clamp01(
+                (Vector2.Distance(left, right) - PlayerBalanceRules.NominalStanceMetres) /
+                PlayerBalanceRules.SplitStanceMetres);
+            leanReference = Vector2.Lerp(supportCentre, cop, split);
+            leanVector = com - leanReference;
+            leanDegrees = PlayerBalanceRules.LeanDegrees(
+                leanVector.magnitude,
                 settings.ComHeight);
             float excursion = support.Excursion(capturePoint);
             instability = Mathf.Max(
@@ -678,62 +920,403 @@ namespace BarPromenade
                     excursion /
                     (settings.MaximumStepReach *
                      PlayerBalanceRules.RecoverableReachFraction)),
-                Mathf.Clamp01(leanRaw / settings.FallLeanDegrees));
+                Mathf.Clamp01(leanDegrees / settings.FallLeanDegrees));
 
-            // Falls.
-            if (input.FallAllowed)
+            UpdatePhase(h, input, settings, capturePoint, support, excursion, left, right, ref drift);
+
+            weave = settings.HeadingWeaveDegrees *
+                    Mathf.Sin(
+                        elapsed * settings.HeadingWeaveFrequency * Mathf.PI * 2f +
+                        swayPhases[0]);
+        }
+
+        /// <summary>
+        /// The ordinary stagger's feet: a step in flight carries the root
+        /// at half its speed, a landed pair gathers, a capture point past
+        /// the boots plans a recovery step, and the root creeps under the
+        /// centre of mass between steps.
+        /// </summary>
+        private void AdvanceOrdinarySteps(
+            float h,
+            in PlayerBalanceInput input,
+            in PlayerBalanceSettings settings,
+            Vector2 capturePoint,
+            in BalanceSupportPolygon support,
+            out Vector2 drift)
+        {
+            drift = Vector2.zero;
+            if (stepActive)
             {
-                bool blockedSide = excursion > 0f &&
-                                   input.WallWithinReach &&
-                                   !handHolding &&
-                                   Vector2.Dot(
-                                       capturePoint,
-                                       -input.WallNormal) > 0f;
-                blockedTimer = blockedSide ? blockedTimer + h : 0f;
-                // While a step is in flight the recovery IS the step:
-                // judge the capture point against the polygon the landing
-                // will make, not against the lone stance foot, or every
-                // step away from the stance foot reads as a lost cause the
-                // moment it starts.
-                BalanceSupportPolygon recoverySupport = stepActive
-                    ? BalanceSupportPolygon.FromFeet(
-                        stepSide == FootSide.Left ? right : left,
-                        stepTo - rootShift,
-                        settings)
-                    : support;
-                bool cannotStep = !PlayerBalanceRules.CanRecoverByStep(
-                    capturePoint,
-                    recoverySupport,
-                    settings);
-                if (graceSeconds <= 0f &&
-                    (leanRaw > settings.FallLeanDegrees ||
-                     cannotStep ||
-                     blockedTimer > PlayerBalanceRules.BlockedFallSeconds))
+                drift = stepDrift;
+                rootShift += stepDrift * h;
+                com -= stepDrift * h;
+                AdvanceStepInFlight(h, settings);
+                return;
+            }
+
+            if (gatherTimer > 0f)
+            {
+                gatherTimer -= h;
+                if (gatherTimer <= 0f)
                 {
-                    lostBalance = true;
-                    fallDirection = PlayerBalanceRules.FallDirection(capturePoint);
-                    instability = 1f;
+                    PlanGatherStep(settings);
+                }
+            }
+
+            if (!stepActive &&
+                PlayerBalanceRules.NeedsStep(
+                    capturePoint,
+                    support,
+                    settings.CaptureMargin))
+            {
+                // The step is judged against where the capture point will
+                // be when the boot lands. If an ordinary step cannot get
+                // there, this is no stagger any more: the topple begins
+                // here, with a lunge thrown at once — no reaction delay
+                // and no waiting for the clip to free the boot, because
+                // the point runs away as e^(ω·t).
+                Vector2 predicted = PlayerBalanceRules.PredictedCapturePoint(
+                    capturePoint,
+                    support,
+                    settings.Omega,
+                    settings.StepDuration * PlayerBalanceRules.LungePredictionFraction);
+                bool emergency = graceSeconds <= 0f &&
+                                 input.FallAllowed &&
+                                 !PlayerBalanceRules.CanRecoverByStep(
+                                     predicted,
+                                     support,
+                                     settings);
+                if (emergency)
+                {
+                    EnterTopple(capturePoint);
+                    PlanLunge(input, settings, capturePoint, support);
+                    return;
+                }
+
+                if (reactionTimer > 0f)
+                {
+                    return;
+                }
+
+                FootSide swingPreference = input.PlantLeft <= input.PlantRight
+                    ? FootSide.Left
+                    : FootSide.Right;
+                FootSide side = PlayerBalanceRules.StepSide(
+                    capturePoint,
+                    support,
+                    swingPreference);
+                float plantOfSide = side == FootSide.Left
+                    ? input.PlantLeft
+                    : input.PlantRight;
+                float plantOfOther = side == FootSide.Left
+                    ? input.PlantRight
+                    : input.PlantLeft;
+                float urgency = support.Excursion(capturePoint) /
+                                Mathf.Max(0.01f, settings.MaximumStepReach * 0.5f);
+                bool clipHoldsThatFoot =
+                    plantOfSide > 0.6f && plantOfOther < 0.6f;
+                if (clipHoldsThatFoot &&
+                    urgency < StanceFootWaitUrgency &&
+                    stanceWaitTimer < StanceFootWaitSeconds)
+                {
+                    stanceWaitTimer += h;
+                }
+                else
+                {
+                    PlanStep(side, capturePoint, urgency, settings);
                 }
             }
             else
+            {
+                stanceWaitTimer = 0f;
+            }
+
+            if (!stepActive && com.magnitude > CreepDeadZone)
+            {
+                drift = Vector2.ClampMagnitude(
+                    com * settings.DriftGain,
+                    settings.CreepLimit);
+            }
+        }
+
+        /// <summary>
+        /// The topple's feet: the root travels with the falling centre of
+        /// mass (the boots stay where they were planted and the legs
+        /// stretch after him), and while the lunge budget lasts a boot is
+        /// thrown at where the capture point will be — at once, with no
+        /// reaction delay to wait out, because the point runs away as
+        /// e^(ω·t) and every hundredth of a second is a centimetre of
+        /// reach lost. A step already in the air is redirected into the
+        /// lunge rather than waited for.
+        /// </summary>
+        private void AdvanceTopplingSteps(
+            float h,
+            in PlayerBalanceInput input,
+            in PlayerBalanceSettings settings,
+            Vector2 capturePoint,
+            in BalanceSupportPolygon support,
+            out Vector2 drift)
+        {
+            drift = comVelocity;
+            rootShift += drift * h;
+            com -= drift * h;
+            if (stepActive)
+            {
+                if (!stepIsLunge &&
+                    lungesTaken < PlayerBalanceRules.MaximumLunges &&
+                    support.Excursion(capturePoint) > 0f)
+                {
+                    RedirectStepIntoLunge(input, settings, capturePoint, support);
+                }
+
+                AdvanceStepInFlight(h, settings);
+                return;
+            }
+
+            if (lungesTaken < PlayerBalanceRules.MaximumLunges &&
+                support.Excursion(capturePoint) > 0f)
+            {
+                PlanLunge(input, settings, capturePoint, support);
+            }
+        }
+
+        private void AdvanceStepInFlight(
+            float h,
+            in PlayerBalanceSettings settings)
+        {
+            stepElapsed += h;
+            float progress = Mathf.Clamp01(stepElapsed / stepDuration);
+            Vector2 footNow = Vector2.Lerp(
+                stepFrom,
+                stepTo,
+                Mathf.SmoothStep(0f, 1f, progress));
+            if (stepSide == FootSide.Left)
+            {
+                leftFoot = footNow;
+            }
+            else
+            {
+                rightFoot = footNow;
+            }
+
+            if (progress >= 1f)
+            {
+                FinishStep(settings);
+            }
+        }
+
+        /// <summary>
+        /// Steady or Recovering into Toppling when the ankles and an
+        /// ordinary step are beaten; Toppling into Recovering when a
+        /// lunge or the torso has put the capture point back between the
+        /// boots with the body not too far over; Toppling into Fallen at
+        /// the point of no return, when the lunges are spent, when the
+        /// topple has gone on too long, or when a wall stops the body.
+        /// Where falls are not allowed the capture point is pinned instead
+        /// and the whole fight is called off.
+        /// </summary>
+        private void UpdatePhase(
+            float h,
+            in PlayerBalanceInput input,
+            in PlayerBalanceSettings settings,
+            Vector2 capturePoint,
+            in BalanceSupportPolygon support,
+            float excursion,
+            Vector2 left,
+            Vector2 right,
+            ref Vector2 drift)
+        {
+            bool handHolding = wallSupport && input.HandHolding;
+            if (!input.FallAllowed)
             {
                 BalanceSupportPolygon recoverable =
                     PlayerBalanceRules.RecoverablePolygon(support, settings);
                 if (!recoverable.Contains(capturePoint))
                 {
                     Vector2 pinned = recoverable.Clamp(capturePoint);
-                    comVelocity = (pinned - com) * omega;
+                    comVelocity = (pinned - com) * PlayerBalanceRules.Omega(settings.ComHeight);
                 }
 
                 instability = Mathf.Min(instability, 0.85f);
                 drift.y = 0f;
                 blockedTimer = 0f;
+                if (phase == BalancePhase.Toppling)
+                {
+                    // The ground under him changed its mind mid-topple
+                    // (a stair, a slope): the fight is called off and he
+                    // is only staggering again.
+                    phase = BalancePhase.Steady;
+                    lungesTaken = 0;
+                    toppleElapsed = 0f;
+                }
+
+                recoveringTimer = 0f;
+                braceWeight = 0f;
+                return;
             }
 
-            weave = settings.HeadingWeaveDegrees *
-                    Mathf.Sin(
-                        elapsed * settings.HeadingWeaveFrequency * Mathf.PI * 2f +
-                        swayPhases[0]);
+            bool blockedSide = excursion > 0f &&
+                               input.WallWithinReach &&
+                               !handHolding &&
+                               Vector2.Dot(
+                                   capturePoint,
+                                   -input.WallNormal) > 0f;
+            blockedTimer = blockedSide ? blockedTimer + h : 0f;
+
+            if (phase == BalancePhase.Toppling)
+            {
+                toppleElapsed += h;
+                instability = 1f;
+                braceWeight = Mathf.Max(
+                    braceWeight,
+                    PlayerBalanceRules.BraceWeight(leanDegrees));
+
+                bool beyondLunge = !stepActive &&
+                                   lungesTaken > 0 &&
+                                   !PlayerBalanceRules.CanRecoverByStep(
+                                       capturePoint,
+                                       support,
+                                       settings.WithStepReach(
+                                           PlayerBalanceRules.LungeReachMultiplier));
+                bool lungesSpent = !stepActive &&
+                                   lungesTaken >= PlayerBalanceRules.MaximumLunges &&
+                                   excursion > settings.CaptureMargin;
+                bool stopped = input.SideContact && !handHolding;
+                BalanceFallCause cause = BalanceFallCause.None;
+                if (leanDegrees > PlayerBalanceRules.PointOfNoReturnDegrees)
+                {
+                    cause = BalanceFallCause.PointOfNoReturn;
+                }
+                else if (toppleElapsed > PlayerBalanceRules.MaximumToppleSeconds)
+                {
+                    cause = BalanceFallCause.ToppleTimeout;
+                }
+                else if (blockedTimer > PlayerBalanceRules.BlockedFallSeconds)
+                {
+                    cause = BalanceFallCause.Blocked;
+                }
+                else if (stopped)
+                {
+                    cause = BalanceFallCause.Stopped;
+                }
+                else if (lungesSpent)
+                {
+                    cause = BalanceFallCause.LungesSpent;
+                }
+                else if (beyondLunge)
+                {
+                    cause = BalanceFallCause.BeyondLunge;
+                }
+
+                if (cause != BalanceFallCause.None)
+                {
+                    Fall(cause);
+                    return;
+                }
+
+                if (toppleElapsed >= PlayerBalanceRules.MinimumToppleSeconds &&
+                    !stepActive &&
+                    excursion <= 0f &&
+                    leanDegrees < PlayerBalanceRules.RecoverLeanDegrees)
+                {
+                    phase = BalancePhase.Recovering;
+                    recoveringTimer = PlayerBalanceRules.RecoveringSeconds;
+                }
+
+                return;
+            }
+
+            if (phase == BalancePhase.Recovering)
+            {
+                recoveringTimer -= h;
+                braceWeight = Mathf.MoveTowards(
+                    braceWeight,
+                    0f,
+                    h / PlayerBalanceRules.BraceReleaseSeconds);
+                if (recoveringTimer <= 0f)
+                {
+                    phase = BalancePhase.Steady;
+                    recoveringTimer = 0f;
+                }
+            }
+            else
+            {
+                braceWeight = 0f;
+            }
+
+            // While a step is in flight the recovery IS the step: judge
+            // the capture point against the polygon the landing will make,
+            // not against the lone stance foot, or every step away from
+            // the stance foot reads as a lost cause the moment it starts.
+            BalanceSupportPolygon recoverySupport = stepActive
+                ? BalanceSupportPolygon.FromFeet(
+                    stepSide == FootSide.Left ? right : left,
+                    stepTo - rootShift,
+                    settings)
+                : support;
+            bool cannotStep = !PlayerBalanceRules.CanRecoverByStep(
+                capturePoint,
+                recoverySupport,
+                settings);
+            if (graceSeconds <= 0f &&
+                (leanDegrees > settings.FallLeanDegrees ||
+                 cannotStep ||
+                 blockedTimer > PlayerBalanceRules.BlockedFallSeconds))
+            {
+                EnterTopple(capturePoint);
+            }
+        }
+
+        private void EnterTopple(Vector2 capturePoint)
+        {
+            if (phase == BalancePhase.Toppling)
+            {
+                return;
+            }
+
+            phase = BalancePhase.Toppling;
+            toppleElapsed = 0f;
+            lungesTaken = 0;
+            recoveringTimer = 0f;
+            topples++;
+            instability = 1f;
+            Vector2 axis = capturePoint - leanReference;
+            fallAxis = axis.sqrMagnitude > 0.000001f
+                ? axis.normalized
+                : new Vector2(PlayerBalanceRules.FallDirection(capturePoint), 0f);
+        }
+
+        /// <summary>The latch, and everything the ragdoll needs to carry on the motion.</summary>
+        private void Fall(BalanceFallCause cause)
+        {
+            phase = BalancePhase.Fallen;
+            lostBalance = true;
+            fallCause = cause;
+            Vector2 axis = leanVector.sqrMagnitude > 0.000001f
+                ? leanVector.normalized
+                : fallAxis;
+            fallAxis = axis.sqrMagnitude > 0.000001f
+                ? axis
+                : Vector2.right;
+            fallDirection = PlayerBalanceRules.FallDirection(fallAxis);
+            // A body past the point of no return does not move toward
+            // upright: whatever the last landing left of a velocity back
+            // over the boots is not handed on.
+            Vector2 velocity = comVelocity;
+            float toward = Vector2.Dot(velocity, fallAxis);
+            if (toward < 0f)
+            {
+                velocity -= fallAxis * toward;
+            }
+
+            fallVelocity = velocity;
+            fallLeanDegrees = leanDegrees;
+            fallAngularVelocity = PlayerBalanceRules.FallAngularVelocity(
+                velocity.magnitude,
+                leanDegrees,
+                lastSettings.ComHeight);
+            braceWeight = 1f;
+            instability = 1f;
         }
 
         private void PlanStep(
@@ -756,6 +1339,122 @@ namespace BarPromenade
                 PlayerBalanceRules.StepLiftBase +
                 PlayerBalanceRules.StepLiftPerUrgency *
                 Mathf.Clamp(urgency, 0f, 2f));
+        }
+
+        /// <summary>
+        /// A lunge: the topple's step. Longer than a stagger's, faster,
+        /// higher, thrown past where the capture point will be when the
+        /// boot lands, pulled by the A/D input, and aimed with an error
+        /// the drink puts on it — drawn here, inside the fixed step, so
+        /// the miss is the same at every frame rate.
+        /// </summary>
+        private void PlanLunge(
+            in PlayerBalanceInput input,
+            in PlayerBalanceSettings settings,
+            Vector2 capturePoint,
+            in BalanceSupportPolygon support)
+        {
+            FootSide swingPreference = input.PlantLeft <= input.PlantRight
+                ? FootSide.Left
+                : FootSide.Right;
+            FootSide side = PlayerBalanceRules.StepSide(
+                capturePoint,
+                support,
+                swingPreference);
+            Vector2 left = leftFoot - rootShift;
+            Vector2 right = rightFoot - rootShift;
+            RecentreFeet();
+            Vector2 from = side == FootSide.Left ? left : right;
+            Vector2 other = side == FootSide.Left ? right : left;
+            float duration = settings.StepDuration *
+                             PlayerBalanceRules.LungeDurationMultiplier;
+            Vector2 to = LungeTarget(
+                input,
+                settings,
+                capturePoint,
+                support,
+                other,
+                side,
+                duration);
+            BeginStep(side, from, to, duration, LungeLift());
+            stepIsLunge = true;
+            lungesTaken++;
+        }
+
+        /// <summary>
+        /// The step already in the air becomes the lunge: same boot,
+        /// carrying on from where it is now, to the lunge's target in the
+        /// time a lunge would still have from here.
+        /// </summary>
+        private void RedirectStepIntoLunge(
+            in PlayerBalanceInput input,
+            in PlayerBalanceSettings settings,
+            Vector2 capturePoint,
+            in BalanceSupportPolygon support)
+        {
+            float progress = Mathf.Clamp01(stepElapsed / stepDuration);
+            Vector2 left = leftFoot - rootShift;
+            Vector2 right = rightFoot - rootShift;
+            RecentreFeet();
+            Vector2 from = stepSide == FootSide.Left ? left : right;
+            Vector2 other = stepSide == FootSide.Left ? right : left;
+            float remaining = Mathf.Max(
+                0.05f,
+                settings.StepDuration *
+                PlayerBalanceRules.LungeDurationMultiplier *
+                (1f - progress));
+            Vector2 to = LungeTarget(
+                input,
+                settings,
+                capturePoint,
+                support,
+                other,
+                stepSide,
+                remaining);
+            stepFrom = from;
+            stepTo = to;
+            stepElapsed = 0f;
+            stepDuration = remaining;
+            stepLift = Mathf.Max(stepLift, LungeLift());
+            stepDrift = (to - from) * 0.5f / stepDuration;
+            stepIsLunge = true;
+            lungesTaken++;
+        }
+
+        private Vector2 LungeTarget(
+            in PlayerBalanceInput input,
+            in PlayerBalanceSettings settings,
+            Vector2 capturePoint,
+            in BalanceSupportPolygon support,
+            Vector2 otherFoot,
+            FootSide side,
+            float flightSeconds)
+        {
+            float error = PlayerBalanceRules.LungeAimErrorMetres * settings.Intoxication;
+            Vector2 aimError = new Vector2(
+                (float)(random.NextDouble() * 2.0 - 1.0) * error,
+                (float)(random.NextDouble() * 2.0 - 1.0) * error);
+            PlayerBalanceSettings lungeSettings = settings.WithStepReach(
+                PlayerBalanceRules.LungeReachMultiplier);
+            Vector2 predicted = PlayerBalanceRules.PredictedCapturePoint(
+                capturePoint,
+                support,
+                settings.Omega,
+                flightSeconds * PlayerBalanceRules.LungePredictionFraction);
+            return PlayerBalanceRules.LungeTarget(
+                predicted,
+                otherFoot,
+                side,
+                input.TurnInput,
+                aimError,
+                lungeSettings);
+        }
+
+        private static float LungeLift()
+        {
+            return (PlayerBalanceRules.StepLiftBase +
+                    PlayerBalanceRules.StepLiftPerUrgency * 2f) *
+                   PlayerBalanceRules.LungeLiftMultiplier;
         }
 
         private void PlanGatherStep(in PlayerBalanceSettings settings)
@@ -799,6 +1498,7 @@ namespace BarPromenade
             stepElapsed = 0f;
             stepLift = lift;
             stepDrift = (to - from) * 0.5f / stepDuration;
+            stepIsLunge = false;
             stanceWaitTimer = 0f;
             gatherTimer = 0f;
             stepsTaken++;
@@ -815,16 +1515,25 @@ namespace BarPromenade
                 rightFoot = stepTo;
             }
 
-            stepActive = false;
-            stepDrift = Vector2.zero;
-            RecentreFeet();
             // A landed step catches the fall: the centre of pressure is
             // under the new boot at once, and the impact takes half the
             // momentum that carried him there. Without this the ankles
             // only start chasing the capture point a reaction later and
             // the COM sails on past the boot that was meant to stop it.
+            // A drunk's lunge lands soft — the knee gives — and keeps
+            // more of the momentum than a stagger's step.
+            float retention = stepIsLunge
+                ? Mathf.Lerp(
+                    LandingVelocityRetention,
+                    PlayerBalanceRules.LungeLandingRetentionAtMaximum,
+                    settings.Intoxication)
+                : LandingVelocityRetention;
+            stepActive = false;
+            stepDrift = Vector2.zero;
+            stepIsLunge = false;
+            RecentreFeet();
             cop = stepSide == FootSide.Left ? leftFoot : rightFoot;
-            comVelocity *= LandingVelocityRetention;
+            comVelocity *= retention;
             reactionTimer = settings.ReactionDelay;
             if (Mathf.Abs(leftFoot.x - rightFoot.x) >
                 PlayerBalanceRules.GatherThreshold)
@@ -849,16 +1558,29 @@ namespace BarPromenade
 
         private PlayerBalanceOutput BuildOutput(Vector2 drift, float weave)
         {
-            PlayerBalanceSettings settings =
-                PlayerBalanceSettings.FromIntoxication(lastIntoxication);
-            float leanRoll = Mathf.Clamp(
-                PlayerBalanceRules.LeanDegrees(com.x, PlayerBalanceSettings.DefaultComHeight),
-                -MaximumLeanRollDegrees,
-                MaximumLeanRollDegrees);
-            float leanPitch = Mathf.Clamp(
-                PlayerBalanceRules.LeanDegrees(com.y, PlayerBalanceSettings.DefaultComHeight),
-                -MaximumLeanPitchDegrees,
-                MaximumLeanPitchDegrees);
+            PlayerBalanceSettings settings = lastSettings;
+            bool freeLean = phase >= BalancePhase.Toppling;
+            float leanRoll = PlayerBalanceRules.LeanDegrees(
+                leanVector.x,
+                settings.ComHeight);
+            float leanPitch = PlayerBalanceRules.LeanDegrees(
+                leanVector.y,
+                settings.ComHeight);
+            if (!freeLean)
+            {
+                // With his feet still under him the lean is held to the
+                // angle a topple begins at, so the hand-over to the free
+                // lean of a topple is continuous.
+                leanRoll = Mathf.Clamp(
+                    leanRoll,
+                    -settings.FallLeanDegrees,
+                    settings.FallLeanDegrees);
+                leanPitch = Mathf.Clamp(
+                    leanPitch,
+                    -settings.FallLeanDegrees,
+                    settings.FallLeanDegrees);
+            }
+
             BalanceStepCommand step = stepActive
                 ? new BalanceStepCommand(
                     true,
@@ -868,26 +1590,47 @@ namespace BarPromenade
                     stepTo - rootShift,
                     stepLift)
                 : BalanceStepCommand.None;
+            float armReaction = Mathf.Max(
+                instability,
+                Mathf.Clamp01(
+                    flywheelVelocity.magnitude /
+                    PlayerBalanceRules.FlywheelArmReferenceVelocity));
+            // The pelvis rides the pendulum's arc: as the body tips, its
+            // hip drops by h·(1 − cos θ). Continuous from upright, so the
+            // topple's dip is the same dip a sway already shows a little
+            // of.
+            float crouch = settings.Intoxication * 0.03f +
+                           instability * 0.04f +
+                           PlayerBalanceRules.PendulumDrop(
+                               leanDegrees,
+                               settings.ComHeight);
             return new PlayerBalanceOutput(
                 drift,
                 leanRoll,
                 leanPitch,
                 instability,
-                instability,
+                armReaction,
                 step,
                 wallSupport,
                 lostBalance,
                 fallDirection,
-                lastIntoxication * 0.03f + instability * 0.04f,
+                crouch,
                 weave,
                 leftFoot - rootShift,
                 rightFoot - rootShift,
                 PlayerBalanceRules.CapturePoint(
                     com,
                     comVelocity,
-                    settings.Omega));
+                    settings.Omega),
+                flywheelAngle * Mathf.Rad2Deg,
+                phase,
+                braceWeight,
+                fallAxis,
+                fallVelocity,
+                fallLeanDegrees,
+                fallAngularVelocity,
+                supportCentre,
+                cop);
         }
-
-        private float lastIntoxication;
     }
 }

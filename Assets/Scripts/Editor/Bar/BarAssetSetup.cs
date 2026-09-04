@@ -61,7 +61,8 @@ namespace BarPromenade.Editor
         private const float ExpectedDepth = 16f;
         private const float ExpectedHeight = 4.8f;
         private const float ExpectedWallThickness = 0.3f;
-        private const float ExpectedDoorWidth = 3.2f;
+        private const float ExpectedDoorWidth = 1.45f;
+        private const float ExpectedDoorHeight = 2.34f;
 
         private static bool buildQueued;
 
@@ -342,6 +343,11 @@ namespace BarPromenade.Editor
                 dimensions.DoorWidth,
                 ExpectedDoorWidth,
                 "door width",
+                problems);
+            AppendIfFar(
+                dimensions.DoorHeight,
+                ExpectedDoorHeight,
+                "door height",
                 problems);
         }
 

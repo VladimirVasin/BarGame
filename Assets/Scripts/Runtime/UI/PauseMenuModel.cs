@@ -26,8 +26,9 @@ namespace BarPromenade
         Scanlines = 3,
         AspectRatio43 = 4,
         VertexJitter = 5,
-        Back = 6,
-        Count = 7
+        Begotten = 6,
+        Back = 7,
+        Count = 8
     }
 
     public enum PauseMenuAction

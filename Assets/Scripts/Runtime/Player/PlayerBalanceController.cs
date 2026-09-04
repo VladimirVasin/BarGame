@@ -28,6 +28,20 @@ namespace BarPromenade
         /// <summary>Yaw keeps this much of its rate at full instability.</summary>
         public const float YawScaleAtFullInstability = 0.4f;
 
+        /// <summary>
+        /// The brace: where the hands go out for the ground as a topple
+        /// passes the point a lunge can save. Each palm aims at the ground
+        /// this far ahead of its shoulder along the fall, the shoulders
+        /// this far either side of the root, probed from chest height; the
+        /// hand on the far side of the fall commits less.
+        /// </summary>
+        public const float BraceReachAhead = 0.45f;
+        public const float BraceShoulderHalfWidth = 0.22f;
+        public const float BraceProbeHeight = 1.3f;
+        public const float BraceProbeDistance = 1.6f;
+        public const float BraceOffHandWeight = 0.7f;
+        public const float BracePalmClearance = 0.02f;
+
         private static readonly RaycastHit[] Hits = new RaycastHit[16];
 
         private PlayerMotor motor;
@@ -49,11 +63,17 @@ namespace BarPromenade
         private float steadySeconds;
         private bool handIsRight = true;
         private PlayerWallReachPose wallReachPose = PlayerWallReachPose.None;
+        private PlayerArmReachPose leftBrace = PlayerArmReachPose.None;
+        private PlayerArmReachPose rightBrace = PlayerArmReachPose.None;
         private bool initialized;
         private PlayerBalanceOutput lastOutput = PlayerBalanceOutput.Still;
 
         /// <summary>The wall hand as the presentation is drawing it.</summary>
         public PlayerWallReachPose WallReach => wallReachPose;
+
+        /// <summary>The bracing hands as the presentation is drawing them.</summary>
+        public PlayerArmReachPose LeftBrace => leftBrace;
+        public PlayerArmReachPose RightBrace => rightBrace;
 
         /// <summary>The hand is on the wall and taking weight.</summary>
         public bool HandHolding => handHolding;
@@ -104,9 +124,20 @@ namespace BarPromenade
             }
 
             model = new PlayerBalanceModel(seed);
+            gait = new PlayerDrunkGaitModel(seed ^ GaitSeedSalt);
             lastOutput = PlayerBalanceOutput.Still;
             initialized = true;
         }
+
+        /// <summary>The drunk walk draws its own sequence beside the balance model's.</summary>
+        public const int GaitSeedSalt = 0x6A17;
+
+        private PlayerDrunkGaitModel gait;
+        private PlayerDrunkGaitPose gaitPose;
+
+        /// <summary>The drunk walk's disorder this frame (exactly none sober or frozen).</summary>
+        public PlayerDrunkGaitPose GaitPose => gaitPose;
+        public PlayerDrunkGaitModel Gait => gait;
 
         public void SetIntoxication(float normalized)
         {
@@ -134,12 +165,17 @@ namespace BarPromenade
                 handHolding = false;
                 handWantsHold = false;
                 handWeight = 0f;
+                leftBrace = PlayerArmReachPose.None;
+                rightBrace = PlayerArmReachPose.None;
                 if (motor != null)
                 {
                     motor.SetBalanceDrift(Vector3.zero);
                     motor.SetBalanceYawScale(1f);
+                    motor.SetBalanceHeadingWeave(0f);
                 }
 
+                gait?.Reset();
+                gaitPose = PlayerDrunkGaitPose.None;
                 balancePresentation?.SetBalance(PlayerBalancePose.Neutral);
             }
         }
@@ -158,6 +194,8 @@ namespace BarPromenade
         public void Reseed(int seed)
         {
             model = new PlayerBalanceModel(seed);
+            gait = new PlayerDrunkGaitModel(seed ^ GaitSeedSalt);
+            gaitPose = PlayerDrunkGaitPose.None;
             lastOutput = PlayerBalanceOutput.Still;
         }
 
@@ -181,6 +219,43 @@ namespace BarPromenade
         public void InjectPerturbation(Vector2 localVelocity)
         {
             model?.InjectPerturbation(localVelocity);
+        }
+
+        /// <summary>
+        /// What the ragdoll starts with when the model has latched a
+        /// fall: the topple's motion in world space — the centre of
+        /// mass's velocity (dipping along the lean), the body's rotation
+        /// about the edge of the boots' support, and the axis and pivot
+        /// of that rotation.
+        /// </summary>
+        public PlayerRagdollHandoff BuildRagdollHandoff()
+        {
+            Vector3 forward = Planar(root.forward, Vector3.forward);
+            Vector3 right = Planar(root.right, Vector3.right);
+            Vector2 axis = lastOutput.FallAxis;
+            Vector3 axisWorld = right * axis.x + forward * axis.y;
+            if (axisWorld.sqrMagnitude <= 0.0001f)
+            {
+                axisWorld = right * lastOutput.FallDirection;
+            }
+
+            axisWorld.Normalize();
+            Vector2 velocity = lastOutput.FallVelocity;
+            Vector3 planar = right * velocity.x + forward * velocity.y;
+            float lean = Mathf.Clamp(lastOutput.FallLeanDegrees, 0f, 80f);
+            Vector3 linear = planar +
+                             Vector3.down *
+                             (planar.magnitude * Mathf.Tan(lean * Mathf.Deg2Rad));
+            Vector3 angular = Vector3.Cross(Vector3.up, axisWorld) *
+                              lastOutput.FallAngularVelocity;
+            Vector2 centre = lastOutput.CentreOfPressure;
+            Vector3 pivot = root.position + right * centre.x + forward * centre.y;
+            return new PlayerRagdollHandoff(
+                linear,
+                angular,
+                axisWorld,
+                pivot,
+                lastOutput.FallDirection);
         }
 
         private void Update()
@@ -209,8 +284,13 @@ namespace BarPromenade
                 handWeight = 0f;
                 steadySeconds = 0f;
                 wallReachPose = PlayerWallReachPose.None;
+                leftBrace = PlayerArmReachPose.None;
+                rightBrace = PlayerArmReachPose.None;
                 motor.SetBalanceDrift(Vector3.zero);
                 motor.SetBalanceYawScale(1f);
+                motor.SetBalanceHeadingWeave(0f);
+                gait?.Reset();
+                gaitPose = PlayerDrunkGaitPose.None;
                 balancePresentation?.SetBalance(PlayerBalancePose.Neutral);
                 return;
             }
@@ -271,6 +351,19 @@ namespace BarPromenade
                 handHolding && WallWithinReach);
             model.Advance(Time.deltaTime, input);
             lastOutput = model.Output;
+            UpdateBrace(right, forward);
+
+            // The drunk walk runs on the Walk clip's own cycle, which the
+            // presentation reports a frame behind; it draws nothing sober.
+            gaitPose = gait != null
+                ? gait.Advance(
+                    Time.deltaTime,
+                    intoxication,
+                    heroPresentation != null ? heroPresentation.ForwardGaitCycle : 0f,
+                    heroPresentation != null && heroPresentation.ForwardGaitDominant,
+                    runBlend,
+                    heroPresentation != null ? heroPresentation.LocomotionBlend : 0f)
+                : PlayerDrunkGaitPose.None;
 
             Vector2 drift = lastOutput.DriftVelocity;
             motor.SetBalanceDrift(right * drift.x + forward * drift.y);
@@ -279,6 +372,9 @@ namespace BarPromenade
                     1f,
                     YawScaleAtFullInstability,
                     lastOutput.Instability));
+            // The model's slow weave of the heading bends the line he
+            // walks without turning him: the desired velocity, not the yaw.
+            motor.SetBalanceHeadingWeave(lastOutput.HeadingWeaveDegrees);
 
             BalanceStepCommand step = lastOutput.Step;
             var pose = new PlayerBalancePose(
@@ -297,8 +393,97 @@ namespace BarPromenade
                     step.Lift),
                 wallReachPose,
                 lastOutput.LeftFoot,
-                lastOutput.RightFoot);
+                lastOutput.RightFoot,
+                lastOutput.TorsoReactionDegrees.x,
+                lastOutput.TorsoReactionDegrees.y,
+                lastOutput.Phase,
+                lastOutput.BraceWeight,
+                lastOutput.FallAxis,
+                leftBrace,
+                rightBrace,
+                gaitPose);
             balancePresentation?.SetBalance(pose);
+        }
+
+        /// <summary>
+        /// The hands go out for the ground as the topple passes the lean
+        /// a lunge can still save: each palm aims at the floor ahead of
+        /// its own shoulder along the fall, where a ray from chest height
+        /// finds it (the root's ground when it finds nothing), the hand
+        /// on the side he is going commits fully and the other less.
+        /// </summary>
+        private void UpdateBrace(Vector3 right, Vector3 forward)
+        {
+            float weight = lastOutput.BraceWeight;
+            if (weight <= 0f)
+            {
+                leftBrace = PlayerArmReachPose.None;
+                rightBrace = PlayerArmReachPose.None;
+                return;
+            }
+
+            Vector2 axis = lastOutput.FallAxis;
+            Vector3 fallWorld = right * axis.x + forward * axis.y;
+            fallWorld = fallWorld.sqrMagnitude > 0.0001f
+                ? fallWorld.normalized
+                : right;
+            bool rightSide = axis.x >= 0f;
+            leftBrace = ProbeBrace(
+                false,
+                fallWorld,
+                right,
+                rightSide ? weight * BraceOffHandWeight : weight);
+            rightBrace = ProbeBrace(
+                true,
+                fallWorld,
+                right,
+                rightSide ? weight : weight * BraceOffHandWeight);
+        }
+
+        private PlayerArmReachPose ProbeBrace(
+            bool rightHand,
+            Vector3 fallWorld,
+            Vector3 right,
+            float weight)
+        {
+            Vector3 shoulder = root.position +
+                               Vector3.up * BraceProbeHeight +
+                               right * (rightHand ? BraceShoulderHalfWidth : -BraceShoulderHalfWidth);
+            Vector3 origin = shoulder + fallWorld * BraceReachAhead;
+            Vector3 point = new Vector3(origin.x, root.position.y, origin.z);
+            Vector3 normal = Vector3.up;
+            int count = Physics.RaycastNonAlloc(
+                origin + Vector3.up * 0.3f,
+                Vector3.down,
+                Hits,
+                BraceProbeDistance,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore);
+            float closest = float.PositiveInfinity;
+            for (int index = 0; index < count; index++)
+            {
+                RaycastHit hit = Hits[index];
+                if (hit.collider == null ||
+                    hit.collider.transform.IsChildOf(root) ||
+                    hit.normal.y <= 0.001f ||
+                    hit.distance >= closest)
+                {
+                    continue;
+                }
+
+                closest = hit.distance;
+                point = hit.point;
+                normal = hit.normal.normalized;
+            }
+
+            return new PlayerArmReachPose(
+                true,
+                rightHand,
+                point + normal * BracePalmClearance,
+                normal,
+                weight,
+                0.15f,
+                0.05f);
         }
 
         private void OnDisable()

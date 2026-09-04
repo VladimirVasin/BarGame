@@ -6,6 +6,374 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-04 — Begotten mode: a rephotographed print inside the PS1 composite
+
+The user asked for a seventh graphics option reproducing the look of
+Merhige's *Begotten* as exactly as possible. The option (`graphics.begotten`,
+`options.begotten`, opt-in, inserted after the vertex jitter so the pause
+menu's row tests keep their positions) swaps the composite's point upscale for
+three new passes of `Ps1Composite.shader` and a pure seeded projector,
+`BegottenFilmModel`. The soft pass reduces the internal frame to half-size
+perceptual luminance, the glow pass blurs it again at quarter size, and the
+print pass at output size thresholds the light with a `±0.04` band inside
+which three octaves of value noise decide the pixel, adds halation from the
+glow, dust, hairs and up to three drifting scratches, and darkens the corners
+- all of that on the light before the threshold, so nothing is ever grey. The
+threshold is a per-picture roll around `0.42` pulled a third of the way to the
+scene mean (sixteen taps of the glow) and clamped to `[0.12, 0.55]`.
+
+The projector runs at `24` pictures a second of unscaled time with a
+`2-3-2-3` game-frame cadence and a `3 %` chance of sticking for two to four
+ticks; on a held frame no composite pass is recorded and `cameraColor` is
+pointed at a persistent `RTHandle` (imported with `discardOnLastUse = false`,
+every descriptor field pinned because the reallocation check compares all of
+them including the name) into which the print pass renders directly. The
+frame rate cap stays at `60`. The mode forces the 4:3 gate, mutes dither,
+RGB555 and scanlines, and skips cameras marked `Ps1VertexJitterExclusion`.
+
+Two lessons from the first sheet: pulled halfway to the scene mean the
+threshold landed exactly on a sunlit ground and the whole floor boiled where
+the film burns it white, and a single "day" tile happened to be a light-leak
+flash (`88 %` bone, no shadow) - the flash is now `1.5x` at `0.2 %` and the
+sheet measures the median of four pictures. A test lesson: the editor
+compiles a new shader pass on its first draw and the print comes back as the
+cleared texture with white dust on it, so the PlayMode tests warm up until a
+twentieth of the frame is bone.
+
+Verification: EditMode `BegottenFilmModelTests` (cadence `195-245` prints in
+ten seconds, stutter hold `5-13` frames, every roll inside its bounds, seed
+determinism, forced picture, no burst after a stall), `GraphicsEffectsSettingsTests`,
+`PauseMenuModelTests`, `Ps1PresentationTests` (`passCount` 5): `26/26`.
+PlayMode `BegottenFilmRenderGraphPlayModeTests` + `Ps1CompositeRenderGraphPlayModeTests`:
+a coloured source prints neutral with `87 %` of the central window either
+soot or bone (the rest is boiling edge and local-contrast rim); a new
+picture changes a quarter to nearly all of the window (`25-95 %` across
+runs, the weave decides) while a held frame is byte-identical to the
+picture before it; the forced gate leaves the bars pure black; a marked
+camera keeps its colour; `TestResults/begotten-sheet.png` (stage with the
+hero: colour, print by day, print by night, three consecutive day pictures)
+reads `31-66 %` bone by day (median `42 %`) and `60 %` by night, every pixel
+neutral: `9/9` with the composite class, `15/15` with the pause-menu class
+on the earlier cut. `AreaCaptureFixture.City` hero shots with the mode on
+(`Captures/City/01-over-the-shoulder.png`, `02-what-he-faces.png`,
+`03-from-above.png`): burnt fog, black road and buildings with boiling
+edges, the lamp-lit hero against the road. One test defect on the way: a bone check
+compared `GetPixel(...).r`, a float in `[0, 1]`, against `150` and could
+never pass - convert to `Color32` first, as the other checks do. Known reds not from
+this work: `LocalizationCatalogTests` misses `balance.warning` in both
+catalogs (the key sits in the committed test, the catalogs never had it).
+Residuals: the inventory preview camera stays in colour under the mode; the
+HUD's paper/ink palette is left as is.
+
+Follow-up the same evening: the user's first look at the real night City
+was an unreadable field of grain around a black silhouette. The stage sheet
+had been brighter than the City: under the noir grade and the fog the whole
+scene sat below the threshold's `0.12` floor, so fog, ground and figures
+printed as one density of noise. The print is now exposed for the scene: a
+new one-pixel `BegottenLevels` pass sweeps the glow (`12x12` taps) for the
+mean and deviation of the light, the mean prints at the middle of the scale
+and two deviations reach either end (`0.5 + (light − mean) / 4σ`, σ floored
+at `0.05`), a touch of local contrast (`+0.5·(light − glow)`) rims
+silhouettes, and the threshold roll is judged in that range with a `±0.06`
+band; the grain is finer (`≈2.9 px` at 1080p) and weaker (`±0.18`). Two
+narrower mappings were tried on the way: black one deviation under the mean
+put the common tone just under the roll and the stage's ground printed as
+boiling black (day bone `12-25 %`); `1.3` deviations either side printed the
+real City's fog as bone but road and hero as one solid soot (the
+`AreaCaptureFixture.City` hero shots, run with the mode on). Four
+deviations across the scale leave the road as sparse grain under a black
+figure. `Ps1PresentationTests` pins `passCount` at `6`.
+
+## 2026-09-04 — Bar menu, order-input and indoor-DOF regression fixes
+
+The reported bar frame exposed three connected usability regressions. The
+four descriptive rows still used page space too loosely, so their copy crowded
+the spine and page edges instead of reading as a stable inset `2 x 2` grid.
+The apparently confirmed beer order produced no
+`session/drink_purchase_resolved` diagnostic event and left the physical menu
+open: the dominant `E` prompt closed the booklet rather than ordering, while
+only the less prominent `Space` path reached `ConfirmSelection`. Finally,
+`BarDrinkShopController.Open` engaged the priority-10 Bokeh as soon as the
+seated session began and kept its focus on the pour point outside the actual
+menu close-up, which blurred the nearby bartender during delivery and service.
+
+`BarDrinkMenuPresentation` and the shared page view/tests now keep all four
+offers inside an inset two-column/two-row layout. A first capture showed that
+TMP auto-sizing still made the longer Russian rows visibly smaller; the final
+pass disables it for the bar, uses normal word wrapping and holds every block
+at the same fixed `0.20` type size. `BarCounterStation` and the
+physical-shop input regression make `E`/`Enter`/gamepad South and
+`Space`/gamepad West confirm the selected drink while `Escape` is the explicit
+close-without-order action. The seated bar controller now acquires cinematic
+DOF only while the menu is open, follows its page at `35 mm / f/8`, and releases
+the volume immediately when the book rests, service starts or the hero exits.
+`RuntimeSceneSetup.AddIndoorGaussianDepthOfField` caps the ordinary Gaussian
+radius at `0.55` for Bar, Home, Stairwell, Supermarket, Church and Mother's
+House; the City, Mountain Road and other exterior profiles retain their
+existing values. Focused menu-framing, input/service-lifecycle and bar
+atmosphere assertions were updated for these contracts. Both world bibles and
+the accepted architecture exception record the bar-only input correction as
+decision `40`; the cafe's distinct placeholder lifecycle remains unchanged.
+
+Fast-mode verification passed one focused PlayMode invocation (`2/2`): the
+real `E` station path advances the beer order to the tap/service/drinking
+lifecycle, and the built BarInterior scene keeps every menu row untruncated
+at the same fixed size of `0.20` while using the page-focused
+`35 mm / f/8` profile. The GPU-backed `AreaCaptureFixture.BarMenu` capture also
+passed (`1/1`); `Captures/BarInterior/09-menu-close-up.png` was inspected at
+`1280 x 720` and shows the four balanced, fully contained blocks. Both
+localization JSON catalogues parse successfully, and the task-scoped
+`git diff --check` passed. No broad Unity suite or player build was run.
+
+## 2026-09-04 — Central-tap beer service and embodied drinking
+
+The beer order now continues after menu confirmation as a physical sequence.
+The ordinary bartender walks to the central tap, takes the pint, pulls the
+handle while a world-space stream fills it, carries it to the selected stool
+and places it directly before the hero. The full vessel waits indefinitely for
+the same gaze predicate that owns its localized `E` prompt and thin yellow
+outline. The seated Hero V2 then runs nested `2 s` pickup, `3 s` sip and `2 s`
+return actions, follows the real hand grip and leaves the empty pint on the
+counter.
+
+Payment and consumption are now separate idempotent boundaries: confirmation
+deducts cash and creates a pending order, while intoxication, last-drink,
+consumed-count and stress effects apply exactly once only after the visible
+drink completes. Hero V2 grows from `38` to `41` bone-only actions; bar and
+service manifests advance to `3.3.3` (`174` / `12,832`) and `1.3.0` (`34` /
+`3,960`). Both world bibles record direct decision 39, and the architecture,
+animation standard, overview, system and player-facing documents describe the
+new lifecycle. Fast-mode verification passed the Blender bar validator
+(`174 / 12,832`, service props `34 / 3,960`, facade `38 / 4,308`) and the
+focused physical beer journey PlayMode regression (`1/1`, `3.95 s`), including
+deferred effects, gaze/outline gating, the real Hero V2 hand socket and the
+empty returned pint. The PlayMode project compiled with zero errors; the
+task-scoped `git diff --check` passed. No broad Unity suite or player build was
+run.
+
+## 2026-09-04 — Four low-grade bar menu offers
+
+The physical bar menu now exposes exactly four purchasable offers in a fixed
+order: flat house beer, cheap fortified wine, unaged distillate and
+bottom-shelf vodka. Each offer carries a localized two-sentence description;
+the book renders two taller multiline blocks on each page, and the service
+shelf places four corresponding bottles in a centered row. Legacy drink IDs
+and presentations remain available to old saves and patron props but are not
+enumerated by the player-facing menu.
+
+The visible four-offer contract, descriptions, 2+2 page split and four-bottle
+service plan are covered by focused catalog and physical-menu regressions.
+Both world bibles and the current architecture, overview, system, README and
+release documentation now record the user's explicit replacement of the old
+nine-drink menu.
+
+Fast-mode verification parsed both localization catalogs with `492/492`
+unique keys and all eight new name/description entries present. Unity rebuilt
+the Runtime, EditMode and PlayMode assemblies, then the focused physical-menu
+PlayMode regression passed `1/1` in `6.72 s`; it checks the exact four offers,
+all localized multiline text, the 2+2 page split, no TMP overflow, a minimum
+readable font size, failure behavior and successful service. The task-scoped
+`git diff --check` passed. No broad test suite or player build was run.
+
+## 2026-09-04 — Shared outward pose for exterior door exits
+
+Exterior building returns now derive one destination-owned arrival pose from
+the receiving door's interaction geometry. `PlayerDoorArrivalPose` places the
+hero at that door and turns them opposite its `EntryFacingDirection`; City
+uses the rule for the bar, apartment stairwell, supermarket and church, while
+the alpine village uses the same rule for the mother's house. The pose is
+applied before `PlayerCameraFollow.Initialize`, so the ordinary third-person
+camera starts behind the hero's shoulder with the door behind them. Internal
+room-to-room transitions and scenes with authored fixed cameras remain
+scene-specific.
+
+A focused EditMode regression now covers both the outward hero heading and the
+camera's initial behind-shoulder alignment. The already open Unity editor
+rebuilt `BarPromenade.Runtime.dll` and `BarPromenade.EditModeTests.dll` after
+the source changes, confirming compilation, and the task-scoped
+`git diff --check` passed. The focused test itself was not run because that
+editor held the project lock; no broad suite or player build was run. The
+repository-wide whitespace check still reports unrelated pre-existing trailing
+whitespace in the dirty `Assets/Resources/Bar/BarInterior3D.prefab`.
+
+## 2026-09-04 — Positional bar mix and animated jukebox glow
+
+The bar no longer treats `bar_theme` as a flat scene score. Its main source
+now sits exactly at the visible jukebox grille with linear full-3D rolloff,
+`120 Hz–5.6 kHz` cabinet bandwidth and light saturation. A second close-range
+source at the same point supplies an eight-second mono motor, record-surface
+and sparse-crackle loop. Before the normal four-second cross-scene tail is
+detached, the player preserves the listener's current linear attenuation for
+the long-range theme and short-range mechanism independently, then temporarily
+makes both voices non-spatial. Walking through the exit therefore neither cuts
+the diegetic source nor makes the close cabinet texture jump in level.
+
+The former low-frequency single crowd loop is now two independent eight-second
+wordless murmur pockets at the authored booth and social-table anchors. A
+single full-3D World voice moves between those groups and the service counter
+for deterministic glass, chair, bottle and short crowd-reaction cues every
+`4.5–8 s`; the diffuse occupied-room bed is stronger underneath them. Together
+with music and cabinet texture this remains a bounded six-source scene mix on
+the existing Music, Ambience/Beds, Ambience/Details and SFX/World buses.
+
+The jukebox's amber panel and two pink tubes now run three slow phase-shifted
+emissive pulses whose amplitude follows `BarMusicPlayer.NormalizedGain`; silence
+leaves a steady pilot glow. `BarJukeboxInteraction` owns the only
+`MaterialPropertyBlock` writer, composes its existing use flash over the panel
+pulse and preserves unrelated renderer properties. No material instance,
+realtime `Light` or strobe was added.
+
+Fast-mode static review and `git diff --check` passed. The focused PlayMode
+selection compiled and passed `9/10`: both soundscape contracts and every
+shared music/fade contract passed, including an explicit regression for the
+theme/cabinet exit levels. The existing real-bar smoke reached the already
+initialized soundscape but stopped at its unrelated arrival-camera check:
+the camera sphere intersects geometry at sample `0`, before the new jukebox
+assertions. No audio/light exception was reported. No broad suite or player
+build was run.
+
+## 2026-09-04 — Closed bar-menu outline and grounded counter wipe
+
+The closed physical bar booklet now owns a collider-free four-rail yellow
+emissive contour. `BarDrinkShopController` drives it from the exact same
+resting-menu gaze and UI-blocking predicate that exposes the contextual
+"open menu" action. Looking away removes it, and every unfold, retrieval or
+presentation reset clears it synchronously so the readable spread is never
+highlighted. The existing physical-menu lifecycle regression now proves the
+look-away, look-at and immediate-open transitions as well as the rail colour
+and shadow contract.
+
+The ordinary bartender no longer inherits the obsolete six-arm service
+duckboard's `0.42 m` root lift. His root and feet stay at the authored floor
+anchor, which puts the shared `CafeAttendantWipe` towel on the real
+`Y = 1.02 m` counter instead of in the air. The duckboard mesh/collider and its
+runtime extension were removed; the compatibility anchor remains at ground
+level. Regenerated `bar_interior_v3` is generator `3.3.1`, `171` semantic
+meshes / `12,472` triangles, signature
+`82ecec05456746df278f59666fc9bda56ed08ef158aeef88fc2394bbfa0c0c98`.
+
+Fast-mode verification passed the Blender interior/service/facade validator,
+the two focused PlayMode contracts for gaze-highlight lifecycle and animated
+towel contact/travel (`2/2`, `7.21 s`), and the explicit GPU bar-menu capture
+(`1/1`, `7.06 s`). `09-bartender-wipe-contact`, `09-menu-close-up` and
+`10-menu-reopen-highlight` were inspected at `1280 x 720`. No broad EditMode
+or PlayMode suite and no player build were run.
+
+## 2026-09-04 — Bar menu camera, fold, DOF and entrance corrected
+
+The bar's larger nine-row booklet now receives a real near-overhead approach
+instead of inheriting the seated eye's grazing angle: focus distance is
+`0.45 m` (formerly `1.10 m`) at FOV `72`, with `0.998` requested surface-facing.
+In the real 16:9 scene the camera projection is only `0.098 m` from the spread
+centre, measured surface-facing is `0.979`, and the menu occupies viewport
+`x 0.258..0.742 / y 0.231..0.942`. The bar-only page style grew from `0.12`
+regular type with a `0.48` auto-size floor to `0.17` bold near-black type with
+a `0.68` floor and wider row boxes; the measured minimum stayed `0.17`, with no
+row overflow or truncation. All nine rows remain above the bottom hint;
+open-menu DOF now follows the page rather than the pour target. Closing the
+booklet blends back to the exact stored seated pose and FOV.
+
+The shared fold's left leaf now follows the upper arc to `-185.5°`. An
+`0.011 m` progressive lift separates the moving cover/page block from the
+stationary cover/pages at the closed endpoint; all panels remain opaque, so
+the closed cover no longer exposes coplanar page textures. Beginning a bar-seat
+exit immediately zeros the priority-10 cinematic DOF volume before
+`CounterSeatView` restores third-person, while ordinary modal cleanup retains
+its existing fade.
+
+The authored room-height `3.20 x 4.80 m` entrance and heavy curtain assembly
+were replaced by the facade's standard `1.45 x 2.34 m` panelled-door language,
+including frame, four panels, transom glass and brass furniture. The front wall
+now has left/right piers plus a lintel collider, and the skirting stops at the
+opening. Regenerated `bar_interior_v3` is version `3.3.0`, `172` semantic meshes
+and `13,228` triangles with signature
+`2e56e3303ac6ca2b1a50bd33623872d244a90beea4eac75db108c60a8f778631`.
+
+Fast-mode verification passed the Blender interior/service/facade validator
+(`172 / 13,228`, `29 / 2,280`, `38 / 4,308`), two focused PlayMode contracts
+for the physical fold/DOF/exit and real scene camera framing/return (`2/2`,
+`13.20 s`), and the explicit GPU-backed bar capture (`1/1`, `18.51 s`). The
+new `08-standard-entrance-door` frame was inspected. The closer overhead/type
+follow-up then passed its real-scene PlayMode contract (`1/1`, `7.00 s`) and
+its dedicated GPU capture (`1/1`, `6.44 s`); `09-menu-close-up` was inspected
+at `1280 x 720`. No broad EditMode or PlayMode suite and no player build were
+run.
+
+## 2026-09-04 — Topple, inertial ragdoll handoff, staged rise
+
+Above `60` a lost capture point latched a fall on the spot and the ragdoll got
+three scripted impulses; the rise was `1.2 s` fixed, a `0.16 s` lerp and the
+clip at its authored rate. Now `SecondOrderFilter`
+(`Assets/Scripts/Runtime/Core/`) gives every balance channel inertia;
+`PlayerBalanceModel` gained a torso flywheel (LIP + flywheel, spent at its
+`40°` stop), a `BalancePhase` machine (`Steady/Recovering/Toppling/Fallen`)
+with lunges planned against the PREDICTED capture point and thrown at once,
+root drift at the centre of mass's velocity in a topple, a lean measured from
+the boots (midpoint, then the CoP boot as they split), brace weights and the
+fall outputs (`FallAxis/FallVelocity/FallLeanDegrees/FallAngularVelocity/
+FallCause`); `PlayerRagdollHandoff` carries a rigid rotation about the CoP into
+the 13 bodies, taken from the late layer's brace pose; `PlayerRiseModel` stages
+the rise and scrubs the authored Rise clip while
+`Player3DProceduralLocomotionLayer.ApplyRise` draws hands, knee hand, lead boot
+and head; at the first stirring frame the capsule is teleported and yawed under
+the lying pelvis (`PlayerMotor.TeleportPlanar`,
+`PlayerCameraFollow.AbsorbTargetShift`) with the pelvis captured in world space.
+
+Offline sim (scratchpad `balancesim`, 200 seeds × 180 s, no input): level 80 —
+topples every ~`90 s`, `68 %` recovered, `62 %` of seeds fell in three minutes
+(steering toward the lean: `2 %`); level 100 — topples every ~`30 s`, `67 %`
+recovered, first fall p10/p50/p90 `14/32/80 s`, `100 %` fell; `1.35` lunges per
+topple, topples `0.1–0.6 s`. Every recovery is a lunge. Three versions failed
+first, each caught by the sim's per-topple accounting: lunges that waited for
+the reaction delay, flew `0.47 s` and aimed at the current point never landed
+in time; aiming at `0.7×` the flight's growth lost every one to `BeyondLunge`;
+planning lunges only after an ordinary step was already doomed mid-flight
+could not be saved either. Two more defects came from a per-frame trace: the
+lagged flywheel command never reached zero (the return waited `~3 s`; release is
+immediate now) and `UpdatePhase` judged a landing against the pre-landing
+capture point (phantom `0.1 s` topples). The old cadence (level 100 p50
+`17 s`) lengthened to `32 s`; accepted — the fights are the feature.
+
+Verification: EditMode `SecondOrderFilterTests`, `PlayerBalanceToppleTests`,
+`PlayerBalanceToppleRulesTests`, `PlayerRiseModelTests`,
+`PlayerRagdollHandoffTests` plus the existing balance suites; PlayMode
+`IntoxicationStatusPlayModeTests`, `PlayerBalancePlayModeTests`, the drunk-arms
+and procedural-locomotion sheets, foot IK, ordinary presentation; and
+`Player3DToppleRiseCapturePlayModeTests` → `TestResults/topple-rise-sheet.png`.
+The sheet's own log line caught a bug the suites had not: "stirring side Left,
+kneel step Right" — `SetLyingSide` was refused because the status controller
+calls it on the very frame the model first reports `Stirring`; it now accepts
+the side until `PushingUp`, and the sheet asserts the lead boot and the knee
+hand are the lying side. Known pre-existing red untouched:
+`RiseClips_PassThroughGroundedAllFoursBeforeNeutral`
+(`0.145` vs `< 0.14`). Unity batch runs rewrote `*.fbx.meta`,
+`ProjectSettings/DynamicsManager.asset` and the Player3D prefab signature —
+reverted before commit.
+
+## 2026-09-04 — Three taps leave a direct menu handoff lane
+
+The five beer taps formerly spanned the customer-facing counter at `1.10 m`
+intervals, while the bar's authored and fallback menu docks both carried a
+`0.77 m` lateral offset from the selected stool. The Blender interior now
+contains exactly three taps in one `0.33 m`-spaced bank at the seat-free right
+overlap of the main counter and return. All six stools remain: the two patrons
+keep their seats and all four free stools remain selectable. Both the authored
+`MenuDock` and `BarDrinkServicePlan.FromLayout` now use the selected seat's X
+axis, and validation rejects a later sideways dock regression.
+
+The regenerated `bar_interior_v3` is generator `3.2.3`, `172` semantic meshes
+and `13,304` triangles with signature
+`9da1ef35cda594df68e978eca1a1777045f812dd634cdc1c9a0dec5c76a14ef6`.
+The unchanged service-prop FBX was preserved byte-for-byte rather than
+committing a timestamp-only export. Fast-mode verification passed the Blender
+validator (`172 / 13,304`), the focused seated-menu PlayMode journey (`1/1`),
+and the explicit GPU-backed `AreaCaptureFixture.Bar` (`1/1`, `18.41 s`). The
+counter, door and overview frames were inspected: the seating row and right
+return remain clear and the room has no new visual overlap. An initial
+`-nographics` capture attempt could not create a RenderTexture; it changed no
+project asset and the corrected graphical batch capture passed. No broad
+EditMode/PlayMode suite or player build was run.
+
 ## 2026-09-04 — Counter menus fold instead of fading away
 
 User report: closing the counter menu only made it transparent, while the
@@ -18896,6 +19264,104 @@ Verification:
 - A focused D3D11 visual-capture PlayMode check passed 1/1 and confirmed that
   the added light makes the unchanged door readable in the unchanged MainRoom
   composition.
+
+## 2026-09-04 — Anatomy through the fall, the drunk walk, face and head, camera and keys while down
+
+The six follow-ups to the topple-and-rise work, in seven slices on the same
+plan file. Runtime C#, the V1 pose generator (inherited by the V2 build), the
+face atlas and one Unity reimport.
+
+- **Anatomy.** `LimbTwoBoneIk` guards the side of the bend (in-plane mirror,
+  never a roll) and hints knees and elbows along the calibrated kneecap and
+  elbow-back as they will face after the aim. The measurement that found the
+  problem was almost the problem: a thigh-frame knee reference read `-86°` on
+  the lunging leg because the world-fixed hint had screwed the femur half a
+  turn. The ragdoll's hinges were inverted against PhysX's joint sense
+  (`JointFlexionSign`), the elbows hinged about the wrong axis, the hips and
+  shoulders too narrow for the brace pose (they snapped on frame 1 and whipped
+  the shins), and every body pair ignored collisions; all four are fixed and
+  pinned by `Player3DRiseAnatomyPlayModeTests`. The Rise clip's three
+  grasshopper keys (`foot_lift`, `half_kneel`, `crouch_leg_lift`) and the
+  `Down` pose's under-body elbow are re-authored; seven Blender rebuilds were
+  driven by a scratchpad probe (`probe_rise.py`, ~1 min) and then by the new
+  `validate_fall_recovery_dense` gate on the V2 build (2 cm floor per frame,
+  `8°`/`130°` hinges). Lesson recorded in the architecture notes: the clips
+  interpolate linearly, so a foot may never turn half a turn between keys,
+  and a knee swung under hips 45 cm up goes through the floor — the hips
+  come up first.
+- **Camera.** The fall no longer disables the orbit; the focus is pulled to
+  the lying pelvis and released with the rise.
+- **Keys while down.** One `PlayerDirectionalInput`; camera-relative twitches
+  of the ragdoll (with lift — friction ate a flat push within one step) that
+  shorten the stun; `PlayerRiseStage.Crawling` on all fours with alternating
+  hands, driven through `PlayerMotor.ApplyDownedMove`.
+- **The walk.** `PlayerDrunkGaitModel` on the Walk clip's cycle: per-swing
+  landings held through the stance, cadence jitter on the walk's share only,
+  toe-out, lifts, a hips-down for any reach shortfall, pelvis roll; the
+  balance model's heading weave finally reaches the motor as a direction.
+- **Face and head.** Nine atlas cells (four new, drawn in the v2 script from
+  one `FACE_ATLAS_CELLS` table), level-driven blinks and resting faces, a pure
+  mood table from the balance phase / ragdoll / rise stage, the face drawn
+  under the ragdoll, and `IntoxicationHeadModel` summed into the attention
+  turn with sign probes.
+
+Known and left: the V2 rise's landmark contacts float (hands and knees
+`15–20 cm` off the floor at all fours, the low crouch's boots `15 cm`) — the
+V1 validator's contact checks fail on V2 and always would have; the runtime's
+hand and boot IK hides most of it and
+`RiseClips_PassThroughGroundedAllFoursBeforeNeutral` stays the documented red.
+The neighbour Codex session was mid-refactor of the bar soundscape for part of
+the day (a deleted `BarSoundscape.cs` blocked every compile for a while).
+
+Verification (headless, `6000.6.0f1`):
+
+- `dotnet build` of Runtime, Editor, EditMode and PlayMode: 0 errors.
+- Hero V2 generator: `BP HERO V2 BUILD OK` with the new frame-by-frame gate;
+  seven rebuilds in the day, the Blender probe before each.
+- Full EditMode suite: `2353 / 2371`. The 18 reds: one was mine
+  (`MothersHouseMotherTests.HerStagedPrefabCarriesTheWholeExpressionGrid`
+  enumerated every `PlayerFacialExpression`; it now asks for the five every
+  rig carries — green in the re-run) and seventeen are the neighbour's
+  in-progress bar work and known drift, none in files this work touched:
+  `BarDistrictIdentityTests` ×4 and `BarSurfaceAppearanceTests` ×4 (bar
+  colours, `Has.Count` on the rebuilt bar), `LocalizationCatalogTests` ×2
+  (`balance.warning` gone from both catalogs), `MountainRoadCafeModelContractTests`,
+  `MountainRoadSurfaceAppearanceTests`, `SupermarketInteriorModelContractTests`,
+  and `Ps1LitShaderParityTests` ×4 (the URP `17.6` clone drift).
+- PlayMode, the fall/rise/gait/face set plus the bus, Ferryman and drunk-arms
+  regressions: `52 / 55` on the broad run and `49 / 51`, then `5 / 5`, on the
+  re-runs after the last fixes. The one red left is the documented
+  `RiseClips_PassThroughGroundedAllFoursBeforeNeutral` (V2's all-fours
+  contacts float). New classes: `Player3DRiseAnatomyPlayModeTests` (4),
+  `PlayerDownedInputPlayModeTests` (1), `Player3DDrunkGaitPlayModeTests` (2),
+  `Player3DDrunkFacePlayModeTests` (2); new EditMode classes
+  `PlayerDrunkGaitModelTests` (9), `PlayerFacialMoodRulesTests` (4),
+  `IntoxicationHeadModelTests` (6), plus the crawl, blink/level/mood, IK
+  side-guard, atlas-fallback and nine-cell pipeline tests.
+- Measured on the run: drunk landings `0.168 m` wide against `0.088 m`
+  sober, lateral range `0.29 m` against `0.02 m`, half-step CV `0.10` against
+  `0.044`; heading weave `3°` bending the line `9.5 cm` with `0.0°` of yaw
+  drift; ragdoll knees `0..122°` through a fall; the blind-drunk blink shut
+  `18` frames against `7`; the head `14.5°` off the sober head; the chest
+  kicked `0.4 m/s` by a twitch.
+- Sheets: `TestResults/topple-rise-sheet.png`, `drunk-gait-sheet.png`,
+  `drunk-face-sheet.png`.
+
+Follow-up the same evening, from the user's look at the crawl ("he floats
+above the ground; does not move his legs, moves his arms weakly"): the V2
+all-fours pose leaves the knees `15 cm` up and its arms too short to reach the
+floor from those shoulders, so body-relative hand targets slid with the body
+and nothing planted. The crawl is a locomotion now — four world-planted
+contacts in diagonal pairs, the thighs aimed at the knees, the shins trailing,
+the hips settling down for the planted knee and hands — and the knee-to-floor
+drop applies through the push-up and the half-kneel too. Measured:
+knees `0.05–0.11 m`, hands `0.02–0.22 m`, a planted hand drifting `7 mm` while
+the body crawled `16 cm` over it; the fall/rise/gait/face PlayMode set
+`31 / 32` with only the documented all-fours red. Two traps recorded: a thigh
+aimed at a spot nearer than its own length overshoots INTO the floor (push
+the spot out, never raise it), and the first plant settles for `0.4 s`, so
+the world-hold is asserted on the second plant and on the hand bone (the
+grip socket yaws with the palm).
 
 ---
 

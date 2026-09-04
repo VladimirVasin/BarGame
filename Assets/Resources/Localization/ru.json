@@ -73,6 +73,10 @@
       "value": "ДРОЖАНИЕ ПОЛИГОНОВ"
     },
     {
+      "key": "options.begotten",
+      "value": "РЕЖИМ BEGOTTEN"
+    },
+    {
       "key": "options.back",
       "value": "НАЗАД"
     },
@@ -369,6 +373,14 @@
       "value": "E — открыть барное меню"
     },
     {
+      "key": "interaction.drink_beverage",
+      "value": "E — выпить напиток"
+    },
+    {
+      "key": "interaction.order_selected_drink",
+      "value": "E — заказать выбранный напиток"
+    },
+    {
       "key": "interaction.sit_at_counter",
       "value": "E — сесть за стойку"
     },
@@ -486,7 +498,11 @@
     },
     {
       "key": "drink.light_beer",
-      "value": "Светлое пиво"
+      "value": "Выдохшееся пиво"
+    },
+    {
+      "key": "drink.light_beer.description",
+      "value": "Пена сразу оседает.\nГоречь остаётся."
     },
     {
       "key": "drink.dark_beer",
@@ -498,11 +514,19 @@
     },
     {
       "key": "drink.red_wine",
-      "value": "Красное вино"
+      "value": "Дешёвое креплёное вино"
+    },
+    {
+      "key": "drink.red_wine.description",
+      "value": "Приторно сладкое.\nПосле него кисло."
     },
     {
       "key": "drink.vodka",
-      "value": "Водка"
+      "value": "Водка с нижней полки"
+    },
+    {
+      "key": "drink.vodka.description",
+      "value": "Пахнет спиртом.\nЖжёт с первого глотка."
     },
     {
       "key": "drink.pepper_vodka",
@@ -510,7 +534,11 @@
     },
     {
       "key": "drink.cognac_vs",
-      "value": "Коньяк VS"
+      "value": "Дистиллят без выдержки"
+    },
+    {
+      "key": "drink.cognac_vs.description",
+      "value": "Резко пахнет спиртом.\nОбжигает горло."
     },
     {
       "key": "drink.cognac_vsop",
@@ -1571,6 +1599,10 @@
     {
       "key": "mountain.cafe.menu.order_hint",
       "value": "Space — заказать"
+    },
+    {
+      "key": "bar.menu.order_hint",
+      "value": "E / Space — заказать"
     },
     {
       "key": "park.quarrel.chess.line.01",

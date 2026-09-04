@@ -10,13 +10,6 @@ namespace BarPromenade
     /// </summary>
     public static class BarBartenderWorldBuilder
     {
-        /// <summary>
-        /// Root offset matching the Blender-authored service duckboard. The
-        /// interior model owns the visible platform; runtime creates no
-        /// substitute geometry.
-        /// </summary>
-        public const float DuckboardHeight = 0.42f;
-
         public static BarBartenderPresentation TryBuild(
             Transform parent,
             BarInteriorLayoutPlan layout)
@@ -65,8 +58,11 @@ namespace BarPromenade
                 provider.BartenderPrefab,
                 parent);
             bartender.name = "Bar Bartender";
-            bartender.transform.localPosition =
-                anchor.Position + (Vector3.up * DuckboardHeight);
+            // The shared cafe service clips were authored against a
+            // ground-level human and the bar counter has the same 1.02 m
+            // working height. Keeping the former six-arm duckboard lift here
+            // raises the towel by exactly 0.42 m and makes Wipe clean air.
+            bartender.transform.localPosition = anchor.Position;
 
             // The sprite-era anchor yaw runs along the service alley;
             // the 3D publican must face his guests across the counter,

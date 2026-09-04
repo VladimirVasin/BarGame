@@ -58,7 +58,19 @@ namespace BarPromenade.Tests.EditMode
                 plan.LightAnchors.Count,
                 Is.LessThanOrEqualTo(
                     BarInteriorLayoutValidator.MaximumLightAnchors));
-            Assert.That(plan.AudioAnchors, Has.Count.EqualTo(2));
+            Assert.That(plan.AudioAnchors, Has.Count.EqualTo(4));
+            Assert.That(
+                plan.AudioAnchors.Count(anchor =>
+                    anchor.Kind == BarInteriorAudioKind.CrowdBed),
+                Is.EqualTo(2));
+            Assert.That(
+                plan.AudioAnchors.Count(anchor =>
+                    anchor.Kind == BarInteriorAudioKind.BarService),
+                Is.EqualTo(1));
+            Assert.That(
+                plan.AudioAnchors.Count(anchor =>
+                    anchor.Kind == BarInteriorAudioKind.Music),
+                Is.EqualTo(1));
 
             foreach (BarInteriorZoneKind kind in
                      Enum.GetValues(typeof(BarInteriorZoneKind)))
@@ -99,6 +111,51 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
             Assert.DoesNotThrow(
                 () => BarInteriorLayoutValidator.ValidateOrThrow(plan));
+        }
+
+        [Test]
+        public void DrinkServiceValidator_RejectsLegacyBottleCatalog()
+        {
+            BarInteriorLayoutPlan layout =
+                BarInteriorLayoutPlanner.Generate(
+                    20260904,
+                    "four-offer-menu-test",
+                    BarActivityKind.Cocktail);
+            BarDrinkServicePlan valid =
+                BarDrinkServicePlan.FromLayout(layout);
+            DrinkId[] legacyDrinks =
+            {
+                DrinkId.Water,
+                DrinkId.DarkBeer,
+                DrinkId.WhiteWine,
+                DrinkId.PepperVodka
+            };
+            var legacySlots = new BarDrinkBottleSlotPlan[legacyDrinks.Length];
+            for (int index = 0; index < legacySlots.Length; index++)
+            {
+                legacySlots[index] = new BarDrinkBottleSlotPlan(
+                    $"legacy-slot-{index}",
+                    legacyDrinks[index],
+                    valid.BottleSlots[index].Pose);
+            }
+
+            var invalid = new BarDrinkServicePlan(
+                valid.BarId,
+                valid.StableSeed,
+                valid.SeatPose,
+                valid.CameraPosition,
+                valid.CameraLookAt,
+                valid.CameraFieldOfView,
+                valid.ServiceStoolPosition,
+                valid.MenuPose,
+                valid.VesselCounterPose,
+                valid.VesselHandPose,
+                valid.BottleHandPose,
+                valid.BottlePourPose,
+                legacySlots);
+
+            Assert.Throws<InvalidOperationException>(
+                () => invalid.ValidateOrThrow(layout));
         }
 
         [TestCase(BarActivityKind.Cocktail)]

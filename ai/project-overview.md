@@ -26,8 +26,9 @@
 - Runtime assembly: `BarPromenade.Runtime`.
 - Player presentation: one modular `Player3DV2.prefab` in all nine gameplay
   roots, with independent mesh parts, a Generic in-place action set, a visible
-  first-person refrigerator subset, a non-rendered bar-vessel attachment rig,
-  a dedicated portrait, real mesh shadows and an analytic contact patch.
+  first-person refrigerator subset, nested full-body seated bar-drinking
+  actions, a dedicated portrait, real mesh shadows and an analytic contact
+  patch.
 - Test assemblies: shared `BarPromenade.TestSupport` infrastructure plus
   `BarPromenade.EditModeTests` and `BarPromenade.PlayModeTests`. A run-level
   callback silences listener output for every automated test and restores the
@@ -483,6 +484,12 @@ The vertical slice contains:
   without a screen-space dither grid, point upscaling and percentage-driven
   intoxication vignette, ghost/chromatic image, warp, warmth and exposure
   pulse; lower `426x240` and `320x180` presets remain available;
+- two depth-of-field tiers behind the same player setting. Exterior grades
+  retain their broader Gaussian far blur, while the six true interiors — Bar,
+  Supermarket, Stairwell, Home, Church and the mother's house — cap Gaussian
+  maximum radius at `0.55`, keeping nearby people, furniture and gestures
+  legible. A separate priority-10 Bokeh owner remains available only to an
+  active modal close-up and yields back to the scene grade when released;
 - a crisp interface-only soot/charcoal/dirty-bone IMGUI layer after the world
   composite: prompts, pause/start, inventory, shops, inspectors, journal,
   loading, HUD and all map modes share a logical `640x360` canvas, flat
@@ -837,8 +844,14 @@ The vertical slice contains:
   six present masters are measured independently because their raw integrated
   loudness spans roughly `8 LUFS`; per-track source trims plus the shared
   `-5.5 dB` Music bus place them all near `-30.5 LUFS` after the `-6 dB`
-  master headroom. A `12 kHz` low-pass leaves the upper transient band to
-  actions without removing the themes' melodic presence. A departing theme detaches from its
+  master headroom. Ordinary themes use a `12 kHz` low-pass that leaves the
+  upper transient band to actions without removing their melodic presence.
+  The bar is diegetic: `bar_theme` sits on the visible jukebox grille with
+  full linear positioning across the room, a `120 Hz–5.6 kHz` cabinet band,
+  light distortion and a short-range generated motor/record texture. The
+  cabinet's amber panel and two pink tubes use three phase-shifted emissive
+  pulses whose strength follows the theme gain; they add no realtime `Light`
+  and never strobe. A departing theme detaches from its
   scene into the persistent mix, so a Single-load never cuts the fade-out
   short and never waits for it either: the tail finishes over the door
   presentation while the destination streams in, and the destination theme
@@ -857,8 +870,8 @@ The vertical slice contains:
   clear of those grounds, and both tracks resume from their own sample.
   Missing optional tracks are silent-safe — an empty place slot simply leaves
   the city theme playing. All
-  themes route through the shared `Music` mixer group, receive a mild
-  low-pass treatment and remain owned by their scene or interaction;
+  themes route through the shared `Music` mixer group and remain owned by
+  their scene or interaction;
 - one shared `BarPromenadeAudio` mixer with `Music`, `Ambience/Beds`,
   `Ambience/Details`, `SFX/World`, `SFX/Gameplay` and dry `UI` groups;
   every snapshot authors the same causal gain hierarchy over `-6 dB` master
@@ -1309,9 +1322,9 @@ The vertical slice contains:
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
 - one production `Resources/Player/Player3DV2` prefab selected by all nine
-  gameplay roots, a visible prefab-derived refrigerator arm, a non-rendered
-  bar-vessel attachment rig and the inventory portrait. It keeps the `1.75 m`,
-  31-bone contract with 38 bone-only Actions
+  gameplay roots, a visible prefab-derived refrigerator arm, nested full-body
+  seated bar-drinking actions and the inventory portrait. It keeps the `1.75 m`,
+  31-bone contract with 41 bone-only Actions
   in 34 mesh parts and 1,984 triangles, but uses adult `7.4946`-head
   proportions, an atlas-driven
   five-state face and a full-colour point-filtered clothing atlas. Its open
@@ -1405,29 +1418,30 @@ The vertical slice contains:
   bend, camera roll and world-image distortion within those ranges, with the
   HUD rendered as five independently filling 20-point segments; presentation
   eases toward a changed level over about `0.7 s`;
-- deterministic balance checks only above `60`: a crisp `140°` arc appears
-  above the player with a green center sector, moving arrow and red risk
-  meter; arrows, A/D, D-pad or left stick counter the arrow, while higher
-  intoxication narrows the safe sector, strengthens disturbances and makes
-  checks longer and more frequent. Warning and active checks keep locomotion
-  enabled, so those same directional controls move the hero while steering
-  the balance arrow;
-- a failed balance check begins with the matching registered
-  `FallLeft/Right` action, then hands its current pose to a 13-body runtime
-  ragdoll after a `0.16 s` directional lead-in. Physics owns the rest of the
-  `0.45 s` falling phase and the `1.2 s` down phase; the pelvis is tethered to
-  a `0.68 m` sphere around the fixed gameplay root, every ragdoll collider
-  ignores both its peers and the upright `CharacterController`, and the
-  expanded analytic contact shadow remains fall-aware. A `0.16 s` kinematic
-  pose blend returns the complete hierarchy to the exact side-down first
-  `RiseLeft/Right` sample. The distinct left/right `50`-source-frame
-  (`1.67 s`) full-body actions then brace and roll prone, hold on all fours,
-  place a lead foot under the body, pass through a low crouch and finish at the
-  exact `Relaxed` seam without any bind/A/T-like fallback. All-fours remains an
-  authored landmark inside the existing `Rising` phase rather than a new
-  gameplay state. Completion, cancellation, transition, disable and destroy
-  all restore the graph, neutral rig, kinematic bodies, disabled ragdoll
-  colliders and ordinary contact shadow;
+- above `60` the hero is balanced by a continuous seeded model rather than a
+  check: the drink pushes his centre of mass, the ankles chase it late, the
+  torso and arms whip to buy ground, the boots step to catch it, and A/D
+  pressed toward the lean is the recovery. When no ordinary step can reach
+  where the capture point is going he topples — the root goes with him, one or
+  two lunges are thrown at where the point will be, the hands go out for the
+  ground — and either a lunge catches him or he goes down;
+- a lost topple hands the body to a 13-body runtime ragdoll from the bracing
+  pose, with the motion the topple had (a rotation about the boot under his
+  weight), instead of a scripted shove after a clip. The pelvis is tethered to
+  a `0.68 m` sphere around the gameplay root, every ragdoll collider ignores
+  both its peers and the upright `CharacterController`, and the expanded
+  analytic contact shadow slides along the fall's own axis. He lies until the
+  ragdoll is still and, drunk, a while longer; then the capsule is brought
+  under him and turned to match how he lies, the frozen body blends into the
+  side-specific `RiseLeft/Right` brace while his hands find the floor and his
+  head lifts, he pushes up onto all fours (slumping back once or twice when far
+  gone), steps a lead boot under himself with a hand on the knee, stands and
+  wobbles. The distinct left/right `50`-source-frame full-body actions supply
+  the trunk; a seeded rise model supplies the time and the limbs, and the
+  wobble's last swing is the next stagger's first push. Completion,
+  cancellation, transition, disable and destroy all restore the graph, neutral
+  rig, kinematic bodies, disabled ragdoll colliders and ordinary contact
+  shadow;
 - a full-screen city map projected from a display envelope seeded by the
   blueprint's centered map bounds,
   with area colors and labels anchored on real active cells, distinct park,
@@ -1636,10 +1650,15 @@ The vertical slice contains:
   activation share one action path;
 - guarded asynchronous transitions and persistent blueprint ID,
   seed/bar/route context for the current city, with an explicit
-  bar/home/supermarket return
+  bar/home/supermarket/church return
   kind, a separate stairwell-arrival side and a consumed
   `Normal`/`OpeningSleep` Home arrival value and a resettable one-shot
-  `DebugCityMapOnArrivalRequested` flag;
+  `DebugCityMapOnArrivalRequested` flag. Every completed exterior building
+  exit resolves a `PlayerDoorArrivalPose` from the destination door's own
+  doorward action axis: the hero faces along its opposite before the chase
+  camera initializes, so the leaf is behind him and the first outdoor frame
+  is already an over-shoulder view. This covers bar, home, supermarket,
+  church and the mother's house without encoding geometry in transition enums;
 - a dedicated `3.15 s` `DoorTransition` scene after that source-scene gesture:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
@@ -1709,13 +1728,16 @@ The vertical slice contains:
   ownership after normal completion or abnormal cleanup;
 - one deterministic `22 x 16 x 4.8 m` bar interior with seven authored zones
   and four validated circulation paths. Its visible permanent environment is
-  the passive fixed-metre `bar_interior_v3` Blender asset at generator `3.2.1`
-  (`178` semantic meshes / `12,940` triangles, signature
-  `efad807bda9314094e97562288f11f55bf82efb94b55bcaaa08ed5015df60c36`):
+  the passive fixed-metre `bar_interior_v3` Blender asset at generator `3.3.3`
+  (`174` semantic meshes / `12,832` triangles, signature
+  `cc252752752c27aa69d0fa57de8ab8222bd3f265bef92e145bd3fe1989c6b512`):
   a long dark panelled counter with a right-hand
-  return, taps and brass foot rail, a mirror-and-bottle backbar, three booths
-  with a snug, four small round pub tables, a reduced music pocket, heavy
-  curtains, worn carpet/plank and low warm practicals. Unity retains the plan,
+  return, brass foot rail and exactly three taps banked at `0.33 m` intervals
+  over its seat-free right overlap, a mirror-and-bottle backbar, three booths
+  with a snug, four small round pub tables, a reduced music pocket, the
+  facade-matched standard `1.45 x 2.34 m` panelled entrance, worn carpet/plank
+  and low warm practicals. The old room-height curtained portal is absent.
+  Unity retains the plan,
   collision, lighting, state and interaction authority rather than rebuilding
   the furniture from runtime primitives. The Residential identity and
   `SplitTheG` dressing remain without turning the British-pub reference into a
@@ -1729,7 +1751,9 @@ The vertical slice contains:
   rightmost stool is held at local `x = 4.00`, clear of the counter return; the
   former single-seat floor marker and yellow emissive counter sign are absent
   from play. The authored eye/look heights are `1.6175 / 1.7175 m`, and the
-  menu/vessel docks track the surface at `1.045 / 1.035 m`. Fifteen
+  menu/vessel docks track the surface at `1.045 / 1.035 m`. The menu dock is
+  laterally collinear with the selected stool, so the bartender lays it
+  directly before the hero as in the Mountain Road cafe. Fifteen
   deterministic `1024 px` source albedo families import at `512 px`; ordinary
   non-emissive interior parts use recognized bar sheets, while the stool metal
   and seats reuse the exact runtime `CafeMetalDetail` / `CafeCounterDetail`
@@ -2063,14 +2087,26 @@ The vertical slice contains:
   `1.75 m`, `39`-mesh / `1,136`-triangle ordinary two-armed publican wears a
   dark-green waistcoat, rolled sleeves and apron and reuses
   `CafeAttendantWipe`, `CafeAttendantWalk`, `CafeAttendantPour` and
-  `CafeAttendantNotice`; `BarBartenderServiceChoreography` binds the right hand
-  to the selected bottle and the left to the physical menu or vessel while the
-  existing service timeline remains authoritative. Ordinary one-bottle service
-  is live; multi-ingredient mixing and multi-bottle choreography remain
+  `CafeAttendantNotice`; `BarBartenderServiceChoreography` binds the hands to
+  the physical menu, bottle, central tap or vessel while the service timeline
+  remains authoritative. For beer he walks to the tap, pulls its handle over
+  the pint, carries the full glass to the selected stool and places it directly
+  before the hero. The active root and feet
+  remain on the authored floor: the legacy `0.42 m` duckboard and matching
+  actor lift are absent. During the quiet shared Wipe, that grounded placement
+  puts the towel against the real `Y = 1.02 m` counter top and the clip carries
+  it along the surface instead of through the air. Ordinary central-tap beer
+  and one-bottle service are live; multi-ingredient mixing and multi-bottle choreography remain
   deferred;
-- a scene-local spatial crowd bed plus rare glass/chair cues consume their
-  layout radius/gain data and coexist with the existing bar music and
-  procedural ambience inside a four-source budget;
+- the soundscape keeps one diffuse occupied-room bed, then places two
+  independent `8 s` mono murmur pockets at the real booth and social-table
+  groups. One fully spatial World voice moves between those groups and the
+  counter for glass, chair, bottle and short wordless crowd events every
+  `4.5–8 s`. Together with the grille-owned theme and its close cabinet
+  texture this is a six-source, layout-driven bar mix; no intelligible speech,
+  new mixer bus or global reverb is introduced. The same jukebox owns three
+  slow, gain-linked emissive channels for its panel and side tubes; the
+  interaction flash is composed by that single presentation writer;
 - one exit and one ordinary-drink counter station remain authoritative; the
   activity fixture (beer-pong table, stage) survives purely as layout
   dressing. The bar-visited mechanic is removed entirely: the map route is
@@ -2094,42 +2130,66 @@ The vertical slice contains:
   Unity warnings/errors; `F8` writes an immediate state snapshot and
   `Shift+F8` opens the log directory;
 - a session-only cash wallet starting at `$999`, shared by finite supermarket
-  stock and the bar's nine-item drink catalog. The bar now uses the same
+  stock and the bar's four-item visible drink menu. The bar now uses the same
   physical counter-seat and `CounterMenu` behavior as the Mountain Road cafe.
   `BarCounterSeatPlanner` exposes all four stools not occupied by patrons; each
   owns a collision-safe entry/exit, and the rightmost sits at local `x = 4.00`
-  clear of the counter return. The world rig walks to the chosen stool and
+  clear of the counter return. Three closely spaced taps occupy the seat-free
+  counter end beyond it. The world rig walks to the chosen stool and
   sits, then the bartender carries a booklet from the passive
-  `bar_service_props_v1` `1.2.0` library
-  (`29` meshes / `2,280` triangles, signature
-  `4c98dce2cdfd017922c236f88849862f8823bd000380b62a26601dbc744c0026`)
-  to its dock. The shared model/input/page/focus/hint/prop-motion layer focuses
-  the bar spread over `0.45 s` at `1.10 m` and FOV `60`; the cafe keeps its
-  independent `0.50 m`, FOV-40 framing. In both venues the page view uses an
-  opaque two-leaf hinge rig for the `0.40 s` close/open motion; no material
-  alpha fade represents the closed state.
-  `W/S` or D-pad wraps selection and `Space`/West confirms. The first
-  `E`/`Enter`/South physically folds the menu on the counter. Looking at that
-  closed booklet changes the contextual action to unfold it; looking away
-  changes it to stand. The bar adapter fills five rows
-  on the left page and four on the right with the nine localized drink names
-  and their fixed prices, while the cafe adapter remains three selection-only
-  item names. A rejected bar purchase leaves the booklet open with the existing
-  failure feedback. A successful confirmation atomically deducts the price,
-  closes the booklet on the counter and enters the existing one-bottle service:
-  the bartender's right hand picks up and tilts that exact bottle, a world-space
-  stream fills the matching reusable 3D tumbler, pint, wine glass, shot glass
-  or snifter, and a non-rendered camera-local attachment carries the vessel to
-  the hero's mouth for an exact three-second drink before returning it empty.
-  Both old camera-local arm meshes stay disabled in the seated bar view; the
-  seated world body remains authoritative and only its head is hidden by the
-  seat camera.
+  `bar_service_props_v1` `1.3.0` library
+  (`34` meshes / `3,960` triangles, signature
+  `aeb5fb8d37ab3d590c39b76b5f9a9fee0db3aed6c4ba1d26b2eb56a974007148`)
+  to a dock exactly on that stool's lateral axis, directly before the hero.
+  The shared model/input/page/focus/hint/prop-motion layer focuses
+  the larger bar spread over `0.45 s` at `0.45 m` and FOV `72`, using a
+  near-overhead solve centred over the booklet. Its bar-only cinematic DOF is
+  a restrained `35 mm`, `f/8` override focused on the page and exists only
+  while the spread is open; resting the booklet, accepting an order or starting
+  an exit ends it immediately. The bar style uses larger bold near-black type
+  on an inset `2 x 2` grid with safe space from the spine, outer rails and
+  head/foot rules, plus a compact gap between the two blocks on each page.
+  Word wrapping keeps long localized copy at the same visible type scale;
+  the cafe keeps its smaller `0.50 m`, FOV-40 framing. In both venues the page view uses an
+  opaque two-leaf hinge rig for the `0.40 s` close/open motion. The moving leaf
+  follows the upper arc and both page/cover blocks are separated in the closed
+  stack, so neither material alpha nor z-fighting represents the closed state.
+  `W/S` or D-pad wraps selection. In the bar, `Space`/West and the contextual
+  `E`/`Enter`/South all order the selected offer; `Escape` alone folds and rests
+  the booklet without ordering, and a rejected purchase remains open. The cafe
+  keeps its selection-only contract: `Space`/West confirms the choice, while
+  its first `E`/`Enter`/South still closes and rests the menu. Looking at that
+  closed booklet changes the contextual action to unfold it and, through that
+  exact same gaze/prompt predicate, enables its thin yellow contour. Looking
+  away or beginning the unfold clears the contour, so the open spread is never
+  highlighted; looking away changes the action to stand. The bar adapter fills
+  two rows on each page with exactly four localized low-grade offers — flat
+  house beer, cheap fortified wine, unaged distillate and bottom-shelf vodka. Every block
+  carries a name, fixed price and two-line description; four matching shelf
+  bottles are centred behind the counter. The cafe adapter remains three
+  selection-only item names. A rejected bar purchase leaves the booklet open
+  with the existing failure feedback. A successful confirmation deducts the price, closes the
+  booklet on the counter and commits a pending order, but defers intoxication,
+  last-drink, consumed-count and stress effects until the physical drink is
+  finished. Beer uses the central tap: the bartender walks to it, takes the
+  pint, pulls the real handle, fills it with the world-space stream, carries it
+  to the selected place and sets it directly before the hero. While the full
+  glass waits, the same gaze predicate drives its thin yellow contour and the
+  localized `E` drink prompt. The seated world body remains authoritative and
+  runs `2 s` pickup, `3 s` sip and `2 s` return actions; its hands lift the
+  glass, drink and set the empty vessel back on the counter. The empty pint
+  remains there, and the pending order is consumed exactly once only after
+  that visible action completes. The old camera-local bar arm meshes remain
+  disabled; only the seated camera hides the hero's head.
   Completing an order leaves the closed booklet available to reopen or to
-  leave behind. Exiting restores the exact pre-seat camera and world rig; only
+  leave behind. Closing restores the exact seated camera; ordinary room DOF,
+  not the menu override, is already active before service or third-person view.
+  Exiting restores the exact pre-seat camera and world rig; only
   after the visible stand-up completes does the bartender take the booklet and
   carry it home, and a later sit starts a fresh delivery.
-  Water costs `$2`, counts as consumed, does not sober the player and preserves
-  the last-alcohol context; lifecycle teardown restores every transform,
+  Legacy drink IDs and purchase definitions remain readable for saved/session
+  compatibility, but none of their five removed entries is exposed by the bar
+  menu. Lifecycle teardown restores every transform,
   collider, camera, world-presentation, shadow, input and HUD state without refunding an
   already committed purchase. The whole bottle row remains inside the seated
   shot at 16:9 and 16:10, and repeated orders restore reusable vessels to their
@@ -2165,8 +2225,8 @@ The vertical slice contains:
   acts are the first minigames built on that footing — city-side, and on the
   surviving `BarMinigameModalLock` rather than the removed catalog.
 - Multi-ingredient cocktail ordering, mixture state/UI and multi-bottle
-  choreography. The active ordinary bartender, physical menu and ordinary
-  one-bottle service are already present; the former six-arm return chord is a
+  choreography. The active ordinary bartender, physical menu, central-tap beer
+  service and ordinary one-bottle branch are already present; the former six-arm return chord is a
   superseded legacy proposal, not the upgrade path.
 
 South City Rollers/Skaters is a design reference only for procedural-world and sprite-character approaches; its code and assets are not present in this repository.

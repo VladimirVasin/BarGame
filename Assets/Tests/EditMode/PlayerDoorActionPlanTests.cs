@@ -101,6 +101,71 @@ namespace BarPromenade.Tests.EditMode
                 Throws.TypeOf<ArgumentException>());
         }
 
+        [Test]
+        public void DoorArrivalPose_FacesAwayAndSeedsCameraBehindPlayer()
+        {
+            var doorObject = new GameObject("Destination Door");
+            var playerObject = new GameObject("Returned Player");
+            var cameraObject = new GameObject("Returned Camera");
+            try
+            {
+                Vector3 doorward =
+                    new Vector3(3f, 2f, -4f).normalized;
+                Vector3 expectedForward =
+                    new Vector3(-3f, 0f, 4f).normalized;
+                Vector3 returnPosition =
+                    new Vector3(8f, 0.04f, -6f);
+                PlayerDoorActionTarget destinationDoor =
+                    doorObject.AddComponent<PlayerDoorActionTarget>();
+                destinationDoor.Configure(
+                    PlayerDoorActionPlan.CreateStationary(
+                        doorObject.transform.position,
+                        Vector3.up * PlayerFactory.GroundedRootOffset,
+                        doorward));
+
+                PlayerDoorArrivalPose pose =
+                    PlayerDoorArrivalPose.FromDestinationDoor(
+                        returnPosition,
+                        destinationDoor);
+                pose.ApplyTo(playerObject.transform);
+
+                AssertVector(playerObject.transform.position, returnPosition);
+                AssertVector(playerObject.transform.forward, expectedForward);
+
+                Camera camera = cameraObject.AddComponent<Camera>();
+                PlayerCameraFollow follow =
+                    cameraObject.AddComponent<PlayerCameraFollow>();
+                follow.Initialize(
+                    camera,
+                    playerObject.transform,
+                    false);
+
+                Vector3 playerToCamera =
+                    camera.transform.position - playerObject.transform.position;
+                playerToCamera.y = 0f;
+                Vector3 cameraForward = camera.transform.forward;
+                cameraForward.y = 0f;
+                Assert.That(
+                    Vector3.Dot(
+                        playerToCamera.normalized,
+                        -expectedForward),
+                    Is.GreaterThan(0.995f),
+                    "The chase camera must start behind the returned hero.");
+                Assert.That(
+                    Vector3.Dot(
+                        cameraForward.normalized,
+                        expectedForward),
+                    Is.GreaterThan(0.995f),
+                    "The camera must look over the hero's outward shoulder.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                UnityEngine.Object.DestroyImmediate(playerObject);
+                UnityEngine.Object.DestroyImmediate(doorObject);
+            }
+        }
+
         private static void AssertPose(
             PlayerAnimatedInteractionPose pose,
             Vector3 expectedRoot,

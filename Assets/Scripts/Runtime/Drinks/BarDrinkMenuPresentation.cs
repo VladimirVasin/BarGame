@@ -13,8 +13,22 @@ namespace BarPromenade
     [DefaultExecutionOrder(330)]
     public sealed class BarDrinkMenuPresentation : MonoBehaviour
     {
-        public const float CameraFocusDistanceMeters = 1.10f;
-        public const float CameraFocusFieldOfView = 60f;
+        // The four descriptive bar rows use a steeper view than the small
+        // cafe card: the camera hangs almost over the spread centre and looks
+        // nearly along its surface normal, keeping both pages legible without
+        // letting the near edge collide with the bottom hint.
+        public const float CameraFocusDistanceMeters = 0.45f;
+        public const float CameraFocusFieldOfView = 72f;
+        public const float CameraFocusSurfaceFacing = 0.998f;
+        public const float CameraFocusTargetTowardViewerMeters = 0.07f;
+
+        // The source prop keeps nine compatibility sockets. The visible bar
+        // menu normalizes its four chosen sockets to this inset 2 x 2 grid so
+        // neither the text boxes nor the selection marker touch the spine,
+        // page rails or top/bottom rules.
+        public const float LeftPageTextCenterMeters = -0.115f;
+        public const float RightPageTextCenterMeters = 0.140f;
+        public const float TextRowOffsetMeters = 0.095f;
 
         private BarServicePropInstance authored;
         private CounterMenuPageView page;
@@ -33,6 +47,9 @@ namespace BarPromenade
         public Transform GripAnchor => motion?.GripAnchor;
         public Transform Carrier => motion?.Carrier;
         public CounterMenuPageView Page => page;
+        public Vector3 CameraFocusWorldPosition => page != null
+            ? page.FocusWorldPosition
+            : transform.position;
         public IReadOnlyList<TMPro.TMP_Text> ItemLines =>
             page?.ItemLines ?? Array.Empty<TMPro.TMP_Text>();
         public TMPro.TMP_Text SelectionMarker => page?.SelectionMarker;
@@ -158,6 +175,7 @@ namespace BarPromenade
             motion.SnapToDock();
             followsCarrier = false;
             IsRestingOnCounter = false;
+            page.SetRestingHighlight(false);
             page.SetVisible(true, true);
             return true;
         }
@@ -169,6 +187,12 @@ namespace BarPromenade
                    page.IsLookingAtRestingProp(camera);
         }
 
+        public void SetRestingHighlight(bool highlighted)
+        {
+            page?.SetRestingHighlight(
+                highlighted && IsRestingOnCounter);
+        }
+
         public void BeginRetrieval()
         {
             if (!IsConfigured)
@@ -176,6 +200,7 @@ namespace BarPromenade
                 return;
             }
 
+            page.SetRestingHighlight(false);
             IsPlaced = false;
             followsCarrier = false;
             if (IsRestingOnCounter)
@@ -245,7 +270,9 @@ namespace BarPromenade
 
             return page.ResolveCameraFocusPose(
                 viewerPosition,
-                CameraFocusDistanceMeters);
+                CameraFocusDistanceMeters,
+                CameraFocusSurfaceFacing,
+                CameraFocusTargetTowardViewerMeters);
         }
 
         public void ResetPresentation()
@@ -259,6 +286,7 @@ namespace BarPromenade
             followsCarrier = false;
             IsPlaced = false;
             IsRestingOnCounter = false;
+            page.SetRestingHighlight(false);
             page.SetSelection(0, false);
             page.SetVisible(false, false);
         }
@@ -324,13 +352,17 @@ namespace BarPromenade
             {
                 Transform row = RequireAnchor(
                     BarServicePropFactory.MenuTextItemRole(index));
+                PlaceRowOnReadableGrid(row, pageOrigin, index);
                 rowAnchors[index] =
                     CounterMenuPageTextAnchor.FromTransform(row);
                 string price = string.Format(
                     LocalizationService.Get("drink_shop.price"),
                     offers[index].Price);
+                string description = LocalizationService.Get(
+                    offers[index].DescriptionKey);
                 lines[index] = LocalizationService.Get(
-                    offers[index].NameKey) + "   " + price;
+                    offers[index].NameKey) + "\n" + price + "\n" +
+                    description;
             }
 
             Transform selection = RequireAnchor(
@@ -352,6 +384,36 @@ namespace BarPromenade
                 rootDock);
             IsConfigured = true;
             ResetPresentation();
+        }
+
+        public static Vector2 ResolveTextBlockPageOffset(int itemIndex)
+        {
+            if (itemIndex < 0 ||
+                itemIndex >= BarServicePropFactory.MenuItemCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(itemIndex));
+            }
+
+            return new Vector2(
+                itemIndex < 2
+                    ? LeftPageTextCenterMeters
+                    : RightPageTextCenterMeters,
+                (itemIndex & 1) == 0
+                    ? TextRowOffsetMeters
+                    : -TextRowOffsetMeters);
+        }
+
+        private static void PlaceRowOnReadableGrid(
+            Transform row,
+            Transform pageOrigin,
+            int itemIndex)
+        {
+            Vector2 target = ResolveTextBlockPageOffset(itemIndex);
+            Vector3 fromOrigin = row.position - pageOrigin.position;
+            float currentAcross = Vector3.Dot(fromOrigin, row.right);
+            float currentUp = Vector3.Dot(fromOrigin, row.up);
+            row.position += row.right * (target.x - currentAcross) +
+                            row.up * (target.y - currentUp);
         }
 
         private Transform RequireAnchor(string role)

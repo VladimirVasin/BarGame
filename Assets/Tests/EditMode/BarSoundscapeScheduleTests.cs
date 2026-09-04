@@ -26,10 +26,12 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void GetCue_StaysRareBoundedAndUsesBothCueKinds()
+        public void GetCue_StaysSparseBoundedAndUsesEveryCueKind()
         {
             bool foundGlass = false;
             bool foundChair = false;
+            bool foundBottle = false;
+            bool foundCrowd = false;
 
             for (int sequence = 0; sequence < 128; sequence++)
             {
@@ -58,10 +60,18 @@ namespace BarPromenade.Tests.EditMode
                 foundChair |=
                     cue.Kind ==
                     BarSoundscapeCueKind.ChairScrape;
+                foundBottle |=
+                    cue.Kind ==
+                    BarSoundscapeCueKind.BottleSetDown;
+                foundCrowd |=
+                    cue.Kind ==
+                    BarSoundscapeCueKind.CrowdReaction;
             }
 
             Assert.That(foundGlass, Is.True);
             Assert.That(foundChair, Is.True);
+            Assert.That(foundBottle, Is.True);
+            Assert.That(foundCrowd, Is.True);
         }
 
         [Test]

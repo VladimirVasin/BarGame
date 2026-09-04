@@ -263,8 +263,8 @@ namespace BarPromenade
             vignette.intensity.Override(0.2f);
             vignette.smoothness.Override(0.2f);
 
-            RuntimeSceneSetup.AddGaussianDepthOfField(
-                RuntimeProfile, 7f, 20f, 1.0f);
+            RuntimeSceneSetup.AddIndoorGaussianDepthOfField(
+                RuntimeProfile, 7f, 20f);
             volumeObject
                 .AddComponent<DepthOfFieldSettingsBinder>()
                 .Initialize(RuntimeProfile);

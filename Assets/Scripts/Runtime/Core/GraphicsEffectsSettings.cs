@@ -11,6 +11,7 @@ namespace BarPromenade
         private const string ScanlinesKey = "graphics.scanlines";
         private const string AspectRatio43Key = "graphics.aspect_4_3";
         private const string VertexJitterKey = "graphics.vertex_jitter";
+        private const string BegottenKey = "graphics.begotten";
 
         private static bool loaded;
         private static bool depthOfFieldEnabled;
@@ -19,6 +20,7 @@ namespace BarPromenade
         private static bool scanlinesEnabled;
         private static bool aspectRatio43Enabled;
         private static bool vertexJitterEnabled;
+        private static bool begottenModeEnabled;
 
         public static int Version { get; private set; }
 
@@ -100,6 +102,26 @@ namespace BarPromenade
                 VertexJitterKey);
         }
 
+        /// <summary>
+        /// Presents the game as a rephotographed 16 mm print in the manner
+        /// of Merhige's <i>Begotten</i>: no mid-tones, boiling grain, a
+        /// flickering, weaving 4:3 frame shown at twenty-four pictures a
+        /// second. The third opt-in - it replaces the whole image and the
+        /// cadence it is shown at, so it is offered rather than imposed.
+        /// </summary>
+        public static bool BegottenModeEnabled
+        {
+            get
+            {
+                EnsureLoaded();
+                return begottenModeEnabled;
+            }
+            set => Apply(
+                ref begottenModeEnabled,
+                value,
+                BegottenKey);
+        }
+
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
@@ -134,6 +156,10 @@ namespace BarPromenade
             // it is offered rather than imposed.
             vertexJitterEnabled =
                 ReadFlag(VertexJitterKey, false);
+            // The third. A film print in place of the picture is a mode,
+            // not a polish, and it also holds the screen at 24 frames.
+            begottenModeEnabled =
+                ReadFlag(BegottenKey, false);
             loaded = true;
         }
 

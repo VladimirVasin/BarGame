@@ -528,17 +528,29 @@ namespace BarPromenade
             return new[]
             {
                 new BarInteriorAudioAnchor(
-                    "crowd-bed",
+                    "crowd-booths",
                     BarInteriorAudioKind.CrowdBed,
-                    new Vector3(0f, 1.5f, 1f),
-                    12f,
-                    0.72f),
+                    new Vector3(-6.8f, 1.35f, 0.5f),
+                    16f,
+                    0.82f),
+                new BarInteriorAudioAnchor(
+                    "crowd-tables",
+                    BarInteriorAudioKind.CrowdBed,
+                    new Vector3(3.4f, 1.35f, -1.2f),
+                    16f,
+                    0.78f),
                 new BarInteriorAudioAnchor(
                     "bar-service",
                     BarInteriorAudioKind.BarService,
                     new Vector3(0f, 1.2f, 6.35f),
-                    8f,
-                    0.55f),
+                    11f,
+                    0.72f),
+                new BarInteriorAudioAnchor(
+                    "jukebox-speaker",
+                    BarInteriorAudioKind.Music,
+                    new Vector3(6.4f, 0.5f, -6.5f),
+                    BarMusicPlayer.DefaultMaximumDistance,
+                    1f),
             };
         }
 

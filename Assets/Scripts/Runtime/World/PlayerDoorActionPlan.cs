@@ -139,4 +139,87 @@ namespace BarPromenade
                    !float.IsInfinity(value);
         }
     }
+
+    /// <summary>
+    /// Destination-owned pose used after crossing out through a building
+    /// door. The exterior door action faces toward its leaf, so the arrival
+    /// faces along the exact opposite axis and leaves the leaf behind the
+    /// player. Applying this before <see cref="PlayerCameraFollow.Initialize"/>
+    /// also seeds the chase camera behind the player's shoulder.
+    /// </summary>
+    public readonly struct PlayerDoorArrivalPose
+    {
+        private PlayerDoorArrivalPose(
+            Vector3 rootPosition,
+            Vector3 forward)
+        {
+            RootPosition = rootPosition;
+            Forward = forward;
+        }
+
+        public Vector3 RootPosition { get; }
+        public Vector3 Forward { get; }
+        public Quaternion Rotation =>
+            Quaternion.LookRotation(Forward, Vector3.up);
+
+        public static PlayerDoorArrivalPose FromDestinationDoor(
+            Vector3 returnRootPosition,
+            PlayerDoorActionPlan destinationDoorPlan)
+        {
+            destinationDoorPlan.Validate(nameof(destinationDoorPlan));
+            if (!IsFinite(returnRootPosition))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(returnRootPosition),
+                    "A door arrival requires a finite return position.");
+            }
+
+            return new PlayerDoorArrivalPose(
+                returnRootPosition,
+                -destinationDoorPlan.EntryFacingDirection);
+        }
+
+        public static PlayerDoorArrivalPose FromDestinationDoor(
+            Vector3 returnRootPosition,
+            PlayerDoorActionTarget destinationDoor)
+        {
+            if (destinationDoor == null)
+            {
+                throw new ArgumentNullException(nameof(destinationDoor));
+            }
+
+            if (!destinationDoor.IsConfigured)
+            {
+                throw new InvalidOperationException(
+                    "The destination door must be configured before " +
+                    "resolving an arrival pose.");
+            }
+
+            return FromDestinationDoor(
+                returnRootPosition,
+                destinationDoor.Plan);
+        }
+
+        public void ApplyTo(Transform playerRoot)
+        {
+            if (playerRoot == null)
+            {
+                throw new ArgumentNullException(nameof(playerRoot));
+            }
+
+            playerRoot.SetPositionAndRotation(
+                RootPosition,
+                Rotation);
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) &&
+                   !float.IsInfinity(value.x) &&
+                   !float.IsNaN(value.y) &&
+                   !float.IsInfinity(value.y) &&
+                   !float.IsNaN(value.z) &&
+                   !float.IsInfinity(value.z);
+        }
+    }
 }

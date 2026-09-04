@@ -439,6 +439,24 @@ MonoBehaviour:
     renderer: {fileID: 3026479557980647284}
     bone: {fileID: 7689081694936904994}
   animations:
+  - clipName: BarDrinkPickupEnter
+    category: bar_drink
+    clip: {fileID: 1410019013583954062, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 2
+    looping: 0
+    facialExpressionKeys: []
+  - clipName: BarDrinkReturnExit
+    category: bar_drink
+    clip: {fileID: -2639012831575392619, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 2
+    looping: 0
+    facialExpressionKeys: []
+  - clipName: BarDrinkSipLoop
+    category: bar_drink
+    clip: {fileID: -3021478020822334409, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 3
+    looping: 1
+    facialExpressionKeys: []
   - clipName: BedEnter
     category: bed
     clip: {fileID: -6617112425389331939, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
@@ -719,6 +737,7 @@ MonoBehaviour:
     rightFoot: {fileID: 7689081694936904994}
     leftGrip: {fileID: 7224169961055360168}
     rightGrip: {fileID: 2813401561251745980}
+    leftVessel: {fileID: 2145845300263681160}
     rightCigarette: {fileID: 2424763158278369304}
     mouth: {fileID: 6029754949622110720}
   metrics:
@@ -730,7 +749,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 1.1.0
   sourcePose: apose
   sourceTriangleCount: 1984
-  buildSignature: 43fc01c19415dad21512fbcbd8bce060
+  buildSignature: 04e112f54742d985dfb1574f4121a262
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}
@@ -752,6 +771,18 @@ MonoBehaviour:
     - expression: 4
       column: 1
       row: 2
+    - expression: 5
+      column: 2
+      row: 2
+    - expression: 6
+      column: 3
+      row: 2
+    - expression: 7
+      column: 0
+      row: 1
+    - expression: 8
+      column: 1
+      row: 1
   applyPaletteOnEnable: 1
 --- !u!1001 &9211038151743410627
 PrefabInstance:
@@ -1004,6 +1035,11 @@ SkinnedMeshRenderer:
 --- !u!137 &2024443831129506719 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -2032132140832386468, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
+  m_PrefabInstance: {fileID: 9211038151743410627}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2145845300263681160 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7067199549321047371, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_PrefabInstance: {fileID: 9211038151743410627}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &2403400400218202193 stripped

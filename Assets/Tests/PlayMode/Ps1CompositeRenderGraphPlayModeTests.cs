@@ -22,6 +22,7 @@ namespace BarPromenade.Tests.PlayMode
         private bool previousDitherEnabled;
         private bool previousScanlinesEnabled;
         private bool previousAspectRatio43Enabled;
+        private bool previousBegottenModeEnabled;
         private bool effectFlagsCaptured;
 
         [SetUp]
@@ -33,10 +34,15 @@ namespace BarPromenade.Tests.PlayMode
                 GraphicsEffectsSettings.ScanlinesEnabled;
             previousAspectRatio43Enabled =
                 GraphicsEffectsSettings.AspectRatio43Enabled;
+            previousBegottenModeEnabled =
+                GraphicsEffectsSettings.BegottenModeEnabled;
             effectFlagsCaptured = true;
             GraphicsEffectsSettings.DitherEnabled = false;
             GraphicsEffectsSettings.ScanlinesEnabled = false;
             GraphicsEffectsSettings.AspectRatio43Enabled = false;
+            // The print replaces the whole composite; these tests measure
+            // the composite.
+            GraphicsEffectsSettings.BegottenModeEnabled = false;
         }
 
         [UnityTest]
@@ -243,6 +249,8 @@ namespace BarPromenade.Tests.PlayMode
                     previousScanlinesEnabled;
                 GraphicsEffectsSettings.AspectRatio43Enabled =
                     previousAspectRatio43Enabled;
+                GraphicsEffectsSettings.BegottenModeEnabled =
+                    previousBegottenModeEnabled;
                 effectFlagsCaptured = false;
             }
 

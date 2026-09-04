@@ -12,7 +12,8 @@ namespace BarPromenade.Tests.EditMode
             "graphics.dither",
             "graphics.scanlines",
             "graphics.aspect_4_3",
-            "graphics.vertex_jitter"
+            "graphics.vertex_jitter",
+            "graphics.begotten"
         };
 
         private bool[] savedExists;
@@ -81,6 +82,11 @@ namespace BarPromenade.Tests.EditMode
                 Is.False,
                 "Vertex jitter moves every silhouette in the game, so " +
                 "it is offered rather than imposed.");
+            Assert.That(
+                GraphicsEffectsSettings.BegottenModeEnabled,
+                Is.False,
+                "The film print replaces the whole picture and its " +
+                "cadence, so it is the third opt-in.");
             Assert.That(GraphicsEffectsSettings.Version, Is.Zero);
         }
 

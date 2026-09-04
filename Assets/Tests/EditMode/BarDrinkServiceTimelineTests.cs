@@ -194,6 +194,79 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void BeerService_WaitsForPhysicalArrivalAndExplicitDrink()
+        {
+            BarDrinkServiceTimeline timeline = CreateBrowsingTimeline();
+
+            Assert.That(timeline.Confirm(DrinkId.LightBeer), Is.True);
+            Assert.That(timeline.IsBeerService, Is.True);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerWalkToTap));
+
+            timeline.Advance(100f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerWalkToTap));
+            Assert.That(timeline.ReportBeerServerAtTap(false), Is.False);
+            Assert.That(timeline.ReportBeerServerAtTap(true), Is.True);
+
+            timeline.Advance(
+                BarDrinkServiceTimeline.BeerGlassPickupDurationSeconds);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerPouring));
+            timeline.Advance(
+                BarDrinkServiceTimeline.BeerPouringDurationSeconds);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerCarryToGuest));
+            Assert.That(timeline.CurrentFrame.VesselFill, Is.EqualTo(1f));
+
+            timeline.Advance(100f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerCarryToGuest));
+            Assert.That(timeline.ReportBeerServerAtGuest(true), Is.True);
+            timeline.Advance(
+                BarDrinkServiceTimeline.BeerGlassPlacementDurationSeconds);
+
+            Assert.That(timeline.IsAwaitingDrink, Is.True);
+            Assert.That(timeline.CanBeginDrink, Is.True);
+            Assert.That(timeline.CurrentFrame.VesselFill, Is.EqualTo(1f));
+            timeline.Advance(100f);
+            Assert.That(timeline.IsAwaitingDrink, Is.True);
+            Assert.That(timeline.BeginDrink(), Is.True);
+            Assert.That(timeline.BeginDrink(), Is.False);
+
+            timeline.Advance(
+                BarDrinkServiceTimeline.PlayerPickupDurationSeconds);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.PlayerDrinking));
+            timeline.Advance(
+                BarDrinkServiceTimeline.DrinkingDurationSeconds - 0.001f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.PlayerDrinking));
+            timeline.Advance(0.001f);
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.PlayerVesselReturn));
+            timeline.Advance(
+                BarDrinkServiceTimeline.PlayerVesselReturnDurationSeconds);
+
+            Assert.That(
+                timeline.Phase,
+                Is.EqualTo(BarDrinkServicePhase.EmptyOnCounter));
+            Assert.That(timeline.HasEmptyVessel, Is.True);
+            Assert.That(timeline.IsCommitted, Is.False);
+            Assert.That(timeline.IsBrowsing, Is.True);
+            Assert.That(timeline.CurrentFrame.VesselVisibility, Is.EqualTo(1f));
+            Assert.That(timeline.CurrentFrame.VesselFill, Is.Zero);
+        }
+
+        [Test]
         public void CompletedService_ReturnsToBrowsingAndCanConfirmAgain()
         {
             Assert.That(
@@ -614,6 +687,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(frame.StreamVisibility, Is.InRange(0f, 1f));
             Assert.That(frame.VesselFill, Is.InRange(0f, 1f));
             Assert.That(frame.DrinkLift, Is.InRange(0f, 1f));
+            Assert.That(frame.TapHandlePull, Is.InRange(0f, 1f));
+            Assert.That(frame.ServiceVesselTravel, Is.InRange(0f, 1f));
         }
 
         private static void AssertFrame(
@@ -734,6 +809,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 actual.DrinkLift,
                 Is.EqualTo(expected.DrinkLift).Within(Tolerance));
+            Assert.That(
+                actual.TapHandlePull,
+                Is.EqualTo(expected.TapHandlePull).Within(Tolerance));
+            Assert.That(
+                actual.ServiceVesselTravel,
+                Is.EqualTo(expected.ServiceVesselTravel).Within(Tolerance));
         }
     }
 }

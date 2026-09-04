@@ -313,7 +313,32 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.wall_thickness_m,
                 Is.EqualTo(plan.WallThickness).Within(0.001f));
-            Assert.That(manifest.door_opening_m.width, Is.EqualTo(3.2f));
+            BarManifest facade = LoadManifest(ExteriorManifestPath);
+            Assert.That(
+                manifest.door_opening_m.width,
+                Is.EqualTo(1.45f).Within(0.001f));
+            Assert.That(
+                manifest.door_opening_m.height,
+                Is.EqualTo(2.34f).Within(0.001f));
+            Assert.That(
+                manifest.door_opening_m.width,
+                Is.EqualTo(facade.door_opening_m.width).Within(0.001f),
+                "The interior threshold must match this bar's facade.");
+            Assert.That(
+                manifest.door_opening_m.height,
+                Is.EqualTo(facade.door_opening_m.height).Within(0.001f));
+
+            BarManifestPart frontWall = manifest.parts.Single(part =>
+                part.name == "Front Wall");
+            Assert.That(
+                frontWall.colliders,
+                Has.Length.EqualTo(3),
+                "The standard opening needs two piers and a lintel collider.");
+            BarManifestCollider lintel = frontWall.colliders.Single(collider =>
+                Mathf.Abs(collider.center[0]) < 0.001f);
+            Assert.That(
+                lintel.center[1] - lintel.size[1] * 0.5f,
+                Is.EqualTo(2.34f).Within(0.001f));
         }
 
         [Test]
@@ -369,7 +394,16 @@ namespace BarPromenade.Tests.EditMode
                 AssertAnchor(
                     registry, instance.transform,
                     "bartender_platform_top",
-                    new Vector3(-0.55f, 0.42f, 6.50f));
+                    new Vector3(-0.55f, 0f, 6.50f));
+
+                BarDrinkServicePlan servicePlan =
+                    BarDrinkServicePlan.FromLayout(plan);
+                Assert.That(
+                    servicePlan.MenuPose.Position.x,
+                    Is.EqualTo(servicePlan.SeatPose.Position.x)
+                        .Within(Tolerance),
+                    "the fallback menu dock is not directly before the " +
+                    "hero");
             }
             finally
             {
@@ -391,11 +425,14 @@ namespace BarPromenade.Tests.EditMode
                 "Snug Divider Patterned Glass",
                 "Pub Carpet Fields",
                 "Pub Carpet Diamond Motifs",
-                "Entrance Heavy Curtains",
+                "Entrance Door Frame",
+                "Entrance Door",
+                "Entrance Door Panels",
+                "Entrance Door Transom Glass",
+                "Entrance Door Furniture",
                 "Bar Drink Service Stool Legs",
                 "Bar Drink Service Stool Footring",
                 "Bar Drink Service Stool",
-                "Bartender Duckboard",
                 "Exit Header"
             };
 
@@ -408,6 +445,19 @@ namespace BarPromenade.Tests.EditMode
                     $"the pub redesign has no '{requiredParts[index]}'");
             }
 
+            Assert.That(
+                manifest.parts.Any(part =>
+                    part.name == "Entrance Heavy Curtains" ||
+                    part.name == "Entrance Curtain Brass Rail"),
+                Is.False,
+                "The former full-height entrance portal returned.");
+            Assert.That(
+                manifest.parts.Any(part =>
+                    part.name == "Bartender Duckboard" ||
+                    part.role == "bartender_duckboard"),
+                Is.False,
+                "The obsolete six-arm bartender duckboard returned.");
+
             if (manifest.generator_version != "3.2.1")
             {
                 Assert.That(
@@ -417,6 +467,18 @@ namespace BarPromenade.Tests.EditMode
                     Is.False,
                     "The retired single-seat marker returned to the model.");
             }
+
+            BarManifestPart[] tapStems = manifest.parts
+                .Where(part => part.role == "tap_stem")
+                .ToArray();
+            BarManifestPart[] tapHandles = manifest.parts
+                .Where(part => part.role == "tap_handle")
+                .ToArray();
+            Assert.That(
+                tapStems,
+                Has.Length.EqualTo(3),
+                "the bar must expose one compact bank of three taps");
+            Assert.That(tapHandles, Has.Length.EqualTo(3));
 
             BarManifestPart regularSeat = manifest.parts.Single(part =>
                 part.name == "Bar Stool 1");
@@ -626,10 +688,27 @@ namespace BarPromenade.Tests.EditMode
                         Vector3.up * 0.1f),
                     Is.LessThan(0.001f));
 
+                string[] expectedVisibleMenuRoles =
+                {
+                    "service_menu_text_item:00",
+                    "service_menu_text_item:04",
+                    "service_menu_text_item:05",
+                    "service_menu_text_item:08"
+                };
+                float[] expectedVisibleMenuPageOffsets =
+                {
+                    0.14f,
+                    -0.14f,
+                    0.105f,
+                    -0.105f
+                };
                 for (int index = 0;
                      index < BarServicePropFactory.MenuItemCount;
                      index++)
                 {
+                    Assert.That(
+                        BarServicePropFactory.MenuTextItemRole(index),
+                        Is.EqualTo(expectedVisibleMenuRoles[index]));
                     Assert.That(
                         menu.TryGetAnchor(
                             BarServicePropFactory.MenuTextItemRole(index),
@@ -639,7 +718,12 @@ namespace BarPromenade.Tests.EditMode
                     Assert.That(row.right.x, Is.GreaterThan(0.98f));
                     Assert.That(row.up.z, Is.GreaterThan(0.98f));
                     Assert.That(-row.forward.y, Is.GreaterThan(0.98f));
-                    if (index < 5)
+                    Assert.That(
+                        row.localPosition.z,
+                        Is.EqualTo(expectedVisibleMenuPageOffsets[index])
+                            .Within(0.001f),
+                        $"visible menu block {index} lost its page spacing");
+                    if (index < 2)
                     {
                         Assert.That(row.localPosition.x, Is.LessThan(0f));
                     }
@@ -831,9 +915,11 @@ namespace BarPromenade.Tests.EditMode
                     new Vector3(-1.15f, 1.6175f, 4.65f));
                 AssertPlaced(room, "HeroCameraLook",
                     new Vector3(-1.15f, 1.7175f, 7.37f));
+                AssertPlaced(room, "MenuDock",
+                    new Vector3(-1.15f, 1.045f, 5.44f));
                 Assert.That(room.Find("Drink Order Point"), Is.Null);
                 Assert.That(room.Find("Exit Header"), Is.Not.Null);
-                Assert.That(room.Find("Bartender Duckboard"), Is.Not.Null);
+                Assert.That(room.Find("Bartender Duckboard"), Is.Null);
 
                 Transform rightmostStool = room.Find("Bar Stool 6");
                 Assert.That(rightmostStool, Is.Not.Null);
@@ -841,20 +927,49 @@ namespace BarPromenade.Tests.EditMode
                     rightmostStool.GetComponent<Renderer>().bounds.center.x,
                     Is.EqualTo(4.00f).Within(Tolerance));
 
-                Renderer[] duckboard = room
+                Renderer[] tapStems = room
                     .GetComponentsInChildren<Renderer>(true)
                     .Where(item => item.name.StartsWith(
-                        "Bartender Duckboard",
+                        "Beer Tap Stem ",
                         StringComparison.Ordinal))
+                    .OrderBy(item => item.name, StringComparer.Ordinal)
                     .ToArray();
-                Assert.That(duckboard, Is.Not.Empty);
-                Bounds duckboardBounds = duckboard[0].bounds;
-                for (int index = 1; index < duckboard.Length; index++)
+                Renderer[] tapHandles = room
+                    .GetComponentsInChildren<Renderer>(true)
+                    .Where(item => item.name.StartsWith(
+                        "Beer Tap Handle ",
+                        StringComparison.Ordinal))
+                    .OrderBy(item => item.name, StringComparer.Ordinal)
+                    .ToArray();
+                Assert.That(tapStems, Has.Length.EqualTo(3));
+                Assert.That(tapHandles, Has.Length.EqualTo(3));
+                float[] expectedTapXs = { 4.75f, 5.08f, 5.41f };
+                for (int index = 0; index < expectedTapXs.Length; index++)
                 {
-                    duckboardBounds.Encapsulate(duckboard[index].bounds);
+                    Assert.That(
+                        tapStems[index].bounds.center.x,
+                        Is.EqualTo(expectedTapXs[index]).Within(Tolerance));
+                    Assert.That(
+                        tapHandles[index].bounds.center.x,
+                        Is.EqualTo(expectedTapXs[index]).Within(Tolerance));
+                    if (index == 0)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        tapStems[index].bounds.center.x -
+                        tapStems[index - 1].bounds.center.x,
+                        Is.EqualTo(0.33f).Within(Tolerance),
+                        "the beer taps are no longer tightly grouped");
                 }
-                Assert.That(duckboardBounds.min.x, Is.LessThanOrEqualTo(-2.53f));
-                Assert.That(duckboardBounds.max.x, Is.GreaterThanOrEqualTo(4.13f));
+
+                Assert.That(
+                    tapHandles[0].bounds.min.x,
+                    Is.GreaterThan(
+                        rightmostStool.GetComponent<Renderer>()
+                            .bounds.max.x),
+                    "the beer taps intrude into the last seating bay");
 
                 Transform regularStool = room.Find("Bar Stool 1");
                 Transform heroStool = room.Find(

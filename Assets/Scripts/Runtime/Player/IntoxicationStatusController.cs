@@ -29,6 +29,9 @@ namespace BarPromenade
         public const float ModalExitGraceDuration = 3f;
         public const float PostFallGraceDuration = 6f;
 
+        /// <summary>The pelvis lean the camera's reaction reads as full, degrees.</summary>
+        public const float CameraLeanReferenceDegrees = 16f;
+
         /// <summary>Instability above which the hero counts as staggering.</summary>
         public const float StaggerThreshold = 0.5f;
 
@@ -37,12 +40,20 @@ namespace BarPromenade
 
         private static readonly RaycastHit[] SurfaceHits = new RaycastHit[16];
 
+        /// <summary>The rise model's seed is the episode's, salted.</summary>
+        private const int RiseSeedSalt = 0x51AE;
+
         private enum BalanceState
         {
             Idle = 0,
+
+            /// <summary>The ragdoll has the body; the fall amount ramps for the shadow and the camera.</summary>
             Falling,
+
+            /// <summary>The ragdoll lies; the rise model waits for it to be still, then for the stun.</summary>
             Down,
-            RagdollRecovering,
+
+            /// <summary>The rise model scrubs the Rise clip and draws the limbs on top.</summary>
             Rising
         }
 
@@ -52,7 +63,12 @@ namespace BarPromenade
         private PlayerMotor motor;
         private PlayerInteractor interactor;
         private IPlayerStatusPresentation playerPresentation;
+        private IPlayerRisePresentation risePresentation;
+        private Player3DCharacterPresentation heroPresentation;
         private Player3DRagdollController ragdoll;
+        private PlayerRiseModel riseModel;
+        private FootSide riseSide = FootSide.Right;
+        private Vector3 riseResidual;
         private PlayerBalanceController balance;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView hud;
@@ -82,8 +98,18 @@ namespace BarPromenade
         public bool IsFalling =>
             balanceState == BalanceState.Falling ||
             balanceState == BalanceState.Down ||
-            balanceState == BalanceState.RagdollRecovering ||
             balanceState == BalanceState.Rising;
+
+        /// <summary>The rise model's stage while a fall is playing out; "None" otherwise.</summary>
+        public string RiseStageName =>
+            riseModel != null ? riseModel.Stage.ToString() : "None";
+        public PlayerRiseModel Rise => riseModel;
+
+        /// <summary>Which side he lay on, as the rise decided it.</summary>
+        public FootSide RiseSide => riseSide;
+
+        /// <summary>What the walkable area refused of the root's move under the lying body.</summary>
+        public Vector3 RiseResidual => riseResidual;
         public bool IsRagdollActive =>
             ragdoll != null && ragdoll.IsActive;
 
@@ -93,6 +119,12 @@ namespace BarPromenade
         public float BalanceRisk =>
             balance != null ? balance.Instability : 0f;
         public string BalanceStateName => balanceState.ToString();
+
+        /// <summary>The balance model's own phase (Steady, Recovering, Toppling, Fallen).</summary>
+        public string BalancePhaseName =>
+            balance != null && balance.Model != null
+                ? balance.Model.Phase.ToString()
+                : BalancePhase.Steady.ToString();
 
         /// <summary>Balance cannot be lost until the session's grace runs out.</summary>
         public bool IsBalanceDelayArmed =>
@@ -109,8 +141,11 @@ namespace BarPromenade
             motor = player.Motor;
             interactor = player.Interactor;
             playerPresentation = player.Visual;
+            risePresentation = player.Visual as IPlayerRisePresentation;
+            heroPresentation = player.Visual as Player3DCharacterPresentation;
             ragdoll = player.Ragdoll;
             ragdoll?.Cancel();
+            riseModel = null;
             balance = player.Balance;
             cameraFollow = follow;
             hud = intoxicationHud;
@@ -183,6 +218,7 @@ namespace BarPromenade
             UpdatePresentationLevel(deltaTime);
             UpdateBalance(deltaTime);
             ApplyPresentation();
+            ApplyRiseBlend();
         }
 
         private void OnDisable()
@@ -342,7 +378,7 @@ namespace BarPromenade
                 return;
             }
 
-            BeginFall(balance.Model.FallDirection);
+            BeginFall();
         }
 
         private void AdvanceFallState(float deltaTime)
@@ -351,22 +387,13 @@ namespace BarPromenade
             switch (balanceState)
             {
                 case BalanceState.Falling:
+                    // The ragdoll has had the body since BeginFall; this
+                    // state only ramps the fall amount the shadow and the
+                    // camera read. Without a ragdoll the Fall clip plays
+                    // through ApplyPresentation as it always did.
                     fallAmount = Mathf.Clamp01(
                         balanceStateElapsed / FallDuration);
-                    if (balanceStateElapsed >=
-                            Player3DRagdollController.FallHandoffTime &&
-                        ragdoll != null &&
-                        !ragdoll.IsActive)
-                    {
-                        playerPresentation?.SetFallPose(
-                            fallDirection,
-                            fallAmount);
-                        playerPresentation?.SetFallAnimation(
-                            PlayerFallAnimationPhase.Falling,
-                            fallAmount);
-                        ragdoll.Begin(fallDirection);
-                    }
-
+                    UpdateTwitch(deltaTime);
                     if (balanceStateElapsed >= FallDuration)
                     {
                         balanceState = BalanceState.Down;
@@ -377,34 +404,19 @@ namespace BarPromenade
                     break;
 
                 case BalanceState.Down:
+                    // He lies until the ragdoll is still and the stun has
+                    // passed; the rise model keeps that clock.
                     fallAmount = 1f;
-                    if (balanceStateElapsed >= DownDuration)
+                    if (riseModel == null)
                     {
-                        balanceState = ragdoll != null &&
-                                       ragdoll.BeginRecovery(fallDirection)
-                            ? BalanceState.RagdollRecovering
-                            : BalanceState.Rising;
-                        balanceStateElapsed = 0f;
+                        riseModel = CreateRiseModel();
                     }
 
-                    break;
-
-                case BalanceState.RagdollRecovering:
-                    fallAmount = 1f;
-                    if (ragdoll == null || !ragdoll.IsRecovering)
+                    UpdateTwitch(deltaTime);
+                    riseModel.Advance(deltaTime, BuildRiseInput());
+                    if (riseModel.Stage >= PlayerRiseStage.Stirring)
                     {
-                        balanceState = BalanceState.Rising;
-                        balanceStateElapsed = 0f;
-                        break;
-                    }
-
-                    ragdoll.SetRecoveryProgress(
-                        balanceStateElapsed / RagdollRecoveryDuration);
-                    if (balanceStateElapsed >= RagdollRecoveryDuration)
-                    {
-                        ragdoll.CompleteRecovery();
-                        balanceState = BalanceState.Rising;
-                        balanceStateElapsed = 0f;
+                        BeginRising();
                     }
 
                     break;
@@ -416,11 +428,21 @@ namespace BarPromenade
                         break;
                     }
 
-                    fallAmount = 1f - Mathf.Clamp01(
-                        balanceStateElapsed / RisingDuration);
-                    if (balanceStateElapsed >= RisingDuration)
+                    if (riseModel != null)
                     {
-                        balanceStateElapsed = RisingDuration;
+                        riseModel.SetDownedInput(ReadDownedInputBodyLocal());
+                        riseModel.Advance(deltaTime, BuildRiseInput());
+                        ApplyCrawl(deltaTime);
+                    }
+
+                    PlayerRiseOutput rise = riseModel != null
+                        ? riseModel.Output
+                        : PlayerRiseOutput.Lying;
+                    fallAmount = 1f - rise.Progress;
+                    if (riseModel == null || riseModel.Stage == PlayerRiseStage.Done)
+                    {
+                        // Rise(1) is presented for this one frame before
+                        // ordinary locomotion is restored.
                         fallAmount = 0f;
                         finishFallAfterTerminalRiseFrame = true;
                     }
@@ -429,12 +451,249 @@ namespace BarPromenade
             }
         }
 
-        private void BeginFall(float direction)
+        /// <summary>A key held while the physics has him: he jerks that way every so often.</summary>
+        public const float TwitchIntervalSeconds = 0.35f;
+
+        /// <summary>Each twitch is the will to get up: the stun to come shrinks by this much.</summary>
+        public const float TwitchStunNudgeSeconds = -0.15f;
+
+        private Vector2? debugDownedInput;
+        private float twitchTimer;
+        private bool downedInputHeld;
+
+        /// <summary>
+        /// A test seam for the keys while he is down: batch mode has no
+        /// keyboard. <c>null</c> reads the real devices again.
+        /// </summary>
+        internal void DebugDownedInput(Vector2? cameraRelative)
         {
-            fallDirection = direction < 0f ? -1f : 1f;
-            // The fall owns the interactor, the orbit and the HUD the way
-            // the old check did, and the motor from the first frame: no
-            // input steers a man who is already going down.
+            debugDownedInput = cameraRelative;
+        }
+
+        /// <summary>
+        /// WASD or the stick, read relative to the camera — a lying body
+        /// has no forward of its own — as a planar world direction no
+        /// longer than one.
+        /// </summary>
+        private Vector3 ReadDownedInputWorld()
+        {
+            Vector2 raw = debugDownedInput ?? PlayerDirectionalInput.ReadRaw();
+            return PlayerDirectionalInput.ToWorldPlanar(
+                raw,
+                cameraFollow != null ? cameraFollow.transform : null,
+                motor != null ? motor.transform : null);
+        }
+
+        private Vector2 ReadDownedInputBodyLocal()
+        {
+            return PlayerDirectionalInput.ToBodyLocal(
+                ReadDownedInputWorld(),
+                motor != null ? motor.transform : null);
+        }
+
+        /// <summary>
+        /// While the ragdoll has him, a key pressed jerks him toward it at
+        /// once and again every interval it is held; each jerk shortens
+        /// the stun he will lie through.
+        /// </summary>
+        private void UpdateTwitch(float deltaTime)
+        {
+            Vector3 direction = ReadDownedInputWorld();
+            bool held = direction.sqrMagnitude >
+                        PlayerRiseRules.CrawlDeadZone * PlayerRiseRules.CrawlDeadZone;
+            if (!held)
+            {
+                downedInputHeld = false;
+                twitchTimer = 0f;
+                return;
+            }
+
+            bool edge = !downedInputHeld;
+            downedInputHeld = true;
+            twitchTimer += deltaTime;
+            if (!edge && twitchTimer < TwitchIntervalSeconds)
+            {
+                return;
+            }
+
+            twitchTimer = 0f;
+            ragdoll?.Twitch(
+                direction,
+                Mathf.Lerp(1f, 0.6f, currentProfile.Normalized));
+            riseModel?.NudgeStun(TwitchStunNudgeSeconds);
+        }
+
+        /// <summary>The crawl the rise model decided this frame, made as a move of the capsule.</summary>
+        private void ApplyCrawl(float deltaTime)
+        {
+            if (motor == null || riseModel == null ||
+                riseModel.Stage != PlayerRiseStage.Crawling)
+            {
+                return;
+            }
+
+            PlayerRiseOutput rise = riseModel.Output;
+            Transform root = motor.transform;
+            Vector3 forward = root.forward;
+            forward.y = 0f;
+            forward = forward.sqrMagnitude > 0.0001f ? forward.normalized : Vector3.forward;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            motor.ApplyDownedMove(
+                right * rise.CrawlVelocityLocal.x + forward * rise.CrawlVelocityLocal.y,
+                rise.CrawlYawDegreesPerSecond * deltaTime,
+                deltaTime);
+        }
+
+        private PlayerRiseModel CreateRiseModel()
+        {
+            return new PlayerRiseModel(
+                PlayerBalanceRules.EpisodeSeed(
+                    GameSessionState.CitySeed,
+                    episodeSequence) ^ RiseSeedSalt,
+                currentProfile.Normalized);
+        }
+
+        private PlayerRiseInput BuildRiseInput()
+        {
+            return new PlayerRiseInput(
+                currentProfile.Normalized,
+                motor == null || motor.IsGrounded,
+                ragdoll != null ? ragdoll.MaximumBodySpeed : 0f);
+        }
+
+        /// <summary>
+        /// The body stirs. The ragdoll freezes where it lies and says
+        /// where; the side he lies on picks the Rise clip and the lead
+        /// boot; the clip's first frame goes on the bones so its authored
+        /// lying frame can be read; the root is brought under the body
+        /// and turned to match it; and the frozen pose is put back on
+        /// top, now expressed under a root that is where he is.
+        /// </summary>
+        private void BeginRising()
+        {
+            PlayerRagdollLyingPose lying = default;
+            bool hasLying = ragdoll != null && ragdoll.BeginRise(out lying);
+            FootSide fallSide = fallDirection < 0f ? FootSide.Left : FootSide.Right;
+            riseSide = hasLying ? lying.LowerShoulder(fallSide) : fallSide;
+            fallDirection = riseSide == FootSide.Left ? -1f : 1f;
+            riseModel?.SetLyingSide(riseSide);
+            heroPresentation?.SetRagdollPoseActive(false);
+            playerPresentation?.SetFallPose(fallDirection, 1f);
+            playerPresentation?.SetFallAnimation(
+                PlayerFallAnimationPhase.Rising,
+                0f);
+            riseResidual = Vector3.zero;
+            if (hasLying &&
+                heroPresentation != null &&
+                heroPresentation.Registry != null &&
+                motor != null)
+            {
+                riseResidual = ReconcileRoot(lying);
+            }
+
+            ragdoll?.ApplyRecoveryBlend(0f);
+            balanceState = BalanceState.Rising;
+            balanceStateElapsed = 0f;
+            fallAmount = 1f;
+            GameLog.Info(
+                "balance",
+                "rising",
+                GameLog.Field("sequence", episodeSequence),
+                GameLog.Field("rise_side", riseSide.ToString()),
+                GameLog.Field("lying_pose", hasLying),
+                GameLog.Field("residual", riseResidual.magnitude),
+                GameLog.Field(
+                    "stun_seconds",
+                    riseModel != null ? riseModel.StunSeconds : 0f),
+                GameLog.Field(
+                    "slumps",
+                    riseModel != null ? riseModel.SlumpsPlanned : 0));
+        }
+
+        /// <summary>
+        /// Moves the capsule under the lying pelvis and turns it so the
+        /// clip's authored lying frame matches the way he actually lies;
+        /// returns what the walkable area refused of the move.
+        /// </summary>
+        private Vector3 ReconcileRoot(in PlayerRagdollLyingPose lying)
+        {
+            Player3DBoneAnchors anchors = heroPresentation.Registry.Anchors;
+            Transform root = motor.transform;
+            if (anchors.Pelvis == null || anchors.Chest == null)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 authoredAxis = anchors.Chest.position - anchors.Pelvis.position;
+            authoredAxis.y = 0f;
+            Vector3 actualAxis = lying.LyingAxis;
+            float deltaYaw = authoredAxis.sqrMagnitude > 0.0001f &&
+                             actualAxis.sqrMagnitude > 0.0001f
+                ? Vector3.SignedAngle(authoredAxis.normalized, actualAxis, Vector3.up)
+                : 0f;
+            Vector3 authoredOffset = anchors.Pelvis.position - root.position;
+            authoredOffset.y = 0f;
+            Vector3 rotatedOffset = Quaternion.AngleAxis(deltaYaw, Vector3.up) * authoredOffset;
+            Vector3 target = lying.PelvisWorld - rotatedOffset;
+            Vector3 residual = motor.TeleportPlanar(target, root.eulerAngles.y + deltaYaw);
+            cameraFollow?.AbsorbTargetShift();
+            return residual;
+        }
+
+        /// <summary>
+        /// After the clip has been sampled for this frame: while he stirs
+        /// the frozen lying body is blended into it, then the ragdoll lets
+        /// go; and the rise model's limbs are handed to the presentation
+        /// for the late pass.
+        /// </summary>
+        private void ApplyRiseBlend()
+        {
+            if (balanceState != BalanceState.Rising || riseModel == null)
+            {
+                return;
+            }
+
+            PlayerRiseOutput rise = riseModel.Output;
+            if (ragdoll != null && ragdoll.IsRecovering)
+            {
+                if (riseModel.Stage == PlayerRiseStage.Stirring)
+                {
+                    ragdoll.ApplyRecoveryBlend(rise.BlendProgress);
+                }
+                else
+                {
+                    ragdoll.EndRise();
+                }
+            }
+
+            risePresentation?.SetRise(PlayerRisePose.FromOutput(rise));
+        }
+
+        private void BeginFall()
+        {
+            PlayerBalanceOutput output = balance != null
+                ? balance.Output
+                : PlayerBalanceOutput.Still;
+            PlayerBalanceModel model = balance != null ? balance.Model : null;
+            fallDirection = output.FallDirection < 0f ? -1f : 1f;
+
+            // The ragdoll takes the body FIRST: from the pose the late
+            // layer wrote this frame (the topple's lean, the hands out
+            // for the ground) and with the motion the model says it had.
+            // Only then is the model frozen — freezing pushes a neutral
+            // pose, and that must never precede the capture.
+            if (ragdoll != null && balance != null)
+            {
+                PlayerRagdollHandoff handoff = balance.BuildRagdollHandoff();
+                (playerPresentation as Player3DCharacterPresentation)
+                    ?.SetFallAxis(handoff.FallAxis);
+                ragdoll.Begin(handoff);
+            }
+
+            // The fall owns the interactor the way the old check did, and
+            // the motor from the first frame: no input steers a man who
+            // is already going down. The orbit stays the player's — he
+            // may look around while he lies there.
             fallLock.TryCaptureAndDisable(
                 interactor,
                 cameraFollow,
@@ -455,20 +714,41 @@ namespace BarPromenade
                     "fall_direction",
                     fallDirection),
                 GameLog.Field(
+                    "fall_axis_forward",
+                    output.FallAxis.y),
+                GameLog.Field(
+                    "fall_cause",
+                    model != null ? model.FallCause.ToString() : "None"),
+                GameLog.Field(
+                    "fall_lean",
+                    output.FallLeanDegrees),
+                GameLog.Field(
+                    "fall_speed",
+                    output.FallVelocity.magnitude),
+                GameLog.Field(
+                    "topple_seconds",
+                    model != null ? model.ToppleElapsed : 0f),
+                GameLog.Field(
+                    "lunges",
+                    model != null ? model.LungesTaken : 0),
+                GameLog.Field(
+                    "topples",
+                    model != null ? model.Topples : 0),
+                GameLog.Field(
                     "instability",
                     balance != null ? balance.Instability : 0f),
                 GameLog.Field(
                     "capture_point",
-                    balance != null ? balance.Output.CapturePoint.x : 0f),
+                    output.CapturePoint.x),
                 GameLog.Field(
                     "steps_taken",
-                    balance != null && balance.Model != null
-                        ? balance.Model.StepsTaken
-                        : 0));
+                    model != null ? model.StepsTaken : 0));
             balanceState = BalanceState.Falling;
             balanceStateElapsed = 0f;
             fallAmount = 0f;
             finishFallAfterTerminalRiseFrame = false;
+            twitchTimer = 0f;
+            downedInputHeld = false;
         }
 
         private void FinishFall()
@@ -486,21 +766,32 @@ namespace BarPromenade
                     "fall_direction",
                     fallDirection),
                 GameLog.Field(
-                    "fall_seconds",
-                    FallDuration),
+                    "rise_side",
+                    riseSide.ToString()),
                 GameLog.Field(
-                    "down_seconds",
-                    DownDuration),
+                    "rise_seconds",
+                    riseModel != null ? riseModel.Elapsed : 0f),
                 GameLog.Field(
-                    "rising_seconds",
-                    RisingDuration));
+                    "slumps",
+                    riseModel != null ? riseModel.SlumpsTaken : 0));
+            Vector2 handback = riseModel != null
+                ? riseModel.HandbackVelocity
+                : Vector2.zero;
+            risePresentation?.SetRise(PlayerRisePose.None);
             ragdoll?.Cancel();
             fallLock.Restore();
             balanceState = BalanceState.Idle;
             balanceStateElapsed = 0f;
             fallAmount = 0f;
             finishFallAfterTerminalRiseFrame = false;
+            riseModel = null;
             BeginNextEpisode(PostFallGraceDuration);
+            // The wobble at the top is the first push the fresh model
+            // gets: he does not start the next stagger from a standstill.
+            if (handback.sqrMagnitude > 0f)
+            {
+                balance?.InjectPerturbation(handback);
+            }
         }
 
         private void CancelFall(bool keepGrace)
@@ -524,12 +815,14 @@ namespace BarPromenade
                     "delay_before_seconds",
                     GameSessionState
                         .BalanceCheckDelayRemaining));
+            risePresentation?.SetRise(PlayerRisePose.None);
             ragdoll?.Cancel();
             fallLock.Restore();
             balanceState = BalanceState.Idle;
             balanceStateElapsed = 0f;
             fallAmount = 0f;
             finishFallAfterTerminalRiseFrame = false;
+            riseModel = null;
             BeginNextEpisode(
                 keepGrace &&
                 GameSessionState.IntoxicationLevel >
@@ -639,7 +932,7 @@ namespace BarPromenade
             // a presentation that already has the pose.
             float modelLean = balance != null && balance.IsActive
                 ? balance.Output.LeanRollDegrees /
-                  PlayerBalanceModel.MaximumLeanRollDegrees
+                  CameraLeanReferenceDegrees
                 : 0f;
             float legacyLean = playerPresentation is IPlayerBalancePresentation
                 ? 0f
@@ -661,12 +954,68 @@ namespace BarPromenade
                 cameraLean,
                 fallDirection,
                 fallAmount);
+            UpdateCameraFocus();
             IntoxicationRenderState.Set(
                 currentProfile,
                 Time.unscaledTime);
             lensDriver?.Apply(
                 currentProfile.ChromaticAberration,
                 currentProfile.LensDistortion);
+        }
+
+        /// <summary>
+        /// The camera follows the BODY through a fall: the capsule stays
+        /// where he lost his feet while the ragdoll carries him up to a
+        /// stride away, so the focus is pulled to the pelvis while he
+        /// falls and lies, and released as the rise brings the root back
+        /// under him (the pelvis and the root meet at the rise's end).
+        /// </summary>
+        private void UpdateCameraFocus()
+        {
+            if (cameraFollow == null)
+            {
+                return;
+            }
+
+            switch (balanceState)
+            {
+                case BalanceState.Falling:
+                case BalanceState.Down:
+                    if (TryGetPelvis(out Vector3 lying))
+                    {
+                        cameraFollow.SetFocusOverride(lying, 1f);
+                        return;
+                    }
+
+                    break;
+                case BalanceState.Rising:
+                    if (TryGetPelvis(out Vector3 rising))
+                    {
+                        cameraFollow.SetFocusOverride(rising, fallAmount);
+                        return;
+                    }
+
+                    break;
+            }
+
+            cameraFollow.ClearFocusOverride();
+        }
+
+        private bool TryGetPelvis(out Vector3 worldPosition)
+        {
+            Transform pelvis = null;
+            if (ragdoll != null && ragdoll.IsInitialized && ragdoll.PelvisBody != null)
+            {
+                pelvis = ragdoll.PelvisBody.transform;
+            }
+            else if (playerPresentation is Player3DCharacterPresentation hero &&
+                     hero.Registry != null)
+            {
+                pelvis = hero.Registry.Anchors.Pelvis;
+            }
+
+            worldPosition = pelvis != null ? pelvis.position : Vector3.zero;
+            return pelvis != null;
         }
 
         private PlayerFallAnimationPhase GetFallAnimationPhase()
@@ -676,8 +1025,6 @@ namespace BarPromenade
                 case BalanceState.Falling:
                     return PlayerFallAnimationPhase.Falling;
                 case BalanceState.Down:
-                    return PlayerFallAnimationPhase.Down;
-                case BalanceState.RagdollRecovering:
                     return PlayerFallAnimationPhase.Down;
                 case BalanceState.Rising:
                     return PlayerFallAnimationPhase.Rising;
@@ -696,11 +1043,12 @@ namespace BarPromenade
                 case BalanceState.Down:
                     return Mathf.Clamp01(
                         balanceStateElapsed / DownDuration);
-                case BalanceState.RagdollRecovering:
-                    return 1f;
                 case BalanceState.Rising:
-                    return Mathf.Clamp01(
-                        balanceStateElapsed / RisingDuration);
+                    // The rise model scrubs the clip: forward through
+                    // its stages, back a little in a slump.
+                    return riseModel != null
+                        ? riseModel.Output.ClipTime
+                        : Mathf.Clamp01(balanceStateElapsed / RisingDuration);
                 default:
                     return 0f;
             }
@@ -735,6 +1083,7 @@ namespace BarPromenade
 
             cameraFollow?.SetIntoxication(0f);
             cameraFollow?.SetBalanceReaction(0f, 0f, 0f);
+            cameraFollow?.ClearFocusOverride();
             IntoxicationRenderState.Clear();
             lensDriver?.Clear();
             initialized = false;

@@ -93,7 +93,7 @@ namespace BarPromenade.Tests.EditMode
         };
 
         [Test]
-        public void Presentations_ExactlyMatchOrderedRetailOffers()
+        public void Presentations_CoverMenuAndLegacyPatronDrinks()
         {
             IReadOnlyList<BarDrinkPresentation> presentations =
                 BarDrinkPresentationCatalog.Presentations;
@@ -101,10 +101,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 presentations,
                 Has.Count.EqualTo(expectedPresentations.Length));
-            Assert.That(
-                presentations,
-                Has.Count.EqualTo(BarDrinkCatalog.Offers.Count));
-
             var drinkIds = new HashSet<DrinkId>();
             var stableIds = new HashSet<string>(
                 StringComparer.Ordinal);
@@ -114,9 +110,6 @@ namespace BarPromenade.Tests.EditMode
                 BarDrinkPresentation actual = presentations[index];
 
                 AssertPresentation(actual, expected);
-                Assert.That(
-                    actual.DrinkId,
-                    Is.EqualTo(BarDrinkCatalog.Offers[index].DrinkId));
                 Assert.That(drinkIds.Add(actual.DrinkId), Is.True);
                 Assert.That(stableIds.Add(actual.StableId), Is.True);
                 Assert.That(actual.TargetFill, Is.InRange(0.01f, 1f));
@@ -127,6 +120,17 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(drinkIds.Contains(DrinkId.None), Is.False);
             Assert.That(drinkIds.Contains(DrinkId.Moonshine), Is.False);
+            for (int index = 0;
+                 index < BarDrinkCatalog.Offers.Count;
+                 index++)
+            {
+                Assert.That(
+                    drinkIds.Contains(
+                        BarDrinkCatalog.Offers[index].DrinkId),
+                    Is.True,
+                    "Every visible menu drink needs a physical " +
+                    "presentation.");
+            }
         }
 
         [TestCaseSource(nameof(expectedPresentations))]

@@ -6,47 +6,102 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class BarDrinkCatalogTests
     {
-        private static readonly object[] expectedOffers =
+        private static readonly object[] expectedMenuOffers =
         {
-            new object[] { DrinkId.Water, "drink.water", 2 },
-            new object[] { DrinkId.LightBeer, "drink.light_beer", 8 },
-            new object[] { DrinkId.DarkBeer, "drink.dark_beer", 10 },
-            new object[] { DrinkId.WhiteWine, "drink.white_wine", 12 },
-            new object[] { DrinkId.RedWine, "drink.red_wine", 14 },
-            new object[] { DrinkId.Vodka, "drink.vodka", 15 },
             new object[]
             {
-                DrinkId.PepperVodka,
-                "drink.pepper_vodka",
-                18
+                DrinkId.LightBeer,
+                "drink.light_beer",
+                "drink.light_beer.description",
+                8
             },
-            new object[] { DrinkId.CognacVs, "drink.cognac_vs", 20 },
             new object[]
             {
-                DrinkId.CognacVsop,
-                "drink.cognac_vsop",
-                25
+                DrinkId.RedWine,
+                "drink.red_wine",
+                "drink.red_wine.description",
+                14
+            },
+            new object[]
+            {
+                DrinkId.CognacVs,
+                "drink.cognac_vs",
+                "drink.cognac_vs.description",
+                20
+            },
+            new object[]
+            {
+                DrinkId.Vodka,
+                "drink.vodka",
+                "drink.vodka.description",
+                15
             }
         };
 
+        private static readonly object[] expectedPurchaseOffers =
+        {
+            Entry(DrinkId.Water, "drink.water", string.Empty, 2),
+            Entry(
+                DrinkId.LightBeer,
+                "drink.light_beer",
+                "drink.light_beer.description",
+                8),
+            Entry(DrinkId.DarkBeer, "drink.dark_beer", string.Empty, 10),
+            Entry(DrinkId.WhiteWine, "drink.white_wine", string.Empty, 12),
+            Entry(
+                DrinkId.RedWine,
+                "drink.red_wine",
+                "drink.red_wine.description",
+                14),
+            Entry(
+                DrinkId.Vodka,
+                "drink.vodka",
+                "drink.vodka.description",
+                15),
+            Entry(
+                DrinkId.PepperVodka,
+                "drink.pepper_vodka",
+                string.Empty,
+                18),
+            Entry(
+                DrinkId.CognacVs,
+                "drink.cognac_vs",
+                "drink.cognac_vs.description",
+                20),
+            Entry(
+                DrinkId.CognacVsop,
+                "drink.cognac_vsop",
+                string.Empty,
+                25)
+        };
+
         [Test]
-        public void Offers_ExposeExactOrderedRetailCatalog()
+        public void Offers_ExposeExactOrderedVisibleMenu()
         {
             IReadOnlyList<BarDrinkOffer> offers =
                 BarDrinkCatalog.Offers;
 
-            Assert.That(offers, Has.Count.EqualTo(expectedOffers.Length));
+            Assert.That(
+                offers,
+                Has.Count.EqualTo(expectedMenuOffers.Length));
             var uniqueDrinks = new HashSet<DrinkId>();
-            for (int index = 0; index < expectedOffers.Length; index++)
+            for (int index = 0;
+                 index < expectedMenuOffers.Length;
+                 index++)
             {
-                object[] expected = (object[])expectedOffers[index];
+                object[] expected = (object[])expectedMenuOffers[index];
                 DrinkId expectedDrink = (DrinkId)expected[0];
                 string expectedNameKey = (string)expected[1];
-                int expectedPrice = (int)expected[2];
+                string expectedDescriptionKey = (string)expected[2];
+                int expectedPrice = (int)expected[3];
                 BarDrinkOffer offer = offers[index];
 
                 Assert.That(offer.DrinkId, Is.EqualTo(expectedDrink));
                 Assert.That(offer.NameKey, Is.EqualTo(expectedNameKey));
+                Assert.That(
+                    offer.DescriptionKey,
+                    Is.EqualTo(expectedDescriptionKey));
+                Assert.That(offer.DescriptionKey, Is.Not.Empty);
                 Assert.That(offer.Price, Is.EqualTo(expectedPrice));
                 Assert.That(offer.Price, Is.GreaterThan(0));
                 Assert.That(uniqueDrinks.Add(offer.DrinkId), Is.True);
@@ -61,10 +116,11 @@ namespace BarPromenade.Tests.EditMode
                 Is.False);
         }
 
-        [TestCaseSource(nameof(expectedOffers))]
+        [TestCaseSource(nameof(expectedPurchaseOffers))]
         public void Lookup_ReturnsMatchingOffer(
             DrinkId drinkId,
             string expectedNameKey,
+            string expectedDescriptionKey,
             int expectedPrice)
         {
             Assert.That(
@@ -74,6 +130,9 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
             Assert.That(offer.DrinkId, Is.EqualTo(drinkId));
             Assert.That(offer.NameKey, Is.EqualTo(expectedNameKey));
+            Assert.That(
+                offer.DescriptionKey,
+                Is.EqualTo(expectedDescriptionKey));
             Assert.That(offer.Price, Is.EqualTo(expectedPrice));
             Assert.That(
                 BarDrinkCatalog.GetOffer(drinkId),
@@ -93,6 +152,21 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(offer, Is.EqualTo(default(BarDrinkOffer)));
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => BarDrinkCatalog.GetOffer(drinkId));
+        }
+
+        private static object[] Entry(
+            DrinkId drinkId,
+            string nameKey,
+            string descriptionKey,
+            int price)
+        {
+            return new object[]
+            {
+                drinkId,
+                nameKey,
+                descriptionKey,
+                price
+            };
         }
     }
 }

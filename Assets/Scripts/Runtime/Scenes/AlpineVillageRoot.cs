@@ -169,6 +169,7 @@ namespace BarPromenade
                                     PlayerFactory.GroundedRootOffset;
             string spawnSource = "lane_foot";
             bool arrivedAtChartedPlace = false;
+            PlayerDoorArrivalPose? exteriorDoorArrival = null;
 
             if (HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway)
             {
@@ -202,9 +203,12 @@ namespace BarPromenade
                     AlpineVillageArrivalKind.MothersHouseDoor;
             if (arrivedFromMothersHouse)
             {
-                spawnPosition = Plan.MothersHouseReturnPosition +
-                                Vector3.up *
-                                PlayerFactory.GroundedRootOffset;
+                spawnPosition = MothersHouseEntrance.ReturnPosition;
+                exteriorDoorArrival =
+                    PlayerDoorArrivalPose.FromDestinationDoor(
+                        spawnPosition,
+                        MothersHouseEntrance.GetComponent<
+                            PlayerDoorActionTarget>());
                 spawnSource = "mothers_house_return";
             }
 
@@ -242,12 +246,6 @@ namespace BarPromenade
             Vector3 facing = ArrivalToken == AreaArrivalToken.Cableway
                 ? -Plan.Station.Cableway.LineForward
                 : Plan.SpawnForward;
-            if (arrivedFromMothersHouse)
-            {
-                // Face away from the leaf and down the lane. The return is a
-                // completed exit, not another invitation to enter at once.
-                facing = Plan.MothersHouse.Facing;
-            }
             if (arrivedAtChartedPlace)
             {
                 Vector3 towards = arrivalPoint - spawnPosition;
@@ -257,9 +255,18 @@ namespace BarPromenade
                     facing = towards.normalized;
                 }
             }
-            Player.GameObject.transform.rotation = Quaternion.LookRotation(
-                facing,
-                Vector3.up);
+            if (exteriorDoorArrival.HasValue)
+            {
+                exteriorDoorArrival.Value.ApplyTo(
+                    Player.GameObject.transform);
+            }
+            else
+            {
+                Player.GameObject.transform.rotation =
+                    Quaternion.LookRotation(
+                        facing,
+                        Vector3.up);
+            }
 
             CameraFollow = areaCamera.GetComponent<PlayerCameraFollow>();
             if (CameraFollow == null)

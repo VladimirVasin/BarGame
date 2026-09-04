@@ -53,47 +53,62 @@ namespace BarPromenade
             float itemFontSize,
             float minimumFontScale,
             Vector2 itemBoxSize,
+            TextWrappingModes itemWrappingMode,
+            bool enableItemAutoSizing,
             float markerFontSize,
             Vector2 markerBoxSize,
             float markerGapMeters,
-            Color ink)
+            Color ink,
+            FontStyles itemFontStyle)
         {
             ItemFontSize = itemFontSize;
             MinimumFontScale = minimumFontScale;
             ItemBoxSize = itemBoxSize;
+            ItemWrappingMode = itemWrappingMode;
+            EnableItemAutoSizing = enableItemAutoSizing;
             MarkerFontSize = markerFontSize;
             MarkerBoxSize = markerBoxSize;
             MarkerGapMeters = markerGapMeters;
             Ink = ink;
+            ItemFontStyle = itemFontStyle;
         }
 
         public float ItemFontSize { get; }
         public float MinimumFontScale { get; }
         public Vector2 ItemBoxSize { get; }
+        public TextWrappingModes ItemWrappingMode { get; }
+        public bool EnableItemAutoSizing { get; }
         public float MarkerFontSize { get; }
         public Vector2 MarkerBoxSize { get; }
         public float MarkerGapMeters { get; }
         public Color Ink { get; }
+        public FontStyles ItemFontStyle { get; }
 
         public static CounterMenuPageStyle Cafe =>
             new CounterMenuPageStyle(
                 0.15f,
                 0.62f,
                 new Vector2(0.195f, 0.044f),
+                TextWrappingModes.NoWrap,
+                true,
                 0.24f,
                 new Vector2(0.028f, 0.044f),
                 0.016f,
-                new Color(0.055f, 0.040f, 0.025f, 1f));
+                new Color(0.055f, 0.040f, 0.025f, 1f),
+                FontStyles.Normal);
 
         public static CounterMenuPageStyle Bar =>
             new CounterMenuPageStyle(
-                0.12f,
-                0.48f,
-                new Vector2(0.235f, 0.034f),
                 0.20f,
-                new Vector2(0.025f, 0.034f),
-                0.010f,
-                new Color(0.055f, 0.040f, 0.025f, 1f));
+                1f,
+                new Vector2(0.215f, 0.180f),
+                TextWrappingModes.Normal,
+                false,
+                0.18f,
+                new Vector2(0.020f, 0.036f),
+                0.014f,
+                new Color(0.012f, 0.006f, 0.003f, 1f),
+                FontStyles.Bold);
     }
 
     public static class CounterMenuCameraPlan
@@ -194,6 +209,118 @@ namespace BarPromenade
                 forward,
                 cameraUp.normalized);
         }
+
+        /// <summary>
+        /// Frames a wide physical spread from above instead of preserving
+        /// the seated eye's shallow grazing angle. The optical target moves
+        /// slightly toward the reader so perspective gives the near and far
+        /// rows balanced screen space.
+        /// </summary>
+        public static void EvaluateOverhead(
+            Vector3 menuPosition,
+            Vector3 pageNormal,
+            Vector3 pageUp,
+            Vector3 viewerPosition,
+            float focusDistanceMeters,
+            float surfaceFacing,
+            float targetTowardViewerMeters,
+            out Vector3 position,
+            out Quaternion rotation)
+        {
+            if (float.IsNaN(focusDistanceMeters) ||
+                float.IsInfinity(focusDistanceMeters) ||
+                focusDistanceMeters <= 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(focusDistanceMeters),
+                    focusDistanceMeters,
+                    "The menu focus distance must be finite and positive.");
+            }
+
+            if (float.IsNaN(surfaceFacing) ||
+                float.IsInfinity(surfaceFacing) ||
+                surfaceFacing <= 0f || surfaceFacing > 1f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(surfaceFacing),
+                    surfaceFacing,
+                    "The overhead menu surface facing must be in (0, 1].");
+            }
+
+            if (float.IsNaN(targetTowardViewerMeters) ||
+                float.IsInfinity(targetTowardViewerMeters) ||
+                targetTowardViewerMeters < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(targetTowardViewerMeters),
+                    targetTowardViewerMeters,
+                    "The menu target offset must be finite and non-negative.");
+            }
+
+            if (pageNormal.sqrMagnitude < 0.000001f)
+            {
+                throw new ArgumentException(
+                    "The menu view needs a page normal.",
+                    nameof(pageNormal));
+            }
+
+            pageNormal.Normalize();
+            if (Vector3.Dot(pageNormal, Vector3.up) < 0f)
+            {
+                pageNormal = -pageNormal;
+            }
+
+            pageUp = Vector3.ProjectOnPlane(pageUp, pageNormal);
+            if (pageUp.sqrMagnitude < 0.000001f)
+            {
+                throw new ArgumentException(
+                    "The menu view needs a page up axis.",
+                    nameof(pageUp));
+            }
+
+            pageUp.Normalize();
+            Vector3 surfaceCenter = menuPosition +
+                pageNormal * SurfaceLiftMeters;
+            Vector3 towardViewer = viewerPosition - surfaceCenter;
+            if (towardViewer.sqrMagnitude < 0.000001f)
+            {
+                throw new ArgumentException(
+                    "The menu view needs a distinct viewer position.",
+                    nameof(viewerPosition));
+            }
+
+            Vector3 planarTowardViewer = Vector3.ProjectOnPlane(
+                towardViewer,
+                pageNormal);
+            if (planarTowardViewer.sqrMagnitude < 0.000001f)
+            {
+                planarTowardViewer = -pageUp;
+            }
+
+            planarTowardViewer.Normalize();
+            Vector3 target = surfaceCenter +
+                planarTowardViewer * targetTowardViewerMeters;
+            float planarFacing = Mathf.Sqrt(
+                Mathf.Max(0f, 1f - surfaceFacing * surfaceFacing));
+            Vector3 cameraOffsetDirection =
+                pageNormal * surfaceFacing +
+                planarTowardViewer * planarFacing;
+            position = target +
+                cameraOffsetDirection * focusDistanceMeters;
+
+            Vector3 forward = (target - position).normalized;
+            Vector3 cameraUp = Vector3.ProjectOnPlane(
+                Vector3.up,
+                forward);
+            if (cameraUp.sqrMagnitude < 0.000001f)
+            {
+                cameraUp = Vector3.ProjectOnPlane(pageUp, forward);
+            }
+
+            rotation = Quaternion.LookRotation(
+                forward,
+                cameraUp.normalized);
+        }
     }
 
     /// <summary>
@@ -209,13 +336,23 @@ namespace BarPromenade
         private const float TextLiftMeters = 0.0015f;
         private const float FoldEndpointTolerance = 0.0001f;
         private const float OpenLeafAngleDegrees = 5.5f;
-        private const float ClosedLeftLeafAngleDegrees = 174.5f;
         private const float RightLeafAngleDegrees = -5.5f;
+        private const float ClosedLeftLeafAngleDegrees =
+            RightLeafAngleDegrees - 180f;
         private const float CoverThicknessMeters = 0.006f;
         private const float PageThicknessMeters = 0.004f;
         private const float CoverGapMeters = 0.006f;
         private const float PageGapMeters = 0.010f;
         private const float PageCoverClearanceMeters = 0.001f;
+        private const float FoldedLeafStackLiftMeters =
+            CoverThicknessMeters + PageThicknessMeters +
+            PageCoverClearanceMeters;
+        private const float RestingHighlightRailWidthMeters = 0.012f;
+        private const float RestingHighlightRailHeightMeters = 0.004f;
+        private const float RestingHighlightHoverMeters = 0.002f;
+
+        private static readonly Color RestingHighlightColor =
+            new Color(1f, 0.72f, 0.05f, 1f);
 
         public const float FoldDurationSeconds = 0.40f;
 
@@ -233,6 +370,7 @@ namespace BarPromenade
         [SerializeField] private Renderer restingPropRenderer;
         [SerializeField] private Transform leftFoldHinge;
         [SerializeField] private Transform rightFoldHinge;
+        [SerializeField] private Transform restingHighlightRoot;
 
         private Vector3[] rowLocalPositions = Array.Empty<Vector3>();
         private Vector3[] rowRightLocal = Array.Empty<Vector3>();
@@ -245,10 +383,13 @@ namespace BarPromenade
         private CounterMenuPageStyle style;
         private readonly List<Renderer> restingPropRenderers =
             new List<Renderer>();
+        private readonly List<Renderer> restingHighlightRenderers =
+            new List<Renderer>();
         private float foldAmount = 1f;
         private float foldTarget = 1f;
         private bool requestedPropVisible;
         private bool requestedTextVisible;
+        private bool requestedRestingHighlight;
 
         public bool IsConfigured { get; private set; }
         public bool IsPropVisible { get; private set; }
@@ -262,8 +403,14 @@ namespace BarPromenade
         public Renderer RestingPropRenderer => restingPropRenderer;
         public IReadOnlyList<Renderer> RestingPropRenderers =>
             restingPropRenderers;
+        public IReadOnlyList<Renderer> RestingHighlightRenderers =>
+            restingHighlightRenderers;
         public Transform LeftFoldHinge => leftFoldHinge;
         public Transform RightFoldHinge => rightFoldHinge;
+        public Vector3 FocusWorldPosition =>
+            IsConfigured && propRoot != null
+                ? propRoot.TransformPoint(focusLocalPosition)
+                : transform.position;
         public float FoldAmount => foldAmount;
         public float LeftLeafAngleDegrees => Mathf.Lerp(
             OpenLeafAngleDegrees,
@@ -286,6 +433,8 @@ namespace BarPromenade
         public bool IsRestingVisible => requestedPropVisible &&
             foldTarget > 0.5f && restingPropRoot != null &&
             restingPropRoot.gameObject.activeSelf;
+        public bool IsRestingHighlighted => restingHighlightRoot != null &&
+            restingHighlightRoot.gameObject.activeInHierarchy;
 
         public void Initialize(
             Transform configuredPropRoot,
@@ -422,6 +571,31 @@ namespace BarPromenade
             return new Pose(position, rotation);
         }
 
+        public Pose ResolveCameraFocusPose(
+            Vector3 viewerPosition,
+            float focusDistanceMeters,
+            float surfaceFacing,
+            float targetTowardViewerMeters)
+        {
+            if (!IsConfigured || propRoot == null)
+            {
+                throw new InvalidOperationException(
+                    "A menu focus requires a configured physical page.");
+            }
+
+            CounterMenuCameraPlan.EvaluateOverhead(
+                propRoot.TransformPoint(focusLocalPosition),
+                propRoot.TransformDirection(focusNormalLocal),
+                propRoot.TransformDirection(focusUpLocal),
+                viewerPosition,
+                focusDistanceMeters,
+                surfaceFacing,
+                targetTowardViewerMeters,
+                out Vector3 position,
+                out Quaternion rotation);
+            return new Pose(position, rotation);
+        }
+
         public void SetSelection(int selectedIndex, bool confirmed)
         {
             if (!IsConfigured || itemLines.Length == 0)
@@ -438,9 +612,10 @@ namespace BarPromenade
             {
                 if (itemLines[index] != null)
                 {
-                    itemLines[index].fontStyle = index == SelectedIndex
-                        ? FontStyles.Bold
-                        : FontStyles.Normal;
+                    itemLines[index].fontStyle = style.ItemFontStyle |
+                        (index == SelectedIndex
+                            ? FontStyles.Bold
+                            : FontStyles.Normal);
                 }
             }
 
@@ -455,6 +630,7 @@ namespace BarPromenade
         {
             requestedPropVisible = propVisible;
             requestedTextVisible = propVisible && textVisible;
+            requestedRestingHighlight = false;
             if (!propVisible)
             {
                 foldAmount = 1f;
@@ -478,6 +654,7 @@ namespace BarPromenade
         {
             requestedPropVisible = visible;
             requestedTextVisible = false;
+            requestedRestingHighlight = false;
             foldTarget = 1f;
             if (!visible)
             {
@@ -485,6 +662,17 @@ namespace BarPromenade
             }
 
             ApplyFoldPose();
+            RefreshPresentationVisibility();
+        }
+
+        /// <summary>
+        /// Shows a thin yellow perimeter only around the fully closed
+        /// booklet. Callers use the same gaze predicate as the world prompt,
+        /// so the physical affordance cannot survive into the readable view.
+        /// </summary>
+        public void SetRestingHighlight(bool highlighted)
+        {
+            requestedRestingHighlight = highlighted;
             RefreshPresentationVisibility();
         }
 
@@ -683,6 +871,7 @@ namespace BarPromenade
                     coverDepth),
                 coverColor,
                 coverSource);
+            BuildRestingHighlight(coverLeafWidth, coverDepth);
 
             restingPropRenderer = leftCover;
             foldAmount = 1f;
@@ -731,6 +920,81 @@ namespace BarPromenade
             return renderer;
         }
 
+        private void BuildRestingHighlight(
+            float coverLeafWidth,
+            float coverDepth)
+        {
+            var highlight = new GameObject("Resting Menu Highlight");
+            highlight.layer = propRoot.gameObject.layer;
+            restingHighlightRoot = highlight.transform;
+            restingHighlightRoot.SetParent(restingPropRoot, false);
+            restingHighlightRoot.localPosition = Vector3.up *
+                (FoldedLeafStackLiftMeters + CoverThicknessMeters +
+                 RestingHighlightHoverMeters +
+                 RestingHighlightRailHeightMeters * 0.5f);
+            restingHighlightRoot.localRotation = Quaternion.AngleAxis(
+                RightLeafAngleDegrees,
+                Vector3.forward);
+
+            float centreX =
+                (CoverGapMeters + coverLeafWidth) * 0.5f;
+            float halfOuterWidth =
+                (coverLeafWidth + RestingHighlightRailWidthMeters) * 0.5f;
+            float halfOuterDepth =
+                (coverDepth + RestingHighlightRailWidthMeters) * 0.5f;
+            AddRestingHighlightRail(
+                "Resting Menu Highlight Near",
+                new Vector3(centreX, 0f, -halfOuterDepth),
+                new Vector3(
+                    coverLeafWidth +
+                    RestingHighlightRailWidthMeters * 2f,
+                    RestingHighlightRailHeightMeters,
+                    RestingHighlightRailWidthMeters));
+            AddRestingHighlightRail(
+                "Resting Menu Highlight Far",
+                new Vector3(centreX, 0f, halfOuterDepth),
+                new Vector3(
+                    coverLeafWidth +
+                    RestingHighlightRailWidthMeters * 2f,
+                    RestingHighlightRailHeightMeters,
+                    RestingHighlightRailWidthMeters));
+            AddRestingHighlightRail(
+                "Resting Menu Highlight Left",
+                new Vector3(centreX - halfOuterWidth, 0f, 0f),
+                new Vector3(
+                    RestingHighlightRailWidthMeters,
+                    RestingHighlightRailHeightMeters,
+                    coverDepth));
+            AddRestingHighlightRail(
+                "Resting Menu Highlight Right",
+                new Vector3(centreX + halfOuterWidth, 0f, 0f),
+                new Vector3(
+                    RestingHighlightRailWidthMeters,
+                    RestingHighlightRailHeightMeters,
+                    coverDepth));
+            highlight.SetActive(false);
+        }
+
+        private void AddRestingHighlightRail(
+            string objectName,
+            Vector3 localPosition,
+            Vector3 size)
+        {
+            GameObject rail = RuntimePrimitiveFactory.CreateBox(
+                objectName,
+                restingHighlightRoot,
+                localPosition,
+                size,
+                RestingHighlightColor,
+                CityNightResources.EmissiveMaterial,
+                false);
+            rail.layer = propRoot.gameObject.layer;
+            Renderer renderer = rail.GetComponent<Renderer>();
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            restingHighlightRenderers.Add(renderer);
+        }
+
         private Renderer FindRenderer(string nameFragment)
         {
             for (int index = 0; index < propRenderers.Length; index++)
@@ -755,7 +1019,14 @@ namespace BarPromenade
                 return;
             }
 
-            leftFoldHinge.localPosition = Vector3.zero;
+            float easedFold = SmootherStep(foldAmount);
+            // The negative rotation carries the left leaf over the booklet,
+            // never down through the counter. At the closed endpoint the
+            // progressive lift stacks its page and cover strictly above the
+            // stationary right leaf instead of leaving four nearly coplanar
+            // surfaces to z-fight through one another.
+            leftFoldHinge.localPosition = Vector3.up *
+                (FoldedLeafStackLiftMeters * easedFold);
             leftFoldHinge.localRotation = Quaternion.AngleAxis(
                 LeftLeafAngleDegrees,
                 Vector3.forward);
@@ -777,6 +1048,16 @@ namespace BarPromenade
             {
                 restingPropRoot.gameObject.SetActive(
                     requestedPropVisible && !showAuthoredOpen);
+            }
+
+            if (restingHighlightRoot != null)
+            {
+                bool showHighlight = requestedRestingHighlight &&
+                    requestedPropVisible &&
+                    !showAuthoredOpen &&
+                    foldTarget > 0.5f &&
+                    foldAmount >= 1f - FoldEndpointTolerance;
+                restingHighlightRoot.gameObject.SetActive(showHighlight);
             }
 
             IsPropVisible = requestedPropVisible;
@@ -954,10 +1235,11 @@ namespace BarPromenade
             text.fontSize = fontSize;
             text.fontSizeMin = fontSize * style.MinimumFontScale;
             text.fontSizeMax = fontSize;
-            text.enableAutoSizing = true;
+            text.enableAutoSizing = style.EnableItemAutoSizing;
             text.color = style.Ink;
+            text.fontStyle = style.ItemFontStyle;
             text.alignment = TextAlignmentOptions.Center;
-            text.textWrappingMode = TextWrappingModes.NoWrap;
+            text.textWrappingMode = style.ItemWrappingMode;
             text.overflowMode = TextOverflowModes.Truncate;
             text.text = value ?? string.Empty;
             text.rectTransform.sizeDelta = size;

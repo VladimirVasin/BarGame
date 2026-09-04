@@ -4,8 +4,8 @@
 Hero V2 keeps the stable 31-bone compatibility contract, but authors new adult
 proportions, a leaner low-poly body, a UV-driven expression face and one
 production-only Run Action. The script deliberately imports the proven V1
-action authoring helpers instead of copying them: V1 remains byte-for-byte
-unchanged at 37 Actions while V2 extends that bank to 38 with the same socket
+action authoring helpers instead of copying them: V1 remains the compatibility
+source at 40 Actions while V2 extends that bank to 41 with the same socket
 names, FBX axis contract and deterministic export code.
 
 Run with Blender 5.0:
@@ -329,26 +329,42 @@ def draw_face_tile(canvas: PixelCanvas, column: int, top_row: int, expression: s
                 canvas.put(ox + x, oy + y, SKIN_SHADOW)
 
     eye_y = 26
-    if expression == "Watchful":
-        eye_height = 5
-    elif expression == "HalfBlink":
-        eye_height = 2
-    elif expression == "ClosedBlink":
-        eye_height = 0
-    elif expression == "Tense":
-        eye_height = 2
-    else:
-        eye_height = 3
+    eye_heights = {
+        "Watchful": 5,
+        "HalfBlink": 2,
+        "ClosedBlink": 0,
+        "Tense": 2,
+        # The drink's faces: lids that will not stay up, eyes that will
+        # not focus, a jaw that hangs, and the wince of the floor coming.
+        "Drowsy": 1,
+        "Glazed": 3,
+        "Slack": 2,
+        "Grimace": 1,
+    }
+    eye_height = eye_heights.get(expression, 3)
+    dull_eyes = expression in ("Tense", "Grimace", "Drowsy")
 
     # Flat brows and heavy upper lids communicate exhaustion, not pleading.
     if expression == "Tense":
         canvas.line(ox + 13, oy + 20, ox + 27, oy + 22, HAIR, 1)
         canvas.line(ox + 37, oy + 22, ox + 51, oy + 20, HAIR, 1)
+    elif expression == "Grimace":
+        # Knitted: the inner ends drawn down and together.
+        canvas.line(ox + 13, oy + 20, ox + 28, oy + 24, HAIR, 1)
+        canvas.line(ox + 36, oy + 24, ox + 51, oy + 20, HAIR, 1)
+    elif expression == "Drowsy":
+        # Low and flat, almost on the lids.
+        canvas.line(ox + 13, oy + 23, ox + 27, oy + 23, HAIR, 1)
+        canvas.line(ox + 37, oy + 24, ox + 51, oy + 23, HAIR, 1)
+    elif expression == "Slack":
+        # One brow up, the other where it fell: nothing is being held.
+        canvas.line(ox + 13, oy + 19, ox + 27, oy + 20, HAIR, 1)
+        canvas.line(ox + 37, oy + 23, ox + 51, oy + 22, HAIR, 1)
     else:
         canvas.line(ox + 13, oy + 21, ox + 27, oy + 21, HAIR, 1)
         canvas.line(ox + 37, oy + 22, ox + 51, oy + 21, HAIR, 1)
 
-    for center_x, pupil_shift in ((21, 1), (43, 0)):
+    for eye_index, (center_x, pupil_shift) in enumerate(((21, 1), (43, 0))):
         left = center_x - 7
         right = center_x + 7
         if eye_height == 0:
@@ -357,18 +373,42 @@ def draw_face_tile(canvas: PixelCanvas, column: int, top_row: int, expression: s
             continue
         top = eye_y
         bottom = eye_y + eye_height
-        canvas.rect(ox + left, oy + top, ox + right + 1, oy + bottom + 1, EYE_DULL if expression == "Tense" else EYE_WHITE)
+        if expression == "Glazed" and eye_index == 1:
+            # One lid hangs lower than the other.
+            top += 1
+        canvas.rect(ox + left, oy + top, ox + right + 1, oy + bottom + 1, EYE_DULL if dull_eyes else EYE_WHITE)
         canvas.line(ox + left, oy + top, ox + right, oy + top, SKIN_DARK, 1)
+        if expression == "Drowsy":
+            # A heavy upper lid: the shadow sits on the eye itself.
+            canvas.line(ox + left, oy + top - 1, ox + right, oy + top - 1, SKIN_SHADOW, 1)
         if expression == "HalfBlink":
             canvas.line(ox + left, oy + bottom, ox + right, oy + bottom, SKIN_SHADOW)
         else:
             pupil_x = center_x + pupil_shift + (1 if expression == "Watchful" else 0)
+            if expression == "Glazed":
+                # The eyes wander apart: each pupil drifts outward.
+                pupil_x += -1 if eye_index == 0 else 1
             canvas.rect(ox + pupil_x - 1, oy + top + 1, ox + pupil_x + 2, oy + bottom + 1, HAIR)
         canvas.line(ox + left + 1, oy + bottom + 2, ox + right - 1, oy + bottom + 3, UNDER_EYE)
 
     mouth_y = 47
     if expression == "Tense":
         canvas.line(ox + 23, oy + mouth_y, ox + 41, oy + mouth_y, LIP, 2)
+    elif expression == "Grimace":
+        # The corners pulled down, the middle up: a wince.
+        canvas.line(ox + 22, oy + mouth_y + 2, ox + 32, oy + mouth_y - 1, LIP, 2)
+        canvas.line(ox + 32, oy + mouth_y - 1, ox + 42, oy + mouth_y + 2, LIP, 2)
+    elif expression == "Slack":
+        # The jaw hangs: a dark slit of open mouth under the lip.
+        canvas.line(ox + 22, oy + mouth_y - 1, ox + 42, oy + mouth_y - 1, LIP)
+        canvas.rect(ox + 25, oy + mouth_y, ox + 40, oy + mouth_y + 3, SKIN_DARK)
+        canvas.line(ox + 25, oy + mouth_y + 3, ox + 40, oy + mouth_y + 3, LIP)
+    elif expression == "Drowsy":
+        # The mouth has let go at the corners.
+        canvas.line(ox + 22, oy + mouth_y + 1, ox + 28, oy + mouth_y, LIP)
+        canvas.line(ox + 28, oy + mouth_y, ox + 37, oy + mouth_y, LIP)
+        canvas.line(ox + 37, oy + mouth_y, ox + 43, oy + mouth_y + 1, LIP)
+        canvas.line(ox + 25, oy + mouth_y + 2, ox + 40, oy + mouth_y + 2, SKIN_SHADOW)
     else:
         canvas.line(ox + 22, oy + mouth_y, ox + 35, oy + mouth_y, LIP)
         canvas.line(ox + 35, oy + mouth_y, ox + 43, oy + mouth_y + 1, LIP)
@@ -377,9 +417,25 @@ def draw_face_tile(canvas: PixelCanvas, column: int, top_row: int, expression: s
     canvas.put(ox + 44, oy + mouth_y + 1, SKIN_SHADOW)
 
 
+# The atlas cells, in python's top-left rows: the five sober faces the
+# runtime has always had, then the drink's four. Unity reads rows from the
+# bottom, so a python row r is the manifest's row 3 - r.
+FACE_ATLAS_CELLS = (
+    ("Neutral", 0, 0),
+    ("HalfBlink", 1, 0),
+    ("ClosedBlink", 2, 0),
+    ("Watchful", 0, 1),
+    ("Tense", 1, 1),
+    ("Drowsy", 2, 1),
+    ("Glazed", 3, 1),
+    ("Slack", 0, 2),
+    ("Grimace", 1, 2),
+)
+
+
 def build_expression_sheet(atlas: PixelCanvas, path: Path) -> None:
-    sheet = PixelCanvas(ATLAS_CELL_SIZE * 2 * 5, ATLAS_CELL_SIZE * 2)
-    source_cells = ((0, 0), (1, 0), (2, 0), (0, 1), (1, 1))
+    sheet = PixelCanvas(ATLAS_CELL_SIZE * 2 * len(FACE_ATLAS_CELLS), ATLAS_CELL_SIZE * 2)
+    source_cells = tuple((column, row) for _, column, row in FACE_ATLAS_CELLS)
     for destination_index, (source_column, source_row) in enumerate(source_cells):
         for y in range(ATLAS_CELL_SIZE):
             for x in range(ATLAS_CELL_SIZE):
@@ -401,11 +457,8 @@ def build_face_atlas(path: Path, expression_sheet_path: Path) -> str:
     for row in range(ATLAS_ROWS):
         for column in range(ATLAS_COLUMNS):
             draw_face_tile(canvas, column, row, "Neutral")
-    draw_face_tile(canvas, 0, 0, "Neutral")
-    draw_face_tile(canvas, 1, 0, "HalfBlink")
-    draw_face_tile(canvas, 2, 0, "ClosedBlink")
-    draw_face_tile(canvas, 0, 1, "Watchful")
-    draw_face_tile(canvas, 1, 1, "Tense")
+    for expression, column, row in FACE_ATLAS_CELLS:
+        draw_face_tile(canvas, column, row, expression)
     canvas.write_png(path)
     build_expression_sheet(canvas, expression_sheet_path)
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -1744,6 +1797,14 @@ def validate_v2_result(
 ) -> v1.ValidationReport:
     bpy.context.view_layer.update()
     errors: list[str] = []
+    # The fall, the lie and the rise are authored in the V1 generator and
+    # shipped by this one. Its landmark contacts (hands and knees on the
+    # floor at all fours, the low crouch's boots) were fitted to the V1
+    # proportions and float on this rig — known debt the runtime's hand
+    # and boot IK hides. What is held here is what no rig may do: pass a
+    # limb through the floor on any frame, or bend a knee or an elbow the
+    # wrong way.
+    v1.validate_fall_recovery_dense(result, errors)
     records = {record.obj.name: record for record in result.parts}
     if len(records) != len(result.parts):
         errors.append("Export mesh names are not unique")
@@ -2416,11 +2477,12 @@ def write_v2_manifest(
                 "filter_mode": "Point",
                 "sha256": face_atlas_sha256,
                 "cells": [
-                    {"expression": "Neutral", "column": 0, "row": 3},
-                    {"expression": "HalfBlink", "column": 1, "row": 3},
-                    {"expression": "ClosedBlink", "column": 2, "row": 3},
-                    {"expression": "Watchful", "column": 0, "row": 2},
-                    {"expression": "Tense", "column": 1, "row": 2},
+                    {
+                        "expression": expression,
+                        "column": column,
+                        "row": ATLAS_ROWS - 1 - row,
+                    }
+                    for expression, column, row in FACE_ATLAS_CELLS
                 ],
             },
             "texture_bindings": [

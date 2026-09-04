@@ -155,8 +155,8 @@ namespace BarPromenade
             grain.intensity.Override(0.19f);
             grain.response.Override(0.78f);
 
-            RuntimeSceneSetup.AddGaussianDepthOfField(
-                runtimeProfile, 5f, 16f, 1.2f);
+            RuntimeSceneSetup.AddIndoorGaussianDepthOfField(
+                runtimeProfile, 5f, 16f);
             volumeObject
                 .AddComponent<DepthOfFieldSettingsBinder>()
                 .Initialize(runtimeProfile);

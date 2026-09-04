@@ -11,11 +11,13 @@ namespace BarPromenade
     /// It is the bus driver's <c>SeatedArmIk.SolveTwoBone</c> moved here
     /// unchanged in its core — CCD iterations toward the target, one
     /// bend-hint twist, a recovery pass, and an optional hard write of the
-    /// tip rotation — with two additions the legs need: a reach clamp so a
-    /// knee never snaps into the straight-leg singularity, and a blend
+    /// tip rotation — with three additions the legs need: a reach clamp so
+    /// a knee never snaps into the straight-leg singularity, a blend
     /// weight so the solved pose can crossfade with the authored clip
     /// (the bartender's <c>SolveOrdinaryReach</c> idiom: capture, solve,
-    /// Slerp).
+    /// Slerp), and a guard that swings a middle joint found on the wrong
+    /// side of the root-to-target line across to the hint's side — a knee
+    /// never bends backward whatever pose the clip or the ragdoll left.
     ///
     /// Everything is world space on purpose. The imported rigs carry a
     /// <c>100x</c> unit factor on their authoring root, so anything that
@@ -128,6 +130,10 @@ namespace BarPromenade
             // the root lands the tip on the target analytically; the CCD
             // passes that follow start from that answer and only polish.
             RotateJointToward(upper, tip.position, target);
+            // A knee the clip authored backward, or an elbow the ragdoll
+            // left inside out, is on the wrong side of the root-to-target
+            // line here. Swing it across before anything polishes it.
+            EnforceBendSide(upper, lower, tip, target, hintPosition);
 
             for (int iteration = 0; iteration < Iterations; iteration++)
             {
@@ -142,6 +148,19 @@ namespace BarPromenade
             {
                 RotateJointToward(lower, tip.position, target);
                 RotateJointToward(upper, tip.position, target);
+            }
+
+            // The polish can carry a nearly straight joint back across the
+            // line by a hair; check once more and re-aim if it did.
+            if (EnforceBendSide(upper, lower, tip, target, hintPosition))
+            {
+                for (int iteration = 0;
+                     iteration < SidePolishIterations;
+                     iteration++)
+                {
+                    RotateJointToward(lower, tip.position, target);
+                    RotateJointToward(upper, tip.position, target);
+                }
             }
 
             if (writeTipRotation)
@@ -300,6 +319,68 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Puts the middle joint on the hint's side of the root-to-target
+        /// line when it is on the other one. The correction is the swing
+        /// a real knee makes: both bones turn in the bend plane, the
+        /// upper by twice the joint's angular offset and the lower by
+        /// whatever brings the tip back, so the chain lands on its mirror
+        /// image across the line — never a half turn about the line,
+        /// which would roll the whole limb's mesh. The mirror keeps every
+        /// length, so the tip is back on the target when it is done.
+        /// </summary>
+        /// <returns>Whether the joint was moved.</returns>
+        private static bool EnforceBendSide(
+            Transform upper,
+            Transform lower,
+            Transform tip,
+            Vector3 targetPosition,
+            Vector3 hintPosition)
+        {
+            Vector3 root = upper.position;
+            Vector3 axis = targetPosition - root;
+            if (axis.sqrMagnitude < 0.000001f)
+            {
+                return false;
+            }
+
+            axis.Normalize();
+            Vector3 joint = lower.position - root;
+            Vector3 current = Vector3.ProjectOnPlane(joint, axis);
+            Vector3 desired = Vector3.ProjectOnPlane(
+                hintPosition - root,
+                axis);
+            if (current.magnitude < SideEpsilonMetres ||
+                desired.sqrMagnitude < 0.000001f ||
+                Vector3.Dot(current, desired) >= 0f)
+            {
+                return false;
+            }
+
+            // A joint at a right angle to the line has no mirror a swing
+            // in the plane can reach; leave it to the hint's twist.
+            if (Mathf.Abs(Vector3.Dot(joint, axis)) < SideEpsilonMetres)
+            {
+                return false;
+            }
+
+            Vector3 normal = Vector3.Cross(axis, current).normalized;
+            Vector3 lowerBefore = tip.position - lower.position;
+            Vector3 mirroredJoint = joint - current * 2f;
+            Vector3 mirroredLower =
+                lowerBefore - Vector3.ProjectOnPlane(lowerBefore, axis) * 2f;
+            upper.rotation = Quaternion.AngleAxis(
+                                 Vector3.SignedAngle(joint, mirroredJoint, normal),
+                                 normal) *
+                             upper.rotation;
+            Vector3 lowerNow = tip.position - lower.position;
+            lower.rotation = Quaternion.AngleAxis(
+                                 Vector3.SignedAngle(lowerNow, mirroredLower, normal),
+                                 normal) *
+                             lower.rotation;
+            return true;
+        }
+
         private static void RotateJointToward(
             Transform joint,
             Vector3 tipPosition,
@@ -355,5 +436,15 @@ namespace BarPromenade
 
         /// <summary>Middle-joint offset from the root-target line at which the bend hint applies in full.</summary>
         public const float HintFullBendMetres = 0.03f;
+
+        /// <summary>
+        /// Below this offset from the root-target line the joint has no
+        /// side to speak of: the authored idle knee sits a millimetre or
+        /// two off its axis either way, and swinging that would be noise.
+        /// </summary>
+        public const float SideEpsilonMetres = 0.002f;
+
+        /// <summary>Aiming passes after a late side correction.</summary>
+        public const int SidePolishIterations = 2;
     }
 }

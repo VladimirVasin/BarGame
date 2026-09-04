@@ -5,6 +5,35 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    internal readonly struct BarBeerTapRuntimeBinding
+    {
+        public BarBeerTapRuntimeBinding(
+            Transform serverDock,
+            Transform vesselDock,
+            Transform spout,
+            Transform handlePivot,
+            Transform handleGrip,
+            Transform handleRoot,
+            bool isAuthored)
+        {
+            ServerDock = serverDock;
+            VesselDock = vesselDock;
+            Spout = spout;
+            HandlePivot = handlePivot;
+            HandleGrip = handleGrip;
+            HandleRoot = handleRoot;
+            IsAuthored = isAuthored;
+        }
+
+        public Transform ServerDock { get; }
+        public Transform VesselDock { get; }
+        public Transform Spout { get; }
+        public Transform HandlePivot { get; }
+        public Transform HandleGrip { get; }
+        public Transform HandleRoot { get; }
+        public bool IsAuthored { get; }
+    }
+
     /// <summary>
     /// Runtime facade for the generated counter set. Controllers animate this
     /// component and never need to search generated geometry by object name.
@@ -28,6 +57,12 @@ namespace BarPromenade
         [SerializeField] private Transform streamRoot;
         [SerializeField] private Renderer streamRenderer;
         [SerializeField] private BarDrinkMenuPresentation menuPresentation;
+        [SerializeField] private Transform beerTapServerDock;
+        [SerializeField] private Transform beerTapVesselDock;
+        [SerializeField] private Transform beerTapSpout;
+        [SerializeField] private Transform beerTapHandlePivot;
+        [SerializeField] private Transform beerTapHandleGrip;
+        [SerializeField] private Transform beerTapHandleRoot;
 
         private BarDrinkServicePlan plan;
         private ReadOnlyCollection<BarDrinkBottleView> bottlesView;
@@ -43,6 +78,14 @@ namespace BarPromenade
         private float carriedBottleHeight;
         private Renderer[] carriedSourceRenderers = Array.Empty<Renderer>();
         private bool[] carriedSourceRendererStates = Array.Empty<bool>();
+        private Transform beerTapDynamicHandleGrip;
+        private Vector3 beerTapHandleRestLocalPosition;
+        private Quaternion beerTapHandleRestLocalRotation =
+            Quaternion.identity;
+        private Vector3 beerTapHandleGripInPivot;
+        private Quaternion beerTapHandleGripRotationInPivot =
+            Quaternion.identity;
+        private bool hasAuthoredBeerTapPresentation;
         private bool initialized;
 
         public BarDrinkServicePlan Plan => plan;
@@ -90,6 +133,51 @@ namespace BarPromenade
                     CarriedBottleGripCenterWorldPosition,
                     carriedBottleRoot.up).magnitude
                 : 0f;
+        public bool HasBeerTapPresentation =>
+            initialized && beerTapServerDock != null &&
+            beerTapVesselDock != null && beerTapSpout != null &&
+            beerTapHandlePivot != null && beerTapDynamicHandleGrip != null;
+        public bool HasAuthoredBeerTapPresentation =>
+            HasBeerTapPresentation && hasAuthoredBeerTapPresentation;
+        public Transform BeerTapServerDock => beerTapServerDock;
+        public Transform BeerTapVesselDock => beerTapVesselDock;
+        public Transform BeerTapSpout => beerTapSpout;
+        public Transform BeerTapHandlePivot => beerTapHandlePivot;
+        public Transform BeerTapHandleGrip => beerTapHandleGrip;
+        public Transform BeerTapHandleRoot => beerTapHandleRoot;
+        public Pose BeerTapServerWorldPose => ResolveWorldPose(
+            beerTapServerDock,
+            plan != null
+                ? plan.BeerTap.ServerPose
+                : default);
+        public Pose BeerTapVesselWorldPose => ResolveWorldPose(
+            beerTapVesselDock,
+            plan != null
+                ? plan.BeerTap.VesselPose
+                : default);
+        public Pose BeerTapSpoutWorldPose => ResolveWorldPose(
+            beerTapSpout,
+            plan != null
+                ? plan.BeerTap.SpoutPose
+                : default);
+        public Pose BeerTapHandlePivotWorldPose => ResolveWorldPose(
+            beerTapHandlePivot,
+            plan != null
+                ? plan.BeerTap.HandlePivotPose
+                : default);
+        public Vector3 BeerTapSpoutWorldPosition =>
+            BeerTapSpoutWorldPose.position;
+        public Vector3 BeerTapHandleGripWorldPosition =>
+            beerTapDynamicHandleGrip != null
+                ? beerTapDynamicHandleGrip.position
+                : transform.TransformPoint(
+                    plan.BeerTap.HandleGripPose.Position);
+        public Transform BeerTapHandleGripTarget =>
+            beerTapDynamicHandleGrip;
+        public float BeerTapHandlePullAmount { get; private set; }
+        public bool IsBeerTapVesselCarriedByBartender { get; private set; }
+        public float BeerTapVesselHandWeight { get; private set; }
+        public float BeerTapHandleHandWeight { get; private set; }
 
         internal void Initialize(
             BarDrinkServicePlan newPlan,
@@ -97,14 +185,15 @@ namespace BarPromenade
             IReadOnlyList<BarDrinkVesselView> newVessels,
             Transform newStreamRoot,
             Renderer newStreamRenderer,
-            BarDrinkMenuPresentation newMenuPresentation)
+            BarDrinkMenuPresentation newMenuPresentation,
+            BarBeerTapRuntimeBinding beerTapBinding)
         {
             plan = newPlan ?? throw new ArgumentNullException(nameof(newPlan));
             if (newBottles == null ||
                 newBottles.Count != BarDrinkServicePlan.RequiredBottleCount)
             {
                 throw new ArgumentException(
-                    "Service view requires exactly nine bottle views.",
+                    "Service view requires exactly four bottle views.",
                     nameof(newBottles));
             }
 
@@ -181,6 +270,14 @@ namespace BarPromenade
             streamRoot = newStreamRoot;
             streamRenderer = newStreamRenderer;
             menuPresentation = newMenuPresentation;
+            beerTapServerDock = beerTapBinding.ServerDock;
+            beerTapVesselDock = beerTapBinding.VesselDock;
+            beerTapSpout = beerTapBinding.Spout;
+            beerTapHandlePivot = beerTapBinding.HandlePivot;
+            beerTapHandleGrip = beerTapBinding.HandleGrip;
+            beerTapHandleRoot = beerTapBinding.HandleRoot;
+            hasAuthoredBeerTapPresentation = beerTapBinding.IsAuthored;
+            ConfigureBeerTapRuntime();
             streamProperties = new MaterialPropertyBlock();
             initialized = true;
             ResetPresentation();
@@ -537,6 +634,65 @@ namespace BarPromenade
             SetActiveVesselLocalPose(plan.VesselHandPose);
         }
 
+        public bool SetActiveVesselAtBeerTap()
+        {
+            if (activeVessel == null || !HasBeerTapPresentation)
+            {
+                return false;
+            }
+
+            Pose pose = BeerTapVesselWorldPose;
+            activeVessel.SetWorldPose(pose.position, pose.rotation);
+            return true;
+        }
+
+        public void SetBeerTapBartenderContact(
+            bool carryVessel,
+            float vesselHandWeight,
+            float handleHandWeight)
+        {
+            IsBeerTapVesselCarriedByBartender =
+                carryVessel && activeVessel != null;
+            BeerTapVesselHandWeight = Mathf.Clamp01(vesselHandWeight);
+            BeerTapHandleHandWeight = Mathf.Clamp01(handleHandWeight);
+        }
+
+        public bool AlignActiveVesselGripTo(Transform carrier)
+        {
+            return activeVessel != null &&
+                   activeVessel.AlignGripTo(carrier);
+        }
+
+        public float ResolveActiveVesselGripError(Transform carrier)
+        {
+            return activeVessel != null
+                ? activeVessel.ResolveGripError(carrier)
+                : float.PositiveInfinity;
+        }
+
+        public void SetBeerTapHandlePull(float amount)
+        {
+            BeerTapHandlePullAmount = Mathf.Clamp01(amount);
+            ApplyBeerTapHandlePose();
+        }
+
+        public bool SetPourStreamFromBeerTap(
+            Color color,
+            float width = 0.018f)
+        {
+            if (!HasBeerTapPresentation || activeVessel == null)
+            {
+                HidePourStream();
+                return false;
+            }
+
+            return SetPourStream(
+                BeerTapSpoutWorldPosition,
+                activeVessel.PourTargetWorldPosition,
+                color,
+                width);
+        }
+
         public void SetFillProgress(float progress)
         {
             activeVessel?.SetFillProgress(progress);
@@ -646,7 +802,87 @@ namespace BarPromenade
 
             selectedBottle = null;
             activeVessel = null;
+            SetBeerTapBartenderContact(false, 0f, 0f);
+            SetBeerTapHandlePull(0f);
             menuPresentation?.ResetPresentation();
+        }
+
+        private void ConfigureBeerTapRuntime()
+        {
+            if (beerTapHandlePivot == null || beerTapHandleGrip == null)
+            {
+                return;
+            }
+
+            beerTapHandleGripInPivot =
+                beerTapHandlePivot.InverseTransformPoint(
+                    beerTapHandleGrip.position);
+            beerTapHandleGripRotationInPivot = Quaternion.Inverse(
+                beerTapHandlePivot.rotation) *
+                beerTapHandleGrip.rotation;
+            if (beerTapHandleRoot != null)
+            {
+                beerTapHandleRestLocalPosition =
+                    beerTapHandleRoot.localPosition;
+                beerTapHandleRestLocalRotation =
+                    beerTapHandleRoot.localRotation;
+            }
+
+            var gripObject = new GameObject(
+                "Beer Tap Dynamic Handle Grip");
+            beerTapDynamicHandleGrip = gripObject.transform;
+            beerTapDynamicHandleGrip.SetParent(transform, false);
+            ApplyBeerTapHandlePose();
+        }
+
+        private void ApplyBeerTapHandlePose()
+        {
+            if (beerTapHandlePivot == null ||
+                beerTapDynamicHandleGrip == null)
+            {
+                return;
+            }
+
+            Quaternion pull = Quaternion.AngleAxis(
+                BarBeerTapServicePlan.HandlePullDegrees *
+                BeerTapHandlePullAmount,
+                Vector3.right);
+            beerTapDynamicHandleGrip.SetPositionAndRotation(
+                beerTapHandlePivot.TransformPoint(
+                    pull * beerTapHandleGripInPivot),
+                beerTapHandlePivot.rotation * pull *
+                beerTapHandleGripRotationInPivot);
+
+            if (beerTapHandleRoot == null ||
+                beerTapHandleRoot.parent == null)
+            {
+                return;
+            }
+
+            Transform parent = beerTapHandleRoot.parent;
+            Vector3 pivotLocal = parent.InverseTransformPoint(
+                beerTapHandlePivot.position);
+            Vector3 axisLocal = parent.InverseTransformDirection(
+                beerTapHandlePivot.right).normalized;
+            Quaternion rootPull = Quaternion.AngleAxis(
+                BarBeerTapServicePlan.HandlePullDegrees *
+                BeerTapHandlePullAmount,
+                axisLocal);
+            beerTapHandleRoot.localPosition = pivotLocal + rootPull *
+                (beerTapHandleRestLocalPosition - pivotLocal);
+            beerTapHandleRoot.localRotation = rootPull *
+                beerTapHandleRestLocalRotation;
+        }
+
+        private Pose ResolveWorldPose(
+            Transform authored,
+            BarDrinkServicePose fallback)
+        {
+            return authored != null
+                ? new Pose(authored.position, authored.rotation)
+                : new Pose(
+                    transform.TransformPoint(fallback.Position),
+                    transform.rotation * fallback.Rotation);
         }
 
         private void CaptureAndHideCarriedSource()

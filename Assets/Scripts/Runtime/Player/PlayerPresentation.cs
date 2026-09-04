@@ -19,7 +19,8 @@ namespace BarPromenade
             Vector3 rightFootWorldPosition,
             float footPlantAmount,
             float fallAmount,
-            float fallDirection)
+            float fallDirection,
+            Vector3? fallAxis = null)
         {
             StandingHeight = standingHeight;
             BodyRadius = bodyRadius;
@@ -28,9 +29,18 @@ namespace BarPromenade
             RightFootWorldPosition = rightFootWorldPosition;
             FootPlantAmount = Mathf.Clamp01(footPlantAmount);
             FallAmount = Mathf.Clamp01(fallAmount);
-            FallDirection = Mathf.Approximately(fallDirection, 0f)
+            float direction = Mathf.Approximately(fallDirection, 0f)
                 ? 1f
                 : Mathf.Sign(fallDirection);
+            FallDirection = direction;
+            Vector3 axis = fallAxis ??
+                           (facingTransform != null
+                               ? facingTransform.right * direction
+                               : Vector3.right * direction);
+            axis.y = 0f;
+            FallAxis = axis.sqrMagnitude > 0.0001f
+                ? axis.normalized
+                : Vector3.right * direction;
         }
 
         public float StandingHeight { get; }
@@ -41,6 +51,13 @@ namespace BarPromenade
         public float FootPlantAmount { get; }
         public float FallAmount { get; }
         public float FallDirection { get; }
+
+        /// <summary>
+        /// World planar unit direction the body is falling in — the
+        /// topple's own axis when the balance model supplied one, else
+        /// the facing's right signed by <see cref="FallDirection"/>.
+        /// </summary>
+        public Vector3 FallAxis { get; }
     }
 
     /// <summary>

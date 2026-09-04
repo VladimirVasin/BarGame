@@ -166,24 +166,20 @@ namespace BarPromenade
             Vector3 offset = Vector3.zero;
             if (fall > 0.001f)
             {
-                Vector3 fallRight = metrics.FacingTransform != null
-                    ? metrics.FacingTransform.right
-                    : groundTransform.right;
-                fallRight = Vector3.ProjectOnPlane(
-                    fallRight,
+                // The shadow slides the way the body is going — the
+                // topple's own axis, which need not be sideways.
+                Vector3 fallAxis = Vector3.ProjectOnPlane(
+                    metrics.FallAxis,
                     groundNormal);
-                if (fallRight.sqrMagnitude <= 0.0001f)
+                if (fallAxis.sqrMagnitude <= 0.0001f)
                 {
-                    fallRight = Vector3.Cross(
+                    fallAxis = Vector3.Cross(
                         groundNormal,
-                        referenceForward);
+                        referenceForward) * metrics.FallDirection;
                 }
 
-                fallRight.Normalize();
-                offset = fallRight *
-                         metrics.FallDirection *
-                         fall *
-                         0.24f;
+                fallAxis.Normalize();
+                offset = fallAxis * fall * 0.24f;
             }
 
             shadowRoot.SetPositionAndRotation(
