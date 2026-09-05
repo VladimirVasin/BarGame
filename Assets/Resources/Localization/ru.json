@@ -313,6 +313,14 @@
       "value": "E — закрыть холодильник"
     },
     {
+      "key": "home.lockedRoomDoor.prompt",
+      "value": "Открыть дверь"
+    },
+    {
+      "key": "home.lockedRoomDoor.missingKey",
+      "value": "Не помню, где ключ от этой двери."
+    },
+    {
       "key": "home.refrigerator.item.vodka.name",
       "value": "Бутылка водки"
     },
@@ -491,6 +499,86 @@
     {
       "key": "intoxication.stage.very_drunk",
       "value": "В стельку"
+    },
+    {
+      "key": "hero.mutter.unsteady.01",
+      "value": "Ноги ещё держат."
+    },
+    {
+      "key": "hero.mutter.unsteady.02",
+      "value": "Я дойду. Тут недалеко."
+    },
+    {
+      "key": "hero.mutter.unsteady.03",
+      "value": "Правая рука не слушается."
+    },
+    {
+      "key": "hero.mutter.unsteady.04",
+      "value": "Я ещё считаю ступени."
+    },
+    {
+      "key": "hero.mutter.unsteady.05",
+      "value": "Ключи в правом кармане. Я проверил."
+    },
+    {
+      "key": "hero.mutter.unsteady.06",
+      "value": "Надо сесть. Ненадолго."
+    },
+    {
+      "key": "hero.mutter.unsteady.07",
+      "value": "Голова тяжёлая. Это пройдёт."
+    },
+    {
+      "key": "hero.mutter.unsteady.08",
+      "value": "Я сегодня ничего не ел."
+    },
+    {
+      "key": "hero.mutter.unsteady.09",
+      "value": "Спать буду сидя. Так проще."
+    },
+    {
+      "key": "hero.mutter.unsteady.10",
+      "value": "Я не спешу. Меня никто не ждёт."
+    },
+    {
+      "key": "hero.mutter.very_drunk.01",
+      "value": "Ещё держат."
+    },
+    {
+      "key": "hero.mutter.very_drunk.02",
+      "value": "Недалеко. Совсем."
+    },
+    {
+      "key": "hero.mutter.very_drunk.03",
+      "value": "Не слушается."
+    },
+    {
+      "key": "hero.mutter.very_drunk.04",
+      "value": "Сколько тут ступеней."
+    },
+    {
+      "key": "hero.mutter.very_drunk.05",
+      "value": "Ключи. Где ключи."
+    },
+    {
+      "key": "hero.mutter.very_drunk.06",
+      "value": "Сесть. Сейчас сяду."
+    },
+    {
+      "key": "hero.mutter.very_drunk.07",
+      "value": "Ступени. Потом ключи."
+    },
+    {
+      "key": "hero.mutter.very_drunk.08",
+      "value": "Не ел. Не помню."
+    },
+    {
+      "key": "hero.mutter.very_drunk.09",
+      "value": "Никто не ждёт."
+    },
+    {
+      "key": "hero.mutter.very_drunk.10",
+      "value": "Я ещё тут."
     },
     {
       "key": "drinking.none",
@@ -1255,6 +1343,10 @@
     {
       "key": "debug.minigames.unavailable",
       "value": "DEBUG СЕЙЧАС НЕДОСТУПЕН"
+    },
+    {
+      "key": "debug.home.skip_to_city",
+      "value": "Перейти к карте города"
     },
     {
       "key": "debug.day",

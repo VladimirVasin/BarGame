@@ -25,7 +25,8 @@
   build indices `7`, `8`, `9`, `10` and `11`, preserving every previous index.
 - Runtime assembly: `BarPromenade.Runtime`.
 - Player presentation: one modular `Player3DV2.prefab` in all nine gameplay
-  roots, with independent mesh parts, a Generic in-place action set, a visible
+  roots, with independent mesh parts, a torso deforming across pelvis, spine
+  and chest, a Generic in-place action set, a visible
   first-person refrigerator subset, nested full-body seated bar-drinking
   actions, a dedicated portrait, real mesh shadows and an analytic contact
   patch.
@@ -96,16 +97,14 @@ The vertical slice contains:
   sleeping loop, the alarm stops; only then does the six-second,
   two-times-slower opening wake begin, gliding to the sleeper over `2.25 s`
   and easing onward into the active gameplay shot without a cut;
-- one Home-wide F9 debug shortcut, installed even for the locked opening
-  `ClockHold`: an accepted press directly loads `City`, starts the session
-  clock at `06:00` if it is still frozen, prepares the player-home exterior
-  return and sets one scene-crossing map request. `CityGameRoot` waits until
-  that transition is complete, enables map test teleport, opens the map and
-  clears the request. The ordinary Wake and Home -> Stairwell -> City paths
-  remain unchanged;
+- one Home F9 debug window with exact reversible apartment day `1–7`
+  selection and a separate button to enter City at home with its debug map
+  open. Opening, contextual actions, door actions and other modal owners block
+  the window. The city-map button retains the existing one-shot arrival
+  request consumed after the transition;
 - one session-owned in-game clock that starts every fresh run frozen at
   `05:59`, advances only after the successful startup Wake or accepted Home
-  F9 debug skip sets it to `06:00`, and persists through Single-mode scene
+  debug city-map skip sets it to `06:00`, and persists through Single-mode scene
   loads. It advances on unpaused real time at
   `1.0` game minute per real second, so a full `24 h` cycle takes exactly
   `1440` real seconds (`24` minutes), crosses midnight with a zero-based day
@@ -1337,11 +1336,15 @@ The vertical slice contains:
   patron-aligned rim-to-mouth pose, and the inventory portrait. It keeps the
   `1.75 m`,
   31-bone contract with 41 bone-only Actions
-  in 34 mesh parts and 1,984 triangles, but uses adult `7.4946`-head
+  in 34 mesh parts and 2,384 triangles, but uses adult `7.4946`-head
   proportions, an atlas-driven
   five-state face and a full-colour point-filtered clothing atlas. Its open
   olive field jacket has long sleeves and no strap; painted garment and boot
-  construction replace protruding detail meshes;
+  construction replace protruding detail meshes. The continuous shirt and
+  jacket bend over pelvis, lower spine and chest through horizontal mesh rings
+  and at most two adjacent bone weights per vertex; all `41` actions retain
+  their timing and contacts on the same shared 31-bone hierarchy. Runtime
+  torso lean is split `40/60` between spine and chest with complete pose reset;
 - one manual PlayableGraph presentation that damp-blends the in-place
   four-second `Idle`, one-second `Walk` and `0.75 s`/18-frame `Run` actions
   from actual constrained planar speed.
@@ -1430,7 +1433,10 @@ The vertical slice contains:
   reverb/echo returns, with dry UI and exact sober bypass. The shared stereo
   transport wanders, flutters, drops out briefly and chews fragments most
   strongly at `81-100` (`0.4-1 s` episodes every `2-4 s` at maximum), adding no
-  voice, noise bed or world source. `IntoxicationPerceptionRules` maps the
+  voice, noise bed or world source. Native audio smoothing eases strength
+  changes, episode boundaries and repetition seams; sobering fades back to
+  exact dry sound without changing world tempo or visuals.
+  `IntoxicationPerceptionRules` maps the
   alcohol percentage through `A = (exp(4.5 L/100)-1)/(exp(4.5)-1)`; world
   motion follows `1-0.12 A`, bounded at `0.88`. The persistent
   `GameTimeScaleRuntime` owns the shared `0.7 s` unpaused real-time level
@@ -1445,11 +1451,13 @@ The vertical slice contains:
   where the capture point is going he topples — the root goes with him, one or
   two lunges are thrown at where the point will be, the hands go out for the
   ground — and either a lunge catches him or he goes down;
-- a lost topple hands the body to a 13-body runtime ragdoll from the bracing
+- a lost topple hands the body to a 14-body runtime ragdoll from the bracing
   pose, with the motion the topple had (a rotation about the boot under his
   weight), instead of a scripted shove after a clip. The pelvis is tethered to
-  a `0.68 m` sphere around the gameplay root, every ragdoll collider ignores
-  both its peers and the upright `CharacterController`, and the expanded
+  a `0.68 m` sphere around the gameplay root; lower spine and chest have
+  separate bounded joints and share the former torso's `18 kg` as `8/10 kg`.
+  Every ragdoll collider ignores its jointed neighbor and the upright
+  `CharacterController`, while other non-overlapping body pairs collide, and the expanded
   analytic contact shadow slides along the fall's own axis. He lies until the
   ragdoll is still and, drunk, a while longer; then the capsule is brought
   under him and turned to match how he lies, the frozen body blends into the
@@ -1654,7 +1662,7 @@ The vertical slice contains:
   over the freight dock and the brink stays dark. The Ferryman answers on the
   summit from a second repertoire that offers nothing, the road having
   ended. With the
-  test teleport enabled through the City F9 toggle or the Home F9 arrival,
+  test teleport enabled through the City F9 toggle or the Home debug-map arrival,
   every map lot becomes selectable,
   the side panel asks for an explicit confirmation and a
   confirmed target moves the hero to that lot's street-front return point or
@@ -1843,14 +1851,22 @@ The vertical slice contains:
   therefore cannot satisfy the stairwell cat's feeding requirement;
 - one compact validated `10 x 8 x 3.4 m` home interior with explicit main-room
   and bathroom zones, clear entry/main/bathroom paths, six main-room furniture
-  groups and separate toilet, shower and sink footprints; its runtime-built
-  shell, stained surfaces, dirty dishes, bottles, cans,
-  ashtray, worn clothes, newspapers, old radio and personal remnants establish
-  a neglected impoverished old alcoholic's bachelor flat, while the dedicated
-  blocking camera-corner junk keeps the authored camera pocket unreachable;
+  groups and separate toilet, shower and sink footprints. Its shell, furniture,
+  bathroom, balcony and dressing use the deterministic Blender
+  `home_interior_v1` library; Unity retains collision, interaction hierarchies,
+  lighting, cameras and deformable bed support. One closed room occupies the
+  north-central pocket; the bookcase stands at `X[-4.55,-3.90], Z[1.05,2.15]`.
+  Its ordinary day-one interaction reports the missing key without opening,
+  revealing contents or consuming the player's apartment keys;
+- seven calendar apartment appearances through `HomeApartmentDayRules` and
+  `HomeApartmentDayController`: day one is relatively kept, days two through
+  seven accumulate domestic clutter and grime, and later days retain day seven.
+  The exact clamped day can be inspected forward or backward in Home debug.
+  This presentation is separate from alcohol level, acts and future decay;
+  sleep, sobering and scene round trips do not clean it or disable actions;
 - one visually prominent data-first refrigerator fitted into a split kitchen
   counter, with a validated player-width approach created by moving the table
-  deeper into the room; its runtime-built worn enamel cabinet contains a
+  deeper into the room; its Blender-authored enamel cabinet contains a
   hollow liner, three stained shelves, a lower drawer, frost, grime and two
   door bins. Six cavity slots and two door slots form the storage contract;
   the initial occupied slots hold a vodka bottle, one chicken egg and an open
@@ -2141,7 +2157,7 @@ The vertical slice contains:
   activity fixture (beer-pong table, stage) survives purely as layout
   dressing. The bar-visited mechanic is removed entirely: the map route is
   edited only by hand and entering a bar changes nothing about it;
-- an `F9` debug window in `City`, `BarInterior` and `MountainRoad`; opening it closes a
+- an `F9` debug window in `City`, `BarInterior`, `MountainRoad` and `HomeInterior`; opening it closes a
   conflicting map before taking the modal lock; clickable controls or the
   Left/Right arrow keys change the session
   intoxication by `-20/+20`, clamped to `0–100`, without changing the
@@ -2151,9 +2167,11 @@ The vertical slice contains:
   cannot be interrupted through this debug path. In `City` the same window
   also owns a
   persistent scene-local test-teleport toggle consumed by the city map. In
-  `HomeInterior`, where that window is not installed, F9 instead uses
-  `HomeDebugCityMapShortcut` to bypass Home and Stairwell and arrive beside
-  the home with the debug-teleport map already open;
+  `HomeInterior`, day selection also resolves the exact apartment appearance,
+  including backward changes, and a separate button invokes
+  `HomeDebugCityMapShortcut` to arrive beside the home with the debug map open.
+  Opening, contextual actions, door actions and other modal ownership block
+  Home debug; ordinary midnight presentation waits for the same safe state;
 - bounded structured session diagnostics in `debug.log`: stable NDJSON
   envelopes correlate scene transitions, generated-city/bar/home initialization,
   route state, drinking and balance outcomes, plus

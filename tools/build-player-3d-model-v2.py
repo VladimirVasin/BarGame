@@ -38,7 +38,12 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 import atlas_kit  # noqa: E402  (after the sys.path fix)
 
 COMMON_AUTHORING_PATH = REPO_ROOT / "tools" / "player_3d_model_common.py"
-V2_GENERATOR_VERSION = "1.2.0"
+V2_GENERATOR_VERSION = "1.3.0"
+TORSO_SKIN_MESHES = ("GEO_Torso", "CLO_JacketBody")
+TORSO_SKIN_BONES = ("pelvis", "spine", "chest")
+# Metres at the canonical 1.75 m height. Both garment and shirt use exactly
+# the same field, so their layers cannot part company when the waist bends.
+TORSO_BLEND_BANDS = ((0.965, 1.075), (1.135, 1.285))
 RUN_ACTION_NAME = "Run"
 RUN_DURATION_SECONDS = 0.75
 RUN_SOURCE_FRAME_COUNT = 18
@@ -836,6 +841,30 @@ def assign_boot_uv(obj: bpy.types.Object, region_name: str) -> None:
     )
 
 
+def torso_weights(height_m: float) -> dict[str, float]:
+    """Three anatomical regions, with only adjacent bones sharing a vertex."""
+    for index, (lower, upper) in enumerate(TORSO_BLEND_BANDS):
+        if height_m <= lower:
+            return {TORSO_SKIN_BONES[index]: 1.0}
+        if height_m < upper:
+            t = (height_m - lower) / (upper - lower)
+            weight = t * t * (3.0 - 2.0 * t)
+            return {TORSO_SKIN_BONES[index]: 1.0 - weight,
+                    TORSO_SKIN_BONES[index + 1]: weight}
+    return {"chest": 1.0}
+
+
+def subdivide_torso_profiles(profiles: Sequence[Sequence[float]]) -> tuple:
+    """Add bending rings without changing the authored silhouette or UV field."""
+    result = [tuple(profiles[0])]
+    for lower, upper in zip(profiles, profiles[1:]):
+        count = math.ceil((upper[0] - lower[0]) / 0.05)
+        for index in range(1, count + 1):
+            t = index / count
+            result.append(tuple(a + (b - a) * t for a, b in zip(lower, upper)))
+    return tuple(result)
+
+
 class HeroV2Builder(common.ProductionPlayerBuilderBase):
     def __init__(
         self,
@@ -879,7 +908,13 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         return self.result
 
     def build_actions(self) -> None:
-        """Build the shared action bank and append the heavy in-place run."""
+        """Rebuild all actions on the articulated torso; retain contact timing.
+
+        Every action already authors the independent pelvis, lumbar and chest
+        tracks. Binding the longitudinal regions activates those tracks on the
+        actual body; changing their endpoints would displace feet, grips and
+        seated/bed contacts shared with the environment.
+        """
 
         super().build_actions()
         if self.result is None:
@@ -1151,6 +1186,22 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         run_action["bp_gait_style"] = "heavy_weary"
         run_action["bp_landmark_count"] = 8
         run_action["bp_short_flight"] = True
+        for record in self.result.actions.values():
+            record.action["bp_torso_skin"] = "pelvis_spine_chest_v1"
+            record.action["bp_generator_version"] = V2_GENERATOR_VERSION
+
+    def skin_torso(self, obj: bpy.types.Object) -> None:
+        obj.vertex_groups.clear()
+        groups = {name: obj.vertex_groups.new(name=name) for name in TORSO_SKIN_BONES}
+        scale = self.config.height / 1.75
+        for vertex in obj.data.vertices:
+            # add_part stores vertices relative to obj.location. Its matrix is
+            # not dependency-graph evaluated yet during construction.
+            height = (obj.location.z + vertex.co.z) / scale
+            for bone, weight in torso_weights(height).items():
+                groups[bone].add([vertex.index], weight, "REPLACE")
+        obj["bp_skin_contract"] = "pelvis_spine_chest_v1"
+        obj["bp_generator_version"] = V2_GENERATOR_VERSION
 
     def create_root(self, collection: bpy.types.Collection) -> bpy.types.Object:
         root = super().create_root(collection)
@@ -1284,14 +1335,14 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         neck["bp_top_width_m"] = 0.127
         torso_rings = tuple(
             (self.d(z), self.d(rx), self.d(ry), self.d(y_offset))
-            for z, rx, ry, y_offset in (
+            for z, rx, ry, y_offset in subdivide_torso_profiles((
                 (0.878, 0.145, 0.086, 0.012),
                 (0.970, 0.166, 0.094, 0.010),
                 (1.105, 0.170, 0.101, 0.004),
                 (1.250, 0.181, 0.108, -0.004),
                 (1.350, 0.187, 0.109, -0.008),
                 (1.415, 0.170, 0.095, -0.010),
-            )
+            ))
         )
         torso = self.add_part(
             "GEO_Torso",
@@ -1300,6 +1351,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         )
         torso["bp_waist_half_width_m"] = 0.166
         torso["bp_chest_half_width_m"] = 0.187
+        self.skin_torso(torso)
         pelvis_rings = tuple(
             (self.d(z), self.d(rx), self.d(ry), self.d(y_offset))
             for z, rx, ry, y_offset in (
@@ -1408,7 +1460,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         # The field jacket stays nearly parallel from hem through chest; only
         # the short top surface slopes into a narrow integrated collar.  This
         # avoids the old inverted-triangle/superhero torso read.
-        profiles = (
+        profiles = subdivide_torso_profiles((
             (0.805, 0.168, 0.104, 0.017, 0.000),
             (0.895, 0.169, 0.110, 0.014, 0.000),
             (0.970, 0.170, 0.114, 0.010, 0.000),
@@ -1419,7 +1471,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
             # The final ring is the actual open neckline, not a raised tube.
             # Its short shoulder plane meets the lowered head/neck seam.
             (1.477, 0.088, 0.071, -0.014, 0.000),
-        )
+        ))
         sides = 12
         vertices: list[Vector] = []
         for base_z, radius_x, radius_y, y_offset, lift in profiles:
@@ -1456,6 +1508,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         jacket["bp_shoulder_slope_height_m"] = 0.025
         jacket["bp_yoke_rise_m"] = 0.050
         assign_jacket_body_uv(jacket)
+        self.skin_torso(jacket)
 
         for side in ("L", "R"):
             anatomical = "Left" if side == "L" else "Right"
@@ -1995,7 +2048,24 @@ def validate_v2_result(
         if len(armature_modifiers) != 1 or armature_modifiers[0].object is not result.rig:
             errors.append(f"{obj.name} needs one Hero V2 armature modifier")
         group = obj.vertex_groups.get(record.bone)
-        if group is None:
+        if obj.name in TORSO_SKIN_MESHES:
+            groups = {group.index: group.name for group in obj.vertex_groups}
+            used = set()
+            blended = 0
+            for vertex in mesh.vertices:
+                actual = {groups[item.group]: item.weight for item in vertex.groups}
+                height = (obj.matrix_local @ vertex.co).z / (config.height / 1.75)
+                expected = torso_weights(height)
+                if (set(actual) != set(expected) or
+                        any(abs(actual[name] - weight) > 1e-5
+                            for name, weight in expected.items())):
+                    errors.append(f"{obj.name} vertex {vertex.index} lost its torso skin weights")
+                    break
+                used.update(actual)
+                blended += len(actual) == 2
+            if used != set(TORSO_SKIN_BONES) or blended < 20:
+                errors.append(f"{obj.name} must articulate all three torso regions with blended rings")
+        elif group is None:
             errors.append(f"{obj.name} has no rigid {record.bone} group")
         else:
             for vertex in mesh.vertices:
@@ -2223,7 +2293,7 @@ def content_signature(
 
     Blender's binary writers may include session-specific bookkeeping.  This
     signature instead covers the data that determines the imported character:
-    mesh topology and UV0, rigid weights, object transforms, skeleton and all
+    mesh topology and UV0, skin weights, object transforms, skeleton and all
     bone animation keys.  Two clean generator runs must therefore publish the
     same value even when the container file bytes differ.
     """
@@ -2458,6 +2528,16 @@ def write_v2_manifest(
             "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
             "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
             "runtime_integrated": True,
+            "torso_skin": {
+                "contract": "pelvis_spine_chest_v1",
+                "meshes": list(TORSO_SKIN_MESHES),
+                "bones": list(TORSO_SKIN_BONES),
+                "maximum_influences": 2,
+                "blend_bands_m": [list(band) for band in TORSO_BLEND_BANDS],
+                "maximum_ring_gap_m": 0.05,
+                "action_count": len(result.actions),
+                "preserves_authored_contacts": True,
+            },
             "content_signature_sha256": content_signature_sha256,
             "material_palette": {
                 "MAT_FaceAtlas": "FFFFFF",

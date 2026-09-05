@@ -257,6 +257,9 @@ namespace BarPromenade
         public const float HeadLiftNeckShare = 0.4f;
         public const float HeadLiftHeadShare = 0.6f;
 
+        /// <summary>The lower back shares the torso's additive bend with the chest.</summary>
+        public const float SpineBendShare = 0.4f;
+
         private static readonly Player3DProceduralLayerInput StandingRiseInput =
             new Player3DProceduralLayerInput(
                 true,
@@ -276,7 +279,7 @@ namespace BarPromenade
 
         private readonly Leg[] legs = { new Leg(), new Leg() };
         private readonly Arm[] arms = { new Arm(), new Arm() };
-        private readonly BoneLocalPose[] basePoses = new BoneLocalPose[16];
+        private readonly BoneLocalPose[] basePoses = new BoneLocalPose[17];
         private readonly FootGroundSample[] samples =
             { FootGroundSample.None, FootGroundSample.None };
         private readonly float[] plants = { 1f, 1f };
@@ -284,6 +287,7 @@ namespace BarPromenade
         private Player3DAssetRegistry registry;
         private Transform actorRoot;
         private Transform pelvis;
+        private Transform spine;
         private Transform chest;
         private Transform leftUpperArm;
         private Transform rightUpperArm;
@@ -372,6 +376,7 @@ namespace BarPromenade
             registry = assetRegistry;
             actorRoot = actorFacingTransform;
             pelvis = pelvisBone;
+            spine = assetRegistry != null ? assetRegistry.Anchors.Spine : null;
             chest = chestBone;
             leftUpperArm = leftUpperArmBone;
             rightUpperArm = rightUpperArmBone;
@@ -1004,11 +1009,15 @@ namespace BarPromenade
             // the forward pitch is the negative turn.
             RotateBone(pelvis, Vector3.forward, input.PelvisRollDegrees);
             RotateBone(pelvis, Vector3.right, -input.PelvisPitchDegrees);
-            RotateBone(chest, Vector3.forward, input.ChestRollDegrees);
-            // The chest shares the spine chain's axes, so its forward
-            // pitch is the same negative turn about local right as the
-            // pelvis's (pinned by a probe in PlayerBalancePlayModeTests).
-            RotateBone(chest, Vector3.right, -input.ChestPitchDegrees);
+            // Spread the same total bend across the lower back and ribcage.
+            // Pedestrians with no registered spine keep their original
+            // single-chest presentation. Both spine bones share the pelvis's
+            // imported local-axis convention.
+            float lowerShare = spine != null ? SpineBendShare : 0f;
+            RotateBone(spine, Vector3.forward, input.ChestRollDegrees * lowerShare);
+            RotateBone(spine, Vector3.right, -input.ChestPitchDegrees * lowerShare);
+            RotateBone(chest, Vector3.forward, input.ChestRollDegrees * (1f - lowerShare));
+            RotateBone(chest, Vector3.right, -input.ChestPitchDegrees * (1f - lowerShare));
 
             // The arms swing in the actor's frame, never the bone's. An
             // imported upper-arm bone's local axes sit at whatever roll
@@ -1532,6 +1541,7 @@ namespace BarPromenade
             basePoses[13] = new BoneLocalPose(arms[1].Hand);
             basePoses[14] = new BoneLocalPose(neck);
             basePoses[15] = new BoneLocalPose(head);
+            basePoses[16] = new BoneLocalPose(spine);
             baseCaptured = true;
         }
 

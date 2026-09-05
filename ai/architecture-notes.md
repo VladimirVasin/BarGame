@@ -20,7 +20,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   saturation and tape-chewing episodes (`0.4-1 s`, every `2-4 s` at maximum),
   while preserving spatial relationships. The effect transforms existing
   audio only: no generated hiss, voice, new sound source or in-fiction
-  explanation. At sober it bypasses exactly, with no persistent delay.
+  explanation. The explicit follow-up correction on `2026-09-05` adds
+  native audio-only smoothing: two cascaded `0.22 s` poles ease changes of
+  strength, and a full-episode quintic attack/release softens every chewing
+  event. Repetition seams crossfade, and the repeated cursor integrates its
+  speed so a changed strength cannot reposition already-travelled playback.
+  Returning to sober fades out before exact bypass, with no persistent delay.
+  Episode length and spacing, the host's shared level smoothing, world tempo
+  and visuals remain unchanged; `tools/audio-vhs/README.md` owns the DSP details.
   Source and native validation live in `tools/audio-vhs`; the packaged
   Windows x86_64 plugin is
   `Assets/Plugins/AudioVhs/x86_64/AudioPluginIntoxicationVhs.dll`.
@@ -316,7 +323,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   visible refrigerator arm, nested full-body seated bar-drinking actions,
   dedicated 3D portrait, real mesh shadows and
   analytic contact patch are the active player presentation. A runtime-composed
-  13-body companion ragdoll temporarily owns those same bones during failed
+  14-body companion ragdoll temporarily owns those same bones during failed
   balance falls; no alternate hero or renderer swap is used.
 - **Accepted — The Kettle Hat boil is a declared per-archetype effect, not a
   clip and not a bone:** the kettle walker's lid trembles and vents and his
@@ -383,7 +390,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Amended 2026-09-04 by explicit user request, which overturns the
   "without increasing polygon density" clause above for seven designs: the
   measured standard for an ordinary adult is now Hero V2's anatomy, not its
-  bone list alone. The hero is `1,984` triangles and the mountain-cafe four
+  bone list alone. At that decision the hero had `1,984` triangles and the mountain-cafe four
   were the only NPCs built to the same body; the rest carried a
   twelve-triangle tapered box for the whole trunk, another for the pelvis
   and a third for each hand, with no ears and no separately drawn thigh.
@@ -1904,6 +1911,69 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `Ps1CompositeRendererFeature` averages the frame to `640x360` and quantizes
   to RGB555 *before* UI is drawn, so a panel in the world would be crushed
   while this one stays sharp.
+- **Accepted and implemented 2026-09-05 — the drunk hero mutters over his own
+  head, and this knowingly breaks the two-channel split above:** past the
+  balance threshold he says short lines about himself on a long timer, and the
+  user lifted the story bible's §16.3 and §7 «никогда о себе» for that one
+  channel (registry row §6, `2026-09-05`; the banned words, reflection,
+  repentance and self-irony are NOT lifted, and a test over both catalogs
+  fails the build if a line reaches for any of them). The line goes over his
+  head rather than into the prompt panel even though he is the one talking:
+  the panel is where somebody ANSWERS him, and a mutter with no addressee put
+  there would read as a reply to nobody — and it would also fight the «E —
+  open» prompt for the same rect. Seven decisions worth keeping.
+  (1) HIS OWN VIEW, on a child object of `IntoxicationStatusController`. Seven
+  of the nine roots that build the hero have no bubble view at all, so
+  borrowing the City's would leave him mute in most of the game; a view of his
+  own also means the eviction ladder can never trade his line against a
+  quarrel in the park. It costs one voice: `NpcSpeechVoice.VoiceCount` is now
+  `Capacity + 2`. (2) NO ROOT CHANGED. All nine roots add the status
+  controller, the prompt view and the HUD to the same `ui` object, so the
+  controller raises the muttering itself, exactly as it already raises
+  `IntoxicationLensVolumeDriver`. (3) THE GATE IS THE MOTOR'S OWN INPUT plus
+  the modal lock plus `Player3DHeadVisibility.IsHeadDrawn`. The lock alone
+  covers the prologue, the pause, the map, the inventory, the journal, every
+  minigame and the shop; the motor covers every seat, door, transition and the
+  bus (which disables the component rather than the flag); and the head test
+  covers all five first-person views without the presenter knowing any of them
+  by name — nothing hangs over a head that is not being drawn. It deliberately
+  does NOT gate on `FixedPoseActive` the way `AdvanceVertigo` does: a fixed
+  camera holds for whole rooms in the apartment and the stairwell, and those
+  are exactly the rooms a drunk man mutters in. A gate closing mid-line
+  dismisses it; a truncated line is never resumed. (4) THE SLUR IS APPLIED
+  ONCE PER LINE, BEFORE DELIVERY. The typewriter reveals a prefix of the
+  string and the panel is measured from the whole of it, so text that changed
+  under either would rewrite letters already on screen. At amount zero
+  `HeroMutterSlur.Apply` returns the input STRING ITSELF, and its length bound
+  holds by construction rather than by a trim, because a trim could leave a
+  bare full stop. (5) THE LETTERS FLY APART ON THE LAST STAGE ONLY.
+  `MutterScatterAmount` is a new keyframe shape — exactly zero through `80`,
+  `0 → 1` across `81..100` — where `MutterSlurAmount` shares the dolly zoom's
+  gate and rises steeply from `61`. Which pool a line came from is latched
+  when it opens, so crossing eighty mid-line cannot hand a two-row line to a
+  one-row layout. (6) PER-GLYPH `GUI.Label`, NOT `Font.GetCharacterInfo`. The
+  interface font is dynamic; `GetCharacterInfo` needs
+  `RequestCharactersInTexture` and its UVs are invalidated whenever the atlas
+  repacks, which any other panel in the same frame can cause — a glyph-swap
+  path with no precedent in this repo, where `CalcSize` is the only text
+  measurement the whole UI uses. Advances come from PREFIX widths of the whole
+  line measured once, so kerning is the font's own; each glyph is snapped to
+  whole pixels and clamped inside the canvas, because IMGUI does not clip to
+  it and a drifting letter would otherwise draw in the letterbox. **The panel
+  does not follow them:** it stays the size it was measured at and the letters
+  leave it. A box that grew to chase them would put the eye on the box. (7)
+  THE VOICE DOES NOT DEGRADE, THE JITTER DOES. He is the ninth entry in
+  `NpcVoiceCatalog` and the only one who is not an NPC — quietest in the table,
+  because his own bubble is measured against himself as the listener and so
+  never fades. Fundamental, timbre and noise are baked into the refcounted
+  clip bank, so a voice that degraded in those would need a clip per degree;
+  `JitterCents` is applied at play time, so that is the one knob the mutter
+  spends (`+26 ¢` at full slur). The rest of his drunkenness is heard through
+  the slurred letters themselves, since a repeated vowel plays one note over
+  and over. `ResolveOrdinal`'s fallback hash now spans
+  `FallbackVoiceCount = Count - 1` with him last: without that, a future
+  speaking NPC would have a one-in-nine chance of being handed the hero's own
+  voice, and the only symptom would be a stranger who sounds like him.
 - **Accepted — the chess lamp's wire crosses the set rather than running along
   it:** the obvious span is along the line of the two tables, one lamp over
   each board. The park's own geometry refuses it. Trees are planted on an 8x8
@@ -2316,9 +2386,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Editor Play pins its start scene to `MainMenu`; the exact temporary
   `InitTestScene{GUID}` bootstrap used by Unity Test Framework suppresses that
   override for PlayMode tests and restores it after returning to Edit Mode.
-- **Accepted — One-shot Home F9 entry to the City debug map:**
-  `HomeInteriorRoot` always installs `HomeDebugCityMapShortcut`, including for
-  the locked opening `ClockHold`. An accepted F9 disables the current motor,
+- **Accepted — Home F9 window and one-shot entry to the City debug map:**
+  `HomeInteriorRoot` installs `MinigameDebugWindow.BindHome`; it is the sole
+  F9 owner. Opening, contextual actions, door actions and other modal ownership
+  block it. Direct day buttons select exact apartment states `1–7` in both
+  directions while retaining `HH:MM`, running state and needs. A separate
+  localized button invokes `HomeDebugCityMapShortcut`, which disables the motor,
   directly requests `City`, starts the session clock from `06:00` if it is
   still frozen, prepares `CityReturnKind.PlayerHome` and sets
   `DebugCityMapOnArrivalRequested`; a rejected or duplicate transition does
@@ -2340,7 +2413,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   between Single-mode scene loads. `BeginNewGame` restores all of those values
   together with route, visits, wallet, drinking and balance state.
 - **Accepted — Wake-started scaled session clock:** `GameTimeState` resets to
-  frozen `05:59`. A successful startup Wake or accepted Home F9 debug skip
+  frozen `05:59`. A successful startup Wake or accepted Home debug city-map skip
   atomically moves it to `06:00` and starts it; later bed interactions do not
   reset or pause it.
   `GameTimeRuntime` persists across Single-mode loads and advances through
@@ -3188,6 +3261,50 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the player from the apartment into `StairwellInterior`; only the stairwell's
   street door sets the home return kind and restores the matching city
   approach, without altering route, visit, cash or drinking progress.
+- **Accepted — Blender-authored starting apartment, 2026-09-05:**
+  `home_interior_v1` is generated by `tools/build-home-interior-3d-model.py`
+  into `Assets/Home/Interior/Models/HomeInterior3D.fbx` plus its JSON manifest.
+  `HomeInteriorModelAssetSetup` builds
+  `Resources/Home/HomeInteriorModels.asset`; `HomeAuthoredVisualFactory`
+  resolves named imported parts into the existing runtime hierarchy. Large
+  forms retain authored metre dimensions, while only explicitly declared
+  thin hardware profiles permit parameterized fitting. Imported geometry owns
+  visible shape, not colliders, Lights, cameras or gameplay components.
+  Existing plans keep collision, contacts, routes and contextual-action
+  ownership; the bed keeps its live deformation contract. The bookcase moves
+  to `X[-4.55,-3.90], Z[1.05,2.15]` on the west wall between bed and kitchen,
+  leaving the locked-room pocket and balcony route clear.
+  `HomeApartmentDressing` owns visual day groups, and
+  `HomeApartmentDayController` reads `HomeApartmentDayRules` at construction
+  and safe interaction boundaries, including exact reverse debug selection.
+- **Accepted architecture exception — 2026-09-05, explicit user request —
+  the existing locked room is interactable from day one:** the story bible's
+  §11 rule withholding its prompt until Act III is lifted only for one ordinary
+  attempt to open the same planned room. The door stays closed, including in
+  all seven apartment appearances, and only reports
+  `home.lockedRoomDoor.missingKey`: «Не помню, где ключ от этой двери.» The
+  ordinary apartment keys cannot open it. There is no second additional room,
+  key item, search, quest, interior reveal, sound from inside or crime clue;
+  the future Act III removal remains separate. The bookcase on the west wall
+  leaves the north-central room pocket clear. The accepted registry row in
+  story §6 replaces the earlier door-count acceptance check with a test that
+  the interaction reveals no fact about the room's contents.
+- **Accepted architecture exception — 2026-09-05, explicit user request —
+  seven calendar appearances of the apartment:** day `1` reads as a modest,
+  old but relatively kept home; days `2–7` accumulate specific everyday
+  neglect, reaching extreme filth and clutter on day `7` and retaining that
+  appearance afterwards. This is a separate presentation of domestic decline,
+  not the story's act-driven `0–5` level, current intoxication, or the future
+  irreversible decay quantity that grows from drinking. It does not advance
+  acts, end the game, disable household interactions or alter cat feeding.
+  Day selection resolves the exact clamped calendar state: debug `7 -> 1`
+  restores the day-one presentation, while ordinary days progress forward.
+  No high-water mark may prevent that explicit debug inspection. Sleep,
+  sobering and a scene round trip do not clean the apartment. Light sources,
+  protected circulation, interaction contacts and fixed-camera readability
+  remain valid in every state; no guests, readable clues, flies, blood or new
+  supernatural effects are introduced. The corresponding story §6 row and
+  art §7 define the accepted scope.
 - **Accepted — Data-first interactive Home refrigerator:** The refrigerator is
   derived from the kitchen footprint as its own validated plan instead of
   remaining an indistinct cube embedded in the counter. The counter is split
@@ -4654,13 +4771,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Parameters interpolate linearly between the 20-point boundaries instead of
   jumping only when a name changes:
 
-  | Range and stage | Speed | 3D bone sway | Camera roll | Vignette | Ghost | Warp | Dolly |
-  | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-  | `1–20` Light Buzz | `1.00` | `0.5°` | `0°` | `0.03` | `0 px` | `0` | `0` |
-  | `21–40` Tipsy | `0.97` | `2°` | `0.15°` | `0.06` | `0.5 px` | `0.0005` | `0` |
-  | `41–60` Drunk | `0.92` | `4°` | `0.6°` | `0.12` | `1 px` | `0.0025` | `0` |
-  | `61–80` Unsteady | `0.82` | `7°` | `1.5°` | `0.20` | `2 px` | `0.009` | `0.35` |
-  | `81–100` Very Drunk | `0.70` | `10°` | `2.5°` | `0.28` | `3 px` | `0.015` | `1.0` |
+  | Range and stage | Speed | 3D bone sway | Camera roll | Vignette | Ghost | Warp | Dolly | Vertigo |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+  | `1–20` Light Buzz | `1.00` | `0.5°` | `0°` | `0.03` | `0 px` | `0` | `0` | `0` |
+  | `21–40` Tipsy | `0.97` | `2°` | `0.15°` | `0.06` | `0.5 px` | `0.0005` | `0` | `0` |
+  | `41–60` Drunk | `0.92` | `4°` | `0.6°` | `0.12` | `1 px` | `0.0025` | `0` | `0` |
+  | `61–80` Unsteady | `0.82` | `7°` | `1.5°` | `0.20` | `2 px` | `0.009` | `0.35` | `0.35` |
+  | `81–100` Very Drunk | `0.70` | `10°` | `2.5°` | `0.28` | `3 px` | `0.015` | `1.0` | `1.0` |
 
   Values shown are each range's upper-bound profile; the lower bound continues
   from the preceding row. Warmth rises to `0.10` and exposure pulse to `0.08`
@@ -4969,6 +5086,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   entries remain the historical record of the staged promotion. Hero V2's
   visible design, its `41` Actions and the independent pedestrian bank of `37`
   Actions do not change, and this removal adds no world fact or lore.
+- **Accepted and implemented 2026-09-05 — the hero's back deforms across
+  pelvis, lower spine and chest:** the user's segmented-torso request uses the
+  existing `pelvis -> spine -> chest` chain, preserving the shared 31-bone
+  Generic Avatar, six sockets and NPC compatibility. `GEO_Torso` and
+  `CLO_JacketBody` remain continuous meshes with horizontal rings and smooth
+  adjacent weights, at most two bones per vertex; other parts remain rigid.
+  The regenerated hero has `34` meshes / `2,384` triangles and the same `41`
+  actions with independent spine/chest channels, timings, contacts and seams.
+  The registry stores an explicit `Spine` anchor; the representative `chest`
+  mesh binding remains the gameplay anchor. Runtime lean is distributed
+  `40/60` between spine and chest with both included in capture/restore.
+  The ragdoll gains a lower-spine body: `8 kg` there and `10 kg` at the chest
+  retain the former `18 kg` torso mass, while fitted adjacent boxes and two
+  bounded joints articulate the back throughout fall and recovery. This
+  supersedes the rigid torso skin and 13-body count, without changing hero
+  silhouette, costume, contextual ownership or world meaning.
 - **Accepted and implemented 2026-09-03 — the drunk hero is a continuous
   balance model, not a scheduled check; feet are solved onto the ground:** the
   modal arrow challenge (`BalanceChallengeModel`, `BalanceCheckView`, its
@@ -5084,6 +5217,59 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Seeded from the city seed; `ReseedDollyZoom` is the test seam, and
   `IntoxicationDollyZoomCapturePlayModeTests` writes twelve seconds of the
   city's own camera at level 100 to `Captures/DollyZoom` for the eye.
+- **Accepted and implemented 2026-09-05 — the vertigo whirlpool is wound
+  around the HERO, not around the middle of the screen:** every drunk
+  distortion until now measured itself from `uv - 0.5`. This one takes a
+  centre. `IntoxicationProfile.VertigoStrength` shares the dolly zoom's gate
+  and curve exactly (the "Vertigo" column above), and the effect splits into
+  two things on two clocks: the disc over his own body always floats a couple
+  of internal pixels once he is past the threshold, while the water around it
+  breathes in attacks. `IntoxicationVertigoModel` is the dolly zoom's
+  oscillator with longer legs (`4.5–9 s` at the threshold down to `1.8–4.2 s`
+  at 100, peak hold `0.18..0.5×` the out leg, rest hold `0.4..1.2×` the back
+  leg, reach `0.72..1×` the strength, direction drawn 50/50) because a
+  whirlpool takes seconds to spin up and one that never let go would be a
+  state rather than an episode; it reuses `IntoxicationDollyZoomModel.Ease`
+  rather than copying the curve, and rest is bit-exactly zero. Four decisions
+  carry the geometry. (1) THE EYE IS PROJECTED IN THE RENDERER FEATURE, not in
+  gameplay: `IntoxicationStatusController` publishes the pelvis lifted by
+  `FocusOverrideHeight` as a WORLD point, and `AddRenderPasses` — which runs
+  after every `LateUpdate`, so the camera pose is final — projects it, so the
+  eye cannot lag a frame behind an orbiting camera. It fades out by the frame's
+  edge (full inside `0.42`, nothing at `0.5`) and dies behind the lens, and an
+  `excluded` camera (inventory preview, reflection probe) gets no whirlpool at
+  all. (2) THE PROFILE IS NORMALISED ON THE FRAME CORNER FARTHEST FROM THE
+  EYE, computed in the shader from centre and aspect, so 16:9, the 4:3 gate and
+  an off-centre eye all reach the full `44°` at their own corner; normalising
+  on the inscribed circle instead would push the whole outer ring off the
+  source image. `t·t·(3-2t)` over `[0.28, corner]` in aspect-corrected frame
+  heights leaves the disc at exactly zero with zero slope at its rim — `0.28`
+  is `0.72 m` at the exterior arm, his torso and head, and needs no FOV term
+  because the dolly zoom holds his apparent size invariant. (3) THE RADIUS IS
+  SHORTENED TO THE FRAME'S OWN BOUNDARY along the twisted direction rather
+  than left to `sampler_LinearClamp`: the degeneracy then points into the
+  vortex, which is the look, instead of smearing an axis-aligned edge. A
+  `0.08` inward pull on top makes it read as a funnel. (4) THE VIGNETTE AND THE
+  WAVE KEEP READING THE UNTWISTED UV — the vignette is a property of the lens,
+  not of the content, and twisting it would make the corners breathe
+  brightness. The whole thing is one changed line in `FragDownsample`
+  (`ApplyVertigoWhirlpool(input.texcoord)`) behind an early-out on still
+  water, so every sober frame stays bit-exact and the boundary margin never
+  gets to zoom the picture; Begotten mode reuses pass 0 and inherits the
+  water for free. `IntoxicationWhirlpool` is the CPU mirror of that shader
+  function and the home of the constants —
+  `IntoxicationVertigoWhirlpoolTests` proves on it that the disc is untouched,
+  that equal radii in every direction twist equally at both aspects, that a
+  dense sweep at `44°` never samples off the frame, that the 4:3 crop
+  inversion round-trips and that the Y is not flipped, and pins the same
+  literals in the shader source. The `graphics.intoxication_fx` toggle and a
+  fixed pose cut it at once (the model resets), and the pause freezes it: it
+  rides `CalendarDeltaTime`, unscaled so the water does not slow with the
+  world at 100. This satisfies the art bible's «Тест опьянения» — a district's
+  large landmarks have to survive maximum distortion, which is exactly why
+  the calm disc and the corner-normalised profile exist. `ReseedVertigo` is
+  the test seam, and `IntoxicationVertigoCapturePlayModeTests` writes
+  twenty-four seconds at level 100 to `Captures/Vertigo` for the eye.
 - **Accepted and implemented 2026-09-04 — the fall is fought for, the rise is
   staged:** above `60` a lost capture point still became a ragdoll on the spot,
   and the rise was a fixed `1.2 s`, a `0.16 s` lerp and the clip at its

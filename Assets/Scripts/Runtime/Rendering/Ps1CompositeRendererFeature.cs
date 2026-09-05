@@ -135,6 +135,29 @@ namespace BarPromenade.Rendering
                 return;
             }
 
+            // The vertigo whirlpool is projected here rather than in
+            // gameplay: this runs after every LateUpdate, so the camera pose
+            // is final and the eye cannot lag a frame behind an orbiting
+            // camera. An excluded camera renders something else entirely -
+            // projecting the hero through its frustum would be nonsense.
+            IntoxicationRenderParameters intoxication =
+                IntoxicationRenderState.Current;
+            Vector4 vertigo = Vector4.zero;
+            Vector4 vertigoShape = Vector4.zero;
+            if (!excluded)
+            {
+                IntoxicationWhirlpool.TryResolve(
+                    cameraData.camera.WorldToViewportPoint(
+                        intoxication.VertigoEyeWorldPosition),
+                    aspectFraction,
+                    effectiveWidth,
+                    outputHeight,
+                    intoxication.VertigoTwistRadians,
+                    intoxication.VertigoCorePixels,
+                    out vertigo,
+                    out vertigoShape);
+            }
+
             // The print has no colour depth to quantize and no CRT to
             // draw lines for: those three are muted under it.
             pass.Setup(
@@ -148,7 +171,9 @@ namespace BarPromenade.Rendering
                 !begotten && GraphicsEffectsSettings.ScanlinesEnabled
                     ? presentationSettings.ScanlineIntensity
                     : 0f,
-                IntoxicationRenderState.Current);
+                intoxication,
+                vertigo,
+                vertigoShape);
             pass.SetupFilm(
                 begotten,
                 cameraData.camera,
@@ -309,6 +334,10 @@ namespace BarPromenade.Rendering
                 Shader.PropertyToID("_IntoxicationExposurePulse");
             private static readonly int IntoxicationTimeId =
                 Shader.PropertyToID("_IntoxicationTime");
+            private static readonly int IntoxicationVertigoId =
+                Shader.PropertyToID("_IntoxicationVertigo");
+            private static readonly int IntoxicationVertigoShapeId =
+                Shader.PropertyToID("_IntoxicationVertigoShape");
             private static readonly int GlowTextureId =
                 Shader.PropertyToID("_BegottenGlowTex");
             private static readonly int LevelsTextureId =
@@ -371,7 +400,9 @@ namespace BarPromenade.Rendering
                 float quantizationStrength,
                 float ditherStrength,
                 float scanlineIntensity,
-                IntoxicationRenderParameters intoxication)
+                IntoxicationRenderParameters intoxication,
+                Vector4 vertigo,
+                Vector4 vertigoShape)
             {
                 material = composite;
                 resolution = internalResolution;
@@ -413,6 +444,12 @@ namespace BarPromenade.Rendering
                 material.SetFloat(
                     IntoxicationTimeId,
                     Mathf.Max(0f, intoxication.AnimationTime));
+                // Pushed every frame even when still: the material is shared,
+                // and a stale eye would leak between cameras and scenes.
+                material.SetVector(IntoxicationVertigoId, vertigo);
+                material.SetVector(
+                    IntoxicationVertigoShapeId,
+                    vertigoShape);
                 requiresIntermediateTexture = true;
             }
 

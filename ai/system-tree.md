@@ -107,6 +107,7 @@ Assets/
       CityBus3D.prefab                  passive real-scale pooled midibus presentation
       CityBusDriver3D.prefab            passive 31-bone seated production driver
     Home/
+      HomeInteriorModels.asset          named passive Blender mesh library + authored part metadata
       Textures/                         twelve apartment RGB albedos; 1024 source, 512 runtime, Repeat/mips
         HomeWallpaperAlbedo.png         faded stripes, sprig stamps, picture ghosts, damp
         HomeCeilingPlasterAlbedo.png    whitewash, hairline cracks, water-stain rings
@@ -214,7 +215,7 @@ Assets/
         NightlifeShelter*Resident3D.{fbx,json} three detailed passive Hero-Avatar resident models/manifests
         {YardBabushka,WeighbridgeAttendant,Cemetery*,LakeFisherman,Park*,LastRouteFerryman}3D.{fbx,json}
                                           eight further NpcHumanV2 staged roles/manifests
-        Mother3D.{fbx,json}             the mother, seated forever; 45 meshes / 1892 tris (the hero is 34 / 1984), face_atlas block instead of texture_bindings, no detail atlas
+        Mother3D.{fbx,json}             the mother, seated forever; 45 meshes / 1892 tris (the hero is 34 / 2384), face_atlas block instead of texture_bindings, no detail atlas
       Prefabs/
         PipebackRoller3D.prefab         passive asset outside Resources and the runtime pool
         MountainCafe*3D.prefab          four cafe roles outside Resources/pedestrian pool
@@ -267,6 +268,9 @@ Assets/
     Models/
       PlayerHomeExterior3D.fbx         47-part passive 13 x 12 x 8.8 m home exterior
       PlayerHomeExterior3D.json        groups/surfaces/bounds/door + exactly-one-lit-window contract
+  Home/Interior/Models/
+    HomeInterior3D.fbx                 fixed-metre apartment parts + declared parametric hardware
+    HomeInterior3D.json                home_interior_v1 semantic parts and day ranges
   Church/
     Models/                             split Catholic exterior/interior FBX + shared manifest
     Textures/                           nine deterministic plaster/stone/wood/glass/art sheets
@@ -298,6 +302,7 @@ Assets/
         GameSessionState.cs       persistent clock/needs + debug day 1..7 + one-shot debug-map handoff
                                   -> SyncDayEvents/ApplyDayEvent: the one place a dated event changes the world
         GameDaySchedule.cs        pure event -> first-day table, looked up by id; FeedTheCatOpens = day 2
+        HomeApartmentDayRules.cs  exact calendar appearance clamp 1..7, separate from story/alcohol
         GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed delta + one-based day
         GameTimeRuntime.cs        pause-aware real-time calendar/needs + day announcement
         GameTimeScaleState.cs     world factor and independent pause ownership
@@ -556,6 +561,10 @@ Assets/
         CityWindDressingWorldBuilder.cs  batched poles/rope chords + per-piece wind-registered cloth
         RoadWalkableArea.cs      ground/road/promenade union + bounded open-tunnel corridor
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
+        HomeInteriorModelLibrary.cs named imported parts and declared fitting contracts
+        HomeAuthoredVisualFactory.cs Blender part placement into plan-owned runtime hierarchy
+        HomeApartmentDressing.cs   visual-only calendar groups from relatively kept to extreme neglect
+        HomeLockedRoomPlan.cs     one solid inaccessible room, door/dock and circulation validation
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
         HomeBalconyLayout*.cs    connected room/threshold/deck walkable plan
@@ -574,7 +583,6 @@ Assets/
         HomeAlarmClockPlan.cs       validated bed-relative nightstand/clock placement
         HomeAlarmClockBuilder.cs    low-poly nightstand and alarm-clock composition
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
-        HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
         SupermarketInteriorLayout*.cs  room/aisles/fixtures, 3 shelves + 5 slots
         SupermarketInteriorWorldBuilder.cs  authored shop placement + plan-owned collision and finite products
         SupermarketSecurityCameraWorldBuilder.cs  four authored corner CCTV pivots servoed at the hero
@@ -777,7 +785,7 @@ Assets/
         Player3DResources.cs            single packaged V2 prefab instantiation
         Player3DCharacterPresentation.cs Idle/Walk/Run gait + physics handoff + full-body Rise sampling
         Player3DFaceAtlasPresenter.cs    merge-safe MPB face-cell texture selection
-        Player3DRagdollController.cs     bounded 13-body failed-balance physics started with the topple's motion; frozen lying pose blended into the rise
+        Player3DRagdollController.cs     bounded 14-body failed-balance physics with separate lower back and chest; frozen lying pose blended into the rise
         PlayerRagdollHandoff.cs          the fall's rigid rotation about the boot under the pressure, as a velocity field
         Player3DFirstPersonSubset.cs     prefab-derived camera-local arm filtering
         Player3DHeadVisibility.cs        the whole head off by bone rule, for a camera inside it
@@ -827,7 +835,8 @@ Assets/
         MountainRoadWindDriver.cs       carries that wind to the crowns, the cloth and the sound bed
         MountainRoadAtmosphere.cs       cold fog, time grade and flickering tunnel lamp
         HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 2x wake
-        HomeDebugCityMapShortcut.cs     Home F9 -> City/home return + one-shot debug map request
+        HomeDebugCityMapShortcut.cs     Home debug button -> City/home return + one-shot map request
+        HomeApartmentDayController.cs  exact day groups; defer midnight changes while Home is busy
         HomeAlarmClock.cs              session-following 28-segment time, ring and rattle
         HomeDayNightController.cs      window and balcony time-of-day lighting
         HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
@@ -901,6 +910,7 @@ Assets/
       Supermarket/SupermarketInteriorAssetSetup.cs passive hall import, anchor/part binding + manifest validation
       Supermarket/SupermarketProductAssetSetup.cs six extracted Resources prefabs + passive pack validation
       PlayerHome/PlayerHomeExterior{AssetSetup,ModelImporter}.cs passive import, prefab authoring + exact lit-window validation
+      PlayerHome/HomeInteriorModelAssetSetup.cs passive apartment import + Resources mesh library
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       MountainRoadCafeCastAssetSetup.cs  isolated v2 model/clip/256 px atlas import, validation + provider setup
       NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 27 on-disk humanoid NPC designs; bartender/cashier swaps leave active cast unchanged
@@ -1028,7 +1038,7 @@ Assets/
       InventoryPlayModeTests.cs            I/Escape, day/time/needs freeze and exact restoration
       SupermarketPurchasePersistencePlayModeTests.cs  music bootstrap + buy/remove/re-enter contract
       StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
-      HomeOpeningPlayModeTests.cs           launch, wake, Home F9 map skip and cleanup
+      HomeOpeningPlayModeTests.cs           launch, wake, Home debug gate/map skip and cleanup
       HomeBalconyPresentationPlayModeTests.cs  time/fog invariants + pedestrian gate
       HomeAlarmClockPlayModeTests.cs        spatial source/rattle/cleanup
       HomeRefrigerator*PlayModeTests.cs     storage, hover, nested inspection and restoration
@@ -1078,6 +1088,7 @@ ArtSource/
     BuildingSurfaces/            24-sheet ordinary-building manifest + district/role contact sheet
   Bar/                           pub v3 interior/exterior/service `.blend`, 1024 px albedo sources + preview nodes
   Home/                          apartment albedo contract, manifest and contact sheet
+    Interior/                    generated HomeInterior3D.blend + home-interior-3d-model.json
   PlayerHome/                    generated exterior .blend/preview + nine-sheet manifest/contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
     Cafe/Blender/                generated fixed-metre cafe `.blend`
@@ -1145,6 +1156,7 @@ tools/
   build-city-fringe-textures.py     four measured fringe albedos + validator
   build-mountain-road-textures.py   six measured mountain albedos + nine borrowed-sheet contracts + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
+  build-home-interior-3d-model.py   deterministic home_interior_v1 mesh set, manifest and validator
 Packages/
 ProjectSettings/
 ```
@@ -1156,7 +1168,7 @@ build index 0 -> MainMenuRoot -> BeginNewGame
                               -> HomeArrival.OpeningSleep
                               -> Single-load HomeInterior
                               -> time frozen at 05:59
-startup Wake or accepted Home F9 debug skip -> session time 06:00
+startup Wake or accepted Home debug city-map skip -> session time 06:00
                                              -> GameTimeRuntime unpaused real delta
                                   -> 1440 real seconds per game day
                                   -> one-based day -> queued DAY N announcement
@@ -1517,8 +1529,10 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                               -> seeded pipe/metal/water/movement cues
        -> HomeInteriorLayoutPlanner -> HomeInteriorLayoutValidator
                                     -> HomeInteriorWorldBuilder
+                                       -> HomeAuthoredVisualFactory -> HomeInteriorModelLibrary
+                                       -> HomeApartmentDressing -> HomeApartmentDayController
+                                          -> exact calendar day 1..7 via HomeApartmentDayRules
                                        -> HomeBathroomBuilder
-                                       -> HomeInteriorDressingBuilder
                                        -> HomeRefrigeratorPlan
                                           -> split counter + shifted table approach
                                           -> HomeRefrigeratorWorldBuilder
@@ -1643,11 +1657,13 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                              -> 2x exit + continuous gameplay settle
                                              -> existing wake frames
                                               -> normal Home camera/input, no handoff cut
-       -> HomeDebugCityMapShortcut -> F9 from any Home phase
-                                   -> direct City load + PlayerHome return
-                                   -> DebugCityMapOnArrivalRequested
-                                      -> City waits for transition completion
-                                      -> enable teleport + open map + clear request
+       -> MinigameDebugWindow.BindHome -> F9 after opening / outside busy actions
+                                      -> exact day 1..7, including reverse inspection
+                                      -> city-map button -> HomeDebugCityMapShortcut
+                                         -> direct City load + PlayerHome return
+                                         -> DebugCityMapOnArrivalRequested
+                                            -> wait for transition completion
+                                            -> enable teleport + open map + clear request
        -> BarInteriorLayoutPlanner -> BarInteriorLayoutValidator
                                    -> BarDistrictIdentity
                                    -> BarInteriorWorldBuilder
@@ -1732,7 +1748,8 @@ F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
                           -> direct day 1..7 -> day index only, keep HH:MM/needs
                           -> City test-teleport toggle -> CityMap all-lot selection
                                                        -> Yes -> PlayerMotor.Teleport
-Home F9 -> HomeDebugCityMapShortcut -> City at home -> open debug-teleport map
+Home F9 -> MinigameDebugWindow -> day 1..7 -> exact apartment appearance
+                              -> city-map button -> HomeDebugCityMapShortcut -> City debug map
 F8 -> GameDiagnosticsSnapshot -> GameLog -> flushed debug.log state record
 state boundaries + scene correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^

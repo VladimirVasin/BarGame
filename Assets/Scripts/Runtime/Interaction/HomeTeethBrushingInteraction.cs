@@ -627,14 +627,14 @@ namespace BarPromenade
                 toothbrush.transform.SetParent(grip, false);
                 toothbrush.transform.localScale =
                     InverseScale(grip.lossyScale);
-                RuntimePrimitiveFactory.CreateCylinder(
+                HomeAuthoredVisualFactory.CreateCylinder(
                     "Handle",
                     toothbrush.transform,
                     new Vector3(0f, 0.055f, 0f),
                     new Vector3(0.012f, 0.11f, 0.012f),
                     new Color(0.55f, 0.15f, 0.12f),
                     false);
-                RuntimePrimitiveFactory.CreateBox(
+                HomeAuthoredVisualFactory.CreateBox(
                     "Bristles",
                     toothbrush.transform,
                     new Vector3(0f, 0.115f, 0.008f),
@@ -664,7 +664,7 @@ namespace BarPromenade
                 };
                 for (int index = 0; index < blobs.Length; index++)
                 {
-                    RuntimePrimitiveFactory.CreateBox(
+                    HomeAuthoredVisualFactory.CreateBox(
                         $"Foam {index + 1}",
                         foam.transform,
                         blobs[index],

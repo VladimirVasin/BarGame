@@ -148,6 +148,9 @@ namespace BarPromenade
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
+        public MinigameDebugWindow DebugWindow { get; private set; }
+        public HomeApartmentDayController ApartmentDays { get; private set; }
+        public LockedDoorInteraction LockedRoomDoor { get; private set; }
 
         private void Awake()
         {
@@ -362,6 +365,14 @@ namespace BarPromenade
             DebugCityMapShortcut =
                 ui.AddComponent<HomeDebugCityMapShortcut>();
             DebugCityMapShortcut.Initialize(Player);
+
+            BuildLockedRoomDoor();
+            ApartmentDays = ui.AddComponent<HomeApartmentDayController>();
+            HomeApartmentDressing dressing = Room.GetComponent<HomeApartmentDressing>();
+            ApartmentDays.Initialize(this, dressing.ApplyDay);
+            DebugWindow = ui.AddComponent<MinigameDebugWindow>();
+            DebugWindow.Initialize(Player, CameraFollow, IntoxicationHud);
+            DebugWindow.BindHome(this, DebugCityMapShortcut, ApartmentDays);
 
             BuildPlayerOcclusion(camera);
 
@@ -585,6 +596,23 @@ namespace BarPromenade
                     exitObject.transform.position,
                     transform.TransformPoint(localDock),
                     transform.TransformDirection(Vector3.back)));
+        }
+
+        private void BuildLockedRoomDoor()
+        {
+            var door = new GameObject("Home Locked Room Interaction");
+            door.transform.SetParent(transform, false);
+            door.transform.localPosition = HomeLockedRoomPlan.TriggerPosition;
+            BoxCollider trigger = door.AddComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = HomeLockedRoomPlan.TriggerSize;
+            var action = door.AddComponent<PlayerDoorActionTarget>();
+            action.Configure(PlayerDoorActionPlan.CreateStationary(
+                transform.TransformPoint(HomeLockedRoomPlan.DoorPosition),
+                transform.TransformPoint(HomeLockedRoomPlan.DockPosition),
+                transform.TransformDirection(Vector3.forward)));
+            LockedRoomDoor = door.AddComponent<LockedDoorInteraction>();
+            LockedRoomDoor.Configure("home.lockedRoomDoor.prompt", "home.lockedRoomDoor.missingKey");
         }
 
         private void BuildBedInteraction()

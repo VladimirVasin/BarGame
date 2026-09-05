@@ -61,10 +61,11 @@ namespace BarPromenade
     ///
     /// The table is AUTHORED rather than derived, because the point is
     /// that two men are told apart by ear. A hash is used only to place
-    /// an UNLISTED design on one of these eight known-good voices —
-    /// never to invent a ninth. That keeps the clip bank at a fixed
-    /// eight clips for the whole game, and gives any future speaking
-    /// design a real voice on the day it first opens its mouth.
+    /// an UNLISTED design on one of the eight known-good NPC voices —
+    /// never to invent a new one, and never onto the hero's, which is
+    /// his alone. That keeps the clip bank at a fixed size for the whole
+    /// game, and gives any future speaking design a real voice on the
+    /// day it first opens its mouth.
     ///
     /// Reading of the table worth keeping: the two park players are the
     /// one pair heard alternating inside ten seconds, so they have to
@@ -74,6 +75,14 @@ namespace BarPromenade
     /// because he is very drunk and face-down on his own forearms. The
     /// cafe woman is the only voice above `240 Hz`, and that is the
     /// whole of this system's gender coding, deliberately no more.
+    ///
+    /// The hero is the ninth entry and the only one here who is not an
+    /// NPC. He is silent everywhere else in the game — narration and his
+    /// own prompts carry <see cref="NpcVoiceCatalog.SilentOrdinal"/> —
+    /// and this voice exists for one channel only: the drunk muttering
+    /// above the balance threshold. He is the quietest in the table on
+    /// purpose, because his own bubble is measured against himself as the
+    /// listener and so never fades with distance.
     /// </summary>
     public static class NpcVoiceCatalog
     {
@@ -96,6 +105,11 @@ namespace BarPromenade
         public const string CafeWomanDesignId = "cafe_couple_woman_v2";
         public const string CafeHusbandDesignId = "cafe_lone_patron_v2";
 
+        /// <summary>The hero's muttering voice. Not a design in the
+        /// appearance catalog: he is the one speaker who is not an NPC.
+        /// </summary>
+        public const string HeroMutterDesignId = "hero_mutter_v1";
+
         private static readonly NpcVoiceProfile[] profiles =
         {
             //              id                Hz  timbre  noise  ¢    vol
@@ -114,7 +128,13 @@ namespace BarPromenade
             new NpcVoiceProfile(
                 "cafe_woman", 262f, 2.72f, 0.05f, 12f, 0.22f),
             new NpcVoiceProfile(
-                "cafe_husband", 138f, 1.86f, 0.22f, 26f, 0.24f)
+                "cafe_husband", 138f, 1.86f, 0.22f, 26f, 0.24f),
+            // The hero, last and quietest. Above the husband's 138 so he
+            // keeps being the lowest voice in the game; the driest throat
+            // and the widest detune in the table, because this voice is
+            // only ever heard while he is too drunk to walk straight.
+            new NpcVoiceProfile(
+                "hero_mutter", 146f, 1.90f, 0.24f, 34f, 0.20f)
         };
 
         private static readonly string[] designIds =
@@ -126,7 +146,8 @@ namespace BarPromenade
             CheckersPlayerDesignId,
             CafeManDesignId,
             CafeWomanDesignId,
-            CafeHusbandDesignId
+            CafeHusbandDesignId,
+            HeroMutterDesignId
         };
 
         /// <summary>The ordinal a silent speaker carries: narration,
@@ -135,6 +156,17 @@ namespace BarPromenade
         public const int SilentOrdinal = -1;
 
         public static int Count => profiles.Length;
+
+        /// <summary>
+        /// Voices an unlisted design may fall onto. The hero is last and is
+        /// NOT one of them: without this a future speaking NPC would have a
+        /// one-in-nine chance of being handed the hero's own mutter, and the
+        /// only symptom would be a stranger who sounds like him.
+        /// </summary>
+        public static int FallbackVoiceCount => profiles.Length - 1;
+
+        /// <summary>The hero's ordinal in this table.</summary>
+        public static int HeroMutterOrdinal => profiles.Length - 1;
 
         public static NpcVoiceProfile ProfileAt(int ordinal)
         {
@@ -172,8 +204,9 @@ namespace BarPromenade
 
         /// <summary>
         /// Authored first; an unlisted design is placed on one of the
-        /// eight by FNV-1a, which is deterministic and platform-stable
-        /// where <c>string.GetHashCode</c> is neither.
+        /// eight NPC voices by FNV-1a, which is deterministic and
+        /// platform-stable where <c>string.GetHashCode</c> is neither.
+        /// Never on the hero's — see <see cref="FallbackVoiceCount"/>.
         /// </summary>
         public static int ResolveOrdinal(string designId)
         {
@@ -190,7 +223,7 @@ namespace BarPromenade
             uint hash = CitySoundStableHash.Combine(
                 CitySoundStableHash.String(designId),
                 FallbackSalt);
-            return (int)(hash % (uint)profiles.Length);
+            return (int)(hash % (uint)FallbackVoiceCount);
         }
 
         public static NpcVoiceProfile Resolve(string designId)
@@ -217,11 +250,20 @@ namespace BarPromenade
         /// mechanically identical. The clip is generated at the
         /// speaker's fundamental, so this multiplier is the whole of
         /// the per-letter melody.
+        ///
+        /// <paramref name="extraJitterCents"/> widens that detune for one
+        /// line without touching the profile. It is the ONE knob a
+        /// speaker's state can turn: the fundamental, the timbre and the
+        /// noise are baked into the shared clip bank, so a voice that
+        /// degraded in those would need a clip per degree. The hero's
+        /// muttering spends it, and the rest of his drunkenness is heard
+        /// through the slurred letters themselves.
         /// </summary>
         public static float ResolveBlipPitch(
             in NpcVoiceProfile voice,
             char character,
-            uint ordinal)
+            uint ordinal,
+            float extraJitterCents = 0f)
         {
             int step = ResolveCharacterStep(character);
             float centre = CitySoundStableHash.ToUnitFloat(
@@ -230,8 +272,13 @@ namespace BarPromenade
                                    ordinal)) *
                            2f -
                            1f;
-            float semitones =
-                step + voice.JitterCents * centre / 100f;
+            float cents = voice.JitterCents;
+            if (!float.IsNaN(extraJitterCents))
+            {
+                cents += Mathf.Max(0f, extraJitterCents);
+            }
+
+            float semitones = step + cents * centre / 100f;
             return Mathf.Pow(2f, semitones / 12f);
         }
     }

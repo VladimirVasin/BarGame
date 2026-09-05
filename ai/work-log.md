@@ -6,6 +6,174 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-05 — The drunk hero mutters, and his words come apart
+
+Past the balance threshold he now says short lines about himself over his own
+head. The user was asked first, because the literal request collides with hard
+canon — §16.3 «У героя нет внутреннего монолога о себе», §7 «Никогда о себе»,
+§21's «внутренний голос», and the fresh §24.44 saying intoxication adds no voice
+— and chose the real thing. So the lift is recorded as a §6 registry row scoped
+to this channel above level `60`, and everything adjacent stays: §16.4's banned
+words, reflection, repentance, self-irony, the victim, the crime, the water and
+the drink itself. A canon test over both catalogs fails the build if a line
+reaches for any of them, which is the only way that scope stays true.
+
+Twenty authored lines. The Unsteady pool is whole sentences; the Very Drunk pool
+is the SAME observations with the subject fallen off and the words doubling
+(«Ноги ещё держат.» → «Ещё держат.»), so «потом просто бред» is one man coming
+apart rather than two men. `HeroMutterSlur` then stretches vowels, sticks a
+syllable, eats spaces and drops letters, and `SpeechScatterLayout` throws the
+glyphs. The incoherence at the top is therefore PRODUCED: every line in both
+pools is a legible sentence in his register, which is what §21's own check
+demands.
+
+Five decisions carry it. The presenter is raised by
+`IntoxicationStatusController` onto a child object, so not one of the nine scene
+roots changed — all nine already put the controller, the prompt view and the HUD
+on the same object. It owns its own bubble view because seven of those roots have
+none at all. The slur is applied once per line before delivery, never per frame,
+because the typewriter reveals a prefix and the panel is measured from the whole
+string. Scatter is a new keyframe shape (exactly zero through `80`), and which
+pool a line came from is latched when it opens, so crossing eighty mid-line
+cannot hand a two-row line to a one-row layout. The per-glyph drawing is one
+`GUI.Label` per letter rather than `Font.GetCharacterInfo`, whose UVs die on an
+atlas repack any other panel can trigger; advances come from prefix widths of the
+whole line, and the panel stays the size it was measured at while the letters
+leave it. The ninth catalog voice is his, mutter-only, quietest in the table, and
+`ResolveOrdinal`'s fallback now excludes him so no future NPC can be handed it.
+
+Verification: EditMode `HeroMutter|NpcSpeechVoiceTests|IntoxicationRulesTests` —
+`44/44` on the first run (`HeroMutterTests` 19, `IntoxicationRulesTests` 18,
+`NpcSpeechVoiceTests` 7). The slur budget is proved over every line in both
+catalogs across 200 seeds. NOT run: a PlayMode measurement of the real font
+against the panel width, and a capture — the letters flying apart is the one part
+of this that has to be looked at, and that is a separate step on request.
+
+## 2026-09-05 — Hero V2 articulated torso
+
+The existing `pelvis -> spine -> chest` hierarchy now deforms the actual
+shirt and jacket through three longitudinal regions. Shared smooth weight
+bands use at most two adjacent bones per vertex; rings no more than `5 cm`
+apart carry the bend without changing the bind silhouette, atlas or mesh
+names. Generator `1.3.0` produces `34` meshes / `2,384` triangles on the
+same `31` bones. All `41` bone-only actions were regenerated with their
+existing independent back tracks and contact timing. The production FBXs,
+Blender source, portrait, study renders and prefab were rebuilt.
+
+The explicit spine anchor receives `40%` of the additive back bend and is
+restored with the other bones. Physics now has `14` bodies: the former
+`18 kg` torso is split into an `8 kg` lower back and `10 kg` chest, with
+separate bounded joints and segment-sized collision boxes.
+
+Verification: the affected Blender validator passes, including dense fall
+floor/hinge checks; a second clean build matches content signature
+`2b948e933259399fb5e2f766b155cec64abc5f6847da373b13460eb3fe208c8c`.
+The focused EditMode skinning test passes for both meshes across all `41`
+clips at nine samples each. The focused PlayMode joint/reset and physical
+settling checks pass (`2/2`). The skinning test uses the same FBX scale-aware
+`BakeMesh(mesh, true)` path as the production foot probe. Eight authored
+motion frames were rendered and inspected in
+`TestResults/hero-spine-motion.png`; `git diff --check` passes.
+No full suites, player build or scene smoke were run.
+
+## 2026-09-05 — Smooth VHS intensity and episode transitions
+
+The native effect now eases every strength change through two cascaded
+`0.22 s` poles. Each existing `0.4–1 s` episode uses a full quintic envelope
+with `45%` attack and `55%` release; repetition seams crossfade over up to
+`55 ms`. The repeat cursor integrates its speed, so a target change cannot
+reposition playback inside an active repeat. Sobering fades to the exact
+dry bypass over about four seconds. This is audio-only: episode spacing,
+world tempo, visuals and the existing sounds remain unchanged.
+
+Verification: `tools/audio-vhs/build.ps1 -Validate` built the DLL and passed
+the actual-DLL validator at `22050/44100/48000/96000 Hz`. Added checks cover
+the first `50 ms` of onset/recovery, `5 ms` episode transitions and rapid
+target reversals during a repeat; existing dry bypass, pause/reset, stale
+history, block-size invariance, stereo coherence and amplitude checks pass.
+On the `48 kHz` constant-`0.1` comparison, the largest deviation from the dry
+input in the first `50 ms` fell from `0.063945` to `0.000656`; the largest
+episode change over `5 ms` fell from `0.008624` to `0.001579`. Seven WAV references include
+`Captures/AudioVhs/intoxication-smooth-transitions.wav`. No Unity run or
+player build was needed.
+
+## 2026-09-05 — Vertigo whirlpool around the hero
+
+Every drunk distortion so far measured itself from the middle of the screen.
+This one takes a centre: `IntoxicationVertigoModel` (the dolly zoom's seeded
+oscillator with longer legs, reusing its `Ease`) breathes a twist that
+`IntoxicationWhirlpool` turns into two material vectors, and one changed line
+in `FragDownsample` winds the frame around the hero's own body — the calm disc
+over him at `0.28` frame heights, the full `44°` at the frame corner farthest
+from him, `t·t·(3-2t)` between them, a `0.08` inward pull on top.
+`IntoxicationProfile.VertigoStrength` shares the dolly zoom's gate exactly
+(`0` through `60`, `0.35` at `80`, `1` at `100`).
+
+Three decisions are the substance. The eye is published as a WORLD point by
+`IntoxicationStatusController` and projected inside `AddRenderPasses`, which
+runs after every `LateUpdate`, so it cannot lag a frame behind an orbiting
+camera; it fades before it leaves the frame, dies behind the lens and never
+reaches an `excluded` camera. The profile is normalised on the frame corner
+farthest from the eye, computed in the shader from centre and aspect, so 16:9,
+the 4:3 gate and an off-centre eye all reach the full angle at their own
+corner. And the radius is shortened to the frame's own boundary along the
+twisted direction instead of being left to `sampler_LinearClamp`, so the
+degeneracy points into the vortex rather than smearing an axis-aligned edge —
+proved by a dense sweep at `44°` in the contract test. The vignette and the
+wave keep reading the untwisted UV, and an early-out on still water keeps
+every sober frame bit-exact.
+
+`IntoxicationWhirlpool` is the CPU mirror of the shader function and the home
+of its constants; `IntoxicationVertigoWhirlpoolTests` checks the geometry
+against it, pins the literals in the shader source and asserts the composite
+still compiles through `ShaderUtil`. Verification: EditMode selection
+`IntoxicationVertigo|IntoxicationRules` — `35/35`, then
+`IntoxicationVertigoWhirlpoolTests` — `9/9` once the shader-compile assertion
+was added (the first run predated it, and a batch EditMode run does not
+compile shaders on its own). The PlayMode extension in
+`IntoxicationStatusPlayModeTests` and the new `Captures/Vertigo` capture
+fixture were NOT run: the PlayMode assembly was mid-edit by the neighbouring
+session (an untracked `HomeAuthoredModelPlayModeTests.cs` briefly failed to
+compile and blocked the first attempt entirely), and the capture is the
+eyeball step, on request.
+
+## 2026-09-05 — Blender apartment and seven calendar appearances
+
+The starting apartment now uses the deterministic `home_interior_v1` mesh
+library through `HomeAuthoredVisualFactory`, retaining plan-owned collision,
+interaction contacts, fixed cameras, lighting and live bed deformation. The
+existing twelve Home sheets remain; there is no new clean atlas. The bookcase
+stands on the west wall, clear of the one north-central locked room. Its
+day-one interaction only reports the missing key and never opens the door or
+consumes the ordinary apartment keys.
+
+`HomeApartmentDayRules`, `HomeApartmentDayController` and
+`HomeApartmentDressing` resolve seven calendar appearances: relatively kept
+on day one, extreme domestic neglect by day seven, then held. Debug selects
+the exact day in either direction; natural changes wait until Home is free of
+busy interactions. This presentation remains separate from acts, intoxication
+and the future irreversible decay system. Both bibles and architecture notes
+record the two explicit user decisions of `2026-09-05`.
+
+Home F9 now opens the shared debug window after waking. Its city-map button
+retains the previous skip, while days `1–7` also update the apartment.
+README and the system indexes describe those controls and boundaries.
+
+Verification: the Blender validator passes for the final `416` meshes and
+`44,678` triangles, including fixed dimensions, day ranges, all circulation
+and the bed/refrigerator approaches. The single focused PlayMode scenario
+`HomeAuthoredModelPlayModeTests.AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed`
+passes `1/1`: real opening and waking, imported geometry and deformable bed,
+debug `1 -> 7 -> 3 -> 1` without a reload or session reset, and the actual
+locked-door gesture and missing-key feedback. All `15` camera frames in
+`Captures/HomeAuthoredModel` were visually reviewed: three opening frames,
+seven main-room days, bathroom/balcony comparisons and the new doorway.
+The late-day duvet, laundry and refuse were enlarged after the first visual
+review; stains now have irregular silhouettes rather than floating panels.
+Both localization catalogs parse, and all three new RU/EN keys occur exactly
+once with nonempty values. `git diff --check` passed. Fast mode: no full
+EditMode/PlayMode suites or player build.
+
 ## 2026-09-05 — Exponential VHS intoxication and gentle world slowdown
 
 The accepted perception contract uses `A = (exp(4.5 L/100)-1)/(exp(4.5)-1)`

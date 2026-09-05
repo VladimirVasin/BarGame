@@ -95,6 +95,17 @@ namespace BarPromenade
             /// <summary>The voice held for the length of this line, or
             /// `-1`.</summary>
             public int VoiceLease;
+
+            /// <summary>How far this line's letters fly apart, 0..1. Zero
+            /// for every line anybody but the drunk hero says, and that is
+            /// what keeps every NPC bubble on the single-label path.
+            /// </summary>
+            public float Scatter;
+
+            /// <summary>Extra per-blip detune for this line only.</summary>
+            public float ExtraJitterCents;
+
+            public uint ScatterSeed;
         }
 
         private readonly NpcSpeaker[] speakers =
@@ -103,11 +114,21 @@ namespace BarPromenade
         private Camera worldCamera;
         private Transform listener;
         private GUIStyle labelStyle;
+        private GUIStyle scatterStyle;
         private bool slotsPrepared;
 
         // Reused for measurement: a fresh GUIContent per bubble per
         // IMGUI event is steady garbage for lines that change rarely.
         private readonly GUIContent measureContent = new GUIContent();
+
+        // The scattered row is measured once per line, from the WHOLE
+        // line, exactly as the panel is: only one bubble in the game ever
+        // scatters, so one cache serves it.
+        private string scatterPrefixText = string.Empty;
+        private float[] scatterPrefixWidths = System.Array.Empty<float>();
+        private readonly System.Collections.Generic.Dictionary<char, string>
+            glyphTexts =
+                new System.Collections.Generic.Dictionary<char, string>(48);
 
         public bool HasRenderedLayout { get; private set; }
         public int LastRenderedBubbleCount { get; private set; }
@@ -251,15 +272,68 @@ namespace BarPromenade
             // trusted the stepper for its first opacity would flash a
             // solid empty frame across the whole park.
             float opacity = ResolveOpacityOf(speaker);
+            // Drunkenness is zeroed here rather than carried: a line opens
+            // sober and is told otherwise, so nothing an old line was doing
+            // can leak into the next speaker to take this slot.
             bubbles[slot] = new Bubble
             {
                 Speaker = speaker,
                 Line = SpeechDelivery.Spoken(text, unscaledTime),
                 Opacity = opacity,
                 IsCulled = opacity <= 0f,
-                VoiceLease = -1
+                VoiceLease = -1,
+                Scatter = 0f,
+                ExtraJitterCents = 0f,
+                ScatterSeed = 0u
             };
             return true;
+        }
+
+        /// <summary>
+        /// Tells one open line how far gone the man saying it is: how much
+        /// its letters fly apart, and how wide its keystrokes detune. Called
+        /// right after <see cref="ShowAt"/>, which zeroes all of it, so a
+        /// caller that never says this gets the ordinary sober line.
+        /// </summary>
+        public bool SetDrunkenness(
+            Object owner,
+            float scatterAmount,
+            float extraJitterCents,
+            uint seed)
+        {
+            int speaker = FindSpeaker(owner);
+            if (speaker < 0)
+            {
+                return false;
+            }
+
+            int slot = FindSlotOf(speaker);
+            if (slot < 0)
+            {
+                return false;
+            }
+
+            bubbles[slot].Scatter = float.IsNaN(scatterAmount)
+                ? 0f
+                : Mathf.Clamp01(scatterAmount);
+            bubbles[slot].ExtraJitterCents = float.IsNaN(extraJitterCents)
+                ? 0f
+                : Mathf.Max(0f, extraJitterCents);
+            bubbles[slot].ScatterSeed = seed;
+            return true;
+        }
+
+        /// <summary>How far this speaker's open line has come apart.</summary>
+        public float ScatterOf(Object owner)
+        {
+            int speaker = FindSpeaker(owner);
+            if (speaker < 0)
+            {
+                return 0f;
+            }
+
+            int slot = FindSlotOf(speaker);
+            return slot < 0 ? 0f : bubbles[slot].Scatter;
         }
 
         private float ResolveOpacityOf(int speaker)
@@ -445,7 +519,8 @@ namespace BarPromenade
                 bubble.Line.BlipOrdinal,
                 speaker.ResolvePosition(Vector3.zero),
                 bubble.Opacity,
-                speaker.Earshot);
+                speaker.Earshot,
+                bubble.ExtraJitterCents);
         }
 
         private void EnsureVoice(ref Bubble bubble)
@@ -474,6 +549,9 @@ namespace BarPromenade
             bubble.Line = default;
             bubble.Opacity = 0f;
             bubble.IsCulled = false;
+            bubble.Scatter = 0f;
+            bubble.ExtraJitterCents = 0f;
+            bubble.ScatterSeed = 0u;
         }
 
         private void CloseBubblesOf(int speaker)
@@ -602,14 +680,22 @@ namespace BarPromenade
             // speaker at whatever distance each of them is standing.
             Color previousGuiColor = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, bubble.Opacity);
-            GUI.Label(
-                new Rect(
-                    panel.x + HorizontalTextInset,
-                    panel.y + VerticalTextInset,
-                    panel.width - HorizontalTextInset * 2f,
-                    panel.height - VerticalTextInset * 2f),
-                drawn,
-                labelStyle);
+            if (SpeechScatterLayout.IsScattering(bubble.Scatter))
+            {
+                DrawScatteredText(panel, bubble, drawn);
+            }
+            else
+            {
+                GUI.Label(
+                    new Rect(
+                        panel.x + HorizontalTextInset,
+                        panel.y + VerticalTextInset,
+                        panel.width - HorizontalTextInset * 2f,
+                        panel.height - VerticalTextInset * 2f),
+                    drawn,
+                    labelStyle);
+            }
+
             GUI.color = previousGuiColor;
 
             HasRenderedLayout = true;
@@ -618,6 +704,114 @@ namespace BarPromenade
             LastRenderedText = bubble.Line.Text;
             LastRenderedRevealedText = drawn;
             LastRenderedOpacity = bubble.Opacity;
+        }
+
+        /// <summary>
+        /// One letter at a time, each on its own drift and its own tilt.
+        ///
+        /// THE PANEL DOES NOT FOLLOW THEM. Its size was measured from the
+        /// whole line and stays measured from the whole line; the letters
+        /// simply leave it. A box that grew to chase them would put the eye
+        /// on the box, and the reading here is that the box is still over his
+        /// head with nothing left in it.
+        ///
+        /// Spaces are skipped rather than drawn: an empty glyph carries no
+        /// letter, and drawing it would only cost a rect.
+        /// </summary>
+        private void DrawScatteredText(
+            Rect panel,
+            in Bubble bubble,
+            string drawn)
+        {
+            float[] widths = EnsurePrefixWidths(bubble.Line.Text);
+            var origin = new Vector2(
+                panel.x + HorizontalTextInset,
+                panel.y + VerticalTextInset);
+            float lineHeight = scatterStyle.lineHeight;
+            float now = Time.unscaledTime;
+            Matrix4x4 previousMatrix = GUI.matrix;
+            for (int index = 0; index < drawn.Length; index++)
+            {
+                char value = drawn[index];
+                if (value == ' ')
+                {
+                    continue;
+                }
+
+                // A letter starts drifting from the moment it was typed,
+                // not from the moment the line opened, so the row assembles
+                // legibly and comes apart behind the cursor.
+                float revealedAt =
+                    bubble.Line.StartedAt +
+                    (index + 1) / SpeechDelivery.CharactersPerSecond;
+                SpeechScatterLayout.ResolveGlyph(
+                    index,
+                    bubble.ScatterSeed,
+                    now - revealedAt,
+                    bubble.Scatter,
+                    out Vector2 offset,
+                    out float degrees);
+                Rect glyph = SpeechScatterLayout.ResolveGlyphRect(
+                    origin,
+                    SpeechScatterLayout.ResolvePenX(widths, index),
+                    SpeechScatterLayout.ResolveGlyphWidth(widths, index),
+                    lineHeight,
+                    offset);
+
+                GUI.matrix = previousMatrix;
+                if (degrees != 0f)
+                {
+                    GUIUtility.RotateAroundPivot(degrees, glyph.center);
+                }
+
+                GUI.Label(glyph, ResolveGlyphText(value), scatterStyle);
+            }
+
+            GUI.matrix = previousMatrix;
+        }
+
+        /// <summary>
+        /// Cumulative widths of every prefix of the line, measured once from
+        /// the WHOLE line — the same rule the panel is sized by. Kerning is
+        /// then the font's own, and the row the glyphs walk is the row the
+        /// single label would have drawn.
+        /// </summary>
+        private float[] EnsurePrefixWidths(string text)
+        {
+            string safeText = text ?? string.Empty;
+            if (string.Equals(
+                    scatterPrefixText,
+                    safeText,
+                    System.StringComparison.Ordinal) &&
+                scatterPrefixWidths.Length == safeText.Length + 1)
+            {
+                return scatterPrefixWidths;
+            }
+
+            EnsureStyles();
+            var widths = new float[safeText.Length + 1];
+            for (int index = 1; index <= safeText.Length; index++)
+            {
+                measureContent.text = safeText.Substring(0, index);
+                widths[index] = scatterStyle.CalcSize(measureContent).x;
+            }
+
+            scatterPrefixText = safeText;
+            scatterPrefixWidths = widths;
+            return widths;
+        }
+
+        /// <summary>One-character strings, kept rather than allocated: a
+        /// scattered line asks for one per letter per repaint.</summary>
+        private string ResolveGlyphText(char value)
+        {
+            if (!glyphTexts.TryGetValue(value, out string text))
+            {
+                text = value.ToString();
+                glyphTexts[value] = text;
+            }
+
+            return text;
         }
 
         /// <summary>
@@ -814,6 +1008,17 @@ namespace BarPromenade
                 RetroUiTheme.Text,
                 false,
                 true);
+            // One glyph at a time: centred in its own padded box, no
+            // wrapping to disagree with the row, and overflow clipping
+            // because the shared style would shave the corners off a
+            // letter that has tipped over.
+            scatterStyle = RetroUiTheme.CreateLabelStyle(
+                9,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.Text,
+                false,
+                false);
+            scatterStyle.clipping = TextClipping.Overflow;
         }
     }
 }

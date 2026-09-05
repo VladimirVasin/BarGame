@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model-v2.py",
-  "generator_version": "1.2.0",
+  "generator_version": "1.3.0",
   "blender_version": "5.0.1",
   "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
   "runtime_integrated": true,
@@ -11,7 +11,7 @@
   "anatomical_left_axis": "+X",
   "object_count": 36,
   "mesh_count": 34,
-  "triangle_count": 1984,
+  "triangle_count": 2384,
   "action_count": 41,
   "socket_count": 6,
   "bounds_min": [
@@ -719,8 +719,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JacketAtlas",
-      "vertices": 96,
-      "triangles": 188
+      "vertices": 216,
+      "triangles": 428
     },
     {
       "name": "CLO_JacketForearm.R",
@@ -1019,8 +1019,8 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_Shirt",
-      "vertices": 62,
-      "triangles": 120
+      "vertices": 142,
+      "triangles": 280
     },
     {
       "name": "GEO_UpperArm.L",
@@ -1045,7 +1045,33 @@
   ],
   "design_version": "HeroV2",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
-  "content_signature_sha256": "13e64a6b9fa51e3577915355567ac1afcab57c7cbe9ce43e5bb3869ee2d4ece7",
+  "torso_skin": {
+    "contract": "pelvis_spine_chest_v1",
+    "meshes": [
+      "GEO_Torso",
+      "CLO_JacketBody"
+    ],
+    "bones": [
+      "pelvis",
+      "spine",
+      "chest"
+    ],
+    "maximum_influences": 2,
+    "blend_bands_m": [
+      [
+        0.965,
+        1.075
+      ],
+      [
+        1.135,
+        1.285
+      ]
+    ],
+    "maximum_ring_gap_m": 0.05,
+    "action_count": 41,
+    "preserves_authored_contacts": true
+  },
+  "content_signature_sha256": "2b948e933259399fb5e2f766b155cec64abc5f6847da373b13460eb3fe208c8c",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",

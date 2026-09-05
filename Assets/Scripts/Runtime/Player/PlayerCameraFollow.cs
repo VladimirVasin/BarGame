@@ -115,6 +115,10 @@ namespace BarPromenade
         private float dollyFieldOfView;
         private float dollyAppliedExponent;
 
+        /// <summary>The camera this follow drives. Anything that has to
+        /// project a world point onto the frame the player is looking at needs
+        /// it, and finding it by component off this object is a guess.</summary>
+        public Camera Camera => controlledCamera;
         public bool OrbitInputEnabled { get; private set; } = true;
         public bool CinematicMotionEnabled { get; private set; } = true;
         public Vector3 CurrentFocusPoint => currentFocusPoint;

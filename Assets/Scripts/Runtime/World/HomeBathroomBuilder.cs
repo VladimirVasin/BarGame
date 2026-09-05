@@ -324,7 +324,7 @@ namespace BarPromenade
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.BoxXY,
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+            parts.Add(HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Bathroom Toilet Flush",
                 room,
                 center +
@@ -385,7 +385,7 @@ namespace BarPromenade
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.BoxXZ,
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+            parts.Add(HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Bathroom Shower Drain",
                 room,
                 center + new Vector3(0.10f, 0.215f, 0.10f),
@@ -488,14 +488,14 @@ namespace BarPromenade
                 HomeSurfaceKind.PaintedMetal,
                 SurfaceProjection.BoxXY,
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+            parts.Add(HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Bathroom Shower Mixer Handle Hot",
                 room,
                 new Vector3(bounds.xMax - 0.27f, 1.02f, backZ - 0.06f),
                 new Vector3(0.085f, 0.03f, 0.085f),
                 HandleHot,
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateCylinder(
+            parts.Add(HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Bathroom Shower Mixer Handle Cold",
                 room,
                 new Vector3(bounds.xMax - 0.13f, 1.02f, backZ - 0.06f),
@@ -552,7 +552,7 @@ namespace BarPromenade
                 new Vector3(bounds.xMax - 0.48f, 2.17f, backZ),
                 new Vector3(0.035f, 0.56f, 0.035f),
                 new Vector3(0f, 0f, 90f)));
-            GameObject headNeck = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject headNeck = HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Bathroom Shower Head Neck",
                 room,
                 new Vector3(bounds.xMax - 0.76f, 2.11f, backZ - 0.04f),
@@ -562,7 +562,7 @@ namespace BarPromenade
             headNeck.transform.localRotation =
                 Quaternion.Euler(35f, 0f, 0f);
             parts.Add(headNeck);
-            GameObject showerHead = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject showerHead = HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Bathroom Shower Head",
                 room,
                 new Vector3(bounds.xMax - 0.78f, 2.045f, backZ - 0.08f),
@@ -572,7 +572,7 @@ namespace BarPromenade
             showerHead.transform.localRotation =
                 Quaternion.Euler(35f, 0f, 0f);
             parts.Add(showerHead);
-            GameObject headFace = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject headFace = HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Bathroom Shower Head Face",
                 room,
                 new Vector3(bounds.xMax - 0.795f, 2.005f, backZ - 0.105f),
@@ -593,7 +593,7 @@ namespace BarPromenade
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.BoxXZ,
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Bathroom Shower Soap",
                 room,
                 new Vector3(bounds.xMax - 0.10f, 1.405f, bounds.yMax - 0.10f),
@@ -642,7 +642,7 @@ namespace BarPromenade
                 Porcelain,
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.BoxXZ));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Bathroom Sink Hollow",
                 room,
                 center +
@@ -670,7 +670,7 @@ namespace BarPromenade
                 occlusionRegistry,
                 "home.bathroom.sink",
                 parts);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeAuthoredVisualFactory.CreateBox(
                 "Home Bathroom Cracked Mirror",
                 room,
                 new Vector3(
@@ -683,7 +683,7 @@ namespace BarPromenade
                     0.024f),
                 Mirror,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeAuthoredVisualFactory.CreateBox(
                 "Home Bathroom Mirror Crack",
                 room,
                 new Vector3(
@@ -723,20 +723,20 @@ namespace BarPromenade
                     bathroom.width * 0.34f,
                     0.055f),
                 new Vector3(0f, 0f, 90f));
-            RuntimePrimitiveFactory.CreateBox(
+            HomeAuthoredVisualFactory.CreateBox(
                 "Home Bathroom Leak Stain",
                 room,
                 new Vector3(
                     bathroom.xMin + 0.42f,
                     2.38f,
-                    3.856f),
+                    3.877f),
                 new Vector3(
                     0.74f,
                     0.94f,
-                    0.025f),
+                    0.003f),
                 new Color(0.10f, 0.15f, 0.12f),
                 false);
-            RuntimePrimitiveFactory.CreateCylinder(
+            HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Bathroom Floor Drain",
                 room,
                 new Vector3(

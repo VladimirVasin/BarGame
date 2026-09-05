@@ -402,7 +402,12 @@ portrait from the same production model. Bar drinking instead keeps that
 seated world rig and runs a nested full-body pickup/sip/return action on it.
 That live model is `Resources/Player/Player3DV2`: the
 adult-proportion, atlas-faced Hero V2 in the canonical olive field jacket,
-with `41` bone-only Actions. Holding either Shift or gamepad L3 while moving
+with `41` bone-only Actions. Its continuous shirt and jacket deform through
+pelvis, lower spine and chest on the same 31-bone hierarchy, with smooth
+adjacent two-bone weights; the regenerated actions retain their timing and
+contacts. The `34` meshes contain `2,384` triangles, the late torso bend is
+shared `40/60` between spine and chest, and the `14`-body ragdoll articulates
+both back segments. Holding either Shift or gamepad L3 while moving
 forward raises the `2.6 m/s` walk to a `4.2 m/s` run; backward movement stays
 at `1.4 m/s`, intoxication still scales movement, and scripted approaches stay
 at walking pace. The gait blend follows actual constrained speed rather than
@@ -951,6 +956,19 @@ starts both the alarm and the session clock. The clock shot and sleeping loop
 hold for three more unscaled seconds; when the alarm stops, the continuous
 six-second camera and wake animation begin and settle into the normal Home
 shot. Ordinary later bed wakes retain their two-second timing.
+
+The starting apartment uses deterministic Blender `home_interior_v1` meshes
+through `HomeInteriorModelLibrary` and `HomeAuthoredVisualFactory`; Unity
+retains the validated layout, collision, interaction hierarchy, fixed shots,
+lights and deformable bed support. The bookcase has moved clear of the one
+north-central locked room. That door is interactable from day one but stays
+closed and only reports the missing key. `HomeApartmentDayRules` maps the
+calendar to seven appearances, from relatively kept on day one to extreme
+domestic neglect on day seven, held thereafter. This does not advance acts or
+the story's decay/`0–5` scale. After waking, Home F9 opens the shared debug
+window; day buttons select exact appearances in either direction, and a
+separate button retains the old City debug-map skip. Busy Home interactions
+block debug and defer ordinary day dressing until a safe boundary.
 
 Fresh-session time is frozen at `05:59` until that successful startup Wake,
 then advances from `06:00` at `1.0` game minute per unpaused real second.

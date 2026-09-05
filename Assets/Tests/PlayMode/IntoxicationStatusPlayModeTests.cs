@@ -160,6 +160,40 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThan(5f),
                 "At one hundred the drunk dolly zoom must move the lens.");
 
+            // The vertigo whirlpool rides the same level: the disc over his
+            // body floats as soon as he is past the threshold, and the water
+            // around him winds up once an attack starts.
+            Assert.That(
+                IntoxicationRenderState.Current.VertigoCorePixels.magnitude,
+                Is.EqualTo(
+                    IntoxicationVertigoModel.CoreWobbleInternalPixels)
+                    .Within(0.01f));
+            Assert.That(
+                IntoxicationRenderState.Current.VertigoEyeWorldPosition.y,
+                Is.GreaterThan(playerObject.transform.position.y),
+                "The whirlpool's eye sits on his body, not at his feet.");
+            status.ReseedVertigo(4242);
+            status.Vertigo.Reset(0f);
+            float vertigoDeadline = Time.realtimeSinceStartup + 3f;
+            while (Mathf.Abs(
+                       IntoxicationRenderState.Current
+                           .VertigoTwistRadians) < 0.01f &&
+                   Time.realtimeSinceStartup < vertigoDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                Mathf.Abs(
+                    IntoxicationRenderState.Current.VertigoTwistRadians),
+                Is.GreaterThan(0.01f),
+                "At one hundred the whirlpool must wind the frame.");
+            Assert.That(
+                Mathf.Abs(
+                    IntoxicationRenderState.Current.VertigoTwistRadians),
+                Is.LessThanOrEqualTo(
+                    IntoxicationVertigoModel.MaximumTwistRadians + 0.0001f));
+
             GraphicsEffectsSettings.IntoxicationLensFxEnabled =
                 false;
             yield return null;
@@ -169,6 +203,13 @@ namespace BarPromenade.Tests.PlayMode
                 "Disabling the drunk lens toggle must collapse the " +
                 "aberration immediately.");
             Assert.That(lensDriver.AppliedLensDistortion, Is.Zero);
+            Assert.That(
+                IntoxicationRenderState.Current.VertigoTwistRadians,
+                Is.Zero,
+                "The drunk lens toggle must cut the whirlpool at once.");
+            Assert.That(
+                IntoxicationRenderState.Current.VertigoCorePixels,
+                Is.EqualTo(Vector2.zero));
 
             // The dolly zoom fades out under the same toggle rather than
             // cutting, so it gets its own short wait.

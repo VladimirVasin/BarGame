@@ -47,21 +47,21 @@ namespace BarPromenade
             alarmObject.transform.localPosition =
                 plan.ClockPosition;
 
-            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
+            occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Alarm Clock Body",
                 alarmObject.transform,
                 Vector3.zero,
                 HomeAlarmClockPlan.ClockBodySize,
                 ClockBody,
                 false));
-            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
+            occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Alarm Clock Face",
                 alarmObject.transform,
                 new Vector3(0f, 0f, -0.126f),
                 new Vector3(0.395f, 0.175f, 0.018f),
                 ClockFace,
                 false));
-            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
+            occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Alarm Clock Snooze",
                 alarmObject.transform,
                 new Vector3(0f, 0.153f, 0.015f),
@@ -90,14 +90,14 @@ namespace BarPromenade
             HomeAlarmClockPlan plan,
             List<GameObject> occluderParts)
         {
-            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
+            occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Alarm Clock Nightstand",
                 room,
                 plan.NightstandCenter,
                 plan.NightstandSize,
                 NightstandWood,
                 false));
-            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
+            occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Alarm Clock Nightstand Top",
                 room,
                 new Vector3(
@@ -112,7 +112,7 @@ namespace BarPromenade
                     plan.NightstandSize.z + 0.04f),
                 NightstandEdge,
                 false));
-            occluderParts.Add(RuntimePrimitiveFactory.CreateBox(
+            occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Alarm Clock Nightstand Handle",
                 room,
                 new Vector3(
@@ -213,7 +213,7 @@ namespace BarPromenade
             Vector3 position,
             Vector3 size)
         {
-            return RuntimePrimitiveFactory.CreateBox(
+            return HomeAuthoredVisualFactory.CreateBox(
                 name,
                 parent,
                 position,

@@ -104,6 +104,15 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     current.DollyZoomStrength,
                     Is.GreaterThanOrEqualTo(previous.DollyZoomStrength));
+                Assert.That(
+                    current.VertigoStrength,
+                    Is.GreaterThanOrEqualTo(previous.VertigoStrength));
+                Assert.That(
+                    current.MutterSlurAmount,
+                    Is.GreaterThanOrEqualTo(previous.MutterSlurAmount));
+                Assert.That(
+                    current.MutterScatterAmount,
+                    Is.GreaterThanOrEqualTo(previous.MutterScatterAmount));
 
                 previous = current;
             }
@@ -144,6 +153,22 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(0.35f).Within(0.001f));
             Assert.That(
                 blackout.DollyZoomStrength,
+                Is.EqualTo(1f).Within(0.001f));
+
+            // The vertigo whirlpool shares that gate exactly: still water
+            // through the threshold, a third of the wind-up at 80.
+            Assert.That(sober.VertigoStrength, Is.Zero);
+            Assert.That(
+                IntoxicationStageRules.Evaluate(60).VertigoStrength,
+                Is.Zero);
+            Assert.That(
+                IntoxicationStageRules.Evaluate(61).VertigoStrength,
+                Is.GreaterThan(0f));
+            Assert.That(
+                IntoxicationStageRules.Evaluate(80).VertigoStrength,
+                Is.EqualTo(0.35f).Within(0.001f));
+            Assert.That(
+                blackout.VertigoStrength,
                 Is.EqualTo(1f).Within(0.001f));
         }
 

@@ -89,7 +89,7 @@ UnityGetAudioEffectDefinitions(UnityAudioEffectDefinition*** result)
     definition.structsize = sizeof(UnityAudioEffectDefinition);
     definition.paramstructsize = sizeof(UnityAudioParameterDefinition);
     definition.apiversion = UNITY_AUDIO_PLUGIN_API_VERSION;
-    definition.pluginversion = 0x00010000;
+    definition.pluginversion = 0x00010001;
     definition.channels = 0;
     definition.numparameters = Count;
     std::strcpy(definition.name, "Intoxication VHS");

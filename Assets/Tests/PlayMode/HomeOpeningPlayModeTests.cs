@@ -697,7 +697,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            MainMenu_F9SkipsHomeAndOpensCityDebugTeleportMap()
+            HomeDebug_AfterWakePreviewsEverySelectedDayAndOffersCitySkip()
         {
             AsyncOperation load = SceneManager.LoadSceneAsync(
                 SceneIds.MainMenu,
@@ -734,6 +734,47 @@ namespace BarPromenade.Tests.PlayMode
 
             yield return PressAndRelease(keyboard.f9Key);
 
+            MinigameDebugWindow debugWindow = home.GetComponentInChildren<
+                MinigameDebugWindow>();
+            HomeApartmentDayController dayController = home.GetComponentInChildren<
+                HomeApartmentDayController>();
+            Assert.That(debugWindow, Is.Not.Null);
+            Assert.That(dayController, Is.Not.Null);
+            Assert.That(debugWindow.IsOpen, Is.False,
+                "F9 must not interrupt the opening or start its clock.");
+            Assert.That(home.DebugCityMapShortcut.KeyboardShortcutEnabled, Is.False);
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(SceneIds.HomeInterior));
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.False);
+            Assert.That(debugWindow.TrySetGameDayNumber(7), Is.False);
+            Assert.That(home.Opening.TryWake(), Is.True);
+            yield return WaitUntil(
+                () => home.Opening.Phase == HomeOpeningPhase.Complete &&
+                      !HomeApartmentDayController.IsHomeBusy(home),
+                "The ordinary wake did not restore Home debug access.");
+
+            yield return PressAndRelease(keyboard.f9Key);
+            Assert.That(debugWindow.IsOpen, Is.True);
+            Assert.That(dayController.AppliedDayNumber, Is.EqualTo(1));
+            double clockBeforePreview = GameSessionState.GameTimeOfDayMinutes;
+            int hungerBeforePreview = GameSessionState.HungerLevel;
+            int fatigueBeforePreview = GameSessionState.FatigueLevel;
+            Vector3 positionBeforePreview = home.Player.GameObject.transform.position;
+            foreach (int previewDay in new[] { 7, 3, 1 })
+            {
+                Assert.That(debugWindow.TrySetGameDayNumber(previewDay), Is.True);
+                Assert.That(dayController.AppliedDayNumber, Is.EqualTo(previewDay));
+                Assert.That(GameSessionState.GameTimeOfDayMinutes,
+                    Is.EqualTo(clockBeforePreview));
+                Assert.That(GameSessionState.HungerLevel, Is.EqualTo(hungerBeforePreview));
+                Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(fatigueBeforePreview));
+                Assert.That(home.Player.GameObject.transform.position,
+                    Is.EqualTo(positionBeforePreview));
+                Assert.That(debugWindow.IsOpen, Is.True);
+            }
+
+            Assert.That(debugWindow.TrySkipHomeToCityMap(), Is.True);
+            Assert.That(debugWindow.IsOpen, Is.False);
+
             CityGameRoot city = null;
             yield return WaitUntil(
                 () =>
@@ -747,7 +788,7 @@ namespace BarPromenade.Tests.PlayMode
                            city.Map != null &&
                            city.Map.IsOpen;
                 },
-                "F9 did not skip Home and open the City debug map.");
+                "The Home debug button did not open the City debug map.");
 
             Assert.That(city.Map.DebugTeleportEnabled, Is.True);
             Assert.That(

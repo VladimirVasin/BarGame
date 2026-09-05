@@ -23,6 +23,9 @@ namespace BarPromenade
         private IntoxicationHudView intoxicationHud;
         private CityMapController cityMap;
         private BarDrinkShopController drinkShop;
+        private HomeInteriorRoot home;
+        private HomeDebugCityMapShortcut homeCityShortcut;
+        private HomeApartmentDayController homeDayController;
         private GUIStyle titleStyle;
         private GUIStyle hintStyle;
         private GUIStyle rowStyle;
@@ -53,11 +56,32 @@ namespace BarPromenade
             IsInitialized = player.Interactor != null;
         }
 
+        /// <summary>
+        /// Home shares this window's day buttons. Its former F9 shortcut
+        /// becomes an explicit button, leaving one owner of the key.
+        /// </summary>
+        public void BindHome(
+            HomeInteriorRoot homeRoot,
+            HomeDebugCityMapShortcut cityShortcut,
+            HomeApartmentDayController dayController = null)
+        {
+            home = homeRoot != null
+                ? homeRoot
+                : throw new System.ArgumentNullException(nameof(homeRoot));
+            homeCityShortcut = cityShortcut != null
+                ? cityShortcut
+                : throw new System.ArgumentNullException(nameof(cityShortcut));
+            homeDayController = dayController;
+            homeCityShortcut.SetKeyboardShortcutEnabled(false);
+            homeDayController?.BindDebugWindow(this);
+        }
+
         public bool Open()
         {
             if (!IsInitialized ||
                 IsOpen ||
                 SceneTransitionService.IsTransitioning ||
+                HomeApartmentDayController.IsHomeBusy(home) ||
                 HasCommittedDrinkService())
             {
                 LastLaunchErrorKey =
@@ -115,13 +139,35 @@ namespace BarPromenade
         public bool TrySetGameDayNumber(int dayNumber)
         {
             if (!IsOpen ||
+                HomeApartmentDayController.IsHomeBusy(home) ||
                 !GameSessionState.TrySetDebugGameDay(dayNumber))
             {
                 return false;
             }
 
+            homeDayController?.RefreshImmediate();
             RetroAudio.Play(RetroSfxId.UiMove);
             return true;
+        }
+
+        public bool TrySkipHomeToCityMap()
+        {
+            if (!IsOpen || homeCityShortcut == null ||
+                HomeApartmentDayController.IsHomeBusy(home))
+            {
+                return false;
+            }
+
+            // Restore this window's captured inputs before the transition
+            // takes ownership, so closing the window cannot unlock travel.
+            Close(false);
+            if (homeCityShortcut.TrySkipToCityMap())
+            {
+                return true;
+            }
+
+            Open();
+            return false;
         }
 
         private void Update()
@@ -283,6 +329,10 @@ namespace BarPromenade
             {
                 DrawDebugTeleportControl();
             }
+            else if (homeCityShortcut != null)
+            {
+                DrawHomeCityShortcutControl();
+            }
 
             if (!string.IsNullOrEmpty(LastLaunchErrorKey))
             {
@@ -384,6 +434,25 @@ namespace BarPromenade
                 }
 
                 GUI.enabled = previousEnabled;
+            }
+        }
+
+        private void DrawHomeCityShortcutControl()
+        {
+            Rect button = new Rect(132f, 156f, 376f, 24f);
+            RetroUiTheme.DrawPanel(
+                button,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
+                1f);
+            if (GUI.Button(
+                    button,
+                    LocalizationService.Get("debug.home.skip_to_city"),
+                    rowStyle))
+            {
+                TrySkipHomeToCityMap();
             }
         }
 

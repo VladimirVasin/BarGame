@@ -123,6 +123,59 @@ namespace BarPromenade.Tests.PlayMode
                     Is.LessThan(Player3DRagdollController.JointFrameBentDegrees),
                     $"{limb.Name} is bent {flexion:F1} deg in the idle pose");
             }
+
+            Transform spine = registry.Anchors.Spine;
+            Transform chest = registry.Anchors.Chest;
+            Assert.That(spine, Is.Not.Null, "the lower back must have a registered anchor");
+            Assert.That(chest.parent, Is.EqualTo(spine));
+            Rigidbody spineBody = hero.Ragdoll.SpineBody;
+            Assert.That(spineBody, Is.Not.Null);
+            Assert.That(spineBody.transform, Is.EqualTo(spine));
+            Assert.That(
+                spine.GetComponent<ConfigurableJoint>().connectedBody,
+                Is.EqualTo(hero.Ragdoll.PelvisBody));
+            Assert.That(
+                chest.GetComponent<ConfigurableJoint>().connectedBody,
+                Is.EqualTo(spineBody));
+            Assert.That(
+                hero.Ragdoll.RestingOverlapPairCount,
+                Is.Zero,
+                hero.Ragdoll.DebugRestingOverlaps);
+
+            // The visible forward bend must use both parts of the back;
+            // resetting the additive pass must restore both, including
+            // repeated application in one frame without accumulating bend.
+            Player3DProceduralLocomotionLayer layer = presentation.Layer;
+            layer.Restore();
+            Quaternion spineBase = spine.localRotation;
+            Quaternion chestBase = chest.localRotation;
+            Vector3 neutralHead = registry.Anchors.Head.position -
+                                  registry.Anchors.Pelvis.position;
+            var bend = new Player3DProceduralLayerInput(
+                true, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f,
+                1f, 1f, 0f, false, false, chestPitchDegrees: 10f);
+            layer.Apply(bend, 1f);
+            Assert.That(Quaternion.Angle(spineBase, spine.localRotation), Is.GreaterThan(1f));
+            Assert.That(Quaternion.Angle(chestBase, chest.localRotation), Is.GreaterThan(1f));
+            Assert.That(
+                Vector3.Dot(
+                    registry.Anchors.Head.position - registry.Anchors.Pelvis.position - neutralHead,
+                    root.forward),
+                Is.GreaterThan(0.04f),
+                "the lower-back/chest bend must carry the head forward");
+            Quaternion spineBent = spine.localRotation;
+            layer.Apply(bend, 0f);
+            Assert.That(Quaternion.Angle(spineBent, spine.localRotation), Is.LessThan(0.02f));
+            layer.Restore();
+            Assert.That(Quaternion.Angle(spineBase, spine.localRotation), Is.LessThan(0.02f));
+            Assert.That(Quaternion.Angle(chestBase, chest.localRotation), Is.LessThan(0.02f));
+
+            Assert.That(hero.Ragdoll.Begin(1f), Is.True);
+            Assert.That(spineBody.isKinematic, Is.False,
+                "the lower back must join physics when the fall takes the rig");
+            hero.Ragdoll.Cancel();
+            Assert.That(spineBody.isKinematic, Is.True,
+                "cancelling physics must release the lower back with the rest of the rig");
         }
 
         [UnityTest]

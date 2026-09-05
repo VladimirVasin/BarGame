@@ -335,6 +335,158 @@ namespace BarPromenade.Tests.EditMode
 
         }
 
+        [TestCase("GEO_Torso")]
+        [TestCase("CLO_JacketBody")]
+        public void TorsoSkinning_DeformsThreeSectionsAcrossProductionActions(
+            string meshName)
+        {
+            V2Manifest manifest = LoadManifest();
+            GameObject owner = new GameObject("Hero V2 spine skinning test");
+            Mesh baked = new Mesh();
+            try
+            {
+                Player3DAssetRegistry registry =
+                    Player3DResources.Instantiate(owner.transform);
+                Assert.That(registry, Is.Not.Null);
+                Player3DBoneAnchors anchors = registry.Anchors;
+                Assert.That(anchors.Pelvis.name, Is.EqualTo("pelvis"));
+                Assert.That(anchors.Spine, Is.Not.Null);
+                Assert.That(anchors.Spine.name, Is.EqualTo("spine"));
+                Assert.That(anchors.Chest.name, Is.EqualTo("chest"));
+                Assert.That(anchors.Spine.parent, Is.SameAs(anchors.Pelvis));
+                Assert.That(anchors.Chest.parent, Is.SameAs(anchors.Spine));
+                Assert.That(registry.AnatomicalParts.Count, Is.EqualTo(16));
+                Assert.That(registry.Animations.Count, Is.EqualTo(41));
+                Assert.That(manifest.actions, Has.Length.EqualTo(41));
+
+                SkinnedMeshRenderer renderer =
+                    FindBinding(registry, meshName).Renderer as SkinnedMeshRenderer;
+                Assert.That(renderer, Is.Not.Null);
+                Assert.That(renderer.quality, Is.EqualTo(SkinQuality.Bone2));
+                Mesh source = renderer.sharedMesh;
+                Vector3[] vertices = source.vertices;
+                BoneWeight[] weights = source.boneWeights;
+                Matrix4x4[] bindposes = source.bindposes;
+                Transform[] bones = renderer.bones;
+                Assert.That(weights, Has.Length.EqualTo(vertices.Length));
+                Assert.That(bindposes, Has.Length.EqualTo(bones.Length));
+                HashSet<Transform> sections = new HashSet<Transform>();
+                int blendedVertexCount = 0;
+                foreach (BoneWeight weight in weights)
+                {
+                    Assert.That(weight.weight0, Is.GreaterThan(0f));
+                    Assert.That(weight.weight1, Is.GreaterThanOrEqualTo(0f));
+                    Assert.That(weight.weight2 + weight.weight3, Is.Zero);
+                    Assert.That(weight.weight0 + weight.weight1,
+                        Is.EqualTo(1f).Within(0.0001f));
+                    sections.Add(bones[weight.boneIndex0]);
+                    if (weight.weight1 > 0f)
+                    {
+                        sections.Add(bones[weight.boneIndex1]);
+                        blendedVertexCount++;
+                    }
+                }
+
+                Assert.That(sections, Is.EquivalentTo(new[]
+                {
+                    anchors.Pelvis, anchors.Spine, anchors.Chest
+                }));
+                Assert.That(blendedVertexCount, Is.GreaterThan(0));
+                int chestIndex = Array.IndexOf(bones, anchors.Chest);
+                float maximumDepartureFromRigidChest = 0f;
+                Matrix4x4[] posedBones = new Matrix4x4[bones.Length];
+                foreach (V2Action action in manifest.actions)
+                {
+                    Assert.That(registry.TryGetAnimation(action.name,
+                        out Player3DAnimationBinding animation), Is.True);
+                    Assert.That(animation.Clip, Is.Not.Null, action.name);
+                    HashSet<string> curvePaths = new HashSet<string>();
+                    foreach (EditorCurveBinding curve in
+                             AnimationUtility.GetCurveBindings(animation.Clip))
+                    {
+                        if (curve.type == typeof(Transform))
+                        {
+                            curvePaths.Add(curve.path);
+                        }
+                    }
+
+                    foreach (Transform section in sections)
+                    {
+                        string path = AnimationUtility.CalculateTransformPath(
+                            section, registry.Animator.transform);
+                        Assert.That(curvePaths, Does.Contain(path),
+                            $"{action.name} lost its {section.name} bone tracks.");
+                    }
+
+                    // Include endpoints and interior poses of every exported
+                    // action, including facial and terminal hold actions.
+                    for (int sample = 0; sample <= 8; sample++)
+                    {
+                        animation.Clip.SampleAnimation(
+                            registry.Animator.gameObject,
+                            animation.Clip.length * sample / 8f);
+                        // Match production ground probing: compensate the FBX
+                        // renderer's local scale before converting to world.
+                        renderer.BakeMesh(baked, true);
+                        Vector3[] actual = baked.vertices;
+                        Assert.That(actual, Has.Length.EqualTo(vertices.Length));
+                        for (int bone = 0; bone < bones.Length; bone++)
+                        {
+                            posedBones[bone] =
+                                bones[bone].localToWorldMatrix * bindposes[bone];
+                        }
+
+                        float maximumSkinningError = 0f;
+                        Vector3 firstActualWorld = Vector3.zero;
+                        Vector3 firstExpectedWorld = Vector3.zero;
+                        for (int vertex = 0; vertex < vertices.Length; vertex++)
+                        {
+                            BoneWeight weight = weights[vertex];
+                            Vector3 expected = posedBones[weight.boneIndex0]
+                                .MultiplyPoint3x4(vertices[vertex]) * weight.weight0;
+                            if (weight.weight1 > 0f)
+                            {
+                                expected += posedBones[weight.boneIndex1]
+                                    .MultiplyPoint3x4(vertices[vertex]) * weight.weight1;
+                            }
+
+                            Vector3 world = renderer.transform.TransformPoint(
+                                actual[vertex]);
+                            if (vertex == 0)
+                            {
+                                firstActualWorld = world;
+                                firstExpectedWorld = expected;
+                            }
+
+                            maximumSkinningError = Mathf.Max(maximumSkinningError,
+                                Vector3.Distance(world, expected));
+                            Vector3 rigidChest = posedBones[chestIndex]
+                                .MultiplyPoint3x4(vertices[vertex]);
+                            maximumDepartureFromRigidChest = Mathf.Max(
+                                maximumDepartureFromRigidChest,
+                                Vector3.Distance(world, rigidChest));
+                        }
+
+                        Assert.That(maximumSkinningError, Is.LessThan(0.0001f),
+                            $"{meshName}, {action.name}, sample {sample}: " +
+                            "the imported mesh does not follow its spine weights. " +
+                            $"Renderer local scale={renderer.transform.localScale}, " +
+                            $"lossy scale={renderer.transform.lossyScale}; " +
+                            $"first vertex actual={firstActualWorld:F6}, " +
+                            $"expected={firstExpectedWorld:F6}.");
+                    }
+                }
+
+                Assert.That(maximumDepartureFromRigidChest, Is.GreaterThan(0.01f),
+                    $"{meshName} still moves as a rigid chest through all 41 actions.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(baked);
+                UnityEngine.Object.DestroyImmediate(owner);
+            }
+        }
+
         private static V2Manifest LoadManifest()
         {
             RequireGeneratedSources();

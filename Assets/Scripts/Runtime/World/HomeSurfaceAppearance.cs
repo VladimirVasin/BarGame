@@ -294,9 +294,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Convenience wrappers the home builders share: create the primitive
-    /// with its authored flat colour, then apply the packaged surface so the
-    /// colour survives as the albedo-compensated tint.
+    /// Place authored meshes while retaining the existing surface-family API.
     /// </summary>
     internal static class HomeSurfacePrimitives
     {
@@ -310,15 +308,16 @@ namespace BarPromenade
             SurfaceProjection projection,
             bool collider = true)
         {
-            GameObject box = RuntimePrimitiveFactory.CreateBox(
+            GameObject box = HomeAuthoredVisualFactory.CreateBox(
                 name,
                 parent,
                 localPosition,
                 size,
                 color,
                 collider);
-            HomeSurfaceAppearance.Apply(
+            HomeAuthoredVisualFactory.ApplySurface(
                 box.GetComponent<Renderer>(),
+                HomeInteriorModelLibrary.Load().Binding(name, "Box"),
                 surfaceKind,
                 projection,
                 color);
@@ -335,15 +334,16 @@ namespace BarPromenade
             SurfaceProjection projection,
             bool collider = true)
         {
-            GameObject cylinder = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject cylinder = HomeAuthoredVisualFactory.CreateCylinder(
                 name,
                 parent,
                 localPosition,
                 size,
                 color,
                 collider);
-            HomeSurfaceAppearance.Apply(
+            HomeAuthoredVisualFactory.ApplySurface(
                 cylinder.GetComponent<Renderer>(),
+                HomeInteriorModelLibrary.Load().Binding(name, "Cylinder"),
                 surfaceKind,
                 projection,
                 color);

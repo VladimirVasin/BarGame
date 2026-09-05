@@ -29,7 +29,10 @@ namespace BarPromenade
             float balanceDifficulty,
             float chromaticAberration,
             float lensDistortion,
-            float dollyZoomStrength)
+            float dollyZoomStrength,
+            float vertigoStrength,
+            float mutterSlurAmount,
+            float mutterScatterAmount)
         {
             Level = level;
             Stage = stage;
@@ -47,6 +50,9 @@ namespace BarPromenade
             ChromaticAberration = chromaticAberration;
             LensDistortion = lensDistortion;
             DollyZoomStrength = dollyZoomStrength;
+            VertigoStrength = vertigoStrength;
+            MutterSlurAmount = mutterSlurAmount;
+            MutterScatterAmount = mutterScatterAmount;
         }
 
         public int Level { get; }
@@ -71,6 +77,31 @@ namespace BarPromenade
         /// then roughly doubling every ten points to the full swing at 100.
         /// </summary>
         public float DollyZoomStrength { get; }
+
+        /// <summary>
+        /// How far the vertigo whirlpool may wind the frame around the hero,
+        /// 0..1 of <see cref="IntoxicationVertigoModel.MaximumTwistDegrees"/>,
+        /// and how much the disc over his own body floats. Gated exactly like
+        /// <see cref="DollyZoomStrength"/>: nothing through the balance
+        /// threshold, a third of the swing at 80, all of it at 100.
+        /// </summary>
+        public float VertigoStrength { get; }
+
+        /// <summary>
+        /// How far his muttering has come apart, 0..1: stretched vowels, a
+        /// stuck syllable, an eaten space, a lost letter. Shares the balance
+        /// threshold's gate — nothing at 60 — and rises steeply, because a
+        /// stage boundary is not a switch and the words have to be more or
+        /// less intelligible before they stop being.
+        /// </summary>
+        public float MutterSlurAmount { get; }
+
+        /// <summary>
+        /// How far the letters of a muttered line fly apart, 0..1. Exactly
+        /// zero through 80 and only then opens: the words come apart on the
+        /// last stage alone.
+        /// </summary>
+        public float MutterScatterAmount { get; }
         public bool BalanceEnabled =>
             Level > IntoxicationStageRules.BalanceThreshold;
     }
@@ -195,6 +226,38 @@ namespace BarPromenade
                     0f,
                     0f,
                     0.35f,
+                    1f),
+                // The whirlpool shares the dolly zoom's gate and curve on
+                // purpose: both are the last stage coming apart, and the two
+                // breathe on their own seeds so they beat against each other
+                // instead of peaking together.
+                Interpolate(
+                    clampedLevel,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0.35f,
+                    1f),
+                // The slur opens with the muttering itself and rises steeply:
+                // barely anything at 61, half undone at 80, all of it at 100.
+                Interpolate(
+                    clampedLevel,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0.55f,
+                    1f),
+                // The letters, though, hold together for the whole of the
+                // Unsteady stage and fly apart only on the last one.
+                Interpolate(
+                    clampedLevel,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
                     1f));
         }
 

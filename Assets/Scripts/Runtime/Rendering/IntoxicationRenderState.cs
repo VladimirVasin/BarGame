@@ -10,7 +10,10 @@ namespace BarPromenade.Rendering
             float warpStrength,
             float warmth,
             float exposurePulse,
-            float animationTime)
+            float animationTime,
+            float vertigoTwistRadians,
+            Vector2 vertigoCorePixels,
+            Vector3 vertigoEyeWorldPosition)
         {
             VignetteStrength = vignetteStrength;
             GhostPixels = ghostPixels;
@@ -18,6 +21,9 @@ namespace BarPromenade.Rendering
             Warmth = warmth;
             ExposurePulse = exposurePulse;
             AnimationTime = animationTime;
+            VertigoTwistRadians = vertigoTwistRadians;
+            VertigoCorePixels = vertigoCorePixels;
+            VertigoEyeWorldPosition = vertigoEyeWorldPosition;
         }
 
         public float VignetteStrength { get; }
@@ -26,6 +32,26 @@ namespace BarPromenade.Rendering
         public float Warmth { get; }
         public float ExposurePulse { get; }
         public float AnimationTime { get; }
+
+        /// <summary>
+        /// Signed reach of the vertigo whirlpool at the frame's farthest
+        /// corner. Exactly zero whenever the water is still, which is the
+        /// composite's early-out and keeps the sober frame bit-exact.
+        /// </summary>
+        public float VertigoTwistRadians { get; }
+
+        /// <summary>
+        /// How far the disc over the hero's body floats, in internal pixels.
+        /// </summary>
+        public Vector2 VertigoCorePixels { get; }
+
+        /// <summary>
+        /// The whirlpool's eye in WORLD space. It is projected by the
+        /// composite rather than by gameplay: the renderer feature runs after
+        /// every LateUpdate, so the camera pose is final there and the eye
+        /// cannot lag a frame behind an orbiting camera.
+        /// </summary>
+        public Vector3 VertigoEyeWorldPosition { get; }
     }
 
     public static class IntoxicationRenderState
@@ -45,7 +71,10 @@ namespace BarPromenade.Rendering
 
         public static void Set(
             IntoxicationProfile profile,
-            float animationTime)
+            float animationTime,
+            float vertigoTwistRadians,
+            Vector2 vertigoCorePixels,
+            Vector3 vertigoEyeWorldPosition)
         {
             Current = new IntoxicationRenderParameters(
                 profile.VignetteStrength,
@@ -53,7 +82,10 @@ namespace BarPromenade.Rendering
                 profile.WarpStrength,
                 profile.Warmth,
                 profile.ExposurePulse,
-                Mathf.Max(0f, animationTime));
+                Mathf.Max(0f, animationTime),
+                vertigoTwistRadians,
+                vertigoCorePixels,
+                vertigoEyeWorldPosition);
         }
 
         public static void Clear()

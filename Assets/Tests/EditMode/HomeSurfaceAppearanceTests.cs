@@ -151,21 +151,6 @@ namespace BarPromenade.Tests.EditMode
                 "Home Bathroom Mirror Crack",
                 "Home Bathroom Leak Stain",
                 "Home Bathroom Floor Drain",
-                "Home Dead Window",
-                "Home Back Wall Damp",
-                "Home Left Wall Peel",
-                "Home Table Crushed Can",
-                "Home Table Ashtray",
-                "Home Table Stale Plate",
-                "Home Kitchen Dirty Dishes",
-                "Home Kitchen Wet Rag",
-                "Home Kitchen Tin",
-                "Home Radio Dial",
-                "Home Faded Photograph",
-                "Home Old Calendar",
-                "Home Pill Blister",
-                "Home Cardboard Box",
-                "Home Floor Can",
                 "Home Lower Facade Damp Stain",
                 "Home Balcony Drain",
                 "Home Balcony Door Handle",
@@ -190,16 +175,6 @@ namespace BarPromenade.Tests.EditMode
 
         private static readonly string[] FlatTintExemptPrefixes =
         {
-            "Home Table Green Bottle",
-            "Home Table Brown Bottle",
-            "Home Kitchen Empty Bottle",
-            "Home Hidden Bed Bottle",
-            "Home Worn Slipper",
-            // The shirt he did not hang up, and its sleeve. Flat-tinted
-            // like the slippers and the bottle it shares the bedside with:
-            // a crumpled garment this small reads by silhouette, and a
-            // tiling surface on it would only fight the bedding.
-            "Home Bed Crumpled Shirt",
             "Home Balcony Ashtray",
             "Home Refrigerator Foot",
             "Home Refrigerator Frost Patch",
@@ -605,6 +580,10 @@ namespace BarPromenade.Tests.EditMode
                     parent.transform,
                     plan,
                     balcony);
+                root.GetComponent<HomeApartmentDressing>().ApplyDay(7);
+                var authoredParts = new Dictionary<Mesh, HomeAuthoredPart>();
+                foreach (HomeAuthoredPart part in HomeInteriorModelLibrary.Load().Parts)
+                    authoredParts.Add(part.mesh, part);
 
                 var expectedTextures = new HashSet<Texture>();
                 foreach (HomeSurfaceKind kind in AllSurfaceKinds())
@@ -623,6 +602,8 @@ namespace BarPromenade.Tests.EditMode
 
                 var seenTextures = new HashSet<Texture>();
                 int texturedRendererCount = 0;
+                int bakedUvRendererCount = 0;
+                int parametricUvRendererCount = 0;
                 Renderer[] renderers =
                     root.GetComponentsInChildren<Renderer>(true);
                 foreach (Renderer renderer in renderers)
@@ -657,15 +638,21 @@ namespace BarPromenade.Tests.EditMode
 
                     var properties = new MaterialPropertyBlock();
                     renderer.GetPropertyBlock(properties);
+                    HomeAuthoredPart authoredPart = null;
+                    MeshFilter filter = renderer.GetComponent<MeshFilter>();
+                    if (filter != null && filter.sharedMesh != null)
+                        authoredParts.TryGetValue(filter.sharedMesh, out authoredPart);
                     Texture texture = properties.GetTexture(BaseMapId);
                     if (texture == null)
                     {
                         Assert.That(
-                            IsFlatTintExempt(renderer.gameObject.name),
+                            authoredPart != null
+                                ? authoredPart.sheet == "Plain"
+                                : IsFlatTintExempt(renderer.gameObject.name),
                             Is.True,
                             $"{renderer.gameObject.name} carries no home " +
-                            "surface texture and is not on the flat-tint " +
-                            "exemption list.");
+                            "surface texture and is not authored as a plain " +
+                            "part or an exempt runtime detail.");
                         continue;
                     }
 
@@ -684,12 +671,25 @@ namespace BarPromenade.Tests.EditMode
                         transform.y,
                         Is.GreaterThan(0f),
                         $"Invalid V tiling on {renderer.name}.");
+                    if (authoredPart != null && !authoredPart.IsParametric)
+                    {
+                        bakedUvRendererCount++;
+                        Assert.That(transform, Is.EqualTo(new Vector4(1f, 1f, 0f, 0f)),
+                            $"'{renderer.name}' must keep its Blender-authored metre UVs unchanged.");
+                    }
+                    else if (authoredPart != null)
+                    {
+                        parametricUvRendererCount++;
+                    }
                     seenTextures.Add(texture);
                 }
 
                 Assert.That(
                     texturedRendererCount,
                     Is.GreaterThanOrEqualTo(60));
+                Assert.That(bakedUvRendererCount, Is.GreaterThan(0));
+                Assert.That(parametricUvRendererCount, Is.GreaterThan(0),
+                    "The same shared appearance path must still texture resizable hardware.");
                 Assert.That(
                     seenTextures,
                     Is.EquivalentTo(expectedTextures));

@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 namespace BarPromenade
 {
     /// <summary>
-    /// Debug-only F9 path from Home directly to the City map. It bypasses
+    /// Debug-only path from Home directly to the City map. It bypasses
     /// the apartment and stairwell presentations without changing their
     /// ordinary progression path.
     /// </summary>
@@ -15,12 +15,18 @@ namespace BarPromenade
 
         public bool IsInitialized { get; private set; }
         public bool IsLoadingCity { get; private set; }
+        public bool KeyboardShortcutEnabled { get; private set; } = true;
         public string OperationId { get; private set; } = string.Empty;
 
         public void Initialize(PlayerRuntime player)
         {
             motor = player.Motor;
             IsInitialized = motor != null;
+        }
+
+        public void SetKeyboardShortcutEnabled(bool enabled)
+        {
+            KeyboardShortcutEnabled = enabled;
         }
 
         public bool TrySkipToCityMap()
@@ -58,7 +64,7 @@ namespace BarPromenade
         private void Update()
         {
             Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
+            if (KeyboardShortcutEnabled && keyboard != null &&
                 keyboard.f9Key.wasPressedThisFrame)
             {
                 TrySkipToCityMap();

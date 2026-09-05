@@ -34,7 +34,7 @@ namespace BarPromenade.Editor
         public const string PrefabPath =
             "Assets/Resources/Player/Player3DV2.prefab";
 
-        private const int BuildSchemaVersion = 3;
+        private const int BuildSchemaVersion = 4;
         private const string ExpectedDesignVersion = "HeroV2";
         private const string ExpectedAtlasRenderer = "GEO_FaceSurface";
         private const string ExpectedAtlasOrigin = "bottom_left";
@@ -973,6 +973,12 @@ namespace BarPromenade.Editor
                     renderer.motionVectorGenerationMode =
                         MotionVectorGenerationMode.Object;
 
+                    if (source.name == "GEO_Torso" ||
+                        source.name == "CLO_JacketBody")
+                    {
+                        ValidateTorsoSkinning(renderer);
+                    }
+
                     Player3DMeshBinding meshBinding = new Player3DMeshBinding(
                         source.name,
                         source.role,
@@ -1022,7 +1028,14 @@ namespace BarPromenade.Editor
 
                 Transform head = RequireTransform(transformsByName, "head");
                 Transform chest = RequireTransform(transformsByName, "chest");
+                Transform spine = RequireTransform(transformsByName, "spine");
                 Transform pelvis = RequireTransform(transformsByName, "pelvis");
+                if (spine.parent != pelvis || chest.parent != spine)
+                {
+                    throw new InvalidOperationException(
+                        "Hero V2 must preserve the pelvis -> spine -> chest " +
+                        "chain shared by its production animation Avatar.");
+                }
                 Transform leftFoot = RequireTransform(transformsByName, "foot.L");
                 Transform rightFoot = RequireTransform(transformsByName, "foot.R");
                 Transform leftGrip = FindOptionalTransform(
@@ -1088,7 +1101,8 @@ namespace BarPromenade.Editor
                         rightGrip,
                         leftVessel,
                         rightCigarette,
-                        mouth),
+                        mouth,
+                        spine),
                     new Player3DMetrics(
                         manifest.height_m,
                         localBounds,
@@ -1114,6 +1128,87 @@ namespace BarPromenade.Editor
             {
                 UnityEngine.Object.DestroyImmediate(prefabRoot);
             }
+        }
+
+        private static void ValidateTorsoSkinning(Renderer renderer)
+        {
+            if (!(renderer is SkinnedMeshRenderer skinned) ||
+                skinned.sharedMesh == null)
+            {
+                throw new InvalidOperationException(
+                    $"Hero V2 '{renderer.name}' must remain a skinned torso.");
+            }
+
+            Transform[] bones = skinned.bones;
+            BoneWeight[] weights = skinned.sharedMesh.boneWeights;
+            HashSet<string> usedBones = new HashSet<string>(StringComparer.Ordinal);
+            int blendedTransitions = 0;
+            if (weights.Length != skinned.sharedMesh.vertexCount)
+            {
+                throw new InvalidOperationException(
+                    $"Hero V2 '{renderer.name}' has missing vertex weights.");
+            }
+
+            foreach (BoneWeight weight in weights)
+            {
+                if (weight.weight0 <= 0f || weight.weight1 < 0f ||
+                    weight.weight2 != 0f || weight.weight3 != 0f ||
+                    Mathf.Abs(weight.weight0 + weight.weight1 - 1f) > 0.0001f)
+                {
+                    throw new InvalidOperationException(
+                        $"Hero V2 '{renderer.name}' must use normalized " +
+                        "weights with at most two influences per vertex.");
+                }
+
+                string first = RequireTorsoInfluence(bones, weight.boneIndex0);
+                usedBones.Add(first);
+                if (weight.weight1 <= 0f)
+                {
+                    continue;
+                }
+
+                string second = RequireTorsoInfluence(bones, weight.boneIndex1);
+                usedBones.Add(second);
+                if (first == second ||
+                    (first != "spine" && second != "spine"))
+                {
+                    throw new InvalidOperationException(
+                        $"Hero V2 '{renderer.name}' may only blend adjacent " +
+                        "pelvis/spine or spine/chest influences.");
+                }
+
+                blendedTransitions |= first == "pelvis" || second == "pelvis"
+                    ? 1 : 2;
+            }
+
+            if (blendedTransitions != 3 ||
+                !usedBones.SetEquals(new[] { "pelvis", "spine", "chest" }))
+            {
+                throw new InvalidOperationException(
+                    $"Hero V2 '{renderer.name}' must deform through the " +
+                    "pelvis, lower spine and chest, with blended transitions.");
+            }
+
+            // Keep the two authored influences even if a quality preset uses
+            // single-bone skinning. Other parts retain their rigid weights.
+            skinned.quality = SkinQuality.Bone2;
+        }
+
+        private static string RequireTorsoInfluence(
+            Transform[] bones,
+            int index)
+        {
+            if (index < 0 || index >= bones.Length || bones[index] == null ||
+                (bones[index].name != "pelvis" &&
+                 bones[index].name != "spine" &&
+                 bones[index].name != "chest"))
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 torso weights reference a missing or " +
+                    "non-torso bone.");
+            }
+
+            return bones[index].name;
         }
 
         private static Player3DFaceAtlasBinding BuildFaceAtlasBinding(

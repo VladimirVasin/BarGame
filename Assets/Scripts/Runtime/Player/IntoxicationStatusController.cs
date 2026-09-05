@@ -43,6 +43,13 @@ namespace BarPromenade
         /// <summary>The rise model's seed is the episode's, salted.</summary>
         private const int RiseSeedSalt = 0x51AE;
 
+        /// <summary>
+        /// The whirlpool's seed. A different salt from the camera's dolly
+        /// zoom (0x5A17) on purpose: the two breaths beat against each other
+        /// instead of peaking on the same second.
+        /// </summary>
+        private const int VertigoSeedSalt = 0x7E11;
+
         private enum BalanceState
         {
             Idle = 0,
@@ -73,6 +80,10 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView hud;
         private IntoxicationLensVolumeDriver lensDriver;
+        private IntoxicationMutterPresenter mutter;
+        private IntoxicationVertigoModel vertigo;
+        private float vertigoTwistRadians;
+        private Vector2 vertigoCorePixels;
         private BalanceState balanceState;
         private IntoxicationProfile currentProfile;
         private float presentationLevel;
@@ -134,6 +145,12 @@ namespace BarPromenade
         public PlayerBalanceController Balance => balance;
         public float FallDirection => fallDirection;
 
+        /// <summary>The vertigo whirlpool's breath, for diagnostics and captures.</summary>
+        public IntoxicationVertigoModel Vertigo => vertigo;
+
+        /// <summary>His muttering, above the balance threshold.</summary>
+        public IntoxicationMutterPresenter Mutter => mutter;
+
         public void Initialize(
             PlayerRuntime player,
             PlayerCameraFollow follow,
@@ -158,6 +175,8 @@ namespace BarPromenade
                     .AddComponent<IntoxicationLensVolumeDriver>();
             }
 
+            EnsureMutter(player, follow);
+
             presentationLevel =
                 GameSessionState.IntoxicationLevel;
             GameTimeScaleRuntime.SetIntoxicationLevel(presentationLevel);
@@ -181,8 +200,49 @@ namespace BarPromenade
             balanceState = BalanceState.Idle;
             balanceStateElapsed = 0f;
             fallAmount = 0f;
+            EnsureVertigo();
+            vertigo.Reset();
+            vertigoTwistRadians = 0f;
+            vertigoCorePixels = Vector2.zero;
             initialized = true;
             ApplyPresentation();
+        }
+
+        /// <summary>
+        /// Raises the muttering on a child object of its own. A child rather
+        /// than this one: the bubble view is
+        /// <see cref="DisallowMultipleComponent"/> and the City's UI object
+        /// already carries one for its own five speakers.
+        /// </summary>
+        private void EnsureMutter(
+            PlayerRuntime player,
+            PlayerCameraFollow follow)
+        {
+            if (mutter == null)
+            {
+                var host = new GameObject(
+                    IntoxicationMutterPresenter.RuntimeObjectName);
+                host.transform.SetParent(transform, false);
+                mutter = host
+                    .AddComponent<IntoxicationMutterPresenter>();
+            }
+
+            mutter.Initialize(
+                player,
+                follow != null ? follow.Camera : null,
+                GetComponent<InteractionPromptView>());
+        }
+
+        /// <summary>
+        /// Test seam: restarts the vertigo whirlpool's random stream from
+        /// still water, mirroring
+        /// <see cref="PlayerCameraFollow.ReseedDollyZoom"/>.
+        /// </summary>
+        public void ReseedVertigo(int seed)
+        {
+            vertigo = new IntoxicationVertigoModel(seed);
+            vertigoTwistRadians = 0f;
+            vertigoCorePixels = Vector2.zero;
         }
 
         /// <summary>
@@ -219,6 +279,7 @@ namespace BarPromenade
             }
 
             UpdatePresentationLevel();
+            AdvanceVertigo(deltaTime);
             if (!GameTimeScaleRuntime.IsPaused && Time.deltaTime > 0f)
             {
                 UpdateBalance(Time.deltaTime);
@@ -956,12 +1017,88 @@ namespace BarPromenade
                 fallDirection,
                 fallAmount);
             UpdateCameraFocus();
+            bool hasEye = TryGetVertigoEye(out Vector3 eye);
             IntoxicationRenderState.Set(
                 currentProfile,
-                Time.unscaledTime);
+                Time.unscaledTime,
+                hasEye ? vertigoTwistRadians : 0f,
+                hasEye ? vertigoCorePixels : Vector2.zero,
+                eye);
             lensDriver?.Apply(
                 currentProfile.ChromaticAberration,
                 currentProfile.LensDistortion);
+            mutter?.SetState(currentProfile, IsFalling);
+        }
+
+        /// <summary>
+        /// Advances the vertigo whirlpool. It rides the calendar delta like
+        /// every other drunk perception effect — unscaled, so the water does
+        /// not slow down with the world at the top level, and exactly zero
+        /// while the game is paused, so a held frame does not keep spinning
+        /// behind the menu.
+        /// </summary>
+        private void AdvanceVertigo(float deltaTime)
+        {
+            EnsureVertigo();
+            bool gateOpen =
+                GraphicsEffectsSettings.IntoxicationLensFxEnabled &&
+                cameraFollow != null &&
+                cameraFollow.CinematicMotionEnabled &&
+                !cameraFollow.FixedPoseActive;
+            if (!gateOpen)
+            {
+                // The toggle and the scripted shots cut the water rather
+                // than fade it, exactly as the lens driver does: both are
+                // flipped from a frame the player is already looking at.
+                vertigo.Reset();
+                vertigoTwistRadians = 0f;
+                vertigoCorePixels = Vector2.zero;
+                return;
+            }
+
+            float pace = Mathf.InverseLerp(
+                IntoxicationStageRules.BalanceThreshold /
+                (float)IntoxicationStageRules.MaximumLevel,
+                1f,
+                currentProfile.Normalized);
+            vertigo.Advance(
+                deltaTime,
+                currentProfile.VertigoStrength,
+                pace);
+            vertigoTwistRadians = vertigo.TwistRadians;
+            vertigoCorePixels = vertigo.CoreOffsetPixels;
+        }
+
+        private void EnsureVertigo()
+        {
+            vertigo ??= new IntoxicationVertigoModel(
+                GameSessionState.CitySeed ^ VertigoSeedSalt);
+        }
+
+        /// <summary>
+        /// The whirlpool's eye is the hero's own body: the pelvis lifted to
+        /// his centre of mass while the presentation can name it — which
+        /// carries the eye to where he actually lies through a fall — and the
+        /// camera's focus point when it cannot.
+        /// </summary>
+        private bool TryGetVertigoEye(out Vector3 worldPosition)
+        {
+            if (TryGetPelvis(out Vector3 pelvis))
+            {
+                worldPosition = pelvis +
+                                Vector3.up *
+                                PlayerCameraFollow.FocusOverrideHeight;
+                return true;
+            }
+
+            if (cameraFollow != null)
+            {
+                worldPosition = cameraFollow.CurrentFocusPoint;
+                return true;
+            }
+
+            worldPosition = Vector3.zero;
+            return false;
         }
 
         /// <summary>
@@ -1084,6 +1221,7 @@ namespace BarPromenade
 
             cameraFollow?.SetIntoxication(0f);
             cameraFollow?.SetBalanceReaction(0f, 0f, 0f);
+            mutter?.Silence();
             cameraFollow?.ClearFocusOverride();
             IntoxicationRenderState.Clear();
             lensDriver?.Clear();

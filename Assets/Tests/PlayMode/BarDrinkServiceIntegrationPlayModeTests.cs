@@ -189,6 +189,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(debugWindow.TrySetGameDayNumber(8), Is.False);
             Assert.That(debugWindow.TrySetGameDayNumber(3), Is.True);
             Assert.That(debugWindow.CurrentGameDayNumber, Is.EqualTo(3));
+            Assert.That(debugWindow.TrySetGameDayNumber(1), Is.True);
+            Assert.That(debugWindow.CurrentGameDayNumber, Is.EqualTo(1));
+            Assert.That(GameSessionState.GameTimeOfDayMinutes,
+                Is.EqualTo(timeBeforeChange),
+                "Backward previews must preserve the same time of day.");
             Assert.That(debugWindow.Close(), Is.True);
             yield return null;
         }

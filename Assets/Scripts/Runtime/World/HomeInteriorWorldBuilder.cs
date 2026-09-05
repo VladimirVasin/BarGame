@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -146,6 +146,7 @@ namespace BarPromenade
             Transform room =
                 new GameObject("Home Interior").transform;
             room.SetParent(parent, false);
+            HomeApartmentDressing dressing = room.gameObject.AddComponent<HomeApartmentDressing>();
             HomeOcclusionRegistry occlusionRegistry =
                 room.gameObject.AddComponent<HomeOcclusionRegistry>();
             BuildShell(room, plan, balcony);
@@ -174,10 +175,6 @@ namespace BarPromenade
                 room,
                 plan,
                 occlusionRegistry);
-            HomeInteriorDressingBuilder.Build(
-                room,
-                plan,
-                occlusionRegistry);
             if (balcony != null)
             {
                 HomeBalconyWorldBuilder.Build(
@@ -195,6 +192,8 @@ namespace BarPromenade
                     exterior,
                     out exteriorNight);
             }
+
+            dressing.Build(plan, balcony, occlusionRegistry);
 
             return room;
         }
@@ -419,7 +418,7 @@ namespace BarPromenade
                 HomeSurfaceKind.DarkWood,
                 SurfaceProjection.BoxXY,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeAuthoredVisualFactory.CreateBox(
                 "Home Exit Door Patch",
                 room,
                 new Vector3(-0.26f, 1.22f, -3.785f),
@@ -622,21 +621,21 @@ namespace BarPromenade
         {
             Vector3 mainBulb =
                 HomeInteriorAtmosphere.MainEmitterPosition;
-            RuntimePrimitiveFactory.CreateCylinder(
+            HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Main Lamp Shade",
                 room,
                 mainBulb + Vector3.up * 0.31f,
                 new Vector3(0.58f, 0.11f, 0.58f),
                 new Color(0.105f, 0.07f, 0.045f),
                 false);
-            RuntimePrimitiveFactory.CreateCylinder(
+            HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Main Lamp Socket",
                 room,
                 mainBulb + Vector3.up * 0.17f,
                 new Vector3(0.11f, 0.07f, 0.11f),
                 new Color(0.075f, 0.055f, 0.040f),
                 false);
-            GameObject bulb = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject bulb = HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Main Dirty Bulb",
                 room,
                 mainBulb,
@@ -651,7 +650,7 @@ namespace BarPromenade
                 0.74f,
                 new Color(1f, 0.58f, 0.24f, 0.12f),
                 new Color(0.78f, 0.30f, 0.08f, 0.035f));
-            RuntimePrimitiveFactory.CreateCylinder(
+            HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Main Lamp Wire",
                 room,
                 new Vector3(
@@ -661,7 +660,7 @@ namespace BarPromenade
                 new Vector3(0.028f, 0.31f, 0.028f),
                 new Color(0.045f, 0.038f, 0.032f),
                 false);
-            RuntimePrimitiveFactory.CreateCylinder(
+            HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Main Lamp Ceiling Rose",
                 room,
                 new Vector3(
@@ -672,7 +671,7 @@ namespace BarPromenade
                 new Color(0.075f, 0.055f, 0.040f),
                 false);
 
-            RuntimePrimitiveFactory.CreateBox(
+            HomeAuthoredVisualFactory.CreateBox(
                 "Home Bathroom Cold Fixture",
                 room,
                 HomeInteriorAtmosphere.BathroomEmitterPosition +
@@ -681,7 +680,7 @@ namespace BarPromenade
                 new Color(0.14f, 0.17f, 0.16f),
                 false);
             Color coldTubeColor = new Color(1.35f, 2.40f, 2.20f);
-            GameObject coldTube = RuntimePrimitiveFactory.CreateBox(
+            GameObject coldTube = HomeAuthoredVisualFactory.CreateBox(
                 "Home Bathroom Cold Tube",
                 room,
                 HomeInteriorAtmosphere.BathroomEmitterPosition,
@@ -713,14 +712,14 @@ namespace BarPromenade
             lamp.SetParent(room, false);
             lamp.localPosition = EntryDoorLampPosition;
 
-            RuntimePrimitiveFactory.CreateBox(
+            HomeAuthoredVisualFactory.CreateBox(
                 "Home Entry Door Lamp Housing",
                 lamp,
                 Vector3.zero,
                 new Vector3(0.34f, 0.14f, 0.065f),
                 new Color(0.065f, 0.052f, 0.036f),
                 false);
-            RuntimePrimitiveFactory.CreateBox(
+            HomeAuthoredVisualFactory.CreateBox(
                 "Home Entry Door Lamp Hood",
                 lamp,
                 new Vector3(0f, 0.085f, 0.028f),
@@ -728,7 +727,7 @@ namespace BarPromenade
                 new Color(0.052f, 0.043f, 0.032f),
                 false);
 
-            GameObject glow = RuntimePrimitiveFactory.CreateBox(
+            GameObject glow = HomeAuthoredVisualFactory.CreateBox(
                 "Home Entry Door Lamp Glow",
                 lamp,
                 new Vector3(0f, -0.005f, 0.052f),
@@ -1081,7 +1080,7 @@ namespace BarPromenade
                 HomeSurfaceKind.Upholstery,
                 SurfaceProjection.BoxXZ,
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Sofa Tear",
                 room,
                 center +
@@ -1211,7 +1210,7 @@ namespace BarPromenade
                 HomeSurfaceKind.DarkWood,
                 SurfaceProjection.BoxXZ,
                 false));
-            parts.Add(RuntimePrimitiveFactory.CreateBox(
+            parts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Camera Corner Suitcase",
                 room,
                 center +

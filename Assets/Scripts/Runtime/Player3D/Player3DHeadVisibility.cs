@@ -66,6 +66,38 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Whether the hero's head is currently on screen at all. Every
+        /// first-person view in the game — the counter stool, the cafe seat,
+        /// the car, the cableway cabin, the board game — takes it off through
+        /// <see cref="Hide"/>, so one question answers all of them without the
+        /// asker having to know any of them by name. Anything that hangs over
+        /// his head has to ask it first.
+        /// </summary>
+        public static bool IsHeadDrawn(Player3DAssetRegistry registry)
+        {
+            if (registry == null)
+            {
+                return false;
+            }
+
+            IReadOnlyList<Player3DMeshBinding> bindings =
+                registry.MeshBindings;
+            for (int index = 0; index < bindings.Count; index++)
+            {
+                Player3DMeshBinding binding = bindings[index];
+                if (binding != null &&
+                    binding.Renderer != null &&
+                    binding.Renderer.enabled &&
+                    IsHeadGeometry(binding.BoneName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Switches off every head renderer on one rig and returns the
         /// handle that puts them back. Never null: a rig with no head
         /// bindings simply hides nothing.

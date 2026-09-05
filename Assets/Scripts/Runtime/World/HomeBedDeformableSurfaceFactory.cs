@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -174,20 +174,12 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Builds a closed box whose top face is a vertex grid the runtime can
-    /// dent. The outermost top ring never moves, so the single-quad sides
-    /// and bottom stay welded to it and the rest silhouette is exactly the
-    /// old primitive box. This is the project's first per-frame-written
-    /// mesh; the build idioms follow CityWaterSurfaceFactory (grid,
-    /// manual bounds allowance, renderer wiring).
+    /// Clones one imported Blender grid for the live mattress or pillow.
+    /// The import step preserves/reorders the independent top quads; runtime
+    /// only deforms that topology and gives its bounds room for the dent.
     /// </summary>
     internal static class HomeBedDeformableSurfaceFactory
     {
-        // Coarse on purpose: at PS1 fidelity a dent reads through hard
-        // per-facet light steps, and finer cells only smooth it back into
-        // the albedo noise.
-        private const float TargetCellSize = 0.14f;
-
         public static GameObject CreateDeformableSurface(
             string name,
             Transform parent,
@@ -198,13 +190,20 @@ namespace BarPromenade
             SurfaceProjection projection,
             float maxDepth)
         {
-            int columns = Mathf.Max(
-                2,
-                Mathf.RoundToInt(size.x / TargetCellSize));
-            int rows = Mathf.Max(
-                2,
-                Mathf.RoundToInt(size.z / TargetCellSize));
-            Mesh mesh = BuildMesh(name, size, columns, rows);
+            HomeAuthoredPart authored = null;
+            foreach (HomeAuthoredPart candidate in HomeInteriorModelLibrary.Load().Parts)
+                if (candidate.role == "grid" && Vector3.Distance(candidate.Size, size) <= 0.001f)
+                { authored = candidate; break; }
+            if (authored == null)
+                throw new System.InvalidOperationException($"No authored bed grid matches '{name}' ({size}).");
+            // The exported mesh owns tessellation. Re-rounding a half-cell in
+            // float here can disagree with Blender's double precision.
+            int columns = authored.grid_columns;
+            int rows = authored.grid_rows;
+            Mesh mesh = Object.Instantiate(authored.mesh);
+            mesh.name = $"{name} Deformable Mesh";
+            mesh.hideFlags = HideFlags.HideAndDontSave;
+            mesh.MarkDynamic();
 
             var result = new GameObject(name);
             result.transform.SetParent(parent, false);
@@ -217,8 +216,9 @@ namespace BarPromenade
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
             RuntimePrimitiveFactory.SetColor(renderer, color);
-            HomeSurfaceAppearance.Apply(
+            HomeAuthoredVisualFactory.ApplySurface(
                 renderer,
+                authored,
                 surfaceKind,
                 projection,
                 color);
@@ -246,144 +246,5 @@ namespace BarPromenade
             return result;
         }
 
-        private static Mesh BuildMesh(
-            string name,
-            Vector3 size,
-            int columns,
-            int rows)
-        {
-            float halfX = size.x * 0.5f;
-            float halfY = size.y * 0.5f;
-            float halfZ = size.z * 0.5f;
-            int topVertexCount = columns * rows * 4;
-
-            // The top is independent per-cell quads (faceted shading — a
-            // smooth bowl vanishes on this project's noisy albedos), then
-            // 5 flat faces at 4 vertices each.
-            var vertices = new Vector3[topVertexCount + 20];
-            var uvs = new Vector2[vertices.Length];
-            var triangles =
-                new int[(columns * rows * 6) + (5 * 6)];
-
-            float cellX = size.x / columns;
-            float cellZ = size.z / rows;
-            int topVertex = 0;
-            int triangle = 0;
-            for (int row = 0; row < rows; row++)
-            {
-                float z0 = -halfZ + (row * cellZ);
-                float z1 = z0 + cellZ;
-                float v0 = (float)row / rows;
-                float v1 = (float)(row + 1) / rows;
-                for (int column = 0; column < columns; column++)
-                {
-                    float x0 = -halfX + (column * cellX);
-                    float x1 = x0 + cellX;
-                    float u0 = (float)column / columns;
-                    float u1 = (float)(column + 1) / columns;
-                    vertices[topVertex] =
-                        new Vector3(x0, halfY, z0);
-                    vertices[topVertex + 1] =
-                        new Vector3(x1, halfY, z0);
-                    vertices[topVertex + 2] =
-                        new Vector3(x0, halfY, z1);
-                    vertices[topVertex + 3] =
-                        new Vector3(x1, halfY, z1);
-                    uvs[topVertex] = new Vector2(u0, v0);
-                    uvs[topVertex + 1] = new Vector2(u1, v0);
-                    uvs[topVertex + 2] = new Vector2(u0, v1);
-                    uvs[topVertex + 3] = new Vector2(u1, v1);
-
-                    // Same proven up-facing winding as the shared grid:
-                    // SW, NW, SE / SE, NW, NE.
-                    triangles[triangle++] = topVertex;
-                    triangles[triangle++] = topVertex + 2;
-                    triangles[triangle++] = topVertex + 1;
-                    triangles[triangle++] = topVertex + 1;
-                    triangles[triangle++] = topVertex + 2;
-                    triangles[triangle++] = topVertex + 3;
-                    topVertex += 4;
-                }
-            }
-
-            int vertex = topVertexCount;
-            AddQuad(
-                vertices, uvs, triangles, ref vertex, ref triangle,
-                new Vector3(-halfX, -halfY, -halfZ),
-                new Vector3(halfX, -halfY, -halfZ),
-                new Vector3(halfX, -halfY, halfZ),
-                new Vector3(-halfX, -halfY, halfZ));
-            AddQuad(
-                vertices, uvs, triangles, ref vertex, ref triangle,
-                new Vector3(-halfX, -halfY, halfZ),
-                new Vector3(halfX, -halfY, halfZ),
-                new Vector3(halfX, halfY, halfZ),
-                new Vector3(-halfX, halfY, halfZ));
-            AddQuad(
-                vertices, uvs, triangles, ref vertex, ref triangle,
-                new Vector3(halfX, -halfY, -halfZ),
-                new Vector3(-halfX, -halfY, -halfZ),
-                new Vector3(-halfX, halfY, -halfZ),
-                new Vector3(halfX, halfY, -halfZ));
-            AddQuad(
-                vertices, uvs, triangles, ref vertex, ref triangle,
-                new Vector3(-halfX, -halfY, -halfZ),
-                new Vector3(-halfX, -halfY, halfZ),
-                new Vector3(-halfX, halfY, halfZ),
-                new Vector3(-halfX, halfY, -halfZ));
-            AddQuad(
-                vertices, uvs, triangles, ref vertex, ref triangle,
-                new Vector3(halfX, -halfY, halfZ),
-                new Vector3(halfX, -halfY, -halfZ),
-                new Vector3(halfX, halfY, -halfZ),
-                new Vector3(halfX, halfY, halfZ));
-
-            var mesh = new Mesh
-            {
-                name = $"{name} Deformable Mesh",
-                hideFlags = HideFlags.HideAndDontSave,
-                indexFormat = IndexFormat.UInt16
-            };
-            mesh.SetVertices(vertices);
-            mesh.SetUVs(0, uvs);
-            mesh.SetTriangles(triangles, 0, true);
-            mesh.RecalculateNormals();
-            mesh.MarkDynamic();
-
-            // Never UploadMeshData(true) here: it discards the CPU copy
-            // and every later SetVertices would throw.
-            return mesh;
-        }
-
-        private static void AddQuad(
-            Vector3[] vertices,
-            Vector2[] uvs,
-            int[] triangles,
-            ref int vertex,
-            ref int triangle,
-            Vector3 a,
-            Vector3 b,
-            Vector3 c,
-            Vector3 d)
-        {
-            vertices[vertex] = a;
-            vertices[vertex + 1] = b;
-            vertices[vertex + 2] = c;
-            vertices[vertex + 3] = d;
-            uvs[vertex] = new Vector2(0f, 0f);
-            uvs[vertex + 1] = new Vector2(1f, 0f);
-            uvs[vertex + 2] = new Vector2(1f, 1f);
-            uvs[vertex + 3] = new Vector2(0f, 1f);
-            // Fan (0,1,2)(0,2,3): with the corner orders used above this
-            // winds every face outward (verified against the water sheet's
-            // proven up-facing grid winding).
-            triangles[triangle++] = vertex;
-            triangles[triangle++] = vertex + 1;
-            triangles[triangle++] = vertex + 2;
-            triangles[triangle++] = vertex;
-            triangles[triangle++] = vertex + 2;
-            triangles[triangle++] = vertex + 3;
-            vertex += 4;
-        }
     }
 }

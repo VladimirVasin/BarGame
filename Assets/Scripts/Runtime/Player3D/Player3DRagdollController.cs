@@ -52,13 +52,25 @@ namespace BarPromenade
         {
             BodySpec.Root(Player3DAnatomicalPart.Pelvis, 12f),
             BodySpec.Jointed(
-                Player3DAnatomicalPart.Torso,
+                Player3DAnatomicalPart.LowerTorso,
                 Player3DAnatomicalPart.Pelvis,
-                18f,
-                -20f,
-                20f,
-                20f,
-                15f,
+                8f,
+                -12f,
+                12f,
+                12f,
+                10f,
+                JointAxis.Right),
+            // Keep the torso's former total mass, now carried through two
+            // physical segments instead of freezing the lower back in the
+            // pose the animation held when the fall began.
+            BodySpec.Jointed(
+                Player3DAnatomicalPart.Torso,
+                Player3DAnatomicalPart.LowerTorso,
+                10f,
+                -10f,
+                10f,
+                12f,
+                10f,
                 JointAxis.Right),
             BodySpec.Jointed(
                 Player3DAnatomicalPart.Head,
@@ -201,6 +213,7 @@ namespace BarPromenade
         public bool IsActive => IsSimulating || IsRecovering;
         public int BodyCount => bodyList.Count;
         public Rigidbody PelvisBody => GetBody(Player3DAnatomicalPart.Pelvis);
+        public Rigidbody SpineBody => GetBody(Player3DAnatomicalPart.LowerTorso);
         public Rigidbody ChestBody => GetBody(Player3DAnatomicalPart.Torso);
 
         public void Initialize(
@@ -525,6 +538,22 @@ namespace BarPromenade
                 return cached;
             }
 
+            // The torso and jacket remain continuous skinned surfaces, so
+            // their lower segment owns an explicit bone anchor rather than
+            // pretending to be a separate anatomical renderer.
+            if (part == Player3DAnatomicalPart.LowerTorso)
+            {
+                Transform spine = registry.Anchors.Spine;
+                if (spine == null)
+                {
+                    throw new InvalidOperationException(
+                        "Player ragdoll requires the registered spine anchor.");
+                }
+
+                bones.Add(part, spine);
+                return spine;
+            }
+
             if (!registry.TryGetPart(part, out var binding) ||
                 binding == null ||
                 binding.Bone == null)
@@ -593,12 +622,16 @@ namespace BarPromenade
                 gameplayRoot.up * (0.06f * scale),
                 gameplayRoot.rotation,
                 new Vector3(0.28f, 0.20f, 0.20f) * scale);
-            AddBox(
+            AddTorsoBox(
+                Player3DAnatomicalPart.LowerTorso,
+                registry.Anchors.Chest.position,
+                0.32f * scale,
+                0.19f * scale);
+            AddTorsoBox(
                 Player3DAnatomicalPart.Torso,
-                bones[Player3DAnatomicalPart.Torso].position +
-                gameplayRoot.up * (0.01f * scale),
-                gameplayRoot.rotation,
-                new Vector3(0.38f, 0.43f, 0.20f) * scale);
+                RequirePartBone(Player3DAnatomicalPart.Neck).position,
+                0.38f * scale,
+                0.20f * scale);
             AddCapsule(
                 Player3DAnatomicalPart.Head,
                 bones[Player3DAnatomicalPart.Head].position -
@@ -640,6 +673,24 @@ namespace BarPromenade
                 Player3DAnatomicalPart.RightFoot,
                 0.07f * scale);
             AddFootBox(Player3DAnatomicalPart.RightFoot, scale);
+        }
+
+        private void AddTorsoBox(
+            Player3DAnatomicalPart part,
+            Vector3 endpoint,
+            float width,
+            float depth)
+        {
+            Vector3 start = bones[part].position;
+            Vector3 segment = endpoint - start;
+            Quaternion orientation = Quaternion.FromToRotation(
+                gameplayRoot.up,
+                segment.normalized) * gameplayRoot.rotation;
+            AddBox(
+                part,
+                (start + endpoint) * 0.5f,
+                orientation,
+                new Vector3(width, segment.magnitude, depth));
         }
 
         private void AddLimbCapsule(
@@ -824,6 +875,7 @@ namespace BarPromenade
             Player3DBoneAnchors anchors = registry.Anchors;
             AddBoneLineage(anchors.Head, unique);
             AddBoneLineage(anchors.Chest, unique);
+            AddBoneLineage(anchors.Spine, unique);
             AddBoneLineage(anchors.Pelvis, unique);
             AddBoneLineage(anchors.LeftFoot, unique);
             AddBoneLineage(anchors.RightFoot, unique);

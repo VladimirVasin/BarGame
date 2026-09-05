@@ -362,7 +362,7 @@ namespace BarPromenade
             for (int row = 0; row < rowCenters.Length; row++)
             {
                 GameObject paneObject =
-                    RuntimePrimitiveFactory.CreateBox(
+                    HomeAuthoredVisualFactory.CreateBox(
                         $"Player Home Authored Front Window Glass " +
                         $"{row + 1}",
                         parent,
@@ -538,7 +538,7 @@ namespace BarPromenade
             SurfaceProjection projection,
             bool addCollider = false)
         {
-            GameObject result = RuntimePrimitiveFactory.CreateBox(
+            GameObject result = HomeAuthoredVisualFactory.CreateBox(
                 name,
                 parent,
                 center,
@@ -607,7 +607,7 @@ namespace BarPromenade
                 SurfaceProjection.BoxXZ,
                 true);
 
-            GameObject drain = RuntimePrimitiveFactory.CreateCylinder(
+            GameObject drain = HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Balcony Drain",
                 parent,
                 new Vector3(
@@ -793,21 +793,21 @@ namespace BarPromenade
             ashtray.localPosition =
                 HomeBalconySmokingPlan.ResolveAshtrayPosition(plan);
 
-            RuntimePrimitiveFactory.CreateCylinder(
+            HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Balcony Ashtray Body",
                 ashtray,
                 new Vector3(0f, 0.025f, 0f),
                 new Vector3(0.26f, 0.025f, 0.26f),
                 AshtrayEnamel,
                 false);
-            RuntimePrimitiveFactory.CreateCylinder(
+            HomeAuthoredVisualFactory.CreateCylinder(
                 "Home Balcony Ashtray Basin",
                 ashtray,
                 new Vector3(0f, 0.052f, 0f),
                 new Vector3(0.24f, 0.002f, 0.24f),
                 AshtrayBasin,
                 false);
-            GameObject ash = RuntimePrimitiveFactory.CreateBox(
+            GameObject ash = HomeAuthoredVisualFactory.CreateBox(
                 "Home Balcony Ashtray Ash",
                 ashtray,
                 new Vector3(-0.025f, 0.056f, 0.018f),
@@ -886,7 +886,7 @@ namespace BarPromenade
             float frameDepth = size.x + 0.10f;
             const float frameWidth = 0.09f;
 
-            GameObject glass = RuntimePrimitiveFactory.CreateBox(
+            GameObject glass = HomeAuthoredVisualFactory.CreateBox(
                 "Home Balcony Window Glass",
                 parent,
                 center +
@@ -1108,7 +1108,7 @@ namespace BarPromenade
                 PlayerHomeExteriorSurfaceKind.PaintedWood,
                 SurfaceProjection.BoxZY,
                 false));
-            GameObject doorGlass = RuntimePrimitiveFactory.CreateBox(
+            GameObject doorGlass = HomeAuthoredVisualFactory.CreateBox(
                 "Home Balcony Door Glass",
                 pivot,
                 new Vector3(
@@ -1124,7 +1124,7 @@ namespace BarPromenade
             ApplyHomeBalconyGlass(doorGlass.GetComponent<Renderer>());
 
             GameObject handle =
-                RuntimePrimitiveFactory.CreateCylinder(
+                HomeAuthoredVisualFactory.CreateCylinder(
                     "Home Balcony Door Handle",
                     pivot,
                     new Vector3(

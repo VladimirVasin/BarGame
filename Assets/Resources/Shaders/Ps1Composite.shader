@@ -34,6 +34,71 @@ Shader "Hidden/BarPromenade/PS1Composite"
             float _IntoxicationWarmth;
             float _IntoxicationExposurePulse;
             float _IntoxicationTime;
+            // (eye.x, eye.y, frame aspect, signed twist in radians) and
+            // (calm disc radius, radial pull, core drift in internal pixels).
+            float4 _IntoxicationVertigo;
+            float4 _IntoxicationVertigoShape;
+
+            // The drunk vertigo whirlpool. The frame is wound around the
+            // hero rather than around the middle of the screen: his own disc
+            // is left alone and only floats a couple of internal pixels,
+            // while everything outside it is twisted progressively harder,
+            // reaching the full angle at the frame corner farthest from him.
+            // Mirrored on the CPU by BarPromenade.Rendering.
+            // IntoxicationWhirlpool, which the contract test compares
+            // against this source.
+            float2 ApplyVertigoWhirlpool(float2 uv)
+            {
+                float twist = _IntoxicationVertigo.w;
+                float2 core = _IntoxicationVertigoShape.zw;
+                if (twist == 0.0 && dot(core, core) == 0.0)
+                {
+                    // Still water: the sober frame stays bit-exact, and the
+                    // boundary margin below never gets to zoom the picture.
+                    return uv;
+                }
+
+                float2 centre = _IntoxicationVertigo.xy;
+                float aspect = _IntoxicationVertigo.z;
+                float inner = _IntoxicationVertigoShape.x;
+                float pull = _IntoxicationVertigoShape.y;
+
+                float2 p = (uv - centre) * float2(aspect, 1.0);
+                float radius = length(p);
+                float2 far = float2(
+                    max(centre.x, 1.0 - centre.x) * aspect,
+                    max(centre.y, 1.0 - centre.y));
+                float outer = max(length(far), inner + 0.001);
+                float t = saturate(
+                    (radius - inner) /
+                    max(0.001, outer - inner));
+                float profile = t * t * (3.0 - 2.0 * t);
+
+                float sine;
+                float cosine;
+                sincos(twist * profile, sine, cosine);
+                float2 rotated = float2(
+                    p.x * cosine - p.y * sine,
+                    p.x * sine + p.y * cosine);
+                rotated *= 1.0 - pull * profile;
+
+                float2 delta = rotated / float2(aspect, 1.0);
+                delta +=
+                    core *
+                    _Ps1LowResolutionTexelSize.xy *
+                    saturate(1.0 - radius / inner);
+                // The radius is shortened to the frame's own boundary along
+                // the twisted direction, so the smear points into the vortex
+                // instead of becoming an axis-aligned clamp at the edge.
+                float2 wall = float2(
+                    delta.x >= 0.0 ? 0.999 - centre.x : centre.x - 0.001,
+                    delta.y >= 0.0 ? 0.999 - centre.y : centre.y - 0.001);
+                float2 inverse = 1.0 / (abs(delta) + 1e-6);
+                float scale = min(
+                    1.0,
+                    min(wall.x * inverse.x, wall.y * inverse.y));
+                return centre + delta * scale;
+            }
 
             float4 FragDownsample(Varyings input) : SV_Target
             {
@@ -52,8 +117,9 @@ Shader "Hidden/BarPromenade/PS1Composite"
                 // centered 4:3 window of the widescreen source — the
                 // exact view of a 4:3 camera with the same vertical
                 // FOV. Warp, vignette and rain stay in target space,
-                // so they follow the visible frame.
-                float2 sourceUv = input.texcoord;
+                // so they follow the visible frame; the whirlpool is
+                // wound in that same target space, before the crop.
+                float2 sourceUv = ApplyVertigoWhirlpool(input.texcoord);
                 sourceUv.x =
                     0.5 +
                     (sourceUv.x - 0.5) * _Ps1AspectFraction;

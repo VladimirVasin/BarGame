@@ -656,26 +656,6 @@ namespace BarPromenade
                 new Vector3(size.x * 0.13f, size.y * 0.08f, 0.014f),
                 DeepRust);
 
-            CreateBox(
-                "Home Refrigerator Yellowed Note",
-                doorLeaf,
-                new Vector3(
-                    -size.x * 0.10f,
-                    size.y * 0.22f,
-                    front - 0.012f),
-                new Vector3(size.x * 0.38f, size.y * 0.18f, 0.012f),
-                new Color(0.58f, 0.50f, 0.27f));
-            GameObject noteLine = CreateBox(
-                "Home Refrigerator Note Pencil Mark",
-                doorLeaf,
-                new Vector3(
-                    -size.x * 0.10f,
-                    size.y * 0.22f,
-                    front - 0.020f),
-                new Vector3(size.x * 0.24f, 0.018f, 0.006f),
-                new Color(0.17f, 0.14f, 0.10f));
-            noteLine.transform.localRotation =
-                Quaternion.Euler(0f, 0f, -5f);
             GameObject magnet = CreateCylinder(
                 "Home Refrigerator Crooked Magnet",
                 doorLeaf,
@@ -1005,7 +985,7 @@ namespace BarPromenade
             Transform root,
             HomeRefrigeratorPlan plan)
         {
-            GameObject strip = RuntimePrimitiveFactory.CreateBox(
+            GameObject strip = HomeAuthoredVisualFactory.CreateBox(
                 "Home Refrigerator Interior Light Strip",
                 root,
                 plan.InteriorLightPosition - plan.RootPosition,
@@ -1060,7 +1040,7 @@ namespace BarPromenade
             Vector3 size,
             Color color)
         {
-            return RuntimePrimitiveFactory.CreateBox(
+            return HomeAuthoredVisualFactory.CreateBox(
                 name,
                 parent,
                 position,
@@ -1095,7 +1075,7 @@ namespace BarPromenade
             Vector3 size,
             Color color)
         {
-            return RuntimePrimitiveFactory.CreateCylinder(
+            return HomeAuthoredVisualFactory.CreateCylinder(
                 name,
                 parent,
                 position,

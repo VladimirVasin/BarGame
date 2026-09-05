@@ -158,6 +158,10 @@ namespace BarPromenade.Tests.EditMode
             state.Advance(685.5f);
 
             Assert.That(state.DayNumber, Is.EqualTo(8));
+            Assert.That(
+                HomeApartmentDayRules.ResolveDay(state.DayNumber),
+                Is.EqualTo(7),
+                "Apartment appearance stops at day seven; the calendar continues.");
             Assert.That(state.Hour, Is.Zero);
             Assert.That(state.Minute, Is.Zero);
         }
@@ -194,6 +198,26 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.TrySetDebugGameDay(0), Is.False);
             Assert.That(GameSessionState.TrySetDebugGameDay(8), Is.False);
             Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(7));
+
+            foreach (int previewDay in new[] { 3, 1, 7 })
+            {
+                Assert.That(GameSessionState.TrySetDebugGameDay(previewDay), Is.True);
+                Assert.That(
+                    HomeApartmentDayRules.ResolveDay(GameSessionState.GameDayNumber),
+                    Is.EqualTo(previewDay),
+                    "Debug backtracking must show that day's apartment again.");
+                Assert.That(GameSessionState.GameTimeOfDayMinutes,
+                    Is.EqualTo(timeBeforeChange));
+                Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+                Assert.That(GameSessionState.HungerLevel, Is.EqualTo(hungerBeforeChange));
+                Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(fatigueBeforeChange));
+            }
+
+            GameSessionState.BeginNewGame();
+            Assert.That(
+                HomeApartmentDayRules.ResolveDay(GameSessionState.GameDayNumber),
+                Is.EqualTo(1),
+                "A new session starts in the normal apartment again.");
         }
 
         [Test]

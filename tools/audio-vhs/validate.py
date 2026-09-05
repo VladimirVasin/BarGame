@@ -1,4 +1,4 @@
-"""Exercise the shipping DLL through Unity's ABI and render six reference WAVs."""
+"""Exercise the shipping DLL through Unity's ABI and render listening references."""
 import argparse
 import ctypes as C
 import json
@@ -178,10 +178,60 @@ def validate(definition, output):
     effect.set(0, 1)
     effect.process(signal)
     effect.set(0, 0)
-    recovered = effect.process(np.tile(signal[:4800], (4, 1)))
-    assert np.array_equal(recovered[-1024:], np.tile(signal[:4800], (4, 1))[-1024:])
+    recovery_input = np.tile(signal[:4800], (40, 1))
+    recovered = effect.process(recovery_input)
+    assert np.array_equal(recovered[-1024:], recovery_input[-1024:])
     effect.close()
     checks.append('Sobering returns to exact zero-latency bypass')
+
+    # A constant source exposes changes introduced by the effect itself.
+    # Sudden control changes must neither duck it sharply on arrival nor
+    # remove its coloration abruptly on recovery. Exercise the shipping
+    # DSP at every supported reference rate, not a copy of its envelope math.
+    transition_metrics = []
+    for rate in rates:
+        dc = np.full((rate * 12, 2), .1, dtype=np.float32)
+        effect = Effect(definition, rate)
+        effect.process(dc[:rate])
+        effect.set(0, 1)
+        arrival = effect.process(dc[:round(rate * 1.75)])
+        effect.set(0, 0)
+        recovery = effect.process(dc[:rate * 4])
+        effect.close()
+        first_50ms = round(rate * .05)
+        arrival_delta = float(np.max(np.abs(arrival[:first_50ms] - .1)))
+        recovery_delta = float(np.max(np.abs(recovery[:first_50ms] - arrival[-1])))
+        assert arrival_delta < .003, f'{rate} Hz effect arrives abruptly: {arrival_delta}'
+        assert recovery_delta < .003, f'{rate} Hz effect releases abruptly: {recovery_delta}'
+        assert np.array_equal(recovery[-1024:], dc[-1024:]), 'Smooth recovery never reached exact dry'
+
+        effect = Effect(definition, rate)
+        effect.set(0, 1)
+        episodes = effect.process(dc)[rate * 2:]
+        effect.close()
+        hop = round(rate * .005)
+        episode_delta = float(np.max(np.abs(episodes[hop:] - episodes[:-hop])))
+        assert episode_delta < .0035, f'{rate} Hz tape episode changes level sharply: {episode_delta}'
+        transition_metrics.append({'rate': rate, 'arrival_50ms_delta': arrival_delta,
+                                   'recovery_50ms_delta': recovery_delta,
+                                   'episode_5ms_delta': episode_delta})
+    checks.append('Gentle onset/recovery and episode envelopes at all four sample rates')
+
+    # Change the target while a repeat head is active, then reverse it and
+    # recover. A low, smooth tone reveals any discontinuous transport jump.
+    rate = 48000
+    t = np.arange(rate * 8) / rate
+    tone = np.repeat((.15 * np.sin(2 * np.pi * 110 * t))[:, None], 2, axis=1).astype(np.float32)
+    effect = Effect(definition, rate)
+    transport = []
+    for start, end, level in [(0, 2.2, 100), (2.2, 2.28, 40), (2.28, 3, 100), (3, 8, 0)]:
+        effect.set(0, profile(level))
+        transport.append(effect.process(tone[round(start * rate):round(end * rate)]))
+    effect.close()
+    transport = np.concatenate(transport)
+    assert float(np.max(np.abs(np.diff(transport, axis=0)))) < .004, 'Changing strength jumps the tape head'
+    assert np.array_equal(transport[-1024:], tone[-1024:])
+    checks.append('Rapid strength reversals during repeat transport stay continuous and recover dry')
 
     metrics = []
     for level in [0, 40, 60, 80, 90, 100]:
@@ -204,7 +254,18 @@ def validate(definition, output):
         effect.close()
     assert all(metrics[i]['difference_rms'] < metrics[i + 1]['difference_rms'] for i in range(5))
     checks.append('Six comparative renders increase monotonically in signal deformation')
-    return {'result': 'passed', 'checks': checks, 'renders': metrics}
+    # One additional listening clip includes abrupt debug-like strength
+    # changes over continuous source audio, including a short reversal.
+    signal = reference(48000)
+    effect = Effect(definition)
+    transition_render = []
+    for start, end, level in [(0, 2, 0), (2, 7, 100), (7, 7.4, 40),
+                              (7.4, 10, 100), (10, 16, 0)]:
+        effect.set(0, profile(level))
+        transition_render.append(effect.process(signal[round(start * 48000):round(end * 48000)]))
+    effect.close()
+    save_wav(output / 'intoxication-smooth-transitions.wav', np.concatenate(transition_render), 48000)
+    return {'result': 'passed', 'checks': checks, 'transitions': transition_metrics, 'renders': metrics}
 
 
 def main():

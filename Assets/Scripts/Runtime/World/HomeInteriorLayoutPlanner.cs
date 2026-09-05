@@ -74,7 +74,7 @@ namespace BarPromenade
                 new HomeFurnitureFootprint(
                     "bookcase",
                     HomeFurnitureKind.Bookcase,
-                    new Rect(0.45f, 2.35f, 0.65f, 1.10f),
+                    new Rect(-4.55f, 1.05f, 0.65f, 1.10f),
                     2.35f,
                     true),
                 new HomeFurnitureFootprint(

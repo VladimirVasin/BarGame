@@ -21,7 +21,10 @@ namespace BarPromenade
         LeftFoot,
         RightThigh,
         RightShin,
-        RightFoot
+        RightFoot,
+        // The continuous torso mesh spans this physics segment and Torso.
+        // Appended to preserve the serialized values of anatomical parts.
+        LowerTorso
     }
 
     [Serializable]
@@ -61,6 +64,8 @@ namespace BarPromenade
 
         public string MeshName => meshName;
         public string Role => role;
+        // The representative gameplay anchor; a continuous skinned surface
+        // can additionally use neighboring bones in its renderer's weights.
         public string BoneName => boneName;
         public string BodyGroup => bodyGroup;
         public string AnatomicalSide => anatomicalSide;
@@ -319,6 +324,7 @@ namespace BarPromenade
         [SerializeField] private Transform leftVessel;
         [SerializeField] private Transform rightCigarette;
         [SerializeField] private Transform mouth;
+        [SerializeField] private Transform spine;
 
         public Player3DBoneAnchors(
             Transform head,
@@ -330,7 +336,8 @@ namespace BarPromenade
             Transform rightGrip,
             Transform leftVessel,
             Transform rightCigarette,
-            Transform mouth)
+            Transform mouth,
+            Transform spine = null)
         {
             this.head = head;
             this.chest = chest;
@@ -342,10 +349,12 @@ namespace BarPromenade
             this.leftVessel = leftVessel;
             this.rightCigarette = rightCigarette;
             this.mouth = mouth;
+            this.spine = spine;
         }
 
         public Transform Head => head;
         public Transform Chest => chest;
+        public Transform Spine => spine;
         public Transform Pelvis => pelvis;
         public Transform LeftFoot => leftFoot;
         public Transform RightFoot => rightFoot;

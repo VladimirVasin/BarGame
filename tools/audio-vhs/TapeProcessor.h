@@ -22,9 +22,11 @@ public:
     {
         written_ = 0;
         clock_ = 0;
+        smoothedTarget_ = 0;
         smoothed_ = 0;
         eventAge_ = -1;
         eventDelay_ = 0;
+        repeatPhase_ = 0;
         nextEvent_ = rate_ * 2.0;
         random_ = 0x62AF341Du;
         low_.fill(0);
@@ -51,7 +53,7 @@ public:
         bool silent = true;
         for (size_t i = 0; i < static_cast<size_t>(frames) * inputChannels; ++i)
             if (input[i] != 0.0f) { silent = false; break; }
-        if (silent || (intensity == 0 && smoothed_ < 0.00001f))
+        if (silent || (intensity == 0 && smoothedTarget_ < 0.00001 && smoothed_ < 0.00001))
         {
             Reset();
             Copy(input, output, frames, inputChannels, outputChannels);
@@ -61,7 +63,9 @@ public:
             Reset();
         previousChannels_ = inputChannels;
         const double inverseRate = 1.0 / rate_;
-        const float smoothing = static_cast<float>(1.0 - std::exp(-inverseRate / 0.030));
+        // Two 220 ms poles soften both the amount and its initial rate of
+        // change. This is audio transport smoothing, independent of world time.
+        const double smoothing = 1.0 - std::exp(-inverseRate / 0.22);
         for (unsigned int frame = 0; frame < frames; ++frame)
         {
             std::array<float, MaxChannels> dry{};
@@ -71,7 +75,8 @@ public:
                 dry[channel] = std::isfinite(value) ? value : 0;
                 history_[static_cast<size_t>(written_ % frames_) * MaxChannels + channel] = dry[channel];
             }
-            smoothed_ += (intensity - smoothed_) * smoothing;
+            smoothedTarget_ += (intensity - smoothedTarget_) * smoothing;
+            smoothed_ += (smoothedTarget_ - smoothed_) * smoothing;
             const double a = smoothed_;
             const double seconds = clock_ * inverseRate;
             const double wow = 0.012 * std::sin(Tau * 0.71 * seconds) +
@@ -85,6 +90,7 @@ public:
                 eventAge_ = 0;
                 eventDuration_ = rate_ * (0.4 + 0.6 * Random());
                 eventDelay_ = 0;
+                repeatPhase_ = 0;
                 repeatLength_ = rate_ * (0.07 + 0.11 * Random());
                 repeatStart_ = static_cast<double>(written_) - ordinaryDelay - repeatLength_;
                 repeat_ = Random() < 0.72;
@@ -94,17 +100,17 @@ public:
             if (eventAge_ >= 0)
             {
                 const double progress = eventAge_ / eventDuration_;
-                envelope = Smooth(std::min(1.0, eventAge_ / (rate_ * 0.035))) *
-                           Smooth(std::min(1.0, (eventDuration_ - eventAge_) / (rate_ * 0.16)));
+                // The entire episode eases in and out, reaching its full
+                // depth at 45 percent without a flat or abrupt leading edge.
+                envelope = Smooth(eventAge_ / (eventDuration_ * 0.45)) *
+                           Smooth((eventDuration_ - eventAge_) / (eventDuration_ * 0.55));
                 // The head slows to one half speed at the deepest point.
                 eventDelay_ += 0.5 * a * std::sin(Pi * progress);
             }
             const double delay = std::clamp(ordinaryDelay + eventDelay_, 0.0, rate_ * 0.75);
             const double normalPosition = static_cast<double>(written_) - ordinaryDelay;
             const double damagedPosition = static_cast<double>(written_) - delay;
-            const double repeatPhase = eventAge_ >= 0 ?
-                std::fmod(eventAge_ * (1.0 - 0.45 * a), repeatLength_) : 0;
-            const double repeatCrossfade = std::min(rate_ * 0.012, repeatLength_ * 0.2);
+            const double repeatCrossfade = std::min(rate_ * 0.055, repeatLength_ * 0.4);
             // Losing tape contact reduces high frequencies and level together.
             const double cutoff = 19000.0 * std::pow(0.22, a) * (1.0 - 0.61 * a * envelope);
             const float lowpass = static_cast<float>(1.0 - std::exp(-Tau * cutoff * inverseRate));
@@ -118,12 +124,12 @@ public:
                 float damaged = Read(damagedPosition, channel);
                 if (repeat_ && eventAge_ >= 0)
                 {
-                    float repeated = Read(repeatStart_ + repeatPhase, channel);
+                    float repeated = Read(repeatStart_ + repeatPhase_, channel);
                     // Two heads overlap the loop seam; a wrap cannot click.
-                    if (repeatPhase < repeatCrossfade)
+                    if (repeatPhase_ < repeatCrossfade)
                     {
-                        const float previous = Read(repeatStart_ + repeatLength_ + repeatPhase, channel);
-                        repeated = Mix(previous, repeated, Smooth(repeatPhase / repeatCrossfade));
+                        const float previous = Read(repeatStart_ + repeatLength_ + repeatPhase_, channel);
+                        repeated = Mix(previous, repeated, Smooth(repeatPhase_ / repeatCrossfade));
                     }
                     damaged = Mix(damaged, repeated, 0.88 * a);
                 }
@@ -134,10 +140,17 @@ public:
                 const float shaped = std::tanh(low_[channel] * drive) / drive;
                 output[frame * outputChannels + channel] = Mix(dry[channel], shaped * contact, wet);
             }
-            if (eventAge_ >= 0 && ++eventAge_ >= eventDuration_)
+            if (eventAge_ >= 0)
             {
-                eventAge_ = -1;
-                eventDelay_ = 0; // rejoin the live head, never accumulate delay
+                // Integrate the current speed: changing intoxication must
+                // not recalculate the distance this head has already travelled.
+                repeatPhase_ = std::fmod(repeatPhase_ + 1.0 - 0.45 * a, repeatLength_);
+                if (++eventAge_ >= eventDuration_)
+                {
+                    eventAge_ = -1;
+                    eventDelay_ = 0; // rejoin the live head, never accumulate delay
+                    repeatPhase_ = 0;
+                }
             }
             ++written_;
             ++clock_;
@@ -147,7 +160,11 @@ public:
 private:
     static constexpr double Pi = 3.14159265358979323846;
     static constexpr double Tau = Pi * 2;
-    static double Smooth(double x) { x = std::clamp(x, 0.0, 1.0); return x * x * (3 - 2 * x); }
+    static double Smooth(double x)
+    {
+        x = std::clamp(x, 0.0, 1.0);
+        return x * x * x * (x * (x * 6 - 15) + 10);
+    }
     static float Mix(float a, float b, double amount) { return static_cast<float>(a + (b - a) * amount); }
     static void Copy(const float* input, float* output, unsigned int frames, int inChannels, int outChannels)
     {
@@ -174,10 +191,10 @@ private:
     std::vector<float> history_;
     std::array<float, MaxChannels> low_{};
     int64_t written_ = 0, clock_ = 0;
-    float smoothed_ = 0;
+    double smoothedTarget_ = 0, smoothed_ = 0;
     double nextEvent_ = rate_ * 2.0;
     double eventAge_ = -1, eventDuration_ = 1, eventDelay_ = 0;
-    double repeatLength_ = 1, repeatStart_ = 0;
+    double repeatLength_ = 1, repeatStart_ = 0, repeatPhase_ = 0;
     bool repeat_ = false;
     uint32_t random_ = 0x62AF341Du;
 };

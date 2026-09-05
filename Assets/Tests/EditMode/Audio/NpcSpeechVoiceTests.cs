@@ -16,7 +16,15 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Catalog_HoldsEveryAuthoredSpeakerOnce()
         {
-            Assert.That(NpcVoiceCatalog.Count, Is.EqualTo(8));
+            // Eight NPCs and the hero, who is the ninth and last.
+            Assert.That(NpcVoiceCatalog.Count, Is.EqualTo(9));
+            Assert.That(
+                NpcVoiceCatalog.DesignIdAt(
+                    NpcVoiceCatalog.HeroMutterOrdinal),
+                Is.EqualTo(NpcVoiceCatalog.HeroMutterDesignId));
+            Assert.That(
+                NpcVoiceCatalog.FallbackVoiceCount,
+                Is.EqualTo(NpcVoiceCatalog.Count - 1));
 
             var seenIds = new HashSet<string>();
             var seenDesigns = new HashSet<string>();
@@ -43,13 +51,18 @@ namespace BarPromenade.Tests.EditMode
 
                 // A voice keyed on a design id that no longer exists is
                 // a rename nobody would hear until two men swapped
-                // tones, so it fails here instead.
-                Assert.That(
-                    NpcDesignAppearanceCatalog.TryGet(
-                        designId,
-                        out _),
-                    Is.True,
-                    "'" + designId + "' is not a design in the game.");
+                // tones, so it fails here instead. The hero is the one
+                // exception and always will be: he is not an NPC, and the
+                // appearance catalog deliberately excludes his models.
+                if (index != NpcVoiceCatalog.HeroMutterOrdinal)
+                {
+                    Assert.That(
+                        NpcDesignAppearanceCatalog.TryGet(
+                            designId,
+                            out _),
+                        Is.True,
+                        "'" + designId + "' is not a design in the game.");
+                }
                 Assert.That(
                     NpcVoiceCatalog.ResolveOrdinal(designId),
                     Is.EqualTo(index));
@@ -68,7 +81,18 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(first, Is.EqualTo(second));
             Assert.That(
                 first,
-                Is.InRange(0, NpcVoiceCatalog.Count - 1));
+                Is.InRange(0, NpcVoiceCatalog.FallbackVoiceCount - 1));
+
+            // And never onto the hero's own mutter, however many designs
+            // are added later: a stranger who sounds like him would be a
+            // bug nobody could name.
+            for (int index = 0; index < 4096; index++)
+            {
+                Assert.That(
+                    NpcVoiceCatalog.ResolveOrdinal(
+                        "generated_speaker_v" + index),
+                    Is.Not.EqualTo(NpcVoiceCatalog.HeroMutterOrdinal));
+            }
             Assert.That(
                 NpcVoiceCatalog.ResolveOrdinal(string.Empty),
                 Is.EqualTo(NpcVoiceCatalog.SilentOrdinal),
@@ -171,7 +195,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Blip_TellsTheEightSpeakersApart()
+        public void Blip_TellsEverySpeakerApart()
         {
             var buffers = new float[NpcVoiceCatalog.Count][];
             for (int index = 0; index < buffers.Length; index++)

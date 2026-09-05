@@ -313,6 +313,14 @@
       "value": "E — close refrigerator"
     },
     {
+      "key": "home.lockedRoomDoor.prompt",
+      "value": "Open door"
+    },
+    {
+      "key": "home.lockedRoomDoor.missingKey",
+      "value": "I can't remember where the key to this door is."
+    },
+    {
       "key": "home.refrigerator.item.vodka.name",
       "value": "Vodka bottle"
     },
@@ -491,6 +499,86 @@
     {
       "key": "intoxication.stage.very_drunk",
       "value": "Very drunk"
+    },
+    {
+      "key": "hero.mutter.unsteady.01",
+      "value": "My legs still hold."
+    },
+    {
+      "key": "hero.mutter.unsteady.02",
+      "value": "I will get there. It is close."
+    },
+    {
+      "key": "hero.mutter.unsteady.03",
+      "value": "The right hand will not obey."
+    },
+    {
+      "key": "hero.mutter.unsteady.04",
+      "value": "I still count the steps."
+    },
+    {
+      "key": "hero.mutter.unsteady.05",
+      "value": "The keys are in my pocket. I checked."
+    },
+    {
+      "key": "hero.mutter.unsteady.06",
+      "value": "I need to sit. Not for long."
+    },
+    {
+      "key": "hero.mutter.unsteady.07",
+      "value": "My head is heavy. It will pass."
+    },
+    {
+      "key": "hero.mutter.unsteady.08",
+      "value": "I have not eaten today."
+    },
+    {
+      "key": "hero.mutter.unsteady.09",
+      "value": "I will sleep sitting up. Simpler."
+    },
+    {
+      "key": "hero.mutter.unsteady.10",
+      "value": "No hurry. Nobody is waiting."
+    },
+    {
+      "key": "hero.mutter.very_drunk.01",
+      "value": "Still holding."
+    },
+    {
+      "key": "hero.mutter.very_drunk.02",
+      "value": "Close. Very close."
+    },
+    {
+      "key": "hero.mutter.very_drunk.03",
+      "value": "Will not obey."
+    },
+    {
+      "key": "hero.mutter.very_drunk.04",
+      "value": "How many steps."
+    },
+    {
+      "key": "hero.mutter.very_drunk.05",
+      "value": "The keys. Where."
+    },
+    {
+      "key": "hero.mutter.very_drunk.06",
+      "value": "Sit. Right now."
+    },
+    {
+      "key": "hero.mutter.very_drunk.07",
+      "value": "Steps. Then keys."
+    },
+    {
+      "key": "hero.mutter.very_drunk.08",
+      "value": "Not eaten. Forgot."
+    },
+    {
+      "key": "hero.mutter.very_drunk.09",
+      "value": "Nobody waits."
+    },
+    {
+      "key": "hero.mutter.very_drunk.10",
+      "value": "I am still here."
     },
     {
       "key": "drinking.none",
@@ -1255,6 +1343,10 @@
     {
       "key": "debug.minigames.unavailable",
       "value": "DEBUG CONTROLS UNAVAILABLE"
+    },
+    {
+      "key": "debug.home.skip_to_city",
+      "value": "Go to city map"
     },
     {
       "key": "debug.day",

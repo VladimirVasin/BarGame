@@ -14,6 +14,8 @@ namespace BarPromenade.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            GameSessionState.BeginNewGame();
+            GameSessionState.TrySetDebugGameDay(3);
             GameSessionState.EnterHome();
             GameSessionState.ClearRoute();
             GameSessionState.ResetDrinkingState();
@@ -44,9 +46,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
 
-            GameSessionState.ClearRoute();
-            GameSessionState.ResetDrinkingState();
-            GameSessionState.ResetEconomyState();
+            GameSessionState.BeginNewGame();
             yield return null;
         }
 
@@ -163,10 +163,10 @@ namespace BarPromenade.Tests.PlayMode
                 "Home Bathroom Cracked Mirror");
             AssertRequiredObject(
                 home.Room,
-                "Home Table Green Bottle");
+                "Day2 Table Bottle 0");
             AssertRequiredObject(
                 home.Room,
-                "Home Faded Photograph");
+                "Home Old Radio");
             AssertEntryWallSealed(home);
             AssertFurnitureOcclusionCoverage(home);
             Transform mainEmitter = AssertRequiredObject(
@@ -214,11 +214,11 @@ namespace BarPromenade.Tests.PlayMode
             AssertRestingOn(
                 home.Room,
                 "Home Scarred Table",
-                "Home Table Green Bottle");
+                "Day2 Table Bottle 0");
             AssertRestingOn(
                 home.Room,
                 "Home Kitchen Top Left",
-                "Home Kitchen Dirty Dishes");
+                "Day2 Kitchen Plate 0");
             AssertRestingOn(
                 home.Room,
                 "Home Battered Cabinet",
@@ -261,7 +261,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             Transform bottle = AssertRequiredObject(
                 home.Room,
-                "Home Table Green Bottle");
+                "Day2 Table Bottle 0");
             Assert.That(
                 bottle.GetComponent<Collider>(),
                 Is.Null,
@@ -441,7 +441,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(0.01f));
 
             home.Player.Motor.Teleport(
-                new Vector3(0.50f, 0.12f, 1.50f));
+                home.Layout.PlayerSpawn);
             yield return null;
 
             Assert.That(
@@ -533,16 +533,16 @@ namespace BarPromenade.Tests.PlayMode
                     "home.furniture.sofa",
                     out HomeOccluderGroup sofaGroup),
                 Is.True);
-            Renderer cardboardBox =
+            Renderer sofaLaundry =
                 AssertRequiredObject(
                     home.Room,
-                    "Home Cardboard Box")
+                    "Day3 Sofa Laundry")
                     .GetComponent<Renderer>();
-            Assert.That(cardboardBox, Is.Not.Null);
+            Assert.That(sofaLaundry, Is.Not.Null);
             Assert.That(
                 sofaGroup.Renderers,
-                Does.Contain(cardboardBox),
-                "The tall box on the sofa must reveal with the sofa group.");
+                Does.Contain(sofaLaundry),
+                "Laundry left on the sofa must reveal with the sofa group.");
 
             Assert.That(
                 home.OcclusionRegistry.TryGetGroup(

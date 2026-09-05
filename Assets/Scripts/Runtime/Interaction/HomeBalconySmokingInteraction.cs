@@ -677,14 +677,14 @@ namespace BarPromenade
             cigaretteProp.transform.SetParent(socket, false);
             cigaretteProp.transform.localScale =
                 InverseScale(socket.lossyScale);
-            RuntimePrimitiveFactory.CreateCylinder(
+            HomeAuthoredVisualFactory.CreateCylinder(
                 "Paper",
                 cigaretteProp.transform,
                 CigarettePaperLocalPosition,
                 CigarettePaperLocalScale,
                 new Color(0.76f, 0.72f, 0.60f),
                 collider: false);
-            RuntimePrimitiveFactory.CreateCylinder(
+            HomeAuthoredVisualFactory.CreateCylinder(
                 "Ember",
                 cigaretteProp.transform,
                 CigaretteEmberLocalPosition,

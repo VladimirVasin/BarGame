@@ -39,7 +39,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   boots and one flush bandage shell. A full-colour `256 x 256` point-filtered
   clothing atlas paints the open jacket edges, pockets, seams, patch, bandage
   wraps, cuffs and boot construction. The result has `34` mesh parts and
-  `1,984` triangles, with the same `31` bones, six sockets and `41` bone-only
+  `2,384` triangles, with the same `31` bones, six sockets and `41` bone-only
   production actions.
 - One curved head surface uses a `4 x 4` face atlas with nine cells. The five
   sober faces `Neutral`, `HalfBlink`, `ClosedBlink`, `Watchful` and `Tense`
@@ -67,7 +67,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
 - Canonical height is `1.75 m`. The production bind pose is an A-pose; Unity
   imports a Generic rig, preserves the hierarchy, disables root motion and
   keeps the Animator free of gameplay-owned transitions and events.
-- The generated asset contains 34 independent mesh parts, 1,984 triangles and
+- The generated asset contains 34 independent mesh parts, 2,384 triangles and
   a 31-bone armature, including six non-deforming sockets. At minimum, these 16
   anatomical parts remain
   independently addressable through `Player3DAssetRegistry`:
@@ -76,15 +76,27 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
 - Geometry owns the body-changing hair, jacket, sleeve, trouser, boot and flush
   bandage silhouettes. Face states, jacket construction, patch, bandage wraps,
   cuffs and boot details are atlas pixels. Meshes use unique source datablocks
-  and deterministic rigid bone weights; Unity reuses shared PS1-lit materials
-  and merge-safe `MaterialPropertyBlock` texture transforms.
+  and deterministic bone weights. The continuous `GEO_Torso` shirt and
+  `CLO_JacketBody` shell have horizontal rings over three regions: pelvis,
+  lower spine and chest, with smooth transitions using at most two adjacent
+  bone influences per vertex. Their registered `chest` binding is the gameplay
+  anchor, not their only skin influence. Other parts keep rigid weights.
+  Unity reuses shared PS1-lit materials and merge-safe `MaterialPropertyBlock`
+  texture transforms.
 - The registry serializes mesh-to-bone bindings, the 16 anatomical bindings,
   animation bindings, source metrics and head/chest/pelvis/feet/grip/mouth
-  anchors. Runtime code does not reconstruct the production hierarchy with
+  anchors, including the explicit lower `Spine` anchor. Runtime code does not
+  reconstruct the production hierarchy with
   name searches.
 
 ## Animation contract
 
+- All `41` existing actions are regenerated with the independent
+  `pelvis -> spine -> chest` tracks on the preserved 31-bone hierarchy. Their
+  timings, sockets, hand/foot contacts and contextual seams remain the same;
+  the newly weighted shirt and jacket now visibly follow each spinal region.
+  The ordinary additive torso bend is shared `40/60` between spine and chest
+  and both local poses participate in the same capture/restore lifecycle.
 - The independent pedestrian locomotion bank remains at `37` actions; the
   production hero's `Run` is not added to it.
 - `Relaxed`, the four-second `Idle`, the one-second `Walk` and the `0.75 s`
@@ -167,7 +179,10 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   an Action; its ownership flag prevents the manual PlayableGraph and additive
   late pose from writing the same bones until the body stirs, when the frozen
   lying pose is blended into the clip while the late pass draws the rise's
-  limbs.
+  limbs. The ragdoll has `14` physical bodies: an `8 kg` lower-spine segment
+  and `10 kg` chest replace the former single `18 kg` torso body. Separate
+  bounded joints and fitted adjacent boxes keep the lower back articulated
+  through the physics handoff and recovery.
 - Intoxication sway and arm spread are additive bone presentation over ordinary
   locomotion, on the game clock, and reset to neutral through the shared
   lifecycle cleanup. The old symmetric knee bend is gone: heavy knees come from

@@ -36,11 +36,13 @@ namespace BarPromenade
 
         public const string VoiceObjectNamePrefix = "Speech Voice ";
 
-        /// <summary>Every bubble slot plus the prompt panel's one line.
-        /// Nothing in the game can be typing more lines than that at
-        /// once, so a lease never has to be refused in practice.
+        /// <summary>Every bubble slot, the prompt panel's one line, and
+        /// the hero's own mutter, which hangs on a second view of its own
+        /// so that his line and a quarrel in the park can never evict
+        /// each other. Nothing in the game can be typing more lines than
+        /// that at once, so a lease never has to be refused in practice.
         /// </summary>
-        public const int VoiceCount = NpcSpeechBubbleView.Capacity + 1;
+        public const int VoiceCount = NpcSpeechBubbleView.Capacity + 2;
 
         /// <summary>
         /// The floor under a source's own rolloff, not the rolloff
@@ -207,7 +209,8 @@ namespace BarPromenade
             uint ordinal,
             Vector3 worldPosition,
             float distanceGain,
-            in NpcEarshotProfile earshot)
+            in NpcEarshotProfile earshot,
+            float extraJitterCents = 0f)
         {
             NpcSpeechVoice service = instance;
             if (service == null ||
@@ -250,7 +253,8 @@ namespace BarPromenade
             source.pitch = NpcVoiceCatalog.ResolveBlipPitch(
                 voice,
                 character,
-                ordinal);
+                ordinal,
+                extraJitterCents);
             source.Play();
             return true;
         }

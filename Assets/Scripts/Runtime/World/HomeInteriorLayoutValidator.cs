@@ -50,6 +50,7 @@ namespace BarPromenade
             ValidateZones(plan);
             ValidatePaths(plan);
             ValidateFurniture(plan);
+            HomeLockedRoomPlan.ValidateOrThrow(plan);
         }
 
         private static void ValidateRoom(
