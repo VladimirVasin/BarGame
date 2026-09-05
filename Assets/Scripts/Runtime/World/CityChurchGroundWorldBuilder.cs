@@ -6,8 +6,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// A continuous church terrain skin, a solid outer skirt and imported
-    /// transparent iron on its genuinely closed edges. The collider uses
-    /// the rendered terrain mesh and the same authored fence spans.
+    /// transparent iron on its genuinely closed edges. Paving replaces the
+    /// visible grass beneath it; collision retains the continuous terrain.
     /// </summary>
     public static class CityChurchGroundWorldBuilder
     {
@@ -51,9 +51,36 @@ namespace BarPromenade
                 CityParkSurfaceKind.Lawn,
                 GardenGrass);
             CloseTerrainSkirt(ground, layout, church.Grounds);
+            ReplaceGrassUnderPaving(ground, layout, church);
             BuildFence(ground.transform,
                 CityChurchGroundPlan.CreateFenceSpans(layout, church));
             return ground;
+        }
+
+        private static void ReplaceGrassUnderPaving(
+            GameObject ground, CityLayout layout, CityChurchPlan church)
+        {
+            CityChurchCourtyardPlan courtyard = CityChurchCourtyardPlanner.Create(
+                layout, church,
+                CityChurchCemeteryPassagePlanner.Create(layout, church));
+            var cuts = new List<Rect>();
+            foreach (CityChurchCourtyardSurfaceDescriptor surface in courtyard.Surfaces)
+            {
+                if (surface.Kind != CityChurchCourtyardSurfaceKind.Lawn)
+                    cuts.Add(surface.Bounds);
+            }
+
+            // The 12 mm paving offset cannot hide a second, differently
+            // tessellated surface reliably under screen-space vertex snapping.
+            // Keep the full terrain collider and its owner, replacing only skin.
+            Mesh skin = CityTerrainSurfaceWorldBuilder.CreateMesh(
+                ObjectName, layout, CitySurfaceKind.ChurchGround,
+                CityParkSurfaceAppearance.GetRecipe(CityParkSurfaceKind.Lawn)
+                    .MetersPerTile, cuts, null);
+            AppendTerrainSkirt(skin, layout, church.Grounds);
+            ground.GetComponent<MeshFilter>().sharedMesh = skin;
+            ground.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(skin);
+            skin.UploadMeshData(false);
         }
 
         private static void CloseTerrainSkirt(
@@ -62,6 +89,16 @@ namespace BarPromenade
             Rect bounds)
         {
             Mesh mesh = ground.GetComponent<MeshFilter>().sharedMesh;
+            AppendTerrainSkirt(mesh, layout, bounds);
+            MeshCollider collider = ground.GetComponent<MeshCollider>();
+            collider.sharedMesh = null;
+            collider.sharedMesh = mesh;
+            mesh.UploadMeshData(false);
+        }
+
+        private static void AppendTerrainSkirt(
+            Mesh mesh, CityLayout layout, Rect bounds)
+        {
             var vertices = new List<Vector3>(mesh.vertices);
             var normals = new List<Vector3>(mesh.normals);
             var uvs = new List<Vector2>(mesh.uv);
@@ -83,10 +120,6 @@ namespace BarPromenade
             mesh.SetUVs(0, uvs);
             mesh.SetTriangles(triangles, 0, true);
             mesh.RecalculateBounds();
-            MeshCollider collider = ground.GetComponent<MeshCollider>();
-            collider.sharedMesh = null;
-            collider.sharedMesh = mesh;
-            mesh.UploadMeshData(false);
         }
 
         private static void AppendSkirt(

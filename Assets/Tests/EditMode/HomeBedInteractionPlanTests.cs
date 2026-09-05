@@ -31,9 +31,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.EntryRootPosition.x,
                 Is.EqualTo(
-                    bed.Bounds.xMax -
+                    bed.Bounds.center.x +
                     HomeBedInteractionPlan
-                        .DoorSideDockFootInset)
+                        .ActionHipFootwardOffset)
                     .Within(Tolerance));
             Assert.That(
                 plan.EntryRootPosition.z,
@@ -60,6 +60,20 @@ namespace BarPromenade.Tests.EditMode
                 plan.ExitRootPosition,
                 plan.EntryRootPosition);
 
+            // The old foot-side dock avoided the storage pile by accident.
+            // Moving to the middle must preserve the actual standing space.
+            foreach (HomeFurnitureFootprint furniture in home.Furniture)
+            {
+                if (!furniture.BlocksMovement) continue;
+                float clearance = HomeInteriorLayoutValidator.PlayerClearanceRadius;
+                Rect occupied = Rect.MinMaxRect(
+                    furniture.Bounds.xMin - clearance, furniture.Bounds.yMin - clearance,
+                    furniture.Bounds.xMax + clearance, furniture.Bounds.yMax + clearance);
+                Assert.That(occupied.Contains(new Vector2(
+                    plan.EntryRootPosition.x, plan.EntryRootPosition.z)), Is.False,
+                    $"The bed dock must stay clear of {furniture.Id}.");
+            }
+
             float triggerMaxX =
                 plan.TriggerCenter.x +
                 (plan.TriggerSize.x * 0.5f);
@@ -71,8 +85,10 @@ namespace BarPromenade.Tests.EditMode
                 (plan.TriggerSize.z * 0.5f);
             Assert.That(
                 triggerMaxX,
-                Is.EqualTo(bed.Bounds.xMax)
-                    .Within(Tolerance));
+                Is.LessThan(bed.Bounds.xMax));
+            Assert.That(
+                plan.TriggerCenter.x - plan.TriggerSize.x * 0.5f,
+                Is.GreaterThan(bed.Bounds.xMin));
             Assert.That(
                 triggerMaxZ,
                 Is.EqualTo(bed.Bounds.yMin)
@@ -124,6 +140,11 @@ namespace BarPromenade.Tests.EditMode
                 plan.SeatHipPosition.x,
                 Is.EqualTo(plan.EntryRootPosition.x)
                     .Within(Tolerance));
+            Assert.That(
+                plan.SeatHipPosition.x,
+                Is.EqualTo(plan.ActionHipPosition.x).Within(Tolerance),
+                "Sitting and sleeping must share the same longitudinal " +
+                "pelvis position, without travel toward the pillow.");
             Assert.That(
                 plan.SeatHipPosition.y,
                 Is.EqualTo(HomeBedInteractionPlan.SeatedHipHeight)

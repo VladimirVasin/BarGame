@@ -1860,6 +1860,8 @@ def validate_v2_result(
 ) -> common.ValidationReport:
     bpy.context.view_layer.update()
     errors: list[str] = []
+    common.validate_bed_support_contract(result, errors)
+    common.validate_bed_sleep_pose(result, errors)
     # The shared fall, lie and rise poses predate the current proportions.
     # Their landmark contacts (hands and knees on the floor at all fours,
     # the low crouch's boots) float on this rig — known debt the runtime's hand

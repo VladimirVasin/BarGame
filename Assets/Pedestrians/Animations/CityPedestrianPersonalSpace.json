@@ -42,7 +42,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.49,
-        1.358577
+        1.347672
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -78,7 +78,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.62,
-        1.316822
+        1.297993
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -95,7 +95,7 @@
       "authored_posture": "grounded standing personal-distance response, free left palm",
       "gait": "quiet palm-held boundary",
       "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
+      "loop_max_error": 0.0,
       "root_translation_range_m": [
         0.0,
         0.0,
@@ -114,7 +114,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.49,
-        1.34837
+        1.343033
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -131,7 +131,7 @@
       "authored_posture": "grounded standing personal-distance response, free left palm",
       "gait": "brief shoulder-assisted push",
       "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
+      "loop_max_error": 0.0,
       "root_translation_range_m": [
         0.0,
         0.0,
@@ -150,7 +150,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.62,
-        1.310118
+        1.299164
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -186,7 +186,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.49,
-        1.351156
+        1.345089
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -222,7 +222,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.62,
-        1.312462
+        1.299269
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -258,7 +258,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.49,
-        1.33806
+        1.349396
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -294,7 +294,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.62,
-        1.259681
+        1.299718
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -330,7 +330,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.49,
-        1.33806
+        1.349396
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -366,7 +366,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.62,
-        1.259681
+        1.299718
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -402,7 +402,7 @@
       "contact_palm_blender_m": [
         0.13,
         -0.49,
-        1.354454
+        1.348136
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
@@ -438,11 +438,11 @@
       "contact_palm_blender_m": [
         0.13,
         -0.62,
-        1.308218
+        1.29655
       ],
       "contact_forward_palm_dot": 1.0,
       "contact_upright_fingers_dot": 1.0
     }
   ],
-  "build_signature": "ffb7c296a61248ff34b40f221fcc4537eff6ac9c8da47f8c43aa7e248ab22664"
+  "build_signature": "e5fefd5b489c92e659631ce485163c11d6c32a79c95896bcf5aeb439ee695d7b"
 }

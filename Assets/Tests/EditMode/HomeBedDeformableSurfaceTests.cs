@@ -182,6 +182,76 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Pillow_FilledShellDentsAgainstItsProfileAndRecoversWithoutOpening()
+        {
+            var parent = new GameObject("Filled Pillow Contract Test");
+            try
+            {
+                var size = new Vector3(0.62f, HomeInteriorWorldBuilder.BedPillowThickness, 1.05f);
+                HomeBedDeformableSurface surface = HomeBedDeformableSurfaceFactory
+                    .CreateDeformableSurface("Test Pillow", parent.transform, Vector3.zero,
+                        size, Color.gray, HomeSurfaceKind.BedLinen, SurfaceProjection.BoxXZ,
+                        HomeInteriorWorldBuilder.BedPillowSinkDepth)
+                    .GetComponent<HomeBedDeformableSurface>();
+                Assert.That(surface.HasRestProfile, Is.True);
+                float crown = surface.SampleRestHeight(0f, 0f);
+                float seam = surface.SampleRestHeight(-size.x * 0.5f, 0f);
+                Assert.That(crown - seam, Is.GreaterThan(0.075f),
+                    "The unloaded pillow must have a filled crown and sloping shoulders.");
+                Assert.That(crown - surface.SampleRestBottomHeight(0f, 0f),
+                    Is.EqualTo(size.y).Within(Tolerance));
+                HomeBedSurfaceDepressionModel support = CreateMattressModel();
+                support.SetSupportProfile(-size.x * 0.5f, -size.z * 0.5f,
+                    size.x * 0.5f, size.z * 0.5f, surface.Columns, surface.Rows,
+                    surface.BottomHeights, HomeInteriorWorldBuilder.BedMattressSurfaceHeight -
+                        HomeInteriorWorldBuilder.BedPillowCenterHeight);
+                support.SetSources(new[] { new HomeBedDepressionSource(0f, 0f, 0.7f, 0.6f, 0.10f) }, 1);
+                support.SetBodyWeight(1f);
+                support.SnapToTarget();
+                Assert.That(support.SampleDepth(0f, 0f), Is.InRange(0.018f, 0.03f),
+                    "The crown may embed deeper than the thin seam.");
+                Assert.That(support.SampleDepth(0.5f, 0f), Is.GreaterThan(0.095f),
+                    "The pillow must not cap the torso dent outside its physical footprint.");
+                var model = new HomeBedSurfaceDepressionModel(
+                    HomeBedSurfaceDepressionSettings.Compact, surface.SizeX, surface.SizeZ,
+                    surface.Columns, surface.Rows, surface.MaxDepth,
+                    surface.RestHeights, surface.BottomHeights);
+                model.SetSources(new[] { new HomeBedDepressionSource(0f, 0f, 0.12f, 0.15f, surface.MaxDepth) }, 1);
+                model.SetBodyWeight(1f);
+                model.SnapToTarget();
+                Vector3[] rest = surface.Mesh.vertices;
+                var buffer = new Vector3[rest.Length];
+                surface.ApplyDepths(model, buffer);
+                Vector3[] dented = surface.Mesh.vertices;
+                Assert.That(model.SampleDepth(0f, 0f), Is.EqualTo(surface.MaxDepth).Within(Tolerance));
+                for (int index = 0; index < surface.TopVertexCount; index++)
+                {
+                    Vector3 point = dented[index];
+                    float restThickness = surface.SampleRestHeight(point.x, point.z) -
+                        surface.SampleRestBottomHeight(point.x, point.z);
+                    Assert.That(point.y - surface.SampleRestBottomHeight(point.x, point.z),
+                        Is.GreaterThanOrEqualTo(Mathf.Min(0.012f, restThickness) - Tolerance),
+                        "The moving shoulder must not collapse through the lower cloth shell.");
+                    bool boundary = Mathf.Abs(point.x) >= size.x * 0.5f - Tolerance ||
+                        Mathf.Abs(point.z) >= size.z * 0.5f - Tolerance;
+                    if (boundary) Assert.That(point, Is.EqualTo(rest[index]));
+                }
+                for (int index = surface.TopVertexCount; index < rest.Length; index++)
+                    Assert.That(dented[index], Is.EqualTo(rest[index]), "The seam and lower shell remain supported.");
+                model.SetBodyWeight(0f);
+                AdvanceInFrames(model, 3f);
+                surface.ApplyDepths(model, buffer);
+                Vector3[] recovered = surface.Mesh.vertices;
+                for (int index = 0; index < rest.Length; index++)
+                    Assert.That(Vector3.Distance(recovered[index], rest[index]), Is.LessThan(0.001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
         public void Model_ThePinnedRingNeverMoves()
         {
             HomeBedSurfaceDepressionModel model = CreateMattressModel();

@@ -201,6 +201,22 @@ namespace BarPromenade.Tests.EditMode
                 "exit seat departure",
                 HomeBedInteractionPlan.ExitSeatDepartureProgress,
                 bed.exit_seat_departure);
+            AssertMirrored(
+                "enter pelvis hold",
+                HomeBedInteractionPlan.EnterHoldProgress,
+                bed.enter_hold);
+            AssertMirrored(
+                "enter pelvis settle",
+                HomeBedInteractionPlan.EnterSettleProgress,
+                bed.enter_settle);
+            AssertMirrored(
+                "exit pelvis hold",
+                HomeBedInteractionPlan.ExitHoldProgress,
+                bed.exit_hold);
+            AssertMirrored(
+                "exit pelvis settle",
+                HomeBedInteractionPlan.ExitSettleProgress,
+                bed.exit_settle);
         }
 
         [Test]
@@ -1247,6 +1263,10 @@ namespace BarPromenade.Tests.EditMode
             public float enter_seat_departure;
             public float exit_seat_arrival;
             public float exit_seat_departure;
+            public float enter_hold;
+            public float enter_settle;
+            public float exit_hold;
+            public float exit_settle;
         }
 
         [Serializable]

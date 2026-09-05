@@ -60,12 +60,11 @@ namespace BarPromenade
                 batches[index] = new List<RuntimeMeshPlacement>();
             }
 
-            for (int index = 0; index < plan.Surfaces.Count; index++)
+            IReadOnlyList<CityChurchCourtyardSurfaceDescriptor> visibleSurfaces =
+                CreateVisibleSurfaces(plan);
+            for (int index = 0; index < visibleSurfaces.Count; index++)
             {
-                // Grass already belongs to the continuous ground mesh. Raised
-                // bevelled lawn patches would expose a grid of artificial seams.
-                if (plan.Surfaces[index].Kind != CityChurchCourtyardSurfaceKind.Lawn)
-                    AppendSurface(provider, plan, plan.Surfaces[index], batches);
+                AppendSurface(provider, plan, visibleSurfaces[index], batches);
             }
 
             for (int index = 0; index < plan.Fixtures.Count; index++)
@@ -98,6 +97,65 @@ namespace BarPromenade
             BuildGardenModels(root, plan);
             BuildCollision(root, plan);
             return root.gameObject;
+        }
+
+        /// <summary>
+        /// The plan's route strips and furniture pads may overlap to keep their
+        /// navigation and reservation bounds connected. Presentation gives each
+        /// square metre to the first surface so their coplanar tops never fight.
+        /// The separate door threshold owns its footprint before the paving;
+        /// grass already belongs to the continuous ground mesh.
+        /// </summary>
+        internal static IReadOnlyList<CityChurchCourtyardSurfaceDescriptor>
+            CreateVisibleSurfaces(CityChurchCourtyardPlan plan)
+        {
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            var visible = new List<CityChurchCourtyardSurfaceDescriptor>();
+            var door = new Vector3(
+                plan.ForecourtBounds.xMax,
+                plan.GroundTopY,
+                plan.ForecourtBounds.center.y);
+            var occupied = new List<Rect>
+            {
+                CityChurchWorldBuilder.GetDoorThresholdBounds(door)
+            };
+            for (int surfaceIndex = 0;
+                 surfaceIndex < plan.Surfaces.Count;
+                 surfaceIndex++)
+            {
+                CityChurchCourtyardSurfaceDescriptor surface =
+                    plan.Surfaces[surfaceIndex];
+                if (surface.Kind == CityChurchCourtyardSurfaceKind.Lawn)
+                {
+                    continue;
+                }
+
+                var patches = new List<Rect> { surface.Bounds };
+                for (int cutIndex = 0;
+                     cutIndex < occupied.Count && patches.Count > 0;
+                     cutIndex++)
+                {
+                    CityTerrainSurfaceWorldBuilder.SubtractFromPatches(
+                        patches, occupied[cutIndex], surface.Bounds);
+                }
+
+                for (int patchIndex = 0; patchIndex < patches.Count; patchIndex++)
+                {
+                    visible.Add(new CityChurchCourtyardSurfaceDescriptor(
+                        surface.Id,
+                        surface.Kind,
+                        patches[patchIndex],
+                        surface.ReservesPassage));
+                }
+
+                occupied.Add(surface.Bounds);
+            }
+
+            return visible;
         }
 
         private static void BuildGardenModels(Transform root, CityChurchCourtyardPlan plan)

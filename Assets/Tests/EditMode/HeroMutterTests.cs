@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -552,7 +553,10 @@ namespace BarPromenade.Tests.EditMode
         /// §16.2: the citizens never react to anything strange about him. The
         /// speech views hand out no events, and nothing in the pedestrian stack
         /// so much as names them — asserted here so the law fails a test rather
-        /// than a review.
+        /// than a review. One exception since the §6 registry row of
+        /// 2026-09-05: the street insult, which holds the shared view to say
+        /// its one line and is checked separately below for reading his
+        /// LEVEL and never his mutter.
         /// </summary>
         [Test]
         public void Citizens_CannotHearHim()
@@ -572,6 +576,9 @@ namespace BarPromenade.Tests.EditMode
 
                 if (!type.Name.StartsWith(
                         "CityPedestrian",
+                        StringComparison.Ordinal) ||
+                    type.Name.StartsWith(
+                        "CityPedestrianInsult",
                         StringComparison.Ordinal))
                 {
                     continue;
@@ -586,6 +593,89 @@ namespace BarPromenade.Tests.EditMode
             CollectionAssert.IsEmpty(
                 offenders,
                 "A pedestrian has learned to hear him.");
+        }
+
+        /// <summary>
+        /// The one pedestrian type allowed near the shared view — the street
+        /// insult of the §6 registry row of 2026-09-05 — reacts to his level
+        /// and to nothing he says. No mutter type is named by any field,
+        /// property, parameter or return of the three insult classes, the
+        /// controller's source names no mutter class, and the only hero
+        /// state it reads is the session's intoxication level. §16.2 stays
+        /// literally true: nobody on the street hears him.
+        /// </summary>
+        [Test]
+        public void Citizens_TheInsultReadsHisLevelAndNeverHisMutter()
+        {
+            Type[] insultTypes =
+            {
+                typeof(CityPedestrianInsultController),
+                typeof(CityPedestrianInsultRules),
+                typeof(CityPedestrianInsultLines)
+            };
+            Type[] mutterTypes =
+            {
+                typeof(IntoxicationMutterPresenter),
+                typeof(HeroMutterLines),
+                typeof(HeroMutterModel),
+                typeof(HeroMutterSlur)
+            };
+            const System.Reflection.BindingFlags Everything =
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Static |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic |
+                System.Reflection.BindingFlags.DeclaredOnly;
+            var offenders = new List<string>();
+            for (int typeIndex = 0; typeIndex < insultTypes.Length; typeIndex++)
+            {
+                Type type = insultTypes[typeIndex];
+                foreach (System.Reflection.FieldInfo field in type.GetFields(Everything))
+                {
+                    if (Array.IndexOf(mutterTypes, field.FieldType) >= 0)
+                    {
+                        offenders.Add($"{type.Name}.{field.Name}");
+                    }
+                }
+
+                foreach (System.Reflection.PropertyInfo property in type.GetProperties(Everything))
+                {
+                    if (Array.IndexOf(mutterTypes, property.PropertyType) >= 0)
+                    {
+                        offenders.Add($"{type.Name}.{property.Name}");
+                    }
+                }
+
+                foreach (System.Reflection.MethodInfo method in type.GetMethods(Everything))
+                {
+                    if (Array.IndexOf(mutterTypes, method.ReturnType) >= 0)
+                    {
+                        offenders.Add($"{type.Name}.{method.Name}()");
+                    }
+
+                    foreach (System.Reflection.ParameterInfo parameter in method.GetParameters())
+                    {
+                        if (Array.IndexOf(mutterTypes, parameter.ParameterType) >= 0)
+                        {
+                            offenders.Add($"{type.Name}.{method.Name}({parameter.Name})");
+                        }
+                    }
+                }
+            }
+
+            CollectionAssert.IsEmpty(
+                offenders,
+                "The street insult has learned to hear him.");
+
+            string source = File.ReadAllText(Path.Combine(
+                Application.dataPath,
+                "Scripts/Runtime/City/NPC/CityPedestrianInsultController.cs"));
+            Assert.That(source.Contains("HeroMutter"), Is.False,
+                "The insult controller names a mutter class.");
+            Assert.That(source.Contains("IntoxicationMutter"), Is.False,
+                "The insult controller names the mutter presenter.");
+            Assert.That(source.Contains("GameSessionState.IntoxicationLevel"), Is.True,
+                "The insult controller must be gated on the session's level and nothing else about him.");
         }
 
         private static bool ReferencesSpeech(Type type)

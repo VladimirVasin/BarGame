@@ -140,8 +140,9 @@ namespace BarPromenade.Tests.EditMode
                     pillowRestTop,
                     Is.GreaterThan(
                         HomeInteriorWorldBuilder
-                            .BedMattressSurfaceHeight),
-                    "A pillow below the mattress is not a pillow.");
+                            .BedMattressSurfaceHeight + 0.075f),
+                    "The filled pillow crown must remain visibly above the mattress, " +
+                    "rather than burying nearly all its thickness inside it.");
 
                 float headX =
                     plan.ActionHipPosition.x -

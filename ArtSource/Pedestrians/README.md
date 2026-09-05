@@ -158,7 +158,11 @@ Rebuild from the repository root with Blender 5:
 ```
 
 Add `-- --archetype kettle_hat` to iterate on one design without rebuilding the
-shared library or the contact sheet.
+shared library or the contact sheet. Add `-- --locomotion-only` to rebuild only
+the shared `CityPedestrianLocomotion` clip bank and its contact sheet, leaving
+every body, atlas and prop untouched; `-- --personal-space-only` does the same
+for the six roaming designs' guard/shove bank, which is built on the street
+idle's first key and so must be rebuilt after any change to the citizen gait.
 
 The generator validates each `1.75 m` grounded silhouette, its
 triangle budget, one source material, rigid weights, non-emissive and

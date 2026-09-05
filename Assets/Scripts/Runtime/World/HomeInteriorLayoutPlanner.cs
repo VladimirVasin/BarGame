@@ -80,7 +80,9 @@ namespace BarPromenade
                 new HomeFurnitureFootprint(
                     "camera-corner-junk",
                     HomeFurnitureKind.CameraCornerJunk,
-                    new Rect(-4.55f, -3.55f, 1.95f, 2.00f),
+                    // Keep the storage pile against the wall so the middle
+                    // of the bed has a full-width standing approach.
+                    new Rect(-4.55f, -3.55f, 1.30f, 2.00f),
                     1.15f,
                     true),
                 new HomeFurnitureFootprint(

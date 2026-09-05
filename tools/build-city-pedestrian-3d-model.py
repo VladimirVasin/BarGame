@@ -1067,6 +1067,13 @@ class BonePose:
     rotation_degrees: tuple[float, float, float] = (0.0, 0.0, 0.0)
     location_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
     scale: tuple[float, float, float] = (1.0, 1.0, 1.0)
+    # Where the bone should POINT, as an armature-space direction measured
+    # from its posed parent's rest frame - the contract the hero's generator
+    # (`tools/player_3d_model_common.py`) uses for his upper arms. When set,
+    # `rotation_degrees` is ignored and `apply_pose` solves the rotation on
+    # the rig; `location_m` and `scale` still apply. Authored for the shared
+    # citizen gait, whose arm aims are the hero's own vectors verbatim.
+    target_direction: tuple[float, float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -1719,6 +1726,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--personal-space-only", action="store_true",
         help="Build only the six roaming designs' grounded guard/shove bank.",
+    )
+    parser.add_argument(
+        "--locomotion-only", action="store_true",
+        help=(
+            "Build only the shared CityPedestrianLocomotion clip bank and "
+            "its contact sheet; no bodies, atlases or props are rewritten."
+        ),
     )
     arguments = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     config = parser.parse_args(arguments)
@@ -10605,6 +10619,18 @@ def interpolate_pose(
     for name in set(start) | set(end):
         first = start.get(name, BonePose())
         second = end.get(name, BonePose())
+        if (first.target_direction is None) != (second.target_direction is None):
+            raise ValueError(
+                f"{name} is aimed in one key and rotated in the other; a "
+                "bone must be authored one way across the keys it is "
+                "sampled between"
+            )
+        aim = None
+        if first.target_direction is not None:
+            aim = tuple(
+                a + (b - a) * amount
+                for a, b in zip(first.target_direction, second.target_direction)
+            )
         sampled[name] = BonePose(
             rotation_degrees=tuple(
                 a + (b - a) * amount
@@ -10618,6 +10644,7 @@ def interpolate_pose(
                 a + (b - a) * amount
                 for a, b in zip(first.scale, second.scale)
             ),
+            target_direction=aim,
         )
     return sampled
 
@@ -10632,15 +10659,50 @@ def reset_pose(rig: bpy.types.Object) -> None:
 
 
 def apply_pose(rig: bpy.types.Object, pose: dict[str, BonePose]) -> None:
+    aimed: list[tuple[bpy.types.PoseBone, BonePose]] = []
     for bone_name, transform in pose.items():
         pose_bone = rig.pose.bones.get(bone_name)
         if pose_bone is None:
             raise ValueError(f"Unknown animation bone {bone_name}")
         pose_bone.rotation_mode = "QUATERNION"
+        if transform.target_direction is not None:
+            aimed.append((pose_bone, transform))
+            continue
         pose_bone.location = transform.location_m
         pose_bone.rotation_quaternion = Euler(
             tuple(math.radians(value) for value in transform.rotation_degrees), "XYZ"
         ).to_quaternion()
+        pose_bone.scale = transform.scale
+    # Aims are solved after every plain rotation and parents first: the
+    # target is measured from the parent's POSED frame, so a chest that
+    # has already leaned carries the arm with it. This is the hero
+    # generator's `_apply_pose` branch for `target_direction`, verbatim in
+    # its arithmetic, so a vector authored for him means the same thing on
+    # the same 31-bone rig here.
+    aimed.sort(key=lambda item: len(item[0].parent_recursive))
+    for pose_bone, transform in aimed:
+        bpy.context.view_layer.update()
+        target_direction = Vector(transform.target_direction).normalized()
+        rest_bone = pose_bone.bone
+        rest_direction = (
+            rest_bone.tail_local - rest_bone.head_local
+        ).normalized()
+        target_rotation = (
+            rest_direction.rotation_difference(target_direction)
+            @ rest_bone.matrix_local.to_quaternion()
+        )
+        parent = pose_bone.parent
+        if parent is not None:
+            parent_delta = (
+                parent.matrix.to_quaternion()
+                @ parent.bone.matrix_local.to_quaternion().inverted()
+            )
+            target_rotation = parent_delta @ target_rotation
+        pose_bone.matrix = (
+            Matrix.Translation(pose_bone.head.copy())
+            @ target_rotation.to_matrix().to_4x4()
+        )
+        pose_bone.location = transform.location_m
         pose_bone.scale = transform.scale
     bpy.context.view_layer.update()
 
@@ -11004,6 +11066,11 @@ def mourner_street_pose() -> dict[str, BonePose]:
     verbatim, so the two designs stand alike in a crowd. The placed
     rite and the graveside walk keep the fold: that is where the
     flowers are.
+
+    Since 2026-09-05 the citizen recipe owns every arm bone it is merged
+    onto (`CITIZEN_ARM_BONES`), so on the street these rows are
+    overwritten by the hero's hanging arms anyway; they still describe
+    the base a reader sees here and keep the swap explicit.
     """
 
     pose = mourner_base_pose()
@@ -11852,36 +11919,84 @@ def ferry_kick(
 #
 # THIS IS THE HERO'S OWN WALK, TRANSPLANTED. `tools/player_3d_model_common.py`
 # authors `Walk` as an eight-key cycle - contact, down, pass, up for each leg
-# - over `1.0 s` at `24` fps, and every leg, pelvis, spine, chest and head key
-# below is copied from it verbatim. It transfers without retargeting because
-# both rigs are the same 31-bone NpcHumanV2 skeleton with the same rest pose;
-# `npc_v2_bone_specs()` reproduces Hero V2's landmarks to the millimetre.
+# - over `1.0 s` at `24` fps, and every leg, pelvis, spine, chest, head, arm
+# and hand key below is copied from it verbatim. It transfers without
+# retargeting because both rigs are the same 31-bone NpcHumanV2 skeleton with
+# the same rest pose; `npc_v2_bone_specs()` reproduces Hero V2's landmarks to
+# the millimetre.
 #
-# ONE THING COULD NOT BE COPIED LITERALLY. The hero aims his upper arms with
-# `BonePose.target_direction`, which this generator's `BonePose` does not
-# have - it carries rotation, location and scale only. The swing is therefore
-# re-expressed as an X rotation of the same magnitude, read off the hero's own
-# aim vectors: `atan2(y, -z)` of each, giving `25.5` degrees at contact,
-# `18.1` at the down beat, `5.9` at the pass and `12.8` at the up beat.
-# Negative X is forward for both arms and legs on this rig, so the
-# opposite-arm-to-leg relationship survives the conversion.
+# THE ARMS ARE HIS AIM VECTORS, NOT ROTATIONS. The hero points each upper arm
+# at an armature-space `target_direction` - a hanging arm is `(0.06, 0, -0.33)`,
+# straight down and a hand's width out - and keys the forearm and hand as
+# plain bone-local rotations under it. Until 2026-09-05 this recipe
+# re-expressed those aims as X rotations "of the same magnitude" and merged
+# them OVER each design's base arms. On the shared A-pose rig the upper arm's
+# local X axis points back and up, not sideways, so an X turn is abduction,
+# not a forward swing: the base's hang was thrown away, every street copy
+# stood in the bind A-pose and flapped +-25 deg like a bird, and the street
+# idle - `1.2 deg` of X on the bare rest - was the A-pose outright. That is
+# what the user saw as arms held out sideways and a strange walk.
+# `BonePose.target_direction` now exists here and `apply_pose` solves it the
+# way his generator does, so the vectors are carried over unchanged.
 #
 # The cycle is a RECIPE rather than a clip: it is merged onto each design's
-# own base pose, so a promoted resident keeps its own posture, coat and
-# carried props and only its gait becomes ordinary.
-def citizen_walk_legs(
-    left_forward: float,
-    lift: float,
-    swing: float,
-) -> dict[str, BonePose]:
-    """One key of the hero cycle, parameterised by which leg leads.
+# own STANDING base pose, and it owns more of it than the arms. The walk keys
+# pelvis, spine, chest and head from the hero's cycle and the idle's breath
+# zeroes spine, chest and head, so on the street a design keeps only its NECK
+# - and, in the idle, its pelvis (pitch and location offset) and legs. An
+# authored stoop in spine/chest/head never reaches the street clips; tune a
+# crossing stance through the neck and pelvis, or through this recipe. The
+# base's clavicles are reset too - the hang is measured from a rest shoulder,
+# and a design's own shoulder shaping (a hunch, a shrug) would tilt it.
 
-    `left_forward` is `+1` at left contact and `-1` at right contact;
-    `lift` separates the down beat from the contact; `swing` is the arm
-    amplitude in degrees.
+# The hero's relaxed arms: `relaxed_pose()` in his generator, verbatim.
+CITIZEN_HANGING_ARMS: dict[str, BonePose] = {
+    "clavicle.L": BonePose(),
+    "clavicle.R": BonePose(),
+    "upper_arm.L": BonePose(target_direction=(0.059, -0.014, -0.334)),
+    "upper_arm.R": BonePose(target_direction=(-0.047, -0.010, -0.334)),
+    "forearm.L": BonePose(rotation_degrees=(-4.0, 3.0, -2.0)),
+    "forearm.R": BonePose(rotation_degrees=(-5.0, -3.0, 2.0)),
+    "hand.L": BonePose(rotation_degrees=(2.0, -5.0, 2.0)),
+    "hand.R": BonePose(rotation_degrees=(2.0, 5.0, -2.0)),
+}
+
+# The bones the citizen recipe owns on every design it is merged onto.
+CITIZEN_ARM_BONES = tuple(CITIZEN_HANGING_ARMS)
+
+
+def citizen_arms(
+    upper_arm_l: tuple[float, float, float],
+    upper_arm_r: tuple[float, float, float],
+    forearm_l: tuple[float, float, float],
+    forearm_r: tuple[float, float, float],
+    hand_l: tuple[float, float, float],
+    hand_r: tuple[float, float, float],
+) -> dict[str, BonePose]:
+    """One key's arms: two aims, four rotations, rest clavicles."""
+
+    return {
+        "clavicle.L": BonePose(),
+        "clavicle.R": BonePose(),
+        "upper_arm.L": BonePose(target_direction=upper_arm_l),
+        "upper_arm.R": BonePose(target_direction=upper_arm_r),
+        "forearm.L": BonePose(rotation_degrees=forearm_l),
+        "forearm.R": BonePose(rotation_degrees=forearm_r),
+        "hand.L": BonePose(rotation_degrees=hand_l),
+        "hand.R": BonePose(rotation_degrees=hand_r),
+    }
+
+
+def citizen_walk_torso(
+    lead: float,
+    lift: float,
+) -> dict[str, BonePose]:
+    """The hero's pelvis, spine, chest and head for one key.
+
+    `lead` is `+1` at left contact and `-1` at right contact; `lift`
+    separates the down beat from the contact.
     """
 
-    lead = left_forward
     return {
         "pelvis": BonePose(
             rotation_degrees=(1.0 + lift, 3.0 * lead, -2.2 * lead)),
@@ -11889,26 +12004,74 @@ def citizen_walk_legs(
         "chest": BonePose(
             rotation_degrees=(4.4 + lift * 0.6, -1.5 * lead, -1.6 * lead)),
         "head": BonePose(rotation_degrees=(1.0, 0.0, 0.6 * lead)),
-        "upper_arm.L": BonePose(rotation_degrees=(swing, 0.0, 0.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(-swing, 0.0, 0.0)),
-        "forearm.L": BonePose(
-            rotation_degrees=(-21.0 - swing * 0.16, 3.0, -3.0)),
-        "forearm.R": BonePose(
-            rotation_degrees=(-21.0 + swing * 0.16, -4.0, 3.0)),
     }
 
 
-# The eight hero keys, verbatim in the legs. Each row is
-# (phase, thighL, shinL, footL, thighR, shinR, footR, lift, armSwingL).
+@dataclass(frozen=True)
+class CitizenWalkKey:
+    """One of the hero's eight walk landmarks, every number his."""
+
+    phase: float
+    lead: float
+    lift: float
+    thigh_l: float
+    shin_l: float
+    foot_l: float
+    thigh_r: float
+    shin_r: float
+    foot_r: float
+    upper_arm_l: tuple[float, float, float]
+    upper_arm_r: tuple[float, float, float]
+    forearm_l: tuple[float, float, float]
+    forearm_r: tuple[float, float, float]
+    hand_l: tuple[float, float, float]
+    hand_r: tuple[float, float, float]
+
+
+# Contact, down, pass, up for the left leg, then the same for the right.
+# The arm opposite the leading leg is back: at left contact the left arm's
+# aim has `+y` (behind, on this -Y-forward rig) and the right arm's `-y`.
 CITIZEN_WALK_CYCLE = (
-    (0.000, -26.0, 12.0, 10.0, 20.0, 24.0, -12.0, 0.0, 25.5, 1.0),
-    (0.125, -18.0, 24.0, 3.0, 14.0, 42.0, -18.0, 1.0, 18.1, 0.6),
-    (0.250, 5.0, 6.0, -6.0, -8.0, 52.0, 12.0, 0.0, 5.9, -0.3),
-    (0.375, 18.0, 10.0, -14.0, -24.0, 34.0, 8.0, -1.0, -12.8, -0.6),
-    (0.500, 20.0, 24.0, -12.0, -26.0, 12.0, 10.0, 0.0, -23.6, -1.0),
-    (0.625, 14.0, 42.0, -18.0, -18.0, 24.0, 3.0, 1.0, -17.8, -0.6),
-    (0.750, -8.0, 52.0, 12.0, 5.0, 6.0, -6.0, 0.0, -5.1, 0.3),
-    (0.875, -24.0, 34.0, 8.0, 18.0, 10.0, -14.0, -1.0, 13.7, 0.6),
+    CitizenWalkKey(
+        0.000, 1.0, 0.0, -26.0, 12.0, 10.0, 20.0, 24.0, -12.0,
+        (0.052, 0.145, -0.304), (-0.052, -0.135, -0.309),
+        (-17.0, 3.0, -3.0), (-27.0, -4.0, 3.0),
+        (4.0, -4.0, 2.0), (5.0, 6.0, -2.0)),
+    CitizenWalkKey(
+        0.125, 0.6, 1.0, -18.0, 24.0, 3.0, 14.0, 42.0, -18.0,
+        (0.052, 0.105, -0.321), (-0.052, -0.103, -0.322),
+        (-19.0, 3.0, -3.0), (-26.0, -4.0, 3.0),
+        (4.0, -4.0, 2.0), (5.0, 6.0, -2.0)),
+    CitizenWalkKey(
+        0.250, -0.3, 0.0, 5.0, 6.0, -6.0, -8.0, 52.0, 12.0,
+        (0.055, 0.035, -0.337), (-0.055, -0.030, -0.337),
+        (-21.0, 3.0, -3.0), (-24.0, -4.0, 3.0),
+        (2.0, -5.0, 2.0), (2.0, 5.0, -2.0)),
+    CitizenWalkKey(
+        0.375, -0.6, -1.0, 18.0, 10.0, -14.0, -24.0, 34.0, 8.0,
+        (0.052, -0.075, -0.329), (-0.052, 0.080, -0.328),
+        (-25.0, 3.0, -3.0), (-20.0, -4.0, 3.0),
+        (2.0, -5.0, 2.0), (2.0, 5.0, -2.0)),
+    CitizenWalkKey(
+        0.500, -1.0, 0.0, 20.0, 24.0, -12.0, -26.0, 12.0, 10.0,
+        (0.052, -0.135, -0.309), (-0.052, 0.145, -0.304),
+        (-27.0, 4.0, -3.0), (-17.0, -3.0, 3.0),
+        (5.0, -6.0, 2.0), (4.0, 4.0, -2.0)),
+    CitizenWalkKey(
+        0.625, -0.6, 1.0, 14.0, 42.0, -18.0, -18.0, 24.0, 3.0,
+        (0.052, -0.103, -0.322), (-0.052, 0.105, -0.321),
+        (-26.0, 4.0, -3.0), (-19.0, -3.0, 3.0),
+        (5.0, -6.0, 2.0), (4.0, 4.0, -2.0)),
+    CitizenWalkKey(
+        0.750, 0.3, 0.0, -8.0, 52.0, 12.0, 5.0, 6.0, -6.0,
+        (0.055, -0.030, -0.337), (-0.055, 0.035, -0.337),
+        (-24.0, 4.0, -3.0), (-21.0, -3.0, 3.0),
+        (2.0, -5.0, 2.0), (2.0, 5.0, -2.0)),
+    CitizenWalkKey(
+        0.875, 0.6, -1.0, -24.0, 34.0, 8.0, 18.0, 10.0, -14.0,
+        (0.052, 0.080, -0.328), (-0.052, -0.075, -0.329),
+        (-20.0, 3.0, -3.0), (-25.0, -4.0, 3.0),
+        (2.0, -5.0, 2.0), (2.0, 5.0, -2.0)),
 )
 
 
@@ -11918,16 +12081,25 @@ def citizen_walk_keys(
     """The hero's walk on one design's base pose, closed back onto key 0."""
 
     keys: list[tuple[float, dict[str, BonePose]]] = []
-    for row in CITIZEN_WALK_CYCLE:
-        phase, tl, sl, fl, tr, sr, fr, lift, swing, lead = row
-        pose = dict(citizen_walk_legs(lead, lift, swing))
-        pose["thigh.L"] = BonePose(rotation_degrees=(tl, 0.0, 0.0))
-        pose["shin.L"] = BonePose(rotation_degrees=(sl, 0.0, 0.0))
-        pose["foot.L"] = BonePose(rotation_degrees=(fl, 0.0, 0.0))
-        pose["thigh.R"] = BonePose(rotation_degrees=(tr, 0.0, 0.0))
-        pose["shin.R"] = BonePose(rotation_degrees=(sr, 0.0, 0.0))
-        pose["foot.R"] = BonePose(rotation_degrees=(fr, 0.0, 0.0))
-        keys.append((phase, merge_pose(base, pose)))
+    for key in CITIZEN_WALK_CYCLE:
+        pose = merge_pose(
+            base,
+            citizen_walk_torso(key.lead, key.lift),
+            {
+                "thigh.L": BonePose(rotation_degrees=(key.thigh_l, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(key.shin_l, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(key.foot_l, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(key.thigh_r, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(key.shin_r, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(key.foot_r, 0.0, 0.0)),
+            },
+            citizen_arms(
+                key.upper_arm_l, key.upper_arm_r,
+                key.forearm_l, key.forearm_r,
+                key.hand_l, key.hand_r,
+            ),
+        )
+        keys.append((key.phase, pose))
     keys.append((1.0, keys[0][1]))
     return tuple(keys)
 
@@ -11938,8 +12110,17 @@ def citizen_idle_keys(
     """A quiet standing breath, so a promoted resident has a street idle.
 
     Deliberately small: this is a person waiting to cross a road, not a
-    performance. Two seconds, one inhale, back to the base pose.
+    performance. Two seconds, one inhale, back to the base pose. The arms
+    hang the hero's way and lift with the breath exactly as his
+    `idle_left_inhale` lifts them.
     """
+
+    def lerp3(
+        first: tuple[float, float, float],
+        second: tuple[float, float, float],
+        amount: float,
+    ) -> tuple[float, float, float]:
+        return tuple(a + (b - a) * amount for a, b in zip(first, second))
 
     def breath(amount: float) -> dict[str, BonePose]:
         return merge_pose(
@@ -11949,11 +12130,15 @@ def citizen_idle_keys(
                 "chest": BonePose(rotation_degrees=(1.4 * amount, 0.0, 0.0)),
                 "head": BonePose(
                     rotation_degrees=(-0.5 * amount, 0.6 * amount, 0.0)),
-                "upper_arm.L": BonePose(
-                    rotation_degrees=(1.2 * amount, 0.0, 0.0)),
-                "upper_arm.R": BonePose(
-                    rotation_degrees=(1.2 * amount, 0.0, 0.0)),
             },
+            citizen_arms(
+                lerp3((0.059, -0.014, -0.334), (0.063, -0.018, -0.330), amount),
+                lerp3((-0.047, -0.010, -0.334), (-0.044, -0.004, -0.336), amount),
+                lerp3((-4.0, 3.0, -2.0), (-9.0, 4.0, -3.0), amount),
+                lerp3((-5.0, -3.0, 2.0), (-11.0, -3.0, 3.0), amount),
+                (2.0, -5.0, 2.0),
+                (2.0, 5.0, -2.0),
+            ),
         )
 
     return (
@@ -14176,10 +14361,14 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         ),
         "FishermanStreetIdle": citizen_idle_keys(fisher),
         "FishermanStreetWalk": citizen_walk_keys(fisher),
-        "ChessStreetIdle": citizen_idle_keys(chess),
-        "ChessStreetWalk": citizen_walk_keys(chess),
-        "CheckersStreetIdle": citizen_idle_keys(checkers),
-        "CheckersStreetWalk": citizen_walk_keys(checkers),
+        # The park players' base pose is the board perch - thighs folded to
+        # -79 deg - and until 2026-09-05 their street idle was built on it,
+        # so a chess player waiting at a crossing sat brooding in mid-air.
+        # The street pair stands on the stooped stance their trudge uses.
+        "ChessStreetIdle": citizen_idle_keys(chess_stand),
+        "ChessStreetWalk": citizen_walk_keys(chess_stand),
+        "CheckersStreetIdle": citizen_idle_keys(checkers_stand),
+        "CheckersStreetWalk": citizen_walk_keys(checkers_stand),
         "BabushkaStreetIdle": citizen_idle_keys(babushka),
         "BabushkaStreetWalk": citizen_walk_keys(babushka),
         "WeigherStreetIdle": citizen_idle_keys(weigh),
@@ -16895,15 +17084,14 @@ def build_personal_space_animation_library(config: argparse.Namespace) -> None:
     for design_key in PERSONAL_SPACE_DESIGNS:
         archetype = ARCHETYPES[design_key]
         result = PedestrianBuilder(archetype).build()
+        # The street idle's first key: the pose the roaming actor is
+        # playing when the reach begins, so frame 0 and frame 24 of the
+        # response are exactly what it blends from and back to - the
+        # citizen arms hanging, and for the park players the stooped
+        # standing stance their street pair has been built on since
+        # 2026-09-05 (before that their street idle was the board perch,
+        # which is why this used to swap in the stand pose by hand).
         base = all_keys[archetype.ambient_idle_clip or archetype.idle_clip][0][1]
-        # The park designs' historic StreetIdle source reuses the board-seat
-        # pose. A physical street response must stand on its own two feet;
-        # use the existing authored standing stance and let the presentation's
-        # action weight handle the entry/exit handoff.
-        if design_key == "park_chess_player":
-            base = chess_player_stand_pose()
-        elif design_key == "park_checkers_player":
-            base = checkers_player_stand_pose()
         actions = {}
         for shove in (False, True):
             suffix = "Shove" if shove else "Guard"
@@ -17566,6 +17754,12 @@ def main() -> None:
     config = parse_args()
     if config.personal_space_only:
         build_personal_space_animation_library(config)
+        return
+    if config.locomotion_only:
+        print("CITY PEDESTRIAN ART BUILD")
+        print(f"  Blender: {bpy.app.version_string}")
+        build_animation_library(config)
+        print("CITY PEDESTRIAN ART BUILD OK")
         return
     if config.hand_props_only:
         print("CITY PEDESTRIAN ART BUILD")

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Reflection;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -19,6 +20,11 @@ namespace BarPromenade.Tests.PlayMode
         private Keyboard keyboard;
         private HomeInteriorRoot home;
         private float previousTimeScale;
+        private Mesh bodyProbeMesh;
+        private readonly List<Vector3> bodyProbeVertices =
+            new List<Vector3>();
+        private readonly HashSet<Renderer> bodyProbeRenderers =
+            new HashSet<Renderer>();
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -70,6 +76,11 @@ namespace BarPromenade.Tests.PlayMode
 
             inputFixture?.TearDown();
             inputFixture = null;
+            if (bodyProbeMesh != null)
+            {
+                Object.DestroyImmediate(bodyProbeMesh);
+                bodyProbeMesh = null;
+            }
             GameSessionState.ClearRoute();
             GameSessionState.ResetDrinkingState();
             GameSessionState.ResetEconomyState();
@@ -667,22 +678,13 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(home.Bed.RequestWake(), Is.True);
 
-            // Rolling over and pushing up all happen on the mattress. Past
-            // roughly a fifth of the wake he is sitting on the edge with his
-            // boots on the floor, where being below the mattress is correct.
-            float elapsed = 0f;
-            while (elapsed < 0.6f &&
-                   home.AnimatedInteraction.Phase ==
-                       PlayerAnimatedInteractionPhase.Exiting)
-            {
-                AssertBodyRestsOnMattress(
-                    home,
-                    $"BedExit at {elapsed:F2}s",
-                    false,
-                    WakeBeddingGive);
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
+            // Follow the entire exit, including both legs leaving the bed.
+            // Only actual posed vertices over the mattress count: a boot
+            // correctly resting outside its edge must not fail an AABB test.
+            yield return ObserveBedTransition(
+                PlayerAnimatedInteractionPhase.Exiting,
+                PlayerAnimatedInteractionPhase.Idle,
+                false);
         }
 
         [UnityTest]
@@ -697,24 +699,54 @@ namespace BarPromenade.Tests.PlayMode
             float sink =
                 HomeInteriorWorldBuilder.BedSleeperSinkDepth;
             Vector3 hip = home.BedInteractionPlan.ActionHipPosition;
+            HomeBedDeformableSurface mattressSurface =
+                FindBedSurface("Home Bed Mattress");
+            HomeBedDeformableSurface pillowSurface =
+                FindBedSurface("Home Pillow");
+            Vector3[] pillowRestVertices = pillowSurface.Mesh.vertices;
+            AssertPillowHasVolume(pillowSurface, pillowRestVertices);
+            AreaCaptureFixture.CaptureHomeBedFrame(home, "00-rest");
 
             Assert.That(
                 home.BedSurface.GetSurfaceHeight(hip),
                 Is.EqualTo(restTop).Within(0.002f),
                 "Before anyone lies down the surface must be flat.");
 
-            Assert.That(home.Bed.BeginSleeping(), Is.True);
-            yield return null;
+            home.Player.Motor.Teleport(
+                home.BedInteractionPlan.EntryRootPosition);
+            home.Player.GameObject.transform.rotation =
+                home.BedInteractionPlan.EntryRotation;
+            Physics.SyncTransforms();
+            yield return WaitForActiveBed(home);
+            home.Bed.Interact(home.Player.Interactor);
+            yield return WaitForPhase(
+                home, PlayerAnimatedInteractionPhase.Entering);
+            Time.timeScale = 2f;
+            yield return ObserveBedTransition(
+                PlayerAnimatedInteractionPhase.Entering,
+                PlayerAnimatedInteractionPhase.Looping);
+
+            // Observe one complete breathing cycle after the real lie-down;
+            // this also lets the soft surfaces reach their loaded shape.
+            float sleepDeadline = Time.time +
+                (float)home.Bed.Definition.LoopDurationSeconds;
+            while (Time.time < sleepDeadline)
+            {
+                yield return null;
+                AssertBodyRestsOnMattress(
+                    home, "BedSleepLoop", true, SleepBeddingGive);
+                AssertHeadRestsOnPillow(home);
+                AssertPillowKeepsItsBaseAndThickness(
+                    pillowSurface, pillowRestVertices);
+            }
+            AreaCaptureFixture.CaptureHomeBedFrame(home, "20-sleep");
 
             Player3DCharacterPresentation presentation =
                 home.Player.Visual as Player3DCharacterPresentation;
             Assert.That(presentation, Is.Not.Null);
 
-            // BeginSleeping enters the loop without a lie-down, so the
-            // deformer snaps to equilibrium immediately. The full sink
-            // depth belongs under the deepest part of the sleeper — the
-            // torso, whose underside defined the support offset — while
-            // shallower parts get shallower dents.
+            // V2's deepest supine part is a boot. The spine lifts the torso
+            // above it, so each footprint must meet its own visible underside.
             Assert.That(
                 presentation.Registry.TryGetPart(
                     Player3DAnatomicalPart.Torso,
@@ -723,9 +755,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.BedSurface.GetSurfaceHeight(
                     torso.Renderer.bounds.center),
-                Is.EqualTo(restTop - sink).Within(0.005f),
-                "Under the sleeper's torso the mattress must be dented " +
-                "by exactly the depth his hip target descended.");
+                Is.EqualTo(Mathf.Max(restTop - sink,
+                    torso.Renderer.bounds.min.y)).Within(0.005f),
+                "Under the sleeper's torso the mattress must meet its " +
+                "actual underside, independently of the deeper boot dent.");
             Assert.That(
                 home.BedSurface.GetSurfaceHeight(hip),
                 Is.LessThan(restTop - 0.02f),
@@ -734,12 +767,6 @@ namespace BarPromenade.Tests.PlayMode
 
             // The model is not the picture: read the actual mesh, so a
             // broken write path cannot hide behind green model asserts.
-            Transform mattressObject =
-                home.Room.Find("Home Bed Mattress");
-            Assert.That(mattressObject, Is.Not.Null);
-            HomeBedDeformableSurface mattressSurface =
-                mattressObject
-                    .GetComponent<HomeBedDeformableSurface>();
             Vector3[] meshVertices =
                 mattressSurface.Mesh.vertices;
             float lowestTopVertex = float.PositiveInfinity;
@@ -760,30 +787,31 @@ namespace BarPromenade.Tests.PlayMode
                     .Within(0.006f),
                 "The rendered mesh itself must carry the dent, not just " +
                 "the model behind it.");
+            Vector3 headSupportPoint = AssertHeadRestsOnPillow(home);
             Assert.That(
-                presentation.Registry.TryGetPart(
-                    Player3DAnatomicalPart.Head,
-                    out Player3DAnatomicalPartBinding head),
-                Is.True);
-            Assert.That(
-                home.BedSurface.GetSurfaceHeight(
-                    head.Renderer.bounds.center),
-                Is.LessThan(
-                    HomeInteriorWorldBuilder
-                        .BedPillowSurfaceHeight - 0.01f),
+                pillowSurface.SampleRestWorldHeight(headSupportPoint) -
+                    home.BedSurface.GetSurfaceHeight(headSupportPoint),
+                Is.GreaterThan(0.01f),
                 "The pillow must be dented under the sleeping head.");
+            Assert.That(
+                MaximumVertexDisplacement(
+                    pillowRestVertices, pillowSurface.Mesh.vertices),
+                Is.GreaterThan(0.01f),
+                "The visible pillow mesh must compress under the head.");
 
             Assert.That(home.Bed.RequestWake(), Is.True);
-            Time.timeScale = FastTimeScale;
-            yield return WaitForPhaseCompletion(
-                home,
+            yield return ObserveBedTransition(
+                PlayerAnimatedInteractionPhase.Exiting,
                 PlayerAnimatedInteractionPhase.Idle);
+            AreaCaptureFixture.CaptureHomeBedFrame(home, "40-standing");
 
             // The dent refills on its own slow spring after he is up.
             float recoveryDeadline = Time.time + 2.5f;
             while (Time.time < recoveryDeadline)
             {
                 yield return null;
+                AssertPillowKeepsItsBaseAndThickness(
+                    pillowSurface, pillowRestVertices);
             }
 
             Assert.That(
@@ -811,6 +839,19 @@ namespace BarPromenade.Tests.PlayMode
                     .Within(0.003f),
                 "and the rendered mesh must be flat again once the " +
                 "dent has refilled.");
+            Assert.That(
+                MaximumVertexDisplacement(
+                    pillowRestVertices, pillowSurface.Mesh.vertices),
+                Is.LessThan(0.003f),
+                "The pillow must recover its authored convex shape after waking.");
+            Assert.That(home.Player.Motor.InputEnabled, Is.True);
+            AssertExactPose(
+                home.Player.GameObject.transform,
+                home.BedInteractionPlan.ExitRootPosition,
+                home.BedInteractionPlan.ExitRotation);
+            AreaCaptureFixture.CaptureHomeBedFrame(home, "41-recovered");
+            Time.timeScale = 1f;
+            yield return AreaCaptureFixture.CaptureHomeBedOpening(home);
         }
 
         [UnityTest]
@@ -901,70 +942,256 @@ namespace BarPromenade.Tests.PlayMode
                 "a completed sleep.");
         }
 
+        private HomeBedDeformableSurface FindBedSurface(string objectName)
+        {
+            Transform surfaceObject = home.Room.Find(objectName);
+            Assert.That(surfaceObject, Is.Not.Null, objectName);
+            HomeBedDeformableSurface surface =
+                surfaceObject.GetComponent<HomeBedDeformableSurface>();
+            Assert.That(surface, Is.Not.Null, objectName);
+            return surface;
+        }
+
+        private IEnumerator ObserveBedTransition(
+            PlayerAnimatedInteractionPhase phase,
+            PlayerAnimatedInteractionPhase completedPhase,
+            bool capture = true)
+        {
+            bool entering = phase == PlayerAnimatedInteractionPhase.Entering;
+            int startFrame = entering
+                ? home.Bed.Definition.EnterStartFrame
+                : home.Bed.Definition.ExitStartFrame;
+            int frameCount = entering
+                ? home.Bed.Definition.EnterFrameCount
+                : home.Bed.Definition.ExitFrameCount;
+            float[] checkpoints = entering
+                ? new[] { 0f, 0.16f, 0.28f, 0.44f, 0.58f, 0.72f, 0.88f, 0.98f }
+                : new[] { 0f, 0.16f, 0.28f, 0.44f, 0.58f, 0.68f, 0.80f, 0.88f, 0.98f };
+            int nextCheckpoint = 0;
+            int sampledFrames = 0;
+            HomeBedDeformableSurface pillow = FindBedSurface("Home Pillow");
+            var pillowRest = new Vector3[pillow.VertexCount];
+            pillow.CopyBaseVertices(pillowRest);
+            var presentation = home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null);
+            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            while (home.AnimatedInteraction.Phase == phase &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                if (home.AnimatedInteraction.Phase != phase)
+                {
+                    break;
+                }
+
+                float progress = Mathf.Clamp01(
+                    (home.AnimatedInteraction.FrameIndex - startFrame) /
+                    (float)frameCount);
+                string clip = entering ? "BedEnter" : "BedExit";
+                AssertContinuous3DPresentation(home, clip);
+                Assert.That(
+                    home.Room.InverseTransformPoint(
+                        presentation.Registry.Anchors.Pelvis.position).x,
+                    Is.EqualTo(home.BedInteractionPlan.ActionHipPosition.x).Within(0.015f),
+                    $"{clip} must keep the pelvis opposite the middle of the " +
+                    "bed instead of sliding toward the pillow or foot end.");
+                AssertPosedVerticesClearMattress($"{clip} at {progress:P0}");
+                AssertPillowKeepsItsBaseAndThickness(pillow, pillowRest);
+                if (capture && nextCheckpoint < checkpoints.Length &&
+                    progress >= checkpoints[nextCheckpoint])
+                {
+                    AreaCaptureFixture.CaptureHomeBedFrame(
+                        home,
+                        $"{(entering ? 10 : 30)}-{clip}-{nextCheckpoint:00}");
+                    nextCheckpoint++;
+                }
+                sampledFrames++;
+            }
+
+            Assert.That(home.AnimatedInteraction.Phase, Is.EqualTo(completedPhase));
+            Assert.That(sampledFrames, Is.GreaterThan(4),
+                "The complete transition must expose intermediate posed frames.");
+            yield return null;
+        }
+
+        private void AssertPosedVerticesClearMattress(
+            string context,
+            bool requireContact = false,
+            float give = WakeBeddingGive)
+        {
+            var presentation = home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null);
+            bodyProbeRenderers.Clear();
+            HomeBedDeformableSurface mattress = FindBedSurface("Home Bed Mattress");
+            // Soft goods can give locally. Use the deepest permitted support
+            // plane; the live contact/indent assertions check the held pose.
+            float supportY = HomeInteriorWorldBuilder.BedMattressSurfaceHeight -
+                HomeInteriorWorldBuilder.BedSleeperSinkDepth;
+            float minimumY = supportY - give;
+            float lowestBody = float.PositiveInfinity;
+            string lowestBodyMesh = "none";
+            foreach (Player3DMeshBinding binding in presentation.Registry.MeshBindings)
+            {
+                Renderer renderer = binding?.Renderer;
+                if (renderer == null || !renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy ||
+                    !bodyProbeRenderers.Add(renderer))
+                {
+                    continue;
+                }
+
+                if (!ReadPosedVertices(renderer))
+                {
+                    continue;
+                }
+
+                float lowest = float.PositiveInfinity;
+                float worldMinimum = float.PositiveInfinity;
+                Vector3 lowestPoint = Vector3.zero;
+                foreach (Vector3 localVertex in bodyProbeVertices)
+                {
+                    Vector3 vertex = renderer.transform.TransformPoint(localVertex);
+                    worldMinimum = Mathf.Min(worldMinimum, vertex.y);
+                    Vector2 mattressPoint = mattress.WorldToLocalPlanar(vertex);
+                    const float edgeInset = 0.025f;
+                    if (Mathf.Abs(mattressPoint.x) < mattress.SizeX * 0.5f - edgeInset &&
+                        Mathf.Abs(mattressPoint.y) < mattress.SizeZ * 0.5f - edgeInset)
+                    {
+                        if (vertex.y < lowest)
+                        {
+                            lowest = vertex.y;
+                            lowestPoint = vertex;
+                        }
+                    }
+                }
+                Assert.That(lowest, Is.GreaterThan(minimumY),
+                    $"{context}: posed {binding.MeshName} reaches {lowest:F3} m " +
+                    $"over the mattress at {lowestPoint:F3}, below its compressed " +
+                    $"support limit at {minimumY:F3} m. Whole-mesh posed minimum=" +
+                    $"{worldMinimum:F3}, renderer AABB minimum={renderer.bounds.min.y:F3}.");
+                if (lowest < lowestBody)
+                {
+                    lowestBody = lowest;
+                    lowestBodyMesh = binding.MeshName;
+                }
+            }
+            if (requireContact)
+            {
+                Assert.That(lowestBody, Is.LessThan(supportY + 0.05f),
+                    $"{context}: the lowest posed mesh over the mattress is " +
+                    $"{lowestBodyMesh} at {lowestBody:F3} m, above the allowed " +
+                    $"contact gap over its compressed support at {supportY:F3} m.");
+            }
+        }
+
+        private bool ReadPosedVertices(Renderer renderer)
+        {
+            bodyProbeVertices.Clear();
+            if (renderer is SkinnedMeshRenderer skinned)
+            {
+                bodyProbeMesh ??= new Mesh { name = "Home bed posed-body test probe" };
+                bodyProbeMesh.Clear(false);
+                skinned.BakeMesh(bodyProbeMesh, true);
+                bodyProbeMesh.GetVertices(bodyProbeVertices);
+            }
+            else
+            {
+                MeshFilter filter = renderer.GetComponent<MeshFilter>();
+                if (filter?.sharedMesh == null)
+                {
+                    return false;
+                }
+                filter.sharedMesh.GetVertices(bodyProbeVertices);
+            }
+            return bodyProbeVertices.Count > 0;
+        }
+
+        private static void AssertPillowHasVolume(
+            HomeBedDeformableSurface pillow,
+            Vector3[] rest)
+        {
+            float low = float.PositiveInfinity;
+            float high = float.NegativeInfinity;
+            for (int index = 0; index < pillow.TopVertexCount; index++)
+            {
+                low = Mathf.Min(low, rest[index].y);
+                high = Mathf.Max(high, rest[index].y);
+            }
+            Assert.That(high - low, Is.GreaterThan(0.06f),
+                "An unloaded pillow must have a visibly rounded crown and shoulders.");
+            Assert.That(pillow.Thickness, Is.GreaterThanOrEqualTo(0.12f));
+        }
+
+        private void AssertPillowKeepsItsBaseAndThickness(
+            HomeBedDeformableSurface pillow,
+            Vector3[] rest)
+        {
+            Vector3[] current = pillow.Mesh.vertices;
+            float maximumBaseMovement = 0f;
+            for (int index = pillow.TopVertexCount; index < current.Length; index++)
+            {
+                maximumBaseMovement = Mathf.Max(maximumBaseMovement,
+                    Vector3.Distance(current[index], rest[index]));
+            }
+            Assert.That(maximumBaseMovement, Is.LessThan(0.0001f),
+                "Compression must keep the authored lower pillow shell seated.");
+            float minimumThickness = float.PositiveInfinity;
+            for (int index = 0; index < pillow.TopVertexCount; index++)
+            {
+                Vector3 vertex = current[index];
+                // A closed lens intentionally tapers to a seam at its edge.
+                if (Mathf.Abs(vertex.x) < pillow.SizeX * 0.35f &&
+                    Mathf.Abs(vertex.z) < pillow.SizeZ * 0.35f)
+                {
+                    minimumThickness = Mathf.Min(minimumThickness,
+                        vertex.y - pillow.SampleRestBottomHeight(vertex.x, vertex.z));
+                }
+            }
+            Assert.That(minimumThickness, Is.InRange(0.012f, pillow.Thickness),
+                "The loaded crown must retain stuffing above its lower shell.");
+            HomeBedDeformableSurface mattress = FindBedSurface("Home Bed Mattress");
+            Vector2 mattressPoint = mattress.WorldToLocalPlanar(pillow.transform.position);
+            float mattressY = mattress.RestTopWorldY -
+                home.BedSurface.MattressModel.SampleDepth(mattressPoint.x, mattressPoint.y);
+            float pillowBottomY = pillow.transform.TransformPoint(
+                new Vector3(0f, pillow.SampleRestBottomHeight(0f, 0f), 0f)).y;
+            Assert.That(pillowBottomY, Is.LessThanOrEqualTo(mattressY + 0.003f),
+                "The pillow's base must remain in contact with the mattress below it.");
+        }
+
+        private static float MaximumVertexDisplacement(Vector3[] rest, Vector3[] current)
+        {
+            Assert.That(current.Length, Is.EqualTo(rest.Length));
+            float maximum = 0f;
+            for (int index = 0; index < rest.Length; index++)
+            {
+                maximum = Mathf.Max(maximum, Vector3.Distance(rest[index], current[index]));
+            }
+            return maximum;
+        }
+
         /// <summary>
         /// The complaint this exists for is "he sinks into the bed". Nothing
         /// grounds the rig while a contextual clip owns it, so the only proof
         /// is to look at where the visible meshes actually are.
         /// </summary>
-        // Renderer AABBs are conservative and bedding compresses, so the
-        // allowance is not zero. The held sleeping pose is still near-exact;
-        // waking gets the same soft-goods give the Blender bed support
-        // validator grants it, because runtime eases the pelvis toward the
-        // bedside seat from the first frame of the wake.
+        // Measure posed geometry: rotated AABBs extend below the boots even
+        // when their real vertices remain supported. Bedding still allows the
+        // same bounded compression as the Blender bed support validator.
         private const float SleepBeddingGive = 0.01f;
         private const float WakeBeddingGive = 0.03f;
 
-        private static void AssertBodyRestsOnMattress(
+        private void AssertBodyRestsOnMattress(
             HomeInteriorRoot home,
             string context,
             bool requireContact,
             float give)
         {
-            Player3DCharacterPresentation presentation =
-                home.Player.Visual as Player3DCharacterPresentation;
-            Assert.That(presentation, Is.Not.Null);
-            // The mattress dents under him: the true support plane while
-            // his weight is on the bed is the dented one, and the hip
-            // target was lowered by exactly the sink depth.
-            float mattress =
-                HomeInteriorWorldBuilder.BedMattressSurfaceHeight -
-                HomeInteriorWorldBuilder.BedSleeperSinkDepth;
-
-            float lowest = float.PositiveInfinity;
-            string lowestPart = "none";
-            foreach (Player3DAnatomicalPartBinding binding in
-                     presentation.Registry.AnatomicalParts)
-            {
-                if (binding?.Renderer == null)
-                {
-                    continue;
-                }
-
-                float bottom = binding.Renderer.bounds.min.y;
-                if (bottom < lowest)
-                {
-                    lowest = bottom;
-                    lowestPart = binding.Part.ToString();
-                }
-            }
-
-            Assert.That(
-                lowest,
-                Is.GreaterThan(mattress - give),
-                $"{context}: {lowestPart} reaches {lowest:F3}, below the " +
-                $"mattress at {mattress:F3} — the hero is inside the bed.");
-            if (requireContact)
-            {
-                Assert.That(
-                    lowest,
-                    Is.LessThan(mattress + 0.05f),
-                    $"{context}: the lowest part of him sits at " +
-                    $"{lowest:F3}, well over the mattress at {mattress:F3} " +
-                    "— he is lying on thin air.");
-            }
+            Assert.That(home, Is.SameAs(this.home));
+            AssertPosedVerticesClearMattress(context, requireContact, give);
         }
 
-        private static void AssertHeadRestsOnPillow(
+        private Vector3 AssertHeadRestsOnPillow(
             HomeInteriorRoot home)
         {
             Player3DCharacterPresentation presentation =
@@ -976,23 +1203,49 @@ namespace BarPromenade.Tests.PlayMode
                     out Player3DAnatomicalPartBinding head),
                 Is.True);
 
-            // The pillow dents under the head; the honest plane is the
-            // deformer's live surface at the head's own XZ.
-            float pillow =
-                HomeInteriorWorldBuilder.BedPillowSurfaceHeight -
-                HomeInteriorWorldBuilder.BedPillowSinkDepth;
-            Assert.That(
-                head.Renderer.bounds.min.y,
-                Is.GreaterThan(pillow - 0.03f),
-                "The sleeper's head must lie on the dented pillow, not " +
-                "inside it.");
             Assert.That(home.BedSurface, Is.Not.Null);
-            Assert.That(
-                head.Renderer.bounds.min.y,
-                Is.GreaterThan(
-                    home.BedSurface.GetSurfaceHeight(
-                        head.Renderer.bounds.center) - 0.03f),
-                "and it must ride on the live deformed surface.");
+            HomeBedDeformableSurface pillow = FindBedSurface("Home Pillow");
+            Vector3 supportPoint = new Vector3(0f, float.PositiveInfinity, 0f);
+            int measuredMeshes = 0;
+            foreach (Player3DMeshBinding binding in presentation.Registry.MeshBindings)
+            {
+                Renderer renderer = binding?.Renderer;
+                if (renderer == null ||
+                    (renderer != head.Renderer && binding.MeshName != "GEO_HairBack"))
+                {
+                    continue;
+                }
+                Assert.That(ReadPosedVertices(renderer), Is.True, binding.MeshName);
+                Vector3 lowestPoint = new Vector3(0f, float.PositiveInfinity, 0f);
+                foreach (Vector3 localVertex in bodyProbeVertices)
+                {
+                    Vector3 point = renderer.transform.TransformPoint(localVertex);
+                    if (point.y < lowestPoint.y)
+                    {
+                        lowestPoint = point;
+                    }
+                }
+                Assert.That(pillow.ContainsPlanar(lowestPoint), Is.True,
+                    $"{binding.MeshName}'s posed underside at {lowestPoint:F3} " +
+                    "must remain over the pillow footprint.");
+                float liveHeight = home.BedSurface.GetSurfaceHeight(lowestPoint);
+                Assert.That(lowestPoint.y, Is.GreaterThan(liveHeight - 0.03f),
+                    $"{binding.MeshName}'s posed underside at {lowestPoint:F3} " +
+                    $"must ride on its local deformed pillow at {liveHeight:F3} m; " +
+                    $"renderer AABB minimum={renderer.bounds.min.y:F3} m.");
+                if (lowestPoint.y < supportPoint.y)
+                {
+                    supportPoint = lowestPoint;
+                }
+                measuredMeshes++;
+            }
+            Assert.That(measuredMeshes, Is.EqualTo(2),
+                "Both the actual head and back-of-head hair must carry the support check.");
+            float supportHeight = home.BedSurface.GetSurfaceHeight(supportPoint);
+            Assert.That(supportPoint.y, Is.LessThan(supportHeight + 0.03f),
+                $"The head's lowest posed point at {supportPoint:F3} must rest on " +
+                $"the local pillow at {supportHeight:F3} m without an air gap.");
+            return supportPoint;
         }
 
         private static void AssertSleepingHeadToFootOrientation(

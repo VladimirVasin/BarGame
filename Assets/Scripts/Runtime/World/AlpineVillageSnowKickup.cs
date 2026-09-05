@@ -27,6 +27,8 @@ namespace BarPromenade
         private Transform[] motes;
         private Vector3[] velocities;
         private float age;
+        private float activeMoteSize = MoteSize;
+        private float activeLifeSeconds = LifeSeconds;
 
         /// <summary>
         /// Throws one step's worth of snow at a point. Depth scales it, so a
@@ -38,21 +40,38 @@ namespace BarPromenade
             Vector3 position,
             float depth)
         {
+            Spawn(parent, position, depth, sand: false);
+        }
+
+        /// <summary>
+        /// Reuses the same brief solid grains for the beach. Damp sand
+        /// throws smaller, lower grains and carries the shore's own sheet.
+        /// </summary>
+        public static void Spawn(
+            Transform parent,
+            Vector3 position,
+            float depth,
+            bool sand)
+        {
             if (depth <= 0f)
             {
                 return;
             }
 
-            var host = new GameObject("Snow Kickup");
+            var host = new GameObject(sand ? "Sand Kickup" : "Snow Kickup");
             host.transform.SetParent(parent, false);
             host.transform.position = position;
             AlpineVillageSnowKickup kickup =
                 host.AddComponent<AlpineVillageSnowKickup>();
-            kickup.Build(Mathf.Clamp01(depth / 0.45f));
+            kickup.Build(Mathf.Clamp01(depth / (sand ? 0.12f : 0.45f)), sand);
         }
 
-        private void Build(float strength)
+        private void Build(float strength, bool sand)
         {
+            activeMoteSize = sand ? 0.025f : MoteSize;
+            activeLifeSeconds = sand ? 0.26f : LifeSeconds;
+            float rise = sand ? 0.48f : RiseSpeed;
+            float spread = sand ? 0.40f : SpreadSpeed;
             motes = new Transform[MoteCount];
             velocities = new Vector3[MoteCount];
             for (int index = 0; index < MoteCount; index++)
@@ -66,34 +85,48 @@ namespace BarPromenade
                 GameObject mote = RuntimePrimitiveFactory.CreateBox(
                     $"Mote {index:00}",
                     transform,
-                    out3 * (MoteSize * 1.5f) +
-                    Vector3.up * (MoteSize * 0.5f),
-                    Vector3.one * (MoteSize * Mathf.Lerp(0.6f, 1f, strength)),
+                    out3 * (activeMoteSize * 1.5f) +
+                    Vector3.up * (activeMoteSize * 0.5f),
+                    Vector3.one * (activeMoteSize * Mathf.Lerp(0.6f, 1f, strength)),
                     Color.white,
                     false);
-                MountainRoadSurfaceAppearance.Apply(
-                    mote.GetComponent<Renderer>(),
-                    AlpineVillageRidgeAppearance.Surface,
-                    Color.white);
+                // Primitive collider removal is deferred until end of frame.
+                // Grains must already be nonphysical on their spawn frame.
+                Collider pendingCollider = mote.GetComponent<Collider>();
+                if (pendingCollider != null) pendingCollider.enabled = false;
+                if (sand)
+                {
+                    CitySeacoastSurfaceAppearance.ApplyCombined(
+                        mote.GetComponent<Renderer>(),
+                        CitySeacoastSurfaceKind.Sand,
+                        CityExteriorAppearance.BeachSand);
+                }
+                else
+                {
+                    MountainRoadSurfaceAppearance.Apply(
+                        mote.GetComponent<Renderer>(),
+                        AlpineVillageRidgeAppearance.Surface,
+                        Color.white);
+                }
                 mote.GetComponent<Renderer>().shadowCastingMode =
                     UnityEngine.Rendering.ShadowCastingMode.Off;
                 motes[index] = mote.transform;
                 velocities[index] =
-                    out3 * (SpreadSpeed * strength) +
-                    Vector3.up * (RiseSpeed * strength);
+                    out3 * (spread * strength) +
+                    Vector3.up * (rise * strength);
             }
         }
 
         private void Update()
         {
             age += Time.deltaTime;
-            if (age >= LifeSeconds || motes == null)
+            if (age >= activeLifeSeconds || motes == null)
             {
                 Destroy(gameObject);
                 return;
             }
 
-            float remaining = 1f - age / LifeSeconds;
+            float remaining = 1f - age / activeLifeSeconds;
             for (int index = 0; index < motes.Length; index++)
             {
                 Transform mote = motes[index];
@@ -108,7 +141,7 @@ namespace BarPromenade
                 // opaque, and a per-instance alpha would need a material of
                 // its own for five cubes that live a third of a second.
                 mote.localScale = Vector3.one *
-                                  (MoteSize * remaining * remaining);
+                                  (activeMoteSize * remaining * remaining);
             }
         }
     }

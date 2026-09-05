@@ -30,6 +30,15 @@ namespace BarPromenade
 
         public const float DoorLeafWidth = 1.8f;
         public const float DoorLeafHeight = 2.6f;
+        public const float DoorThresholdDepth = 0.92f;
+        public const float DoorThresholdWidth = DoorLeafWidth + 0.9f;
+
+        internal static Rect GetDoorThresholdBounds(Vector3 door)
+        {
+            return new Rect(door.x - DoorThresholdDepth,
+                door.z - DoorThresholdWidth * 0.5f,
+                DoorThresholdDepth, DoorThresholdWidth);
+        }
 
         private static readonly Color FoundationStone =
             new Color(0.28f, 0.29f, 0.27f);
@@ -286,15 +295,15 @@ namespace BarPromenade
                 "Church Door Threshold",
                 root,
                 door +
-                (outward * 0.46f) +
+                (outward * (DoorThresholdDepth * 0.5f)) +
                 (Vector3.up *
                  (CityChurchPlanner.ApproachSurfaceTopAboveGround -
                   CityChurchPlanner.ApproachSurfaceHeight * 0.5f)),
                 FacadeSize(
                     frontageIsX,
-                    0.92f,
+                    DoorThresholdDepth,
                     CityChurchPlanner.ApproachSurfaceHeight,
-                    DoorLeafWidth + 0.9f),
+                    DoorThresholdWidth),
                 DoorTrimStone,
                 false);
         }

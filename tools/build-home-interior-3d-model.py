@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 SOURCE = ROOT / "ArtSource/Home/Interior"
 MODEL = ROOT / "Assets/Home/Interior/Models/HomeInterior3D.fbx"
 PITCH = {"Plain": 1, "Wallpaper": 1.9, "CeilingPlaster": 2.8,
@@ -128,6 +128,43 @@ def grid(size,cols,rows):
     return bp.to_source((vertices,faces))
 
 
+def pillow_grid(size,cols,rows):
+    """Two filled cloth shells meet at one thin, pinned perimeter seam.
+
+    The upper shell includes the rounded shoulders. Both height profiles are
+    exported so runtime contact samples this shape instead of an imaginary
+    plane. The lower shell stays supported by the mattress.
+    """
+    x,y,z=size; top=[]; bottom=[]
+    # A slightly lifted sewn edge separates this filled pillow from the
+    # mattress. Crown height and the central lower support stay unchanged.
+    seam_top=-y*.18+.0015+.015; seam_bottom=seam_top-.003
+    for row in range(rows+1):
+        for col in range(cols+1):
+            dome=max(0,math.sin(math.pi*col/cols)*math.sin(math.pi*row/rows))**.65
+            top.append(seam_top+(y*.5-seam_top)*dome)
+            bottom.append(seam_bottom+(-y*.5-seam_bottom)*dome)
+    vertices=[]; faces=[]
+    for heights,upper in ((top,True),(bottom,False)):
+        for row in range(rows):
+            for col in range(cols):
+                a=len(vertices)
+                for cx,cz in ((col,row),(col+1,row),(col,row+1),(col+1,row+1)):
+                    vertices.append(((cx/cols-.5)*x,heights[cz*(cols+1)+cx],(cz/rows-.5)*z))
+                face=(a,a+2,a+3,a+1)
+                faces.append(face if upper else tuple(reversed(face)))
+    boundary=[(col,0) for col in range(cols+1)]
+    boundary += [(cols,row) for row in range(1,rows+1)]
+    boundary += [(col,rows) for col in range(cols-1,-1,-1)]
+    boundary += [(0,row) for row in range(rows-1,0,-1)]
+    for left,right in zip(boundary,boundary[1:]+boundary[:1]):
+        a=len(vertices)
+        for (cx,cz),height in ((left,seam_bottom),(right,seam_bottom),(right,seam_top),(left,seam_top)):
+            vertices.append(((cx/cols-.5)*x,height,(cz/rows-.5)*z))
+        faces.append((a,a+3,a+2,a+1))
+    return bp.to_source((vertices,faces)),top,bottom
+
+
 def dish(size,deep=False):
     profile=((.63,-.5),(.84,-.44),(1,.34),(1,.5),(.86,.5),
              (.73,-.20),(.18,-.26),(.12,-.26)) if deep else (
@@ -175,7 +212,8 @@ class Build:
     def add(self,name,size,sheet="Plain",*,semantic=None,role="binding",group="shell",
             fit="fixed",aliases=(),patterns=(),position=(0,0,0),rotation=(0,0,0),
             min_day=1,max_day=7,tint=None,geometry=None,collider=False,
-            grid_columns=0,grid_rows=0,max_depth=0):
+            grid_columns=0,grid_rows=0,max_depth=0,
+            grid_top_heights=(),grid_bottom_heights=()):
         if any(p["name"]==name for p in self.parts):
             raise ValueError("Duplicate part "+name)
         geometry=geometry or box(size)
@@ -205,7 +243,8 @@ class Build:
               "position":list(position),"rotation":list(rotation),"size":list(size),
               "bounds_min":list(swap(lo)),"bounds_max":list(swap(hi)),
               "triangles":kit.triangle_count(geometry),"collider":collider,
-              "grid_columns":grid_columns,"grid_rows":grid_rows,"max_depth":max_depth}
+              "grid_columns":grid_columns,"grid_rows":grid_rows,"max_depth":max_depth,
+              "grid_top_heights":list(grid_top_heights),"grid_bottom_heights":list(grid_bottom_heights)}
         for key in ("role","group","sheet","fit","min_day","max_day"):
             obj["bp_"+key]=item[key]
         self.parts.append(item);self.geometry[name]=geometry
@@ -245,15 +284,15 @@ def add_bindings(b):
         "Home Battered Cabinet":((.65,2.25,1.10),"DarkWood"),
         "Home Cabinet Shelf 1":((.468,.10,.08),"WornLaminate"),
         "Home Cabinet Shelf 2":((.468,.10,.08),"WornLaminate"),
-        "Home Camera Corner Junk Base":((1.95,.44,2),"DarkWood"),
-        "Home Camera Corner Broken Wardrobe Door":((1.521,.12,1.36),"DarkWood"),
+        "Home Camera Corner Junk Base":((1.30,.44,2),"DarkWood"),
+        "Home Camera Corner Broken Wardrobe Door":((1.014,.12,1.36),"DarkWood"),
         "Home Camera Corner Suitcase":((.72,.24,.62),"DarkWood"),
         "Home Camera Corner Old Coat":((.78,.10,.72),"Upholstery"),
         "Home Alarm Clock Nightstand":((.68,.72,.46),"DarkWood"),
         "Home Alarm Clock Nightstand Top":((.73,.05,.5),"DarkWood"),
-        "Alarm Clock Body":((.46,.27,.24),"PaintedMetal"),
-        "Alarm Clock Face":((.395,.175,.018),"Plain"),
-        "Alarm Clock Snooze":((.16,.035,.075),"Plain"),
+        "Alarm Clock Body":((.276,.162,.144),"PaintedMetal"),
+        "Alarm Clock Face":((.237,.105,.0108),"Plain"),
+        "Alarm Clock Snooze":((.096,.021,.045),"Plain"),
         "Home Bathroom West Wall":((.18,3.4,3),"Wallpaper"),
         "Home Bathroom Front Wall Left":((.17,3.4,.18),"Wallpaper"),
         "Home Bathroom Front Wall Right":((1.83,3.4,.18),"Wallpaper"),
@@ -306,10 +345,14 @@ def add_bindings(b):
             geom=cylinder(size,((1,-.5),(1,-.46),(.62,-.42),(.52,.38),(.70,.45),(1,.5)))
         b.add(name,size,sheet,geometry=geom)
     for name,size,cols,rows,depth in (
-            ("Home Bed Mattress",(2.39,.18,1.57),17,11,.10),
-            ("Home Pillow",(.62,.10,1.05),4,8,.045)):
+            ("Home Bed Mattress",(2.39,.18,1.57),17,11,.10),):
         b.add(name,size,"BedLinen",role="grid",semantic=name,
               geometry=grid(size,cols,rows),grid_columns=cols,grid_rows=rows,max_depth=depth)
+    size=(.62,.14,1.05); cols,rows=8,14
+    geometry,top,bottom=pillow_grid(size,cols,rows)
+    b.add("Home Pillow",size,"BedLinen",role="grid",semantic="Home Pillow",
+          geometry=geometry,grid_columns=cols,grid_rows=rows,max_depth=.070,
+          grid_top_heights=top,grid_bottom_heights=bottom,tint=(.58,.55,.47,1))
     b.add("Home Bathroom Toilet Bowl",(.62,.24,.572),"Enamel",
           geometry=dish((.62,.24,.572),True))
     b.add("Home Bathroom Toilet Seat",(.54,.05,.506),"Enamel",
@@ -468,7 +511,7 @@ def add_decor(b):
         if day>=5:
             for i in range((day-3)*3):
                 slot={5:0,6:6,7:15}[day]+i
-                x=-4.36+(slot%5)*.36+.025*math.sin(slot*2.7)
+                x=-4.36+(slot%5)*.23+.025*math.sin(slot*2.7)
                 z=-3.39+(slot//5)*.27+.034*math.cos(slot*3.9)
                 bottle(f"Day{day} Corner Bottle {i}",(x,.50 if i%3==0 else .61,z),day,
                        side=i%3==0,brown=i%2==0,group="home.furniture.camera-junk")
@@ -477,7 +520,7 @@ def add_decor(b):
                 size=(.41,.31,.43)
                 geom=cylinder(size,((.58,-.5),(.91,-.4),(1,-.10),(.84,.26),(.36,.43),(.24,.5)))
                 slot={5:0,6:2,7:5}[day]+i
-                add(f"Day{day} Refuse Bag {i}",size,(-3.93+(slot%2)*.45,.68+(slot//2)*.22,-2.10),
+                add(f"Day{day} Refuse Bag {i}",size,(-4.10+(slot%2)*.45,.68+(slot//2)*.22,-2.10),
                     day=day,geom=geom,tint=(.16,.18,.14,1),group="home.furniture.camera-junk")
             rag(f"Day{day} Bathroom Towel",(2.94+(day-5)*.025,.05+(day-5)*.065,3.44+(day-5)*.035),
                 day,(.39,.08,.46),tint=(.28,.29,.23,1))
@@ -609,6 +652,24 @@ def validate(b):
         if volume<=1e-11:errors.append(f"{p['name']}: non-positive volume {volume}")
         if not 1<=p["min_day"]<=p["max_day"]<=7:errors.append("bad day range")
         if any(not math.isfinite(x) for v in geom[0] for x in v):errors.append("non-finite vertex")
+        if p["grid_top_heights"]:
+            top=p["grid_top_heights"];bottom=p["grid_bottom_heights"]
+            cols,rows=p["grid_columns"],p["grid_rows"]
+            if len(top)!=(cols+1)*(rows+1) or len(bottom)!=len(top):
+                errors.append(p["name"]+": incomplete cloth profiles")
+            if max(top)-min(top)<.075 or min(t-b for t,b in zip(top,bottom))<.0029:
+                errors.append(p["name"]+": pillow lacks filled crown or seam thickness")
+            # Weld only for validation: the exported duplicate corners keep
+            # the cloth's per-facet lighting, while every shell edge is closed.
+            keys=[tuple(round(c,7) for c in vertex) for vertex in geom[0]]
+            edges={};directions={}
+            for face in geom[1]:
+                for left,right in zip(face,face[1:]+face[:1]):
+                    edge=tuple(sorted((keys[left],keys[right])))
+                    edges[edge]=edges.get(edge,0)+1
+                    directions[edge]=directions.get(edge,0)+(1 if keys[left]<keys[right] else -1)
+            if any(count!=2 for count in edges.values()) or any(directions.values()):
+                errors.append(p["name"]+": open or non-manifold cloth shell")
         actual=[h-l for l,h in zip(p["bounds_min"],p["bounds_max"])]
         if max(abs(a-s) for a,s in zip(actual,p["size"]))>.0001:
             errors.append(f"{p['name']}: measured size {actual} != {p['size']}")
@@ -654,21 +715,21 @@ def compose_source_preview(b,render=False):
         "Home Left Wall":(-5,1.7,0),
         "Home Bed Frame":(-2.975,.22,-.375),
         "Home Bed Mattress":(-2.975,.47,-.375),
-        "Home Pillow":(-3.689,.575,-.375),
+        "Home Pillow":(-3.799,.6035,-.375),
         "Home Bed Crooked Blanket":(-2.525,.60,.17),
         "Home Sofa Base":(3.8,.35,-2.51),"Home Sofa Back":(4.37,.94,-2.51),
         "Home Sofa Sunken Cushion":(3.68,.67,-2.51),
         "Home Scarred Table":(-.825,.82,1.85),"Home Table Base Crooked":(-.97,.40,1.946),
         "Home Battered Cabinet":(-4.225,1.125,1.60),
         "Home Cabinet Shelf 1":(-4.275,.46,1.127),"Home Cabinet Shelf 2":(-4.275,1.08,1.127),
-        "Home Camera Corner Junk Base":(-3.575,.22,-2.55),
-        "Home Camera Corner Broken Wardrobe Door":(-3.475,.50,-2.37),
-        "Home Camera Corner Suitcase":(-3.355,.69,-2.91),
-        "Home Camera Corner Old Coat":(-3.815,.86,-2.17),
+        "Home Camera Corner Junk Base":(-3.90,.22,-2.55),
+        "Home Camera Corner Broken Wardrobe Door":(-3.80,.50,-2.37),
+        "Home Camera Corner Suitcase":(-3.68,.69,-2.91),
+        "Home Camera Corner Old Coat":(-4.14,.86,-2.17),
         "Home Alarm Clock Nightstand":(-3.87,.36,.80),
         "Home Alarm Clock Nightstand Top":(-3.87,.745,.80),
-        "Alarm Clock Body":(-3.87,.92,.80),"Alarm Clock Face":(-3.87,.92,.674),
-        "Alarm Clock Snooze":(-3.87,1.073,.815),
+        "Alarm Clock Body":(-3.87,.853,.80),"Alarm Clock Face":(-3.87,.853,.7244),
+        "Alarm Clock Snooze":(-3.87,.9448,.809),
         "Home Kitchen Counter Left":(-3.55475,.48,2.89),
         "Home Kitchen Top Left":(-3.55475,.98,2.89),
         "Home Kitchen Counter Right":(-1.20475,.48,2.89),
@@ -765,7 +826,7 @@ def main():
                         "ShowerCurtainPivot":[3.40,0,2.384],
                         "LockedRoomDoor":[.68,1.1,.855]},
              "import_contract":{"fixed_mesh_scale":1,"parametric_size":"full metre envelope; cylinder caller Y is half-height",
-                                "grid":"reindex top vertices by x/z, four independent corners per cell; five rest side faces",
+                                "grid":"flat mattress: independent top quads and five rest faces; profiled pillow: top/bottom height samples and imported top vertex-to-sample mapping",
                                 "dynamic_hierarchy":"runtime-owned; binding changes meshes only"}}
     (SOURCE/"home-interior-3d-model.json").write_text(json.dumps(payload,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     MODEL.with_suffix(".json").write_text(json.dumps(payload,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")

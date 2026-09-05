@@ -77,14 +77,18 @@
     "SOCKET_Mouth"
   ],
   "bed_contract": {
-    "supine_pelvis_offset_m": 0.1377,
-    "supine_head_offset_m": 0.0656,
-    "seated_pelvis_lift_m": 0.0239,
+    "supine_pelvis_offset_m": 0.1303,
+    "supine_head_offset_m": -0.0132,
+    "seated_pelvis_lift_m": 0.0644,
     "mattress_above_floor_m": 0.56,
     "enter_seat_arrival": 0.28,
     "enter_seat_departure": 0.44,
     "exit_seat_arrival": 0.5,
-    "exit_seat_departure": 0.88
+    "exit_seat_departure": 0.88,
+    "enter_hold": 0.05,
+    "enter_settle": 0.96,
+    "exit_hold": 0.3,
+    "exit_settle": 1.0
   },
   "actions": [
     {
@@ -1071,7 +1075,7 @@
     "action_count": 41,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "2b948e933259399fb5e2f766b155cec64abc5f6847da373b13460eb3fe208c8c",
+  "content_signature_sha256": "1c4554e5138530a04f703109d74ec6fc100939202569738e9b10b8611deea420",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",

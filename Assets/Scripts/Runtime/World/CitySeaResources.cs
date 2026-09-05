@@ -13,8 +13,7 @@ namespace BarPromenade
     /// to speak of, but swell travels, and a sea whose crests stood
     /// and breathed read as a floor pretending. The trains run at the
     /// shore and die on it — the shore fade takes the amplitude down
-    /// to a floor over the inner shelf so the trough can never
-    /// undercut the silt, and the crests break white on their own
+    /// over the shallow sand slope, and the crests break white on their own
     /// tops on the way in. The sea is the one water in the city that
     /// is supposed to visibly move on its own. The fog is the
     /// horizon, so the sheet's job is done within twenty metres of
@@ -73,12 +72,11 @@ namespace BarPromenade
         private const float CrestFoamThreshold = 0.5f;
 
         /// <summary>
-        /// The swell dies on the sand. Over the inner shelf the
-        /// amplitude sits at the floor — trough `0.20 * 1.73 * 0.35 =
-        /// 0.12 m`, inside the shelf's `0.15 m` minimum clearance —
+        /// The swell dies on the sand. Over the first 2.6 metres the
+        /// amplitude sits at the floor — maximum trough 0.12 m —
         /// and ramps to full height over the next twelve metres out.
-        /// The south edge of the ramp is the inner shelf's seaward
-        /// edge, which only the seacoast builder knows; it calls
+        /// Near the waterline it intersects the continuous sand slope.
+        /// The seacoast builder anchors this envelope through
         /// <see cref="ConfigureShoreFade"/> at build time.
         /// </summary>
         internal const float ShoreFadeFloor = 0.35f;
@@ -91,6 +89,11 @@ namespace BarPromenade
         /// </summary>
         internal const float DepthFadeDistance = 1.4f;
         internal const float FoamDistance = 0.55f;
+
+        // Thin swash follows the existing sand, then joins the sea sheet.
+        internal const float SwashRunup = 2.8f;
+        internal const float SwashMeshReach = 3.6f;
+        internal const float SwashSeaReach = 1.8f;
 
         /// <summary>
         /// Shoreward. Not a current — swell direction: the shader's
@@ -219,6 +222,8 @@ namespace BarPromenade
             Shader.PropertyToID("_CrestFoamThreshold");
         private static readonly int ShoreFadeParamsId =
             Shader.PropertyToID("_ShoreFadeParams");
+        private static readonly int ShoreSwashParamsId =
+            Shader.PropertyToID("_ShoreSwashParams");
         private static readonly int LanternPositionId =
             Shader.PropertyToID("_LanternPosition");
         private static readonly int LanternColorId =
@@ -229,6 +234,7 @@ namespace BarPromenade
             Shader.PropertyToID("_LanternBeamDir");
 
         private static Material waterMaterial;
+        private static Material swashMaterial;
 
         // Where the shore fade's ramp starts, in world Z. Written by
         // the seacoast builder — the layout knows, this class cannot —
@@ -266,6 +272,42 @@ namespace BarPromenade
 
                 return waterMaterial;
             }
+        }
+
+        internal static Material SwashMaterial
+        {
+            get
+            {
+                if (swashMaterial == null)
+                {
+                    swashMaterial = new Material(WaterMaterial)
+                    {
+                        name = "City Sea Swash (Shared)",
+                        hideFlags = HideFlags.HideAndDontSave,
+                        renderQueue = WaterMaterial.renderQueue + 1
+                    };
+                    swashMaterial.SetFloat("_WaterZWrite", 0f);
+                    swashMaterial.SetFloat("_WaterSrcBlend",
+                        (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    swashMaterial.SetFloat("_WaterDstBlend",
+                        (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    swashMaterial.SetVector(ShoreSwashParamsId, SwashParams());
+                    // The film is diffuse and thin; the existing sea owns
+                    // the lighthouse and lamp glitter beyond this strip.
+                    swashMaterial.SetFloat(LanternGlintId, 0f);
+                    swashMaterial.SetFloat(AdditionalSpecularId, 0f);
+                    CityWaterResources.Register(swashMaterial);
+                }
+
+                return swashMaterial;
+            }
+        }
+
+        private static Vector4 SwashParams()
+        {
+            return new Vector4(
+                shoreFadeSouthZ - CitySeacoastSeaLayout.InnerShelfReach,
+                SwashRunup, SwashSeaReach, 1f);
         }
 
         private static void Configure(Material material)
@@ -331,6 +373,11 @@ namespace BarPromenade
             WaterMaterial.SetVector(
                 ShoreFadeParamsId,
                 ShoreFadeParams(southZ));
+            if (swashMaterial != null)
+            {
+                swashMaterial.SetVector(ShoreFadeParamsId, ShoreFadeParams(southZ));
+                swashMaterial.SetVector(ShoreSwashParamsId, SwashParams());
+            }
         }
 
         /// <summary>
@@ -418,6 +465,37 @@ namespace BarPromenade
                 shoreFadeEnabled: true);
         }
 
+        // Separate slots from the lighthouse: a passing working lamp must never
+        // replace the island's virtual lantern. Other water materials retain zero.
+        private static readonly int[] BoatHullIds =
+            { Shader.PropertyToID("_OffshoreHull0"), Shader.PropertyToID("_OffshoreHull1") };
+        private static readonly int[] BoatCourseIds =
+            { Shader.PropertyToID("_OffshoreCourse0"), Shader.PropertyToID("_OffshoreCourse1") };
+        private static readonly int[] BoatLampIds =
+            { Shader.PropertyToID("_OffshoreLamp0"), Shader.PropertyToID("_OffshoreLamp1") };
+        private static readonly int[] BoatBeamIds =
+            { Shader.PropertyToID("_OffshoreBeam0"), Shader.PropertyToID("_OffshoreBeam1") };
+
+        internal static void SetOffshoreBoat(int index, Vector3 hull, Vector3 forward,
+            Vector3 lamp, Vector3 beam, float presence, float lampPower)
+        {
+            if (index < 0 || index >= 2 || waterMaterial == null) return;
+            waterMaterial.SetVector(BoatHullIds[index], new Vector4(hull.x, hull.y, hull.z, presence));
+            waterMaterial.SetVector(BoatCourseIds[index], new Vector4(forward.x, forward.z, 2.7f, 0.8f));
+            waterMaterial.SetVector(BoatLampIds[index], new Vector4(lamp.x, lamp.y, lamp.z, presence * lampPower));
+            waterMaterial.SetVector(BoatBeamIds[index], new Vector4(beam.x, beam.y, beam.z, 5.5f));
+        }
+
+        internal static void ClearOffshoreBoats()
+        {
+            if (waterMaterial == null) return;
+            for (int i = 0; i < 2; i++)
+            {
+                waterMaterial.SetVector(BoatHullIds[i], Vector4.zero);
+                waterMaterial.SetVector(BoatLampIds[i], Vector4.zero);
+            }
+        }
+
         private static Vector4 ShoreFadeParams(float southZ)
         {
             return new Vector4(
@@ -446,6 +524,12 @@ namespace BarPromenade
             shoreFadeSouthZ = 0f;
             lanternPosition = default;
             lanternConfigured = false;
+            if (swashMaterial != null)
+            {
+                CityWaterResources.Unregister(swashMaterial);
+                UnityEngine.Object.Destroy(swashMaterial);
+                swashMaterial = null;
+            }
             if (waterMaterial != null)
             {
                 CityWaterResources.Unregister(waterMaterial);

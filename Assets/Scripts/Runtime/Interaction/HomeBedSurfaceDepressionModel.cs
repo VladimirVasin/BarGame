@@ -125,6 +125,9 @@ namespace BarPromenade
         private readonly float maxDepth;
         private readonly float dentAlpha;
         private readonly float recoverAlpha;
+        private readonly float[] restHeights;
+        private readonly float[] bottomHeights;
+        private readonly float highestRestPoint;
         private readonly float[] depths;
         private readonly float[] targets;
         private readonly HomeBedDepressionSource[] sources =
@@ -143,6 +146,10 @@ namespace BarPromenade
         private float shadowMaxX;
         private float shadowMaxZ;
         private float shadowMaxDepth;
+        private float[] supportBottomProfile;
+        private int supportColumns;
+        private int supportRows;
+        private float supportRestHeightOffset;
 
         public HomeBedSurfaceDepressionModel(
             HomeBedSurfaceDepressionSettings depressionSettings,
@@ -150,7 +157,9 @@ namespace BarPromenade
             float surfaceSizeZ,
             int gridColumns,
             int gridRows,
-            float maximumDepth)
+            float maximumDepth,
+            float[] topProfile = null,
+            float[] bottomProfile = null)
         {
             settings = depressionSettings;
             sizeX = Mathf.Max(0.01f, surfaceSizeX);
@@ -166,6 +175,15 @@ namespace BarPromenade
                 -FixedStep / Mathf.Max(0.001f, settings.RecoverTauSeconds));
             depths = new float[VertexCount];
             targets = new float[VertexCount];
+            if (topProfile != null && topProfile.Length > 0)
+            {
+                if (topProfile.Length != VertexCount || bottomProfile == null || bottomProfile.Length != VertexCount)
+                    throw new System.ArgumentException("Cloth profiles must match the pressure grid.");
+                restHeights = (float[])topProfile.Clone();
+                bottomHeights = (float[])bottomProfile.Clone();
+                highestRestPoint = float.NegativeInfinity;
+                foreach (float height in restHeights) highestRestPoint = Mathf.Max(highestRestPoint, height);
+            }
         }
 
         public int Columns { get; }
@@ -205,6 +223,29 @@ namespace BarPromenade
             shadowMaxX = maxX;
             shadowMaxZ = maxZ;
             shadowMaxDepth = Mathf.Max(0f, maximumDepthInside);
+        }
+
+        /// <summary>
+        /// Supports a filled pillow only at nodes inside its true footprint.
+        /// Its rounded lower shell embeds deeper beneath the crown than at
+        /// the seam. Outside nodes stay free to follow the hero's shoulders.
+        /// </summary>
+        public void SetSupportProfile(
+            float minX, float minZ, float maxX, float maxZ,
+            int profileColumns, int profileRows, float[] bottomProfile,
+            float mattressTopAbovePillowOrigin)
+        {
+            if (bottomProfile == null || bottomProfile.Length != (profileColumns + 1) * (profileRows + 1))
+                throw new System.ArgumentException("Pillow support requires its complete lower profile.");
+            hasShadowRect = false;
+            shadowMinX = minX;
+            shadowMinZ = minZ;
+            shadowMaxX = maxX;
+            shadowMaxZ = maxZ;
+            supportColumns = profileColumns;
+            supportRows = profileRows;
+            supportBottomProfile = (float[])bottomProfile.Clone();
+            supportRestHeightOffset = mattressTopAbovePillowOrigin;
         }
 
         public void SetSources(
@@ -414,7 +455,13 @@ namespace BarPromenade
                         const float zeroCross = 0.55f;
                         if (skirt < zeroCross)
                         {
-                            float dent = source.Depth *
+                            // On a filled pillow each point starts at its
+                            // own height. Only cloth above the contact plane
+                            // sinks; the shoulder must not copy the crown's
+                            // depth and punch through its thinner filling.
+                            float contactDepth = restHeights == null ? source.Depth :
+                                Mathf.Max(0f, source.Depth - (highestRestPoint - restHeights[index]));
+                            float dent = contactDepth *
                                 (1f - Smooth01(skirt / zeroCross));
                             if (dent > deepest)
                             {
@@ -454,6 +501,9 @@ namespace BarPromenade
                     float target = Mathf.Min(
                         maxDepth,
                         signedDepth * envelope * bodyWeight);
+                    if (restHeights != null && target > 0f)
+                        target = Mathf.Min(target,
+                            Mathf.Max(0f, restHeights[index] - bottomHeights[index] - 0.012f));
 
                     // Padded by one cell so a bilinear sample anywhere
                     // inside the true rectangle only ever reads capped
@@ -466,6 +516,20 @@ namespace BarPromenade
                         z <= shadowMaxZ + cellZ)
                     {
                         target = Mathf.Min(target, shadowMaxDepth);
+                    }
+                    if (supportBottomProfile != null &&
+                        x >= shadowMinX && x <= shadowMaxX && z >= shadowMinZ && z <= shadowMaxZ)
+                    {
+                        float gx = Mathf.Clamp01((x - shadowMinX) / (shadowMaxX - shadowMinX)) * supportColumns;
+                        float gz = Mathf.Clamp01((z - shadowMinZ) / (shadowMaxZ - shadowMinZ)) * supportRows;
+                        int sx = Mathf.Min((int)gx, supportColumns - 1);
+                        int sz = Mathf.Min((int)gz, supportRows - 1);
+                        int sample = sz * (supportColumns + 1) + sx;
+                        float bottom = Mathf.Lerp(
+                            Mathf.Lerp(supportBottomProfile[sample], supportBottomProfile[sample + 1], gx - sx),
+                            Mathf.Lerp(supportBottomProfile[sample + supportColumns + 1],
+                                supportBottomProfile[sample + supportColumns + 2], gx - sx), gz - sz);
+                        target = Mathf.Min(target, Mathf.Max(0f, supportRestHeightOffset - bottom - 0.003f));
                     }
 
                     targets[index] = target;

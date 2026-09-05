@@ -9,6 +9,7 @@ namespace BarPromenade
             "home.furniture.alarm-clock";
 
         private const float MinimumVisibility = 0.23f;
+        private const float DisplayScale = 0.6f;
 
         private static readonly Color NightstandWood =
             new Color(0.105f, 0.055f, 0.035f);
@@ -57,15 +58,15 @@ namespace BarPromenade
             occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Alarm Clock Face",
                 alarmObject.transform,
-                new Vector3(0f, 0f, -0.126f),
-                new Vector3(0.395f, 0.175f, 0.018f),
+                new Vector3(0f, 0f, -0.0756f),
+                new Vector3(0.237f, 0.105f, 0.0108f),
                 ClockFace,
                 false));
             occluderParts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Alarm Clock Snooze",
                 alarmObject.transform,
-                new Vector3(0f, 0.153f, 0.015f),
-                new Vector3(0.16f, 0.035f, 0.075f),
+                new Vector3(0f, 0.0918f, 0.009f),
+                new Vector3(0.096f, 0.021f, 0.045f),
                 NightstandEdge,
                 false));
             GameObject[] displaySegments =
@@ -216,8 +217,8 @@ namespace BarPromenade
             return HomeAuthoredVisualFactory.CreateBox(
                 name,
                 parent,
-                position,
-                size,
+                position * DisplayScale,
+                size * DisplayScale,
                 DisplayRed,
                 CityNightResources.EmissiveMaterial,
                 false);

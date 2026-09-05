@@ -12,7 +12,7 @@ namespace BarPromenade
         public const string RuntimeClipName =
             "HomeAlarmClock_MechanicalRing";
         public const float RattleFrequency = 18f;
-        public const float RattlePositionAmplitude = 0.008f;
+        public const float RattlePositionAmplitude = 0.0048f;
         public const float RattleRotationAmplitude = 2.2f;
         public const int DisplayDigitCount = 4;
         public const int SegmentsPerDigit = 7;

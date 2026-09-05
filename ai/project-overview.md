@@ -94,8 +94,8 @@ The vertical slice contains:
   the same held shot while the silent display keeps flickering `05:59`. Wake
   Up alone switches it to solid `06:00`, starts the session clock and alarm,
   and hides the menu. After three more unscaled seconds on the clock and
-  sleeping loop, the alarm stops; only then does the six-second,
-  two-times-slower opening wake begin, gliding to the sleeper over `2.25 s`
+  sleeping loop, the alarm stops; only then does the `6.9 s`
+  opening wake begin (`6 s` exit clip at a `1.15` duration multiplier), gliding to the sleeper over `2.25 s`
   and easing onward into the active gameplay shot without a cut;
 - one Home F9 debug window with exact reversible apartment day `1–7`
   selection and a separate button to enter City at home with its debug map
@@ -999,9 +999,22 @@ The vertical slice contains:
   the seacoast precinct (`CitySeacoastPlanner`): its connected beach has a
   deterministic street approach and remains walkable to the water line,
   while the northern water row carries an animated sea (a third material of
-  the shared water shader over chunked sheets and a shelving silt bed whose
-  foam line draws the surf) and stays excluded from player navigation and
-  night-fixture placement. The shore is zoned around the river mouth — a
+  the shared water shader over chunked sheets and a continuous sand slope
+  whose depth hides its far edge) and stays excluded from player navigation and
+  night-fixture placement. Open west/east sand receives uneven swash tongues
+  reaching up to `2.8 m`, with a faster advance, slower retreat, broken foam
+  and a brief wet-sand tail. The shared transparent swash strips conform to
+  the existing beach, add no collision and exclude the central sea wall.
+  Beach sand now carries bounded `0.15 m` deterministic relief on a `0.4 m`
+  grid and a shallow loose visual skin. `CitySandTreading` presses that skin
+  into soft trails while retaining separate fixed ground collision; confirmed
+  beach contacts use `FootstepSoil` and small sand-textured grains through the
+  village's existing kickup effect. The loose skin fades away across the
+  last `4–6 m` toward the surf. The same sand texture, tint and world UVs
+  continue from exact shared shore heights and normals down an `18 m`
+  seabed, easing toward a `1:5` slope instead of two stepped silt boxes.
+  River-mouth cuts remain open.
+  The shore is zoned around the river mouth — a
   dead port with a concrete mol and a frozen derrick
   to the west; a granite esplanade with sparse glow lamps, benches and the
   abandoned municipal boat station (hut, «ПРОКАТ ЛОДОК» board, sea pier
@@ -1019,6 +1032,21 @@ The vertical slice contains:
   night-gated), rendered on its own no-fog shaders with a
   camera-distance self-fade inside the 48 m far plane — visible from
   the esplanade, sand and pier head, gone from every street;
+- up to two decorative old fishing vessels spawn only near the actual hero
+  at the coast (`CityOffshoreBoat{Planner,Controller}`): full presence within
+  `8 m` of the finite shore or pier/mol decks, zero at `28 m`. Their cleared
+  courses are chosen around the hero's easting and remain fixed during each
+  pass. Moving over `32 m` alongshore or leaving the coastal band fades and
+  releases vessels, audio and water slots before another local pass; camera
+  movement does not control spawning. Two
+  dedicated Blender variants use `0.42` presentation scale, slow staggered
+  motion, the sea's wave pose and hull self-haze inside the unchanged `48 m`
+  far plane. Warm working searchlights retain a two-thirds daytime floor;
+  bounded moving water glints/wakes preserve the lighthouse's separate lamp.
+  Two soft positional motor loops and one sparse shared horn belong to the
+  vessels. They add no realtime Light, docking, interaction, navigation, map
+  marker or story state; the station's boats remain ashore. Art-bible §10d,
+  story-bible §6 and the accepted architecture exception define that scope;
 - a reusable Cemetery non-urban profile on the default city's eastern edge
   (the church occupies the next `4 x 2` rows and the former lake block above
   that remains a plain `4 x 4` north-east yard),
@@ -1084,8 +1112,11 @@ The vertical slice contains:
   receives the stronger wash; the statue has a gentler separate accent.
   `CityChurchGroundPlan`
   keeps the inhabited `38 m` flat and grades the northern `14 m` into the
-  adjoining yard; rendering, collision and navigation share its sampled
-  terrain. Open iron closes only the existing west frontage outside its
+  adjoining yard. Collision and navigation retain its continuous sampled
+  terrain; the grass renderer cuts out paved footprints. Imported paving
+  patches partition overlapping pads and paths and yield to the flush door
+  threshold, so each paved point has one visible surface. Open iron closes
+  only the existing west frontage outside its
   `8.8 m` aperture and the actual unsupported outer edges.
   `CityChurchCemeteryPassagePlan` continues the
   cemetery's middle cross alley through one maintained `3 m` north-fence
@@ -2063,11 +2094,11 @@ The vertical slice contains:
   destroy all reset clip spatial offsets and restore control, camera, HUD,
   props, partner animation and contact shadow through owned cleanup;
 - one reachable bed interaction on the long `zMin` side nearest the Home door:
-  the first `E` walks and turns the 3D hero to a clear foot-side segment of
-  that edge, holds neutral for one frame and plays the `3.75 s` `BedEnter`
+  the first `E` walks and turns the 3D hero to the middle of
+  that edge, opposite the sleeping pelvis, holds neutral for one frame and plays the `3.75 s` `BedEnter`
   on the continuous rig — the one contextual action authored on eased curves
-  with staggered keys, so the pelvis and legs lead each landmark and the
-  chest, head, arms and face reach it a few frames behind. A dedicated seated
+  with separately staggered pelvis, lower-spine, chest and head keys.
+  The hands support the lowering trunk and the head settles last. A dedicated seated
   pelvis waypoint holds the character on the mattress edge with both feet
   grounded before movement can continue between the standing dock and bed
   centre. The
@@ -2077,23 +2108,27 @@ The vertical slice contains:
   four-beat sit-up rather than a roll: he curls onto his elbows into a
   half-crouch on the mattress with both boots drawn under him, drops the right
   leg over the near edge, then the left, and only then stands. Per-sample pelvis alignment
-  keeps the sleeper at the authored bed action anchor, with the head at the
+  keeps the same longitudinal coordinate through entry, sleep and exit;
+  sitting no longer carries him along the mattress from the foot end. The
+  standing approach stays clear beside the `1.30 m`-wide corner storage pile.
+  The sleeper remains at the authored bed action anchor, with the head at the
   `xMin` pillow. Both hip anchors are the mattress top plus a measured body
   offset rather than a clearance guess: the generator reports how far the
   supine back, the lifted head and the seated weight hang below the pelvis
   bone, `PlayerCharacterDimensions` mirrors those numbers, and the pillow,
   blanket and crumpled shirt are placed around the pose instead of through it.
-  The mattress and pillow tops are deformable vertex grids: they dent under
-  the sleeper by his parts' actual penetration into the rest plane, his hip
+  The mattress and the closed, domed pillow use deformable vertex grids:
+  they dent under actual contact with their local rest surface, his hip
   target descends by the same sink depth so he lies in the dent rather than
   hovering over it, and the dent visibly refills over about a second and a
-  half once he is up — the bed behaves like thick cloth, not a box. Sitting
+  half once he is up. The pillow retains thickness and connected shoulders
+  while its head hollow refills; its rest shape is authored in Blender. Sitting
   on the edge dents nothing, because that pose is pinned by both boots on
   the floor.
   Only a normally completed `BedExit` resets session fatigue;
   cancellation, transition, disable and destroy preserve it. Localized prompts
   and all normal/abnormal cleanup remain;
-- one bed-relative low-poly nightstand and 3D alarm clock that remain visible
+- one bed-relative low-poly nightstand and a `27.6 cm`-wide 3D alarm clock that remain visible
   as ordinary Home dressing. Its reusable 28-segment display begins the
   one-shot opening at `05:59` and flickers all digits and punctuation briefly
   at long intervals. After a silent five-second input lock it reveals the menu
@@ -2105,7 +2140,7 @@ The vertical slice contains:
   returning Home. The clock shot and sleeping loop remain fixed for three
   unscaled seconds; the ring then stops and only then does the camera glide to
   the sleeper and smoothly settle into the active Home shot while the existing
-  36-frame wake sequence plays over six seconds instead of the ordinary three,
+  72-frame wake sequence plays over `6.9 s` instead of the ordinary six,
   restoring normal control without a camera cut or another scene load;
 - one fully built bathroom with tiled surfaces, an ajar doorway, toilet,
   shower tray and curtain, pedestal sink, cracked mirror, exposed rusty pipes,

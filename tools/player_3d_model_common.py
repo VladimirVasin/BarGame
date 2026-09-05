@@ -137,10 +137,10 @@ REQUIRED_FACE_BONES = (
 # the pelvis bone that runtime pins to the mattress. Mirrored by
 # PlayerCharacterDimensions in the Unity runtime; validate_bed_support_contract
 # measures both against the real posed meshes and refuses a silent drift.
-BED_BODY_SUPPORT_OFFSET_M = 0.1377
-BED_HEAD_SUPPORT_OFFSET_M = 0.0656
-BED_SEATED_SUPPORT_OFFSET_M = 0.0109
-BED_SEATED_PELVIS_LIFT_M = 0.0239
+BED_BODY_SUPPORT_OFFSET_M = 0.1303
+BED_HEAD_SUPPORT_OFFSET_M = -0.0132
+BED_SEATED_SUPPORT_OFFSET_M = 0.0614
+BED_SEATED_PELVIS_LIFT_M = 0.0644
 # Mirrors HomeInteriorWorldBuilder.BedMattressSurfaceHeight: how far the
 # mattress he sits on stands above the floor his boots have to reach.
 BED_MATTRESS_ABOVE_FLOOR_M = 0.56
@@ -150,14 +150,16 @@ BED_ENTER_SEAT_ARRIVAL = 0.28
 BED_ENTER_SEAT_DEPARTURE = 0.44
 BED_EXIT_SEAT_ARRIVAL = 0.50
 BED_EXIT_SEAT_DEPARTURE = 0.88
+BED_ENTER_HOLD = 0.05
+BED_ENTER_SETTLE = 0.96
+BED_EXIT_HOLD = 0.30
+BED_EXIT_SETTLE = 1.0
 
-# The bed Actions stagger their landmarks: the pelvis and legs drive a move
-# and the chest, head, arms and face arrive at the same landmark a few frames
-# behind. Splitting the rig this way is what allows overlap at all — a key
-# that names every bone forces the whole body to turn on one frame.
+# The pelvis/legs, lumbar spine, shoulder girdle and head each have their own
+# bed keys. The back can uncoil from the seat without turning as one rigid
+# segment, and the head can settle onto the pillow after the shoulders.
 BED_LEADING_BONES = (
     "pelvis",
-    "spine",
     "thigh.L",
     "shin.L",
     "foot.L",
@@ -166,10 +168,10 @@ BED_LEADING_BONES = (
     "foot.R",
 )
 
+BED_SPINE_BONES = ("spine",)
+
 BED_TRAILING_BONES = (
     "chest",
-    "neck",
-    "head",
     "clavicle.L",
     "upper_arm.L",
     "forearm.L",
@@ -178,6 +180,11 @@ BED_TRAILING_BONES = (
     "upper_arm.R",
     "forearm.R",
     "hand.R",
+)
+
+BED_HEAD_BONES = (
+    "neck",
+    "head",
     "face.eye.L",
     "face.eye.R",
     "face.brow.L",
@@ -2309,8 +2316,8 @@ class ProductionPlayerBuilderBase:
                 "chest": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
                 "neck": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
-                "thigh.L": BonePose(rotation_degrees=(-22.0, 0.0, 3.0)),
-                "thigh.R": BonePose(rotation_degrees=(-20.0, 0.0, -3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-39.0, 0.0, 3.0)),
+                "thigh.R": BonePose(rotation_degrees=(-43.4, 0.0, -3.0)),
                 "shin.L": BonePose(rotation_degrees=(27.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(25.0, 0.0, 0.0)),
             },
@@ -2341,8 +2348,8 @@ class ProductionPlayerBuilderBase:
                 # The mattress stands higher than his knee, so he perches
                 # with his heels drawn back under him. Straighter legs would
                 # leave the boots hanging in the air.
-                "thigh.L": BonePose(rotation_degrees=(-42.0, 0.0, 5.0)),
-                "thigh.R": BonePose(rotation_degrees=(-47.0, 0.0, -5.0)),
+                "thigh.L": BonePose(rotation_degrees=(-52.0, 0.0, 5.0)),
+                "thigh.R": BonePose(rotation_degrees=(-57.0, 0.0, -5.0)),
                 "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
                 "foot.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
@@ -2370,8 +2377,8 @@ class ProductionPlayerBuilderBase:
                 ),
                 "forearm.L": BonePose(rotation_degrees=(2.0, 0.0, 8.0)),
                 "forearm.R": BonePose(rotation_degrees=(2.0, 0.0, -8.0)),
-                "thigh.L": BonePose(rotation_degrees=(-45.0, 0.0, 5.0)),
-                "thigh.R": BonePose(rotation_degrees=(-49.0, 0.0, -5.0)),
+                "thigh.L": BonePose(rotation_degrees=(-55.0, 0.0, 5.0)),
+                "thigh.R": BonePose(rotation_degrees=(-59.0, 0.0, -5.0)),
                 "shin.L": BonePose(rotation_degrees=(33.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(33.0, 0.0, 0.0)),
             },
@@ -2398,6 +2405,8 @@ class ProductionPlayerBuilderBase:
                 "forearm.R": BonePose(
                     rotation_degrees=(8.0, 0.0, -12.0)
                 ),
+                "thigh.L": BonePose(rotation_degrees=(-46.8, 0.0, 5.0)),
+                "thigh.R": BonePose(rotation_degrees=(-51.2, 0.0, -5.0)),
             },
         )
         bed_leg_swing = self.merge_pose(
@@ -2416,10 +2425,10 @@ class ProductionPlayerBuilderBase:
                 "upper_arm.R": BonePose(
                     target_direction=(-0.070, -0.050, -0.250)
                 ),
-                "forearm.R": BonePose(rotation_degrees=(-14.0, -4.0, 4.0)),
+                "forearm.R": BonePose(rotation_degrees=(-24.0, -4.0, 4.0)),
                 "hand.R": BonePose(rotation_degrees=(16.0, 6.0, -3.0)),
-                "thigh.L": BonePose(rotation_degrees=(-18.0, 4.0, 7.0)),
-                "thigh.R": BonePose(rotation_degrees=(-22.0, -4.0, -7.0)),
+                "thigh.L": BonePose(rotation_degrees=(-71.5, 4.0, 7.0)),
+                "thigh.R": BonePose(rotation_degrees=(-76.4, -4.0, -7.0)),
                 "shin.L": BonePose(rotation_degrees=(28.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
             },
@@ -2447,8 +2456,8 @@ class ProductionPlayerBuilderBase:
                 "forearm.R": BonePose(rotation_degrees=(-14.0, -4.0, 4.0)),
                 "hand.L": BonePose(rotation_degrees=(6.0, -5.0, 2.0)),
                 "hand.R": BonePose(rotation_degrees=(16.0, 6.0, -3.0)),
-                "thigh.L": BonePose(rotation_degrees=(-3.0, 3.0, 8.0)),
-                "thigh.R": BonePose(rotation_degrees=(-8.0, -4.0, -8.0)),
+                "thigh.L": BonePose(rotation_degrees=(-36.7, 3.0, 8.0)),
+                "thigh.R": BonePose(rotation_degrees=(-39.5, -4.0, -8.0)),
                 "shin.L": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
                 "face.eye.L": BonePose(scale=(1.0, 0.72, 1.0)),
@@ -2480,8 +2489,8 @@ class ProductionPlayerBuilderBase:
                     rotation_degrees=(-25.0, -4.0, 4.0)
                 ),
                 "hand.R": BonePose(rotation_degrees=(12.0, 6.0, -3.0)),
-                "thigh.L": BonePose(rotation_degrees=(12.0, 3.0, 8.0)),
-                "thigh.R": BonePose(rotation_degrees=(6.0, -4.0, -8.0)),
+                "thigh.L": BonePose(rotation_degrees=(1.1, 3.0, 8.0)),
+                "thigh.R": BonePose(rotation_degrees=(-4.2, -4.0, -8.0)),
                 "shin.L": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
                 "face.eye.L": BonePose(scale=(1.0, 0.45, 1.0)),
@@ -2498,8 +2507,8 @@ class ProductionPlayerBuilderBase:
                 "spine": BonePose(rotation_degrees=(-8.0, 1.0, -6.0)),
                 "chest": BonePose(rotation_degrees=(10.0, -1.0, 6.0)),
                 "head": BonePose(rotation_degrees=(-11.0, 0.0, -5.0)),
-                "thigh.L": BonePose(rotation_degrees=(18.0, 0.0, 6.0)),
-                "thigh.R": BonePose(rotation_degrees=(8.0, 0.0, -6.0)),
+                "thigh.L": BonePose(rotation_degrees=(12.9, 0.0, 6.0)),
+                "thigh.R": BonePose(rotation_degrees=(5.3, 0.0, -6.0)),
                 "shin.L": BonePose(rotation_degrees=(-28.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
                 "face.eye.L": BonePose(scale=(1.0, 0.22, 1.0)),
@@ -2513,7 +2522,7 @@ class ProductionPlayerBuilderBase:
             ),
             "spine": BonePose(rotation_degrees=(-4.0, 0.0, -3.0)),
             "chest": BonePose(rotation_degrees=(7.0, 0.0, 4.0)),
-            "neck": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+            "neck": BonePose(rotation_degrees=(27.0, 0.0, 0.0)),
             "head": BonePose(rotation_degrees=(-15.0, 0.0, -4.0)),
             "upper_arm.L": BonePose(rotation_degrees=(18.0, -8.0, 10.0)),
             "upper_arm.R": BonePose(rotation_degrees=(-12.0, 6.0, -12.0)),
@@ -2534,7 +2543,7 @@ class ProductionPlayerBuilderBase:
             lying,
             {
                 "chest": BonePose(rotation_degrees=(4.5, 0.0, 4.0)),
-                "neck": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(26.0, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(-10.0, 0.0, -4.0)),
                 "upper_arm.L": BonePose(rotation_degrees=(15.0, -8.0, 10.0)),
                 "upper_arm.R": BonePose(rotation_degrees=(-14.0, 6.0, -12.0)),
@@ -2550,7 +2559,7 @@ class ProductionPlayerBuilderBase:
             lying,
             {
                 "chest": BonePose(rotation_degrees=(6.2, 0.0, 4.1)),
-                "neck": BonePose(rotation_degrees=(15.2, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(27.2, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(-15.1, 0.0, -4.1)),
                 "upper_arm.R": BonePose(rotation_degrees=(-12.4, 6.2, -12.2)),
             },
@@ -2560,7 +2569,7 @@ class ProductionPlayerBuilderBase:
             {
                 "spine": BonePose(rotation_degrees=(-4.4, 0.0, -3.0)),
                 "chest": BonePose(rotation_degrees=(4.9, 0.0, 4.2)),
-                "neck": BonePose(rotation_degrees=(15.6, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(27.6, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(-15.4, 0.0, -4.3)),
                 "upper_arm.L": BonePose(rotation_degrees=(17.4, -8.4, 10.4)),
                 "upper_arm.R": BonePose(rotation_degrees=(-12.8, 6.4, -12.5)),
@@ -2573,7 +2582,7 @@ class ProductionPlayerBuilderBase:
             lying,
             {
                 "chest": BonePose(rotation_degrees=(6.0, 0.0, 4.0)),
-                "neck": BonePose(rotation_degrees=(15.3, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(27.3, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(-15.2, 0.0, -4.1)),
                 "upper_arm.L": BonePose(rotation_degrees=(17.8, -8.2, 10.2)),
                 "forearm.R": BonePose(rotation_degrees=(-42.3, 0.0, -14.1)),
@@ -2583,7 +2592,7 @@ class ProductionPlayerBuilderBase:
             lying,
             {
                 "chest": BonePose(rotation_degrees=(6.8, 0.0, 3.9)),
-                "neck": BonePose(rotation_degrees=(15.1, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(27.1, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(-15.1, 0.0, -3.9)),
                 "upper_arm.L": BonePose(rotation_degrees=(17.9, -7.9, 9.8)),
                 "forearm.L": BonePose(rotation_degrees=(-50.2, 0.0, 17.8)),
@@ -2595,7 +2604,7 @@ class ProductionPlayerBuilderBase:
             lying,
             {
                 "chest": BonePose(rotation_degrees=(6.9, 0.0, 3.9)),
-                "neck": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(27.0, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(-14.9, 0.0, -3.8)),
                 "hand.L": BonePose(rotation_degrees=(1.2, -5.4, 2.2)),
                 "hand.R": BonePose(rotation_degrees=(2.6, 5.3, -2.2)),
@@ -2606,7 +2615,7 @@ class ProductionPlayerBuilderBase:
             {
                 "spine": BonePose(rotation_degrees=(-4.5, 0.0, -2.0)),
                 "chest": BonePose(rotation_degrees=(6.5, 0.0, 3.0)),
-                "neck": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(-13.0, 0.0, -2.0)),
                 "upper_arm.L": BonePose(
                     rotation_degrees=(18.0, -8.0, 10.0)
@@ -2620,8 +2629,8 @@ class ProductionPlayerBuilderBase:
                 "face.eye.R": BonePose(scale=(1.0, 0.42, 1.0)),
             },
         )
-        # Waking starts at the head. The chest and the near arm answer it,
-        # and only then does the body follow them over onto its side.
+        # Waking starts at the head while the pelvis is still supported.
+        # The forearms brace before the lumbar spine starts the sit-up.
         bed_wake_head_lift = self.merge_pose(
             bed_wake_stir,
             {
@@ -2650,15 +2659,15 @@ class ProductionPlayerBuilderBase:
                 "chest": BonePose(rotation_degrees=(2.0, 0.0, 3.0)),
                 "neck": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
                 "head": BonePose(rotation_degrees=(-10.0, 0.0, -3.0)),
-                "upper_arm.L": BonePose(rotation_degrees=(34.0, -14.0, 16.0)),
+                "upper_arm.L": BonePose(rotation_degrees=(28.0, -14.0, 16.0)),
                 "upper_arm.R": BonePose(rotation_degrees=(-30.0, 12.0, -18.0)),
                 "forearm.L": BonePose(rotation_degrees=(-74.0, 0.0, 24.0)),
                 "forearm.R": BonePose(rotation_degrees=(-72.0, 0.0, -20.0)),
                 # The thighs have to fold as fast as the pelvis rises. Left
                 # at their lying angle they would swing straight down through
                 # the mattress as the torso comes up.
-                "thigh.L": BonePose(rotation_degrees=(-28.0, 0.0, 4.0)),
-                "thigh.R": BonePose(rotation_degrees=(-38.0, 0.0, -5.0)),
+                "thigh.L": BonePose(rotation_degrees=(-43.0, 0.0, 4.0)),
+                "thigh.R": BonePose(rotation_degrees=(-53.0, 0.0, -5.0)),
                 "shin.L": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
                 "face.eye.L": BonePose(scale=(1.0, 0.72, 1.0)),
@@ -2680,8 +2689,8 @@ class ProductionPlayerBuilderBase:
                 "upper_arm.R": BonePose(rotation_degrees=(-20.0, 9.0, -13.0)),
                 "forearm.L": BonePose(rotation_degrees=(-44.0, 0.0, 16.0)),
                 "forearm.R": BonePose(rotation_degrees=(-42.0, 0.0, -14.0)),
-                "thigh.L": BonePose(rotation_degrees=(-78.0, 0.0, 5.0)),
-                "thigh.R": BonePose(rotation_degrees=(-86.0, 0.0, -6.0)),
+                "thigh.L": BonePose(rotation_degrees=(-90.0, 0.0, 5.0)),
+                "thigh.R": BonePose(rotation_degrees=(-98.0, 0.0, -6.0)),
                 "shin.L": BonePose(rotation_degrees=(56.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(64.0, 0.0, 0.0)),
                 "face.eye.L": BonePose(scale=(1.0, 0.88, 1.0)),
@@ -2711,8 +2720,8 @@ class ProductionPlayerBuilderBase:
                 "forearm.R": BonePose(rotation_degrees=(-31.0, -3.0, -6.0)),
                 "hand.L": BonePose(rotation_degrees=(8.0, -5.0, 2.0)),
                 "hand.R": BonePose(rotation_degrees=(8.0, 5.0, -2.0)),
-                "thigh.L": BonePose(rotation_degrees=(-122.0, 0.0, 7.0)),
-                "thigh.R": BonePose(rotation_degrees=(-128.0, 0.0, -7.0)),
+                "thigh.L": BonePose(rotation_degrees=(-134.0, 0.0, 7.0)),
+                "thigh.R": BonePose(rotation_degrees=(-140.0, 0.0, -7.0)),
                 "shin.L": BonePose(rotation_degrees=(92.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(96.0, 0.0, 0.0)),
                 "face.eye.L": BonePose(scale=(1.0, 1.0, 1.0)),
@@ -2728,7 +2737,7 @@ class ProductionPlayerBuilderBase:
                     rotation_degrees=(-2.0, -4.0, 0.0),
                     location_m=(0.0, 0.01, -0.09),
                 ),
-                "thigh.R": BonePose(rotation_degrees=(-122.0, -14.0, -18.0)),
+                "thigh.R": BonePose(rotation_degrees=(-134.0, -14.0, -18.0)),
                 "shin.R": BonePose(rotation_degrees=(88.0, 0.0, 0.0)),
             },
         )
@@ -2742,7 +2751,7 @@ class ProductionPlayerBuilderBase:
                 "spine": BonePose(rotation_degrees=(20.0, 0.0, -1.0)),
                 "chest": BonePose(rotation_degrees=(-8.0, 0.0, 2.0)),
                 "head": BonePose(rotation_degrees=(11.0, 0.0, -2.0)),
-                "thigh.R": BonePose(rotation_degrees=(-47.0, -4.0, -6.0)),
+                "thigh.R": BonePose(rotation_degrees=(-58.5, -4.0, -6.0)),
                 "shin.R": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
                 "foot.R": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
             },
@@ -2757,7 +2766,7 @@ class ProductionPlayerBuilderBase:
                 "spine": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
                 "chest": BonePose(rotation_degrees=(-7.0, 0.0, 1.0)),
                 "head": BonePose(rotation_degrees=(9.0, 0.0, -1.0)),
-                "thigh.L": BonePose(rotation_degrees=(-42.0, 0.0, 5.0)),
+                "thigh.L": BonePose(rotation_degrees=(-54.2, 0.0, 5.0)),
                 "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
                 "foot.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
             },
@@ -2782,6 +2791,8 @@ class ProductionPlayerBuilderBase:
                 "forearm.R": BonePose(
                     rotation_degrees=(-14.0, 0.0, -8.0)
                 ),
+                "thigh.L": BonePose(rotation_degrees=(-54.7, 0.0, 5.0)),
+                "thigh.R": BonePose(rotation_degrees=(-59.1, 0.0, -5.0)),
             },
         )
         # One held beat on the edge with his hands on his knees. It is the
@@ -2804,8 +2815,8 @@ class ProductionPlayerBuilderBase:
                 "forearm.R": BonePose(rotation_degrees=(-27.0, -2.0, -6.0)),
                 "hand.L": BonePose(rotation_degrees=(10.0, -4.0, 2.0)),
                 "hand.R": BonePose(rotation_degrees=(10.0, 4.0, -2.0)),
-                "thigh.L": BonePose(rotation_degrees=(-37.0, 0.0, 4.0)),
-                "thigh.R": BonePose(rotation_degrees=(-41.0, 0.0, -4.0)),
+                "thigh.L": BonePose(rotation_degrees=(-60.7, 0.0, 4.0)),
+                "thigh.R": BonePose(rotation_degrees=(-65.7, 0.0, -4.0)),
                 "shin.L": BonePose(rotation_degrees=(43.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(42.0, 0.0, 0.0)),
             },
@@ -2826,8 +2837,8 @@ class ProductionPlayerBuilderBase:
                 ),
                 "forearm.L": BonePose(rotation_degrees=(-4.0, 3.0, -2.0)),
                 "forearm.R": BonePose(rotation_degrees=(-5.0, -3.0, 2.0)),
-                "thigh.L": BonePose(rotation_degrees=(-39.0, 0.0, 4.0)),
-                "thigh.R": BonePose(rotation_degrees=(-43.0, 0.0, -4.0)),
+                "thigh.L": BonePose(rotation_degrees=(-58.1, 0.0, 4.0)),
+                "thigh.R": BonePose(rotation_degrees=(-63.1, 0.0, -4.0)),
                 "shin.L": BonePose(rotation_degrees=(45.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(44.0, 0.0, 0.0)),
             },
@@ -2852,8 +2863,8 @@ class ProductionPlayerBuilderBase:
                 "forearm.R": BonePose(
                     rotation_degrees=(-38.0, 0.0, -15.0)
                 ),
-                "thigh.L": BonePose(rotation_degrees=(-32.0, 0.0, 3.0)),
-                "thigh.R": BonePose(rotation_degrees=(-34.0, 0.0, -3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-34.9, 0.0, 3.0)),
+                "thigh.R": BonePose(rotation_degrees=(-39.1, 0.0, -3.0)),
                 "shin.L": BonePose(rotation_degrees=(38.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(39.0, 0.0, 0.0)),
             },
@@ -2871,17 +2882,36 @@ class ProductionPlayerBuilderBase:
                 (0.07, bed_stand_shift),
                 (0.17, bed_edge_bend),
                 (0.28, bed_edge_sit, BED_LEADING_BONES),
+                (0.30, bed_edge_sit, BED_SPINE_BONES),
                 (0.31, bed_edge_sit, BED_TRAILING_BONES),
+                (0.33, bed_edge_sit, BED_HEAD_BONES),
                 (0.36, bed_edge_settle),
                 (0.44, bed_edge_scoot),
+                (0.50, bed_leg_swing, ("forearm.R", "hand.R")),
+                # Lift the boots clear before the pelvis carries them across
+                # the near mattress edge. The former extended legs swept
+                # through the bed even though the final lie was supported.
+                (0.51, bed_leg_swing, BED_LEADING_BONES[1:]),
                 (0.55, bed_leg_swing, BED_LEADING_BONES),
+                (0.57, bed_leg_swing, BED_SPINE_BONES),
                 (0.59, bed_leg_swing, BED_TRAILING_BONES),
-                (0.67, bed_lower_brace),
+                (0.61, bed_leg_swing, BED_HEAD_BONES),
+                (0.65, bed_lower_brace, BED_TRAILING_BONES),
+                (0.67, bed_lower_brace, BED_LEADING_BONES),
+                (0.69, bed_lower_brace, BED_SPINE_BONES),
+                (0.71, bed_lower_brace, BED_HEAD_BONES),
                 (0.78, bed_lower_side, BED_LEADING_BONES),
+                (0.80, bed_lower_side, BED_SPINE_BONES),
                 (0.82, bed_lower_side, BED_TRAILING_BONES),
+                (0.84, bed_lower_side, BED_HEAD_BONES),
                 (0.89, bed_roll_back, BED_LEADING_BONES),
+                (0.91, bed_roll_back, BED_SPINE_BONES),
                 (0.93, bed_roll_back, BED_TRAILING_BONES),
+                (0.95, bed_roll_back, BED_HEAD_BONES),
+                (0.96, lying, BED_LEADING_BONES),
                 (0.97, bed_settle_press, BED_TRAILING_BONES),
+                (0.98, lying, BED_SPINE_BONES),
+                (0.98, bed_settle_press, BED_HEAD_BONES),
                 (1.0, lying),
             ),
             interpolation="BEZIER",
@@ -2891,10 +2921,13 @@ class ProductionPlayerBuilderBase:
             (
                 (0.0, lying),
                 (0.16, lying_inhale_rise, BED_TRAILING_BONES),
+                (0.20, lying_inhale_rise, BED_HEAD_BONES),
                 (0.40, lying_inhale),
                 (0.58, lying_exhale_fall, BED_TRAILING_BONES),
+                (0.62, lying_exhale_fall, BED_HEAD_BONES),
                 (0.78, lying_settle),
                 (0.90, lying_drift, BED_TRAILING_BONES),
+                (0.94, lying_drift, BED_HEAD_BONES),
                 (1.0, lying),
             ),
             interpolation="BEZIER",
@@ -2909,22 +2942,36 @@ class ProductionPlayerBuilderBase:
             "BedExit", "bed", 6.0, False, 72, 12,
             (
                 (0.0, lying),
-                (0.05, bed_wake_stir),
-                (0.11, bed_wake_head_lift, BED_TRAILING_BONES),
-                (0.20, bed_wake_elbows),
+                (0.05, bed_wake_stir, BED_HEAD_BONES),
+                (0.08, bed_wake_stir, BED_TRAILING_BONES),
+                (0.11, bed_wake_head_lift, BED_HEAD_BONES),
+                (0.11, lying, BED_LEADING_BONES),
+                (0.11, bed_wake_stir, BED_SPINE_BONES),
+                (0.17, bed_wake_elbows, BED_TRAILING_BONES),
+                (0.18, bed_wake_elbows, BED_SPINE_BONES),
+                (0.20, bed_wake_elbows, BED_LEADING_BONES),
+                (0.22, bed_wake_elbows, BED_HEAD_BONES),
                 (0.30, bed_wake_curl, BED_LEADING_BONES),
+                (0.31, bed_wake_curl, BED_SPINE_BONES),
                 (0.33, bed_wake_curl, BED_TRAILING_BONES),
+                (0.35, bed_wake_curl, BED_HEAD_BONES),
                 (0.43, bed_wake_hunch, BED_LEADING_BONES),
+                (0.44, bed_wake_hunch, BED_SPINE_BONES),
                 (0.46, bed_wake_hunch, BED_TRAILING_BONES),
+                (0.48, bed_wake_hunch, BED_HEAD_BONES),
                 (0.55, bed_wake_right_lead, BED_LEADING_BONES),
                 (0.63, bed_wake_right_down, BED_LEADING_BONES),
+                (0.64, bed_wake_right_down, BED_SPINE_BONES),
                 (0.66, bed_wake_right_down, BED_TRAILING_BONES),
+                (0.67, bed_wake_right_down, BED_HEAD_BONES),
                 # The left leg is held up on the bedding while the right one
                 # finds the floor. Without this key the two swings blur into
                 # one and the whole point of the beat is lost.
                 (0.68, bed_wake_hunch, ("thigh.L", "shin.L", "foot.L")),
                 (0.74, bed_wake_left_down, BED_LEADING_BONES),
+                (0.75, bed_wake_left_down, BED_SPINE_BONES),
                 (0.77, bed_wake_left_down, BED_TRAILING_BONES),
+                (0.78, bed_wake_left_down, BED_HEAD_BONES),
                 (0.80, bed_wake_sit),
                 (0.85, bed_wake_gather),
                 (0.91, bed_wake_lean),
@@ -4319,7 +4366,8 @@ def validate_bed_support_contract(
     def sample(action_name: str, normalized_time: float) -> None:
         record = result.actions[action_name]
         animation_data.action = record.action
-        scene.frame_set(round(record.action.frame_end * normalized_time))
+        frame = record.action.frame_end * normalized_time
+        scene.frame_set(math.floor(frame), subframe=frame - math.floor(frame))
         bpy.context.view_layer.update()
 
     def lowest_named(selector) -> tuple[float, str]:
@@ -4381,6 +4429,31 @@ def validate_bed_support_contract(
                     continue
                 break
 
+        # Imported FBX is sampled at 24 Hz. Check both those frames and their
+        # midpoints: an eased quaternion arc can leave the support plane even
+        # when every authored landmark clears it.
+        def dense_times(name: str, start: float, end: float) -> tuple[float, ...]:
+            steps = round(result.actions[name].action.frame_end * 2)
+            return tuple(
+                frame / steps
+                for frame in range(math.ceil(start * steps), math.floor(end * steps) + 1)
+            )
+
+        # Dock, edge seat and sleeping pelvis share the long-side midpoint X.
+        hip_x = -2.975 + 0.135
+        for name in ("BedEnter", "BedExit"):
+            action = result.actions[name].action
+            key_times = {}
+            for bone in ("pelvis", "spine", "chest", "head"):
+                curve = next(
+                    curve for curve in iter_action_fcurves(action)
+                    if curve.data_path == f'pose.bones["{bone}"].rotation_quaternion'
+                    and curve.array_index == 0
+                )
+                key_times[bone] = tuple(round(key.co.x, 3) for key in curve.keyframe_points)
+            if key_times["pelvis"] == key_times["spine"] or key_times["spine"] == key_times["chest"] or key_times["chest"] == key_times["head"]:
+                errors.append(f"{name} must stagger pelvis, lumbar, chest and head keys")
+
         sample("BedEnter", 1.0)
         pelvis = pelvis_height()
         body_low, body_part = lowest_named(is_body)
@@ -4436,15 +4509,84 @@ def validate_bed_support_contract(
                 return BED_SEATED_PELVIS_LIFT_M
             return BED_SEATED_PELVIS_LIFT_M + eased(
                 (normalized_time - BED_ENTER_SEAT_DEPARTURE) /
-                (1.0 - BED_ENTER_SEAT_DEPARTURE)
+                (BED_ENTER_SETTLE - BED_ENTER_SEAT_DEPARTURE)
             ) * (BED_BODY_SUPPORT_OFFSET_M - BED_SEATED_PELVIS_LIFT_M)
 
         def exiting_support_offset(normalized_time: float) -> float:
             if normalized_time >= BED_EXIT_SEAT_ARRIVAL:
                 return BED_SEATED_PELVIS_LIFT_M
             return BED_BODY_SUPPORT_OFFSET_M + eased(
-                normalized_time / BED_EXIT_SEAT_ARRIVAL
+                (normalized_time - BED_EXIT_HOLD) /
+                (BED_EXIT_SEAT_ARRIVAL - BED_EXIT_HOLD)
             ) * (BED_SEATED_PELVIS_LIFT_M - BED_BODY_SUPPORT_OFFSET_M)
+
+        # GroundedRootOffset + canonical V2 pelvis + the neutral visual lift.
+        # The controller moves this target independently of the source pelvis
+        # translation, so floor contact has to be measured AFTER that pin.
+        standing_hip = 0.04 + 0.835 + 0.005
+        seated_hip = BED_MATTRESS_ABOVE_FLOOR_M + BED_SEATED_PELVIS_LIFT_M
+        sleeping_hip = BED_MATTRESS_ABOVE_FLOOR_M + BED_BODY_SUPPORT_OFFSET_M - 0.10
+
+        def hip_height_at(name: str, t: float) -> float:
+            if name == "BedEnter":
+                if t < BED_ENTER_SEAT_ARRIVAL:
+                    return standing_hip + (seated_hip - standing_hip) * eased(
+                        (t - BED_ENTER_HOLD) / (BED_ENTER_SEAT_ARRIVAL - BED_ENTER_HOLD)
+                    )
+                return seated_hip + (sleeping_hip - seated_hip) * eased(
+                    (t - BED_ENTER_SEAT_DEPARTURE) / (BED_ENTER_SETTLE - BED_ENTER_SEAT_DEPARTURE)
+                )
+            if t < BED_EXIT_SEAT_ARRIVAL:
+                return sleeping_hip + (seated_hip - sleeping_hip) * eased(
+                    (t - BED_EXIT_HOLD) / (BED_EXIT_SEAT_ARRIVAL - BED_EXIT_HOLD)
+                )
+            return seated_hip + (standing_hip - seated_hip) * eased(
+                (t - BED_EXIT_SEAT_DEPARTURE) / (BED_EXIT_SETTLE - BED_EXIT_SEAT_DEPARTURE)
+            )
+
+        for name in ("BedEnter", "BedExit"):
+            worst = (0.0, "?", 0.0)
+            mattress_worst = (math.inf, "?", 0.0)
+            for t in dense_times(name, 0.0, 1.0):
+                sample(name, t)
+                low, culprit = lowest_named(lambda _: True)
+                world_low = low - pelvis_height() + hip_height_at(name, t)
+                if world_low < worst[0]:
+                    worst = (world_low, culprit, t)
+                if name == "BedEnter":
+                    if t < BED_ENTER_SEAT_ARRIVAL:
+                        blend = eased((t - BED_ENTER_HOLD) / (BED_ENTER_SEAT_ARRIVAL - BED_ENTER_HOLD))
+                        hip_z = -1.73 + 0.64 * blend
+                    else:
+                        blend = eased((t - BED_ENTER_SEAT_DEPARTURE) / (BED_ENTER_SETTLE - BED_ENTER_SEAT_DEPARTURE))
+                        hip_z = -1.09 + 0.715 * blend
+                elif t < BED_EXIT_SEAT_ARRIVAL:
+                    blend = eased((t - BED_EXIT_HOLD) / (BED_EXIT_SEAT_ARRIVAL - BED_EXIT_HOLD))
+                    hip_z = -0.375 - 0.715 * blend
+                else:
+                    blend = eased((t - BED_EXIT_SEAT_DEPARTURE) / (BED_EXIT_SETTLE - BED_EXIT_SEAT_DEPARTURE))
+                    hip_z = -1.09 - 0.64 * blend
+                pelvis = rig.matrix_world @ rig.pose.bones["pelvis"].head
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                for part in result.parts:
+                    evaluated = part.obj.evaluated_get(depsgraph)
+                    mesh = evaluated.to_mesh()
+                    try:
+                        for vertex in mesh.vertices:
+                            relative = evaluated.matrix_world @ vertex.co - pelvis
+                            x, z = relative.x + hip_x, relative.y + hip_z
+                            if -4.17 <= x <= -1.78 and -1.16 <= z <= 0.41:
+                                y = relative.z + hip_height_at(name, t)
+                                if y < mattress_worst[0]:
+                                    mattress_worst = (y, part.obj.name, t)
+                    finally:
+                        evaluated.to_mesh_clear()
+            print(f"  {name} floor sweep: {worst[0]:+.4f} m ({worst[1]} at {worst[2]:.3f})")
+            print(f"  {name} mattress sweep: {mattress_worst[0]:+.4f} m ({mattress_worst[1]} at {mattress_worst[2]:.3f})")
+            if worst[0] < -0.025:
+                errors.append(f"{name} at {worst[2]:.3f} pushes {worst[1]} {-worst[0]:.4f} m through the floor after pelvis alignment")
+            if mattress_worst[0] < 0.43:
+                errors.append(f"{name} at {mattress_worst[2]:.3f} pushes {mattress_worst[1]} to Y={mattress_worst[0]:.4f} inside the mattress footprint (minimum 0.43)")
 
         # Since the wake became a sit-up rather than a roll, his weight stays
         # on the bed from the first frame to the moment the first boot leaves
@@ -4455,10 +4597,10 @@ def validate_bed_support_contract(
         # easing the pelvis down toward the edge the instant the wake begins
         # while he is still, correctly, lying flat and stirring.
         windows = (
-            ("BedEnter", (0.95, 0.98, 1.0), entering_support_offset, tolerance),
+            ("BedEnter", dense_times("BedEnter", 0.95, 1.0), entering_support_offset, tolerance),
             (
                 "BedSleepLoop",
-                (0.0, 0.16, 0.4, 0.58, 0.78, 0.9, 1.0),
+                dense_times("BedSleepLoop", 0.0, 1.0),
                 lambda _: BED_BODY_SUPPORT_OFFSET_M,
                 tolerance,
             ),
@@ -4467,7 +4609,7 @@ def validate_bed_support_contract(
             # the first leg goes over the edge.
             (
                 "BedExit",
-                (0.0, 0.05, 0.11, 0.20, 0.26, 0.30, 0.36, 0.43, 0.46, 0.50),
+                dense_times("BedExit", 0.0, 0.50),
                 exiting_support_offset,
                 0.02,
             ),
@@ -5936,6 +6078,10 @@ def write_manifest(
             "enter_seat_departure": BED_ENTER_SEAT_DEPARTURE,
             "exit_seat_arrival": BED_EXIT_SEAT_ARRIVAL,
             "exit_seat_departure": BED_EXIT_SEAT_DEPARTURE,
+            "enter_hold": BED_ENTER_HOLD,
+            "enter_settle": BED_ENTER_SETTLE,
+            "exit_hold": BED_EXIT_HOLD,
+            "exit_settle": BED_EXIT_SETTLE,
         },
         "actions": [
             {

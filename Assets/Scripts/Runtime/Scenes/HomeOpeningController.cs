@@ -522,10 +522,10 @@ namespace BarPromenade
             {
                 Vector3 target =
                     home.AlarmClock.transform.position +
-                    new Vector3(0f, -0.015f, 0f);
+                    new Vector3(0f, -0.009f, 0f);
                 position =
                     target +
-                    new Vector3(-0.45f, 0.39f, -1.18f);
+                    new Vector3(-0.34f, 0.29f, -0.885f);
                 rotation = LookAt(position, target);
                 fieldOfView = ClockFieldOfView;
             }

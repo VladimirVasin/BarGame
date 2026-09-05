@@ -68,6 +68,13 @@ Shader "Bar Promenade/City River Water"
         // sea dies on a shore.
         _ShoreFadeParams("Shore Fade (SouthZ, 1/Len, Floor, On)", Vector) = (0, 0, 1, 0)
 
+        // Only the shared sea swash material enables this sand-conforming
+        // film. All ordinary water keeps its opaque depth-writing pass.
+        _ShoreSwashParams("Swash (WaterlineZ, Runup, SeaReach, On)", Vector) = (0, 0, 0, 0)
+        [HideInInspector] _WaterZWrite("Water ZWrite", Float) = 1
+        [HideInInspector] _WaterSrcBlend("Water Source Blend", Float) = 1
+        [HideInInspector] _WaterDstBlend("Water Destination Blend", Float) = 0
+
         _DepthFadeDistance("Depth Fade Distance", Float) = 0.9
         _FoamDistance("Foam Distance", Float) = 0.42
         _RefractionStrength("Refraction Strength", Range(0, 0.5)) = 0.055
@@ -117,6 +124,14 @@ Shader "Bar Promenade/City River Water"
         _LanternColor("Lantern Color", Color) = (0.95, 0.90, 0.78, 1)
         _LanternGlint("Lantern Glint Strength", Range(0, 4)) = 0
         _LanternBeamDir("Lantern Beam (Sin, Cos, CosHalfWidth)", Vector) = (0, 1, 1, 0)
+        _OffshoreHull0("Passing hull 0", Vector) = (0, 0, 0, 0)
+        _OffshoreHull1("Passing hull 1", Vector) = (0, 0, 0, 0)
+        _OffshoreCourse0("Passing course 0", Vector) = (0, 1, 0, 0)
+        _OffshoreCourse1("Passing course 1", Vector) = (0, 1, 0, 0)
+        _OffshoreLamp0("Working lamp 0", Vector) = (0, 0, 0, 0)
+        _OffshoreLamp1("Working lamp 1", Vector) = (0, 0, 0, 0)
+        _OffshoreBeam0("Working beam 0", Vector) = (0, 0, 1, 0)
+        _OffshoreBeam1("Working beam 1", Vector) = (0, 0, 1, 0)
     }
 
     SubShader
@@ -137,10 +152,10 @@ Shader "Bar Promenade/City River Water"
             Name "RiverWater"
             Tags { "LightMode" = "UniversalForward" }
 
-            ZWrite On
+            ZWrite [_WaterZWrite]
             ZTest LEqual
             Cull Back
-            Blend Off
+            Blend [_WaterSrcBlend] [_WaterDstBlend]
 
             HLSLPROGRAM
             #pragma target 3.5
@@ -189,6 +204,7 @@ Shader "Bar Promenade/City River Water"
                 half _CrestFoamStrength;
                 half _CrestFoamThreshold;
                 float4 _ShoreFadeParams;
+                float4 _ShoreSwashParams;
                 float _DepthFadeDistance;
                 float _FoamDistance;
                 half _RefractionStrength;
@@ -206,7 +222,17 @@ Shader "Bar Promenade/City River Water"
                 half4 _LanternColor;
                 half _LanternGlint;
                 float4 _LanternBeamDir;
+                float4 _OffshoreHull0;
+                float4 _OffshoreHull1;
+                float4 _OffshoreCourse0;
+                float4 _OffshoreCourse1;
+                float4 _OffshoreLamp0;
+                float4 _OffshoreLamp1;
+                float4 _OffshoreBeam0;
+                float4 _OffshoreBeam1;
             CBUFFER_END
+
+            #include "CityOffshoreBoatWater.hlsl"
 
             struct Attributes
             {
@@ -362,8 +388,18 @@ Shader "Bar Promenade/City River Water"
                 float time = _Time.y * _FlowSpeed;
                 float2 slope;
                 float crest01;
-                positionWS.y += WaveField(
+                float waveHeight = WaveField(
                     positionWS.xz, time, slope, crest01);
+                if (_ShoreSwashParams.w > 0.5)
+                {
+                    // The landward film stays on the sand; at the outer
+                    // edge its height is exactly the ordinary sea wave.
+                    float offshore = smoothstep(0.0, _ShoreSwashParams.z,
+                        positionWS.z - _ShoreSwashParams.x);
+                    waveHeight *= offshore;
+                    slope *= offshore;
+                }
+                positionWS.y += waveHeight;
 
                 output.positionWS = positionWS;
 
@@ -459,12 +495,50 @@ Shader "Bar Promenade/City River Water"
                 return normalize(float3(tilt.x, 1.0, tilt.y));
             }
 
+            // Faster uprush, slower drainage. Alongshore phase and strength
+            // vary continuously in world metres, so adjacent mesh strips
+            // cannot restart a wave at their seam.
+            float SwashReach(float x, float seconds)
+            {
+                float phase = frac(seconds * 0.12 +
+                    sin(x * 0.19) * 0.16 + sin(x * 0.47 + 1.3) * 0.055);
+                float pulse = smoothstep(0.0, 0.30, phase) *
+                    (1.0 - smoothstep(0.30, 1.0, phase));
+                float strength = 0.72 + 0.15 * sin(x * 0.31 + 0.7) +
+                    0.10 * sin(seconds * 0.23 + x * 0.07);
+                return _ShoreSwashParams.y * strength * pulse;
+            }
+
             half4 RiverFragment(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
                 float time = _Time.y * _FlowSpeed;
                 float2 screenUV = input.screenPos.xy / input.screenPos.w;
+
+                float swashCoverage = 1.0;
+                float swashWet = 0.0;
+                float swashFoam = 0.0;
+                float swashOffshore = 1.0;
+                float swashFade = 1.0;
+                if (_ShoreSwashParams.w > 0.5)
+                {
+                    float landward = _ShoreSwashParams.x - input.positionWS.z;
+                    float reach = SwashReach(input.positionWS.x, _Time.y);
+                    float previousReach = SwashReach(input.positionWS.x, _Time.y - 1.25);
+                    float lace = sin(input.positionWS.x * 3.1 +
+                        sin(input.positionWS.z * 4.7) + _Time.y * 0.6) * 0.055;
+                    float behindFront = reach - landward + lace;
+                    swashCoverage = smoothstep(-0.07, 0.16, behindFront);
+                    swashWet = smoothstep(-0.14, 0.22,
+                        max(reach, previousReach) - landward + lace);
+                    swashOffshore = smoothstep(0.0, _ShoreSwashParams.z, -landward);
+                    swashFade = 1.0 - smoothstep(_ShoreSwashParams.z * 0.55,
+                        _ShoreSwashParams.z, -landward);
+                    swashFoam = (1.0 - smoothstep(0.06, 0.48, behindFront)) *
+                        swashCoverage;
+                    clip(max(swashCoverage, swashWet) * swashFade - 0.003);
+                }
 
                 float3 rippleNormal = SampleRipple(input.positionWS.xz, time);
                 float3 waveNormalWS = normalize(input.waveNormalWS);
@@ -531,6 +605,10 @@ Shader "Bar Promenade/City River Water"
                 // river's own colour and nothing else.
                 float absorption = saturate(
                     waterDepth / max(0.01, _DepthFadeDistance));
+                if (_ShoreSwashParams.w > 0.5)
+                {
+                    absorption = max(absorption, 0.20 * swashCoverage);
+                }
                 half3 body = lerp(
                     _BaseColor.rgb,
                     _DeepColor.rgb,
@@ -733,6 +811,14 @@ Shader "Bar Promenade/City River Water"
                                 max(0.05, _FoamTiling);
                 half foamMask = SAMPLE_TEXTURE2D(
                     _FoamMap, sampler_FoamMap, foamUV).r;
+                if (_ShoreSwashParams.w > 0.5)
+                {
+                    // Foam belongs to the advancing front, not every
+                    // shallow pixel on the sand. A little broken lace
+                    // remains in the draining film behind it.
+                    foamEdge = swashFoam + swashCoverage * 0.12 *
+                        (1.0 - swashOffshore);
+                }
                 half foam = saturate(
                     foamEdge *
                     (foamMask * 1.5h + 0.25h) *
@@ -778,6 +864,10 @@ Shader "Bar Promenade/City River Water"
                 half fogFactor = ComputeFogFactorZ0ToFar(
                     max(input.viewZ - _ProjectionParams.y, 0));
                 color = MixFog(color, fogFactor);
+                color += OffshoreBoatWater(input.positionWS, normalWS, viewDirWS,
+                    _OffshoreHull0, _OffshoreCourse0, _OffshoreLamp0, _OffshoreBeam0);
+                color += OffshoreBoatWater(input.positionWS, normalWS, viewDirWS,
+                    _OffshoreHull1, _OffshoreCourse1, _OffshoreLamp1, _OffshoreBeam1);
 
                 // The puddle film. Both sides of the lerp are final
                 // pixels — the water is fogged above and the sampled
@@ -809,6 +899,18 @@ Shader "Bar Promenade/City River Water"
                 }
 
                 color = lerp((half3)background, color, saturate(film));
+                if (_ShoreSwashParams.w > 0.5)
+                {
+                    // Opaque background is already fogged. Darken its
+                    // unfogged portion only, leaving a short wet trail
+                    // as the thin water and its foam retreat.
+                    half3 wetSand = background *
+                        (1.0h - 0.24h * ComputeFogIntensity(fogFactor));
+                    color = lerp(wetSand, color, swashCoverage);
+                    half alpha = (half)(max(swashCoverage * 0.88,
+                        swashWet * 0.65) * swashFade);
+                    return half4(color, alpha);
+                }
                 return half4(color, 1.0h);
             }
             ENDHLSL

@@ -28,6 +28,11 @@ namespace BarPromenade
         public int triangles;
         public int grid_columns;
         public int grid_rows;
+        public float[] grid_top_heights;
+        public float[] grid_bottom_heights;
+        // Import-owned mapping: each leading upper-shell vertex addresses
+        // one authored height sample, including duplicate facet corners.
+        public int[] grid_vertex_samples;
         public float max_depth;
         public bool collider;
         public Mesh mesh;

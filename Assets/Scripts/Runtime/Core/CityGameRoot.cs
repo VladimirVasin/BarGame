@@ -169,6 +169,17 @@ namespace BarPromenade
             private set;
         }
 
+        /// <summary>
+        /// Street walkers cursing the hero on the last drunkenness stage,
+        /// or <c>null</c> when the walkers or the bubble view were never
+        /// raised.
+        /// </summary>
+        public CityPedestrianInsultController PedestrianInsults
+        {
+            get;
+            private set;
+        }
+
         /// <summary>Where lines nobody said to the hero are drawn.</summary>
         public NpcSpeechBubbleView SpeechBubbles
         {
@@ -555,6 +566,14 @@ namespace BarPromenade
                 camera,
                 World.WalkableArea,
                 prompt);
+            World.Root.GetComponentInChildren<CityOffshoreBoatController>()
+                ?.AttachHero(Player.GameObject.transform);
+            CitySandTreading sand = World.Root.GetComponentInChildren<CitySandTreading>();
+            if (sand != null)
+            {
+                sand.AttachWalker(Player.GameObject.transform);
+                Player.Motor.SetFootstepSurface(sand);
+            }
             if (exteriorDoorArrival.HasValue)
             {
                 // This must happen before the follow camera initializes:
@@ -1157,6 +1176,15 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 SpeechBubbles,
                 GameSessionState.CitySeed);
+            // The one thing a walker ever says to him: a short insult on
+            // the last stage, over the walker's own head. City only — the
+            // Home balcony street has walkers but no bubble view.
+            PedestrianInsults = CityPedestrianInsultController.Create(
+                transform,
+                Pedestrians,
+                Player.GameObject.transform,
+                SpeechBubbles,
+                GameSessionState.CitySeed);
             // And the games themselves. Nothing on either board moves
             // until the hero takes one of the two free planks; from
             // that moment that table is a real match against a real,
@@ -1505,6 +1533,15 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            if (PedestrianInsults != null)
+            {
+                // Withdraws its speaker from the shared view before the
+                // view itself goes down with the UI object.
+                PedestrianInsults.Shutdown();
+            }
+
+            PedestrianInsults = null;
+
             if (BalconySmokers != null)
             {
                 BalconySmokers.Shutdown();

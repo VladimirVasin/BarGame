@@ -12,7 +12,7 @@ namespace BarPromenade
         public const float NightstandHeight = 0.72f;
         public const float NightstandTopThickness = 0.05f;
         public static readonly Vector3 ClockBodySize =
-            new Vector3(0.46f, 0.27f, 0.24f);
+            new Vector3(0.276f, 0.162f, 0.144f);
 
         private HomeAlarmClockPlan(
             Rect bedBounds,
@@ -69,7 +69,7 @@ namespace BarPromenade
                 NightstandHeight +
                 NightstandTopThickness +
                 ClockBodySize.y * 0.5f +
-                0.015f,
+                0.002f,
                 center.y);
             var plan = new HomeAlarmClockPlan(
                 bed.Bounds,

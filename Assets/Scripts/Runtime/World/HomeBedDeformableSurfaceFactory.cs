@@ -24,6 +24,10 @@ namespace BarPromenade
         private float sizeZ;
         private float restTopLocalY;
         private float maxDepth;
+        private float[] restHeights;
+        private float[] bottomHeights;
+        private int[] vertexSamples;
+        private float highestBottomLocalY;
 
         public Mesh Mesh => mesh;
         public int Columns => columns;
@@ -37,7 +41,12 @@ namespace BarPromenade
         /// caught facet by facet — a smooth-normal bowl on this project's
         /// noisy albedos reads as nothing at all (verified by capture).
         /// </summary>
-        public int TopVertexCount => columns * rows * 4;
+        public int TopVertexCount => vertexSamples?.Length ?? columns * rows * 4;
+        public bool HasRestProfile => restHeights != null && restHeights.Length > 0;
+        public float[] RestHeights => restHeights;
+        public float[] BottomHeights => bottomHeights;
+        public float RestBottomSupportWorldY => transform.TransformPoint(
+            new Vector3(0f, highestBottomLocalY, 0f)).y;
         public float RestTopWorldY =>
             transform.TransformPoint(
                 new Vector3(0f, restTopLocalY, 0f)).y;
@@ -50,7 +59,10 @@ namespace BarPromenade
             float surfaceSizeX,
             float surfaceSizeZ,
             float topLocalY,
-            float maximumDepth)
+            float maximumDepth,
+            float[] topProfile = null,
+            float[] bottomProfile = null,
+            int[] upperVertexSamples = null)
         {
             mesh = surfaceMesh;
             baseVertices = restVertices;
@@ -60,6 +72,16 @@ namespace BarPromenade
             sizeZ = surfaceSizeZ;
             restTopLocalY = topLocalY;
             maxDepth = maximumDepth;
+            restHeights = topProfile;
+            bottomHeights = bottomProfile;
+            highestBottomLocalY = -topLocalY;
+            if (bottomProfile != null)
+                foreach (float height in bottomProfile)
+                    highestBottomLocalY = Mathf.Max(highestBottomLocalY, height);
+            vertexSamples = upperVertexSamples != null && upperVertexSamples.Length > 0
+                ? upperVertexSamples : null;
+            if (HasRestProfile && vertexSamples == null)
+                throw new System.InvalidOperationException("The pillow requires its imported upper-shell mapping.");
         }
 
         public void CopyBaseVertices(Vector3[] target)
@@ -86,6 +108,33 @@ namespace BarPromenade
                    Mathf.Abs(local.y) <= sizeZ * 0.5f;
         }
 
+        public float SampleRestHeight(float localX, float localZ) =>
+            SampleProfile(restHeights, localX, localZ, restTopLocalY);
+
+        public float SampleRestBottomHeight(float localX, float localZ) =>
+            SampleProfile(bottomHeights, localX, localZ, -restTopLocalY);
+
+        public float SampleRestWorldHeight(Vector3 worldPosition)
+        {
+            Vector2 local = WorldToLocalPlanar(worldPosition);
+            return transform.TransformPoint(new Vector3(
+                local.x, SampleRestHeight(local.x, local.y), local.y)).y;
+        }
+
+        private float SampleProfile(float[] profile, float x, float z, float fallback)
+        {
+            if (profile == null || profile.Length == 0) return fallback;
+            float gx = Mathf.Clamp((x / sizeX + 0.5f) * columns, 0f, columns);
+            float gz = Mathf.Clamp((z / sizeZ + 0.5f) * rows, 0f, rows);
+            int column = Mathf.Min((int)gx, columns - 1);
+            int row = Mathf.Min((int)gz, rows - 1);
+            int index = row * (columns + 1) + column;
+            return Mathf.Lerp(
+                Mathf.Lerp(profile[index], profile[index + 1], gx - column),
+                Mathf.Lerp(profile[index + columns + 1], profile[index + columns + 2], gx - column),
+                gz - row);
+        }
+
         /// <summary>
         /// Writes the model's current depths into the mesh. The top face is
         /// per-cell quads; each quad corner takes the depth of its grid
@@ -102,6 +151,17 @@ namespace BarPromenade
             }
 
             CopyBaseVertices(buffer);
+            if (vertexSamples != null)
+            {
+                for (int index = 0; index < vertexSamples.Length; index++)
+                {
+                    int sample = vertexSamples[index];
+                    buffer[index].y -= model.GetDepth(sample % (columns + 1), sample / (columns + 1));
+                }
+                mesh.SetVertices(buffer);
+                mesh.RecalculateNormals();
+                return;
+            }
             int vertex = 0;
             for (int row = 0; row < rows; row++)
             {
@@ -242,7 +302,10 @@ namespace BarPromenade
                 size.x,
                 size.z,
                 size.y * 0.5f,
-                maxDepth);
+                maxDepth,
+                authored.grid_top_heights,
+                authored.grid_bottom_heights,
+                authored.grid_vertex_samples);
             return result;
         }
 

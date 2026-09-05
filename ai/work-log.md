@@ -6,6 +6,406 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-05 — Bed entry and wake from the middle
+
+The user's clarification exposed a `0.69 m` longitudinal mismatch between the
+foot-side sitting dock and sleeping pelvis. Aligned the entry/exit dock, seated
+waypoint and trigger with the sleeping pelvis near the middle of the long
+side. Wake holds the pelvis in place until `30%` while the torso sits up, then
+reaches the side seat at `50%`. It keeps the requested right leg down, left leg down, stand
+sequence; reclining now reaches the pillow through the body's movement.
+The existing plan contract checks the shared longitudinal coordinate, and the
+focused PlayMode bed regression checks it on the actual pelvis throughout
+both transitions. Capture checkpoints now show each leg's separate beat.
+The first reproduction caught the new dock inside the camera-corner storage
+collider. Narrowed that pile from `1.95 m` to `1.30 m` against the west wall,
+including its authored base/door and later-day bottles and bags. The plan
+contract now requires player clearance from every blocking furniture footprint.
+
+Verification: regenerated Home geometry passed its direct validator. The
+focused PlayMode bed regression passed `1/1` in `29.3 s`; actual pelvis samples
+stay at the same longitudinal coordinate, and the contact, sleep/recovery and
+opening-control handoff checks pass. Reviewed the middle seat, separate leg
+beats, standing endpoint and reverse lie-down captures. No full test suites
+or player build were run.
+
+## 2026-09-05 — Refined Home waking, V2 bed contacts and a filled pillow
+
+Reduced the complete bedside clock to `60%` (body width `27.6 cm`), moved it
+onto the nightstand and adjusted its opening close-up and translation rattle.
+The clock/menu/alarm handoff and wake duration remain unchanged.
+
+Re-authored only the three Hero V2 bed actions with separate pelvis, lower
+spine, chest and head timing. The shared pelvis transition now uses the bed's
+hold/settle windows. Measured V2 support replaces stale pre-V2 offsets; the
+entry lifts the feet before crossing the mattress edge, and the exit plants
+the right foot, then the left, before standing. The V2 generator now actually
+runs its bed support validator, including full-clip 48 Hz mattress/floor
+sweeps. The regenerated animation bank retains all other action contracts.
+
+Replaced the flat pillow box with a closed `14 cm` filled cushion, an `8 x 14`
+upper grid, curved lower shell and `3 mm` seam. The manifest/import retain its
+rest-height profiles and vertex mapping; local dents preserve thickness and
+recover through the existing spring. Pillow placement and mattress support
+are coordinated with the actual V2 head and shoulder geometry.
+
+Extended the existing bed regression through real Enter, a complete sleep
+loop, full Exit and recovery. Optional `BAR_PROMENADE_CAPTURE_HOME_BED=1`
+records contact views and the production opening camera in `Captures/HomeBed`.
+The existing V2 manifest contract also checks the four hold/settle values.
+
+Verification: Blender Home geometry/determinism and V2 support validation
+passed. The focused PlayMode bed regression passed `1/1` in `28.4 s`, including
+the production opening camera and control handoff. Reviewed the side views of
+entry/exit, clock close-up and pillow before loading, under the head and after
+recovery. Contact assertions now measure posed mesh vertices instead of loose
+renderer bounds. No full Unity suites or player build were run.
+
+## 2026-09-05 — He holds it down: the nausea gauge on the last stage
+
+The user's request: another system on the last level — now and then a
+mini-game in which the hero tries not to be sick. A vertical gauge to the
+right of him on screen, a safe band climbing it, a marker that rises while
+`E` is HELD and falls when it is let go, a dark-green stomach icon under the
+gauge, the outcomes stubbed as Success/Fail. Asked, the user chose: he keeps
+walking and is controlled as usual, only `E` is taken; the right hand comes
+up to the mouth and he hiccups, audibly; the word under the icon plus a
+highlight as the stub; `30–50 s` between bouts at `81`, `15–25 s` at `100` —
+and, seeing it, "чаще": the rests are now `15–25 s` at `81` and `8–14 s` at
+`100`, so at the top the gauge is up about a third of the time. The `20 s`
+rest on entering the stage stays.
+
+A design review before any code changed the one thing that mattered: the
+obvious `BarMinigameModalLock` is the wrong tool. `IsAnyLocked` and a disabled
+interactor read as "busy" to the balance controller (pose to Neutral — the
+drunk walk vanishes), to the fall gate (`UpdateBalance`: falls forbidden, then
+`3 s` of immunity) and to the mutter; so the gauge borrows only the key
+(`PlayerInteractor.SetInteractKeyClaimed`, `IsInteractHeld`) and `InputEnabled`
+never moves. Three more from the same review: the hand's target is resolved
+INSIDE the late layer after the body pose (the lean moves the mouth `4–11 cm`);
+the elbow gets an explicit hint through a new
+`PlayerArmReachPose.ElbowHintWorld` (the calibrated elbow-back swung onto a
+target at the mouth is a chicken wing) — and the first sheet corrected the
+hint itself: the drinking arm's `right·0.42 − up·0.12` lies almost along the
+shoulder-to-mouth line, so the solver's projection sent the elbow UP into a
+salute (`6 cm` above the shoulder); `forward·0.20 − up·0.30` puts it before
+the sternum, below the shoulder; and the controller is a plain object
+ticked from `IntoxicationStatusController.Update` after `ApplyPresentation`,
+not a child component, so the pose lands the same frame.
+
+Runtime: `HeroNauseaClock` (rest `20 s` on entering the stage — the PlayMode
+fixtures wait `15–20 s` at level `100`), `HeroNauseaGaugeModel` (fixed-step
+`1/120`, band `0.12 → 0.88` at `0.10–0.13/s` ±15 % seeded; first cut lift
+`2.6`, gravity `1.8`, caps `0.9/1.1`, half-height `0.14 → 0.10`, strain
+`+0.5/−0.35` per second — then, at the user's "чуть попроще", lift `2.2`,
+gravity `1.5`, caps `0.7/0.9`, half-height `0.17 → 0.13`, strain
+`+0.4/−0.45`: a released marker coasts a sixth of the track instead of a
+quarter, and a slip costs less and is forgiven faster; the band's climb, and
+so the bout's length, is unchanged),
+`PlayerNauseaModel`/`PlayerNauseaPose` (hand `0.3 s` up / `0.35 s` down,
+hiccups `2.5–5 s` apart on a `NodShape` envelope),
+`IntoxicationNauseaController`, `IntoxicationNauseaGaugeView` (IMGUI at
+`-85`, `10×120` logical px `0.45 m` to the camera's right of the chest, the
+frame warming toward `Bad` with strain, the verdict word for `1.5 s`),
+`IntoxicationNauseaIconLibrary` (a 16 px stomach through the now-shared
+`PixelPainter`), `RetroSfxId.Hiccup`, a `Grimace` from
+`PlayerFacialMoodContext.Nausea`, and «Тошнота сейчас» in the F9 window (it
+closes the window first — the window holds the full-screen lock the bout is
+gated on). Canon: no «Нельзя» is lifted, so no §6 row; recorded as story
+§24.45 and an accepted architecture note.
+
+Verification: EditMode `HeroNauseaTests` (clock cadence measured through
+`ResolveRestRange`, the perfect player wins in `5–9 s`, never holding fails
+first, seed replay, layout inside the canvas at six anchors, the icon dark
+and green-led, the key claim leaving `InputEnabled` true, reflection: no
+nausea type names a mutter or a citizen), `PlayerFacialMoodRulesTests` (+1),
+`RetroSfxLibraryTests` (+`Hiccup`), `LocalizationCatalogTests` (+3 keys).
+PlayMode `Player3DNauseaHandCapturePlayModeTests` writes
+`TestResults/nausea-hand-sheet.png` and asserts the palm within `0.12 m` of
+the mouth socket, the elbow below the shoulder and `≥ 0.05 m` out to his
+right, and the arm exactly back where the clip has it once the pose is None.
+Runs: EditMode over `HeroNausea|PlayerFacialMoodRules|RetroSfxLibrary|
+LocalizationCatalog|HeroMutter|InventoryPresentation|CemeteryGraveWork|
+RetroUiTheme|IntoxicationHeadModel|PlayerBalanceModel` — `179` tests, `175`
+green; the four red were two of the new gauge tests (a `0.6 − 0.5 ≤ 0.1`
+float edge and a wrong expectation that a released marker stops dead — it
+coasts on its momentum for half a second; both rewritten) and the two
+pre-existing `Catalog_IsPresentAndContainsRequiredKeys` reds on the
+`balance.warning` key, untouched here. The three new-code suites rerun:
+`57/57`. PlayMode `Player3DNauseaHandCapture|Player3DDrunkArmsCapture|
+Player3DDrunkFace` with a GPU: `4` tests, the two neighbours green under the
+new status controller, the hand sheet red once on the salute elbow (see
+above), then `1/1` after the hint moved — palm `0.055 m` from the mouth
+socket, elbow `0.153 m` below the shoulder, `0.248 m` forward, `0.073 m`
+inward of it; the hanging arm `0.748 m` from the mouth before and after.
+
+## 2026-09-05 — Fishing boats spawn only near the hero at the coast
+
+Replaced the global fleet with a lightweight coast controller attached to the
+actual hero by `CityGameRoot`. Only coastal proximity creates vessels/audio;
+the finite shore and pier/mol decks give full presence within `8 m` and none
+at `28 m`. Safe courses are selected around the hero's current easting and
+stay fixed during a pass. Moving over `32 m` alongshore or leaving the coast
+fades the old fleet over up to `3 s`, releases models, sources, clips and water
+slots, and permits the next local pass only after release. A visit starts its
+own pass clock and fresh horn wait. Pause freezes the lifecycle; camera
+translation and rotation cannot create or relocate vessels.
+
+The user's explicit correction is recorded in the existing accepted
+architecture decision, both bibles, overview, system index and README.
+Verification: `AreaCaptureFixture.CityOffshoreBoats` passed `1/1` in `12.30 s`.
+It checks lazy creation, hero/camera independence, bounded shoreline and deck
+proximity, safe local courses, fade-before-relocation, departure cleanup,
+return without horn catchup, and pause alongside the existing model/audio
+contracts. Fresh shore, pier and mol day/night frames were reviewed.
+`git diff --check` passed; no full suites or player build were run.
+
+## 2026-09-05 — Passers-by curse the drunk on the last stage
+
+The user's request: the street pedestrians — and only they — insult the hero
+on the last drunkenness level, about twenty lines. In this codebase the last
+level is `IntoxicationStage.VeryDrunk`, `81..100`, the stage the shove, the
+scattered letters and «В стельку» already key off. Told that the literal
+request collides with hard canon — §17 «Прохожие» («Никогда не говорят»,
+«Нельзя — реплика»), §8 «реплика NPC о его виде», §16.6 «Город не наказывает
+героя», §22 «Тест равнодушия», §24.44, art §15 «без реплики», and the green
+`HeroMutterTests.Citizens_CannotHearHim` — the user chose the real thing and
+authorised the story bible rewrite, then picked: biting without profanity or
+exclamation marks; five speaking designs (the mourner's street copy stays
+mute); a remark on approach (~3 m) rather than only at the shove; one shared
+pool of twenty lines in the voice of the anonymous role.
+
+Canon, by the mutter precedent: one §6 registry row scoped to the roaming
+street role on that stage with an explicit «**Не снимается ничего больше:**»
+clause; §8, §16.6, §17 (opening sentence, a new paragraph beside the palm,
+the «Нельзя» line), §21 (first pool of the anonymous role), §22 (the
+indifference test rewritten around its one dated exception) and §24.44
+amended in place; art §15 loses «без реплики». The register test that pins
+the scope is `CityPedestrianInsultTests` over BOTH catalogs: `<= 48` chars,
+ends in a full stop, no `!`/`?`/`(`/digits, one or two sentences, the banned
+words of §16.4, the abstractions of §21, the crime's subjects (§16.1) and a
+profanity list. It earned its keep at once: RU line 16 «…Повезло.» carried
+«зло» inside «Повезло», and two English lines ran to `49`/`51` characters —
+all three rewritten before the run went green. `Citizens_CannotHearHim` is
+re-scoped by name and a sibling asserts the stronger thing: the three
+`CityPedestrianInsult*` types name no mutter type in any field, property,
+parameter or return, the controller's source names no mutter class, and the
+only hero state it reads is `GameSessionState.IntoxicationLevel` — §16.2
+stays literally true.
+
+Runtime: `CityPedestrianInsultRules` (3 m, facing dot `> 0.2`, `8 s`
+cooldown, rearm past `4.5 m` — beyond the attention release radius `4.2 m`,
+`SilentDesignIds`), `CityPedestrianInsultLines` (twenty keys
+`city.pedestrian.insult.01..20`, the watchman's seeded no-repeat walk with its
+own salt) and `CityPedestrianInsultController` (`[DefaultExecutionOrder(315)]`,
+between the director and the park quarrel), created in `CityGameRoot` right
+after `ParkQuarrel` and shut down before the balcony smokers. The trigger is
+the walker's own glance — `CityPedestrianActor.IsAttending` — plus the
+personal-space controller's chest-height sight ray and its hero gate, both
+now public (`IsHeroAvailable`, `HasClearSightTo`), so the palm and the word
+share one set of conditions; the actor mid-shove qualifies, riders, sitters
+and stop-waiters never do. One speaker on the whole street; the speaker is
+DECLARED ON DEMAND with `NpcSpeaker.FromRegistry(owner: presentation, …,
+Conversation)` and withdrawn when the line closes, when the body's
+presentation changes or goes back to the pool, and on shutdown — the shared
+view holds eight speakers for the life of the City, the park pair own two,
+and `SweepDeadSpeakers` cannot see a pooled head bone, which is alive.
+`Disengage` dismisses only its own owner. Home has walkers but no bubble
+view, so `Create` returns `null` there without a branch.
+
+Verification: `dotnet build` of Runtime, EditModeTests and PlayModeTests `0`
+errors (the neighbour's seven untracked `CityOffshoreBoat*` files had to be
+written into the generated csproj by hand first). Unity EditMode
+`CityPedestrianInsultTests` `5/5` + `HeroMutterTests` `20/20` (with
+`LocalizationCatalogTests` in the first run: `LocalizedCatalogs_HaveMatchingKeySets`
+green; `Catalog_IsPresentAndContainsRequiredKeys` red on `balance.warning` in
+both catalogs — pre-existing, the key is required by HEAD's test and absent
+from HEAD's catalogs). Unity PlayMode `CityPedestrianInsultPlayModeTests`
+`8/8`: one line over the right head at `81`, nothing at `0/60/80`, the
+speaker slot given back when the bubble closes, the second walker waiting out
+the open line and the cooldown, rearm only after the hero withdraws, a
+released body taking its line down, a back turned or a wall keeping him
+quiet, and `Disengage` leaving a bystander's line alone. Two launches before
+that were lost to the shared checkout, not to the code: one to the
+neighbour's `CityOffshoreBoatSound.cs` arriving without its `.meta`
+(«Scripts have compiler errors»), one to a test-runner `RunError` after the
+neighbour's mother's-house atlas queued build threw during play-mode entry;
+the third run waited for their Unity to exit. Not run: full suites, a player
+build, a City capture. Also corrected, from the gait fix's review: the recipe
+comment in the generator and the architecture note no longer claim the
+design «keeps its head» on the street — the citizen recipe keys pelvis,
+spine, chest and head, so only the neck (and the idle's pelvis and legs)
+survive from a base pose. Nothing committed; the neighbour is still editing
+this checkout.
+
+## 2026-09-05 — Distant fishing vessels with working lights and soft motors
+
+Added two dedicated Blender-authored offshore variants and a pure bounded
+course plan. Up to two slow world-fixed passes clear the finite sea and
+rotated coast/island footprints, use staggered cycles and disappear before
+resetting. The controller follows existing water waves; self-hazed hulls,
+warm downward searchlights, restrained cabin light and separate moving sea
+glint/wake slots retain City's fog, `48 m` far plane and realtime light pool.
+Two low-passed positional motor loops and one sparse horn voice belong to
+the moving hull anchors, respect pause and clean up on unload.
+
+The user's accepted plan and added soft motor explicitly permit offshore
+working vessels at story level `0`; art-bible §10d, story-bible §§6/18 and
+architecture record the narrow exception. Station boats remain ashore, the
+port stays closed, and the vessels add no text, crew, interaction, navigation,
+map marker, docking or story state. README, overview, system index and release
+notes describe the player-visible addition.
+
+Verification: `AreaCaptureFixture.CityOffshoreBoats` passed `1/1` in `10.87 s`
+after correcting imported pivot axes, moving the material-property block out
+of the MonoBehaviour constructor, and making palette sRGB-to-linear conversion
+explicit at authoring with LINEAR FBX colours. Imported metres, anchors, beam
+direction and palette, deterministic safe routes, movement/pause, three spatial
+voices, audible shore motor and isolated water-slot cleanup passed together.
+Day/night shore, pier and mol frames were visually reviewed; white ghost-like
+hulls were corrected to dark painted silhouettes with warm short beams. Both
+Blender variants reproduced their signatures (`2,194 / 2,134` triangles), and
+direct audio sample validation found no clipping or discontinuous loop join.
+No broad EditMode/PlayMode suites or player build were run.
+
+## 2026-09-05 — Sand continues underwater and gives underfoot
+
+The beach now continues into an `18 m` seabed slope with matching shore
+heights, normals, texture, tint and world UVs. It eases toward `1:5`, letting
+water depth hide the far edge; the old two-step silt boxes are removed and
+river-mouth cuts retained. Dry sand gains bounded `0.15 m` deterministic
+relief on a `0.4 m` mesh plus a shallow loose skin that fades out before the
+surf. `CitySandTreading` presses only that skin into slowly recovering trails;
+the fixed ground collider stays separate. Confirmed physical beach support
+routes steps through `IPlayerFootstepSurface` to `FootstepSoil` and the existing
+village kickup effect with smaller sand-textured grains. README, overview,
+art-bible §10d, architecture and the system index record the new material
+behavior; no story meaning or canon exception is added.
+
+Verification: `AreaCaptureFixture.CityShoreSwash` passed `1/1` in Unity
+`6000.6.0f1`. The focused GPU check verifies matching shore heights/normals,
+shared sand texture/tint/world UVs, hidden seabed endpoints, independent
+visual/collision meshes, actual sand-step ownership and road/pier rejection.
+A short walking pass lowers the visual skin by more than `1 cm` while the
+collider vertices stay identical; the five grains are nonphysical at spawn.
+Inspected all nine coast, before/after trail and kickup frames in
+`Captures/City/`. The first run caught deferred primitive-collider removal;
+grains now disable it immediately, and the same selection was rerun. Analytic
+loose-sand normals also preserve lighting across terrain-patch seams and on
+untouched ground after a print. `git diff --check` passed. Full suites and a
+player build were not run.
+
+## 2026-09-05 — The street walkers put their arms down
+
+The user's report: the street NPCs hold their arms out sideways and walk
+strangely; the follow-up narrowed it to the NORMAL ones only — the five
+strange walkers hold their arms out by design. All six roaming designs
+(babushka, weigher, watchman, chess and checkers players, mourner) walk the
+street on the shared citizen gait, `citizen_walk_keys`/`citizen_idle_keys`
+in `tools/build-city-pedestrian-3d-model.py`, and that recipe was wrong in
+one line since it was written on 2026-09-02: the hero's `target_direction`
+arm aims had been "re-expressed as X rotations of the same magnitude" and
+merged OVER each design's base arms. On the shared A-pose rig the upper
+arm's local X axis points back and up, so an X turn abducts rather than
+swings: the base's hang was discarded, both arms sat at the bind A-pose
+(`56°` out, measured `0.83` sideways share) and flapped `±25°` up and down,
+and the street idle (`1.2°` of X on the bare rest) was the A-pose outright.
+The Blender contact sheet could not show it — it renders only each design's
+PLACED pair, never the `*Street*` clips. A second defect in the same
+recipe: the park players' street pair was built on their board perch
+(thighs at `-79°`), so a chess player waiting at a crossing sat brooding in
+mid-air.
+
+Diagnosis was by measurement, not by eye: a pure-python model of Blender's
+roll-0 bone frame (shortest arc `+Y → bone`, XYZ Euler = `Rz·Ry·Rx`)
+reproduced the FBX `Lcl Rotation` values to `0.01°`, and a probe composing
+the bone chain out of the FBX curves gave armature-space arm directions —
+hero Idle `11.5°` from vertical, Walk `±25°` fore and aft; every street walk
+`56°` out and swinging vertically.
+
+Fix, generator: the pedestrian `BonePose` gained the hero's
+`target_direction`; `apply_pose` solves aimed bones after every plain
+rotation, parents first, with the hero generator's `_apply_pose`
+arithmetic (rest aim difference times the rest matrix, premultiplied by the
+parent's pose delta, assigned through `pose_bone.matrix`);
+`interpolate_pose` lerps aims and refuses a bone aimed in one key and
+rotated in the next. `CITIZEN_WALK_CYCLE` became a `CitizenWalkKey` table
+carrying the hero's eight keys' upper-arm aims, forearm and hand rotations
+verbatim; `citizen_idle_keys` breathes between his `relaxed` and
+`idle_left_inhale` arms; both reset the clavicles so the hang is measured
+from a rest shoulder. `ChessStreetIdle/Walk` and `CheckersStreetIdle/Walk`
+build on `chess_player_stand_pose`; the personal-space bank takes its
+frame-0/24 base from the street idle's first key for all six designs (the
+park special case is gone), so a guard or shove blends from the very arms
+the actor is playing. New flag `--locomotion-only` rebuilds the shared bank
+alone. No generator version bump: no body FBX or manifest changed.
+
+Rebuilt: `CityPedestrianLocomotion` (`53` Actions, signature `1178e60c…`)
+and `CityPedestrianPersonalSpace` (`12` one-shots, signature `e5fefd5b…`),
+every grounding, seat and palm-contact validator green. The FBX probe now
+reads the six street walks identical to the hero's Walk (`0.10, 0.45,
+-0.89` at left contact) and the street idle `(0.17, 0.01, -0.98)`; the
+placed clips' arm curves are unchanged.
+
+Tests: new `CityPedestrianStreetGaitTests` samples the shipped clips through
+`CityPedestrianPresentation` in EditMode (`AlwaysAnimate`, `ConfigureCycle`
+per phase) and pins the hang (`< 22°` idle, `< 40°` walk, sideways share
+`< 0.35`), a fore-and-aft swing range above `0.25`, opposition at heel
+contact and standing thighs (`< 30°`) — `6/6`, alongside
+`ProductionPrefabs_UseCustomLocomotionAndGroundedWalk` `5/5` and
+`PromotedResidents_KeepTheirPlacedRoleAndGainAStreetGait` `6/6`.
+`CityPedestrianPersonalSpaceAssetSetup.BuildOrThrow` re-validated the bank
+(no prefab changed) and `CityPedestrianPersonalSpacePlayModeTests` `6/6`.
+New explicit `CityPedestrianGaitCapturePlayModeTests` wrote
+`Captures/PedestrianGait/`: the six stand with their arms down and walk
+with the hero's swing. Not run: full suites, a player build, the strange
+walkers' clips (untouched by design). Observed and left alone, for the
+user to decide: the babushka's PLACED `BabushkaSmoke` holds the upper arm
+horizontal (`91°`) and the weigher's placed base arms sit `49°` out and
+back — authored Euler poses of the same class, outside the request.
+Nothing committed; the neighbour is still editing this checkout.
+
+## 2026-09-05 — Uneven waves wash onto the sand
+
+Open west/east sea edges now receive sand-conforming transparent swash:
+unequal tongues reach up to `2.8 m`, advance faster than they recede, and
+leave broken foam with a brief dark wet tail. The central granite sea wall
+is excluded. One shared material uses the existing water shader and drive;
+world-X/time phases join adjacent strips. The water-grid factory samples
+the existing sand and joins the sea over `1.8 m`; collision, navigation,
+lighting, sound and story meaning retain their existing contracts.
+
+Verification: the focused GPU-backed `AreaCaptureFixture.CityShoreSwash`
+selection passed `1/1` in Unity `6000.6.0f1`: shared materials, swash-only
+activation, waterline anchoring and collider-free meshes. Inspected six
+frames in `Captures/City/shore-swash-*.png`: one close view at `0/2/4/6 s`,
+an oblique view and an overhead view. The first capture used the waterline
+height for a camera farther inland, obscuring the film with the slope;
+sampling the actual ground under the camera fixed the capture, and only
+that same selection was rerun. Advance, retreat and the uneven foam front
+are visible. `git diff --check` passed. No full suites or player build ran.
+
+## 2026-09-05 — Church courtyard surface overlap fix
+
+The garden's imported pads overlapped its route strips at the same height,
+and the door threshold duplicated the forecourt. The grass skin also ran
+under all paving only `12 mm` below meshes with different tessellation,
+leaving competing surfaces under PS1 screen-space vertex snapping.
+The courtyard now uses the existing terrain rectangle subtraction to give
+each paved point one visible owner and reserve the threshold footprint.
+The church ground renderer cuts out the original paving footprints while
+its separately owned full terrain collider preserves walking height and
+the northern grade. Imported meshes, shared materials and logical route
+and fixture reservations remain unchanged; no canon exception is introduced.
+
+Verification: `AreaCaptureFixture.CityChurchCourtyardSurfaces` passed `1/1`
+in Unity `6000.6.0f1`: no paved overlap beyond the shared `1 mm` geometry
+tolerance, no grass triangles below paving, exactly one visible owner and
+unchanged collision height across a `0.25 m` sampling grid. Inspected all ten
+garden/moving-camera frames in `Captures/City/`; the first iteration only
+needed the rectangle edge assertion to respect floating-point tolerance.
+`git diff --check` passed. No full suites or player build were run.
+
 ## 2026-09-05 — Hand props leave the pedestrian bodies
 
 The user's rule: whatever an NPC holds is a separate thing in the hand, not

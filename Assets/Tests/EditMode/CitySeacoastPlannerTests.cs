@@ -732,9 +732,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThan(0.40f),
                 "The swell reaches the pier deck's validated floor.");
 
-            // The shore shelf must be legible through the water and
-            // foamed over: shallower than the depth fade, its inner
-            // step inside the foam distance.
+            // The near sand remains legible through the water, with
+            // foam reaching less deeply than the water's colour fade.
             Assert.That(
                 CitySeaResources.FoamDistance,
                 Is.LessThan(CitySeaResources.DepthFadeDistance));
@@ -865,39 +864,44 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(frame.SeaRowBounds.width).Within(0.05f),
                 "The sheets must tile the sea row exactly.");
 
-            var shelves = new List<Bounds>();
-            CitySeacoastSeaLayout.CreateShelfBoxes(frame, shelves);
-            Assert.That(shelves.Count, Is.GreaterThan(10));
-            foreach (Bounds shelf in shelves)
+            int shores = 0;
+            foreach (CitySurfaceDescriptor surface in layout.Surfaces)
             {
-                float top = shelf.center.y + shelf.size.y * 0.5f;
-                Assert.That(
-                    top,
-                    Is.LessThan(frame.SeaTopY - 0.15f),
-                    "A shelf breaking the surface is a sandbar, not " +
-                    "a bed.");
-                Assert.That(
-                    top,
-                    Is.GreaterThan(frame.SeaTopY - 0.80f),
-                    "A shelf this deep grows no foam.");
-                Assert.That(
-                    shelf.center.z - shelf.size.z * 0.5f,
-                    Is.GreaterThanOrEqualTo(
-                        frame.WaterlineZ - 0.001f));
-
-                // The inner step is the surf line: inside the foam
-                // distance along the whole shore.
-                bool inner =
-                    shelf.center.z - shelf.size.z * 0.5f <
-                    frame.WaterlineZ + 0.5f;
-                if (inner)
+                if (surface.Kind != CitySurfaceKind.Beach ||
+                    surface.Feature != CityAreaFeatureKind.NorthWaterfront)
+                    continue;
+                shores++;
+                for (int across = 0; across <= 4; across++)
                 {
+                    var edge = new Vector2(
+                        Mathf.Lerp(surface.WorldBounds.xMin, surface.WorldBounds.xMax, across / 4f),
+                        surface.WorldBounds.yMax);
+                    float previous = CityTerrainSurfacePlan.SampleTop(layout, surface, edge);
                     Assert.That(
-                        frame.SeaTopY - top,
-                        Is.LessThan(CitySeaResources.FoamDistance),
-                        "The surf line lost its shelf.");
+                        CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, edge),
+                        Is.EqualTo(previous).Within(0.0001f),
+                        "The sand must meet its own underwater continuation without a drop.");
+                    Assert.That(Vector3.Dot(
+                            CityTerrainSurfacePlan.SampleNormal(layout, surface, edge),
+                            CitySeacoastSeaLayout.SampleSeabedNormal(layout, surface, edge)),
+                        Is.GreaterThan(0.9999f), "The shore join must not carry a lighting seam.");
+                    for (float distance = 0.25f;
+                         distance <= CitySeacoastSeaLayout.SeabedReach;
+                         distance += 0.25f)
+                    {
+                        float top = CitySeacoastSeaLayout.SampleSeabedTop(
+                            layout, surface, edge + Vector2.up * distance);
+                        Assert.That(top, Is.LessThanOrEqualTo(previous + 0.0001f),
+                            "The seabed must descend continuously without a raised outer shelf.");
+                        previous = top;
+                    }
+                    Assert.That(frame.SeaTopY - previous,
+                        Is.GreaterThan(CitySeaResources.DepthFadeDistance +
+                                       CitySeaResources.WaveHeight * CitySeaResources.CrestFactor),
+                        "The bed must end below visibility even in a wave trough.");
                 }
             }
+            Assert.That(shores, Is.GreaterThan(0));
         }
 
         [Test]

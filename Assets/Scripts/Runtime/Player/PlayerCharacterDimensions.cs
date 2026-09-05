@@ -20,12 +20,13 @@ namespace BarPromenade
         // weight hangs below that bone has to be a known quantity rather than
         // a guessed clearance. tools/player_3d_model_common.py measures all
         // three against the real posed meshes on every rebuild and publishes
-        // them as `bed_contract` in both model manifests; the focused player
+        // them as `bed_contract` in the production manifest; the focused player
         // asset tests fail if these copies drift. Take a new number from the
         // production generator's report — never tune one here.
-        public const float SupinePelvisSupportOffset = 0.1377f;
-        public const float SupineHeadSupportOffset = 0.0656f;
-        public const float SeatedPelvisSupportOffset = 0.0239f;
+        public const float SupinePelvisSupportOffset = 0.1303f;
+        // The pillow supports the back of the head above the pelvis plane.
+        public const float SupineHeadSupportOffset = -0.0132f;
+        public const float SeatedPelvisSupportOffset = 0.0644f;
 
         public static Vector3 GetUprightPelvisPosition(
             Vector3 rootPosition,

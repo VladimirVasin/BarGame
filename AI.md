@@ -964,8 +964,8 @@ PS1-style `WAKE UP`/`QUIT` menu appears while the clock stays silent and keeps
 showing and flickering `05:59`. Only Wake Up switches it to solid `06:00` and
 starts both the alarm and the session clock. The clock shot and sleeping loop
 hold for three more unscaled seconds; when the alarm stops, the continuous
-six-second camera and wake animation begin and settle into the normal Home
-shot. Ordinary later bed wakes retain their two-second timing.
+6.9-second camera and wake animation begin and settle into the normal Home
+shot. Ordinary later bed wakes use the same six-second exit clip.
 
 The starting apartment uses deterministic Blender `home_interior_v1` meshes
 through `HomeInteriorModelLibrary` and `HomeAuthoredVisualFactory`; Unity

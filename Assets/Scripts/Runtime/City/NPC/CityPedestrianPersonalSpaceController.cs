@@ -43,6 +43,21 @@ namespace BarPromenade
         public int PushCount { get; private set; }
         public float Elapsed => elapsed;
 
+        /// <summary>
+        /// The one hero gate the street shares: on his feet, in control,
+        /// not falling, not in a modal, not mid-transition. The insult
+        /// controller asks this rather than keeping a second copy of the
+        /// same eleven conditions.
+        /// </summary>
+        public bool IsHeroAvailable => PlayerAvailable();
+
+        /// <summary>Chest-height line of sight from a walker to the hero,
+        /// the same ray the palm is refused without.</summary>
+        public bool HasClearSightTo(CityPedestrianActor actor)
+        {
+            return actor != null && player != null && ClearContact(actor);
+        }
+
         public void Advance(float deltaTime)
         {
             if (float.IsNaN(deltaTime) || float.IsInfinity(deltaTime) ||

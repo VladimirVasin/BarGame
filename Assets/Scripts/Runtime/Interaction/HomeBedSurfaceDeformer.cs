@@ -91,22 +91,20 @@ namespace BarPromenade
                 pillow,
                 HomeBedSurfaceDepressionSettings.Compact);
 
-            // The pillow's rigid box is embedded in the mattress: capping
-            // the mattress dent under its footprint to the embed depth
-            // keeps a gap from opening beneath it.
-            float pillowBottomWorldY =
-                pillow.RestTopWorldY - pillow.Thickness;
-            float embedDepth =
-                mattress.RestTopWorldY - pillowBottomWorldY;
             Vector2 pillowCenter =
                 mattress.WorldToLocalPlanar(
                     pillow.transform.position);
-            mattressModel.SetShadowRect(
-                pillowCenter.x - (pillow.SizeX * 0.5f),
-                pillowCenter.y - (pillow.SizeZ * 0.5f),
-                pillowCenter.x + (pillow.SizeX * 0.5f),
-                pillowCenter.y + (pillow.SizeZ * 0.5f),
-                Mathf.Max(0f, embedDepth - 0.01f));
+            if (pillow.HasRestProfile)
+                mattressModel.SetSupportProfile(
+                    pillowCenter.x - pillow.SizeX * 0.5f, pillowCenter.y - pillow.SizeZ * 0.5f,
+                    pillowCenter.x + pillow.SizeX * 0.5f, pillowCenter.y + pillow.SizeZ * 0.5f,
+                    pillow.Columns, pillow.Rows, pillow.BottomHeights,
+                    mattress.RestTopWorldY - pillow.transform.position.y);
+            else
+                mattressModel.SetShadowRect(
+                    pillowCenter.x - pillow.SizeX * 0.5f, pillowCenter.y - pillow.SizeZ * 0.5f,
+                    pillowCenter.x + pillow.SizeX * 0.5f, pillowCenter.y + pillow.SizeZ * 0.5f,
+                    Mathf.Max(0f, mattress.RestTopWorldY - pillow.RestBottomSupportWorldY - 0.01f));
             mattressVertices = new Vector3[mattress.VertexCount];
             pillowVertices = new Vector3[pillow.VertexCount];
             mattress.CopyBaseVertices(mattressVertices);
@@ -125,28 +123,23 @@ namespace BarPromenade
         /// </summary>
         public float GetSurfaceHeight(Vector3 worldPosition)
         {
+            float mattressHeight = HomeInteriorWorldBuilder.BedMattressSurfaceHeight;
+            if (mattress != null && mattressModel != null)
+            {
+                Vector2 mattressLocal = mattress.WorldToLocalPlanar(worldPosition);
+                mattressHeight = mattress.RestTopWorldY - mattressModel.SampleDepth(
+                    mattressLocal.x, mattressLocal.y);
+            }
             if (pillow != null &&
                 pillowModel != null &&
                 pillow.ContainsPlanar(worldPosition))
             {
                 Vector2 local =
                     pillow.WorldToLocalPlanar(worldPosition);
-                return pillow.RestTopWorldY -
-                       pillowModel.SampleDepth(local.x, local.y);
+                return Mathf.Max(mattressHeight,
+                    pillow.SampleRestWorldHeight(worldPosition) - pillowModel.SampleDepth(local.x, local.y));
             }
-
-            if (mattress == null || mattressModel == null)
-            {
-                return HomeInteriorWorldBuilder
-                    .BedMattressSurfaceHeight;
-            }
-
-            Vector2 mattressLocal =
-                mattress.WorldToLocalPlanar(worldPosition);
-            return mattress.RestTopWorldY -
-                   mattressModel.SampleDepth(
-                       mattressLocal.x,
-                       mattressLocal.y);
+            return mattressHeight;
         }
 
         private void LateUpdate()
@@ -229,7 +222,9 @@ namespace BarPromenade
                 surface.SizeZ,
                 surface.Columns,
                 surface.Rows,
-                surface.MaxDepth);
+                surface.MaxDepth,
+                surface.RestHeights,
+                surface.BottomHeights);
         }
 
         private float ResolveBodyWeight()
@@ -322,6 +317,14 @@ namespace BarPromenade
                 pillowCount = AppendPart(
                     presentation, Player3DAnatomicalPart.Head,
                     pillow, pillowSources, pillowCount);
+                // The measured supine head support is the back of the
+                // hair shell, slightly below GEO_Head on the production rig.
+                foreach (Player3DMeshBinding binding in presentation.Registry.MeshBindings)
+                    if (binding.MeshName == "GEO_HairBack" && binding.Renderer != null)
+                    {
+                        pillowCount = AppendBounds(binding.Renderer.bounds, pillow, pillowSources, pillowCount);
+                        break;
+                    }
             }
 
             mattressModel.SetSources(mattressSources, mattressCount);
@@ -344,7 +347,13 @@ namespace BarPromenade
                 return count;
             }
 
-            Bounds bounds = binding.Renderer.bounds;
+            return AppendBounds(binding.Renderer.bounds, surface, target, count);
+        }
+
+        private static int AppendBounds(Bounds bounds, HomeBedDeformableSurface surface,
+            HomeBedDepressionSource[] target, int count)
+        {
+            if (count >= target.Length) return count;
             float penetration = Mathf.Clamp(
                 surface.RestTopWorldY - bounds.min.y,
                 0f,

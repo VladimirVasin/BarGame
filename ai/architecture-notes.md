@@ -4,6 +4,44 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — Distant passing fishing boats (2026-09-05):** The user
+  accepted the decorative offshore plan, requested a soft positional motor,
+  then explicitly limited spawning to the hero's position and shore proximity.
+  This explicitly lifts art-bible §10d's `лодка на воде` prohibition and
+  `Ни одна лодка не на воде` check only for at most two offshore working
+  fishing vessels; story-bible §6 records the exception at level `0`.
+  Station hulls stay ashore and the port stays dead. No docking, river entry,
+  crew, text, fresh damage, interaction, navigation, map marker or story state
+  is introduced. `build-city-offshore-boats-3d-model.py` authors two passive
+  fixed-metre variants and their anchors; the controller presents the imported
+  models at deliberate `0.42` scale, with no runtime hull or beam geometry.
+  `CityWorldBuilder` creates only the lightweight controller and coast data;
+  `CityGameRoot` attaches the actual hero transform. Models and sound are
+  created only within `28 m` of the finite shoreline or its pier/mol decks,
+  with full presence within `8 m`. `CityOffshoreBoatPlanner` subtracts rotated
+  coast/island bounds from the actual sea sheets and selects at most two
+  courses around the hero's shore easting (centre offset at most `35 m`). Each
+  active pass stays fixed in world space; camera position and orientation do
+  not spawn or relocate it. Moving over `32 m` alongshore retires the old
+  fleet over up to `3 s`, destroys its models, sources and clips, and clears
+  its water slots before a new local pass can spawn on the next tick. Leaving
+  the coastal band uses the same release. Motion uses
+  `0.42–0.46 m/s`, a shared `440 s` cycle with half-cycle staggering, endpoint
+  fades and invisible resets; no safe local corridor means no boats. Each
+  coastal visit starts its own clock with the first boat mid-pass and a fresh
+  `90–150 s` horn wait, independent of time spent inland. The controller
+  samples the sea's existing wave model for water contact. Hull self-haze and
+  camera-distance fading keep City's `48 m` far plane and fixed fog intact.
+  Each warm downward working beam and cabin light retain a two-thirds daytime
+  floor without adding a realtime `Light`; the water has `0–2` bounded moving
+  glint/wake slots separate from the lighthouse's existing virtual lamp.
+  `CityOffshoreBoatSound` owns three sources: two quiet low-passed spatial
+  engine loops and one shared horn with `90–150 s` between scheduled attempts.
+  Hull anchors own the sound, building masses attenuate it, and the shared
+  mixer retains ordinary audio controls and intoxication processing. Scaled
+  time, spawn/release and audio obey pause; unload clears water slots and
+  owned clips.
+
 - **2026-09-05 — roaming personal-space reactions:** the director gives one
   `Walking` actor a temporary reaction hold, preserving its graph destination.
   `CityPedestrianPersonalSpaceRules` owns raw alcohol gates (`>60..80` Guard,
@@ -23,6 +61,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Bus/bench states, staged roles, modal actions and falls retain their owners.
   This implements the existing canon's ordinary social boundary without an
   exception, speech, new audio or a reaction to muttering/perceptual distortion.
+  (The street insult of the same day is the one speech exception, recorded
+  beside the mutter below; it reads the level, never the muttering.)
 
 - **Accepted by explicit user decision, 2026-09-05 — intoxication changes
   perceived sound and world pace:** `IntoxicationPerceptionRules.Evaluate`
@@ -1303,8 +1343,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the surrounding road-node datums across each cell and keeps the road-edge
   plateaus, so adjacent cells form one continuous terrain surface instead of
   stacked slabs with vertical seams; the beach has its own continuous descent
-  to the waterline. `CityTerrainSurfaceWorldBuilder` materializes that contract
-  as triangulated render meshes with matching mesh colliders, while declared
+  to the waterline and bounded deterministic sand relief.
+  `CityTerrainSurfaceWorldBuilder` materializes that contract
+  as triangulated render meshes with matching mesh colliders; the beach's
+  shallow deformable visual skin sits over its separate fixed collider (see
+  the sand decision below), while declared
   special-purpose flat surfaces keep their flat contracts. Building and public
   place foundations extend downward without moving their authored tops. Park
   plazas use closed terrain-conforming meshes; each district public place owns
@@ -1971,6 +2014,49 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `Ps1CompositeRendererFeature` averages the frame to `640x360` and quantizes
   to RGB555 *before* UI is drawn, so a panel in the world would be crushed
   while this one stays sharp.
+- **Accepted architecture exception, explicit user decision 2026-09-05 —
+  roaming walkers curse the hero on the last stage, over their own heads:**
+  the user asked for insults and, told that the literal request collides
+  with §17 «Прохожие» («Никогда не говорят», «Нельзя — реплика»), §8
+  «реплика NPC о его виде», §16.6 «Город не наказывает героя», §22 «Тест
+  равнодушия» and §24.44, chose the real thing and authorised the story
+  bible rewrite. The lift is one §6 registry row scoped to the roaming
+  street role on `IntoxicationStage.VeryDrunk` (level `81..100`) and the
+  named sections are amended in place; art bible §15 loses «без реплики».
+  NOT lifted, by name: §16.2 literally — `CityPedestrianInsultController`
+  reads `GameSessionState.IntoxicationLevel` and nothing he says
+  (`HeroMutterTests.Citizens_TheInsultReadsHisLevelAndNeverHisMutter` fails
+  the build on any mutter type in its fields, properties, parameters,
+  returns or source); §16.1/§16.4/§21 through
+  `CityPedestrianInsultTests.Lines_ResolveInBothCatalogsAndHoldTheStreetRegister`
+  (both catalogs: ≤ `48` chars, ends in a full stop, no `!`/`?`/`(`/digits,
+  one or two sentences, banned words, abstractions, the crime's subjects
+  and a profanity list); staged, seated, riding and balcony bodies; the
+  mourner's street copy (`CityPedestrianInsultRules.SilentDesignIds`); no
+  crowd, no pursuit, no new `AudioSource` (the shared writing blip). Design
+  decisions worth keeping. (1) THE CHANNEL: an insult aimed at him hangs
+  over the speaker's head like an overheard line, never in the prompt panel
+  — the panel is where somebody answers an interaction of his, and nobody
+  asked this man anything. (2) ONE SHARED POOL of twenty lines in the voice
+  of the anonymous role, the user's choice over per-design pools; the
+  walker's own design id still picks the voice through
+  `NpcVoiceCatalog.ResolveOrdinal`. (3) THE TRIGGER is the walker's own
+  glance: `CityPedestrianActor.IsAttending` (the hero's notice cone run
+  from the walker), `3 m`, facing dot `> 0.2`, the personal-space
+  controller's chest-height sight ray and its `IsHeroAvailable` gate, so the
+  same eleven hero conditions gate the palm and the word. (4) ONE SPEAKER AT
+  A TIME on the street, `8 s` between lines, rearm per walker only past
+  `4.5 m` (beyond the attention release radius `4.2 m`). (5) SPEAKERS ARE
+  DECLARED ON DEMAND and withdrawn when the line closes, when the body's
+  presentation changes or goes back to the pool, and on shutdown: the view
+  holds eight speakers for the life of the City, the park pair own two, and
+  `NpcSpeechBubbleView.SweepDeadSpeakers` cannot see a pooled head bone,
+  which is alive. `Disengage` dismisses only its own owner. (6) City only:
+  `Create` returns `null` without a bubble view, so the Home balcony street
+  gets no insults without a branch; `[DefaultExecutionOrder(315)]` sits
+  between the director (`310`) and the park quarrel (`320`).
+  `CityPedestrianInsultPlayModeTests` walks the lifecycle on real prefabs.
+
 - **Accepted and implemented 2026-09-05 — the drunk hero mutters over his own
   head, and this knowingly breaks the two-channel split above:** past the
   balance threshold he says short lines about himself on a long timer, and the
@@ -2034,6 +2120,77 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `FallbackVoiceCount = Count - 1` with him last: without that, a future
   speaking NPC would have a one-in-nine chance of being handed the hero's own
   voice, and the only symptom would be a stranger who sounds like him.
+- **Accepted — he holds it down on the last stage, and the gauge for it takes
+  no lock:** by the user's decision of `2026-09-05`, on «В стельку»
+  (`81..100`) a seeded clock (`HeroNauseaClock`: the first bout no sooner
+  than `20 s` into the stage, then `15–25 s` at `81` shortening to `8–14 s`
+  at `100` — the user's second call, "чаще", after a first cut at
+  `30–50`/`15–25` — a closed gate REARMING the rest rather than spending it)
+  opens a
+  bout — a vertical gauge beside him whose safe band climbs the track while
+  the held interact key lifts the marker and gravity drops it
+  (`HeroNauseaGaugeModel`, fixed-step `1/120`, strain up outside the band and
+  down inside it, full strain = Fail, band at the top = Success). The
+  outcomes are STUBS: a word under the stomach icon for `1.5 s`, a `Good`/`Bad`
+  cue and a `GameLog` row; nothing in the world answers yet. Seven decisions
+  worth keeping. (1) NO MODAL LOCK AND NO `SetInputEnabled(false)`.
+  `BarMinigameModalLock.IsAnyLocked` and a disabled interactor both read as
+  "the hero is busy" to `PlayerBalanceController` (pose to Neutral — the
+  drunk walk vanishes), to the fall gate in
+  `IntoxicationStatusController.UpdateBalance` (falls forbidden, then `3 s`
+  of immunity after) and to the mutter, and the user's decision was that he
+  keeps walking and is controlled as usual. So the gauge borrows ONLY the
+  key: `PlayerInteractor.SetInteractKeyClaimed` hides the prompt and stops
+  the interactor reading its own press while `InputEnabled` stays true, and
+  `PlayerInteractor.IsInteractHeld` reads the same three bindings the press
+  does. A pause or another modal owner HOLDS a bout; a fall, a transition, a
+  vehicle, a seat or a clip CANCELS it with no outcome. (2) A PLAIN OBJECT
+  TICKED FROM THE STATUS CONTROLLER, right after `ApplyPresentation`, not a
+  component with an Update of its own: a child component runs at order 0,
+  before the status controller's 5, so its pose would reach the presentation
+  a frame late — the frame a fall bakes the late pose into the ragdoll. Only
+  the IMGUI view is a component, on a child «Hero Nausea» like the mutter's;
+  no root changed. (3) THE HAND IS A REACH RESOLVED INSIDE THE LAYER.
+  `Player3DProceduralLayerInput.MouthReachWeight` is a weight, not a world
+  point: `Player3DProceduralLocomotionLayer.BuildMouthReach` reads the bound
+  mouth anchor AFTER `ApplyBodyPose`/`ApplyLegs`, because the lean and the
+  crouch move the mouth by `4–11 cm` and a target read before them lands the
+  hand in the cheek. It competes with the wall and the brace through the
+  existing `Heavier`, and the right arm's drunk spread is given back by
+  `1 − HandWeight` — the wall hand's rule. (4) AN EXPLICIT ELBOW HINT.
+  `PlayerArmReachPose.ElbowHintWorld` (null keeps the wall/brace rule
+  bit-exact): the calibrated elbow-back swung by the least rotation onto a
+  target at the mouth points the elbow into the ribs or up like a wing, so
+  an explicit hint is used and `AlignHingeRoll` is skipped for a reach that
+  placed its own elbow. The hint is `shoulder + forward·0.20 − up·0.30 +
+  right·0.05`, NOT the drinking arm's `right·0.42 − forward·0.08 − up·0.12`
+  that was tried first: the solver projects the hint onto the plane across
+  the shoulder-to-target line, and with the target at the mouth that line
+  runs up and inward, so a hint out to the side lies almost along it and
+  projects UPWARD — the first sheet showed a salute, the elbow `6 cm` above
+  the shoulder. Down and forward projects down and forward; the elbow lands
+  before the sternum, a hand's width below the shoulder. (5) THE
+  HICCUP RIDES EXISTING CHANNELS: `HiccupAmount` (a `NodShape`-style
+  envelope, seeded `2.5–5 s` apart, only during a bout, the first at `0.3 s`
+  announcing it) is a negative `chestPitchDegrees` on the layer input and a
+  chin-up term summed into `ApplyAttentionPose` before the clamp;
+  `RetroSfxId.Hiccup` is appended before `Count` with its definition at the
+  END of the table, a body sound of his own like the footsteps. The face is
+  `Grimace` from `PlayerFacialMoodContext.Nausea ≥ 0.5`, after every face a
+  fall asks for. (6) TWO CLOCKS, DOCUMENTED: the clock, the gauge and the hand
+  blend run on `CalendarDeltaTime` (unscaled, zero while paused) like every
+  drunk perception effect, while the arm filters the hand takes over run on
+  `Time.deltaTime` like every other arm term — the `12 %` slowdown at the top
+  is the only gap, and it is accepted. (7) THE INITIAL REST IS `20 s`, not
+  the `10 s` first proposed: the PlayMode fixtures wait `15–20 s` at level
+  `100` for a fall, and a bout inside that window would bring the right hand
+  in under an arm-span assertion. Seed salt `0x4E41`, distinct from the five
+  other drunk salts. The instrument hangs `0.45 m` to the camera's right of
+  his chest in the WORLD, so the dolly zoom cannot push it into his shoulder;
+  its frame warms toward `Bad` with the strain — one frame, no second bar
+  (art §15a). Canon: no «Нельзя» is lifted (§16.15 — a Fail is not a loss;
+  §16.16 — no control taken; §16.2 — no citizen reacts), so no §6 row; the
+  behaviour is recorded as story decision §24.45.
 - **Accepted — the chess lamp's wire crosses the set rather than running along
   it:** the obvious span is along the line of the two tables, one lamp over
   each board. The park's own geometry refuses it. Trees are planted on an 8x8
@@ -2182,10 +2339,34 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
      and three editor gates require the clip to live in
      `CityPedestrianLocomotion.fbx` besides. The generator's
      `CITIZEN_WALK_CYCLE` is the hero's eight-key cycle copied key for key,
-     with his `target_direction` arm aims re-expressed as X rotations of the
-     same magnitude (`25.5°`, `18.1°`, `5.9°`, `12.8°`, read off his own aim
-     vectors). It is a recipe merged onto each design's base pose, so seven
-     designs share one gait and keep their own coats and posture.
+     arms included: since 2026-09-05 the pedestrian `BonePose` carries his
+     `target_direction` and `apply_pose` solves it with his generator's
+     arithmetic, so his upper-arm aim vectors, forearm and hand rotations
+     travel verbatim. It is a recipe merged onto each design's STANDING
+     base pose, and it owns more of it than the arms: the walk keys pelvis,
+     spine, chest and head from the hero's cycle and the idle's breath
+     zeroes spine, chest and head, so on the street a design keeps only its
+     neck (and, in the idle, its pelvis and legs) — an authored stoop in
+     spine/chest/head never reaches the street clips — and the base's
+     clavicles are reset so the hang is measured from a rest shoulder.
+     **The first version got the arms wrong, and for three days every
+     street copy stood in the bind A-pose.** It re-expressed the aims as
+     bone-local X rotations "of the same magnitude" and merged them over
+     the design's base arms. On the shared A-pose rig the upper arm's
+     local X axis points back and up, not sideways, so an X turn abducts
+     rather than swings: the base's hang was discarded, the arms sat
+     `56°` out (the A-pose) and flapped `±25°` up and down, and the street
+     idle (`1.2°` of X on the bare rest) WAS the A-pose. The park players
+     were worse: their street pair was built on the board perch, so a
+     chess player waiting at a crossing sat brooding in mid-air; both now
+     build on `chess_player_stand_pose`, and the personal-space bank takes
+     its frame `0`/`24` from the street idle's first key for all six
+     designs, so a guard or shove blends from the very arms the actor is
+     playing. `CityPedestrianStreetGaitTests` samples the shipped clips
+     through the production presentation and pins the hang (`< 22°` idle,
+     `< 40°` walk, sideways share `< 0.35`), the fore-and-aft swing, the
+     opposition at heel contact and the standing thighs. Rebuild the bank
+     alone with `--locomotion-only`.
 
   **Three of the eight ride Route 01, and the five refusals are
   measurements.** Seating aligns the shared rest pelvis to the cushion, so a
@@ -3593,15 +3774,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the independent exit and the neutral ordinary rig stays locked until its
   final `LateUpdate` restoration frame. Normal and abnormal exits end the clip,
   reset its model-root spatial offset and restore owned presentation state.
-- **Accepted — The mattress is thick cloth, not a box:** The bed's mattress
-  and pillow tops are vertex grids (the project's first per-frame-written
-  meshes) that dent under the sleeping hero and slowly refill after he gets
-  up. `HomeBedSurfaceDepressionModel` is a pure fixed-step spring in the
-  cemetery-model idiom: per-source target depth is the part's actual
-  penetration under the rest plane read from live renderer bounds — not a
-  guessed weight, which would contradict the rigidly lowered pose — with a
-  smoothstep skirt, a pinned border ring the single-quad sides stay welded
-  to, fast denting (~0.25 s) and slow recovery (~1.5 s).
+- **Accepted — Deformable mattress and volumetric pillow:** The mattress
+  retains its faceted top grid. The pillow is a closed Blender-authored
+  `0.62 x 0.14 x 1.05 m` cushion with an `8 x 14` domed top grid, rounded
+  shoulders and a `3 mm` perimeter seam; its manifest and imported library
+  carry the top and bottom rest profiles and deformation topology.
+  `HomeBedSurfaceDepressionModel` uses a pure fixed-step spring with fast
+  denting (~0.25 s) and slow recovery (~1.5 s). Contact and surface queries use
+  the local rest height instead of treating the dome as a flat top plane.
+  The hollow preserves at least `12 mm` of filling where the rest shell is
+  thicker than its pinned seam; a small surrounding bulge follows the same
+  spring. The lower support and connected edge prevent holes or a detached cushion.
   `HomeBedSurfaceDeformer` (order 400, after every pose writer) feeds it
   `Phase` + `FrameIndex` from the shared controller — no shared interaction
   code changed — and rewrites the meshes only on frames that moved.
@@ -3617,7 +3800,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   under the body that made it. Readability was capture-driven through the REAL pipeline (play-mode
   renders of the actual camera, bulb light and occluder-dither material):
   a smooth-normal bowl is invisible on the project's noisy albedos, so the
-  top faces are independent per-cell quads (coarse 0.14 m cells — hard
+  mattress top faces are independent per-cell quads (coarse 0.14 m cells — hard
   facet light-steps, not gradients), dented facet normals have their
   lateral component steepened ~3x, the displaced bedding bulges UP in a
   welt around the body (RimBulgeRatio of the local dent), and the sink is
@@ -3625,10 +3808,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   behind the untouched rim even from the far gameplay camera. Depth
   started at the discussed 0.045 and was raised twice at the user's
   direction after on-screen checks; the welt is 0.65 of the local dent
-  and the pillow swallows 0.045 of the head.
-  The mattress dent under the pillow footprint is capped to the pillow's
-  embed depth (padded a cell so bilinear sampling cannot leak past the
-  border), keeping a gap from opening beneath its rigid box. A loop entered
+  and the pillow permits up to `0.070 m` of local depression. Its unloaded
+  crown is at `Y=0.6735`, centre at `0.6035` and central underside at `0.5335`;
+  the upper seam is at `0.5948`, above the `0.56 m` mattress. The raised rest
+  shape and deeper allowance preserve the same loaded head plane while making
+  the filled silhouette, hollow and recovery visible in the actual Home capture.
+  The mattress dent is capped by the pillow's local lower profile strictly
+  inside its physical footprint, without cell padding; neighbouring shoulder
+  nodes remain free.
+  The pillow sits `11 cm` nearer the headboard to clear V2's jacket, and the
+  head pressure includes the registered back-hair shell that actually makes
+  the lowest head contact. A loop entered
   without a lie-down (the opening's `BeginLooping`) snaps the springs to
   equilibrium; the snap trigger deliberately ignores the bed's ownership
   flag at event time, because that flag is raised only after `BeginLooping`
@@ -3654,14 +3844,27 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The generator refuses drift in either the offsets or the poses; EditMode owns
   the built geometry and PlayMode sweeps the real renderers through sleep and
   wake. Bedding compresses, so the bedside seat and the waking stir carry a
-  stated soft-goods allowance while the held sleeping pose does not. The roll
-  itself is deliberately unasserted: a rolling body's support moves and the
-  shared pelvis transition carries one waypoint rather than a profile, so
-  asserting through it would assert against the runtime instead of the pose.
+  stated soft-goods allowance while the held sleeping pose does not. The lie-down
+  and wake are checked over their complete transitions, using actual mesh
+  samples above the mattress footprint so a foot descending outside the bed
+  is not mistaken for penetration. The bed uses the shared pelvis transition's
+  hold/settle windows to align travel with authored contact beats.
+  The standing dock, seat and sleeping pelvis share the same longitudinal
+  coordinate, `bed.Bounds.center.x + 0.135 m`. Entry, exit and their trigger
+  therefore sit near the middle of the door-side long edge. This removes the
+  former `0.69 m` travel along the mattress between the foot-side dock and
+  the sleeping pelvis; only the supported movement across the bed remains.
+  Wake holds the sleeping pelvis through `30%` of the clip while the torso
+  rises, reaches the side seat at `50%`, then lowers the right and left legs
+  separately before the standing movement begins at `88%`.
+  The camera-corner storage pile is `1.30 m` wide against the west wall, leaving
+  the middle dock's player clearance free. Its fixed authored base/wardrobe
+  door and later-day bottles/bags fit that footprint; the plan contract rejects
+  a dock inside any blocking furniture's clearance envelope.
   The three bed clips also became the first contextual Actions on auto-clamped
-  Bezier curves with staggered keys, which is what removed the wooden-doll
-  read; the other five contextual triads keep their linear timing until they
-  are re-authored in turn. Waking was then re-cut at the user's direction from
+  Bezier curves with separately staggered pelvis, lower-spine, chest and head
+  keys. V2's build now runs the bed support validator on its actual skinned
+  geometry. Waking was then re-cut at the user's direction from
   a roll into a four-beat sit-up — half-crouch on the mattress, right leg over
   the near edge, then the left, then stand — which is both what a man getting
   out on the door side actually does and what makes the whole wake checkable:
@@ -4459,6 +4662,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   exactly three unscaled seconds, then stops the ring before camera motion and
   the wake animation begin. The display follows current session hours/minutes
   thereafter and on later Home visits while remaining silent.
+  The `2026-09-05` waking-scene refinement reduces the authored clock and
+  display to `60%` (`0.276 x 0.162 x 0.144 m` body), preserves the nightstand,
+  and brings the opening camera closer for readable digits. Translation
+  rattle scales with the clock; opening timing and the time/audio handoff stay
+  unchanged (`6 s` BedExit, `1.15` opening duration multiplier).
 - **Accepted — Layered scene-local procedural ambience:** Every playable root
   owns one quiet deterministic `22050 Hz` ambience bed and tone filter routed
   to `Ambience/Beds`. Home additionally owns five spatial
@@ -4894,9 +5102,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   challenge and clears its delay.
 
 - **Accepted — One drive for every body of water:** The river and the sea are
-  two materials of one shader, and water carries no per-renderer variation at
-  all — no property blocks anywhere — so night factor and rain intensity have
-  to be written on the material itself. With one body that could live in
+  distinct base materials of one shader, and water carries no per-renderer
+  variation at all — no property blocks anywhere — so night factor and rain
+  intensity have to be written on the material itself. With one body that could live in
   `CityRiverResources`; with two it cannot, because the registries that push
   those values (`CityNightGlowRegistry`, `CityWeatherController`) have no
   business knowing how many bodies exist. `CityWaterResources` owns the drive
@@ -4907,6 +5115,29 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the vertex stage computes, and the sea's ripple sheet is isotropic where the
   river's is deliberately smeared along its flow. (The drained lake's still
   water proved out both halves of this decision first.)
+  The sea additionally registers one shared alpha-blended swash material
+  without depth writes on that same drive. Its strips conform to the existing
+  sand through the extended water-grid factory; world-X/time shader phases
+  meet continuously across strip boundaries. Swash remains disabled on all
+  other water materials. This adds no object authoring system or exception.
+- **Accepted — Beach sand continues beneath the sea and answers footsteps:**
+  The existing terrain builder extends each beach patch into one `18 m`
+  seabed slope, retaining its river-mouth cuts. Exact shore heights, normals,
+  sand tint, texture and world UV scale are shared across the join; the slope
+  starts at the beach tangent and eases toward `1:5`. Water-depth absorption
+  hides the far edge. This replaces the former two-step silt boxes without
+  extending navigation into the sea.
+  `CityBeachSandPlan` adds at most `0.15 m` of deterministic relief to the
+  compacted beach base on a `0.4 m` grid. Its `0.025–0.10 m` loose skin fades
+  away across the `4–6 m` shore band and at the street approach.
+  `CitySandTreading` deforms only that visual skin through the village snow's
+  bounded stamp approach, with `10 Hz` mesh uploads and slow recovery.
+  `IPlayerFootstepSurface` claims the step only when the actual fixed beach
+  collider is the topmost support near the feet, so decks and other paving
+  cannot produce sand trails or sand audio. It reuses `FootstepSoil` and the
+  existing kickup effect with smaller, lower sand-textured grains. Collision
+  remains independent of the visual deformation. This is an extension of
+  existing procedural terrain and surface response, with no canon exception.
 - **Accepted — A precinct's water edge is authored, or the rail stays:**
   `CityTerrainSafetyWorldBuilder` rails any drop past
   `CityRoadGroundBoundaryPlanner.MaximumSafeStep`; the skip that exists for
@@ -4916,9 +5147,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the contract on every raised deck: mol parapets bridged only by the root
   stair, an esplanade sea wall cut exactly for the pier and the chained
   slipway, footbridge rails both sides, each under a `ValidateOrThrow`
-  perimeter-continuity check to within `0.05 m`. The beach-to-sea step itself
-  sits inside the safe-step budget, so the open waterline is honestly
-  rail-free. (The lake's revetment proved this contract before the coast
+  perimeter-continuity check to within `0.05 m`. The open beach-to-sea join
+  is a continuous sand slope, so the waterline is honestly rail-free.
+  (The lake's revetment proved this contract before the coast
   inherited it.)
 - **Corrected — precinct ground over `Water` cells is in the walkable mask,
   and has to be:** an earlier entry recorded the opposite as an accepted

@@ -96,14 +96,14 @@ namespace BarPromenade
                 return Mathf.Lerp(
                     landwardDatum,
                     waterlineDatum,
-                    amount);
+                    amount) + CityBeachSandPlan.SampleRelief(elevation, surface, worldXZ);
             }
 
             return SampleContinuousDatum(
                 elevation,
                 surface.Cell,
                 worldXZ,
-                surface.DatumY);
+                surface.DatumY) + CityBeachSandPlan.SampleRelief(elevation, surface, worldXZ);
         }
 
         internal static float SampleContinuousDatum(
@@ -209,10 +209,12 @@ namespace BarPromenade
                 layout,
                 surface,
                 worldXZ + Vector2.down * SampleNormalOffset);
-            float north = SampleTop(
-                layout,
-                surface,
-                worldXZ + Vector2.up * SampleNormalOffset);
+            Vector2 northPoint = worldXZ + Vector2.up * SampleNormalOffset;
+            float north = surface.Kind == CitySurfaceKind.Beach &&
+                          surface.Feature == CityAreaFeatureKind.NorthWaterfront &&
+                          northPoint.y > surface.WorldBounds.yMax
+                ? CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, northPoint)
+                : SampleTop(layout, surface, northPoint);
             var tangentX = new Vector3(
                 SampleNormalOffset * 2f,
                 east - west,

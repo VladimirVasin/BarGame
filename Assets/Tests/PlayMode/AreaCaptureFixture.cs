@@ -43,7 +43,7 @@ namespace BarPromenade.Tests.PlayMode
     /// Frames land in `Captures/&lt;area&gt;/`, which is gitignored. Look at
     /// them; that is the whole point.
     /// </summary>
-    public sealed class AreaCaptureFixture
+    public sealed partial class AreaCaptureFixture
     {
         private const int Width = 1280;
         private const int Height = 720;
@@ -924,6 +924,302 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [Explicit("Focused shoreline continuity, sand treading and advancing/retreating shore captures.")]
+        public IEnumerator CityShoreSwash()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(GameSessionState.TryStartGameTimeFromWake(), Is.True);
+            GameSessionState.AdvanceGameTime(360f);
+
+            CityGameRoot city = null;
+            yield return Capture(
+                SceneIds.City,
+                () =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return city != null && city.IsInitialized ? city : null;
+                },
+                () => CityShoreSwashShots(city));
+        }
+
+        private static Shot[] CityShoreSwashShots(CityGameRoot city)
+        {
+            CitySeacoastPlan coast = city.World.SeacoastPlan;
+            Assert.That(coast, Is.Not.Null);
+            GameObject coastRoot = GameObject.Find(CitySeacoastWorldBuilder.RootName);
+            Assert.That(coastRoot, Is.Not.Null);
+            Transform sea = coastRoot.transform.Find("Sea");
+            Assert.That(sea, Is.Not.Null);
+
+            int swashCount = 0;
+            Material sharedSwash = null;
+            int swashParamsId = Shader.PropertyToID("_ShoreSwashParams");
+            foreach (Renderer renderer in sea.GetComponentsInChildren<Renderer>())
+            {
+                if (!renderer.name.StartsWith("Sea Swash ", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                swashCount++;
+                Assert.That(renderer.sharedMaterial, Is.Not.Null, renderer.name);
+                if (sharedSwash == null) sharedSwash = renderer.sharedMaterial;
+                Assert.That(renderer.sharedMaterial, Is.SameAs(sharedSwash),
+                    "Every swash chunk must reuse the one sea swash material.");
+                Assert.That(renderer.sharedMaterial.shader,
+                    Is.SameAs(CitySeaResources.WaterMaterial.shader));
+                Assert.That(renderer.sharedMaterial.GetVector(swashParamsId).w,
+                    Is.EqualTo(1f).Within(0.0001f), renderer.name);
+                Assert.That(renderer.GetComponentsInChildren<Collider>(true), Is.Empty,
+                    "A cosmetic wash must not block the player's feet.");
+                MeshFilter filter = renderer.GetComponent<MeshFilter>();
+                Assert.That(filter, Is.Not.Null, renderer.name);
+                Assert.That(filter.sharedMesh, Is.Not.Null, renderer.name);
+                Assert.That(filter.sharedMesh.vertexCount, Is.GreaterThan(4), renderer.name);
+            }
+            Assert.That(swashCount, Is.GreaterThan(0), "The shore has no visible swash meshes.");
+            Assert.That(CitySeaResources.WaterMaterial.GetVector(swashParamsId).w,
+                Is.EqualTo(0f).Within(0.0001f),
+                "The ordinary sea sheet must keep its existing water path.");
+
+            CitySeacoastFrame frame = coast.Frame;
+            CitySandTreading treading = AssertCityShoreSandMeshes(city, sea);
+            Mesh visualSand = treading.GetComponent<MeshFilter>().sharedMesh;
+            MeshCollider sandCollider = treading.GetComponent<MeshCollider>();
+            Vector3[] originalSandVertices = visualSand.vertices;
+            Vector3[] originalSandNormals = visualSand.normals;
+            Vector3[] fixedCollisionVertices = sandCollider.sharedMesh.vertices;
+            float x = frame.EastZone.xMin + Mathf.Min(16f, frame.EastZone.width * 0.18f);
+            Assert.That(sharedSwash.GetVector(swashParamsId).x,
+                Is.EqualTo(frame.WaterlineZ).Within(0.001f));
+            // The beach rises inland. The waterline datum puts an eye
+            // five metres inland inside the slope on the elevated city.
+            Vector3 SandPoint(float pointX, float pointZ, float lift)
+            {
+                Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(
+                    city.Layout, new Vector2(pointX, pointZ), out float top, out _),
+                    Is.True);
+                return new Vector3(pointX, top + lift, pointZ);
+            }
+            Vector3 from = SandPoint(x, frame.WaterlineZ - 5.6f, EyeHeight);
+            Vector3 target = SandPoint(x, frame.WaterlineZ - 0.8f, 0.02f);
+            var treadPath = new List<Vector3>();
+            Vector3 treadSpot = default;
+            float depthBefore = 0f;
+            // Use an actual clear inland passage. The beach's authored
+            // props must never be treated as sand merely by their XZ.
+            for (int candidate = 0; candidate < 20 && treadPath.Count == 0; candidate++)
+            {
+                float pathX = x + (candidate % 2 == 0 ? 1f : -1f) * (candidate / 2) * 0.8f;
+                var proposed = new List<Vector3>();
+                for (float inland = 9f; inland <= 12.001f; inland += 0.1f)
+                {
+                    Vector3 point = SandPoint(pathX, frame.WaterlineZ - inland, 0f);
+                    if (!Physics.Raycast(point + Vector3.up * 0.5f, Vector3.down,
+                            out RaycastHit contact, 1.2f, Physics.DefaultRaycastLayers,
+                            QueryTriggerInteraction.Ignore) || contact.collider != sandCollider)
+                        break;
+                    proposed.Add(contact.point);
+                }
+                if (proposed.Count < 30) continue;
+                Vector3 middle = proposed[proposed.Count / 2];
+                float loose = treading.SampleVisibleDepth(middle);
+                if (loose <= 0.03f) continue;
+                treadPath = proposed;
+                treadSpot = middle;
+                depthBefore = loose;
+            }
+            Assert.That(treadPath.Count, Is.GreaterThanOrEqualTo(30),
+                "No clear loose-sand passage was found for the walking proof.");
+            Vector3 kickSpot = default;
+            float kickDepth = 0f;
+            for (int candidate = 0; candidate < 12 && kickDepth <= 0f; candidate++)
+            {
+                float offset = (candidate % 2 == 0 ? 1f : -1f) *
+                               (0.9f + candidate / 2 * 0.4f);
+                Vector3 point = SandPoint(treadSpot.x + offset, treadSpot.z, 0f);
+                if (!Physics.Raycast(point + Vector3.up * 0.5f, Vector3.down,
+                        out RaycastHit contact, 1.2f, Physics.DefaultRaycastLayers,
+                        QueryTriggerInteraction.Ignore) || contact.collider != sandCollider)
+                    continue;
+                float loose = treading.SampleVisibleDepth(contact.point);
+                if (loose <= 0.03f) continue;
+                kickSpot = contact.point;
+                kickDepth = loose;
+            }
+            Assert.That(kickDepth, Is.GreaterThan(0.03f),
+                "The grain shot needs fresh loose sand beside the compacted trail.");
+            Assert.That(coast.TryGetPart(CitySeacoastPlanner.PierDeckRootId,
+                out CitySeacoastPartDescriptor pier), Is.True);
+            Assert.That(treading.TryPlayFootstep(
+                    pier.Center + Vector3.up * (pier.Size.y * 0.5f + 0.02f), 0f),
+                Is.False, "A wooden pier must not kick up the sand underneath it.");
+            Rect road = city.Layout.GetRoadRect(city.Layout.RoadEdges[0]);
+            Assert.That(treading.TryPlayFootstep(
+                    new Vector3(road.center.x, 0f, road.center.y), 0f),
+                Is.False, "Ordinary city roads must retain their own footstep fallback.");
+
+            bool pressed = false;
+            bool verifiedTrail = false;
+            float pressTime = 0f;
+            bool AfterTreading()
+            {
+                if (!pressed)
+                {
+                    foreach (Vector3 point in treadPath) treading.Press(point);
+                    pressTime = Time.time;
+                    pressed = true;
+                }
+                if (Time.time - pressTime < CitySandTreading.RebuildInterval * 1.5f)
+                    return false;
+                if (!verifiedTrail)
+                {
+                    Assert.That(treading.SampleVisibleDepth(treadSpot),
+                        Is.LessThan(depthBefore * 0.75f),
+                        "A walking pass must visibly compact the loose surface.");
+                    Vector3[] deformed = visualSand.vertices;
+                    Vector3[] normals = visualSand.normals;
+                    float greatestDepression = 0f;
+                    for (int index = 0; index < deformed.Length; index++)
+                    {
+                        greatestDepression = Mathf.Max(greatestDepression,
+                            originalSandVertices[index].y - deformed[index].y);
+                        if (Mathf.Abs(deformed[index].z - frame.WaterlineZ) < 0.001f)
+                            Assert.That(Vector3.Dot(normals[index], originalSandNormals[index]),
+                                Is.GreaterThan(0.9999f),
+                                "An inland print must preserve the shoreline's matched normals.");
+                    }
+                    Assert.That(greatestDepression, Is.GreaterThan(0.01f));
+                    CollectionAssert.AreEqual(fixedCollisionVertices, sandCollider.sharedMesh.vertices,
+                        "Sand treading must leave the fixed physical ground unchanged.");
+                    verifiedTrail = true;
+                }
+                return true;
+            }
+            bool kicked = false;
+            bool KickSand()
+            {
+                if (kicked) return true;
+                Assert.That(treading.TryPlayFootstep(kickSpot, 0f), Is.True,
+                    "An actual loose-sand contact must own its step and grains.");
+                Transform kickup = treading.transform.Find("Sand Kickup");
+                Assert.That(kickup, Is.Not.Null);
+                foreach (Collider pendingCollider in kickup.GetComponentsInChildren<Collider>())
+                    Assert.That(pendingCollider.enabled, Is.False,
+                        "A grain must be nonphysical even before deferred collider removal.");
+                Assert.That(kickup.GetComponentsInChildren<Renderer>().Length,
+                    Is.EqualTo(AlpineVillageSnowKickup.MoteCount));
+                kicked = true;
+                return true;
+            }
+            Vector3 trailTarget = treadSpot + Vector3.up * depthBefore;
+            Vector3 trailEye = trailTarget + new Vector3(1.4f, 2.6f, -2.5f);
+            Vector3 kickTarget = kickSpot + Vector3.up * kickDepth;
+            float startTime = -1f;
+            Func<bool> AtElapsed(float seconds)
+            {
+                return () =>
+                {
+                    if (startTime < 0f) startTime = Time.time;
+                    return Time.time >= startTime + seconds;
+                };
+            }
+
+            // Keep the real shader clock: these are seconds elapsed from the
+            // first shot, after settling, not invented absolute wave phases.
+            // The same close view exposes the changing water reach on sand.
+            return new[]
+            {
+                Shot.At("shore-swash-00s", from, target, 62f, readyWhen: AtElapsed(0f)),
+                Shot.At("shore-swash-02s", from, target, 62f, readyWhen: AtElapsed(2f)),
+                Shot.At("shore-swash-04s", from, target, 62f, readyWhen: AtElapsed(4f)),
+                Shot.At("shore-swash-06s", from, target, 62f, readyWhen: AtElapsed(6f)),
+                Shot.At("shore-swash-oblique",
+                    SandPoint(x + 8f, frame.WaterlineZ - 4.4f, EyeHeight), target, 62f),
+                Shot.At("shore-swash-overhead",
+                    target + new Vector3(0f, 8f, -1f), target, 62f),
+                Shot.At("shore-sand-before", trailEye, trailTarget, 54f),
+                Shot.At("shore-sand-after", trailEye, trailTarget, 54f, readyWhen: AfterTreading),
+                Shot.At("shore-sand-kickup",
+                    kickTarget + new Vector3(0.65f, 0.8f, -1.25f), kickTarget, 48f,
+                    readyWhen: KickSand)
+            };
+        }
+
+        private static CitySandTreading AssertCityShoreSandMeshes(CityGameRoot city, Transform sea)
+        {
+            CitySandTreading[] sandComponents =
+                city.World.Root.GetComponentsInChildren<CitySandTreading>();
+            Assert.That(sandComponents.Length, Is.EqualTo(1));
+            CitySandTreading treading = sandComponents[0];
+            Assert.That(treading.name, Is.EqualTo("Beach"));
+            MeshFilter beachFilter = treading.GetComponent<MeshFilter>();
+            MeshCollider beachCollider = treading.GetComponent<MeshCollider>();
+            Assert.That(beachFilter, Is.Not.Null);
+            Assert.That(beachCollider, Is.Not.Null);
+            Assert.That(beachFilter.sharedMesh, Is.Not.SameAs(beachCollider.sharedMesh),
+                "Loose sand must deform a visual mesh independently of its fixed collider.");
+            Transform bed = sea.Find("Sea Bed Slope");
+            Assert.That(bed, Is.Not.Null, "The sand has no underwater continuation.");
+            Assert.That(bed.GetComponentsInChildren<Collider>(), Is.Empty);
+            Renderer dryRenderer = treading.GetComponent<Renderer>();
+            Renderer bedRenderer = bed.GetComponent<Renderer>();
+            Assert.That(bedRenderer.sharedMaterial, Is.SameAs(dryRenderer.sharedMaterial));
+            var dryProperties = new MaterialPropertyBlock();
+            var bedProperties = new MaterialPropertyBlock();
+            dryRenderer.GetPropertyBlock(dryProperties);
+            bedRenderer.GetPropertyBlock(bedProperties);
+            int mapId = Shader.PropertyToID("_BaseMap");
+            int colorId = Shader.PropertyToID("_BaseColor");
+            Assert.That(bedProperties.GetTexture(mapId), Is.SameAs(
+                CitySeacoastSurfaceAppearance.GetTexture(CitySeacoastSurfaceKind.Sand)));
+            Assert.That(bedProperties.GetTexture(mapId), Is.SameAs(dryProperties.GetTexture(mapId)));
+            Assert.That(bedProperties.GetColor(colorId), Is.EqualTo(dryProperties.GetColor(colorId)),
+                "The water, rather than a tint seam, must darken the submerged sand.");
+
+            CitySeacoastFrame frame = city.World.SeacoastPlan.Frame;
+            float tile = CitySeacoastSurfaceAppearance.GetRecipe(CitySeacoastSurfaceKind.Sand)
+                .MetersPerTile;
+            int shoreVertices = 0;
+            int deepVertices = 0;
+            foreach (Mesh mesh in new[] { beachFilter.sharedMesh, bed.GetComponent<MeshFilter>().sharedMesh })
+            {
+                Vector3[] vertices = mesh.vertices;
+                Vector3[] normals = mesh.normals;
+                Vector2[] uvs = mesh.uv;
+                Assert.That(uvs.Length, Is.EqualTo(vertices.Length));
+                for (int index = 0; index < vertices.Length; index++)
+                {
+                    Vector3 vertex = vertices[index];
+                    Assert.That(Vector2.Distance(uvs[index], new Vector2(vertex.x, vertex.z) / tile),
+                        Is.LessThan(0.0001f), "Both sand skins must keep the same world UV phase.");
+                    if (Mathf.Abs(vertex.z - frame.WaterlineZ) < 0.001f)
+                    {
+                        Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(city.Layout,
+                            new Vector2(vertex.x, vertex.z), out float top,
+                            out CitySurfaceDescriptor surface), Is.True);
+                        Assert.That(vertex.y, Is.EqualTo(top).Within(0.0001f),
+                            "There is a vertical gap between beach and seabed.");
+                        Assert.That(Vector3.Dot(normals[index], CityTerrainSurfacePlan.SampleNormal(
+                                city.Layout, surface, new Vector2(vertex.x, vertex.z))),
+                            Is.GreaterThan(0.9999f), "The joined sand needs matching shading normals.");
+                        shoreVertices++;
+                    }
+                    if (Mathf.Abs(vertex.z - frame.WaterlineZ - CitySeacoastSeaLayout.SeabedReach) < 0.001f)
+                    {
+                        Assert.That(frame.SeaTopY - vertex.y,
+                            Is.GreaterThan(CitySeaResources.DepthFadeDistance +
+                                           CitySeaResources.WaveHeight * CitySeaResources.CrestFactor));
+                        deepVertices++;
+                    }
+                }
+            }
+            Assert.That(shoreVertices, Is.GreaterThan(2));
+            Assert.That(deepVertices, Is.GreaterThan(2));
+            return treading;
+        }
+
+        [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator CityArchShelter()
         {
@@ -951,6 +1247,107 @@ namespace BarPromenade.Tests.PlayMode
                     return cityRoot;
                 },
                 () => CitySpecialBuildingShots(cityRoot));
+        }
+
+        [UnityTest]
+        [Explicit("Church paving overlap regression and moving-camera captures only.")]
+        public IEnumerator CityChurchCourtyardSurfaces()
+        {
+            GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeFromWake();
+            GameSessionState.AdvanceGameTime(360f);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City,
+                () =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return city != null && city.IsInitialized ? city : null;
+                }, () =>
+                {
+                    ValidateChurchPavingSurfaces(city);
+                    var shots = new List<Shot>(ChurchGardenShots(city));
+                    CityChurchCourtyardPlan garden = city.World.ChurchCourtyardPlan;
+                    Vector3 origin = new Vector3(garden.Grounds.xMin,
+                        garden.GroundTopY, garden.Grounds.yMin);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        Vector3 shift = Vector3.right * (i * 0.08f);
+                        shots.Add(Shot.At($"church-paving-motion-{i}",
+                            origin + new Vector3(33f, EyeHeight, 29f) + shift,
+                            origin + new Vector3(37f, 0f, 25.5f) + shift, 65f));
+                    }
+                    return shots.ToArray();
+                });
+        }
+
+        private static void ValidateChurchPavingSurfaces(CityGameRoot city)
+        {
+            CityChurchCourtyardPlan plan = city.World.ChurchCourtyardPlan;
+            IReadOnlyList<CityChurchCourtyardSurfaceDescriptor> visible =
+                CityChurchCourtyardWorldBuilder.CreateVisibleSurfaces(plan);
+            Rect threshold = CityChurchWorldBuilder.GetDoorThresholdBounds(
+                city.World.ChurchPlan.DoorGroundPosition);
+            for (int i = 0; i < visible.Count; i++)
+            {
+                Assert.That(ChurchSurfaceOverlap(visible[i].Bounds, threshold), Is.False,
+                    "Paving competes with the door threshold: " + visible[i].Id);
+                for (int j = 0; j < i; j++)
+                    Assert.That(ChurchSurfaceOverlap(visible[i].Bounds, visible[j].Bounds), Is.False,
+                        "Coplanar paving: " + visible[i].Id + " / " + visible[j].Id);
+            }
+
+            GameObject ground = GameObject.Find(CityChurchGroundWorldBuilder.ObjectName);
+            Mesh skin = ground.GetComponent<MeshFilter>().sharedMesh;
+            MeshCollider collision = ground.GetComponent<MeshCollider>();
+            Vector3[] vertices = skin.vertices;
+            int[] triangles = skin.triangles;
+            foreach (CityChurchCourtyardSurfaceDescriptor surface in plan.Surfaces)
+            {
+                if (surface.Kind == CityChurchCourtyardSurfaceKind.Lawn) continue;
+                for (int t = 0; t < triangles.Length; t += 3)
+                {
+                    Vector3 a = vertices[triangles[t]];
+                    Vector3 b = vertices[triangles[t + 1]];
+                    Vector3 c = vertices[triangles[t + 2]];
+                    if (Vector3.Cross(b - a, c - a).y <= 0f) continue;
+                    Rect face = Rect.MinMaxRect(
+                        Mathf.Min(a.x, Mathf.Min(b.x, c.x)),
+                        Mathf.Min(a.z, Mathf.Min(b.z, c.z)),
+                        Mathf.Max(a.x, Mathf.Max(b.x, c.x)),
+                        Mathf.Max(a.z, Mathf.Max(b.z, c.z)));
+                    Assert.That(ChurchSurfaceOverlap(face, surface.Bounds), Is.False,
+                        "Grass is still rendered beneath " + surface.Id);
+                }
+
+                // Cover the original route, including trimmed pad intersections
+                // and the threshold: one visible owner, continuous walking ground.
+                for (float x = surface.Bounds.xMin + 0.125f;
+                     x < surface.Bounds.xMax; x += 0.25f)
+                for (float z = surface.Bounds.yMin + 0.125f;
+                     z < surface.Bounds.yMax; z += 0.25f)
+                {
+                    var point = new Vector2(x, z);
+                    int owners = threshold.Contains(point) ? 1 : 0;
+                    foreach (CityChurchCourtyardSurfaceDescriptor patch in visible)
+                        if (patch.Bounds.Contains(point)) owners++;
+                    Assert.That(owners, Is.EqualTo(1), surface.Id + " at " + point);
+                    Assert.That(collision.Raycast(new Ray(
+                        new Vector3(x, plan.GroundTopY + 1f, z), Vector3.down),
+                        out RaycastHit hit, 2f), Is.True, surface.Id);
+                    Assert.That(hit.point.y,
+                        Is.EqualTo(plan.GroundTopY).Within(0.001f), surface.Id);
+                }
+            }
+        }
+
+        private static bool ChurchSurfaceOverlap(Rect first, Rect second)
+        {
+            // Rect stores origin + size: reconstructing an edge near world
+            // X=200 can differ by an ULP. Use the plans' millimetre tolerance.
+            return Mathf.Min(first.xMax, second.xMax) -
+                   Mathf.Max(first.xMin, second.xMin) > 0.001f &&
+                   Mathf.Min(first.yMax, second.yMax) -
+                   Mathf.Max(first.yMin, second.yMin) > 0.001f;
         }
 
         [UnityTest]

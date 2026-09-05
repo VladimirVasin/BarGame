@@ -16,8 +16,8 @@ namespace BarPromenade
     ///
     /// The sea itself is built here too: chunked animated sheets of
     /// the shared water shader where the flat municipal slab used to
-    /// be, over a shelving silt bed that rises to meet the sand — the
-    /// depth-threshold foam draws the surf line along that shelf on
+    /// be, over the continuous sand slope — the
+    /// depth-threshold foam draws the surf line along that slope on
     /// its own. Each sheet runs a cosmetic apron past the map's north
     /// edge, because past the apron there is only fog anyway.
     /// </summary>
@@ -57,12 +57,6 @@ namespace BarPromenade
         internal static readonly Color Litter =
             new Color(0.27f, 0.22f, 0.16f);
 
-        // The silt shelf under the shallows. Darker than the sand it
-        // continues, because half a metre of sea water is what is
-        // between them.
-        internal static readonly Color Silt =
-            new Color(0.10f, 0.10f, 0.085f);
-
         // The hut bulb is the lake's, bolt for bolt: same warm
         // tungsten over the same kind of door, dimmed by day, full at
         // night, never switched off.
@@ -93,7 +87,8 @@ namespace BarPromenade
 
         public static GameObject Build(
             Transform parent,
-            CitySeacoastPlan plan)
+            CitySeacoastPlan plan,
+            CityLayout layout)
         {
             if (parent == null)
             {
@@ -105,10 +100,15 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(plan));
             }
 
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
 
-            BuildSea(root, plan.Frame);
+            BuildSea(root, plan.Frame, layout);
             BuildDressing(root, plan);
             BuildLamps(root, plan);
 
@@ -123,16 +123,15 @@ namespace BarPromenade
         /// </summary>
         private static void BuildSea(
             Transform root,
-            in CitySeacoastFrame frame)
+            in CitySeacoastFrame frame,
+            CityLayout layout)
         {
             Transform sea = new GameObject("Sea").transform;
             sea.SetParent(root, false);
 
             // The swell dies on the sand: the shader's shore fade
-            // ramps up from the inner shelf's seaward edge, which only
-            // this builder knows. Anchoring it here keeps the trough
-            // off the silt without the material ever learning the
-            // layout.
+            // ramps up from the shallow coastal band. Its anchor stays
+            // layout-owned while the sand continues below the water.
             CitySeaResources.ConfigureShoreFade(
                 frame.WaterlineZ +
                 CitySeacoastSeaLayout.InnerShelfReach);
@@ -150,6 +149,8 @@ namespace BarPromenade
                     CitySeaResources.WaterMaterial);
             }
 
+            BuildSwash(sea, frame, layout);
+
             // The river pours in: its own material continued past the
             // waterline on a shallow downhill sheet, so the mouth
             // reads as water flowing into water. The south edge sits
@@ -166,33 +167,66 @@ namespace BarPromenade
                 frame.SeaTopY - CitySeacoastSeaLayout.SpillDip,
                 CityRiverResources.WaterMaterial);
 
-            var shelves = new List<Bounds>();
-            CitySeacoastSeaLayout.CreateShelfBoxes(frame, shelves);
-            if (shelves.Count > 0)
+            // Same sand, same UVs and matching edge vertices. Water
+            // absorption supplies the darkening as the slope gets deeper.
+            GameObject bed = CityTerrainSurfaceWorldBuilder.Build(
+                "Sea Bed Slope", sea, layout, CitySurfaceKind.Beach,
+                CityExteriorAppearance.BeachSand, false,
+                CitySeacoastSurfaceAppearance.GetRecipe(CitySeacoastSurfaceKind.Sand).MetersPerTile,
+                seabedOnly: true);
+            if (bed != null)
+                CitySeacoastSurfaceAppearance.ApplyCombined(bed.GetComponent<Renderer>(),
+                    CitySeacoastSurfaceKind.Sand, CityExteriorAppearance.BeachSand);
+        }
+
+        // Reuse the water grid with the actual sand height. Only the open
+        // beach gets a film: the station seawall and river mouth stay dry
+        // on their landward side. No collision or navigation is added.
+        private static void BuildSwash(
+            Transform sea,
+            CitySeacoastFrame frame,
+            CityLayout layout)
+        {
+            int index = 0;
+            foreach (CitySurfaceDescriptor surface in layout.Surfaces)
             {
-                // The bed reads through the water's `1.4 m` depth fade
-                // along the whole shore, so it is the first thing the
-                // eye meets at the waterline. It carries the sand sheet
-                // on world-planar UVs at the shore's own pitch, keeping
-                // the silt tint it always had: the compensation rule
-                // preserves the brightness, so this adds grain without
-                // lifting the bed out of the dark.
-                GameObject bed =
-                    RuntimePrimitiveFactory.CreateCombinedBoxes(
-                        "Sea Bed Shelf",
-                        sea,
-                        shelves,
-                        Silt,
-                        false,
-                        CitySeacoastSurfaceAppearance
-                            .GetRecipe(CitySeacoastSurfaceKind.Sand)
-                            .MetersPerTile);
-                if (bed != null)
+                if (surface.Kind != CitySurfaceKind.Beach ||
+                    Mathf.Abs(surface.WorldBounds.yMax - frame.WaterlineZ) > 0.01f)
                 {
-                    CitySeacoastSurfaceAppearance.ApplyCombined(
-                        bed.GetComponent<Renderer>(),
-                        CitySeacoastSurfaceKind.Sand,
-                        Silt);
+                    continue;
+                }
+
+                AddStrip(frame.WestZone);
+                AddStrip(frame.EastZone);
+
+                void AddStrip(Rect zone)
+                {
+                    float west = Mathf.Max(surface.WorldBounds.xMin, zone.xMin);
+                    float east = Mathf.Min(surface.WorldBounds.xMax, zone.xMax);
+                    if (east - west < 0.01f)
+                    {
+                        return;
+                    }
+
+                    Rect bounds = Rect.MinMaxRect(
+                        west, frame.WaterlineZ - CitySeaResources.SwashMeshReach,
+                        east, frame.WaterlineZ + CitySeaResources.SwashSeaReach);
+                    CityWaterSurfaceFactory.CreateSlopedSurface(
+                        $"Sea Swash {index++:D2}", sea, bounds,
+                        frame.BeachEdgeTopY, frame.SeaTopY,
+                        CitySeaResources.SwashMaterial,
+                        sampleTop: point =>
+                        {
+                            Vector2 sandPoint = new Vector2(
+                                point.x, Mathf.Min(point.y, frame.WaterlineZ));
+                            float sandTop = CityTerrainSurfacePlan.SampleTop(
+                                layout, surface, sandPoint) + 0.018f;
+                            float seaward = Mathf.SmoothStep(0f, 1f,
+                                (point.y - frame.WaterlineZ) /
+                                CitySeaResources.SwashSeaReach);
+                            return Mathf.Lerp(sandTop, frame.SeaTopY, seaward);
+                        },
+                        surfacePitch: 0.30f);
                 }
             }
         }
@@ -1060,15 +1094,12 @@ namespace BarPromenade
         /// </summary>
         internal const float ApronReach = 23f;
 
-        // The shore shelf: silt rising to meet the sand. The inner
-        // step sits well inside the foam distance, so the surf line
-        // draws the whole shore; the outer step half-fades before the
-        // bottom drops away to the deep colour.
+        // The low shore wave envelope ends here; it no longer denotes
+        // a geometric step in the sand.
         internal const float InnerShelfReach = 2.6f;
-        private const float InnerShelfDepth = 0.30f;
-        private const float OuterShelfDepth = 0.62f;
-        private const float ShelfRunLength = 10f;
-        private const float ShelfBottomDrop = 1.9f;
+        internal const float SeabedReach = 18f;
+        private const float DeepSandSlope = 0.20f;
+        private const float ShoreSlopeBlendReach = 2.2f;
 
         /// <summary>
         /// How far the mouth spill carries the river's surface past
@@ -1109,73 +1140,36 @@ namespace BarPromenade
             }
         }
 
-        internal static void CreateShelfBoxes(
-            in CitySeacoastFrame frame,
-            ICollection<Bounds> destination)
+        internal static float SampleSeabedTop(
+            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)
         {
-            Rect row = frame.SeaRowBounds;
-            float bottom = frame.SeaTopY - ShelfBottomDrop;
-            int runs = Mathf.Max(
-                1,
-                Mathf.CeilToInt(row.width / ShelfRunLength));
-            float runLength = row.width / runs;
-            for (int index = 0; index < runs; index++)
-            {
-                float from = row.xMin + index * runLength;
-                float center = from + runLength * 0.5f;
-                uint hash = Hash(index);
-
-                // The inner step: ankle-deep, foam over its whole
-                // width. Its jitter is what makes the surf line
-                // wander instead of ruling itself along the map.
-                float innerTop = frame.SeaTopY - InnerShelfDepth +
-                                 ((hash & 0xFFu) / 255f - 0.5f) * 0.10f;
-                destination.Add(new Bounds(
-                    new Vector3(
-                        center,
-                        (innerTop + bottom) * 0.5f,
-                        frame.WaterlineZ + InnerShelfReach * 0.5f),
-                    new Vector3(
-                        runLength,
-                        innerTop - bottom,
-                        InnerShelfReach)));
-
-                // The outer step: knee-deep, foam breaking up, gone a
-                // few metres further out.
-                float reach = 5f +
-                              (((hash >> 8) & 0xFFu) / 255f) * 3.5f;
-                float outerTop = frame.SeaTopY - OuterShelfDepth +
-                                 (((hash >> 16) & 0xFFu) / 255f - 0.5f) *
-                                 0.16f;
-                destination.Add(new Bounds(
-                    new Vector3(
-                        center,
-                        (outerTop + bottom) * 0.5f,
-                        frame.WaterlineZ + InnerShelfReach +
-                            (reach - InnerShelfReach) * 0.5f),
-                    new Vector3(
-                        runLength,
-                        outerTop - bottom,
-                        reach - InnerShelfReach)));
-            }
+            float distance = point.y - surface.WorldBounds.yMax;
+            if (distance <= 0f)
+                return CityTerrainSurfacePlan.SampleTop(layout, surface, point);
+            var edge = new Vector2(point.x, surface.WorldBounds.yMax);
+            float edgeTop = CityTerrainSurfacePlan.SampleTop(layout, surface, edge);
+            const float tangentSample = 0.10f;
+            float shoreSlope = Mathf.Max(0f,
+                (CityTerrainSurfacePlan.SampleTop(layout, surface,
+                    edge - Vector2.up * tangentSample) - edgeTop) / tangentSample);
+            // Integral of a positive slope that starts at the beach's
+            // tangent and eases toward 1:5. No risers or terminal ledge
+            // can be exposed inside the water's depth-fade distance.
+            float easedDistance = ShoreSlopeBlendReach *
+                (1f - Mathf.Exp(-distance / ShoreSlopeBlendReach));
+            return edgeTop - DeepSandSlope * distance -
+                (shoreSlope - DeepSandSlope) * easedDistance;
         }
 
-        /// <summary>
-        /// Positional, not seeded: the shelf wander is texture, and a
-        /// different city does not need a different shore any more
-        /// than it needs a different ripple sheet.
-        /// </summary>
-        private static uint Hash(int index)
+        internal static Vector3 SampleSeabedNormal(
+            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)
         {
-            unchecked
-            {
-                uint value = 0x53454142u ^ (uint)index; // "SEAB"
-                value *= 16777619u;
-                value ^= value >> 16;
-                value *= 0x7FEB352Du;
-                value ^= value >> 15;
-                return value;
-            }
+            const float offset = 0.10f;
+            float west = SampleSeabedTop(layout, surface, point - Vector2.right * offset);
+            float east = SampleSeabedTop(layout, surface, point + Vector2.right * offset);
+            float south = SampleSeabedTop(layout, surface, point - Vector2.up * offset);
+            float north = SampleSeabedTop(layout, surface, point + Vector2.up * offset);
+            return new Vector3(west - east, offset * 2f, south - north).normalized;
         }
     }
 }

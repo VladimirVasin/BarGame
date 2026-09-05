@@ -867,7 +867,7 @@ namespace BarPromenade.Tests.EditMode
 
                 GameObject seacoast = CitySeacoastWorldBuilder.Build(
                     parent.transform,
-                    CitySeacoastPlanner.Create(layout));
+                    CitySeacoastPlanner.Create(layout), layout);
                 Assert.That(
                     seacoast.GetComponentsInChildren<Renderer>(true)
                         .Count(renderer => renderer.name.StartsWith(

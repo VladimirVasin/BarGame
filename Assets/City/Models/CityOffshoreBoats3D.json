@@ -1,0 +1,115 @@
+{
+  "design_id": "city_offshore_fishing_boats_v1",
+  "generator": "build-city-offshore-boats-3d-model.py",
+  "coordinate_system": "Unity +Z bow, +Y up, origin at waterline; authored metres",
+  "color_space": "linear vertex RGB; visual sRGB swatches converted once at authoring; FBX LINEAR",
+  "suggested_presentation_scale": 0.42,
+  "variants": [
+    {
+      "variant": 0,
+      "name": "OldTrawler",
+      "bounds_min": [
+        -2.19,
+        -1.05,
+        -5.59052
+      ],
+      "bounds_max": [
+        2.19,
+        5.50552,
+        7.10312
+      ],
+      "triangle_count": 2194,
+      "anchors": [
+        {
+          "name": "ANCHOR_Engine",
+          "position": [
+            0.0,
+            0.31,
+            -1.15
+          ]
+        },
+        {
+          "name": "ANCHOR_Horn",
+          "position": [
+            0.45,
+            3.22,
+            1.95
+          ]
+        },
+        {
+          "name": "SearchlightPivot",
+          "position": [
+            0.0,
+            3.41,
+            2.45
+          ]
+        }
+      ],
+      "beam_length_m": 12.0,
+      "opaque_color_min": [
+        0.007851,
+        0.010816,
+        0.01131
+      ],
+      "opaque_color_max": [
+        0.170645,
+        0.174728,
+        0.132868
+      ],
+      "geometry_signature": "e47ddaf436d788ee29ccbb56fbc4b3a76a27e9ddfc58bab09f2c0c47a7e6c25b"
+    },
+    {
+      "variant": 1,
+      "name": "OldMotorboat",
+      "bounds_min": [
+        -1.69,
+        -1.05,
+        -4.61361
+      ],
+      "bounds_max": [
+        1.69,
+        4.02971,
+        5.86841
+      ],
+      "triangle_count": 2134,
+      "anchors": [
+        {
+          "name": "ANCHOR_Engine",
+          "position": [
+            0.0,
+            0.31,
+            -1.15
+          ]
+        },
+        {
+          "name": "ANCHOR_Horn",
+          "position": [
+            0.45,
+            2.87,
+            1.4
+          ]
+        },
+        {
+          "name": "SearchlightPivot",
+          "position": [
+            0.0,
+            3.06,
+            1.9
+          ]
+        }
+      ],
+      "beam_length_m": 12.0,
+      "opaque_color_min": [
+        0.007851,
+        0.010816,
+        0.01131
+      ],
+      "opaque_color_max": [
+        0.170645,
+        0.174728,
+        0.132868
+      ],
+      "geometry_signature": "cc540dd9bcc7acc2b651b953878a87d16f97fcd90849e689c180f039fc19ebfc"
+    }
+  ]
+}

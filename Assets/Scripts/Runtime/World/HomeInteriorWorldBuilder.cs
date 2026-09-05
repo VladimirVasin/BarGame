@@ -22,13 +22,16 @@ namespace BarPromenade
         // bedside seat deliberately takes no dent — its hip height is pinned
         // by both boots on the floor, so a dent there could only open a gap.
         internal const float BedSleeperSinkDepth = 0.10f;
-        internal const float BedPillowSinkDepth = 0.045f;
+        internal const float BedPillowSinkDepth = 0.070f;
 
         // The pillow is not decoration: its rest top sits one pillow-dent
         // above where the sunken sleep pose puts the back of the hero's head,
         // so the head lies in the dented pillow rather than inside a rigid
         // one. It follows the clip; the clip never dodges it.
-        internal const float BedPillowThickness = 0.10f;
+        internal const float BedPillowThickness = 0.14f;
+        // Hero V2's continuous jacket reaches farther headward than the old
+        // rigid torso. Keep the near pillow seam clear of that shoulder.
+        internal const float BedPillowHeadwardOffset = 0.11f;
         internal const float BedPillowSurfaceHeight =
             BedMattressSurfaceHeight +
             PlayerCharacterDimensions.SupinePelvisSupportOffset -
@@ -850,8 +853,8 @@ namespace BarPromenade
                 SurfaceProjection.BoxXZ));
             // The mattress and pillow are deformable grids, not primitive
             // boxes: their tops dent under the sleeping hero and slowly
-            // refill after he gets up. Rest silhouette, names, texturing
-            // and occlusion membership stay exactly what the boxes had.
+            // refill after he gets up. The pillow also owns its filled
+            // rest profile; both surfaces retain shared bed occlusion.
             parts.Add(
                 HomeBedDeformableSurfaceFactory
                     .CreateDeformableSurface(
@@ -886,8 +889,8 @@ namespace BarPromenade
             parts.Add(blanket);
             blanket.transform.localRotation =
                 Quaternion.Euler(0f, 5f, -2f);
-            // Worn flat and pressed into the mattress; its dented top is
-            // where the sunken sleep pose lands the back of his head.
+            // The filled crown cups the back of the head while the near
+            // seam leaves the Hero V2 jacket and shoulder free to rise.
             parts.Add(
                 HomeBedDeformableSurfaceFactory
                     .CreateDeformableSurface(
@@ -895,7 +898,7 @@ namespace BarPromenade
                         room,
                         center +
                         new Vector3(
-                            -bounds.width * 0.28f,
+                            -bounds.width * 0.28f - BedPillowHeadwardOffset,
                             BedPillowCenterHeight,
                             0f),
                         new Vector3(

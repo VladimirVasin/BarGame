@@ -142,6 +142,11 @@ namespace BarPromenade.Editor
 
         private static void ReorderGrid(Mesh mesh, HomeAuthoredPart part)
         {
+            if (part.grid_top_heights != null && part.grid_top_heights.Length > 0)
+            {
+                ReorderProfileGrid(mesh, part);
+                return;
+            }
             int topCount = part.grid_columns * part.grid_rows * 4;
             Vector3[] vertices = mesh.vertices;
             Vector3[] normals = mesh.normals;
@@ -179,6 +184,52 @@ namespace BarPromenade.Editor
             mesh.uv = order.Select(index => uv[index]).ToArray();
             mesh.tangents = Array.Empty<Vector4>();
             mesh.triangles = triangles.Select(index => inverse[index]).ToArray();
+        }
+
+        private static void ReorderProfileGrid(Mesh mesh, HomeAuthoredPart part)
+        {
+            int sampleCount = (part.grid_columns + 1) * (part.grid_rows + 1);
+            if (part.grid_top_heights.Length != sampleCount ||
+                part.grid_bottom_heights == null || part.grid_bottom_heights.Length != sampleCount)
+                throw new InvalidOperationException($"'{part.name}' has incomplete cloth height profiles.");
+            Vector3[] vertices = mesh.vertices;
+            Vector3[] normals = mesh.normals;
+            Vector2[] uv = mesh.uv;
+            var samples = new int[vertices.Length];
+            var seen = new bool[sampleCount];
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                samples[index] = -1;
+                Vector3 point = vertices[index];
+                int column = Mathf.RoundToInt((point.x / part.Size.x + 0.5f) * part.grid_columns);
+                int row = Mathf.RoundToInt((point.z / part.Size.z + 0.5f) * part.grid_rows);
+                if (column < 0 || column > part.grid_columns || row < 0 || row > part.grid_rows)
+                    throw new InvalidOperationException($"'{part.name}' has an off-grid cloth vertex.");
+                int sample = row * (part.grid_columns + 1) + column;
+                Vector3 expected = new Vector3(
+                    (column / (float)part.grid_columns - 0.5f) * part.Size.x,
+                    part.grid_top_heights[sample],
+                    (row / (float)part.grid_rows - 0.5f) * part.Size.z);
+                if (normals[index].y > 0.01f && (point - expected).sqrMagnitude < 0.000001f)
+                {
+                    samples[index] = sample;
+                    seen[sample] = true;
+                }
+            }
+            if (seen.Any(value => !value))
+                throw new InvalidOperationException($"'{part.name}' is missing an upper cloth sample.");
+            int[] order = Enumerable.Range(0, vertices.Length)
+                .OrderBy(index => samples[index] < 0 ? 1 : 0).ToArray();
+            var inverse = new int[vertices.Length];
+            for (int index = 0; index < order.Length; index++) inverse[order[index]] = index;
+            int[] triangles = mesh.triangles;
+            mesh.vertices = order.Select(index => vertices[index]).ToArray();
+            mesh.normals = order.Select(index => normals[index]).ToArray();
+            mesh.uv = order.Select(index => uv[index]).ToArray();
+            mesh.tangents = Array.Empty<Vector4>();
+            mesh.triangles = triangles.Select(index => inverse[index]).ToArray();
+            part.grid_vertex_samples = order.Where(index => samples[index] >= 0)
+                .Select(index => samples[index]).ToArray();
         }
     }
 }

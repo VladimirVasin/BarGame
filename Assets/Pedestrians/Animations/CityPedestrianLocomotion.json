@@ -582,15 +582,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.738645,
+        -0.308159,
         -0.339848
       ],
       "animated_local_xz_max_m": [
-        0.74086,
+        0.337296,
         0.191792
       ],
       "animated_local_xz_size_m": [
-        1.479505,
+        0.645454,
         0.53164
       ]
     },
@@ -615,15 +615,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.830904,
+        -0.322225,
         -0.54043
       ],
       "animated_local_xz_max_m": [
-        0.838588,
+        0.324371,
         0.486299
       ],
       "animated_local_xz_size_m": [
-        1.669492,
+        0.646596,
         1.026729
       ]
     },
@@ -750,15 +750,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.754738,
+        -0.30913,
         -0.181029
       ],
       "animated_local_xz_max_m": [
-        0.756909,
+        0.335198,
         0.158637
       ],
       "animated_local_xz_size_m": [
-        1.511647,
+        0.644328,
         0.339666
       ]
     },
@@ -783,15 +783,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.824567,
+        -0.309749,
         -0.54043
       ],
       "animated_local_xz_max_m": [
-        0.832501,
+        0.311947,
         0.486299
       ],
       "animated_local_xz_size_m": [
-        1.657068,
+        0.621696,
         1.026729
       ]
     },
@@ -882,15 +882,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.754738,
+        -0.30913,
         -0.335253
       ],
       "animated_local_xz_max_m": [
-        0.756909,
+        0.335198,
         0.179603
       ],
       "animated_local_xz_size_m": [
-        1.511647,
+        0.644328,
         0.514856
       ]
     },
@@ -915,15 +915,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.824567,
+        -0.321015,
         -0.539799
       ],
       "animated_local_xz_max_m": [
-        0.832501,
+        0.321015,
         0.481452
       ],
       "animated_local_xz_size_m": [
-        1.657068,
+        0.642031,
         1.021251
       ]
     },
@@ -1050,15 +1050,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.679642,
+        -0.30913,
         -0.183552
       ],
       "animated_local_xz_max_m": [
-        0.681176,
+        0.335198,
         0.180579
       ],
       "animated_local_xz_size_m": [
-        1.360818,
+        0.644328,
         0.364131
       ]
     },
@@ -1083,15 +1083,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.82317,
+        -0.309749,
         -0.54043
       ],
       "animated_local_xz_max_m": [
-        0.830678,
+        0.311947,
         0.486299
       ],
       "animated_local_xz_size_m": [
-        1.653849,
+        0.621696,
         1.026729
       ]
     },
@@ -1182,16 +1182,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.509711,
+        -0.31792,
         -0.224139
       ],
       "animated_local_xz_max_m": [
-        0.596176,
-        0.324542
+        0.347582,
+        0.252474
       ],
       "animated_local_xz_size_m": [
-        1.105886,
-        0.548681
+        0.665502,
+        0.476613
       ]
     },
     {
@@ -1215,15 +1215,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.806817,
+        -0.315872,
         -0.550093
       ],
       "animated_local_xz_max_m": [
-        0.839128,
+        0.318534,
         0.475377
       ],
       "animated_local_xz_size_m": [
-        1.645945,
+        0.634406,
         1.02547
       ]
     },
@@ -1493,16 +1493,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.488553,
-        -0.17582
+        -0.30913,
+        -0.195053
       ],
       "animated_local_xz_max_m": [
-        0.490799,
-        0.694421
+        0.331722,
+        0.205708
       ],
       "animated_local_xz_size_m": [
-        0.979352,
-        0.870241
+        0.640852,
+        0.400761
       ]
     },
     {
@@ -1526,15 +1526,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.852264,
+        -0.309749,
         -0.540773
       ],
       "animated_local_xz_max_m": [
-        0.858229,
+        0.311947,
         0.488752
       ],
       "animated_local_xz_size_m": [
-        1.710494,
+        0.621696,
         1.029525
       ]
     },
@@ -1687,16 +1687,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.488553,
-        -0.17582
+        -0.30913,
+        -0.195053
       ],
       "animated_local_xz_max_m": [
-        0.490799,
-        0.694421
+        0.331722,
+        0.225853
       ],
       "animated_local_xz_size_m": [
-        0.979352,
-        0.870241
+        0.640852,
+        0.420906
       ]
     },
     {
@@ -1720,15 +1720,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.852264,
+        -0.309749,
         -0.540773
       ],
       "animated_local_xz_max_m": [
-        0.858229,
+        0.311947,
         0.488752
       ],
       "animated_local_xz_size_m": [
-        1.710494,
+        0.621696,
         1.029525
       ]
     },
@@ -1861,5 +1861,5 @@
       ]
     }
   ],
-  "build_signature": "73e6e62673cebf6f4e9a24e65f89393d8b9aa2fc3f3c9f0e161f546c6b096a5e"
+  "build_signature": "1178e60c84ad29cb30c57bab7fe2fc7972ddb4ed199e278b21571a1c6709ffa8"
 }

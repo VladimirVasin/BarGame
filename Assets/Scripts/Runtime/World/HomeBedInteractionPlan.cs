@@ -10,7 +10,6 @@ namespace BarPromenade
         private const float TriggerHeight = 1.80f;
         private const float TriggerLength = 0.90f;
         internal const float ActionHipFootwardOffset = 0.135f;
-        internal const float DoorSideDockFootInset = 0.45f;
         internal const float DoorSideSeatInset = 0.16f;
 
         // Both hip heights are the mattress plus the measured distance the
@@ -39,6 +38,14 @@ namespace BarPromenade
         internal const float EnterSeatDepartureProgress = 0.44f;
         internal const float ExitSeatArrivalProgress = 0.50f;
         internal const float ExitSeatDepartureProgress = 0.88f;
+        // Let the hands and head prepare while the pelvis keeps its support;
+        // on entry it arrives before the final shoulder/head settle.
+        internal const float EnterHoldProgress = 0.05f;
+        internal const float EnterSettleProgress = 0.96f;
+        // Sit up over the sleeping support before moving toward the room;
+        // the legs leave the bed only after the seated waypoint is reached.
+        internal const float ExitHoldProgress = 0.30f;
+        internal const float ExitSettleProgress = 1f;
         public const float UprightVisualOffset = 0.005f;
 
         private HomeBedInteractionPlan(
@@ -102,7 +109,11 @@ namespace BarPromenade
                 EnterSeatArrivalProgress,
                 EnterSeatDepartureProgress,
                 ExitSeatArrivalProgress,
-                ExitSeatDepartureProgress);
+                ExitSeatDepartureProgress,
+                EnterHoldProgress,
+                EnterSettleProgress,
+                ExitHoldProgress,
+                ExitSettleProgress);
 
         public static HomeBedInteractionPlan Create(
             HomeInteriorLayoutPlan layout)
@@ -122,7 +133,10 @@ namespace BarPromenade
 
             Rect bounds = bed.Bounds;
             float doorSideEdge = bounds.yMin;
-            float dockX = bounds.xMax - DoorSideDockFootInset;
+            // Sit opposite the sleeping pelvis near the middle of the long
+            // side. Sharing this longitudinal coordinate lets the torso
+            // reach the pillow by reclining, without sliding along the bed.
+            float dockX = bounds.center.x + ActionHipFootwardOffset;
             float centerZ = bounds.center.y;
             Vector3 entryRoot = new Vector3(
                 dockX,

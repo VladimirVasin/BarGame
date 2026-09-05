@@ -82,7 +82,8 @@ namespace BarPromenade
             bool applyGroundAppearance,
             float? worldUvTileSize = null,
             IReadOnlyList<Rect> excavations = null,
-            CityTerrainSurfaceAreaFilter areaFilter = null)
+            CityTerrainSurfaceAreaFilter areaFilter = null,
+            bool seabedOnly = false)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -102,7 +103,8 @@ namespace BarPromenade
                 kind,
                 worldUvTileSize,
                 excavations,
-                areaFilter);
+                areaFilter,
+                seabedOnly);
             if (mesh == null)
             {
                 return null;
@@ -120,9 +122,12 @@ namespace BarPromenade
                 CityExteriorAppearance.ApplyGroundSurface(renderer);
             }
 
-            MeshCollider terrainCollider =
-                result.AddComponent<MeshCollider>();
-            terrainCollider.sharedMesh = mesh;
+            if (!seabedOnly)
+            {
+                MeshCollider terrainCollider =
+                    result.AddComponent<MeshCollider>();
+                terrainCollider.sharedMesh = mesh;
+            }
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
             mesh.UploadMeshData(false);
@@ -208,17 +213,23 @@ namespace BarPromenade
         /// authored stair and river cuts and any runtime excavations
         /// subtracted. Null when the kind covers no ground at all.
         /// </summary>
-        private static Mesh CreateMesh(
+        internal static Mesh CreateMesh(
             string name,
             CityLayout layout,
             CitySurfaceKind kind,
             float? worldUvTileSize,
             IReadOnlyList<Rect> excavations,
-            CityTerrainSurfaceAreaFilter areaFilter)
+            CityTerrainSurfaceAreaFilter areaFilter,
+            bool seabedOnly = false)
         {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
+            }
+
+            if (seabedOnly && kind != CitySurfaceKind.Beach)
+            {
+                throw new ArgumentException("Only the beach continues into the sea.", nameof(kind));
             }
 
             float tileSize = ResolveTileSize(worldUvTileSize);
@@ -234,6 +245,7 @@ namespace BarPromenade
                     layout.Surfaces[surfaceIndex];
                 if (surface.Kind != kind ||
                     !CityTerrainSurfacePlan.UsesContinuousTop(surface) ||
+                    (seabedOnly && surface.Feature != CityAreaFeatureKind.NorthWaterfront) ||
                     (areaFilter != null &&
                      !areaFilter.Includes(surface.AreaId)))
                 {
@@ -248,15 +260,26 @@ namespace BarPromenade
                      patchIndex < patches.Count;
                      patchIndex++)
                 {
+                    Rect patch = patches[patchIndex];
+                    if (seabedOnly)
+                    {
+                        // Extend only the north-facing sand edge. The
+                        // existing terrain cuts keep the river mouth open.
+                        if (Mathf.Abs(patch.yMax - surface.WorldBounds.yMax) > 0.001f)
+                            continue;
+                        patch = Rect.MinMaxRect(patch.xMin, patch.yMax,
+                            patch.xMax, patch.yMax + CitySeacoastSeaLayout.SeabedReach);
+                    }
                     AppendPatch(
                         layout,
                         surface,
-                        patches[patchIndex],
+                        patch,
                         tileSize,
                         vertices,
                         normals,
                         uvs,
-                        triangles);
+                        triangles,
+                        seabedOnly);
                 }
             }
 
@@ -683,7 +706,8 @@ namespace BarPromenade
             ICollection<Vector3> vertices,
             ICollection<Vector3> normals,
             ICollection<Vector2> uvs,
-            ICollection<int> triangles)
+            ICollection<int> triangles,
+            bool seabedOnly = false)
         {
             float cellMinimumX = layout.ElevationPlan.WorldOrigin.x +
                                  surface.Cell.x *
@@ -694,6 +718,22 @@ namespace BarPromenade
             float halfRoad = layout.ElevationPlan.RoadWidth * 0.5f;
             var xAnchors = new List<float>();
             var zAnchors = new List<float>();
+            if (surface.Kind == CitySurfaceKind.Beach)
+            {
+                for (float x = patch.xMin + CityBeachSandPlan.MeshPitch; x < patch.xMax;
+                     x += CityBeachSandPlan.MeshPitch)
+                    xAnchors.Add(x);
+                if (!seabedOnly)
+                    for (float z = patch.yMin + CityBeachSandPlan.MeshPitch; z < patch.yMax;
+                         z += CityBeachSandPlan.MeshPitch)
+                        zAnchors.Add(z);
+            }
+            if (seabedOnly)
+            {
+                float shore = surface.WorldBounds.yMax;
+                foreach (float distance in new[] { 0.5f, 1f, 1.8f, 2.6f, 4f, 6f, 9f, 12f })
+                    zAnchors.Add(shore + distance);
+            }
             if (surface.Kind == CitySurfaceKind.ChurchGround)
             {
                 Rect churchGrounds = CityChurchGroundPlan.GetGrounds(
@@ -740,15 +780,13 @@ namespace BarPromenade
                         zCoordinates[zIndex]);
                     vertices.Add(new Vector3(
                         worldXZ.x,
-                        CityTerrainSurfacePlan.SampleTop(
-                            layout,
-                            surface,
-                            worldXZ),
+                        seabedOnly
+                            ? CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, worldXZ)
+                            : CityTerrainSurfacePlan.SampleTop(layout, surface, worldXZ),
                         worldXZ.y));
-                    normals.Add(CityTerrainSurfacePlan.SampleNormal(
-                        layout,
-                        surface,
-                        worldXZ));
+                    normals.Add(seabedOnly
+                        ? CitySeacoastSeaLayout.SampleSeabedNormal(layout, surface, worldXZ)
+                        : CityTerrainSurfacePlan.SampleNormal(layout, surface, worldXZ));
                     uvs.Add(worldXZ * tilesPerMeter);
                 }
             }
@@ -903,7 +941,7 @@ namespace BarPromenade
             coordinates.Add(value);
         }
 
-        private static void SubtractFromPatches(
+        internal static void SubtractFromPatches(
             List<Rect> patches,
             Rect cut,
             Rect surfaceBounds)

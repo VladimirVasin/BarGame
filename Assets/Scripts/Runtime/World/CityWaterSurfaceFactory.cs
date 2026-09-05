@@ -68,7 +68,9 @@ namespace BarPromenade
             Rect bounds,
             float southTopY,
             float northTopY,
-            Material sharedMaterial)
+            Material sharedMaterial,
+            Func<Vector2, float> sampleTop = null,
+            float surfacePitch = SurfacePitch)
         {
             if (parent == null)
             {
@@ -87,8 +89,15 @@ namespace BarPromenade
                     nameof(bounds));
             }
 
-            int columns = ResolveSpans(bounds.width);
-            int rows = ResolveSpans(bounds.height);
+            if (!(surfacePitch > 0f))
+            {
+                throw new ArgumentOutOfRangeException(nameof(surfacePitch));
+            }
+
+            int columns = Mathf.Max(MinimumSpans,
+                Mathf.RoundToInt(bounds.width / surfacePitch));
+            int rows = Mathf.Max(MinimumSpans,
+                Mathf.RoundToInt(bounds.height / surfacePitch));
             var vertices = new Vector3[(columns + 1) * (rows + 1)];
             var normals = new Vector3[vertices.Length];
             var triangles = new int[columns * rows * 6];
@@ -113,7 +122,10 @@ namespace BarPromenade
                         bounds.xMax,
                         (float)column / columns);
                     int index = row * (columns + 1) + column;
-                    vertices[index] = new Vector3(x, topY, z) - origin;
+                    float sampledTop = sampleTop != null
+                        ? sampleTop(new Vector2(x, z))
+                        : topY;
+                    vertices[index] = new Vector3(x, sampledTop, z) - origin;
 
                     // Flat up, not the slope's true normal. The shader
                     // replaces this wholesale with the analytic wave
