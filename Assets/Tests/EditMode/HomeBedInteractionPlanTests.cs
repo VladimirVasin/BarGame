@@ -265,6 +265,41 @@ namespace BarPromenade.Tests.EditMode
                 Throws.TypeOf<ArgumentNullException>());
         }
 
+        [TestCase(true)]
+        [TestCase(false)]
+        public void PelvisPath_TransfersWeightBeforeMovingAcrossTheBed(bool entering)
+        {
+            HomeBedInteractionPlan plan = HomeBedInteractionPlan.Create(HomeInteriorLayoutPlanner.Generate());
+            PlayerAnimatedInteractionPelvisTransition transition = plan.PelvisTransition;
+            Vector3 Sample(float time) => entering
+                ? transition.EvaluateEntering(plan.EntryHipPosition, plan.ActionHipPosition, time)
+                : transition.EvaluateExiting(plan.ActionHipPosition, plan.ExitHipPosition, time);
+            float begin = entering ? 0.30f : 0.32f;
+            float end = entering ? 0.64f : 0.57f;
+            Vector3 previous = Sample(begin);
+            bool previouslyMoving = false;
+            int transfers = 0;
+            for (int index = 1; index <= 1000; index++)
+            {
+                Vector3 current = Sample(Mathf.Lerp(begin, end, index / 1000f));
+                bool moving = Mathf.Abs(current.z - previous.z) > 0.000001f;
+                if (moving)
+                {
+                    Assert.That(current.y, Is.GreaterThanOrEqualTo(
+                        HomeBedInteractionPlan.SeatedHipHeight + 0.065f),
+                        "The pelvis must leave the mattress before it moves across it.");
+                    if (!previouslyMoving) transfers++;
+                }
+                Assert.That(current.x, Is.EqualTo(plan.ActionHipPosition.x).Within(Tolerance));
+                previouslyMoving = moving;
+                previous = current;
+            }
+            Assert.That(transfers, Is.EqualTo(2), "Two separate pushes must replace the continuous glide.");
+            Vector3 rest = Sample(entering ? 0.455f : 0.445f);
+            Assert.That(rest.y, Is.EqualTo(HomeBedInteractionPlan.SeatedHipHeight).Within(Tolerance));
+            AssertVector(rest, Sample(entering ? 0.465f : 0.455f));
+        }
+
         private static void AssertVector(
             Vector3 actual,
             Vector3 expected)

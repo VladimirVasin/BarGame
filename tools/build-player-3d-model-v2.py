@@ -38,7 +38,7 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 import atlas_kit  # noqa: E402  (after the sys.path fix)
 
 COMMON_AUTHORING_PATH = REPO_ROOT / "tools" / "player_3d_model_common.py"
-V2_GENERATOR_VERSION = "1.3.0"
+V2_GENERATOR_VERSION = "1.4.0"
 TORSO_SKIN_MESHES = ("GEO_Torso", "CLO_JacketBody")
 TORSO_SKIN_BONES = ("pelvis", "spine", "chest")
 # Metres at the canonical 1.75 m height. Both garment and shirt use exactly
@@ -48,10 +48,14 @@ RUN_ACTION_NAME = "Run"
 RUN_DURATION_SECONDS = 0.75
 RUN_SOURCE_FRAME_COUNT = 18
 RUN_SOURCE_FPS = 24
-ATLAS_COLUMNS = 4
+# Eight columns: the left half holds the nine faces, the right half their
+# soiled twins at column + 4, so the atlas is twice as wide as it is tall.
+ATLAS_COLUMNS = 8
 ATLAS_ROWS = 4
 ATLAS_CELL_SIZE = 64
-ATLAS_SIZE = ATLAS_COLUMNS * ATLAS_CELL_SIZE
+ATLAS_WIDTH = ATLAS_COLUMNS * ATLAS_CELL_SIZE
+ATLAS_HEIGHT = ATLAS_ROWS * ATLAS_CELL_SIZE
+FACE_ATLAS_SOILED_COLUMN_OFFSET = 4
 CLOTHING_ATLAS_SIZE = 256
 
 DEFAULT_OUTPUT = (
@@ -301,9 +305,21 @@ SOCKET = (126, 96, 89, 255)
 UNDER_EYE = (111, 82, 78, 255)
 CHEEK = (183, 145, 125, 255)
 LIP = (88, 58, 58, 255)
+# What the drink left on his chin: a wet ochre band under the lip, darker
+# where it ran, a few pale crumbs. Skin reads ~150 in luma, the soil ~85, so
+# the band survives the composite's grain at 640x360.
+SOIL = (96, 84, 46, 255)
+SOIL_DARK = (66, 56, 30, 255)
+SOIL_PALE = (150, 140, 84, 255)
 
 
-def draw_face_tile(canvas: PixelCanvas, column: int, top_row: int, expression: str) -> None:
+def draw_face_tile(
+    canvas: PixelCanvas,
+    column: int,
+    top_row: int,
+    expression: str,
+    soiled: bool = False,
+) -> None:
     ox = column * ATLAS_CELL_SIZE
     oy = top_row * ATLAS_CELL_SIZE
     canvas.rect(ox, oy, ox + 64, oy + 64, SKIN)
@@ -422,11 +438,41 @@ def draw_face_tile(canvas: PixelCanvas, column: int, top_row: int, expression: s
     canvas.put(ox + 21, oy + mouth_y, SKIN_SHADOW)
     canvas.put(ox + 44, oy + mouth_y + 1, SKIN_SHADOW)
 
+    if soiled:
+        draw_mouth_soil(canvas, ox, oy, column)
+
+
+def draw_mouth_soil(canvas: PixelCanvas, ox: int, oy: int, column: int) -> None:
+    """The soiled twin of a face: the same expression with the drink on it.
+
+    Painted after the mouth so the lips (y=47-48) and Slack's open slit stay
+    readable above the band; the soil begins at y=50 and runs down the chin.
+    The eyes are never touched - the expression still has to carry.
+    """
+    canvas.rect(ox + 24, oy + 50, ox + 43, oy + 54, SOIL)
+    canvas.rect(ox + 27, oy + 54, ox + 40, oy + 56, SOIL)
+    # Where it ran: two drips of unequal length below the band.
+    canvas.rect(ox + 30, oy + 56, ox + 32, oy + 59, SOIL_DARK)
+    canvas.rect(ox + 37, oy + 56, ox + 38, oy + 58, SOIL_DARK)
+    # Smears at the corners of the mouth where the back of a hand went.
+    canvas.line(ox + 20, oy + 48, ox + 23, oy + 50, SOIL_DARK, 1)
+    canvas.line(ox + 43, oy + 49, ox + 47, oy + 51, SOIL_DARK, 1)
+    # Specks across the chin and lower cheeks; the column salts the hash so
+    # no two twins carry the same spatter.
+    for y in range(46, 59):
+        for x in range(17, 49):
+            selector = x * 7 + y * 13 + column * 3
+            if selector % 17 == 0:
+                canvas.put(ox + x, oy + y, SOIL_DARK)
+            elif selector % 23 == 0:
+                canvas.put(ox + x, oy + y, SOIL_PALE)
+
 
 # The atlas cells, in python's top-left rows: the five sober faces the
-# runtime has always had, then the drink's four. Unity reads rows from the
-# bottom, so a python row r is the manifest's row 3 - r.
-FACE_ATLAS_CELLS = (
+# runtime has always had, then the drink's four, then a soiled twin of every
+# one of them four columns to the right. Unity reads rows from the bottom,
+# so a python row r is the manifest's row 3 - r.
+FACE_ATLAS_CLEAN_CELLS = (
     ("Neutral", 0, 0),
     ("HalfBlink", 1, 0),
     ("ClosedBlink", 2, 0),
@@ -437,11 +483,17 @@ FACE_ATLAS_CELLS = (
     ("Slack", 0, 2),
     ("Grimace", 1, 2),
 )
+FACE_ATLAS_CELLS = tuple(
+    (expression, column, row, False) for expression, column, row in FACE_ATLAS_CLEAN_CELLS
+) + tuple(
+    (expression, column + FACE_ATLAS_SOILED_COLUMN_OFFSET, row, True)
+    for expression, column, row in FACE_ATLAS_CLEAN_CELLS
+)
 
 
 def build_expression_sheet(atlas: PixelCanvas, path: Path) -> None:
     sheet = PixelCanvas(ATLAS_CELL_SIZE * 2 * len(FACE_ATLAS_CELLS), ATLAS_CELL_SIZE * 2)
-    source_cells = tuple((column, row) for _, column, row in FACE_ATLAS_CELLS)
+    source_cells = tuple((column, row) for _, column, row, _ in FACE_ATLAS_CELLS)
     for destination_index, (source_column, source_row) in enumerate(source_cells):
         for y in range(ATLAS_CELL_SIZE):
             for x in range(ATLAS_CELL_SIZE):
@@ -458,13 +510,13 @@ def build_expression_sheet(atlas: PixelCanvas, path: Path) -> None:
 
 
 def build_face_atlas(path: Path, expression_sheet_path: Path) -> str:
-    canvas = PixelCanvas(ATLAS_SIZE, ATLAS_SIZE)
+    canvas = PixelCanvas(ATLAS_WIDTH, ATLAS_HEIGHT)
     # Reserved cells contain a safe weary-neutral fallback instead of alpha.
     for row in range(ATLAS_ROWS):
         for column in range(ATLAS_COLUMNS):
             draw_face_tile(canvas, column, row, "Neutral")
-    for expression, column, row in FACE_ATLAS_CELLS:
-        draw_face_tile(canvas, column, row, expression)
+    for expression, column, row, soiled in FACE_ATLAS_CELLS:
+        draw_face_tile(canvas, column, row, expression, soiled)
     canvas.write_png(path)
     build_expression_sheet(canvas, expression_sheet_path)
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -2571,8 +2623,9 @@ def write_v2_manifest(
                         "expression": expression,
                         "column": column,
                         "row": ATLAS_ROWS - 1 - row,
+                        "soiled": soiled,
                     }
-                    for expression, column, row in FACE_ATLAS_CELLS
+                    for expression, column, row, soiled in FACE_ATLAS_CELLS
                 ],
             },
             "texture_bindings": [

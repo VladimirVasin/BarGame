@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using PelvisKey = BarPromenade.PlayerAnimatedInteractionPelvisPath.Key;
 
 namespace BarPromenade
 {
@@ -27,17 +28,17 @@ namespace BarPromenade
             PlayerCharacterDimensions.SupinePelvisSupportOffset -
             HomeInteriorWorldBuilder.BedSleeperSinkDepth;
 
-        // The window each clip actually spends sitting on the edge. Waking is
-        // the longer one: he is seated from the half-crouch at 0.50 until his
-        // weight goes over his feet at 0.88, with the legs leaving the bed one
-        // at a time in between. These mirror the BedEnter and BedExit
+        // The window each clip actually spends sitting on the edge. The wake
+        // reaches it after two supported pelvis steps, then lowers the legs
+        // one at a time before standing. These mirror the BedEnter and BedExit
         // landmarks in tools/player_3d_model_common.py, which publishes them as
         // `bed_contract` in the model manifest so drift fails a test rather
         // than silently sliding the hero across the mattress.
-        internal const float EnterSeatArrivalProgress = 0.28f;
-        internal const float EnterSeatDepartureProgress = 0.44f;
-        internal const float ExitSeatArrivalProgress = 0.50f;
-        internal const float ExitSeatDepartureProgress = 0.88f;
+        internal const float EnterSeatArrivalProgress = 0.22f;
+        internal const float EnterSeatDepartureProgress = 0.30f;
+        internal const float ExitSeatArrivalProgress = 0.57f;
+        internal const float ExitSeatDepartureProgress = 0.90f;
+        internal const float PelvisStepLift = 0.07f;
         // Let the hands and head prepare while the pelvis keeps its support;
         // on entry it arrives before the final shoulder/head settle.
         internal const float EnterHoldProgress = 0.05f;
@@ -113,7 +114,47 @@ namespace BarPromenade
                 EnterHoldProgress,
                 EnterSettleProgress,
                 ExitHoldProgress,
-                ExitSettleProgress);
+                ExitSettleProgress,
+                CreateEnterPath(),
+                CreateExitPath());
+
+        private Vector3 SupportedSeat(float acrossBed, float lift = 0f) =>
+            new Vector3(SeatHipPosition.x, SeatedHipHeight + lift,
+                Mathf.Lerp(SeatHipPosition.z, ActionHipPosition.z, acrossBed));
+
+        private PlayerAnimatedInteractionPelvisPath CreateEnterPath() =>
+            new PlayerAnimatedInteractionPelvisPath(
+                new PelvisKey(0f, EntryHipPosition),
+                new PelvisKey(EnterHoldProgress, EntryHipPosition),
+                new PelvisKey(EnterSeatArrivalProgress, SeatHipPosition),
+                new PelvisKey(EnterSeatDepartureProgress, SeatHipPosition),
+                // Lift first; translate only while the hands carry the weight.
+                new PelvisKey(0.34f, SupportedSeat(0f, PelvisStepLift)),
+                new PelvisKey(0.41f, SupportedSeat(0.5f, PelvisStepLift)),
+                new PelvisKey(0.44f, SupportedSeat(0.5f)),
+                new PelvisKey(0.47f, SupportedSeat(0.5f)),
+                new PelvisKey(0.51f, SupportedSeat(0.5f, PelvisStepLift)),
+                new PelvisKey(0.58f, SupportedSeat(1f, PelvisStepLift)),
+                new PelvisKey(0.61f, SupportedSeat(1f)),
+                new PelvisKey(0.64f, SupportedSeat(1f)),
+                new PelvisKey(EnterSettleProgress, ActionHipPosition),
+                new PelvisKey(1f, ActionHipPosition));
+
+        private PlayerAnimatedInteractionPelvisPath CreateExitPath() =>
+            new PlayerAnimatedInteractionPelvisPath(
+                new PelvisKey(0f, ActionHipPosition),
+                // Rise over the same support before advancing toward the edge.
+                new PelvisKey(0.30f, SupportedSeat(1f)),
+                new PelvisKey(0.32f, SupportedSeat(1f)),
+                new PelvisKey(0.35f, SupportedSeat(1f, PelvisStepLift)),
+                new PelvisKey(0.40f, SupportedSeat(0.5f, PelvisStepLift)),
+                new PelvisKey(0.43f, SupportedSeat(0.5f)),
+                new PelvisKey(0.46f, SupportedSeat(0.5f)),
+                new PelvisKey(0.49f, SupportedSeat(0.5f, PelvisStepLift)),
+                new PelvisKey(0.54f, SupportedSeat(0f, PelvisStepLift)),
+                new PelvisKey(ExitSeatArrivalProgress, SeatHipPosition),
+                new PelvisKey(ExitSeatDepartureProgress, SeatHipPosition),
+                new PelvisKey(1f, ExitHipPosition));
 
         public static HomeBedInteractionPlan Create(
             HomeInteriorLayoutPlan layout)

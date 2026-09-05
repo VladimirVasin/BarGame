@@ -83,6 +83,8 @@ namespace BarPromenade
         private IntoxicationMutterPresenter mutter;
         private IntoxicationNauseaController nausea;
         private IntoxicationNauseaGaugeView nauseaView;
+        private IntoxicationVomitController vomit;
+        private HeroVomitStreamEffect vomitEffect;
         private IntoxicationVertigoModel vertigo;
         private float vertigoTwistRadians;
         private Vector2 vertigoCorePixels;
@@ -156,6 +158,13 @@ namespace BarPromenade
         /// <summary>His fight with the nausea, on the last stage.</summary>
         public IntoxicationNauseaController Nausea => nausea;
 
+        /// <summary>The bout of vomiting a lost fight becomes.</summary>
+        public IntoxicationVomitController Vomit => vomit;
+
+        /// <summary>The stream effect's object, when the rig has a mouth to pour from.</summary>
+        public Transform VomitHost =>
+            vomitEffect != null ? vomitEffect.transform : null;
+
         public void Initialize(
             PlayerRuntime player,
             PlayerCameraFollow follow,
@@ -182,6 +191,7 @@ namespace BarPromenade
 
             EnsureMutter(player, follow);
             EnsureNausea(player, follow);
+            EnsureVomit(player);
 
             presentationLevel =
                 GameSessionState.IntoxicationLevel;
@@ -270,6 +280,56 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Raises the bout of vomiting. The controller is a plain object
+        /// like the nausea's, ticked from this Update right after it, so
+        /// the lost fight becomes the bout in the same frame; the stream
+        /// is a component on a child of its own, following the mouth. A
+        /// rig with neither a mouth nor a head anchor (the stand-in
+        /// presentations in tests) gets the controller alone — the
+        /// schedule, the key and the relief need no stream, and the
+        /// effect refuses a null anchor.
+        /// </summary>
+        private void EnsureVomit(PlayerRuntime player)
+        {
+            int seed = GameSessionState.CitySeed ^
+                       IntoxicationVomitController.VomitSeedSalt;
+            Player3DAssetRegistry registry = heroPresentation != null
+                ? heroPresentation.Registry
+                : null;
+            Transform mouth = null;
+            if (registry != null)
+            {
+                mouth = registry.Anchors.Mouth != null
+                    ? registry.Anchors.Mouth
+                    : registry.Anchors.Head;
+            }
+
+            if (mouth != null)
+            {
+                if (vomitEffect == null)
+                {
+                    var host = new GameObject(
+                        HeroVomitStreamEffect.RuntimeObjectName);
+                    host.transform.SetParent(transform, false);
+                    vomitEffect = host
+                        .AddComponent<HeroVomitStreamEffect>();
+                }
+
+                vomitEffect.Initialize(
+                    mouth,
+                    player.GameObject != null
+                        ? player.GameObject.transform
+                        : null,
+                    registry,
+                    seed);
+            }
+
+            vomit?.Shutdown();
+            vomit = new IntoxicationVomitController(player, seed);
+            vomit.Bind(vomitEffect);
+        }
+
+        /// <summary>
         /// Test seam: restarts the vertigo whirlpool's random stream from
         /// still water, mirroring
         /// <see cref="PlayerCameraFollow.ReseedDollyZoom"/>.
@@ -321,9 +381,33 @@ namespace BarPromenade
                 UpdateBalance(Time.deltaTime);
             }
             ApplyPresentation();
+            heroPresentation?.SetMouthSoiled(GameSessionState.HeroMouthSoiled);
+            // Only the F9 button can put a gauge under a bout of vomiting
+            // (either order); the gauge gives way, the bout keeps the key.
+            if (vomit != null &&
+                vomit.IsActive &&
+                nausea != null &&
+                nausea.IsBoutActive)
+            {
+                nausea.Cancel();
+            }
+
             // After the drunk pose, so the nausea's hand lands on top of
-            // it in the presentation's late pass this same frame.
-            nausea?.Tick(deltaTime, IsFalling, IsStaggering);
+            // it in the presentation's late pass this same frame. While
+            // he is being sick the clock's gate stays closed and rearms.
+            nausea?.Tick(
+                deltaTime,
+                IsFalling,
+                IsStaggering,
+                vomit != null && vomit.IsActive);
+            if (nausea != null && nausea.ConsumeFailCue())
+            {
+                vomit?.Begin();
+            }
+
+            // Scaled time, zero while paused: the stream, the sounds and
+            // the ragdoll's joints all run on Time.deltaTime.
+            vomit?.Tick(Time.deltaTime, GameTimeScaleRuntime.IsPaused);
             ApplyRiseBlend();
         }
 
@@ -1262,6 +1346,7 @@ namespace BarPromenade
             cameraFollow?.SetBalanceReaction(0f, 0f, 0f);
             mutter?.Silence();
             nausea?.Shutdown();
+            vomit?.Shutdown();
             cameraFollow?.ClearFocusOverride();
             IntoxicationRenderState.Clear();
             lensDriver?.Clear();

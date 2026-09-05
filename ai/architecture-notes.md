@@ -3854,9 +3854,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   therefore sit near the middle of the door-side long edge. This removes the
   former `0.69 m` travel along the mattress between the foot-side dock and
   the sleeping pelvis; only the supported movement across the bed remains.
-  Wake holds the sleeping pelvis through `30%` of the clip while the torso
-  rises, reaches the side seat at `50%`, then lowers the right and left legs
-  separately before the standing movement begins at `88%`.
+  `PlayerAnimatedInteractionPelvisPath` adds optional immutable, endpoint-checked
+  world-space keys to the shared transition; omitted paths retain the existing
+  waypoint behavior. Bed uses two distinct support changes instead of a single
+  smoothed translation. Each raises the pelvis `7 cm`, moves half the cross-bed
+  distance while lifted, then sits down; no horizontal travel occurs during
+  the lift, lowering or seated pauses. Blender solves the alternating support
+  hand against a stationary mattress point and bakes ordinary bone keys.
+  The `5 s` entry transfers at `34–41%` and `51–58%`, finishing both before
+  reclining at `64%`. The `6 s` wake sits up first, transfers at `35–40%` and
+  `49–54%`, reaches the side seat at `57%`, lowers each leg, then stands after
+  `90%`. The manifest publishes the same paths and lift for a direct contract
+  comparison with Unity. Full motion captures accompany the contact regression.
   The camera-corner storage pile is `1.30 m` wide against the west wall, leaving
   the middle dock's player clearance free. Its fixed authored base/wardrobe
   door and later-day bottles/bags fit that footprint; the plan contract rejects
@@ -4865,16 +4874,81 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   modal `BarMinigameModalLock` capture, Bézier camera from the pinned
   bathroom shot with the shared smoking drift, debounced stop input,
   commit only on completion, idempotent restore + `ReapplyActiveShot` —
-  while replacing authored clips with three RECORDED EXCEPTIONS:
+  while replacing authored clips with recorded scoped exceptions:
   (a) the shower hides the standing Idle hero behind the drawn curtain
-  group (scale-x animation of the folded panels); (b) the toilet is a
-  privacy cut — the camera retreats to the ajar-door frame and the hero
-  stays off-frame in Idle while the cistern and flush play; (c) teeth
+  group (scale-x animation of the folded panels); (b) the former toilet
+  privacy cut is retired by the accepted `2026-09-05` replacement below;
+  (c) teeth
   brushing poses a procedural additive CCD right arm atop Idle
   (`HomeTeethBrushingArmPose`, capture-solve-slerp each LateUpdate at
   order 300 — the bus-driver/cashier idiom) driving a RightGrip
   toothbrush prop oscillating at the Mouth anchor with a head
   counter-yaw.
+- **Accepted — First-person toilet replacement (`2026-09-05`):** The user
+  approved the plan for a controllable first-person toilet action. This
+  replaces only bathroom exception (b) with a scoped procedural 3D action;
+  the shared `HomeBathroomSceneInteraction` retains visible constrained
+  approach, neutral settle, modal capture, independent guided exit, terminal
+  presentation and owned idempotent cleanup. It poses the actual Hero V2 right
+  arm against the Blender anatomy's grip through IK and hides only the
+  registered head geometry near the eye-level camera. No replacement arm,
+  hero model or additional full-body clips are authored; this is the explicit
+  exception to the standard's authored action-clip requirement. Shower and
+  brushing exceptions remain as recorded above.
+
+  `HomeToiletSceneTimeline` owns `1.5 s` entry, exactly `6 s` urination,
+  `4 s` shaking and `1.3 s` exit; guided travel and the rendered neutral and
+  terminal endpoints are separate. The hero stands in place during the action.
+  The user's follow-up slows the other action animations twofold. The final
+  `20%` of main emission follows `1 - smoothstep` from full flow to zero,
+  integrated over each consumed timeline interval before driving packet rate,
+  speed and diameter; already emitted packets keep their own velocity.
+  The anatomy base sits `8 mm` inside the actual baked garment/torso
+  intersection at pelvis height, measured once at action entry. It pivots
+  there with the body; the former broad upper-torso measurement and `55 mm`
+  forward clearance are removed. The fixed authored length and base grip
+  remain unchanged.
+  Mouse/right stick steer the held anatomy, with wrist yaw limited locally
+  and excess yaw passed into an unrestricted body turn; RMB/gamepad LB move
+  an independent look offset. `HomeToiletGaugeView` shows only this action's
+  remaining volume at the right edge in the existing HUD language. Stop `E`
+  cancels without relief or a flush; natural completion flushes once and
+  commits stress `-6` once. Already emitted liquid and marks survive the end
+  or cancellation of the modal action.
+
+  `tools/build-home-toilet-action-3d-model.py` authors the fixed-metre anatomy,
+  hinge-origin lid, true annular seat, hollow ceramic pedestal, correctly seated bowl-water
+  surface and paper roll with an open cardboard core plus segment, droplet,
+  splash, stain and wall-drip meshes: eleven FBX models, thirteen meshes,
+  `2,048` triangles, source `.blend`, manifests and a direct export validator.
+  The pedestal replaces only the visible solid footprint while preserving its
+  logical collision and `0.82 x 0.48 x 0.858 m` envelope; the cavity centres
+  `0.10 m` west of that footprint to match the bowl. Eighteen mesh-ray checks
+  prove clearance to the real water plane and for the incoming stream. The
+  original lathed seat also carried filled lower caps; its replacement is a
+  true `0.54 x 0.05 x 0.506 m` annular shell, retaining a `70%` opening with
+  `25` unobstructed through-hole rays and a separate physical-rim check. The
+  `0.10 m`-diameter, `0.095 m`-high paper roll stands on the cistern without a
+  label or interaction. The user's later clearance correction limits the lid
+  to `90 degrees`, keeping it clear of the cistern.
+  Anatomy reuses the Hero V2 skin palette and shared materials. The lid opens
+  on capture and closes on restoration. `HomeUrineEffect` advances emitted
+  packets under gravity and sweeps their travelled segments against actual
+  Home mesh surfaces, preserving the existing flight when the aim changes.
+  Bowl and solid impacts own their contact sound and splash. Imported effect
+  meshes are reused; surface projection deforms the authored stain mesh.
+  Nearby marks merge in the bounded `HomeUrineResidue` store (`384` deposits,
+  with oldest slots reused at capacity). Stable surface IDs and local contact
+  coordinates preserve marks on moving objects and across Home scene loads;
+  a new game clears them. They are player-caused traces, separate from
+  calendar-day dressing, intoxication, story poisoning and bodily decay.
+
+  Preparation validates assets before modal capture; completion, stop,
+  transition, disable, destroy and failed approach restore the owned camera,
+  head renderer states, arm pose, cursor, occlusion, gauge, lid and input.
+  The action adds no fiction text, reaction, comedy beat or story state and
+  violates no world-canon prohibition. The focused validation result belongs
+  in the `2026-09-05` work-log entry.
 - **Accepted — Mirror-camera brushing scene:** The close-up shoots from
   7 cm in front of the mirror plane back into the hero's face (FOV 36) —
   the PS1 "reflection" without RenderTextures; the pinned bathroom shot
@@ -5917,3 +5991,116 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   contract was re-anchored on the filter tip (`11 mm` at the drag, the
   tube/filter junction is `44 mm` by construction) and its axis threshold on
   the generator's own validated `0.889` (`0.86`, not `0.94`).
+- **Accepted and implemented 2026-09-05 — the lost bout ends in vomit, and
+  the vomit takes no lock either:** by the user's decision the Fail of the
+  nausea gauge is no longer a stub. `IntoxicationNauseaController` only
+  raises a `ConsumeFailCue`; the bout itself is `IntoxicationVomitController`,
+  a second plain object ticked from `IntoxicationStatusController.Update`
+  right after the gauge, with its OWN gates — not a branch inside the gauge
+  controller, because the gauge cancels on `!CanRun(isFalling)` and holds on
+  `BarMinigameModalLock.IsAnyLocked`, and a fall takes exactly that lock
+  (`fallLock`), while the user's decision was that the bout survives the
+  fall and goes on lying down and through the rise. So the vomit ignores the
+  modal lock altogether; only a scene transition, a vehicle and `Shutdown`
+  cancel it, and a cancel emits no further cues (a Relief already granted
+  stays granted, the residue stays on the ground). It runs on SCALED
+  `Time.deltaTime`, zero while paused, unlike the gauge's calendar clock:
+  the stream's arc, the particles (`useUnscaledTime = false`), the ragdoll
+  and the sounds all live on scaled time, and a `timeScale 0` pause has to
+  freeze the head, the stream and the schedule together — the `≤ 12 %` gap
+  to the gauge at the top is the one already accepted for the hand (note
+  (6) of the nausea entry). The schedule is a pure deterministic
+  `HeroVomitModel` (`HeroVomitRules`: onset `0.4 s` — the head goes down and
+  the retch is heard before anything flows — bursts `3/1/1 s` at strengths
+  `1/0.55/0.55` with `2 s` pauses, a `3.2 Hz` pulse of depth `0.45` in the
+  flow, head down `14°` plus a `4°` heave in the first `0.3 s` of every
+  burst, blend-in `0.35 s`, blend-out `0.8 s` after `9.4 s`, `IsActive`
+  until `10.2 s`) with a FIFO cue queue, so a dropped frame delivers every
+  crossed cue in order and two models advanced by the same steps give the
+  same trace. THE HEAD GOES DOWN IN EVERY BODY STATE, by two different
+  writers: on his feet, in a clip and through the rise it is a term in
+  `Player3DCharacterPresentation.ApplyAttentionPose` — the single pass over
+  `neckBone`/`headBone` — subtracted AFTER the `[−32, +10]` clamp (inside
+  it the drunk droop would eat it), not under `headFree`, written with the
+  same `0.38/0.62` split through the same capture/restore pair, so over the
+  Rise clip's `HeadLift` the two simply add; the attention pitch is faded by
+  `1 − vomitWeight` while the attention weight itself keeps running. Under
+  the ragdoll PhysX owns the bones, so
+  `Player3DRagdollController.SetHeadDrive(deg)` puts a slerp drive on the
+  head's `ConfigurableJoint` (`spring 90`, `damper 9`, `maxForce 60` — a
+  first cut at `40/6/25` moved a head lying on the floor by four degrees in
+  three quarters of a second, the right way and too timidly to read;
+  `targetRotation = AngleAxis(HeadDriveSign · deg, right)`), cleared in
+  `Cancel`, `BeginRise` and after `FreezeBodies`. `HeadDriveSign = −1f` sits
+  beside `JointFlexionSign` and was pinned the way the flexion sign was:
+  `targetRotation` is the connected body's frame relative to the joint's,
+  i.e. inverted, so a chin-down asks for a negative target — the capture
+  fixture measures `MeasureHeadPitchDownDegrees()` before and `60` frames
+  after the drive starts and names the one constant to flip if the chin
+  goes up (the first run read `+3.96°` with `−1`, so the sign holds); the
+  bone term on his feet is probed the same way through
+  `DebugHeadPitchDownDegrees` (`+8°` and more within thirty frames). THE COLLISION IS A RAYCAST PER PARTICLE in
+  `HeroVomitStreamEffect.LateUpdate` (order `280`, after the mouth has been
+  lowered), never the `collision` module: the mouth socket sits INSIDE the
+  hero's `0.32 m` capsule and, lying down, the stream crosses his own
+  ragdoll proxies, and the module cannot exclude an object; and the stair
+  treads he may be standing on are FootProbe triggers, which the module
+  ignores wholesale. Each live particle is swept back along
+  `velocity · dt · 1.15 + 2 cm` with `QueryTriggerInteraction.Collide`, the
+  nearest hit that is not a trigger (except `FootProbeSurface`), not a
+  child of the hero and not a child of the residue wins, the normal is NOT
+  rejected by `y` (walls and furniture take residue too), and the particle
+  is killed by writing its `remainingLifetime` back through `SetParticles`
+  — without the write-back the kill is lost. The stream, the chunks and the
+  splashes are MESH particles (cubes stretched along velocity) on `Ps1Lit`
+  — the first lit particles in the project — not on the unlit
+  `CityAtmosphereParticle` material every other particle uses: an unlit
+  yellow-green jet at night would glow like neon (art §15a) and would not
+  separate by lightness from the dark chunks inside it in the Begotten
+  print; lit and opaque it takes the street light the floor takes, and the
+  residue on the ground is lit the same way. `enableGPUInstancing` is off
+  (URP Lit has no procedural particle instancing; Unity bakes the mesh).
+  THE RESIDUE OBEYS THE BAN ON FLAT QUADS: `HeroVomitResidueModel`
+  coalesces impacts within `0.3 m` on the same normal (`dot > 0.9`) into
+  one patch that grows with the volume (`radius = min(0.45, sqrt(area/π))`,
+  the centre pulled toward the hit by `volume/area`), `12` patches at most
+  with the oldest evicted, `48` chunks; each patch is a centre plus ten rim
+  vertices at `0.62–1.0 · r` by a stable hash, in the surface's tangent
+  plane, lifted `6 mm` along its normal, UV in metres over `0.18 m` tiles of
+  a runtime `32×32` slurry texture (base, `30 %` darker cells, `10 %` dark
+  lumps, `6 %` pale crumbs, point-filtered) — an irregular, textured, lit
+  polygon, never a rectangle, with dark cubes sunk `40 %` into it for the
+  pieces. THE SOILED MOUTH IS AN ATLAS FLAG, not a second face pipeline:
+  the face atlas became `8×4` (`512×256`), each of the nine grimaces has a
+  soiled twin at column `+4`, `Player3DFaceAtlasCell` gained `Soiled` (the
+  three-argument constructor stays for the mother),
+  `Player3DFaceAtlasBinding.TryGetTextureTransform(expression, soiled, …)`
+  matches the pair exactly and falls back to the clean cell when the twin
+  is missing, and `Player3DFaceAtlasPresenter.Apply(expression, soiled)` is
+  the only new call the presentation makes. A runtime composite was
+  rejected (a second face path around the atlas's sha256 contract) and so
+  was squeezing twins into the seven free `4×4` cells (no room for nine;
+  `Watchful`/`Tense` would have jumped to a soiled Neutral). The flag is
+  `GameSessionState.HeroMouthSoiled`, set after the FIRST burst and cleared
+  by the shower, by teeth-brushing BEFORE its daily gate (a wash always
+  washes), by sleep, by `ResetDrinkingState` and by the session reset. THE
+  RELIEF IS `GameSessionState.RelieveIntoxication(points, reason)`, the
+  first API that lowers the level by an amount: it clamps at `0`, returns
+  what was actually removed, zeroes the balance delay at `≤ 60` and does
+  NOT touch `intoxicationRecoveryElapsed` — a relief is not a drink, so the
+  sobering-up already under way is not restarted. The user's decisions:
+  `−20` in parts, `7/7/6` at each burst's end, not once at the end; the
+  soil holds until a wash or sleep, across scenes; the movement is free —
+  no lock, only the interact key is claimed for the `≈ 10 s`, and the
+  gauge's rest is REARMED (`boutsSuspended`) so the next bout is at least
+  `20 s` away. The accepted consequence: from `100` one Fail lands on `80`,
+  the last stage ends and the bouts, the hiccups and the scattering letters
+  stop until the next drink; a second Fail (`60`) switches the falls off.
+  My own choices, each one constant to reverse: the soil comes after burst
+  one (`SoilAtBurstIndex = 0` — a face cannot be clean after three seconds
+  of it; the brief's literal order is `2`), and the `0.4 s` onset before
+  the first flow. Seed salt `0x564D`, the seventh drunk salt. Canon: the §6
+  registry row of `2026-09-05` (level `0`; it lifts the §24.45 stub sentence
+  and «§16.15 — провал ничего не отнимает» and nothing else) and story
+  decision §24.46; the closing sentence of the nausea note above — "no §6
+  row" — is superseded by that row.

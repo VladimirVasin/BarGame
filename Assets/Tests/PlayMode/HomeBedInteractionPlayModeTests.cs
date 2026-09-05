@@ -965,8 +965,8 @@ namespace BarPromenade.Tests.PlayMode
                 ? home.Bed.Definition.EnterFrameCount
                 : home.Bed.Definition.ExitFrameCount;
             float[] checkpoints = entering
-                ? new[] { 0f, 0.16f, 0.28f, 0.44f, 0.58f, 0.72f, 0.88f, 0.98f }
-                : new[] { 0f, 0.16f, 0.28f, 0.44f, 0.58f, 0.68f, 0.80f, 0.88f, 0.98f };
+                ? new[] { 0f, 0.22f, 0.30f, 0.375f, 0.45f, 0.545f, 0.62f, 0.78f, 0.98f }
+                : new[] { 0f, 0.30f, 0.375f, 0.445f, 0.515f, 0.58f, 0.71f, 0.84f, 0.98f };
             int nextCheckpoint = 0;
             int sampledFrames = 0;
             HomeBedDeformableSurface pillow = FindBedSurface("Home Pillow");
@@ -974,43 +974,66 @@ namespace BarPromenade.Tests.PlayMode
             pillow.CopyBaseVertices(pillowRest);
             var presentation = home.Player.Visual as Player3DCharacterPresentation;
             Assert.That(presentation, Is.Not.Null);
-            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
-            while (home.AnimatedInteraction.Phase == phase &&
-                   Time.realtimeSinceStartup < deadline)
+            string clip = entering ? "BedEnter" : "BedExit";
+            bool fixedMotion = capture && AreaCaptureFixture.CaptureHomeBedEnabled;
+            float previousCaptureStep = Time.captureDeltaTime;
+            if (fixedMotion)
+                Time.captureDeltaTime = 1f / (24f * Mathf.Max(0.001f, Time.timeScale));
+            double motionStartedAt = Time.timeAsDouble;
+            // Saving two camera views must not advance the clip past its
+            // short support changes. The longer wall timeout is capture-only.
+            float deadline = Time.realtimeSinceStartup + (fixedMotion ? 90f : TimeoutSeconds);
+            try
             {
-                yield return null;
-                if (home.AnimatedInteraction.Phase != phase)
+                if (capture) AreaCaptureFixture.CaptureHomeBedMotionFrame(home, clip, 0f);
+                while (home.AnimatedInteraction.Phase == phase &&
+                       Time.realtimeSinceStartup < deadline)
                 {
-                    break;
+                    yield return null;
+                    if (home.AnimatedInteraction.Phase != phase)
+                    {
+                        break;
+                    }
+
+                    float progress = Mathf.Clamp01(
+                        (home.AnimatedInteraction.FrameIndex - startFrame) /
+                        (float)frameCount);
+                    if (capture) AreaCaptureFixture.CaptureHomeBedMotionFrame(
+                        home, clip, (float)(Time.timeAsDouble - motionStartedAt));
+                    AssertContinuous3DPresentation(home, clip);
+                    Assert.That(
+                        home.Room.InverseTransformPoint(
+                            presentation.Registry.Anchors.Pelvis.position).x,
+                        Is.EqualTo(home.BedInteractionPlan.ActionHipPosition.x).Within(0.015f),
+                        $"{clip} must keep the pelvis opposite the middle of the " +
+                        "bed instead of sliding toward the pillow or foot end.");
+                    AssertPosedVerticesClearMattress($"{clip} at {progress:P0}");
+                    AssertPillowKeepsItsBaseAndThickness(pillow, pillowRest);
+                    if (capture && nextCheckpoint < checkpoints.Length &&
+                        progress >= checkpoints[nextCheckpoint])
+                    {
+                        AreaCaptureFixture.CaptureHomeBedFrame(
+                            home,
+                            $"{(entering ? 10 : 30)}-{clip}-{nextCheckpoint:00}");
+                        nextCheckpoint++;
+                    }
+                    sampledFrames++;
                 }
 
-                float progress = Mathf.Clamp01(
-                    (home.AnimatedInteraction.FrameIndex - startFrame) /
-                    (float)frameCount);
-                string clip = entering ? "BedEnter" : "BedExit";
-                AssertContinuous3DPresentation(home, clip);
-                Assert.That(
-                    home.Room.InverseTransformPoint(
-                        presentation.Registry.Anchors.Pelvis.position).x,
-                    Is.EqualTo(home.BedInteractionPlan.ActionHipPosition.x).Within(0.015f),
-                    $"{clip} must keep the pelvis opposite the middle of the " +
-                    "bed instead of sliding toward the pillow or foot end.");
-                AssertPosedVerticesClearMattress($"{clip} at {progress:P0}");
-                AssertPillowKeepsItsBaseAndThickness(pillow, pillowRest);
-                if (capture && nextCheckpoint < checkpoints.Length &&
-                    progress >= checkpoints[nextCheckpoint])
-                {
-                    AreaCaptureFixture.CaptureHomeBedFrame(
-                        home,
-                        $"{(entering ? 10 : 30)}-{clip}-{nextCheckpoint:00}");
-                    nextCheckpoint++;
-                }
-                sampledFrames++;
+                Assert.That(home.AnimatedInteraction.Phase, Is.EqualTo(completedPhase));
+                Assert.That(sampledFrames, Is.GreaterThan(4),
+                    "The complete transition must expose intermediate posed frames.");
+                if (fixedMotion)
+                    Assert.That(sampledFrames, Is.GreaterThanOrEqualTo(frameCount),
+                        "Motion review must include every authored frame, not sparse key poses.");
+                if (capture) AreaCaptureFixture.CaptureHomeBedMotionFrame(
+                    home, clip, (float)(Time.timeAsDouble - motionStartedAt));
             }
-
-            Assert.That(home.AnimatedInteraction.Phase, Is.EqualTo(completedPhase));
-            Assert.That(sampledFrames, Is.GreaterThan(4),
-                "The complete transition must expose intermediate posed frames.");
+            finally
+            {
+                Time.captureDeltaTime = previousCaptureStep;
+                if (capture) AreaCaptureFixture.CompleteHomeBedMotion(clip);
+            }
             yield return null;
         }
 

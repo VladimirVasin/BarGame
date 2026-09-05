@@ -41,8 +41,11 @@ namespace BarPromenade
         /// Shows the cell for <paramref name="expression"/>, or the cell
         /// of the nearest face the atlas does have when this one is
         /// missing (an atlas built before the drink's faces existed).
+        /// With <paramref name="soiled"/> the soiled twin is preferred at
+        /// every step; the binding itself drops to the clean cell when an
+        /// atlas has no twin for that face.
         /// </summary>
-        public bool Apply(PlayerFacialExpression expression)
+        public bool Apply(PlayerFacialExpression expression, bool soiled = false)
         {
             if (!IsConfigured)
             {
@@ -51,6 +54,7 @@ namespace BarPromenade
 
             if (!binding.TryGetTextureTransform(
                     expression,
+                    soiled,
                     out Vector4 textureTransform))
             {
                 PlayerFacialExpression fallback =
@@ -58,6 +62,7 @@ namespace BarPromenade
                 if (fallback == expression ||
                     !binding.TryGetTextureTransform(
                         fallback,
+                        soiled,
                         out textureTransform))
                 {
                     return false;

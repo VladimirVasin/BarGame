@@ -19,7 +19,15 @@ namespace BarPromenade
     /// wrong picture. He keeps walking; only the interact key is lent to
     /// the gauge (<see cref="PlayerInteractor.SetInteractKeyClaimed"/>).
     ///
-    /// The outcomes are, for now, reported and shown and nothing more.
+    /// A success is reported and shown and nothing more. A fail is handed
+    /// on: it raises a cue the status controller reads once
+    /// (<see cref="ConsumeFailCue"/>) and answers by starting the bout of
+    /// vomiting in <see cref="IntoxicationVomitController"/>. The key is
+    /// released here on resolve all the same — the bout claims it again
+    /// in the same Update, and the interactor runs earlier in the frame
+    /// than the status controller, so no press falls through the gap.
+    /// While that bout runs the clock is held with its gate closed, which
+    /// rearms the full rest: after being sick he is left alone for a while.
     /// </summary>
     public sealed class IntoxicationNauseaController
     {
@@ -52,6 +60,7 @@ namespace BarPromenade
         private float boutPace;
         private bool keyClaimed;
         private float verdictRemaining;
+        private bool failDue;
 
         public IntoxicationNauseaController(PlayerRuntime player, int newSeed)
         {
@@ -147,9 +156,16 @@ namespace BarPromenade
         /// <summary>
         /// One frame on the calendar clock (unscaled, zero while paused),
         /// from the status controller that already knows whether he is
-        /// falling or fighting for his balance.
+        /// falling or fighting for his balance. <paramref name="boutsSuspended"/>
+        /// closes the clock's gate without touching a running bout: while
+        /// he is being sick no new bout may start, and a closed gate
+        /// rearms the full rest on purpose.
         /// </summary>
-        public void Tick(float deltaTime, bool isFalling, bool isStaggering)
+        public void Tick(
+            float deltaTime,
+            bool isFalling,
+            bool isStaggering,
+            bool boutsSuspended = false)
         {
             float step = float.IsNaN(deltaTime) ? 0f : Mathf.Max(0f, deltaTime);
             if (gauge.IsRunning)
@@ -169,7 +185,9 @@ namespace BarPromenade
             }
             else if (!IsHeldByOthers)
             {
-                clock.Advance(step, CanBegin(isFalling, isStaggering));
+                clock.Advance(
+                    step,
+                    CanBegin(isFalling, isStaggering) && !boutsSuspended);
                 if (clock.ConsumeBoutCue())
                 {
                     BeginBout();
@@ -208,6 +226,22 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// True once after a bout is lost. The status controller reads it
+        /// in the same Update the gauge resolved and starts the vomiting;
+        /// nothing else consumes it, and a shutdown drops it.
+        /// </summary>
+        public bool ConsumeFailCue()
+        {
+            if (!failDue)
+            {
+                return false;
+            }
+
+            failDue = false;
+            return true;
+        }
+
         /// <summary>The bout is abandoned: the key is his again, nothing is reported.</summary>
         public void Cancel()
         {
@@ -231,6 +265,7 @@ namespace BarPromenade
         {
             Cancel();
             ReleaseKey();
+            failDue = false;
             verdictRemaining = 0f;
             Verdict = HeroNauseaOutcome.None;
             poseModel.Reset();
@@ -274,6 +309,7 @@ namespace BarPromenade
             else
             {
                 Fails++;
+                failDue = true;
                 RetroAudio.Play(RetroSfxId.Bad);
             }
 

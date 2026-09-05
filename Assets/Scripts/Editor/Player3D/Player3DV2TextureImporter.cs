@@ -10,6 +10,14 @@ namespace BarPromenade.Editor
     /// </summary>
     public sealed class Player3DV2TextureImporter : AssetPostprocessor
     {
+        /// <summary>
+        /// Every atlas in the game is 256 px square except the hero's face
+        /// atlas, which grew to 8x4 cells (512x256) when each face got a
+        /// soiled twin; a 256 cap would have halved it back down silently.
+        /// </summary>
+        private const int DefaultMaxTextureSize = 256;
+        internal const int FaceAtlasMaxTextureSize = 512;
+
         private void OnPreprocessTexture()
         {
             if (!(assetImporter is TextureImporter importer))
@@ -22,7 +30,7 @@ namespace BarPromenade.Editor
                     Player3DV2AssetSetup.AtlasPath,
                     StringComparison.OrdinalIgnoreCase))
             {
-                ConfigureAtlas(importer);
+                ConfigureAtlas(importer, FaceAtlasMaxTextureSize);
             }
             else if (string.Equals(
                          assetPath,
@@ -47,7 +55,14 @@ namespace BarPromenade.Editor
         /// </summary>
         internal static void ConfigureAtlas(TextureImporter importer)
         {
-            ConfigureCommon(importer);
+            ConfigureAtlas(importer, DefaultMaxTextureSize);
+        }
+
+        internal static void ConfigureAtlas(
+            TextureImporter importer,
+            int maxTextureSize)
+        {
+            ConfigureCommon(importer, maxTextureSize);
             importer.alphaSource = TextureImporterAlphaSource.FromInput;
             importer.alphaIsTransparency = false;
             importer.mipmapEnabled = false;
@@ -63,7 +78,9 @@ namespace BarPromenade.Editor
             importer.streamingMipmaps = false;
         }
 
-        internal static void ConfigureCommon(TextureImporter importer)
+        internal static void ConfigureCommon(
+            TextureImporter importer,
+            int maxTextureSize = DefaultMaxTextureSize)
         {
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;
@@ -73,7 +90,7 @@ namespace BarPromenade.Editor
             importer.filterMode = FilterMode.Point;
             importer.wrapMode = TextureWrapMode.Clamp;
             importer.anisoLevel = 1;
-            importer.maxTextureSize = 256;
+            importer.maxTextureSize = maxTextureSize;
             importer.textureCompression =
                 TextureImporterCompression.Uncompressed;
             importer.compressionQuality = 100;
@@ -81,7 +98,7 @@ namespace BarPromenade.Editor
             TextureImporterPlatformSettings standalone =
                 importer.GetPlatformTextureSettings("Standalone");
             standalone.overridden = true;
-            standalone.maxTextureSize = 256;
+            standalone.maxTextureSize = maxTextureSize;
             standalone.format = TextureImporterFormat.Automatic;
             standalone.textureCompression =
                 TextureImporterCompression.Uncompressed;

@@ -376,6 +376,7 @@ namespace BarPromenade.Tests.EditMode
             "debug.teleport.disabled",
             "debug.teleport.enabled",
             "debug.nausea.trigger",
+            "debug.vomit.trigger",
             "hero.nausea.result.success",
             "hero.nausea.result.fail"
         };

@@ -217,6 +217,26 @@ namespace BarPromenade.Tests.EditMode
                 "exit pelvis settle",
                 HomeBedInteractionPlan.ExitSettleProgress,
                 bed.exit_settle);
+            AssertMirrored("pelvis step lift", HomeBedInteractionPlan.PelvisStepLift,
+                bed.pelvis_step_lift_m);
+            HomeBedInteractionPlan plan = HomeBedInteractionPlan.Create(HomeInteriorLayoutPlanner.Generate());
+            PlayerAnimatedInteractionPelvisTransition transition = plan.PelvisTransition;
+            Assert.That(bed.enter_pelvis_path, Is.Not.Null.And.Not.Empty);
+            Assert.That(bed.exit_pelvis_path, Is.Not.Null.And.Not.Empty);
+            foreach (V2ManifestPelvisKey key in bed.enter_pelvis_path)
+                AssertPelvisKey(key, transition.EvaluateEntering(
+                    plan.EntryHipPosition, plan.ActionHipPosition, key.progress));
+            foreach (V2ManifestPelvisKey key in bed.exit_pelvis_path)
+                AssertPelvisKey(key, transition.EvaluateExiting(
+                    plan.ActionHipPosition, plan.ExitHipPosition, key.progress));
+        }
+
+        private static void AssertPelvisKey(V2ManifestPelvisKey key, Vector3 actual)
+        {
+            Assert.That(key.position, Has.Length.EqualTo(3));
+            Assert.That(Vector3.Distance(actual,
+                new Vector3(key.position[0], key.position[1], key.position[2])), Is.LessThan(0.0001f),
+                $"Runtime support at {key.progress} must match the pose author's world-space path.");
         }
 
         [Test]
@@ -231,7 +251,7 @@ namespace BarPromenade.Tests.EditMode
             AssertManifestContract(manifest);
             AssertModelImport();
             AssertAnimationImport(manifest);
-            AssertTextureImport(V2AtlasPath, false);
+            AssertTextureImport(V2AtlasPath, false, 512);
             AssertTextureImport(V2ClothingAtlasPath, false);
             AssertTextureImport(V2PortraitPath, true);
 
@@ -241,7 +261,7 @@ namespace BarPromenade.Tests.EditMode
                 AssetDatabase.LoadAssetAtPath<Texture2D>(V2PortraitPath);
             Texture2D clothingAtlas =
                 AssetDatabase.LoadAssetAtPath<Texture2D>(V2ClothingAtlasPath);
-            Assert.That(atlas.width, Is.EqualTo(256));
+            Assert.That(atlas.width, Is.EqualTo(512));
             Assert.That(atlas.height, Is.EqualTo(256));
             Assert.That(portrait.width, Is.EqualTo(192));
             Assert.That(portrait.height, Is.EqualTo(256));
@@ -266,59 +286,45 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(registry.HasFaceAtlas, Is.True);
                 Assert.That(registry.FaceAtlas.Renderer.name, Is.EqualTo("GEO_FaceSurface"));
                 Assert.That(registry.FaceAtlas.Texture, Is.SameAs(atlas));
-                Assert.That(registry.FaceAtlas.Columns, Is.EqualTo(4));
+                Assert.That(registry.FaceAtlas.Columns, Is.EqualTo(8));
                 Assert.That(registry.FaceAtlas.Rows, Is.EqualTo(4));
-                Assert.That(registry.FaceAtlas.Cells.Count, Is.EqualTo(9));
+                Assert.That(registry.FaceAtlas.Cells.Count, Is.EqualTo(18));
                 Assert.That(registry.Anchors.LeftVessel, Is.Not.Null);
                 Assert.That(
                     registry.Anchors.LeftVessel.name,
                     Is.EqualTo("SOCKET_Vessel.L"));
 
-                AssertAtlasTransform(
-                    registry.FaceAtlas,
-                    PlayerFacialExpression.Neutral,
-                    0,
-                    3);
-                AssertAtlasTransform(
-                    registry.FaceAtlas,
-                    PlayerFacialExpression.HalfBlink,
-                    1,
-                    3);
-                AssertAtlasTransform(
-                    registry.FaceAtlas,
-                    PlayerFacialExpression.ClosedBlink,
-                    2,
-                    3);
-                AssertAtlasTransform(
-                    registry.FaceAtlas,
-                    PlayerFacialExpression.Watchful,
-                    0,
-                    2);
-                AssertAtlasTransform(
-                    registry.FaceAtlas,
-                    PlayerFacialExpression.Tense,
-                    1,
-                    2);
-                AssertAtlasTransform(
-                    registry.FaceAtlas,
-                    PlayerFacialExpression.Drowsy,
-                    2,
-                    2);
-                AssertAtlasTransform(
-                    registry.FaceAtlas,
-                    PlayerFacialExpression.Glazed,
-                    3,
-                    2);
-                AssertAtlasTransform(
-                    registry.FaceAtlas,
-                    PlayerFacialExpression.Slack,
-                    0,
-                    1);
-                AssertAtlasTransform(
-                    registry.FaceAtlas,
-                    PlayerFacialExpression.Grimace,
-                    1,
-                    1);
+                // Every face sits in the left half of the atlas and its
+                // soiled twin four columns to the right, same row.
+                (PlayerFacialExpression expression, int column, int row)[]
+                    canonicalCells =
+                    {
+                        (PlayerFacialExpression.Neutral, 0, 3),
+                        (PlayerFacialExpression.HalfBlink, 1, 3),
+                        (PlayerFacialExpression.ClosedBlink, 2, 3),
+                        (PlayerFacialExpression.Watchful, 0, 2),
+                        (PlayerFacialExpression.Tense, 1, 2),
+                        (PlayerFacialExpression.Drowsy, 2, 2),
+                        (PlayerFacialExpression.Glazed, 3, 2),
+                        (PlayerFacialExpression.Slack, 0, 1),
+                        (PlayerFacialExpression.Grimace, 1, 1)
+                    };
+                foreach ((PlayerFacialExpression expression, int column, int row)
+                         in canonicalCells)
+                {
+                    AssertAtlasTransform(
+                        registry.FaceAtlas,
+                        expression,
+                        column,
+                        row,
+                        false);
+                    AssertAtlasTransform(
+                        registry.FaceAtlas,
+                        expression,
+                        column + 4,
+                        row,
+                        true);
+                }
 
                 Player3DMeshBinding faceBinding =
                     FindBinding(registry, "GEO_FaceSurface");
@@ -587,12 +593,14 @@ namespace BarPromenade.Tests.EditMode
                 manifest.face_atlas.texture_asset,
                 Is.EqualTo(V2AtlasPath));
             Assert.That(manifest.face_atlas.renderer, Is.EqualTo("GEO_FaceSurface"));
-            Assert.That(manifest.face_atlas.columns, Is.EqualTo(4));
+            // Eight columns since the soiled twins: the nine faces in the
+            // left half, the same nine with the mouth soiled at column + 4.
+            Assert.That(manifest.face_atlas.columns, Is.EqualTo(8));
             Assert.That(manifest.face_atlas.rows, Is.EqualTo(4));
             Assert.That(manifest.face_atlas.cell_size_px, Is.EqualTo(64));
             Assert.That(manifest.face_atlas.uv_origin, Is.EqualTo("bottom_left"));
             Assert.That(manifest.face_atlas.filter_mode, Is.EqualTo("Point"));
-            Assert.That(manifest.face_atlas.cells, Has.Length.EqualTo(9));
+            Assert.That(manifest.face_atlas.cells, Has.Length.EqualTo(18));
             Assert.That(manifest.design_metrics, Is.Not.Null);
             Assert.That(
                 manifest.design_metrics.pelvis_height_m,
@@ -609,6 +617,15 @@ namespace BarPromenade.Tests.EditMode
             AssertCell(manifest, "Glazed", 3, 2);
             AssertCell(manifest, "Slack", 0, 1);
             AssertCell(manifest, "Grimace", 1, 1);
+            AssertCell(manifest, "Neutral", 4, 3, soiled: true);
+            AssertCell(manifest, "HalfBlink", 5, 3, soiled: true);
+            AssertCell(manifest, "ClosedBlink", 6, 3, soiled: true);
+            AssertCell(manifest, "Watchful", 4, 2, soiled: true);
+            AssertCell(manifest, "Tense", 5, 2, soiled: true);
+            AssertCell(manifest, "Drowsy", 6, 2, soiled: true);
+            AssertCell(manifest, "Glazed", 7, 2, soiled: true);
+            AssertCell(manifest, "Slack", 4, 1, soiled: true);
+            AssertCell(manifest, "Grimace", 5, 1, soiled: true);
             AssertRunManifestContract(manifest);
             AssertBarDrinkManifestContract(manifest);
             AssertStaticTextureManifestContract(manifest);
@@ -700,12 +717,19 @@ namespace BarPromenade.Tests.EditMode
             V2Manifest manifest,
             string expression,
             int column,
-            int row)
+            int row,
+            bool soiled = false)
         {
+            // Every expression now has two cells, clean and soiled; the
+            // flag picks which one this call is about.
             V2FaceCell cell = Array.Find(
                 manifest.face_atlas.cells,
-                candidate => candidate.expression == expression);
-            Assert.That(cell, Is.Not.Null, $"Missing atlas cell {expression}.");
+                candidate => candidate.expression == expression &&
+                             candidate.soiled == soiled);
+            Assert.That(
+                cell,
+                Is.Not.Null,
+                $"Missing atlas cell {expression} (soiled: {soiled}).");
             Assert.That(cell.column, Is.EqualTo(column));
             Assert.That(cell.row, Is.EqualTo(row));
         }
@@ -1069,7 +1093,8 @@ namespace BarPromenade.Tests.EditMode
 
         private static void AssertTextureImport(
             string path,
-            bool alphaIsTransparency)
+            bool alphaIsTransparency,
+            int maxTextureSize = 256)
         {
             TextureImporter importer =
                 AssetImporter.GetAtPath(path) as TextureImporter;
@@ -1086,14 +1111,14 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(importer.mipmapEnabled, Is.False);
             Assert.That(importer.isReadable, Is.False);
             Assert.That(importer.npotScale, Is.EqualTo(TextureImporterNPOTScale.None));
-            Assert.That(importer.maxTextureSize, Is.EqualTo(256));
+            Assert.That(importer.maxTextureSize, Is.EqualTo(maxTextureSize));
             Assert.That(
                 importer.textureCompression,
                 Is.EqualTo(TextureImporterCompression.Uncompressed));
             TextureImporterPlatformSettings standalone =
                 importer.GetPlatformTextureSettings("Standalone");
             Assert.That(standalone.overridden, Is.True);
-            Assert.That(standalone.maxTextureSize, Is.EqualTo(256));
+            Assert.That(standalone.maxTextureSize, Is.EqualTo(maxTextureSize));
             Assert.That(
                 standalone.textureCompression,
                 Is.EqualTo(TextureImporterCompression.Uncompressed));
@@ -1104,15 +1129,21 @@ namespace BarPromenade.Tests.EditMode
             Player3DFaceAtlasBinding atlas,
             PlayerFacialExpression expression,
             int column,
-            int row)
+            int row,
+            bool soiled)
         {
             Assert.That(
-                atlas.TryGetTextureTransform(expression, out Vector4 transform),
+                atlas.TryGetTextureTransform(
+                    expression,
+                    soiled,
+                    out Vector4 transform),
                 Is.True);
-            Assert.That(transform.x, Is.EqualTo(0.25f).Within(0.0001f));
-            Assert.That(transform.y, Is.EqualTo(0.25f).Within(0.0001f));
-            Assert.That(transform.z, Is.EqualTo(column * 0.25f).Within(0.0001f));
-            Assert.That(transform.w, Is.EqualTo(row * 0.25f).Within(0.0001f));
+            float width = 1f / atlas.Columns;
+            float height = 1f / atlas.Rows;
+            Assert.That(transform.x, Is.EqualTo(width).Within(0.0001f));
+            Assert.That(transform.y, Is.EqualTo(height).Within(0.0001f));
+            Assert.That(transform.z, Is.EqualTo(column * width).Within(0.0001f));
+            Assert.That(transform.w, Is.EqualTo(row * height).Within(0.0001f));
         }
 
         private static void AssertNeutralAtlasBootstrapped(
@@ -1128,7 +1159,7 @@ namespace BarPromenade.Tests.EditMode
                 "face before PlayerFactory adds its presentation component.");
             Vector4 transform = properties.GetVector(
                 Shader.PropertyToID("_BaseMap_ST"));
-            Assert.That(transform.x, Is.EqualTo(0.25f).Within(0.0001f));
+            Assert.That(transform.x, Is.EqualTo(0.125f).Within(0.0001f));
             Assert.That(transform.y, Is.EqualTo(0.25f).Within(0.0001f));
             Assert.That(transform.z, Is.EqualTo(0f).Within(0.0001f));
             Assert.That(transform.w, Is.EqualTo(0.75f).Within(0.0001f));
@@ -1267,6 +1298,16 @@ namespace BarPromenade.Tests.EditMode
             public float enter_settle;
             public float exit_hold;
             public float exit_settle;
+            public float pelvis_step_lift_m;
+            public V2ManifestPelvisKey[] enter_pelvis_path;
+            public V2ManifestPelvisKey[] exit_pelvis_path;
+        }
+
+        [Serializable]
+        private sealed class V2ManifestPelvisKey
+        {
+            public float progress;
+            public float[] position;
         }
 
         [Serializable]
@@ -1331,6 +1372,7 @@ namespace BarPromenade.Tests.EditMode
             public string expression;
             public int column;
             public int row;
+            public bool soiled;
         }
 
         [Serializable]

@@ -107,6 +107,9 @@ Assets/
     Vehicles/
       CityBus3D.prefab                  passive real-scale pooled midibus presentation
       CityBusDriver3D.prefab            passive 31-bone seated production driver
+    HomeToiletAction/
+      HomeToiletAction.json              fixed-metre model, grip/outlet and liquid-mesh contracts
+      Models/                           eleven Blender FBX: anatomy, lid, open seat, hollow pedestal, water, paper roll and five liquid meshes
     Home/
       HomeInteriorModels.asset          named passive Blender mesh library + authored part metadata
       Textures/                         twelve apartment RGB albedos; 1024 source, 512 runtime, Repeat/mips
@@ -184,7 +187,7 @@ Assets/
     V2/
       Models/PlayerCharacter3DV2.{fbx,json}  production 34-part model + deterministic metrics
       Animations/PlayerCharacter3DV2Animations.fbx  production 41-action V2 rig, including Run and seated drink 2/3/2
-      Textures/PlayerFaceAtlas.png       4x4 five-expression point-filtered atlas
+      Textures/PlayerFaceAtlas.png       8x4 point-filtered atlas: nine expressions + their soiled twins at column +4
       Textures/PlayerClothingAtlas.png   full-colour open-jacket/trouser/boot atlas
       Materials/Player3DV2Clothing.mat  shared white-tint atlas material
   Pedestrians/
@@ -599,6 +602,9 @@ Assets/
         HomeAlarmClockPlan.cs       validated bed-relative nightstand/clock placement
         HomeAlarmClockBuilder.cs    low-poly nightstand and alarm-clock composition
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
+        HomeToiletLid.cs           authored hinge motion + bowl-water asset composition
+        HomeUrineEffect.cs         pooled ballistic packets, contact sounds, splashes and projected marks
+        HomeUrine{Trajectory,SurfaceMap,Residue,Resources}.cs  swept mesh hits, shared assets and bounded session deposits
         SupermarketInteriorLayout*.cs  room/aisles/fixtures, 3 shelves + 5 slots
         SupermarketInteriorWorldBuilder.cs  authored shop placement + plan-owned collision and finite products
         SupermarketSecurityCameraWorldBuilder.cs  four authored corner CCTV pivots servoed at the hero
@@ -826,7 +832,7 @@ Assets/
         BarJukeboxInteraction.cs     prompt + single-writer three-channel emissive pulse/flash
         CityTunnelTravel{Plan,Planner,Controller}.cs automatic unavailable crossing + visible return
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
-        PlayerAnimatedInteraction*.cs  positioning, static/moving pelvis targets + independent exit
+        PlayerAnimatedInteraction*.cs  positioning, keyed/static/moving pelvis targets + independent exit
         PlayerDoorAction{Plan,Controller,Target}.cs  guided door gesture, destination-owned outward arrival + terminal cleanup
         HomeBedInteraction.cs          first-E sleep, persistent loop, completed-wake fatigue reset
         HomeBalconySmoking{Interaction,Timeline}.cs  safe exit + camera push/drift + music envelopes
@@ -835,7 +841,8 @@ Assets/
         HomeRefrigeratorFirstPersonHand.cs  prefab-derived right arm and handle reach
         StairwellCatInteraction.cs     Talk/Interact adapter + paired feeding orchestration
         HomeBathroomSceneInteraction.cs  shared bathroom-scene skeleton: modal, walk-in, camera
-        HomeToiletInteraction.cs       privacy-cut toilet scene + pure timeline
+        HomeToiletInteraction.cs       first-person 5 s urine + 2 s shake timeline, natural relief and cancel
+        HomeToiletFirstPersonView.cs   actual hero arm IK, head visibility, held Blender anatomy and aim/look
         HomeShowerInteraction.cs       curtain/water/steam shower scene + timeline + effect
         HomeTeethBrushingInteraction.cs  mirror close-up, CCD brushing arm, foam, day-gated relief
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
@@ -915,6 +922,7 @@ Assets/
         InventoryTargetInteractionController.cs shared modal target menu + atomic consumption
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
+        HomeToiletGaugeView.cs       right-edge local remaining-volume gauge
         CounterMenuHintView.cs       shared compact W/S + Space world-menu hint/status
         MountainRoadCafeMenuHintView.cs cafe localization adapter for the shared hint
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
@@ -1119,6 +1127,7 @@ ArtSource/
   Bar/                           pub v3 interior/exterior/service `.blend`, 1024 px albedo sources + preview nodes
   Home/                          apartment albedo contract, manifest and contact sheet
     Interior/                    generated HomeInterior3D.blend + home-interior-3d-model.json
+  HomeToiletAction/               Blender source, model/anchor manifest and anatomy/lid/liquid preview
   PlayerHome/                    generated exterior .blend/preview + nine-sheet manifest/contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
     Cafe/Blender/                generated fixed-metre cafe `.blend`
@@ -1190,6 +1199,7 @@ tools/
   build-mountain-road-textures.py   six measured mountain albedos + nine borrowed-sheet contracts + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
   build-home-interior-3d-model.py   deterministic home_interior_v1 mesh set, manifest and validator
+  build-home-toilet-action-3d-model.py  eleven toilet models + hollow opening and FBX round-trip validator
 Packages/
 ProjectSettings/
 ```
@@ -1630,7 +1640,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                     -> PlayerAnimatedInteractionController
                                        -> visible Positioning -> Entering/Looping/Exiting
                                        -> separate root/pelvis/facing entry + exit poses
-                                       -> held seated pelvis waypoint on both transitions
+                                       -> two supported pelvis lifts/transfers with seated stops on both transitions
                                        -> BedEnter/BedSleepLoop/BedExit on same rig
                                        -> sample then align registered pelvis anchor
                                        -> grounded guided walk/turn or stalled cancel

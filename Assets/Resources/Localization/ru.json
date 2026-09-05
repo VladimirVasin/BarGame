@@ -1465,6 +1465,10 @@
       "value": "ТОШНОТА СЕЙЧАС"
     },
     {
+      "key": "debug.vomit.trigger",
+      "value": "РВОТА СЕЙЧАС"
+    },
+    {
       "key": "quest.feed_cat.title",
       "value": "Накормить кота"
     },

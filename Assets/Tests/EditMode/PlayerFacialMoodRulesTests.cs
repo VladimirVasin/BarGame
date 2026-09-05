@@ -16,7 +16,8 @@ namespace BarPromenade.Tests.EditMode
             PlayerRiseStage stage = PlayerRiseStage.Settling,
             float progress = 0f,
             bool slump = false,
-            float nausea = 0f)
+            float nausea = 0f,
+            float vomit = 0f)
         {
             return new PlayerFacialMoodContext(
                 intoxication,
@@ -29,7 +30,8 @@ namespace BarPromenade.Tests.EditMode
                 stage,
                 progress,
                 slump,
-                nausea);
+                nausea,
+                vomit);
         }
 
         [Test]
@@ -73,6 +75,70 @@ namespace BarPromenade.Tests.EditMode
                 PlayerFacialMoodRules.Resolve(
                     Context(ragdoll: true, ragdollSeconds: 2f, nausea: 1f)),
                 Is.EqualTo(PlayerFacialMood.Out));
+        }
+
+        /// <summary>
+        /// The stream owns the face from its first trickle: the gauge is
+        /// over and the hand is down by then, so nothing else would hold
+        /// the grimace through the gushes.
+        /// </summary>
+        [Test]
+        public void Vomiting_OnHisFeetIsAGrimace()
+        {
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(Context(vomit: 0.04f)),
+                Is.EqualTo(PlayerFacialMood.None),
+                "Below the flow threshold the face is his own.");
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(vomit: PlayerFacialMoodRules.VomitGrimaceFlow)),
+                Is.EqualTo(PlayerFacialMood.Grimace));
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(Context(vomit: 1f, intoxication: 0f)),
+                Is.EqualTo(PlayerFacialMood.Grimace));
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(Context(vomit: 1f, nausea: 0f)),
+                Is.EqualTo(PlayerFacialMood.Grimace),
+                "The hand being down does not matter once the stream runs.");
+        }
+
+        /// <summary>The floor's faces come first: out cold stays out cold, stream or not.</summary>
+        [Test]
+        public void Vomiting_OnTheFloorIsStillOutAfterTheWince()
+        {
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(ragdoll: true, ragdollSeconds: 1f, vomit: 1f)),
+                Is.EqualTo(PlayerFacialMood.Out));
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(ragdoll: true, ragdollSeconds: 0.2f, vomit: 1f)),
+                Is.EqualTo(PlayerFacialMood.Grimace),
+                "The wince of the landing is the same grimace either way.");
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(rise: true, stage: PlayerRiseStage.Stunned, vomit: 1f)),
+                Is.EqualTo(PlayerFacialMood.Out),
+                "The blank of the lie outranks the stream too.");
+        }
+
+        /// <summary>
+        /// Unlike the hand at the mouth, the stream keeps the grimace
+        /// through a fight for balance: the balance's tense face comes
+        /// after it.
+        /// </summary>
+        [Test]
+        public void Vomiting_WhileRecoveringIsAGrimace()
+        {
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(phase: BalancePhase.Recovering, instability: 0.9f, vomit: 1f)),
+                Is.EqualTo(PlayerFacialMood.Grimace));
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(phase: BalancePhase.Recovering, instability: 0.9f, vomit: 0f)),
+                Is.EqualTo(PlayerFacialMood.Tense),
+                "Without the stream the fight for balance shows as before.");
         }
 
         [Test]

@@ -28,6 +28,7 @@ namespace BarPromenade
         IPlayerPresentation,
         IPlayerClipPresentation,
         IPlayerNauseaPresentation,
+        IPlayerVomitPresentation,
         IPlayerBalancePresentation,
         IPlayerRisePresentation
     {
@@ -214,6 +215,8 @@ namespace BarPromenade
         private PlayerBalancePose balancePose = PlayerBalancePose.Neutral;
         private PlayerRisePose risePose = PlayerRisePose.None;
         private PlayerNauseaPose nauseaPose = PlayerNauseaPose.None;
+        private PlayerVomitPose vomitPose = PlayerVomitPose.None;
+        private bool mouthSoiled;
         private bool ragdollPoseActive;
         private bool interactionHandoffLocked;
         private bool releaseInteractionHandoffAfterLateUpdate;
@@ -247,6 +250,17 @@ namespace BarPromenade
         private Quaternion attentionHeadBase;
         private Quaternion attentionNeckBase;
         private bool attentionBaseCaptured;
+
+        // The head-pitch probe's frame: the actor's forward and right as
+        // the neck's parent and the head carried them in the imported
+        // rest pose. Measuring between these instead of the bones' own
+        // axes makes the rest pose read zero whatever way the rig's bone
+        // axes point (the import lesson: a bone's local X is NOT the
+        // anatomical right).
+        private Vector3 headPitchProbeParentForward;
+        private Vector3 headPitchProbeParentRight;
+        private Vector3 headPitchProbeHeadForward;
+        private bool headPitchProbeCaptured;
         private readonly Player3DProceduralLocomotionLayer layer =
             new Player3DProceduralLocomotionLayer();
         private PlayerFacialExpression visibleFacialExpression;
@@ -545,6 +559,43 @@ namespace BarPromenade
         }
 
         public PlayerNauseaPose NauseaPose => nauseaPose;
+
+        /// <summary>
+        /// The bout's pose for this frame: how far the head is pitched
+        /// down over the ground and how hard the stream runs, drawn over
+        /// whatever else the body is doing — clips, handoffs and the
+        /// rise included, because the stream keeps running through them.
+        /// Pushed by the vomit controller every frame it has anything to
+        /// say and set to <see cref="PlayerVomitPose.None"/> when it has
+        /// not; a None pose adds exactly nothing.
+        /// </summary>
+        public void SetVomit(in PlayerVomitPose pose)
+        {
+            vomitPose = pose;
+        }
+
+        public PlayerVomitPose VomitPose => vomitPose;
+
+        /// <summary>
+        /// Whether the face wears its soiled twin: set once the first
+        /// gush has been through the mouth and cleared when he cleans
+        /// up. The face is re-applied at once so the cell changes in the
+        /// same frame the flag flips, not on the next facial pass.
+        /// </summary>
+        public void SetMouthSoiled(bool soiled)
+        {
+            if (mouthSoiled == soiled)
+            {
+                return;
+            }
+
+            mouthSoiled = soiled;
+            ReapplyFacialPose();
+        }
+
+        /// <summary>The soiled face is actually on screen: flagged AND drawn from an atlas.</summary>
+        public bool IsMouthSoiledVisible =>
+            mouthSoiled && faceAtlasPresenter.IsConfigured;
 
         public void SetFallPose(float signedDirection, float amount)
         {
@@ -869,6 +920,76 @@ namespace BarPromenade
             return layer.DebugElbowBack(rightArm);
         }
 
+        /// <summary>
+        /// How far the head is pitched down from the neck's parent, in
+        /// degrees, POSITIVE with the face toward the ground: the probe
+        /// for the bout's head-down. It is the signed angle from the
+        /// parent's forward to the head's forward about the parent's
+        /// right — each of those being the ACTOR's forward and right as
+        /// that bone carried them in the imported rest pose, so the rest
+        /// pose reads zero and the sign owes nothing to the rig's bone
+        /// axes. Sign convention: a positive turn about the actor's
+        /// right tips a forward vector DOWN (Euler(90,0,0) looks at the
+        /// floor, the drunk-face probe's own check), and
+        /// <c>Vector3.SignedAngle(from, to, axis)</c> is positive when
+        /// that turn carries <c>from</c> onto <c>to</c> — so chin-down
+        /// comes out positive. Zero when the bones are missing.
+        /// </summary>
+        internal float DebugHeadPitchDownDegrees
+        {
+            get
+            {
+                if (!headPitchProbeCaptured ||
+                    headBone == null ||
+                    neckBone == null ||
+                    neckBone.parent == null)
+                {
+                    return 0f;
+                }
+
+                Transform parent = neckBone.parent;
+                Vector3 axis = parent.TransformDirection(
+                    headPitchProbeParentRight);
+                Vector3 parentForward = Vector3.ProjectOnPlane(
+                    parent.TransformDirection(headPitchProbeParentForward),
+                    axis);
+                Vector3 headForward = Vector3.ProjectOnPlane(
+                    headBone.TransformDirection(headPitchProbeHeadForward),
+                    axis);
+                if (axis.sqrMagnitude <= 0.000001f ||
+                    parentForward.sqrMagnitude <= 0.000001f ||
+                    headForward.sqrMagnitude <= 0.000001f)
+                {
+                    return 0f;
+                }
+
+                return Vector3.SignedAngle(parentForward, headForward, axis);
+            }
+        }
+
+        private void CaptureHeadPitchProbeFrame()
+        {
+            headPitchProbeCaptured = false;
+            if (headBone == null ||
+                neckBone == null ||
+                neckBone.parent == null ||
+                actorFacingTransform == null)
+            {
+                return;
+            }
+
+            // Taken before the graph's first evaluation, with the bones in
+            // the imported rest pose and the head looking along the actor.
+            Transform parent = neckBone.parent;
+            headPitchProbeParentForward = parent.InverseTransformDirection(
+                actorFacingTransform.forward);
+            headPitchProbeParentRight = parent.InverseTransformDirection(
+                actorFacingTransform.right);
+            headPitchProbeHeadForward = headBone.InverseTransformDirection(
+                actorFacingTransform.forward);
+            headPitchProbeCaptured = true;
+        }
+
         internal void ReapplyLatePresentationPose()
         {
             // A deterministic seam for checks that run in batch mode, where
@@ -927,6 +1048,8 @@ namespace BarPromenade
             balancePose = PlayerBalancePose.Neutral;
             risePose = PlayerRisePose.None;
             nauseaPose = PlayerNauseaPose.None;
+            vomitPose = PlayerVomitPose.None;
+            mouthSoiled = false;
             ResetPoseFilters();
             ragdollPoseActive = false;
             planarSpeed = 0f;
@@ -1382,6 +1505,22 @@ namespace BarPromenade
                             !ragdollPoseActive &&
                             !risePose.Active;
             bool allowed = headFree && attentionFocus.HasValue;
+            // The bout's head-down is deliberately NOT under headFree: a
+            // modal clip, an interaction handoff and the rise all keep
+            // it, because the stream keeps running through them and the
+            // mouth has to stay over the ground. Only the ragdoll is
+            // out — there the joint drive owns the head. The same
+            // capture/restore pair carries it: the base is taken after
+            // the late pass (the rise's HeadLift included, so the two
+            // add rather than accumulate) and EvaluateGraph restores it
+            // before the graph writes the next frame.
+            float vomitDown = registry != null &&
+                              headBone != null &&
+                              !ragdollPoseActive
+                ? vomitPose.HeadDownDegrees
+                : 0f;
+            float vomitWeight = Mathf.Clamp01(
+                vomitDown / HeroVomitRules.HeadDownDegrees);
             // The drunk head: the chin sinks, the head wanders and nods,
             // and it trails the body's lean — summed with the glance
             // under the same limits. Exactly still sober.
@@ -1458,7 +1597,8 @@ namespace BarPromenade
                 : 0f;
             if (attentionWeight <= 0.0001f &&
                 drunkHead.IsNone &&
-                hiccupHeadPitch <= 0.0001f)
+                hiccupHeadPitch <= 0.0001f &&
+                vomitDown <= 0.0001f)
             {
                 return;
             }
@@ -1467,17 +1607,22 @@ namespace BarPromenade
             // right, pitch positive UP); the drunk head's pitch is
             // written chin-down, so it enters negated. They add before
             // the signs that map them onto the bones, under the glance's
-            // own limits.
+            // own limits. The bout fades the glance's pitch out under it
+            // (the weight itself keeps running, so the glance resumes
+            // the moment the head comes back up) and its own chin-down
+            // is added AFTER the clamp: inside it the drunk chin, already
+            // near the limit, would eat the whole bout. Chin-down is a
+            // negative pitch here, the same sense the drunk head enters.
             float yaw = Mathf.Clamp(
                 attentionYaw * attentionWeight + drunkHead.YawDegrees,
                 -PlayerAttentionRules.MaxHeadYawDegrees,
                 PlayerAttentionRules.MaxHeadYawDegrees);
             float pitch = Mathf.Clamp(
-                attentionPitch * attentionWeight -
+                attentionPitch * attentionWeight * (1f - vomitWeight) -
                 drunkHead.PitchDownDegrees +
                 hiccupHeadPitch,
                 -PlayerAttentionRules.MaxHeadDownPitchDegrees,
-                PlayerAttentionRules.MaxHeadUpPitchDegrees);
+                PlayerAttentionRules.MaxHeadUpPitchDegrees) - vomitDown;
             float roll = Mathf.Clamp(
                 drunkHead.RollDegrees,
                 -DrunkHeadMaximumRollDegrees,
@@ -2343,6 +2488,7 @@ namespace BarPromenade
             chestBone = registry.Anchors.Chest;
             headBone = registry.Anchors.Head;
             neckBone = GetPartBone(Player3DAnatomicalPart.Neck);
+            CaptureHeadPitchProbeFrame();
             leftUpperArmBone = GetPartBone(
                 Player3DAnatomicalPart.LeftUpperArm);
             rightUpperArmBone = GetPartBone(
@@ -2439,7 +2585,8 @@ namespace BarPromenade
                     risePose.Stage,
                     risePose.StageProgress,
                     risePose.SlumpActive,
-                    nauseaPose.Active ? nauseaPose.HandWeight : 0f));
+                    nauseaPose.Active ? nauseaPose.HandWeight : 0f,
+                    vomitPose.Flow));
             PlayerFacialExpression expression = facialState.Advance(
                 Time.deltaTime,
                 allowIdleExpressions,
@@ -2463,7 +2610,8 @@ namespace BarPromenade
                     risePose.Stage,
                     risePose.StageProgress,
                     risePose.SlumpActive,
-                    nauseaPose.Active ? nauseaPose.HandWeight : 0f));
+                    nauseaPose.Active ? nauseaPose.HandWeight : 0f,
+                    vomitPose.Flow));
 
         private float ragdollPoseSince;
 
@@ -2530,7 +2678,10 @@ namespace BarPromenade
             PlayerFacialExpression expression)
         {
             visibleFacialExpression = expression;
-            if (faceAtlasPresenter.Apply(expression))
+            // The soiled twin rides every atlas face the same way; the
+            // binding falls back to the clean cell where an atlas has no
+            // twin, so an older atlas simply never shows the mess.
+            if (faceAtlasPresenter.Apply(expression, mouthSoiled))
             {
                 return;
             }

@@ -62,6 +62,19 @@ namespace BarPromenade
         protected abstract bool SceneCompleted { get; }
         protected abstract bool StopPromptVisible { get; }
 
+        // Optional presentation hooks keep moving first-person targets on
+        // the same approach, modal ownership and cleanup path as fixed shots.
+        protected virtual bool PrepareScene() => true;
+        protected virtual void OnSceneCaptured() { }
+        protected virtual void OnScenePresentation(float deltaTime) { }
+        protected virtual bool TryGetSceneCamera(out Vector3 position,
+            out Quaternion rotation)
+        {
+            position = default;
+            rotation = default;
+            return false;
+        }
+
         protected abstract void OnSceneBegin();
         protected abstract void OnSceneAdvance(float deltaTime);
 
@@ -146,6 +159,11 @@ namespace BarPromenade
 
         private void BeginScene(PlayerInteractor interactor)
         {
+            if (!PrepareScene())
+            {
+                return;
+            }
+
             if (!modalLock.TryCaptureAndDisable(
                     interactor,
                     Home.CameraFollow,
@@ -195,6 +213,7 @@ namespace BarPromenade
             exitInputArmTime =
                 Time.unscaledTime + ExitInputDebounceSeconds;
             CaptureCameraPath();
+            OnSceneCaptured();
         }
 
         private void CaptureCameraPath()
@@ -236,6 +255,11 @@ namespace BarPromenade
             }
 
             float deltaTime = Time.deltaTime;
+            if (SceneTransitionService.IsTransitioning)
+            {
+                CancelScene();
+                return;
+            }
             if (approaching)
             {
                 AdvanceGuidedWalk(
@@ -388,6 +412,12 @@ namespace BarPromenade
                 return;
             }
 
+            OnScenePresentation(Time.deltaTime);
+            if (TryGetSceneCamera(out Vector3 position, out Quaternion rotation))
+            {
+                cameraTargetPosition = position;
+                cameraTargetRotation = rotation;
+            }
             ApplyCamera(CameraBlend, CameraDriftWeight);
         }
 

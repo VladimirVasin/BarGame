@@ -32,7 +32,8 @@ namespace BarPromenade
             PlayerRiseStage riseStage,
             float riseStageProgress,
             bool slumpActive,
-            float nausea = 0f)
+            float nausea = 0f,
+            float vomit = 0f)
         {
             Intoxication = Mathf.Clamp01(intoxication);
             Phase = phase;
@@ -45,6 +46,7 @@ namespace BarPromenade
             RiseStageProgress = Mathf.Clamp01(riseStageProgress);
             SlumpActive = slumpActive;
             Nausea = float.IsNaN(nausea) ? 0f : Mathf.Clamp01(nausea);
+            Vomit = float.IsNaN(vomit) ? 0f : Mathf.Clamp01(vomit);
         }
 
         public float Intoxication { get; }
@@ -60,6 +62,9 @@ namespace BarPromenade
 
         /// <summary>How far the hand is up at the mouth in a nausea bout, 0..1.</summary>
         public float Nausea { get; }
+
+        /// <summary>How hard the stream is running this frame, 0..1.</summary>
+        public float Vomit { get; }
     }
 
     /// <summary>The pure rules of the mood: the same context always gives the same face.</summary>
@@ -79,6 +84,9 @@ namespace BarPromenade
 
         /// <summary>With the hand this far up at the mouth, the face is a grimace.</summary>
         public const float NauseaGrimaceWeight = 0.5f;
+
+        /// <summary>With the stream running at least this hard, the face is a grimace.</summary>
+        public const float VomitGrimaceFlow = 0.05f;
 
         public static PlayerFacialMood Resolve(in PlayerFacialMoodContext context)
         {
@@ -115,6 +123,17 @@ namespace BarPromenade
                     default:
                         return PlayerFacialMood.None;
                 }
+            }
+
+            // The stream owns the face while it runs: the gauge has ended
+            // by then, the hand has come down, and without this the face
+            // would go back to Slack in the middle of the first gush. The
+            // fall's own faces still come first — the wince and the blank
+            // of the floor, the strain of the rise — which is why this
+            // sits after them and before the balance.
+            if (context.Vomit >= VomitGrimaceFlow)
+            {
+                return PlayerFacialMood.Grimace;
             }
 
             switch (context.Phase)

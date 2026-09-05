@@ -2095,18 +2095,20 @@ The vertical slice contains:
   props, partner animation and contact shadow through owned cleanup;
 - one reachable bed interaction on the long `zMin` side nearest the Home door:
   the first `E` walks and turns the 3D hero to the middle of
-  that edge, opposite the sleeping pelvis, holds neutral for one frame and plays the `3.75 s` `BedEnter`
+  that edge, opposite the sleeping pelvis, holds neutral for one frame and plays the `5 s` `BedEnter`
   on the continuous rig — the one contextual action authored on eased curves
   with separately staggered pelvis, lower-spine, chest and head keys.
-  The hands support the lowering trunk and the head settles last. A dedicated seated
-  pelvis waypoint holds the character on the mattress edge with both feet
-  grounded before movement can continue between the standing dock and bed
-  centre. The
+  The hands support the lowering trunk and the head settles last. An authored
+  pelvis path replaces continuous travel across the mattress: two `7 cm`
+  lifts, transfers under alternating planted hands and full seated stops.
+  The hands change support during the pause, and reclining starts only after
+  both transfers. The
   deterministic `BedSleepLoop` repeats with the existing breathing holds until
   a second `E` plays the `6.0 s` `BedExit`; the opening can begin directly in
   that loop and apply its one-shot wake-duration multiplier. Waking is a
   four-beat sit-up rather than a roll: he curls onto his elbows into a
-  half-crouch on the mattress with both boots drawn under him, drops the right
+  half-crouch on the mattress with both boots drawn under him, uses the same
+  two supported pelvis steps to reach the side, then drops the right
   leg over the near edge, then the left, and only then stands. Per-sample pelvis alignment
   keeps the same longitudinal coordinate through entry, sleep and exit;
   sitting no longer carries him along the mattress from the foot end. The
@@ -2179,11 +2181,30 @@ The vertical slice contains:
   require camera-plane or yaw-billboard modes to preserve a sprite aspect;
 - a lived-in bathroom: a rebuilt shower stall (folded curtain on an
   L-rail, mixer, hose, tilted head, soap shelf) and three modal scenes on
-  one shared skeleton — a tactful toilet privacy cut with an off-frame
-  flush, a curtained shower with water, steam and a crossfaded hiss loop,
+  one shared skeleton — a first-person toilet action, a curtained shower
+  with water, steam and a crossfaded hiss loop,
   and a mirror teeth-brushing close-up shot from the mirror plane with a
   procedural brushing arm, foam and a rinse; toilet/shower relieve
   stress on completion, brushing once per game day;
+- the toilet opens its hinged Blender lid immediately, guides the standing
+  hero into place and blends to eye level over `1.5 s`. A hollow ceramic
+  pedestal and an actually open annular seat keep the water visible and reachable;
+  a layered paper roll with
+  an open cardboard core stands on the cistern. The actual production
+  right arm holds a matching Blender anatomy mesh through IK; only head
+  geometry hides near the camera. Mouse/right stick aim, with unrestricted
+  yaw passed into a body turn on the spot; RMB/gamepad LB provide independent
+  look. A local right-edge gauge drains over exactly `6 s`, followed by `4 s`
+  of shaking and `1.3 s` of camera return, with guided travel separate.
+  Over the final `20%` of the main emission, pressure, diameter and packet
+  frequency ease to zero; emitted liquid retains its existing trajectory.
+  Ballistic liquid and residual drops collide with the authored surfaces;
+  the bowl receives water hits while missed shots leave merged, surface-bound
+  wet marks and wall drips. Their bounded session store survives Home reloads
+  independently of calendar dirt and resets with a new game. Natural completion
+  flushes and commits stress `-6` once; stop input cancels without relief and
+  retains existing marks. The shared lifecycle restores pose, head visibility,
+  camera, cursor, occlusion, HUD, lid and modal input on completion or interruption;
 - a deterministic `11`-person bar crowd drawn from ordinary city pedestrian
   prefabs: six compatible designs sit at the booth anchors on concrete
   `0.48 m` seats, two sit at the counter on the exact cafe `0.8175 m` stools,

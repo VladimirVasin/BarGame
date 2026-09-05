@@ -1046,6 +1046,170 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void RelieveIntoxication_ClampsAtZeroAndReturnsActualPoints()
+        {
+            GameSessionState.UpdateDrinkingProgress(12, DrinkId.Vodka, 2);
+
+            Assert.That(
+                GameSessionState.RelieveIntoxication(5, "test"),
+                Is.EqualTo(5));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(7));
+            Assert.That(
+                GameSessionState.RelieveIntoxication(-3, "test"),
+                Is.Zero,
+                "Negative relief clamps to nothing.");
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(7));
+            Assert.That(
+                GameSessionState.RelieveIntoxication(20, "test"),
+                Is.EqualTo(7),
+                "Only the points that were there come off.");
+            Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
+            Assert.That(
+                GameSessionState.LastAlcoholicDrink,
+                Is.EqualTo(DrinkId.Vodka));
+            Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void RelieveIntoxication_LeavesRecoveryProgressIntact()
+        {
+            GameSessionState.UpdateDrinkingProgress(30, DrinkId.Vodka, 3);
+            float halfInterval =
+                IntoxicationStageRules.GetRecoverySecondsPerPoint(30) *
+                0.5f;
+
+            GameSessionState.AdvanceIntoxicationRecovery(halfInterval);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(30));
+
+            Assert.That(
+                GameSessionState.RelieveIntoxication(5, "test"),
+                Is.EqualTo(5));
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(25));
+
+            // The half point earned before the relief is still earned:
+            // the other half of the (now shorter) interval completes it.
+            // Had the relief restarted the timer like a drink does, this
+            // step would recover nothing and the level would stay at 25.
+            GameSessionState.AdvanceIntoxicationRecovery(halfInterval);
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(24),
+                "Relief must not reset the recovery timer.");
+        }
+
+        [Test]
+        public void RelieveIntoxication_ClearsBalanceDelayAtOrBelowThreshold()
+        {
+            GameSessionState.UpdateDrinkingProgress(70, DrinkId.Vodka, 4);
+            GameSessionState.SetBalanceCheckDelay(14f);
+
+            GameSessionState.RelieveIntoxication(5, "test");
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(65));
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.EqualTo(14f),
+                "Above the balance threshold the delay keeps running.");
+
+            GameSessionState.RelieveIntoxication(5, "test");
+            Assert.That(
+                GameSessionState.IntoxicationLevel,
+                Is.EqualTo(IntoxicationStageRules.BalanceThreshold));
+            Assert.That(
+                GameSessionState.BalanceCheckDelayRemaining,
+                Is.Zero,
+                "At the threshold the pending balance check is dropped.");
+        }
+
+        [Test]
+        public void RelieveIntoxication_IsANoOpWhenSoberOrAskedForNothing()
+        {
+            Assert.That(
+                GameSessionState.RelieveIntoxication(7, "test"),
+                Is.Zero);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.Zero);
+
+            GameSessionState.UpdateDrinkingProgress(20, DrinkId.Vodka, 1);
+            Assert.That(
+                GameSessionState.RelieveIntoxication(0, "test"),
+                Is.Zero);
+            Assert.That(GameSessionState.IntoxicationLevel, Is.EqualTo(20));
+        }
+
+        [Test]
+        public void HeroMouthSoiled_IsSetAndClearedOnlyByWater()
+        {
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.False);
+
+            GameSessionState.SetHeroMouthSoiled(true, "test");
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.True);
+
+            // The toilet relieves stress but puts no water on his face.
+            GameSessionState.CommitBathroomStressRelief("toilet", 6);
+            Assert.That(
+                GameSessionState.HeroMouthSoiled,
+                Is.True,
+                "The toilet must not wash the mouth.");
+
+            GameSessionState.CommitBathroomStressRelief("shower", 1);
+            Assert.That(
+                GameSessionState.HeroMouthSoiled,
+                Is.False,
+                "The shower washes the mouth.");
+        }
+
+        [Test]
+        public void HeroMouthSoiled_IsClearedByTeethBrushingEvenWhenReliefIsGated()
+        {
+            GameSessionState.SetHeroMouthSoiled(true, "test");
+            Assert.That(
+                GameSessionState.TryCommitTeethBrushingRelief(5),
+                Is.True);
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.False);
+
+            GameSessionState.SetHeroMouthSoiled(true, "test");
+            Assert.That(
+                GameSessionState.TryCommitTeethBrushingRelief(5),
+                Is.False,
+                "The second brushing of the day earns no relief.");
+            Assert.That(
+                GameSessionState.HeroMouthSoiled,
+                Is.False,
+                "Water at the sink cleans regardless of the daily gate.");
+        }
+
+        [Test]
+        public void HeroMouthSoiled_IsClearedBySleep()
+        {
+            GameSessionState.SetHeroMouthSoiled(true, "test");
+
+            GameSessionState.ResetFatigueAfterSleep();
+
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.False);
+        }
+
+        [Test]
+        public void HeroMouthSoiled_IsClearedByDrinkingResetEvenWhenSober()
+        {
+            // Nothing else about the drinking is set, so this exercises
+            // the early return: the flag has to be cleared ahead of it.
+            GameSessionState.SetHeroMouthSoiled(true, "test");
+
+            GameSessionState.ResetDrinkingState();
+
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.False);
+        }
+
+        [Test]
+        public void HeroMouthSoiled_IsClearedByANewGame()
+        {
+            GameSessionState.SetHeroMouthSoiled(true, "test");
+
+            GameSessionState.BeginNewGame();
+
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.False);
+        }
+
+        [Test]
         public void TryPurchaseDrink_FailureDoesNotMutateSession()
         {
             GameSessionState.UpdateDrinkingProgress(

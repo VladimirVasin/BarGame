@@ -1465,6 +1465,10 @@
       "value": "NAUSEA NOW"
     },
     {
+      "key": "debug.vomit.trigger",
+      "value": "VOMIT NOW"
+    },
+    {
       "key": "quest.feed_cat.title",
       "value": "Feed the cat"
     },

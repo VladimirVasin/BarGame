@@ -77,6 +77,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroSfxId.RefrigeratorHinge)]
         [TestCase(RetroSfxId.RefrigeratorThunk)]
         [TestCase(RetroSfxId.Hiccup)]
+        [TestCase(RetroSfxId.Retch)]
+        [TestCase(RetroSfxId.VomitGush)]
+        [TestCase(RetroSfxId.VomitSplat)]
         public void GenerateSamples_IsDeterministicFiniteAndAudible(
             RetroSfxId id)
         {
@@ -161,6 +164,57 @@ namespace BarPromenade.Tests.EditMode
                 Is.Not.EqualTo(
                     RetroSfxLibrary.GenerateSamples(
                         RetroSfxId.RefrigeratorThunk)));
+        }
+
+        [Test]
+        public void VomitCues_AreDistinctSpatialWorldEffects()
+        {
+            RetroSfxId[] cues =
+            {
+                RetroSfxId.Retch,
+                RetroSfxId.VomitGush,
+                RetroSfxId.VomitSplat
+            };
+            float[] expectedDurations = { 0.34f, 1.0f, 0.14f };
+            for (int index = 0; index < cues.Length; index++)
+            {
+                RetroSfxDefinition definition =
+                    RetroSfxLibrary.GetDefinition(cues[index]);
+                Assert.That(
+                    definition.Category,
+                    Is.EqualTo(RetroSfxCategory.World),
+                    cues[index].ToString());
+                Assert.That(
+                    definition.SpatialBlend,
+                    Is.GreaterThanOrEqualTo(0.9f),
+                    cues[index].ToString());
+                Assert.That(
+                    definition.Duration,
+                    Is.EqualTo(expectedDurations[index]).Within(1e-4f),
+                    cues[index].ToString());
+            }
+
+            // Impacts arrive in clusters; the retch and the stream are
+            // one voice each so a dropped frame cannot double them.
+            Assert.That(
+                RetroSfxLibrary.GetDefinition(RetroSfxId.VomitSplat)
+                    .MaxVoices,
+                Is.EqualTo(2));
+
+            float[] retch =
+                RetroSfxLibrary.GenerateSamples(RetroSfxId.Retch);
+            float[] gush =
+                RetroSfxLibrary.GenerateSamples(RetroSfxId.VomitGush);
+            float[] splat =
+                RetroSfxLibrary.GenerateSamples(RetroSfxId.VomitSplat);
+            float[] hiccup =
+                RetroSfxLibrary.GenerateSamples(RetroSfxId.Hiccup);
+            Assert.That(retch, Is.Not.EqualTo(gush));
+            Assert.That(gush, Is.Not.EqualTo(splat));
+            Assert.That(retch, Is.Not.EqualTo(splat));
+            Assert.That(retch, Is.Not.EqualTo(hiccup));
+            Assert.That(gush, Is.Not.EqualTo(hiccup));
+            Assert.That(splat, Is.Not.EqualTo(hiccup));
         }
 
         [Test]

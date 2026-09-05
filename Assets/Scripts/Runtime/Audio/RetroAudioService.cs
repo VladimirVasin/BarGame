@@ -367,6 +367,11 @@ namespace BarPromenade
     {
         public static bool Play(RetroSfxId id)
         {
+            if (!Application.isPlaying)
+            {
+                return false;
+            }
+
             return RetroAudioService
                 .EnsureInstalled()
                 .TryPlay(id, Vector3.zero);
@@ -376,6 +381,15 @@ namespace BarPromenade
             RetroSfxId id,
             Vector3 worldPosition)
         {
+            // Outside play mode there is nothing to hear and no scene to
+            // keep the service in: EditMode tests now drive the nausea and
+            // vomit controllers to their outcomes, and the service's
+            // DontDestroyOnLoad is an error there rather than a sound.
+            if (!Application.isPlaying)
+            {
+                return false;
+            }
+
             return RetroAudioService
                 .EnsureInstalled()
                 .TryPlay(id, worldPosition);

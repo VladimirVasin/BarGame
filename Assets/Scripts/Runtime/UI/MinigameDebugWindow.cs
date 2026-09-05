@@ -188,6 +188,44 @@ namespace BarPromenade
             return false;
         }
 
+        /// <summary>
+        /// A bout of vomiting now, the gauge skipped. The window closes
+        /// first like the nausea's button: the bout takes no lock, but it
+        /// borrows the interact key, which this window holds captured.
+        /// </summary>
+        public bool TryTriggerVomit()
+        {
+            if (!IsOpen)
+            {
+                return false;
+            }
+
+            IntoxicationStatusController status =
+                GetComponent<IntoxicationStatusController>();
+            if (status == null)
+            {
+                status = FindAnyObjectByType<IntoxicationStatusController>();
+            }
+
+            IntoxicationVomitController vomit =
+                status != null ? status.Vomit : null;
+            if (vomit == null)
+            {
+                LastLaunchErrorKey = "debug.minigames.unavailable";
+                return false;
+            }
+
+            Close(false);
+            if (vomit.DebugForceBout())
+            {
+                return true;
+            }
+
+            Open();
+            LastLaunchErrorKey = "debug.minigames.unavailable";
+            return false;
+        }
+
         public bool TrySkipHomeToCityMap()
         {
             if (!IsOpen || homeCityShortcut == null ||
@@ -343,7 +381,7 @@ namespace BarPromenade
                     RetroUiTheme.Backdrop,
                     0.92f));
 
-            Rect panel = new Rect(112f, 24f, 416f, 200f);
+            Rect panel = new Rect(112f, 24f, 416f, 232f);
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
@@ -373,11 +411,12 @@ namespace BarPromenade
             }
 
             DrawNauseaControl();
+            DrawVomitControl();
 
             if (!string.IsNullOrEmpty(LastLaunchErrorKey))
             {
                 GUI.Label(
-                    new Rect(132f, 191f, 376f, 20f),
+                    new Rect(132f, 223f, 376f, 20f),
                     LocalizationService.Get(LastLaunchErrorKey),
                     footerStyle);
             }
@@ -425,6 +464,25 @@ namespace BarPromenade
                     rowStyle))
             {
                 TryTriggerNausea();
+            }
+        }
+
+        private void DrawVomitControl()
+        {
+            Rect button = new Rect(324f, 186f, 184f, 24f);
+            RetroUiTheme.DrawPanel(
+                button,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
+                1f);
+            if (GUI.Button(
+                    button,
+                    LocalizationService.Get("debug.vomit.trigger"),
+                    rowStyle))
+            {
+                TryTriggerVomit();
             }
         }
 

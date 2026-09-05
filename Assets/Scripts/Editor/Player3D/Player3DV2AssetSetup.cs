@@ -34,7 +34,7 @@ namespace BarPromenade.Editor
         public const string PrefabPath =
             "Assets/Resources/Player/Player3DV2.prefab";
 
-        private const int BuildSchemaVersion = 4;
+        private const int BuildSchemaVersion = 5;
         private const string ExpectedDesignVersion = "HeroV2";
         private const string ExpectedAtlasRenderer = "GEO_FaceSurface";
         private const string ExpectedAtlasOrigin = "bottom_left";
@@ -52,8 +52,11 @@ namespace BarPromenade.Editor
             "Assets/Scripts/Runtime/Player3D/Player3DAssetRegistry.cs";
         private const float ExpectedHeight = 1.75f;
         private const int MaximumTriangleCount = 4500;
-        private const int ExpectedAtlasColumns = 4;
+        // Eight columns: the nine faces on the left, their soiled twins four
+        // columns to the right, so the atlas imports at 512x256.
+        private const int ExpectedAtlasColumns = 8;
         private const int ExpectedAtlasRows = 4;
+        private const int SoiledAtlasColumnOffset = 4;
         private const int ExpectedAtlasCellSize = 64;
         private const int ExpectedPortraitWidth = 192;
         private const int ExpectedPortraitHeight = 256;
@@ -169,7 +172,25 @@ namespace BarPromenade.Editor
             new CanonicalFaceCell(PlayerFacialExpression.Drowsy, 2, 2),
             new CanonicalFaceCell(PlayerFacialExpression.Glazed, 3, 2),
             new CanonicalFaceCell(PlayerFacialExpression.Slack, 0, 1),
-            new CanonicalFaceCell(PlayerFacialExpression.Grimace, 1, 1)
+            new CanonicalFaceCell(PlayerFacialExpression.Grimace, 1, 1),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.Neutral, SoiledAtlasColumnOffset + 0, 3, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.HalfBlink, SoiledAtlasColumnOffset + 1, 3, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.ClosedBlink, SoiledAtlasColumnOffset + 2, 3, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.Watchful, SoiledAtlasColumnOffset + 0, 2, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.Tense, SoiledAtlasColumnOffset + 1, 2, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.Drowsy, SoiledAtlasColumnOffset + 2, 2, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.Glazed, SoiledAtlasColumnOffset + 3, 2, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.Slack, SoiledAtlasColumnOffset + 0, 1, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.Grimace, SoiledAtlasColumnOffset + 1, 1, true)
         };
 
         private static bool isBuilding;
@@ -690,8 +711,10 @@ namespace BarPromenade.Editor
                     $"{CanonicalFaceCells.Length} canonical cells.");
             }
 
-            HashSet<PlayerFacialExpression> expressions =
-                new HashSet<PlayerFacialExpression>();
+            // A face and its soiled twin are two cells of the same
+            // expression, so duplicates are keyed by the pair.
+            HashSet<(PlayerFacialExpression, bool)> expressions =
+                new HashSet<(PlayerFacialExpression, bool)>();
             for (int index = 0; index < atlas.cells.Length; index++)
             {
                 Player3DV2ManifestFaceCell cell = atlas.cells[index];
@@ -703,18 +726,21 @@ namespace BarPromenade.Editor
 
                 PlayerFacialExpression expression =
                     ParseExpression(cell.expression, "face_atlas");
-                if (!expressions.Add(expression))
+                if (!expressions.Add((expression, cell.soiled)))
                 {
                     throw new InvalidOperationException(
-                        $"Hero V2 face_atlas duplicates '{expression}'.");
+                        $"Hero V2 face_atlas duplicates '{expression}' " +
+                        $"(soiled: {cell.soiled}).");
                 }
 
-                CanonicalFaceCell expected = FindCanonicalCell(expression);
+                CanonicalFaceCell expected =
+                    FindCanonicalCell(expression, cell.soiled);
                 if (cell.column != expected.Column ||
                     cell.row != expected.Row)
                 {
                     throw new InvalidOperationException(
-                        $"Hero V2 face_atlas maps '{expression}' to " +
+                        $"Hero V2 face_atlas maps '{expression}' " +
+                        $"(soiled: {cell.soiled}) to " +
                         $"({cell.column},{cell.row}); expected " +
                         $"({expected.Column},{expected.Row}).");
                 }
@@ -739,18 +765,21 @@ namespace BarPromenade.Editor
         }
 
         private static CanonicalFaceCell FindCanonicalCell(
-            PlayerFacialExpression expression)
+            PlayerFacialExpression expression,
+            bool soiled)
         {
             for (int index = 0; index < CanonicalFaceCells.Length; index++)
             {
-                if (CanonicalFaceCells[index].Expression == expression)
+                if (CanonicalFaceCells[index].Expression == expression &&
+                    CanonicalFaceCells[index].Soiled == soiled)
                 {
                     return CanonicalFaceCells[index];
                 }
             }
 
             throw new InvalidOperationException(
-                $"No canonical atlas cell exists for '{expression}'.");
+                $"No canonical atlas cell exists for '{expression}' " +
+                $"(soiled: {soiled}).");
         }
 
         private static void ValidateTextureAssets(
@@ -1224,7 +1253,8 @@ namespace BarPromenade.Editor
                 cells[index] = new Player3DFaceAtlasCell(
                     ParseExpression(cell.expression, "face_atlas"),
                     cell.column,
-                    cell.row);
+                    cell.row,
+                    cell.soiled);
             }
 
             return new Player3DFaceAtlasBinding(
@@ -1508,16 +1538,19 @@ namespace BarPromenade.Editor
             public CanonicalFaceCell(
                 PlayerFacialExpression expression,
                 int column,
-                int row)
+                int row,
+                bool soiled = false)
             {
                 Expression = expression;
                 Column = column;
                 Row = row;
+                Soiled = soiled;
             }
 
             public PlayerFacialExpression Expression { get; }
             public int Column { get; }
             public int Row { get; }
+            public bool Soiled { get; }
         }
 
         private readonly struct ActionContract
@@ -1621,6 +1654,7 @@ namespace BarPromenade.Editor
             public string expression;
             public int column;
             public int row;
+            public bool soiled;
         }
     }
 }

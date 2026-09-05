@@ -48,6 +48,22 @@ namespace BarPromenade
         /// </summary>
         public const float JointFlexionSign = -1f;
 
+        /// <summary>
+        /// Which way the head joint's drive target counts a chin-down.
+        /// The bout's head-down on the floor is a Slerp drive on the
+        /// head joint whose target is <c>AngleAxis(HeadDriveSign · deg,
+        /// Vector3.right)</c> in joint space, X being the actor's right;
+        /// a positive turn about the actor's right is what pitches a
+        /// face DOWN. But a ConfigurableJoint's <c>targetRotation</c> is
+        /// the CONNECTED body's frame relative to this one's — the same
+        /// parent-from-child reckoning that put <see cref="JointFlexionSign"/>
+        /// at −1 — so the head reaching a +deg chin-down asks for a −deg
+        /// target. Pinned by the ragdoll vomit PlayMode probe through
+        /// <see cref="MeasureHeadPitchDownDegrees"/>: flip it here if the
+        /// probe finds the chin coming UP.
+        /// </summary>
+        public const float HeadDriveSign = -1f;
+
         private static readonly BodySpec[] BodySpecs =
         {
             BodySpec.Root(Player3DAnatomicalPart.Pelvis, 12f),
@@ -206,6 +222,15 @@ namespace BarPromenade
         private ConfigurableJoint pelvisTether;
         private BonePose[] recoveryStart;
         private bool initialized;
+
+        // The head joint kept aside for the bout's drive, and the actor's
+        // forward as the chest and head bodies carried it when the joints
+        // were built: the head-pitch measure is taken between those, so
+        // the build pose reads zero whatever the bones' own axes do.
+        private ConfigurableJoint headJoint;
+        private bool headDriveActive;
+        private Vector3 headDriveChestForwardLocal;
+        private Vector3 headDriveHeadForwardLocal;
 
         public bool IsInitialized => initialized;
         public bool IsSimulating { get; private set; }
@@ -508,6 +533,114 @@ namespace BarPromenade
                     PlayerFallAnimationPhase.None,
                     0f);
             }
+        }
+
+        /// <summary>
+        /// Pitches the simulated head down toward the chest for the bout
+        /// on the floor. It is a Slerp drive on the head joint rather
+        /// than a per-FixedUpdate PD in script: PhysX runs its spring
+        /// inside the solver every substep, against the limits and the
+        /// floor, where a torque written from a script lands a step late
+        /// and fights the contacts. The spring is soft and the torque is
+        /// bounded so a head pinned under a shoulder or face-down on the
+        /// ground gives way instead of levering the torso up. The neck
+        /// has no body of its own (it rides inside the torso segment,
+        /// the head hangs off the torso), so this one joint IS the neck:
+        /// driving it bends head and neck together, which is all the bout
+        /// asks. Nothing outside a live simulation.
+        /// </summary>
+        public void SetHeadDrive(float pitchDownDegrees)
+        {
+            if (!initialized || headJoint == null || !IsSimulating)
+            {
+                return;
+            }
+
+            headJoint.rotationDriveMode = RotationDriveMode.Slerp;
+            // 90 / 9 / 60: the first cut (40 / 6 / 25) moved a head lying
+            // on the floor by four degrees in three quarters of a second —
+            // the direction right, the pull too timid to read.
+            headJoint.slerpDrive = new JointDrive
+            {
+                positionSpring = 90f,
+                positionDamper = 9f,
+                maximumForce = 60f
+            };
+            headJoint.targetRotation = Quaternion.AngleAxis(
+                HeadDriveSign * Mathf.Clamp(pitchDownDegrees, 0f, 30f),
+                Vector3.right);
+            headDriveActive = true;
+        }
+
+        /// <summary>The drive comes off: no spring, the joint back at rest.</summary>
+        public void ClearHeadDrive()
+        {
+            if (!headDriveActive)
+            {
+                return;
+            }
+
+            headDriveActive = false;
+            if (headJoint == null)
+            {
+                return;
+            }
+
+            headJoint.slerpDrive = new JointDrive
+            {
+                positionSpring = 0f,
+                positionDamper = 0f,
+                maximumForce = 0f
+            };
+            headJoint.targetRotation = Quaternion.identity;
+        }
+
+        /// <summary>
+        /// How far the simulated head is pitched toward the chest, in
+        /// degrees, POSITIVE with the chin toward the chest: the probe
+        /// that pins <see cref="HeadDriveSign"/>. Measured about the head
+        /// joint's axis as the head carries it now (the actor's right
+        /// when the joints were built), between the actor's forward as
+        /// the chest body and the head body carried it at that build —
+        /// so the build pose reads zero and the bones' own axes never
+        /// enter. Sign: a positive turn about the actor's right tips a
+        /// forward vector DOWN (Euler(90,0,0) looks at the floor), and
+        /// <c>Vector3.SignedAngle(from, to, axis)</c> is positive when
+        /// that turn carries <c>from</c> onto <c>to</c>; the head's
+        /// forward tipped down from the chest's is the chin on the
+        /// chest, hence positive. Zero before initialisation.
+        /// </summary>
+        public float MeasureHeadPitchDownDegrees()
+        {
+            if (!initialized)
+            {
+                return 0f;
+            }
+
+            Rigidbody chest = GetBody(Player3DAnatomicalPart.Torso);
+            Rigidbody head = GetBody(Player3DAnatomicalPart.Head);
+            if (chest == null || head == null)
+            {
+                return 0f;
+            }
+
+            Vector3 axis = headJoint != null
+                ? headJoint.transform.TransformDirection(headJoint.axis).normalized
+                : gameplayRoot.right;
+            Vector3 chestForward = Vector3.ProjectOnPlane(
+                chest.transform.TransformDirection(headDriveChestForwardLocal),
+                axis);
+            Vector3 headForward = Vector3.ProjectOnPlane(
+                head.transform.TransformDirection(headDriveHeadForwardLocal),
+                axis);
+            if (axis.sqrMagnitude <= 0.000001f ||
+                chestForward.sqrMagnitude <= 0.000001f ||
+                headForward.sqrMagnitude <= 0.000001f)
+            {
+                return 0f;
+            }
+
+            return Vector3.SignedAngle(chestForward, headForward, axis);
         }
 
         private void OnDisable()
@@ -833,6 +966,16 @@ namespace BarPromenade
                     gameplayRoot.up).normalized;
                 ConfigureJointCommon(joint);
                 joints.Add(joint);
+                if (spec.Part == Player3DAnatomicalPart.Head)
+                {
+                    headJoint = joint;
+                    headDriveHeadForwardLocal =
+                        body.transform.InverseTransformDirection(
+                            gameplayRoot.forward);
+                    headDriveChestForwardLocal =
+                        parent.transform.InverseTransformDirection(
+                            gameplayRoot.forward);
+                }
             }
         }
 
@@ -1083,6 +1226,10 @@ namespace BarPromenade
 
         private void FreezeBodies()
         {
+            // BeginRise and Cancel both freeze through here, so this is
+            // where the bout's head drive comes off: a frozen body must
+            // not wake up with a spring still pulling its chin down.
+            ClearHeadDrive();
             for (int index = 0; index < bodyList.Count; index++)
             {
                 Rigidbody body = bodyList[index];

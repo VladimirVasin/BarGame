@@ -14,11 +14,9 @@ namespace BarPromenade
             "Home Bed Crumpled Shirt";
         public const int SleepLoopFrameCount = 16;
         public const float SleepLoopFramesPerSecond = 4f;
-        // Both are 12 fps in tools/player_3d_model_common.py: 45 frames is the
-        // 3.75 s BedEnter, 72 is the 6.0 s BedExit. Waking is the longer of
-        // the two on purpose — it has four separate beats to get through (sit
-        // up, right leg, left leg, stand) and a weary man rushes none of them.
-        public const int BedEnterFrameCount = 45;
+        // Both are 12 fps. Five seconds leaves time for two supported pelvis
+        // steps before reclining; the six-second wake also lowers each leg.
+        public const int BedEnterFrameCount = 60;
         public const int BedExitFrameCount = 72;
         public const float BedTransitionFramesPerSecond = 12f;
         public const int FullExhaleLoopFrameOffset = 3;

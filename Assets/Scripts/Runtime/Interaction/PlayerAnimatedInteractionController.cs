@@ -21,9 +21,14 @@ namespace BarPromenade
     /// Defaults reproduce the older two-marker behaviour exactly - move from
     /// the first frame, arrive on the last - so a seat with no door to wait
     /// for says nothing about either.
+    /// Actions with multiple support changes may supply an immutable keyed
+    /// path instead, with independent lifts, transfers and seated pauses.
     /// </summary>
     public readonly struct PlayerAnimatedInteractionPelvisTransition
     {
+        private readonly PlayerAnimatedInteractionPelvisPath enterPath;
+        private readonly PlayerAnimatedInteractionPelvisPath exitPath;
+
         public PlayerAnimatedInteractionPelvisTransition(
             Vector3 waypoint,
             float enterArrivalProgress,
@@ -33,7 +38,9 @@ namespace BarPromenade
             float enterHoldProgress = 0f,
             float enterSettleProgress = 1f,
             float exitHoldProgress = 0f,
-            float exitSettleProgress = 1f)
+            float exitSettleProgress = 1f,
+            PlayerAnimatedInteractionPelvisPath authoredEnterPath = null,
+            PlayerAnimatedInteractionPelvisPath authoredExitPath = null)
         {
             Waypoint = waypoint;
             EnterArrivalProgress = enterArrivalProgress;
@@ -44,6 +51,8 @@ namespace BarPromenade
             EnterSettleProgress = enterSettleProgress;
             ExitHoldProgress = exitHoldProgress;
             ExitSettleProgress = exitSettleProgress;
+            enterPath = authoredEnterPath;
+            exitPath = authoredExitPath;
             Validate(nameof(waypoint));
         }
 
@@ -69,6 +78,7 @@ namespace BarPromenade
             Vector3 end,
             float progress)
         {
+            if (enterPath != null) return enterPath.Evaluate(start, end, progress);
             return Evaluate(
                 start,
                 end,
@@ -84,6 +94,7 @@ namespace BarPromenade
             Vector3 end,
             float progress)
         {
+            if (exitPath != null) return exitPath.Evaluate(start, end, progress);
             return Evaluate(
                 start,
                 end,

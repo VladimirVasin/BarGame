@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model-v2.py",
-  "generator_version": "1.3.0",
+  "generator_version": "1.4.0",
   "blender_version": "5.0.1",
   "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
   "runtime_integrated": true,
@@ -81,14 +81,227 @@
     "supine_head_offset_m": -0.0132,
     "seated_pelvis_lift_m": 0.0644,
     "mattress_above_floor_m": 0.56,
-    "enter_seat_arrival": 0.28,
-    "enter_seat_departure": 0.44,
-    "exit_seat_arrival": 0.5,
-    "exit_seat_departure": 0.88,
+    "enter_seat_arrival": 0.22,
+    "enter_seat_departure": 0.3,
+    "exit_seat_arrival": 0.57,
+    "exit_seat_departure": 0.9,
     "enter_hold": 0.05,
     "enter_settle": 0.96,
     "exit_hold": 0.3,
-    "exit_settle": 1.0
+    "exit_settle": 1.0,
+    "pelvis_step_lift_m": 0.07,
+    "enter_pelvis_path": [
+      {
+        "progress": 0.0,
+        "position": [
+          -2.84,
+          0.88,
+          -1.73
+        ]
+      },
+      {
+        "progress": 0.05,
+        "position": [
+          -2.84,
+          0.88,
+          -1.73
+        ]
+      },
+      {
+        "progress": 0.22,
+        "position": [
+          -2.84,
+          0.6244,
+          -1.09
+        ]
+      },
+      {
+        "progress": 0.3,
+        "position": [
+          -2.84,
+          0.6244,
+          -1.09
+        ]
+      },
+      {
+        "progress": 0.34,
+        "position": [
+          -2.84,
+          0.6944,
+          -1.09
+        ]
+      },
+      {
+        "progress": 0.41,
+        "position": [
+          -2.84,
+          0.6944,
+          -0.7325
+        ]
+      },
+      {
+        "progress": 0.44,
+        "position": [
+          -2.84,
+          0.6244,
+          -0.7325
+        ]
+      },
+      {
+        "progress": 0.47,
+        "position": [
+          -2.84,
+          0.6244,
+          -0.7325
+        ]
+      },
+      {
+        "progress": 0.51,
+        "position": [
+          -2.84,
+          0.6944,
+          -0.7325
+        ]
+      },
+      {
+        "progress": 0.58,
+        "position": [
+          -2.84,
+          0.6944,
+          -0.375
+        ]
+      },
+      {
+        "progress": 0.61,
+        "position": [
+          -2.84,
+          0.6244,
+          -0.375
+        ]
+      },
+      {
+        "progress": 0.64,
+        "position": [
+          -2.84,
+          0.6244,
+          -0.375
+        ]
+      },
+      {
+        "progress": 0.96,
+        "position": [
+          -2.84,
+          0.5903,
+          -0.375
+        ]
+      },
+      {
+        "progress": 1.0,
+        "position": [
+          -2.84,
+          0.5903,
+          -0.375
+        ]
+      }
+    ],
+    "exit_pelvis_path": [
+      {
+        "progress": 0.0,
+        "position": [
+          -2.84,
+          0.5903,
+          -0.375
+        ]
+      },
+      {
+        "progress": 0.3,
+        "position": [
+          -2.84,
+          0.6244,
+          -0.375
+        ]
+      },
+      {
+        "progress": 0.32,
+        "position": [
+          -2.84,
+          0.6244,
+          -0.375
+        ]
+      },
+      {
+        "progress": 0.35,
+        "position": [
+          -2.84,
+          0.6944,
+          -0.375
+        ]
+      },
+      {
+        "progress": 0.4,
+        "position": [
+          -2.84,
+          0.6944,
+          -0.7325
+        ]
+      },
+      {
+        "progress": 0.43,
+        "position": [
+          -2.84,
+          0.6244,
+          -0.7325
+        ]
+      },
+      {
+        "progress": 0.46,
+        "position": [
+          -2.84,
+          0.6244,
+          -0.7325
+        ]
+      },
+      {
+        "progress": 0.49,
+        "position": [
+          -2.84,
+          0.6944,
+          -0.7325
+        ]
+      },
+      {
+        "progress": 0.54,
+        "position": [
+          -2.84,
+          0.6944,
+          -1.09
+        ]
+      },
+      {
+        "progress": 0.57,
+        "position": [
+          -2.84,
+          0.6244,
+          -1.09
+        ]
+      },
+      {
+        "progress": 0.9,
+        "position": [
+          -2.84,
+          0.6244,
+          -1.09
+        ]
+      },
+      {
+        "progress": 1.0,
+        "position": [
+          -2.84,
+          0.88,
+          -1.73
+        ]
+      }
+    ]
   },
   "actions": [
     {
@@ -130,12 +343,12 @@
     {
       "name": "BedEnter",
       "category": "bed",
-      "duration_seconds": 3.75,
+      "duration_seconds": 5.0,
       "loop": false,
-      "source_frame_count": 45,
+      "source_frame_count": 60,
       "source_fps": 12,
       "frame_start": 0.0,
-      "frame_end": 90.0,
+      "frame_end": 120.0,
       "root_motion": false,
       "event_count": 0,
       "face_keys": [
@@ -1075,7 +1288,7 @@
     "action_count": 41,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "1c4554e5138530a04f703109d74ec6fc100939202569738e9b10b8611deea420",
+  "content_signature_sha256": "27011ab1187882fe19962bcc3ebd021c8257e10685524ca360f5e690d0926678",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -1095,57 +1308,120 @@
   "face_atlas": {
     "texture_asset": "Assets/Player3D/V2/Textures/PlayerFaceAtlas.png",
     "renderer": "GEO_FaceSurface",
-    "columns": 4,
+    "columns": 8,
     "rows": 4,
     "cell_size_px": 64,
     "uv_origin": "bottom_left",
     "filter_mode": "Point",
-    "sha256": "3523d98754f38b13da431ba69988c9e1c6a6d2f4cef548f570855e811d66e53d",
+    "sha256": "64de84706382acdba65e48f4309ec5a7f4c6daf6368cadd6153e858afbe0f375",
     "cells": [
       {
         "expression": "Neutral",
         "column": 0,
-        "row": 3
+        "row": 3,
+        "soiled": false
       },
       {
         "expression": "HalfBlink",
         "column": 1,
-        "row": 3
+        "row": 3,
+        "soiled": false
       },
       {
         "expression": "ClosedBlink",
         "column": 2,
-        "row": 3
+        "row": 3,
+        "soiled": false
       },
       {
         "expression": "Watchful",
         "column": 0,
-        "row": 2
+        "row": 2,
+        "soiled": false
       },
       {
         "expression": "Tense",
         "column": 1,
-        "row": 2
+        "row": 2,
+        "soiled": false
       },
       {
         "expression": "Drowsy",
         "column": 2,
-        "row": 2
+        "row": 2,
+        "soiled": false
       },
       {
         "expression": "Glazed",
         "column": 3,
-        "row": 2
+        "row": 2,
+        "soiled": false
       },
       {
         "expression": "Slack",
         "column": 0,
-        "row": 1
+        "row": 1,
+        "soiled": false
       },
       {
         "expression": "Grimace",
         "column": 1,
-        "row": 1
+        "row": 1,
+        "soiled": false
+      },
+      {
+        "expression": "Neutral",
+        "column": 4,
+        "row": 3,
+        "soiled": true
+      },
+      {
+        "expression": "HalfBlink",
+        "column": 5,
+        "row": 3,
+        "soiled": true
+      },
+      {
+        "expression": "ClosedBlink",
+        "column": 6,
+        "row": 3,
+        "soiled": true
+      },
+      {
+        "expression": "Watchful",
+        "column": 4,
+        "row": 2,
+        "soiled": true
+      },
+      {
+        "expression": "Tense",
+        "column": 5,
+        "row": 2,
+        "soiled": true
+      },
+      {
+        "expression": "Drowsy",
+        "column": 6,
+        "row": 2,
+        "soiled": true
+      },
+      {
+        "expression": "Glazed",
+        "column": 7,
+        "row": 2,
+        "soiled": true
+      },
+      {
+        "expression": "Slack",
+        "column": 4,
+        "row": 1,
+        "soiled": true
+      },
+      {
+        "expression": "Grimace",
+        "column": 5,
+        "row": 1,
+        "soiled": true
       }
     ]
   },

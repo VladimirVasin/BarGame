@@ -491,6 +491,114 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        // ---- the hand-off --------------------------------------------
+
+        /// <summary>
+        /// A lost bout raises the fail cue once, after the gauge has
+        /// resolved and not before, and the key is his again by then —
+        /// the vomiting claims it afresh in the same Update.
+        /// </summary>
+        [Test]
+        public void Fail_RaisesTheFailCueExactlyOnce()
+        {
+            using (var rig = new ControllerRig())
+            {
+                IntoxicationNauseaController controller = rig.Controller;
+                Assert.That(controller.ConsumeFailCue(), Is.False, "Nothing is due before a bout.");
+                Assert.That(controller.DebugForceBout(), Is.True);
+                Assert.That(controller.IsBoutActive, Is.True);
+                Assert.That(rig.Interactor.InteractKeyClaimed, Is.True);
+
+                // Nobody holds the key in EditMode: the gauge is lost.
+                int guard = 0;
+                while (guard++ < 60 * 30)
+                {
+                    controller.Tick(Step, false, false);
+                    if (!controller.IsBoutActive)
+                    {
+                        break;
+                    }
+
+                    Assert.That(controller.ConsumeFailCue(), Is.False, "No cue while the bout still runs.");
+                }
+
+                Assert.That(controller.IsBoutActive, Is.False, "The bout resolved.");
+                Assert.That(controller.Verdict, Is.EqualTo(HeroNauseaOutcome.Fail));
+                Assert.That(controller.Fails, Is.EqualTo(1));
+                Assert.That(rig.Interactor.InteractKeyClaimed, Is.False, "The key is released on resolve.");
+                Assert.That(controller.ConsumeFailCue(), Is.True, "The fail is handed on once.");
+                Assert.That(controller.ConsumeFailCue(), Is.False, "And only once.");
+
+                controller.Tick(Step, false, false);
+                Assert.That(controller.ConsumeFailCue(), Is.False, "A later frame does not raise it again.");
+            }
+        }
+
+        /// <summary>
+        /// A second lost bout raises the cue again, and a shutdown drops
+        /// one nobody has read.
+        /// </summary>
+        [Test]
+        public void Fail_TheCueIsPerBoutAndShutdownDropsIt()
+        {
+            using (var rig = new ControllerRig())
+            {
+                IntoxicationNauseaController controller = rig.Controller;
+                LoseABout(controller);
+                Assert.That(controller.ConsumeFailCue(), Is.True);
+
+                LoseABout(controller);
+                Assert.That(controller.Fails, Is.EqualTo(2));
+                controller.Shutdown();
+                Assert.That(controller.ConsumeFailCue(), Is.False, "Shutdown drops an unread cue.");
+                Assert.That(rig.Interactor.InteractKeyClaimed, Is.False);
+            }
+        }
+
+        /// <summary>
+        /// The suspension the vomiting asks for: the clock's gate closes
+        /// without touching anything else, and a closed gate rearms the
+        /// full twenty seconds — after being sick he is left alone.
+        /// </summary>
+        [Test]
+        public void Clock_ASuspendedGateRearmsTheFullRest()
+        {
+            using (var rig = new ControllerRig())
+            {
+                GameSessionState.UpdateDrinkingProgress(90, DrinkId.Vodka, 6);
+                try
+                {
+                    IntoxicationNauseaController controller = rig.Controller;
+                    Assert.That(controller.CanBegin(false, false), Is.True, "The last stage, on his feet: a bout may come.");
+
+                    Run(controller, 15f, false);
+                    Assert.That(controller.Clock.RestElapsed, Is.GreaterThan(14f));
+                    Assert.That(controller.BoutsBegun, Is.EqualTo(0), "Fifteen seconds is not twenty.");
+
+                    controller.Tick(Step, false, false, boutsSuspended: true);
+                    Assert.That(controller.Clock.RestElapsed, Is.EqualTo(0f));
+                    Assert.That(
+                        controller.Clock.RestDuration,
+                        Is.EqualTo(HeroNauseaClock.InitialRestSeconds));
+
+                    Run(controller, 25f, true);
+                    Assert.That(controller.BoutsBegun, Is.EqualTo(0), "Suspended, the clock never cues.");
+                    Assert.That(controller.IsBoutActive, Is.False);
+                    Assert.That(controller.Clock.RestElapsed, Is.EqualTo(0f));
+
+                    Run(controller, 19f, false);
+                    Assert.That(controller.BoutsBegun, Is.EqualTo(0), "Released, the full rest runs again.");
+                    Run(controller, 1.5f, false);
+                    Assert.That(controller.BoutsBegun, Is.EqualTo(1));
+                    Assert.That(controller.IsBoutActive, Is.True);
+                }
+                finally
+                {
+                    GameSessionState.ResetDrinkingState();
+                }
+            }
+        }
+
         // ---- the scope -----------------------------------------------
 
         /// <summary>
@@ -543,6 +651,60 @@ namespace BarPromenade.Tests.EditMode
         }
 
         // ---- helpers -------------------------------------------------
+
+        /// <summary>
+        /// The controller over a bare hero: a motor and an interactor on
+        /// one object, no presentation and no ragdoll. Enough for the
+        /// gates (<see cref="IntoxicationNauseaController.CanRun"/> wants a
+        /// live motor and interactor) and for the key.
+        /// </summary>
+        private sealed class ControllerRig : IDisposable
+        {
+            private readonly GameObject root;
+
+            public ControllerRig()
+            {
+                root = new GameObject("Nausea Controller Test");
+                Motor = root.AddComponent<PlayerMotor>();
+                Interactor = root.AddComponent<PlayerInteractor>();
+                var player = new PlayerRuntime(root, Motor, Interactor, null);
+                Controller = new IntoxicationNauseaController(player, Seed);
+            }
+
+            public PlayerMotor Motor { get; }
+            public PlayerInteractor Interactor { get; }
+            public IntoxicationNauseaController Controller { get; }
+
+            public void Dispose()
+            {
+                Controller.Shutdown();
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void LoseABout(IntoxicationNauseaController controller)
+        {
+            Assert.That(controller.DebugForceBout(), Is.True);
+            int guard = 0;
+            while (controller.IsBoutActive && guard++ < 60 * 30)
+            {
+                controller.Tick(Step, false, false);
+            }
+
+            Assert.That(controller.Verdict, Is.EqualTo(HeroNauseaOutcome.Fail));
+        }
+
+        private static void Run(
+            IntoxicationNauseaController controller,
+            float seconds,
+            bool boutsSuspended)
+        {
+            int frames = Mathf.CeilToInt(seconds / Step);
+            for (int frame = 0; frame < frames; frame++)
+            {
+                controller.Tick(Step, false, false, boutsSuspended);
+            }
+        }
 
         private static void AssertNotForbidden(Type type, string[] prefixes, string where)
         {

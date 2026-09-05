@@ -197,20 +197,36 @@ namespace BarPromenade
         [SerializeField] private PlayerFacialExpression expression;
         [SerializeField, Min(0)] private int column;
         [SerializeField, Min(0)] private int row;
+        [SerializeField] private bool soiled;
 
         public Player3DFaceAtlasCell(
             PlayerFacialExpression expression,
             int column,
             int row)
+            : this(expression, column, row, false)
+        {
+        }
+
+        /// <summary>
+        /// A soiled cell is the same expression with the drink still on the
+        /// chin; the hero's atlas carries one twin per face, other rigs none.
+        /// </summary>
+        public Player3DFaceAtlasCell(
+            PlayerFacialExpression expression,
+            int column,
+            int row,
+            bool soiled)
         {
             this.expression = expression;
             this.column = column;
             this.row = row;
+            this.soiled = soiled;
         }
 
         public PlayerFacialExpression Expression => expression;
         public int Column => column;
         public int Row => row;
+        public bool Soiled => soiled;
     }
 
     /// <summary>
@@ -258,6 +274,33 @@ namespace BarPromenade
             PlayerFacialExpression expression,
             out Vector4 textureTransform)
         {
+            return TryGetTextureTransform(expression, false, out textureTransform);
+        }
+
+        /// <summary>
+        /// The exact (expression, soiled) cell. A soiled request whose twin
+        /// the atlas lacks falls back to the clean cell, so a rig without
+        /// soiled faces keeps showing the expression rather than nothing.
+        /// </summary>
+        public bool TryGetTextureTransform(
+            PlayerFacialExpression expression,
+            bool soiled,
+            out Vector4 textureTransform)
+        {
+            if (TryGetExactTextureTransform(expression, soiled, out textureTransform))
+            {
+                return true;
+            }
+
+            return soiled &&
+                   TryGetExactTextureTransform(expression, false, out textureTransform);
+        }
+
+        private bool TryGetExactTextureTransform(
+            PlayerFacialExpression expression,
+            bool soiled,
+            out Vector4 textureTransform)
+        {
             if (columns <= 0 || rows <= 0 || cells == null)
             {
                 textureTransform = new Vector4(1f, 1f, 0f, 0f);
@@ -268,6 +311,7 @@ namespace BarPromenade
             {
                 Player3DFaceAtlasCell cell = cells[index];
                 if (cell.Expression != expression ||
+                    cell.Soiled != soiled ||
                     cell.Column < 0 ||
                     cell.Column >= columns ||
                     cell.Row < 0 ||

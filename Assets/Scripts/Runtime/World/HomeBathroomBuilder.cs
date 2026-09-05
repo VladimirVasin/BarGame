@@ -276,6 +276,10 @@ namespace BarPromenade
                 PorcelainShadow,
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.BoxXY));
+            // Keep the validated player collision footprint while the actual
+            // ceramic body leaves a cavity below the bowl's water line.
+            parts[0].GetComponent<MeshFilter>().sharedMesh =
+                HomeUrineResources.Mesh("ToiletPedestal");
             parts.Add(HomeSurfacePrimitives.CreateCylinder(
                 "Home Bathroom Toilet Bowl",
                 room,
@@ -308,6 +312,10 @@ namespace BarPromenade
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.CylinderCapXZ,
                 false));
+            // The legacy lathe capped the hole with a disk at its bottom.
+            // This authored ring connects only the inner and outer walls.
+            parts[2].GetComponent<MeshFilter>().sharedMesh =
+                HomeUrineResources.Mesh("ToiletSeat");
             parts.Add(HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Toilet Cistern",
                 room,
@@ -339,6 +347,11 @@ namespace BarPromenade
                 occlusionRegistry,
                 "home.bathroom.toilet",
                 parts);
+            HomeToiletLid lid = HomeToiletLid.Create(room);
+            occlusionRegistry.AddRenderers("home.bathroom.toilet", lid.gameObject);
+            occlusionRegistry.AddRenderers("home.bathroom.toilet", HomeToiletLid.CreateWater(room));
+            occlusionRegistry.AddRenderers("home.bathroom.toilet",
+                HomeToiletLid.CreatePaper(room, parts[3].GetComponent<Renderer>().bounds));
         }
 
         /// <summary>

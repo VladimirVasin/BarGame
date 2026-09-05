@@ -315,6 +315,100 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Binding_SoiledTwinIsUsedAndFallsBackToClean()
+        {
+            GameObject face = new GameObject("Face Surface");
+            Texture2D texture = new Texture2D(512, 256);
+            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
+            Assert.That(shader, Is.Not.Null);
+            Material material = new Material(shader);
+            try
+            {
+                Renderer renderer = face.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial = material;
+                // The hero's 8x4 layout, but with soiled twins for two faces
+                // only, so the fallback to the clean cell can be seen.
+                Player3DFaceAtlasCell[] clean = CreateCanonicalCells();
+                var cells = new Player3DFaceAtlasCell[clean.Length + 2];
+                Array.Copy(clean, cells, clean.Length);
+                cells[clean.Length] = new Player3DFaceAtlasCell(
+                    PlayerFacialExpression.Grimace, 4, 2, true);
+                cells[clean.Length + 1] = new Player3DFaceAtlasCell(
+                    PlayerFacialExpression.Neutral, 4, 0, true);
+                var binding = new Player3DFaceAtlasBinding(
+                    renderer,
+                    texture,
+                    8,
+                    4,
+                    cells);
+                Assert.That(binding.IsConfigured, Is.True);
+
+                // The twin when the atlas has one: Grimace's sits at (4,2).
+                Assert.That(
+                    binding.TryGetTextureTransform(
+                        PlayerFacialExpression.Grimace,
+                        true,
+                        out Vector4 transform),
+                    Is.True);
+                Assert.That(
+                    transform,
+                    Is.EqualTo(new Vector4(0.125f, 0.25f, 0.5f, 0.5f)));
+
+                // The clean cell when it has none: Watchful stays at (3,0).
+                Assert.That(
+                    binding.TryGetTextureTransform(
+                        PlayerFacialExpression.Watchful,
+                        true,
+                        out transform),
+                    Is.True);
+                Assert.That(
+                    transform,
+                    Is.EqualTo(new Vector4(0.125f, 0.25f, 0.375f, 0f)));
+
+                // A clean request never picks up the twin.
+                Assert.That(
+                    binding.TryGetTextureTransform(
+                        PlayerFacialExpression.Grimace,
+                        false,
+                        out transform),
+                    Is.True);
+                Assert.That(
+                    transform,
+                    Is.EqualTo(new Vector4(0.125f, 0.25f, 0f, 0.5f)));
+
+                // The presenter carries the flag through to the renderer:
+                // the soiled Grimace lands in the right half of the atlas.
+                var presenter = new Player3DFaceAtlasPresenter();
+                presenter.Configure(binding);
+                Assert.That(
+                    presenter.Apply(PlayerFacialExpression.Grimace, true),
+                    Is.True);
+                var properties = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(properties);
+                Vector4 shown = properties.GetVector(BaseMapTransformId);
+                Assert.That(shown.z, Is.GreaterThanOrEqualTo(0.5f));
+                Assert.That(
+                    shown,
+                    Is.EqualTo(new Vector4(0.125f, 0.25f, 0.5f, 0.5f)));
+
+                // And drops back to the clean face for a twin it lacks.
+                Assert.That(
+                    presenter.Apply(PlayerFacialExpression.Watchful, true),
+                    Is.True);
+                renderer.GetPropertyBlock(properties);
+                Assert.That(
+                    properties.GetVector(BaseMapTransformId),
+                    Is.EqualTo(new Vector4(0.125f, 0.25f, 0.375f, 0f)));
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(face);
+            }
+        }
+
         private static Player3DFaceAtlasCell[] CreateCanonicalCells()
         {
             return new[]

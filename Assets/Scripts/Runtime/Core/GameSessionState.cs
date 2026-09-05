@@ -153,6 +153,14 @@ namespace BarPromenade
             private set;
         } = AlpineVillageArrivalKind.Default;
         public static int IntoxicationLevel { get; private set; }
+
+        /// <summary>
+        /// The hero threw up and has not washed since: the face wears
+        /// its soiled atlas twin until water touches it. Session state
+        /// rather than a presentation flag because the dirt has to
+        /// survive an area change - he walks home from the bar with it.
+        /// </summary>
+        public static bool HeroMouthSoiled { get; private set; }
         public static int LastTeethBrushingDayIndex
         {
             get;
@@ -441,6 +449,7 @@ namespace BarPromenade
             nextDrinkOrderSequence = 0L;
             CityWetSurfaceRegistry.ResetForNewSession();
             ChurchGardenPotSessionState.ResetForNewSession();
+            HomeUrineEffect.ResetSession();
             CitySeed = DefaultCitySeed;
             CityBlueprintId = DefaultCityBlueprintId;
             ActiveBarId = string.Empty;
@@ -453,6 +462,9 @@ namespace BarPromenade
             AlpineVillageArrival = AlpineVillageArrivalKind.Default;
             DebugCityMapOnArrivalRequested = false;
             IntoxicationLevel = 0;
+            // A new game starts with a clean face; assigned directly
+            // because nothing here is a change worth a log line.
+            HeroMouthSoiled = false;
             needsProgression.Reset();
             StressLevel = DefaultStress;
             intoxicationRecoveryElapsed = 0f;
@@ -795,6 +807,9 @@ namespace BarPromenade
         public static void ResetFatigueAfterSleep()
         {
             UpdateFatigue(DefaultFatigue);
+            // Nobody wakes up still wearing last night's sick - a night
+            // in bed is the one cleaning that needs no water.
+            SetHeroMouthSoiled(false, "sleep");
         }
 
         /// <summary>
@@ -805,6 +820,14 @@ namespace BarPromenade
             string sourceId,
             int relief)
         {
+            // Only the shower washes the face; the toilet relieves the
+            // same stress but puts no water on him, so a soiled mouth
+            // stays soiled through it.
+            if (string.Equals(sourceId, "shower", StringComparison.Ordinal))
+            {
+                SetHeroMouthSoiled(false, sourceId);
+            }
+
             PlayerNeedReliefResult result =
                 PlayerNeedsRules.ApplyStressRelief(
                     StressLevel,
@@ -829,6 +852,10 @@ namespace BarPromenade
         /// </summary>
         public static bool TryCommitTeethBrushingRelief(int relief)
         {
+            // Washing at the sink always cleans the mouth, whether or
+            // not today's stress relief is still on offer - the gate
+            // below rations the relief, not the water.
+            SetHeroMouthSoiled(false, "teeth_brushing");
             if (GameDayIndex == LastTeethBrushingDayIndex)
             {
                 GameLog.Info(
@@ -1763,6 +1790,68 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Takes intoxication points off at once - the body throwing
+        /// the drink back up rather than metabolising it. Unlike a
+        /// drink this does not restart the recovery timer: the point
+        /// that was half earned before the bout stays half earned, so
+        /// relief only ever brings sobriety closer. Returns the points
+        /// actually removed, which is fewer than asked near zero.
+        /// </summary>
+        public static int RelieveIntoxication(int points, string reason)
+        {
+            int requestedPoints = Math.Max(0, points);
+            if (requestedPoints == 0 || IntoxicationLevel <= 0)
+            {
+                return 0;
+            }
+
+            int previousIntoxication = IntoxicationLevel;
+            IntoxicationLevel = Math.Max(
+                0,
+                IntoxicationLevel - requestedPoints);
+            if (IntoxicationLevel == 0)
+            {
+                intoxicationRecoveryElapsed = 0f;
+            }
+
+            if (IntoxicationLevel <=
+                IntoxicationStageRules.BalanceThreshold)
+            {
+                BalanceCheckDelayRemaining = 0f;
+            }
+
+            GameLog.Info(
+                "intoxication",
+                "relieved",
+                GameLog.Field(
+                    "previous_level",
+                    previousIntoxication),
+                GameLog.Field("level", IntoxicationLevel),
+                GameLog.Field("points", requestedPoints),
+                GameLog.Field("reason", reason ?? string.Empty));
+            return previousIntoxication - IntoxicationLevel;
+        }
+
+        /// <summary>
+        /// Marks or clears the sick on the hero's face. Logs only a
+        /// change, because every wash and every wake-up calls it
+        /// whether or not there was anything to clean.
+        /// </summary>
+        public static void SetHeroMouthSoiled(bool soiled, string reason)
+        {
+            if (HeroMouthSoiled == soiled)
+            {
+                return;
+            }
+
+            HeroMouthSoiled = soiled;
+            GameLog.Info(
+                "session",
+                soiled ? "mouth_soiled" : "mouth_cleaned",
+                GameLog.Field("reason", reason ?? string.Empty));
+        }
+
         public static DrinkPurchaseResult TryPurchaseDrink(
             DrinkId drinkId)
         {
@@ -1898,6 +1987,12 @@ namespace BarPromenade
 
         public static void ResetDrinkingState()
         {
+            // The dirt on his face is the drinking's last trace, so it
+            // goes with the rest - and it goes BEFORE the early return
+            // below, which only knows about the numbers. The tests'
+            // session resets come through here; without this the sick
+            // would leak from one test into the next.
+            SetHeroMouthSoiled(false, "drinking_reset");
             if (IntoxicationLevel == 0 &&
                 LastAlcoholicDrink == DrinkId.None &&
                 DrinksConsumed == 0 &&

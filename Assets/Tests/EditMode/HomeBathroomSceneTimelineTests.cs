@@ -19,119 +19,72 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Toilet_RunsPrivacyCutAndFlushesOnce()
+        public void Toilet_RunsSixSecondsThenFourSecondShakeAndFlushesOnce()
         {
             var timeline = new HomeToiletSceneTimeline();
-            Assert.That(
-                timeline.Phase,
-                Is.EqualTo(HomeToiletScenePhase.Idle));
             timeline.Begin();
             Assert.That(timeline.CameraBlend, Is.Zero);
-
-            Advance(
-                timeline.Advance,
-                HomeToiletSceneTimeline.CameraAwaySeconds + 0.05f);
-            Assert.That(
-                timeline.Phase,
-                Is.EqualTo(HomeToiletScenePhase.Privacy));
-            Assert.That(timeline.CameraBlend, Is.EqualTo(1f));
+            timeline.Advance(HomeToiletSceneTimeline.EnterSeconds);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeToiletScenePhase.Urinating));
+            Assert.That(timeline.RemainingAmount, Is.EqualTo(1f));
+            timeline.Advance(3f);
+            Assert.That(timeline.RemainingAmount, Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(timeline.UrineFlow, Is.EqualTo(1f));
+            Assert.That(HomeToiletSceneTimeline.EvaluateUrineFlow(4.8f), Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(HomeToiletSceneTimeline.EvaluateUrineFlow(5.4f), Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(HomeToiletSceneTimeline.AverageUrineFlow(4.8f, 6f), Is.EqualTo(0.5f).Within(0.0001f));
+            timeline.Advance(3f);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeToiletScenePhase.Shaking));
+            Assert.That(timeline.RemainingAmount, Is.Zero);
+            Assert.That(timeline.UrineFlow, Is.Zero);
             Assert.That(timeline.ConsumeFlushCue(), Is.False);
-
-            Advance(
-                timeline.Advance,
-                HomeToiletSceneTimeline.FlushTimeSeconds + 0.05f);
+            timeline.Advance(4f);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeToiletScenePhase.Exiting));
             Assert.That(timeline.ConsumeFlushCue(), Is.True);
-            Assert.That(
-                timeline.ConsumeFlushCue(),
-                Is.False,
-                "The flush must land exactly once.");
-            Assert.That(timeline.WaterAmount, Is.GreaterThan(0f));
-
-            Advance(timeline.Advance, 2f);
-            Assert.That(
-                timeline.Phase,
-                Is.EqualTo(HomeToiletScenePhase.CameraReturn));
-            Advance(
-                timeline.Advance,
-                HomeToiletSceneTimeline.CameraReturnSeconds + 0.05f);
-            Assert.That(timeline.IsCompleted, Is.True);
-            Assert.That(timeline.WaterAmount, Is.Zero);
+            Assert.That(timeline.ConsumeFlushCue(), Is.False);
+            timeline.Advance(HomeToiletSceneTimeline.ExitSeconds);
+            Assert.That(timeline.CanCommit, Is.True);
         }
 
         [Test]
-        public void Toilet_StopRequestShortensPrivacyAfterMinimum()
+        public void Toilet_StopDuringEmissionNeverCommitsOrFlushes()
         {
             var timeline = new HomeToiletSceneTimeline();
             timeline.Begin();
-            Advance(
-                timeline.Advance,
-                HomeToiletSceneTimeline.CameraAwaySeconds + 0.05f);
-            Advance(
-                timeline.Advance,
-                HomeToiletSceneTimeline.MinimumPrivacySeconds +
-                0.05f);
+            timeline.Advance(HomeToiletSceneTimeline.EnterSeconds + 4f);
             Assert.That(timeline.RequestFinish(), Is.True);
-            Assert.That(
-                timeline.Phase,
-                Is.EqualTo(HomeToiletScenePhase.CameraReturn));
-            Assert.That(timeline.ReachedMinimumPrivacy, Is.True);
-            Assert.That(
-                timeline.ConsumeFlushCue(),
-                Is.True,
-                "An early finish still flushes before the camera " +
-                "turns back.");
+            timeline.Advance(HomeToiletSceneTimeline.ExitSeconds);
+            Assert.That(timeline.IsCompleted, Is.True);
+            Assert.That(timeline.CanCommit, Is.False);
+            Assert.That(timeline.ConsumeFlushCue(), Is.False);
         }
 
         [Test]
-        public void Toilet_InterruptsBeforeMinimumWithoutReward()
+        public void Toilet_HitchCarriesAllPhaseTimeExactlyOnce()
         {
             var timeline = new HomeToiletSceneTimeline();
             timeline.Begin();
-            Advance(
-                timeline.Advance,
-                HomeToiletSceneTimeline.CameraAwaySeconds + 0.05f);
-            Advance(timeline.Advance, 0.5f);
-            Assert.That(timeline.RequestFinish(), Is.True);
-            Assert.That(
-                timeline.Phase,
-                Is.EqualTo(HomeToiletScenePhase.CameraReturn));
-            Assert.That(timeline.ReachedMinimumPrivacy, Is.False);
-            Assert.That(
-                timeline.RequestFinish(),
-                Is.False,
-                "A second stop during the wind-down is refused.");
-            Advance(
-                timeline.Advance,
-                HomeToiletSceneTimeline.CameraReturnSeconds + 0.05f);
-            Assert.That(timeline.IsCompleted, Is.True);
+            timeline.Advance(30f);
+            Assert.That(timeline.TotalUrinatingSeconds, Is.EqualTo(6f));
+            Assert.That(timeline.TotalShakingSeconds, Is.EqualTo(4f));
+            Assert.That(timeline.CanCommit, Is.True);
+            Assert.That(timeline.ConsumeFlushCue(), Is.True);
+            Assert.That(timeline.ConsumeFlushCue(), Is.False);
         }
 
         [Test]
-        public void Toilet_AbortDuringCameraAwayKeepsBlendAndFlush()
+        public void Toilet_AbortDuringEntryKeepsCameraBlend()
         {
             var timeline = new HomeToiletSceneTimeline();
             timeline.Begin();
-            Advance(timeline.Advance, 1.2f);
-            float blendBefore = timeline.CameraBlend;
-            Assert.That(
-                blendBefore,
-                Is.GreaterThan(0f).And.LessThan(1f));
+            timeline.Advance(HomeToiletSceneTimeline.EnterSeconds * 0.4f);
+            float before = timeline.CameraBlend;
             Assert.That(timeline.RequestFinish(), Is.True);
-            Assert.That(
-                timeline.Phase,
-                Is.EqualTo(HomeToiletScenePhase.CameraReturn));
-            Assert.That(
-                timeline.CameraBlend,
-                Is.EqualTo(blendBefore).Within(0.001f),
-                "An abort mid-retreat must not snap the camera.");
-            Advance(
-                timeline.Advance,
-                HomeToiletSceneTimeline.CameraReturnSeconds + 0.05f);
-            Assert.That(timeline.IsCompleted, Is.True);
-            Assert.That(
-                timeline.ConsumeFlushCue(),
-                Is.False,
-                "Nothing happened yet — the abort must not flush.");
+            Assert.That(timeline.CameraBlend, Is.EqualTo(before).Within(0.0001f));
+            Assert.That(timeline.RequestFinish(), Is.False);
+            timeline.Advance(HomeToiletSceneTimeline.ExitSeconds);
+            Assert.That(timeline.CanCommit, Is.False);
+            Assert.That(timeline.ConsumeFlushCue(), Is.False);
         }
 
         [Test]

@@ -6,6 +6,200 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-05 — Toilet body attachment and slower completion
+
+Followed the user's screenshot correction for the floating anatomy base.
+The previous garment measurement included the upper torso and added a
+`55 mm` air gap. Attachment now uses the body surface at the base height,
+with the existing right-hand grip, camera and authored anatomy retained.
+
+Main emission now lasts the explicitly requested `6 s`; shaking is doubled
+to `4 s`, camera entry/return to `1.5/1.3 s`, and the lid, flush handle and
+shaking movement run at half their previous speed. Guided locomotion remains
+ordinary walking. The follow-up fade request holds full main flow for `80%`
+of the action, then eases to zero over the final `1.2 s`. The timeline
+integrates the smooth envelope over each consumed frame; particle count,
+diameter and launch speed follow it while existing flight remains independent.
+Fractional-packet accumulation replaces the old seconds remainder so pressure
+changes cannot release a backlog. Residual shaking drops remain separate.
+
+The existing focused PlayMode regression now checks actual baked body
+triangles against the anatomy base through pitch limits and body turns,
+captures those poses and fading flow, and verifies the actual `6 + 4 s`
+phase totals and applied launch parameters. The exact selection
+`HomeBathroomInteractionsPlayModeTests.Toilet_FirstPersonStreamStainsAndRestores`
+passed `1/1`; default contact, off-target contact, extreme aim and fading-flow
+gameplay captures were inspected. The first reproduction exposed a linked
+initial-aim regression after attachment moved inward: the stream caught the
+near rim. Targeting the inside of the far water edge restored actual bowl hits;
+the same selection then passed. Full suites and a player build were not run.
+
+## 2026-09-05 — First-person toilet aiming and persistent wet marks
+
+Implemented the user's approved toilet plan on the shared bathroom lifecycle.
+The lid opens immediately, the ordinary visible hero walks to the separate
+entry pose and settles, and the camera moves to eye level. The production
+right arm holds Blender-authored anatomy through IK; only the head geometry
+hides near the lens. Mouse/right stick aim in any yaw direction through an
+on-the-spot body turn; RMB/gamepad LB provide independent look. Translation
+stays locked during the action. The local right-edge volume gauge drains over
+exactly `5 s`, followed by `2 s` shaking with residual drops; camera entry
+`0.75 s`, return `0.65 s` and guided travel are separate.
+
+The deterministic Blender kit exports eleven FBX models, thirteen meshes and
+`2,048` triangles: anatomy with measured aim/grip/outlet anchors, a hinged lid,
+a true annular seat, a hollow ceramic pedestal, water fitted to the actual bowl profile, a paper
+roll with an open cardboard core and five liquid-effect meshes. The visible
+solid footprint had covered the water; its replacement preserves the original
+envelope and collider while clearing the bowl. Eighteen actual mesh rays check
+the opening and incoming stream path. The old lathed seat also had filled
+bottom caps: its replacement preserves the outer size and `70%` hole while
+passing `25` through-aperture rays plus a positive physical-rim check.
+The user's added paper requirement puts
+the `0.10 x 0.095 m` roll on the cistern; the lid's open limit is `90 degrees`
+after the user's clearance correction. The authoring preview shows actual
+metre proportions and a `3 mm` stream, never oversized normalized VFX stock.
+After the user reported hand occlusion, the anatomy's authored grip moved
+closer to its base, to local `(0,-0.0015,0.025)`, while the outlet and all
+anatomy geometry stayed fixed; the world-arm adapter owns the matching wrist
+orientation and garment-front placement.
+`HomeUrineEffect` advances already emitted packets independently under gravity
+and sweeps against Home mesh surfaces. Contact owns splashes and bowl/solid
+sound. Misses leave projected patches and wall drips, merged in a bounded
+surface-local store that survives Home reloads and clears on a new game.
+Calendar dressing remains independent of these player-caused traces.
+
+Natural completion flushes once and commits stress `-6` once. Stop `E` cancels
+without relief or a flush and retains deposited marks. Owned cleanup restores
+arm pose, head renderer states, camera, cursor, occlusion, gauge, lid and modal
+input; the common bathroom path also supports a distinct guided exit and a
+terminal presentation before unlocking. The former toilet privacy-cut
+exception (b) is retired in favour of the user's scoped procedural world-rig
+replacement. Shower and brushing exceptions remain. README, art canon,
+architecture, overview and system indexes now describe the implemented action;
+no fiction text, reaction, comedy beat or story state was added.
+
+Verification: the directly affected Blender validator passed deterministic
+geometry, bounds, grip/outlet, lid rotation, importer settings and actual FBX
+round-trip metre/axis/anchor checks, including the new hollow pedestal and
+paper/core geometry. The exact focused PlayMode selection
+`HomeBathroomInteractionsPlayModeTests.Toilet_FirstPersonStreamStainsAndRestores`
+passed `1/1` in `21.26 s`, compiling its dependencies. It checks post-LateUpdate
+grip contact, lid/cistern clearance and supported paper placement, actual bowl
+and off-target hits, the five-second emission and shake transition, one relief
+commit, camera/input restoration, residue across a real Home reload and disable
+cleanup without a reward. Five frames under `Captures/HomeToilet/` were inspected.
+The rendered corrections also moved the Blender grip to `(0,-0.0015,0.025)`,
+measured the garment front to keep the anatomy visible, and brought the right
+wrist and forearm to the side. Stream diameter is `3 mm`, drops `4 mm`.
+An earlier capture exposed the legacy seat's capped hole; the new annular mesh
+now leaves the real water visible. Full suites and a player build were not run.
+
+## 2026-09-05 — The lost nausea bout ends in vomit
+
+The user's request: develop the Fail of the «не наблевать» gauge — the head
+and neck drop a little in every body state, the hero vomits a thick
+yellow-green stream with food in it that arcs and LEAVES traces where it
+lands, three bursts (`3 s`, `2 s` pause, `1 s`, `2 s` pause, `1 s`), a dirty
+mouth afterwards, `−20` intoxication per bout. Asked, the user chose: the
+`−20` in parts, `7/7/6` after each burst; the soil until a wash or sleep (a
+session flag across scenes, cleared by the shower, teeth-brushing and sleep);
+free movement — no modal lock, only `E` claimed, the bout SURVIVES a fall
+and goes on lying down and through the rise; and a §6 row plus §24.46. The
+accepted consequence: from `100` one Fail is `80` — the last stage ends and
+the bouts, the hiccups and the scattering letters stop until the next drink.
+My own one-constant choices: the soil after the FIRST burst
+(`SoilAtBurstIndex = 0`) and a `0.4 s` onset before the first flow.
+
+Runtime (built in parallel by several agents against one shared contract):
+`HeroVomitModel`/`HeroVomitRules` (pure, scaled time, FIFO cues, onset
+`0.4 s`, flow envelope with a `3.2 Hz` pulse, head `14°` plus a `4°` heave),
+`PlayerVomitPose`/`IPlayerVomitPresentation`, `IntoxicationVomitController`
+(own gates — transition, vehicle, shutdown, never the modal lock; `Retch`,
+`VomitGush` and `VomitSplat` at the mouth, relief, soil, the key claim, the
+ragdoll head drive), `HeroVomitStreamEffect` (three mesh-particle systems
+on `Ps1Lit`, a raycast per particle with the hero and the residue excluded
+and the FootProbe triggers included), `HeroVomitResidueModel`/`HeroVomitResidue`
+(coalescing ten-rim irregular patches and sunk cubes, `12/48` caps, one
+combined mesh) and `HeroVomitResources` (three hidden materials and a
+`32×32` slurry texture). `Player3DCharacterPresentation` subtracts the head
+term after the attention clamp and passes `mouthSoiled` to the atlas
+presenter; `Player3DRagdollController.SetHeadDrive` with a `HeadDriveSign`
+for the PlayMode probe to pin; `PlayerFacialMoodRules` holds `Grimace`
+while the flow runs; the face atlas is `8×4` with soiled twins at column
+`+4` (`Player3DFaceAtlasCell.Soiled`, a binding lookup with the clean
+fallback, `Player3DV2AssetSetup` schema `5`, the importer cap `512` for the
+face alone); `GameSessionState.RelieveIntoxication` (the recovery timer
+untouched) and `HeroMouthSoiled`, cleared in five places; the nausea
+controller raises `ConsumeFailCue` and rearms its rest while a bout runs;
+F9 «Рвота сейчас».
+
+Canon: a §6 registry row of `2026-09-05` (level `0`: it lifts the §24.45
+stub sentence and «§16.15 — провал ничего не отнимает», nothing else), story
+decision §24.46, §24.45 pointing at it, the exception in §16.15 in the style
+of §16.3/§16.6; the architecture note (it supersedes the nausea note's "no
+§6 row"), the systems map (`Current`), README, release notes, the art spec
+(`8 x 4`) and the system tree.
+
+Verification (main session, `6000.6.0f1` batch): Blender rebuilt the atlas
+(`512x256`, 18 cells); `Player3DV2AssetSetup.RunBatch` rebuilt the prefab
+(nine soiled cells) in 21 s — the neighbour's earlier Unity launch had
+already imported the PNG at the new 512 cap. EditMode
+`HeroVomitTests|HeroVomitResidueModelTests|HeroNauseaTests|Player3DFacialAtlasTests|
+Player3DV2AssetPipelineTests|PlayerFacialMoodRulesTests|RetroSfxLibraryTests|
+LocalizationCatalogTests|GameSessionStateTests|IntoxicationRulesTests`:
+`185` run, `182` green; the two `LocalizationCatalogTests` reds are the known
+pre-existing `balance.warning`, the third was this feature's own miss —
+`AssertManifestContract` still expected `4` columns and `9` cells (fixed, plus a
+`soiled` flag on `AssertCell`; the class re-ran `9/9`). Two fixes surfaced
+by the runs: `RetroAudio.Play/PlayAt` now return `false` outside play mode
+(an EditMode test that drives the gauge to Fail would otherwise install the
+service, whose `Awake` calls `DontDestroyOnLoad`); and the first stream cut
+(`3.0–3.8 m/s`) landed the puddle `1.81 m` out — a hose, not a heave — so
+the rods leave at `2.3–2.9 m/s` and the first splash sits `1.2–1.6 m` ahead.
+PlayMode `Player3DVomitCapturePlayModeTests` + the drunk-face, nausea-hand
+and topple-rise capture suites: `5/5` green (`TestResults/vomit-sheet.png`).
+The probes: bone term `+15.0°` on his feet in thirty frames; ragdoll
+`HeadDriveSign = −1` confirmed (`+3.96°` with the first `40/6/25` drive,
+`+24.3°` lying stunned after it was raised to `90/9/60`); `+61°` mid-rise;
+level `100 → 80 → 60` across two bouts, `7` patches / `48` chunks on the
+floor, face cell `(0.125, 0.25, 0.625, 0.75)` = soiled `HalfBlink`. Three
+Unity launches instead of one (the atlas `RunBatch`, EditMode and PlayMode
+cannot share a run), plus two single-class re-runs while tuning — the
+deviation from AGENTS.md is recorded here.
+
+Files: `ai/city-story-bible.md` (§6 row, §16.15, §24.45, §24.46),
+`ai/architecture-notes.md`, `ai/systems-map.md`, `README.md`,
+`ai/release-notes.md`, `ai/player-art-spec.md`, `ai/system-tree.md`,
+`ai/work-log.md`.
+
+## 2026-09-05 — Supported pelvis steps replace the bed glide
+
+Moving the dock to the middle had removed longitudinal travel but still left
+one continuous transverse pelvis interpolation. Replaced it in both directions
+with two supported steps: lift `7 cm`, translate under a planted palm, lower
+and pause seated before changing hands. Blender authors the waist lean and
+solves each support hand against a fixed mattress contact, baking normal bone
+keys without runtime IK or bone scaling. Enter now lasts `5 s`; Exit remains
+`6 s` and keeps the separate right-leg, left-leg and standing beats.
+
+The shared transition accepts optional immutable pelvis paths and checks their
+endpoints against the interaction plan. Existing waypoint users retain their
+default behavior. The Hero V2 manifest publishes the same paths; focused tests
+compare them and require that transverse movement happens above the seated
+support, separated by a full stop. Optional Home captures use a fixed `24 fps`
+game-time step and record every rendered Enter/Exit frame with both contact
+views and game-time durations for normal-speed MP4 playback. Capture I/O can
+no longer skip the short support and transfer beats.
+
+Verification: Blender's full bed contact and planted-hand sweep passes.
+Focused Unity path, compatibility and manifest checks passed `6/6`; the full
+sleep/wake integration regression passed `1/1` in `51.9 s`. Reviewed the two
+support steps and seated pause in both contact views from the complete
+`121`-frame Enter and `146`-frame Exit captures; normal-speed videos are in
+`Captures/HomeBed/BedEnter.mp4` and `BedExit.mp4`. No full test suites or player
+build were run.
+
 ## 2026-09-05 — Bed entry and wake from the middle
 
 The user's clarification exposed a `0.69 m` longitudinal mismatch between the

@@ -146,14 +146,51 @@ BED_SEATED_PELVIS_LIFT_M = 0.0644
 BED_MATTRESS_ABOVE_FLOOR_M = 0.56
 # Mirror HomeBedInteractionPlan: the windows each transition spends sitting on
 # the bedside edge, in normalized clip time.
-BED_ENTER_SEAT_ARRIVAL = 0.28
-BED_ENTER_SEAT_DEPARTURE = 0.44
-BED_EXIT_SEAT_ARRIVAL = 0.50
-BED_EXIT_SEAT_DEPARTURE = 0.88
+BED_ENTER_SEAT_ARRIVAL = 0.22
+BED_ENTER_SEAT_DEPARTURE = 0.30
+BED_EXIT_SEAT_ARRIVAL = 0.57
+BED_EXIT_SEAT_DEPARTURE = 0.90
 BED_ENTER_HOLD = 0.05
 BED_ENTER_SETTLE = 0.96
 BED_EXIT_HOLD = 0.30
 BED_EXIT_SETTLE = 1.0
+
+# Mirror HomeBedInteractionPlan's authored pelvis path: time, height, cross-bed
+# coordinate. Each transfer has a separate lift, horizontal push and landing.
+BED_PELVIS_PROFILES = {
+    "BedEnter": (
+        (0.0, 0.88, -1.73), (0.05, 0.88, -1.73),
+        (0.22, 0.6244, -1.09), (0.30, 0.6244, -1.09),
+        (0.34, 0.6944, -1.09), (0.41, 0.6944, -0.7325),
+        (0.44, 0.6244, -0.7325), (0.47, 0.6244, -0.7325),
+        (0.51, 0.6944, -0.7325), (0.58, 0.6944, -0.375),
+        (0.61, 0.6244, -0.375), (0.64, 0.6244, -0.375),
+        (0.96, 0.5903, -0.375), (1.0, 0.5903, -0.375),
+    ),
+    "BedExit": (
+        (0.0, 0.5903, -0.375), (0.30, 0.6244, -0.375),
+        (0.32, 0.6244, -0.375), (0.35, 0.6944, -0.375),
+        (0.40, 0.6944, -0.7325), (0.43, 0.6244, -0.7325),
+        (0.46, 0.6244, -0.7325), (0.49, 0.6944, -0.7325),
+        (0.54, 0.6944, -1.09), (0.57, 0.6244, -1.09),
+        (0.90, 0.6244, -1.09), (1.0, 0.88, -1.73),
+    ),
+}
+BED_SCOOTS = {
+    "BedEnter": ((0.30, 0.34, 0.41, 0.44, "L"), (0.47, 0.51, 0.58, 0.61, "R")),
+    "BedExit": ((0.32, 0.35, 0.40, 0.43, "L"), (0.46, 0.49, 0.54, 0.57, "R")),
+}
+
+
+def bed_pelvis_at(name: str, time: float) -> tuple[float, float]:
+    """World height and transverse position from the runtime bed landmarks."""
+    profile = BED_PELVIS_PROFILES[name]
+    for left, right in zip(profile, profile[1:]):
+        if time <= right[0]:
+            t = max(0.0, min(1.0, (time - left[0]) / (right[0] - left[0])))
+            t = t * t * (3.0 - 2.0 * t)
+            return tuple(left[i] + (right[i] - left[i]) * t for i in (1, 2))
+    return profile[-1][1:]
 
 # The pelvis/legs, lumbar spine, shoulder girdle and head each have their own
 # bed keys. The back can uncoil from the seat without turning as one rigid
@@ -2863,12 +2900,81 @@ class ProductionPlayerBuilderBase:
                 "forearm.R": BonePose(
                     rotation_degrees=(-38.0, 0.0, -15.0)
                 ),
-                "thigh.L": BonePose(rotation_degrees=(-34.9, 0.0, 3.0)),
-                "thigh.R": BonePose(rotation_degrees=(-39.1, 0.0, -3.0)),
+                "thigh.L": BonePose(rotation_degrees=(-40.1, 0.0, 3.0)),
+                "thigh.R": BonePose(rotation_degrees=(-44.2, 0.0, -3.0)),
                 "shin.L": BonePose(rotation_degrees=(38.0, 0.0, 0.0)),
                 "shin.R": BonePose(rotation_degrees=(39.0, 0.0, 0.0)),
             },
         )
+        def scoot_keys(name: str, duration: float) -> list[ActionKey]:
+            """Bake the supporting arm against fixed mattress contacts.
+
+            Pelvis translation belongs to the runtime path. The hand follows
+            its inverse here, with ordinary two-bone rotations and no rig
+            constraints or changes in bone length. It releases only once the
+            pelvis has landed, before the other palm takes the next push.
+            """
+            keys = []
+            rig = self.result.rig
+            self._reset_pose()
+            self._apply_pose(bed_wake_hunch)
+            # Keep the gathered legs clear while the pelvis rocks from one
+            # bearing side to the other; the hip joints still follow it.
+            gathered_legs = {
+                bone: BonePose(armature_direction=tuple(rig.pose.bones[bone].tail - rig.pose.bones[bone].head))
+                for bone in BED_LEADING_BONES[1:]
+            }
+            for start, raised, carried, landed, side in BED_SCOOTS[name]:
+                sign = 1.0 if side == "L" else -1.0
+                start_cross = bed_pelvis_at(name, start)[1]
+                contact_cross = start_cross + (0.025 if name == "BedEnter" else -0.18)
+                frame_count = round(duration * ANIMATION_FPS)
+                times = sorted({start, raised, carried, landed, *(
+                    frame / frame_count
+                    for frame in range(math.ceil(start * frame_count), math.floor(landed * frame_count) + 1)
+                )})
+                for t in times:
+                    height, cross = bed_pelvis_at(name, t)
+                    carried_fraction = abs(cross - start_cross) / 0.3575
+                    pitch = (-1.0 + 40.0 * carried_fraction if name == "BedEnter"
+                             else 25.0 - 50.0 * carried_fraction)
+                    pose = self.merge_pose(bed_wake_hunch, gathered_legs, {
+                        "pelvis": BonePose(rotation_degrees=(pitch * 0.4, -sign * 4.0, -sign * 8.0)),
+                        "spine": BonePose(rotation_degrees=(pitch * 0.6, sign * 4.0, -sign * 25.0)),
+                        "chest": BonePose(rotation_degrees=(-4.0, 0.0, sign * 2.0)),
+                        "neck": BonePose(rotation_degrees=(-4.0, 0.0, sign * 7.0)),
+                        "head": BonePose(rotation_degrees=(8.0, -sign * 3.0, sign * 10.0)),
+                    })
+                    self._reset_pose()
+                    self._apply_pose(pose)
+                    upper = rig.pose.bones[f"upper_arm.{side}"]
+                    lower = rig.pose.bones[f"forearm.{side}"]
+                    shoulder = upper.head.copy()
+                    target = rig.pose.bones["pelvis"].head + Vector((
+                        sign * 0.44, contact_cross - cross, 0.592 - height,
+                    )) * self.scale
+                    delta = target - shoulder
+                    distance = delta.length
+                    first_length, second_length = upper.length, lower.length
+                    if distance >= first_length + second_length:
+                        raise RuntimeError(f"{name} {t:.3f}: supporting {side} hand is out of reach")
+                    axis = delta.normalized()
+                    pole = Vector((sign * 0.6, -0.1, 0.3))
+                    bend = (pole - axis * pole.dot(axis)).normalized()
+                    along = (first_length ** 2 - second_length ** 2 + distance ** 2) / (2.0 * distance)
+                    outward = math.sqrt(max(0.0, first_length ** 2 - along ** 2))
+                    elbow = shoulder + axis * along + bend * outward
+                    pose.update({
+                        f"upper_arm.{side}": BonePose(armature_direction=tuple(elbow - shoulder)),
+                        f"forearm.{side}": BonePose(armature_direction=tuple(target - elbow)),
+                        f"hand.{side}": BonePose(armature_direction=(0.0, -1.0, 0.0)),
+                    })
+                    keys.append((t, pose))
+            return keys
+
+        enter_scoots = scoot_keys("BedEnter", 5.0)
+        exit_scoots = scoot_keys("BedExit", 6.0)
+
         # Bed is the one place the hero gives his whole weight to the world,
         # so its three Actions carry eased curves and staggered keys. The
         # pelvis takes a landmark first and the chest, head and arms take the
@@ -2876,33 +2982,31 @@ class ProductionPlayerBuilderBase:
         # instead of a plank. Both endpoints still key the whole rig, so the
         # neutral and terminal seams stay exact.
         self._create_action(
-            "BedEnter", "bed", 3.75, False, 45, 12,
-            (
+            "BedEnter", "bed", 5.0, False, 60, 12,
+            sorted((
                 (0.0, relaxed),
                 (0.07, bed_stand_shift),
-                (0.17, bed_edge_bend),
-                (0.28, bed_edge_sit, BED_LEADING_BONES),
-                (0.30, bed_edge_sit, BED_SPINE_BONES),
-                (0.31, bed_edge_sit, BED_TRAILING_BONES),
-                (0.33, bed_edge_sit, BED_HEAD_BONES),
-                (0.36, bed_edge_settle),
-                (0.44, bed_edge_scoot),
-                (0.50, bed_leg_swing, ("forearm.R", "hand.R")),
-                # Lift the boots clear before the pelvis carries them across
-                # the near mattress edge. The former extended legs swept
-                # through the bed even though the final lie was supported.
-                (0.51, bed_leg_swing, BED_LEADING_BONES[1:]),
-                (0.55, bed_leg_swing, BED_LEADING_BONES),
-                (0.57, bed_leg_swing, BED_SPINE_BONES),
-                (0.59, bed_leg_swing, BED_TRAILING_BONES),
-                (0.61, bed_leg_swing, BED_HEAD_BONES),
-                (0.65, bed_lower_brace, BED_TRAILING_BONES),
-                (0.67, bed_lower_brace, BED_LEADING_BONES),
-                (0.69, bed_lower_brace, BED_SPINE_BONES),
-                (0.71, bed_lower_brace, BED_HEAD_BONES),
-                (0.78, bed_lower_side, BED_LEADING_BONES),
-                (0.80, bed_lower_side, BED_SPINE_BONES),
-                (0.82, bed_lower_side, BED_TRAILING_BONES),
+                (0.13, bed_edge_bend),
+                (0.22, bed_edge_sit, BED_LEADING_BONES),
+                (0.23, bed_edge_sit, BED_SPINE_BONES),
+                (0.24, bed_edge_sit, BED_TRAILING_BONES),
+                (0.25, bed_edge_sit, BED_HEAD_BONES),
+                (0.255, bed_edge_settle),
+                # Both boots are drawn up before either horizontal transfer.
+                (0.29, bed_wake_hunch, BED_LEADING_BONES[1:]),
+                *enter_scoots,
+                (0.64, bed_wake_hunch),
+                (0.68, bed_leg_swing, BED_LEADING_BONES),
+                (0.685, bed_leg_swing, BED_SPINE_BONES),
+                (0.69, bed_leg_swing, BED_TRAILING_BONES),
+                (0.695, bed_leg_swing, BED_HEAD_BONES),
+                (0.72, bed_lower_brace, BED_TRAILING_BONES),
+                (0.74, bed_lower_brace, BED_LEADING_BONES),
+                (0.75, bed_lower_brace, BED_SPINE_BONES),
+                (0.76, bed_lower_brace, BED_HEAD_BONES),
+                (0.81, bed_lower_side, BED_LEADING_BONES),
+                (0.82, bed_lower_side, BED_SPINE_BONES),
+                (0.83, bed_lower_side, BED_TRAILING_BONES),
                 (0.84, bed_lower_side, BED_HEAD_BONES),
                 (0.89, bed_roll_back, BED_LEADING_BONES),
                 (0.91, bed_roll_back, BED_SPINE_BONES),
@@ -2913,7 +3017,7 @@ class ProductionPlayerBuilderBase:
                 (0.98, lying, BED_SPINE_BONES),
                 (0.98, bed_settle_press, BED_HEAD_BONES),
                 (1.0, lying),
-            ),
+            ), key=lambda key: key[0]),
             interpolation="BEZIER",
         )
         self._create_action(
@@ -2940,44 +3044,48 @@ class ProductionPlayerBuilderBase:
         # bed the whole way, which is also what makes it checkable.
         self._create_action(
             "BedExit", "bed", 6.0, False, 72, 12,
-            (
+            sorted((
                 (0.0, lying),
                 (0.05, bed_wake_stir, BED_HEAD_BONES),
                 (0.08, bed_wake_stir, BED_TRAILING_BONES),
                 (0.11, bed_wake_head_lift, BED_HEAD_BONES),
-                (0.11, lying, BED_LEADING_BONES),
+                (0.10, lying, BED_LEADING_BONES),
                 (0.11, bed_wake_stir, BED_SPINE_BONES),
-                (0.17, bed_wake_elbows, BED_TRAILING_BONES),
-                (0.18, bed_wake_elbows, BED_SPINE_BONES),
-                (0.20, bed_wake_elbows, BED_LEADING_BONES),
-                (0.22, bed_wake_elbows, BED_HEAD_BONES),
-                (0.30, bed_wake_curl, BED_LEADING_BONES),
-                (0.31, bed_wake_curl, BED_SPINE_BONES),
-                (0.33, bed_wake_curl, BED_TRAILING_BONES),
-                (0.35, bed_wake_curl, BED_HEAD_BONES),
-                (0.43, bed_wake_hunch, BED_LEADING_BONES),
-                (0.44, bed_wake_hunch, BED_SPINE_BONES),
-                (0.46, bed_wake_hunch, BED_TRAILING_BONES),
-                (0.48, bed_wake_hunch, BED_HEAD_BONES),
-                (0.55, bed_wake_right_lead, BED_LEADING_BONES),
-                (0.63, bed_wake_right_down, BED_LEADING_BONES),
-                (0.64, bed_wake_right_down, BED_SPINE_BONES),
-                (0.66, bed_wake_right_down, BED_TRAILING_BONES),
-                (0.67, bed_wake_right_down, BED_HEAD_BONES),
+                (0.14, bed_wake_elbows, BED_TRAILING_BONES),
+                (0.15, bed_wake_elbows, BED_SPINE_BONES),
+                (0.16, bed_wake_elbows, BED_LEADING_BONES),
+                (0.17, bed_wake_elbows, BED_HEAD_BONES),
+                (0.21, bed_wake_curl, BED_LEADING_BONES),
+                (0.22, bed_wake_curl, BED_SPINE_BONES),
+                (0.23, bed_wake_curl, BED_TRAILING_BONES),
+                (0.24, bed_wake_curl, BED_HEAD_BONES),
+                (0.27, bed_wake_hunch, BED_LEADING_BONES),
+                (0.28, bed_wake_hunch, BED_SPINE_BONES),
+                (0.29, bed_wake_hunch, BED_TRAILING_BONES),
+                (0.30, bed_wake_hunch, BED_HEAD_BONES),
+                *exit_scoots,
+                (0.60, bed_wake_right_lead, BED_LEADING_BONES),
+                (0.61, bed_wake_hunch, BED_SPINE_BONES),
+                (0.62, bed_wake_hunch, BED_TRAILING_BONES),
+                (0.63, bed_wake_hunch, BED_HEAD_BONES),
+                (0.70, bed_wake_right_down, BED_LEADING_BONES),
+                (0.705, bed_wake_right_down, BED_SPINE_BONES),
+                (0.71, bed_wake_right_down, BED_TRAILING_BONES),
+                (0.72, bed_wake_right_down, BED_HEAD_BONES),
                 # The left leg is held up on the bedding while the right one
                 # finds the floor. Without this key the two swings blur into
                 # one and the whole point of the beat is lost.
-                (0.68, bed_wake_hunch, ("thigh.L", "shin.L", "foot.L")),
-                (0.74, bed_wake_left_down, BED_LEADING_BONES),
-                (0.75, bed_wake_left_down, BED_SPINE_BONES),
-                (0.77, bed_wake_left_down, BED_TRAILING_BONES),
-                (0.78, bed_wake_left_down, BED_HEAD_BONES),
-                (0.80, bed_wake_sit),
-                (0.85, bed_wake_gather),
-                (0.91, bed_wake_lean),
+                (0.74, bed_wake_hunch, ("thigh.L", "shin.L", "foot.L")),
+                (0.80, bed_wake_left_down, BED_LEADING_BONES),
+                (0.805, bed_wake_left_down, BED_SPINE_BONES),
+                (0.81, bed_wake_left_down, BED_TRAILING_BONES),
+                (0.815, bed_wake_left_down, BED_HEAD_BONES),
+                (0.82, bed_wake_sit),
+                (0.87, bed_wake_gather),
+                (0.925, bed_wake_lean),
                 (0.96, bed_wake_rise),
                 (1.0, relaxed),
-            ),
+            ), key=lambda key: key[0]),
             interpolation="BEZIER",
         )
 
@@ -4495,54 +4603,42 @@ def validate_bed_support_contract(
                 "so a pillow can be built under it"
             )
 
-        # Runtime slides the pelvis between the bedside seat and the sleeping
-        # target on a smoothstep, so the mattress sits a moving distance under
-        # the pelvis bone during both transitions. These mirror
-        # PlayerAnimatedInteractionPelvisTransition; measuring against a fixed
-        # offset would accuse an honest pose of clipping.
+        # Runtime samples separate lifts, supported transfers and landings.
+        # Measure against that same path: a fixed support offset would mistake
+        # a real weight transfer for penetration or unsupported floating.
         def eased(span: float) -> float:
             span = min(1.0, max(0.0, span))
             return span * span * (3.0 - (2.0 * span))
 
         def entering_support_offset(normalized_time: float) -> float:
-            if normalized_time <= BED_ENTER_SEAT_DEPARTURE:
-                return BED_SEATED_PELVIS_LIFT_M
-            return BED_SEATED_PELVIS_LIFT_M + eased(
-                (normalized_time - BED_ENTER_SEAT_DEPARTURE) /
-                (BED_ENTER_SETTLE - BED_ENTER_SEAT_DEPARTURE)
-            ) * (BED_BODY_SUPPORT_OFFSET_M - BED_SEATED_PELVIS_LIFT_M)
+            return bed_pelvis_at("BedEnter", normalized_time)[0] - (BED_MATTRESS_ABOVE_FLOOR_M - 0.10)
 
         def exiting_support_offset(normalized_time: float) -> float:
-            if normalized_time >= BED_EXIT_SEAT_ARRIVAL:
-                return BED_SEATED_PELVIS_LIFT_M
-            return BED_BODY_SUPPORT_OFFSET_M + eased(
-                (normalized_time - BED_EXIT_HOLD) /
-                (BED_EXIT_SEAT_ARRIVAL - BED_EXIT_HOLD)
-            ) * (BED_SEATED_PELVIS_LIFT_M - BED_BODY_SUPPORT_OFFSET_M)
+            return bed_pelvis_at("BedExit", normalized_time)[0] - (BED_MATTRESS_ABOVE_FLOOR_M - 0.10)
 
         # GroundedRootOffset + canonical V2 pelvis + the neutral visual lift.
         # The controller moves this target independently of the source pelvis
         # translation, so floor contact has to be measured AFTER that pin.
-        standing_hip = 0.04 + 0.835 + 0.005
-        seated_hip = BED_MATTRESS_ABOVE_FLOOR_M + BED_SEATED_PELVIS_LIFT_M
-        sleeping_hip = BED_MATTRESS_ABOVE_FLOOR_M + BED_BODY_SUPPORT_OFFSET_M - 0.10
-
         def hip_height_at(name: str, t: float) -> float:
-            if name == "BedEnter":
-                if t < BED_ENTER_SEAT_ARRIVAL:
-                    return standing_hip + (seated_hip - standing_hip) * eased(
-                        (t - BED_ENTER_HOLD) / (BED_ENTER_SEAT_ARRIVAL - BED_ENTER_HOLD)
-                    )
-                return seated_hip + (sleeping_hip - seated_hip) * eased(
-                    (t - BED_ENTER_SEAT_DEPARTURE) / (BED_ENTER_SETTLE - BED_ENTER_SEAT_DEPARTURE)
-                )
-            if t < BED_EXIT_SEAT_ARRIVAL:
-                return sleeping_hip + (seated_hip - sleeping_hip) * eased(
-                    (t - BED_EXIT_HOLD) / (BED_EXIT_SEAT_ARRIVAL - BED_EXIT_HOLD)
-                )
-            return seated_hip + (standing_hip - seated_hip) * eased(
-                (t - BED_EXIT_SEAT_DEPARTURE) / (BED_EXIT_SETTLE - BED_EXIT_SEAT_DEPARTURE)
-            )
+            return bed_pelvis_at(name, t)[0]
+
+        for name, steps in BED_SCOOTS.items():
+            for start, raised, carried, landed, side in steps:
+                wrist_positions = []
+                hand_heights = []
+                for t in dense_times(name, raised, carried):
+                    sample(name, t)
+                    height, cross = bed_pelvis_at(name, t)
+                    pelvis = rig.matrix_world @ rig.pose.bones["pelvis"].head
+                    wrist = rig.matrix_world @ rig.pose.bones[f"hand.{side}"].head
+                    wrist_positions.append(wrist - pelvis + Vector((hip_x, cross, height)))
+                    hand_heights.append(lowest(lambda part: part.bone == f"hand.{side}") - pelvis.z + height)
+                drift = max((point - wrist_positions[0]).length for point in wrist_positions)
+                print(f"  {name} {side} palm support {raised:.2f}-{carried:.2f}: drift {drift:.4f} m, underside {min(hand_heights):.4f}-{max(hand_heights):.4f} m")
+                if drift > 0.018:
+                    errors.append(f"{name} {side} planted wrist drifts {drift:.4f} m during the pelvis transfer")
+                if min(hand_heights) < 0.52 or max(hand_heights) > 0.59:
+                    errors.append(f"{name} {side} palm must stay on the mattress during its weighted push")
 
         for name in ("BedEnter", "BedExit"):
             worst = (0.0, "?", 0.0)
@@ -4553,19 +4649,7 @@ def validate_bed_support_contract(
                 world_low = low - pelvis_height() + hip_height_at(name, t)
                 if world_low < worst[0]:
                     worst = (world_low, culprit, t)
-                if name == "BedEnter":
-                    if t < BED_ENTER_SEAT_ARRIVAL:
-                        blend = eased((t - BED_ENTER_HOLD) / (BED_ENTER_SEAT_ARRIVAL - BED_ENTER_HOLD))
-                        hip_z = -1.73 + 0.64 * blend
-                    else:
-                        blend = eased((t - BED_ENTER_SEAT_DEPARTURE) / (BED_ENTER_SETTLE - BED_ENTER_SEAT_DEPARTURE))
-                        hip_z = -1.09 + 0.715 * blend
-                elif t < BED_EXIT_SEAT_ARRIVAL:
-                    blend = eased((t - BED_EXIT_HOLD) / (BED_EXIT_SEAT_ARRIVAL - BED_EXIT_HOLD))
-                    hip_z = -0.375 - 0.715 * blend
-                else:
-                    blend = eased((t - BED_EXIT_SEAT_DEPARTURE) / (BED_EXIT_SETTLE - BED_EXIT_SEAT_DEPARTURE))
-                    hip_z = -1.09 - 0.64 * blend
+                hip_z = bed_pelvis_at(name, t)[1]
                 pelvis = rig.matrix_world @ rig.pose.bones["pelvis"].head
                 depsgraph = bpy.context.evaluated_depsgraph_get()
                 for part in result.parts:
@@ -4639,7 +4723,7 @@ def validate_bed_support_contract(
 
         # Sitting rests on a different part of him than lying does, so the
         # edge of the bed needs its own measured offset.
-        sample("BedEnter", 0.36)
+        sample("BedEnter", 31.0 / 120.0)
         seat_pelvis = pelvis_height()
         seat_low, seat_part = lowest_named(
             lambda part: part.bone == "pelvis"
@@ -4685,8 +4769,8 @@ def validate_bed_support_contract(
         # allowance the long-held sleeping pose does not.
         seated_give = 0.025
         for name, times in (
-            ("BedEnter", (BED_ENTER_SEAT_ARRIVAL + 0.03, 0.36, 0.44)),
-            ("BedExit", (0.46, 0.55, 0.63, 0.74, 0.80, 0.85, 0.88)),
+            ("BedEnter", (0.22, 31.0 / 120.0)),
+            ("BedExit", (0.70, 0.80, 0.82, 0.87, 0.90)),
         ):
             for normalized_time in times:
                 sample(name, normalized_time)
@@ -4711,9 +4795,9 @@ def validate_bed_support_contract(
             )
             return lowest(lambda part: part.bone == f"foot.{side}") - floor
 
-        both_up = (boot_drop(0.46, "L"), boot_drop(0.46, "R"))
-        right_only = (boot_drop(0.68, "L"), boot_drop(0.68, "R"))
-        both_down = (boot_drop(0.80, "L"), boot_drop(0.80, "R"))
+        both_up = (boot_drop(0.30, "L"), boot_drop(0.30, "R"))
+        right_only = (boot_drop(0.73, "L"), boot_drop(0.73, "R"))
+        both_down = (boot_drop(0.82, "L"), boot_drop(0.82, "R"))
         print(
             "  Bed wake boots over the floor: "
             f"crouch L{both_up[0]:+.3f} R{both_up[1]:+.3f}, "
@@ -4727,7 +4811,7 @@ def validate_bed_support_contract(
             )
         if right_only[1] > 0.06:
             errors.append(
-                "BedExit must have the right boot down by 0.68; it hangs "
+                "BedExit must have the right boot down by 0.73; it hangs "
                 f"{right_only[1]:.3f} m over the floor"
             )
         if right_only[0] < right_only[1] + 0.20:
@@ -4747,7 +4831,7 @@ def validate_bed_support_contract(
         # seated plane is the honest thing to measure a reaching hand
         # against. This is a "reads as contact" band, not solved IK.
         reaches = []
-        for normalized_time in (0.55, 0.60, 0.67, 0.74, 0.80):
+        for normalized_time in (0.70, 0.74, 0.78, 0.82, 0.86):
             sample("BedEnter", normalized_time)
             plane = pelvis_height() - entering_support_offset(normalized_time)
             reaches.append(
@@ -6082,6 +6166,11 @@ def write_manifest(
             "enter_settle": BED_ENTER_SETTLE,
             "exit_hold": BED_EXIT_HOLD,
             "exit_settle": BED_EXIT_SETTLE,
+            "pelvis_step_lift_m": 0.07,
+            **{
+                key: [{"progress": t, "position": [-2.84, height, cross]} for t, height, cross in BED_PELVIS_PROFILES[name]]
+                for key, name in (("enter_pelvis_path", "BedEnter"), ("exit_pelvis_path", "BedExit"))
+            },
         },
         "actions": [
             {
