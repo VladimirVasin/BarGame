@@ -593,6 +593,94 @@
       "value": "Я ещё тут."
     },
     {
+      "key": "hero.nausea.result.success",
+      "value": "Успех"
+    },
+    {
+      "key": "hero.nausea.result.fail",
+      "value": "Провал"
+    },
+    {
+      "key": "city.pedestrian.insult.01",
+      "value": "Иди домой. Если помнишь, где это."
+    },
+    {
+      "key": "city.pedestrian.insult.02",
+      "value": "Стена тебя держит. Скажи ей спасибо."
+    },
+    {
+      "key": "city.pedestrian.insult.03",
+      "value": "От тебя пахнет за три дома."
+    },
+    {
+      "key": "city.pedestrian.insult.04",
+      "value": "Тротуар не твой. Ноги, похоже, тоже."
+    },
+    {
+      "key": "city.pedestrian.insult.05",
+      "value": "Держись за воздух. Он крепче тебя."
+    },
+    {
+      "key": "city.pedestrian.insult.06",
+      "value": "При людях. Хоть бы за угол зашёл."
+    },
+    {
+      "key": "city.pedestrian.insult.07",
+      "value": "Ты не идёшь. Ты падаешь медленно."
+    },
+    {
+      "key": "city.pedestrian.insult.08",
+      "value": "Такие потом лежат у остановки."
+    },
+    {
+      "key": "city.pedestrian.insult.09",
+      "value": "Смотреть противно. И не смотреть тоже."
+    },
+    {
+      "key": "city.pedestrian.insult.10",
+      "value": "Тебя качает, а тошнит меня."
+    },
+    {
+      "key": "city.pedestrian.insult.11",
+      "value": "Дойдёшь до угла: уже подвиг."
+    },
+    {
+      "key": "city.pedestrian.insult.12",
+      "value": "Не дыши сюда. Дыши в другую сторону."
+    },
+    {
+      "key": "city.pedestrian.insult.13",
+      "value": "Ты шире тротуара. Стой ровнее."
+    },
+    {
+      "key": "city.pedestrian.insult.14",
+      "value": "Ещё одна такая, и на четвереньках."
+    },
+    {
+      "key": "city.pedestrian.insult.15",
+      "value": "Прислонись. Столбу всё равно."
+    },
+    {
+      "key": "city.pedestrian.insult.16",
+      "value": "Утром сам себя не узнаешь. И хорошо."
+    },
+    {
+      "key": "city.pedestrian.insult.17",
+      "value": "Ноги врозь, глаза врозь. Всё врозь."
+    },
+    {
+      "key": "city.pedestrian.insult.18",
+      "value": "Глаза бы мои не видели. Да куда деваться."
+    },
+    {
+      "key": "city.pedestrian.insult.19",
+      "value": "Куда несёт, туда и неси. Только не сюда."
+    },
+    {
+      "key": "city.pedestrian.insult.20",
+      "value": "Иди, иди. Асфальт мягче не станет."
+    },
+    {
       "key": "drinking.none",
       "value": "ничего"
     },
@@ -1371,6 +1459,10 @@
     {
       "key": "debug.teleport.enabled",
       "value": "ТЕСТОВАЯ ТЕЛЕПОРТАЦИЯ: ВКЛ"
+    },
+    {
+      "key": "debug.nausea.trigger",
+      "value": "ТОШНОТА СЕЙЧАС"
     },
     {
       "key": "quest.feed_cat.title",

@@ -81,6 +81,8 @@ namespace BarPromenade
         private IntoxicationHudView hud;
         private IntoxicationLensVolumeDriver lensDriver;
         private IntoxicationMutterPresenter mutter;
+        private IntoxicationNauseaController nausea;
+        private IntoxicationNauseaGaugeView nauseaView;
         private IntoxicationVertigoModel vertigo;
         private float vertigoTwistRadians;
         private Vector2 vertigoCorePixels;
@@ -151,6 +153,9 @@ namespace BarPromenade
         /// <summary>His muttering, above the balance threshold.</summary>
         public IntoxicationMutterPresenter Mutter => mutter;
 
+        /// <summary>His fight with the nausea, on the last stage.</summary>
+        public IntoxicationNauseaController Nausea => nausea;
+
         public void Initialize(
             PlayerRuntime player,
             PlayerCameraFollow follow,
@@ -176,6 +181,7 @@ namespace BarPromenade
             }
 
             EnsureMutter(player, follow);
+            EnsureNausea(player, follow);
 
             presentationLevel =
                 GameSessionState.IntoxicationLevel;
@@ -234,6 +240,36 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Raises the nausea. The controller is a plain object ticked from
+        /// this Update, after the rest of the drunk pose has been pushed,
+        /// so the hand at his mouth reaches the presentation the same
+        /// frame; only its gauge view is a component, on a child of its
+        /// own like the muttering. Nothing is taken from any root.
+        /// </summary>
+        private void EnsureNausea(
+            PlayerRuntime player,
+            PlayerCameraFollow follow)
+        {
+            nausea?.Shutdown();
+            nausea = new IntoxicationNauseaController(
+                player,
+                GameSessionState.CitySeed ^
+                IntoxicationNauseaController.NauseaSeedSalt);
+            if (nauseaView == null)
+            {
+                var host = new GameObject(
+                    IntoxicationNauseaGaugeView.RuntimeObjectName);
+                host.transform.SetParent(transform, false);
+                nauseaView = host
+                    .AddComponent<IntoxicationNauseaGaugeView>();
+            }
+
+            nauseaView.Bind(
+                nausea,
+                follow != null ? follow.Camera : null);
+        }
+
+        /// <summary>
         /// Test seam: restarts the vertigo whirlpool's random stream from
         /// still water, mirroring
         /// <see cref="PlayerCameraFollow.ReseedDollyZoom"/>.
@@ -285,6 +321,9 @@ namespace BarPromenade
                 UpdateBalance(Time.deltaTime);
             }
             ApplyPresentation();
+            // After the drunk pose, so the nausea's hand lands on top of
+            // it in the presentation's late pass this same frame.
+            nausea?.Tick(deltaTime, IsFalling, IsStaggering);
             ApplyRiseBlend();
         }
 
@@ -1222,6 +1261,7 @@ namespace BarPromenade
             cameraFollow?.SetIntoxication(0f);
             cameraFollow?.SetBalanceReaction(0f, 0f, 0f);
             mutter?.Silence();
+            nausea?.Shutdown();
             cameraFollow?.ClearFocusOverride();
             IntoxicationRenderState.Clear();
             lensDriver?.Clear();

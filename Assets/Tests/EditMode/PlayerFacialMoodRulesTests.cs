@@ -15,7 +15,8 @@ namespace BarPromenade.Tests.EditMode
             bool rise = false,
             PlayerRiseStage stage = PlayerRiseStage.Settling,
             float progress = 0f,
-            bool slump = false)
+            bool slump = false,
+            float nausea = 0f)
         {
             return new PlayerFacialMoodContext(
                 intoxication,
@@ -27,7 +28,8 @@ namespace BarPromenade.Tests.EditMode
                 rise,
                 stage,
                 progress,
-                slump);
+                slump,
+                nausea);
         }
 
         [Test]
@@ -35,6 +37,42 @@ namespace BarPromenade.Tests.EditMode
         {
             Assert.That(PlayerFacialMoodRules.Resolve(Context()), Is.EqualTo(PlayerFacialMood.None));
             Assert.That(PlayerFacialMoodRules.Resolve(Context(intoxication: 0f)), Is.EqualTo(PlayerFacialMood.None));
+        }
+
+        /// <summary>
+        /// The hand at the mouth is a grimace only once it is properly up,
+        /// only on his feet, and never over a face a fall is asking for.
+        /// </summary>
+        [Test]
+        public void Nausea_IsAGrimaceOnlyWhileSteady()
+        {
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(Context(nausea: 0.4f)),
+                Is.EqualTo(PlayerFacialMood.None));
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(Context(nausea: 0.5f)),
+                Is.EqualTo(PlayerFacialMood.Grimace));
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(Context(nausea: 1f, intoxication: 0f)),
+                Is.EqualTo(PlayerFacialMood.Grimace));
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(phase: BalancePhase.Recovering, instability: 0.3f, nausea: 1f)),
+                Is.EqualTo(PlayerFacialMood.Grimace),
+                "A mild stagger does not take the grimace away.");
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(phase: BalancePhase.Recovering, instability: 0.8f, nausea: 1f)),
+                Is.EqualTo(PlayerFacialMood.Tense),
+                "The fight for balance comes first.");
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(phase: BalancePhase.Toppling, brace: 0f, nausea: 1f)),
+                Is.EqualTo(PlayerFacialMood.Tense));
+            Assert.That(
+                PlayerFacialMoodRules.Resolve(
+                    Context(ragdoll: true, ragdollSeconds: 2f, nausea: 1f)),
+                Is.EqualTo(PlayerFacialMood.Out));
         }
 
         [Test]

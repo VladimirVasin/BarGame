@@ -76,6 +76,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroSfxId.RefrigeratorSeal)]
         [TestCase(RetroSfxId.RefrigeratorHinge)]
         [TestCase(RetroSfxId.RefrigeratorThunk)]
+        [TestCase(RetroSfxId.Hiccup)]
         public void GenerateSamples_IsDeterministicFiniteAndAudible(
             RetroSfxId id)
         {

@@ -31,7 +31,8 @@ namespace BarPromenade
             bool riseActive,
             PlayerRiseStage riseStage,
             float riseStageProgress,
-            bool slumpActive)
+            bool slumpActive,
+            float nausea = 0f)
         {
             Intoxication = Mathf.Clamp01(intoxication);
             Phase = phase;
@@ -43,6 +44,7 @@ namespace BarPromenade
             RiseStage = riseStage;
             RiseStageProgress = Mathf.Clamp01(riseStageProgress);
             SlumpActive = slumpActive;
+            Nausea = float.IsNaN(nausea) ? 0f : Mathf.Clamp01(nausea);
         }
 
         public float Intoxication { get; }
@@ -55,6 +57,9 @@ namespace BarPromenade
         public PlayerRiseStage RiseStage { get; }
         public float RiseStageProgress { get; }
         public bool SlumpActive { get; }
+
+        /// <summary>How far the hand is up at the mouth in a nausea bout, 0..1.</summary>
+        public float Nausea { get; }
     }
 
     /// <summary>The pure rules of the mood: the same context always gives the same face.</summary>
@@ -71,6 +76,9 @@ namespace BarPromenade
 
         /// <summary>Standing up from a fall at this level or more, the drowse is back at once.</summary>
         public const float DrowsyStandingLevel = 0.6f;
+
+        /// <summary>With the hand this far up at the mouth, the face is a grimace.</summary>
+        public const float NauseaGrimaceWeight = 0.5f;
 
         public static PlayerFacialMood Resolve(in PlayerFacialMoodContext context)
         {
@@ -117,12 +125,20 @@ namespace BarPromenade
                         ? PlayerFacialMood.Grimace
                         : PlayerFacialMood.Tense;
                 case BalancePhase.Recovering:
-                    return context.Instability > RecoveringTenseInstability
-                        ? PlayerFacialMood.Tense
-                        : PlayerFacialMood.None;
-                default:
-                    return PlayerFacialMood.None;
+                    if (context.Instability > RecoveringTenseInstability)
+                    {
+                        return PlayerFacialMood.Tense;
+                    }
+
+                    break;
             }
+
+            // The nausea: while the hand is up at the mouth the face is a
+            // grimace. Only on his feet and steady enough — every face a
+            // fall asks for comes before it.
+            return context.Nausea >= NauseaGrimaceWeight
+                ? PlayerFacialMood.Grimace
+                : PlayerFacialMood.None;
         }
     }
 }

@@ -211,6 +211,26 @@ namespace BarPromenade.Tests.EditMode
             "cemetery.watchman.line.13",
             "cemetery.watchman.line.14",
             "cemetery.watchman.line.15",
+            "city.pedestrian.insult.01",
+            "city.pedestrian.insult.02",
+            "city.pedestrian.insult.03",
+            "city.pedestrian.insult.04",
+            "city.pedestrian.insult.05",
+            "city.pedestrian.insult.06",
+            "city.pedestrian.insult.07",
+            "city.pedestrian.insult.08",
+            "city.pedestrian.insult.09",
+            "city.pedestrian.insult.10",
+            "city.pedestrian.insult.11",
+            "city.pedestrian.insult.12",
+            "city.pedestrian.insult.13",
+            "city.pedestrian.insult.14",
+            "city.pedestrian.insult.15",
+            "city.pedestrian.insult.16",
+            "city.pedestrian.insult.17",
+            "city.pedestrian.insult.18",
+            "city.pedestrian.insult.19",
+            "city.pedestrian.insult.20",
             "pause.title",
             "pause.resume",
             "pause.restart",
@@ -354,7 +374,10 @@ namespace BarPromenade.Tests.EditMode
             "debug.minigames.unavailable",
             "debug.day",
             "debug.teleport.disabled",
-            "debug.teleport.enabled"
+            "debug.teleport.enabled",
+            "debug.nausea.trigger",
+            "hero.nausea.result.success",
+            "hero.nausea.result.fail"
         };
 
         private static readonly string[] RetiredControlHintKeys =

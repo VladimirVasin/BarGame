@@ -27,6 +27,7 @@ namespace BarPromenade
         MonoBehaviour,
         IPlayerPresentation,
         IPlayerClipPresentation,
+        IPlayerNauseaPresentation,
         IPlayerBalancePresentation,
         IPlayerRisePresentation
     {
@@ -212,6 +213,7 @@ namespace BarPromenade
             new SecondOrderFilter(TorsoFilterOmega, TorsoFilterZeta);
         private PlayerBalancePose balancePose = PlayerBalancePose.Neutral;
         private PlayerRisePose risePose = PlayerRisePose.None;
+        private PlayerNauseaPose nauseaPose = PlayerNauseaPose.None;
         private bool ragdollPoseActive;
         private bool interactionHandoffLocked;
         private bool releaseInteractionHandoffAfterLateUpdate;
@@ -398,6 +400,7 @@ namespace BarPromenade
                 GetPartBone(Player3DAnatomicalPart.RightForearm),
                 GetPartBone(Player3DAnatomicalPart.RightHand));
             layer.BindHead(neckBone, headBone);
+            layer.BindMouth(registry.Anchors.Mouth);
             layer.Calibrate();
         }
 
@@ -528,6 +531,20 @@ namespace BarPromenade
         }
 
         public PlayerRisePose RisePose => risePose;
+
+        /// <summary>
+        /// The nausea's pose for this frame: the right hand up at the
+        /// mouth and the hiccup's jerk, drawn over whatever else the body
+        /// is doing. Pushed by the nausea controller every frame it has
+        /// anything to say and set to <see cref="PlayerNauseaPose.None"/>
+        /// when it has not; a None pose adds exactly nothing.
+        /// </summary>
+        public void SetNausea(in PlayerNauseaPose pose)
+        {
+            nauseaPose = pose;
+        }
+
+        public PlayerNauseaPose NauseaPose => nauseaPose;
 
         public void SetFallPose(float signedDirection, float amount)
         {
@@ -909,6 +926,7 @@ namespace BarPromenade
             SetFootPlant(1f, 1f, 1f, false);
             balancePose = PlayerBalancePose.Neutral;
             risePose = PlayerRisePose.None;
+            nauseaPose = PlayerNauseaPose.None;
             ResetPoseFilters();
             ragdollPoseActive = false;
             planarSpeed = 0f;
@@ -1431,7 +1449,16 @@ namespace BarPromenade
                         : AttentionBlendOutSeconds));
             }
 
-            if (attentionWeight <= 0.0001f && drunkHead.IsNone)
+            // The hiccup's jerk of the head: the chin comes up with the
+            // chest, on the same shape. Nothing while the head is not his
+            // to move.
+            float hiccupHeadPitch = headFree
+                ? nauseaPose.HiccupAmount *
+                  PlayerNauseaRules.HiccupHeadPitchDegrees
+                : 0f;
+            if (attentionWeight <= 0.0001f &&
+                drunkHead.IsNone &&
+                hiccupHeadPitch <= 0.0001f)
             {
                 return;
             }
@@ -1446,7 +1473,9 @@ namespace BarPromenade
                 -PlayerAttentionRules.MaxHeadYawDegrees,
                 PlayerAttentionRules.MaxHeadYawDegrees);
             float pitch = Mathf.Clamp(
-                attentionPitch * attentionWeight - drunkHead.PitchDownDegrees,
+                attentionPitch * attentionWeight -
+                drunkHead.PitchDownDegrees +
+                hiccupHeadPitch,
                 -PlayerAttentionRules.MaxHeadDownPitchDegrees,
                 PlayerAttentionRules.MaxHeadUpPitchDegrees);
             float roll = Mathf.Clamp(
@@ -1655,6 +1684,17 @@ namespace BarPromenade
                 }
             }
 
+            // The hand going up to the mouth gives its swing back the same
+            // way, so the reach blends from a hanging arm. Its weight is
+            // blended by the nausea model on the calendar clock; the swing
+            // it takes over is on the game clock like every other arm term.
+            float handToMouth = nauseaPose.HandWeight;
+            if (handToMouth > 0f)
+            {
+                rightArmOutward *= 1f - handToMouth;
+                rightArmForward *= 1f - handToMouth;
+            }
+
             // The arms have mass: each angle is chased through an
             // under-damped spring, so a reaction the model throws at them
             // arrives late, flies past and swings back — the windmill —
@@ -1696,7 +1736,11 @@ namespace BarPromenade
                     hasAuthoredRunClip,
                     forwardGaitDominant,
                     balancePose.WallReach,
-                    torsoPitch,
+                    // The hiccup snaps the chest BACK: a negative forward
+                    // pitch on top of the hip strategy's own.
+                    torsoPitch -
+                    nauseaPose.HiccupAmount *
+                    PlayerNauseaRules.HiccupChestPitchDegrees,
                     modelWeight > 0f ? balancePose.LeftBrace : PlayerArmReachPose.None,
                     modelWeight > 0f ? balancePose.RightBrace : PlayerArmReachPose.None,
                     gait.LeftFootOffsetLocal * modelWeight,
@@ -1704,7 +1748,8 @@ namespace BarPromenade
                     gait.LeftFootYawDegrees * modelWeight,
                     gait.RightFootYawDegrees * modelWeight,
                     gait.LeftFootLift * modelWeight,
-                    gait.RightFootLift * modelWeight),
+                    gait.RightFootLift * modelWeight,
+                    handToMouth),
                 deltaTime);
         }
 
@@ -2393,7 +2438,8 @@ namespace BarPromenade
                     risePose.Active,
                     risePose.Stage,
                     risePose.StageProgress,
-                    risePose.SlumpActive));
+                    risePose.SlumpActive,
+                    nauseaPose.Active ? nauseaPose.HandWeight : 0f));
             PlayerFacialExpression expression = facialState.Advance(
                 Time.deltaTime,
                 allowIdleExpressions,
@@ -2416,7 +2462,8 @@ namespace BarPromenade
                     risePose.Active,
                     risePose.Stage,
                     risePose.StageProgress,
-                    risePose.SlumpActive));
+                    risePose.SlumpActive,
+                    nauseaPose.Active ? nauseaPose.HandWeight : 0f));
 
         private float ragdollPoseSince;
 

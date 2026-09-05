@@ -593,6 +593,94 @@
       "value": "I am still here."
     },
     {
+      "key": "hero.nausea.result.success",
+      "value": "Success"
+    },
+    {
+      "key": "hero.nausea.result.fail",
+      "value": "Fail"
+    },
+    {
+      "key": "city.pedestrian.insult.01",
+      "value": "Go home. If you remember where that is."
+    },
+    {
+      "key": "city.pedestrian.insult.02",
+      "value": "The wall is holding you. Thank it."
+    },
+    {
+      "key": "city.pedestrian.insult.03",
+      "value": "You can be smelled three houses off."
+    },
+    {
+      "key": "city.pedestrian.insult.04",
+      "value": "The pavement is not yours. Nor the legs."
+    },
+    {
+      "key": "city.pedestrian.insult.05",
+      "value": "Hold on to the air. It is steadier than you."
+    },
+    {
+      "key": "city.pedestrian.insult.06",
+      "value": "In front of everyone. Find a corner at least."
+    },
+    {
+      "key": "city.pedestrian.insult.07",
+      "value": "You are not walking. You are falling slowly."
+    },
+    {
+      "key": "city.pedestrian.insult.08",
+      "value": "Your kind ends up lying by the bus stop."
+    },
+    {
+      "key": "city.pedestrian.insult.09",
+      "value": "Disgusting to look at. And not to look at."
+    },
+    {
+      "key": "city.pedestrian.insult.10",
+      "value": "You sway, and I am the one feeling sick."
+    },
+    {
+      "key": "city.pedestrian.insult.11",
+      "value": "Make it to the corner: quite the feat."
+    },
+    {
+      "key": "city.pedestrian.insult.12",
+      "value": "Do not breathe this way. Breathe over there."
+    },
+    {
+      "key": "city.pedestrian.insult.13",
+      "value": "You are wider than the pavement. Stand straight."
+    },
+    {
+      "key": "city.pedestrian.insult.14",
+      "value": "One more like that and it is all fours."
+    },
+    {
+      "key": "city.pedestrian.insult.15",
+      "value": "Lean on something. The post will not mind."
+    },
+    {
+      "key": "city.pedestrian.insult.16",
+      "value": "You will not know yourself by morning. Good."
+    },
+    {
+      "key": "city.pedestrian.insult.17",
+      "value": "Legs apart, eyes apart. All of you apart."
+    },
+    {
+      "key": "city.pedestrian.insult.18",
+      "value": "Wish I had not seen this. No way round it."
+    },
+    {
+      "key": "city.pedestrian.insult.19",
+      "value": "Wherever it carries you, go there. Not here."
+    },
+    {
+      "key": "city.pedestrian.insult.20",
+      "value": "Walk on. The asphalt will not get softer."
+    },
+    {
       "key": "drinking.none",
       "value": "nothing"
     },
@@ -1371,6 +1459,10 @@
     {
       "key": "debug.teleport.enabled",
       "value": "TEST TELEPORT: ON"
+    },
+    {
+      "key": "debug.nausea.trigger",
+      "value": "NAUSEA NOW"
     },
     {
       "key": "quest.feed_cat.title",

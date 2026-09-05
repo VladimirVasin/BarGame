@@ -50,6 +50,7 @@ namespace BarPromenade
         StoneTamp,
         FootstepSnow,
         FootstepSoil,
+        Hiccup,
         Count
     }
 
@@ -568,7 +569,24 @@ namespace BarPromenade
                 512,
                 3600f,
                 0.10f,
-                131)
+                131),
+            // The drunk hero's hiccup, on the last stage while he fights
+            // the nausea down: a body sound of his own like his footsteps,
+            // placed at his head. One voice — a hiccup over a hiccup is a
+            // cartoon — and a wide pitch wander, because no two are alike.
+            new RetroSfxDefinition(
+                RetroSfxId.Hiccup,
+                RetroSfxCategory.World,
+                0.16f,
+                0.22f,
+                1f,
+                1,
+                0.2f,
+                3,
+                512,
+                5200f,
+                0.12f,
+                130)
         };
 
         public static int Count => definitions.Length - 1;
@@ -682,6 +700,11 @@ namespace BarPromenade
                     return GenerateMapOpen(time, duration);
                 case RetroSfxId.Footstep:
                     return GenerateFootstep(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.Hiccup:
+                    return GenerateHiccup(
                         time,
                         duration,
                         ref noiseState);
@@ -1482,6 +1505,43 @@ namespace BarPromenade
                        liquid +
                        bubble) *
                    envelope;
+        }
+
+        /// <summary>
+        /// A hiccup: the glottis snaps shut — a click of noise over the
+        /// first fifteen milliseconds — and the trapped breath rings a
+        /// short rising "hic" behind it that is cut off rather than let
+        /// ring. Two events in a sixth of a second; the definition's pitch
+        /// wander keeps any two apart.
+        /// </summary>
+        private static float GenerateHiccup(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            const float clickSeconds = 0.015f;
+            const float voiceStartSeconds = 0.012f;
+            float click = time < clickSeconds
+                ? NextNoise(ref noiseState) *
+                  (1f - time / clickSeconds) *
+                  0.55f
+                : 0f;
+            if (time < voiceStartSeconds)
+            {
+                return click;
+            }
+
+            float local = time - voiceStartSeconds;
+            float voiceDuration = Mathf.Max(
+                0.0001f,
+                duration - voiceStartSeconds);
+            float envelope = Envelope(local, voiceDuration, 0.006f, 2.2f);
+            float tone = GlideSine(local, voiceDuration, 180f, 420f);
+            float overtone = GlideSine(local, voiceDuration, 360f, 840f);
+            float breath = NextNoise(ref noiseState) * 0.06f;
+            float voice = (tone * 0.62f + overtone * 0.18f + breath) *
+                          envelope;
+            return click + voice;
         }
 
         private static float GenerateShotSwap(

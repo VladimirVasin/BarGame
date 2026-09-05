@@ -19,6 +19,18 @@ namespace BarPromenade
         private Func<bool> promptAction;
 
         public bool InputEnabled { get; private set; } = true;
+
+        /// <summary>
+        /// Whether something else is reading the interact key right now.
+        /// Narrower than <see cref="InputEnabled"/> on purpose: the nausea
+        /// gauge borrows `E` while the hero keeps walking, and every system
+        /// that treats a disabled interactor as "the hero is busy" — the
+        /// balance model, the fall gate, the mutter — must keep running.
+        /// The prompt hides while the key is claimed, because a prompt
+        /// promising a door the key will not open is a lie.
+        /// </summary>
+        public bool InteractKeyClaimed { get; private set; }
+
         public IInteractable ActiveInteractable => activeInteractable;
         public static int InteractionLayerMask =>
             CityPedestrianCollision.NonPedestrianMask &
@@ -44,6 +56,20 @@ namespace BarPromenade
             if (!enabled)
             {
                 promptView?.ClearFeedback();
+                SetActive(null);
+            }
+        }
+
+        /// <summary>
+        /// Lends the interact key to another reader without disabling
+        /// the interactor. Feedback lines stay: an answer already on the
+        /// panel is not withdrawn because he is holding his mouth.
+        /// </summary>
+        public void SetInteractKeyClaimed(bool claimed)
+        {
+            InteractKeyClaimed = claimed;
+            if (claimed)
+            {
                 SetActive(null);
             }
         }
@@ -109,7 +135,9 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (!InputEnabled || SceneTransitionService.IsTransitioning)
+            if (!InputEnabled ||
+                InteractKeyClaimed ||
+                SceneTransitionService.IsTransitioning)
             {
                 SetActive(null);
                 return;
@@ -125,6 +153,7 @@ namespace BarPromenade
         private bool TryInteractActive()
         {
             if (!InputEnabled ||
+                InteractKeyClaimed ||
                 SceneTransitionService.IsTransitioning ||
                 (promptView != null &&
                  promptView.IsFeedbackVisible) ||
@@ -211,6 +240,24 @@ namespace BarPromenade
 
             Gamepad gamepad = Gamepad.current;
             return gamepad != null && gamepad.buttonSouth.wasPressedThisFrame;
+        }
+
+        /// <summary>
+        /// Whether the interact key is down this frame — the same three
+        /// bindings <see cref="WasInteractPressed"/> reads, so a reader
+        /// that borrows the key cannot drift from the key itself.
+        /// </summary>
+        public static bool IsInteractHeld()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null &&
+                (keyboard.eKey.isPressed || keyboard.enterKey.isPressed))
+            {
+                return true;
+            }
+
+            Gamepad gamepad = Gamepad.current;
+            return gamepad != null && gamepad.buttonSouth.isPressed;
         }
     }
 }

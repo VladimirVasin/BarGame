@@ -150,6 +150,44 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// A nausea bout now, stage and clock ignored. The window holds
+        /// the full-screen lock and the bout is gated on nobody holding
+        /// one, so the window closes first and reopens only on refusal.
+        /// </summary>
+        public bool TryTriggerNausea()
+        {
+            if (!IsOpen)
+            {
+                return false;
+            }
+
+            IntoxicationStatusController status =
+                GetComponent<IntoxicationStatusController>();
+            if (status == null)
+            {
+                status = FindAnyObjectByType<IntoxicationStatusController>();
+            }
+
+            IntoxicationNauseaController nausea =
+                status != null ? status.Nausea : null;
+            if (nausea == null)
+            {
+                LastLaunchErrorKey = "debug.minigames.unavailable";
+                return false;
+            }
+
+            Close(false);
+            if (nausea.DebugForceBout())
+            {
+                return true;
+            }
+
+            Open();
+            LastLaunchErrorKey = "debug.minigames.unavailable";
+            return false;
+        }
+
         public bool TrySkipHomeToCityMap()
         {
             if (!IsOpen || homeCityShortcut == null ||
@@ -334,6 +372,8 @@ namespace BarPromenade
                 DrawHomeCityShortcutControl();
             }
 
+            DrawNauseaControl();
+
             if (!string.IsNullOrEmpty(LastLaunchErrorKey))
             {
                 GUI.Label(
@@ -369,9 +409,28 @@ namespace BarPromenade
                 intoxication < 100);
         }
 
+        private void DrawNauseaControl()
+        {
+            Rect button = new Rect(324f, 156f, 184f, 24f);
+            RetroUiTheme.DrawPanel(
+                button,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
+                1f);
+            if (GUI.Button(
+                    button,
+                    LocalizationService.Get("debug.nausea.trigger"),
+                    rowStyle))
+            {
+                TryTriggerNausea();
+            }
+        }
+
         private void DrawDebugTeleportControl()
         {
-            Rect button = new Rect(132f, 156f, 376f, 24f);
+            Rect button = new Rect(132f, 156f, 184f, 24f);
             RetroUiTheme.DrawPanel(
                 button,
                 RetroUiTheme.PanelInset,
@@ -439,7 +498,7 @@ namespace BarPromenade
 
         private void DrawHomeCityShortcutControl()
         {
-            Rect button = new Rect(132f, 156f, 376f, 24f);
+            Rect button = new Rect(132f, 156f, 184f, 24f);
             RetroUiTheme.DrawPanel(
                 button,
                 RetroUiTheme.PanelInset,

@@ -33,9 +33,11 @@ namespace BarPromenade
             float leftFootYawDegrees = 0f,
             float rightFootYawDegrees = 0f,
             float leftFootLift = 0f,
-            float rightFootLift = 0f)
+            float rightFootLift = 0f,
+            float mouthReachWeight = 0f)
         {
             Enabled = enabled;
+            MouthReachWeight = Mathf.Clamp01(mouthReachWeight);
             LeftFootOffsetLocal = leftFootOffsetLocal;
             RightFootOffsetLocal = rightFootOffsetLocal;
             LeftFootYawDegrees = leftFootYawDegrees;
@@ -71,6 +73,14 @@ namespace BarPromenade
         /// </summary>
         public PlayerArmReachPose LeftReach { get; }
         public PlayerArmReachPose RightReach { get; }
+
+        /// <summary>
+        /// The right hand up over the mouth, 0..1. The target is the
+        /// layer's own to resolve — the mouth anchor it was bound with,
+        /// read AFTER the body pose has leaned and crouched the torso —
+        /// which is why this is a weight and not a world point.
+        /// </summary>
+        public float MouthReachWeight { get; }
 
         public static Player3DProceduralLayerInput Disabled => default;
 
@@ -244,6 +254,29 @@ namespace BarPromenade
         /// <summary>The elbow's back is mostly behind and a little below the hanging arm.</summary>
         public const float ElbowBackShare = 0.85f;
 
+        /// <summary>
+        /// The hand over the mouth: the palm this far in front of the
+        /// mouth anchor, a little to his right and down — a hand pressed
+        /// to the mouth, not one hovering before the nose.
+        /// </summary>
+        public const float MouthReachForwardMetres = 0.05f;
+        public const float MouthReachRightMetres = 0.02f;
+        public const float MouthReachDownMetres = 0.01f;
+
+        /// <summary>
+        /// The elbow of the hand at the mouth is hinted well below and in
+        /// front of the shoulder. The solver projects the hint onto the
+        /// plane across the shoulder-to-mouth line, and that line runs up
+        /// and inward: a hint out to the side and only a little down (the
+        /// drinking arm's) lies almost along it and projects UPWARD — the
+        /// elbow came out level with the shoulder like a salute. Down and
+        /// forward projects down and forward, and the elbow lands in
+        /// front of the sternum, a hand's width below the shoulder.
+        /// </summary>
+        public const float MouthElbowRightMetres = 0.05f;
+        public const float MouthElbowForwardMetres = 0.20f;
+        public const float MouthElbowDownMetres = 0.30f;
+
         /// <summary>A ramp tilts the sole at most this much.</summary>
         public const float MaximumSoleTiltDegrees = 18f;
 
@@ -293,6 +326,7 @@ namespace BarPromenade
         private Transform rightUpperArm;
         private Transform neck;
         private Transform head;
+        private Transform mouth;
         private Player3DFootGroundProbe probe;
         private bool baseCaptured;
         private float ikBlend;
@@ -536,6 +570,15 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// The mouth anchor the nausea's hand goes to. Optional: a rig
+        /// without one never brings a hand up.
+        /// </summary>
+        public void BindMouth(Transform mouthAnchor)
+        {
+            mouth = mouthAnchor;
+        }
+
+        /// <summary>
         /// The reaching hands: the wall hand, and each hand's own target
         /// (the ground in a topple). Where two reaches want one arm the
         /// heavier one is solved. Runs after the legs so the shoulder it
@@ -558,8 +601,45 @@ namespace BarPromenade
                 }
             }
 
+            if (input.MouthReachWeight > 0.0001f && mouth != null)
+            {
+                right = Heavier(BuildMouthReach(input.MouthReachWeight), right);
+            }
+
             ApplyArmReach(left, false);
             ApplyArmReach(right, true);
+        }
+
+        /// <summary>
+        /// The right hand over the mouth, as a reach: the palm a few
+        /// centimetres in front of the mouth anchor and turned to face
+        /// it, the elbow hinted down and in front of the shoulder —
+        /// because the calibrated elbow-back swung onto a target this
+        /// high puts the elbow in the ribs or up like a wing. Resolved
+        /// here, after the body pose, so the lean and the crouch that
+        /// moved the mouth this frame are already in the anchor.
+        /// </summary>
+        private PlayerArmReachPose BuildMouthReach(float weight)
+        {
+            Vector3 forward = PlanarForward();
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 target = mouth.position +
+                             forward * MouthReachForwardMetres +
+                             right * MouthReachRightMetres -
+                             Vector3.up * MouthReachDownMetres;
+            Arm arm = arms[1];
+            Vector3 shoulder = arm.Upper != null ? arm.Upper.position : target;
+            Vector3 elbowHint = shoulder +
+                                right * MouthElbowRightMetres +
+                                forward * MouthElbowForwardMetres -
+                                Vector3.up * MouthElbowDownMetres;
+            return new PlayerArmReachPose(
+                true,
+                true,
+                target,
+                forward,
+                weight,
+                elbowHintWorld: elbowHint);
         }
 
         private static PlayerArmReachPose Heavier(
@@ -622,7 +702,8 @@ namespace BarPromenade
                                     arm.Hand.position - shoulder,
                                     target - shoulder) *
                                 arm.ElbowBack();
-            Vector3 hint = arm.Forearm.position +
+            Vector3 hint = reach.ElbowHintWorld ??
+                           arm.Forearm.position +
                            elbowBack * ElbowHintBackMetres;
             LimbTwoBoneIk.Solve(
                 arm.Upper,
@@ -634,7 +715,12 @@ namespace BarPromenade
                 reach.Weight * ikBlend,
                 float.PositiveInfinity,
                 true);
-            AlignHingeRoll(arm.Upper, arm.Forearm, arm.Hand, arm.ElbowBack(), reach.Weight * ikBlend);
+            if (!reach.ElbowHintWorld.HasValue)
+            {
+                // A reach that placed its own elbow is not then rolled
+                // back toward the hanging arm's bend plane.
+                AlignHingeRoll(arm.Upper, arm.Forearm, arm.Hand, arm.ElbowBack(), reach.Weight * ikBlend);
+            }
         }
 
         /// <summary>The calibrated knee-forward direction of one leg, for probes.</summary>

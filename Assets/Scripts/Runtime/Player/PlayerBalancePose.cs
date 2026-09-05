@@ -200,7 +200,8 @@ namespace BarPromenade
             Vector3 worldNormal,
             float weight,
             float elbowDropMetres = 0.3f,
-            float elbowBackMetres = 0.2f)
+            float elbowBackMetres = 0.2f,
+            Vector3? elbowHintWorld = null)
         {
             Active = active;
             RightHand = rightHand;
@@ -209,6 +210,7 @@ namespace BarPromenade
             Weight = Mathf.Clamp01(weight);
             ElbowDropMetres = elbowDropMetres;
             ElbowBackMetres = elbowBackMetres;
+            ElbowHintWorld = elbowHintWorld;
         }
 
         public static PlayerArmReachPose None => default;
@@ -226,6 +228,14 @@ namespace BarPromenade
         /// <summary>Where the elbow is hinted: this far below and behind the shoulder.</summary>
         public float ElbowDropMetres { get; }
         public float ElbowBackMetres { get; }
+
+        /// <summary>
+        /// An explicit world point for the elbow, when the reach knows
+        /// better than the arm's calibrated back — a hand up at the face,
+        /// where "behind the hanging arm" swung onto the target points the
+        /// elbow into the ribs. Null keeps the wall and brace rule.
+        /// </summary>
+        public Vector3? ElbowHintWorld { get; }
     }
 
     /// <summary>A presentation that can draw the balance model's pose.</summary>
