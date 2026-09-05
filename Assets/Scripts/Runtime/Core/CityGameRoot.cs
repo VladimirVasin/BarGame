@@ -12,6 +12,7 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public CityLayout Layout { get; private set; }
         public CityWorldResult World { get; private set; }
+        public ChurchGardenPotInteraction ChurchGardenPot { get; private set; }
         public CityNightWorldResult Night { get; private set; }
         public CityDayNightController DayNight { get; private set; }
         public CityRainField Rain { get; private set; }
@@ -703,7 +704,8 @@ namespace BarPromenade
             CemeteryWatchman = CemeteryWatchmanFactory.Create(
                 transform,
                 watchmanPlan,
-                GameSessionState.CitySeed);
+                GameSessionState.CitySeed,
+                Player.GameObject.transform);
             // The hero works this yard for a living, and the old man
             // at the gate has the only work going: vacant plots near
             // his own post, handed over one at a time and marked out
@@ -824,6 +826,7 @@ namespace BarPromenade
                 benchPlans,
                 Player,
                 camera);
+            InstallChurchGardenPot();
             // Life simulation: every now and then a walker near a free
             // bench sits down for a while and moves on.
             BenchRests = CityBenchNpcRestController.Create(
@@ -1279,6 +1282,34 @@ namespace BarPromenade
                     YardWheelchair != null
                         ? YardWheelchair.Plan.Radius
                         : 0f));
+        }
+
+        private void InstallChurchGardenPot()
+        {
+            CityChurchCourtyardPlan courtyard = World.ChurchCourtyardPlan;
+            if (courtyard == null || World.ChurchCourtyardRoot == null) return;
+            CityChurchCourtyardFixtureDescriptor ledge = CityChurchCourtyardPlanner.GetFixture(
+                courtyard, CityChurchCourtyardFixtureKind.PottingLedge);
+            Quaternion facing = ledge.Rotation;
+            Vector3 standing = ledge.GroundPosition - facing * Vector3.forward *
+                ChurchGardenPotPlan.LedgeForwardOffset;
+            var plan = new ChurchGardenPotPlan(
+                "church-garden-pot-" + GameSessionState.CitySeed, standing, facing);
+            Transform gardenRoot = World.ChurchCourtyardRoot.transform;
+            GameObject pot = ChurchGardenModelProvider.Load().Instantiate(
+                ChurchGardenAssetKind.PotMedium, gardenRoot, plan.GetDockPosition(0));
+            pot.name = "Church Garden Movable Pot";
+            var trigger = new GameObject("Church Garden Pot Interaction");
+            trigger.transform.SetParent(gardenRoot, false);
+            trigger.transform.SetPositionAndRotation(standing, facing);
+            BoxCollider bounds = trigger.AddComponent<BoxCollider>();
+            bounds.isTrigger = true;
+            bounds.center = new Vector3(0f, 0.8f, -0.2f);
+            bounds.size = new Vector3(1.8f, 1.8f, 1f);
+            ChurchGardenPot = trigger.AddComponent<ChurchGardenPotInteraction>();
+            ChurchGardenPot.Initialize(Player,
+                Player.GameObject.GetComponent<PlayerAnimatedInteractionController>(),
+                plan, pot.transform);
         }
 
         private static void ReportLayout(CityLayout layout)

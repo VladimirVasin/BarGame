@@ -48,7 +48,6 @@ MonoBehaviour:
   animator: {fileID: 6212729997253246040}
   modelRoot: {fileID: 4550583639127054422}
   renderers:
-  - {fileID: 88668172629427818}
   - {fileID: 1513474134896964985}
   - {fileID: 5545122368824389664}
   - {fileID: 8461720554466796300}
@@ -93,15 +92,6 @@ MonoBehaviour:
   - {fileID: 7930626730229513412}
   - {fileID: 5349129911345808091}
   rendererBindings:
-  - rendererName: ACC_Chalk
-    role: surface_detail
-    paletteName: chalk
-    renderer: {fileID: 88668172629427818}
-    baseColor: {r: 0.62, g: 0.635, b: 0.615, a: 1}
-    variantOneColor: {r: 0.5208, g: 0.5842, b: 0.63345, a: 1}
-    variantTwoColor: {r: 0.65099996, g: 0.5588, b: 0.4797, a: 1}
-    variantThreeColor: {r: 0.58280003, g: 0.635, b: 0.5289, a: 1}
-    usesDetailAtlas: 0
   - rendererName: ACC_Eye.L
     role: face_detail
     paletteName: void
@@ -499,13 +489,15 @@ MonoBehaviour:
   ambientWalkClip: {fileID: 6653310216307726873, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   sitClip: {fileID: -7519259734819672638, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   actionClip: {fileID: 0}
+  personalSpaceGuardClip: {fileID: -745076687792294147, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
+  personalSpaceShoveClip: {fileID: 3345037529033634719, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   localBounds:
     m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.037137583}
     m_Extent: {x: 0.7784672, y: 0.8749999, z: 0.19155073}
-  sourceTriangleCount: 2180
+  sourceTriangleCount: 2160
   sourceGeneratorVersion: 4.5.2
   designId: weigh_attendant_v1
-  buildSignature: 56452d36af22edc5cddb29b62ec898d8577e0f171675caffb506e687e084acfe
+  buildSignature: 9bc645f144fa4b57a32b86f47f6896347359b01f224e6239608aa004d0e0ce49
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -832,14 +824,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
-    - target: {fileID: 4149875687778941399, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
-      propertyPath: m_UpdateWhenOffscreen
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4149875687778941399, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 4378110811552499729, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
       propertyPath: m_UpdateWhenOffscreen
       value: 1
@@ -928,11 +912,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 6212729997253246040}
   m_SourcePrefab: {fileID: 100100000, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
---- !u!137 &88668172629427818 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 4149875687778941399, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}
-  m_PrefabInstance: {fileID: 4083729984494124989}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &304336179241949073 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4365512976932153388, guid: 51d0ebb8e8ef3424db09be3d97ba8ca1, type: 3}

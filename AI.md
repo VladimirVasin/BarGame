@@ -30,8 +30,18 @@ flushing at arm's length and never at the church, the district POIs, the
 cemetery or the boat-station tableau. The
 church owns a large
 Blender-authored exterior and a west-facing street entrance into its separate
-runtime-composed interior;
-the north edge carries the dressed seacoast precinct — mol, beacon,
+runtime-composed interior. Its parish garden now has one connected `2.4 m`
+gravel loop, two bench pockets, grouped planting, a small running fountain,
+a restrained Mary statue and three terracotta pots. A low broken hedge frames
+the garden's back and wings while leaving a broad northern opening. Ten
+small ground uplights wash the planting and statue with local warm light;
+they retain the City's two-thirds daytime floor and persistent small halos,
+outside the unchanged twelve-light street/bar pool. One pot uses five
+separate Hero V2 clips to lift, inspect and place at either of two shelf docks;
+the chosen dock persists within the session. The north `14 m` of church land
+grades into the neighbouring yard, while the first `38 m` stays level.
+The fountain owns the accepted single `4.5 m` local water voice and no Light.
+The city's north edge carries the dressed seacoast precinct — mol, beacon,
 the transplanted boat station with its fisherman, footbridge over
 the river mouth, animated sea and wild east shore. Both `3 m` river
 promenades hand their complete logical width to the shore over granite

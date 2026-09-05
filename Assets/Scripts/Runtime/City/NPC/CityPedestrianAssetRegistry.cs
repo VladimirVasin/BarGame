@@ -120,6 +120,8 @@ namespace BarPromenade
         [SerializeField] private AnimationClip ambientWalkClip;
         [SerializeField] private AnimationClip sitClip;
         [SerializeField] private AnimationClip actionClip;
+        [SerializeField] private AnimationClip personalSpaceGuardClip;
+        [SerializeField] private AnimationClip personalSpaceShoveClip;
         [SerializeField] private Bounds localBounds;
         [SerializeField] private int sourceTriangleCount;
         [SerializeField] private string sourceGeneratorVersion;
@@ -181,6 +183,8 @@ namespace BarPromenade
         /// ever needed two; a second one earns the list.
         /// </summary>
         public AnimationClip ActionClip => actionClip;
+        public AnimationClip PersonalSpaceGuardClip => personalSpaceGuardClip;
+        public AnimationClip PersonalSpaceShoveClip => personalSpaceShoveClip;
         public Bounds LocalBounds => localBounds;
         public int SourceTriangleCount => sourceTriangleCount;
         public string SourceGeneratorVersion => sourceGeneratorVersion;
@@ -273,6 +277,12 @@ namespace BarPromenade
             buildSignature = configuredBuildSignature ?? string.Empty;
             NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
             ApplyPaletteVariant(0);
+        }
+
+        public void ConfigurePersonalSpaceClips(AnimationClip guard, AnimationClip shove)
+        {
+            personalSpaceGuardClip = guard;
+            personalSpaceShoveClip = shove;
         }
 
         public void ConfigureDetailAtlas(Texture2D atlas)

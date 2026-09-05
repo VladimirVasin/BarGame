@@ -954,6 +954,264 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [Explicit("Focused church garden route, interaction and visual acceptance.")]
+        public IEnumerator CityChurchCourtyard()
+        {
+            BuildChurchGardenEditorAssets("ChurchGardenAssetSetup");
+            BuildChurchGardenEditorAssets("ChurchGardenPotActionAssetSetup");
+            GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeFromWake();
+            GameSessionState.AdvanceGameTime(360f);
+            CityGameRoot city = null;
+            yield return Capture(SceneIds.City,
+                () =>
+                {
+                    city = Object.FindAnyObjectByType<CityGameRoot>();
+                    return city != null && city.IsInitialized ? city : null;
+                }, () => ChurchGardenShots(city));
+            Debug.Log("Church garden acceptance: frames captured; walking physical route.");
+            CityChurchCourtyardPlan courtyard = city.World.ChurchCourtyardPlan;
+            CityChurchCourtyardPlanner.ValidateOrThrow(city.Layout, city.World.ChurchPlan, courtyard);
+            ValidateChurchGardenLights(city, false);
+            CaptureChurchGardenLighting(city, "day");
+            var landing = new CityMapCityTeleportGround(city.Layout);
+            float x = courtyard.Grounds.xMin;
+            float z = courtyard.Grounds.yMin;
+            Assert.That(landing.TryResolveStandingPosition(
+                new Vector2(x - 2f, city.World.ChurchPlan.DoorGroundPosition.z),
+                out Vector3 streetStart), Is.True);
+            city.Player.Motor.Teleport(streetStart);
+            city.Player.Motor.SetInputEnabled(false);
+            yield return null;
+            IReadOnlyList<Vector3> route = CityChurchCourtyardPlanner.GetLoopWaypoints(courtyard);
+            for (int i = 0; i < route.Count; i++)
+                yield return WalkChurchGardenLeg(city.Player.Motor, route[i], "loop-" + i);
+            yield return WalkChurchGardenLeg(city.Player.Motor,
+                new Vector3(route[0].x, courtyard.GroundTopY, z + 1.2f), "south-turn");
+            yield return WalkChurchGardenLeg(city.Player.Motor,
+                new Vector3(courtyard.Passage.AxisX, courtyard.GroundTopY, z + 1.2f), "passage-approach");
+            yield return WalkChurchGardenLeg(city.Player.Motor,
+                new Vector3(courtyard.Passage.AxisX, courtyard.GroundTopY, z - 4f), "cemetery-passage");
+
+            // The former north wall must agree with the actual ground mesh,
+            // not merely disappear from presentation.
+            Assert.That(landing.TryResolveStandingPosition(
+                new Vector2(x + 25.5f, z + 34f), out Vector3 gradeStart), Is.True);
+            city.Player.Motor.Teleport(gradeStart);
+            yield return null;
+            yield return WalkChurchGardenLeg(city.Player.Motor,
+                new Vector3(x + 25.5f, courtyard.GroundTopY, courtyard.Grounds.yMax + 2f), "north-grade-through-hedge-gap");
+            Debug.Log("Church garden acceptance: route and north grade traversed.");
+
+            ChurchGardenFountain fountain = city.World.ChurchCourtyardRoot
+                .GetComponentInChildren<ChurchGardenFountain>();
+            Assert.That(fountain, Is.Not.Null);
+            Assert.That(fountain.GetComponentsInChildren<Light>(), Is.Empty);
+            Assert.That(fountain.Voice.maxDistance, Is.EqualTo(4.5f));
+            Assert.That(fountain.Voice.spatialBlend, Is.EqualTo(1f));
+
+            ChurchGardenPotInteraction pot = city.ChurchGardenPot;
+            Assert.That(pot, Is.Not.Null);
+            city.Player.Motor.Teleport(pot.Plan.EntryPose.RootPosition);
+            city.Player.GameObject.transform.rotation = pot.Plan.Facing;
+            city.Player.Motor.SetInputEnabled(true);
+            yield return null;
+            Assert.That(pot.Begin(), Is.True, "The pot must offer its real action.");
+            yield return WaitForChurchPot(() => pot.Controller.Phase ==
+                PlayerAnimatedInteractionPhase.Looping, "pickup");
+            yield return null;
+            Assert.That(pot.IsHolding, Is.True);
+            ValidateChurchPotHeroDimensions(city);
+            CaptureChurchPot(city, pot, "church-garden-07-pot-hold");
+            Assert.That(pot.SelectDock(1), Is.True);
+            Assert.That(pot.RequestPlace(), Is.True);
+            yield return WaitForChurchPot(() => !pot.OwnsActiveInteraction, "place-right");
+            yield return null;
+            Assert.That(pot.DockIndex, Is.EqualTo(1));
+            Assert.That(Vector3.Distance(pot.PotTransform.position,
+                pot.Plan.GetDockPosition(1)), Is.LessThan(0.005f));
+            Assert.That(city.Player.Motor.InputEnabled, Is.True);
+            CaptureChurchPot(city, pot, "church-garden-08-pot-placed");
+            // Rebinding models after a scene reload reads the same session
+            // dock. It must not reset the moved object to its authoring dock.
+            pot.Initialize(city.Player, pot.Controller, pot.Plan, pot.PotTransform);
+            Assert.That(pot.DockIndex, Is.EqualTo(1));
+            Assert.That(pot.Begin(), Is.True);
+            yield return WaitForChurchPot(() => pot.Controller.Phase ==
+                PlayerAnimatedInteractionPhase.Looping, "pickup-right");
+            yield return null;
+            Assert.That(pot.SelectDock(0), Is.True);
+            Assert.That(pot.RequestPlace(), Is.True);
+            yield return WaitForChurchPot(() => !pot.OwnsActiveInteraction, "place-left");
+            yield return null;
+            Assert.That(pot.DockIndex, Is.EqualTo(0));
+            Assert.That(Vector3.Distance(pot.PotTransform.position,
+                pot.Plan.GetDockPosition(0)), Is.LessThan(0.005f));
+            Assert.That(pot.Begin(), Is.True);
+            yield return WaitForChurchPot(() => pot.Controller.Phase ==
+                PlayerAnimatedInteractionPhase.Looping, "cancel-pickup");
+            yield return null;
+            pot.enabled = false;
+            yield return null;
+            yield return null;
+            Assert.That(pot.OwnsActiveInteraction, Is.False);
+            Assert.That(pot.Controller.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+            Assert.That(pot.DockIndex, Is.EqualTo(0));
+            Assert.That(city.Player.Motor.InputEnabled, Is.True);
+            Assert.That(Vector3.Distance(pot.PotTransform.position,
+                pot.Plan.GetDockPosition(0)), Is.LessThan(0.005f));
+            pot.enabled = true;
+            Debug.Log("Church garden acceptance: placement, session rebind and disable cleanup passed.");
+            GameSessionState.AdvanceGameTime((float)(21d * 60d - GameSessionState.GameTimeOfDayMinutes));
+            city.DayNight.ApplyCurrentTime(true);
+            yield return null;
+            ValidateChurchGardenLights(city, true);
+            CaptureChurchGardenLighting(city, "night");
+            Debug.Log("Church garden acceptance: hedge lighting remains visible by day and night.");
+        }
+
+        private static void ValidateChurchGardenLights(CityGameRoot city, bool night)
+        {
+            ChurchGardenUplight[] fixtures = city.World.ChurchCourtyardRoot
+                .GetComponentsInChildren<ChurchGardenUplight>();
+            Assert.That(fixtures.Length, Is.EqualTo(city.World.ChurchCourtyardPlan
+                .GetFixtureCount(CityChurchCourtyardFixtureKind.Uplight)));
+            Assert.That(fixtures.Length, Is.InRange(8, 10));
+            int statueLights = 0;
+            foreach (ChurchGardenUplight fixture in fixtures)
+            {
+                if (fixture.LightsStatue) statueLights++;
+                Assert.That(fixture.Emitter.enabled, Is.True);
+                Assert.That(fixture.Emitter.type, Is.EqualTo(LightType.Spot));
+                Assert.That(fixture.Emitter.shadows, Is.EqualTo(LightShadows.None));
+                Assert.That(fixture.Emitter.range, Is.EqualTo(ChurchGardenUplight.LightRange));
+                Assert.That(fixture.Emitter.intensity, Is.GreaterThanOrEqualTo(
+                    fixture.NightIntensity * GameTimeDayNightRules.DayFixtureFloor - 0.001f));
+                if (night) Assert.That(fixture.Emitter.intensity,
+                    Is.EqualTo(fixture.NightIntensity).Within(0.001f));
+                Assert.That(fixture.Emitter.transform.forward.y, Is.InRange(0.5f, 0.65f));
+            }
+            Assert.That(statueLights, Is.EqualTo(1));
+        }
+
+        private static void CaptureChurchGardenLighting(CityGameRoot city, string time)
+        {
+            CityChurchCourtyardPlan garden = city.World.ChurchCourtyardPlan;
+            float x = garden.Grounds.xMin, z = garden.Grounds.yMin, y = garden.GroundTopY;
+            Shot[] shots =
+            {
+                Shot.At("church-garden-10-hedge-west-" + time,
+                    new Vector3(x + 17.6f, y + EyeHeight, z + 34f),
+                    new Vector3(x + 17.6f, y + 0.5f, z + 37.3f), 68f),
+                Shot.At("church-garden-11-hedge-east-" + time,
+                    new Vector3(x + 39.5f, y + EyeHeight, z + 32.5f),
+                    new Vector3(x + 42f, y + 0.5f, z + 35.8f), 68f),
+                Shot.At("church-garden-12-statue-" + time,
+                    new Vector3(x + 29f, y + EyeHeight, z + 29f),
+                    new Vector3(x + 32.4f, y + 0.9f, z + 32.7f), 58f),
+                Shot.At("church-garden-13-garden-" + time,
+                    new Vector3(x + 22f, y + 5f, z + 24f),
+                    new Vector3(x + 22f, y, z + 34f), 80f)
+            };
+            Camera camera = Camera.main;
+            foreach (Shot shot in shots)
+            {
+                camera.transform.SetPositionAndRotation(shot.Position,
+                    Quaternion.LookRotation(shot.Target - shot.Position, Vector3.up));
+                camera.fieldOfView = shot.FieldOfView;
+                CaptureCurrentCamera(camera, SceneIds.City, shot.Name);
+            }
+        }
+
+        private static void BuildChurchGardenEditorAssets(string className)
+        {
+            Type type = Type.GetType("BarPromenade.Editor." + className + ", BarPromenade.Editor");
+            Assert.That(type, Is.Not.Null, className);
+            var method = type.GetMethod("BuildOrThrow",
+                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+            Assert.That(method, Is.Not.Null, className);
+            method.Invoke(null, null);
+        }
+
+        private static Shot[] ChurchGardenShots(CityGameRoot city)
+        {
+            CityChurchCourtyardPlan plan = city.World.ChurchCourtyardPlan;
+            float x = plan.Grounds.xMin;
+            float z = plan.Grounds.yMin;
+            float y = plan.GroundTopY;
+            return new[]
+            {
+                Shot.At("church-garden-00-overview", new Vector3(x + 22f, y + 10f, z + 37f),
+                    new Vector3(x + 22f, y, z + 29f), 78f),
+                Shot.At("church-garden-01-street", new Vector3(x - 2f, y + EyeHeight, z + 13f),
+                    city.World.ChurchPlan.DoorGroundPosition + Vector3.up * 2.2f, 68f),
+                Shot.At("church-garden-02-fountain", new Vector3(x + 17f, y + EyeHeight, z + 28f),
+                    new Vector3(x + 20.5f, y + 0.6f, z + 26.5f), 62f),
+                Shot.At("church-garden-03-seated", new Vector3(x + 16.5f, y + 1.2f, z + 32.9f),
+                    new Vector3(x + 22f, y + 4f, z + 18f), 62f),
+                Shot.At("church-garden-04-statue", new Vector3(x + 29f, y + EyeHeight, z + 29f),
+                    new Vector3(x + 32.4f, y + 1f, z + 32.7f), 58f),
+                Shot.At("church-garden-05-cemetery", new Vector3(x + 40f, y + EyeHeight, z - 3f),
+                    new Vector3(x + 39f, y + 1.1f, z + 15f), 65f),
+                Shot.At("church-garden-06-north-grade", new Vector3(x + 44f, y + 3.5f, z + 47f),
+                    new Vector3(x + 24f, y + 1.5f, z + 31f), 65f)
+            };
+        }
+
+        private static IEnumerator WalkChurchGardenLeg(PlayerMotor motor, Vector3 target, string name)
+        {
+            bool arrived = false;
+            for (int frame = 0; frame < 180 && !arrived; frame++)
+            {
+                // Larger bounded test steps retain the production controller
+                // sweep and navigation constraint, without a minute-long walk.
+                arrived = motor.MoveTowardsApproachWaypoint(target, 0.10f, 0.25f);
+                yield return null;
+            }
+            motor.CancelInteractionPoseMove();
+            Assert.That(arrived, Is.True, "Blocked church garden leg: " + name +
+                " at " + motor.transform.position + " toward " + target);
+        }
+
+        private static IEnumerator WaitForChurchPot(Func<bool> ready, string phase)
+        {
+            float deadline = Time.realtimeSinceStartup + 18f;
+            while (!ready() && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(ready(), Is.True, "Church pot stalled: " + phase);
+        }
+
+        private static void CaptureChurchPot(CityGameRoot city, ChurchGardenPotInteraction pot, string name)
+        {
+            Camera camera = Camera.main;
+            Vector3 origin = pot.Plan.StandingGroundPosition;
+            camera.transform.SetPositionAndRotation(origin + new Vector3(1.6f, 1.7f, -1.7f),
+                Quaternion.LookRotation(new Vector3(-1.6f, -0.5f, 2.15f), Vector3.up));
+            camera.fieldOfView = 58f;
+            CaptureCurrentCamera(camera, SceneIds.City, name);
+        }
+
+        private static void ValidateChurchPotHeroDimensions(CityGameRoot city)
+        {
+            Player3DAssetRegistry registry = city.Player.GameObject
+                .GetComponentInChildren<Player3DAssetRegistry>();
+            Assert.That(registry, Is.Not.Null);
+            bool first = true;
+            Bounds bounds = default;
+            foreach (Renderer renderer in registry.Renderers)
+            {
+                if (renderer == null) continue;
+                if (first) bounds = renderer.bounds;
+                else bounds.Encapsulate(renderer.bounds);
+                first = false;
+            }
+            Assert.That(first, Is.False);
+            Assert.That(bounds.size.y, Is.InRange(1f, 2.2f),
+                "The imported pot action must retain the hero's metre-scale body.");
+            Assert.That(bounds.size.x, Is.LessThan(1.8f));
+            Assert.That(bounds.size.z, Is.LessThan(1.8f));
+        }
+
+        [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator CityWindowLighting()
         {

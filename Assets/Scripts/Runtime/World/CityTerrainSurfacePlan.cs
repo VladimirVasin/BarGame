@@ -22,6 +22,7 @@ namespace BarPromenade
             return surface.Kind == CitySurfaceKind.BuildableGround ||
                    surface.Kind == CitySurfaceKind.ParkGround ||
                    surface.Kind == CitySurfaceKind.OpenGround ||
+                   surface.Kind == CitySurfaceKind.ChurchGround ||
                    surface.Kind == CitySurfaceKind.Beach;
         }
 
@@ -33,6 +34,11 @@ namespace BarPromenade
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
+            }
+
+            if (surface.Kind == CitySurfaceKind.ChurchGround)
+            {
+                return CityChurchGroundPlan.SampleDatum(layout, surface, worldXZ);
             }
 
             float baseDatum = SampleDatum(

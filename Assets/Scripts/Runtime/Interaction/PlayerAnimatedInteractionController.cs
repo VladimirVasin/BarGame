@@ -230,6 +230,7 @@ namespace BarPromenade
         private IPlayerClipPresentation clipPresentation;
         private PlayerAnimatedInteractionTimeline timeline;
         private PlayerAnimatedInteractionTimeline nestedLoopAction;
+        private string selectedExitClipName;
         private int nestedLoopActionSettleFrame = -1;
         private Vector3 standHip;
         private Vector3 actionHip;
@@ -708,6 +709,26 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Selects an alternative authored exit with the same timing and
+        /// endpoint contract, after the current loop reaches its exact seam.
+        /// Selection is prepared before queuing; failure keeps the loop intact.
+        /// </summary>
+        public bool RequestExitAtLoopBoundaryWithClip(string exitClipName)
+        {
+            if (IsNestedLoopActionActive || timeline == null ||
+                string.IsNullOrEmpty(exitClipName) ||
+                clipPresentation == null ||
+                !clipPresentation.HasClip(exitClipName) ||
+                !timeline.RequestExitAtLoopBoundary())
+            {
+                return false;
+            }
+
+            selectedExitClipName = exitClipName;
+            return true;
+        }
+
+        /// <summary>
         /// Starts the terminal phase from a supplied current pelvis position
         /// and finishes at a new independent authored exit pose. This is the
         /// moving-platform counterpart to the static RequestExit overloads.
@@ -1111,6 +1132,12 @@ namespace BarPromenade
             string clipName = GetCurrentClipName(
                 presentationTimeline.Definition,
                 presentationTimeline.Phase);
+            if (presentationTimeline == timeline &&
+                presentationTimeline.Phase == PlayerAnimatedInteractionPhase.Exiting &&
+                !string.IsNullOrEmpty(selectedExitClipName))
+            {
+                clipName = selectedExitClipName;
+            }
             if (string.IsNullOrEmpty(clipName))
             {
                 throw new InvalidOperationException(
@@ -1186,6 +1213,7 @@ namespace BarPromenade
             nestedLoopAction = null;
             nestedLoopActionSettleFrame = -1;
             timeline?.Reset();
+            selectedExitClipName = null;
 
             if (shouldPlaceAtExit)
             {

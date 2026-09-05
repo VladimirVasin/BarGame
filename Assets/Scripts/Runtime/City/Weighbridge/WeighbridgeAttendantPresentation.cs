@@ -14,8 +14,8 @@ namespace BarPromenade
     /// normalized time, so pose and travel can never drift apart: he
     /// walks to the deck centre, stands still through the authored
     /// weighing pause, walks on and turns for the return trip. The
-    /// staged prefab ships the weigher's chalk; this enables it only
-    /// for her role. The presentation stays passive — the needle
+    /// body ships empty-handed; this attaches the chalk hand prop for
+    /// the weigher's role only. The presentation stays passive — the needle
     /// controller polls <see cref="IsWeighingNow"/>, nothing here
     /// pushes into a registry.
     /// </summary>
@@ -35,10 +35,7 @@ namespace BarPromenade
 
         private const float TurnDegreesPerSecond = 220f;
 
-        private static readonly string[] ChalkRendererNames =
-        {
-            "ACC_Chalk"
-        };
+        private CityPedestrianHandPropRegistry heldProp;
 
         private PlayableGraph graph;
         private AnimationClipPlayable playable;
@@ -54,6 +51,11 @@ namespace BarPromenade
         public WeighbridgeAttendantRole Role { get; private set; }
         public AnimationClip ActiveClip { get; private set; }
         public bool Strolls => strolls;
+
+        /// <summary>The chalk, attached for the weigher only; null for
+        /// the weighed worker, before <see cref="Initialize"/> and after
+        /// release.</summary>
+        public CityPedestrianHandPropRegistry HeldProp => heldProp;
 
         /// <summary>True while the worker stands square at the deck
         /// centre being weighed — the moment the needle answers.</summary>
@@ -105,7 +107,7 @@ namespace BarPromenade
             ActiveClip = clip;
             playbackSpeed = Mathf.Max(0.05f, stance.PlaybackSpeed);
             registry.ApplyPaletteVariant(stance.PaletteVariant);
-            ApplyPropVisibility(registry, stance.Role);
+            AttachHeldProp(registry, stance.Role);
 
             strolls = stance.Strolls;
             if (strolls)
@@ -195,6 +197,10 @@ namespace BarPromenade
             }
 
             hasGraph = false;
+
+            // The chalk is a child of her hand socket and dies with the
+            // body anyway; detaching keeps the reference honest.
+            CityPedestrianHandProps.Detach(ref heldProp);
         }
 
         /// <summary>Places the worker on the corridor from his loop's
@@ -227,41 +233,25 @@ namespace BarPromenade
                 Mathf.Min(Time.deltaTime, MaximumStepSeconds));
         }
 
-        /// <summary>Shows exactly the prop this role holds: only the
-        /// weigher carries the chalk, the worker's hands stay free.</summary>
-        private static void ApplyPropVisibility(
+        /// <summary>
+        /// Attaches exactly the prop this role holds: only the weigher
+        /// carries the chalk, the worker's hands stay free. Done after the
+        /// palette is applied so the chalk copies the variant the body
+        /// wears; a second Initialize replaces rather than stacks.
+        /// </summary>
+        private void AttachHeldProp(
             CityPedestrianAssetRegistry registry,
             WeighbridgeAttendantRole role)
         {
-            if (role == WeighbridgeAttendantRole.Weigher)
+            CityPedestrianHandProps.Detach(ref heldProp);
+            if (role != WeighbridgeAttendantRole.Weigher)
             {
                 return;
             }
 
-            for (int index = 0;
-                 index < registry.Renderers.Count;
-                 index++)
-            {
-                Renderer renderer = registry.Renderers[index];
-                if (renderer == null)
-                {
-                    continue;
-                }
-
-                for (int name = 0;
-                     name < ChalkRendererNames.Length;
-                     name++)
-                {
-                    if (string.Equals(
-                            renderer.name,
-                            ChalkRendererNames[name],
-                            StringComparison.Ordinal))
-                    {
-                        renderer.enabled = false;
-                        break;
-                    }
-                }
-            }
+            heldProp = CityPedestrianHandProps.Attach(
+                registry,
+                CityPedestrianHandPropId.Chalk);
         }
     }
 }

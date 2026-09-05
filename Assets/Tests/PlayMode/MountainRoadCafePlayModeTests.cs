@@ -40,8 +40,19 @@ namespace BarPromenade.Tests.PlayMode
         private const float MinimumTapLiftClearance = 0.015f;
         private const float MaximumTapHorizontalGap = 0.020f;
         private const float MinimumTapDishClearance = 0.040f;
+        /// <summary>
+        /// The drag's cigarette axis against the lips-to-mouth-socket
+        /// direction. The generator validates this same dot product over
+        /// the whole drag window and records its minimum in
+        /// `MountainRoadCafeCast.json` (`cigarette_drag_socket_lip_alignment_min`,
+        /// 0.889 — the authored hold sits ~27 degrees off that axis, the
+        /// way a cigarette held at the lips reads level rather than
+        /// pointing down the throat). 0.86 leaves room for a sample at
+        /// the window's edge; the old 0.94 (20 degrees) contradicted the
+        /// authored clip and could never hold.
+        /// </summary>
         private const float MaximumCigaretteLipDistance = 0.025f,
-            MinimumCigaretteAxisAlignment = 0.940f;
+            MinimumCigaretteAxisAlignment = 0.860f;
         private const float MinimumCigaretteApproach = 0.120f;
         private const int CaptureWidth = 1280;
         private const int CaptureHeight = 720;
@@ -302,18 +313,27 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThanOrEqualTo(pourReach + 0.10f),
                 "The visible coffee mesh is longer than the measured " +
                 "spout-to-cup reach.");
-            Renderer[] visiblePot = attendant.Registry.RendererBindings
-                .Where(binding => binding?.Renderer != null &&
-                    binding.Renderer.name.StartsWith(
-                        "ACC_CoffeePot",
-                        StringComparison.Ordinal))
-                .Select(binding => binding.Renderer)
-                .ToArray();
-            Assert.That(visiblePot, Is.Not.Empty);
+            // The pot is a hand prop attached to the attendant's right
+            // grip (2026-09-05), so its renderers come from the attached
+            // registry, not from the body's bindings.
+            CityPedestrianHandPropRegistry pot = attendant.CoffeePot;
+            Assert.That(pot, Is.Not.Null, "The attendant holds no coffee pot.");
             Assert.That(
-                visiblePot.All(renderer => renderer.enabled),
+                pot.transform.parent?.name,
+                Is.EqualTo(CityPedestrianHandProps.GripRightSocketName));
+            Assert.That(pot.Renderers, Is.Not.Empty);
+            Assert.That(
+                pot.IsVisible,
                 Is.True,
                 "The attendant cannot pour with a hidden coffee pot.");
+            Assert.That(
+                attendant.Registry.CoffeePot,
+                Is.SameAs(pot),
+                "The registry must route SetCoffeePotVisible to this pot.");
+            Assert.That(
+                potSpout.IsChildOf(pot.transform),
+                Is.True,
+                "The pour spout must be the pot prop's own anchor.");
 
             Player3DAssetRegistry playerRegistry =
                 ((Player3DCharacterPresentation)root.Player.Visual).Registry;
@@ -513,19 +533,32 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(
-                riskyBindings.Count(renderer => renderer.name.StartsWith(
-                    "ACC_CoffeePot",
-                    StringComparison.Ordinal)),
-                Is.GreaterThan(0),
-                "The shipped attendant has no coffee-pot sweep targets.");
-            Assert.That(
                 riskyBindings.All(renderer =>
                     renderer is SkinnedMeshRenderer),
                 Is.True,
                 "Every deforming carry part must be measured from its baked " +
                 "skin, not a coarse renderer bound.");
-            SkinnedMeshRenderer[] riskyRenderers = riskyBindings
-                .Cast<SkinnedMeshRenderer>()
+
+            // The coffee pot is a hand prop on the attendant's right grip
+            // (2026-09-05): rigid MeshRenderers that ride the socket. They
+            // are swept through the same counter test as the hand — a pot
+            // that clips the counter is exactly as wrong as a sleeve.
+            CityPedestrianHandPropRegistry heldPot = attendant.CoffeePot;
+            Assert.That(
+                heldPot,
+                Is.Not.Null,
+                "The shipped attendant holds no coffee pot to sweep.");
+            var potRenderers = new HashSet<Renderer>(
+                heldPot.Renderers.Where(renderer => renderer != null));
+            Assert.That(potRenderers, Is.Not.Empty);
+            Assert.That(
+                potRenderers.All(renderer =>
+                    renderer is MeshRenderer &&
+                    renderer.GetComponent<MeshFilter>()?.sharedMesh != null),
+                Is.True,
+                "Every pot part is a rigid mesh baked through its transform.");
+            Renderer[] riskyRenderers = riskyBindings
+                .Concat(potRenderers)
                 .ToArray();
 
             MountainRoadCafePartBinding counterTop = root.World.Cafe.Model
@@ -570,7 +603,7 @@ namespace BarPromenade.Tests.PlayMode
                         Is.EqualTo(MountainRoadCafeServicePhase.WalkToCup));
 
                     var previous = new Dictionary<
-                        SkinnedMeshRenderer,
+                        Renderer,
                         Vector3[]>();
                     var samplesByPhase = new Dictionary<
                         MountainRoadCafeServicePhase,
@@ -596,11 +629,9 @@ namespace BarPromenade.Tests.PlayMode
                         samples++;
                         samplesByPhase.TryGetValue(frame.Phase, out int count);
                         samplesByPhase[frame.Phase] = count + 1;
-                        foreach (SkinnedMeshRenderer renderer in riskyRenderers)
+                        foreach (Renderer renderer in riskyRenderers)
                         {
-                            if (renderer.name.StartsWith(
-                                    "ACC_CoffeePot",
-                                    StringComparison.Ordinal))
+                            if (potRenderers.Contains(renderer))
                             {
                                 Assert.That(renderer.enabled, Is.True,
                                     $"{renderer.name} is hidden during " +
@@ -638,9 +669,8 @@ namespace BarPromenade.Tests.PlayMode
                     // that visible carry-to-idle return as part of the sweep.
                     yield return null;
                     MountainRoadCafeServiceFrame wipeFrame = cast.ServiceFrame;
-                    foreach (SkinnedMeshRenderer renderer in riskyRenderers.Where(
-                                 renderer => !renderer.name.StartsWith(
-                                     "ACC_CoffeePot", StringComparison.Ordinal)))
+                    foreach (Renderer renderer in riskyRenderers.Where(
+                                 renderer => !potRenderers.Contains(renderer)))
                     {
                         Mesh baked = scratch[renderer];
                         Vector3[] current = BakeWorldVertices(renderer, baked);
@@ -848,11 +878,32 @@ namespace BarPromenade.Tests.PlayMode
 
             Transform mouth = root.World.Cafe.Cast.GetMouthSocket(MountainRoadCafeCastRole.PairWoman);
             Assert.That(mouth, Is.Not.Null);
-            SkinnedMeshRenderer cigarette = FindSkinnedRenderer(woman.Registry, "ACC_CafeCigarette");
+            // The cigarette is a hand prop on SOCKET_Cigarette.R (2026-09-05):
+            // a rigid mesh that follows the socket the sampled clip poses.
+            Assert.That(woman.HeldCigarette, Is.Not.Null, "The woman holds no cigarette prop.");
+            Renderer cigarette = woman.HeldCigarette.FindRenderer(MountainRoadCafeCigaretteEffect.CigaretteRendererName);
+            Assert.That(cigarette, Is.Not.Null);
+            Assert.That(effect.CigaretteRenderer, Is.SameAs(cigarette));
             SkinnedMeshRenderer lips = FindSkinnedRenderer(woman.Registry, "ACC_LipRed");
             var cigaretteScratch = new Mesh();
+            // The lips end is the FILTER's far ring, not the paper tube's:
+            // the tube starts where the 34 mm filter ends, so its ring
+            // farthest from the ember is the tube/filter junction, a
+            // filter's length short of the lips by construction (the
+            // authored drag puts the filter tip 10-11 mm from the lip
+            // centre, the junction 44 mm). Measured on the prop through
+            // its socket, which lands exactly where the skinned tube did
+            // (probed 2026-09-05: 0.0000 m from the hand.R prediction).
+            Renderer cigaretteFilterPart = woman.HeldCigarette.FindRenderer("ACC_CafeCigaretteFilter");
+            Assert.That(cigaretteFilterPart, Is.Not.Null, "The cigarette prop lost its filter part.");
+            var cigaretteFilterMesh = cigaretteFilterPart.GetComponent<MeshFilter>();
+            Assert.That(
+                cigaretteFilterMesh != null && cigaretteFilterMesh.sharedMesh != null &&
+                cigaretteFilterMesh.sharedMesh.isReadable,
+                Is.True,
+                "The cigarette prop mesh must import readable for the lip measurement.");
             Vector3 FilterCenter(Vector3 ember) =>
-                BakeWorldVertices(cigarette, cigaretteScratch).OrderByDescending(vertex =>
+                BakeWorldVertices(cigaretteFilterPart, cigaretteScratch).OrderByDescending(vertex =>
                     (vertex - ember).sqrMagnitude).Take(6).Aggregate(Vector3.zero, (sum, vertex) => sum + vertex) / 6f;
             try
             {
@@ -1062,9 +1113,6 @@ namespace BarPromenade.Tests.PlayMode
                    string.Equals(
                        rendererName,
                        "CLO_RolledCuff.R",
-                       StringComparison.Ordinal) ||
-                   rendererName.StartsWith(
-                       "ACC_CoffeePot",
                        StringComparison.Ordinal);
         }
 
@@ -1120,8 +1168,81 @@ namespace BarPromenade.Tests.PlayMode
             return world;
         }
 
+        /// <summary>
+        /// A skinned part is baked; a rigid hand-prop part (the pot, the
+        /// towel, the cigarette — MeshRenderers riding a socket since
+        /// 2026-09-05) is its shared mesh through its own transform. Both
+        /// yield world vertices, so the sweeps treat them alike.
+        /// </summary>
+        private static Vector3[] BakeWorldVertices(
+            Renderer renderer,
+            Mesh scratch)
+        {
+            if (renderer is SkinnedMeshRenderer skinned)
+            {
+                return BakeWorldVertices(skinned, scratch);
+            }
+
+            var filter = renderer.GetComponent<MeshFilter>();
+            Mesh mesh = filter != null ? filter.sharedMesh : null;
+            Assert.That(mesh, Is.Not.Null, $"{renderer.name} has no mesh.");
+            Vector3[] local;
+            int[] topology;
+            if (mesh.isReadable)
+            {
+                local = mesh.vertices;
+                topology = mesh.triangles;
+            }
+            else
+            {
+                // The prop FBX imports non-readable, so the part is
+                // swept as its mesh-local box: the eight corners through
+                // the part's own transform (an oriented box, tight for a
+                // rigid pot part) and the box's twelve face triangles so
+                // the edge test still runs. Conservative, never lenient.
+                Bounds box = mesh.bounds;
+                local = new Vector3[8];
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    local[corner] = new Vector3(
+                        (corner & 1) == 0 ? box.min.x : box.max.x,
+                        (corner & 2) == 0 ? box.min.y : box.max.y,
+                        (corner & 4) == 0 ? box.min.z : box.max.z);
+                }
+
+                topology = BoxFaceTriangles;
+            }
+
+            // Mirror the part into the scratch so callers reading
+            // `scratch.triangles` after a bake see this part's topology.
+            scratch.Clear();
+            scratch.vertices = local;
+            scratch.triangles = topology;
+            var world = new Vector3[local.Length];
+            Matrix4x4 localToWorld = renderer.localToWorldMatrix;
+            for (int index = 0; index < local.Length; index++)
+            {
+                world[index] = localToWorld.MultiplyPoint3x4(local[index]);
+            }
+
+            return world;
+        }
+
+        /// <summary>The twelve triangles of a box whose corners are
+        /// indexed by bit (x = 1, y = 2, z = 4), for the non-readable
+        /// hand-prop sweep above.</summary>
+        private static readonly int[] BoxFaceTriangles =
+        {
+            0, 2, 3, 0, 3, 1, // -z face
+            4, 5, 7, 4, 7, 6, // +z face
+            0, 1, 5, 0, 5, 4, // -y face
+            2, 6, 7, 2, 7, 3, // +y face
+            0, 4, 6, 0, 6, 2, // -x face
+            1, 3, 7, 1, 7, 5  // +x face
+        };
+
         private static void AssertMeshOutsideCounter(
-            SkinnedMeshRenderer renderer,
+            Renderer renderer,
             IReadOnlyList<Vector3> vertices,
             IReadOnlyList<int> triangles,
             Bounds counterInterior,
@@ -1165,7 +1286,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static void AssertSweptVerticesOutsideCounter(
-            SkinnedMeshRenderer renderer,
+            Renderer renderer,
             IReadOnlyList<Vector3> previous,
             IReadOnlyList<Vector3> current,
             Bounds counterInterior,
@@ -1381,14 +1502,19 @@ namespace BarPromenade.Tests.PlayMode
                     StringComparison.Ordinal));
             Assert.That(counterTop.Renderer, Is.Not.Null);
 
-            SkinnedMeshRenderer towel = attendant.Registry.RendererBindings
-                .Where(binding => binding?.Renderer != null)
-                .Select(binding => binding.Renderer)
-                .OfType<SkinnedMeshRenderer>()
-                .Single(renderer => string.Equals(
-                    renderer.name,
-                    "ACC_ServiceTowel",
-                    StringComparison.Ordinal));
+            // The towel is a hand prop on the attendant's left grip
+            // (2026-09-05): a rigid mesh riding the socket the wipe clip
+            // poses, measured through its own transform.
+            CityPedestrianHandPropRegistry heldTowel = attendant.ServiceTowel;
+            Assert.That(
+                heldTowel,
+                Is.Not.Null,
+                "The attendant holds no service towel.");
+            Assert.That(
+                heldTowel.transform.parent?.name,
+                Is.EqualTo(CityPedestrianHandProps.GripLeftSocketName));
+            Renderer towel = heldTowel.FindRenderer("ACC_ServiceTowel");
+            Assert.That(towel, Is.Not.Null);
             Assert.That(towel.enabled, Is.True);
             MeasureSkinnedMesh(
                 towel,
@@ -1424,7 +1550,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         private static void MeasureSkinnedMesh(
-            SkinnedMeshRenderer renderer,
+            Renderer renderer,
             out float lowestWorldY,
             out Vector3 worldCenter)
         {

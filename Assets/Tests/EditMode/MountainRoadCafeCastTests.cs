@@ -1081,11 +1081,65 @@ namespace BarPromenade.Tests.EditMode
                     Is.SameAs(registry.GetClip(
                         MountainRoadCafeCastClipKind.Interject)));
             }
+            // Since 2026-09-05 the pot, the towel and the woman's
+            // cigarette are hand-prop prefabs: the spout anchor lives on
+            // the coffee-pot prop, so NO cafe body may carry it, and no
+            // body may carry a renderer named like a prop part (exact
+            // names — the bartender's own towel is a different model).
             Assert.That(
                 registry.FindModelTransform(
-                    "SOCKET_CafePotSpout") != null,
-                Is.EqualTo(
-                    expectedRole == MountainRoadCafeCastRole.Attendant));
+                    CityPedestrianHandProps.CoffeePotSpoutAnchorName),
+                Is.Null,
+                $"{expectedRole} still carries the body-side spout anchor.");
+            var bodyRendererNames = new HashSet<string>(
+                prefab.GetComponentsInChildren<Renderer>(true)
+                    .Select(renderer => renderer.name),
+                StringComparer.Ordinal);
+            foreach (string propPart in new[]
+                     {
+                         "ACC_CoffeePotBody",
+                         "ACC_CoffeePotLid",
+                         "ACC_CoffeePotBaseRing",
+                         "ACC_CoffeePotLidKnob",
+                         "ACC_CoffeePotSpout",
+                         "ACC_CoffeePotSpoutLip",
+                         "ACC_CoffeePotHandleTop",
+                         "ACC_CoffeePotHandleBottom",
+                         "ACC_CoffeePotHandleGrip",
+                         "ACC_ServiceTowel",
+                         "ACC_CafeCigaretteFilter",
+                         "ACC_CafeCigarette",
+                         "ACC_CafeCigaretteEmber"
+                     })
+            {
+                Assert.That(
+                    bodyRendererNames.Contains(propPart),
+                    Is.False,
+                    $"{expectedRole} still carries '{propPart}' on its body.");
+            }
+
+            if (expectedRole == MountainRoadCafeCastRole.Attendant)
+            {
+                Assert.That(
+                    registry.FindModelTransform(
+                        CityPedestrianHandProps.GripRightSocketName),
+                    Is.Not.Null,
+                    "The attendant's coffee pot rides SOCKET_Grip.R.");
+                Assert.That(
+                    registry.FindModelTransform(
+                        CityPedestrianHandProps.GripLeftSocketName),
+                    Is.Not.Null,
+                    "The attendant's towel rides SOCKET_Grip.L.");
+            }
+
+            if (expectedRole == MountainRoadCafeCastRole.PairWoman)
+            {
+                Assert.That(
+                    registry.FindModelTransform(
+                        CityPedestrianHandProps.CigaretteRightSocketName),
+                    Is.Not.Null,
+                    "The woman's cigarette rides SOCKET_Cigarette.R.");
+            }
 
             if (expectedRole == MountainRoadCafeCastRole.PairMan ||
                 expectedRole == MountainRoadCafeCastRole.PairWoman)
@@ -1283,6 +1337,137 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(actual.x, Is.EqualTo(expected.x).Within(tolerance));
             Assert.That(actual.y, Is.EqualTo(expected.y).Within(tolerance));
             Assert.That(actual.z, Is.EqualTo(expected.z).Within(tolerance));
+        }
+
+        [Test]
+        [Category("MountainRoad")]
+        public void Attendant_TurnsHisHeadAfterTheHeroAtTheCounterButNotDuringABeat()
+        {
+            // The attendant looks up from his counter under the hero's own
+            // notice rule: right for a hero on his right, left for one on
+            // his left, never behind him, and never while an authored
+            // service beat owns his body.
+            var root = new GameObject("Cafe Attendant Attention Root");
+            var player = new GameObject("Cafe Attendant Test Player");
+            player.transform.SetParent(root.transform, false);
+            try
+            {
+                MountainRoadCafePlan cafePlan = CreateCafePlan();
+                MountainRoadCafeWorldResult cafe =
+                    MountainRoadCafeWorldBuilder.Build(
+                        root.transform,
+                        cafePlan);
+                Transform attendantRoot = cafe.Cast.GetPresentationRoot(
+                    MountainRoadCafeCastRole.Attendant);
+                Assert.That(
+                    attendantRoot.GetComponent<NpcHeroAttentionLook>(),
+                    Is.Null,
+                    "Nobody looks at a hero who has not been bound.");
+
+                Assert.That(
+                    cafe.Cast.BindHeroAttention(player.transform),
+                    Is.True);
+                Assert.That(
+                    cafe.Cast.BindHeroAttention(player.transform),
+                    Is.False,
+                    "One glance per attendant.");
+                NpcHeroAttentionLook look =
+                    attendantRoot.GetComponent<NpcHeroAttentionLook>();
+                Assert.That(look, Is.Not.Null);
+                MountainRoadCafeCastPresentation attendant = attendantRoot
+                    .GetComponent<MountainRoadCafeCastPresentation>();
+                MountainRoadCafeCastAssetRegistry registry =
+                    attendant.Registry;
+                Vector3 forward = attendantRoot.forward;
+                Vector3 right = attendantRoot.right;
+
+                player.transform.position = attendantRoot.position -
+                                            (forward * 2f);
+                Step(look, 40);
+                Assert.That(look.IsAttending, Is.False);
+                Assert.That(look.AttentionWeight, Is.EqualTo(0f));
+
+                player.transform.position = attendantRoot.position +
+                                            (forward * 1.5f) +
+                                            (right * 2f);
+                Step(look, 40);
+                Assert.That(look.IsAttending, Is.True);
+                Assert.That(
+                    look.AttentionWeight,
+                    Is.EqualTo(1f).Within(0.0001f));
+                float rightYaw = FaceYaw(registry, forward);
+                Assert.That(
+                    rightYaw,
+                    Is.GreaterThan(15f),
+                    "A hero on his right turns the face right.");
+
+                player.transform.position = attendantRoot.position +
+                                            (forward * 1.5f) -
+                                            (right * 2f);
+                Step(look, 60);
+                float leftYaw = FaceYaw(registry, forward);
+                Assert.That(
+                    leftYaw,
+                    Is.LessThan(-15f),
+                    "A hero on his left turns the face left.");
+
+                Assert.That(
+                    attendant.ApplyClip(MountainRoadCafeCastClipKind.Walk, 0f),
+                    Is.True);
+                Assert.That(attendant.IsBeatPlaying, Is.True);
+                Step(look, 40);
+                Assert.That(
+                    look.IsAttending,
+                    Is.False,
+                    "A service beat owns the body; the glance stands down.");
+                Assert.That(look.AttentionWeight, Is.EqualTo(0f));
+                Assert.That(
+                    Mathf.Abs(FaceYaw(registry, forward)),
+                    Is.LessThan(4f),
+                    "...and the face is back on the authored pose.");
+
+                Assert.That(
+                    attendant.ApplyClip(registry.DefaultClipKind, 0f),
+                    Is.True);
+                Step(look, 40);
+                Assert.That(
+                    look.IsAttending,
+                    Is.True,
+                    "Back at the counter he notices the hero again.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void Step(NpcHeroAttentionLook look, int frames)
+        {
+            for (int frame = 0; frame < frames; frame++)
+            {
+                look.Advance(0.02f);
+            }
+        }
+
+        /// <summary>
+        /// Where the face points off the body facing, in the plane: head
+        /// bone to the midpoint of the eye bones, which ride the head.
+        /// </summary>
+        private static float FaceYaw(
+            MountainRoadCafeCastAssetRegistry registry,
+            Vector3 facing)
+        {
+            Transform head = registry.FindModelTransform("head");
+            Transform leftEye = registry.FindModelTransform("face.eye.L");
+            Transform rightEye = registry.FindModelTransform("face.eye.R");
+            Assert.That(head, Is.Not.Null);
+            Assert.That(leftEye, Is.Not.Null);
+            Assert.That(rightEye, Is.Not.Null);
+            Vector3 eyes = (leftEye.position + rightEye.position) * 0.5f;
+            Vector3 face = eyes - head.position;
+            face.y = 0f;
+            facing.y = 0f;
+            return Vector3.SignedAngle(facing, face, Vector3.up);
         }
 
         private static MountainRoadCafePlan CreateCafePlan()

@@ -443,7 +443,8 @@ namespace BarPromenade
             Patrons = BarPatronWorldBuilder.Build(transform, Layout);
             Bartender = BarBartenderWorldBuilder.TryBuild(
                 transform,
-                Layout);
+                Layout,
+                Player.GameObject.transform);
             if (Bartender != null && DrinkShop != null)
             {
                 if (DrinkShop.HasPhysicalMenuPresentation)

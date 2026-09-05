@@ -48,11 +48,6 @@ MonoBehaviour:
   animator: {fileID: 6096277505265186501}
   modelRoot: {fileID: 5126684755773518428}
   renderers:
-  - {fileID: 3102819517745245686}
-  - {fileID: 7563154216299787061}
-  - {fileID: 1202222437341051241}
-  - {fileID: 3319041131672045430}
-  - {fileID: 1497664480634037910}
   - {fileID: 2102660257897078285}
   - {fileID: 2140815776864713655}
   - {fileID: 686208934686372543}
@@ -89,51 +84,6 @@ MonoBehaviour:
   - {fileID: 1588769927661688526}
   - {fileID: 3618820949534189777}
   rendererBindings:
-  - rendererName: ACC_BouquetBloomA
-    role: signature_silhouette
-    paletteName: bouquet_bloom
-    renderer: {fileID: 3102819517745245686}
-    baseColor: {r: 0.29, g: 0.06, b: 0.075, a: 1}
-    variantOneColor: {r: 0.24359998, g: 0.0552, b: 0.077250004, a: 1}
-    variantTwoColor: {r: 0.30449998, g: 0.0528, b: 0.0585, a: 1}
-    variantThreeColor: {r: 0.2726, g: 0.06, b: 0.064500004, a: 1}
-    usesDetailAtlas: 0
-  - rendererName: ACC_BouquetBloomB
-    role: signature_silhouette
-    paletteName: bouquet_bloom
-    renderer: {fileID: 7563154216299787061}
-    baseColor: {r: 0.29, g: 0.06, b: 0.075, a: 1}
-    variantOneColor: {r: 0.24359998, g: 0.0552, b: 0.077250004, a: 1}
-    variantTwoColor: {r: 0.30449998, g: 0.0528, b: 0.0585, a: 1}
-    variantThreeColor: {r: 0.2726, g: 0.06, b: 0.064500004, a: 1}
-    usesDetailAtlas: 0
-  - rendererName: ACC_BouquetGreens
-    role: surface_detail
-    paletteName: bouquet_stem
-    renderer: {fileID: 1202222437341051241}
-    baseColor: {r: 0.055, g: 0.11, b: 0.06, a: 1}
-    variantOneColor: {r: 0.0462, g: 0.1012, b: 0.061799996, a: 1}
-    variantTwoColor: {r: 0.057749998, g: 0.0968, b: 0.0468, a: 1}
-    variantThreeColor: {r: 0.0517, g: 0.11, b: 0.051599998, a: 1}
-    usesDetailAtlas: 0
-  - rendererName: ACC_BouquetStems
-    role: surface_detail
-    paletteName: bouquet_stem
-    renderer: {fileID: 3319041131672045430}
-    baseColor: {r: 0.055, g: 0.11, b: 0.06, a: 1}
-    variantOneColor: {r: 0.0462, g: 0.1012, b: 0.061799996, a: 1}
-    variantTwoColor: {r: 0.057749998, g: 0.0968, b: 0.0468, a: 1}
-    variantThreeColor: {r: 0.0517, g: 0.11, b: 0.051599998, a: 1}
-    usesDetailAtlas: 0
-  - rendererName: ACC_BouquetWrap
-    role: signature_silhouette
-    paletteName: bouquet_wrap
-    renderer: {fileID: 1497664480634037910}
-    baseColor: {r: 0.33, g: 0.3, b: 0.24, a: 1}
-    variantOneColor: {r: 0.2772, g: 0.27600002, b: 0.24719998, a: 1}
-    variantTwoColor: {r: 0.3465, g: 0.264, b: 0.1872, a: 1}
-    variantThreeColor: {r: 0.3102, g: 0.3, b: 0.20639999, a: 1}
-    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.01
     role: surface_detail
     paletteName: button
@@ -459,13 +409,15 @@ MonoBehaviour:
   ambientWalkClip: {fileID: -1943993256183851123, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   sitClip: {fileID: 0}
   actionClip: {fileID: 0}
+  personalSpaceGuardClip: {fileID: 2670805136320832604, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
+  personalSpaceShoveClip: {fileID: -6223973721212317202, guid: 1409e5d6bde7d42489da0f5a0a10c6bc, type: 3}
   localBounds:
-    m_Center: {x: 0.0120869875, y: 0.8749999, z: -0.007390052}
-    m_Extent: {x: 0.79155433, y: 0.8749999, z: 0.23127547}
-  sourceTriangleCount: 1904
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: -0.007390052}
+    m_Extent: {x: 0.7784672, y: 0.8749999, z: 0.23127547}
+  sourceTriangleCount: 1712
   sourceGeneratorVersion: 4.5.2
   designId: cemetery_mourner_v1
-  buildSignature: 1ef19c611ac88d30a0a573e4eeeae0b1726c92a62581c4d71fbb4cf799b3bb6d
+  buildSignature: 69479a463b057cc2b23b3cec219b40ad4fc3cbbdca026dfc9af81269205b0bb1
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -636,14 +588,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
-    - target: {fileID: -1251851502099754303, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: m_UpdateWhenOffscreen
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: -1251851502099754303, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -966092931409822362, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
       propertyPath: m_UpdateWhenOffscreen
       value: 1
@@ -736,14 +680,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
-    - target: {fileID: 2907818282066962050, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: m_UpdateWhenOffscreen
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2907818282066962050, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 2917338623341552390, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
       propertyPath: m_UpdateWhenOffscreen
       value: 1
@@ -768,14 +704,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
-    - target: {fileID: 5764672453934623966, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: m_UpdateWhenOffscreen
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5764672453934623966, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 5985216152584102931, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
       propertyPath: m_UpdateWhenOffscreen
       value: 1
@@ -792,27 +720,11 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
-    - target: {fileID: 6082067363562156833, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: m_UpdateWhenOffscreen
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6082067363562156833, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 6344302036161960283, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
       propertyPath: m_UpdateWhenOffscreen
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6344302036161960283, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
-    - target: {fileID: 7755321752836487233, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-      propertyPath: m_UpdateWhenOffscreen
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7755321752836487233, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
@@ -871,11 +783,6 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -3951070287074089208, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
   m_PrefabInstance: {fileID: 4660976995884537271}
   m_PrefabAsset: {fileID: 0}
---- !u!137 &1202222437341051241 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 5764672453934623966, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-  m_PrefabInstance: {fileID: 4660976995884537271}
-  m_PrefabAsset: {fileID: 0}
 --- !u!137 &1414376037655228836 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5985216152584102931, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
@@ -884,11 +791,6 @@ SkinnedMeshRenderer:
 --- !u!137 &1492738724733730943 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6059690141948990920, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-  m_PrefabInstance: {fileID: 4660976995884537271}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &1497664480634037910 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 6082067363562156833, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
   m_PrefabInstance: {fileID: 4660976995884537271}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &1588769927661688526 stripped
@@ -924,16 +826,6 @@ SkinnedMeshRenderer:
 --- !u!137 &2923895033388674511 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -1712248667737540488, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-  m_PrefabInstance: {fileID: 4660976995884537271}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &3102819517745245686 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 7755321752836487233, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-  m_PrefabInstance: {fileID: 4660976995884537271}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &3319041131672045430 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -1251851502099754303, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
   m_PrefabInstance: {fileID: 4660976995884537271}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &3618820949534189777 stripped
@@ -1066,11 +958,6 @@ SkinnedMeshRenderer:
 --- !u!137 &7553493044658173617 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2917338623341552390, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
-  m_PrefabInstance: {fileID: 4660976995884537271}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &7563154216299787061 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 2907818282066962050, guid: d6a0c118a3434f648807b159e9f1ea02, type: 3}
   m_PrefabInstance: {fileID: 4660976995884537271}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &7603027931282945086 stripped

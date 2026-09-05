@@ -1,0 +1,196 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4283510766667402293
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8574503436080325477}
+  - component: {fileID: 2559228721196867735}
+  - component: {fileID: 7610812381846498260}
+  m_Layer: 0
+  m_Name: ACC_ServiceTowel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8574503436080325477
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4283510766667402293}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071067}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 100, y: 99.99999, z: 99.99999}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6212947020692708171}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &2559228721196867735
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4283510766667402293}
+  m_Mesh: {fileID: -5104711619124743129, guid: 765dd5e293244cd1a58933790a8e6070, type: 3}
+--- !u!23 &7610812381846498260
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4283510766667402293}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &5660492982694719858
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 775715500232954004}
+  - component: {fileID: 645465195389124833}
+  m_Layer: 0
+  m_Name: ServiceTowel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &775715500232954004
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5660492982694719858}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6212947020692708171}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &645465195389124833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5660492982694719858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c669733d281469b84b5e91eed867fca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CityPedestrianHandPropRegistry
+  id: 7
+  manifestId: service_towel
+  socketName: SOCKET_Grip.L
+  referenceDesignId: cafe_attendant_v2
+  mount: {fileID: 6212947020692708171}
+  mountLocalPosition: {x: -0.000000017716404, y: 0.0000000016709851, z: -0.000000033218473}
+  mountLocalRotation: {x: 0.0000015666468, y: 0.7071068, z: -0.7071067, w: 0.0000015296562}
+  mountLocalScale: {x: 0.010000007, y: 0.010000006, z: 0.010000008}
+  referenceSocketRestPosition: {x: 0.7397586, y: 1.0389962, z: -0.02287972}
+  referenceSocketRestRotation: {x: 0.0000017650141, y: 0.70710695, z: -0.7071067, w: -0.0000014754834}
+  renderers:
+  - {fileID: 7610812381846498260}
+  rendererBindings:
+  - rendererName: ACC_ServiceTowel
+    role: held_prop
+    paletteName: cafe_towel
+    renderer: {fileID: 7610812381846498260}
+    baseColor: {r: 0.445, g: 0.465, b: 0.42, a: 1}
+    variantOneColor: {r: 0.37379998, g: 0.4278, b: 0.43259996, a: 1}
+    variantTwoColor: {r: 0.46724996, g: 0.4092, b: 0.32759997, a: 1}
+    variantThreeColor: {r: 0.4183, g: 0.465, b: 0.3612, a: 1}
+    usesDetailAtlas: 0
+  anchors: []
+  sourceTriangleCount: 12
+  sourceGeneratorVersion: 4.5.2
+  buildSignature: 0e2e5386feba22dd92906ae5360a689a62f58f9eaed159a5822ce393cbb58ec9
+  paletteVariant: 0
+--- !u!1 &8319006124243507188
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6212947020692708171}
+  m_Layer: 0
+  m_Name: Mount
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6212947020692708171
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8319006124243507188}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.0000015666468, y: 0.7071068, z: -0.7071067, w: 0.0000015296562}
+  m_LocalPosition: {x: -0.000000017716404, y: 0.0000000016709851, z: -0.000000033218473}
+  m_LocalScale: {x: 0.010000007, y: 0.010000006, z: 0.010000008}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8574503436080325477}
+  m_Father: {fileID: 775715500232954004}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

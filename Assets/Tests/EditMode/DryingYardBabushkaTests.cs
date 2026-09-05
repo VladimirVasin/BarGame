@@ -344,8 +344,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(registry.IdleClip.isLooping, Is.True);
             Assert.That(registry.WalkClip.isLooping, Is.True);
 
-            // The staged prefab ships both hand props; the runtime
-            // enables exactly one per role.
+            // Since 2026-09-05 the body ships empty-handed: the beater
+            // and the cigarette are hand-prop prefabs the yard attaches
+            // per role, so a roaming copy of her carries nothing. A
+            // renderer with a prop's name on the body would be the old
+            // skinned prop creeping back into the FBX.
             var rendererNames = new HashSet<string>();
             foreach (Renderer renderer in
                      prefab.GetComponentsInChildren<Renderer>(true))
@@ -353,17 +356,35 @@ namespace BarPromenade.Tests.EditMode
                 rendererNames.Add(renderer.name);
             }
 
+            foreach (string propPart in new[]
+                     {
+                         "ACC_BeaterHandle",
+                         "ACC_BeaterNeck",
+                         "ACC_BeaterPaddleRise",
+                         "ACC_BeaterPaddleTip",
+                         "ACC_Cigarette",
+                         "ACC_CigaretteEmber"
+                     })
+            {
+                Assert.That(
+                    rendererNames.Contains(propPart),
+                    Is.False,
+                    $"The babushka body still carries '{propPart}'; hand " +
+                    "props are separate prefabs now.");
+            }
+
             Assert.That(
-                rendererNames,
-                Is.SupersetOf(new[]
-                {
-                    "ACC_BeaterHandle",
-                    "ACC_BeaterNeck",
-                    "ACC_BeaterPaddleRise",
-                    "ACC_BeaterPaddleTip",
-                    "ACC_Cigarette",
-                    "ACC_CigaretteEmber"
-                }));
+                CityPedestrianHandProps.FindSocket(
+                    prefab.transform,
+                    CityPedestrianHandPropId.CarpetBeater),
+                Is.Not.Null,
+                "The beater rides SOCKET_Grip.R.");
+            Assert.That(
+                CityPedestrianHandProps.FindSocket(
+                    prefab.transform,
+                    CityPedestrianHandPropId.Cigarette),
+                Is.Not.Null,
+                "The cigarette rides SOCKET_Cigarette.R.");
 
             Assert.That(
                 prefab.GetComponentsInChildren<Collider>(true),
@@ -393,6 +414,108 @@ namespace BarPromenade.Tests.EditMode
                 CityPedestrianResources.Roams(
                     DryingYardBabushkaProvider.DesignId),
                 Is.True);
+        }
+
+        /// <summary>
+        /// The role decides the prop: a beater holds the carpet beater in
+        /// her right grip, the smoker holds the cigarette on the
+        /// cigarette socket, and neither holds the other's. Judged in
+        /// world space through the presentation's own accessor, because
+        /// the old name-table visibility could hide the wrong one
+        /// silently and this must not.
+        /// </summary>
+        [Test]
+        public void Presentation_AttachesTheBeaterOrTheCigarettePerRole()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                Seed);
+            DryingYardBabushkaPlan plan =
+                DryingYardBabushkaPlan.Create(layout);
+            Assert.That(plan.IsPresent, Is.True);
+            DryingYardBabushkaProvider provider =
+                DryingYardBabushkaProvider.Load();
+            Assert.That(provider, Is.Not.Null);
+            Assert.That(provider.StagedPrefab, Is.Not.Null);
+
+            var parent = new GameObject("Babushka Hand Prop Test");
+            try
+            {
+                bool sawBeater = false;
+                bool sawSmoker = false;
+                foreach (DryingYardBabushkaStance stance in plan.Stances)
+                {
+                    GameObject instance = Object.Instantiate(
+                        provider.StagedPrefab,
+                        parent.transform);
+                    var registry =
+                        instance.GetComponent<CityPedestrianAssetRegistry>();
+                    Assert.That(registry, Is.Not.Null);
+                    var presentation = instance
+                        .AddComponent<DryingYardBabushkaPresentation>();
+                    presentation.Initialize(registry, stance);
+
+                    CityPedestrianHandPropId expectedId =
+                        stance.Role == DryingYardBabushkaRole.CarpetBeater
+                            ? CityPedestrianHandPropId.CarpetBeater
+                            : CityPedestrianHandPropId.Cigarette;
+                    CityPedestrianHandPropRegistry held =
+                        presentation.HeldProp;
+                    Assert.That(held, Is.Not.Null, stance.Role.ToString());
+                    Assert.That(
+                        held.Id,
+                        Is.EqualTo(expectedId),
+                        stance.Role.ToString());
+                    Transform socket = CityPedestrianHandProps.FindSocket(
+                        registry.ModelRoot,
+                        expectedId);
+                    Assert.That(socket, Is.Not.Null, stance.Role.ToString());
+                    Assert.That(
+                        held.transform.parent,
+                        Is.SameAs(socket),
+                        $"The {stance.Role} prop must hang off " +
+                        $"'{CityPedestrianHandProps.GetSocketName(expectedId)}'.");
+                    Assert.That(
+                        Vector3.Distance(
+                            held.transform.position,
+                            socket.position),
+                        Is.LessThan(0.02f),
+                        $"The {stance.Role} prop root drifted off its socket.");
+                    Assert.That(
+                        held.PaletteVariant,
+                        Is.EqualTo(stance.PaletteVariant % 4),
+                        "The prop wears the stance's palette.");
+                    Assert.That(
+                        CityPedestrianHandProps.FindAttached(
+                            CityPedestrianHandProps.FindSocket(
+                                registry.ModelRoot,
+                                CityPedestrianHandPropId.CarpetBeater),
+                            CityPedestrianHandPropId.CarpetBeater) != null,
+                        Is.EqualTo(
+                            stance.Role == DryingYardBabushkaRole.CarpetBeater),
+                        "Only a beater holds the beater.");
+                    Assert.That(
+                        CityPedestrianHandProps.FindAttached(
+                            CityPedestrianHandProps.FindSocket(
+                                registry.ModelRoot,
+                                CityPedestrianHandPropId.Cigarette),
+                            CityPedestrianHandPropId.Cigarette) != null,
+                        Is.EqualTo(
+                            stance.Role != DryingYardBabushkaRole.CarpetBeater),
+                        "Only the smoker holds the cigarette.");
+                    sawBeater |=
+                        stance.Role == DryingYardBabushkaRole.CarpetBeater;
+                    sawSmoker |=
+                        stance.Role != DryingYardBabushkaRole.CarpetBeater;
+                }
+
+                Assert.That(sawBeater && sawSmoker, Is.True,
+                    "The plan must exercise both roles.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
         }
 
         private static CityDistrictPointOfInterestDescriptor

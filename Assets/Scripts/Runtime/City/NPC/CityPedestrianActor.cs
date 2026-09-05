@@ -111,6 +111,11 @@ namespace BarPromenade
         private Quaternion transferRotation = Quaternion.identity;
         private bool transferPassedWaypoint;
         private int benchNodeIndex = -1;
+        // Whether the hero currently holds this walker's head. The hero's
+        // own notice/release hysteresis decides it, seen from the walker:
+        // a hero on the edge of the cone is kept, not flickered.
+        private readonly NpcAttentionNotice attention =
+            new NpcAttentionNotice();
 
         public bool IsInitialized { get; private set; }
         public bool IsSpawned => presentation != null;
@@ -118,6 +123,12 @@ namespace BarPromenade
         public CityPedestrianMotionState MotionState { get; private set; } =
             CityPedestrianMotionState.Dormant;
         public CityPedestrianPresentation Presentation => presentation;
+
+        /// <summary>Whether the last <see cref="Advance"/> turned this
+        /// walker's head toward the attention candidate it was given.</summary>
+        public bool IsAttending => attention.IsHeld;
+        public bool IsPersonalSpaceReacting { get; private set; }
+        internal bool PersonalSpaceEncounterUsed { get; set; }
         public bool HasPresentation => presentation != null;
         public bool CollisionEnabled =>
             characterController != null && characterController.enabled;
@@ -321,6 +332,7 @@ namespace BarPromenade
         public CityPedestrianPresentation ReleasePresentation(
             Transform poolRoot)
         {
+            EndPersonalSpaceReaction();
             if (characterController != null)
             {
                 characterController.enabled = false;
@@ -328,8 +340,10 @@ namespace BarPromenade
 
             CityPedestrianPresentation released = presentation;
             presentation = null;
+            attention.Reset();
             if (released != null)
             {
+                released.ClearAttention();
                 released.ClearSeat();
                 released.SetMoving(false);
                 released.gameObject.SetActive(false);
@@ -343,11 +357,19 @@ namespace BarPromenade
             return released;
         }
 
+        /// <summary>
+        /// One frame of this walker. <paramref name="attentionCandidate"/>
+        /// is the one thing on the street the walker may glance at - the
+        /// hero's head, from the director - and the hero's own notice rule,
+        /// run from the walker's feet and facing, decides whether it takes
+        /// the head this frame.
+        /// </summary>
         public void Advance(
             float deltaTime,
             bool shouldYield = false,
             Vector3? initialApproachTarget = null,
-            IReadOnlyList<float> initialApproachNodeDistances = null)
+            IReadOnlyList<float> initialApproachNodeDistances = null,
+            Vector3? attentionCandidate = null)
         {
             if (!IsSpawned)
             {
@@ -358,6 +380,19 @@ namespace BarPromenade
             approachTarget = initialApproachTarget;
             approachNodeDistances = initialApproachNodeDistances;
             LastDisplacement = Vector3.zero;
+            if (IsPersonalSpaceReacting)
+            {
+                // An intentional stop must not trigger the jam/detour timer.
+                IsYielding = false;
+                blockedTime = 0f;
+                approachTarget = null;
+                approachNodeDistances = null;
+                presentation.SetAttentionFocus(attention.Resolve(
+                    transform.position, transform.eulerAngles.y, attentionCandidate));
+                presentation.Advance(safeDeltaTime, false);
+                return;
+            }
+
             bool roaming = MotionState == CityPedestrianMotionState.Walking ||
                 MotionState == CityPedestrianMotionState.ApproachingStop ||
                 MotionState == CityPedestrianMotionState.ApproachingBench;
@@ -409,6 +444,11 @@ namespace BarPromenade
 
             approachTarget = null;
             approachNodeDistances = null;
+            presentation.SetAttentionFocus(
+                attention.Resolve(
+                    transform.position,
+                    transform.eulerAngles.y,
+                    attentionCandidate));
             presentation.Advance(
                 safeDeltaTime,
                 (roaming || transferring) &&
@@ -417,10 +457,43 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Sends this walker to a Route 01 wait slot. Routing reuses the same
-        /// graph guidance the population director already runs toward the
-        /// hero, seeded at the stop instead.
+        /// Lend a grounded walking actor to one brief personal-space gesture.
         /// </summary>
+        internal bool TryBeginPersonalSpaceReaction()
+        {
+            if (!IsSpawned || !isActiveAndEnabled ||
+                MotionState != CityPedestrianMotionState.Walking ||
+                IsPersonalSpaceReacting || PersonalSpaceEncounterUsed)
+            {
+                return false;
+            }
+
+            IsPersonalSpaceReacting = true;
+            PersonalSpaceEncounterUsed = true;
+            blockedTime = 0f;
+            LastDisplacement = Vector3.zero;
+            presentation.SetMoving(false, true);
+            return true;
+        }
+
+        internal void EndPersonalSpaceReaction()
+        {
+            if (!IsPersonalSpaceReacting)
+            {
+                return;
+            }
+
+            IsPersonalSpaceReacting = false;
+            blockedTime = 0f;
+            if (IsSpawned && MotionState == CityPedestrianMotionState.Walking)
+            {
+                presentation.SetMoving(true, true);
+            }
+
+            presentation?.ClearAuthoredAction();
+        }
+
+        /// <summary>Route guidance toward a Route 01 wait slot.</summary>
         public bool BeginStopApproach(
             int waitNodeIndex,
             Vector3 slotPosition,
@@ -430,6 +503,7 @@ namespace BarPromenade
             if (!IsSpawned ||
                 MotionState != CityPedestrianMotionState.Walking ||
                 waitNodeIndex < 0 ||
+                IsPersonalSpaceReacting ||
                 targetNodeIndex < 0 ||
                 plan == null ||
                 waitNodeDistances == null ||
@@ -489,6 +563,7 @@ namespace BarPromenade
             if (!IsSpawned ||
                 MotionState != CityPedestrianMotionState.Walking ||
                 targetNodeIndex < 0 ||
+                IsPersonalSpaceReacting ||
                 plan == null ||
                 benchNode < 0 ||
                 benchNode >= plan.Nodes.Count ||
@@ -1245,8 +1320,11 @@ namespace BarPromenade
             benchNodeIndex = -1;
             StopWaitNodeIndex = -1;
             SpawnAnchorId = string.Empty;
+            IsPersonalSpaceReacting = false;
+            PersonalSpaceEncounterUsed = false;
             MotionState = CityPedestrianMotionState.Dormant;
             IsYielding = false;
+            attention.Reset();
             LastDisplacement = Vector3.zero;
             CrosswalkDecisionCount = 0;
             CrosswalksTaken = 0;

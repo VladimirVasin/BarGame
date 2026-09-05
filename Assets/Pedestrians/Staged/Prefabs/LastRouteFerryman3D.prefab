@@ -410,6 +410,8 @@ MonoBehaviour:
   ambientWalkClip: {fileID: 0}
   sitClip: {fileID: -3508637186140793292, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   actionClip: {fileID: -8828702316034381432, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
+  personalSpaceGuardClip: {fileID: 0}
+  personalSpaceShoveClip: {fileID: 0}
   localBounds:
     m_Center: {x: -0.0010001659, y: 0.87499994, z: 0.03648752}
     m_Extent: {x: 0.7827215, y: 0.87499994, z: 0.18979935}

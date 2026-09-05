@@ -10,10 +10,11 @@ namespace BarPromenade
     /// controller moves her along her route, and one playback of the
     /// MournerMourn rite (lay, sob, wipe) while she stands at the
     /// grave — through a small manual PlayableGraph exactly like the
-    /// drying-yard babushkas. The staged prefab ships the bouquet in
-    /// her hands; the controller hides it at the lay cue and stands
-    /// its own bouquet on the grave. The presentation stays passive:
-    /// the mourner controller owns spawning, movement and despawn.
+    /// drying-yard babushkas. The body ships empty-handed; Initialize
+    /// attaches the funeral bouquet hand prop to her right grip, and
+    /// the controller releases it at the lay cue and places the same
+    /// prop prefab on the grave. The presentation stays passive: the
+    /// mourner controller owns spawning, movement and despawn.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CemeteryMournerPresentation : MonoBehaviour
@@ -22,14 +23,7 @@ namespace BarPromenade
         /// bounded step instead of teleporting mid-stride.</summary>
         public const float MaximumStepSeconds = 0.1f;
 
-        private static readonly string[] BouquetRendererNames =
-        {
-            "ACC_BouquetStems",
-            "ACC_BouquetWrap",
-            "ACC_BouquetBloomA",
-            "ACC_BouquetBloomB",
-            "ACC_BouquetGreens"
-        };
+        private CityPedestrianHandPropRegistry heldBouquet;
 
         private PlayableGraph graph;
         private AnimationClipPlayable playable;
@@ -39,6 +33,11 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public CityPedestrianAssetRegistry Registry { get; private set; }
         public AnimationClip ActiveClip { get; private set; }
+
+        /// <summary>The bouquet in her hands: attached by
+        /// <see cref="Initialize"/>, null after
+        /// <see cref="ReleaseHeldBouquet"/>.</summary>
+        public CityPedestrianHandPropRegistry HeldBouquet => heldBouquet;
 
         public void Initialize(
             CityPedestrianAssetRegistry registry,
@@ -66,6 +65,14 @@ namespace BarPromenade
             Registry = registry;
             registry.ApplyPaletteVariant(paletteVariant);
 
+            // After the palette so the bouquet copies the visit's
+            // variant; replaced rather than stacked on a re-Initialize.
+            CityPedestrianHandProps.Detach(ref heldBouquet);
+            heldBouquet = CityPedestrianHandProps.Attach(
+                registry,
+                CityPedestrianHandPropId.FuneralBouquet,
+                paletteVariant);
+
             graph = PlayableGraph.Create("Cemetery Mourner");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             output = AnimationPlayableOutput.Create(
@@ -91,34 +98,12 @@ namespace BarPromenade
             Play(Registry.IdleClip);
         }
 
-        /// <summary>The bouquet has left her hands: from here on she
-        /// walks and grieves empty-handed.</summary>
-        public void HideHeldBouquet()
+        /// <summary>The bouquet has left her hands: the attached prop is
+        /// destroyed, and from here on she walks and grieves
+        /// empty-handed. Safe to call twice.</summary>
+        public void ReleaseHeldBouquet()
         {
-            for (int index = 0;
-                 index < Registry.Renderers.Count;
-                 index++)
-            {
-                Renderer renderer = Registry.Renderers[index];
-                if (renderer == null)
-                {
-                    continue;
-                }
-
-                for (int name = 0;
-                     name < BouquetRendererNames.Length;
-                     name++)
-                {
-                    if (string.Equals(
-                            renderer.name,
-                            BouquetRendererNames[name],
-                            StringComparison.Ordinal))
-                    {
-                        renderer.enabled = false;
-                        break;
-                    }
-                }
-            }
+            CityPedestrianHandProps.Detach(ref heldBouquet);
         }
 
         private void Play(AnimationClip clip)
@@ -160,6 +145,7 @@ namespace BarPromenade
             }
 
             hasGraph = false;
+            ReleaseHeldBouquet();
         }
     }
 }

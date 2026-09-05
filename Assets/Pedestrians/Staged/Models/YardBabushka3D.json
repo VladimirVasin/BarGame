@@ -18,10 +18,10 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 40,
-  "triangle_count": 1836,
+  "mesh_count": 34,
+  "triangle_count": 1692,
   "triangle_budget": [
-    1800,
+    1650,
     2400
   ],
   "staged": true,
@@ -29,8 +29,8 @@
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.826103,
-    -0.355056,
+    -0.780987,
+    -0.247897,
     0.0
   ],
   "bounds_max": [
@@ -60,7 +60,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "2b8a2271b2488383751fdfa856b03b9e7f5ec4df52825993d3b956aa670342f1",
+  "build_signature": "e1cf33f141c9d6b8a656f034245a500f421c66b4ad3d29d2e4623fd051256c12",
   "bones": [
     {
       "name": "root",
@@ -529,90 +529,6 @@
     }
   ],
   "parts": [
-    {
-      "name": "ACC_BeaterHandle",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "beater_plastic_dark",
-      "base_color": [
-        0.3,
-        0.085,
-        0.055,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "ACC_BeaterNeck",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "beater_plastic",
-      "base_color": [
-        0.56,
-        0.165,
-        0.105,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "ACC_BeaterPaddleRise",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "beater_plastic",
-      "base_color": [
-        0.56,
-        0.165,
-        0.105,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "ACC_BeaterPaddleTip",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "beater_plastic",
-      "base_color": [
-        0.56,
-        0.165,
-        0.105,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "ACC_Cigarette",
-      "role": "surface_detail",
-      "bone": "hand.R",
-      "palette_name": "pipe_ivory",
-      "base_color": [
-        0.585,
-        0.555,
-        0.465,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "ACC_CigaretteEmber",
-      "role": "surface_detail",
-      "bone": "hand.R",
-      "palette_name": "amber",
-      "base_color": [
-        0.525,
-        0.275,
-        0.075,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
     {
       "name": "ACC_Eye.L",
       "role": "face_detail",

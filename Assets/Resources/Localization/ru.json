@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "key": "interaction.inspect_garden_pot",
+      "value": "Поднять горшок"
+    },
+    {
+      "key": "interaction.place_garden_pot_left",
+      "value": "Поставить слева · A/D — выбрать место"
+    },
+    {
+      "key": "interaction.place_garden_pot_right",
+      "value": "Поставить справа · A/D — выбрать место"
+    },
+    {
       "key": "opening.title",
       "value": "БАРНЫЙ ПРОМЕНАД"
     },

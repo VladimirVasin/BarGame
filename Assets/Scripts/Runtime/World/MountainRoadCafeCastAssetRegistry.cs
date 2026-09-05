@@ -89,6 +89,17 @@ namespace BarPromenade
                 Array.Empty<MountainRoadCafeCastRendererBinding>();
         [SerializeField] private Texture2D detailAtlas;
 
+        /// <summary>
+        /// The coffee pot is a hand prop prefab attached by the cast
+        /// factory at runtime, never part of the attendant's body, so the
+        /// reference is runtime-only. The last requested visibility is
+        /// remembered because <see cref="SetCoffeePotVisible"/> is called
+        /// from Configure/OnEnable and from the presentation's clip
+        /// changes before and after the pot exists.
+        /// </summary>
+        [NonSerialized] private CityPedestrianHandPropRegistry coffeePot;
+        [NonSerialized] private bool coffeePotVisible;
+
         public Animator Animator => animator;
         public MountainRoadCafeCastRole Role => role;
         public MountainRoadCafeCastClipKind DefaultClipKind =>
@@ -109,6 +120,14 @@ namespace BarPromenade
             RendererBindings => rendererBindings ??
                 Array.Empty<MountainRoadCafeCastRendererBinding>();
         public Texture2D DetailAtlas => detailAtlas;
+
+        /// <summary>The attached coffee-pot hand prop, or null until the
+        /// factory attaches one (only the attendant ever gets one).</summary>
+        public CityPedestrianHandPropRegistry CoffeePot => coffeePot;
+
+        /// <summary>Whether the pot was last asked to show: the walk and
+        /// pour clips carry it, everything else hides it.</summary>
+        public bool IsCoffeePotVisible => coffeePotVisible;
 
         public void Configure(
             Animator configuredAnimator,
@@ -197,22 +216,37 @@ namespace BarPromenade
             return null;
         }
 
-        public void SetCoffeePotVisible(bool visible)
+        /// <summary>
+        /// Takes the attached coffee-pot prop and applies the visibility
+        /// requested so far: the presentation may have asked for the
+        /// walk-clip pot before the factory attached it. A previous pot
+        /// is destroyed rather than orphaned.
+        /// </summary>
+        public void AttachCoffeePot(CityPedestrianHandPropRegistry pot)
         {
-            if (rendererBindings == null)
+            if (coffeePot != null && coffeePot != pot)
             {
-                return;
+                CityPedestrianHandProps.Detach(ref coffeePot);
             }
 
-            for (int index = 0; index < rendererBindings.Length; index++)
+            coffeePot = pot;
+            if (coffeePot != null)
             {
-                Renderer target = rendererBindings[index]?.Renderer;
-                if (target != null && target.name.StartsWith(
-                        "ACC_CoffeePot",
-                        StringComparison.Ordinal))
-                {
-                    target.enabled = visible;
-                }
+                coffeePot.SetVisible(coffeePotVisible);
+            }
+        }
+
+        /// <summary>
+        /// Null-safe: remembers the request even while no pot is
+        /// attached, and routes it to the attached prop as a whole. The
+        /// body carries no pot renderer of its own any more.
+        /// </summary>
+        public void SetCoffeePotVisible(bool visible)
+        {
+            coffeePotVisible = visible;
+            if (coffeePot != null)
+            {
+                coffeePot.SetVisible(visible);
             }
         }
 

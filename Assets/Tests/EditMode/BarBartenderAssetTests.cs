@@ -289,5 +289,129 @@ namespace BarPromenade.Tests.EditMode
                 Object.DestroyImmediate(instance);
             }
         }
+
+        [Test]
+        public void HeroAttention_TurnsTheFaceAfterTheHeroAndReleasesToTheRig()
+        {
+            // Two identical bartenders stepped in lockstep: one is given the
+            // hero, the other never is. A hero across the counter on the
+            // right must swing the first one's face right; a hero walking
+            // off behind him must leave the head and neck exactly where the
+            // twin's rig holds them.
+            BarBartenderProvider provider = BarBartenderProvider.Load();
+            var root = new GameObject("Bartender Attention Root");
+            try
+            {
+                GameObject glancingObject = Object.Instantiate(
+                    provider.BartenderPrefab,
+                    root.transform);
+                GameObject twinObject = Object.Instantiate(
+                    provider.BartenderPrefab,
+                    root.transform);
+                BarBartenderAssetRegistry registry =
+                    glancingObject.GetComponent<BarBartenderAssetRegistry>();
+                BarBartenderAssetRegistry twinRegistry =
+                    twinObject.GetComponent<BarBartenderAssetRegistry>();
+                BarBartenderPresentation glancing =
+                    glancingObject.AddComponent<BarBartenderPresentation>();
+                BarBartenderPresentation twin =
+                    twinObject.AddComponent<BarBartenderPresentation>();
+                glancing.Initialize(registry);
+                twin.Initialize(twinRegistry);
+
+                var heroObject = new GameObject("Hero Root");
+                heroObject.transform.SetParent(root.transform, false);
+                Transform hero = heroObject.transform;
+                hero.position = glancing.transform.position +
+                                (glancing.transform.forward * 2f) +
+                                (glancing.transform.right * 2f);
+                NpcHeroAttentionLook look =
+                    BarBartenderWorldBuilder.AttachHeroAttention(
+                        glancing,
+                        registry,
+                        hero);
+                Assert.That(look, Is.Not.Null);
+                Assert.That(look.IsInitialized, Is.True);
+
+                for (int frame = 0; frame < 40; frame++)
+                {
+                    glancing.Advance(0.02f);
+                    twin.Advance(0.02f);
+                    look.Advance(0.02f);
+                }
+
+                Assert.That(look.IsAttending, Is.True);
+                Assert.That(
+                    look.AttentionWeight,
+                    Is.EqualTo(1f).Within(0.0001f));
+                float yaw = PlanarFaceYaw(twinRegistry, registry);
+                Assert.That(
+                    yaw,
+                    Is.GreaterThan(20f).And.LessThan(
+                        PlayerAttentionRules.MaxHeadYawDegrees + 1f),
+                    "A hero 45 degrees to the right turns the face right, " +
+                    "within what a neck can do.");
+
+                hero.position = glancing.transform.position -
+                                (glancing.transform.forward * 2f);
+                for (int frame = 0; frame < 40; frame++)
+                {
+                    glancing.Advance(0.02f);
+                    twin.Advance(0.02f);
+                    look.Advance(0.02f);
+                }
+
+                Assert.That(look.IsAttending, Is.False);
+                Assert.That(look.AttentionWeight, Is.EqualTo(0f));
+                Assert.That(
+                    Quaternion.Angle(
+                        registry.Head.localRotation,
+                        twinRegistry.Head.localRotation),
+                    Is.LessThan(0.01f),
+                    "Released, the head is exactly the rig's own.");
+                if (registry.Neck != null && twinRegistry.Neck != null)
+                {
+                    Assert.That(
+                        Quaternion.Angle(
+                            registry.Neck.localRotation,
+                            twinRegistry.Neck.localRotation),
+                        Is.LessThan(0.01f),
+                        "Released, the neck is exactly the rig's own.");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        /// <summary>
+        /// The glancing face's planar yaw off the twin's: head bone to the
+        /// midpoint of the eye bones, which ride the head.
+        /// </summary>
+        private static float PlanarFaceYaw(
+            BarBartenderAssetRegistry rest,
+            BarBartenderAssetRegistry turned)
+        {
+            Vector3 restFace = FaceDirection(rest);
+            Vector3 turnedFace = FaceDirection(turned);
+            restFace.y = 0f;
+            turnedFace.y = 0f;
+            return Vector3.SignedAngle(restFace, turnedFace, Vector3.up);
+        }
+
+        private static Vector3 FaceDirection(
+            BarBartenderAssetRegistry registry)
+        {
+            Transform bones = registry.Animator.transform;
+            Transform leftEye =
+                NpcAttentionHeadLayer.FindBone(bones, "face.eye.L");
+            Transform rightEye =
+                NpcAttentionHeadLayer.FindBone(bones, "face.eye.R");
+            Assert.That(leftEye, Is.Not.Null);
+            Assert.That(rightEye, Is.Not.Null);
+            Vector3 eyes = (leftEye.position + rightEye.position) * 0.5f;
+            return (eyes - registry.Head.position).normalized;
+        }
     }
 }

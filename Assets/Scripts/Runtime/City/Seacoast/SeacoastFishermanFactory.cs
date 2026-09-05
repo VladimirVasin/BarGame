@@ -32,6 +32,10 @@ namespace BarPromenade
         /// out over the pond where nobody can reach it.</summary>
         public const float TriggerBackOffMeters = 0.55f;
 
+        /// <summary>The coal on the pipe prop, whose material the pipe
+        /// effect swaps for the emissive one.</summary>
+        public const string PipeEmberRendererName = "ACC_PipeEmber";
+
         public static SeacoastFishermanPresentation Create(
             Transform parent,
             SeacoastFishermanPlan plan,
@@ -96,17 +100,24 @@ namespace BarPromenade
                     nameof(CityPedestrianAssetRegistry) + ".");
             }
 
-            var anchors = instance
-                .GetComponentInChildren<SeacoastFishermanRigAnchors>(true);
-            if (anchors == null ||
-                anchors.PipeEmberAnchor == null ||
-                anchors.RodTipAnchor == null)
+            // The body ships empty-handed; the rod and the pipe are hand
+            // prop prefabs that ride his sockets. Both sockets must exist
+            // on the staged rig, because the ember and the line below are
+            // measured off the props' own anchors and have nothing to
+            // hang from otherwise.
+            if (CityPedestrianHandProps.FindSocket(
+                    registry.ModelRoot,
+                    CityPedestrianHandPropId.FishingRod) == null ||
+                CityPedestrianHandProps.FindSocket(
+                    registry.ModelRoot,
+                    CityPedestrianHandPropId.SmokingPipe) == null)
             {
                 UnityEngine.Object.Destroy(root.gameObject);
                 throw new InvalidOperationException(
-                    "The staged fisherman prefab requires bound " +
-                    nameof(SeacoastFishermanRigAnchors) + " for its pipe " +
-                    "and rod tip.");
+                    "The staged fisherman prefab requires the '" +
+                    CityPedestrianHandProps.GripRightSocketName + "' and '" +
+                    CityPedestrianHandProps.MouthSocketName + "' sockets " +
+                    "for its rod and pipe hand props.");
             }
 
             ValidatePassivePresentation(instance);
@@ -115,25 +126,53 @@ namespace BarPromenade
                 .AddComponent<SeacoastFishermanPresentation>();
             presentation.Initialize(registry, stance);
 
+            // Attached AFTER the passivity check (the props are as
+            // passive as the body, but the check is about the art) and
+            // after Initialize so they copy the palette the body wears.
+            CityPedestrianHandPropRegistry rod =
+                CityPedestrianHandProps.Attach(
+                    registry,
+                    CityPedestrianHandPropId.FishingRod);
+            CityPedestrianHandPropRegistry pipeProp =
+                CityPedestrianHandProps.Attach(
+                    registry,
+                    CityPedestrianHandPropId.SmokingPipe);
+
             // The pipe. The prefab is validated to carry no light, so
             // the ember, its glow and the plume are raised here and
             // driven from the loop the presentation is already running.
+            // The ember anchor and renderer come off the pipe prop. The
+            // renderer is REQUIRED here even though the effect itself
+            // tolerates a null: a pipe with no coal to tint is a renamed
+            // part in the prop library, and that should fail loudly at
+            // spawn rather than smoulder unnoticed.
+            Renderer pipeEmber = pipeProp.FindRenderer(PipeEmberRendererName);
+            if (pipeEmber == null)
+            {
+                UnityEngine.Object.Destroy(root.gameObject);
+                throw new InvalidOperationException(
+                    "The smoking pipe hand prop carries no '" +
+                    PipeEmberRendererName + "' renderer for the " +
+                    "fisherman's pipe effect.");
+            }
+
             var pipe = new GameObject("Fisherman Pipe");
             pipe.transform.SetParent(root, false);
             pipe.AddComponent<SeacoastFishermanPipeEffect>().Initialize(
                 presentation,
-                anchors.PipeEmberAnchor,
-                anchors.PipeEmberRenderer);
+                pipeProp.RequireAnchor(
+                    CityPedestrianHandProps.PipeEmberAnchorName),
+                pipeEmber);
 
             // And the line, from the live rod tip down to the water the
             // coast plan measured. The float rides the sea's swell -
             // the world build has already anchored the shore fade, so
             // the profile it hands over matches the sheets drawn a few
-            // metres past his boots.
+            // metres past his boots. The tip is the rod prop's anchor.
             var line = new GameObject("Fisherman Line");
             line.transform.SetParent(root, false);
             line.AddComponent<SeacoastFishermanLine>().Initialize(
-                anchors.RodTipAnchor,
+                rod.RequireAnchor(CityPedestrianHandProps.RodTipAnchorName),
                 plan.WaterTopY,
                 CitySeaResources.CreateWaveProfile());
 

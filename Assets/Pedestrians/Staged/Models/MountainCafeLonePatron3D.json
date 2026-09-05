@@ -44,6 +44,8 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx",
+  "ambient_idle_clip": null,
+  "ambient_walk_clip": null,
   "shared_clips": [
     "CafeLoneSleep",
     "CafeLoneInterject"

@@ -4,25 +4,43 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>One grave a mourner may visit: the slab's ground point
-    /// and yaw read back from the cemetery plan. Local +Z points from
-    /// the foot of the grave toward its monument, away from the gate,
-    /// so the mourner stands on the local -Z side.</summary>
+    /// <summary>One grave a mourner may visit: the slab's ground point,
+    /// yaw and top height read back from the cemetery plan. Local +Z
+    /// points from the foot of the grave toward its monument, away from
+    /// the gate, so the mourner stands on the local -Z side.</summary>
     public readonly struct CemeteryGraveAnchor
     {
+        /// <summary>A grave with no raised slab: the laid bouquet then
+        /// rests on the ground point itself.</summary>
         public CemeteryGraveAnchor(
             int ordinal,
             Vector3 ground,
             Quaternion yaw)
+            : this(ordinal, ground, yaw, ground.y)
+        {
+        }
+
+        public CemeteryGraveAnchor(
+            int ordinal,
+            Vector3 ground,
+            Quaternion yaw,
+            float slabTopY)
         {
             Ordinal = ordinal;
             Ground = ground;
             Yaw = yaw;
+            SlabTopY = slabTopY;
         }
 
         public int Ordinal { get; }
         public Vector3 Ground { get; }
         public Quaternion Yaw { get; }
+
+        /// <summary>World height of the slab's top face: the six grave
+        /// variants stand slabs of 0.08-0.16 m on the ground, and a
+        /// bouquet laid at a guessed height floats over the thin ones or
+        /// sinks into the thick one.</summary>
+        public float SlabTopY { get; }
     }
 
     /// <summary>
@@ -132,7 +150,9 @@ namespace BarPromenade
 
                 // The slab is emitted at the grave's ground point with
                 // a zero planar offset, so its centre carries the
-                // grave position and its rotation the grave yaw.
+                // grave position and its rotation the grave yaw; the
+                // planner raises every part by half its height, so the
+                // top face is half a size above the centre.
                 var ground = new Vector3(
                     part.Center.x,
                     plan.GroundTopY,
@@ -140,7 +160,8 @@ namespace BarPromenade
                 anchors.Add(new CemeteryGraveAnchor(
                     part.GraveOrdinal,
                     ground,
-                    part.Rotation));
+                    part.Rotation,
+                    part.Center.y + part.Size.y * 0.5f));
             }
 
             return anchors;

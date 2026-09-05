@@ -80,8 +80,15 @@ namespace BarPromenade
             : default;
         public MountainRoadCafeServicePresentation ServicePresentation =>
             servicePresentation;
+        /// <summary>
+        /// The spout anchor of the coffee-pot hand prop attached under the
+        /// attendant's right grip. FindModelTransform walks the whole
+        /// model subtree, so the attached prop's anchor is found the same
+        /// way the baked one used to be; null until the pot is attached.
+        /// </summary>
         public Transform AttendantPourSpout => attendant?.Registry
-            ?.FindModelTransform("SOCKET_CafePotSpout");
+            ?.FindModelTransform(
+                CityPedestrianHandProps.CoffeePotSpoutAnchorName);
         public Transform AttendantMotionRoot => attendant != null
             ? attendant.transform
             : null;
@@ -115,6 +122,38 @@ namespace BarPromenade
             MountainRoadCafeCastRole role)
         {
             return GetPresentation(role)?.transform;
+        }
+
+        /// <summary>
+        /// The attendant's hero glance: given the player root, he turns
+        /// his head after the hero under the hero's own notice rule while
+        /// he stands at his counter, and keeps it on his work while a
+        /// service beat plays. Once per cast; a second call is refused.
+        /// </summary>
+        public bool BindHeroAttention(Transform heroRoot)
+        {
+            if (!IsInitialized || heroRoot == null || attendant == null ||
+                attendant.GetComponent<NpcHeroAttentionLook>() != null)
+            {
+                return false;
+            }
+
+            Transform head = attendant.Registry.FindModelTransform("head");
+            if (head == null)
+            {
+                return false;
+            }
+
+            MountainRoadCafeCastPresentation body = attendant;
+            NpcHeroAttentionLook look =
+                attendant.gameObject.AddComponent<NpcHeroAttentionLook>();
+            look.Initialize(
+                attendant.transform,
+                head,
+                attendant.Registry.FindModelTransform("neck"),
+                heroRoot,
+                () => !body.IsBeatPlaying);
+            return true;
         }
 
         public void Initialize(

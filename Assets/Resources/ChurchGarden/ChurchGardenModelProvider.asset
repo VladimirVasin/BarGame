@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 603986dd14e24626ab36701fa1559a8d, type: 3}
+  m_Name: ChurchGardenModelProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.ChurchGardenModelProvider
+  pieces:
+  - kind: 0
+    prefab: {fileID: 5757361748611765630, guid: 1a61409f31562ca408795e28f64d9a42, type: 3}
+  - kind: 1
+    prefab: {fileID: 3214522273400519776, guid: 30e70e46469cbfa4291175836612d5ad, type: 3}
+  - kind: 2
+    prefab: {fileID: 7745512429582094014, guid: 1cd845ed910788d4787287777ed04238, type: 3}
+  - kind: 3
+    prefab: {fileID: 8262443780953480483, guid: 71d807cc40a1e2946b9300c8f4b86bd8, type: 3}
+  - kind: 4
+    prefab: {fileID: 519632168251342749, guid: 2d0f1ae6d59c756468f9c9ee4c122461, type: 3}
+  - kind: 5
+    prefab: {fileID: 8471013038384227769, guid: 06755e1794cd6d1428d88b993c9d02cb, type: 3}
+  - kind: 6
+    prefab: {fileID: 1251075835235708394, guid: 4b58dd415f42506488c5f1c15f96b707, type: 3}
+  - kind: 7
+    prefab: {fileID: 7589189817703571092, guid: 269b23f84a8e71944ab19bcec940469c, type: 3}
+  - kind: 8
+    prefab: {fileID: 6164790188436796879, guid: e86d0330d402ba3458b5943063ced193, type: 3}
+  - kind: 9
+    prefab: {fileID: 8999911033900557133, guid: ada546ed79e86e44681c50e6c5395f0b, type: 3}
+  buildSignature: 8ac90bf25caa80581cf3a4afce3376852d3d464facf23c274be4160523086d31

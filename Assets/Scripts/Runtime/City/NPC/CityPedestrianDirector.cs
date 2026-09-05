@@ -44,6 +44,14 @@ namespace BarPromenade
         public const float MaximumDaytimeDistantSimulationMultiplier = 2.75f;
         public const float PlayerAvoidanceDistance = 0.95f;
         public const float PedestrianAvoidanceDistance = 0.78f;
+
+        /// <summary>
+        /// Where a walker looks when it looks at the hero: his head bone
+        /// when his rig is under the player root, else this far above his
+        /// feet - the face of a standing 1.75 m man.
+        /// </summary>
+        public const float HeroFocusFallbackHeight =
+            HeroAttentionFocus.FallbackHeight;
         public const float CollisionActivationPadding = 0.05f;
         public const float StaticClearanceLift = 0.03f;
 
@@ -79,6 +87,8 @@ namespace BarPromenade
         private bool hasPreviousPlayerPosition;
         private CharacterController playerController;
         private bool playerControllerCached;
+        private HeroAttentionFocus heroFocus;
+        private CityPedestrianPersonalSpaceController personalSpace;
         private Vector3 approachRefreshPosition;
         private bool hasApproachRefreshPosition;
         private int[] initialApproachComponentByNode = Array.Empty<int>();
@@ -93,6 +103,7 @@ namespace BarPromenade
         private int approachHeapCount;
 
         public bool IsInitialized { get; private set; }
+        public CityPedestrianPersonalSpaceController PersonalSpace => personalSpace;
         public CityPedestrianPlan Plan => plan;
         public IReadOnlyList<CityPedestrianActor> Actors => actors;
         public CityPedestrianPopulationProfile Profile => profile;
@@ -162,6 +173,7 @@ namespace BarPromenade
                 ? presentationPoolRoot
                 : throw new ArgumentNullException(
                     nameof(presentationPoolRoot));
+            heroFocus = new HeroAttentionFocus(player);
             nightModeProvider = runtimeNightModeProvider ??
                 IsSessionNight;
             if (routeActors == null)
@@ -224,6 +236,7 @@ namespace BarPromenade
             hasPreviousPlayerPosition = true;
             spawnCooldown = GetNextInitialSpawnDelay();
             IsInitialized = true;
+            personalSpace = new CityPedestrianPersonalSpaceController(player, actors);
         }
 
         public bool IsActorPresented(int actorIndex)
@@ -246,11 +259,16 @@ namespace BarPromenade
             float safeDeltaTime = SanitizeDeltaTime(deltaTime);
             RefreshSpawnMode();
             RefreshPlayerTravel(safeDeltaTime);
+            personalSpace.Advance(safeDeltaTime);
             if (HasActiveInitialApproach())
             {
                 RefreshInitialApproachRoutes();
             }
 
+            // The hero's head, once per frame: every walker near enough
+            // and facing him turns its head after him, the way his turns
+            // after them.
+            Vector3 heroHead = ResolveHeroFocus();
             for (int index = 0; index < actors.Count; index++)
             {
                 CityPedestrianActor actor = actors[index];
@@ -268,7 +286,8 @@ namespace BarPromenade
                         : player.position,
                     initialApproachCompleted[index]
                         ? null
-                        : initialApproachNodeDistances);
+                        : initialApproachNodeDistances,
+                    heroHead);
                 RefreshInitialApproachState(index, actor.Position);
             }
 
@@ -324,6 +343,7 @@ namespace BarPromenade
                 return;
             }
 
+            personalSpace?.Reset();
             ReleaseAllActors();
             for (int index = 0;
                  index < presentationPool.Count;
@@ -374,6 +394,7 @@ namespace BarPromenade
         {
             if (IsInitialized)
             {
+                personalSpace?.Reset();
                 ReleaseAllActors();
             }
         }
@@ -1890,6 +1911,24 @@ namespace BarPromenade
             }
 
             return playerController;
+        }
+
+        /// <summary>
+        /// The point a walker's head turns toward: the hero's animated head
+        /// bone, so a fallen or leaning hero is looked at where he is, or a
+        /// fixed face height over the player root when no rig is mounted.
+        /// Public so a deterministic check can read what the walkers are
+        /// handed.
+        /// </summary>
+        public Vector3 ResolveHeroFocus()
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException(
+                    "Initialize the city pedestrian director first.");
+            }
+
+            return heroFocus.Resolve();
         }
 
         private static bool VerticalCapsulesOverlap(

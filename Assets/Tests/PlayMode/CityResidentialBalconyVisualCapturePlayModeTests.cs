@@ -482,6 +482,22 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertSmokingProps(
             CityBalconySmokerPresentation presentation)
         {
+            // The cigarette is a hand prop on SOCKET_Cigarette.R since
+            // 2026-09-05: rigid MeshRenderers under the socket, never a
+            // skin borrowed from the babushka.
+            CityPedestrianHandPropRegistry held = presentation.HeldCigarette;
+            Assert.That(held, Is.Not.Null, "No cigarette hand prop attached.");
+            Assert.That(
+                held.Id,
+                Is.EqualTo(CityPedestrianHandPropId.Cigarette));
+            Assert.That(held.transform.parent, Is.Not.Null);
+            Assert.That(
+                held.transform.parent.name,
+                Is.EqualTo(CityBalconySmokerPresentation.CigaretteSocketName));
+            Assert.That(
+                held.transform.parent.IsChildOf(
+                    presentation.Registry.ModelRoot),
+                Is.True);
             Assert.That(presentation.CigaretteRenderers.Count, Is.EqualTo(2));
             Renderer cigarette = presentation.CigaretteRenderers.Single(
                 renderer => string.Equals(
@@ -493,8 +509,22 @@ namespace BarPromenade.Tests.PlayMode
                     renderer.name,
                     "ACC_CigaretteEmber",
                     StringComparison.Ordinal));
+            Assert.That(cigarette, Is.InstanceOf<MeshRenderer>());
+            Assert.That(ember, Is.InstanceOf<MeshRenderer>());
             Assert.That(cigarette.enabled, Is.True);
             Assert.That(ember.enabled, Is.True);
+        }
+
+        /// <summary>The world centre of a rigid part's mesh through its
+        /// own transform — exact for one mesh and independent of whether
+        /// the renderer has been through a frame.</summary>
+        private static Vector3 MeasureMeshCentre(Renderer renderer)
+        {
+            var filter = renderer.GetComponent<MeshFilter>();
+            Mesh mesh = filter != null ? filter.sharedMesh : null;
+            Assert.That(mesh, Is.Not.Null, $"{renderer.name} has no mesh.");
+            return renderer.localToWorldMatrix.MultiplyPoint3x4(
+                mesh.bounds.center);
         }
 
         private static void AssertBalconyExhaleParticleMotion(
@@ -628,7 +658,7 @@ namespace BarPromenade.Tests.PlayMode
                 CityBalconySmokerPresentation.MouthSocketName);
             Transform cigarette = FindDescendant(
                 presentation.Registry.ModelRoot,
-                CityBalconySmokerAccessory.CigaretteSocketName);
+                CityBalconySmokerPresentation.CigaretteSocketName);
             Player3DAssetRegistry driver = presentation
                 .GetComponentInChildren<Player3DAssetRegistry>(true);
             Assert.That(mouth, Is.Not.Null, designId);
@@ -639,7 +669,7 @@ namespace BarPromenade.Tests.PlayMode
                 CityBalconySmokerPresentation.MouthSocketName);
             Transform driverCigarette = FindDescendant(
                 driver.ModelRoot,
-                CityBalconySmokerAccessory.CigaretteSocketName);
+                CityBalconySmokerPresentation.CigaretteSocketName);
             Assert.That(driverMouth, Is.Not.Null, designId);
             Assert.That(driverCigarette, Is.Not.Null, designId);
 
@@ -653,6 +683,33 @@ namespace BarPromenade.Tests.PlayMode
                 residentDistance,
                 Is.EqualTo(driverDistance).Within(0.001f),
                 $"{designId} must receive the literal Hero V2 bone pose.");
+
+            // The attached prop rides the socket the pose transfer
+            // moved: its ember must be within a cigarette's length of
+            // the socket and no farther from the mouth than that. A prop
+            // left at the 100x scale or on a stale Mount fails here, not
+            // in a capture someone has to look at.
+            Assert.That(presentation.HeldCigarette, Is.Not.Null, designId);
+            Renderer emberRenderer = presentation.HeldCigarette.FindRenderer(
+                "ACC_CigaretteEmber");
+            Assert.That(emberRenderer, Is.Not.Null, designId);
+            Vector3 emberCentre = MeasureMeshCentre(emberRenderer);
+            float emberToSocket = Vector3.Distance(
+                emberCentre,
+                cigarette.position);
+            Assert.That(
+                emberToSocket,
+                Is.InRange(0.02f, 0.15f),
+                $"{designId}: the ember sits {emberToSocket:F3} m from " +
+                "SOCKET_Cigarette.R.");
+            float emberToMouth = Vector3.Distance(
+                emberCentre,
+                mouth.position);
+            Assert.That(
+                emberToMouth,
+                Is.LessThanOrEqualTo(residentDistance + 0.15f),
+                $"{designId}: the ember is {emberToMouth:F3} m from " +
+                "SOCKET_Mouth at the held inhale.");
             return residentDistance;
         }
 

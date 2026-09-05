@@ -23,7 +23,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 import sys
-from typing import Iterable, Mapping, Sequence
+from typing import Callable, Iterable, Mapping, Sequence
 
 try:
     import bpy
@@ -394,15 +394,11 @@ CAFE_ATTENDANT_ATLAS_REGIONS = cafe_atlas_regions(
     headwear_sides=12,
     headwear_rings=4,
 )
-CAFE_ATTENDANT_RIG_ANCHORS = (
-    RigAnchorSpec(
-        "SOCKET_CafePotSpout",
-        "hand.R",
-        "anchor",
-        ("ACC_CoffeePotSpout",),
-        axis_from="ACC_CoffeePotBody",
-    ),
-)
+# The cafe attendant used to declare `SOCKET_CafePotSpout` here, a rig
+# anchor at the lip of his skinned coffee pot. Since 2026-09-05 the pot is
+# a hand prop (see HAND_PROPS), and the spout anchor is measured by the
+# prop's own prefab build instead; no body declares a rig anchor for a
+# thing it no longer carries.
 
 
 @dataclass(frozen=True)
@@ -658,7 +654,11 @@ ARCHETYPES = {
         "yard_babushka", "yard_babushka_v1", "Yard Babushka", 715233,
         "YardBabushka3D.blend", "YardBabushka3D",
         "YardBabushka3D.png", "BabushkaSmoke", "BabushkaBeat",
-        (1800, 2400),
+        # 1800 -> 1650 on 2026-09-05: the carpet beater and the cigarette
+        # moved into the hand-prop library (HAND_PROPS), so the body alone
+        # carries 144 triangles fewer. The C# descriptor floor is the same
+        # number and is compared exactly.
+        (1650, 2400),
         staged=True,
         pool_eligible=True,
         ambient_idle_clip="BabushkaStreetIdle",
@@ -715,7 +715,10 @@ ARCHETYPES = {
         "cemetery_mourner", "cemetery_mourner_v1", "Cemetery Mourner", 918477,
         "CemeteryMourner3D.blend", "CemeteryMourner3D",
         "CemeteryMourner3D.png", "MournerMourn", "MournerWalk",
-        (1800, 2400),
+        # 1800 -> 1600 on 2026-09-05: the funeral bouquet moved into the
+        # hand-prop library (HAND_PROPS); the cemetery attaches it and a
+        # roaming copy of her walks empty-handed. Same floor in C#.
+        (1600, 2400),
         ambient_idle_clip="MournerStreetIdle",
         ambient_walk_clip="MournerStreetWalk",
         staged=True,
@@ -751,7 +754,10 @@ ARCHETYPES = {
         "lake_fisherman", "lake_fisherman_v1", "Lake Fisherman", 1023877,
         "LakeFisherman3D.blend", "LakeFisherman3D",
         "LakeFisherman3D.png", "FishermanLean", "FishermanTrudge",
-        (900, 2000),
+        # 900 -> 800 on 2026-09-05: the rod and the pipe moved into the
+        # hand-prop library (HAND_PROPS) and the pier attaches both. Same
+        # floor in C#.
+        (800, 2000),
         # The street pair stays authored and bound: he had them when he
         # roamed, nothing plays them now, and stripping them would move the
         # animation manifest signature for no gain.
@@ -1008,7 +1014,6 @@ ARCHETYPES = {
         dismount_clip="CafeAttendantNotice",
         texture_atlas=CAFE_ATTENDANT_DETAIL_ATLAS_NAME,
         texture_regions=CAFE_ATTENDANT_ATLAS_REGIONS,
-        rig_anchors=CAFE_ATTENDANT_RIG_ANCHORS,
     ),
 }
 
@@ -1667,6 +1672,12 @@ def parse_args() -> argparse.Namespace:
         default=Path("Assets/Pedestrians/Textures"),
     )
     parser.add_argument(
+        "--prop-dir",
+        type=Path,
+        default=Path("Assets/Pedestrians/Props"),
+        help="Where the shared hand-prop FBX and manifest land.",
+    )
+    parser.add_argument(
         "--archetype",
         choices=("all", *ARCHETYPES),
         default="all",
@@ -1696,6 +1707,19 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--no-preview", action="store_true")
+    parser.add_argument(
+        "--hand-props-only",
+        action="store_true",
+        help=(
+            "Build only the shared hand-prop library (beater, cigarettes, "
+            "bouquet, chalk, rod, pipe, towel, coffee pot); no bodies, no "
+            "clips."
+        ),
+    )
+    parser.add_argument(
+        "--personal-space-only", action="store_true",
+        help="Build only the six roaming designs' grounded guard/shove bank.",
+    )
     arguments = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     config = parser.parse_args(arguments)
     # Blender resolves a relative render path against the unsaved startup
@@ -1703,7 +1727,7 @@ def parse_args() -> argparse.Namespace:
     # Resolve every output from the invocation cwd before touching Blender IO.
     for field_name in (
         "source_dir", "model_dir", "animation_dir", "staged_model_dir",
-        "texture_dir",
+        "texture_dir", "prop_dir",
     ):
         setattr(config, field_name, getattr(config, field_name).resolve())
     return config
@@ -2036,6 +2060,551 @@ def combine_geometry(*items):
         vertices.extend(item_vertices)
         faces.extend(tuple(index + offset for index in face) for face in item_faces)
     return vertices, faces
+
+
+# ---------------------------------------------------------------------------
+# Hand props.
+#
+# Until 2026-09-05 everything a pedestrian held - the babushka's carpet
+# beater and cigarette, the mourner's bouquet, the weigher's chalk, the
+# fisherman's rod and pipe, the cafe woman's cigarette, the attendant's
+# towel and coffee pot - was a skinned `ACC_*` part of the body that used
+# it, and three unrelated runtime name tables hid whichever one a role did
+# not want. A pool-eligible design roams the street as an anonymous walker,
+# so every copy of the mourner carried a bouquet and every babushka a
+# beater. The user's rule ended that: «все предметы нужно отделить от
+# моделек — они должны быть дополнительными ручными поделками».
+#
+# The props now live in ONE animation-free FBX, `CityPedestrianHandProps`,
+# one Empty per prop at its socket's rest head, one mesh per part under it.
+# The geometry is the SAME helper calls with the SAME constants the body
+# builders used, run through the reference design's own `remap_geometry_point`
+# with the ORIGINAL role string, so a prop lands to the micrometre where the
+# body carried it; the Unity build then measures the socket-relative Mount
+# off the imported meshes and the runtime attaches the prefab at identity.
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class HandPropPartSpec:
+    """One renderer of a prop: the name the runtime finds it by, its
+    authored geometry, and the role/palette it wore on the body. The role
+    is kept verbatim because `remap_geometry_point` scales a `held_prop`
+    differently from a `surface_detail`, and the prop must land exactly
+    where the skinned part did."""
+
+    name: str
+    geometry: Callable[[], tuple[list, list]]
+    role: str
+    palette: str
+
+
+@dataclass(frozen=True)
+class HandPropAnchorSpec:
+    """A named point the prefab build derives from the prop's geometry:
+    `farthest_from_socket` (the rod tip), `part_center` (the pipe ember)
+    or `farthest_from_part` (the spout lip, forward = tip - axis_from
+    centre)."""
+
+    name: str
+    kind: str
+    part: str
+    axis_from: str = ""
+
+
+@dataclass(frozen=True)
+class HandPropSpec:
+    id: str
+    prefab_name: str
+    display_name: str
+    socket: str
+    bone: str
+    # ARCHETYPES key of the design the geometry was authored against; its
+    # anatomy profile is what the remap needs, no build is required.
+    reference_design: str
+    parts: tuple[HandPropPartSpec, ...]
+    anchors: tuple[HandPropAnchorSpec, ...] = ()
+
+
+HAND_PROP_LIBRARY_NAME = "CityPedestrianHandProps"
+HAND_PROP_MATERIAL_ASSET = "Assets/Player3D/Materials/Player3DLit.mat"
+
+
+def prop_along(
+    grip: tuple[float, float, float],
+    direction: tuple[float, float, float],
+    distance: float,
+) -> tuple[float, float, float]:
+    """The body builders' local `along()` closure, verbatim, so the
+    arithmetic (and therefore every vertex) is bit-identical."""
+
+    return (
+        grip[0] + direction[0] * distance,
+        grip[1] + direction[1] * distance,
+        grip[2] + direction[2] * distance,
+    )
+
+
+# The beater points forward-down out of the fist: the A-pose envelope
+# allows barely 5 cm past the fingertips on X, so the carry direction
+# leans into -Y (the model's forward) instead of along the arm. With the
+# strike key extending the forearm toward the carpet, this forward bias
+# is what lands the paddle on the hung carpet instead of folding it back
+# into the skirt.
+BEATER_DIRECTION = (0.0, -0.600, -0.800)
+BEATER_GRIP = (-0.720, -0.021, 1.048)
+# Up and slightly forward out of the fist: with both forearms folded to
+# the chest in the authored clips, this direction stands the blooms
+# upright against the collarbone.
+BOUQUET_DIRECTION = (0.0, -0.280, 0.960)
+BOUQUET_GRIP = (-0.720, -0.021, 1.048)
+# The rod: forward and up, out of the fist, so the line falls clear of
+# the end board to the water the plan measured.
+ROD_DIRECTION = (0.130, -0.960, 0.250)
+ROD_GRIP = (-0.730, -0.030, 1.048)
+COFFEE_SPOUT_BASE = (-0.748, -0.076, 1.040)
+COFFEE_SPOUT_TIP = (-0.748, -0.218, 1.104)
+
+
+def _beater_along(distance: float) -> tuple[float, float, float]:
+    return prop_along(BEATER_GRIP, BEATER_DIRECTION, distance)
+
+
+def _bouquet_along(distance: float) -> tuple[float, float, float]:
+    return prop_along(BOUQUET_GRIP, BOUQUET_DIRECTION, distance)
+
+
+def _rod_along(distance: float) -> tuple[float, float, float]:
+    return prop_along(ROD_GRIP, ROD_DIRECTION, distance)
+
+
+def _bouquet_bloom_b():
+    bloom_b = _bouquet_along(0.240)
+    return make_ellipsoid(
+        (bloom_b[0] + 0.040, bloom_b[1] - 0.012, bloom_b[2] - 0.018),
+        (0.040, 0.038, 0.034), 8, 4,
+    )
+
+
+def _bouquet_greens():
+    bloom_c = _bouquet_along(0.228)
+    return make_ellipsoid(
+        (bloom_c[0] - 0.042, bloom_c[1] + 0.010, bloom_c[2] - 0.008),
+        (0.036, 0.034, 0.040), 8, 4,
+    )
+
+
+def _rod_reel():
+    return make_box(
+        (
+            _rod_along(0.128)[0],
+            _rod_along(0.128)[1],
+            _rod_along(0.128)[2] - 0.052,
+        ),
+        (0.056, 0.072, 0.072),
+    )
+
+
+def _coffee_spout_lip():
+    return make_ellipsoid(
+        COFFEE_SPOUT_TIP,
+        (0.026, 0.014, 0.020),
+        8,
+        3,
+        orientation=(v(COFFEE_SPOUT_TIP) - v(COFFEE_SPOUT_BASE))
+        .to_track_quat("Z", "Y"),
+    )
+
+
+# Table order is the C# `CityPedestrianHandPropId` order; the enum values
+# are serialized on the prefabs, so append, never reorder.
+HAND_PROPS: tuple[HandPropSpec, ...] = (
+    HandPropSpec(
+        "carpet_beater", "CarpetBeater", "Carpet Beater",
+        "SOCKET_Grip.R", "hand.R", "yard_babushka",
+        (
+            # The classic bright Soviet plastic: a handle continuing the
+            # right hand's axis into a flattened teardrop paddle.
+            HandPropPartSpec(
+                "ACC_BeaterHandle",
+                lambda: make_frustum_between(
+                    _beater_along(-0.050), _beater_along(0.240),
+                    0.015, 0.013, 8, 0.95,
+                ),
+                "signature_silhouette", "beater_plastic_dark",
+            ),
+            HandPropPartSpec(
+                "ACC_BeaterNeck",
+                lambda: make_frustum_between(
+                    _beater_along(0.240), _beater_along(0.320),
+                    0.013, 0.011, 8, 0.95,
+                ),
+                "signature_silhouette", "beater_plastic",
+            ),
+            HandPropPartSpec(
+                "ACC_BeaterPaddleRise",
+                lambda: make_frustum_between(
+                    _beater_along(0.320), _beater_along(0.440),
+                    0.018, 0.085, 8, 0.26,
+                ),
+                "signature_silhouette", "beater_plastic",
+            ),
+            HandPropPartSpec(
+                "ACC_BeaterPaddleTip",
+                lambda: make_frustum_between(
+                    _beater_along(0.440), _beater_along(0.580),
+                    0.085, 0.012, 8, 0.26,
+                ),
+                "signature_silhouette", "beater_plastic",
+            ),
+        ),
+    ),
+    HandPropSpec(
+        "cigarette", "Cigarette", "Cigarette",
+        "SOCKET_Cigarette.R", "hand.R", "yard_babushka",
+        (
+            # Along the canonical SOCKET_Cigarette.R direction; the same
+            # prop serves the smoking babushka and the balcony smokers.
+            HandPropPartSpec(
+                "ACC_Cigarette",
+                lambda: make_frustum_between(
+                    (-0.744, -0.052, 1.052),
+                    (-0.748, -0.126, 1.055),
+                    0.0068, 0.0060, 6, 1.0,
+                ),
+                "surface_detail", "pipe_ivory",
+            ),
+            HandPropPartSpec(
+                "ACC_CigaretteEmber",
+                lambda: make_box((-0.748, -0.132, 1.055), (0.015, 0.014, 0.015)),
+                "surface_detail", "amber",
+            ),
+        ),
+    ),
+    HandPropSpec(
+        "funeral_bouquet", "FuneralBouquet", "Funeral Bouquet",
+        "SOCKET_Grip.R", "hand.R", "cemetery_mourner",
+        (
+            HandPropPartSpec(
+                "ACC_BouquetStems",
+                lambda: make_frustum_between(
+                    _bouquet_along(-0.070), _bouquet_along(0.020),
+                    0.011, 0.015, 6, 1.0,
+                ),
+                "surface_detail", "bouquet_stem",
+            ),
+            HandPropPartSpec(
+                "ACC_BouquetWrap",
+                lambda: make_frustum_between(
+                    _bouquet_along(0.000), _bouquet_along(0.165),
+                    0.028, 0.056, 8, 1.0,
+                ),
+                "signature_silhouette", "bouquet_wrap",
+            ),
+            HandPropPartSpec(
+                "ACC_BouquetBloomA",
+                lambda: make_ellipsoid(
+                    _bouquet_along(0.210), (0.056, 0.052, 0.044), 8, 4,
+                ),
+                "signature_silhouette", "bouquet_bloom",
+            ),
+            HandPropPartSpec(
+                "ACC_BouquetBloomB", _bouquet_bloom_b,
+                "signature_silhouette", "bouquet_bloom",
+            ),
+            HandPropPartSpec(
+                "ACC_BouquetGreens", _bouquet_greens,
+                "surface_detail", "bouquet_stem",
+            ),
+        ),
+    ),
+    HandPropSpec(
+        "chalk", "Chalk", "Chalk",
+        "SOCKET_Grip.R", "hand.R", "weigh_attendant",
+        (
+            # The stub rides the right fist along the canonical cigarette
+            # direction; only the weigher gets it.
+            HandPropPartSpec(
+                "ACC_Chalk",
+                lambda: make_frustum_between(
+                    (-0.740, -0.048, 1.050),
+                    (-0.744, -0.108, 1.053),
+                    0.012, 0.010, 6, 1.0,
+                ),
+                "surface_detail", "chalk",
+            ),
+        ),
+    ),
+    HandPropSpec(
+        "fishing_rod", "FishingRod", "Fishing Rod",
+        "SOCKET_Grip.R", "hand.R", "lake_fisherman",
+        (
+            # One stick, rigid to the right fist; the left hand is brought
+            # onto the same axis by the authored pose, whose angles were
+            # fitted against exactly this geometry.
+            HandPropPartSpec(
+                "ACC_RodGrip",
+                lambda: make_frustum_between(
+                    _rod_along(-0.120), _rod_along(0.100),
+                    0.021, 0.019, 8, 1.0,
+                ),
+                "signature_silhouette", "rod_cork",
+            ),
+            HandPropPartSpec(
+                "ACC_RodReel", _rod_reel,
+                "signature_silhouette", "rod_reel",
+            ),
+            HandPropPartSpec(
+                "ACC_RodButt",
+                lambda: make_frustum_between(
+                    _rod_along(0.100), _rod_along(0.760),
+                    0.0140, 0.0106, 6, 1.0,
+                ),
+                "signature_silhouette", "rod_cane",
+            ),
+            HandPropPartSpec(
+                "ACC_RodMid",
+                lambda: make_frustum_between(
+                    _rod_along(0.760), _rod_along(1.450),
+                    0.0106, 0.0070, 6, 1.0,
+                ),
+                "signature_silhouette", "rod_cane",
+            ),
+            HandPropPartSpec(
+                "ACC_RodTip",
+                lambda: make_frustum_between(
+                    _rod_along(1.450), _rod_along(2.050),
+                    0.0070, 0.0032, 6, 1.0,
+                ),
+                "signature_silhouette", "rod_cane",
+            ),
+        ),
+        anchors=(
+            # The line hangs from here.
+            HandPropAnchorSpec(
+                "ANCHOR_RodTip", "farthest_from_socket", "ACC_RodTip",
+            ),
+        ),
+    ),
+    HandPropSpec(
+        "smoking_pipe", "SmokingPipe", "Smoking Pipe",
+        "SOCKET_Mouth", "head", "lake_fisherman",
+        (
+            # Leaves the mouth along the canonical SOCKET_Mouth direction,
+            # bends down and forward, and stands its bowl back up in front
+            # of the beard: the classic bent shape, because a straight
+            # stem reads as a stick from the front.
+            HandPropPartSpec(
+                "ACC_PipeStem",
+                lambda: make_frustum_between(
+                    (0.008, -0.150, 1.474),
+                    (0.020, -0.246, 1.434),
+                    0.0074, 0.0086, 6, 1.0,
+                ),
+                "signature_silhouette", "pipe_briar_dark",
+            ),
+            HandPropPartSpec(
+                "ACC_PipeBowl",
+                lambda: make_frustum_between(
+                    (0.022, -0.252, 1.428),
+                    (0.024, -0.262, 1.492),
+                    0.026, 0.030, 8, 1.0,
+                ),
+                "signature_silhouette", "pipe_briar",
+            ),
+            # The one part the runtime drives: the shared material stays
+            # non-emissive, so the glow, the light and the plume are all
+            # raised by the runtime against this exact part.
+            HandPropPartSpec(
+                "ACC_PipeEmber",
+                lambda: make_box((0.024, -0.262, 1.496), (0.036, 0.036, 0.010)),
+                "signature_silhouette", "amber",
+            ),
+        ),
+        anchors=(
+            HandPropAnchorSpec("ANCHOR_PipeEmber", "part_center", "ACC_PipeEmber"),
+        ),
+    ),
+    HandPropSpec(
+        "cafe_cigarette", "CafeCigarette", "Cafe Cigarette",
+        "SOCKET_Cigarette.R", "hand.R", "cafe_couple_woman",
+        (
+            # The tan filter straddles the gripping fingers at the
+            # cigarette socket; white paper and the ember continue along
+            # the socket's -Y/outward axis. The runtime uses that same
+            # axis for the small causal plume; neither smoke nor a light
+            # is baked in.
+            HandPropPartSpec(
+                "ACC_CafeCigaretteFilter",
+                lambda: make_frustum_between(
+                    (
+                        CAFE_CIGARETTE_BIND_X,
+                        CAFE_CIGARETTE_FILTER_INNER_Y,
+                        CAFE_CIGARETTE_BIND_Z,
+                    ),
+                    (
+                        CAFE_CIGARETTE_BIND_X,
+                        CAFE_CIGARETTE_FILTER_OUTER_Y,
+                        CAFE_CIGARETTE_BIND_Z,
+                    ),
+                    0.0068,
+                    0.0065,
+                    6,
+                    1.0,
+                ),
+                "held_prop", "cafe_paper",
+            ),
+            HandPropPartSpec(
+                "ACC_CafeCigarette",
+                lambda: make_frustum_between(
+                    (
+                        CAFE_CIGARETTE_BIND_X,
+                        CAFE_CIGARETTE_FILTER_OUTER_Y,
+                        CAFE_CIGARETTE_BIND_Z,
+                    ),
+                    (
+                        CAFE_CIGARETTE_BIND_X,
+                        CAFE_CIGARETTE_PAPER_OUTER_Y,
+                        CAFE_CIGARETTE_BIND_Z,
+                    ),
+                    0.0065,
+                    0.0060,
+                    6,
+                    1.0,
+                ),
+                "held_prop", "cafe_ivory_light",
+            ),
+            HandPropPartSpec(
+                "ACC_CafeCigaretteEmber",
+                lambda: make_box(
+                    (
+                        CAFE_CIGARETTE_BIND_X,
+                        CAFE_CIGARETTE_EMBER_CENTER_Y,
+                        CAFE_CIGARETTE_BIND_Z,
+                    ),
+                    (
+                        CAFE_CIGARETTE_EMBER_SIZE_M,
+                        0.014,
+                        CAFE_CIGARETTE_EMBER_SIZE_M,
+                    ),
+                ),
+                "surface_detail", "cafe_red_light",
+            ),
+        ),
+    ),
+    HandPropSpec(
+        "service_towel", "ServiceTowel", "Service Towel",
+        "SOCKET_Grip.L", "hand.L", "cafe_attendant",
+        (
+            # The one left-hand prop: towel left, pot right, never swapped.
+            HandPropPartSpec(
+                "ACC_ServiceTowel",
+                lambda: make_tapered_box(
+                    (0.748, -0.030, 0.940), (0.748, -0.030, 1.100),
+                    (0.180, 0.025, 0), (0.145, 0.025, 0),
+                ),
+                "held_prop", "cafe_towel",
+            ),
+        ),
+    ),
+    HandPropSpec(
+        "coffee_pot", "CoffeePot", "Coffee Pot",
+        "SOCKET_Grip.R", "hand.R", "cafe_attendant",
+        (
+            HandPropPartSpec(
+                "ACC_CoffeePotBody",
+                lambda: make_frustum_between(
+                    (-0.748, -0.022, 0.950),
+                    (-0.748, -0.022, 1.095),
+                    0.070, 0.058, 12,
+                ),
+                "held_prop", "cafe_pot",
+            ),
+            HandPropPartSpec(
+                "ACC_CoffeePotLid",
+                lambda: make_frustum_between(
+                    (-0.748, -0.022, 1.092),
+                    (-0.748, -0.022, 1.114),
+                    0.066, 0.038, 10,
+                ),
+                "held_prop", "cafe_pot_dark",
+            ),
+            HandPropPartSpec(
+                "ACC_CoffeePotBaseRing",
+                lambda: make_frustum_between(
+                    (-0.748, -0.022, 0.944),
+                    (-0.748, -0.022, 0.960),
+                    0.074,
+                    0.070,
+                    12,
+                ),
+                "held_prop", "cafe_pot_dark",
+            ),
+            HandPropPartSpec(
+                "ACC_CoffeePotLidKnob",
+                lambda: make_ellipsoid(
+                    (-0.748, -0.022, 1.121),
+                    (0.018, 0.018, 0.015),
+                    8,
+                    3,
+                ),
+                "held_prop", "cafe_pot_dark",
+            ),
+            HandPropPartSpec(
+                "ACC_CoffeePotSpout",
+                lambda: make_tapered_box(
+                    COFFEE_SPOUT_BASE,
+                    COFFEE_SPOUT_TIP,
+                    (0.070, 0.055, 0),
+                    (0.025, 0.030, 0),
+                ),
+                "held_prop", "cafe_pot",
+            ),
+            HandPropPartSpec(
+                "ACC_CoffeePotSpoutLip", _coffee_spout_lip,
+                "held_prop", "cafe_pot_dark",
+            ),
+            HandPropPartSpec(
+                "ACC_CoffeePotHandleTop",
+                lambda: make_frustum_between(
+                    (-0.690, 0.002, 1.072),
+                    (-0.640, 0.010, 1.105),
+                    0.014, 0.014, 6,
+                ),
+                "held_prop", "cafe_pot_dark",
+            ),
+            HandPropPartSpec(
+                "ACC_CoffeePotHandleBottom",
+                lambda: make_frustum_between(
+                    (-0.690, 0.002, 0.978),
+                    (-0.640, 0.010, 0.952),
+                    0.014, 0.014, 6,
+                ),
+                "held_prop", "cafe_pot_dark",
+            ),
+            HandPropPartSpec(
+                "ACC_CoffeePotHandleGrip",
+                lambda: make_frustum_between(
+                    (-0.640, 0.010, 0.952),
+                    (-0.640, 0.010, 1.105),
+                    0.014, 0.014, 6,
+                ),
+                "held_prop", "cafe_pot_dark",
+            ),
+        ),
+        anchors=(
+            # The pour stream leaves the spout lip; forward is measured in
+            # Unity as tip minus pot-body centre, no Blender-side sign
+            # flip (the old skinned Empty needed one for the FBX axis
+            # conversion, a measured point does not).
+            HandPropAnchorSpec(
+                "SOCKET_CafePotSpout", "farthest_from_part",
+                "ACC_CoffeePotSpout", axis_from="ACC_CoffeePotBody",
+            ),
+        ),
+    ),
+)
+HAND_PROP_BY_ID = {prop.id: prop for prop in HAND_PROPS}
 
 
 class PedestrianBuilder:
@@ -4639,13 +5208,15 @@ class PedestrianBuilder:
         )
 
     def build_yard_babushka_details(self) -> None:
-        """Both authored hand props, enabled per role by the runtime.
+        """Robe buttons. The hands are empty by design.
 
-        The beater is the classic bright Soviet plastic: a handle
-        continuing the right hand's axis into a flattened teardrop
-        paddle. The cigarette rides the same hand along the canonical
-        SOCKET_Cigarette.R direction; a beating babushka shows only the
-        beater and the smoking one only the cigarette.
+        Until 2026-09-05 this pass also authored the carpet beater and
+        the cigarette as skinned parts of her body, and the runtime hid
+        whichever one a role did not want - which put a beater into the
+        fist of every anonymous copy of her on the promenade. Both now
+        live in HAND_PROPS (`carpet_beater`, `cigarette`), authored
+        against this design and attached by the drying yard and the
+        balcony at runtime.
         """
 
         self.add_part(
@@ -4662,57 +5233,6 @@ class PedestrianBuilder:
             "ACC_RobeButton.03",
             make_box((0, -0.152, 1.020), (0.024, 0.018, 0.024)),
             "spine", "surface_detail", "button",
-        )
-
-        # The beater points forward-down out of the fist: the A-pose
-        # envelope allows barely 5 cm past the fingertips on X, so the
-        # carry direction leans into -Y (the model's forward) instead
-        # of along the arm. With the strike key extending the forearm
-        # toward the carpet, this forward bias is what lands the paddle
-        # on the hung carpet instead of folding it back into the skirt.
-        direction = (0.0, -0.600, -0.800)
-        grip = (-0.720, -0.021, 1.048)
-
-        def along(distance: float) -> tuple[float, float, float]:
-            return (
-                grip[0] + direction[0] * distance,
-                grip[1] + direction[1] * distance,
-                grip[2] + direction[2] * distance,
-            )
-
-        self.add_part(
-            "ACC_BeaterHandle",
-            make_frustum_between(along(-0.050), along(0.240), 0.015, 0.013, 8, 0.95),
-            "hand.R", "signature_silhouette", "beater_plastic_dark",
-        )
-        self.add_part(
-            "ACC_BeaterNeck",
-            make_frustum_between(along(0.240), along(0.320), 0.013, 0.011, 8, 0.95),
-            "hand.R", "signature_silhouette", "beater_plastic",
-        )
-        self.add_part(
-            "ACC_BeaterPaddleRise",
-            make_frustum_between(along(0.320), along(0.440), 0.018, 0.085, 8, 0.26),
-            "hand.R", "signature_silhouette", "beater_plastic",
-        )
-        self.add_part(
-            "ACC_BeaterPaddleTip",
-            make_frustum_between(along(0.440), along(0.580), 0.085, 0.012, 8, 0.26),
-            "hand.R", "signature_silhouette", "beater_plastic",
-        )
-        self.add_part(
-            "ACC_Cigarette",
-            make_frustum_between(
-                (-0.744, -0.052, 1.052),
-                (-0.748, -0.126, 1.055),
-                0.0068, 0.0060, 6, 1.0,
-            ),
-            "hand.R", "surface_detail", "pipe_ivory",
-        )
-        self.add_part(
-            "ACC_CigaretteEmber",
-            make_box((-0.748, -0.132, 1.055), (0.015, 0.014, 0.015)),
-            "hand.R", "surface_detail", "amber",
         )
 
     def build_cemetery_mourner_body(self) -> None:
@@ -4846,13 +5366,14 @@ class PedestrianBuilder:
         )
 
     def build_cemetery_mourner_details(self) -> None:
-        """Coat buttons and the clasped funeral bouquet.
+        """Coat buttons. The bouquet is a hand prop now.
 
-        The bouquet rides the right hand the way the babushka's beater
-        does: authored at the A-pose fist and pointing up-forward out
-        of it, so the clasp pose of MournerWalk carries it against the
-        chest. The runtime hides these ACC_Bouquet* renderers at the
-        lay cue and places its own bouquet on the grave slab.
+        Until 2026-09-05 the clasped funeral bouquet was authored here,
+        skinned to the right hand, and the runtime hid its renderers at
+        the lay cue - so a roaming copy of her carried flowers down the
+        promenade with nowhere to lay them. It lives in HAND_PROPS
+        (`funeral_bouquet`), authored against this design; the cemetery
+        attaches it for the rite and places the same prop on the slab.
         """
 
         for index, height in enumerate((1.250, 1.130, 1.000), start=1):
@@ -4865,53 +5386,6 @@ class PedestrianBuilder:
                 "chest" if height > 1.09 else "spine",
                 "surface_detail", "button",
             )
-
-        # Up and slightly forward out of the fist: with both forearms
-        # folded to the chest in the authored clips, this direction
-        # stands the blooms upright against the collarbone.
-        direction = (0.0, -0.280, 0.960)
-        grip = (-0.720, -0.021, 1.048)
-
-        def along(distance: float) -> tuple[float, float, float]:
-            return (
-                grip[0] + direction[0] * distance,
-                grip[1] + direction[1] * distance,
-                grip[2] + direction[2] * distance,
-            )
-
-        self.add_part(
-            "ACC_BouquetStems",
-            make_frustum_between(along(-0.070), along(0.020), 0.011, 0.015, 6, 1.0),
-            "hand.R", "surface_detail", "bouquet_stem",
-        )
-        self.add_part(
-            "ACC_BouquetWrap",
-            make_frustum_between(along(0.000), along(0.165), 0.028, 0.056, 8, 1.0),
-            "hand.R", "signature_silhouette", "bouquet_wrap",
-        )
-        self.add_part(
-            "ACC_BouquetBloomA",
-            make_ellipsoid(along(0.210), (0.056, 0.052, 0.044), 8, 4),
-            "hand.R", "signature_silhouette", "bouquet_bloom",
-        )
-        bloom_b = along(0.240)
-        self.add_part(
-            "ACC_BouquetBloomB",
-            make_ellipsoid(
-                (bloom_b[0] + 0.040, bloom_b[1] - 0.012, bloom_b[2] - 0.018),
-                (0.040, 0.038, 0.034), 8, 4,
-            ),
-            "hand.R", "signature_silhouette", "bouquet_bloom",
-        )
-        bloom_c = along(0.228)
-        self.add_part(
-            "ACC_BouquetGreens",
-            make_ellipsoid(
-                (bloom_c[0] - 0.042, bloom_c[1] + 0.010, bloom_c[2] - 0.008),
-                (0.036, 0.034, 0.040), 8, 4,
-            ),
-            "hand.R", "surface_detail", "bouquet_stem",
-        )
 
     def build_last_route_ferryman_body(self) -> None:
         """The Ferryman: a driver built to read as a boatman.
@@ -5444,27 +5918,15 @@ class PedestrianBuilder:
         )
 
     def build_lake_fisherman_details(self) -> None:
-        """The two things he is actually doing: the pipe and the rod.
+        """Slicker seams, the hood cord and the clasps.
 
-        Both are hard-mounted geometry rather than togglable props,
-        because unlike the babushka he has exactly one role and never
-        puts either down.
-
-        The pipe leaves the mouth along the canonical SOCKET_Mouth
-        direction, bends down and forward, and stands its bowl back up
-        in front of the beard - the classic bent shape, chosen because
-        a straight stem would read as a stick from the front. The ember
-        is a separate flat part on top of the bowl and nothing else:
-        the shared source material must stay non-emissive, so the glow,
-        the light and the smoke are all raised by the runtime against
-        this exact part.
-
-        The rod is bound rigidly to the right hand, because it is one
-        stick and this rig has one vertex group per part; the left hand
-        is brought onto the same axis by the authored pose instead, and
-        those angles were fitted against this geometry rather than set
-        by eye. It leaves the fist forward and slightly up, so the line
-        falls clear of the end board to the water the plan measured.
+        The pipe and the rod used to be hard-mounted here, on the
+        grounds that he has exactly one role and never puts either
+        down. Since 2026-09-05 they are HAND_PROPS (`smoking_pipe` on
+        SOCKET_Mouth, `fishing_rod` on SOCKET_Grip.R), authored against
+        this design so they land exactly where the body carried them;
+        the pier attaches both. The fitted two-hand pose in
+        `fisherman_base_pose` still holds the rod's authored axis.
         """
 
         self.add_part(
@@ -5496,78 +5958,6 @@ class PedestrianBuilder:
             "ACC_SlickerClasp.02",
             make_box((0.050, -0.146, 1.086), (0.024, 0.018, 0.026)),
             "chest", "surface_detail", "rod_reel",
-        )
-
-        # The pipe, on the head bone, out of SOCKET_Mouth.
-        self.add_part(
-            "ACC_PipeStem",
-            make_frustum_between(
-                (0.008, -0.150, 1.474),
-                (0.020, -0.246, 1.434),
-                0.0074, 0.0086, 6, 1.0,
-            ),
-            "head", "signature_silhouette", "pipe_briar_dark",
-        )
-        self.add_part(
-            "ACC_PipeBowl",
-            make_frustum_between(
-                (0.022, -0.252, 1.428),
-                (0.024, -0.262, 1.492),
-                0.026, 0.030, 8, 1.0,
-            ),
-            "head", "signature_silhouette", "pipe_briar",
-        )
-        # The one part the runtime drives. Its name is a contract:
-        # LakeFishermanPipeEffect finds it by name and breathes the
-        # ember, the point light and the plume off it.
-        self.add_part(
-            "ACC_PipeEmber",
-            make_box((0.024, -0.262, 1.496), (0.036, 0.036, 0.010)),
-            "head", "signature_silhouette", "amber",
-        )
-
-        # The rod, on the right hand. Forward and up, out of the fist.
-        direction = (0.130, -0.960, 0.250)
-        grip = (-0.730, -0.030, 1.048)
-
-        def along(distance: float) -> tuple[float, float, float]:
-            return (
-                grip[0] + direction[0] * distance,
-                grip[1] + direction[1] * distance,
-                grip[2] + direction[2] * distance,
-            )
-
-        self.add_part(
-            "ACC_RodGrip",
-            make_frustum_between(along(-0.120), along(0.100), 0.021, 0.019, 8, 1.0),
-            "hand.R", "signature_silhouette", "rod_cork",
-        )
-        self.add_part(
-            "ACC_RodReel",
-            make_box(
-                (
-                    along(0.128)[0],
-                    along(0.128)[1],
-                    along(0.128)[2] - 0.052,
-                ),
-                (0.056, 0.072, 0.072),
-            ),
-            "hand.R", "signature_silhouette", "rod_reel",
-        )
-        self.add_part(
-            "ACC_RodButt",
-            make_frustum_between(along(0.100), along(0.760), 0.0140, 0.0106, 6, 1.0),
-            "hand.R", "signature_silhouette", "rod_cane",
-        )
-        self.add_part(
-            "ACC_RodMid",
-            make_frustum_between(along(0.760), along(1.450), 0.0106, 0.0070, 6, 1.0),
-            "hand.R", "signature_silhouette", "rod_cane",
-        )
-        self.add_part(
-            "ACC_RodTip",
-            make_frustum_between(along(1.450), along(2.050), 0.0070, 0.0032, 6, 1.0),
-            "hand.R", "signature_silhouette", "rod_cane",
         )
 
     def build_park_chess_player_body(self) -> None:
@@ -6293,11 +6683,12 @@ class PedestrianBuilder:
         )
 
     def build_weigh_attendant_details(self) -> None:
-        """Quilt seams, buttons and the one working prop: the chalk.
+        """Quilt seams, buttons and pockets.
 
-        The chalk stub rides the right fist along the canonical
-        cigarette direction; the runtime shows it only on the weigher
-        and hides it for the worker's free hands.
+        The chalk stub used to ride the right fist here, and the
+        runtime hid it for the worker's free hands. Since 2026-09-05 it
+        is the `chalk` hand prop (HAND_PROPS), authored against this
+        design; the weighbridge attaches it to the weigher only.
         """
 
         # Horizontal quilt seams read as the padded jacket's stitching.
@@ -6331,15 +6722,6 @@ class PedestrianBuilder:
                 ),
                 "pelvis", "surface_detail", "weigh_jacket_dark",
             )
-        self.add_part(
-            "ACC_Chalk",
-            make_frustum_between(
-                (-0.740, -0.048, 1.050),
-                (-0.744, -0.108, 1.053),
-                0.012, 0.010, 6, 1.0,
-            ),
-            "hand.R", "surface_detail", "chalk",
-        )
 
     def trunk_section(self, height: float) -> tuple[float, float, float]:
         """Half-width, half-depth and y offset of the trunk at a height."""
@@ -7343,68 +7725,11 @@ class PedestrianBuilder:
             ),
             "head", "face_detail", "cafe_red_light",
         )
-        # One ordinary cigarette in the free right hand. The left hand owns
-        # the coffee cup, so the two props never exchange hands. The tan filter
-        # straddles the gripping fingers at the cigarette socket; white paper
-        # and the ember continue along the socket's -Y/outward axis. Runtime
-        # uses that same phase/axis for the small causal plume; neither smoke
-        # nor a realtime light is baked into this model.
-        self.add_part(
-            "ACC_CafeCigaretteFilter",
-            make_frustum_between(
-                (
-                    CAFE_CIGARETTE_BIND_X,
-                    CAFE_CIGARETTE_FILTER_INNER_Y,
-                    CAFE_CIGARETTE_BIND_Z,
-                ),
-                (
-                    CAFE_CIGARETTE_BIND_X,
-                    CAFE_CIGARETTE_FILTER_OUTER_Y,
-                    CAFE_CIGARETTE_BIND_Z,
-                ),
-                0.0068,
-                0.0065,
-                6,
-                1.0,
-            ),
-            "hand.R", "held_prop", "cafe_paper",
-        )
-        self.add_part(
-            "ACC_CafeCigarette",
-            make_frustum_between(
-                (
-                    CAFE_CIGARETTE_BIND_X,
-                    CAFE_CIGARETTE_FILTER_OUTER_Y,
-                    CAFE_CIGARETTE_BIND_Z,
-                ),
-                (
-                    CAFE_CIGARETTE_BIND_X,
-                    CAFE_CIGARETTE_PAPER_OUTER_Y,
-                    CAFE_CIGARETTE_BIND_Z,
-                ),
-                0.0065,
-                0.0060,
-                6,
-                1.0,
-            ),
-            "hand.R", "held_prop", "cafe_ivory_light",
-        )
-        self.add_part(
-            "ACC_CafeCigaretteEmber",
-            make_box(
-                (
-                    CAFE_CIGARETTE_BIND_X,
-                    CAFE_CIGARETTE_EMBER_CENTER_Y,
-                    CAFE_CIGARETTE_BIND_Z,
-                ),
-                (
-                    CAFE_CIGARETTE_EMBER_SIZE_M,
-                    0.014,
-                    CAFE_CIGARETTE_EMBER_SIZE_M,
-                ),
-            ),
-            "hand.R", "surface_detail", "cafe_red_light",
-        )
+        # Her cigarette is the `cafe_cigarette` hand prop (HAND_PROPS)
+        # since 2026-09-05, authored against this design on
+        # SOCKET_Cigarette.R; the cafe factory attaches it and the drag
+        # proof (`validate_cafe_woman_cigarette_contact`) evaluates the
+        # prop through that posed socket instead of through a body part.
         bpy.context.view_layer.update()
         self.assign_atlas_uvs()
 
@@ -7488,116 +7813,10 @@ class PedestrianBuilder:
                 ),
                 "head", "body_detail", "cafe_hat_band",
             )
-        # Towel left, pot right: the two props never exchange hands. Runtime
-        # hides the pot while he wipes/notices and reveals it for Walk/Pour.
-        self.add_part(
-            "ACC_ServiceTowel",
-            make_tapered_box(
-                (0.748, -0.030, 0.940), (0.748, -0.030, 1.100),
-                (0.180, 0.025, 0), (0.145, 0.025, 0),
-            ),
-            "hand.L", "held_prop", "cafe_towel",
-        )
-        self.add_part(
-            "ACC_CoffeePotBody",
-            make_frustum_between(
-                (-0.748, -0.022, 0.950),
-                (-0.748, -0.022, 1.095),
-                0.070, 0.058, 12,
-            ),
-            "hand.R", "held_prop", "cafe_pot",
-        )
-        self.add_part(
-            "ACC_CoffeePotLid",
-            make_frustum_between(
-                (-0.748, -0.022, 1.092),
-                (-0.748, -0.022, 1.114),
-                0.066, 0.038, 10,
-            ),
-            "hand.R", "held_prop", "cafe_pot_dark",
-        )
-        self.add_part(
-            "ACC_CoffeePotBaseRing",
-            make_frustum_between(
-                (-0.748, -0.022, 0.944),
-                (-0.748, -0.022, 0.960),
-                0.074,
-                0.070,
-                12,
-            ),
-            "hand.R", "held_prop", "cafe_pot_dark",
-        )
-        self.add_part(
-            "ACC_CoffeePotLidKnob",
-            make_ellipsoid(
-                (-0.748, -0.022, 1.121),
-                (0.018, 0.018, 0.015),
-                8,
-                3,
-            ),
-            "hand.R", "held_prop", "cafe_pot_dark",
-        )
-        coffee_spout_base = (-0.748, -0.076, 1.040)
-        coffee_spout_tip = (-0.748, -0.218, 1.104)
-        self.add_part(
-            "ACC_CoffeePotSpout",
-            make_tapered_box(
-                coffee_spout_base,
-                coffee_spout_tip,
-                (0.070, 0.055, 0),
-                (0.025, 0.030, 0),
-            ),
-            "hand.R", "held_prop", "cafe_pot",
-        )
-        self.add_part(
-            "ACC_CoffeePotSpoutLip",
-            make_ellipsoid(
-                coffee_spout_tip,
-                (0.026, 0.014, 0.020),
-                8,
-                3,
-                orientation=(v(coffee_spout_tip) - v(coffee_spout_base))
-                .to_track_quat("Z", "Y"),
-            ),
-            "hand.R", "held_prop", "cafe_pot_dark",
-        )
-        self.create_bone_anchor(
-            "SOCKET_CafePotSpout",
-            "hand.R",
-            coffee_spout_tip,
-            # FBX converts Blender's right-handed local Z to Unity with the
-            # Empty's forward axis reversed.  Author the Empty against the
-            # mesh direction here so Transform.forward in Unity follows the
-            # visible spout from pot body to lip.
-            tuple(v(coffee_spout_base) - v(coffee_spout_tip)),
-        )
-        self.add_part(
-            "ACC_CoffeePotHandleTop",
-            make_frustum_between(
-                (-0.690, 0.002, 1.072),
-                (-0.640, 0.010, 1.105),
-                0.014, 0.014, 6,
-            ),
-            "hand.R", "held_prop", "cafe_pot_dark",
-        )
-        self.add_part(
-            "ACC_CoffeePotHandleBottom",
-            make_frustum_between(
-                (-0.690, 0.002, 0.978),
-                (-0.640, 0.010, 0.952),
-                0.014, 0.014, 6,
-            ),
-            "hand.R", "held_prop", "cafe_pot_dark",
-        )
-        self.add_part(
-            "ACC_CoffeePotHandleGrip",
-            make_frustum_between(
-                (-0.640, 0.010, 0.952),
-                (-0.640, 0.010, 1.105),
-                0.014, 0.014, 6,
-            ),
-            "hand.R", "held_prop", "cafe_pot_dark",
-        )
+        # The towel (left) and the coffee pot with its spout anchor
+        # (right) are HAND_PROPS since 2026-09-05 (`service_towel`,
+        # `coffee_pot`), authored against this design; the cafe factory
+        # attaches both and toggles the pot for the wipe/notice beats.
         bpy.context.view_layer.update()
         self.assign_atlas_uvs()
 
@@ -9123,14 +9342,12 @@ def validate_result(
             }
         )
 
-    # Existing mechanism anchors are materialized by their focused Unity
-    # setup. The cafe pot spout is different: its world-space stream needs an
-    # exact transform that follows hand.R directly from the staged FBX.
-    expected_anchors = (
-        tuple(anchor.name for anchor in archetype.rig_anchors)
-        if archetype.key == "cafe_attendant"
-        else ()
-    )
+    # No body exports an anchor Empty. Declared rig anchors (the kettle's)
+    # are materialized by their focused Unity setup, and the one exception
+    # this used to make - the cafe pot spout, which followed hand.R straight
+    # out of the staged FBX - left with the pot on 2026-09-05: the spout is
+    # now an anchor of the coffee-pot hand prop, measured by its own build.
+    expected_anchors = ()
     if tuple(result.anchors) != expected_anchors:
         errors.append(
             f"Rig anchors are {tuple(result.anchors)!r}; "
@@ -10451,10 +10668,10 @@ def create_action(
     action.use_frame_range = True
     action.frame_start = 0.0
     action.frame_end = float(spec.frame_end)
-    action.use_cyclic = True
+    action.use_cyclic = not spec.one_shot
     action["bp_archetype"] = spec.archetype
     action["bp_duration_seconds"] = spec.duration_seconds
-    action["bp_loop"] = True
+    action["bp_loop"] = not spec.one_shot
     action["bp_in_place"] = True
     action["bp_root_motion"] = False
     action["bp_authored_posture"] = spec.authored_posture
@@ -10737,6 +10954,9 @@ def mourner_base_pose() -> dict[str, BonePose]:
     Both clips keep the feet planted, so the ordinary walker sole bake
     grounds them; the grief lives in the sunk head, the rounded back
     and the two forearms folded up to the chest around the bouquet.
+    The bouquet itself is a hand prop the cemetery attaches, so the
+    fold is only right where the flowers are: the placed rite and walk.
+    The street clips take `mourner_street_pose` instead.
     """
 
     return {
@@ -10760,6 +10980,37 @@ def mourner_base_pose() -> dict[str, BonePose]:
         "shin.R": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
     }
+
+
+MOURNER_STREET_ARM_BONES = (
+    "clavicle.L", "clavicle.R",
+    "upper_arm.L", "upper_arm.R",
+    "forearm.L", "forearm.R",
+    "hand.L", "hand.R",
+)
+
+
+def mourner_street_pose() -> dict[str, BonePose]:
+    """The mourner as an anonymous walker: her grief, the weigher's arms.
+
+    `mourner_base_pose` folds both forearms to the chest (-88 degrees)
+    around the bouquet. Until 2026-09-05 the bouquet was part of her
+    body, so a roaming copy of her carried it and the fold made sense;
+    now the bouquet is a hand prop the cemetery attaches, and a walker
+    on the promenade has nothing in her hands. Folded empty forearms
+    read as a woman hugging herself, so the two street clips take the
+    bowed head, rounded back and planted feet of the base pose with
+    the hanging arms of `weigh_attendant_base_pose` - the same rows,
+    verbatim, so the two designs stand alike in a crowd. The placed
+    rite and the graveside walk keep the fold: that is where the
+    flowers are.
+    """
+
+    pose = mourner_base_pose()
+    hanging = weigh_attendant_base_pose()
+    for name in MOURNER_STREET_ARM_BONES:
+        pose[name] = hanging[name]
+    return pose
 
 
 def watchman_base_pose() -> dict[str, BonePose]:
@@ -12340,6 +12591,9 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     })
 
     mourner = mourner_base_pose()
+    # Street clips only: the fold is around a bouquet that is no longer
+    # in the body (see `mourner_street_pose`).
+    mourner_street = mourner_street_pose()
 
     # The mourner's grieving gait: short heavy steps with no arm swing,
     # both forearms staying folded to the chest around the bouquet.
@@ -13932,8 +14186,8 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "WeigherStreetWalk": citizen_walk_keys(weigh),
         "WatchmanStreetIdle": citizen_idle_keys(watchman),
         "WatchmanStreetWalk": citizen_walk_keys(watchman),
-        "MournerStreetIdle": citizen_idle_keys(mourner),
-        "MournerStreetWalk": citizen_walk_keys(mourner),
+        "MournerStreetIdle": citizen_idle_keys(mourner_street),
+        "MournerStreetWalk": citizen_walk_keys(mourner_street),
         "MournerWalk": (
             (0.0, mourner_walk_l),
             (0.25, mourner_walk_pr),
@@ -14822,17 +15076,29 @@ def validate_cafe_woman_cigarette_contact(
     that neither the hand nor the prop crosses the anatomical head, that the
     distinct tan filter remains inside the gripping hand, and that the ember
     stays visibly farther away instead of becoming the gripped endpoint.
+
+    Since 2026-09-05 the cigarette is not a body part: it is the
+    `cafe_cigarette` hand prop, attached to `SOCKET_Cigarette.R` at
+    runtime. The proof is kept by evaluating the prop's rest-space
+    vertices through that posed socket every frame - the same transform
+    a rigidly skinned part gets from the Armature modifier
+    (`rig.matrix_world @ pose_bone.matrix @ bone.matrix_local.inverted()`),
+    so the numbers are what the attached prop will show. The lips, the
+    hand and the head still come from the evaluated body; every
+    threshold is unchanged.
     """
 
     required = {
-        "body": {"ACC_CafeCigarette"},
-        "filter": {"ACC_CafeCigaretteFilter"},
-        "ember": {"ACC_CafeCigaretteEmber"},
         "lip": {"ACC_LipRed"},
         "hand": {"GEO_Hand.R", "GEO_Thumb.R"},
         "head": {
             "GEO_Head", "GEO_FaceSurface", "GEO_Ear.L", "GEO_Ear.R",
         },
+    }
+    prop_families = {
+        "body": ("ACC_CafeCigarette",),
+        "filter": ("ACC_CafeCigaretteFilter",),
+        "ember": ("ACC_CafeCigaretteEmber",),
     }
     parts_by_name = {part.obj.name: part for part in result.parts}
     missing = sorted(
@@ -14843,6 +15109,22 @@ def validate_cafe_woman_cigarette_contact(
         raise RuntimeError(
             "CafeWomanIdle cigarette validation is missing parts: "
             + ", ".join(missing)
+        )
+    prop = HAND_PROP_BY_ID["cafe_cigarette"]
+    if prop.socket != "SOCKET_Cigarette.R":
+        raise RuntimeError(
+            "CafeWomanIdle cigarette proof expects the cafe cigarette on "
+            f"SOCKET_Cigarette.R, not {prop.socket!r}"
+        )
+    prop_rest = hand_prop_rest_geometry(prop)
+    missing_prop_parts = sorted(
+        name for names in prop_families.values() for name in names
+        if name not in prop_rest
+    )
+    if missing_prop_parts:
+        raise RuntimeError(
+            "CafeWomanIdle cigarette validation is missing prop parts: "
+            + ", ".join(missing_prop_parts)
         )
     if not 0.020 <= CAFE_CIGARETTE_FILTER_LENGTH_M <= 0.035:
         raise RuntimeError(
@@ -14861,6 +15143,8 @@ def validate_cafe_woman_cigarette_contact(
 
     scene = bpy.context.scene
     rig = result.rig
+    socket_pose_bone = rig.pose.bones[prop.socket]
+    socket_rest_inverse = rig.data.bones[prop.socket].matrix_local.inverted()
     first_frame = round(action.frame_start)
     last_frame = round(action.frame_end)
     drag_first = round(action.frame_end * 0.26)
@@ -14885,6 +15169,15 @@ def validate_cafe_woman_cigarette_contact(
             family: evaluated_part_family_bvh(parts, depsgraph)
             for family, parts in families.items()
         }
+        # The prop, carried by the posed socket exactly as the Armature
+        # modifier would carry a part rigidly weighted to it.
+        socket_matrix = (
+            rig.matrix_world @ socket_pose_bone.matrix @ socket_rest_inverse
+        )
+        for family, names in prop_families.items():
+            evaluated[family] = posed_hand_prop_family_bvh(
+                prop_rest, names, socket_matrix
+            )
         body_bvh, body_vertices = evaluated["body"]
         filter_bvh, filter_vertices = evaluated["filter"]
         ember_bvh, ember_vertices = evaluated["ember"]
@@ -16455,8 +16748,831 @@ def build_shelter_animation_library(config: argparse.Namespace) -> None:
     )
 
 
+PERSONAL_SPACE_DESIGNS = (
+    "yard_babushka", "weigh_attendant", "cemetery_watchman",
+    "park_chess_player", "park_checkers_player", "cemetery_mourner",
+)
+PERSONAL_SPACE_CONTACT_FRAME = 8
+PERSONAL_SPACE_FRAME_END = 24
+
+
+def personal_space_reach_pose(
+    rig: bpy.types.Object,
+    base: dict[str, BonePose],
+    forward: float,
+    lean: float,
+) -> dict[str, BonePose]:
+    """Solve the free left palm in metres; no runtime IK or root movement.
+
+    The left hand leaves the right-hand bouquet, cigarette and role props
+    alone. Shoulder/elbow rotations solve a real two-segment reach, with an
+    outward, low elbow and the flat palm facing the approaching body.
+    """
+    pose = dict(base)
+    chest = base.get("chest", BonePose())
+    pose["chest"] = BonePose(
+        rotation_degrees=(chest.rotation_degrees[0] + lean, 0.0, -lean * 0.2)
+    )
+    if lean > 8.0:
+        spine = base.get("spine", BonePose())
+        pose["spine"] = BonePose(rotation_degrees=(
+            spine.rotation_degrees[0] + lean * 0.4,
+            spine.rotation_degrees[1], spine.rotation_degrees[2],
+        ))
+    reset_pose(rig)
+    apply_pose(rig, pose)
+    upper = rig.pose.bones["upper_arm.L"]
+    forearm = rig.pose.bones["forearm.L"]
+    hand = rig.pose.bones["hand.L"]
+    shoulder = upper.head.copy()
+    # The contact sits at lower chest height, not face height. Account for
+    # a design's own shoulder instead of stretching a short character's arm.
+    target = Vector((0.13, -forward, shoulder.z - 0.14))
+    vector = target - shoulder
+    length = vector.length
+    upper_length = upper.length
+    lower_length = forearm.length
+    if length >= upper_length + lower_length - 0.006:
+        raise RuntimeError(f"Personal-space palm exceeds its real arm: {length:.4f} m")
+    along = vector.normalized()
+    bend = Vector((0.45, 0.0, -1.0))
+    bend = (bend - along * bend.dot(along)).normalized()
+    elbow_along = (
+        upper_length ** 2 - lower_length ** 2 + length ** 2
+    ) / (2.0 * length)
+    elbow_height = math.sqrt(max(0.0, upper_length ** 2 - elbow_along ** 2))
+    elbow = shoulder + along * elbow_along + bend * elbow_height
+
+    def aim(bone: bpy.types.PoseBone, endpoint: Vector) -> None:
+        delta = (bone.tail - bone.head).rotation_difference(endpoint - bone.head)
+        matrix = (delta @ bone.matrix.to_quaternion()).to_matrix().to_4x4()
+        matrix.translation = bone.head.copy()
+        bone.matrix = matrix
+        bpy.context.view_layer.update()
+
+    aim(upper, elbow)
+    aim(forearm, target)
+    # Transform the actual hand's bind finger/palm axes to upright fingers
+    # and a forward normal, rather than guessing an Euler wrist angle.
+    finger = (hand.bone.tail_local - hand.bone.head_local).normalized()
+    normal = Vector((0.0, -1.0, 0.0))
+    normal = (normal - finger * normal.dot(finger)).normalized()
+    source_basis = Matrix((finger.cross(normal), finger, normal)).transposed()
+    target_finger = Vector((0.0, 0.0, 1.0))
+    target_normal = Vector((0.0, -1.0, 0.0))
+    target_basis = Matrix((
+        target_finger.cross(target_normal), target_finger, target_normal,
+    )).transposed()
+    rotation = target_basis @ source_basis.inverted()
+    matrix = (rotation @ hand.bone.matrix_local.to_3x3()).to_4x4()
+    matrix.translation = hand.head.copy()
+    hand.matrix = matrix
+    bpy.context.view_layer.update()
+    for name in ("upper_arm.L", "forearm.L", "hand.L"):
+        bone = rig.pose.bones[name]
+        pose[name] = BonePose(
+            rotation_degrees=tuple(math.degrees(v) for v in bone.rotation_quaternion.to_euler("XYZ")),
+        )
+    return pose
+
+
+def personal_space_keys(
+    rig: bpy.types.Object,
+    base: dict[str, BonePose],
+    shove: bool,
+) -> tuple[tuple[float, dict[str, BonePose]], ...]:
+    reach = lambda forward, lean: personal_space_reach_pose(rig, base, forward, lean)
+    if shove:
+        samples = ((0, base), (4, reach(0.26, -2.0)),
+                   (8, reach(0.62, 18.0)), (10, reach(0.65, 20.0)),
+                   (16, reach(0.34, 2.0)), (24, base))
+    else:
+        samples = ((0, base), (4, reach(0.31, 0.0)),
+                   (8, reach(0.49, 0.0)), (14, reach(0.49, 0.0)),
+                   (20, reach(0.30, 0.0)), (24, base))
+    return tuple((frame / PERSONAL_SPACE_FRAME_END, pose) for frame, pose in samples)
+
+
+def validate_personal_space_contact(
+    result: BuildResult, action: bpy.types.Action,
+) -> dict[str, object]:
+    rig = result.rig
+    rig.animation_data_create().action = action
+    bpy.context.scene.frame_set(PERSONAL_SPACE_CONTACT_FRAME)
+    bpy.context.view_layer.update()
+    hand = rig.pose.bones["hand.L"]
+    finger = (hand.bone.tail_local - hand.bone.head_local).normalized()
+    normal = Vector((0.0, -1.0, 0.0))
+    normal = (normal - finger * normal.dot(finger)).normalized()
+    deformation = hand.matrix.to_3x3() @ hand.bone.matrix_local.to_3x3().inverted()
+    palm_alignment = (deformation @ normal).normalized().dot(Vector((0, -1, 0)))
+    fingers_alignment = (hand.tail - hand.head).normalized().dot(Vector((0, 0, 1)))
+    contact = (hand.head + hand.tail) * 0.5
+    minimum_reach = 0.60 if action.name.endswith("PersonalSpaceShove") else 0.46
+    if contact.y > -minimum_reach or palm_alignment < 0.995 or fingers_alignment < 0.995:
+        raise RuntimeError(f"{action.name} has no forward open-palm contact: {contact}, {palm_alignment}")
+    if not 0.85 <= contact.z <= 1.55:
+        raise RuntimeError(f"{action.name} contacts outside adult chest height: {contact.z}")
+    rig.animation_data.action = None
+    reset_pose(rig)
+    return {
+        "contact_seconds": PERSONAL_SPACE_CONTACT_FRAME / ANIMATION_FPS,
+        "contact_frame": PERSONAL_SPACE_CONTACT_FRAME,
+        "contact_palm_blender_m": [stable_float(v) for v in contact],
+        "contact_forward_palm_dot": stable_float(palm_alignment),
+        "contact_upright_fingers_dot": stable_float(fingers_alignment),
+    }
+
+
+def build_personal_space_animation_library(config: argparse.Namespace) -> None:
+    """Rebuild only this bank; existing models, atlases and clips stay intact."""
+    all_keys = animation_keys()
+    action_specs: list[ActionSpec] = []
+    keyed_poses = {}
+    pelvis_tracks = {}
+    grounding = {}
+    review_tiles: list[Path] = []
+    for design_key in PERSONAL_SPACE_DESIGNS:
+        archetype = ARCHETYPES[design_key]
+        result = PedestrianBuilder(archetype).build()
+        base = all_keys[archetype.ambient_idle_clip or archetype.idle_clip][0][1]
+        # The park designs' historic StreetIdle source reuses the board-seat
+        # pose. A physical street response must stand on its own two feet;
+        # use the existing authored standing stance and let the presentation's
+        # action weight handle the entry/exit handoff.
+        if design_key == "park_chess_player":
+            base = chess_player_stand_pose()
+        elif design_key == "park_checkers_player":
+            base = checkers_player_stand_pose()
+        actions = {}
+        for shove in (False, True):
+            suffix = "Shove" if shove else "Guard"
+            name = f"{archetype.design_id}_PersonalSpace{suffix}"
+            spec = ActionSpec(
+                name, archetype.design_id, 1.0, PERSONAL_SPACE_FRAME_END,
+                "grounded standing personal-distance response, free left palm",
+                "brief shoulder-assisted push" if shove else "quiet palm-held boundary",
+                one_shot=True,
+                motion_beats=(("contact", PERSONAL_SPACE_CONTACT_FRAME / PERSONAL_SPACE_FRAME_END),),
+            )
+            keys = personal_space_keys(result.rig, base, shove)
+            if keys != personal_space_keys(result.rig, base, shove):
+                raise RuntimeError(f"Non-deterministic personal-space keys for {name}")
+            keyed_poses[name] = keys
+            action_specs.append(spec)
+            actions[name] = create_action(result.rig, spec, keys)
+        bake_grounded_pelvis(result, actions)
+        reports = validate_animated_grounding(result, actions, archetype)
+        for name, action in actions.items():
+            reports[name].update(validate_personal_space_contact(result, action))
+            pelvis_tracks[name] = capture_pelvis_track(action)
+        grounding.update(reports)
+        print(f"  Personal-space {design_key}: two deterministic grounded palm contacts", flush=True)
+        if not config.no_preview:
+            camera, _ = setup_review_stage(result)
+            camera.location = (2.8, -3.8, 1.9)
+            camera.rotation_euler = (
+                Vector((0, -0.12, 0.88)) - camera.location
+            ).to_track_quat("-Z", "Y").to_euler()
+            for name, action in actions.items():
+                result.rig.animation_data_create().action = action
+                bpy.context.scene.frame_set(PERSONAL_SPACE_CONTACT_FRAME)
+                bpy.context.view_layer.update()
+                tile = config.source_dir / f".personal-space-{len(review_tiles)}.png"
+                tile.parent.mkdir(parents=True, exist_ok=True)
+                bpy.context.scene.render.filepath = str(tile)
+                bpy.ops.render.render(write_still=True)
+                review_tiles.append(tile)
+
+    if review_tiles:
+        width, height = TILE_WIDTH * 2, TILE_HEIGHT * len(PERSONAL_SPACE_DESIGNS)
+        pixels = [0.008, 0.012, 0.010, 1.0] * (width * height)
+        for index, tile in enumerate(review_tiles):
+            source = bpy.data.images.load(str(tile), check_existing=False)
+            source_pixels = list(source.pixels)
+            left = (index % 2) * TILE_WIDTH
+            bottom = (len(PERSONAL_SPACE_DESIGNS) - 1 - index // 2) * TILE_HEIGHT
+            for row in range(TILE_HEIGHT):
+                offset = ((bottom + row) * width + left) * 4
+                pixels[offset:offset + TILE_WIDTH * 4] = source_pixels[
+                    row * TILE_WIDTH * 4:(row + 1) * TILE_WIDTH * 4
+                ]
+            bpy.data.images.remove(source)
+            tile.unlink()
+        sheet = bpy.data.images.new("CityPedestrianPersonalSpaceContactSheet", width, height)
+        sheet.pixels = pixels
+        sheet.filepath_raw = str(config.source_dir / "CityPedestrianPersonalSpaceContactSheet.png")
+        sheet.file_format = "PNG"
+        sheet.save()
+
+    result = PedestrianBuilder(ARCHETYPES[PERSONAL_SPACE_DESIGNS[0]]).build()
+    actions = {
+        spec.name: create_action(result.rig, spec, keyed_poses[spec.name])
+        for spec in action_specs
+    }
+    for name, action in actions.items():
+        apply_pelvis_track(result.rig, action, pelvis_tracks[name])
+    for part in list(result.parts):
+        bpy.data.objects.remove(part.obj, do_unlink=True)
+    result.parts.clear()
+    result.root["bp_animation_only"] = True
+    result.root["bp_root_motion"] = False
+    signature, clips = validate_animation_library(result.rig, actions, grounding, action_specs)
+    stem = "CityPedestrianPersonalSpace"
+    export_animation_fbx(config.animation_dir / f"{stem}.fbx", result)
+    write_animation_manifest(config.animation_dir / f"{stem}.json", signature, clips)
+    save_blend(config.source_dir / f"{stem}.blend")
+    print(f"  {stem}: 12 one-shots, 31 bones, no meshes/root motion/events; signature {signature}", flush=True)
+
+
+# ---------------------------------------------------------------------------
+# Hand-prop library build (`--hand-props-only`, and the tail of `--archetype
+# all`). No armature, no actions: one Empty per prop at its socket's rest
+# head, one mesh per part parented under it, every vertex stored relative to
+# that head. The Unity side (`CityPedestrianHandPropAssetSetup`) measures the
+# socket-relative Mount off the imported meshes, so nothing here re-derives
+# an FBX axis or the 100x bone scale.
+# ---------------------------------------------------------------------------
+
+
+HAND_PROP_ID_ORDER = (
+    "carpet_beater", "cigarette", "funeral_bouquet", "chalk", "fishing_rod",
+    "smoking_pipe", "cafe_cigarette", "service_towel", "coffee_pot",
+)
+HAND_PROP_ANCHOR_KINDS = (
+    "farthest_from_socket", "part_center", "farthest_from_part",
+)
+
+
+@dataclass
+class HandPropPartRecord:
+    spec: HandPropPartSpec
+    obj: bpy.types.Object
+    color: tuple[float, float, float, float]
+    # Model-space (V2 frame) positions: the remapped authored vertices,
+    # which is also what `obj.matrix_world @ vertex.co` evaluates to.
+    world_vertices: list[Vector]
+    faces: list[tuple[int, ...]]
+
+
+@dataclass
+class HandPropRecord:
+    spec: HandPropSpec
+    empty: bpy.types.Object
+    socket_head: Vector
+    parts: list[HandPropPartRecord] = field(default_factory=list)
+
+
+@dataclass
+class HandPropLibraryResult:
+    export_collection: bpy.types.Collection
+    presentation: bpy.types.Collection
+    material: bpy.types.Material
+    props: list[HandPropRecord] = field(default_factory=list)
+    signature: str = ""
+    mesh_count: int = 0
+    triangle_count: int = 0
+
+
+def hand_prop_rest_geometry(
+    prop: HandPropSpec,
+) -> dict[str, tuple[list[Vector], list[tuple[int, ...]]]]:
+    """Every part of a prop in model space, exactly as its body carried it.
+
+    The reference design's `PedestrianBuilder` is constructed but never
+    built: `remap_geometry_point` only needs the anatomy profile, which
+    `anatomy_profile_key` reads from the spec. The role passed is the
+    part's ORIGINAL role, because a `held_prop` keeps its dimensions
+    through the remap while a `surface_detail` follows the hand's scale,
+    and the prop must land where the skinned part did.
+    """
+
+    builder = PedestrianBuilder(ARCHETYPES[prop.reference_design])
+    geometry: dict[str, tuple[list[Vector], list[tuple[int, ...]]]] = {}
+    for part in prop.parts:
+        vertices, faces = part.geometry()
+        remapped = [
+            builder.remap_geometry_point(vertex, prop.bone, part.role, part.name)
+            for vertex in vertices
+        ]
+        geometry[part.name] = (remapped, [tuple(face) for face in faces])
+    return geometry
+
+
+def fan_triangulate(faces: Iterable[tuple[int, ...]]) -> list[tuple[int, int, int]]:
+    """The Triangulate modifier's FIXED split (first and third vertex of
+    a quad), so a BVH built here matches one built from the evaluated
+    body meshes to the same sub-millimetre on a non-planar side quad."""
+
+    triangles: list[tuple[int, int, int]] = []
+    for face in faces:
+        for index in range(1, len(face) - 1):
+            triangles.append((face[0], face[index], face[index + 1]))
+    return triangles
+
+
+def posed_hand_prop_family_bvh(
+    rest: Mapping[str, tuple[list[Vector], list[tuple[int, ...]]]],
+    names: Sequence[str],
+    matrix: Matrix,
+):
+    """A world-space BVH of some prop parts carried by a posed socket."""
+
+    from mathutils.bvhtree import BVHTree
+
+    vertices: list[Vector] = []
+    polygons: list[tuple[int, int, int]] = []
+    for name in names:
+        part_vertices, faces = rest[name]
+        offset = len(vertices)
+        vertices.extend(matrix @ vertex for vertex in part_vertices)
+        polygons.extend(
+            tuple(offset + index for index in triangle)
+            for triangle in fan_triangulate(faces)
+        )
+    return BVHTree.FromPolygons(vertices, polygons, all_triangles=True), vertices
+
+
+def build_hand_prop_scene() -> HandPropLibraryResult:
+    PedestrianBuilder.reset_scene()
+    scene_root = bpy.context.scene.collection
+    library = bpy.data.collections.new(f"BP_{HAND_PROP_LIBRARY_NAME}")
+    scene_root.children.link(library)
+    export_collection = bpy.data.collections.new(
+        f"EXPORT_{HAND_PROP_LIBRARY_NAME}"
+    )
+    library.children.link(export_collection)
+    presentation = bpy.data.collections.new(
+        f"PRESENTATION_{HAND_PROP_LIBRARY_NAME}"
+    )
+    library.children.link(presentation)
+    material = PedestrianBuilder.create_shared_material()
+    result = HandPropLibraryResult(export_collection, presentation, material)
+
+    seen_parts: set[str] = set()
+    for prop in HAND_PROPS:
+        if prop.socket not in BONE_BY_NAME:
+            raise ValueError(f"Hand prop {prop.id} names unknown socket {prop.socket}")
+        if BONE_BY_NAME[prop.socket].parent != prop.bone:
+            raise ValueError(
+                f"Hand prop {prop.id}: {prop.socket} hangs off "
+                f"{BONE_BY_NAME[prop.socket].parent!r}, not {prop.bone!r}"
+            )
+        socket_head = v(BONE_BY_NAME[prop.socket].head)
+        empty = bpy.data.objects.new(f"PROP_{prop.prefab_name}", None)
+        export_collection.objects.link(empty)
+        empty.empty_display_type = "PLAIN_AXES"
+        empty.empty_display_size = 0.06
+        empty.location = socket_head
+        empty["bp_export"] = True
+        empty["bp_prop"] = prop.id
+        empty["bp_socket"] = prop.socket
+        empty["bp_bone"] = prop.bone
+        empty["bp_reference_design"] = ARCHETYPES[prop.reference_design].design_id
+        empty["bp_generator"] = "tools/build-city-pedestrian-3d-model.py"
+        empty["bp_generator_version"] = GENERATOR_VERSION
+        empty["bp_forward_axis"] = "-Y"
+        empty["bp_anatomical_left_axis"] = "+X"
+        # The parent inverse below reads the Empty's world matrix, which is
+        # only current after a depsgraph pass.
+        bpy.context.view_layer.update()
+
+        record = HandPropRecord(prop, empty, socket_head)
+        rest = hand_prop_rest_geometry(prop)
+        for part in prop.parts:
+            if part.name in seen_parts:
+                raise ValueError(f"Duplicate hand prop part {part.name}")
+            seen_parts.add(part.name)
+            color = PALETTE[part.palette]
+            remapped, faces = rest[part.name]
+            mesh = bpy.data.meshes.new(f"{part.name}_Mesh")
+            mesh.from_pydata(
+                [tuple(vertex - socket_head) for vertex in remapped],
+                [],
+                faces,
+            )
+            mesh.update(calc_edges=True)
+            for polygon in mesh.polygons:
+                polygon.use_smooth = False
+            obj = bpy.data.objects.new(part.name, mesh)
+            export_collection.objects.link(obj)
+            obj.color = color
+            obj.data.materials.append(material)
+            # Parent inverse cancels the Empty, so the mesh keeps its own
+            # location at the socket head: local-to-parent is identity and
+            # the FBX puts every part exactly on its Empty.
+            obj.parent = empty
+            obj.matrix_parent_inverse = empty.matrix_world.inverted()
+            obj.location = socket_head
+            triangulate = obj.modifiers.new("Triangulate", "TRIANGULATE")
+            triangulate.quad_method = "FIXED"
+            triangulate.ngon_method = "CLIP"
+            obj["bp_export"] = True
+            obj["bp_role"] = part.role
+            obj["bp_bone"] = prop.bone
+            obj["bp_palette"] = part.palette
+            obj["bp_base_color"] = list(color)
+            obj["bp_prop"] = prop.id
+            obj["bp_socket"] = prop.socket
+            obj["bp_generator_version"] = GENERATOR_VERSION
+            obj["bp_anatomy_standard"] = NPC_ANATOMY_STANDARD
+            record.parts.append(
+                HandPropPartRecord(part, obj, color, remapped, faces)
+            )
+        result.props.append(record)
+
+    bpy.context.view_layer.update()
+    for record in result.props:
+        for part in record.parts:
+            origin_error = (
+                part.obj.matrix_world.translation - record.socket_head
+            ).length
+            if origin_error > 0.000001:
+                raise RuntimeError(
+                    f"{part.obj.name} origin is {origin_error:.9f} m off "
+                    f"{record.spec.socket}'s head"
+                )
+            for vertex, expected in zip(part.obj.data.vertices, part.world_vertices):
+                if ((part.obj.matrix_world @ vertex.co) - expected).length > 0.000001:
+                    raise RuntimeError(
+                        f"{part.obj.name} does not evaluate to its authored "
+                        "model-space geometry"
+                    )
+    return result
+
+
+def validate_hand_prop_library(result: HandPropLibraryResult) -> list[dict]:
+    """Structural checks plus the deterministic signature; returns the
+    per-prop manifest payloads so the manifest and the signature are
+    computed off the same numbers."""
+
+    errors: list[str] = []
+    if tuple(prop.id for prop in HAND_PROPS) != HAND_PROP_ID_ORDER:
+        errors.append(
+            "HAND_PROPS order diverges from the C# CityPedestrianHandPropId "
+            "order"
+        )
+    prefab_names = [prop.id for prop in HAND_PROPS]
+    if len(set(prefab_names)) != len(prefab_names):
+        errors.append("Hand prop ids are not unique")
+    if len({prop.prefab_name for prop in HAND_PROPS}) != len(HAND_PROPS):
+        errors.append("Hand prop prefab names are not unique")
+    if bpy.data.actions:
+        errors.append("Hand prop library must contain no Actions")
+    if any(
+        obj.type in {"LIGHT", "CAMERA", "ARMATURE"}
+        for obj in result.export_collection.objects
+    ):
+        errors.append("Hand prop export collection contains a light, camera or rig")
+    if result.material.get("bp_emissive", True):
+        errors.append("Shared source material must be explicitly non-emissive")
+
+    props_payload: list[dict] = []
+    signature_props: list[dict] = []
+    total_meshes = 0
+    total_triangles = 0
+    for record in result.props:
+        prop = record.spec
+        part_names = {part.spec.name for part in record.parts}
+        for anchor in prop.anchors:
+            if anchor.kind not in HAND_PROP_ANCHOR_KINDS:
+                errors.append(f"{prop.id} anchor {anchor.name} has unknown kind {anchor.kind}")
+            if anchor.part not in part_names:
+                errors.append(f"{prop.id} anchor {anchor.name} names a missing part {anchor.part}")
+            if anchor.kind == "farthest_from_part" and anchor.axis_from not in part_names:
+                errors.append(
+                    f"{prop.id} anchor {anchor.name} needs an axis_from part"
+                )
+        if not record.parts:
+            errors.append(f"{prop.id} has no parts")
+        vertices_all: list[Vector] = []
+        parts_payload: list[dict] = []
+        signature_parts: list[dict] = []
+        triangle_count = 0
+        for part in sorted(record.parts, key=lambda item: item.spec.name):
+            obj = part.obj
+            mesh = obj.data
+            if len(mesh.materials) != 1 or mesh.materials[0] != result.material:
+                errors.append(f"{obj.name} does not use the one shared source material")
+            if obj.vertex_groups or any(
+                modifier.type == "ARMATURE" for modifier in obj.modifiers
+            ):
+                errors.append(f"{obj.name} must not be skinned")
+            if obj.parent != record.empty:
+                errors.append(f"{obj.name} must hang directly under {record.empty.name}")
+            if not mesh.vertices:
+                errors.append(f"{obj.name} has no vertices")
+            triangles = triangulated_count(mesh)
+            triangle_count += triangles
+            vertices_all.extend(part.world_vertices)
+            parts_payload.append(
+                {
+                    "name": obj.name,
+                    "role": part.spec.role,
+                    "palette_name": part.spec.palette,
+                    "base_color": [stable_float(component) for component in part.color],
+                    "vertices": len(mesh.vertices),
+                    "triangles": triangles,
+                }
+            )
+            signature_parts.append(
+                {
+                    "name": obj.name,
+                    "role": part.spec.role,
+                    "palette_name": part.spec.palette,
+                    "color": [stable_float(component) for component in part.color],
+                    "vertices": [
+                        [stable_float(component) for component in vertex]
+                        for vertex in part.world_vertices
+                    ],
+                    "faces": [list(face) for face in part.faces],
+                    "triangles": triangles,
+                }
+            )
+        if vertices_all:
+            bounds_min = [
+                stable_float(min(vertex[axis] for vertex in vertices_all))
+                for axis in range(3)
+            ]
+            bounds_max = [
+                stable_float(max(vertex[axis] for vertex in vertices_all))
+                for axis in range(3)
+            ]
+        else:
+            bounds_min = [0.0, 0.0, 0.0]
+            bounds_max = [0.0, 0.0, 0.0]
+        total_meshes += len(record.parts)
+        total_triangles += triangle_count
+        anchors_payload = [
+            {
+                "name": anchor.name,
+                "kind": anchor.kind,
+                "part": anchor.part,
+                "axis_from": anchor.axis_from,
+            }
+            for anchor in prop.anchors
+        ]
+        props_payload.append(
+            {
+                "id": prop.id,
+                "prefab_name": prop.prefab_name,
+                "display_name": prop.display_name,
+                "socket": prop.socket,
+                "bone": prop.bone,
+                "reference_design": ARCHETYPES[prop.reference_design].design_id,
+                "root": record.empty.name,
+                "socket_head_m": [stable_float(component) for component in record.socket_head],
+                "mesh_count": len(record.parts),
+                "triangle_count": triangle_count,
+                "bounds_min": bounds_min,
+                "bounds_max": bounds_max,
+                "parts": parts_payload,
+                "anchors": anchors_payload,
+            }
+        )
+        signature_props.append(
+            {
+                "id": prop.id,
+                "prefab_name": prop.prefab_name,
+                "socket": prop.socket,
+                "bone": prop.bone,
+                "reference_design": ARCHETYPES[prop.reference_design].design_id,
+                "socket_head": [stable_float(component) for component in record.socket_head],
+                "anchors": anchors_payload,
+                "parts": signature_parts,
+            }
+        )
+
+    signature_payload = {
+        "generator_version": GENERATOR_VERSION,
+        "library": HAND_PROP_LIBRARY_NAME,
+        "anatomy_standard": NPC_ANATOMY_STANDARD,
+        "props": sorted(signature_props, key=lambda item: item["id"]),
+    }
+    signature = hashlib.sha256(
+        json.dumps(signature_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    if errors:
+        formatted = "\n".join(f"  - {error}" for error in errors)
+        raise RuntimeError(f"City pedestrian hand prop validation failed:\n{formatted}")
+    result.signature = signature
+    result.mesh_count = total_meshes
+    result.triangle_count = total_triangles
+    return props_payload
+
+
+def export_hand_prop_fbx(path: Path, result: HandPropLibraryResult) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if bpy.context.object is not None and bpy.context.object.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    # Empties AND meshes: with `use_selection` an unselected parent would
+    # drop the hierarchy and every part would export as a loose root.
+    for record in result.props:
+        record.empty.select_set(True)
+        for part in record.parts:
+            part.obj.select_set(True)
+    bpy.context.view_layer.objects.active = result.props[0].empty
+    bpy.ops.export_scene.fbx(
+        filepath=str(path),
+        use_selection=True,
+        object_types={"EMPTY", "MESH"},
+        axis_forward="-Z",
+        axis_up="Y",
+        add_leaf_bones=False,
+        bake_anim=False,
+        use_armature_deform_only=False,
+        use_mesh_modifiers=True,
+        mesh_smooth_type="FACE",
+        use_custom_props=True,
+    )
+
+
+def write_hand_prop_manifest(
+    path: Path,
+    result: HandPropLibraryResult,
+    props_payload: list[dict],
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "generator": "tools/build-city-pedestrian-3d-model.py",
+        "generator_version": GENERATOR_VERSION,
+        "blender_version": bpy.app.version_string,
+        "library": HAND_PROP_LIBRARY_NAME,
+        "anatomy_standard": NPC_ANATOMY_STANDARD,
+        "forward_axis": "-Y",
+        "anatomical_left_axis": "+X",
+        "material_asset": HAND_PROP_MATERIAL_ASSET,
+        "emissive": False,
+        "colliders": False,
+        "mesh_count": result.mesh_count,
+        "triangle_count": result.triangle_count,
+        "build_signature": result.signature,
+        "props": props_payload,
+    }
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temporary, path)
+
+
+def render_hand_prop_contact_sheet(
+    path: Path,
+    source_dir: Path,
+    result: HandPropLibraryResult,
+) -> None:
+    """One tile per prop, three columns. Every right-hand prop sits on
+    the same fist, so a single frame of the whole library would be nine
+    things through one another; each tile hides the others and frames
+    its own bounds."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    scene = bpy.context.scene
+    presentation = result.presentation
+    camera_data = bpy.data.cameras.new("CAM_HandPropReview")
+    camera = bpy.data.objects.new("CAM_HandPropReview", camera_data)
+    presentation.objects.link(camera)
+    camera_data.lens = 50
+    scene.camera = camera
+    lights = []
+    for name, color in (
+        ("Key", (0.72, 0.82, 0.72)),
+        ("Rim", (0.35, 0.48, 0.42)),
+    ):
+        data = bpy.data.lights.new(f"LIGHT_HandProp{name}", "AREA")
+        data.color = color
+        data.shape = "DISK"
+        light = bpy.data.objects.new(f"LIGHT_HandProp{name}", data)
+        presentation.objects.link(light)
+        lights.append(light)
+    scene.render.resolution_x = TILE_WIDTH
+    scene.render.resolution_y = TILE_HEIGHT
+    scene.render.resolution_percentage = 100
+
+    all_meshes = [part.obj for record in result.props for part in record.parts]
+    tiles: list[Path] = []
+    view_direction = Vector((-0.80, -0.95, 0.55)).normalized()
+    light_offsets = (
+        Vector((-0.55, -0.85, 1.20)).normalized(),
+        Vector((0.85, 0.45, 0.80)).normalized(),
+    )
+    try:
+        for index, record in enumerate(result.props):
+            for obj in all_meshes:
+                obj.hide_render = True
+            for part in record.parts:
+                part.obj.hide_render = False
+            vertices = [
+                vertex for part in record.parts for vertex in part.world_vertices
+            ]
+            bounds_min = Vector(tuple(min(vertex[axis] for vertex in vertices) for axis in range(3)))
+            bounds_max = Vector(tuple(max(vertex[axis] for vertex in vertices) for axis in range(3)))
+            centre = (bounds_min + bounds_max) * 0.5
+            extent = max(bounds_max - bounds_min)
+            distance = max(0.32, extent * 1.25 + 0.12)
+            camera.location = centre + view_direction * distance
+            camera.rotation_euler = (
+                centre - camera.location
+            ).to_track_quat("-Z", "Y").to_euler()
+            for light, offset, energy in zip(lights, light_offsets, (60.0, 32.0)):
+                light.location = centre + offset * distance * 1.6
+                light.rotation_euler = (
+                    centre - light.location
+                ).to_track_quat("-Z", "Y").to_euler()
+                # Inverse-square: the same look at every distance.
+                light.data.energy = energy * (distance * 1.6) ** 2
+                light.data.size = distance * 0.9
+            tile = source_dir / f".hand-prop-review-{index}.png"
+            scene.render.filepath = str(tile)
+            bpy.ops.render.render(write_still=True)
+            tiles.append(tile)
+    finally:
+        for obj in all_meshes:
+            obj.hide_render = False
+
+    rows = math.ceil(len(tiles) / SHEET_COLUMNS)
+    width = SHEET_COLUMNS * TILE_WIDTH
+    height = rows * TILE_HEIGHT
+    sheet = bpy.data.images.new(f"{HAND_PROP_LIBRARY_NAME}ContactSheet", width, height)
+    pixels = [0.008, 0.012, 0.010, 1.0] * (width * height)
+    for index, tile in enumerate(tiles):
+        tile_image = bpy.data.images.load(str(tile), check_existing=False)
+        tile_pixels = list(tile_image.pixels)
+        column = index % SHEET_COLUMNS
+        row = index // SHEET_COLUMNS
+        destination_y = (rows - 1 - row) * TILE_HEIGHT
+        for y in range(TILE_HEIGHT):
+            source_start = y * TILE_WIDTH * 4
+            destination_start = (
+                (destination_y + y) * width + column * TILE_WIDTH
+            ) * 4
+            pixels[destination_start : destination_start + TILE_WIDTH * 4] = (
+                tile_pixels[source_start : source_start + TILE_WIDTH * 4]
+            )
+        bpy.data.images.remove(tile_image)
+    sheet.pixels = pixels
+    sheet.filepath_raw = str(path)
+    sheet.file_format = "PNG"
+    sheet.save()
+    for tile in tiles:
+        try:
+            tile.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def build_hand_prop_library(config: argparse.Namespace) -> None:
+    result = build_hand_prop_scene()
+    props_payload = validate_hand_prop_library(result)
+    fbx_path = config.prop_dir / f"{HAND_PROP_LIBRARY_NAME}.fbx"
+    manifest_path = config.prop_dir / f"{HAND_PROP_LIBRARY_NAME}.json"
+    blend_path = config.source_dir / f"{HAND_PROP_LIBRARY_NAME}.blend"
+    export_hand_prop_fbx(fbx_path, result)
+    write_hand_prop_manifest(manifest_path, result, props_payload)
+    if not config.no_preview:
+        render_hand_prop_contact_sheet(
+            config.source_dir / f"{HAND_PROP_LIBRARY_NAME}ContactSheet.png",
+            config.source_dir,
+            result,
+        )
+    save_blend(blend_path)
+    print(
+        f"  {HAND_PROP_LIBRARY_NAME}: {len(result.props)} props, "
+        f"{result.mesh_count} meshes, {result.triangle_count} triangles"
+    )
+    for entry in props_payload:
+        print(
+            f"    {entry['id']}: {entry['mesh_count']} meshes, "
+            f"{entry['triangle_count']} triangles on {entry['socket']}"
+        )
+    print(f"    Signature: {result.signature}")
+    print(f"    Blend: {blend_path}")
+    print(f"    FBX: {fbx_path}")
+    # A second in-process build proves the library deterministic, exactly
+    # as the bodies are proved.
+    rerun = build_hand_prop_scene()
+    validate_hand_prop_library(rerun)
+    if rerun.signature != result.signature:
+        raise RuntimeError(
+            "Non-deterministic hand prop signature: "
+            f"{result.signature} != {rerun.signature}"
+        )
+    print("  Determinism: repeated hand prop signatures match")
+
+
 def main() -> None:
     config = parse_args()
+    if config.personal_space_only:
+        build_personal_space_animation_library(config)
+        return
+    if config.hand_props_only:
+        print("CITY PEDESTRIAN ART BUILD")
+        print(f"  Blender: {bpy.app.version_string}")
+        build_hand_prop_library(config)
+        print("CITY PEDESTRIAN ART BUILD OK")
+        return
     if sum((config.cafe_cast, config.shelter_residents, config.mother)) > 1:
         raise SystemExit("Only one dedicated cast selector may be given")
     if (
@@ -16530,6 +17646,9 @@ def main() -> None:
         build_shelter_animation_library(config)
     elif config.archetype == "all":
         build_animation_library(config)
+        # The hand props are authored against these bodies' anatomy, so
+        # they are rebuilt whenever the whole library is.
+        build_hand_prop_library(config)
     if config.cafe_cast or config.shelter_residents or config.archetype == "all":
         first_signatures = {
             spec.design_id: report.build_signature for spec, report in reports

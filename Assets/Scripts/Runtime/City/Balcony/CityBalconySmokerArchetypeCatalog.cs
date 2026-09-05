@@ -8,7 +8,8 @@ namespace BarPromenade
     /// <summary>
     /// Technical eligibility for reusing Hero V2 SmokeLoop. Every accepted
     /// design is a current roaming archetype with the exact shared Avatar,
-    /// both foot anchors, and the canonical mouth/right-hand sockets.
+    /// both foot anchors, and the canonical mouth/right-hand sockets, and
+    /// the cigarette hand prop prefab must be buildable.
     /// </summary>
     public static class CityBalconySmokerArchetypeCatalog
     {
@@ -115,15 +116,15 @@ namespace BarPromenade
                 return true;
             }
 
-            if (CityBalconySmokerAccessory.FindDescendant(
+            if (CityPedestrianHandProps.FindSocket(
                     registry.ModelRoot,
                     CityBalconySmokerPresentation.MouthSocketName) == null ||
-                CityBalconySmokerAccessory.FindDescendant(
+                CityPedestrianHandProps.FindSocket(
                     registry.ModelRoot,
-                    CityBalconySmokerAccessory.RightHandBoneName) == null ||
-                CityBalconySmokerAccessory.FindDescendant(
+                    CityBalconySmokerPresentation.RightHandBoneName) == null ||
+                CityPedestrianHandProps.FindSocket(
                     registry.ModelRoot,
-                    CityBalconySmokerAccessory.CigaretteSocketName) == null)
+                    CityBalconySmokerPresentation.CigaretteSocketName) == null)
             {
                 reason = "canonical mouth/right-hand sockets are missing";
                 return true;
@@ -136,9 +137,13 @@ namespace BarPromenade
                 return true;
             }
 
-            if (!CityBalconySmokerAccessory.HasBorrowableCigaretteSource())
+            // The cigarette is a hand prop prefab now, the same one for
+            // every design, so eligibility no longer depends on a babushka
+            // body carrying a borrowable skinned cigarette.
+            if (!CityPedestrianHandProps.IsAvailable(
+                    CityPedestrianHandPropId.Cigarette))
             {
-                reason = "YardBabushka3D cigarette source is unavailable";
+                reason = "the cigarette hand prop is unavailable";
                 return true;
             }
 

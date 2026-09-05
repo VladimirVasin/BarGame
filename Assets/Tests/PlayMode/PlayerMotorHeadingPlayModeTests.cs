@@ -48,6 +48,8 @@ namespace BarPromenade.Tests.PlayMode
         private const float Deceleration = 11f;
 
         private GameObject playerObject;
+        private GameObject pushGround;
+        private GameObject pushWall;
         private PlayerMotor motor;
         private RecordingMotionPresentation presentation;
         private InputTestFixture inputFixture;
@@ -88,6 +90,16 @@ namespace BarPromenade.Tests.PlayMode
             if (playerObject != null)
             {
                 Object.Destroy(playerObject);
+            }
+
+            if (pushGround != null)
+            {
+                Object.Destroy(pushGround);
+            }
+
+            if (pushWall != null)
+            {
+                Object.Destroy(pushWall);
             }
 
             inputFixture?.TearDown();
@@ -788,6 +800,130 @@ namespace BarPromenade.Tests.PlayMode
             QueueKeyboardState();
         }
 
+        [UnityTest]
+        public IEnumerator ExternalPush_MovesAgainstHeldForwardAndCapsTravelAcrossALongFrame()
+        {
+            yield return GroundForExternalPush();
+            QueueKeyboardState(Key.W);
+            yield return WaitForSpeed(1f);
+            Vector3 contactPosition = playerObject.transform.position;
+            Vector3 heading = playerObject.transform.forward;
+            float yaw = playerObject.transform.eulerAngles.y;
+
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.True);
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.False,
+                "A second pedestrian cannot stack a shove onto the same contact.");
+            yield return WaitForExternalPushEnd();
+            Assert.That(contactPosition.z - playerObject.transform.position.z,
+                Is.EqualTo(0.4f).Within(0.015f),
+                "Both held W and its earned forward momentum must yield to the shove.");
+            AssertHeadingUnchanged(heading, yaw);
+
+            QueueKeyboardState();
+            Vector3 stoppedPosition = playerObject.transform.position;
+            yield return null;
+            yield return null;
+            AssertPlanarPositionUnchanged(stoppedPosition);
+
+            // The next ordinary frame spans this entire contact. Sampling
+            // its initial velocity for the whole frame would overshoot badly.
+            Assert.That(motor.TryApplyExternalPush(Vector3.right, 0.4f, 0.000001f),
+                Is.True);
+            yield return WaitForExternalPushEnd();
+            Assert.That(playerObject.transform.position.x - stoppedPosition.x,
+                Is.EqualTo(0.4f).Within(0.001f));
+        }
+
+        [UnityTest]
+        public IEnumerator ExternalPush_StopsAtWalkableBoundsAndWallsWithoutStoredMotion()
+        {
+            yield return GroundForExternalPush();
+            var area = new ToggleWalkableArea { Blocked = true };
+            motor.Initialize(area, presentation);
+            Vector3 blockedPosition = playerObject.transform.position;
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.True);
+            yield return WaitForExternalPushEnd();
+            AssertPlanarPositionUnchanged(blockedPosition);
+            area.Blocked = false;
+            yield return null;
+            yield return null;
+            AssertPlanarPositionUnchanged(blockedPosition);
+
+            CharacterController capsule =
+                playerObject.GetComponent<CharacterController>();
+            pushWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pushWall.name = "External Push Test Wall";
+            pushWall.transform.localScale = new Vector3(5f, 5f, 0.5f);
+            pushWall.transform.position = blockedPosition +
+                Vector3.back * (capsule.radius + 0.4f);
+            Physics.SyncTransforms();
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.True);
+            yield return WaitForExternalPushEnd();
+            float travelled = blockedPosition.z - playerObject.transform.position.z;
+            Assert.That(travelled, Is.GreaterThan(0.01f).And.LessThan(0.25f),
+                "The real capsule must stop against the wall before using its full shove.");
+            Vector3 wallStop = playerObject.transform.position;
+            Object.Destroy(pushWall);
+            pushWall = null;
+            yield return null;
+            yield return null;
+            AssertPlanarPositionUnchanged(wallStop);
+        }
+
+        [UnityTest]
+        public IEnumerator ExternalPush_HardStopsClearContactAndUnavailableStatesRejectIt()
+        {
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.False,
+                "An airborne rig must not accept a pending contact.");
+            yield return GroundForExternalPush();
+            Assert.That(motor.TryApplyExternalPush(Vector3.zero), Is.False);
+            Assert.That(motor.TryApplyExternalPush(Vector3.up), Is.False);
+            Assert.That(motor.TryApplyExternalPush(new Vector3(float.NaN, 0f, 0f)), Is.False);
+            Assert.That(motor.TryApplyExternalPush(Vector3.back, float.PositiveInfinity), Is.False);
+            Assert.That(motor.TryApplyExternalPush(Vector3.back, 0.4f, 0f), Is.False);
+
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.True);
+            motor.SetInputEnabled(false);
+            Assert.That(motor.ExternalPushActive, Is.False);
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.False);
+            Vector3 stopped = playerObject.transform.position;
+            yield return null;
+            AssertPlanarPositionUnchanged(stopped);
+
+            motor.SetInputEnabled(true);
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.True);
+            motor.Teleport(stopped);
+            Assert.That(motor.ExternalPushActive, Is.False);
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.False,
+                "Teleport invalidates the old ground sample until the capsule moves again.");
+            yield return null;
+            AssertPlanarPositionUnchanged(stopped);
+
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.True);
+            motor.enabled = false;
+            Assert.That(motor.ExternalPushActive, Is.False);
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.False);
+            motor.enabled = true;
+            yield return null;
+            AssertPlanarPositionUnchanged(stopped);
+
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.True);
+            motor.MoveTowardsInteractionPose(
+                stopped + Vector3.forward,
+                Quaternion.identity,
+                0f);
+            Assert.That(motor.ExternalPushActive, Is.False);
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.False);
+            motor.CancelInteractionPoseMove();
+
+            CharacterController capsule =
+                playerObject.GetComponent<CharacterController>();
+            capsule.enabled = false;
+            Assert.That(motor.TryApplyExternalPush(Vector3.back), Is.False);
+            yield return null;
+            Assert.That(motor.ExternalPushActive, Is.False);
+        }
+
         [Test]
         public void InteractionPoseMove_ApproachesWithoutOvershootAndAligns()
         {
@@ -931,6 +1067,37 @@ namespace BarPromenade.Tests.PlayMode
         private IEnumerator WaitForMovement()
         {
             yield return WaitForSpeed(MinimumMovingSpeed);
+        }
+
+        private IEnumerator GroundForExternalPush()
+        {
+            CharacterController capsule =
+                playerObject.GetComponent<CharacterController>();
+            pushGround = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pushGround.name = "External Push Test Ground";
+            pushGround.transform.localScale = new Vector3(100f, 1f, 100f);
+            pushGround.transform.position = playerObject.transform.position +
+                Vector3.up * (capsule.center.y - capsule.height * 0.5f - 0.55f);
+            Physics.SyncTransforms();
+            float deadline = Time.realtimeSinceStartup + 1f;
+            while (!motor.IsGrounded && Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(motor.IsGrounded, Is.True);
+        }
+
+        private IEnumerator WaitForExternalPushEnd()
+        {
+            float deadline = Time.realtimeSinceStartup + 1f;
+            while (motor.ExternalPushActive && Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(motor.ExternalPushActive, Is.False,
+                "A contact must finish or stop at its first obstruction.");
         }
 
         private void QueueKeyboardState(params Key[] pressedKeys)

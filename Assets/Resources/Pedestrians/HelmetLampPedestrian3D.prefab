@@ -429,6 +429,8 @@ MonoBehaviour:
   ambientWalkClip: {fileID: 0}
   sitClip: {fileID: 0}
   actionClip: {fileID: 0}
+  personalSpaceGuardClip: {fileID: 0}
+  personalSpaceShoveClip: {fileID: 0}
   localBounds:
     m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.0933058}
     m_Extent: {x: 0.775211, y: 0.8749999, z: 0.29469413}

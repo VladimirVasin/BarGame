@@ -29,8 +29,12 @@ namespace BarPromenade.Editor
         public const string ProviderPath =
             "Assets/Resources/MountainRoad/" +
             "MountainRoadCafeCastProvider.asset";
+        /// <summary>
+        /// Kept as the one name the cafe validation refuses on a body: the
+        /// anchor itself is measured on the coffee-pot hand prop.
+        /// </summary>
         public const string CoffeePotSpoutAnchorName =
-            "SOCKET_CafePotSpout";
+            CityPedestrianHandProps.CoffeePotSpoutAnchorName;
 
         public const string LonePatronModelPath =
             "Assets/Pedestrians/Staged/Models/" +
@@ -570,15 +574,6 @@ namespace BarPromenade.Editor
                     manifest.texture_bindings[0],
                     renderersByName);
 
-                if (descriptor.Role ==
-                    MountainRoadCafeCastRole.Attendant)
-                {
-                    BuildCoffeePotSpoutAnchor(
-                        model,
-                        renderersByName,
-                        descriptor.DisplayName);
-                }
-
                 Animator[] animators =
                     model.GetComponentsInChildren<Animator>(true);
                 Animator animator;
@@ -1036,54 +1031,26 @@ namespace BarPromenade.Editor
             return manifest;
         }
 
+        /// <summary>
+        /// No cafe body declares a rig anchor any more. The attendant's
+        /// coffee-pot spout used to be measured on his hand.R; since
+        /// 2026-09-05 the pot is a hand prop and the spout anchor is
+        /// measured on that prefab by the hand-prop build, so a manifest
+        /// that still lists one comes from a generator older than the
+        /// prefabs it would feed.
+        /// </summary>
         private static void ValidateManifestRigAnchors(
             CafeCastDescriptor descriptor,
             CafeCastModelManifest manifest)
         {
             CafeCastManifestRigAnchor[] anchors = manifest.rig_anchors ??
                 Array.Empty<CafeCastManifestRigAnchor>();
-            int expectedCount = descriptor.Role ==
-                                MountainRoadCafeCastRole.Attendant
-                ? 1
-                : 0;
-            if (anchors.Length != expectedCount)
+            if (anchors.Length != 0)
             {
                 throw new InvalidOperationException(
-                    $"{descriptor.DisplayName} manifest has the wrong " +
-                    "coffee-pot anchor count.");
-            }
-
-            if (expectedCount == 0)
-            {
-                return;
-            }
-
-            CafeCastManifestRigAnchor anchor = anchors[0];
-            if (anchor == null ||
-                !string.Equals(
-                    anchor.name,
-                    CoffeePotSpoutAnchorName,
-                    StringComparison.Ordinal) ||
-                !string.Equals(
-                    anchor.bone,
-                    "hand.R",
-                    StringComparison.Ordinal) ||
-                !string.Equals(
-                    anchor.kind,
-                    "anchor",
-                    StringComparison.Ordinal) ||
-                anchor.parts == null ||
-                !anchor.parts.SequenceEqual(
-                    new[] { "ACC_CoffeePotSpout" },
-                    StringComparer.Ordinal) ||
-                !string.Equals(
-                    anchor.axis_from,
-                    "ACC_CoffeePotBody",
-                    StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    "Cafe attendant manifest must declare the measured " +
-                    "coffee-pot spout anchor on hand.R.");
+                    $"{descriptor.DisplayName} manifest lists rig anchors; " +
+                    "no cafe body carries one since the coffee pot became " +
+                    "a hand prop.");
             }
         }
 
@@ -1525,10 +1492,11 @@ namespace BarPromenade.Editor
                 modelTransforms,
                 "root",
                 descriptor.DisplayName);
-            int expectedRigTransformCount = ExpectedBoneCount +
-                (descriptor.Role == MountainRoadCafeCastRole.Attendant
-                    ? 1
-                    : 0);
+            // Every cafe body is the bare 31-bone rig now: the attendant's
+            // one authored anchor (the pot spout) left with the pot when it
+            // became a hand prop, so an extra transform under `root` is a
+            // stale body anchor, not a feature.
+            int expectedRigTransformCount = ExpectedBoneCount;
             if (boneRoot
                     .GetComponentsInChildren<Transform>(true).Length !=
                 expectedRigTransformCount)
@@ -1866,75 +1834,30 @@ namespace BarPromenade.Editor
             return result;
         }
 
-        private static void BuildCoffeePotSpoutAnchor(
-            GameObject model,
-            IReadOnlyDictionary<string, Renderer> renderers,
-            string label)
-        {
-            Dictionary<string, Transform> transforms =
-                IndexUniqueTransforms(model, label);
-            Transform hand = RequireTransform(
-                transforms,
-                "hand.R",
-                label);
-            if (!renderers.TryGetValue(
-                    "ACC_CoffeePotBody",
-                    out Renderer body) ||
-                !renderers.TryGetValue(
-                    "ACC_CoffeePotSpout",
-                    out Renderer spout) ||
-                body == null ||
-                spout == null)
-            {
-                throw new InvalidOperationException(
-                    "Cafe attendant is missing authored coffee-pot parts.");
-            }
-
-            Transform authoredAnchor = RequireTransform(
-                transforms,
-                CoffeePotSpoutAnchorName,
-                label);
-            if (authoredAnchor.parent != hand)
-            {
-                throw new InvalidOperationException(
-                    "Cafe attendant coffee-pot spout anchor must be " +
-                    "exported directly below hand.R.");
-            }
-        }
-
+        /// <summary>
+        /// The spout anchor lives on the coffee-pot hand prop, so a cafe
+        /// prefab of ANY role that still carries a transform by that name
+        /// is a body built before the pot left it — and the runtime
+        /// factory refuses it for the same reason.
+        /// </summary>
         private static void ValidateCoffeePotSpoutAnchor(
             CafeCastDescriptor descriptor,
             GameObject prefab)
         {
-            Transform[] matches = prefab
-                .GetComponentsInChildren<Transform>(true)
-                .Where(transform => string.Equals(
-                    transform.name,
-                    CoffeePotSpoutAnchorName,
-                    StringComparison.Ordinal))
-                .ToArray();
-            if (descriptor.Role != MountainRoadCafeCastRole.Attendant)
+            Transform[] transforms =
+                prefab.GetComponentsInChildren<Transform>(true);
+            for (int index = 0; index < transforms.Length; index++)
             {
-                if (matches.Length != 0)
+                if (string.Equals(
+                        transforms[index].name,
+                        CoffeePotSpoutAnchorName,
+                        StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException(
-                        $"{descriptor.DisplayName} must not own a coffee-pot " +
-                        "spout anchor.");
+                        $"{descriptor.DisplayName} prefab still carries " +
+                        $"'{CoffeePotSpoutAnchorName}'; the spout anchor " +
+                        "lives on the coffee-pot hand prop.");
                 }
-
-                return;
-            }
-
-            if (matches.Length != 1 ||
-                matches[0].parent == null ||
-                !string.Equals(
-                    matches[0].parent.name,
-                    "hand.R",
-                    StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    "Cafe attendant requires one measured " +
-                    $"'{CoffeePotSpoutAnchorName}' child of hand.R.");
             }
         }
 

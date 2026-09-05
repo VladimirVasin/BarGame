@@ -409,8 +409,15 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(HomeBalconySmokingPlan.ExhaleHoldSeconds));
         }
 
+        /// <summary>
+        /// The cigarette is no longer borrowed from the babushka's skin:
+        /// any eligible design takes the cigarette hand prop on its own
+        /// `SOCKET_Cigarette.R`, and the prop is plain mesh geometry that
+        /// rides the socket. A design without that socket is ineligible
+        /// upstream, so here the attach must simply land.
+        /// </summary>
         [Test]
-        public void BorrowedCigarette_ReusesMeshesAndRebindsTargetRig()
+        public void AttachedCigarette_IsTheHandPropUnderTheCigaretteSocket()
         {
             string designId = CityBalconySmokerArchetypeCatalog
                 .EligibleDesignIds
@@ -419,7 +426,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(CityPedestrianResources.TryGetArchetype(
                 designId,
                 out CityPedestrianArchetype archetype), Is.True);
-            var parent = new GameObject("Borrowed Cigarette Test");
+            Assert.That(
+                CityPedestrianHandProps.IsAvailable(
+                    CityPedestrianHandPropId.Cigarette),
+                Is.True,
+                "The cigarette hand prop prefab gates every balcony smoker.");
+            var parent = new GameObject("Attached Cigarette Test");
             try
             {
                 Assert.That(CityPedestrianResources.TryInstantiate(
@@ -427,33 +439,44 @@ namespace BarPromenade.Tests.EditMode
                     parent.transform,
                     out CityPedestrianAssetRegistry target), Is.True);
 
-                IReadOnlyList<Renderer> borrowed =
-                    CityBalconySmokerAccessory.Attach(target, 2);
-                CityPedestrianAssetRegistry source = Resources
-                    .Load<GameObject>(
-                        CityPedestrianResources
-                            .BabushkaPrefabResourcePath)
-                    .GetComponent<CityPedestrianAssetRegistry>();
-                Assert.That(borrowed.Count, Is.EqualTo(2));
-                foreach (Renderer renderer in borrowed)
+                CityPedestrianHandPropRegistry cigarette =
+                    CityPedestrianHandProps.Attach(
+                        target,
+                        CityPedestrianHandPropId.Cigarette,
+                        2);
+                Assert.That(cigarette, Is.Not.Null);
+                Assert.That(
+                    cigarette.Id,
+                    Is.EqualTo(CityPedestrianHandPropId.Cigarette));
+                Assert.That(cigarette.PaletteVariant, Is.EqualTo(2));
+                Transform socket = CityPedestrianHandProps.FindSocket(
+                    target.ModelRoot,
+                    CityBalconySmokerPresentation.CigaretteSocketName);
+                Assert.That(socket, Is.Not.Null, designId);
+                Assert.That(cigarette.transform.parent, Is.SameAs(socket));
+                Assert.That(
+                    Vector3.Distance(
+                        cigarette.transform.position,
+                        socket.position),
+                    Is.LessThan(0.02f),
+                    "The prop root must sit on the socket.");
+                CollectionAssert.AreEquivalent(
+                    new[] { "ACC_Cigarette", "ACC_CigaretteEmber" },
+                    cigarette.Renderers.Select(item => item.name));
+                foreach (Renderer renderer in cigarette.Renderers)
                 {
-                    var skin = renderer as SkinnedMeshRenderer;
-                    Assert.That(skin, Is.Not.Null, renderer.name);
-                    var sourceSkin = source.Renderers
-                        .Single(item => item.name == renderer.name) as
-                        SkinnedMeshRenderer;
-                    Assert.That(sourceSkin, Is.Not.Null, renderer.name);
-                    Assert.That(skin.sharedMesh,
-                        Is.SameAs(sourceSkin.sharedMesh),
-                        "The accessory must reuse Blender geometry, not " +
-                        "build a runtime primitive.");
                     Assert.That(
-                        skin.bones.All(item =>
-                            item != null &&
-                            (item == target.ModelRoot ||
-                             item.IsChildOf(target.ModelRoot))),
+                        renderer,
+                        Is.InstanceOf<MeshRenderer>(),
+                        renderer.name);
+                    Assert.That(
+                        renderer.transform.IsChildOf(socket),
                         Is.True,
                         renderer.name);
+                    Assert.That(
+                        renderer.sharedMaterial,
+                        Is.SameAs(target.Renderers[0].sharedMaterial),
+                        "The prop renders in the body's shared material.");
                 }
             }
             finally
@@ -505,8 +528,8 @@ namespace BarPromenade.Tests.EditMode
                         presentation.ExhaleEffect.Particles.emission
                             .burstCount,
                         Is.Zero);
-                    AssertBorrowedCigarette(presentation);
-                    AssertRolePropsHidden(presentation.Registry);
+                    AssertAttachedCigarette(presentation);
+                    AssertBodyCarriesNoProp(presentation.Registry);
                 }
 
                 AssertPassive(runtime.RootGameObject);
@@ -565,51 +588,58 @@ namespace BarPromenade.Tests.EditMode
                        lot) == CityBuildingExteriorFit.Full;
         }
 
-        private static void AssertBorrowedCigarette(
+        private static void AssertAttachedCigarette(
             CityBalconySmokerPresentation presentation)
         {
+            CityPedestrianHandPropRegistry held = presentation.HeldCigarette;
+            Assert.That(held, Is.Not.Null, "No cigarette hand prop attached.");
+            Assert.That(
+                held.Id,
+                Is.EqualTo(CityPedestrianHandPropId.Cigarette));
+            Transform socket = held.transform.parent;
+            Assert.That(socket, Is.Not.Null);
+            Assert.That(
+                socket.name,
+                Is.EqualTo(CityBalconySmokerPresentation.CigaretteSocketName));
+            Assert.That(
+                socket.IsChildOf(presentation.Registry.ModelRoot),
+                Is.True,
+                "The cigarette socket must belong to this smoker's rig.");
             CollectionAssert.AreEquivalent(
                 new[] { "ACC_Cigarette", "ACC_CigaretteEmber" },
                 presentation.CigaretteRenderers.Select(item => item.name));
             foreach (Renderer renderer in presentation.CigaretteRenderers)
             {
                 Assert.That(renderer.enabled, Is.True, renderer.name);
-                var skin = renderer as SkinnedMeshRenderer;
-                Assert.That(skin, Is.Not.Null, renderer.name);
                 Assert.That(
-                    skin.bones.All(item =>
-                        item != null &&
-                        (item == presentation.Registry.ModelRoot ||
-                         item.IsChildOf(
-                             presentation.Registry.ModelRoot))),
+                    renderer,
+                    Is.InstanceOf<MeshRenderer>(),
+                    renderer.name);
+                Assert.That(
+                    renderer.transform.IsChildOf(socket),
                     Is.True,
                     renderer.name);
             }
         }
 
-        private static void AssertRolePropsHidden(
+        /// <summary>
+        /// The body ships nothing in its hands, so there is nothing to
+        /// hide: no renderer on a smoker's body may carry a hand-prop
+        /// part name. Exact names, never prefixes — `ACC_PipeManifold`
+        /// on the pipeback roller is his own.
+        /// </summary>
+        private static void AssertBodyCarriesNoProp(
             CityPedestrianAssetRegistry registry)
         {
-            string[] prefixes =
-            {
-                "ACC_Beater",
-                "ACC_Chair",
-                "ACC_Bouquet",
-                "ACC_Pipe",
-                "ACC_Rod"
-            };
+            HashSet<string> propParts =
+                CityPedestrianHandPropTests.CollectPropPartNames();
             foreach (Renderer renderer in registry.Renderers)
             {
-                bool hidden = renderer.name == "ACC_LoadBelt" ||
-                              renderer.name == "ACC_Chalk" ||
-                              prefixes.Any(prefix =>
-                                  renderer.name.StartsWith(prefix));
-                if (hidden)
-                {
-                    Assert.That(renderer.enabled,
-                        Is.False,
-                        renderer.name);
-                }
+                Assert.That(
+                    propParts.Contains(renderer.name),
+                    Is.False,
+                    $"{registry.DesignId} still carries the hand-prop part " +
+                    $"'{renderer.name}' on its body.");
             }
         }
 

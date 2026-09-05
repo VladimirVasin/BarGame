@@ -296,6 +296,131 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("CityChurch")]
+        [Category("CityChurchCourtyard")]
+        public void GardenGrade_JoinsNorthYardAndClosesOnlyRealBoundaries()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityChurchPlan church = CityChurchPlanner.Create(layout);
+            CitySurfaceDescriptor[] grounds = layout.Surfaces.Where(
+                surface => surface.Kind == CitySurfaceKind.ChurchGround)
+                .ToArray();
+            RoadWalkableArea walkable = RoadWalkableArea.FromLayout(layout);
+
+            // The complete occupied garden, including bench approaches,
+            // remains level; the reserve behind it pays for the grade.
+            for (float x = 0.5f; x <= 44f; x += 2.5f)
+            {
+                for (float z = 0.5f; z <= 38f; z += 2.5f)
+                {
+                    Vector2 point = church.Grounds.min + new Vector2(x, z);
+                    Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(
+                        layout, point, out float top, out _), Is.True);
+                    Assert.That(top, Is.EqualTo(church.GroundTopY)
+                        .Within(Tolerance));
+                }
+            }
+
+            CitySurfaceDescriptor[] north = grounds.Where(surface =>
+                Mathf.Abs(surface.WorldBounds.yMax - church.Grounds.yMax) <
+                Tolerance).ToArray();
+            Assert.That(north, Has.Length.EqualTo(4));
+            foreach (CitySurfaceDescriptor surface in north)
+            {
+                CitySurfaceDescriptor neighbour = layout.Surfaces.Single(
+                    candidate => candidate.Cell == surface.Cell + Vector2Int.up);
+                for (int sample = 0; sample <= 8; sample++)
+                {
+                    Vector2 point = new Vector2(Mathf.Lerp(
+                        surface.WorldBounds.xMin, surface.WorldBounds.xMax,
+                        sample / 8f), church.Grounds.yMax);
+                    float top = CityTerrainSurfacePlan.SampleTop(layout,
+                        surface, point);
+                    Assert.That(top, Is.EqualTo(CityTerrainSurfacePlan
+                        .SampleTop(layout, neighbour, point)).Within(Tolerance),
+                        "The north seam must meet real terrain on both sides.");
+                    if (sample > 0 && sample < 8)
+                    {
+                        Assert.That(walkable.Contains(
+                            new Vector3(point.x, top, point.y),
+                            CityGroundTraversalPlanner.MaximumAgentRadius),
+                            Is.True, "Open grass cannot hide a traversal seam.");
+                    }
+                }
+            }
+
+            var fences = CityChurchGroundPlan.CreateFenceSpans(layout, church);
+            Assert.That(fences, Is.Not.Empty);
+            float openingMinimum = church.Access.Center.z -
+                church.Access.Width * 0.5f;
+            float openingMaximum = church.Access.Center.z +
+                church.Access.Width * 0.5f;
+            float eastLength = 0f;
+            foreach (CityChurchGroundFenceSpan span in fences)
+            {
+                if (span.First.x - church.Grounds.xMin < 0.2f &&
+                    span.Second.x - church.Grounds.xMin < 0.2f)
+                {
+                    Assert.That(span.Second.z + 0.09f <=
+                        openingMinimum + Tolerance ||
+                        span.First.z - 0.09f >= openingMaximum - Tolerance,
+                        Is.True, "The sole west aperture stays fully clear.");
+                }
+
+                if (church.Grounds.xMax - span.First.x < 0.2f &&
+                    church.Grounds.xMax - span.Second.x < 0.2f)
+                {
+                    eastLength += span.Second.z - span.First.z;
+                }
+
+                Assert.That(Mathf.Abs(span.First.z - church.Grounds.yMax) <
+                    Tolerance && Mathf.Abs(span.Second.z -
+                    church.Grounds.yMax) < Tolerance, Is.False,
+                    "The healed northern seam must not acquire a fence.");
+            }
+
+            Assert.That(eastLength, Is.EqualTo(church.Grounds.height)
+                .Within(Tolerance), "The east map limit is physically readable.");
+
+            var owner = new GameObject("Church Garden Grade Test");
+            try
+            {
+                GameObject built = CityChurchGroundWorldBuilder.Build(
+                    owner.transform, layout);
+                Mesh mesh = built.GetComponent<MeshFilter>().sharedMesh;
+                Assert.That(built.GetComponent<MeshCollider>().sharedMesh,
+                    Is.SameAs(mesh));
+                Vector3[] vertices = mesh.vertices;
+                Vector3[] normals = mesh.normals;
+                for (int index = 0; index < vertices.Length; index++)
+                {
+                    if (normals[index].y <= 0f)
+                    {
+                        continue;
+                    }
+
+                    Vector3 point = vertices[index];
+                    CitySurfaceDescriptor source = grounds.First(surface =>
+                        point.x >= surface.WorldBounds.xMin - Tolerance &&
+                        point.x <= surface.WorldBounds.xMax + Tolerance &&
+                        point.z >= surface.WorldBounds.yMin - Tolerance &&
+                        point.z <= surface.WorldBounds.yMax + Tolerance);
+                    float top = CityTerrainSurfacePlan.SampleTop(layout,
+                        source, new Vector2(point.x, point.z));
+                    Assert.That(point.y, Is.EqualTo(top).Within(Tolerance),
+                        "Rendered and collider terrain use the sampled grade.");
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        [Category("CityChurch")]
         public void ResidualEastYard_StaysValidAndClearOfChurchSite()
         {
             CityLayout layout = CityLayoutGenerator.Generate(

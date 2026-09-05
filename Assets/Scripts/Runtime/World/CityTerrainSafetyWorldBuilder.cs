@@ -45,7 +45,10 @@ namespace BarPromenade
             {
                 CityRoadGroundBoundarySpan span =
                     roadGroundBoundaries.ProtectedDrops[index];
-                if (span.Surface.Kind == CitySurfaceKind.RiverWater)
+                if (span.Surface.Kind == CitySurfaceKind.RiverWater ||
+                    // The church owns a transparent iron frontage with
+                    // rail heights measured above both ground and street.
+                    span.Surface.Kind == CitySurfaceKind.ChurchGround)
                 {
                     continue;
                 }

@@ -17,6 +17,9 @@ namespace BarPromenade.Editor
             bool isAnimation = string.Equals(
                 assetPath,
                 CityPedestrianAssetSetup.AnimationPath,
+                StringComparison.OrdinalIgnoreCase) || string.Equals(
+                assetPath,
+                CityPedestrianPersonalSpaceAssetSetup.AnimationPath,
                 StringComparison.OrdinalIgnoreCase);
             if (!isModel && !isAnimation)
             {
@@ -67,10 +70,13 @@ namespace BarPromenade.Editor
 
         private void OnPreprocessAnimation()
         {
-            if (!string.Equals(
+            if ((!string.Equals(
                     assetPath,
                     CityPedestrianAssetSetup.AnimationPath,
-                    StringComparison.OrdinalIgnoreCase) ||
+                    StringComparison.OrdinalIgnoreCase) && !string.Equals(
+                    assetPath,
+                    CityPedestrianPersonalSpaceAssetSetup.AnimationPath,
+                    StringComparison.OrdinalIgnoreCase)) ||
                 !(assetImporter is ModelImporter importer))
             {
                 return;
@@ -160,6 +166,17 @@ namespace BarPromenade.Editor
             for (int index = 0; index < importedAssets.Length; index++)
             {
                 string importedPath = importedAssets[index];
+                if (string.Equals(importedPath,
+                        CityPedestrianPersonalSpaceAssetSetup.AnimationPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(importedPath,
+                        CityPedestrianPersonalSpaceAssetSetup.ManifestPath,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    CityPedestrianPersonalSpaceAssetSetup.QueueBuild();
+                    continue;
+                }
+
                 if (string.Equals(
                         importedPath,
                         CityPedestrianAssetSetup.ModelPath,

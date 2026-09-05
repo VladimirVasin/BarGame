@@ -2941,6 +2941,325 @@ namespace BarPromenade.Tests.EditMode
                 : clipName;
         }
 
+        [Test]
+        public void Presentation_TurnsTheFaceAfterTheFocusAndReleasesToTheClip()
+        {
+            // Two identical bodies on the same idle: one is handed a focus,
+            // the other never is. The glance must move the first one's face
+            // the way it moves the hero's - to the right for a focus on the
+            // right, down for a focus at the knees - and, once released,
+            // leave the bones bit-for-bit where the clip alone puts them.
+            GameObject root = new GameObject("Attention Presentation Root");
+            CityPedestrianPresentation glancing = null;
+            CityPedestrianPresentation twin = null;
+            try
+            {
+                glancing = CreateStandalonePresentation(root.transform);
+                twin = CreateStandalonePresentation(root.transform);
+                Assert.That(glancing.HasAttentionHead, Is.True);
+                Transform head = glancing.Registry.HeadAnchor;
+                Transform twinHead = twin.Registry.HeadAnchor;
+                Transform neck = FindAttentionBone(
+                    glancing.Registry.Animator.transform,
+                    "neck");
+                Transform twinNeck = FindAttentionBone(
+                    twin.Registry.Animator.transform,
+                    "neck");
+                Assert.That(neck, Is.Not.Null);
+                for (int frame = 0; frame < 10; frame++)
+                {
+                    glancing.Advance(0.02f, false);
+                    twin.Advance(0.02f, false);
+                }
+
+                Vector3 restFace = MeasureFaceDirection(twin.Registry);
+                Assert.That(
+                    Vector3.Dot(restFace, twin.transform.forward),
+                    Is.GreaterThan(0.4f),
+                    "The eyes must sit in front of the head bone for the " +
+                    "measurement to mean anything.");
+
+                Vector3 rightFocus = glancing.transform.position +
+                                     (glancing.transform.right * 2f) +
+                                     (glancing.transform.forward * 2f) +
+                                     (Vector3.up * 1.5f);
+                glancing.SetAttentionFocus(rightFocus);
+                for (int frame = 0; frame < 40; frame++)
+                {
+                    glancing.Advance(0.02f, false);
+                    twin.Advance(0.02f, false);
+                }
+
+                Assert.That(glancing.AttentionWeight, Is.EqualTo(1f).Within(0.0001f));
+                Assert.That(twin.AttentionWeight, Is.EqualTo(0f));
+                float yaw = PlanarSignedAngle(
+                    MeasureFaceDirection(twin.Registry),
+                    MeasureFaceDirection(glancing.Registry));
+                Assert.That(
+                    yaw,
+                    Is.GreaterThan(20f).And.LessThan(
+                        PlayerAttentionRules.MaxHeadYawDegrees + 1f),
+                    "A focus 45 degrees to the right must turn the face " +
+                    "to the right, within what a neck can do.");
+
+                Vector3 lowFocus = glancing.transform.position +
+                                   (glancing.transform.forward * 2f) +
+                                   (Vector3.up * 0.2f);
+                glancing.SetAttentionFocus(lowFocus);
+                for (int frame = 0; frame < 40; frame++)
+                {
+                    glancing.Advance(0.02f, false);
+                    twin.Advance(0.02f, false);
+                }
+
+                Vector3 lowFace = MeasureFaceDirection(glancing.Registry);
+                Vector3 twinFace = MeasureFaceDirection(twin.Registry);
+                Assert.That(
+                    lowFace.y,
+                    Is.LessThan(twinFace.y - 0.15f),
+                    "A focus at the knees must drop the chin.");
+                Assert.That(
+                    Mathf.Abs(PlanarSignedAngle(twinFace, lowFace)),
+                    Is.LessThan(4f),
+                    "A focus straight ahead must not leave the head " +
+                    "turned to a side.");
+
+                glancing.SetAttentionFocus(null);
+                for (int frame = 0; frame < 40; frame++)
+                {
+                    glancing.Advance(0.02f, false);
+                    twin.Advance(0.02f, false);
+                }
+
+                Assert.That(glancing.AttentionWeight, Is.EqualTo(0f));
+                Assert.That(
+                    Quaternion.Angle(head.localRotation, twinHead.localRotation),
+                    Is.LessThan(0.01f),
+                    "Released, the head must be exactly the clip's.");
+                Assert.That(
+                    Quaternion.Angle(neck.localRotation, twinNeck.localRotation),
+                    Is.LessThan(0.01f),
+                    "Released, the neck must be exactly the clip's.");
+            }
+            finally
+            {
+                glancing?.Shutdown();
+                twin?.Shutdown();
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Actor_NoticesTheHeroAheadKeepsHimAtTheEdgeAndDropsHimBehind()
+        {
+            // The hero's own notice rule, run from the walker: a fresh hero
+            // is taken inside the notice cone only, kept out to the release
+            // limits, and never noticed behind the walker's back.
+            GameObject root = new GameObject("Attention Actor Root");
+            CityPedestrianActor actor = null;
+            CityPedestrianPresentation presentation = null;
+            try
+            {
+                CityPedestrianPlan plan = CreateCornerPlan();
+                actor = CreateBoundActor(
+                    root.transform,
+                    plan,
+                    plan.SpawnAnchors[0],
+                    1,
+                    out presentation);
+                actor.Advance(0.02f);
+                Assert.That(actor.IsAttending, Is.False);
+                Assert.That(presentation.AttentionFocus, Is.Null);
+
+                Vector3 behind = HeroFaceAlong(actor, -2f);
+                actor.Advance(0.02f, attentionCandidate: behind);
+                Assert.That(actor.IsAttending, Is.False);
+                Assert.That(presentation.AttentionFocus, Is.Null);
+
+                Vector3 justOutside = HeroFaceAlong(
+                    actor,
+                    PlayerAttentionRules.NoticeRadius + 0.3f);
+                actor.Advance(0.02f, attentionCandidate: justOutside);
+                Assert.That(
+                    actor.IsAttending,
+                    Is.False,
+                    "Past the notice radius a fresh hero is not taken.");
+
+                Vector3 ahead = HeroFaceAlong(actor, 3f);
+                actor.Advance(0.02f, attentionCandidate: ahead);
+                Assert.That(actor.IsAttending, Is.True);
+                Assert.That(presentation.AttentionFocus, Is.EqualTo(ahead));
+                Assert.That(
+                    presentation.AttentionWeight,
+                    Is.GreaterThan(0f),
+                    "The glance starts blending in the same frame.");
+
+                Vector3 drifting = HeroFaceAlong(
+                    actor,
+                    PlayerAttentionRules.NoticeRadius + 0.3f);
+                actor.Advance(0.02f, attentionCandidate: drifting);
+                Assert.That(
+                    actor.IsAttending,
+                    Is.True,
+                    "A hero already held survives inside the release radius.");
+
+                Vector3 gone = HeroFaceAlong(
+                    actor,
+                    PlayerAttentionRules.ReleaseRadius + 0.3f);
+                actor.Advance(0.02f, attentionCandidate: gone);
+                Assert.That(actor.IsAttending, Is.False);
+                Assert.That(presentation.AttentionFocus, Is.Null);
+
+                actor.Advance(0.02f, attentionCandidate: HeroFaceAlong(actor, 3f));
+                Assert.That(actor.IsAttending, Is.True);
+                actor.Advance(0.02f);
+                Assert.That(
+                    actor.IsAttending,
+                    Is.False,
+                    "A frame with no candidate at all releases the head.");
+                Assert.That(presentation.AttentionFocus, Is.Null);
+
+                actor.Advance(0.02f, attentionCandidate: HeroFaceAlong(actor, 3f));
+                Assert.That(actor.IsAttending, Is.True);
+                actor.ReleasePresentation(root.transform);
+                Assert.That(actor.IsAttending, Is.False);
+                Assert.That(
+                    presentation.AttentionFocus,
+                    Is.Null,
+                    "A pooled body must not carry the last glance to its " +
+                    "next spawn.");
+                Assert.That(presentation.AttentionWeight, Is.EqualTo(0f));
+            }
+            finally
+            {
+                ReleaseBoundActor(actor, presentation, root.transform);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Director_HandsWalkersTheHeroHeadOrAFaceHeightOverHisFeet()
+        {
+            GameObject root = new GameObject("Attention Director Root");
+            try
+            {
+                Transform player = CreatePlayer(root.transform);
+                player.position = new Vector3(3f, 0.5f, -2f);
+                GameObject poolRoot = new GameObject("Pool");
+                poolRoot.transform.SetParent(root.transform, false);
+                CityPedestrianDirector director =
+                    root.AddComponent<CityPedestrianDirector>();
+                director.Initialize(
+                    CreateCornerPlan(),
+                    Array.Empty<CityPedestrianActor>(),
+                    Array.Empty<CityPedestrianPresentation>(),
+                    player,
+                    poolRoot.transform,
+                    () => false);
+
+                Vector3 fallback = director.ResolveHeroFocus();
+                Assert.That(
+                    Vector3.Distance(
+                        fallback,
+                        player.position + (Vector3.up *
+                            CityPedestrianDirector.HeroFocusFallbackHeight)),
+                    Is.LessThan(0.0001f),
+                    "A bare player root is looked at face-high over its feet.");
+
+                Player3DAssetRegistry hero =
+                    Player3DResources.Instantiate(player);
+                Assert.That(hero.Anchors.Head, Is.Not.Null);
+                Vector3 focus = director.ResolveHeroFocus();
+                Assert.That(
+                    Vector3.Distance(focus, hero.Anchors.Head.position),
+                    Is.LessThan(0.0001f),
+                    "With the rig mounted the walkers look at the head bone.");
+                Assert.That(
+                    focus.y - player.position.y,
+                    Is.InRange(1.3f, 1.8f),
+                    "The head bone sits at face height over the feet.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        private static CityPedestrianPresentation CreateStandalonePresentation(
+            Transform parent)
+        {
+            CityPedestrianAssetRegistry registry =
+                CityPedestrianResources.Instantiate(parent);
+            CityPedestrianPresentation presentation =
+                registry.GetComponent<CityPedestrianPresentation>();
+            if (presentation == null)
+            {
+                presentation = registry.gameObject.AddComponent<
+                    CityPedestrianPresentation>();
+            }
+
+            presentation.Initialize(registry);
+            presentation.ConfigureCycle(0.91f, 0f);
+            presentation.Advance(0f, false, true);
+            return presentation;
+        }
+
+        /// <summary>The hero's face this far along the walker's facing.</summary>
+        private static Vector3 HeroFaceAlong(
+            CityPedestrianActor actor,
+            float distance)
+        {
+            return actor.Position +
+                   (actor.transform.forward * distance) +
+                   (Vector3.up * CityPedestrianDirector.HeroFocusFallbackHeight);
+        }
+
+        /// <summary>
+        /// Where the face points: from the head bone to the midpoint of the
+        /// two eye bones, which ride the head and so turn with the glance.
+        /// </summary>
+        private static Vector3 MeasureFaceDirection(
+            CityPedestrianAssetRegistry registry)
+        {
+            Transform bones = registry.Animator.transform;
+            Transform leftEye = FindAttentionBone(bones, "face.eye.L");
+            Transform rightEye = FindAttentionBone(bones, "face.eye.R");
+            Assert.That(leftEye, Is.Not.Null);
+            Assert.That(rightEye, Is.Not.Null);
+            Vector3 eyes = (leftEye.position + rightEye.position) * 0.5f;
+            return (eyes - registry.HeadAnchor.position).normalized;
+        }
+
+        private static float PlanarSignedAngle(Vector3 from, Vector3 to)
+        {
+            from.y = 0f;
+            to.y = 0f;
+            return Vector3.SignedAngle(from, to, Vector3.up);
+        }
+
+        private static Transform FindAttentionBone(
+            Transform root,
+            string boneName)
+        {
+            if (root.name == boneName)
+            {
+                return root;
+            }
+
+            for (int index = 0; index < root.childCount; index++)
+            {
+                Transform found = FindAttentionBone(
+                    root.GetChild(index),
+                    boneName);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
         private static CityPedestrianActor CreateBoundActor(
             Transform parent,
             CityPedestrianPlan plan,

@@ -34,6 +34,48 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public MountainRoadCafeCastRole Role { get; private set; }
         public MountainRoadCafeCastAssetRegistry Registry => registry;
+
+        /// <summary>The woman's cafe cigarette hand prop; null on every
+        /// other role and until the factory attaches it.</summary>
+        public CityPedestrianHandPropRegistry HeldCigarette { get; private set; }
+
+        /// <summary>The attendant's towel hand prop (left grip); null on
+        /// every other role and until the factory attaches it.</summary>
+        public CityPedestrianHandPropRegistry ServiceTowel { get; private set; }
+
+        /// <summary>The attendant's coffee-pot hand prop (right grip),
+        /// the same instance the registry routes visibility to.</summary>
+        public CityPedestrianHandPropRegistry CoffeePot { get; private set; }
+
+        /// <summary>
+        /// Files an attached hand prop under the accessor for its id so
+        /// the effects and the tests reach its renderers without walking
+        /// the rig. Any other id is a wiring mistake and throws.
+        /// </summary>
+        public void RegisterHandProp(CityPedestrianHandPropRegistry prop)
+        {
+            if (prop == null)
+            {
+                throw new ArgumentNullException(nameof(prop));
+            }
+
+            switch (prop.Id)
+            {
+                case CityPedestrianHandPropId.CafeCigarette:
+                    HeldCigarette = prop;
+                    break;
+                case CityPedestrianHandPropId.ServiceTowel:
+                    ServiceTowel = prop;
+                    break;
+                case CityPedestrianHandPropId.CoffeePot:
+                    CoffeePot = prop;
+                    break;
+                default:
+                    throw new ArgumentException(
+                        "The cafe cast holds no " + prop.Id + " prop.",
+                        nameof(prop));
+            }
+        }
         public MountainRoadCafeCastClipKind CurrentClipKind =>
             currentClipKind;
         public float CurrentClipTimeSeconds => currentClipTimeSeconds;
@@ -363,6 +405,17 @@ namespace BarPromenade
         private void OnDestroy()
         {
             DestroyGraph();
+            // The props are children of the sockets and die with the
+            // body; releasing them here keeps the accessors honest.
+            CityPedestrianHandPropRegistry cigarette = HeldCigarette;
+            CityPedestrianHandProps.Detach(ref cigarette);
+            HeldCigarette = null;
+            CityPedestrianHandPropRegistry towel = ServiceTowel;
+            CityPedestrianHandProps.Detach(ref towel);
+            ServiceTowel = null;
+            CityPedestrianHandPropRegistry pot = CoffeePot;
+            CityPedestrianHandProps.Detach(ref pot);
+            CoffeePot = null;
         }
 
         private void DestroyGraph()

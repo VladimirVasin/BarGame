@@ -206,6 +206,14 @@ namespace BarPromenade
                     "service clock.");
             }
 
+            if (!World.Cafe.Cast.BindHeroAttention(
+                    Player.GameObject.transform))
+            {
+                throw new InvalidOperationException(
+                    "The mountain cafe attendant could not bind his hero " +
+                    "glance.");
+            }
+
             CafeConversation =
                 MountainRoadCafeConversationController.Create(
                     ui.transform,

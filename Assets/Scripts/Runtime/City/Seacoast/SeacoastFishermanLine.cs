@@ -63,6 +63,12 @@ namespace BarPromenade
         /// <summary>Current strung length, in metres.</summary>
         public float LineLength { get; private set; }
 
+        /// <summary>
+        /// The rod tip is the `ANCHOR_RodTip` transform of the fishing rod
+        /// hand prop, measured by the prop build at the far end of the
+        /// tip section; it rides the right grip socket, so the live lift
+        /// of the loop moves it and the line re-strikes from it.
+        /// </summary>
         public void Initialize(
             Transform configuredRodTip,
             float waterTopY,

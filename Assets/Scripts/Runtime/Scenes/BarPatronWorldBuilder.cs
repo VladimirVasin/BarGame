@@ -202,11 +202,9 @@ namespace BarPromenade
                 registry.ApplyPaletteVariant(anchor.VisualVariant);
 
                 // The bar mints its own pooled bodies rather than going
-                // through CityPedestrianFactory, so the street's prop rule
-                // has to be applied here too - miss it and the bar fills
-                // with grandmothers holding carpet beaters.
-                CityPedestrianHeldProps.ApplyRoamingRules(registry);
-
+                // through CityPedestrianFactory, and it attaches no hand
+                // prop: a body ships empty-handed, so a grandmother at the
+                // counter holds no carpet beater without any rule here.
                 CityPedestrianPresentation presentation =
                     registry.GetComponent<CityPedestrianPresentation>();
                 if (presentation == null)

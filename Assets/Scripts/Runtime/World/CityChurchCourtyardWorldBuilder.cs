@@ -6,8 +6,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// Materialises the church-yard plan exclusively from Blender-authored
-    /// City misc meshes. Runtime geometry is limited to invisible collision
-    /// proxies; surfaces, furniture and planting are imported presentation.
+    /// City misc and garden meshes. The ground builder owns continuous grass;
+    /// paths, furniture and planting use imported presentation.
     /// </summary>
     public static class CityChurchCourtyardWorldBuilder
     {
@@ -20,7 +20,7 @@ namespace BarPromenade
         private static readonly Color Gravel =
             new Color(0.37f, 0.34f, 0.29f);
         private static readonly Color Lawn =
-            new Color(0.18f, 0.31f, 0.17f);
+            new Color(0.20f, 0.29f, 0.18f);
         private static readonly Color Foliage =
             new Color(0.14f, 0.30f, 0.16f);
         private static readonly Color Bark =
@@ -62,12 +62,16 @@ namespace BarPromenade
 
             for (int index = 0; index < plan.Surfaces.Count; index++)
             {
-                AppendSurface(provider, plan, plan.Surfaces[index], batches);
+                // Grass already belongs to the continuous ground mesh. Raised
+                // bevelled lawn patches would expose a grid of artificial seams.
+                if (plan.Surfaces[index].Kind != CityChurchCourtyardSurfaceKind.Lawn)
+                    AppendSurface(provider, plan, plan.Surfaces[index], batches);
             }
 
             for (int index = 0; index < plan.Fixtures.Count; index++)
             {
-                AppendFixture(provider, plan.Fixtures[index], batches);
+                if ((int)plan.Fixtures[index].Kind <= (int)CityChurchCourtyardFixtureKind.Tree)
+                    AppendFixture(provider, plan.Fixtures[index], batches);
             }
 
             for (int index = 0; index < styleCount; index++)
@@ -91,8 +95,50 @@ namespace BarPromenade
                 ApplyAppearance(batch.GetComponent<Renderer>(), style, color);
             }
 
+            BuildGardenModels(root, plan);
             BuildCollision(root, plan);
             return root.gameObject;
+        }
+
+        private static void BuildGardenModels(Transform root, CityChurchCourtyardPlan plan)
+        {
+            ChurchGardenModelProvider provider = ChurchGardenModelProvider.Load();
+            for (int i = 0; i < plan.Fixtures.Count; i++)
+            {
+                CityChurchCourtyardFixtureDescriptor fixture = plan.Fixtures[i];
+                if ((int)fixture.Kind <= (int)CityChurchCourtyardFixtureKind.Tree) continue;
+                ChurchGardenAssetKind kind;
+                switch (fixture.Kind)
+                {
+                    case CityChurchCourtyardFixtureKind.Fountain:
+                        kind = ChurchGardenAssetKind.FountainStone; break;
+                    case CityChurchCourtyardFixtureKind.Statue:
+                        kind = ChurchGardenAssetKind.MaryStatue; break;
+                    case CityChurchCourtyardFixtureKind.PottingLedge:
+                        kind = ChurchGardenAssetKind.StonePottingLedge; break;
+                    case CityChurchCourtyardFixtureKind.PotSmall:
+                        kind = ChurchGardenAssetKind.PotSmall; break;
+                    case CityChurchCourtyardFixtureKind.PotLarge:
+                        kind = ChurchGardenAssetKind.PotLarge; break;
+                    case CityChurchCourtyardFixtureKind.Hedge:
+                        kind = ChurchGardenAssetKind.HedgeSegment; break;
+                    case CityChurchCourtyardFixtureKind.Uplight:
+                        kind = ChurchGardenAssetKind.GardenUplight; break;
+                    default: throw new ArgumentOutOfRangeException();
+                }
+                GameObject model = provider.Instantiate(kind, root,
+                    fixture.GroundPosition, fixture.Rotation.eulerAngles.y);
+                model.name = fixture.Id;
+                model.transform.localScale = Vector3.Scale(model.transform.localScale, fixture.Scale);
+                if (fixture.Kind == CityChurchCourtyardFixtureKind.Uplight)
+                    model.AddComponent<ChurchGardenUplight>().Initialize(fixture.Variant == 1);
+                if (fixture.Kind != CityChurchCourtyardFixtureKind.Fountain) continue;
+                GameObject water = provider.Instantiate(
+                    ChurchGardenAssetKind.FountainWater, model.transform, Vector3.zero);
+                GameObject stream = provider.Instantiate(
+                    ChurchGardenAssetKind.FountainStream, model.transform, Vector3.zero);
+                model.AddComponent<ChurchGardenFountain>().Initialize(water, stream);
+            }
         }
 
         public static void AppendBenchSeats(
@@ -295,6 +341,20 @@ namespace BarPromenade
                     return 1.30f;
                 case CityChurchCourtyardFixtureKind.Tree:
                     return 2.75f;
+                case CityChurchCourtyardFixtureKind.Fountain:
+                    return 0.74f;
+                case CityChurchCourtyardFixtureKind.Statue:
+                    return 1.65f;
+                case CityChurchCourtyardFixtureKind.PottingLedge:
+                    return 0.65f;
+                case CityChurchCourtyardFixtureKind.PotSmall:
+                    return 0.24f;
+                case CityChurchCourtyardFixtureKind.PotLarge:
+                    return 0.42f;
+                case CityChurchCourtyardFixtureKind.Hedge:
+                    return 0.8f;
+                case CityChurchCourtyardFixtureKind.Uplight:
+                    return 0.22f;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }

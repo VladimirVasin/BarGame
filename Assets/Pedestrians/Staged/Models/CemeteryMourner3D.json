@@ -18,10 +18,10 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 40,
-  "triangle_count": 1904,
+  "mesh_count": 35,
+  "triangle_count": 1712,
   "triangle_budget": [
-    1800,
+    1600,
     2400
   ],
   "staged": true,
@@ -29,7 +29,7 @@
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.803641,
+    -0.777467,
     -0.223885,
     0.0
   ],
@@ -60,7 +60,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "1ef19c611ac88d30a0a573e4eeeae0b1726c92a62581c4d71fbb4cf799b3bb6d",
+  "build_signature": "69479a463b057cc2b23b3cec219b40ad4fc3cbbdca026dfc9af81269205b0bb1",
   "bones": [
     {
       "name": "root",
@@ -529,76 +529,6 @@
     }
   ],
   "parts": [
-    {
-      "name": "ACC_BouquetBloomA",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "bouquet_bloom",
-      "base_color": [
-        0.29,
-        0.06,
-        0.075,
-        1.0
-      ],
-      "vertices": 26,
-      "triangles": 48
-    },
-    {
-      "name": "ACC_BouquetBloomB",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "bouquet_bloom",
-      "base_color": [
-        0.29,
-        0.06,
-        0.075,
-        1.0
-      ],
-      "vertices": 26,
-      "triangles": 48
-    },
-    {
-      "name": "ACC_BouquetGreens",
-      "role": "surface_detail",
-      "bone": "hand.R",
-      "palette_name": "bouquet_stem",
-      "base_color": [
-        0.055,
-        0.11,
-        0.06,
-        1.0
-      ],
-      "vertices": 26,
-      "triangles": 48
-    },
-    {
-      "name": "ACC_BouquetStems",
-      "role": "surface_detail",
-      "bone": "hand.R",
-      "palette_name": "bouquet_stem",
-      "base_color": [
-        0.055,
-        0.11,
-        0.06,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "ACC_BouquetWrap",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "bouquet_wrap",
-      "base_color": [
-        0.33,
-        0.3,
-        0.24,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
     {
       "name": "ACC_CoatButton.01",
       "role": "surface_detail",

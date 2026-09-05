@@ -318,6 +318,125 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Presentation_TurnsHisHeadAfterTheHeroInFrontAndNotBehind()
+        {
+            // The old man looks back: the hero's own notice rule run from
+            // the doorstep. Behind him nothing happens; on his right the
+            // face (measured from the eye bones, which ride the head)
+            // swings right, on his left it swings left, and once the hero
+            // walks off behind him the glance blends out to nothing.
+            (CityLayout _, CityCemeteryPlan plan) = GenerateCemetery();
+            CemeteryWatchmanPlan watchmanPlan =
+                CemeteryWatchmanPlan.Create(plan);
+            Assert.That(watchmanPlan.IsPresent, Is.True);
+            CemeteryWatchmanStance stance = watchmanPlan.Stance;
+            Vector3 right = Vector3.Cross(Vector3.up, stance.Facing).normalized;
+            var root = new GameObject("Watchman Attention Root");
+            try
+            {
+                var heroObject = new GameObject("Hero Root");
+                heroObject.transform.SetParent(root.transform, false);
+                Transform hero = heroObject.transform;
+                hero.position = stance.Position - (stance.Facing * 2f);
+
+                CemeteryWatchmanPresentation watchman =
+                    CemeteryWatchmanFactory.Create(
+                        root.transform,
+                        watchmanPlan,
+                        Seed,
+                        hero);
+                Assert.That(
+                    watchman,
+                    Is.Not.Null,
+                    "The provider asset must resolve in edit mode.");
+                Step(watchman, 40);
+                Assert.That(watchman.IsAttending, Is.False);
+                Assert.That(watchman.AttentionFocus, Is.Null);
+                Assert.That(watchman.AttentionWeight, Is.EqualTo(0f));
+
+                hero.position = stance.Position +
+                                (stance.Facing * 1.5f) +
+                                (right * 2f);
+                Step(watchman, 40);
+                Assert.That(watchman.IsAttending, Is.True);
+                Assert.That(
+                    watchman.AttentionWeight,
+                    Is.EqualTo(1f).Within(0.0001f));
+                Assert.That(watchman.AttentionFocus, Is.Not.Null);
+                Assert.That(
+                    Vector3.Distance(
+                        watchman.AttentionFocus.Value,
+                        hero.position +
+                        (Vector3.up * HeroAttentionFocus.FallbackHeight)),
+                    Is.LessThan(0.001f),
+                    "A bare hero root is looked at face-high over its feet.");
+                float rightYaw = FaceYaw(watchman, stance.Facing);
+                Assert.That(
+                    rightYaw,
+                    Is.GreaterThan(15f),
+                    "A hero on his right turns the face right.");
+
+                hero.position = stance.Position +
+                                (stance.Facing * 1.5f) -
+                                (right * 2f);
+                Step(watchman, 60);
+                Assert.That(watchman.IsAttending, Is.True);
+                float leftYaw = FaceYaw(watchman, stance.Facing);
+                Assert.That(
+                    leftYaw,
+                    Is.LessThan(-15f),
+                    "A hero on his left turns the face left.");
+                Assert.That(rightYaw - leftYaw, Is.GreaterThan(45f));
+
+                hero.position = stance.Position - (stance.Facing * 2f);
+                Step(watchman, 40);
+                Assert.That(
+                    watchman.IsAttending,
+                    Is.False,
+                    "Straight behind him the hero is dropped.");
+                Assert.That(watchman.AttentionWeight, Is.EqualTo(0f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void Step(
+            CemeteryWatchmanPresentation watchman,
+            int frames)
+        {
+            for (int frame = 0; frame < frames; frame++)
+            {
+                watchman.Advance(0.02f);
+            }
+        }
+
+        /// <summary>
+        /// Where his face points relative to his stance, in the plane:
+        /// from the head bone to the midpoint of the eye bones.
+        /// </summary>
+        private static float FaceYaw(
+            CemeteryWatchmanPresentation watchman,
+            Vector3 facing)
+        {
+            var registry = watchman
+                .GetComponentInChildren<CityPedestrianAssetRegistry>(true);
+            Transform bones = registry.Animator.transform;
+            Transform leftEye =
+                NpcAttentionHeadLayer.FindBone(bones, "face.eye.L");
+            Transform rightEye =
+                NpcAttentionHeadLayer.FindBone(bones, "face.eye.R");
+            Assert.That(leftEye, Is.Not.Null);
+            Assert.That(rightEye, Is.Not.Null);
+            Vector3 eyes = (leftEye.position + rightEye.position) * 0.5f;
+            Vector3 face = eyes - registry.HeadAnchor.position;
+            face.y = 0f;
+            facing.y = 0f;
+            return Vector3.SignedAngle(facing, face, Vector3.up);
+        }
+
         private static (CityLayout, CityCemeteryPlan) GenerateCemetery()
         {
             CityLayout layout = CityLayoutGenerator.Generate(

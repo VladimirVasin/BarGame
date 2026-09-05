@@ -101,21 +101,28 @@ namespace BarPromenade
                     "matching asset registry.");
             }
 
+            // The anchors are rig sockets; the paper and the ember are
+            // parts of the cafe cigarette hand prop the factory attached
+            // to SOCKET_Cigarette.R, not renderers of the body.
             cigaretteAnchor = registry.FindModelTransform(
                 CigaretteAnchorName);
             mouthAnchor = registry.FindModelTransform(MouthAnchorName);
-            cigaretteRenderer = FindRenderer(
-                registry,
-                CigaretteRendererName);
-            emberRenderer = FindRenderer(registry, EmberRendererName);
+            CityPedestrianHandPropRegistry held = presentation.HeldCigarette;
+            cigaretteRenderer = held != null
+                ? held.FindRenderer(CigaretteRendererName)
+                : null;
+            emberRenderer = held != null
+                ? held.FindRenderer(EmberRendererName)
+                : null;
             if (cigaretteAnchor == null ||
                 mouthAnchor == null ||
                 cigaretteRenderer == null ||
                 emberRenderer == null)
             {
                 throw new InvalidOperationException(
-                    "The cafe woman is missing her authored cigarette, " +
-                    "ember, SOCKET_Cigarette.R or SOCKET_Mouth anchor.");
+                    "The cafe woman is missing her attached cigarette " +
+                    "hand prop (ACC_CafeCigarette, ACC_CafeCigaretteEmber), " +
+                    "SOCKET_Cigarette.R or SOCKET_Mouth anchor.");
             }
 
             properties = new MaterialPropertyBlock();
@@ -430,28 +437,6 @@ namespace BarPromenade
                 mouthAnchor.position + outward * MouthForwardOffset,
                 Quaternion.LookRotation(outward, worldUp));
             plume.transform.localScale = Vector3.one;
-        }
-
-        private static Renderer FindRenderer(
-            MountainRoadCafeCastAssetRegistry registry,
-            string rendererName)
-        {
-            for (int index = 0;
-                 index < registry.RendererBindings.Count;
-                 index++)
-            {
-                Renderer renderer =
-                    registry.RendererBindings[index]?.Renderer;
-                if (renderer != null && string.Equals(
-                        renderer.name,
-                        rendererName,
-                        StringComparison.Ordinal))
-                {
-                    return renderer;
-                }
-            }
-
-            return null;
         }
 
         private static float SmoothRamp(

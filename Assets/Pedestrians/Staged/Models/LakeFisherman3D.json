@@ -18,10 +18,10 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 45,
-  "triangle_count": 1052,
+  "mesh_count": 37,
+  "triangle_count": 892,
   "triangle_budget": [
-    900,
+    800,
     2000
   ],
   "staged": true,
@@ -29,8 +29,8 @@
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.772733,
-    -1.918258,
+    -0.769306,
+    -0.21767,
     0.0
   ],
   "bounds_max": [
@@ -60,7 +60,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "45f2c318e32f00f29ae80e2c41b2e34d36336cbbd5a831ec074331eb31361e18",
+  "build_signature": "202dc3d65190dec50f90c3e3908780b6c62ca971922cc02ea1ae30c05c3842a8",
   "bones": [
     {
       "name": "root",
@@ -612,118 +612,6 @@
       ],
       "vertices": 8,
       "triangles": 12
-    },
-    {
-      "name": "ACC_PipeBowl",
-      "role": "signature_silhouette",
-      "bone": "head",
-      "palette_name": "pipe_briar",
-      "base_color": [
-        0.165,
-        0.098,
-        0.055,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "ACC_PipeEmber",
-      "role": "signature_silhouette",
-      "bone": "head",
-      "palette_name": "amber",
-      "base_color": [
-        0.525,
-        0.275,
-        0.075,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_PipeStem",
-      "role": "signature_silhouette",
-      "bone": "head",
-      "palette_name": "pipe_briar_dark",
-      "base_color": [
-        0.082,
-        0.048,
-        0.028,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "ACC_RodButt",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "rod_cane",
-      "base_color": [
-        0.23,
-        0.15,
-        0.072,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "ACC_RodGrip",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "rod_cork",
-      "base_color": [
-        0.33,
-        0.245,
-        0.145,
-        1.0
-      ],
-      "vertices": 16,
-      "triangles": 28
-    },
-    {
-      "name": "ACC_RodMid",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "rod_cane",
-      "base_color": [
-        0.23,
-        0.15,
-        0.072,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "ACC_RodReel",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "rod_reel",
-      "base_color": [
-        0.128,
-        0.132,
-        0.13,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_RodTip",
-      "role": "signature_silhouette",
-      "bone": "hand.R",
-      "palette_name": "rod_cane",
-      "base_color": [
-        0.23,
-        0.15,
-        0.072,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
     },
     {
       "name": "ACC_SlickerClasp.01",

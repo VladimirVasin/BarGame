@@ -113,6 +113,13 @@ namespace BarPromenade
 
                     var presentation = instance.AddComponent<
                         MountainRoadCafeCastPresentation>();
+                    // Hand props BEFORE Initialize and before anything
+                    // reads the attendant's pour spout: the spout anchor
+                    // lives on the coffee-pot prop, and the presentation's
+                    // clip changes route the pot's visibility through the
+                    // registry, which remembers the request until the pot
+                    // is there.
+                    AttachHandProps(registry, presentation, member.Role);
                     presentation.Initialize(
                         registry,
                         member.Role,
@@ -138,6 +145,70 @@ namespace BarPromenade
                 DestroyObject(castRoot);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// What each role holds: the woman her cafe cigarette, the
+        /// attendant the towel in his left hand and the pot in his right.
+        /// The cafe bodies are not <see cref="CityPedestrianAssetRegistry"/>
+        /// bodies, so the socket is found by name off the model root and
+        /// the material copied from the body's first bound renderer; the
+        /// palette is the props' authored one (variant 0), because the
+        /// cafe cast wears manifest colours, not the street's variants.
+        /// </summary>
+        private static void AttachHandProps(
+            MountainRoadCafeCastAssetRegistry registry,
+            MountainRoadCafeCastPresentation presentation,
+            MountainRoadCafeCastRole role)
+        {
+            switch (role)
+            {
+                case MountainRoadCafeCastRole.PairWoman:
+                    presentation.RegisterHandProp(
+                        AttachHandProp(
+                            registry,
+                            CityPedestrianHandPropId.CafeCigarette));
+                    break;
+                case MountainRoadCafeCastRole.Attendant:
+                    presentation.RegisterHandProp(
+                        AttachHandProp(
+                            registry,
+                            CityPedestrianHandPropId.ServiceTowel));
+                    CityPedestrianHandPropRegistry pot = AttachHandProp(
+                        registry,
+                        CityPedestrianHandPropId.CoffeePot);
+                    presentation.RegisterHandProp(pot);
+                    registry.AttachCoffeePot(pot);
+                    break;
+            }
+        }
+
+        private static CityPedestrianHandPropRegistry AttachHandProp(
+            MountainRoadCafeCastAssetRegistry registry,
+            CityPedestrianHandPropId id)
+        {
+            string socketName = CityPedestrianHandProps.GetSocketName(id);
+            Transform socket = registry.FindModelTransform(socketName);
+            if (socket == null)
+            {
+                throw new InvalidOperationException(
+                    "The cafe " + registry.Role + " prefab has no '" +
+                    socketName + "' socket for the " + id + " hand prop.");
+            }
+
+            Material material = null;
+            for (int index = 0;
+                 index < registry.RendererBindings.Count && material == null;
+                 index++)
+            {
+                Renderer renderer = registry.RendererBindings[index]?.Renderer;
+                if (renderer != null)
+                {
+                    material = renderer.sharedMaterial;
+                }
+            }
+
+            return CityPedestrianHandProps.Attach(socket, id, material, 0);
         }
 
         private static void ValidateProvider(
@@ -199,13 +270,16 @@ namespace BarPromenade
                     "clip count.");
             }
 
-            if (role == MountainRoadCafeCastRole.Attendant &&
-                registry.FindModelTransform(
-                    "SOCKET_CafePotSpout") == null)
+            // The spout anchor lives on the coffee-pot hand prop now. A
+            // body still carrying one is a stale build whose baked pot
+            // would double up with the attached prop.
+            if (registry.FindModelTransform(
+                    CityPedestrianHandProps.CoffeePotSpoutAnchorName) != null)
             {
                 throw new InvalidOperationException(
-                    "The cafe attendant prefab is missing its measured " +
-                    "coffee-pot spout anchor.");
+                    "The cafe " + role + " prefab still carries '" +
+                    CityPedestrianHandProps.CoffeePotSpoutAnchorName +
+                    "'; the spout anchor lives on the coffee-pot hand prop.");
             }
 
             if (registry.RendererBindings.Count == 0)

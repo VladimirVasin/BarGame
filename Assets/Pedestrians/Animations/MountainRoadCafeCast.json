@@ -333,13 +333,13 @@
       "cigarette_total_length_m": 0.0944,
       "cigarette_drag_filter_lip_surface_gap_min_m": 0.001744,
       "cigarette_drag_filter_lip_surface_gap_max_m": 0.001744,
-      "cigarette_drag_filter_lip_center_distance_min_m": 0.01051,
+      "cigarette_drag_filter_lip_center_distance_min_m": 0.010509,
       "cigarette_drag_filter_lip_center_distance_max_m": 0.01051,
-      "cigarette_drag_axis_angle_max_degrees": 29.209554,
+      "cigarette_drag_axis_angle_max_degrees": 29.20955,
       "cigarette_drag_socket_lip_alignment_min": 0.888622,
       "cigarette_drag_ember_lip_distance_min_m": 0.094672,
       "cigarette_drag_ember_farther_margin_min_m": 0.084162,
-      "cigarette_filter_hand_gap_max_m": 0.000314,
+      "cigarette_filter_hand_gap_max_m": 0.000315,
       "cigarette_ember_hand_gap_min_m": 0.011983,
       "cigarette_ember_filter_grip_margin_min_m": 0.011669,
       "cigarette_idle_cigarette_head_gap_min_m": 0.042358,
@@ -352,11 +352,11 @@
       ],
       "animated_local_xz_max_m": [
         0.400168,
-        0.483304
+        0.481497
       ],
       "animated_local_xz_size_m": [
         0.771775,
-        0.651547
+        0.64974
       ]
     },
     {
@@ -431,12 +431,12 @@
         -0.156173
       ],
       "animated_local_xz_max_m": [
-        0.600075,
-        0.662467
+        0.552049,
+        0.581112
       ],
       "animated_local_xz_size_m": [
-        1.132419,
-        0.81864
+        1.084393,
+        0.737285
       ]
     },
     {
@@ -465,11 +465,11 @@
       ],
       "animated_local_xz_max_m": [
         0.406553,
-        0.418472
+        0.324725
       ],
       "animated_local_xz_size_m": [
         0.943789,
-        0.707219
+        0.613473
       ]
     },
     {
@@ -498,11 +498,11 @@
       ],
       "animated_local_xz_max_m": [
         0.397372,
-        0.743659
+        0.588528
       ],
       "animated_local_xz_size_m": [
         0.946896,
-        0.899831
+        0.744701
       ]
     },
     {
@@ -531,13 +531,13 @@
       ],
       "animated_local_xz_max_m": [
         0.40132,
-        0.504484
+        0.335582
       ],
       "animated_local_xz_size_m": [
         0.930476,
-        0.660656
+        0.491754
       ]
     }
   ],
-  "build_signature": "67c3b9db04d64c10ce61bc153a6f300c4f529bc60a8b07733eb0859c469298aa"
+  "build_signature": "8b4b0e006e11a89cc5b43ddc22dcf7bf77d23014d5a374f9525a4b990f2bc8e9"
 }

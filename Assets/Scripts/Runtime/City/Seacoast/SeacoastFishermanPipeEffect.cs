@@ -100,6 +100,14 @@ namespace BarPromenade
         public Light EmberLight => emberLight;
         public ParticleSystem Plume => plume;
 
+        /// <summary>
+        /// The anchor is the `ANCHOR_PipeEmber` transform of the smoking
+        /// pipe hand prop (measured by the prop build at the bowl's top)
+        /// and the renderer its `ACC_PipeEmber` part; both ride the mouth
+        /// socket, so the light and the plume follow the live pose without
+        /// any bone lookup here. The renderer may be null: the effect then
+        /// keeps its light and plume and simply has no coal to tint.
+        /// </summary>
         public void Initialize(
             SeacoastFishermanPresentation configuredPresentation,
             Transform configuredEmberAnchor,

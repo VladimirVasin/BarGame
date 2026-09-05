@@ -103,6 +103,7 @@ Assets/
       KettleHatPedestrian3D.prefab      pooled stout Kettle Hat Walker presentation + lid-pivot/spout-anchor rig metadata, detail atlas bound per renderer
       LongArmPedestrian3D.prefab        pooled narrow Long-Arm Walker presentation
       HelmetLampPedestrian3D.prefab     pooled hopping miner with one worn Spot
+      HandProps/                        nine passive hand-prop prefabs (CarpetBeater, Cigarette, FuneralBouquet, Chalk, FishingRod, SmokingPipe, CafeCigarette, ServiceTowel, CoffeePot): root + socket-relative Mount + rigid parts + anchors, attached to a body socket at runtime
     Vehicles/
       CityBus3D.prefab                  passive real-scale pooled midibus presentation
       CityBusDriver3D.prefab            passive 31-bone seated production driver
@@ -170,6 +171,8 @@ Assets/
     Church/
       ChurchExterior3D.prefab          passive Catholic exterior + typed semantic anchors
       ChurchInterior3D.prefab          passive furnished interior + typed semantic anchors
+    ChurchGarden/
+      ChurchGardenModelProvider.asset ten passive garden-part prefab links
   MothersHouse/
     Models/MothersHouseInterior3D.{fbx,json}  deterministic fixed-metre two-storey interior + contract manifest
     Localization/
@@ -199,9 +202,13 @@ Assets/
     Animations/
       CityPedestrianLocomotion.fbx      shared 37-clip NpcHumanV2 locomotion/action library
       CityPedestrianLocomotion.json     gait/contact/clearance/apex + staged wheel-contact manifest
+      CityPedestrianPersonalSpace.{fbx,json}  isolated 12 one-shot left-palm Guard/Shove actions for six roaming designs
       MountainRoadCafeCast.{fbx,json}   isolated ten-clip sleep/interject/drink/wipe/walk/pour library + soundless tap/smoke idles
       NightlifeShelterResidents.{fbx,json} isolated three-loop warmer/seated/sleeper library
       MothersHouseMother.{fbx,json}     isolated one-clip bank: MotherRock, 6 s of breathing only — the rock belongs to the chair, not to her
+    Props/
+      CityPedestrianHandProps.fbx       nine hand props as PROP_<Name> Empties at their socket heads + 33 rigid part meshes, no armature (840 tris)
+      CityPedestrianHandProps.json      library manifest: socket, reference design, parts, anchors, bounds + deterministic signature
     Textures/
       KettleHatDetailAtlas.png          256 px grey detail atlas (seams, chips, grooves, laces) multiplied by the kettle walker's palette tint
       MountainCafe*3DDetailAtlas.png    four role-specific 256 px face/clothing/hair/shoe atlases for the Hero V2-fidelity cafe cast
@@ -275,6 +282,10 @@ Assets/
     Models/                             split Catholic exterior/interior FBX + shared manifest
     Textures/                           nine deterministic plaster/stone/wood/glass/art sheets
     Materials/                          shared URP bindings for the thirteen semantic slots
+  ChurchGarden/
+    Models/                             ten-part fixed-metre garden FBX + measured manifest
+    Prefabs/                            passive fountain/statue/pots/ledge/hedge/ground-light parts
+    Textures/                           shared stone, terracotta and foliage detail sheets
   Cemetery/
     Raven/
       Models/
@@ -373,7 +384,7 @@ Assets/
         MountainRoadCafeCollisionWorldBuilder.cs  exact 17-collider plan-owned shell
         MountainRoadCafe{ServiceTimeline,ServicePresentation,CupView}.cs role-staggered drink/fill/refill + repeatable seated menu handoff/post-exit retrieval
                                        hand/mouth-fitted cups, exact saucer return, counter-clear carry + per-frame spout-to-target stream
-        MountainRoadCafeCigaretteEffect.cs woman idle phase -> separate ember glow + world-space SOCKET_Mouth exhale
+        MountainRoadCafeCigaretteEffect.cs woman idle phase -> separate ember glow on the attached CafeCigarette prop + world-space SOCKET_Mouth exhale
                                        no separate clock, Light or AudioSource
         MountainRoadCafeConversation{Lines,Timeline,Controller,Look}.cs fixed ten-pair RU/EN bubble loop, cafe-volume gate + action-safe queue/head turns
         MountainRoadCafeSeatView.cs   cafe-stool first-person lifecycle + upright viewer-ray page focus/all-look lock/exact restore
@@ -419,7 +430,7 @@ Assets/
         MountainRoad{Terrain,Surface,Scenery}*.cs 76 m terrain, gorge, road + colliderless terminal apron
         MountainRoadSurfaceAppearance.cs six printed + nine borrowed measured surface families
         MountainRoadCafe{WorldBuilder,WorldResult}.cs imported enterable 61-mesh glass cafe composition
-        MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs ten-clip cast: every-third-exchange ignored husband one-shot + silent attendant/menu handoff + drinking, talking pair
+        MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs ten-clip cast: every-third-exchange ignored husband one-shot + silent attendant/menu handoff + drinking, talking pair; CafeCigarette/ServiceTowel/CoffeePot hand props attached by the factory before Initialize, the pour spout anchor rides the pot
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
         AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + looming 74° / 60 m ridge, 12 m margin, brink mesh
@@ -474,9 +485,14 @@ Assets/
         CityCemeteryCoffinWorldBuilder.cs  six-sided turned-board coffin, overhanging lid, cross
         CityCemeterySealedGraveWorldBuilder.cs  turned mound courses + one planner monument, slab omitted; publishes the mound-crown perch point
         CityChurchPlan.cs        `4 x 2` precinct, west door/approach, cemetery clearance + return
-        CityChurchCourtyardPlan.cs  stone forecourt, north garden furniture/planting + reserved routes
+        CityChurchCourtyardPlan.cs  connected 2.4 m loop, bench/pot pockets, grouped planting + reserved routes
+        ChurchGardenBorderPlan.cs  28 low hedge segments, 3.9 m north opening + ten uplight docks
         CityChurchCemeteryPassagePlan.cs  one 3 m middle-alley opening + safe shared threshold
-        CityChurchCourtyardWorldBuilder.cs imported surface/fixture batches, collision + bench seats
+        CityChurchCourtyardWorldBuilder.cs imported surface/fixture batches, garden kit, collision + bench seats
+        CityChurchGroundPlan.cs  flat inhabited garden, north grade + actual boundary spans
+        ChurchGardenModelProvider.cs  ten fixed-metre passive Blender garden pieces
+        ChurchGardenFountain.cs  shared City water materials + one 4.5 m local water voice
+        ChurchGardenUplight.cs  ten fixed site Spots, short warm wash + always-burning lenses/halos
         CityChurch{Ground,World}WorldBuilder.cs typed ground and Catholic exterior composition
         ChurchAssetRegistry.cs   passive Blender-part/material/anchor contract shared by both prefabs
         ChurchResources.cs       typed Resources load/instantiate bridge for exterior and interior
@@ -613,11 +629,15 @@ Assets/
         CityPedestrianPlanner.cs       height-sampled sidewalks, stairs + zebra connector graph
         CityPedestrianActor.cs         forward graph walk, seeded zebra choice + Route 01 and bench-rest states
         CityPedestrianDirector.cs      fog-band lifecycle, safe pooling + yielding
+        CityPedestrianPersonalSpaceRules.cs       pure alcohol thresholds, distances and reaction phases
+        CityPedestrianPersonalSpaceController.cs  one roaming Guard/Shove, contact gate and rearm cooldown
         CityPedestrianPresentation.cs  archetype Idle/Walk/Sit blend, grounding + seat alignment; raises Advanced(dt) after every graph write
         CityKettleHatRigAnchors.cs     lid pivot / spout anchor / head-local axes; asset metadata only
         KettleBoilModel.cs             pure seeded pressure-vent cycle: lid lift/tilt, steam rate
         CityKettleHatBoilEffect.cs     factory-attached always-on boil: pivot write on Advanced, code-built steam
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
+        CityPedestrianHandProps.cs     the hand-prop library contract: ids, sockets, Resources paths; Attach/Place/Detach/FindSocket/FindAttached/IsAvailable
+        CityPedestrianHandPropRegistry.cs  one prop instance: Mount, renderer bindings + MPB palettes, anchors, visibility, reference socket rest pose (stale-Mount guard)
         CityWheelchairNpcAssetRegistry.cs passive future mechanism-pivot bindings; metadata only
         CityArchShelterResidentAssetRegistry.cs one textured Hero-Avatar model + quiet loop contract
         CityArchShelterResidentProvider.cs build-safe references to the three staged prefabs
@@ -625,8 +645,8 @@ Assets/
       City/Balcony/  local passive smokers on authored Residential docks
         CityBalconySmokerPlan.cs        all-building candidate catalogue + bounded Home selection
         CityBalconySmokerDirector.cs    per-session local chance, activation and distance release
-        CityBalconySmokerFactory.cs     roaming-prefab reuse + authored cigarette attachment
-        CityBalconySmokerPresentation.cs hidden Hero SmokeLoop driver, 31-bone pose transfer, grounding + timed plume
+        CityBalconySmokerFactory.cs     roaming-prefab reuse; eligibility gated on the Cigarette hand prop being available
+        CityBalconySmokerPresentation.cs hidden Hero SmokeLoop driver, 31-bone pose transfer, grounding + timed plume; holds the Cigarette hand prop on SOCKET_Cigarette.R
         CityBalconySmokerRuntime.cs     scene-owned visibility and playable cleanup
       Yard/          staged yard roles plus bounded colliderless courtyard-life residents
         YardWheelchairMotion.cs      pure drift pose; computes the reserved wheel differential
@@ -636,15 +656,15 @@ Assets/
         YardWheelchairFactory.cs     one instance, passivity re-checked at instantiation
         YardWheelchairProvider.cs    the only serialized reference to the staged prefab
         DryingYardBabushkaPlan.cs    three authored stances off the drying yard descriptor
-        DryingYardBabushkaPresentation.cs  one-clip manual PlayableGraph + role prop enabling
+        DryingYardBabushkaPresentation.cs  one-clip manual PlayableGraph + CarpetBeater/Cigarette hand prop attached per role
         DryingYardBabushkaFactory.cs three instances, passivity re-checked at instantiation
         DryingYardBabushkaProvider.cs  the only serialized reference to the staged prefab
         CityCourtyardResidentPlan.cs deterministic active residential-pocket stances, cap five; no fringe NPCs
         CityCourtyardResidentPresentation.cs borrowed generic idle/sit presentation, no new clips
-        CityCourtyardResidentFactory.cs colliderless passive instances outside the roaming pool
+        CityCourtyardResidentFactory.cs colliderless passive instances outside the roaming pool; the babushka resident gets the Cigarette hand prop
       Weighbridge/   the authored pair on the Industrial cold weighbridge + the answering needle
         WeighbridgeAttendantPlan.cs  two authored stances + the deck rect off the weighbridge descriptor
-        WeighbridgeAttendantPresentation.cs  one-clip manual PlayableGraph; corridor travel slaved to clip time
+        WeighbridgeAttendantPresentation.cs  one-clip manual PlayableGraph; corridor travel slaved to clip time; Chalk hand prop for the weigher only
         WeighbridgeAttendantFactory.cs two instances, passivity re-checked at instantiation
         WeighbridgeAttendantProvider.cs  the only serialized reference to the staged prefab
         CityWeighbridgeNeedleController.cs  City-root needle deflection under NPC pause or hero weight
@@ -654,17 +674,17 @@ Assets/
         SeacoastFishermanQuips.cs  15-line seeded repertoire, never twice running, never second person
         SeacoastFishermanInteraction.cs  talk stub on a trigger docked behind him, not in front
         SeacoastFishermanPresentation.cs  single-clip manual PlayableGraph; publishes the loop's breath phase
-        SeacoastFishermanRigAnchors.cs  bind-pose anchors for the pipe bowl and the rod point
-        SeacoastFishermanPipeEffect.cs  ember, its point light and the plume, all on the breath phase
-        SeacoastFishermanLine.cs  line struck from the live rod tip to the sea's own top
-        SeacoastFishermanFactory.cs  one staged instance, passivity validated, magnet + talk trigger + pipe + line
+        SeacoastFishermanPipeEffect.cs  ember, its point light and the plume, all on the breath phase; ember renderer + ANCHOR_PipeEmber come from the SmokingPipe prop
+        SeacoastFishermanLine.cs  line struck from the live rod tip (the FishingRod prop's ANCHOR_RodTip) to the sea's own top
+        SeacoastFishermanFactory.cs  one staged instance, passivity validated, magnet + talk trigger + FishingRod/SmokingPipe hand props + pipe effect + line
       Cemetery/      the scripted graveside visitor summoned by the hero's presence
         CemeteryMournerPlan.cs   pure grave candidates, foot-side stand, gate route, unseen spawn + trigger band
         CemeteryMournerTimeline.cs  approach/lay/cry(30 s)/wipe/depart clock with the one-shot lay cue
-        CemeteryMournerPresentation.cs  two-clip manual PlayableGraph + hand-bouquet hiding
+        CemeteryMournerPresentation.cs  two-clip manual PlayableGraph + FuneralBouquet hand prop attached on Initialize, released at the grave
         CemeteryMournerFactory.cs  one transient instance per visit, passivity re-checked
         CemeteryMournerProvider.cs  the only serialized reference to the staged prefab
-        CityCemeteryMournerController.cs  City-root proximity trigger, spawn/route/cooldown + the laid bouquet
+        CityCemeteryMournerController.cs  City-root proximity trigger, spawn/route/cooldown + the laid bouquet (the same FuneralBouquet prop placed on the slab top)
+        CemeteryLaidBouquet.cs  pure laid pose: stems->bloom axis along +Z, rotated bounds rested on the slab; Place + name/palette
         CemeteryWatchmanPlan.cs  doorstep stance read back from the plan's own lodge parts
         CemeteryWatchmanQuips.cs  seeded 15-line snide repertoire, never the same twice running
         CemeteryWatchmanInteraction.cs  cashier-contract talk stub serving the next quip
@@ -760,7 +780,7 @@ Assets/
         CityBusResources.cs        passive Resources prefab loading
         CityBusFactory.cs          physical slot/layer composition + validation
       Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
-        PlayerMotor.cs             tank walk/back/run input + grounded guided walk approach
+        PlayerMotor.cs             tank walk/back/run input, grounded approach + constrained external push
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
         PlayerFactory.cs           shared prefab spawn in all nine gameplay roots
         PlayerAttention.cs         Silent Hill head: notice cone rules, target picker + magnets
@@ -799,6 +819,7 @@ Assets/
         SupermarketProductCatalog.cs five offers with localized metadata/prices
         SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
       Interaction/   reusable CounterSeat + shared CounterMenu input, shops and location doors
+        ChurchGardenPot{Plan,Actions,Interaction,SessionState}.cs  two measured shelf docks, five live-rig clips + session placement
         CounterSeatInteraction.cs    physical authored approach/sit/loop/stand lifecycle
         CounterMenuInput.cs          shared W/S/D-pad selection and Space/West confirmation
         BarCounterStation.cs         seated bar E/Enter/South order + Escape-only rest dispatch
@@ -904,6 +925,8 @@ Assets/
       City/CityBuilding{AssetSetup,ModelImporter}.cs passive v2 FBX import + four wrappers/provider
       City/CityBuildingSurfaceTextureImporter.cs path-specific Clamp/Repeat, max-size, mip and readability contract
       City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
+      City/ChurchGardenAssetSetup.cs ten-piece passive garden import, measured prefabs + provider
+      Player3D/ChurchGardenPotActionAssetSetup.cs isolated five-clip bank + imported metre/contact checks
       Bar/BarAssetSetup.cs       v3 interior/exterior/service-pack import, prefab and manifest validation
       Bar/BarBartenderV2AssetSetup.cs ordinary bartender import/prefab/provider setup
       Supermarket/SupermarketExterior{AssetSetup,ModelImporter}.cs passive exterior import, Resources prefab + manifest validation
@@ -915,6 +938,9 @@ Assets/
       MountainRoadCafeCastAssetSetup.cs  isolated v2 model/clip/256 px atlas import, validation + provider setup
       NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 27 on-disk humanoid NPC designs; bartender/cashier swaps leave active cast unchanged
       City/NPC/CityArchShelterResidentAssetSetup.cs isolated three-model/atlas/loop prefab + provider pipeline
+      City/NPC/CityPedestrianPersonalSpaceAssetSetup.cs isolated reaction-bank validation + roaming-registry clip wiring
+      City/NPC/CityPedestrianHandPropAssetSetup.cs isolated prop-library build: socket-relative Mount measured against the reference body FBX in its bind pose, anchors from imported vertices, nine Resources prefabs + stale-Mount validation
+      City/NPC/CityPedestrianHandPropModelImporter.cs prop FBX import contract (no rig/avatar/animation, readable meshes) + pipeline-gated rebuild queue
       MothersHouse/MothersHouseMotherAssetSetup.cs  her own pipeline: the shared descriptor reads clip names out of the ONE bank and demands a walk, and she has neither
       City/NPC/CityPedestrianTextureImporter.cs  routes pedestrian detail atlases to the Hero V2 atlas import contract (Point/Clamp/sRGB/256/no mip)
       Player3D/       production V2 atlas/import/prefab pipeline
@@ -955,6 +981,7 @@ Assets/
       CityVerticalTraversalAuditTests.cs     continuous seams + spawn-road reachability
       CityPedestrianPlannerTests.cs     deterministic radius-safe sidewalk routes
       CityPedestrianRuntimeTests.cs     production lifecycle + staged Pipeback isolation/bindings + kettle rig/atlas contract
+      CityPedestrianHandPropTests.cs    manifest identity, prefab contract, attach/detach/place on real bodies judged in WORLD bounds, MPB palettes + exact-name body sweep
       KettleBoilModelTests.cs           pure boil cycle: seeds, vent bands, dt hygiene, 2.75x parity
       CityBusPlannerTests.cs            winding target loop/stops + turn-envelope proof
       CityBusRuntimeTests.cs            encounter/loop/dwell plus passenger holds, recycle guards + reset
@@ -1027,6 +1054,9 @@ Assets/
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
       Audio/CitySound*.cs                   causal plan/schedule/rewind/synthesis/occlusion contracts
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
+      CityPedestrianPersonalSpacePlayModeTests.cs  stage/contact/rearm/ownership regressions
+      CityPedestrianPersonalSpaceCapture.cs  isolated production-rig reaction frames
+      CityPedestrianHandPropCapturePlayModeTests.cs  explicit eight-frame prop-in-hand capture under Captures/HandProps (needs a GPU)
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
       BegottenFilmRenderGraphPlayModeTests.cs  soot-and-bone print, forced 4:3 gate, held vs boiling frames, marked cameras, begotten-sheet.png
@@ -1067,7 +1097,7 @@ ArtSource/
     Blender/                    generated bus .blend and deterministic preview
     Drivers/Blender/            generated driver .blend and deterministic preview
   Pedestrians/
-    Blender/                    production/staged model sources, previews and animation contact sheets
+    Blender/                    production/staged model sources, previews, animation contact sheets + the hand-prop library .blend/contact sheet
   Player/
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
     BedSleep/                    retired player-sprite source history
@@ -1102,6 +1132,7 @@ ArtSource/
     Preview/                     deterministic unbranded product review PNG
   Village/Blender/               village kit `.blend` source and contact sheet (no sheet of its own)
   Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
+  ChurchGarden/Blender/          passive garden-kit `.blend` and contact sheet
   MothersHouse/
     Blender/                     generated fixed-metre room `.blend`
     Preview/                     approved wide fixed-camera composition PNG
@@ -1111,7 +1142,7 @@ tools/
   build-exterior-cloud-3d-model.py  deterministic hemisphere, packed density texture and export validator
   build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
-  build-city-pedestrian-3d-model.py  compatible rig/model/export validator
+  build-city-pedestrian-3d-model.py  compatible rig/model/export validator; --personal-space-only isolates the 12 reaction actions; --hand-props-only builds the nine-prop library (also after --archetype all)
   build-city-chess-set-3d-model.py   turned chessmen/draught meshes + height-ladder validator
   player_3d_model_common.py         shared production rig/action/export/bed validators
   build-player-3d-model-v2.py       sole runnable production V2 anatomy/atlas/rig/export generator
@@ -1123,6 +1154,8 @@ tools/
   build-player-cat-feeding-atlas.py       retired player-sprite source tooling
   build-stairwell-cat-3d-model.py   armature-free pivot-empty cat + grin-UV validator
   build-church-3d-model.py       deterministic Catholic exterior/interior Blender build + validator
+  build-church-garden-3d-model.py  ten measured garden pieces, shared detail sheets + validator
+  build-church-garden-pot-actions.py  independent Hero V2 two-hand pickup/inspect/place bank
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mothers-house-interior-3d-model.py  fixed-metre room, UV/triangle/anchor/export validator
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes

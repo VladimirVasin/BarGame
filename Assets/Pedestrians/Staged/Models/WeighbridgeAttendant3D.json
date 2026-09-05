@@ -18,8 +18,8 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 44,
-  "triangle_count": 2180,
+  "mesh_count": 43,
+  "triangle_count": 2160,
   "triangle_budget": [
     1800,
     2400
@@ -64,7 +64,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "56452d36af22edc5cddb29b62ec898d8577e0f171675caffb506e687e084acfe",
+  "build_signature": "9bc645f144fa4b57a32b86f47f6896347359b01f224e6239608aa004d0e0ce49",
   "bones": [
     {
       "name": "root",
@@ -533,20 +533,6 @@
     }
   ],
   "parts": [
-    {
-      "name": "ACC_Chalk",
-      "role": "surface_detail",
-      "bone": "hand.R",
-      "palette_name": "chalk",
-      "base_color": [
-        0.62,
-        0.635,
-        0.615,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
-    },
     {
       "name": "ACC_Eye.L",
       "role": "face_detail",

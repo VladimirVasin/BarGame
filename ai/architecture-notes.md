@@ -4,6 +4,26 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **2026-09-05 — roaming personal-space reactions:** the director gives one
+  `Walking` actor a temporary reaction hold, preserving its graph destination.
+  `CityPedestrianPersonalSpaceRules` owns raw alcohol gates (`>60..80` Guard,
+  `>80` Shove), approach distances (`1 / 0.75 m`), contact timing and rearming
+  only after withdrawal beyond `1.5 m` plus a `3 s` cooldown. The controller
+  requires a same-level, unobstructed contact within `0.75 m` and drives the isolated
+  `CityPedestrianPersonalSpace` bank: two one-second actions per each of the six
+  roaming designs, contact at `1/3 s`, free left palm and an unchanged
+  right-hand grip (the props themselves are separate attachments since the
+  same day). Its deterministic generator path is `--personal-space-only`.
+  Standing action endpoints use full action weight, including chess/checkers;
+  historical seated idle clips are neither changed nor blended into the gesture.
+  The neutral endpoint is shown before ordinary walking resumes. Strong contact
+  asks `PlayerMotor.TryApplyExternalPush` for at most
+  `0.4 m` over `0.3 s` through ordinary world/navigation collision and perturbs
+  existing balance by `0.65 m/s`. It never commands a fall or takes the player rig.
+  Bus/bench states, staged roles, modal actions and falls retain their owners.
+  This implements the existing canon's ordinary social boundary without an
+  exception, speech, new audio or a reaction to muttering/perceptual distortion.
+
 - **Accepted by explicit user decision, 2026-09-05 — intoxication changes
   perceived sound and world pace:** `IntoxicationPerceptionRules.Evaluate`
   clamps the alcohol level to `0-100` and returns
@@ -798,6 +818,44 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   district distinctness negligible. The cemetery pair keeps its own §6 row,
   its own trigger and its uniqueness: у первой закрытой могилы всегда ровно
   две птицы.
+- **Accepted architecture exception — 2026-09-05, explicit user acceptance of
+  the church-garden implementation plan:** One permanent small church-garden
+  fountain may own a quiet spatial water loop with a `4.5 m` audible radius.
+  This narrowly lifts the courtyard's no-own-sound rule; the story-bible §6
+  registry records level `0`. It adds no Light, music, voice, bell, drinking,
+  automatic gaze target, lore or story reaction. A restrained Mary statue and
+  three pots are ordinary garden furnishing. The movable empty pot uses the
+  existing Hero V2, separate bone-only actions and the shared positioned
+  interaction lifecycle; its two dock positions persist across City reloads
+  only within the current game session. The approved landscape replaces the
+  scattered garden with one continuous route and two bench pockets, blends
+  the north terrace inside ChurchGround and makes physical boundary and
+  navigation agree. The single west entrance and `3 m` cemetery passage remain.
+- **Accepted architecture exception — 2026-09-05, subsequent explicit user
+  request for a low church-garden hedge and ground lighting:** The earlier
+  courtyard ban on new Light sources is lifted only for ten fixed garden
+  uplights: nine wash the planted edge and one washes the Mary statue.
+  `ChurchGardenUplight` points shadowless warm Spots upward by `35°` with a
+  `3.2 m` range and registers them through `CityNightSiteLightRegistry`.
+  The current border wash is more pronounced (night intensity `7.2`), while
+  the statue receives a gentler `2.8` accent from its diagonal approach.
+  Each real lens has a small persistent halo and retains the shared
+  two-thirds daytime floor under story-bible §20; the twelve-light street/bar
+  pool is unchanged. The fountain itself still receives no Light and keeps
+  its separate accepted water-voice exception above.
+  `ChurchGardenBorderPlan` adds exactly `28` low hedge segments, `0.8 m`
+  high and `0.85 m` deep, along the garden's back and wings with rounded
+  turns and a `3.9 m` northern opening. The existing east tree joins this
+  edge; the two trees and six grouped shrubs keep their own counts. This
+  narrowly extends the earlier `6–8`-shrub furnishing description through a
+  separate perimeter planting, without a formal parterre or a new wall.
+  The main loop, west entrance, bench pockets and sole cemetery passage
+  remain clear. The passive Blender kit gains `HedgeSegment` and
+  `GardenUplight`, for ten pieces and `12,492` triangles. The ground fixture
+  stays below `0.22 m`; the eight original mesh signatures remain unchanged.
+  The story-bible §6 records this permanent
+  level-`0` furnishing; it creates no new text, action, lore, water or story
+  reaction.
 - **Accepted architecture exception — 2026-08-27, explicit user request — one
   maintained Cemetery–Church connection:** The earlier art-bible rule that the
   two precincts have no direct connection is lifted only for one internal
@@ -810,7 +868,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   changes its west-street setback from `16 m` to `10 m`, and gives the precinct
   a stone forecourt plus a restrained north lawn/garden with exactly two
   benches, two small trees, `6–8` clipped shrubs and modest beds. It adds no
-  realtime Light, sound or lore. Data-first ownership is split
+  realtime Light, sound or lore in that initial decision; the separate
+  `2026-09-05` garden decisions above are its bounded later extensions.
+  Data-first ownership is split
   between `CityChurchCourtyardPlan` and
   `CityChurchCemeteryPassagePlan`; the latter owns the fence opening, both
   ground heights, safe shared threshold and capsule-clear route instead of
@@ -4257,8 +4317,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   lights plus bar entrance point lights keeps the city-atmosphere pool at no
   more than `12` shadowless realtime lights. The sole active bus may add `4`
   runtime-owned shadowless Spots, the single pooled helmet-lamp pedestrian may
-  add `1`, and the fixed always-on yard Spot adds `1`, for a bounded worst case
-  of `18` local realtime lights. The scene Directional and transient lightning
+  add `1`, and the fixed always-on yard Spot adds `1`. Fixed site lights,
+  including the cemetery and ten church-garden uplights, are separate from
+  the unchanged twelve-light atmosphere pool. The scene Directional and transient lightning
   Directional are separate from this local-light count.
 - **Accepted — Safe signal rhythm:** Each selected intersection uses one
   seed-phased controller for two heads and flashes amber below 1 Hz; red and
@@ -5536,3 +5597,92 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   model's is written chin-down and enters negated. `DrunkHeadRollSign` and the
   pitch sense are pinned by `Player3DDrunkFacePlayModeTests` probes against
   the actor's frame, the way `HeadLiftSign` was.
+- **Accepted and implemented 2026-09-05 — hand props are separate
+  attachments, never part of a body:** the user's rule is that whatever an
+  NPC holds is a thing in the hand, not skin on the body. Until now every
+  held object was a skinned `ACC_*` part of its design's FBX, and the
+  pool-eligible designs (mourner, babushka, weigher, watchman, chess and
+  checkers players) roam the street anonymously, so a roaming mourner walked
+  with her bouquet and a roaming babushka with her carpet beater. Three
+  unrelated tables hid renderers by name to paper over that —
+  `CityPedestrianHeldProps` for the pool, `CityBalconySmokerAccessory`
+  (which also cloned the babushka's skinned cigarette onto other bodies and
+  hid props by prefix) and `CityCourtyardResidentFactory` — plus per-role
+  `ApplyPropVisibility`, `HideHeldBouquet` and a `SetCoffeePotVisible` that
+  toggled body renderers. All of it is gone. The nine props (carpet beater,
+  cigarette, funeral bouquet, chalk, fishing rod, smoking pipe, cafe
+  cigarette, service towel, coffee pot) are one module-level `HAND_PROPS`
+  table in `build-city-pedestrian-3d-model.py`, factored out of the six body
+  builders with the same helper calls, constants and palettes, so the
+  geometry is byte-identical to what the bodies carried; a
+  `build_hand_prop_library` run puts each prop under an Empty
+  `PROP_<Name>` at its socket bone's head, remaps the vertices through the
+  reference design's own `remap_geometry_point`, and exports an EMPTY+MESH
+  FBX (`33` meshes / `840` triangles, no armature, deterministic sha256
+  signature proved by a second in-process build) with a manifest naming
+  socket, reference design, parts, anchors and bounds. `CityPedestrianHandPropAssetSetup`
+  instantiates the library and the reference body FBX at identity and
+  measures the `Mount` in the bind pose: `mount = socket.worldToLocal ·
+  Translate(E)`, `freeLocal_P = Translate(−E) · world_P`, both decomposed
+  with a `1e-5` round-trip proof and a `socket.l2w · Mount · part == source`
+  check at `1e-4`; anchors are computed from imported vertices
+  (`farthest_from_socket` for the rod tip, `part_center` for the pipe ember,
+  `farthest_from_part` with `LookRotation(tip − body centre, up)` for the pot
+  spout) and saved as children of the Mount, palettes bound through the
+  bodies' own `BuildPaletteVariant`. Each prefab under
+  `Resources/Pedestrians/HandProps` is root (identity, `CityPedestrianHandPropRegistry`)
+  → `Mount` → parts + anchors. At runtime `CityPedestrianHandProps.Attach(body,
+  id, palette)` parents the root under the named socket (`SOCKET_Grip.R/L`,
+  `SOCKET_Cigarette.R`, `SOCKET_Mouth`) and restores the Mount pose,
+  `Place` sets a free-standing instance with an identity Mount, `Detach`
+  destroys it; wrong sockets and missing prefabs throw. Anchors now live on
+  the props: `ANCHOR_RodTip` feeds the fisherman's line, `ANCHOR_PipeEmber`
+  and the ember renderer feed his pipe effect, `SOCKET_CafePotSpout` rides
+  the pot and no cafe body may carry one. The laid grave bouquet is the same
+  `FuneralBouquet` prefab placed by the pure `CemeteryLaidBouquet` (stems→bloom
+  axis turned onto grave-local `+Z`, the rotated bounds rested on the grave's
+  measured `SlabTopY`), not primitive cubes. Removing the parts dropped three
+  bodies under their triangle floors, and floors are duplicated in the
+  generator and in C# and compared EXACTLY, so both sides fell together:
+  babushka `1650` (`1,692`), mourner `1600` (`1,712`), fisherman `800`
+  (`892`). The mourner's street clips inherited `mourner_base_pose`, which
+  folds both forearms around a bouquet she no longer holds, so
+  `MournerStreetIdle/Walk` now build on `mourner_street_pose` — the mourner's
+  base with the weigher's hanging arm rows — and the personal-space bank,
+  whose mourner base is that idle's first key, was rebuilt on it. The cafe
+  woman's cigarette-contact proof survives with the part off her body: the
+  validator evaluates the prop's rest vertices through the posed
+  `SOCKET_Cigarette.R` (`rig.matrix_world @ pose_bone.matrix @
+  bone.matrix_local.inverted()`) and its recorded numbers moved by at most
+  `1e-6`; an EditMode probe showed the socket-driven prop lands where
+  `hand.R` skinning put the old tube to `0.0000 m` at `t=0` and `t=0.31`.
+  Traps this cost: (1) Blender's `FBX_SCALE_NONE` puts the unit scale on root
+  objects, so a socket's lossyScale is `≈100`, the Mount comes out at
+  `0.01` and every part at `100` — scale uniformity is compared relatively
+  and tests judge WORLD bounds, never local scales; a prop `100×` too big
+  means `RestoreMountToSocketPose` was skipped. (2) Parts are parented with
+  `matrix_parent_inverse` and their location at the socket head, and the
+  Empties AND the meshes are selected for export, so every part's world
+  origin equals its Empty (asserted `1e-6` in Blender, `1e-4` in Unity)
+  before anything is measured. (3) `LoadAssetAtPath` on an un-imported path
+  is a silent null: the prop build force-imports the FBX, the manifest and
+  every reference body synchronously first, and the batch order is
+  pedestrians → cafe cast → hand props → personal space, the prop
+  postprocessor gated on `IsAnyPipelineBuilding`. (4) A Mount is valid only
+  for the bind pose it was measured against: the registry stores
+  `ReferenceSocketRestPosition/Rotation`, `ValidateOrThrow` re-measures the
+  reference body within `0.0001 m / 0.02°` and queues a rebuild on drift —
+  and because the pedestrian prefab turns its Model child `180°` about Y, the
+  test comparing a live socket with that rest pose must work in
+  `ModelRoot`'s frame. (5) The cafe presentation's `ApplyClip`/`Shutdown` and
+  the registry's `Configure`/`OnEnable` ask for pot visibility before any pot
+  exists, and the service presentation throws on a null spout: the registry
+  remembers the last request and applies it on `AttachCoffeePot`, the
+  factory attaches the props BEFORE `presentation.Initialize`, and the cafe
+  asset setup's expected rig-transform count had to lose the attendant's
+  `+1`. (6) The prop FBX imports READABLE after all (amendment 4 reversed):
+  the cafe PlayMode contact sweeps need vertices, and sweeping a thin tilted
+  cigarette as its local box read `0.058 m` of lip distance; the same test's
+  contract was re-anchored on the filter tip (`11 mm` at the drag, the
+  tube/filter junction is `44 mm` by construction) and its axis threshold on
+  the generator's own validated `0.889` (`0.86`, not `0.94`).

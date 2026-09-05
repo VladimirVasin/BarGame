@@ -18,6 +18,20 @@ namespace BarPromenade
         public const string SmokeLoopClipName = "SmokeLoop";
         public const float MaximumStepSeconds = 0.1f;
         public const string MouthSocketName = "SOCKET_Mouth";
+
+        /// <summary>The bone the cigarette socket hangs off; part of the
+        /// 31-bone pose transfer so the socket follows the hand.</summary>
+        public const string RightHandBoneName = "hand.R";
+
+        /// <summary>
+        /// The socket the cigarette hand prop is attached to. The hero's
+        /// SmokeLoop never keys sockets, so the transferred delta on it is
+        /// zero and the prop sits exactly where the skinned cigarette used
+        /// to.
+        /// </summary>
+        public const string CigaretteSocketName =
+            CityPedestrianHandProps.CigaretteRightSocketName;
+
         private const int ExpectedPoseBoneCount = 31;
         private const float RestPositionTolerance = 0.0001f;
         private const float RestAngleTolerance = 0.01f;
@@ -44,9 +58,9 @@ namespace BarPromenade
             "clavicle.R",
             "upper_arm.R",
             "forearm.R",
-            CityBalconySmokerAccessory.RightHandBoneName,
+            RightHandBoneName,
             "SOCKET_Grip.R",
-            CityBalconySmokerAccessory.CigaretteSocketName,
+            CigaretteSocketName,
             "SOCKET_Bottle.R",
             "thigh.L",
             "shin.L",
@@ -71,8 +85,7 @@ namespace BarPromenade
         private Vector3 modelBaseLocalPosition;
         private double loopTimeSeconds;
         private double burstTimeSeconds;
-        private IReadOnlyList<Renderer> cigaretteRenderers =
-            Array.Empty<Renderer>();
+        private CityPedestrianHandPropRegistry heldCigarette;
 
         public bool IsInitialized { get; private set; }
         public CityBalconySmokerDescriptor Descriptor { get; private set; }
@@ -81,8 +94,17 @@ namespace BarPromenade
         public PlayerAnimatedInteractionDefinition AnimationDefinition =>
             animationDefinition;
         public HomeBalconySmokingExhaleEffect ExhaleEffect => exhaleEffect;
+        /// <summary>The cigarette hand prop attached to
+        /// <see cref="CigaretteSocketName"/>; null until Initialize and
+        /// after Shutdown.</summary>
+        public CityPedestrianHandPropRegistry HeldCigarette => heldCigarette;
+
+        /// <summary>The attached cigarette's renderers (the paper and its
+        /// ember), for the visual tests that measure the mouth distance.</summary>
         public IReadOnlyList<Renderer> CigaretteRenderers =>
-            cigaretteRenderers;
+            heldCigarette != null
+                ? heldCigarette.Renderers
+                : Array.Empty<Renderer>();
         public double LoopTimeSeconds => loopTimeSeconds;
         public int CurrentLoopFrame { get; private set; }
         public float CurrentClipProgress01 { get; private set; }
@@ -165,10 +187,14 @@ namespace BarPromenade
 
             transform.localScale = Vector3.one;
             registry.ApplyPaletteVariant(descriptor.PaletteVariant);
-            cigaretteRenderers = CityBalconySmokerAccessory.Attach(
+            // The same cigarette prefab for every design: the body ships
+            // empty-handed and no babushka source has to be borrowed.
+            CityPedestrianHandProps.Detach(ref heldCigarette);
+            heldCigarette = CityPedestrianHandProps.Attach(
                 registry,
+                CityPedestrianHandPropId.Cigarette,
                 descriptor.PaletteVariant);
-            mouthSocket = FindDescendant(
+            mouthSocket = CityPedestrianHandProps.FindSocket(
                 registry.ModelRoot,
                 MouthSocketName);
             if (mouthSocket == null)
@@ -265,6 +291,11 @@ namespace BarPromenade
                 CityPedestrianResources.DestroyObject(poseDriverRoot);
             }
 
+            // Explicit rather than left to the body's destruction: the
+            // director may release a smoker and the body's asset must not
+            // keep a cigarette between uses.
+            CityPedestrianHandProps.Detach(ref heldCigarette);
+
             IsInitialized = false;
             registry = null;
             activeClip = null;
@@ -275,7 +306,6 @@ namespace BarPromenade
             poseDriverRoot = null;
             poseBoneBindings = Array.Empty<PoseBoneBinding>();
             mouthSocket = null;
-            cigaretteRenderers = Array.Empty<Renderer>();
             loopTimeSeconds = 0d;
             burstTimeSeconds = 0d;
             CurrentLoopFrame = 0;
@@ -560,32 +590,6 @@ namespace BarPromenade
             {
                 registry.ModelRoot.localPosition = modelBaseLocalPosition;
             }
-        }
-
-        private static Transform FindDescendant(
-            Transform root,
-            string name)
-        {
-            if (root == null)
-            {
-                return null;
-            }
-
-            if (string.Equals(root.name, name, StringComparison.Ordinal))
-            {
-                return root;
-            }
-
-            for (int index = 0; index < root.childCount; index++)
-            {
-                Transform result = FindDescendant(root.GetChild(index), name);
-                if (result != null)
-                {
-                    return result;
-                }
-            }
-
-            return null;
         }
 
         private static int ResolveLoopFrame(

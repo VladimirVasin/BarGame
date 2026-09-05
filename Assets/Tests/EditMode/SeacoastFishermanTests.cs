@@ -294,13 +294,15 @@ namespace BarPromenade.Tests.EditMode
 
         /// <summary>
         /// The staged art actually reaches a build, is the loop the
-        /// presentation expects, and carries the two anchors the pipe
-        /// and the line hang from — on the right bones. An anchor
-        /// parented to the wrong bone still resolves at runtime and
-        /// leaves the ember floating beside his head.
+        /// presentation expects, ships empty-handed, and takes the rod
+        /// and the pipe as hand props whose anchors land on the right
+        /// bones. Since 2026-09-05 neither the rod nor the pipe is part
+        /// of the body: an anchor measured on the wrong socket still
+        /// resolves at runtime and leaves the ember floating beside his
+        /// head, so the distances are judged in world space here.
         /// </summary>
         [Test]
-        public void StagedPrefab_IsBoundPassiveAndCarriesItsPipeAndRodAnchors()
+        public void StagedPrefab_IsBoundPassiveAndTakesItsPipeAndRodProps()
         {
             SeacoastFishermanProvider provider = SeacoastFishermanProvider.Load();
             Assert.That(
@@ -346,33 +348,98 @@ namespace BarPromenade.Tests.EditMode
                 prefab.GetComponentsInChildren<ParticleSystem>(true),
                 Is.Empty);
 
-            var anchors =
-                prefab.GetComponentInChildren<SeacoastFishermanRigAnchors>(true);
-            Assert.That(anchors, Is.Not.Null);
-            Assert.That(anchors.PedestrianRegistry, Is.EqualTo(registry));
-            Assert.That(anchors.PipeEmberRenderer, Is.Not.Null);
-            Assert.That(
-                anchors.PipeEmberRenderer.name,
-                Is.EqualTo(SeacoastFishermanRigAnchors.PipeEmberRendererName));
+            // Empty-handed: the rod and the pipe are hand-prop prefabs,
+            // and a renderer with one of their part names on the body
+            // is the old skinned prop back in the FBX.
+            string[] propParts =
+            {
+                "ACC_RodGrip",
+                "ACC_RodReel",
+                "ACC_RodButt",
+                "ACC_RodMid",
+                "ACC_RodTip",
+                "ACC_PipeStem",
+                "ACC_PipeBowl",
+                "ACC_PipeEmber"
+            };
+            var rendererNames = new HashSet<string>();
+            foreach (Renderer renderer in
+                     prefab.GetComponentsInChildren<Renderer>(true))
+            {
+                rendererNames.Add(renderer.name);
+            }
 
-            Transform ember = anchors.PipeEmberAnchor;
-            Transform rodTip = anchors.RodTipAnchor;
-            Assert.That(ember, Is.Not.Null);
-            Assert.That(rodTip, Is.Not.Null);
-            Assert.That(ember.parent.name, Is.EqualTo("head"));
-            Assert.That(rodTip.parent.name, Is.EqualTo("hand.R"));
+            foreach (string part in propParts)
+            {
+                Assert.That(
+                    rendererNames.Contains(part),
+                    Is.False,
+                    $"The fisherman body still carries '{part}'.");
+            }
 
-            // The bowl is in his teeth, so its anchor is a hand's
-            // breadth from the head bone and no further.
-            Assert.That(
-                Vector3.Distance(ember.position, ember.parent.position),
-                Is.InRange(0.10f, 0.40f));
+            var parent = new GameObject("Fisherman Hand Prop Test");
+            try
+            {
+                GameObject instance = Object.Instantiate(
+                    prefab,
+                    parent.transform);
+                var body = instance
+                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
+                        true);
+                Assert.That(body, Is.Not.Null);
+                Transform head = CityPedestrianHandProps.FindSocket(
+                    body.ModelRoot,
+                    "head");
+                Transform rightHand = CityPedestrianHandProps.FindSocket(
+                    body.ModelRoot,
+                    "hand.R");
+                Assert.That(head, Is.Not.Null);
+                Assert.That(rightHand, Is.Not.Null);
 
-            // And the rod is a two-metre stick: an anchor that landed on
-            // the grip would still look plausible in the inspector.
-            Assert.That(
-                Vector3.Distance(rodTip.position, rodTip.parent.position),
-                Is.InRange(1.4f, 2.6f));
+                CityPedestrianHandPropRegistry pipe =
+                    CityPedestrianHandProps.Attach(
+                        body,
+                        CityPedestrianHandPropId.SmokingPipe);
+                CityPedestrianHandPropRegistry rod =
+                    CityPedestrianHandProps.Attach(
+                        body,
+                        CityPedestrianHandPropId.FishingRod);
+                Assert.That(
+                    pipe.transform.parent.name,
+                    Is.EqualTo(CityPedestrianHandProps.MouthSocketName));
+                Assert.That(
+                    rod.transform.parent.name,
+                    Is.EqualTo(CityPedestrianHandProps.GripRightSocketName));
+
+                Renderer emberRenderer = pipe.FindRenderer(
+                    SeacoastFishermanFactory.PipeEmberRendererName);
+                Assert.That(
+                    emberRenderer,
+                    Is.Not.Null,
+                    "The pipe effect swaps this renderer's material.");
+                Assert.That(emberRenderer, Is.InstanceOf<MeshRenderer>());
+
+                Transform ember = pipe.RequireAnchor(
+                    CityPedestrianHandProps.PipeEmberAnchorName);
+                Transform rodTip = rod.RequireAnchor(
+                    CityPedestrianHandProps.RodTipAnchorName);
+
+                // The bowl is in his teeth, so its anchor is a hand's
+                // breadth from the head bone and no further.
+                Assert.That(
+                    Vector3.Distance(ember.position, head.position),
+                    Is.InRange(0.10f, 0.40f));
+
+                // And the rod is a two-metre stick: an anchor that landed
+                // on the grip would still look plausible in the inspector.
+                Assert.That(
+                    Vector3.Distance(rodTip.position, rightHand.position),
+                    Is.InRange(1.4f, 2.6f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
         }
 
         /// <summary>

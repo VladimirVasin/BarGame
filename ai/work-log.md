@@ -6,6 +6,209 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-05 — Hand props leave the pedestrian bodies
+
+The user's rule: whatever an NPC holds is a separate thing in the hand, not
+part of the body model. Every held object was a skinned `ACC_*` part of its
+design's FBX, and because the mourner, babushka and weigher are pool-eligible,
+a roaming mourner walked the street hugging her bouquet and a roaming
+babushka swung her carpet beater. Three unrelated name tables
+(`CityPedestrianHeldProps`, `CityBalconySmokerAccessory`,
+`CityCourtyardResidentFactory`) plus per-role `ApplyPropVisibility`,
+`HideHeldBouquet` and a body-renderer `SetCoffeePotVisible` hid the wrong
+props by name. All of them are deleted.
+
+Blender: the nine props (carpet beater, cigarette, funeral bouquet, chalk,
+fishing rod, smoking pipe, cafe cigarette, service towel, coffee pot) moved
+out of the six body builders into a module-level `HAND_PROPS` table with the
+original helper calls, constants and palettes; `build_hand_prop_library`
+(`--hand-props-only`, also after `--archetype all`) parents each prop's
+parts to an Empty `PROP_<Name>` at the socket bone head, remaps vertices
+through the reference design, and exports
+`Assets/Pedestrians/Props/CityPedestrianHandProps.{fbx,json}` (`9` props,
+`33` meshes, `840` triangles, generator `4.5.2`, signature
+`0e2e5386…bb58ec9`, proved deterministic by a second in-process build). The
+cafe attendant's body anchor `SOCKET_CafePotSpout` became a prop anchor
+(`farthest_from_part` of the spout, axis from the pot body), the fisherman's
+rod tip and pipe ember became `ANCHOR_RodTip` (`farthest_from_socket`) and
+`ANCHOR_PipeEmber` (`part_center`). The cafe woman's cigarette validator now
+evaluates the prop through the posed `SOCKET_Cigarette.R`; its recorded
+metrics moved by at most `1e-6`. `MournerStreetIdle/Walk` build on a new
+`mourner_street_pose` (weigher's hanging arms) so the empty-handed roaming
+mourner no longer folds her forearms around nothing; the personal-space bank
+was rebuilt on it (`ffb7c296…`), the locomotion bank re-signed
+(`73e6e626…`). Bodies after removal: babushka `34` meshes / `1,692` tris
+(was `1,836`), mourner `35` / `1,712` (`1,904`), fisherman `37` / `892`
+(`1,052`), weigher `43` / `2,160`, cafe woman `38` / `2,188`, attendant
+`38` / `1,972`; floors lowered to `1650` / `1600` / `800` in the generator and
+in `CityPedestrianAssetSetup` alike (compared exactly). Ten unchanged designs
+had only timestamp-dirtied outputs and were restored.
+
+Editor: `CityPedestrianHandPropModelImporter` (no rig/avatar/animation,
+readable meshes) and `CityPedestrianHandPropAssetSetup` (menu `Build/Validate
+Hand Props`, batch `Run`, registered in `NpcHumanV2AssetSetup` after the
+cafe setup) force-import the prop FBX, manifest and six reference bodies,
+instantiate both at identity, assert every part origin within `1e-4 m` of its
+Empty and the Empty within `0.02 m` of the socket, and measure `Mount =
+socket.worldToLocal · Translate(E)` with a `1e-5` round-trip proof. Measured
+on every prop: Mount local position `(0, 0, 0)`, rotation `(90, 180, 0)`
+(pipe/towel `89.98`), scale `0.01` under a socket lossyScale of `100.0001`;
+Empties at `SOCKET_Grip.R (-0.738, 1.033, -0.019)`, `SOCKET_Cigarette.R
+(-0.738, 1.045, -0.029)`, `SOCKET_Mouth (0.002, 1.538, -0.141)`,
+`SOCKET_Grip.L (0.740, 1.039, -0.023)`; `ANCHOR_RodTip` `1.993 m` from the
+socket, `ANCHOR_PipeEmber` `0.087 m`, `SOCKET_CafePotSpout` `0.221 m` from
+the socket and `0.227 m` from the pot body centre. Nine prefabs under
+`Assets/Resources/Pedestrians/HandProps/` carry the registry with the
+reference socket rest pose; `ValidateOrThrow` re-measures it within
+`0.0001 m / 0.02°`. `CityPedestrianAssetSetup` lost the fishing-rig branch and
+`SeacoastFishermanRigAnchors`; `MountainRoadCafeCastAssetSetup` refuses
+`SOCKET_CafePotSpout` on any cafe prefab and no longer expects the
+attendant's `+1` rig transform.
+
+Runtime: `CityPedestrianHandProps.Attach/Place/Detach` over the
+`CityPedestrianHandPropRegistry` contract. The drying-yard babushkas attach
+`CarpetBeater` or `Cigarette` per role, the courtyard babushka `Cigarette`,
+the weigher `Chalk` (the worker nothing), the mourner `FuneralBouquet` on
+Initialize and releases it at the grave, where `CemeteryLaidBouquet` places
+the same prefab on the grave's measured `SlabTopY` with its stems→bloom axis
+along grave-local `+Z`; the balcony smoker attaches `Cigarette` and the
+archetype is eligible only while that prefab exists; the fisherman attaches
+`FishingRod` + `SmokingPipe` and feeds their anchors to the line and pipe
+effect; the cafe factory attaches `CafeCigarette`, `ServiceTowel` and
+`CoffeePot` BEFORE `presentation.Initialize`, and the registry routes
+`SetCoffeePotVisible` to the attached pot, remembering requests made before it
+exists. Pooled walkers and bar patrons attach nothing.
+
+Verification: Blender `--hand-props-only`, `--archetype all`, `--cafe-cast`
+and `--personal-space-only` all passed (`CITY PEDESTRIAN ART BUILD OK`,
+signatures reproduced on rebuild); `dotnet build` of the Runtime, Editor,
+EditMode and PlayMode csproj files: `0` errors each. Unity batch order
+`CityPedestrianAssetSetup.Run` → `MountainRoadCafeCastAssetSetup.Run` →
+`CityPedestrianHandPropAssetSetup.Run` →
+`CityPedestrianPersonalSpaceAssetSetup.BuildOrThrow`, each with its success
+line. EditMode full suite `2472` run / `2436` passed / `35` failed /
+`1` skipped: one red was this work's (the rod tip-at-far-end assertion,
+re-anchored on tip-to-grip distance) and `34` are pre-existing or the
+neighbour's (`Ps1LitShaderParity`, `BarDistrictIdentity`,
+`BarSurfaceAppearance`, `LocalizationCatalog`, the `HedgeSegment` family off
+the untracked church garden, and others unrelated to pedestrians); after
+the fix `CityPedestrianHandPropTests` `33/33` twice. Targeted PlayMode
+(`-batchmode` with a GPU; `-nographics` crashes the capture in
+`ParticleSystemRenderer`): `23` run / `21` passed, the cafe cigarette lip
+metric fixed (filter tip, alignment `0.86` per the manifest's `0.889`) so
+`MountainRoadCafePlayModeTests` ends `6/6`, and
+`BarInteriorSpawnPlayModeTests` `RedWine` intoxication `92` vs `91` is the
+neighbour's. Eight explicit frames under `Captures/HandProps/` show every
+prop in its hand at hand scale; the balcony and cafe contact captures were
+re-read. Nothing committed; the neighbour is still editing this checkout.
+
+## 2026-09-05 — Low garden hedges and visible ground lighting
+
+The user's follow-up explicitly permits a planted perimeter and real ground
+lighting in the church garden. A separate accepted exception in architecture
+and story §6 lifts the earlier no-new-light rule for these fixtures. The
+fountain retains its independent sound-only exception.
+
+`ChurchGardenBorderPlan` adds 28 low hedge segments with rounded turns along
+three connected perimeter runs. Their `0.8 m` height keeps the garden open,
+and a `3.9 m` northern gap preserves the walk onto the graded ground. Existing
+trees, six grouped shrubs, benches, main loop and pot interaction remain clear.
+Ten small Blender ground fixtures wash this edge: nine face the planting and
+one lights the statue from a diagonal `1.57 m` offset. Following the user's
+request for more pronounced border lamps, the edge wash uses `7.2` intensity,
+stronger lens glow and a restrained `0.58 m` outer halo; the statue keeps the
+softer `2.8` light. All Spots aim `35 degrees` up with `3.2 m` range and no
+shadow maps. The existing site-light registry supplies the always-burning
+two-thirds day floor, without changing the twelve-light street/bar pool.
+
+The deterministic garden kit now has ten pieces and `12,492` triangles.
+Blender validation covered manifold geometry, dimensions, material slots and
+repeat determinism; the original eight geometry/UV signatures and their
+stone/clay texture hashes remain unchanged. The new texture importer now
+explicitly requests Texture2D, preventing a minimal metadata file from being
+interpreted as a cubemap. Visual review also tuned the hedge tint for the
+actual foggy game lighting, then checked the stronger edge wash and full
+statue silhouette in both day and night frames.
+
+Verification: the final focused `AreaCaptureFixture.CityChurchCourtyard`
+selection passed `1/1` in `41.234 s` in the existing isolated stable copy,
+including the actual north route through the hedge opening, the full church
+loop and cemetery passage, both pot transfers and cleanup, and day/night light
+contracts. Final frames are under `Captures/ChurchGarden/`; generated shared
+materials, ten prefabs, provider and import metadata were copied back after
+verification. No full suites, player build or startup smoke run.
+
+## 2026-09-05 — A connected parish garden around the church
+
+Replaced the scattered courtyard composition with one clear `2.4 m` gravel
+loop from the west forecourt around the church to its sole cemetery passage.
+Two oriented bench pockets, two grouped planting areas, a modest fountain,
+a Mary statue and a potting shelf give each widening a purpose. Continuous
+grass replaces raised lawn tiles and their artificial seams. The first `38 m`
+of church land remains level; its northern `14 m` now grades into the adjoining
+yard. Transparent imported fencing marks the closed external edges while the
+north seam becomes physically traversable.
+
+The deterministic Blender garden kit supplies eight fixed-metre pieces
+(`10,192` triangles), shared materials and a complete Resources provider.
+The fountain reuses the existing water presentation, adds no Light, and owns
+the accepted single quiet water voice within `4.5 m`. The canon exception,
+bibles, system documentation and player-facing README are updated together.
+
+One real terracotta pot uses five separately imported Hero V2 clips to lift,
+inspect and place at either of two shelf docks. A/D or the D-pad selects the
+dock; the ordinary action key requests placement at the loop seam. Both hands
+carry the physical pot, the selected dock persists within the session, and
+cancellation restores the appropriate dock and shared player state. The main
+hero prefab and animation bank remain unchanged.
+
+Verification: deterministic Blender geometry/contact validation passed. An
+isolated copy of HEAD with only the church changes allowed verification while
+the user's separate NPC task was still changing compilation and asset inputs
+in the main working copy. Actual game captures exposed an FBX unit-import
+error that stretched the hero during the new action; explicit `useFileScale`
+and imported-pose measurements fixed it. The final focused PlayMode selection
+`AreaCaptureFixture.CityChurchCourtyard` passed `1/1` in `44.483 s`, including
+physical route/grade traversal, both dock transfers, session rebinding,
+cancellation and normal hero dimensions. Nine final game frames were visually
+reviewed and saved under `Captures/ChurchGarden/`. No full suites, player build
+or startup smoke run.
+
+## 2026-09-05 — Passers-by defend their personal space
+
+Roaming walkers now stop and offer a guarding palm when the hero approaches
+on the penultimate alcohol stage, and briefly shove him away at very close
+range on the final stage. A temporary actor hold preserves the current graph
+route, while one director-owned controller serializes turn, authored action,
+contact and recovery. Withdrawal and a cooldown prevent repeated contacts.
+
+The isolated twelve-action `CityPedestrianPersonalSpace` bank gives each of
+the six roaming designs a one-second Guard/Shove pair with contact at `1/3 s`.
+Both use the free left palm; right-hand props keep their grips. Standing
+endpoints and full action weight keep the park players' historical seated
+idle out of the gesture, then return each actor to walking. The generator's
+`--personal-space-only` path leaves the older locomotion bank unchanged.
+
+Strong contact requests a bounded external displacement through `PlayerMotor`
+and nudges the existing balance model; it does not command a fall. Same-level
+visibility and ownership gates keep walls, benches, bus transfers, staged NPCs,
+contextual player actions and falling out of the reaction. Both bibles record
+the ordinary silent boundary separately from story progression and muttering.
+
+Verification: Blender validation passed for all twelve actions: 31 bones,
+no root motion or root translation, grounded feet and deterministic repeated
+poses. The contact sheet was visually reviewed, including open-palm contact
+orientation and standing park-player endpoints. The focused PlayMode selection
+passed `9/9` in `15.775 s` (six reaction scenarios and three motor scenarios).
+After the final art adjustment, the single
+`RawStageBoundaries_UseAuthoredGuardOrOnePhysicalContact` recheck passed `1/1`
+in `2.049 s`, including an imported hand-to-hero forward gap below `0.14 m`.
+Production-rig captures confirm distinct guard/shove poses, visible palm-to-chest
+contact through a shoulder lean, and the hero's `0.4 m` displacement. Final
+shove reach is `0.62 m` at contact and `0.65 m` through follow-through; approach
+and contact gates both remain capsule-safe at `0.75 m`. No full suites,
+player build or smoke run.
+
 ## 2026-09-05 — The drunk hero mutters, and his words come apart
 
 Past the balance threshold he now says short lines about himself over his own

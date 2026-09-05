@@ -220,6 +220,31 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(timeline.IsActive, Is.False);
         }
 
+        [TestCase(0.6f)]
+        [TestCase(20f)]
+        public void Timeline_QueuedExitFinishesLoopAtExactSeamAndResetClearsRequest(float crossingStep)
+        {
+            var timeline = new PlayerAnimatedInteractionTimeline(
+                CreateDefinition(loopFrameCount: 2, loopFramesPerSecond: 2f));
+            Assert.That(timeline.RequestExitAtLoopBoundary(), Is.False);
+            timeline.BeginLooping();
+            timeline.Advance(0.45f);
+            Assert.That(timeline.RequestExitAtLoopBoundary(), Is.True);
+            Assert.That(timeline.RequestExitAtLoopBoundary(), Is.False);
+            Assert.That(timeline.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Looping));
+            Assert.That(timeline.ClipProgress, Is.EqualTo(0.45f).Within(Tolerance));
+
+            timeline.Advance(crossingStep);
+
+            Assert.That(timeline.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Exiting));
+            Assert.That(timeline.ClipProgress, Is.Zero);
+            Assert.That(timeline.FrameIndex, Is.EqualTo(timeline.Definition.ExitStartFrame));
+            timeline.Reset();
+            timeline.BeginLooping();
+            timeline.Advance(2.5f);
+            Assert.That(timeline.Phase, Is.EqualTo(PlayerAnimatedInteractionPhase.Looping));
+        }
+
         [Test]
         public void Timeline_LoopHoldsFreezeClipProgressAndLogicalFrame()
         {

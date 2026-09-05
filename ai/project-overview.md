@@ -464,8 +464,9 @@ The vertical slice contains:
   outside `NightFactor` and stays on. The atmosphere pool remains capped at
   `12` local realtime lights. One active bus may add `4`, the single pooled
   helmet-lamp pedestrian `1`, the yard `1` and the drying yard's night-only
-  pole floodlight `1`, for a bounded worst case of
-  `19`; the scene Directional and transient lightning Directional are counted
+  pole floodlight `1`. Fixed site lights, including the cemetery and the ten
+  church-garden uplights, remain separate from the twelve-light pool;
+  the scene Directional and transient lightning Directional are counted
   separately. Bar, Supermarket and Stairwell lighting remain unchanged. The
   `0.070` exponential-squared luminous gray-green fog,
   fog-matched terminal camera backdrop, City-only `48 m` visibility cap,
@@ -626,6 +627,19 @@ The vertical slice contains:
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
+  A roaming walker alone may briefly defend personal space: raw alcohol above
+  `60` through `80` selects the Guard hand at `1 m`, and above `80` selects a
+  Shove at `0.75 m`. One reaction at a time stops and turns the walker, samples
+  a dedicated one-second action, then resumes its graph route. The isolated
+  `CityPedestrianPersonalSpace` bank contains Guard/Shove for all six roaming
+  designs: the free left palm acts while the right hand keeps its grip pose
+  (a roaming walker holds no prop in it; see the hand-prop library below).
+  Contact occurs at one third of the action. A strong contact
+  requests a collision-constrained `0.4 m` push over `0.3 s` and a modest balance
+  perturbation (`0.65 m/s`). Another reaction requires leaving `1.5 m` and a
+  `3 s` cooldown;
+  staged roles, bus/bench activity and a player already under action or fall
+  ownership do not participate. The reaction adds no dialogue or audio.
   The on-disk humanoid-NPC asset set comprises `27` rigged designs: five
   production-folder pedestrian models, `17` staged residents, the active
   ordinary and retained inactive six-armed bartenders, the active normal and
@@ -639,6 +653,21 @@ The vertical slice contains:
   manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
   The four Mountain Road cafe models and their separate `10`-clip bank use
   `4.5.2`; the shelter trio and dedicated three-loop bank use `4.2.0`.
+  Nothing an NPC holds is part of a body model. The nine hand props
+  (carpet beater, cigarette, funeral bouquet, chalk, fishing rod, smoking
+  pipe, cafe cigarette, service towel, coffee pot) form the separate
+  `CityPedestrianHandProps` library (`4.5.2`, `33` meshes / `840`
+  triangles, no armature) built by the same generator and imported to nine
+  passive `Resources/Pedestrians/HandProps` prefabs whose `Mount` is
+  measured against the reference body's socket in its bind pose. They are
+  attached at runtime to a named socket (`SOCKET_Grip.R/L`,
+  `SOCKET_Cigarette.R`, `SOCKET_Mouth`) only by the staged roles that need
+  them; pooled walkers and bar patrons attach nothing, and the laid grave
+  bouquet is the same prefab placed on the slab. The six prop-bearing
+  bodies lost their skinned prop parts (babushka `1,692`, mourner `1,712`,
+  fisherman `892`, weigher `2,160`, cafe woman `2,188`, attendant `1,972`
+  triangles) and the babushka/mourner/fisherman floors dropped to
+  `1650` / `1600` / `800` in the generator and in C# together.
   The active bartender manifest uses `3.1.0`, while the retained six-armed
   bartender and bus-driver manifests use `2.0.0`; the cashier generator
   owns the active `1.0.0` normal output (`1.75 m`, `40` meshes / `1,244`
@@ -1033,9 +1062,32 @@ The vertical slice contains:
   its west street — neo-Gothic tower and spire, buttresses, lancet windows,
   rose window, pitched roofs and Latin crosses — with emissive windows but no
   new realtime exterior Light.
-  `CityChurchCourtyardPlan` gives the site a stone approach/forecourt and a
-  restrained north lawn/garden with two sittable benches, two small trees, six
-  clipped shrubs and two modest beds. `CityChurchCemeteryPassagePlan` continues the
+  `CityChurchCourtyardPlan` gives the site a full-width stone entrance and a
+  continuous `2.4 m` gravel loop around the church with two bench pockets,
+  two small trees, six grouped shrubs and two modest beds. A separate
+  deterministic Blender garden kit adds a `1.6 m` fountain, a restrained
+  Mary statue and three hollow terracotta pots with a low stone potting ledge.
+  One pot uses five separate Hero V2 actions to lift, inspect and place at
+  either of two docks; the selected dock survives scene changes within the
+  current session. The fountain uses shared City water shaders and one
+  ordinary local water voice bounded to `4.5 m`. `ChurchGardenBorderPlan`
+  frames the garden's back and wings with `28` low hedge segments at `0.8 m`
+  high, rounded turns and one `3.9 m` clear northern corridor. The existing
+  east tree joins that edge; the two trees and six grouped shrubs retain
+  their own counts. Nine ground uplights face the planted edge and one
+  faces the statue. `ChurchGardenUplight` owns their short `3.2 m`, shadowless
+  warm Spots, tilted upward `35°`, through `CityNightSiteLightRegistry`.
+  The lenses and small halos stay lit at every hour, with the shared
+  two-thirds daytime floor; these ten fixed site lights leave the
+  twelve-light street/bar pool unchanged. The passive garden kit has ten
+  pieces, including the hedge segment and shielded ground fixture. The edge
+  receives the stronger wash; the statue has a gentler separate accent.
+  `CityChurchGroundPlan`
+  keeps the inhabited `38 m` flat and grades the northern `14 m` into the
+  adjoining yard; rendering, collision and navigation share its sampled
+  terrain. Open iron closes only the existing west frontage outside its
+  `8.8 m` aperture and the actual unsupported outer edges.
+  `CityChurchCemeteryPassagePlan` continues the
   cemetery's middle cross alley through one maintained `3 m` north-fence
   opening into the south church path while preserving the west cemetery gate
   as its only street gate and the route used by the mourner, watchman and grave

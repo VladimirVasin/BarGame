@@ -694,6 +694,14 @@ namespace BarPromenade
             float halfRoad = layout.ElevationPlan.RoadWidth * 0.5f;
             var xAnchors = new List<float>();
             var zAnchors = new List<float>();
+            if (surface.Kind == CitySurfaceKind.ChurchGround)
+            {
+                Rect churchGrounds = CityChurchGroundPlan.GetGrounds(
+                    layout, surface.AreaId);
+                zAnchors.Add(churchGrounds.yMin +
+                    CityChurchGroundPlan.FlatGardenDepth);
+            }
+
             AppendDistrictPointAnchors(
                 layout,
                 surface,

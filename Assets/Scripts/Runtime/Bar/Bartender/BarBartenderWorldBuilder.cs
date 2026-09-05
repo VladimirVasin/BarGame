@@ -10,9 +10,15 @@ namespace BarPromenade
     /// </summary>
     public static class BarBartenderWorldBuilder
     {
+        /// <summary>
+        /// <paramref name="heroRoot"/> is the player root the bartender
+        /// watches for across the counter; without it he keeps his eyes on
+        /// his glasses.
+        /// </summary>
         public static BarBartenderPresentation TryBuild(
             Transform parent,
-            BarInteriorLayoutPlan layout)
+            BarInteriorLayoutPlan layout,
+            Transform heroRoot = null)
         {
             if (parent == null)
             {
@@ -89,6 +95,11 @@ namespace BarPromenade
             BarBartenderPresentation presentation =
                 bartender.AddComponent<BarBartenderPresentation>();
             presentation.Initialize(registry);
+            if (heroRoot != null)
+            {
+                AttachHeroAttention(presentation, registry, heroRoot);
+            }
+
             GameLog.Info(
                 "bar",
                 "bartender_built",
@@ -97,6 +108,40 @@ namespace BarPromenade
                     "design",
                     registry.DesignId));
             return presentation;
+        }
+
+        /// <summary>
+        /// The bartender looks up from his glasses: the hero's own head
+        /// turn, run behind the presentation's own late pass, held back
+        /// while an authored service clip owns the body. The legacy rig
+        /// has no clips and glances whenever the hero is in the cone.
+        /// </summary>
+        public static NpcHeroAttentionLook AttachHeroAttention(
+            BarBartenderPresentation presentation,
+            BarBartenderAssetRegistry registry,
+            Transform heroRoot)
+        {
+            if (presentation == null)
+            {
+                throw new ArgumentNullException(nameof(presentation));
+            }
+
+            if (registry == null || registry.Head == null)
+            {
+                return null;
+            }
+
+            NpcHeroAttentionLook look = presentation.gameObject
+                .AddComponent<NpcHeroAttentionLook>();
+            look.Initialize(
+                presentation.transform,
+                registry.Head,
+                registry.Neck,
+                heroRoot,
+                () => !presentation.UsesOrdinaryRig ||
+                      presentation.CurrentClipKind ==
+                      BarBartenderClipKind.Wipe);
+            return look;
         }
     }
 }

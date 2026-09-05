@@ -1,0 +1,728 @@
+{
+  "generator": "tools/build-city-pedestrian-3d-model.py",
+  "generator_version": "4.5.2",
+  "blender_version": "5.0.1",
+  "library": "CityPedestrianHandProps",
+  "anatomy_standard": "NpcHumanV2",
+  "forward_axis": "-Y",
+  "anatomical_left_axis": "+X",
+  "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
+  "emissive": false,
+  "colliders": false,
+  "mesh_count": 33,
+  "triangle_count": 840,
+  "build_signature": "0e2e5386feba22dd92906ae5360a689a62f58f9eaed159a5822ce393cbb58ec9",
+  "props": [
+    {
+      "id": "carpet_beater",
+      "prefab_name": "CarpetBeater",
+      "display_name": "Carpet Beater",
+      "socket": "SOCKET_Grip.R",
+      "bone": "hand.R",
+      "reference_design": "yard_babushka_v1",
+      "root": "PROP_CarpetBeater",
+      "socket_head_m": [
+        -0.73776,
+        -0.01888,
+        1.033
+      ],
+      "mesh_count": 4,
+      "triangle_count": 112,
+      "bounds_min": [
+        -0.826103,
+        -0.355056,
+        0.566016
+      ],
+      "bounds_max": [
+        -0.640086,
+        0.020764,
+        1.085474
+      ],
+      "parts": [
+        {
+          "name": "ACC_BeaterHandle",
+          "role": "signature_silhouette",
+          "palette_name": "beater_plastic_dark",
+          "base_color": [
+            0.3,
+            0.085,
+            0.055,
+            1.0
+          ],
+          "vertices": 16,
+          "triangles": 28
+        },
+        {
+          "name": "ACC_BeaterNeck",
+          "role": "signature_silhouette",
+          "palette_name": "beater_plastic",
+          "base_color": [
+            0.56,
+            0.165,
+            0.105,
+            1.0
+          ],
+          "vertices": 16,
+          "triangles": 28
+        },
+        {
+          "name": "ACC_BeaterPaddleRise",
+          "role": "signature_silhouette",
+          "palette_name": "beater_plastic",
+          "base_color": [
+            0.56,
+            0.165,
+            0.105,
+            1.0
+          ],
+          "vertices": 16,
+          "triangles": 28
+        },
+        {
+          "name": "ACC_BeaterPaddleTip",
+          "role": "signature_silhouette",
+          "palette_name": "beater_plastic",
+          "base_color": [
+            0.56,
+            0.165,
+            0.105,
+            1.0
+          ],
+          "vertices": 16,
+          "triangles": 28
+        }
+      ],
+      "anchors": []
+    },
+    {
+      "id": "cigarette",
+      "prefab_name": "Cigarette",
+      "display_name": "Cigarette",
+      "socket": "SOCKET_Cigarette.R",
+      "bone": "hand.R",
+      "reference_design": "yard_babushka_v1",
+      "root": "PROP_Cigarette",
+      "socket_head_m": [
+        -0.73776,
+        -0.02888,
+        1.045
+      ],
+      "mesh_count": 2,
+      "triangle_count": 32,
+      "bounds_min": [
+        -0.762536,
+        -0.132389,
+        1.030397
+      ],
+      "bounds_max": [
+        -0.741484,
+        -0.048409,
+        1.047533
+      ],
+      "parts": [
+        {
+          "name": "ACC_Cigarette",
+          "role": "surface_detail",
+          "palette_name": "pipe_ivory",
+          "base_color": [
+            0.585,
+            0.555,
+            0.465,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        },
+        {
+          "name": "ACC_CigaretteEmber",
+          "role": "surface_detail",
+          "palette_name": "amber",
+          "base_color": [
+            0.525,
+            0.275,
+            0.075,
+            1.0
+          ],
+          "vertices": 8,
+          "triangles": 12
+        }
+      ],
+      "anchors": []
+    },
+    {
+      "id": "funeral_bouquet",
+      "prefab_name": "FuneralBouquet",
+      "display_name": "Funeral Bouquet",
+      "socket": "SOCKET_Grip.R",
+      "bone": "hand.R",
+      "reference_design": "cemetery_mourner_v1",
+      "root": "PROP_FuneralBouquet",
+      "socket_head_m": [
+        -0.73776,
+        -0.01888,
+        1.033
+      ],
+      "mesh_count": 5,
+      "triangle_count": 192,
+      "bounds_min": [
+        -0.803641,
+        -0.131631,
+        0.965994
+      ],
+      "bounds_max": [
+        -0.630995,
+        0.008729,
+        1.288141
+      ],
+      "parts": [
+        {
+          "name": "ACC_BouquetBloomA",
+          "role": "signature_silhouette",
+          "palette_name": "bouquet_bloom",
+          "base_color": [
+            0.29,
+            0.06,
+            0.075,
+            1.0
+          ],
+          "vertices": 26,
+          "triangles": 48
+        },
+        {
+          "name": "ACC_BouquetBloomB",
+          "role": "signature_silhouette",
+          "palette_name": "bouquet_bloom",
+          "base_color": [
+            0.29,
+            0.06,
+            0.075,
+            1.0
+          ],
+          "vertices": 26,
+          "triangles": 48
+        },
+        {
+          "name": "ACC_BouquetGreens",
+          "role": "surface_detail",
+          "palette_name": "bouquet_stem",
+          "base_color": [
+            0.055,
+            0.11,
+            0.06,
+            1.0
+          ],
+          "vertices": 26,
+          "triangles": 48
+        },
+        {
+          "name": "ACC_BouquetStems",
+          "role": "surface_detail",
+          "palette_name": "bouquet_stem",
+          "base_color": [
+            0.055,
+            0.11,
+            0.06,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        },
+        {
+          "name": "ACC_BouquetWrap",
+          "role": "signature_silhouette",
+          "palette_name": "bouquet_wrap",
+          "base_color": [
+            0.33,
+            0.3,
+            0.24,
+            1.0
+          ],
+          "vertices": 16,
+          "triangles": 28
+        }
+      ],
+      "anchors": []
+    },
+    {
+      "id": "chalk",
+      "prefab_name": "Chalk",
+      "display_name": "Chalk",
+      "socket": "SOCKET_Grip.R",
+      "bone": "hand.R",
+      "reference_design": "weigh_attendant_v1",
+      "root": "PROP_Chalk",
+      "socket_head_m": [
+        -0.73776,
+        -0.01888,
+        1.033
+      ],
+      "mesh_count": 1,
+      "triangle_count": 20,
+      "bounds_min": [
+        -0.760405,
+        -0.103288,
+        1.024575
+      ],
+      "bounds_max": [
+        -0.731441,
+        -0.044092,
+        1.047036
+      ],
+      "parts": [
+        {
+          "name": "ACC_Chalk",
+          "role": "surface_detail",
+          "palette_name": "chalk",
+          "base_color": [
+            0.62,
+            0.635,
+            0.615,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        }
+      ],
+      "anchors": []
+    },
+    {
+      "id": "fishing_rod",
+      "prefab_name": "FishingRod",
+      "display_name": "Fishing Rod",
+      "socket": "SOCKET_Grip.R",
+      "bone": "hand.R",
+      "reference_design": "lake_fisherman_v1",
+      "root": "PROP_FishingRod",
+      "socket_head_m": [
+        -0.73776,
+        -0.01888,
+        1.033
+      ],
+      "mesh_count": 5,
+      "triangle_count": 100,
+      "bounds_min": [
+        -0.772733,
+        -1.918258,
+        0.976181
+      ],
+      "bounds_max": [
+        -0.448265,
+        0.088458,
+        1.568953
+      ],
+      "parts": [
+        {
+          "name": "ACC_RodButt",
+          "role": "signature_silhouette",
+          "palette_name": "rod_cane",
+          "base_color": [
+            0.23,
+            0.15,
+            0.072,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        },
+        {
+          "name": "ACC_RodGrip",
+          "role": "signature_silhouette",
+          "palette_name": "rod_cork",
+          "base_color": [
+            0.33,
+            0.245,
+            0.145,
+            1.0
+          ],
+          "vertices": 16,
+          "triangles": 28
+        },
+        {
+          "name": "ACC_RodMid",
+          "role": "signature_silhouette",
+          "palette_name": "rod_cane",
+          "base_color": [
+            0.23,
+            0.15,
+            0.072,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        },
+        {
+          "name": "ACC_RodReel",
+          "role": "signature_silhouette",
+          "palette_name": "rod_reel",
+          "base_color": [
+            0.128,
+            0.132,
+            0.13,
+            1.0
+          ],
+          "vertices": 8,
+          "triangles": 12
+        },
+        {
+          "name": "ACC_RodTip",
+          "role": "signature_silhouette",
+          "palette_name": "rod_cane",
+          "base_color": [
+            0.23,
+            0.15,
+            0.072,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        }
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_RodTip",
+          "kind": "farthest_from_socket",
+          "part": "ACC_RodTip",
+          "axis_from": ""
+        }
+      ]
+    },
+    {
+      "id": "smoking_pipe",
+      "prefab_name": "SmokingPipe",
+      "display_name": "Smoking Pipe",
+      "socket": "SOCKET_Mouth",
+      "bone": "head",
+      "reference_design": "lake_fisherman_v1",
+      "root": "PROP_SmokingPipe",
+      "socket_head_m": [
+        0.002,
+        -0.141,
+        1.538
+      ],
+      "mesh_count": 3,
+      "triangle_count": 60,
+      "bounds_min": [
+        -0.004659,
+        -0.250967,
+        1.456518
+      ],
+      "bounds_max": [
+        0.045939,
+        -0.118542,
+        1.5259
+      ],
+      "parts": [
+        {
+          "name": "ACC_PipeBowl",
+          "role": "signature_silhouette",
+          "palette_name": "pipe_briar",
+          "base_color": [
+            0.165,
+            0.098,
+            0.055,
+            1.0
+          ],
+          "vertices": 16,
+          "triangles": 28
+        },
+        {
+          "name": "ACC_PipeEmber",
+          "role": "signature_silhouette",
+          "palette_name": "amber",
+          "base_color": [
+            0.525,
+            0.275,
+            0.075,
+            1.0
+          ],
+          "vertices": 8,
+          "triangles": 12
+        },
+        {
+          "name": "ACC_PipeStem",
+          "role": "signature_silhouette",
+          "palette_name": "pipe_briar_dark",
+          "base_color": [
+            0.082,
+            0.048,
+            0.028,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        }
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_PipeEmber",
+          "kind": "part_center",
+          "part": "ACC_PipeEmber",
+          "axis_from": ""
+        }
+      ]
+    },
+    {
+      "id": "cafe_cigarette",
+      "prefab_name": "CafeCigarette",
+      "display_name": "Cafe Cigarette",
+      "socket": "SOCKET_Cigarette.R",
+      "bone": "hand.R",
+      "reference_design": "cafe_couple_woman_v2",
+      "root": "PROP_CafeCigarette",
+      "socket_head_m": [
+        -0.73776,
+        -0.02888,
+        1.045
+      ],
+      "mesh_count": 3,
+      "triangle_count": 52,
+      "bounds_min": [
+        -0.750996,
+        -0.082894,
+        1.022192
+      ],
+      "bounds_max": [
+        -0.727235,
+        0.008815,
+        1.042211
+      ],
+      "parts": [
+        {
+          "name": "ACC_CafeCigarette",
+          "role": "held_prop",
+          "palette_name": "cafe_ivory_light",
+          "base_color": [
+            0.755,
+            0.72,
+            0.57,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        },
+        {
+          "name": "ACC_CafeCigaretteEmber",
+          "role": "surface_detail",
+          "palette_name": "cafe_red_light",
+          "base_color": [
+            0.52,
+            0.095,
+            0.075,
+            1.0
+          ],
+          "vertices": 8,
+          "triangles": 12
+        },
+        {
+          "name": "ACC_CafeCigaretteFilter",
+          "role": "held_prop",
+          "palette_name": "cafe_paper",
+          "base_color": [
+            0.625,
+            0.54,
+            0.33,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        }
+      ],
+      "anchors": []
+    },
+    {
+      "id": "service_towel",
+      "prefab_name": "ServiceTowel",
+      "display_name": "Service Towel",
+      "socket": "SOCKET_Grip.L",
+      "bone": "hand.L",
+      "reference_design": "cafe_attendant_v2",
+      "root": "PROP_ServiceTowel",
+      "socket_head_m": [
+        0.73976,
+        -0.02288,
+        1.039
+      ],
+      "mesh_count": 1,
+      "triangle_count": 12,
+      "bounds_min": [
+        0.650993,
+        -0.044636,
+        0.931832
+      ],
+      "bounds_max": [
+        0.830841,
+        -0.018227,
+        1.100203
+      ],
+      "parts": [
+        {
+          "name": "ACC_ServiceTowel",
+          "role": "held_prop",
+          "palette_name": "cafe_towel",
+          "base_color": [
+            0.445,
+            0.465,
+            0.42,
+            1.0
+          ],
+          "vertices": 8,
+          "triangles": 12
+        }
+      ],
+      "anchors": []
+    },
+    {
+      "id": "coffee_pot",
+      "prefab_name": "CoffeePot",
+      "display_name": "Coffee Pot",
+      "socket": "SOCKET_Grip.R",
+      "bone": "hand.R",
+      "reference_design": "cafe_attendant_v2",
+      "root": "PROP_CoffeePot",
+      "socket_head_m": [
+        -0.73776,
+        -0.01888,
+        1.033
+      ],
+      "mesh_count": 9,
+      "triangle_count": 260,
+      "bounds_min": [
+        -0.812994,
+        -0.234134,
+        0.930762
+      ],
+      "bounds_max": [
+        -0.617559,
+        0.041573,
+        1.126354
+      ],
+      "parts": [
+        {
+          "name": "ACC_CoffeePotBaseRing",
+          "role": "held_prop",
+          "palette_name": "cafe_pot_dark",
+          "base_color": [
+            0.085,
+            0.095,
+            0.095,
+            1.0
+          ],
+          "vertices": 24,
+          "triangles": 44
+        },
+        {
+          "name": "ACC_CoffeePotBody",
+          "role": "held_prop",
+          "palette_name": "cafe_pot",
+          "base_color": [
+            0.245,
+            0.275,
+            0.275,
+            1.0
+          ],
+          "vertices": 24,
+          "triangles": 44
+        },
+        {
+          "name": "ACC_CoffeePotHandleBottom",
+          "role": "held_prop",
+          "palette_name": "cafe_pot_dark",
+          "base_color": [
+            0.085,
+            0.095,
+            0.095,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        },
+        {
+          "name": "ACC_CoffeePotHandleGrip",
+          "role": "held_prop",
+          "palette_name": "cafe_pot_dark",
+          "base_color": [
+            0.085,
+            0.095,
+            0.095,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        },
+        {
+          "name": "ACC_CoffeePotHandleTop",
+          "role": "held_prop",
+          "palette_name": "cafe_pot_dark",
+          "base_color": [
+            0.085,
+            0.095,
+            0.095,
+            1.0
+          ],
+          "vertices": 12,
+          "triangles": 20
+        },
+        {
+          "name": "ACC_CoffeePotLid",
+          "role": "held_prop",
+          "palette_name": "cafe_pot_dark",
+          "base_color": [
+            0.085,
+            0.095,
+            0.095,
+            1.0
+          ],
+          "vertices": 20,
+          "triangles": 36
+        },
+        {
+          "name": "ACC_CoffeePotLidKnob",
+          "role": "held_prop",
+          "palette_name": "cafe_pot_dark",
+          "base_color": [
+            0.085,
+            0.095,
+            0.095,
+            1.0
+          ],
+          "vertices": 18,
+          "triangles": 32
+        },
+        {
+          "name": "ACC_CoffeePotSpout",
+          "role": "held_prop",
+          "palette_name": "cafe_pot",
+          "base_color": [
+            0.245,
+            0.275,
+            0.275,
+            1.0
+          ],
+          "vertices": 8,
+          "triangles": 12
+        },
+        {
+          "name": "ACC_CoffeePotSpoutLip",
+          "role": "held_prop",
+          "palette_name": "cafe_pot_dark",
+          "base_color": [
+            0.085,
+            0.095,
+            0.095,
+            1.0
+          ],
+          "vertices": 18,
+          "triangles": 32
+        }
+      ],
+      "anchors": [
+        {
+          "name": "SOCKET_CafePotSpout",
+          "kind": "farthest_from_part",
+          "part": "ACC_CoffeePotSpout",
+          "axis_from": "ACC_CoffeePotBody"
+        }
+      ]
+    }
+  ]
+}

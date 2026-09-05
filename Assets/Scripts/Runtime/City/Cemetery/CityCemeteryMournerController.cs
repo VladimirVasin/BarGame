@@ -37,23 +37,17 @@ namespace BarPromenade
         public const float MaximumStepSeconds = 0.1f;
         private const float TurnDegreesPerSecond = 220f;
 
-        /// <summary>The laid bouquet mirrors the authored offering
-        /// spot across the slab's axis, so a grave that already owns
-        /// flowers receives hers beside them, not through them.</summary>
-        private static readonly Vector3 LaidBouquetLocalOffset =
-            new Vector3(-0.22f, 0.17f, -0.45f);
-
-        private static readonly Color StemColor =
-            new Color(0.055f, 0.110f, 0.060f);
-        private static readonly Color WrapColor =
-            new Color(0.330f, 0.300f, 0.240f);
-        private static readonly Color[] BloomColors =
-        {
-            new Color(0.290f, 0.060f, 0.075f),
-            new Color(0.550f, 0.530f, 0.500f),
-            new Color(0.220f, 0.100f, 0.300f),
-            new Color(0.450f, 0.280f, 0.060f)
-        };
+        /// <summary>
+        /// Where on the slab the laid bouquet is centred, in the grave's
+        /// frame: it mirrors the authored offering spot across the slab's
+        /// axis, so a grave that already owns flowers receives hers beside
+        /// them, not through them. Planar only — the height is the slab
+        /// top the anchor carries, and the prop is rested on it by
+        /// <see cref="CemeteryLaidBouquet"/> rather than by a guessed
+        /// offset.
+        /// </summary>
+        public static readonly Vector3 LaidBouquetLocalOffset =
+            new Vector3(-0.22f, 0f, -0.45f);
 
         private CityLayout layout;
         private CityCemeteryPlan cemeteryPlan;
@@ -75,10 +69,18 @@ namespace BarPromenade
         private Vector3 standPoint;
         private Vector3 standFacing;
         private CemeteryGraveAnchor grave;
-        private GameObject laidBouquet;
+        private CityPedestrianHandPropRegistry laidBouquet;
 
         public bool HasActiveMourner => presentation != null;
         public CemeteryMournerPhase? ActivePhase => timeline?.Phase;
+
+        /// <summary>The bouquet lying on the grave during the current
+        /// visit, null before the lay cue and after the visit.</summary>
+        public CityPedestrianHandPropRegistry LaidBouquet => laidBouquet;
+
+        /// <summary>The grave of the current visit (meaningful only while
+        /// <see cref="HasActiveMourner"/>).</summary>
+        public CemeteryGraveAnchor ActiveGrave => grave;
 
         public static CityCemeteryMournerController Create(
             Transform parent,
@@ -289,7 +291,7 @@ namespace BarPromenade
                 RotateToward(standFacing, deltaTime);
                 if (timeline.ConsumeLayCue())
                 {
-                    presentation.HideHeldBouquet();
+                    presentation.ReleaseHeldBouquet();
                     laidBouquet = CreateLaidBouquet();
                 }
             }
@@ -377,90 +379,54 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The bouquet she leaves on the slab: a few shared-material
-        /// boxes in the palette of the visit, standing where the
-        /// cemetery's own authored offerings stand. It lives exactly
-        /// as long as her visit, so repeat visits never pile up props.
+        /// The bouquet she leaves on the slab: the same funeral-bouquet
+        /// hand prop she carried in, placed free-standing in the material
+        /// and palette of the visit where the cemetery's own authored
+        /// offerings stand. It lives exactly as long as her visit, so
+        /// repeat visits never pile up props.
         /// </summary>
-        private GameObject CreateLaidBouquet()
+        private CityPedestrianHandPropRegistry CreateLaidBouquet()
         {
-            var root = new GameObject("Cemetery Mourner Bouquet");
-            root.transform.SetParent(transform, false);
-            root.transform.SetPositionAndRotation(
-                grave.Ground + grave.Yaw * LaidBouquetLocalOffset,
-                grave.Yaw);
-
             Material material = null;
-            if (presentation != null &&
-                presentation.Registry.Renderers.Count > 0 &&
-                presentation.Registry.Renderers[0] != null)
+            int paletteVariant = 0;
+            if (presentation != null)
             {
-                material = presentation.Registry.Renderers[0]
-                    .sharedMaterial;
+                paletteVariant = presentation.Registry.PaletteVariant;
+                for (int index = 0;
+                     index < presentation.Registry.Renderers.Count &&
+                     material == null;
+                     index++)
+                {
+                    Renderer renderer =
+                        presentation.Registry.Renderers[index];
+                    if (renderer != null)
+                    {
+                        material = renderer.sharedMaterial;
+                    }
+                }
             }
 
-            Color bloom = BloomColors[
-                presentation != null
-                    ? presentation.Registry.PaletteVariant %
-                      BloomColors.Length
-                    : 0];
-            AddBouquetBox(
-                root.transform, material, StemColor,
-                new Vector3(0f, 0f, -0.02f),
-                new Vector3(0.05f, 0.05f, 0.24f));
-            AddBouquetBox(
-                root.transform, material, WrapColor,
-                new Vector3(0f, 0.005f, 0.02f),
-                new Vector3(0.09f, 0.06f, 0.11f));
-            AddBouquetBox(
-                root.transform, material, bloom,
-                new Vector3(0.015f, 0.02f, 0.10f),
-                new Vector3(0.12f, 0.08f, 0.11f));
-            AddBouquetBox(
-                root.transform, material, bloom,
-                new Vector3(-0.035f, 0.01f, 0.07f),
-                new Vector3(0.08f, 0.06f, 0.08f));
-            return root;
+            return CemeteryLaidBouquet.Place(
+                transform,
+                ComputeLaidBouquetSlabPoint(grave),
+                grave.Yaw,
+                material,
+                paletteVariant);
         }
 
-        private static void AddBouquetBox(
-            Transform parent,
-            Material material,
-            Color color,
-            Vector3 localPosition,
-            Vector3 localScale)
+        /// <summary>The world point on the slab top the laid bouquet is
+        /// centred on. Pure, so a test can pin it.</summary>
+        public static Vector3 ComputeLaidBouquetSlabPoint(
+            CemeteryGraveAnchor anchor)
         {
-            GameObject box = GameObject.CreatePrimitive(
-                PrimitiveType.Cube);
-            box.name = "Bouquet Part";
-            Collider collider = box.GetComponent<Collider>();
-            if (collider != null)
-            {
-                Destroy(collider);
-            }
-
-            box.transform.SetParent(parent, false);
-            box.transform.localPosition = localPosition;
-            box.transform.localScale = localScale;
-            var renderer = box.GetComponent<MeshRenderer>();
-            if (material != null)
-            {
-                renderer.sharedMaterial = material;
-            }
-
-            var properties = new MaterialPropertyBlock();
-            properties.SetColor("_BaseColor", color);
-            properties.SetColor("_Color", color);
-            renderer.SetPropertyBlock(properties);
+            Vector3 point = anchor.Ground + anchor.Yaw * LaidBouquetLocalOffset;
+            point.y = anchor.SlabTopY;
+            return point;
         }
 
         private void DestroyLaidBouquet()
         {
-            if (laidBouquet != null)
-            {
-                Destroy(laidBouquet);
-                laidBouquet = null;
-            }
+            CityPedestrianHandProps.Detach(ref laidBouquet);
         }
     }
 }

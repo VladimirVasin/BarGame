@@ -587,11 +587,11 @@
       ],
       "animated_local_xz_max_m": [
         0.74086,
-        0.436524
+        0.191792
       ],
       "animated_local_xz_size_m": [
         1.479505,
-        0.776373
+        0.53164
       ]
     },
     {
@@ -615,16 +615,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.928715,
+        -0.830904,
         -0.54043
       ],
       "animated_local_xz_max_m": [
         0.838588,
-        0.605403
+        0.486299
       ],
       "animated_local_xz_size_m": [
-        1.767303,
-        1.145833
+        1.669492,
+        1.026729
       ]
     },
     {
@@ -686,11 +686,11 @@
       ],
       "animated_local_xz_max_m": [
         0.543401,
-        1.060148
+        0.561294
       ],
       "animated_local_xz_size_m": [
         1.411406,
-        1.424844
+        0.925989
       ]
     },
     {
@@ -717,7 +717,7 @@
       "seated_contact_m": 0.066308,
       "seated_floor_drop_limit_m": 0.41,
       "animated_local_xz_min_m": [
-        -0.546155,
+        -0.538243,
         -0.385822
       ],
       "animated_local_xz_max_m": [
@@ -725,7 +725,7 @@
         0.469848
       ],
       "animated_local_xz_size_m": [
-        1.080381,
+        1.072469,
         0.85567
       ]
     },
@@ -821,11 +821,11 @@
       ],
       "animated_local_xz_max_m": [
         0.536803,
-        0.456194
+        0.40852
       ],
       "animated_local_xz_size_m": [
         1.390599,
-        1.025379
+        0.977704
       ]
     },
     {
@@ -849,7 +849,7 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.577997,
+        -0.569488,
         -0.501238
       ],
       "animated_local_xz_max_m": [
@@ -857,7 +857,7 @@
         0.351016
       ],
       "animated_local_xz_size_m": [
-        1.146744,
+        1.138234,
         0.852254
       ]
     },
@@ -882,16 +882,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.533699,
+        -0.754738,
         -0.335253
       ],
       "animated_local_xz_max_m": [
-        0.51399,
-        0.285893
+        0.756909,
+        0.179603
       ],
       "animated_local_xz_size_m": [
-        1.047689,
-        0.621145
+        1.511647,
+        0.514856
       ]
     },
     {
@@ -915,15 +915,15 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.871961,
+        -0.824567,
         -0.539799
       ],
       "animated_local_xz_max_m": [
-        0.828008,
+        0.832501,
         0.481452
       ],
       "animated_local_xz_size_m": [
-        1.699969,
+        1.657068,
         1.021251
       ]
     },
@@ -948,7 +948,7 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.564675,
+        -0.495608,
         -0.486837
       ],
       "animated_local_xz_max_m": [
@@ -956,7 +956,7 @@
         0.276175
       ],
       "animated_local_xz_size_m": [
-        1.061568,
+        0.992501,
         0.763012
       ]
     },
@@ -981,7 +981,7 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.676625,
+        -0.541491,
         -0.53343
       ],
       "animated_local_xz_max_m": [
@@ -989,7 +989,7 @@
         0.632706
       ],
       "animated_local_xz_size_m": [
-        1.218944,
+        1.083809,
         1.166135
       ]
     },
@@ -1182,16 +1182,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.754202,
+        -0.509711,
         -0.224139
       ],
       "animated_local_xz_max_m": [
         0.596176,
-        1.821095
+        0.324542
       ],
       "animated_local_xz_size_m": [
-        1.350377,
-        2.045235
+        1.105886,
+        0.548681
       ]
     },
     {
@@ -1215,16 +1215,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -2.254169,
+        -0.806817,
         -0.550093
       ],
       "animated_local_xz_max_m": [
         0.839128,
-        2.018479
+        0.475377
       ],
       "animated_local_xz_size_m": [
-        3.093297,
-        2.568571
+        1.645945,
+        1.02547
       ]
     },
     {
@@ -1248,16 +1248,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.577566,
+        -0.362795,
         -0.224916
       ],
       "animated_local_xz_max_m": [
         0.268114,
-        2.110863
+        0.73948
       ],
       "animated_local_xz_size_m": [
-        0.845681,
-        2.33578
+        0.630909,
+        0.964396
       ]
     },
     {
@@ -1281,16 +1281,16 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.604493,
+        -0.368968,
         -0.548359
       ],
       "animated_local_xz_max_m": [
         0.273379,
-        2.144359
+        0.751827
       ],
       "animated_local_xz_size_m": [
-        0.877872,
-        2.692717
+        0.642347,
+        1.300185
       ]
     },
     {
@@ -1861,5 +1861,5 @@
       ]
     }
   ],
-  "build_signature": "5ecc3e955b1ee723ecd377782cd5660d20b9f62d91070c030b09449d18fd58c3"
+  "build_signature": "73e6e62673cebf6f4e9a24e65f89393d8b9aa2fc3f3c9f0e161f546c6b096a5e"
 }

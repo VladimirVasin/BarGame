@@ -354,7 +354,11 @@ namespace BarPromenade.Editor
                 "BabushkaBeat",
                 4f,
                 1.5f,
-                1800,
+                // 1650 since 2026-09-05: the beater and the cigarette
+                // left the body for the hand-prop library, taking 144
+                // triangles with them (1836 -> 1692). Compared exactly
+                // against the generator's ArchetypeSpec.
+                1650,
                 2400,
                 isStaged: true,
                 ambientIdleClipName: "BabushkaStreetIdle",
@@ -403,7 +407,10 @@ namespace BarPromenade.Editor
                 "MournerWalk",
                 36.5f,
                 1.5f,
-                1800,
+                // 1600 since 2026-09-05: the bouquet is a hand prop now
+                // (1904 -> 1712 triangles on the body). Compared exactly
+                // against the generator's ArchetypeSpec.
+                1600,
                 2400,
                 isStaged: true,
                 ambientIdleClipName: "MournerStreetIdle",
@@ -439,9 +446,10 @@ namespace BarPromenade.Editor
             // fishing loop and the walk slot an oilskin trudge kept
             // for a later pass. Staged like the watchman — authored
             // with the shared art library, outside Resources and the
-            // runtime catalog. He is the only design that declares a
-            // fishing rig, which is what adds the two bind-pose
-            // anchors his pipe and his line hang from.
+            // runtime catalog. His rod and his pipe are hand props
+            // since 2026-09-05 (the rod tip and pipe ember anchors
+            // ride those prefabs, measured by the hand-prop build), so
+            // his body declares no rig of its own any more.
             new PedestrianDescriptor(
                 "Lake Fisherman",
                 "LakeFisherman3D",
@@ -453,14 +461,16 @@ namespace BarPromenade.Editor
                 "FishermanTrudge",
                 8f,
                 1.5f,
-                900,
+                // 800 since 2026-09-05: rod and pipe left the body
+                // (1052 -> 892 triangles). Compared exactly against the
+                // generator's ArchetypeSpec.
+                800,
                 2000,
                 isStaged: true,
                 ambientIdleClipName: "FishermanStreetIdle",
                 ambientWalkClipName: "FishermanStreetWalk",
                 ambientIdleDuration: 2f,
-                ambientWalkDuration: 1f,
-                carriesFishingRig: true),
+                ambientWalkDuration: 1f),
             // The park chess player: the idle slot carries the brooding
             // loop and the walk slot a park trudge kept for a later
             // pass. Staged like the fisherman — authored with the shared
@@ -685,6 +695,34 @@ namespace BarPromenade.Editor
         }
 
         /// <summary>
+        /// The imported body FBX of a design by its generator id, for the
+        /// hand-prop build, which measures each prop's socket-relative
+        /// pose against the REFERENCE body the geometry was authored on.
+        /// It asks the descriptors rather than keeping a second table: a
+        /// design renamed here and forgotten there would measure a prop
+        /// against nothing and throw, instead of against a stale path.
+        /// The cafe designs live in <see cref="MountainRoadCafeCastAssetSetup"/>
+        /// and are not answered here.
+        /// </summary>
+        public static bool TryGetModelPath(string designId, out string modelPath)
+        {
+            for (int index = 0; index < Descriptors.Length; index++)
+            {
+                if (string.Equals(
+                        designId,
+                        Descriptors[index].DesignId,
+                        StringComparison.Ordinal))
+                {
+                    modelPath = Descriptors[index].ModelPath;
+                    return true;
+                }
+            }
+
+            modelPath = null;
+            return false;
+        }
+
+        /// <summary>
         /// True for clips whose archetype deliberately leaves the pavement.
         /// Their vertical travel is authored on the pelvis, which this rig's
         /// Avatar treats as the motion node, so locking root height would
@@ -714,6 +752,11 @@ namespace BarPromenade.Editor
         /// </summary>
         public static bool IsOneShotClip(string normalizedClipName)
         {
+            if (CityPedestrianPersonalSpaceAssetSetup.IsPersonalSpaceClip(normalizedClipName))
+            {
+                return true;
+            }
+
             if (string.IsNullOrEmpty(normalizedClipName))
             {
                 return false;
@@ -2462,7 +2505,6 @@ namespace BarPromenade.Editor
                     "anchor binding.");
             }
 
-            ValidateFishingRigBindings(prefab, registry, descriptor);
             ValidateCoinRigBindings(prefab, registry, descriptor);
             ValidateKettleRigBindings(prefab, registry, descriptor);
             ValidateDetailAtlasBindings(registry, descriptor, manifest);
@@ -2606,7 +2648,6 @@ namespace BarPromenade.Editor
                     behaviour != null &&
                     !(behaviour is CityPedestrianAssetRegistry) &&
                     !(behaviour is CityWheelchairNpcAssetRegistry) &&
-                    !(behaviour is SeacoastFishermanRigAnchors) &&
                     !(behaviour is LastRouteFerrymanRigAnchors)))
             {
                 throw new InvalidOperationException(
@@ -3838,6 +3879,7 @@ namespace BarPromenade.Editor
                     action,
                     ambientIdle,
                     ambientWalk);
+                CityPedestrianPersonalSpaceAssetSetup.ConfigureRegistry(registry);
 
                 if (descriptor.HasDetailAtlas)
                 {
@@ -3873,44 +3915,6 @@ namespace BarPromenade.Editor
                         registry,
                         head,
                         renderersByName);
-                }
-
-                if (descriptor.CarriesFishingRig)
-                {
-                    // Measured once, here, in the bind pose, off the
-                    // imported meshes themselves. Both points are drawn
-                    // by rigidly skinned vertices and neither has a
-                    // Transform, so reconstructing them at runtime would
-                    // mean re-deriving the FBX axis conversion and this
-                    // prefab's own 180 degree model flip in gameplay
-                    // code — twice, and again whenever the art moves.
-                    Transform rightHand = RequireTransform(
-                        transformsByName,
-                        RightHandBoneName,
-                        "fisherman prefab");
-                    Renderer emberRenderer = RequireRenderer(
-                        renderersByName,
-                        SeacoastFishermanRigAnchors.PipeEmberRendererName);
-                    Renderer rodTipRenderer = RequireRenderer(
-                        renderersByName,
-                        SeacoastFishermanRigAnchors.RodTipRendererName);
-                    Transform emberAnchor = CreateBoneAnchor(
-                        head,
-                        SeacoastFishermanRigAnchors.PipeEmberAnchorName,
-                        BindPoseCenter(emberRenderer));
-                    Transform rodTipAnchor = CreateBoneAnchor(
-                        rightHand,
-                        SeacoastFishermanRigAnchors.RodTipAnchorName,
-                        BindPoseFarthestPoint(
-                            rodTipRenderer,
-                            rightHand.position));
-                    prefabRoot
-                        .AddComponent<SeacoastFishermanRigAnchors>()
-                        .Configure(
-                            registry,
-                            emberAnchor,
-                            rodTipAnchor,
-                            emberRenderer);
                 }
 
                 if (descriptor.CarriesCoinRig)
@@ -4512,76 +4516,6 @@ namespace BarPromenade.Editor
         }
 
         /// <summary>
-        /// A fishing design owes both bind-pose anchors, on the right
-        /// bones, and nobody else may carry the component: an anchor
-        /// parented to the wrong bone still resolves at runtime and then
-        /// leaves the ember hanging in the air beside his head.
-        /// </summary>
-        private static void ValidateFishingRigBindings(
-            GameObject prefab,
-            CityPedestrianAssetRegistry registry,
-            PedestrianDescriptor descriptor)
-        {
-            SeacoastFishermanRigAnchors anchors =
-                prefab.GetComponentInChildren<SeacoastFishermanRigAnchors>(true);
-            if (!descriptor.CarriesFishingRig)
-            {
-                if (anchors != null)
-                {
-                    throw new InvalidOperationException(
-                        $"'{descriptor.DisplayName}' declares no fishing " +
-                        "rig but its prefab carries anchor metadata.");
-                }
-
-                return;
-            }
-
-            if (anchors == null ||
-                anchors.PedestrianRegistry != registry ||
-                anchors.PipeEmberAnchor == null ||
-                anchors.RodTipAnchor == null ||
-                anchors.PipeEmberRenderer == null)
-            {
-                throw new InvalidOperationException(
-                    $"'{descriptor.DisplayName}' must bind its pipe and " +
-                    "rod anchors and its ember renderer.");
-            }
-
-            if (anchors.PipeEmberAnchor.parent == null ||
-                !string.Equals(
-                    anchors.PipeEmberAnchor.parent.name,
-                    "head",
-                    StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    "The pipe ember anchor must ride the head bone.");
-            }
-
-            if (anchors.RodTipAnchor.parent == null ||
-                !string.Equals(
-                    anchors.RodTipAnchor.parent.name,
-                    RightHandBoneName,
-                    StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    "The rod tip anchor must ride the right hand bone.");
-            }
-
-            // The rod is a two-metre stick on a 1.75 m envelope, so an
-            // anchor that landed on the grip instead of the point would
-            // still look plausible in the inspector. This does not.
-            float reach = Vector3.Distance(
-                anchors.RodTipAnchor.position,
-                anchors.RodTipAnchor.parent.position);
-            if (reach < 1.4f)
-            {
-                throw new InvalidOperationException(
-                    $"The rod tip anchor sits {reach:0.###} m from the " +
-                    "hand; it must be at the point of the rod.");
-            }
-        }
-
-        /// <summary>
         /// A kettle design owes its lid pivot and spout anchor on the
         /// head, with the lid and knob re-bound to the pivot and nobody
         /// else, and nobody else may carry the component. The pivot's
@@ -5034,7 +4968,7 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static Color BuildPaletteVariant(
+        internal static Color BuildPaletteVariant(
             string paletteName,
             Color baseColor,
             int variant)
@@ -5089,7 +5023,7 @@ namespace BarPromenade.Editor
                 baseColor.a);
         }
 
-        private static bool IsVariantPalette(string paletteName)
+        internal static bool IsVariantPalette(string paletteName)
         {
             return !string.Equals(
                        paletteName,
@@ -5108,7 +5042,7 @@ namespace BarPromenade.Editor
                        StringComparison.Ordinal);
         }
 
-        private static Color ParseColor(float[] components)
+        internal static Color ParseColor(float[] components)
         {
             return new Color(
                 components[0],
@@ -5280,7 +5214,7 @@ namespace BarPromenade.Editor
                 : sourceName;
         }
 
-        private static void EnsureFolderForAsset(string assetPath)
+        internal static void EnsureFolderForAsset(string assetPath)
         {
             string directory = Path.GetDirectoryName(assetPath)
                 ?.Replace('\\', '/');
@@ -5425,7 +5359,6 @@ namespace BarPromenade.Editor
                 float sitDuration = 0f,
                 bool isStaged = false,
                 bool isWheelchair = false,
-                bool carriesFishingRig = false,
                 string actionClipName = null,
                 float actionDuration = 0f,
                 bool carriesCoinRig = false,
@@ -5448,7 +5381,6 @@ namespace BarPromenade.Editor
                 DismountDuration = dismountDuration;
                 IsStaged = isStaged;
                 IsWheelchair = isWheelchair;
-                CarriesFishingRig = carriesFishingRig;
                 CarriesCoinRig = carriesCoinRig;
                 SitClipName = sitClipName;
                 SitDuration = sitDuration;
@@ -5560,15 +5492,6 @@ namespace BarPromenade.Editor
             /// by an authored wheelchair design.
             /// </summary>
             public bool IsWheelchair { get; }
-
-            /// <summary>
-            /// Declares the two bind-pose anchors a fishing design needs:
-            /// the top of the pipe bowl on the head bone and the far end
-            /// of the rod on the right hand. Both are drawn by rigidly
-            /// skinned vertices, so neither has a Transform of its own
-            /// for the runtime to hang an ember or a line from.
-            /// </summary>
-            public bool CarriesFishingRig { get; }
 
             /// <summary>
             /// Declares the two bind-pose anchors the Ferryman needs:

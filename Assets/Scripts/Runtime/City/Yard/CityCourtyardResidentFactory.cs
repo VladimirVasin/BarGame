@@ -78,13 +78,16 @@ namespace BarPromenade
                         $"Courtyard Resident {index + 1:00} " +
                         $"({descriptor.Activity})";
                     ValidatePassivePresentation(registry.gameObject);
-                    ApplyCourtyardProps(registry);
                     var presentation = registry.gameObject.AddComponent<
                         CityCourtyardResidentPresentation>();
                     presentation.Initialize(
                         registry,
                         archetype,
                         descriptor);
+                    // After Initialize: that is where the descriptor's
+                    // palette lands on the body, and the prop copies the
+                    // variant the body wears at the moment of attach.
+                    ApplyCourtyardProps(registry);
                     presentations.Add(presentation);
                 }
 
@@ -104,22 +107,15 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The one prop a courtyard body must put down.
+        /// The one prop a courtyard body picks up.
         ///
-        /// The babushka's prefab ships both of her hand props enabled so the
-        /// drying yard can pick one per role, and the street strips both. Here
-        /// she keeps the CIGARETTE - it is half of what `BabushkaSmoke` is
-        /// about - and loses the carpet beater, which belongs to a hung carpet
-        /// and would read as a woman about to hit a bicycle with it.
+        /// A body ships empty-handed and a role attaches what it holds. The
+        /// babushka keeps the CIGARETTE - it is half of what `BabushkaSmoke`
+        /// is about - and gets no carpet beater, which belongs to a hung
+        /// carpet and would read as a woman about to hit a bicycle with it.
+        /// The prop follows the palette the resident already wears, so a
+        /// tinted hand and its cigarette agree.
         /// </summary>
-        private static readonly string[] BabushkaCourtyardHidden =
-        {
-            "ACC_BeaterHandle",
-            "ACC_BeaterNeck",
-            "ACC_BeaterPaddleRise",
-            "ACC_BeaterPaddleTip"
-        };
-
         private static void ApplyCourtyardProps(
             CityPedestrianAssetRegistry registry)
         {
@@ -129,9 +125,10 @@ namespace BarPromenade
                     CityPedestrianResources.BabushkaDesignId,
                     StringComparison.Ordinal))
             {
-                CityPedestrianHeldProps.Hide(
+                CityPedestrianHandProps.Attach(
                     registry,
-                    BabushkaCourtyardHidden);
+                    CityPedestrianHandPropId.Cigarette,
+                    registry.PaletteVariant);
             }
         }
 

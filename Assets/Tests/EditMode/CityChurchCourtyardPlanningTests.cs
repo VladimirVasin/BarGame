@@ -117,8 +117,9 @@ namespace BarPromenade.Tests.EditMode
                     seats[index].SeatTopCenter.y,
                     Is.EqualTo(first.GroundTopY + 0.49f)
                         .Within(Tolerance));
-                Assert.That(seats[index].FaceDirection, Is.EqualTo(
-                    Vector3.back));
+                Assert.That(Vector3.Distance(seats[index].FaceDirection,
+                    index == 0 ? Vector3.back : Vector3.left),
+                    Is.LessThan(Tolerance));
             }
 
             CityOpenAreaDecorationPlan openArea =

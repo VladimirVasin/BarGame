@@ -1,0 +1,448 @@
+{
+  "generator": "tools/build-city-pedestrian-3d-model.py",
+  "generator_version": "4.5.2",
+  "blender_version": "5.0.1",
+  "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
+  "anatomy_standard": "NpcHumanV2",
+  "rest_pelvis_height_m": 0.835,
+  "bone_count": 31,
+  "fps": 24,
+  "root_motion": false,
+  "mesh_count": 0,
+  "clip_count": 12,
+  "clips": [
+    {
+      "name": "yard_babushka_v1_PersonalSpaceGuard",
+      "archetype": "yard_babushka_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "quiet palm-held boundary",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.49,
+        1.358577
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "yard_babushka_v1_PersonalSpaceShove",
+      "archetype": "yard_babushka_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "brief shoulder-assisted push",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.62,
+        1.316822
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "weigh_attendant_v1_PersonalSpaceGuard",
+      "archetype": "weigh_attendant_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "quiet palm-held boundary",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.49,
+        1.34837
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "weigh_attendant_v1_PersonalSpaceShove",
+      "archetype": "weigh_attendant_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "brief shoulder-assisted push",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.62,
+        1.310118
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "cemetery_watchman_v1_PersonalSpaceGuard",
+      "archetype": "cemetery_watchman_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "quiet palm-held boundary",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.49,
+        1.351156
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "cemetery_watchman_v1_PersonalSpaceShove",
+      "archetype": "cemetery_watchman_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "brief shoulder-assisted push",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.62,
+        1.312462
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "park_chess_player_v1_PersonalSpaceGuard",
+      "archetype": "park_chess_player_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "quiet palm-held boundary",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.49,
+        1.33806
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "park_chess_player_v1_PersonalSpaceShove",
+      "archetype": "park_chess_player_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "brief shoulder-assisted push",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.62,
+        1.259681
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "park_checkers_player_v1_PersonalSpaceGuard",
+      "archetype": "park_checkers_player_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "quiet palm-held boundary",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.49,
+        1.33806
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "park_checkers_player_v1_PersonalSpaceShove",
+      "archetype": "park_checkers_player_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "brief shoulder-assisted push",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.62,
+        1.259681
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "cemetery_mourner_v1_PersonalSpaceGuard",
+      "archetype": "cemetery_mourner_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "quiet palm-held boundary",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.49,
+        1.354454
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    },
+    {
+      "name": "cemetery_mourner_v1_PersonalSpaceShove",
+      "archetype": "cemetery_mourner_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "grounded standing personal-distance response, free left palm",
+      "gait": "brief shoulder-assisted push",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "contact",
+          "normalized_time": 0.333333
+        }
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "contact_seconds": 0.3333333333333333,
+      "contact_frame": 8,
+      "contact_palm_blender_m": [
+        0.13,
+        -0.62,
+        1.308218
+      ],
+      "contact_forward_palm_dot": 1.0,
+      "contact_upright_fingers_dot": 1.0
+    }
+  ],
+  "build_signature": "ffb7c296a61248ff34b40f221fcc4537eff6ac9c8da47f8c43aa7e248ab22664"
+}

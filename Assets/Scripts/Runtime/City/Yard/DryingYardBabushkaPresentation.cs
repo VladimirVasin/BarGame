@@ -13,8 +13,9 @@ namespace BarPromenade
     /// carpet's reaction: around the authored strike moment the hung
     /// cloth receives a short acceleration pulse away from her. The
     /// smoker walks her corridor back and forth, turning at the ends,
-    /// while her loop keeps gesturing. The staged prefab ships both
-    /// hand props; this enables only the one her role holds.
+    /// while her loop keeps gesturing. The body ships empty-handed;
+    /// this attaches the one hand prop her role holds (the beater or
+    /// the cigarette) through <see cref="CityPedestrianHandProps"/>.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class DryingYardBabushkaPresentation : MonoBehaviour
@@ -36,19 +37,7 @@ namespace BarPromenade
 
         private const float TurnDegreesPerSecond = 220f;
 
-        private static readonly string[] BeaterRendererNames =
-        {
-            "ACC_BeaterHandle",
-            "ACC_BeaterNeck",
-            "ACC_BeaterPaddleRise",
-            "ACC_BeaterPaddleTip"
-        };
-
-        private static readonly string[] CigaretteRendererNames =
-        {
-            "ACC_Cigarette",
-            "ACC_CigaretteEmber"
-        };
+        private CityPedestrianHandPropRegistry heldProp;
 
         private PlayableGraph graph;
         private AnimationClipPlayable playable;
@@ -73,6 +62,11 @@ namespace BarPromenade
         public Cloth Carpet => carpet;
         public bool Strolls => strolls;
         public int StrikeCount { get; private set; }
+
+        /// <summary>The one hand prop this role holds: the carpet beater
+        /// for a beater, the cigarette for the smoker. Null before
+        /// <see cref="Initialize"/> and after release.</summary>
+        public CityPedestrianHandPropRegistry HeldProp => heldProp;
 
         /// <summary>
         /// Raised at the authored frame where the beater actually meets the
@@ -113,7 +107,7 @@ namespace BarPromenade
             ActiveClip = clip;
             playbackSpeed = Mathf.Max(0.05f, stance.PlaybackSpeed);
             registry.ApplyPaletteVariant(stance.PaletteVariant);
-            ApplyPropVisibility(registry, stance.Role);
+            AttachHeldProp(registry, stance.Role);
 
             if (stance.Role == DryingYardBabushkaRole.CarpetBeater)
             {
@@ -213,6 +207,11 @@ namespace BarPromenade
             }
 
             hasGraph = false;
+
+            // The prop is a child of her hand socket and dies with the
+            // body anyway; detaching here keeps the reference honest for
+            // anything still holding this presentation.
+            CityPedestrianHandProps.Detach(ref heldProp);
         }
 
         /// <summary>Fires the carpet pulse when the loop crosses the
@@ -278,38 +277,23 @@ namespace BarPromenade
                 TurnDegreesPerSecond * deltaTime);
         }
 
-        /// <summary>Shows exactly the prop this role holds: the two
-        /// beaters carry no cigarette and the smoker no beater.</summary>
-        private static void ApplyPropVisibility(
+        /// <summary>
+        /// Attaches exactly the prop this role holds: the two beaters get
+        /// the carpet beater and the smoker her cigarette. Attached AFTER
+        /// the palette is applied so the prop copies the variant the body
+        /// already wears, and replaced rather than stacked if Initialize
+        /// is ever run twice on one body.
+        /// </summary>
+        private void AttachHeldProp(
             CityPedestrianAssetRegistry registry,
             DryingYardBabushkaRole role)
         {
-            string[] hidden =
+            CityPedestrianHandProps.Detach(ref heldProp);
+            heldProp = CityPedestrianHandProps.Attach(
+                registry,
                 role == DryingYardBabushkaRole.CarpetBeater
-                    ? CigaretteRendererNames
-                    : BeaterRendererNames;
-            for (int index = 0;
-                 index < registry.Renderers.Count;
-                 index++)
-            {
-                Renderer renderer = registry.Renderers[index];
-                if (renderer == null)
-                {
-                    continue;
-                }
-
-                for (int name = 0; name < hidden.Length; name++)
-                {
-                    if (string.Equals(
-                            renderer.name,
-                            hidden[name],
-                            StringComparison.Ordinal))
-                    {
-                        renderer.enabled = false;
-                        break;
-                    }
-                }
-            }
+                    ? CityPedestrianHandPropId.CarpetBeater
+                    : CityPedestrianHandPropId.Cigarette);
         }
     }
 }

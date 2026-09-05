@@ -1,0 +1,271 @@
+{
+  "generator": "tools/build-church-garden-3d-model.py",
+  "generator_version": "1.1.0",
+  "design_id": "church_garden_v1",
+  "build_signature": "8ac90bf25caa80581cf3a4afce3376852d3d464facf23c274be4160523086d31",
+  "triangle_count": 12492,
+  "coordinate_contract": "Unity x,y,z = Blender x,z,y; fixed metre bare meshes",
+  "textures": [
+    {
+      "path": "Assets/ChurchGarden/Textures/GardenFoliageAlbedo.png",
+      "sha256": "8b9d1ba904231041f8b08a9c4aea0498426f27eace145002b8f0b6d030057068"
+    },
+    {
+      "path": "Assets/ChurchGarden/Textures/GardenStoneAlbedo.png",
+      "sha256": "c46115a3ea3f4baeaf6698620d2efe3f4a376b60b060fd1f48f923cc1a1ebc09"
+    },
+    {
+      "path": "Assets/ChurchGarden/Textures/GardenTerracottaAlbedo.png",
+      "sha256": "7ca169380d5d4a3fcf262d80ffeca93f4d4b0e352ec61301ff12b5291d84941e"
+    }
+  ],
+  "pieces": [
+    {
+      "kind": "FountainStone",
+      "mesh": "GEO_FountainStone",
+      "material_role": "Stone",
+      "material_roles": [
+        "Stone"
+      ],
+      "geometry_signature": "f9e0262a925e8df9198598e0e9b431915903d9e472d21a17b400e77f3a0e2991",
+      "bounds_min": [
+        -0.8,
+        0.0,
+        -0.8
+      ],
+      "bounds_max": [
+        0.8,
+        0.73,
+        0.8
+      ],
+      "triangle_count": 1652
+    },
+    {
+      "kind": "FountainWater",
+      "mesh": "GEO_FountainWater",
+      "material_role": "Water",
+      "material_roles": [
+        "Water"
+      ],
+      "geometry_signature": "2f003064450d982196d9204f4c02526b6f8db50198f0acbdb9dec3a1487a5083",
+      "bounds_min": [
+        -0.684,
+        0.447,
+        -0.684
+      ],
+      "bounds_max": [
+        0.684,
+        0.459,
+        0.684
+      ],
+      "triangle_count": 476
+    },
+    {
+      "kind": "FountainStream",
+      "mesh": "GEO_FountainStream",
+      "material_role": "Stream",
+      "material_roles": [
+        "Stream"
+      ],
+      "geometry_signature": "d5f013abe04281ff537418900237b7aa68e04b78e50d8f322738795d17b202d8",
+      "bounds_min": [
+        -0.0998,
+        0.457941,
+        0.134144
+      ],
+      "bounds_max": [
+        0.0998,
+        0.70069,
+        0.4268
+      ],
+      "triangle_count": 1004
+    },
+    {
+      "kind": "MaryStatue",
+      "mesh": "GEO_MaryStatue",
+      "material_role": "Statue",
+      "material_roles": [
+        "Statue"
+      ],
+      "geometry_signature": "cd44064be44f3629f7d56bebbd3331348f564d0cbca78d1bab8b8ba16e58a541",
+      "bounds_min": [
+        -0.29,
+        0.0,
+        -0.255
+      ],
+      "bounds_max": [
+        0.29,
+        1.65,
+        0.255
+      ],
+      "triangle_count": 4636
+    },
+    {
+      "kind": "PotSmall",
+      "mesh": "GEO_PotSmall",
+      "material_role": "Terracotta",
+      "material_roles": [
+        "Terracotta"
+      ],
+      "geometry_signature": "2f9eafacdfda66c1bdeae80eae17b929500953d978a30eb4388be54b9f403346",
+      "bounds_min": [
+        -0.12,
+        0.0,
+        -0.12
+      ],
+      "bounds_max": [
+        0.12,
+        0.23,
+        0.12
+      ],
+      "triangle_count": 668
+    },
+    {
+      "kind": "PotMedium",
+      "mesh": "GEO_PotMedium",
+      "material_role": "Terracotta",
+      "material_roles": [
+        "Terracotta"
+      ],
+      "geometry_signature": "0b7b07ba7e245512c16e73384da0f4479eed7b74bbd0f37513ac60eba0ab754b",
+      "bounds_min": [
+        -0.17,
+        0.0,
+        -0.17
+      ],
+      "bounds_max": [
+        0.17,
+        0.32,
+        0.17
+      ],
+      "triangle_count": 668
+    },
+    {
+      "kind": "PotLarge",
+      "mesh": "GEO_PotLarge",
+      "material_role": "Terracotta",
+      "material_roles": [
+        "Terracotta"
+      ],
+      "geometry_signature": "4d3cc3655b72300decc0643adb9f628c665676d59f8202ab73c7d386a5bbb631",
+      "bounds_min": [
+        -0.24,
+        0.0,
+        -0.24
+      ],
+      "bounds_max": [
+        0.24,
+        0.44,
+        0.24
+      ],
+      "triangle_count": 668
+    },
+    {
+      "kind": "StonePottingLedge",
+      "mesh": "GEO_StonePottingLedge",
+      "material_role": "Stone",
+      "material_roles": [
+        "Stone"
+      ],
+      "geometry_signature": "0d3f2e1a182680751419d046e84567ef2c1859ccee34b878fcfc84929a979dde",
+      "bounds_min": [
+        -0.575,
+        0.0,
+        -0.26
+      ],
+      "bounds_max": [
+        0.575,
+        0.65,
+        0.26
+      ],
+      "triangle_count": 420
+    },
+    {
+      "kind": "HedgeSegment",
+      "mesh": "GEO_HedgeSegment",
+      "material_role": "Foliage",
+      "material_roles": [
+        "Foliage"
+      ],
+      "geometry_signature": "d41ebfd79fd46fc8356d69a0655173d87702eecb3534c329b2b7a58542f47b7d",
+      "bounds_min": [
+        -1.0,
+        0.0,
+        -0.425
+      ],
+      "bounds_max": [
+        1.0,
+        0.8,
+        0.425
+      ],
+      "triangle_count": 1388
+    },
+    {
+      "kind": "GardenUplight",
+      "mesh": "GEO_GardenUplight",
+      "material_role": "Metal",
+      "material_roles": [
+        "Metal",
+        "Lens"
+      ],
+      "geometry_signature": "ffae1b58cbd4241903cb236f29f02d6a5d6aca4a656571400ad76c3aaccb6a66",
+      "bounds_min": [
+        -0.09,
+        0.0,
+        -0.071511
+      ],
+      "bounds_max": [
+        0.09,
+        0.208813,
+        0.114955
+      ],
+      "triangle_count": 912
+    }
+  ],
+  "pot_medium": {
+    "outer_radius_m": 0.17,
+    "height_m": 0.32,
+    "rim_inner_radius_m": 0.1394,
+    "empty": true
+  },
+  "fountain": {
+    "water_height_m": 0.459,
+    "stream_outlet": [
+      0,
+      0.686,
+      0.137
+    ],
+    "stream_landing": [
+      0,
+      0.463,
+      0.327
+    ]
+  },
+  "statue": {
+    "figure_height_m": 1.23,
+    "pedestal_height_m": 0.42,
+    "faces": "+Z",
+    "identity": "veiled Virgin Mary with folded prayer hands; passive stone"
+  },
+  "hedge": {
+    "length_m": 2.0,
+    "depth_m": 0.85,
+    "height_m": 0.8,
+    "suggested_continuous_pitch_m": 1.8
+  },
+  "uplight": {
+    "lens_position": [
+      0.0,
+      0.13009021,
+      0.05440439
+    ],
+    "lens_direction": [
+      0.0,
+      0.57357645,
+      0.81915206
+    ],
+    "lens_material_index": 1,
+    "elevation_degrees": 35,
+    "imports_light": false
+  }
+}

@@ -72,6 +72,12 @@ namespace BarPromenade
         private readonly Player3DProceduralLocomotionLayer legLayer =
             new Player3DProceduralLocomotionLayer();
         private bool legLayerBound;
+        // The Silent Hill head, mirrored: the same additive neck-and-head
+        // turn the hero makes toward a passer-by, made by the passer-by
+        // toward him. The layer is shared with every staged NPC that
+        // looks back at the hero (the cemetery watchman first).
+        private readonly NpcAttentionHeadLayer attention =
+            new NpcAttentionHeadLayer();
 
         public bool IsInitialized { get; private set; }
         public bool IsMoving { get; private set; }
@@ -85,6 +91,16 @@ namespace BarPromenade
         /// <summary>The seat this walker is aligned to, or <c>null</c> on
         /// the pavement.</summary>
         public Transform SeatAnchor => seatAnchor;
+
+        /// <summary>Where the head is asked to look, or <c>null</c> for
+        /// nothing; the last value handed to <see cref="SetAttentionFocus"/>.</summary>
+        public Vector3? AttentionFocus => attention.Focus;
+
+        /// <summary>How far the glance is blended in, 0..1.</summary>
+        public float AttentionWeight => attention.Weight;
+
+        /// <summary>Whether this rig has a head bone the glance can turn.</summary>
+        public bool HasAttentionHead => attention.HasHead;
 
         /// <summary>The sanitised delta the graph was last evaluated with -
         /// already accelerated for a distant walker.</summary>
@@ -148,7 +164,33 @@ namespace BarPromenade
             IsInitialized = true;
             ConfigureCycle(animationSpeed, 0f);
             BindLegLayer();
+            BindAttentionBones();
             SetMoving(false);
+        }
+
+        /// <summary>
+        /// Where this walker's head should look, in world space, or
+        /// <c>null</c> for nothing. Set before each <see cref="Advance(float,
+        /// bool, bool)"/> by whoever decides what the walker notices - the
+        /// actor, for the hero - and applied after the graph has written the
+        /// bones. The presentation owns all smoothing and limits, exactly as
+        /// the hero's does.
+        /// </summary>
+        public void SetAttentionFocus(Vector3? focus)
+        {
+            attention.SetFocus(focus);
+        }
+
+        /// <summary>
+        /// Drops the glance at once: focus, blend and the bones it moved.
+        /// A body going back to the pool calls this explicitly - it cannot
+        /// wait for <c>OnDisable</c>, which edit mode never raises - so no
+        /// spawn inherits the last hero its predecessor was looking at.
+        /// </summary>
+        public void ClearAttention()
+        {
+            attention.Restore();
+            attention.Clear();
         }
 
         public void ConfigureCycle(
@@ -346,6 +388,7 @@ namespace BarPromenade
             }
 
             EvaluateGraph(safeDeltaTime);
+            attention.Apply(safeDeltaTime);
             LastAdvanceDeltaTime = safeDeltaTime;
             Advanced?.Invoke(safeDeltaTime);
         }
@@ -378,6 +421,7 @@ namespace BarPromenade
             archetypeGroundTrimResolved = false;
             legLayer.Dispose();
             legLayerBound = false;
+            attention.Unbind();
             registry = null;
             Advanced = null;
         }
@@ -487,6 +531,7 @@ namespace BarPromenade
 
             RestoreModelBasePosition();
             legLayer.Restore();
+            attention.Restore();
             graph.Evaluate(deltaTime);
             if (IsSeated)
             {
@@ -608,6 +653,7 @@ namespace BarPromenade
             }
 
             legLayer.Restore();
+            ClearAttention();
             RestoreModelBasePosition();
         }
 
@@ -684,6 +730,22 @@ namespace BarPromenade
             {
                 legLayer.Dispose();
             }
+        }
+
+        /// <summary>
+        /// The head anchor every pedestrian registry carries and the neck
+        /// above the chest, by the name every humanoid rig in the project
+        /// shares. A rig without a head keeps its head still; one without a
+        /// neck turns the head alone. The glance is measured against this
+        /// presentation's own facing, which the actor keeps aligned with
+        /// its root.
+        /// </summary>
+        private void BindAttentionBones()
+        {
+            attention.Bind(
+                transform,
+                registry != null ? registry.HeadAnchor : null,
+                registry != null ? registry.Animator : null);
         }
 
         private void ApplyLegLayer(float deltaTime)

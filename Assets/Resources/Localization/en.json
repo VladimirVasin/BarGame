@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "key": "interaction.inspect_garden_pot",
+      "value": "Pick up pot"
+    },
+    {
+      "key": "interaction.place_garden_pot_left",
+      "value": "Place on left · A/D — choose spot"
+    },
+    {
+      "key": "interaction.place_garden_pot_right",
+      "value": "Place on right · A/D — choose spot"
+    },
+    {
       "key": "opening.title",
       "value": "BAR PROMENADE"
     },

@@ -337,6 +337,297 @@ namespace BarPromenade.Tests.EditMode
                 "Two blocks away is not near the cemetery.");
         }
 
+        /// <summary>
+        /// The pure half of laying the bouquet: a prop standing upright
+        /// (stems at the root, bloom 0.4 m above) is rotated so its axis
+        /// lies along grave-local +Z, and the offset then centres the
+        /// rotated box on the slab point with its bottom exactly on the
+        /// slab. Every number here is chosen so the expected pose is
+        /// known by hand.
+        /// </summary>
+        [Test]
+        public void LaidBouquet_PureMathLaysTheAxisAlongPlusZOnTheSlab()
+        {
+            var stems = new Vector3(0f, 0.05f, 0f);
+            var bloom = new Vector3(0f, 0.45f, 0f);
+            var boundsMin = new Vector3(-0.06f, -0.02f, -0.06f);
+            var boundsMax = new Vector3(0.06f, 0.50f, 0.06f);
+
+            CemeteryLaidBouquet.ComputeLaidPose(
+                stems,
+                bloom,
+                boundsMin,
+                boundsMax,
+                out Quaternion rotation,
+                out Vector3 offset);
+
+            Vector3 laidAxis = rotation * (bloom - stems).normalized;
+            Assert.That(
+                Vector3.Dot(laidAxis, Vector3.forward),
+                Is.GreaterThan(0.9999f),
+                "The stems-to-bloom axis must lie along grave-local +Z.");
+
+            CemeteryLaidBouquet.RotateBounds(
+                rotation,
+                boundsMin,
+                boundsMax,
+                out Vector3 laidMin,
+                out Vector3 laidMax);
+            // The upright 0.52 m box lies down: 0.52 m long along Z,
+            // 0.12 m wide and tall.
+            Assert.That(laidMax.z - laidMin.z, Is.EqualTo(0.52f).Within(0.0001f));
+            Assert.That(laidMax.y - laidMin.y, Is.EqualTo(0.12f).Within(0.0001f));
+            Assert.That(laidMax.x - laidMin.x, Is.EqualTo(0.12f).Within(0.0001f));
+
+            // Shifted by the offset, the box bottom is at y = 0 and its
+            // XZ centre at the origin: the slab point.
+            Assert.That(laidMin.y + offset.y, Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(
+                0.5f * (laidMin.x + laidMax.x) + offset.x,
+                Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(
+                0.5f * (laidMin.z + laidMax.z) + offset.z,
+                Is.EqualTo(0f).Within(0.0001f));
+
+            // Degenerate axis: identity, never NaN.
+            Assert.That(
+                CemeteryLaidBouquet.ComputeLaidRotation(stems, stems),
+                Is.EqualTo(Quaternion.identity));
+        }
+
+        /// <summary>
+        /// The bouquet actually placed on a real grave of the default
+        /// cemetery: the SAME funeral-bouquet hand prop she carried,
+        /// resting on the slab top (not floating over the thin slabs,
+        /// not sunk into the thick one), inside the slab's footprint,
+        /// with its stems-to-bloom axis pointing at the stone. Measured
+        /// in world space under a rotated, offset parent so the frame
+        /// conversions are exercised, not assumed.
+        /// </summary>
+        [Test]
+        public void LaidBouquet_RestsOnTheSlabInsideTheGraveFootprint()
+        {
+            (CityLayout _, CityCemeteryPlan plan) = GenerateCemetery();
+            List<CemeteryGraveAnchor> candidates =
+                CemeteryMournerPlan.CollectCandidateGraves(plan);
+            Assert.That(candidates, Is.Not.Empty);
+            Assert.That(
+                CityPedestrianHandProps.IsAvailable(
+                    CityPedestrianHandPropId.FuneralBouquet),
+                Is.True,
+                "The funeral bouquet hand prop prefab is missing.");
+
+            var parentObject = new GameObject("Laid Bouquet Test");
+            parentObject.transform.SetPositionAndRotation(
+                new Vector3(3.5f, -1.25f, -7f),
+                Quaternion.Euler(0f, 37f, 0f));
+            try
+            {
+                // Three graves, so more than one slab thickness and yaw
+                // is covered when the default cemetery offers them.
+                int graveCount = Mathf.Min(3, candidates.Count);
+                for (int index = 0; index < graveCount; index++)
+                {
+                    CemeteryGraveAnchor anchor = candidates[index];
+                    CityCemeteryPartDescriptor slab = FindSlab(plan, anchor);
+                    Assert.That(
+                        anchor.SlabTopY,
+                        Is.EqualTo(slab.Center.y + slab.Size.y * 0.5f)
+                            .Within(0.0001f),
+                        "SlabTopY must be the slab's real top face.");
+                    Assert.That(
+                        anchor.SlabTopY - plan.GroundTopY,
+                        Is.InRange(0.05f, 0.20f),
+                        "Every grave variant stands a 0.08-0.16 m slab.");
+
+                    Vector3 slabPoint =
+                        CityCemeteryMournerController.ComputeLaidBouquetSlabPoint(
+                            anchor);
+                    Assert.That(
+                        slabPoint.y,
+                        Is.EqualTo(anchor.SlabTopY).Within(0.0001f));
+
+                    CityPedestrianHandPropRegistry bouquet =
+                        CemeteryLaidBouquet.Place(
+                            parentObject.transform,
+                            slabPoint,
+                            anchor.Yaw,
+                            null,
+                            index % 4);
+                    try
+                    {
+                        Assert.That(bouquet, Is.Not.Null);
+                        Assert.That(
+                            bouquet.Id,
+                            Is.EqualTo(CityPedestrianHandPropId.FuneralBouquet));
+                        Assert.That(
+                            bouquet.name,
+                            Is.EqualTo(CemeteryLaidBouquet.RuntimeObjectName));
+                        Assert.That(
+                            bouquet.transform.parent,
+                            Is.SameAs(parentObject.transform));
+                        Assert.That(
+                            bouquet.PaletteVariant,
+                            Is.EqualTo(index % 4));
+
+                        MeasureWorldBounds(
+                            bouquet,
+                            out Vector3 min,
+                            out Vector3 max);
+
+                        // Resting on the slab: the lowest point on the top
+                        // face within a centimetre, the whole thing lower
+                        // than a hand's breadth above it.
+                        Assert.That(
+                            min.y,
+                            Is.GreaterThanOrEqualTo(anchor.SlabTopY - 0.01f),
+                            $"Grave {anchor.Ordinal}: the bouquet sinks " +
+                            $"{anchor.SlabTopY - min.y:F3} m into the slab.");
+                        // The helper rests the AABB of the rotated AABB,
+                        // which is conservative: the true lowest point
+                        // may hover by the box inflation, never sink.
+                        Assert.That(
+                            min.y,
+                            Is.LessThanOrEqualTo(anchor.SlabTopY + 0.06f),
+                            $"Grave {anchor.Ordinal}: the bouquet floats " +
+                            $"{min.y - anchor.SlabTopY:F3} m over the slab.");
+                        Assert.That(
+                            max.y,
+                            Is.LessThanOrEqualTo(anchor.SlabTopY + 0.20f),
+                            $"Grave {anchor.Ordinal}: the bouquet stands " +
+                            $"{max.y - anchor.SlabTopY:F3} m tall.");
+
+                        // Inside the slab's footprint, judged in the
+                        // grave's own frame (+Z toward the stone).
+                        Quaternion inverseYaw = Quaternion.Inverse(anchor.Yaw);
+                        Vector3 halfSlab = slab.Size * 0.5f;
+                        for (int corner = 0; corner < 8; corner++)
+                        {
+                            var world = new Vector3(
+                                (corner & 1) == 0 ? min.x : max.x,
+                                (corner & 2) == 0 ? min.y : max.y,
+                                (corner & 4) == 0 ? min.z : max.z);
+                            Vector3 graveLocal =
+                                inverseYaw * (world - anchor.Ground);
+                            Assert.That(
+                                Mathf.Abs(graveLocal.x),
+                                Is.LessThanOrEqualTo(halfSlab.x + 0.02f),
+                                $"Grave {anchor.Ordinal}: the bouquet " +
+                                "overhangs the slab's side.");
+                            Assert.That(
+                                Mathf.Abs(graveLocal.z),
+                                Is.LessThanOrEqualTo(halfSlab.z + 0.02f),
+                                $"Grave {anchor.Ordinal}: the bouquet " +
+                                "overhangs the slab's end.");
+                        }
+
+                        // Centred on the slab point in XZ, where the old
+                        // boxes were.
+                        Vector3 centre = 0.5f * (min + max);
+                        Assert.That(
+                            PlanarDistance(centre, slabPoint),
+                            Is.LessThan(0.06f),
+                            $"Grave {anchor.Ordinal}: the bouquet is not " +
+                            "centred on the slab point.");
+
+                        // Blooms toward the stone: stems to bloom along
+                        // the grave's +Z.
+                        Vector3 stemsCentre = MeasureMeshCentre(
+                            bouquet.FindRenderer(
+                                CemeteryLaidBouquet.StemsRendererName));
+                        Vector3 bloomCentre = MeasureMeshCentre(
+                            bouquet.FindRenderer(
+                                CemeteryLaidBouquet.BloomRendererName));
+                        Vector3 axis = (bloomCentre - stemsCentre).normalized;
+                        Assert.That(
+                            Vector3.Dot(axis, anchor.Yaw * Vector3.forward),
+                            Is.GreaterThan(0.95f),
+                            $"Grave {anchor.Ordinal}: the bouquet does not " +
+                            "point at the stone.");
+                    }
+                    finally
+                    {
+                        CityPedestrianHandProps.Detach(ref bouquet);
+                    }
+
+                    Assert.That(bouquet, Is.Null,
+                        "Detach must null the reference.");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(parentObject);
+            }
+        }
+
+        private static CityCemeteryPartDescriptor FindSlab(
+            CityCemeteryPlan plan,
+            CemeteryGraveAnchor anchor)
+        {
+            foreach (CityCemeteryPartDescriptor part in plan.Parts)
+            {
+                if (part.Kind == CityCemeteryPartKind.GraveSlab &&
+                    part.GraveOrdinal == anchor.Ordinal)
+                {
+                    return part;
+                }
+            }
+
+            Assert.Fail($"Grave {anchor.Ordinal} has no slab part.");
+            return default;
+        }
+
+        /// <summary>World AABB of every prop part from its mesh bounds
+        /// through its transform: the prop meshes import non-readable,
+        /// and for a rigid part the box corners bound every vertex.</summary>
+        private static void MeasureWorldBounds(
+            CityPedestrianHandPropRegistry registry,
+            out Vector3 min,
+            out Vector3 max)
+        {
+            min = new Vector3(
+                float.PositiveInfinity,
+                float.PositiveInfinity,
+                float.PositiveInfinity);
+            max = new Vector3(
+                float.NegativeInfinity,
+                float.NegativeInfinity,
+                float.NegativeInfinity);
+            bool any = false;
+            foreach (Renderer renderer in registry.Renderers)
+            {
+                var filter = renderer != null
+                    ? renderer.GetComponent<MeshFilter>()
+                    : null;
+                Mesh mesh = filter != null ? filter.sharedMesh : null;
+                Assert.That(mesh, Is.Not.Null, "A bouquet part has no mesh.");
+                Bounds local = mesh.bounds;
+                Matrix4x4 localToWorld = renderer.localToWorldMatrix;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 point = localToWorld.MultiplyPoint3x4(new Vector3(
+                        (corner & 1) == 0 ? local.min.x : local.max.x,
+                        (corner & 2) == 0 ? local.min.y : local.max.y,
+                        (corner & 4) == 0 ? local.min.z : local.max.z));
+                    min = Vector3.Min(min, point);
+                    max = Vector3.Max(max, point);
+                    any = true;
+                }
+            }
+
+            Assert.That(any, Is.True, "The bouquet has no parts.");
+        }
+
+        private static Vector3 MeasureMeshCentre(Renderer renderer)
+        {
+            Assert.That(renderer, Is.Not.Null);
+            var filter = renderer.GetComponent<MeshFilter>();
+            Assert.That(filter, Is.Not.Null, renderer.name);
+            Assert.That(filter.sharedMesh, Is.Not.Null, renderer.name);
+            return renderer.localToWorldMatrix.MultiplyPoint3x4(
+                filter.sharedMesh.bounds.center);
+        }
+
         private static (CityLayout, CityCemeteryPlan) GenerateCemetery()
         {
             CityLayout layout = CityLayoutGenerator.Generate(

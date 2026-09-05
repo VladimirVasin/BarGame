@@ -18,8 +18,8 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 48,
-  "triangle_count": 2244,
+  "mesh_count": 38,
+  "triangle_count": 1972,
   "triangle_budget": [
     1800,
     3200
@@ -29,12 +29,12 @@
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.812994,
+    -0.786781,
     -0.243097,
     0.0
   ],
   "bounds_max": [
-    0.830841,
+    0.788781,
     0.12578,
     1.75
   ],
@@ -44,6 +44,8 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx",
+  "ambient_idle_clip": null,
+  "ambient_walk_clip": null,
   "shared_clips": [
     "CafeAttendantWipe",
     "CafeAttendantWalk",
@@ -58,7 +60,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "a5003900b422800a09fad2401b0fba489188aa6a8654d7ffb6c429f1b173c8f1",
+  "build_signature": "4c89035d1ba82fc08a3d5d09560a5530c54c9d795531a6e853cc738eb7bc0e25",
   "bones": [
     {
       "name": "root",
@@ -570,132 +572,6 @@
       "triangles": 32
     },
     {
-      "name": "ACC_CoffeePotBaseRing",
-      "role": "held_prop",
-      "bone": "hand.R",
-      "palette_name": "cafe_pot_dark",
-      "base_color": [
-        0.085,
-        0.095,
-        0.095,
-        1.0
-      ],
-      "vertices": 24,
-      "triangles": 44
-    },
-    {
-      "name": "ACC_CoffeePotBody",
-      "role": "held_prop",
-      "bone": "hand.R",
-      "palette_name": "cafe_pot",
-      "base_color": [
-        0.245,
-        0.275,
-        0.275,
-        1.0
-      ],
-      "vertices": 24,
-      "triangles": 44
-    },
-    {
-      "name": "ACC_CoffeePotHandleBottom",
-      "role": "held_prop",
-      "bone": "hand.R",
-      "palette_name": "cafe_pot_dark",
-      "base_color": [
-        0.085,
-        0.095,
-        0.095,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "ACC_CoffeePotHandleGrip",
-      "role": "held_prop",
-      "bone": "hand.R",
-      "palette_name": "cafe_pot_dark",
-      "base_color": [
-        0.085,
-        0.095,
-        0.095,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "ACC_CoffeePotHandleTop",
-      "role": "held_prop",
-      "bone": "hand.R",
-      "palette_name": "cafe_pot_dark",
-      "base_color": [
-        0.085,
-        0.095,
-        0.095,
-        1.0
-      ],
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "ACC_CoffeePotLid",
-      "role": "held_prop",
-      "bone": "hand.R",
-      "palette_name": "cafe_pot_dark",
-      "base_color": [
-        0.085,
-        0.095,
-        0.095,
-        1.0
-      ],
-      "vertices": 20,
-      "triangles": 36
-    },
-    {
-      "name": "ACC_CoffeePotLidKnob",
-      "role": "held_prop",
-      "bone": "hand.R",
-      "palette_name": "cafe_pot_dark",
-      "base_color": [
-        0.085,
-        0.095,
-        0.095,
-        1.0
-      ],
-      "vertices": 18,
-      "triangles": 32
-    },
-    {
-      "name": "ACC_CoffeePotSpout",
-      "role": "held_prop",
-      "bone": "hand.R",
-      "palette_name": "cafe_pot",
-      "base_color": [
-        0.245,
-        0.275,
-        0.275,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_CoffeePotSpoutLip",
-      "role": "held_prop",
-      "bone": "hand.R",
-      "palette_name": "cafe_pot_dark",
-      "base_color": [
-        0.085,
-        0.095,
-        0.095,
-        1.0
-      ],
-      "vertices": 18,
-      "triangles": 32
-    },
-    {
       "name": "ACC_PaperCapCrown",
       "role": "signature_silhouette",
       "bone": "head",
@@ -719,20 +595,6 @@
         0.315,
         0.33,
         0.285,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_ServiceTowel",
-      "role": "held_prop",
-      "bone": "hand.L",
-      "palette_name": "cafe_towel",
-      "base_color": [
-        0.445,
-        0.465,
-        0.42,
         1.0
       ],
       "vertices": 8,
@@ -1213,20 +1075,6 @@
       ],
       "vertices": 12,
       "triangles": 20
-    }
-  ],
-  "anchor_names": [
-    "SOCKET_CafePotSpout"
-  ],
-  "rig_anchors": [
-    {
-      "name": "SOCKET_CafePotSpout",
-      "bone": "hand.R",
-      "kind": "anchor",
-      "parts": [
-        "ACC_CoffeePotSpout"
-      ],
-      "axis_from": "ACC_CoffeePotBody"
     }
   ],
   "texture_bindings": [

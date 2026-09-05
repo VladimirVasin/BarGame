@@ -391,6 +391,85 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(resumed, Is.EqualTo(0.75f).Within(0.0001f));
         }
 
+        /// <summary>
+        /// The weigher holds the chalk in her right grip; the weighed
+        /// worker's hands are free. Judged through the presentation's
+        /// accessor and the socket in world space, so a prop attached
+        /// to the wrong role (the old visibility table's failure mode)
+        /// cannot pass.
+        /// </summary>
+        [Test]
+        public void Presentation_AttachesChalkToTheWeigherOnly()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                Seed);
+            WeighbridgeAttendantPlan plan =
+                WeighbridgeAttendantPlan.Create(layout);
+            Assert.That(plan.IsPresent, Is.True);
+            WeighbridgeAttendantProvider provider =
+                WeighbridgeAttendantProvider.Load();
+            Assert.That(provider, Is.Not.Null);
+            Assert.That(provider.StagedPrefab, Is.Not.Null);
+
+            var parent = new GameObject("Attendant Hand Prop Test");
+            try
+            {
+                foreach (WeighbridgeAttendantStance stance in plan.Stances)
+                {
+                    GameObject instance = Object.Instantiate(
+                        provider.StagedPrefab,
+                        parent.transform);
+                    var registry =
+                        instance.GetComponent<CityPedestrianAssetRegistry>();
+                    Assert.That(registry, Is.Not.Null);
+                    var presentation = instance
+                        .AddComponent<WeighbridgeAttendantPresentation>();
+                    presentation.Initialize(registry, stance);
+
+                    Transform socket = CityPedestrianHandProps.FindSocket(
+                        registry.ModelRoot,
+                        CityPedestrianHandPropId.Chalk);
+                    Assert.That(socket, Is.Not.Null);
+                    if (stance.Role == WeighbridgeAttendantRole.Weigher)
+                    {
+                        CityPedestrianHandPropRegistry chalk =
+                            presentation.HeldProp;
+                        Assert.That(chalk, Is.Not.Null,
+                            "The weigher must hold her chalk.");
+                        Assert.That(
+                            chalk.Id,
+                            Is.EqualTo(CityPedestrianHandPropId.Chalk));
+                        Assert.That(chalk.transform.parent, Is.SameAs(socket));
+                        Assert.That(
+                            Vector3.Distance(
+                                chalk.transform.position,
+                                socket.position),
+                            Is.LessThan(0.02f));
+                        Assert.That(
+                            chalk.FindRenderer("ACC_Chalk"),
+                            Is.Not.Null);
+                    }
+                    else
+                    {
+                        Assert.That(
+                            presentation.HeldProp,
+                            Is.Null,
+                            "The weighed worker's hands stay free.");
+                        Assert.That(
+                            CityPedestrianHandProps.FindAttached(
+                                socket,
+                                CityPedestrianHandPropId.Chalk),
+                            Is.Null);
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
         [Test]
         public void Provider_BindsTheStagedPrefabWithoutPublishingIt()
         {
@@ -431,8 +510,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(registry.IdleClip.isLooping, Is.True);
             Assert.That(registry.WalkClip.isLooping, Is.True);
 
-            // The staged prefab ships the weigher's chalk; the
-            // runtime hides it for the worker's free hands.
+            // Since 2026-09-05 the chalk is a hand-prop prefab the
+            // weighbridge attaches to the weigher alone; the body ships
+            // empty-handed so a roaming copy (and the weighed worker)
+            // holds nothing. The old skinned chalk on the FBX would be a
+            // regression of the generator.
             var rendererNames = new HashSet<string>();
             foreach (Renderer renderer in
                      prefab.GetComponentsInChildren<Renderer>(true))
@@ -441,8 +523,16 @@ namespace BarPromenade.Tests.EditMode
             }
 
             Assert.That(
-                rendererNames,
-                Is.SupersetOf(new[] { "ACC_Chalk" }));
+                rendererNames.Contains("ACC_Chalk"),
+                Is.False,
+                "The attendant body still carries 'ACC_Chalk'; the chalk " +
+                "is a hand prop now.");
+            Assert.That(
+                CityPedestrianHandProps.FindSocket(
+                    prefab.transform,
+                    CityPedestrianHandPropId.Chalk),
+                Is.Not.Null,
+                "The chalk rides SOCKET_Grip.R.");
 
             Assert.That(
                 prefab.GetComponentsInChildren<Collider>(true),

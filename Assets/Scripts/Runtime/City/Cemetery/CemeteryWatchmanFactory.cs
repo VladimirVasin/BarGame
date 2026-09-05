@@ -21,23 +21,30 @@ namespace BarPromenade
         public const float TriggerHeight = 1.8f;
         public const float TriggerReach = 1.5f;
 
+        /// <summary>
+        /// <paramref name="heroRoot"/> is the player root the old man
+        /// watches for; without it he never looks up from his post.
+        /// </summary>
         public static CemeteryWatchmanPresentation Create(
             Transform parent,
             CemeteryWatchmanPlan plan,
-            int citySeed)
+            int citySeed,
+            Transform heroRoot = null)
         {
             return Create(
                 parent,
                 plan,
                 citySeed,
-                CemeteryWatchmanProvider.Load());
+                CemeteryWatchmanProvider.Load(),
+                heroRoot);
         }
 
         public static CemeteryWatchmanPresentation Create(
             Transform parent,
             CemeteryWatchmanPlan plan,
             int citySeed,
-            CemeteryWatchmanProvider provider)
+            CemeteryWatchmanProvider provider,
+            Transform heroRoot = null)
         {
             if (parent == null)
             {
@@ -90,10 +97,11 @@ namespace BarPromenade
             var presentation = instance
                 .AddComponent<CemeteryWatchmanPresentation>();
             presentation.Initialize(registry, stance);
+            presentation.SetHero(heroRoot);
 
             // Colliderless like every staged NPC: the hero's
             // attention finds him through a magnet at his capped
-            // head height.
+            // head height - and he looks back, above.
             var magnet = instance.AddComponent<PlayerAttentionMagnet>();
             magnet.FocusHeight = 1.58f;
 

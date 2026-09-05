@@ -440,6 +440,7 @@ namespace BarPromenade
                 : sessionGeneration + 1;
             nextDrinkOrderSequence = 0L;
             CityWetSurfaceRegistry.ResetForNewSession();
+            ChurchGardenPotSessionState.ResetForNewSession();
             CitySeed = DefaultCitySeed;
             CityBlueprintId = DefaultCityBlueprintId;
             ActiveBarId = string.Empty;

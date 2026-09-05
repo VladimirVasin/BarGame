@@ -38,6 +38,10 @@ namespace BarPromenade
         // motion, but never folded into next frame's momentum, so a wall
         // that stops the drift cannot fling him the other way.
         private Vector3 balanceDrift;
+        private Vector3 externalPushDirection;
+        private float externalPushDistance;
+        private float externalPushDuration;
+        private float externalPushElapsed;
         private float balanceYawScale = 1f;
         private Vector3 momentumVelocity;
         private PlayerMotorContactSample lastContact;
@@ -67,6 +71,8 @@ namespace BarPromenade
         public bool InteractionPoseMoveActive =>
             interactionPoseMoveActive;
         public bool InteractionPoseMoveStalled { get; private set; }
+        public bool ExternalPushActive =>
+            externalPushDuration > externalPushElapsed;
 
         public void Initialize(
             IWalkableArea area,
@@ -117,6 +123,45 @@ namespace BarPromenade
 
         /// <summary>What the capsule met during its last move.</summary>
         public PlayerMotorContactSample LastContact => lastContact;
+
+        /// <summary>
+        /// One short, linearly slowing shove in world space. Distance is its
+        /// complete unobstructed travel, independent of frame length. The
+        /// capsule and walkable area can stop it; refused travel is discarded.
+        /// While it lasts, walking into the shove cannot cancel its contact.
+        /// </summary>
+        public bool TryApplyExternalPush(
+            Vector3 worldDirection,
+            float distance = 0.4f,
+            float duration = 0.3f)
+        {
+            if (!isActiveAndEnabled ||
+                controller == null || !controller.enabled ||
+                !InputEnabled || !groundedAfterMainMove ||
+                interactionPoseMoveActive || ExternalPushActive ||
+                SceneTransitionService.IsTransitioning ||
+                GameTimeScaleRuntime.IsPaused ||
+                !IsFinite(worldDirection) ||
+                !IsFinite(distance) || distance <= 0f ||
+                !IsFinite(duration) || duration <= 0f)
+            {
+                return false;
+            }
+
+            worldDirection.y = 0f;
+            float magnitude = worldDirection.magnitude;
+            if (!IsFinite(magnitude) || magnitude <= 0.0001f)
+            {
+                return false;
+            }
+
+            externalPushDirection = worldDirection / magnitude;
+            externalPushDistance = distance;
+            externalPushDuration = duration;
+            externalPushElapsed = 0f;
+            momentumVelocity = RemoveMotionAgainstPush(momentumVelocity);
+            return true;
+        }
 
         /// <summary>
         /// The balance model's root velocity for the coming move, world
@@ -170,6 +215,7 @@ namespace BarPromenade
 
             transform.position = position;
             verticalSpeed = 0f;
+            groundedAfterMainMove = false;
             ResetInteractionPoseMove();
             StopPlanarMotion();
 
@@ -228,6 +274,7 @@ namespace BarPromenade
                 targetPosition,
                 targetRotation,
                 deltaTime);
+            ClearExternalPush();
             if (!interactionPoseMoveActive)
             {
                 interactionPoseStallSeconds = 0f;
@@ -314,6 +361,8 @@ namespace BarPromenade
                     "The arrival radius must be positive.");
             }
 
+            ClearExternalPush();
+
             if (!interactionPoseMoveActive)
             {
                 interactionPoseStallSeconds = 0f;
@@ -394,8 +443,9 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (controller == null)
+            if (controller == null || !controller.enabled)
             {
+                StopPlanarMotion();
                 return;
             }
 
@@ -454,6 +504,14 @@ namespace BarPromenade
             Vector3 steeredPlanarVelocity =
                 Quaternion.AngleAxis(yawDelta, Vector3.up) *
                 momentumVelocity;
+            if (ExternalPushActive)
+            {
+                desiredPlanarVelocity =
+                    RemoveMotionAgainstPush(desiredPlanarVelocity);
+                steeredPlanarVelocity =
+                    RemoveMotionAgainstPush(steeredPlanarVelocity);
+            }
+
             float velocityChangeRate = GetVelocityChangeRate(
                 steeredPlanarVelocity,
                 desiredPlanarVelocity);
@@ -490,27 +548,28 @@ namespace BarPromenade
             balanceDrift = Vector3.zero;
             if (drift.sqrMagnitude > 0.000001f && Time.deltaTime > 0f)
             {
-                Vector3 driftStart = transform.position;
-                Vector3 driftDesired = driftStart + drift * Time.deltaTime;
-                Vector3 driftConstrained = walkableArea == null
-                    ? driftDesired
-                    : walkableArea.Constrain(
-                        driftStart,
-                        driftDesired,
-                        controller.radius);
-                Vector3 driftPush = driftDesired - driftConstrained;
-                driftPush.y = 0f;
-                constraintPush += driftPush;
-                Vector3 driftDelta = driftConstrained - driftStart;
-                driftDelta.y = 0f;
-                // A hair of downward push keeps the capsule in contact
-                // through the second move, so the controller keeps
-                // reporting the ground under him.
-                controller.Move(driftDelta + Vector3.down * DriftGroundBias);
-                flags |= controller.collisionFlags;
-                groundedAfterMainMove |= controller.isGrounded;
-                driftDisplacement = transform.position - driftStart;
-                driftDisplacement.y = 0f;
+                driftDisplacement = MoveConstrainedDrift(
+                    drift * Time.deltaTime,
+                    ref constraintPush,
+                    ref flags);
+            }
+
+            Vector3 pushDisplacement = Vector3.zero;
+            if (ExternalPushActive && Time.deltaTime > 0f)
+            {
+                Vector3 pushDirection = externalPushDirection;
+                Vector3 pushDelta = AdvanceExternalPush(Time.deltaTime);
+                pushDisplacement = MoveConstrainedDrift(
+                    pushDelta,
+                    ref constraintPush,
+                    ref flags);
+                if (Vector3.Dot(pushDisplacement, pushDirection) + 0.0001f <
+                    pushDelta.magnitude)
+                {
+                    // An obstruction ends the contact, rather than storing
+                    // a tail that could escape if the obstacle moves away.
+                    ClearExternalPush();
+                }
             }
 
             lastContact = PlayerMotorContactSample.From(
@@ -520,7 +579,8 @@ namespace BarPromenade
                 sideHitPoint,
                 constraintPush);
 
-            Vector3 planarVelocity = momentumDisplacement + driftDisplacement;
+            Vector3 planarVelocity = momentumDisplacement + driftDisplacement +
+                                     pushDisplacement;
             PlanarVelocity = planarVelocity * inverseDelta;
             float signedForwardSpeed =
                 Vector3.Dot(PlanarVelocity, transform.forward);
@@ -531,6 +591,62 @@ namespace BarPromenade
                 turnInput,
                 runBlend));
             UpdateFootsteps(planarVelocity, runBlend: runBlend);
+        }
+
+        private Vector3 MoveConstrainedDrift(
+            Vector3 delta,
+            ref Vector3 constraintPush,
+            ref CollisionFlags flags)
+        {
+            Vector3 start = transform.position;
+            Vector3 desired = start + delta;
+            Vector3 constrained = walkableArea == null
+                ? desired
+                : walkableArea.Constrain(start, desired, controller.radius);
+            Vector3 refused = desired - constrained;
+            refused.y = 0f;
+            constraintPush += refused;
+            Vector3 constrainedDelta = constrained - start;
+            constrainedDelta.y = 0f;
+            // Each extra planar move retains the main move's ground contact.
+            controller.Move(constrainedDelta + Vector3.down * DriftGroundBias);
+            flags |= controller.collisionFlags;
+            groundedAfterMainMove |= controller.isGrounded;
+            Vector3 displacement = transform.position - start;
+            displacement.y = 0f;
+            return displacement;
+        }
+
+        private Vector3 RemoveMotionAgainstPush(Vector3 velocity)
+        {
+            float alongPush = Vector3.Dot(velocity, externalPushDirection);
+            return alongPush < 0f
+                ? velocity - externalPushDirection * alongPush
+                : velocity;
+        }
+
+        private Vector3 AdvanceExternalPush(float deltaTime)
+        {
+            float before = Mathf.Clamp01(
+                externalPushElapsed / externalPushDuration);
+            externalPushElapsed = Mathf.Min(
+                externalPushDuration,
+                externalPushElapsed + deltaTime);
+            float after = Mathf.Clamp01(
+                externalPushElapsed / externalPushDuration);
+            // Integral of v(t) = 2d/T * (1 - t/T), including the final
+            // partial frame. Even a frame longer than T travels at most d.
+            float travel = externalPushDistance *
+                           (after - before) * (2f - before - after);
+            return externalPushDirection * travel;
+        }
+
+        private void ClearExternalPush()
+        {
+            externalPushDirection = Vector3.zero;
+            externalPushDistance = 0f;
+            externalPushDuration = 0f;
+            externalPushElapsed = 0f;
         }
 
         private void UpdateVerticalMotion()
@@ -596,6 +712,7 @@ namespace BarPromenade
 
         private void StopPlanarMotion()
         {
+            ClearExternalPush();
             PlanarVelocity = Vector3.zero;
             momentumVelocity = Vector3.zero;
             balanceDrift = Vector3.zero;
@@ -607,6 +724,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             verticalSpeed = 0f;
+            groundedAfterMainMove = false;
             ResetInteractionPoseMove();
             StopPlanarMotion();
         }

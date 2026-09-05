@@ -320,6 +320,7 @@ namespace BarPromenade
         private double phaseElapsedSeconds;
         private float exitDurationMultiplier = 1f;
         private bool exitEndpointPresented;
+        private bool exitAtLoopBoundaryRequested;
 
         public PlayerAnimatedInteractionTimeline(
             PlayerAnimatedInteractionDefinition definition,
@@ -432,6 +433,19 @@ namespace BarPromenade
             return RequestExit(1f);
         }
 
+        /// <summary>Finish the visible loop at its authored seam before exit.</summary>
+        public bool RequestExitAtLoopBoundary()
+        {
+            if (Phase != PlayerAnimatedInteractionPhase.Looping ||
+                exitAtLoopBoundaryRequested)
+            {
+                return false;
+            }
+
+            exitAtLoopBoundaryRequested = true;
+            return true;
+        }
+
         public bool RequestExit(float durationMultiplier)
         {
             if (float.IsNaN(durationMultiplier) ||
@@ -451,6 +465,7 @@ namespace BarPromenade
 
             exitDurationMultiplier = durationMultiplier;
             exitEndpointPresented = false;
+            exitAtLoopBoundaryRequested = false;
             Phase = PlayerAnimatedInteractionPhase.Exiting;
             phaseElapsedSeconds = 0d;
             FrameIndex = definition.ExitStartFrame;
@@ -481,6 +496,7 @@ namespace BarPromenade
             FrameIndex = -1;
             exitDurationMultiplier = 1f;
             exitEndpointPresented = false;
+            exitAtLoopBoundaryRequested = false;
         }
 
         private void AdvanceEntering()
@@ -506,6 +522,19 @@ namespace BarPromenade
         {
             double duration =
                 definition.LoopDurationSeconds;
+            if (exitAtLoopBoundaryRequested && phaseElapsedSeconds >= duration)
+            {
+                // Present the exact seam even when a hitch crossed it. The
+                // chosen exit's first sample has the same authored pose.
+                phaseElapsedSeconds = 0d;
+                exitAtLoopBoundaryRequested = false;
+                exitDurationMultiplier = 1f;
+                exitEndpointPresented = false;
+                Phase = PlayerAnimatedInteractionPhase.Exiting;
+                FrameIndex = definition.ExitStartFrame;
+                return;
+            }
+
             if (exitAfterOneLoopCycle && phaseElapsedSeconds >= duration)
             {
                 phaseElapsedSeconds -= duration;
