@@ -80,6 +80,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroSfxId.Retch)]
         [TestCase(RetroSfxId.VomitGush)]
         [TestCase(RetroSfxId.VomitSplat)]
+        [TestCase(RetroSfxId.VomitCough)]
         public void GenerateSamples_IsDeterministicFiniteAndAudible(
             RetroSfxId id)
         {
@@ -173,9 +174,14 @@ namespace BarPromenade.Tests.EditMode
             {
                 RetroSfxId.Retch,
                 RetroSfxId.VomitGush,
-                RetroSfxId.VomitSplat
+                RetroSfxId.VomitSplat,
+                RetroSfxId.VomitCough
             };
-            float[] expectedDurations = { 0.34f, 1.0f, 0.14f };
+            float[] expectedDurations = { 0.62f, 0.7f, 0.18f, 0.55f };
+            // Loud enough to be heard from the third-person camera: the
+            // first cut sat at a quarter volume and the user heard
+            // nothing. The splat stays under the voice.
+            float[] minimumVolumes = { 0.5f, 0.45f, 0.3f, 0.45f };
             for (int index = 0; index < cues.Length; index++)
             {
                 RetroSfxDefinition definition =
@@ -191,6 +197,10 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     definition.Duration,
                     Is.EqualTo(expectedDurations[index]).Within(1e-4f),
+                    cues[index].ToString());
+                Assert.That(
+                    definition.Volume,
+                    Is.GreaterThanOrEqualTo(minimumVolumes[index]),
                     cues[index].ToString());
             }
 
@@ -209,6 +219,10 @@ namespace BarPromenade.Tests.EditMode
                 RetroSfxLibrary.GenerateSamples(RetroSfxId.VomitSplat);
             float[] hiccup =
                 RetroSfxLibrary.GenerateSamples(RetroSfxId.Hiccup);
+            float[] cough =
+                RetroSfxLibrary.GenerateSamples(RetroSfxId.VomitCough);
+            Assert.That(cough, Is.Not.EqualTo(retch));
+            Assert.That(cough, Is.Not.EqualTo(gush));
             Assert.That(retch, Is.Not.EqualTo(gush));
             Assert.That(gush, Is.Not.EqualTo(splat));
             Assert.That(retch, Is.Not.EqualTo(splat));

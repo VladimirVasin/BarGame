@@ -4,10 +4,11 @@ namespace BarPromenade
 {
     /// <summary>
     /// The drunk hero being sick: the bout the nausea gauge lost, run to
-    /// its end — the head down, the stream on and off three times, the
-    /// key lent and returned, the sounds at his mouth and on the floor,
-    /// the relief taken off his intoxication and the mark left on his
-    /// face.
+    /// its end — the head and neck down and the body doubled over, the
+    /// stream on and off three times with a retch before, a cough after
+    /// and its own gurgle while it runs, the key lent and returned, the
+    /// sounds at his mouth and on the floor, the relief taken off his
+    /// intoxication, the mouth wiped and the mark left on his face.
     ///
     /// A controller of its own rather than a branch of
     /// <see cref="IntoxicationNauseaController"/>, because the two have
@@ -195,6 +196,9 @@ namespace BarPromenade
 
             PlayerVomitPose pose = model.Pose;
             presentation?.SetVomit(pose);
+            // The stream's own sound follows the flow frame by frame -
+            // the pump, the attack and the tail are heard as drawn.
+            effect?.SetStreamSound(pose.Flow);
             ApplyHeadDrive(pose);
         }
 
@@ -262,6 +266,9 @@ namespace BarPromenade
                         break;
                     case HeroVomitCueKind.BurstEnd:
                         effect?.SetFlow(0f, -1);
+                        break;
+                    case HeroVomitCueKind.Cough:
+                        RetroAudio.PlayAt(RetroSfxId.VomitCough, ResolveMouthPosition());
                         break;
                     case HeroVomitCueKind.Relief:
                         int removed = GameSessionState.RelieveIntoxication(
@@ -342,6 +349,14 @@ namespace BarPromenade
 
         private Vector3 ResolveMouthPosition()
         {
+            // The effect's emitter stands where the FOLDED mouth was after
+            // the last late pass; the anchor itself, read from this Update,
+            // is still in the raw clip pose with the head up.
+            if (effect != null && effect.IsInitialized)
+            {
+                return effect.MouthPosition;
+            }
+
             Player3DAssetRegistry registry = heroPresentation != null
                 ? heroPresentation.Registry
                 : null;

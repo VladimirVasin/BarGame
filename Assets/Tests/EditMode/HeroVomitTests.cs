@@ -37,17 +37,20 @@ namespace BarPromenade.Tests.EditMode
             new ExpectedCue(HeroVomitCueKind.Gush, 0, 1.55f),
             new ExpectedCue(HeroVomitCueKind.Gush, 0, 2.45f),
             new ExpectedCue(HeroVomitCueKind.BurstEnd, 0, 3.4f),
+            new ExpectedCue(HeroVomitCueKind.Cough, 0, 3.4f),
             new ExpectedCue(HeroVomitCueKind.Relief, 0, 3.4f),
             new ExpectedCue(HeroVomitCueKind.Soil, 0, 3.4f),
             new ExpectedCue(HeroVomitCueKind.Retch, 1, 5.1f),
             new ExpectedCue(HeroVomitCueKind.BurstBegin, 1, 5.4f),
             new ExpectedCue(HeroVomitCueKind.Gush, 1, 5.65f),
             new ExpectedCue(HeroVomitCueKind.BurstEnd, 1, 6.4f),
+            new ExpectedCue(HeroVomitCueKind.Cough, 1, 6.4f),
             new ExpectedCue(HeroVomitCueKind.Relief, 1, 6.4f),
             new ExpectedCue(HeroVomitCueKind.Retch, 2, 8.1f),
             new ExpectedCue(HeroVomitCueKind.BurstBegin, 2, 8.4f),
             new ExpectedCue(HeroVomitCueKind.Gush, 2, 8.65f),
             new ExpectedCue(HeroVomitCueKind.BurstEnd, 2, 9.4f),
+            new ExpectedCue(HeroVomitCueKind.Cough, 2, 9.4f),
             new ExpectedCue(HeroVomitCueKind.Relief, 2, 9.4f),
             new ExpectedCue(HeroVomitCueKind.Finished, -1, 9.4f)
         };
@@ -66,7 +69,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(HeroVomitRules.BurstStart(2), Is.EqualTo(8.4f).Within(0.0001f));
             Assert.That(HeroVomitRules.BurstEnd(2), Is.EqualTo(9.4f).Within(0.0001f));
             Assert.That(HeroVomitRules.ScheduleEndSeconds, Is.EqualTo(9.4f).Within(0.0001f));
-            Assert.That(HeroVomitRules.TotalSeconds, Is.EqualTo(10.2f).Within(0.0001f));
+            // 9.4 s of score, then the 1.6 s wipe outlasts the 0.8 s head blend-out.
+            Assert.That(HeroVomitRules.WipeSeconds, Is.EqualTo(1.6f).Within(0.0001f));
+            Assert.That(HeroVomitRules.TotalSeconds, Is.EqualTo(11.0f).Within(0.0001f));
 
             var model = new HeroVomitModel();
             Assert.That(model.IsActive, Is.False);
@@ -308,12 +313,18 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(atBlendIn, Is.GreaterThanOrEqualTo(13f), "Down by the end of the blend-in.");
-            Assert.That(atFour, Is.GreaterThanOrEqualTo(13f), "Held through the first pause.");
-            Assert.That(atSeven, Is.GreaterThanOrEqualTo(13f), "Held through the second pause.");
+            Assert.That(atBlendIn, Is.GreaterThanOrEqualTo(HeroVomitRules.HeadDownDegrees - 1f), "Down by the end of the blend-in.");
+            Assert.That(atFour, Is.GreaterThanOrEqualTo(HeroVomitRules.HeadDownDegrees - 1f), "Held through the first pause.");
+            Assert.That(atSeven, Is.GreaterThanOrEqualTo(HeroVomitRules.HeadDownDegrees - 1f), "Held through the second pause.");
             Assert.That(atTotal, Is.LessThanOrEqualTo(0.5f), "Back up by the end of the bout.");
-            Assert.That(peak, Is.LessThanOrEqualTo(HeroVomitRules.HeadDownDegrees + HeroVomitRules.HeadDownHeaveExtraDegrees + 0.001f));
-            Assert.That(peak, Is.GreaterThan(HeroVomitRules.HeadDownDegrees + 3f), "The heave adds visibly to the pitch.");
+            Assert.That(
+                peak,
+                Is.LessThanOrEqualTo(
+                    HeroVomitRules.HeadDownDegrees +
+                    HeroVomitRules.HeadDownHeaveExtraDegrees +
+                    HeroVomitRules.PumpHeadDegrees + 0.001f));
+            Assert.That(peak, Is.GreaterThan(HeroVomitRules.HeadDownDegrees + 8f), "The heave adds visibly to the pitch.");
+            Assert.That(HeroVomitRules.HeadDownDegrees, Is.EqualTo(24f), "A slightly raised head leaves room for the forward jet.");
             Assert.That(peakSpasm, Is.GreaterThan(0.9f));
             Assert.That(peakSpasm, Is.LessThanOrEqualTo(1f));
             Assert.That(spasmOutsideBursts, Is.False, "The heave belongs to the start of a burst.");
@@ -322,6 +333,92 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(HeroVomitRules.HeaveShape(0f), Is.EqualTo(0f));
             Assert.That(HeroVomitRules.HeaveShape(HeroVomitRules.HeadDownHeaveSeconds), Is.EqualTo(0f));
             Assert.That(HeroVomitRules.HeaveShape(0.08f), Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        // ---- the body ------------------------------------------------
+
+        [Test]
+        public void Pose_DoublesOverBracesOnTheKneesConvulsesWithThePumpAndWipes()
+        {
+            var model = new HeroVomitModel();
+            model.Begin();
+            float time = 0f;
+            float torsoAtFour = -1f;
+            float torsoAtSeven = -1f;
+            float braceAtSeven = -1f;
+            float crouchAtSeven = -1f;
+            float peakTorso = 0f;
+            float peakPump = 0f;
+            float peakWipe = 0f;
+            float wipeAtNine = -1f;
+            float wipeAtEnd = -1f;
+            bool pumpOutsideBursts = false;
+            bool torsoPumpsInFirstBurst = false;
+            float previousTorso = 0f;
+            int torsoCrestsInFirstBurst = 0;
+            for (int frame = 0; frame < 60 * 12; frame++)
+            {
+                model.Advance(Step);
+                time += Step;
+                PlayerVomitPose pose = model.Pose;
+                peakTorso = Mathf.Max(peakTorso, pose.TorsoPitchDegrees);
+                peakPump = Mathf.Max(peakPump, pose.Pump);
+                peakWipe = Mathf.Max(peakWipe, pose.WipeWeight);
+                if (pose.Pump > 0f && ExpectedBurst(time) < 0 && !NearAnEdge(time))
+                {
+                    pumpOutsideBursts = true;
+                }
+
+                if (time > 1f && time < 3.2f)
+                {
+                    // Inside the first burst the torso rocks with the pump:
+                    // count its crests.
+                    if (pose.TorsoPitchDegrees < previousTorso && previousTorso > HeroVomitRules.TorsoPitchDegrees + 1f)
+                    {
+                        torsoCrestsInFirstBurst++;
+                    }
+
+                    torsoPumpsInFirstBurst |= pose.Pump > 0.9f;
+                }
+
+                previousTorso = pose.TorsoPitchDegrees;
+                if (torsoAtFour < 0f && time >= 4f)
+                {
+                    torsoAtFour = pose.TorsoPitchDegrees;
+                }
+
+                if (torsoAtSeven < 0f && time >= 7f)
+                {
+                    torsoAtSeven = pose.TorsoPitchDegrees;
+                    braceAtSeven = pose.BraceWeight;
+                    crouchAtSeven = pose.CrouchMetres;
+                }
+
+                if (wipeAtNine < 0f && time >= 9f)
+                {
+                    wipeAtNine = pose.WipeWeight;
+                }
+
+                if (wipeAtEnd < 0f && time >= HeroVomitRules.TotalSeconds - Step * 0.01f)
+                {
+                    wipeAtEnd = pose.WipeWeight;
+                }
+            }
+
+            Assert.That(torsoAtFour, Is.EqualTo(HeroVomitRules.TorsoPitchDegrees).Within(0.001f), "Doubled over through the first pause.");
+            Assert.That(torsoAtSeven, Is.EqualTo(HeroVomitRules.TorsoPitchDegrees).Within(0.001f), "And the second.");
+            Assert.That(braceAtSeven, Is.EqualTo(1f).Within(0.001f), "Hands on the knees between bursts.");
+            Assert.That(crouchAtSeven, Is.EqualTo(HeroVomitRules.CrouchMetres).Within(0.0001f), "The knees give for the whole bout.");
+            Assert.That(peakTorso, Is.GreaterThan(HeroVomitRules.TorsoPitchDegrees + HeroVomitRules.TorsoHeaveExtraDegrees * 0.8f), "The heave lurches the torso further.");
+            Assert.That(peakPump, Is.GreaterThan(0.95f), "The first burst pumps at full strength.");
+            Assert.That(torsoPumpsInFirstBurst, Is.True);
+            Assert.That(torsoCrestsInFirstBurst, Is.GreaterThanOrEqualTo(5), "The torso rocks with every push of the pump.");
+            Assert.That(pumpOutsideBursts, Is.False, "The pump beats only while the stream runs.");
+            Assert.That(wipeAtNine, Is.EqualTo(0f), "No wipe while the last burst still runs.");
+            Assert.That(peakWipe, Is.EqualTo(1f).Within(0.001f), "The hand reaches the mouth after the last burst.");
+            Assert.That(wipeAtEnd, Is.LessThanOrEqualTo(0.02f), "And has fallen by the bout's end.");
+            Assert.That(model.Pose.IsNone, Is.True, "Nothing left once the bout is over.");
+            Assert.That(HeroVomitRules.PulseHertz, Is.EqualTo(HeroVomitStreamSound.PumpHertz), "The stream sound pumps to the flow's beat.");
         }
 
         // ---- the stream ----------------------------------------------
@@ -456,6 +553,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(second.Flow, Is.EqualTo(first.Flow));
                 Assert.That(second.HeadDownDegrees, Is.EqualTo(first.HeadDownDegrees));
                 Assert.That(second.Spasm, Is.EqualTo(first.Spasm));
+                Assert.That(second.TorsoPitchDegrees, Is.EqualTo(first.TorsoPitchDegrees));
+                Assert.That(second.WipeWeight, Is.EqualTo(first.WipeWeight));
+                Assert.That(second.Pump, Is.EqualTo(first.Pump));
                 Assert.That(second.ReliefGranted, Is.EqualTo(first.ReliefGranted));
 
                 while (first.TryConsumeCue(out HeroVomitCue cue))

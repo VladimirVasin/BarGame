@@ -27,8 +27,10 @@ shading, anatomy anchors, lid rotation, VFX bounds, import settings and every
 exported FBX's actual round-trip vertices and anchors. Eighteen mesh rays prove
 the pedestal clears the water and incoming stream; 25 seat rays pass through
 the entire central opening, and separate rays prove the paper and cardboard
-rims exist around a real through-hole. The kit contains eleven models,
-thirteen meshes and 2,048 triangles.
+rims exist around a real through-hole. The kit contains thirteen models,
+fifteen meshes and 2,376 triangles. The paired scrotum
+meshes additionally validate their real scale and broad, overlapping upper
+necks. `Anatomy-Attachment.png` shows their authored assembly in close-up.
 
 All manifest coordinates are Unity local metres, +Y up and +Z forward. Export
 uses the existing Home Y/Z source swap with face rewinding and FBX -Z forward,
@@ -38,6 +40,8 @@ conversion; meshes remain readable for pooled effect deformation.
 | Resource suffix under `HomeToiletAction/Models/` | Authored contract |
 | --- | --- |
 | `Anatomy` | Neutral adult anatomy extends +Z by 0.13 m and curves down. `AimPivot` is `(0,0,0)`, `Grip` is `(0,-0.0015,0.025)`, `Outlet` is `(0,-0.020,0.130)`. The baseward grip leaves the distal shaft visible beyond the actual hero hand. |
+| `ScrotumLeft` | Origin is the upper pendulum joint; hang toward -Y. Attach `(-0.011,-0.016,-0.006)` relative to the anatomy base. The 0.048 m wide main lobe is slightly lower than the right. Its broad neck reaches Y+0.014 and overlaps the shaft root and the other neck, then curves forward to place the main volume at Z+0.060, clear of the coat. Bounds `(-0.034,-0.067,-0.026)` to `(0.018,0.014,0.082)`. |
+| `ScrotumRight` | Same fixed body pivot, forward-curved neck, scale and skin material; attach `(+0.011,-0.016,-0.006)`. Bounds `(-0.018,-0.063,-0.026)` to `(0.034,0.014,0.082)`. Runtime may rotate each lobe around its fixed upper joint; the meshes are separate for restrained inertial motion. |
 | `ToiletLid` | Width 0.54 m, depth 0.51 m, thickness 0.025 m. Hinge origin is at the back; closed mesh extends -Z. Local X +90 degrees raises it into +Y. |
 | `BowlWater` | Horizontal XZ oval, 0.34 x 0.314 m, upper surface Y0. Place at `(4.05,0.4373,1.40)` to meet the existing toilet bowl's inner slope. |
 | `ToiletPedestal` | Rounded ceramic plinth and hollow upper body in the original 0.82 x 0.48 x 0.858 m footprint. Place at `(4.15,0.24,1.40)`; its upper cavity centres at local X-0.10 to match the actual bowl. The original logical collider may remain. |

@@ -48,7 +48,7 @@ RUN_ACTION_NAME = "Run"
 RUN_DURATION_SECONDS = 0.75
 RUN_SOURCE_FRAME_COUNT = 18
 RUN_SOURCE_FPS = 24
-# Eight columns: the left half holds the nine faces, the right half their
+# Eight columns: the left half holds the expressions, the right half their
 # soiled twins at column + 4, so the atlas is twice as wide as it is tall.
 ATLAS_COLUMNS = 8
 ATLAS_ROWS = 4
@@ -213,7 +213,7 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path]:
+def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, bool]:
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
@@ -232,6 +232,10 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         default=DEFAULT_ANIMATION_FBX,
     )
     parser.add_argument("--face-atlas", type=Path, default=DEFAULT_FACE_ATLAS)
+    parser.add_argument(
+        "--face-atlas-only", action="store_true",
+        help="Update only face pixels, expression sheet and face manifest data.",
+    )
     parser.add_argument(
         "--clothing-atlas",
         type=Path,
@@ -285,6 +289,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         resolve_path(args.head_front),
         resolve_path(args.head_three_quarter),
         resolve_path(args.lower_body_closeup),
+        args.face_atlas_only,
     )
 
 
@@ -305,6 +310,9 @@ SOCKET = (126, 96, 89, 255)
 UNDER_EYE = (111, 82, 78, 255)
 CHEEK = (183, 145, 125, 255)
 LIP = (88, 58, 58, 255)
+# Warm, dull enamel: legible at the mirror without a bright white smile.
+TEETH = (175, 165, 143, 255)
+TEETH_SHADOW = (128, 119, 105, 255)
 # What the drink left on his chin: a wet ochre band under the lip, darker
 # where it ran, a few pale crumbs. Skin reads ~150 in luma, the soil ~85, so
 # the band survives the composite's grain at 640x360.
@@ -431,6 +439,22 @@ def draw_face_tile(
         canvas.line(ox + 28, oy + mouth_y, ox + 37, oy + mouth_y, LIP)
         canvas.line(ox + 37, oy + mouth_y, ox + 43, oy + mouth_y + 1, LIP)
         canvas.line(ox + 25, oy + mouth_y + 2, ox + 40, oy + mouth_y + 2, SKIN_SHADOW)
+    elif expression == "TeethDisplay":
+        # Straight, slightly parted lips. The eyes and brows stay weary:
+        # inspecting the teeth is a small physical gesture, not a smile.
+        canvas.line(ox + 22, oy + mouth_y - 2, ox + 42, oy + mouth_y - 2, LIP)
+        canvas.rect(ox + 22, oy + mouth_y - 1, ox + 43, oy + mouth_y + 4, SKIN_DARK)
+        canvas.rect(ox + 24, oy + mouth_y - 1, ox + 41, oy + mouth_y + 2, TEETH)
+        canvas.line(ox + 24, oy + mouth_y + 2, ox + 40, oy + mouth_y + 2, TEETH_SHADOW)
+        for x in (28, 32, 36):
+            canvas.put(ox + x, oy + mouth_y + 1, TEETH_SHADOW)
+        canvas.line(ox + 24, oy + mouth_y + 4, ox + 40, oy + mouth_y + 4, LIP)
+    elif expression == "Spit":
+        # A compact opening at the same mouth centre, no grimacing eyes.
+        canvas.ellipse(ox + 32, oy + mouth_y + 1, 5, 3, LIP)
+        canvas.ellipse(ox + 32, oy + mouth_y + 1, 3, 2, SKIN_DARK)
+        canvas.line(ox + 24, oy + mouth_y, ox + 26, oy + mouth_y + 1, SKIN_SHADOW)
+        canvas.line(ox + 38, oy + mouth_y + 1, ox + 41, oy + mouth_y, SKIN_SHADOW)
     else:
         canvas.line(ox + 22, oy + mouth_y, ox + 35, oy + mouth_y, LIP)
         canvas.line(ox + 35, oy + mouth_y, ox + 43, oy + mouth_y + 1, LIP)
@@ -482,6 +506,8 @@ FACE_ATLAS_CLEAN_CELLS = (
     ("Glazed", 3, 1),
     ("Slack", 0, 2),
     ("Grimace", 1, 2),
+    ("TeethDisplay", 2, 2),
+    ("Spit", 3, 2),
 )
 FACE_ATLAS_CELLS = tuple(
     (expression, column, row, False) for expression, column, row in FACE_ATLAS_CLEAN_CELLS
@@ -509,7 +535,7 @@ def build_expression_sheet(atlas: PixelCanvas, path: Path) -> None:
     sheet.write_png(path)
 
 
-def build_face_atlas(path: Path, expression_sheet_path: Path) -> str:
+def draw_face_atlas() -> PixelCanvas:
     canvas = PixelCanvas(ATLAS_WIDTH, ATLAS_HEIGHT)
     # Reserved cells contain a safe weary-neutral fallback instead of alpha.
     for row in range(ATLAS_ROWS):
@@ -517,9 +543,59 @@ def build_face_atlas(path: Path, expression_sheet_path: Path) -> str:
             draw_face_tile(canvas, column, row, "Neutral")
     for expression, column, row, soiled in FACE_ATLAS_CELLS:
         draw_face_tile(canvas, column, row, expression, soiled)
+    return canvas
+
+
+def validate_face_atlas(canvas: PixelCanvas) -> None:
+    pairs = {(expression, soiled) for expression, _, _, soiled in FACE_ATLAS_CELLS}
+    positions = {(column, row) for _, column, row, _ in FACE_ATLAS_CELLS}
+    assert len(pairs) == len(positions) == 22, "Face cells must have unique pairs and positions"
+    assert all(0 <= c < ATLAS_COLUMNS and 0 <= r < ATLAS_ROWS
+               for _, c, r, _ in FACE_ATLAS_CELLS), "Face cell outside atlas"
+    assert all(alpha == 255 for alpha in canvas.pixels[3::4]), "Opaque facial atlas required"
+    assert canvas.pixels == draw_face_atlas().pixels, "Face generation is not deterministic"
+    for expression, column, row, soiled in FACE_ATLAS_CELLS:
+        if expression not in ("TeethDisplay", "Spit") or soiled:
+            continue
+        neutral = PixelCanvas(ATLAS_WIDTH, ATLAS_HEIGHT)
+        draw_face_tile(neutral, column, row, "Neutral")
+        # Only the lips change; this gesture cannot turn the upper face into
+        # a pleased/theatrical expression.
+        for y in range(row * ATLAS_CELL_SIZE, row * ATLAS_CELL_SIZE + 44):
+            start = (y * ATLAS_WIDTH + column * ATLAS_CELL_SIZE) * 4
+            assert canvas.pixels[start:start + ATLAS_CELL_SIZE * 4] == neutral.pixels[start:start + ATLAS_CELL_SIZE * 4]
+    teeth_start = ((2 * ATLAS_CELL_SIZE + 47) * ATLAS_WIDTH + 2 * ATLAS_CELL_SIZE + 25) * 4
+    assert tuple(canvas.pixels[teeth_start:teeth_start + 4]) == TEETH, "Teeth must remain visible"
+
+
+def build_face_atlas(path: Path, expression_sheet_path: Path) -> str:
+    canvas = draw_face_atlas()
+    validate_face_atlas(canvas)
     canvas.write_png(path)
     build_expression_sheet(canvas, expression_sheet_path)
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def face_atlas_cells_manifest() -> list[dict]:
+    return [
+        {"expression": expression, "column": column,
+         "row": ATLAS_ROWS - 1 - row, "soiled": soiled}
+        for expression, column, row, soiled in FACE_ATLAS_CELLS
+    ]
+
+
+def update_face_atlas_manifest(path: Path, texture_path: Path, sha256: str) -> None:
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    atlas = manifest["face_atlas"]
+    assert atlas["columns"] == ATLAS_COLUMNS and atlas["rows"] == ATLAS_ROWS
+    atlas["texture_asset"] = texture_path.relative_to(REPO_ROOT).as_posix()
+    atlas["sha256"] = sha256
+    atlas["cells"] = face_atlas_cells_manifest()
+    # The exported model's signature stays attached to that unchanged FBX.
+    # This explicit scope prevents a texture-only revision from claiming the
+    # old combined signature describes its new pixels.
+    manifest["content_signature_scope"] = "last_full_model_export; current_face_pixels_use_face_atlas.sha256"
+    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 rgba_from_hex = atlas_kit.rgba_from_hex
@@ -2847,8 +2923,14 @@ def main() -> None:
         head_front_path,
         head_three_quarter_path,
         lower_body_closeup_path,
+        face_atlas_only,
     ) = parse_args()
     face_atlas_sha256 = build_face_atlas(face_atlas_path, expression_sheet_path)
+    if face_atlas_only:
+        update_face_atlas_manifest(config.manifest, face_atlas_path, face_atlas_sha256)
+        print(f"Face atlas validated: 22 cells, deterministic opaque pixels; {face_atlas_sha256}")
+        print("Updated face atlas, expression sheet and facial manifest only; model/rig/animations unchanged.")
+        return
     clothing_atlas_sha256 = build_clothing_atlas(clothing_atlas_path)
     builder = HeroV2Builder(config, face_atlas_path, clothing_atlas_path)
     result = builder.build()

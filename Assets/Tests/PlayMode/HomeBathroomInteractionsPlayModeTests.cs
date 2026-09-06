@@ -45,6 +45,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Toilet_FirstPersonStreamStainsAndRestores()
         {
+            AssertToiletSpringResponse();
             yield return LoadHome();
             GameSessionState.UpdateNeeds(0, 40);
             CursorLockMode previousCursor = Cursor.lockState;
@@ -65,6 +66,7 @@ namespace BarPromenade.Tests.PlayMode
                 CaptureToilet("00-grip");
                 Assert.That(home.ToiletScene.FirstPerson.GripError, Is.LessThan(0.025f));
                 AssertToiletBodyContact();
+                AssertScrotumVisible();
             });
             Assert.That(home.ToiletScene.GaugeVisible, Is.True);
             Assert.That(home.ToiletScene.Lid.Angle, Is.GreaterThan(85f));
@@ -89,6 +91,31 @@ namespace BarPromenade.Tests.PlayMode
                 "; outlet " + home.ToiletScene.FirstPerson.OutletPosition + "; aim " +
                 home.ToiletScene.FirstPerson.OutletDirection);
             yield return AtPresentation(() => CaptureToilet("01-bowl"));
+            HomeToiletFirstPersonView firstPerson = home.ToiletScene.FirstPerson;
+            Assert.That(firstPerson.LeftScrotum, Is.Not.Null);
+            Assert.That(firstPerson.RightScrotum, Is.Not.Null);
+            Quaternion leftRest = firstPerson.LeftScrotum.rotation;
+            Quaternion rightRest = firstPerson.RightScrotum.rotation;
+            float aimBeforeLook = firstPerson.AimYawDegrees;
+            firstPerson.ApplyAimDelta(new Vector2(18f, 8f), true);
+            yield return AtPresentation(() =>
+            {
+                CaptureToilet("07-camera-sway");
+                Assert.That(firstPerson.AimYawDegrees, Is.EqualTo(aimBeforeLook),
+                    "Independent camera motion must excite inertia without changing the player's aim input.");
+                Assert.That(firstPerson.Dynamics.ShaftDegrees.magnitude, Is.GreaterThan(0.01f));
+                Assert.That(Quaternion.Angle(leftRest, firstPerson.LeftScrotum.rotation), Is.GreaterThan(0.01f));
+                Assert.That(Quaternion.Angle(rightRest, firstPerson.RightScrotum.rotation), Is.GreaterThan(0.01f));
+                AssertToiletBodyContact();
+                Assert.That(firstPerson.GripError, Is.LessThan(0.025f));
+                Quaternion body = home.Player.GameObject.transform.rotation;
+                Assert.That(Vector3.Distance(firstPerson.LeftScrotum.position,
+                    firstPerson.AnatomyRoot.position + body * HomeToiletFirstPersonView.LeftScrotumAttachment),
+                    Is.LessThan(0.001f));
+                Assert.That(Vector3.Distance(firstPerson.RightScrotum.position,
+                    firstPerson.AnatomyRoot.position + body * HomeToiletFirstPersonView.RightScrotumAttachment),
+                    Is.LessThan(0.001f));
+            });
             Vector3 originalDirection = home.ToiletScene.FirstPerson.OutletDirection;
             home.ToiletScene.FirstPerson.ApplyAimDelta(110f, 0f);
             int solidBefore = home.ToiletScene.Urine.SurfaceHitCount;
@@ -142,7 +169,7 @@ namespace BarPromenade.Tests.PlayMode
             });
             Time.timeScale = 2f;
             yield return WaitUntil(() => home.ToiletScene.Timeline.Phase == HomeToiletScenePhase.Shaking,
-                "The six-second stream never entered the four-second shake.");
+                "The six-second stream never entered the two-second shake.");
             Time.timeScale = 1f;
             yield return null;
             Assert.That(home.ToiletScene.Timeline.TotalUrinatingSeconds, Is.EqualTo(6f));
@@ -150,14 +177,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.ToiletScene.GaugeVisible, Is.True);
             yield return AtPresentation(() => CaptureToilet("03-shake"));
             yield return WaitUntil(() => home.ToiletScene.Timeline.Phase == HomeToiletScenePhase.Exiting,
-                "The four-second shake never reached the camera return.");
-            Assert.That(home.ToiletScene.Timeline.TotalShakingSeconds, Is.EqualTo(4f));
+                "The two-second shake never reached the camera return.");
+            Assert.That(home.ToiletScene.Timeline.TotalShakingSeconds, Is.EqualTo(2f));
             yield return WaitUntil(() => home.Player.Motor.InputEnabled,
                 "The toilet never restored the player.");
             yield return null;
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(40 - HomeToiletInteraction.StressRelief));
             Assert.That(home.CameraFollow.FixedBaseFieldOfView, Is.EqualTo(92f).Within(0.01f));
             Assert.That(home.ToiletScene.FirstPerson.IsActive, Is.False);
+            Assert.That(home.ToiletScene.FirstPerson.Dynamics.MotionMagnitude, Is.Zero);
             Assert.That(home.Player.Visual.InteractionHandoffLocked, Is.False);
             Assert.That(Cursor.lockState, Is.EqualTo(previousCursor));
             Assert.That(Cursor.visible, Is.EqualTo(previousCursorVisible));
@@ -182,6 +210,96 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Player.Visual.InteractionHandoffLocked, Is.False);
             Assert.That(home.CameraFollow.FixedBaseFieldOfView, Is.EqualTo(92f).Within(0.01f));
             Assert.That(home.ToiletScene.Urine.ResidueCount, Is.GreaterThanOrEqualTo(residueCount));
+        }
+
+        private static void AssertToiletSpringResponse()
+        {
+            var dynamics = new HomeToiletAnatomyDynamics();
+            dynamics.Reset(Quaternion.identity);
+            for (int frame = 0; frame < 60; frame++)
+                dynamics.Advance(1f / 60f, Quaternion.identity, Quaternion.identity, 0f);
+            Assert.That(dynamics.MotionMagnitude, Is.Zero, "A stationary camera must not invent an idle oscillation.");
+            Quaternion moved = Quaternion.Euler(16f, 24f, 0f);
+            dynamics.Advance(1f / 60f, moved, Quaternion.identity, 0f);
+            float firstMotion = dynamics.MotionMagnitude;
+            Assert.That(firstMotion, Is.GreaterThan(0.1f));
+            dynamics.Advance(1f / 60f, moved, Quaternion.identity, 0f);
+            Assert.That(dynamics.MotionMagnitude, Is.GreaterThan(0.1f),
+                "Stopping the camera leaves momentum rather than snapping back.");
+            for (int frame = 0; frame < 180; frame++)
+            {
+                dynamics.Advance(1f / 60f, moved, Quaternion.identity, 0f);
+                Assert.That(dynamics.ShaftDegrees.magnitude, Is.LessThanOrEqualTo(HomeToiletAnatomyDynamics.ShaftLimitDegrees + 0.001f));
+                Assert.That(dynamics.LeftDegrees.magnitude, Is.LessThanOrEqualTo(HomeToiletAnatomyDynamics.ScrotumLimitDegrees + 0.001f));
+                Assert.That(dynamics.RightDegrees.magnitude, Is.LessThanOrEqualTo(HomeToiletAnatomyDynamics.ScrotumLimitDegrees + 0.001f));
+            }
+            Assert.That(dynamics.MotionMagnitude, Is.LessThan(firstMotion * 0.05f), "Damping must settle the motion.");
+            dynamics.Reset(moved);
+            Assert.That(dynamics.MotionMagnitude, Is.Zero);
+        }
+
+        private void AssertScrotumVisible()
+        {
+            HomeToiletFirstPersonView view = home.ToiletScene.FirstPerson;
+            Camera camera = home.CameraFollow.GetComponent<Camera>();
+            var body = new System.Collections.Generic.List<(Vector3[] vertices, int[] triangles)>();
+            var baked = new Mesh();
+            try
+            {
+                foreach (Player3DMeshBinding binding in view.Registry.MeshBindings)
+                {
+                    if (!(binding?.Renderer is SkinnedMeshRenderer renderer) || !renderer.enabled ||
+                        renderer.forceRenderingOff || !renderer.gameObject.activeInHierarchy) continue;
+                    baked.Clear(false);
+                    renderer.BakeMesh(baked, true);
+                    Vector3[] vertices = baked.vertices;
+                    for (int index = 0; index < vertices.Length; index++)
+                        vertices[index] = renderer.transform.TransformPoint(vertices[index]);
+                    body.Add((vertices, baked.triangles));
+                }
+            }
+            finally { Object.DestroyImmediate(baked); }
+            foreach (Transform lobe in new[] { view.LeftScrotum, view.RightScrotum })
+            {
+                float visibleArea = 0f;
+                foreach (MeshFilter filter in lobe.GetComponentsInChildren<MeshFilter>())
+                {
+                    Vector3[] vertices = filter.sharedMesh.vertices;
+                    int[] triangles = filter.sharedMesh.triangles;
+                    for (int triangle = 0; triangle < triangles.Length; triangle += 3)
+                    {
+                        Vector3 a = filter.transform.TransformPoint(vertices[triangles[triangle]]);
+                        Vector3 b = filter.transform.TransformPoint(vertices[triangles[triangle + 1]]);
+                        Vector3 c = filter.transform.TransformPoint(vertices[triangles[triangle + 2]]);
+                        Vector3 center = (a + b + c) / 3f;
+                        if (Vector3.Dot(Vector3.Cross(b - a, c - a), camera.transform.position - center) <= 0f) continue;
+                        Vector3 screen = camera.WorldToViewportPoint(center);
+                        if (screen.z <= 0f || screen.x < 0f || screen.x > 1f || screen.y < 0f || screen.y > 1f) continue;
+                        Vector3 toward = center - camera.transform.position;
+                        var ray = new Ray(camera.transform.position, toward.normalized);
+                        bool blocked = false;
+                        foreach (var mesh in body)
+                        {
+                            for (int face = 0; face < mesh.triangles.Length; face += 3)
+                            {
+                                if (RayTriangleDistance(ray, mesh.vertices[mesh.triangles[face]],
+                                    mesh.vertices[mesh.triangles[face + 1]], mesh.vertices[mesh.triangles[face + 2]],
+                                    out float distance) && distance < toward.magnitude - 0.003f)
+                                { blocked = true; break; }
+                            }
+                            if (blocked) break;
+                        }
+                        if (blocked) continue;
+                        Vector3 pa = camera.WorldToViewportPoint(a);
+                        Vector3 pb = camera.WorldToViewportPoint(b);
+                        Vector3 pc = camera.WorldToViewportPoint(c);
+                        visibleArea += Mathf.Abs((pb.x - pa.x) * (pc.y - pa.y) -
+                            (pb.y - pa.y) * (pc.x - pa.x)) * (1280f * 720f * 0.5f);
+                    }
+                }
+                Assert.That(visibleArea, Is.GreaterThan(30f),
+                    lobe.name + " must show a visible volume outside the jacket and holding hand.");
+            }
         }
 
         private void AssertToiletBodyContact()
@@ -262,10 +380,10 @@ namespace BarPromenade.Tests.PlayMode
             if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
         }
 
-        private void CaptureToilet(string shot)
+        private void CaptureToilet(string shot, string interaction = "HomeToilet")
         {
             Camera camera = home.CameraFollow.GetComponent<Camera>();
-            string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", "HomeToilet");
+            string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", interaction);
             System.IO.Directory.CreateDirectory(folder);
             var target = new RenderTexture(1280, 720, 24);
             var frame = new Texture2D(1280, 720, TextureFormat.RGB24, false);
@@ -338,58 +456,155 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        [PrebuildSetup(typeof(HomeBrushingAssetsSetup))]
         public IEnumerator Brushing_MirrorSceneGatesReliefPerDay()
         {
             yield return LoadHome();
             GameSessionState.UpdateNeeds(0, 30);
-            yield return WalkToAndActivate(
-                home.TeethBrushing,
-                new Vector3(2.075f, 0.12f, 2.55f));
-
-            Time.timeScale = FastTimeScale;
-            yield return WaitUntil(
-                () => home.TeethBrushing.Timeline.Phase ==
-                      HomeTeethBrushingPhase.Brushing,
-                "The brushing scene never reached its loop.");
-            Assert.That(
-                home.TeethBrushing.Toothbrush,
-                Is.Not.Null);
-            Assert.That(
-                home.TeethBrushing.Toothbrush.activeSelf,
-                Is.True,
-                "The toothbrush must be in hand during the loop.");
-            Assert.That(
-                home.TeethBrushing.ArmPose.Weight,
-                Is.EqualTo(1f).Within(0.01f));
-
-            yield return WaitUntil(
-                () => home.Player.Motor.InputEnabled,
-                "The brushing scene never restored the player.");
+            GameSessionState.SetHeroMouthSoiled(true, "brushing_test");
+            var brushing = home.TeethBrushing;
+            var visual = (Player3DCharacterPresentation)home.Player.Visual;
+            int bodyIntersectionFrames = 0;
+            float minimumBodyClearance = float.PositiveInfinity;
+            var armProbe = home.gameObject.AddComponent<HomeBathroomPresentationProbe>();
+            armProbe.Observe = () =>
+            {
+                if (brushing.ArmPose == null || brushing.Timeline.Phase == HomeTeethBrushingPhase.Idle) return;
+                minimumBodyClearance = Mathf.Min(minimumBodyClearance, brushing.ArmPose.BodyClearance);
+                if (brushing.ArmPose.BodyIntersectionCount > 0)
+                {
+                    if (bodyIntersectionFrames == 0)
+                    {
+                        CaptureToilet("arm-body-intersection", "HomeBrushing");
+                        Debug.Log($"Brushing arm contact: phase={brushing.Timeline.Phase}, radii={brushing.ArmPose.ArmRadii:F4}, clearances={brushing.ArmPose.ArmClearances:F4}, detail={brushing.ArmPose.BodyIntersectionDetail}");
+                    }
+                    bodyIntersectionFrames++;
+                }
+            };
+            CursorLockMode previousCursor = Cursor.lockState;
+            bool previousCursorVisible = Cursor.visible;
+            yield return WalkToAndActivate(brushing, new Vector3(2.075f, 0.12f, 2.55f));
+            Time.timeScale = 2f;
+            yield return WaitUntil(() => brushing.Timeline.Phase == HomeTeethBrushingPhase.Brushing,
+                "The brushing scene never reached mouse control.");
+            yield return new WaitForSeconds(0.4f);
+            yield return AtPresentation(() =>
+            {
+                CaptureToilet("00-brush-contact", "HomeBrushing");
+                Assert.That(brushing.ArmPose.ArmRadii.x, Is.InRange(0.04f, 0.09f), "FBX readback must retain metre-scale arm geometry.");
+                Assert.That(brushing.ArmPose.ArmRadii.y, Is.InRange(0.035f, 0.08f));
+                Assert.That(brushing.ArmPose.ArmRadii.z, Is.InRange(0.025f, 0.10f));
+                Assert.That(brushing.Progress.Amount, Is.Zero, "An idle mouse cannot clean the teeth.");
+                Assert.That(brushing.ArmPose.ContactError, Is.LessThan(0.012f),
+                    $"The actual bristles must reach the teeth. Arm radii={brushing.ArmPose.ArmRadii:F4}; clearances={brushing.ArmPose.ArmClearances:F4}.");
+                Assert.That(brushing.Toothbrush.activeSelf, Is.True);
+                Assert.That(brushing.GaugeVisible, Is.True);
+                Assert.That(visual.CurrentFacialExpression, Is.EqualTo(PlayerFacialExpression.TeethDisplay));
+                Assert.That(visual.HasContextualFacialExpression, Is.True);
+                Assert.That(home.Player.Motor.InputEnabled, Is.False);
+            });
+            foreach (Vector2 corner in new[] { new Vector2(-1f, -1f), new Vector2(1f, 1f),
+                new Vector2(-1f, 1f), new Vector2(1f, -1f) })
+            {
+                brushing.ApplyBrushDelta(corner * 300f);
+                brushing.ApplyBrushDelta(corner * 300f);
+                yield return AtPresentation(() =>
+                {
+                    Assert.That(brushing.ArmPose.ContactError, Is.LessThan(0.012f), "Every permitted mouse corner must remain reachable outside the body.");
+                    // The continuous probe reports any bad corner together
+                    // with entry, lowering and spit after the complete cycle.
+                });
+            }
+            yield return BrushToCompletion(true);
             Time.timeScale = 1f;
-            Assert.That(
-                home.TeethBrushing.Toothbrush.activeSelf,
-                Is.False);
+            yield return new WaitForSeconds(HomeTeethBrushingTimeline.ArmLowerSeconds + 0.05f);
+            yield return AtPresentation(() =>
+            {
+                CaptureToilet("02-clean-teeth", "HomeBrushing");
+                Assert.That(brushing.Timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.ShowTeeth));
+                Assert.That(brushing.Progress.Amount, Is.EqualTo(1f));
+                Assert.That(brushing.Toothbrush.activeSelf, Is.False, "The clean teeth must be unobstructed.");
+                Assert.That(brushing.SpitEffect.EmittedCount, Is.Zero, "Show the teeth before spitting.");
+                Assert.That(visual.IsMouthSoiledVisible, Is.False, "The finishing shot must show the clean teeth atlas cell.");
+                Assert.That(GameSessionState.HeroMouthSoiled, Is.True, "State commits only after the whole action.");
+            });
+            yield return WaitUntil(() => brushing.SpitEffect.EmittedCount > 0, "No visible foam left the mouth.");
+            yield return AtPresentation(() =>
+            {
+                CaptureToilet("03-spit-flight", "HomeBrushing");
+                Assert.That(brushing.ArmPose.Bend, Is.GreaterThan(0.9f));
+                Assert.That(visual.CurrentFacialExpression, Is.EqualTo(PlayerFacialExpression.Spit));
+                Assert.That(Vector3.Distance(brushing.SpitEffect.LastMouth, visual.Registry.Anchors.Mouth.position), Is.LessThan(0.03f));
+            });
+            yield return WaitUntil(() => brushing.SpitEffect.BasinHitCount > 0, "The mouth-origin foam missed the real sink mesh.");
+            yield return AtPresentation(() => CaptureToilet("04-sink-impact", "HomeBrushing"));
+            Assert.That(home.transform.InverseTransformPoint(brushing.SpitEffect.LastImpact).y, Is.LessThan(0.84f),
+                "The foam must enter the cavity below the rim.");
+            yield return WaitUntil(() => home.Player.Motor.InputEnabled, "The brushing scene never restored the player.");
+            Assert.That(brushing.Toothbrush.activeSelf, Is.False);
+            Assert.That(brushing.GaugeVisible, Is.False);
+            Assert.That(visual.HasContextualFacialExpression, Is.False);
+            Assert.That(visual.InteractionHandoffLocked, Is.False);
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.False);
+            Assert.That(Cursor.lockState, Is.EqualTo(previousCursor));
+            Assert.That(Cursor.visible, Is.EqualTo(previousCursorVisible));
             int stressAfterFirst = GameSessionState.StressLevel;
-            Assert.That(
-                stressAfterFirst,
-                Is.EqualTo(
-                    30 - HomeTeethBrushingInteraction.StressRelief));
+            Assert.That(stressAfterFirst, Is.EqualTo(30 - HomeTeethBrushingInteraction.StressRelief));
 
-            // The same game day: the scene replays, the relief does
-            // not.
-            yield return WalkToAndActivate(
-                home.TeethBrushing,
-                new Vector3(2.075f, 0.12f, 2.55f));
-            Time.timeScale = FastTimeScale;
-            yield return WaitUntil(
-                () => home.Player.Motor.InputEnabled,
-                "The second brushing never restored the player.");
+            // Daily relief is gated; a second complete brushing still cleans the mouth.
+            GameSessionState.SetHeroMouthSoiled(true, "brushing_test_repeat");
+            yield return WalkToAndActivate(brushing, new Vector3(2.075f, 0.12f, 2.55f));
+            Time.timeScale = 3f;
+            yield return WaitUntil(() => brushing.Timeline.Phase == HomeTeethBrushingPhase.Brushing, "No second brushing.");
+            yield return BrushToCompletion(false);
+            yield return WaitUntil(() => home.Player.Motor.InputEnabled, "The second brushing never restored the player.");
             Time.timeScale = 1f;
-            Assert.That(
-                GameSessionState.StressLevel,
-                Is.EqualTo(stressAfterFirst),
-                "A second brushing the same day must commit " +
-                "nothing.");
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(stressAfterFirst));
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.False);
+
+            GameSessionState.SetHeroMouthSoiled(true, "brushing_test_cancel");
+            yield return WalkToAndActivate(brushing, new Vector3(2.075f, 0.12f, 2.55f));
+            Time.timeScale = 3f;
+            yield return WaitUntil(() => brushing.Timeline.Phase == HomeTeethBrushingPhase.Brushing, "No cancellable brushing.");
+            brushing.ApplyBrushDelta(new Vector2(80f, 0f));
+            yield return null;
+            brushing.RequestStop();
+            yield return WaitUntil(() => home.Player.Motor.InputEnabled, "Cancel did not restore control.");
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.True, "A cancelled brush must not clean the mouth.");
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(stressAfterFirst));
+            Assert.That(visual.HasContextualFacialExpression, Is.False);
+            Assert.That(visual.InteractionHandoffLocked, Is.False);
+            Assert.That(brushing.SpitEffect.EmittedCount, Is.Zero, "Cancellation skips the completion spit.");
+            Assert.That(bodyIntersectionFrames, Is.Zero, "The actual arm must stay outside the torso throughout entry, strokes, lowering and spit.");
+            Assert.That(minimumBodyClearance, Is.GreaterThanOrEqualTo(-0.0005f));
+            armProbe.Observe = null;
+        }
+
+        private IEnumerator BrushToCompletion(bool capture)
+        {
+            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            float started = Time.time;
+            int stroke = 0;
+            bool captured = false;
+            var brushing = home.TeethBrushing;
+            float remainingSeconds = (1f - brushing.Progress.Amount) *
+                HomeTeethBrushingProgress.RequiredDistance / HomeTeethBrushingProgress.MaximumCreditSpeed;
+            while (brushing.Timeline.Phase == HomeTeethBrushingPhase.Brushing && Time.realtimeSinceStartup < deadline)
+            {
+                brushing.ApplyBrushDelta(new Vector2((stroke++ % 2 == 0 ? 1f : -1f) * 160f, 0f));
+                if (capture && !captured && brushing.Progress.Amount >= 0.5f)
+                {
+                    captured = true;
+                    yield return AtPresentation(() => CaptureToilet("01-brushing", "HomeBrushing"));
+                }
+                else yield return null;
+            }
+            Assert.That(brushing.Timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.ShowTeeth),
+                $"Mouse strokes did not finish brushing: {brushing.Progress.Amount:F3}, tip error {brushing.ArmPose.ContactError:F4}, radii {brushing.ArmPose.ArmRadii:F4}, clearances {brushing.ArmPose.ArmClearances:F4}, {brushing.ArmPose.BodyIntersectionDetail}.");
+            // The first input is consumed by the current LateUpdate, whose
+            // delta has already advanced Time.time before the coroutine starts.
+            Assert.That(Time.time - started + Time.maximumDeltaTime, Is.GreaterThanOrEqualTo(remainingSeconds - 0.01f),
+                "Large mouse spikes cannot finish instantly.");
         }
 
         private IEnumerator LoadHome()
@@ -463,12 +678,25 @@ namespace BarPromenade.Tests.PlayMode
         }
     }
 
+    public sealed class HomeBrushingAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            System.Type setup = System.Type.GetType("BarPromenade.Editor.Player3DV2AssetSetup, BarPromenade.Editor", true);
+            setup.GetMethod("BuildOrThrow", System.Type.EmptyTypes).Invoke(null, null);
+#endif
+        }
+    }
+
     [DefaultExecutionOrder(20000)]
     public sealed class HomeBathroomPresentationProbe : MonoBehaviour
     {
         public System.Action Sample;
+        public System.Action Observe;
         private void LateUpdate()
         {
+            Observe?.Invoke();
             System.Action pending = Sample;
             Sample = null;
             pending?.Invoke();

@@ -20,7 +20,13 @@ namespace BarPromenade
         Slack = 7,
 
         /// <summary>The wince of a fall coming, or of the floor just met.</summary>
-        Grimace = 8
+        Grimace = 8,
+
+        /// <summary>Lips drawn back just enough to inspect the teeth at the mirror.</summary>
+        TeethDisplay = 9,
+
+        /// <summary>Pursed lips for the short spit into the basin.</summary>
+        Spit = 10
     }
 
     /// <summary>

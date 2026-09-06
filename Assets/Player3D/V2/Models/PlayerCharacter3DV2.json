@@ -1313,7 +1313,7 @@
     "cell_size_px": 64,
     "uv_origin": "bottom_left",
     "filter_mode": "Point",
-    "sha256": "64de84706382acdba65e48f4309ec5a7f4c6daf6368cadd6153e858afbe0f375",
+    "sha256": "c0413e3f353804c7c1b1dec61e938d7d9dbcf2e7329a4eae0afff578cbbe8188",
     "cells": [
       {
         "expression": "Neutral",
@@ -1370,6 +1370,18 @@
         "soiled": false
       },
       {
+        "expression": "TeethDisplay",
+        "column": 2,
+        "row": 1,
+        "soiled": false
+      },
+      {
+        "expression": "Spit",
+        "column": 3,
+        "row": 1,
+        "soiled": false
+      },
+      {
         "expression": "Neutral",
         "column": 4,
         "row": 3,
@@ -1420,6 +1432,18 @@
       {
         "expression": "Grimace",
         "column": 5,
+        "row": 1,
+        "soiled": true
+      },
+      {
+        "expression": "TeethDisplay",
+        "column": 6,
+        "row": 1,
+        "soiled": true
+      },
+      {
+        "expression": "Spit",
+        "column": 7,
         "row": 1,
         "soiled": true
       }
@@ -1623,5 +1647,6 @@
     "right_knee_width_m": 0.107155,
     "right_calf_width_m": 0.133021,
     "right_ankle_width_m": 0.08129
-  }
+  },
+  "content_signature_scope": "last_full_model_export; current_face_pixels_use_face_atlas.sha256"
 }

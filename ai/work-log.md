@@ -6,6 +6,200 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-06 — Forward pressure and a slightly raised vomiting head
+
+The stream keeps its origin at the folded mouth, but its launch now turns
+at most `25°` toward the hero's forward. Full-burst speed is `2.8–3.4 m/s`
+and weak-burst speed is `1.8–2.3 m/s`; the existing rods and chunks still
+fall under gravity and use the same swept collision/residue path. The held
+head/neck pitch is reduced from `30°` to `24°` at the user's request;
+the torso fold, pulse and bout timing remain in place.
+
+A focused standing-burst regression measures the forward speed of newly
+emitted particles, the first floor impact relative to the furthest folded
+mouth position, and the emitter's contact with that mouth. It also captures
+`TestResults/vomit-forward.png`, which was visually checked. The single
+`Player3DVomitCapturePlayModeTests.Vomit_StandingStreamHasForwardPressure`
+selection passed in `2.38 s` (`TestResults/vomit-forward-v3.xml`): fresh
+particles averaged `2.08 m/s` forward, and the first floor impact was
+`0.76 m` beyond the furthest sampled mouth position. The emitter remained
+attached to the folded mouth. `git diff --check` passed; full suites and a
+player build were intentionally not run.
+
+## 2026-09-06 — Manual mirror brushing, visible teeth and a real sink spit
+
+The approved brushing replacement now uses mouse/right-stick X/Y to guide the
+actual hero's brush at the teeth. `HomeTeethBrushingProgress` credits only
+commanded motion that the real brush tip performs in contact, capped at
+`0.08 m/s` toward `0.64 m`; the gauge therefore needs at least `8 s` of active
+movement and does not advance while idle. The shared bathroom lifecycle still
+owns approach, modal capture, neutral/terminal presentation and physical exit.
+
+The user's final arm requirement applies throughout raising, brushing,
+lowering, spitting and cancellation: the sleeve, forearm and hand remain
+outside the body. Wrist travel follows an outward arc with two-bone IK;
+geometric clearance is measured against the posed torso, jacket and pelvis,
+rather than inferred from the wrist target alone. The focused Unity scene
+check below verified these full-arm clearances.
+
+At full progress the hand lowers and `ShowTeeth` holds for `1.5 s`, followed
+by a `1.5 s` Spit phase. The production spine, chest, neck and head bend into
+the basin; cream foam leaves the live mouth, flies under gravity and hits the
+actual Home mesh triangles, with a brief splash and positional spit sound.
+The mirror camera shifts aside to include that flight and then returns.
+The `8 x 4` face atlas now carries eleven expressions and their soiled twins
+(`22` occupied cells, ten free), adding TeethDisplay and Spit without changing
+the weary expression or replacing the real rig.
+
+`E` cancels before `100%`. Only a full completed scene clears the soiled-mouth
+flag, including replays after today's relief; stress `-5` remains once per
+game day. The finishing gesture previews the clean face locally. Scene cleanup
+restores the contextual expression lease, hand/body pose, cursor, handoff,
+camera and props; cancellation does not clean the mouth or consume relief.
+
+`HomeBrushingAction` adds a truly hollow Blender basin, a small perforated
+drain, a correctly sized brush handle and two normalized foam meshes:
+five FBX/five meshes, `1,060` triangles.
+The existing sink collider and occlusion group stay in place. The old wide
+Hollow visual is entirely replaced with the drain over the genuine ceramic
+floor at world `Y=0.720`; all liquid receivers see the authored triangles.
+
+Validation: the direct Blender validator passed deterministic geometry,
+nondegenerate triangles, fixed dimensions, sixteen cavity rays, three incoming
+trajectory clearances, readable importer settings and actual FBX vertex/anchor
+round trips. The face-atlas validator passed deterministic pixels and all 22
+cell contracts. The source previews and five in-game captures were inspected.
+The single focused PlayMode selection
+`HomeBathroomInteractionsPlayModeTests.Brushing_MirrorSceneGatesReliefPerDay`
+passed in `22.26 s` (`TestResults/home-brushing-v5.xml`). It covers idle input,
+all four mouse corners, active movement, clean-face display, mouth-origin foam
+hitting below the sink rim, daily relief, replay cleaning, cancellation and
+restoration. The continuous presentation probe recorded zero arm/body
+intersection frames throughout entry, brushing, lowering and spitting.
+
+Geometry readback follows the production FBX `BakeMesh(..., true)` convention;
+the focused check also bounds the measured arm radii in metres. The guard
+excludes only the authored shoulder/axilla seam (`0.195 m` on the `0.301 m`
+upper-arm bone, measured from source Idle0), then checks the free upper arm,
+whole forearm and hand. Capsule contacts require confirmation against the
+posed mesh triangles, preserving the tapered sleeve's actual clearance.
+`git diff --check` passed. Full suites and a player build were intentionally
+not run.
+
+## 2026-09-05 — The vomit is heard, the neck folds, the body convulses
+
+The user's three asks on the bout of vomiting: a SOUND of vomiting (the
+first cut's three one-shots — a third of a second of noise at a quarter
+volume — did not read as one), the head and neck bent much harder, and an
+expressive animation at the moment the stream comes out. No canon moved:
+the §6 row of the bout already covers it.
+
+Sound. `Retch` is rebuilt as a three-beat heave (`0.62 s`, volume `0.55`):
+the breath dragged in, a harmonic voice climbing `95 → 150 Hz` rattled at
+`22 Hz` under a `520 Hz` formant, a wet choke with a bubble. `VomitGush`
+(`0.7 s`, `0.5`, still re-cued every `0.9 s`) gained a falling gurgle, a
+`92 Hz` body and bubbles on an irregular grid; `VomitSplat` is heavier
+(`0.36`); a new `VomitCough` (`0.55 s`, `0.5`: two chest coughs, a spit, the
+breath back in) is cued on every `BurstEnd` — appended at the END of the
+enum and the table, as the indexed table demands. The stream itself now
+has a voice of its own: `HeroVomitStreamSound` synthesises a `2 s` loop in
+the one-shots' crunch (hold `3`, `512` steps, low-pass `2.8 kHz`; pump at
+the flow's `3.2 Hz`, a `7 Hz` push, an `84 Hz` gurgling body, bubbles), its
+tail folded into its head over `90 ms` so the seam carries neither click
+nor silence, and `HeroVomitStreamEffect` owns one looping `AudioSource` on
+the emitter (`1.2–13 m` linear like the pool's voices, `SfxWorld`) whose
+volume the controller sets from `Pose.Flow` every tick, so the pump, the
+attack and the tail of each burst are heard as they are drawn. It never
+plays outside play mode; `StopAndClear` silences it.
+
+Bend. `HeadDownDegrees 14 → 30`, the heave `4 → 12°` over `0.42 s`, and a
+`5°` jerk with every push of the pump. The presentation applies the bout's
+chin-down beside the glance with its own split, `VomitNeckShare 0.55` —
+the glance's `0.38/0.62` is a nod; being sick folds the NECK — still
+outside the `[−32, +10]` clamp. The ragdoll's head drive is `120/11/80`
+and clamps at `45°`.
+
+Convulsion. `PlayerVomitPose` grew `TorsoPitchDegrees` (`22` held, `+9` at
+the heave, `+4` with the pump; positive is forward in the layer's
+`chestPitchDegrees`, the hiccup's snap-back being the negative one),
+`CrouchMetres` (`5 cm`, `+4 cm` at the heave), `BraceWeight` (both palms
+braced on the thighs just above the knees through `PlayerArmReachPose`,
+scaled by `1 − locomotionBlend` so a man walking through a bout keeps his
+arms, yielding to the balance model's brace hand), `WipeWeight` (the right
+hand to the mouth through the gauge's own `mouthReachWeight`: `0.4 s` up,
+`0.6 s` held, `0.6 s` down after the last burst — `TotalSeconds 10.2 →
+11.0`) and `Pump` (the flow's half-sine scaled by the burst's strength,
+zero between bursts). Everything rides the head's one `EvaluateHeld` curve
+and is None after the bout. One tune off the first sheet: at `16°` of fold
+with the knee as the target the shoulder stayed ninety centimetres above
+it and the IK, pulled past its reach, read as arms hanging forward — the
+fold went to `22°` and the palm to `55 %` down the thigh, `5 cm` ahead of
+the bone, where a straight arm reaches it.
+
+The deeper fold exposed an order bug the shallow one had hidden: the user
+saw the stream leave «оттуда, где раньше была голова». `HeroVomitStreamEffect`
+(order `280`) called `FollowMouth` from its `Update`, which runs after the
+presentation's `Update` (order `0`) has evaluated the graph — every bone in
+the raw clip pose, the head UP — and before the presentation's `LateUpdate`
+folds neck, head and torso; the particle systems begin their step between
+the two, so every frame's rods left from the unbent mouth. With `14°` on
+the head alone that was centimetres; with `30° + 22°` it was the height of
+a head. The emitter now follows the mouth ONLY in `LateUpdate`, after the
+fold (one frame of lag on a held pose), `SetFlow` no longer re-places it
+from the status controller's `Update`, and the retch, spurt and cough
+sounds take the emitter's position (`MouthPosition`) rather than the
+anchor's. The capture pins it: at `1.2 s` the emitter must sit within
+`8 cm` of the folded mouth anchor. Its older "peak alive `> 40` rods"
+threshold had been measured from the unfolded mouth, a head's height too
+high, from where the rods flew longer; leaving the folded mouth they land
+sooner (`37` at the peak), so the threshold is `25`.
+
+Verification: `dotnet build` Runtime / EditModeTests / PlayModeTests `0`
+errors. Unity EditMode `HeroVomitTests` (new
+`Pose_DoublesOverBracesOnTheKneesConvulsesWithThePumpAndWipes`, the score
+with `Cough`, `TotalSeconds 11`), `HeroVomitStreamSoundTests` (determinism,
+RMS `0.08–0.45`, pump crests over troughs, a seam that opens and closes on
+the rush), `RetroSfxLibraryTests` (durations `0.62/0.7/0.18/0.55`, minimum
+volumes, the cough distinct and audible), `HeroNauseaTests`,
+`PlayerFacialMoodRulesTests`: `82/82`, then `53/53` after the tune. PlayMode
+`Player3DVomitCapturePlayModeTests` `1/1` twice; the second
+`TestResults/vomit-sheet.png` shows him folded with the face at the
+pavement and the palms on the front of the thighs while the first burst
+arcs out, the same fold lying stunned and mid-rise, and the wiped, soiled
+face after. Not run: full suites, a player build, a listen — the sounds are
+pinned by their tests, not by an ear. Nothing committed.
+
+## 2026-09-05 — Toilet paired anatomy and camera-driven inertia
+
+Restored the user's requested `2 s` shake duration; main emission remains
+`6 s`, including its final `20%` fade. Added two distinct Blender-authored
+scrotum lobes with continuous upper necks and fixed body attachment pivots.
+They share the production skin material and have slightly different masses.
+The authored kit now contains `13` FBX models, `15` meshes and `2,376`
+triangles; shaft geometry, aim/grip/outlet anchors and other fixture assets
+remain unchanged. The initial gameplay capture showed the jacket covering
+both lobes, so their continuous necks now curve forward to expose the volumes
+while the upper roots remain on the body.
+
+`HomeToiletAnatomyDynamics` integrates bounded angular spring/damper motion
+at substeps no larger than `1/120 s`: a firmer held shaft and two independent
+gravity pendulums with different lengths/damping. Camera angular motion,
+including independent look, supplies inertial forcing; the authored final
+shake also drives the hanging masses. The body attachments remain fixed,
+the real hand follows through the existing IK, and emission reads the actual
+swaying outlet. End/disable clears momentum and hides the entire owned model.
+
+The existing PlayMode regression checks stationary/no-drive rest, inertia
+after a camera impulse, damping, limits, live independent-look response,
+fixed attachment/grip contact, visible lobe area outside actual baked hero
+triangles and the `6 + 2 s` lifecycle. Blender's directly affected validator
+passed including deterministic geometry, neck overlap, units and actual FBX
+round-trip. The exact focused selection
+`HomeBathroomInteractionsPlayModeTests.Toilet_FirstPersonStreamStainsAndRestores`
+passed `1/1` in `15.81 s` after the visibility correction. Gameplay captures
+of the default pose, camera impulse, aiming and final shake were inspected.
+Full test suites and a player build were not run.
+
 ## 2026-09-05 — Toilet body attachment and slower completion
 
 Followed the user's screenshot correction for the floating anatomy base.

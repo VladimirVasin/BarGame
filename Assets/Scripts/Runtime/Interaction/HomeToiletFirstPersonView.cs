@@ -30,6 +30,9 @@ namespace BarPromenade
         private const float ShakeDegrees = 11f;
         private const float AnatomyHeightAbovePelvis = 0.020f;
         private const float AnatomyBaseInset = 0.008f;
+        public static readonly Vector3 LeftScrotumAttachment = new Vector3(-0.011f, -0.016f, -0.006f);
+        public static readonly Vector3 RightScrotumAttachment = new Vector3(0.011f, -0.016f, -0.006f);
+        private readonly HomeToiletAnatomyDynamics dynamics = new HomeToiletAnatomyDynamics();
 
         private HomeInteriorRoot home;
         private Player3DAssetRegistry registry;
@@ -42,6 +45,8 @@ namespace BarPromenade
         private Transform anatomyGrip;
         private Transform anatomyOutlet;
         private Transform anatomyAimPivot;
+        private Transform leftScrotum;
+        private Transform rightScrotum;
         private Player3DHeadVisibility hiddenHead;
         private SeatedArmHandAttachment handAttachment;
         private Quaternion handFrameInHand;
@@ -76,6 +81,9 @@ namespace BarPromenade
         public Transform AnatomyRoot => anatomyRoot;
         public Transform Grip => anatomyGrip;
         public Transform Outlet => anatomyOutlet;
+        public Transform LeftScrotum => leftScrotum;
+        public Transform RightScrotum => rightScrotum;
+        public HomeToiletAnatomyDynamics Dynamics => dynamics;
         public float AimYawDegrees => aimYaw;
         public float AimPitchDegrees => aimPitch;
         public float AnatomyForwardMeters => anatomyForwardMeters;
@@ -154,9 +162,11 @@ namespace BarPromenade
             anatomyGrip = FindDescendant(model.transform, "Grip");
             anatomyOutlet = FindDescendant(model.transform, "Outlet");
             anatomyAimPivot = FindDescendant(model.transform, "AimPivot");
-            Renderer[] renderers = model.GetComponentsInChildren<Renderer>(true);
+            leftScrotum = CreateScrotum("ScrotumLeft");
+            rightScrotum = CreateScrotum("ScrotumRight");
+            Renderer[] renderers = anatomyRoot.GetComponentsInChildren<Renderer>(true);
             if (anatomyGrip == null || anatomyOutlet == null ||
-                anatomyAimPivot == null || renderers.Length == 0 ||
+                anatomyAimPivot == null || leftScrotum == null || rightScrotum == null || renderers.Length == 0 ||
                 Vector3.Distance(anatomyOutlet.position,
                     anatomyAimPivot.position) < 0.10f ||
                 Vector3.Distance(anatomyOutlet.position,
@@ -229,6 +239,8 @@ namespace BarPromenade
             wasAimingAllowed = false;
             IsActive = true;
             anatomyRoot.gameObject.SetActive(true);
+            UpdateCameraPose();
+            dynamics.Reset(cameraRotation);
             ApplyPose(0f, -1f);
             UpdateCameraPose();
         }
@@ -267,7 +279,7 @@ namespace BarPromenade
             }
             else
             {
-                ApplyPose(weight, shakeElapsed);
+                ApplyPose(weight, shakeElapsed, deltaTime);
                 UpdateCameraPose();
                 // Only head geometry is hidden; the actual arm, body and
                 // contact shadow stay visible throughout the action.
@@ -347,11 +359,12 @@ namespace BarPromenade
             }
 
             IsActive = false;
+            dynamics.Reset(Quaternion.identity);
             freeLook = false;
             wasAimingAllowed = false;
         }
 
-        private void ApplyPose(float weight, float shakeElapsed)
+        private void ApplyPose(float weight, float shakeElapsed, float deltaTime = 0f)
         {
             upperArm.localRotation = neutralUpper;
             forearm.localRotation = neutralForearm;
@@ -373,8 +386,12 @@ namespace BarPromenade
                     ShakeDegrees * envelope;
             }
 
+            UpdateCameraPose();
+            if (!PauseMenuController.IsAnyPaused)
+                dynamics.Advance(deltaTime, cameraRotation, actor.rotation, shake);
+            Vector2 sway = dynamics.ShaftDegrees;
             Quaternion aimRotation = entryRotation *
-                Quaternion.Euler(aimPitch + shake, aimYaw, 0f);
+                Quaternion.Euler(aimPitch + shake + sway.x, aimYaw + sway.y, 0f);
             // At both endpoints the fixed-size model is physically behind
             // the existing trousers. No opacity or scale animation masks it.
             float reveal = Mathf.SmoothStep(0f, 1f,
@@ -387,6 +404,10 @@ namespace BarPromenade
             // AimPivot is authored at zero, but aligning by measured world
             // position also preserves correctness if the FBX root changes.
             anatomyRoot.position += rootPosition - anatomyAimPivot.position;
+            // Both upper attachments stay on the body. The hanging masses
+            // use their own gravity/damping response, independent of shaft aim.
+            ApplyScrotum(leftScrotum, LeftScrotumAttachment, dynamics.LeftDegrees, rootPosition, reveal);
+            ApplyScrotum(rightScrotum, RightScrotumAttachment, dynamics.RightDegrees, rootPosition, reveal);
 
             // A generic prop socket gives contact, not the palm's facing.
             // Use the actual hand/thumbnail geometry's measured frame:
@@ -406,6 +427,25 @@ namespace BarPromenade
                 wristTarget, handRotation, elbowHint, weight,
                 float.PositiveInfinity, true);
             poseApplied |= weight > 0.0001f;
+        }
+
+        private Transform CreateScrotum(string resourceName)
+        {
+            GameObject template = Resources.Load<GameObject>("HomeToiletAction/Models/" + resourceName);
+            if (template == null) return null;
+            Transform pivot = new GameObject("Home Toilet " + resourceName + " Pivot").transform;
+            pivot.SetParent(anatomyRoot, false);
+            // Retain the FBX's authored unit factor on its own root.
+            Instantiate(template, pivot, false);
+            return pivot;
+        }
+
+        private void ApplyScrotum(Transform pivot, Vector3 offset, Vector2 swing,
+            Vector3 attachment, float reveal)
+        {
+            if (pivot == null) return;
+            pivot.SetPositionAndRotation(attachment + actor.rotation * offset,
+                actor.rotation * Quaternion.Euler(swing.x * reveal, 0f, swing.y * reveal));
         }
 
         private void UpdateCameraPose()
@@ -730,6 +770,7 @@ namespace BarPromenade
             anatomyGrip = null;
             anatomyOutlet = null;
             anatomyAimPivot = null;
+            leftScrotum = rightScrotum = null;
         }
 
         private static Transform FindDescendant(Transform root, string name)

@@ -655,6 +655,10 @@ namespace BarPromenade
                 Porcelain,
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.BoxXZ));
+            // The player keeps the original fixture collision envelope;
+            // visible ceramic and liquid receivers use the true cavity.
+            parts[1].GetComponent<MeshFilter>().sharedMesh =
+                HomeBrushingResources.Mesh("SinkBasin");
             parts.Add(HomeAuthoredVisualFactory.CreateBox(
                 "Home Bathroom Sink Hollow",
                 room,
@@ -669,6 +673,12 @@ namespace BarPromenade
                     bounds.height * 0.54f),
                 new Color(0.22f, 0.25f, 0.22f),
                 false));
+            // Retain the registered semantic name, replacing the old broad
+            // dark insert with a small perforated drain at the real bottom.
+            parts[2].GetComponent<MeshFilter>().sharedMesh =
+                HomeBrushingResources.Mesh("SinkDrain");
+            parts[2].transform.localPosition = center +
+                new Vector3(-0.08f, 0.724f, 0f);
             parts.Add(CreatePipe(
                 "Home Bathroom Sink Tap",
                 room,

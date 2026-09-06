@@ -4878,12 +4878,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   (a) the shower hides the standing Idle hero behind the drawn curtain
   group (scale-x animation of the folded panels); (b) the former toilet
   privacy cut is retired by the accepted `2026-09-05` replacement below;
-  (c) teeth
-  brushing poses a procedural additive CCD right arm atop Idle
-  (`HomeTeethBrushingArmPose`, capture-solve-slerp each LateUpdate at
-  order 300 — the bus-driver/cashier idiom) driving a RightGrip
-  toothbrush prop oscillating at the Mouth anchor with a head
-  counter-yaw.
+  (c) teeth brushing retains the actual standing rig and a RightGrip
+  toothbrush, with procedural two-bone hand IK and a connected
+  spine/chest/neck/head bend for the spit. Its user-driven replacement
+  is recorded under the mirror-camera brushing decision below; no new
+  full-body animation clip or replacement arm is introduced.
 - **Accepted — First-person toilet replacement (`2026-09-05`):** The user
   approved the plan for a controllable first-person toilet action. This
   replaces only bathroom exception (b) with a scoped procedural 3D action;
@@ -4897,9 +4896,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   brushing exceptions remain as recorded above.
 
   `HomeToiletSceneTimeline` owns `1.5 s` entry, exactly `6 s` urination,
-  `4 s` shaking and `1.3 s` exit; guided travel and the rendered neutral and
+  `2 s` shaking and `1.3 s` exit; guided travel and the rendered neutral and
   terminal endpoints are separate. The hero stands in place during the action.
-  The user's follow-up slows the other action animations twofold. The final
+  The user's follow-up slows the other action animations twofold, then restores
+  the shake duration to two seconds. The final
   `20%` of main emission follows `1 - smoothstep` from full flow to zero,
   integrated over each consumed timeline interval before driving packet rate,
   speed and diameter; already emitted packets keep their own velocity.
@@ -4908,6 +4908,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   there with the body; the former broad upper-torso measurement and `55 mm`
   forward clearance are removed. The fixed authored length and base grip
   remain unchanged.
+  `HomeToiletAnatomyDynamics` adds camera-driven inertia: a held-shaft torsion
+  spring and two gravity pendulums (`g/L`, lengths `0.058/0.050 m`) integrate
+  at steps no larger than `1/120 s`, with separate damping and `8/22 degree`
+  limits. The authored hand shake also drives the hanging masses. Roots remain
+  fixed to the body, the right-arm IK keeps contact, and the real outlet drives
+  emission. This is local spring dynamics, with no detached Rigidbody or
+  substitute idle sine; ending the action clears all momentum.
+  Both lobe pivots attach at body-base offsets `X=-/+0.011, Y=-0.016,
+  Z=-0.006 m`. Their authored upper necks remain at those roots and curve
+  forward to the visible masses, preserving contact without hiding the new
+  volumes beneath the jacket.
   Mouse/right stick steer the held anatomy, with wrist yaw limited locally
   and excess yaw passed into an unrestricted body turn; RMB/gamepad LB move
   an independent look offset. `HomeToiletGaugeView` shows only this action's
@@ -4919,8 +4930,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `tools/build-home-toilet-action-3d-model.py` authors the fixed-metre anatomy,
   hinge-origin lid, true annular seat, hollow ceramic pedestal, correctly seated bowl-water
   surface and paper roll with an open cardboard core plus segment, droplet,
-  splash, stain and wall-drip meshes: eleven FBX models, thirteen meshes,
-  `2,048` triangles, source `.blend`, manifests and a direct export validator.
+  splash, stain and wall-drip meshes, plus two upper-pivot scrotum lobes:
+  thirteen FBX models, fifteen meshes, `2,376` triangles, source `.blend`,
+  manifests and a direct export validator.
   The pedestal replaces only the visible solid footprint while preserving its
   logical collision and `0.82 x 0.48 x 0.858 m` envelope; the cavity centres
   `0.10 m` west of that footprint to match the bowl. Eighteen mesh-ray checks
@@ -4949,15 +4961,75 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The action adds no fiction text, reaction, comedy beat or story state and
   violates no world-canon prohibition. The focused validation result belongs
   in the `2026-09-05` work-log entry.
-- **Accepted — Mirror-camera brushing scene:** The close-up shoots from
-  7 cm in front of the mirror plane back into the hero's face (FOV 36) —
-  the PS1 "reflection" without RenderTextures; the pinned bathroom shot
-  is never edited, scene poses are transient. Foam blobs ride the Mouth
-  anchor; the rinse dips the camera look-at to the basin over two Pour
-  beats. Stress relief is gated once per `GameDayIndex`
-  (`TryCommitTeethBrushingRelief`); toilet and shower commit ungated
-  (`CommitBathroomStressRelief`) — always on completion, never on
-  cancel.
+- **Accepted — Manual mirror-camera brushing (`2026-09-05`):** The user's
+  replacement keeps the camera seven centimetres in front of the mirror
+  plane, facing the hero at FOV `36`, with no reflection RenderTexture or
+  replacement rig. `HomeTeethBrushingTimeline` blends in over `2.8 s`,
+  including the real arm's last `0.8 s` of rise, then waits in Brushing for
+  input-qualified completion. Mouse or right-stick X/Y maps to screen-relative
+  movement at the teeth, bounded to `±26 mm` horizontally and `±8 mm`
+  vertically. The shared bathroom owner applies `HomeTeethBrushingArmPose`
+  after the ordinary pose; two-bone IK keeps the actual brush tip at the
+  target. The arm, body, held brush and mouth remain the production hero.
+
+  The outward side comes from the actual right/left shoulders, with the face
+  frame captured from the head and mouth; imported bone axes are not assumed
+  to be anatomical. Body clearance uses the posed torso, jacket and pelvis,
+  with capsule candidates confirmed against the actual sleeve/hand triangles.
+  Only the authored shoulder/axilla junction is excluded (`0.195 m` from the
+  upper-arm root, measured against source Idle0). The elbow, forearm and hand
+  remain fully checked; blocked poses cannot earn cleaning progress.
+  The user's final clearance requirement covers every phase, including
+  raising, lowering, the spit and cancellation. The wrist follows an outward
+  arc with two-bone IK; the sleeve, forearm and hand must remain outside the
+  posed torso, jacket and pelvis. Geometric checks cover the arm's visible
+  surfaces, not only the wrist target. The focused Unity result is recorded
+  separately in the `2026-09-06` work-log entry.
+
+  `HomeTeethBrushingProgress` credits the minimum of commanded travel,
+  measured tip travel and `0.08 m/s` while contact error is below `12 mm`.
+  It requires `0.64 m`, so at least `8 s` of active movement; waiting,
+  blocked travel, movement away from contact and uncommanded pose drift
+  cannot fill `HomeBrushingGaugeView`. The scrub cue follows credited travel.
+  The first mouse delta is discarded and pause blocks input. Stop `E` during
+  entry or Brushing returns from the current camera/arm blend without
+  relief or cleaning; reaching `100%` commits to the short finishing action.
+
+  Full progress starts `ShowTeeth` for `1.5 s`; the brush lowers over
+  `0.45 s` and the atlas shows parted lips and muted teeth without a smile.
+  `Spit` then lasts `1.5 s`: the existing spine, chest, neck and head bend
+  together, the mouth uses the compact Spit expression, and a transient side
+  camera at FOV `48` includes the mouth and basin. `HomeBrushingSpitEffect`
+  emits cream foam from the live Mouth anchor during phase seconds
+  `0.55..0.85`; its world-space droplets follow gravity and stop at the first
+  actual visible Home mesh triangle, creating a short splash and one local
+  positional spit sound. The effect has bounded pools and leaves no persistent
+  residue. Camera return lasts `2.2 s`, followed by the shared physical exit.
+
+  `HomeBrushingAction` is a deterministic Blender kit of five models and five
+  meshes (`1,060` triangles): fixed-metre `SinkBasin` and `BrushHandle`,
+  a perforated `SinkDrain`, plus normalized `Droplet` and `Splash`.
+  The sink retains its original
+  `0.85 x 0.20 x 0.35 m` collider envelope and occlusion group. The actual
+  ceramic floor lies at `(1.995, 0.720, 3.425)`; the old wide Hollow insert is
+  entirely replaced by the small drain at `(1.995, 0.724, 3.425)`, preserving
+  its semantic name. `HomeBrushingResources` shares the readable metre-scale
+  imported meshes and one PS1 Lit cream material. Sixteen downward cavity
+  rays, three incoming rays and FBX round trips validate the authored opening.
+
+  The face atlas adds `TeethDisplay` and `Spit` plus their soiled twins:
+  eleven expressions, `22` occupied cells and ten free cells in the unchanged
+  `8 x 4` layout. A contextual expression owner prevents ordinary mood/blink
+  updates from overwriting the gesture and releases it on every exit. The
+  finished teeth preview uses the clean face locally; persistent mouth
+  cleaning occurs only when the whole scene completes.
+  `TryCommitTeethBrushingRelief` clears `HeroMouthSoiled` on each completed
+  replay before its daily gate, and applies stress `-5` once per
+  `GameDayIndex`. Cancel, disable and transition do not spend the daily
+  relief or clean the mouth. Owned cleanup restores the arm/body pose, facial
+  lease, handoff, cursor, camera, props and gauge. The existing bathroom
+  procedural exception remains scoped to this action; no world-canon
+  prohibition, fiction text, reaction, comedy beat or light is added.
 - **Accepted — Shower stall rebuild:** The stall keeps its footprint,
   tray collider and pinned names while gaining an L-rail, a
   four-fold animatable curtain group (gathered scale 0.55 <-> drawn 1.0)
@@ -5991,6 +6063,61 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   contract was re-anchored on the filter tip (`11 mm` at the drag, the
   tube/filter junction is `44 mm` by construction) and its axis threshold on
   the generator's own validated `0.889` (`0.86`, not `0.94`).
+- **Implemented 2026-09-05 (later the same day), the user's three asks on
+  the bout — a sound, the head and neck bent harder, an expressive
+  convulsion while the stream runs:** no canon moved; the §6 row already
+  covers the bout. (1) THE SOUND. `Retch` is a three-beat heave (`0.62 s`,
+  volume `0.55`: the breath dragged in, a harmonic voice climbing `95 →
+  150 Hz` rattled at `22 Hz` with a `520 Hz` formant, a wet choke), the
+  spurt `VomitGush` (`0.7 s`, `0.5`, every `0.9 s`) gained a gurgle, a body
+  and bubbles, `VomitSplat` is louder (`0.36`), and a new `VomitCough`
+  (`0.55 s`, `0.5`: two chest coughs, a spit, the breath back in) is cued on
+  every `BurstEnd` — appended at the END of the enum and the table, the
+  way the indexed table demands. The stream itself is no longer re-cued
+  one-shots: `HeroVomitStreamSound` synthesises a `2 s` loop in the same
+  crunch (hold `3`, `512` steps, low-pass `2.8 kHz`; pump at the flow's
+  `3.2 Hz`, a `7 Hz` push, an `84 Hz` gurgling body, bubbles on an
+  irregular grid; the tail folded into the head over `90 ms` so the seam
+  carries neither click nor silence), and `HeroVomitStreamEffect` owns
+  ONE looping `AudioSource` on the emitter (linear `1.2–13 m` like the
+  pool's voices, `SfxWorld`) whose volume the controller sets from
+  `Pose.Flow` every tick — the pump, the attack and the tail are heard as
+  drawn, and `StopAndClear` silences it. It never plays outside play
+  mode. THE EMITTER FOLLOWS THE MOUTH ONLY IN LATEUPDATE: the effect's
+  `Update` (order `280`) runs after the presentation's `Update` (order
+  `0`) has evaluated the graph into the raw clip pose and before its
+  `LateUpdate` folds the body, and the particle step begins between the
+  two — a `FollowMouth` there placed the emitter on the unbent mouth every
+  frame, which the deeper fold turned into a stream leaving from where the
+  head had been. One frame of lag on a held pose is the price; the mouth
+  sounds take `MouthPosition` (the emitter) for the same reason. (2) THE BEND.
+  `HeadDownDegrees` was raised from `14` to `30`; the user's `2026-09-06`
+  adjustment lowers the held pitch to `24°`, slightly lifting the chin over
+  the unchanged folded torso. The heave remains `12°` over
+  `0.42 s`, plus `PumpHeadDegrees 5` with every push; the presentation
+  applies the bout's chin-down beside the glance with its OWN split,
+  `VomitNeckShare 0.55` (the glance's `0.38/0.62` is a nod; being sick
+  folds the neck), still outside the clamp. The ragdoll drive is
+  `120/11/80`, clamped at `45°`. (3) THE CONVULSION. `PlayerVomitPose` grew
+  `TorsoPitchDegrees` (`22` held, `+9` at the heave, `+4` with the pump —
+  positive is forward in the layer's `chestPitchDegrees`, the hiccup's
+  snap-back negated), `CrouchMetres` (`5 cm`, `+4 cm` at the heave),
+  `BraceWeight` (both palms braced on the thighs just above the knees — `55 %`
+  down the thigh, `5 cm` ahead of the bone; the knee itself is out of an
+  arm's reach at this fold and the first sheet showed arms hanging
+  forward — through `PlayerArmReachPose`, scaled by `1 − locomotionBlend`
+  so a man walking through a bout keeps his arms, and yielding to the
+  balance model's brace hand), `WipeWeight` (the right hand to the mouth
+  through the gauge's own `mouthReachWeight`, `0.4 s` up, `0.6 s` held,
+  `0.6 s` down after the last burst — `TotalSeconds 10.2 → 11.0`) and
+  `Pump` (the flow's half-sine scaled by the burst's strength; zero
+  between bursts). All of it rides one `EvaluateHeld` curve with the
+  head, so nothing lingers after the bout. Pinned by `HeroVomitTests`
+  (`Pose_DoublesOverBracesOnTheKneesConvulsesWithThePumpAndWipes`, the
+  score with `Cough`), `HeroVomitStreamSoundTests` (determinism, RMS band,
+  pump crests over troughs, a quiet seam) and `RetroSfxLibraryTests`
+  (durations and minimum volumes).
+
 - **Accepted and implemented 2026-09-05 — the lost bout ends in vomit, and
   the vomit takes no lock either:** by the user's decision the Fail of the
   nausea gauge is no longer a stub. `IntoxicationNauseaController` only
@@ -6041,7 +6168,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bone term on his feet is probed the same way through
   `DebugHeadPitchDownDegrees` (`+8°` and more within thirty frames). THE COLLISION IS A RAYCAST PER PARTICLE in
   `HeroVomitStreamEffect.LateUpdate` (order `280`, after the mouth has been
-  lowered), never the `collision` module: the mouth socket sits INSIDE the
+  lowered), never the `collision` module. The `2026-09-06` pressure adjustment
+  keeps the source `2 cm` outside the actual mouth, rotates launch direction
+  at most `25 degrees` toward the hero's forward and uses `2.8–3.4 m/s` for
+  the full burst / `1.8–2.3 m/s` for the weak ones. The same launch feeds rods
+  and chunks; gravity then bends their world-space flight. This compensates
+  the combined head/torso fold without moving the emitter to the old upright
+  mouth position. The mouth socket sits INSIDE the
   hero's `0.32 m` capsule and, lying down, the stream crosses his own
   ragdoll proxies, and the module cannot exclude an object; and the stair
   treads he may be standing on are FootProbe triggers, which the module
@@ -6071,7 +6204,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   lumps, `6 %` pale crumbs, point-filtered) — an irregular, textured, lit
   polygon, never a rectangle, with dark cubes sunk `40 %` into it for the
   pieces. THE SOILED MOUTH IS AN ATLAS FLAG, not a second face pipeline:
-  the face atlas became `8×4` (`512×256`), each of the nine grimaces has a
+  the face atlas became `8×4` (`512×256`), each of the now eleven expressions has a
   soiled twin at column `+4`, `Player3DFaceAtlasCell` gained `Soiled` (the
   three-argument constructor stays for the mother),
   `Player3DFaceAtlasBinding.TryGetTextureTransform(expression, soiled, …)`

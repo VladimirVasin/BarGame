@@ -54,6 +54,7 @@ namespace BarPromenade
         Retch,
         VomitGush,
         VomitSplat,
+        VomitCough,
         Count
     }
 
@@ -590,38 +591,42 @@ namespace BarPromenade
                 5200f,
                 0.12f,
                 130),
-            // The heave before each stream when the nausea is lost: a
-            // glottal clench at the hero's head, one voice like the
+            // The heave before each stream when the nausea is lost: the
+            // breath dragged in, the voice forced out through a closing
+            // throat and the wet choke it ends on, at the hero's head.
+            // Loud - the user could not hear the first cut, a third of a
+            // second of noise at a quarter volume - one voice like the
             // hiccup it follows, and a little pitch wander so the three
             // retches of a bout are not one sample played thrice.
             new RetroSfxDefinition(
                 RetroSfxId.Retch,
                 RetroSfxCategory.World,
-                0.34f,
-                0.26f,
+                0.62f,
+                0.55f,
                 1f,
                 1,
                 0.3f,
                 3,
                 512,
-                3200f,
-                0.10f,
+                3600f,
+                0.08f,
                 130),
-            // The stream itself, re-cued every 0.9 s while a burst runs;
-            // one voice and a cooldown just under that interval so a
-            // dropped frame delivering two cues cannot double it. Dull
+            // The spurt: a hard wet push re-cued every 0.9 s while a
+            // burst runs, over the stream loop the effect owns; one
+            // voice and a cooldown under that interval so a dropped
+            // frame delivering two cues cannot double it. Dull
             // low-pass: liquid, not the toilet's ceramic rush.
             new RetroSfxDefinition(
                 RetroSfxId.VomitGush,
                 RetroSfxCategory.World,
-                1.0f,
-                0.24f,
+                0.7f,
+                0.5f,
                 1f,
                 1,
-                0.85f,
+                0.6f,
                 3,
                 512,
-                2600f,
+                3000f,
                 0.06f,
                 129),
             // Particles landing on the pavement. Two voices and a short
@@ -631,8 +636,8 @@ namespace BarPromenade
             new RetroSfxDefinition(
                 RetroSfxId.VomitSplat,
                 RetroSfxCategory.World,
-                0.14f,
-                0.20f,
+                0.18f,
+                0.36f,
                 1f,
                 2,
                 0.06f,
@@ -640,7 +645,22 @@ namespace BarPromenade
                 512,
                 4200f,
                 0.16f,
-                128)
+                128),
+            // The wet cough and spit after each burst, and the breath
+            // dragged back in behind it. One voice, cued once per burst.
+            new RetroSfxDefinition(
+                RetroSfxId.VomitCough,
+                RetroSfxCategory.World,
+                0.55f,
+                0.5f,
+                1f,
+                1,
+                0.4f,
+                3,
+                512,
+                3800f,
+                0.10f,
+                130)
         };
 
         public static int Count => definitions.Length - 1;
@@ -774,6 +794,11 @@ namespace BarPromenade
                         ref noiseState);
                 case RetroSfxId.VomitSplat:
                     return GenerateVomitSplat(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.VomitCough:
+                    return GenerateVomitCough(
                         time,
                         duration,
                         ref noiseState);
@@ -1614,37 +1639,90 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// A retch: the breath is thrown out through a closing throat -
-        /// a burst of noise over the first eighth of a second - while
-        /// the throat itself clenches in a falling tone gated by the
-        /// same pulse the gulp swallows to, run the other way. Nothing
-        /// wet in it yet; the stream comes a quarter-second later.
+        /// A retch, in three beats. The breath is dragged IN first - a
+        /// tenth of a second of rising, breathy noise - then the voice is
+        /// forced out through a closing throat: a low, harmonic-rich tone
+        /// that climbs with the pressure and sags again, rattled by the
+        /// throat at twenty-two a second and given a nasal formant so it
+        /// reads as a man and not a machine. It ends on a wet choke: the
+        /// tone falls into the chest under a burst of noise and a bubble.
+        /// Nothing streams yet; the burst comes a quarter-second later.
         /// </summary>
         private static float GenerateRetch(
             float time,
             float duration,
             ref uint noiseState)
         {
-            const float burstSeconds = 0.12f;
-            float burst = NextNoise(ref noiseState) *
-                0.55f *
-                Envelope(time, burstSeconds, 0.004f, 1.8f);
-            float throatPulse = Mathf.Max(
-                0f,
-                Mathf.Sin(2f * Mathf.PI * 9f * time));
-            float heave = GlideSine(time, duration, 210f, 80f) *
-                0.4f *
-                throatPulse *
-                Envelope(time, duration, 0.01f, 1.4f);
-            return burst + heave;
+            const float inhaleSeconds = 0.11f;
+            const float voiceStartSeconds = 0.08f;
+            const float chokeStartSeconds = 0.42f;
+            float normalized = Mathf.Clamp01(time / Mathf.Max(0.0001f, duration));
+            float noise = NextNoise(ref noiseState);
+
+            // The breath in: noise swelling to the moment the voice takes over.
+            float inhale = time < inhaleSeconds
+                ? noise * 0.32f * Mathf.Sin(Mathf.PI * time / inhaleSeconds)
+                : 0f;
+
+            // The voice: fundamental climbing 95 -> 150 Hz over the first
+            // half of the heave and sagging back toward 105 Hz.
+            float voice = 0f;
+            if (time >= voiceStartSeconds)
+            {
+                float local = time - voiceStartSeconds;
+                float voiceDuration = Mathf.Max(0.0001f, duration - voiceStartSeconds);
+                float progress = Mathf.Clamp01(local / voiceDuration);
+                float frequency = progress < 0.45f
+                    ? Mathf.Lerp(95f, 150f, progress / 0.45f)
+                    : Mathf.Lerp(150f, 105f, (progress - 0.45f) / 0.55f);
+                float phase = 2f * Mathf.PI * frequency * local;
+                float harmonic =
+                    Mathf.Sin(phase) * 0.55f +
+                    Mathf.Sin(phase * 2f) * 0.32f +
+                    Mathf.Sin(phase * 3f) * 0.22f +
+                    Mathf.Sin(phase * 4f) * 0.14f +
+                    Mathf.Sin(phase * 5f) * 0.09f;
+                // The throat's rattle: the voice gated at 22 Hz, never
+                // fully closed, so it growls rather than stutters.
+                float rattle = 0.55f + 0.45f * Mathf.Max(
+                    0f,
+                    Mathf.Sin(2f * Mathf.PI * 22f * local));
+                // The formant: a resonance near 520 Hz riding the voice,
+                // the "aaa" in the "hraaagh".
+                float formant = Mathf.Sin(2f * Mathf.PI * 520f * local) *
+                                Mathf.Abs(harmonic) *
+                                0.35f;
+                float breath = noise * 0.22f;
+                float envelope = Envelope(local, voiceDuration, 0.03f, 1.3f) *
+                                 (0.65f + 0.35f * Mathf.Sin(Mathf.PI * Mathf.Min(1f, progress / 0.6f)));
+                voice = (harmonic * rattle + formant + breath) * envelope * 0.9f;
+            }
+
+            // The choke: the voice's tail falls into the chest, under a
+            // burst of noise and one bubble.
+            float choke = 0f;
+            if (time >= chokeStartSeconds)
+            {
+                float local = time - chokeStartSeconds;
+                float chokeDuration = Mathf.Max(0.0001f, duration - chokeStartSeconds);
+                float fall = GlideSine(local, chokeDuration, 170f, 55f) * 0.45f;
+                float wet = noise * 0.30f * Envelope(local, chokeDuration * 0.6f, 0.005f, 1.6f);
+                float bubble = Mathf.Sin(2f * Mathf.PI * (330f - local * 600f) * local) *
+                               Mathf.Max(0f, 1f - local / 0.06f) *
+                               0.28f;
+                choke = (fall + wet + bubble) * Envelope(local, chokeDuration, 0.01f, 1.5f);
+            }
+
+            return (inhale + voice + choke) * (1f - 0.15f * normalized);
         }
 
         /// <summary>
-        /// The stream: the flush's rush of noise without its cistern,
-        /// the whole thing pulsing at seven a second as the stomach
-        /// pushes in waves, with a gurgle falling from 180 to 70 Hz
-        /// underneath - lower than the toilet's, because it is a body
-        /// and not a pipe.
+        /// The spurt: one hard push of the stream over the loop the effect
+        /// keeps running - a thick rush of noise pulsing at seven a second,
+        /// a gurgle falling from 190 to 70 Hz under it (lower than the
+        /// toilet's, because it is a body and not a pipe), bubbles
+        /// breaking through it on an irregular grid, and a low body of
+        /// its own so it carries at distance.
         /// </summary>
         private static float GenerateVomitGush(
             float time,
@@ -1654,22 +1732,51 @@ namespace BarPromenade
             float pulse = Mathf.Max(
                 0f,
                 Mathf.Sin(2f * Mathf.PI * 7f * time));
-            float rush = NextNoise(ref noiseState) *
-                0.55f *
-                (0.7f + pulse * 0.3f) *
-                Envelope(time, duration * 0.8f, 0.03f, 1.4f);
-            float gurgle = GlideSine(time, duration, 180f, 70f) *
-                pulse *
-                0.20f *
-                Envelope(time, duration, 0.05f, 1.2f);
-            return rush + gurgle;
+            float noise = NextNoise(ref noiseState);
+            float rush = noise *
+                0.62f *
+                (0.6f + pulse * 0.4f) *
+                Envelope(time, duration * 0.85f, 0.02f, 1.3f);
+            float gurgle = GlideSine(time, duration, 190f, 70f) *
+                (0.5f + 0.5f * pulse) *
+                0.30f *
+                Envelope(time, duration, 0.04f, 1.2f);
+            float body = Mathf.Sin(2f * Mathf.PI * 92f * time) *
+                         0.16f *
+                         Envelope(time, duration, 0.03f, 1.4f);
+            // Bubbles: a short falling chirp every 0.07..0.13 s.
+            float bubble = 0f;
+            float slot = 0f;
+            int slotIndex = 0;
+            while (slot <= time && slotIndex < 64)
+            {
+                float slotLength = 0.07f + 0.06f * Mathf.Repeat(slotIndex * 0.6180339f, 1f);
+                if (time < slot + slotLength)
+                {
+                    float into = time - slot;
+                    const float bubbleSeconds = 0.03f;
+                    if (into < bubbleSeconds)
+                    {
+                        bubble = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(460f, 200f, into / bubbleSeconds) * into) *
+                                 Mathf.Sin(Mathf.PI * into / bubbleSeconds) *
+                                 (0.18f + 0.22f * pulse) *
+                                 Envelope(time, duration, 0.02f, 1.2f);
+                    }
+
+                    break;
+                }
+
+                slot += slotLength;
+                slotIndex++;
+            }
+
+            return rush + gurgle + body + bubble;
         }
 
         /// <summary>
         /// A splat: a twelve-millisecond click of noise as the mass
         /// breaks, a low thump of it hitting the ground, and a short wet
-        /// glide down as it spreads. A seventh of a second, cued per
-        /// particle landing.
+        /// glide down as it spreads. Cued per particle landing.
         /// </summary>
         private static float GenerateVomitSplat(
             float time,
@@ -1680,15 +1787,77 @@ namespace BarPromenade
             float click = time < clickSeconds
                 ? NextNoise(ref noiseState) *
                   (1f - time / clickSeconds) *
-                  0.5f
+                  0.55f
                 : 0f;
-            float envelope = Envelope(time, duration, 0.003f, 2.4f);
-            float thump = Mathf.Sin(2f * Mathf.PI * 140f * time) * 0.42f;
-            float wetSeconds = duration * 0.5f;
-            float wet = GlideSine(time, wetSeconds, 600f, 300f) *
+            float envelope = Envelope(time, duration, 0.003f, 2.2f);
+            float thump = Mathf.Sin(2f * Mathf.PI * 130f * time) * 0.48f;
+            float wetSeconds = duration * 0.55f;
+            float wet = GlideSine(time, wetSeconds, 620f, 280f) *
                 Mathf.Max(0f, 1f - time / wetSeconds) *
-                0.22f;
-            return click + (thump + wet) * envelope;
+                0.26f;
+            float spray = NextNoise(ref noiseState) *
+                          0.14f *
+                          Mathf.Max(0f, 1f - time / (duration * 0.4f));
+            return click + (thump + wet + spray) * envelope;
+        }
+
+        /// <summary>
+        /// The cough after a burst: two wet chest coughs - a burst of
+        /// noise with a low thump under each, the second weaker - then a
+        /// spit of sibilant noise, and the breath dragged back in behind
+        /// it. Cued once as each burst ends.
+        /// </summary>
+        private static float GenerateVomitCough(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float noise = NextNoise(ref noiseState);
+            float sample = 0f;
+
+            // Two coughs at 0 and 0.17 s: 90 ms each.
+            for (int cough = 0; cough < 2; cough++)
+            {
+                float start = cough * 0.17f;
+                float local = time - start;
+                if (local < 0f || local > 0.11f)
+                {
+                    continue;
+                }
+
+                float strength = cough == 0 ? 1f : 0.7f;
+                float envelope = Envelope(local, 0.11f, 0.004f, 1.9f);
+                float thump = GlideSine(local, 0.11f, 150f, 80f) * 0.42f;
+                float rasp = noise * 0.62f;
+                float wet = Mathf.Sin(2f * Mathf.PI * (380f - local * 1500f) * local) * 0.2f;
+                sample += (thump + rasp + wet) * envelope * strength;
+            }
+
+            // The spit at 0.33 s: 60 ms of bright noise with a lip pop.
+            {
+                float local = time - 0.33f;
+                if (local >= 0f && local < 0.07f)
+                {
+                    float envelope = Envelope(local, 0.07f, 0.002f, 2.4f);
+                    float pop = local < 0.008f ? (1f - local / 0.008f) * 0.5f : 0f;
+                    float hiss = noise * 0.45f * (0.6f + 0.4f * Mathf.Sin(2f * Mathf.PI * 2200f * local));
+                    sample += (pop + hiss) * envelope;
+                }
+            }
+
+            // The breath in from 0.4 s to the end: a breathy swell.
+            {
+                float local = time - 0.4f;
+                float breathDuration = Mathf.Max(0.0001f, duration - 0.4f);
+                if (local >= 0f && local < breathDuration)
+                {
+                    float shape = Mathf.Sin(Mathf.PI * local / breathDuration);
+                    sample += noise * 0.22f * shape +
+                              Mathf.Sin(2f * Mathf.PI * 240f * local) * 0.06f * shape;
+                }
+            }
+
+            return sample;
         }
 
         private static float GenerateShotSwap(

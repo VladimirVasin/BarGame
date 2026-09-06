@@ -46,13 +46,13 @@ namespace BarPromenade
         public const float WeakStrength = 0.55f;
         public const float FullRatePerSecond = 160f;
         public const float WeakRatePerSecond = 90f;
-        // From a mouth about 1.5 m up and tipped 14° down, 2.3–2.9 m/s
-        // puts the first splash 1.2–1.6 m ahead of his boots — a heave, not
-        // a hose. The first cut at 3.0–3.8 m/s landed it 1.8 m out.
-        public const float FullSpeedMinimum = 2.3f;
-        public const float FullSpeedMaximum = 2.9f;
-        public const float WeakSpeedMinimum = 1.5f;
-        public const float WeakSpeedMaximum = 1.9f;
+        // The folded torso and neck put the mouth nearly downward. Give
+        // the launch a small forward kick before gravity takes the stream.
+        public const float ForwardBiasDegrees = 25f;
+        public const float FullSpeedMinimum = 2.8f;
+        public const float FullSpeedMaximum = 3.4f;
+        public const float WeakSpeedMinimum = 1.8f;
+        public const float WeakSpeedMaximum = 2.3f;
         public const float FullConeDegrees = 5f;
         public const float WeakConeDegrees = 8f;
         public const float WeakSizeScale = 0.85f;
@@ -110,6 +110,7 @@ namespace BarPromenade
         private ParticleSystemRenderer streamRenderer;
         private ParticleSystemRenderer chunkRenderer;
         private ParticleSystemRenderer splashRenderer;
+        private AudioSource streamAudio;
         private uint seed;
         private float pulseTime;
         private float lastSplashTime = float.NegativeInfinity;
@@ -139,9 +140,28 @@ namespace BarPromenade
         public HeroVomitResidue Residue { get; private set; }
         public Transform Host => transform;
         public Transform MouthAnchor => mouthAnchor;
+
+        /// <summary>
+        /// Where the stream leaves this frame: the emitter, placed after
+        /// the presentation's fold in the last LateUpdate. The sounds at
+        /// his mouth take this rather than the anchor, which reads unbent
+        /// from an Update.
+        /// </summary>
+        public Vector3 MouthPosition =>
+            emitterTransform != null
+                ? emitterTransform.position
+                : mouthAnchor != null
+                    ? mouthAnchor.position
+                    : transform.position;
         public ParticleSystem Stream => stream;
         public ParticleSystem Chunks => chunks;
         public ParticleSystem Splash => splash;
+        /// <summary>The looping gurgle at the mouth, or null before Initialize.</summary>
+        public AudioSource StreamAudio => streamAudio;
+
+        /// <summary>The stream sound's current loudness, 0..MaximumVolume.</summary>
+        public float StreamSoundVolume { get; private set; }
+
         public int StreamAliveCount =>
             stream != null ? stream.particleCount : 0;
         public int ChunkAliveCount =>
@@ -167,6 +187,7 @@ namespace BarPromenade
 
             StopAndClear();
             EnsureSystems();
+            EnsureStreamAudio();
             ConfigureStream();
             ConfigureChunks();
             ConfigureSplash();
@@ -221,7 +242,9 @@ namespace BarPromenade
             IsEmitting = true;
             pulseTime = 0f;
             ApplyStrength(CurrentStrength);
-            FollowMouth();
+            // No FollowMouth here either: SetFlow arrives from the status
+            // controller's Update (order 5), with the bones in the raw
+            // clip pose. The emitter keeps last LateUpdate's folded place.
             if (!stream.isPlaying)
             {
                 stream.Play(false);
@@ -252,6 +275,42 @@ namespace BarPromenade
             StopSystem(stream);
             StopSystem(chunks);
             StopSystem(splash);
+            SetStreamSound(0f);
+        }
+
+        /// <summary>
+        /// The stream's own sound, following the flow the controller reads
+        /// off the model every frame: silent at zero, the full gurgle at
+        /// one. Starts and stops the loop itself; nothing plays outside
+        /// play mode, where an edit-mode fixture drives the same bout.
+        /// </summary>
+        public void SetStreamSound(float flow)
+        {
+            float volume = HeroVomitStreamSound.MaximumVolume *
+                           (float.IsNaN(flow) ? 0f : Mathf.Clamp01(flow));
+            StreamSoundVolume = volume;
+            if (streamAudio == null)
+            {
+                return;
+            }
+
+            streamAudio.volume = volume;
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+
+            if (volume > 0.002f)
+            {
+                if (!streamAudio.isPlaying)
+                {
+                    streamAudio.Play();
+                }
+            }
+            else if (streamAudio.isPlaying)
+            {
+                streamAudio.Stop();
+            }
         }
 
         /// <summary>Rods per second at a strength, before the pulse.</summary>
@@ -278,6 +337,20 @@ namespace BarPromenade
                    Mathf.Max(0f, Mathf.Sin(2f * Mathf.PI * PulseHertz * seconds));
         }
 
+        /// <summary>
+        /// Deliberately NO <see cref="FollowMouth"/> here. This Update runs
+        /// after the presentation's (order 0), which has just evaluated the
+        /// graph and left every bone in the raw clip pose - the head still
+        /// UP - and before the presentation's LateUpdate folds the neck,
+        /// the head and the torso over the ground. The particle systems
+        /// begin their step between the two, from wherever the emitter
+        /// stands; following the mouth here put the emitter on the
+        /// unbent mouth every frame, and with the bout's head-down
+        /// head and twenty-two-degree fold the stream left from where the
+        /// head HAD been. The emitter is placed once per frame in
+        /// LateUpdate, after the fold, and the next frame's emission
+        /// leaves from there: one frame of lag on a held pose.
+        /// </summary>
         private void Update()
         {
             if (!IsInitialized)
@@ -285,7 +358,6 @@ namespace BarPromenade
                 return;
             }
 
-            FollowMouth();
             if (IsEmitting)
             {
                 pulseTime += Time.deltaTime;
@@ -840,6 +912,34 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// One looping source on the emitter, so it rides the mouth with
+        /// the rods. Spatialised like the one-shot pool's voices and
+        /// routed with them; volume zero until the flow says otherwise.
+        /// </summary>
+        private void EnsureStreamAudio()
+        {
+            if (streamAudio != null || emitterTransform == null)
+            {
+                return;
+            }
+
+            var host = new GameObject("Hero Vomit Stream Sound");
+            host.transform.SetParent(emitterTransform, false);
+            streamAudio = host.AddComponent<AudioSource>();
+            streamAudio.clip = HeroVomitStreamSound.LoopClip;
+            streamAudio.loop = true;
+            streamAudio.playOnAwake = false;
+            streamAudio.spatialBlend = 1f;
+            streamAudio.dopplerLevel = 0f;
+            streamAudio.rolloffMode = AudioRolloffMode.Linear;
+            streamAudio.minDistance = HeroVomitStreamSound.MinimumDistanceMetres;
+            streamAudio.maxDistance = HeroVomitStreamSound.MaximumDistanceMetres;
+            streamAudio.bypassReverbZones = true;
+            streamAudio.volume = 0f;
+            GameAudioMixer.Route(streamAudio, GameAudioGroup.SfxWorld);
+        }
+
         private void FollowMouth()
         {
             if (mouthAnchor == null || emitterTransform == null)
@@ -854,15 +954,19 @@ namespace BarPromenade
             }
 
             outward.Normalize();
+            Vector3 launch = heroRoot != null
+                ? Vector3.RotateTowards(outward, heroRoot.forward,
+                    ForwardBiasDegrees * Mathf.Deg2Rad, 0f).normalized
+                : outward;
             Vector3 worldUp = Vector3.up;
-            if (Mathf.Abs(Vector3.Dot(outward, worldUp)) > 0.98f)
+            if (Mathf.Abs(Vector3.Dot(launch, worldUp)) > 0.98f)
             {
                 worldUp = mouthAnchor.forward;
             }
 
             emitterTransform.SetPositionAndRotation(
                 mouthAnchor.position + outward * MouthForwardOffset,
-                Quaternion.LookRotation(outward, worldUp));
+                Quaternion.LookRotation(launch, worldUp));
             emitterTransform.localScale = Vector3.one;
         }
 

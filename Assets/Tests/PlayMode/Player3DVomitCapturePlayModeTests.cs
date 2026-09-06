@@ -193,6 +193,55 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Vomit_StandingStreamHasForwardPressure()
+        {
+            PlayerRuntime hero = CreateHero();
+            var presentation = (Player3DCharacterPresentation)hero.Visual;
+            IntoxicationStatusController status = CreateStatus(hero, 100);
+            HeroVomitStreamEffect effect = status.Vomit.Effect;
+            HoldRecovery(hero);
+            yield return Frames(30);
+            Vector3 forward = Vector3.ProjectOnPlane(hero.GameObject.transform.forward, Vector3.up).normalized;
+            float furthestMouth = float.NegativeInfinity;
+            float firstImpact = float.NaN;
+            effect.OnImpact += (point, normal, burst) =>
+            {
+                if (float.IsNaN(firstImpact) && normal.y > 0.9f)
+                    firstImpact = Vector3.Dot(point, forward);
+            };
+            Assert.That(status.Vomit.DebugForceBout(), Is.True);
+            var particles = new ParticleSystem.Particle[HeroVomitStreamEffect.StreamMaxParticles];
+            float forwardSpeed = 0f;
+            int samples = 0;
+            for (int frame = 0; frame < 100; frame++)
+            {
+                yield return null;
+                if (!status.Vomit.Model.IsVomiting) continue;
+                furthestMouth = Mathf.Max(furthestMouth, Vector3.Dot(effect.MouthPosition, forward));
+                int count = effect.Stream.GetParticles(particles);
+                for (int index = 0; index < count; index++)
+                {
+                    float age = particles[index].startLifetime - particles[index].remainingLifetime;
+                    if (age > 0.06f) continue;
+                    forwardSpeed += Vector3.Dot(particles[index].totalVelocity, forward);
+                    samples++;
+                }
+            }
+            // Coroutines resume before the late body fold. Read the same
+            // posed endpoint as the existing full capture, not the raw clip.
+            presentation.ReapplyLatePresentationPose();
+            CaptureTile(cameraObject.GetComponent<Camera>(), presentation, status, 0, 1f, 0.9f, 0.28f, 1.3f, 0.15f);
+            WriteSheet("Standing forward-pressure capture", "vomit-forward.png", true);
+            Assert.That(samples, Is.GreaterThan(20), "Measure newly emitted liquid, before gravity has bent its flight.");
+            Assert.That(forwardSpeed / samples, Is.GreaterThan(1.3f), "The folded mouth must emit forward with pressure.");
+            Assert.That(float.IsNaN(firstImpact), Is.False, "The jet must still land on the floor.");
+            Assert.That(firstImpact - furthestMouth, Is.InRange(0.20f, 1.3f),
+                "The first splash must be ahead of every sampled mouth position, rather than straight under the head.");
+            Assert.That(Vector3.Distance(effect.MouthPosition, presentation.Registry.Anchors.Mouth.position), Is.LessThan(0.08f));
+            Debug.Log($"Vomit launch: fresh forward speed {forwardSpeed / samples:F2} m/s; first impact {firstImpact - furthestMouth:F2} m beyond the mouth.");
+        }
+
+        [UnityTest]
         public IEnumerator Vomit_RenderSheet()
         {
             Camera camera = cameraObject.GetComponent<Camera>();
@@ -243,11 +292,26 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(status.Vomit.Model.IsVomiting, Is.True, "1.2 s in, the first burst is running");
+            // Twenty-five, not the forty the first cut passed: that number
+            // was measured with the emitter on the UNFOLDED mouth, a head's
+            // height too high, from where the rods flew longer. Leaving the
+            // folded mouth they land sooner and fewer are in the air at once.
             Assert.That(
                 peakAlive,
-                Is.GreaterThan(40),
+                Is.GreaterThan(25),
                 "the first burst fills the air with rods (peak alive between 0.9 and 1.2 s)");
             presentation.ReapplyLatePresentationPose();
+            // The stream leaves the FOLDED mouth. The emitter is placed
+            // after the late pass, so with the head held down it stands
+            // on the anchor; when it followed the mouth from Update it
+            // stood on the raw clip's mouth, a head's height above.
+            Transform mouthAnchor = presentation.Registry.Anchors.Mouth != null
+                ? presentation.Registry.Anchors.Mouth
+                : presentation.Registry.Anchors.Head;
+            Assert.That(
+                Vector3.Distance(effect.MouthPosition, mouthAnchor.position),
+                Is.LessThan(0.08f),
+                "the emitter must sit on the folded mouth, not where the head was before the bout");
             notes[0] =
                 $"standing pitch +{standingPitchAfter - standingPitchBefore:F1} deg, alive {effect.StreamAliveCount} (peak {peakAlive}), flow {status.Vomit.Pose.Flow:F2}";
             foreground[0] = CaptureTile(camera, presentation, status, 0, 1f, 0.9f, 0.28f, 1.3f, 0.15f);
@@ -450,14 +514,22 @@ namespace BarPromenade.Tests.PlayMode
         /// early: the picture is the deliverable, and a half-filled sheet
         /// still shows which tile went wrong and how.
         /// </summary>
-        private string WriteSheet(string note)
+        private string WriteSheet(string note, string fileName = "vomit-sheet.png", bool firstTileOnly = false)
         {
             sheet.Apply(false, false);
             string outputDirectory = Path.GetFullPath(
                 Path.Combine(Application.dataPath, "..", "TestResults"));
             Directory.CreateDirectory(outputDirectory);
-            string outputPath = Path.Combine(outputDirectory, "vomit-sheet.png");
-            File.WriteAllBytes(outputPath, sheet.EncodeToPNG());
+            string outputPath = Path.Combine(outputDirectory, fileName);
+            if (firstTileOnly)
+            {
+                var tile = new Texture2D(TileSize, TileSize, TextureFormat.RGBA32, false, true);
+                tile.SetPixels(sheet.GetPixels(0, TileSize * (Rows - 1), TileSize, TileSize));
+                tile.Apply();
+                File.WriteAllBytes(outputPath, tile.EncodeToPNG());
+                UnityEngine.Object.Destroy(tile);
+            }
+            else File.WriteAllBytes(outputPath, sheet.EncodeToPNG());
             sheetWritten = true;
             Debug.Log(note + " -> " + outputPath);
             return outputPath;

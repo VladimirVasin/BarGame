@@ -13,7 +13,7 @@ namespace BarPromenade
     {
         public const float EnterSeconds = 1.5f;
         public const float UrinatingSeconds = 6f;
-        public const float ShakingSeconds = 4f;
+        public const float ShakingSeconds = 2f;
         public const float ExitSeconds = 1.3f;
         public const float FlowFadeFraction = 0.2f;
 

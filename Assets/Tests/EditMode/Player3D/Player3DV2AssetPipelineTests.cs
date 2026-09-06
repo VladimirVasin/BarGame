@@ -288,7 +288,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(registry.FaceAtlas.Texture, Is.SameAs(atlas));
                 Assert.That(registry.FaceAtlas.Columns, Is.EqualTo(8));
                 Assert.That(registry.FaceAtlas.Rows, Is.EqualTo(4));
-                Assert.That(registry.FaceAtlas.Cells.Count, Is.EqualTo(18));
+                Assert.That(registry.FaceAtlas.Cells.Count, Is.EqualTo(22));
                 Assert.That(registry.Anchors.LeftVessel, Is.Not.Null);
                 Assert.That(
                     registry.Anchors.LeftVessel.name,
@@ -307,7 +307,9 @@ namespace BarPromenade.Tests.EditMode
                         (PlayerFacialExpression.Drowsy, 2, 2),
                         (PlayerFacialExpression.Glazed, 3, 2),
                         (PlayerFacialExpression.Slack, 0, 1),
-                        (PlayerFacialExpression.Grimace, 1, 1)
+                        (PlayerFacialExpression.Grimace, 1, 1),
+                        (PlayerFacialExpression.TeethDisplay, 2, 1),
+                        (PlayerFacialExpression.Spit, 3, 1)
                     };
                 foreach ((PlayerFacialExpression expression, int column, int row)
                          in canonicalCells)
@@ -593,14 +595,13 @@ namespace BarPromenade.Tests.EditMode
                 manifest.face_atlas.texture_asset,
                 Is.EqualTo(V2AtlasPath));
             Assert.That(manifest.face_atlas.renderer, Is.EqualTo("GEO_FaceSurface"));
-            // Eight columns since the soiled twins: the nine faces in the
-            // left half, the same nine with the mouth soiled at column + 4.
+            // Eight columns: expressions in the left half, soiled twins at +4.
             Assert.That(manifest.face_atlas.columns, Is.EqualTo(8));
             Assert.That(manifest.face_atlas.rows, Is.EqualTo(4));
             Assert.That(manifest.face_atlas.cell_size_px, Is.EqualTo(64));
             Assert.That(manifest.face_atlas.uv_origin, Is.EqualTo("bottom_left"));
             Assert.That(manifest.face_atlas.filter_mode, Is.EqualTo("Point"));
-            Assert.That(manifest.face_atlas.cells, Has.Length.EqualTo(18));
+            Assert.That(manifest.face_atlas.cells, Has.Length.EqualTo(22));
             Assert.That(manifest.design_metrics, Is.Not.Null);
             Assert.That(
                 manifest.design_metrics.pelvis_height_m,
@@ -617,6 +618,8 @@ namespace BarPromenade.Tests.EditMode
             AssertCell(manifest, "Glazed", 3, 2);
             AssertCell(manifest, "Slack", 0, 1);
             AssertCell(manifest, "Grimace", 1, 1);
+            AssertCell(manifest, "TeethDisplay", 2, 1);
+            AssertCell(manifest, "Spit", 3, 1);
             AssertCell(manifest, "Neutral", 4, 3, soiled: true);
             AssertCell(manifest, "HalfBlink", 5, 3, soiled: true);
             AssertCell(manifest, "ClosedBlink", 6, 3, soiled: true);
@@ -626,6 +629,8 @@ namespace BarPromenade.Tests.EditMode
             AssertCell(manifest, "Glazed", 7, 2, soiled: true);
             AssertCell(manifest, "Slack", 4, 1, soiled: true);
             AssertCell(manifest, "Grimace", 5, 1, soiled: true);
+            AssertCell(manifest, "TeethDisplay", 6, 1, soiled: true);
+            AssertCell(manifest, "Spit", 7, 1, soiled: true);
             AssertRunManifestContract(manifest);
             AssertBarDrinkManifestContract(manifest);
             AssertStaticTextureManifestContract(manifest);

@@ -19,7 +19,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Toilet_RunsSixSecondsThenFourSecondShakeAndFlushesOnce()
+        public void Toilet_RunsSixSecondsThenTwoSecondShakeAndFlushesOnce()
         {
             var timeline = new HomeToiletSceneTimeline();
             timeline.Begin();
@@ -38,7 +38,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(timeline.RemainingAmount, Is.Zero);
             Assert.That(timeline.UrineFlow, Is.Zero);
             Assert.That(timeline.ConsumeFlushCue(), Is.False);
-            timeline.Advance(4f);
+            timeline.Advance(2f);
             Assert.That(timeline.Phase, Is.EqualTo(HomeToiletScenePhase.Exiting));
             Assert.That(timeline.ConsumeFlushCue(), Is.True);
             Assert.That(timeline.ConsumeFlushCue(), Is.False);
@@ -66,7 +66,7 @@ namespace BarPromenade.Tests.EditMode
             timeline.Begin();
             timeline.Advance(30f);
             Assert.That(timeline.TotalUrinatingSeconds, Is.EqualTo(6f));
-            Assert.That(timeline.TotalShakingSeconds, Is.EqualTo(4f));
+            Assert.That(timeline.TotalShakingSeconds, Is.EqualTo(2f));
             Assert.That(timeline.CanCommit, Is.True);
             Assert.That(timeline.ConsumeFlushCue(), Is.True);
             Assert.That(timeline.ConsumeFlushCue(), Is.False);
@@ -183,116 +183,103 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Brushing_RaisesArmScrubsAndRinses()
+        public void Brushing_RequiresMouseTravelAtTeethThenShowsTeethAndSpits()
         {
             var timeline = new HomeTeethBrushingTimeline();
+            var progress = new HomeTeethBrushingProgress();
             timeline.Begin();
             Assert.That(timeline.ArmWeight, Is.Zero);
-
-            Advance(
-                timeline.Advance,
+            timeline.Advance(
                 HomeTeethBrushingTimeline.ArmRaiseStartSeconds +
-                (HomeTeethBrushingTimeline.ArmRaiseSeconds * 0.5f));
-            Assert.That(
-                timeline.ArmWeight,
-                Is.GreaterThan(0f).And.LessThan(1f));
-
-            // Cross into Brushing with only a small remainder so the
-            // foam has not started yet.
-            Advance(
-                timeline.Advance,
-                (HomeTeethBrushingTimeline.CameraToMirrorSeconds -
-                 HomeTeethBrushingTimeline.ArmRaiseStartSeconds -
-                 (HomeTeethBrushingTimeline.ArmRaiseSeconds * 0.5f)) +
-                0.1f);
-            Assert.That(
-                timeline.Phase,
-                Is.EqualTo(HomeTeethBrushingPhase.Brushing));
+                HomeTeethBrushingTimeline.ArmRaiseSeconds * 0.5f);
+            Assert.That(timeline.ArmWeight, Is.GreaterThan(0f).And.LessThan(1f));
+            timeline.Advance(HomeTeethBrushingTimeline.CameraToMirrorSeconds);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.Brushing));
             Assert.That(timeline.ArmWeight, Is.EqualTo(1f));
             Assert.That(timeline.CameraBlend, Is.EqualTo(1f));
-            Assert.That(timeline.FoamVisible, Is.False);
 
-            int scrubs = 0;
-            float elapsed = 0f;
-            while (elapsed < 2.5f)
+            // Waiting, body motion alone and tiny mouse jitter earn nothing.
+            timeline.Advance(60f);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.Brushing));
+            Assert.That(progress.Credit(0.1f, true, 60f), Is.Zero);
+            progress.Move(Vector2.right);
+            Assert.That(progress.Offset, Is.EqualTo(Vector2.zero));
+            Assert.That(progress.Credit(0.1f, true, Step), Is.Zero);
+            progress.Move(Vector2.right * 100f);
+            Assert.That(progress.Credit(0.1f, false, Step), Is.Zero);
+            Assert.That(progress.Credit(0.1f, true, Step), Is.Zero,
+                "Travel without contact cannot be banked for a later frame.");
+            progress.Move(Vector2.left * 100f);
+            Assert.That(progress.Credit(0f, true, Step), Is.Zero,
+                "Mouse input alone cannot clean when the actual brush is stationary.");
+            Assert.That(progress.Amount, Is.Zero);
+
+            // Alternating strokes must physically move the brush at the teeth;
+            // each frame is capped so violent mouse motion cannot finish early.
+            int strokes = 0;
+            while (!progress.Complete && strokes < 600)
             {
+                Vector2 before = progress.Offset;
+                progress.Move(Vector2.right * (strokes % 2 == 0 ? 100f : -100f));
+                float travel = Vector2.Distance(before, progress.Offset);
+                float credited = progress.Credit(travel, true, Step);
+                Assert.That(credited,
+                    Is.LessThanOrEqualTo(HomeTeethBrushingProgress.MaximumCreditSpeed * Step + 0.000001f));
                 timeline.Advance(Step);
-                elapsed += Step;
-                if (timeline.ConsumeScrubCue())
-                {
-                    scrubs++;
-                }
+                strokes++;
             }
-
-            Assert.That(scrubs, Is.GreaterThanOrEqualTo(3));
-            Assert.That(
-                timeline.FoamVisible,
-                Is.True,
-                "Foam must appear after a couple of seconds.");
-
-            Advance(
-                timeline.Advance,
-                HomeTeethBrushingTimeline.MinimumBrushSeconds);
-            Assert.That(timeline.RequestFinish(), Is.True);
-            Assert.That(
-                timeline.Phase,
-                Is.EqualTo(HomeTeethBrushingPhase.Rinse));
-
-            bool firstPour = false;
-            bool secondPour = false;
-            elapsed = 0f;
-            float dipPeak = 0f;
-            while (elapsed < HomeTeethBrushingTimeline.RinseSeconds)
-            {
-                timeline.Advance(Step);
-                elapsed += Step;
-                dipPeak = Mathf.Max(dipPeak, timeline.RinseDip);
-                if (timeline.ConsumePourCue())
-                {
-                    if (!firstPour)
-                    {
-                        firstPour = true;
-                    }
-                    else
-                    {
-                        secondPour = true;
-                    }
-                }
-            }
-
-            Assert.That(firstPour, Is.True);
-            Assert.That(secondPour, Is.True);
-            Assert.That(dipPeak, Is.EqualTo(1f).Within(0.01f));
+            Assert.That(progress.Complete, Is.True);
+            Assert.That(progress.Amount, Is.EqualTo(1f));
+            Assert.That(strokes * Step, Is.GreaterThanOrEqualTo(7.99f));
+            Assert.That(timeline.CanCommit, Is.False);
+            timeline.CompleteBrushing();
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.ShowTeeth));
+            Assert.That(timeline.Cleaned, Is.True);
+            Assert.That(timeline.RequestFinish(), Is.False,
+                "The completed brush action owns the short teeth/spit finale.");
+            timeline.Advance(HomeTeethBrushingTimeline.ShowTeethSeconds);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.Spit));
             Assert.That(timeline.ArmWeight, Is.Zero);
-
-            Advance(
-                timeline.Advance,
-                HomeTeethBrushingTimeline.CameraReturnSeconds +
-                0.1f);
+            Assert.That(timeline.EmissionSeconds, Is.Zero,
+                "Spitting follows the tooth display, never overlaps it.");
+            timeline.Advance(HomeTeethBrushingTimeline.SpitStartSeconds);
+            Assert.That(timeline.SpitBend, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(timeline.EmissionSeconds, Is.Zero);
+            timeline.Advance(HomeTeethBrushingTimeline.SpitSeconds -
+                HomeTeethBrushingTimeline.SpitStartSeconds);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CameraReturn));
+            Assert.That(timeline.EmissionSeconds,
+                Is.EqualTo(HomeTeethBrushingTimeline.SpitEndSeconds -
+                    HomeTeethBrushingTimeline.SpitStartSeconds).Within(0.0001f));
+            Assert.That(timeline.CanCommit, Is.False);
+            timeline.Advance(HomeTeethBrushingTimeline.CameraReturnSeconds);
             Assert.That(timeline.IsCompleted, Is.True);
+            Assert.That(timeline.CanCommit, Is.True);
+            Assert.That(timeline.CameraBlend, Is.Zero);
         }
 
         [Test]
-        public void Brushing_InterruptsBeforeMinimumWithoutReward()
+        public void Brushing_CancelsPartialCleaningWithoutTeethSpitOrReward()
         {
             var timeline = new HomeTeethBrushingTimeline();
+            var progress = new HomeTeethBrushingProgress();
             timeline.Begin();
-            Advance(
-                timeline.Advance,
-                HomeTeethBrushingTimeline.CameraToMirrorSeconds +
-                1f);
+            timeline.Advance(HomeTeethBrushingTimeline.CameraToMirrorSeconds);
+            progress.Move(Vector2.right * 100f);
+            progress.Credit(progress.Offset.magnitude, true, 0.2f);
+            Assert.That(progress.Amount, Is.GreaterThan(0f).And.LessThan(1f));
             Assert.That(timeline.RequestFinish(), Is.True);
-            Assert.That(
-                timeline.Phase,
-                Is.EqualTo(HomeTeethBrushingPhase.Rinse),
-                "A stop mid-brushing still passes the rinse beat.");
-            Assert.That(timeline.ReachedMinimumBrush, Is.False);
-            Advance(
-                timeline.Advance,
-                HomeTeethBrushingTimeline.RinseSeconds +
-                HomeTeethBrushingTimeline.CameraReturnSeconds +
-                0.2f);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CameraReturn));
+            Assert.That(timeline.RequestFinish(), Is.False);
+            timeline.CompleteBrushing();
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CameraReturn),
+                "A stale completion after cancellation cannot start the finale.");
+            timeline.Advance(HomeTeethBrushingTimeline.CameraReturnSeconds);
             Assert.That(timeline.IsCompleted, Is.True);
+            Assert.That(timeline.WasCancelled, Is.True);
+            Assert.That(timeline.Cleaned, Is.False);
+            Assert.That(timeline.CanCommit, Is.False);
+            Assert.That(timeline.EmissionSeconds, Is.Zero);
         }
 
         [Test]
@@ -313,7 +300,7 @@ namespace BarPromenade.Tests.EditMode
                 timeline.CameraBlend,
                 Is.EqualTo(blendBefore).Within(0.001f),
                 "An abort mid-push must not snap the camera.");
-            Assert.That(timeline.ReachedMinimumBrush, Is.False);
+            Assert.That(timeline.Cleaned, Is.False);
             Advance(
                 timeline.Advance,
                 HomeTeethBrushingTimeline.CameraReturnSeconds +

@@ -42,7 +42,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   `2,384` triangles, with the same `31` bones, six sockets and `41` bone-only
   production actions.
 - One curved head surface uses an `8 x 4` face atlas (`512 x 256`) with
-  eighteen cells: nine expressions in columns `c0..c3` and their nine soiled
+  twenty-two cells: eleven expressions in columns `c0..c3` and their eleven soiled
   twins at column `+4`. The five sober faces `Neutral`, `HalfBlink`,
   `ClosedBlink`, `Watchful` and `Tense`
   (Unity cells `c0r3`, `c1r3`, `c2r3`, `c0r2`, `c1r2`) remain readable without
@@ -50,7 +50,12 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   lids a pixel high, brows down, the mouth let go), `Glazed` (`c3r2`, one lid
   lower, the pupils drifted apart), `Slack` (`c0r1`, one brow up and one down,
   a dark slit of open mouth) and `Grimace` (`c1r1`, brows knitted, the corners
-  of the mouth pulled down). Python draws rows from the top, so a manifest
+  of the mouth pulled down). Mirror brushing adds `TeethDisplay` (`c2r1`,
+  slightly parted straight lips and visible muted teeth, without a smile)
+  and `Spit` (`c3r1`, a small opening at the same mouth centre); the weary
+  eyes and brows keep their identity. The actual rig owns the brushing hand
+  and the short spine/chest/neck/head bend; no replacement face or body is
+  introduced. Python draws rows from the top, so a manifest
   row is `3 - r`. Each soiled twin (`c4..c7`, the same row, `soiled: true`
   in the manifest) repeats its clean face and adds the vomit after the mouth
   is drawn: a band of slurry under the lower lip running down the chin with
@@ -60,7 +65,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   grey against skin at `150` in the monochrome print. The runtime asks for
   the twin by an `(expression, soiled)` pair and falls back to the clean
   cell when a twin is missing, so an atlas without them still draws every
-  face. The remaining fourteen cells are free. Neutral is weary, flat and
+  face. The remaining ten cells are free. Neutral is weary, flat and
   predominantly depressive, never guilty, tearful or theatrical; the smaller
   cranium preserves extra vertical room for the existing nose, mouth, jaw
   and chin identity.

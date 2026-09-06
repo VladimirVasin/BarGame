@@ -1512,6 +1512,11 @@ The vertical slice contains:
   bend, camera roll and world-image distortion within those ranges, with the
   HUD rendered as five independently filling 20-point segments; presentation
   eases toward a changed level over about `0.7 s`;
+- during vomiting, the head and neck add `24°` of downward pitch to the
+  unchanged folded-torso pose. The source stays at the actual mouth; its launch turns
+  up to `25°` toward the hero's forward with full-burst speed `2.8–3.4 m/s`
+  and weak-burst speed `1.8–2.3 m/s`, giving the jet an initial forward
+  impulse before gravity brings it down;
 - exponential VHS-like processing of existing music, ambience, SFX and their
   reverb/echo returns, with dry UI and exact sober bypass. The shared stereo
   transport wanders, flutters, drops out briefly and chews fragments most
@@ -2183,9 +2188,15 @@ The vertical slice contains:
   L-rail, mixer, hose, tilted head, soap shelf) and three modal scenes on
   one shared skeleton — a first-person toilet action, a curtained shower
   with water, steam and a crossfaded hiss loop,
-  and a mirror teeth-brushing close-up shot from the mirror plane with a
-  procedural brushing arm, foam and a rinse; toilet/shower relieve
-  stress on completion, brushing once per game day;
+  and a mirror teeth-brushing close-up shot from the mirror plane. Mouse or
+  right-stick X/Y drives the actual right arm; its gauge credits only
+  commanded brush travel confirmed at the teeth, requiring at least `8 s`
+  of active movement. At full progress the hero lowers the brush, shows his
+  teeth for `1.5 s`, then bends and spits for `1.5 s`; mouth-origin foam
+  follows ballistic flight into the real hollow Blender basin. Stop `E`
+  cancels before full progress. Completion cleans the soiled mouth on every
+  replay and grants stress `-5` once per game day; cancellation does neither.
+  Toilet and shower retain their own completion-only relief;
 - the toilet opens its hinged Blender lid immediately, guides the standing
   hero into place and blends to eye level over `1.5 s`. A hollow ceramic
   pedestal and an actually open annular seat keep the water visible and reachable;
@@ -2194,10 +2205,13 @@ The vertical slice contains:
   right arm holds a matching Blender anatomy mesh through IK; only head
   geometry hides near the camera. Mouse/right stick aim, with unrestricted
   yaw passed into a body turn on the spot; RMB/gamepad LB provide independent
-  look. A local right-edge gauge drains over exactly `6 s`, followed by `4 s`
+  look. A local right-edge gauge drains over exactly `6 s`, followed by `2 s`
   of shaking and `1.3 s` of camera return, with guided travel separate.
   Over the final `20%` of the main emission, pressure, diameter and packet
   frequency ease to zero; emitted liquid retains its existing trajectory.
+  Two Blender-authored scrotum lobes hang from fixed body attachments.
+  Camera movement excites a damped shaft spring and two distinct gravity
+  pendulums; the real hand and urine outlet follow the resulting pose.
   Ballistic liquid and residual drops collide with the authored surfaces;
   the bowl receives water hits while missed shots leave merged, surface-bound
   wet marks and wall drips. Their bounded session store survives Home reloads

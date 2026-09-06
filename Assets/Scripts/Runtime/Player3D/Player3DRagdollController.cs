@@ -560,14 +560,18 @@ namespace BarPromenade
             // 90 / 9 / 60: the first cut (40 / 6 / 25) moved a head lying
             // on the floor by four degrees in three quarters of a second —
             // the direction right, the pull too timid to read.
+            // 120 / 11 / 80 for the deeper bend the bout asks for since
+            // 2026-09-05 (thirty degrees held, forty-two at the heave);
+            // the earlier 90 / 9 / 60 read twenty-four degrees lying down
+            // against a fourteen-degree ask.
             headJoint.slerpDrive = new JointDrive
             {
-                positionSpring = 90f,
-                positionDamper = 9f,
-                maximumForce = 60f
+                positionSpring = 120f,
+                positionDamper = 11f,
+                maximumForce = 80f
             };
             headJoint.targetRotation = Quaternion.AngleAxis(
-                HeadDriveSign * Mathf.Clamp(pitchDownDegrees, 0f, 30f),
+                HeadDriveSign * Mathf.Clamp(pitchDownDegrees, 0f, 45f),
                 Vector3.right);
             headDriveActive = true;
         }

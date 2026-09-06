@@ -217,6 +217,9 @@ namespace BarPromenade
         private PlayerNauseaPose nauseaPose = PlayerNauseaPose.None;
         private PlayerVomitPose vomitPose = PlayerVomitPose.None;
         private bool mouthSoiled;
+        private object contextualFaceOwner;
+        private PlayerFacialExpression contextualFaceExpression;
+        private bool contextualFaceSuppressesMouthSoil;
         private bool ragdollPoseActive;
         private bool interactionHandoffLocked;
         private bool releaseInteractionHandoffAfterLateUpdate;
@@ -353,6 +356,7 @@ namespace BarPromenade
             }
 
             DestroyGraph();
+            ClearContextualFacialExpression();
             registry = assetRegistry;
             faceAtlasPresenter.Configure(registry.FaceAtlas);
             actorFacingTransform = facingTransform != null
@@ -595,7 +599,53 @@ namespace BarPromenade
 
         /// <summary>The soiled face is actually on screen: flagged AND drawn from an atlas.</summary>
         public bool IsMouthSoiledVisible =>
-            mouthSoiled && faceAtlasPresenter.IsConfigured;
+            mouthSoiled && faceAtlasPresenter.IsConfigured &&
+            !(HasContextualFacialExpression && contextualFaceSuppressesMouthSoil);
+
+        public bool HasContextualFacialExpression => contextualFaceOwner != null;
+
+        /// <summary>
+        /// Acquires or updates a facial override belonging to one interaction.
+        /// Other owners cannot replace it. Suppressing soil changes only the
+        /// visible cell; the persistent mouth state remains owned by gameplay.
+        /// </summary>
+        public bool TrySetContextualFacialExpression(
+            object owner,
+            PlayerFacialExpression expression,
+            bool suppressMouthSoil = false)
+        {
+            if (owner == null || !isActiveAndEnabled ||
+                !Enum.IsDefined(typeof(PlayerFacialExpression), expression) ||
+                (contextualFaceOwner != null &&
+                 !ReferenceEquals(contextualFaceOwner, owner)))
+            {
+                return false;
+            }
+
+            contextualFaceOwner = owner;
+            contextualFaceExpression = expression;
+            contextualFaceSuppressesMouthSoil = suppressMouthSoil;
+            ReapplyFacialPose();
+            return true;
+        }
+
+        public void ReleaseContextualFacialExpression(object owner)
+        {
+            if (owner == null || !ReferenceEquals(contextualFaceOwner, owner))
+            {
+                return;
+            }
+
+            ClearContextualFacialExpression();
+            ReapplyFacialPose();
+        }
+
+        private void ClearContextualFacialExpression()
+        {
+            contextualFaceOwner = null;
+            contextualFaceExpression = PlayerFacialExpression.Neutral;
+            contextualFaceSuppressesMouthSoil = false;
+        }
 
         public void SetFallPose(float signedDirection, float amount)
         {
@@ -1036,6 +1086,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ClearContextualFacialExpression();
             interactionHandoffLocked = false;
             releaseInteractionHandoffAfterLateUpdate = false;
             intoxicationTarget = 0f;
@@ -1622,19 +1673,26 @@ namespace BarPromenade
                 drunkHead.PitchDownDegrees +
                 hiccupHeadPitch,
                 -PlayerAttentionRules.MaxHeadDownPitchDegrees,
-                PlayerAttentionRules.MaxHeadUpPitchDegrees) - vomitDown;
+                PlayerAttentionRules.MaxHeadUpPitchDegrees);
+            // The bout's chin-down travels beside the glance rather than
+            // inside it: outside the clamp, and split between the neck
+            // and the head by its own share, because a man being sick
+            // bends his NECK - the glance's split (most of it in the
+            // head) reads as a nod, not as a body folded over the ground.
+            float vomitPitch = -vomitDown;
             float roll = Mathf.Clamp(
                 drunkHead.RollDegrees,
                 -DrunkHeadMaximumRollDegrees,
                 DrunkHeadMaximumRollDegrees);
             yaw *= AttentionYawSign;
             pitch *= AttentionPitchSign;
+            vomitPitch *= AttentionPitchSign;
             roll *= DrunkHeadRollSign;
             CaptureAttentionPoseBase();
             if (neckBone != null)
             {
                 neckBone.localRotation *= Quaternion.Euler(
-                    pitch * AttentionNeckShare,
+                    pitch * AttentionNeckShare + vomitPitch * VomitNeckShare,
                     yaw * AttentionNeckShare,
                     roll * AttentionNeckShare);
             }
@@ -1642,11 +1700,19 @@ namespace BarPromenade
             if (headBone != null)
             {
                 headBone.localRotation *= Quaternion.Euler(
-                    pitch * AttentionHeadShare,
+                    pitch * AttentionHeadShare + vomitPitch * (1f - VomitNeckShare),
                     yaw * AttentionHeadShare,
                     roll * AttentionHeadShare);
             }
         }
+
+        /// <summary>
+        /// How much of the bout's chin-down the NECK takes; the head gets
+        /// the rest. More than the glance gives the neck (0.38): being
+        /// sick folds the neck over, and a head-heavy split reads as a
+        /// nod at the floor rather than a body bent toward it.
+        /// </summary>
+        public const float VomitNeckShare = 0.55f;
 
         /// <summary>The head may tilt this far toward a shoulder.</summary>
         public const float DrunkHeadMaximumRollDegrees = 10f;
@@ -1833,11 +1899,26 @@ namespace BarPromenade
             // way, so the reach blends from a hanging arm. Its weight is
             // blended by the nausea model on the calendar clock; the swing
             // it takes over is on the game clock like every other arm term.
-            float handToMouth = nauseaPose.HandWeight;
+            float handToMouth = Mathf.Max(nauseaPose.HandWeight, vomitPose.WipeWeight);
             if (handToMouth > 0f)
             {
                 rightArmOutward *= 1f - handToMouth;
                 rightArmForward *= 1f - handToMouth;
+            }
+
+            // Doubled over being sick, both hands go to the knees and
+            // the drunk spread gives way under them the same way. Only
+            // while he stands: a man walking through a bout keeps his
+            // arms for the walk. The knee targets themselves are built
+            // below, after the balance brace has had first claim.
+            float vomitBrace = vomitPose.BraceWeight *
+                               (1f - Mathf.Clamp01(locomotionBlend));
+            if (vomitBrace > 0f)
+            {
+                leftArmOutward *= 1f - vomitBrace;
+                leftArmForward *= 1f - vomitBrace;
+                rightArmOutward *= 1f - vomitBrace;
+                rightArmForward *= 1f - vomitBrace;
             }
 
             // The arms have mass: each angle is chased through an
@@ -1854,8 +1935,21 @@ namespace BarPromenade
             // asymmetrically when the feet stand on different heights.
             float crouch = crouchFilter.Advance(
                 intoxicationAmount * IntoxicationCrouchMetres +
-                balancePose.CrouchMetres * modelWeight,
+                balancePose.CrouchMetres * modelWeight +
+                vomitPose.CrouchMetres,
                 deltaTime);
+
+            // The bout's hands on the knees. The balance model's brace
+            // (a hand going out for the ground he is falling toward) has
+            // first claim on an arm; the knee takes the other.
+            PlayerArmReachPose leftReach =
+                modelWeight > 0f && balancePose.LeftBrace.Active
+                    ? balancePose.LeftBrace
+                    : BuildVomitKneeReach(false, vomitBrace);
+            PlayerArmReachPose rightReach =
+                modelWeight > 0f && balancePose.RightBrace.Active
+                    ? balancePose.RightBrace
+                    : BuildVomitKneeReach(true, vomitBrace);
 
             // The drunk walk: the boots land wide, long or short and
             // turned out, the swinging one comes up higher, and the
@@ -1882,12 +1976,15 @@ namespace BarPromenade
                     forwardGaitDominant,
                     balancePose.WallReach,
                     // The hiccup snaps the chest BACK: a negative forward
-                    // pitch on top of the hip strategy's own.
+                    // pitch on top of the hip strategy's own. The bout
+                    // folds it FORWARD: doubled over, and jerked further
+                    // with every heave and every push of the pump.
                     torsoPitch -
                     nauseaPose.HiccupAmount *
-                    PlayerNauseaRules.HiccupChestPitchDegrees,
-                    modelWeight > 0f ? balancePose.LeftBrace : PlayerArmReachPose.None,
-                    modelWeight > 0f ? balancePose.RightBrace : PlayerArmReachPose.None,
+                    PlayerNauseaRules.HiccupChestPitchDegrees +
+                    vomitPose.TorsoPitchDegrees,
+                    leftReach,
+                    rightReach,
                     gait.LeftFootOffsetLocal * modelWeight,
                     gait.RightFootOffsetLocal * modelWeight,
                     gait.LeftFootYawDegrees * modelWeight,
@@ -1897,6 +1994,58 @@ namespace BarPromenade
                     handToMouth),
                 deltaTime);
         }
+
+        /// <summary>
+        /// A palm braced on the thigh just above the knee for the bout of
+        /// vomiting, at the brace's weight. The knee itself (the rise's
+        /// target, on the shin bone's head) is out of an arm's reach with
+        /// the torso folded twenty-odd degrees — the shoulder stays a
+        /// good ninety centimetres above it — and an IK pulled past its
+        /// reach read as arms hanging forward. Just over halfway down the
+        /// thigh from the hip, a little ahead of the bone so the hand
+        /// sits on the front of the leg, the arm reaches it straight and
+        /// the body reads as propped on its legs. None with no weight or
+        /// no shin.
+        /// </summary>
+        private PlayerArmReachPose BuildVomitKneeReach(bool rightHand, float weight)
+        {
+            Transform shin = rightHand ? rightShinBone : leftShinBone;
+            if (shin == null || weight <= 0.0001f)
+            {
+                return PlayerArmReachPose.None;
+            }
+
+            Vector3 knee = shin.position;
+            Vector3 hip = shin.parent != null
+                ? shin.parent.position
+                : knee + Vector3.up * 0.4f;
+            Vector3 forward = actorFacingTransform != null
+                ? actorFacingTransform.forward
+                : transform.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude > 0.0001f)
+            {
+                forward.Normalize();
+            }
+
+            Vector3 palm = Vector3.Lerp(hip, knee, VomitBraceThighFraction) +
+                           forward * VomitBraceForwardMetres +
+                           Vector3.up * RiseKneeHandLift;
+            return new PlayerArmReachPose(
+                true,
+                rightHand,
+                palm,
+                Vector3.up,
+                weight,
+                0.15f,
+                0.05f);
+        }
+
+        /// <summary>How far down the thigh, hip to knee, the braced palm sits.</summary>
+        public const float VomitBraceThighFraction = 0.55f;
+
+        /// <summary>The palm sits this far ahead of the thigh bone: on the front of the leg.</summary>
+        public const float VomitBraceForwardMetres = 0.05f;
 
         /// <summary>
         /// The rise's late pass: the rise model's hero-frame targets are
@@ -2628,6 +2777,12 @@ namespace BarPromenade
 
         private void ApplyAuthoredClipFacialPose()
         {
+            if (HasContextualFacialExpression)
+            {
+                ApplyFacialExpression(contextualFaceExpression);
+                return;
+            }
+
             // Legacy clips already own their keyed face bones. Atlas faces
             // use the same authored priority through optional clip keys.
             if (!UsesFacialAtlas)
@@ -2677,11 +2832,16 @@ namespace BarPromenade
         private void ApplyFacialExpression(
             PlayerFacialExpression expression)
         {
+            if (HasContextualFacialExpression)
+            {
+                expression = contextualFaceExpression;
+            }
+
             visibleFacialExpression = expression;
             // The soiled twin rides every atlas face the same way; the
             // binding falls back to the clean cell where an atlas has no
             // twin, so an older atlas simply never shows the mess.
-            if (faceAtlasPresenter.Apply(expression, mouthSoiled))
+            if (faceAtlasPresenter.Apply(expression, IsMouthSoiledVisible))
             {
                 return;
             }

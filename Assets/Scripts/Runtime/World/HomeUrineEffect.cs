@@ -43,6 +43,21 @@ namespace BarPromenade
             public Vector3[] Vertices;
         }
 
+        // The render pipeline's own "not for the GPU Resident Drawer" marker; internal to the
+        // GPUDriven runtime assembly, so it is found by full name across the loaded assemblies.
+        private static readonly Type DisallowGpuDrivenRenderingType =
+            FindBehaviourType("UnityEngine.Rendering.DisallowGPUDrivenRendering");
+
+        private static Type FindBehaviourType(string fullName)
+        {
+            foreach (System.Reflection.Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type candidate = assembly.GetType(fullName, false);
+                if (candidate != null && typeof(MonoBehaviour).IsAssignableFrom(candidate)) return candidate;
+            }
+            return null;
+        }
+
         private readonly Packet[] packets = new Packet[PacketCapacity];
         private readonly Splash[] splashes = new Splash[SplashCapacity];
         private readonly Stain[] stains = new Stain[HomeUrineResidue.Capacity];
@@ -80,6 +95,8 @@ namespace BarPromenade
         public Vector3 LastHitPoint { get; private set; }
         public string LastHitSurfaceId { get; private set; }
         public int ResidueCount => HomeUrineResidue.Deposits.Count;
+        /// <summary>The pipeline's GPU-driven opt-out marker was found and rides every visual.</summary>
+        public static bool GpuDrivenOptOutAvailable => DisallowGpuDrivenRenderingType != null;
         public int ReceiverCount => surfaces != null ? surfaces.Count : 0;
         public int ActivePacketCount
         {
@@ -336,6 +353,14 @@ namespace BarPromenade
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = true;
+            // These meshes are cleared, refilled and destroyed on the CPU
+            // while their renderers live; the GPU Resident Drawer keeps a
+            // registered mesh handle across such rebuilds and then submits
+            // draw commands against an invalid mesh ("BatchDrawCommand was
+            // submitted with an invalid ... Mesh ID"). Keep them on the
+            // classic path: the opt-out flag is internal to the render
+            // pipeline package, so its own component sets it for us.
+            if (DisallowGpuDrivenRenderingType != null) result.AddComponent(DisallowGpuDrivenRenderingType);
             renderer.enabled = false;
             return new Visual { Transform = result.transform, Filter = filter, Renderer = renderer };
         }
@@ -374,6 +399,9 @@ namespace BarPromenade
             foreach (Stain stain in stains)
             {
                 if (stain == null) continue;
+                // A renderer must never outlive its mesh, even for the
+                // remainder of this frame.
+                if (stain.Visual.Renderer != null) stain.Visual.Renderer.enabled = false;
                 if (stain.Visual.Transform != null) Destroy(stain.Visual.Transform.gameObject);
                 if (stain.Mesh != null) Destroy(stain.Mesh);
             }

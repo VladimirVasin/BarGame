@@ -5,10 +5,14 @@ namespace BarPromenade
 {
     /// <summary>
     /// The numbers of a bout of vomiting. The bout is one fixed score:
-    /// the head goes down, three bursts come with a breath between them
-    /// (one long, two short dregs), and the head comes back up. Nothing
-    /// in it is seeded — the same bout plays every time, and only the
-    /// residue it leaves on the ground varies with the seed.
+    /// the head and neck go down and the torso doubles over with the
+    /// hands on the knees, three bursts come with a breath between them
+    /// (one long, two short dregs), each opening with a heave and
+    /// convulsing him with every push of the pump while it runs, a wet
+    /// cough follows each, and the head comes back up while the right
+    /// hand wipes the mouth. Nothing in it is seeded — the same bout
+    /// plays every time, and only the residue it leaves on the ground
+    /// varies with the seed.
     /// </summary>
     public static class HeroVomitRules
     {
@@ -32,12 +36,42 @@ namespace BarPromenade
         public const float PulseHertz = 3.2f;
         public const float PulseDepth = 0.45f;
 
-        /// <summary>The head pitches this far over the ground for the whole bout.</summary>
-        public const float HeadDownDegrees = 14f;
+        /// <summary>
+        /// The head and neck pitch this far over the ground for the whole
+        /// bout. The torso remains folded; a slightly raised chin leaves
+        /// room for the initial forward jet instead of aiming at the boots.
+        /// </summary>
+        public const float HeadDownDegrees = 24f;
 
         /// <summary>Each burst opens with a heave: this much further down, for this long.</summary>
-        public const float HeadDownHeaveExtraDegrees = 4f;
-        public const float HeadDownHeaveSeconds = 0.3f;
+        public const float HeadDownHeaveExtraDegrees = 12f;
+        public const float HeadDownHeaveSeconds = 0.42f;
+
+        /// <summary>While the stream runs the head jerks down with every push of the pump.</summary>
+        public const float PumpHeadDegrees = 5f;
+
+        /// <summary>
+        /// Doubled over: extra forward pitch of the spine and chest for
+        /// the whole bout, more at the heave, and a jerk with every push.
+        /// Twenty-two, not sixteen: at sixteen the shoulders stay too high
+        /// for the hands to reach the thighs, and the brace read as arms
+        /// hanging forward rather than a body propped on its legs.
+        /// </summary>
+        public const float TorsoPitchDegrees = 22f;
+        public const float TorsoHeaveExtraDegrees = 9f;
+        public const float PumpTorsoDegrees = 4f;
+
+        /// <summary>The knees give under him: a pelvis drop held through the bout, deeper at the heave.</summary>
+        public const float CrouchMetres = 0.05f;
+        public const float CrouchHeaveExtraMetres = 0.04f;
+
+        /// <summary>
+        /// Once the last burst is over and the head comes up, the right
+        /// hand wipes the mouth: up over this long, held, and let fall.
+        /// </summary>
+        public const float WipeRiseSeconds = 0.4f;
+        public const float WipeHoldSeconds = 0.6f;
+        public const float WipeFallSeconds = 0.6f;
 
         /// <summary>The head drops fast and comes back slowly.</summary>
         public const float HeadDownBlendInSeconds = 0.35f;
@@ -104,8 +138,12 @@ namespace BarPromenade
         /// <summary>The last burst's end — the Finished cue, and the key comes free.</summary>
         public static float ScheduleEndSeconds => BurstEnd(BurstCount - 1);
 
-        /// <summary>The head is back up; the bout is over.</summary>
-        public static float TotalSeconds => ScheduleEndSeconds + HeadDownBlendOutSeconds;
+        /// <summary>The whole wipe, from the last burst's end.</summary>
+        public static float WipeSeconds => WipeRiseSeconds + WipeHoldSeconds + WipeFallSeconds;
+
+        /// <summary>The head is back up and the mouth is wiped; the bout is over.</summary>
+        public static float TotalSeconds =>
+            ScheduleEndSeconds + Mathf.Max(HeadDownBlendOutSeconds, WipeSeconds);
 
         /// <summary>The shape of one heave over its whole duration, 0..1.</summary>
         public static float HeaveShape(float secondsIntoBurst)
@@ -140,6 +178,9 @@ namespace BarPromenade
 
         /// <summary>The stream stops.</summary>
         BurstEnd,
+
+        /// <summary>The wet cough and spit that follows a burst.</summary>
+        Cough,
 
         /// <summary>Take these points of intoxication off him.</summary>
         Relief,
@@ -238,8 +279,29 @@ namespace BarPromenade
 
         public float Spasm => active ? EvaluateHeave(time) : 0f;
 
+        /// <summary>Where the stomach's pump is in its beat, 0..1, scaled by the burst; zero between bursts.</summary>
+        public float Pump => active ? EvaluatePump(time) : 0f;
+
+        public float TorsoPitchDegrees => active ? EvaluateTorsoPitch(time) : 0f;
+
+        public float CrouchMetres => active ? EvaluateCrouch(time) : 0f;
+
+        /// <summary>The hands on the knees: with the head, down first and up last.</summary>
+        public float BraceWeight => active ? EvaluateHeld(time) : 0f;
+
+        public float WipeWeight => active ? EvaluateWipe(time) : 0f;
+
         public PlayerVomitPose Pose =>
-            new PlayerVomitPose(active, HeadDownDegrees, Flow, Spasm);
+            new PlayerVomitPose(
+                active,
+                HeadDownDegrees,
+                Flow,
+                Spasm,
+                TorsoPitchDegrees,
+                CrouchMetres,
+                BraceWeight,
+                WipeWeight,
+                Pump);
 
         /// <summary>
         /// Start the bout from the top. A bout already running starts
@@ -378,31 +440,102 @@ namespace BarPromenade
             return 0f;
         }
 
-        private static float EvaluateHeadDown(float atSeconds)
+        /// <summary>
+        /// The bout's hold: down fast at the start, one through every
+        /// burst and pause, and up slowly after the last burst. The head,
+        /// the torso, the knees and the brace all ride this one curve.
+        /// </summary>
+        private static float EvaluateHeld(float atSeconds)
         {
-            float held;
             if (atSeconds < HeroVomitRules.HeadDownBlendInSeconds)
             {
-                held = Mathf.SmoothStep(
+                return Mathf.SmoothStep(
                     0f,
                     1f,
                     atSeconds / HeroVomitRules.HeadDownBlendInSeconds);
             }
-            else if (atSeconds < ScheduleEnd)
+
+            if (atSeconds < ScheduleEnd)
             {
-                held = 1f;
-            }
-            else
-            {
-                held = 1f - Mathf.SmoothStep(
-                    0f,
-                    1f,
-                    (atSeconds - ScheduleEnd) /
-                    HeroVomitRules.HeadDownBlendOutSeconds);
+                return 1f;
             }
 
-            return HeroVomitRules.HeadDownDegrees * held +
-                   HeroVomitRules.HeadDownHeaveExtraDegrees * EvaluateHeave(atSeconds);
+            return 1f - Mathf.SmoothStep(
+                0f,
+                1f,
+                (atSeconds - ScheduleEnd) /
+                HeroVomitRules.HeadDownBlendOutSeconds);
+        }
+
+        /// <summary>
+        /// The pump's beat while a burst runs: the same half-sine the
+        /// flow throbs to, scaled by the burst's strength so the dregs
+        /// convulse him less than the meal did. Zero between bursts.
+        /// </summary>
+        private static float EvaluatePump(float atSeconds)
+        {
+            int index = ResolveBurstIndex(atSeconds);
+            if (index < 0)
+            {
+                return 0f;
+            }
+
+            float into = atSeconds - BurstStarts[index];
+            return HeroVomitRules.BurstStrengths[index] *
+                   Mathf.Max(0f, Mathf.Sin(2f * Mathf.PI * HeroVomitRules.PulseHertz * into));
+        }
+
+        private static float EvaluateHeadDown(float atSeconds)
+        {
+            return HeroVomitRules.HeadDownDegrees * EvaluateHeld(atSeconds) +
+                   HeroVomitRules.HeadDownHeaveExtraDegrees * EvaluateHeave(atSeconds) +
+                   HeroVomitRules.PumpHeadDegrees * EvaluatePump(atSeconds);
+        }
+
+        private static float EvaluateTorsoPitch(float atSeconds)
+        {
+            return HeroVomitRules.TorsoPitchDegrees * EvaluateHeld(atSeconds) +
+                   HeroVomitRules.TorsoHeaveExtraDegrees * EvaluateHeave(atSeconds) +
+                   HeroVomitRules.PumpTorsoDegrees * EvaluatePump(atSeconds);
+        }
+
+        private static float EvaluateCrouch(float atSeconds)
+        {
+            return HeroVomitRules.CrouchMetres * EvaluateHeld(atSeconds) +
+                   HeroVomitRules.CrouchHeaveExtraMetres * EvaluateHeave(atSeconds);
+        }
+
+        /// <summary>
+        /// The wipe: nothing until the last burst is over, then the hand
+        /// rises to the mouth as the head comes up, holds there and
+        /// falls. It ends exactly at the bout's total.
+        /// </summary>
+        private static float EvaluateWipe(float atSeconds)
+        {
+            float into = atSeconds - ScheduleEnd;
+            if (into <= 0f)
+            {
+                return 0f;
+            }
+
+            if (into < HeroVomitRules.WipeRiseSeconds)
+            {
+                return Mathf.SmoothStep(0f, 1f, into / HeroVomitRules.WipeRiseSeconds);
+            }
+
+            into -= HeroVomitRules.WipeRiseSeconds;
+            if (into < HeroVomitRules.WipeHoldSeconds)
+            {
+                return 1f;
+            }
+
+            into -= HeroVomitRules.WipeHoldSeconds;
+            if (into >= HeroVomitRules.WipeFallSeconds)
+            {
+                return 0f;
+            }
+
+            return 1f - Mathf.SmoothStep(0f, 1f, into / HeroVomitRules.WipeFallSeconds);
         }
 
         private static float[] BuildEdges(bool ends)
@@ -459,6 +592,9 @@ namespace BarPromenade
                 }
 
                 cues.Add(new HeroVomitCue(HeroVomitCueKind.BurstEnd, index, strength, 0, end));
+                // The cough and spit that follow every burst, on the
+                // same instant the stream stops and before the relief.
+                cues.Add(new HeroVomitCue(HeroVomitCueKind.Cough, index, strength, 0, end));
                 cues.Add(new HeroVomitCue(
                     HeroVomitCueKind.Relief,
                     index,

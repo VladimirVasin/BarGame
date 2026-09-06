@@ -52,7 +52,7 @@ namespace BarPromenade.Editor
             "Assets/Scripts/Runtime/Player3D/Player3DAssetRegistry.cs";
         private const float ExpectedHeight = 1.75f;
         private const int MaximumTriangleCount = 4500;
-        // Eight columns: the nine faces on the left, their soiled twins four
+        // Eight columns: the expressions on the left, their soiled twins four
         // columns to the right, so the atlas imports at 512x256.
         private const int ExpectedAtlasColumns = 8;
         private const int ExpectedAtlasRows = 4;
@@ -173,6 +173,8 @@ namespace BarPromenade.Editor
             new CanonicalFaceCell(PlayerFacialExpression.Glazed, 3, 2),
             new CanonicalFaceCell(PlayerFacialExpression.Slack, 0, 1),
             new CanonicalFaceCell(PlayerFacialExpression.Grimace, 1, 1),
+            new CanonicalFaceCell(PlayerFacialExpression.TeethDisplay, 2, 1),
+            new CanonicalFaceCell(PlayerFacialExpression.Spit, 3, 1),
             new CanonicalFaceCell(
                 PlayerFacialExpression.Neutral, SoiledAtlasColumnOffset + 0, 3, true),
             new CanonicalFaceCell(
@@ -190,7 +192,11 @@ namespace BarPromenade.Editor
             new CanonicalFaceCell(
                 PlayerFacialExpression.Slack, SoiledAtlasColumnOffset + 0, 1, true),
             new CanonicalFaceCell(
-                PlayerFacialExpression.Grimace, SoiledAtlasColumnOffset + 1, 1, true)
+                PlayerFacialExpression.Grimace, SoiledAtlasColumnOffset + 1, 1, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.TeethDisplay, SoiledAtlasColumnOffset + 2, 1, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.Spit, SoiledAtlasColumnOffset + 3, 1, true)
         };
 
         private static bool isBuilding;

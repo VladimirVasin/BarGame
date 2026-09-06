@@ -109,7 +109,10 @@ Assets/
       CityBusDriver3D.prefab            passive 31-bone seated production driver
     HomeToiletAction/
       HomeToiletAction.json              fixed-metre model, grip/outlet and liquid-mesh contracts
-      Models/                           eleven Blender FBX: anatomy, lid, open seat, hollow pedestal, water, paper roll and five liquid meshes
+      Models/                           thirteen Blender FBX: anatomy, two scrotum lobes, lid, open seat, hollow pedestal, water, paper roll and five liquid meshes
+    HomeBrushingAction/
+      HomeBrushingAction.json            real sink cavity, drain and normalized foam geometry contracts
+      Models/                           five Blender FBX: hollow basin, perforated drain, brush handle, droplet and splash
     Home/
       HomeInteriorModels.asset          named passive Blender mesh library + authored part metadata
       Textures/                         twelve apartment RGB albedos; 1024 source, 512 runtime, Repeat/mips
@@ -187,7 +190,7 @@ Assets/
     V2/
       Models/PlayerCharacter3DV2.{fbx,json}  production 34-part model + deterministic metrics
       Animations/PlayerCharacter3DV2Animations.fbx  production 41-action V2 rig, including Run and seated drink 2/3/2
-      Textures/PlayerFaceAtlas.png       8x4 point-filtered atlas: nine expressions + their soiled twins at column +4
+      Textures/PlayerFaceAtlas.png       8x4 point-filtered atlas: eleven expressions + soiled twins; 22 occupied cells, 10 free
       Textures/PlayerClothingAtlas.png   full-colour open-jacket/trouser/boot atlas
       Materials/Player3DV2Clothing.mat  shared white-tint atlas material
   Pedestrians/
@@ -605,6 +608,8 @@ Assets/
         HomeToiletLid.cs           authored hinge motion + bowl-water asset composition
         HomeUrineEffect.cs         pooled ballistic packets, contact sounds, splashes and projected marks
         HomeUrine{Trajectory,SurfaceMap,Residue,Resources}.cs  swept mesh hits, shared assets and bounded session deposits
+        HomeBrushingSpitEffect.cs  pooled mouth-origin foam flight and actual sink-triangle impacts
+        HomeBrushingResources.cs   shared readable Blender sink/effect meshes and cream PS1 Lit foam
         SupermarketInteriorLayout*.cs  room/aisles/fixtures, 3 shelves + 5 slots
         SupermarketInteriorWorldBuilder.cs  authored shop placement + plan-owned collision and finite products
         SupermarketSecurityCameraWorldBuilder.cs  four authored corner CCTV pivots servoed at the hero
@@ -841,10 +846,13 @@ Assets/
         HomeRefrigeratorFirstPersonHand.cs  prefab-derived right arm and handle reach
         StairwellCatInteraction.cs     Talk/Interact adapter + paired feeding orchestration
         HomeBathroomSceneInteraction.cs  shared bathroom-scene skeleton: modal, walk-in, camera
-        HomeToiletInteraction.cs       first-person 5 s urine + 2 s shake timeline, natural relief and cancel
+        HomeToiletInteraction.cs       first-person 6 s urine + 2 s shake timeline, natural relief and cancel
         HomeToiletFirstPersonView.cs   actual hero arm IK, head visibility, held Blender anatomy and aim/look
+        HomeToiletAnatomyDynamics.cs   camera-driven shaft spring and paired damped gravity pendulums
         HomeShowerInteraction.cs       curtain/water/steam shower scene + timeline + effect
-        HomeTeethBrushingInteraction.cs  mirror close-up, CCD brushing arm, foam, day-gated relief
+        HomeTeethBrushingInteraction.cs  manual mirror brush, teeth display, spit and completion-only daily relief
+        HomeTeethBrushingModel.cs        contact-qualified travel progress and brush/show/spit/return timeline
+        HomeTeethBrushingArmPose.cs      actual rig hand IK and connected spine/chest/neck/head spit bend
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
         MothersHouse{Entrance,Exit}.cs existing village leaf -> room -> one-shot safe return
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
@@ -923,6 +931,7 @@ Assets/
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
         HomeToiletGaugeView.cs       right-edge local remaining-volume gauge
+        HomeBrushingGaugeView.cs     manual brush-contact progress in the existing HUD frame language
         CounterMenuHintView.cs       shared compact W/S + Space world-menu hint/status
         MountainRoadCafeMenuHintView.cs cafe localization adapter for the shared hint
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
@@ -1128,6 +1137,7 @@ ArtSource/
   Home/                          apartment albedo contract, manifest and contact sheet
     Interior/                    generated HomeInterior3D.blend + home-interior-3d-model.json
   HomeToiletAction/               Blender source, model/anchor manifest and anatomy/lid/liquid preview
+  HomeBrushingAction/             Blender sink source, five-model manifest and cavity/drain inspection PNG
   PlayerHome/                    generated exterior .blend/preview + nine-sheet manifest/contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
     Cafe/Blender/                generated fixed-metre cafe `.blend`
@@ -1200,6 +1210,7 @@ tools/
   build-home-textures.py            deterministic apartment surface albedos + validator
   build-home-interior-3d-model.py   deterministic home_interior_v1 mesh set, manifest and validator
   build-home-toilet-action-3d-model.py  eleven toilet models + hollow opening and FBX round-trip validator
+  build-home-brushing-action-3d-model.py  five sink/brush/foam models + cavity rays and FBX round-trip validator
 Packages/
 ProjectSettings/
 ```

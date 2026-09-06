@@ -23,9 +23,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "ArtSource/HomeToiletAction"
 RESOURCES = ROOT / "Assets/Resources/HomeToiletAction"
 MODELS = RESOURCES / "Models"
-VERSION = "1.3.1"
+VERSION = "1.4.1"
 ANCHORS = {"AimPivot": (0, 0, 0), "Grip": (0, -.0015, .025),
            "Outlet": (0, -.020, .130)}
+SCROTUM_ATTACHMENTS = {"ScrotumLeft": (-.011, -.016, -.006),
+                       "ScrotumRight": (.011, -.016, -.006)}
 COLORS = {"Skin": "AE8D7B", "SkinDark": "392D2E", "Enamel": "919982", "Water": "3F4941",
           "Paper": "C5BEAD", "Cardboard": "80684D",
           "Urine": "B9A343"}
@@ -116,6 +118,27 @@ def hollow_vertical_profile(profile, sides=16):
     return vertices, faces
 
 
+def scrotum_lobe(side):
+    """Suspended skin volume with an overlapping broad neck, never a loose ball.
+
+    Local origin is the upper pendulum joint. The paired runtime attachments
+    sit below the shaft root; each upper neck penetrates the root volume and
+    overlaps the other neck. A small lower asymmetry separates the two masses.
+    The neck curves forward to carry the volumes clear of the hero's coat
+    without moving either body attachment or the independently aimed shaft.
+    """
+    low = .004 if side < 0 else 0
+    return ring_loft([
+        ((side * .005, -.063 - low, .068), .003, .003),
+        ((side * .008, -.057 - low, .066), .015, .015),
+        ((side * .010, -.043 - low, .060), .024, .022),
+        ((side * .006, -.025 - low * .5, .045), .023, .021),
+        ((0, -.010, .018), .017, .016),
+        ((0, .003, -.008), .017, .015),
+        ((0, .014, -.010), .018, .016),
+    ], sides=12, axis="y")
+
+
 def definitions():
     anatomy = ring_loft([
         ((0, 0, 0), .025, .021),
@@ -171,6 +194,10 @@ def definitions():
         "Anatomy": {"meshes": [("Anatomy_Skin", anatomy, "Skin"),
                                 ("Anatomy_Outlet", outlet, "SkinDark")],
                     "anchors": ANCHORS, "contract": "fixed metres; held adult anatomy"},
+        "ScrotumLeft": {"meshes": [("ScrotumLeft_Skin", scrotum_lobe(-1), "Skin")],
+                         "anchors": {}, "contract": "fixed metres; upper pendulum pivot at origin; hang -Y; attach (-.011,-.016,-.006) relative to Anatomy AimPivot; broad neck overlaps shaft and right neck"},
+        "ScrotumRight": {"meshes": [("ScrotumRight_Skin", scrotum_lobe(1), "Skin")],
+                          "anchors": {}, "contract": "fixed metres; upper pendulum pivot at origin; hang -Y; attach (+.011,-.016,-.006) relative to Anatomy AimPivot; broad neck overlaps shaft and left neck"},
         "ToiletLid": {"meshes": [("ToiletLid", lid, "Enamel")], "anchors": {},
                       "contract": "hinge at origin; extends -Z; local X +90 raises to +Y"},
         "BowlWater": {"meshes": [("BowlWater", water, "Water")], "anchors": {},
@@ -256,6 +283,20 @@ def validate(defs, objects):
     assert abs(anatomy_bounds[1][2] - ANCHORS["Outlet"][2]) < 1e-8
     assert all(anatomy_bounds[0][i] <= ANCHORS["Grip"][i] <= anatomy_bounds[1][i]
                for i in range(3)), "Grip is outside anatomy"
+    for name, attachment in SCROTUM_ATTACHMENTS.items():
+        geometry = defs[name]["meshes"][0][1]
+        lo, hi = bounds(geometry)
+        assert .047 <= hi[0] - lo[0] <= .055, (name, "lobe width")
+        assert .076 <= hi[1] - lo[1] <= .082, (name, "neck and lobe height")
+        assert .075 <= hi[2] <= .085, (name, "forward coat clearance")
+        # Each upper ring crosses the shaft root plane and stays inside its
+        # vertical span; both broad necks overlap at the body's centre line.
+        upper = [point for point in geometry[0] if abs(point[1] - .014) < 1e-8]
+        assert min(p[0] + attachment[0] for p in upper) < 0
+        assert max(p[0] + attachment[0] for p in upper) > 0
+        assert min(p[2] + attachment[2] for p in upper) < 0
+        assert max(p[2] + attachment[2] for p in upper) >= -1e-8
+        assert anatomy_bounds[0][1] < .014 + attachment[1] < anatomy_bounds[1][1]
     lid_lo, lid_hi = bounds(defs["ToiletLid"]["meshes"][0][1])
     assert abs(lid_hi[0] - lid_lo[0] - .54) < 1e-7
     assert abs(lid_lo[2] + .51) < 1e-7 and abs(lid_hi[2]) < 1e-7
@@ -307,7 +348,8 @@ def validate(defs, objects):
             "deterministic_geometry": True, "grip_and_outlet": True,
             "lid_hinge_raise_sign": "+90 local X", "unit_vfx_bounds": True,
             "pedestal_hollow_water_clearance_rays": 18, "paper_roll_open_core": True,
-            "seat_through_aperture_rays": 25}
+            "seat_through_aperture_rays": 25,
+            "scrotum_pair_fixed_metres_and_connected_necks": True}
 
 
 def guid(path):
@@ -381,7 +423,9 @@ def compose_preview(roots):
     # Every prop retains its physical metre scale. The normalized liquid meshes
     # use their real runtime dimensions: 3 mm stream, 4 mm drop, 28 mm splash.
     anatomy_origin = Vector((-.35, -.26, .24))
-    copy_model("Anatomy", anatomy_origin)
+    anatomy_preview = copy_model("Anatomy", anatomy_origin)
+    for name, attachment in SCROTUM_ATTACHMENTS.items():
+        anatomy_preview += copy_model(name, anatomy_origin + Vector(source_point(attachment)))
     copy_model("ToiletLid", (.20, .25, .01))
     copy_model("BowlWater", (.20, .50, .002))
     copy_model("ToiletPaperRoll", (.44, .50, .0475))
@@ -445,6 +489,14 @@ def compose_preview(roots):
     camera.rotation_euler = (Vector((2.50,.10,0)) - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera_data.ortho_scale = .68
     scene.render.filepath = str(SOURCE / "ToiletSeat-Opening.png")
+    bpy.ops.render.render(write_still=True)
+    for obj in collection.objects:
+        if obj.type == "MESH": obj.hide_render = obj not in anatomy_preview
+    camera.location = anatomy_origin + Vector((.21, .28, .15))
+    target = anatomy_origin + Vector((0, .035, -.027))
+    camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
+    camera_data.ortho_scale = .24
+    scene.render.filepath = str(SOURCE / "Anatomy-Attachment.png")
     bpy.ops.render.render(write_still=True)
     for obj in collection.objects:
         if obj.type == "MESH": obj.hide_render = False
@@ -533,6 +585,7 @@ def main():
                "signature": signature, "coordinates": "Unity local metres +Y up +Z forward",
                "source_conversion": "Y/Z swap and face rewinding; FBX -Z forward Y up",
                "palette_srgb_hex": COLORS, "report": report, "models": model_records,
+               "scrotum_attachments_relative_to_anatomy_aim_pivot": SCROTUM_ATTACHMENTS,
                "runtime_contract": "Reuse shared materials. No generated runtime geometry. Hero arm remains Player3DV2. Use model hierarchy for unit and axis conversion."}
     text = json.dumps(payload, indent=2) + "\n"
     (SOURCE / "home-toilet-action-3d-model.json").write_text(text, encoding="utf-8")

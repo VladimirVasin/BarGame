@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generator_version": "1.3.1",
-  "signature": "7c4fad38df8d37b3097498aa2a46b6e20c87aa0f06bfb5879b1cb7c894af0cfc",
+  "generator_version": "1.4.1",
+  "signature": "4b7a12e73b74915215cb49bd808a5e3c710ab9fe39d9509dad654598acedff2c",
   "coordinates": "Unity local metres +Y up +Z forward",
   "source_conversion": "Y/Z swap and face rewinding; FBX -Z forward Y up",
   "palette_srgb_hex": {
@@ -14,16 +14,17 @@
     "Urine": "B9A343"
   },
   "report": {
-    "models": 11,
-    "meshes": 13,
-    "triangles": 2048,
+    "models": 13,
+    "meshes": 15,
+    "triangles": 2376,
     "deterministic_geometry": true,
     "grip_and_outlet": true,
     "lid_hinge_raise_sign": "+90 local X",
     "unit_vfx_bounds": true,
     "pedestal_hollow_water_clearance_rays": 18,
     "paper_roll_open_core": true,
-    "seat_through_aperture_rays": 25
+    "seat_through_aperture_rays": 25,
+    "scrotum_pair_fixed_metres_and_connected_necks": true
   },
   "models": [
     {
@@ -77,6 +78,52 @@
             0.13015
           ],
           "triangles": 28
+        }
+      ]
+    },
+    {
+      "name": "ScrotumLeft",
+      "resource": "HomeToiletAction/Models/ScrotumLeft",
+      "contract": "fixed metres; upper pendulum pivot at origin; hang -Y; attach (-.011,-.016,-.006) relative to Anatomy AimPivot; broad neck overlaps shaft and right neck",
+      "anchors": {},
+      "meshes": [
+        {
+          "name": "ScrotumLeft_Skin",
+          "material": "Skin",
+          "bounds_min": [
+            -0.034,
+            -0.067,
+            -0.026000000000000002
+          ],
+          "bounds_max": [
+            0.018,
+            0.014,
+            0.08199999999999999
+          ],
+          "triangles": 164
+        }
+      ]
+    },
+    {
+      "name": "ScrotumRight",
+      "resource": "HomeToiletAction/Models/ScrotumRight",
+      "contract": "fixed metres; upper pendulum pivot at origin; hang -Y; attach (+.011,-.016,-.006) relative to Anatomy AimPivot; broad neck overlaps shaft and left neck",
+      "anchors": {},
+      "meshes": [
+        {
+          "name": "ScrotumRight_Skin",
+          "material": "Skin",
+          "bounds_min": [
+            -0.018,
+            -0.063,
+            -0.026000000000000002
+          ],
+          "bounds_max": [
+            0.034,
+            0.014,
+            0.08199999999999999
+          ],
+          "triangles": 164
         }
       ]
     },
@@ -326,5 +373,17 @@
       ]
     }
   ],
+  "scrotum_attachments_relative_to_anatomy_aim_pivot": {
+    "ScrotumLeft": [
+      -0.011,
+      -0.016,
+      -0.006
+    ],
+    "ScrotumRight": [
+      0.011,
+      -0.016,
+      -0.006
+    ]
+  },
   "runtime_contract": "Reuse shared materials. No generated runtime geometry. Hero arm remains Player3DV2. Use model hierarchy for unit and axis conversion."
 }
