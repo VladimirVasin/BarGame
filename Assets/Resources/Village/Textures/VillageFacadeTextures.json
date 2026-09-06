@@ -1,0 +1,76 @@
+{
+  "design_id": "village_facade_surfaces_v1",
+  "generator_version": "1.1.0",
+  "build_signature": "4e1801288a78e7ecf507a6f47a64d691296a1fa47111f833d54764b30ea74490",
+  "texture_size": 1024,
+  "grayscale": true,
+  "mipmaps": true,
+  "wrap_mode": "Repeat",
+  "sheets": [
+    {
+      "name": "VillageTimberAlbedo",
+      "surface": "Timber",
+      "meters_per_tile": 1.4,
+      "grain_axis": "U",
+      "sha256": "2782febc006043325897c8feed62cf2115c27f998d3c3344494815d0d88581dd",
+      "mean_linear_luminance": 0.57688815,
+      "percentile_5": 164.0,
+      "percentile_95": 230.0,
+      "macro_stddev": 7.1485,
+      "read_128_stddev": 17.0972,
+      "read_64_stddev": 13.4303
+    },
+    {
+      "name": "VillageJoineryAlbedo",
+      "surface": "Timber",
+      "meters_per_tile": 1.4,
+      "grain_axis": "V",
+      "sha256": "07b11b058cdc5c05b0e295b0ed5208c64f24dea7b661cd490259f42a5d1d9b40",
+      "mean_linear_luminance": 0.57688815,
+      "percentile_5": 164.0,
+      "percentile_95": 230.0,
+      "macro_stddev": 7.152,
+      "read_128_stddev": 17.0953,
+      "read_64_stddev": 13.4347
+    },
+    {
+      "name": "VillageStoneAlbedo",
+      "surface": "LayeredStone",
+      "meters_per_tile": 2.4,
+      "grain_axis": "none",
+      "sha256": "96fabad82c837507fb44a8e6072960dfe64fd989175b34822920fe5c59390c3a",
+      "mean_linear_luminance": 0.58337516,
+      "percentile_5": 178.0,
+      "percentile_95": 225.0,
+      "macro_stddev": 6.8097,
+      "read_128_stddev": 12.2666,
+      "read_64_stddev": 10.056
+    },
+    {
+      "name": "VillageRoofAlbedo",
+      "surface": "Timber",
+      "meters_per_tile": 2.4,
+      "grain_axis": "U",
+      "sha256": "345f9297dc9099c84c56cb24e0fbf459fe0a3fb3085404c26f959f7c1653baa7",
+      "mean_linear_luminance": 0.5751535,
+      "percentile_5": 146.0,
+      "percentile_95": 232.0,
+      "macro_stddev": 7.2796,
+      "read_128_stddev": 17.7486,
+      "read_64_stddev": 13.538
+    },
+    {
+      "name": "VillagePlasterAlbedo",
+      "surface": "Masonry",
+      "meters_per_tile": 2.4,
+      "grain_axis": "none",
+      "sha256": "62920a4037fd5a6e8744bf92e25893bf0e770d979bff9952b47849c7953f581b",
+      "mean_linear_luminance": 0.5823269,
+      "percentile_5": 192.0,
+      "percentile_95": 209.0,
+      "macro_stddev": 2.4182,
+      "read_128_stddev": 4.1945,
+      "read_64_stddev": 3.3324
+    }
+  ]
+}

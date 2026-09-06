@@ -407,6 +407,8 @@ Assets/
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket/mother-house plans and builders
         MothersHouseInterior{LayoutPlan,LayoutPlanner,LayoutValidator,WorldBuilder,WorldResult}.cs  ground + stair/corridor/two furnished bedrooms, floor-aware fixtures/routes and collision
+        MothersHouseWindowLayout.cs    generated shared 16-window table for interior openings and exterior placement
+        MothersHouseWindowCutaway.cs   mother-only render visibility of camera-side walls/windows; keeps collision and camera poses
         MothersHouseMotherPlan.cs       where she sits, measured off the drawn cushion; one of her, no seed, no spawn band
         MothersHouseSofaSeatPlanner.cs  the sofa as one authored CityBenchSeat: south cushion, front-approach-only past the stair ramp
                                       pure room contract + imported-model composition
@@ -468,7 +470,12 @@ Assets/
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
         AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + looming 74° / 60 m ridge, 12 m margin, brink mesh
         AlpineVillagePathPlan.cs visible path/traversal segments + shared dressing anchors
+        AlpineVillagePathSurfaceBuilder.cs joined ground-fitted path skins, round bends/endings and metre UVs
+        AlpineVillageRock{Planner,Builder}.cs passive rock ledges beyond the physical bowl toe
+        VillageRockAssetProvider.cs measured Blender rock/snow library with shared ridge haze
+        UpperCablewayCanopyAssetProvider.cs fixed-metre Return canopy; Drive unchanged
         AlpineVillageBrook{Plan,Planner,Builder}.cs 97 m spring brook: seeps, catch, swale cut into the sampler, ribbon water to the cableway cut
+        AlpineVillageTerrainGrid.cs   shared ground mesh axes; quarter-metre refinement around the brook keeps coarse vertices and collision fitting aligned
         AlpineSpringWaterResources.cs   still catch + running brook + road reach on the shared city water shader
         AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs free bowl mask, two-submesh ground with one shared snapped edge, 2+1 house kit, warmth targets + permanent blizzard
         AlpineVillageRidgeAppearance.cs  village-only stable opaque 96-108 m haze handoff, 0.40 floor + floor-matched PS1 snap/world UV
@@ -477,7 +484,8 @@ Assets/
         AlpineVillageGarlandWind.cs      fixed-anchor wire deformation from shaped village wind
         Audio/AlpineVillageSoundscape*.cs eight deterministic causal spatial voices
         AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}.cs boarding, first-person ride, ridge fade
-        VillageAssetProvider.cs         22 assemblies / 48 passive meshes: two ordinary closed-shell house archetypes, unique TopHouse + spring ledge/step/bed stones
+        VillageAssetProvider.cs         normalized village catalog: two ordinary house archetypes, unique TopHouse, detailed openings and spring stones
+        VillageFacadeAppearance.cs    shared house albedos with measured mean compensation and metre UVs
         MountainRoadBrook{Plan,Builder}.cs water either side of the long-standing culvert, and the pour its sound anchor never had
         MountainRoadMiscAssetProvider.cs 19 passive Blender meshes + deterministic visual variants
         MountainRoadWalkableArea.cs route/plateau movement boundary
@@ -980,6 +988,8 @@ Assets/
       Environment/ExteriorCloud{AssetSetup,ModelImporter,TextureImporter}.cs  deterministic import/prefab validation
       City/CityMiscAssetSetup.cs  FBX import/provider binding + strict manifest/root/bounds validation
       Village/VillageAssetSetup.cs  village FBX import/binding; expectation derived from the runtime catalog
+      Village/{VillageRock,UpperCablewayCanopy}AssetSetup.cs measured rock and upper-canopy imports
+      Village/VillageFacadeTextureSetup.cs deterministic facade-sheet hashes and import validation
       City/CityBuilding{AssetSetup,ModelImporter}.cs passive v2 FBX import + four wrappers/provider
       City/CityBuildingSurfaceTextureImporter.cs path-specific Clamp/Repeat, max-size, mip and readability contract
       City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
@@ -1228,7 +1238,10 @@ tools/
   build-mothers-house-interior-3d-model.py  fixed-metre room, UV/triangle/anchor/export validator
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
   build-mountain-road-cafe-3d-model.py  v1.2.1 / 61-mesh cafe, passive kitchen/menu + hinge/anchor/prop/collider/overlap validator
-  build-village-3d-model.py      v3.0.0 / village_house_archetypes_v3, 17 assemblies / 43 outward-validated meshes; no doors/panes/new sheet
+  build-village-3d-model.py      v3.3.0 / village_house_archetypes_v3, 24 assemblies / 57 meshes; detailed joinery, roof edges, doors and windows
+  build-village-rocks-3d-model.py four fixed-metre rock/snow strata, closed-solid and deterministic validation
+  build-village-facade-textures.py five neutral timber/joinery/stone/roof/plaster detail sheets
+  build-upper-cableway-canopy-3d-model.py fixed-metre Return canopy: steel, timber, fasteners and snow
   build-city-misc-3d-model.py    82 kinds / 122 assemblies / 259 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 28 semantic meshes + UV/exact/near-layer validation
   build-city-building-surface-textures.py  24 deterministic district/semantic albedos + validator

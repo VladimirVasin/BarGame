@@ -80,6 +80,9 @@ namespace BarPromenade
         private Vector3 fixedBasePosition;
         private Quaternion fixedBaseRotation = Quaternion.identity;
         private float fixedBaseFieldOfView = 57f;
+        private FixedCameraFocus fixedFocus;
+        private Vector2 fixedFocusOffset;
+        private Vector2 fixedFocusVelocity;
         private float targetYaw;
         private float currentYaw;
         private float yawVelocity;
@@ -131,6 +134,26 @@ namespace BarPromenade
         public Vector3 FixedBasePosition => fixedBasePosition;
         public Quaternion FixedBaseRotation => fixedBaseRotation;
         public float FixedBaseFieldOfView => fixedBaseFieldOfView;
+
+        /// <summary>Whether the active fixed pose is allowed to pan onto
+        /// the hero. Any new owner of the camera takes the focus off, so a
+        /// shot only follows him while the owner that authored it says
+        /// so.</summary>
+        public bool FixedFocusActive =>
+            fixedPoseActive && fixedFocus.Enabled;
+
+        /// <summary>The pan the focus is holding right now, in degrees:
+        /// x yaw, y pitch. Zero while the shot sits exactly as
+        /// authored.</summary>
+        public Vector2 FixedFocusOffset => fixedFocusOffset;
+
+        /// <summary>The aim the fixed shot is actually rendered with, the
+        /// authored rotation turned by <see cref="FixedFocusOffset"/> and
+        /// before the drunk breath is laid over it.</summary>
+        public Quaternion FixedFocusedRotation =>
+            FixedCameraFocus.Compose(
+                fixedBaseRotation,
+                fixedFocusOffset);
         public float FollowFieldOfView => isInterior
             ? interiorFieldOfView
             : exteriorFieldOfView;
@@ -166,6 +189,7 @@ namespace BarPromenade
                 CityPedestrianCollision.NonPedestrianMask &
                 CityBusCollision.NonBusMask;
             fixedPoseActive = false;
+            ClearFixedFocusState();
             targetYaw = target != null ? target.eulerAngles.y : 0f;
             currentYaw = targetYaw;
             targetPitch = ClampOrbitPitch(
@@ -280,11 +304,51 @@ namespace BarPromenade
             fixedBaseRotation = Normalize(rotation);
             fixedBaseFieldOfView = fieldOfView;
             fixedPoseActive = true;
+
+            // A pose is authored, not focused: whoever wants this shot to
+            // follow the hero arms it right after. Clearing here is what
+            // keeps every other owner of the camera - a shop, a seat, an
+            // opening - framed exactly as it composed itself.
+            ClearFixedFocusState();
             currentFocusPoint =
                 fixedBasePosition +
                 fixedBaseRotation * Vector3.forward;
             ApplyFixedPose(fixedBaseRotation);
             ConfigureCamera();
+        }
+
+        /// <summary>
+        /// Lets the active fixed pose pan onto the hero within the bounds
+        /// the focus carries. Arming resolves and snaps at once, because
+        /// the shot it belongs to has just cut in and a cut arrives
+        /// already framed.
+        /// </summary>
+        public void SetFixedFocus(FixedCameraFocus focus)
+        {
+            if (!fixedPoseActive)
+            {
+                throw new InvalidOperationException(
+                    "A fixed camera focus needs a fixed pose to follow.");
+            }
+
+            fixedFocus = focus;
+            fixedFocusVelocity = Vector2.zero;
+            fixedFocusOffset = ResolveFixedFocusOffset();
+            ApplyFixedPose(FixedFocusedRotation);
+        }
+
+        public void ClearFixedFocus()
+        {
+            if (!fixedFocus.Enabled)
+            {
+                return;
+            }
+
+            ClearFixedFocusState();
+            if (fixedPoseActive)
+            {
+                ApplyFixedPose(fixedBaseRotation);
+            }
         }
 
         public void ClearFixedPose()
@@ -295,6 +359,7 @@ namespace BarPromenade
             }
 
             fixedPoseActive = false;
+            ClearFixedFocusState();
 
             // An owner that blended back to the very lens it took from the
             // drunk camera (the bar shop returns to the live pose it
@@ -487,7 +552,8 @@ namespace BarPromenade
 
             if (fixedPoseActive)
             {
-                ApplyFixedPose(fixedBaseRotation);
+                SnapFixedFocus();
+                ApplyFixedPose(FixedFocusedRotation);
                 ConfigureCamera();
                 return;
             }
@@ -613,6 +679,7 @@ namespace BarPromenade
                 targetIntoxication,
                 deltaTime / 0.7f);
             UpdateCinematicMotionWeight(deltaTime);
+            UpdateFixedFocus(deltaTime);
             cinematicTime += deltaTime;
 
             IntoxicationProfile intoxication =
@@ -643,8 +710,78 @@ namespace BarPromenade
                     pitchOffset,
                     0f,
                     rollOffset);
-            ApplyFixedPose(fixedBaseRotation * reaction);
+            ApplyFixedPose(FixedFocusedRotation * reaction);
             ConfigureCamera();
+        }
+
+        private void UpdateFixedFocus(float deltaTime)
+        {
+            if (!fixedFocus.Enabled)
+            {
+                return;
+            }
+
+            Vector2 desired = ResolveFixedFocusOffset();
+            if (fixedFocus.SmoothTime <= 0f)
+            {
+                fixedFocusOffset = desired;
+                fixedFocusVelocity = Vector2.zero;
+                return;
+            }
+
+            fixedFocusOffset = new Vector2(
+                Mathf.SmoothDamp(
+                    fixedFocusOffset.x,
+                    desired.x,
+                    ref fixedFocusVelocity.x,
+                    fixedFocus.SmoothTime,
+                    Mathf.Infinity,
+                    deltaTime),
+                Mathf.SmoothDamp(
+                    fixedFocusOffset.y,
+                    desired.y,
+                    ref fixedFocusVelocity.y,
+                    fixedFocus.SmoothTime,
+                    Mathf.Infinity,
+                    deltaTime));
+        }
+
+        private void SnapFixedFocus()
+        {
+            if (!fixedFocus.Enabled)
+            {
+                return;
+            }
+
+            fixedFocusOffset = ResolveFixedFocusOffset();
+            fixedFocusVelocity = Vector2.zero;
+        }
+
+        private Vector2 ResolveFixedFocusOffset()
+        {
+            if (!fixedFocus.Enabled || followTarget == null)
+            {
+                return Vector2.zero;
+            }
+
+            float aspect =
+                controlledCamera != null &&
+                controlledCamera.aspect > 0.01f
+                    ? controlledCamera.aspect
+                    : FixedCameraFocus.DefaultAspect;
+            return fixedFocus.Resolve(
+                fixedBasePosition,
+                fixedBaseRotation,
+                fixedBaseFieldOfView,
+                aspect,
+                followTarget.position);
+        }
+
+        private void ClearFixedFocusState()
+        {
+            fixedFocus = FixedCameraFocus.None;
+            fixedFocusOffset = Vector2.zero;
+            fixedFocusVelocity = Vector2.zero;
         }
 
         private void ApplyPose(Vector3 focusPoint, Quaternion rotation)

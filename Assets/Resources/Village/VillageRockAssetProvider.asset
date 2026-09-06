@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41f3c21b4d4e519ab2e51953c9ac771f, type: 3}
+  m_Name: VillageRockAssetProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.VillageRockAssetProvider
+  designId: alpine_village_bedded_rock_v1
+  buildSignature: 253c88c6d4a45f5ae00ee2f3986a3e5d98049817989c10808e4406bfbaf93380
+  entries:
+  - variant: 0
+    role: 0
+    mesh: {fileID: -7793327165538838998, guid: 50867d8f71a1570ba4136ab29bd43ca4, type: 3}
+    importedScale: {x: 1, y: 1, z: 1}
+  - variant: 0
+    role: 1
+    mesh: {fileID: -3514948302627274915, guid: 50867d8f71a1570ba4136ab29bd43ca4, type: 3}
+    importedScale: {x: 1, y: 1, z: 1}
+  - variant: 1
+    role: 0
+    mesh: {fileID: -1125155179780021736, guid: 50867d8f71a1570ba4136ab29bd43ca4, type: 3}
+    importedScale: {x: 1, y: 1, z: 1}
+  - variant: 1
+    role: 1
+    mesh: {fileID: 7018846652479626641, guid: 50867d8f71a1570ba4136ab29bd43ca4, type: 3}
+    importedScale: {x: 1, y: 1, z: 1}
+  - variant: 2
+    role: 0
+    mesh: {fileID: 4849591638786295057, guid: 50867d8f71a1570ba4136ab29bd43ca4, type: 3}
+    importedScale: {x: 1, y: 1, z: 1}
+  - variant: 2
+    role: 1
+    mesh: {fileID: 9033069903026082480, guid: 50867d8f71a1570ba4136ab29bd43ca4, type: 3}
+    importedScale: {x: 1, y: 1, z: 1}
+  - variant: 3
+    role: 0
+    mesh: {fileID: -7726993412014485373, guid: 50867d8f71a1570ba4136ab29bd43ca4, type: 3}
+    importedScale: {x: 1, y: 1, z: 1}
+  - variant: 3
+    role: 1
+    mesh: {fileID: -2886664437376617977, guid: 50867d8f71a1570ba4136ab29bd43ca4, type: 3}
+    importedScale: {x: 1, y: 1, z: 1}

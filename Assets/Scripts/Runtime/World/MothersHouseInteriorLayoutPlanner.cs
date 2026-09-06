@@ -30,6 +30,9 @@ namespace BarPromenade
         public const string ModelResourcePath =
             "MothersHouse/MothersHouseInterior3D";
 
+        public static IReadOnlyList<MothersHouseWindowDescriptor> Windows =>
+            MothersHouseWindowLayout.Windows;
+
         public static readonly Bounds ModelLocalBounds = new Bounds(
             new Vector3(0f, 2.93f, 0f),
             new Vector3(10.24f, 6.22f, 8.24f));
@@ -205,9 +208,9 @@ namespace BarPromenade
         public const float UpperWindowHead = 2.02f;
 
         /// <summary>
-        /// Where the cold daylight enters each bedroom. The village facade
-        /// already lights one upper window on both of these walls, so the
-        /// interior is answering an opening the exterior always showed.
+        /// The two original bedroom openings retain their curtains, sill
+        /// objects and practical lights. Windows contains the complete
+        /// shared interior/exterior layout, including these two positions.
         /// </summary>
         public static readonly Vector3 UpperNorthWindowPosition =
             new Vector3(

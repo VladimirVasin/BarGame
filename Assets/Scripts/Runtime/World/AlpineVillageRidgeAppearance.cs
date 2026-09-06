@@ -70,13 +70,18 @@ namespace BarPromenade
         internal const float Ps1VertexSnap = 1f;
 
         /// <summary>
-        /// The one sheet the whole village ground wears, on both submeshes:
-        /// §10g raises no new surface family, and one sheet across the toe
-        /// is what makes the seam a change of slope rather than a change of
-        /// material.
+        /// The snow sheet on the bowl floor and the lying snow. The accepted
+        /// village art pass exposes the mountain's existing stone on steep
+        /// faces; snow remains on the floor and authored rock ledges.
         /// </summary>
         public const MountainRoadSurfaceKind Surface =
             MountainRoadSurfaceKind.WindSnow;
+
+        public const MountainRoadSurfaceKind RockSurface =
+            MountainRoadSurfaceKind.LayeredStone;
+
+        internal static readonly Color RockTint =
+            new Color(0.255f, 0.275f, 0.270f, 1f);
 
         /// <summary>Village terrain and lying snow bake world-planar UVs at
         /// the recipe's metre pitch. Their material transform is identity;
@@ -92,18 +97,6 @@ namespace BarPromenade
         {
             return point * UvUnitsPerMeter;
         }
-
-        /// <summary>
-        /// Snow in its own shadow: colder and darker than the amber haze
-        /// `(0.575, 0.545, 0.495)` and the floor's `(0.695, 0.685, 0.655)`,
-        /// two steps below the road's far snowy ring `(0.47, 0.52, 0.525)`.
-        /// A wall lighter than the haze is a hole in the sky; a wall only a
-        /// little darker is a smudge (the first pass at `(0.40, 0.44, 0.48)`
-        /// was). This reads as a mass. Compensated for the sheet's mean
-        /// before it is written.
-        /// </summary>
-        public static readonly Color SnowShadowTint =
-            new Color(0.31f, 0.35f, 0.41f, 1f);
 
         private static readonly int BaseMapId =
             Shader.PropertyToID("_BaseMap");
@@ -212,6 +205,23 @@ namespace BarPromenade
             Renderer renderer,
             int materialIndex)
         {
+            Apply(renderer, materialIndex, RockSurface, RockTint,
+                BakedUvTransform);
+        }
+
+        /// <summary>
+        /// Authored rock and ledge snow share the wall's stable haze and
+        /// projected vertex snap. Their metre UVs come from their generator.
+        /// No object receives an instanced material or its own fog clock.
+        /// </summary>
+        internal static void Apply(
+            Renderer renderer,
+            int materialIndex,
+            MountainRoadSurfaceKind surface,
+            Color tint,
+            Vector4 uvTransform,
+            float exposure = 1f)
+        {
             if (renderer == null)
             {
                 throw new ArgumentNullException(nameof(renderer));
@@ -226,15 +236,22 @@ namespace BarPromenade
             }
 
             HomeSurfaceRecipe recipe =
-                MountainRoadSurfaceAppearance.GetRecipe(Surface);
+                MountainRoadSurfaceAppearance.GetRecipe(surface);
             Color displayTint = MountainRoadSurfaceAppearance
-                .CreateDisplayTint(SnowShadowTint, Surface);
+                .CreateDisplayTint(tint, surface);
+            // A local presentation gain can keep the small snow shelves
+            // readable after shadow, haze and the PS1 colour grade. Apply it
+            // after the recipe's bounded albedo compensation; the shader
+            // still lights and fogs the surface normally.
+            displayTint.r *= exposure;
+            displayTint.g *= exposure;
+            displayTint.b *= exposure;
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties, materialIndex);
             properties.SetTexture(
                 BaseMapId,
-                MountainRoadSurfaceAppearance.GetTexture(Surface));
-            properties.SetVector(BaseMapTransformId, BakedUvTransform);
+                MountainRoadSurfaceAppearance.GetTexture(surface));
+            properties.SetVector(BaseMapTransformId, uvTransform);
             properties.SetColor(BaseColorId, displayTint);
             properties.SetColor(ColorId, displayTint);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);

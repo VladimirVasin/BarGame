@@ -71,6 +71,21 @@ namespace BarPromenade.Tests.EditMode
                     new Vector2(brook.OverflowLip.x, brook.OverflowLip.z)),
                 Is.LessThan(0.05f),
                 "The brook must start at the bowl's own overflow lip.");
+            Assert.That(samples[0].Position.y,
+                Is.EqualTo(brook.BowlWaterTopY).Within(0.001f),
+                "The notch cannot start at a different level from its bowl.");
+            Vector3 lipOffset = brook.OverflowLip - brook.BowlCenter;
+            Assert.That(Mathf.Abs(Vector3.Dot(lipOffset, brook.BowlFacing)),
+                Is.LessThan(0.001f), "The outlet must meet the side-wall notch.");
+            Assert.That(Vector3.Dot(lipOffset, brook.BowlOutletDirection),
+                Is.GreaterThan(brook.CatchOuterSize.x * 0.5f),
+                "The brook must begin outside the catch's collision footprint.");
+            Assert.That(Vector3.Dot(samples[0].Right, -brook.BowlFacing),
+                Is.GreaterThan(0.999f),
+                "Both water sheets must share the notch's cross-section.");
+            Assert.That(samples[0].Width,
+                Is.LessThan(brook.CatchOuterSize.y * 0.28f),
+                "Water must fit between the authored outlet cheeks.");
 
             float longest = 0f;
             for (int index = 1; index < samples.Count; index++)
@@ -249,6 +264,25 @@ namespace BarPromenade.Tests.EditMode
             float deepest = 0f;
             int dished = 0;
 
+            // The catch interior is separate from the downstream swale.
+            // A centreline-only check let terrain bury half its water sheet.
+            for (int along = -2; along <= 2; along++)
+            {
+                for (int across = -2; across <= 2; across++)
+                {
+                    Vector3 point = brook.BowlCenter +
+                        brook.BowlFacing * (brook.BowlInnerHalfSize.y * along * 0.5f) +
+                        brook.BowlOutletDirection * (brook.BowlInnerHalfSize.x * across * 0.5f);
+                    var xz = new Vector2(point.x, point.z);
+                    Assert.That(brook.BowlWaterTopY -
+                        AlpineVillageTerrainSampler.SampleHeight(plan, xz),
+                        Is.GreaterThan(0.05f),
+                        "The catch needs visible water depth across its whole interior.");
+                    Assert.That(brook.DistanceOutsideWetGround(xz), Is.LessThan(0f),
+                        "The rotated catch cannot hold snow over its water.");
+                }
+            }
+
             for (int index = 0; index < brook.Samples.Count; index++)
             {
                 AlpineVillageBrookSample sample = brook.Samples[index];
@@ -358,6 +392,15 @@ namespace BarPromenade.Tests.EditMode
                     seeps[index].Fall,
                     Is.GreaterThan(0f),
                     "A seep must stand above the water it feeds.");
+                Vector3 landing = seeps[index].Landing - brook.BowlCenter;
+                Assert.That(seeps[index].Landing.y,
+                    Is.EqualTo(brook.BowlWaterTopY).Within(0.001f));
+                Assert.That(Mathf.Abs(Vector3.Dot(landing, brook.BowlFacing)) +
+                    seeps[index].Width, Is.LessThan(brook.BowlInnerHalfSize.y),
+                    "The falling water must land inside the back rim.");
+                Assert.That(Mathf.Abs(Vector3.Dot(landing, brook.BowlOutletDirection)) +
+                    seeps[index].Width, Is.LessThan(brook.BowlInnerHalfSize.x),
+                    "A seep splash must fit inside the side walls.");
             }
 
             Assert.That(

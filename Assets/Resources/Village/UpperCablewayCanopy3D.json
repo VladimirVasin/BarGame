@@ -1,0 +1,97 @@
+{
+  "design_id": "upper_cableway_canopy_v1",
+  "generator_version": "1.0.0",
+  "build_signature": "35b26e52985455d5dcba8308f91ce9d6f384f9c5b292104cc32517a57fe97d9d",
+  "mesh_count": 4,
+  "triangle_count": 4024,
+  "parts": [
+    {
+      "name": "GEO_UpperCanopy_Steel",
+      "role": "Steel",
+      "surface": "PaintedMetal",
+      "bounds_min": [
+        -4.492295265197754,
+        4.47460090909091,
+        -3.107499837875366
+      ],
+      "bounds_max": [
+        4.492300987243652,
+        5.445366859436035,
+        3.107499837875366
+      ],
+      "triangle_count": 1928,
+      "signed_volume": 2.3510505373675
+    },
+    {
+      "name": "GEO_UpperCanopy_Timber",
+      "role": "Timber",
+      "surface": "Timber",
+      "bounds_min": [
+        -4.433046340942383,
+        4.050461292266846,
+        -3.065
+      ],
+      "bounds_max": [
+        4.432370185852051,
+        5.39914608001709,
+        3.065
+      ],
+      "triangle_count": 420,
+      "signed_volume": 2.6323741744309532
+    },
+    {
+      "name": "GEO_UpperCanopy_Fasteners",
+      "role": "Fasteners",
+      "surface": "RustedIron",
+      "bounds_min": [
+        -4.1450000000000005,
+        4.385,
+        -3.12
+      ],
+      "bounds_max": [
+        4.1450000000000005,
+        5.445519764100987,
+        3.12
+      ],
+      "triangle_count": 716,
+      "signed_volume": 0.2236076080000083
+    },
+    {
+      "name": "GEO_UpperCanopy_Snow",
+      "role": "Snow",
+      "surface": "WindSnow",
+      "bounds_min": [
+        -4.530082652845122,
+        4.671101053652425,
+        -3.23835
+      ],
+      "bounds_max": [
+        4.570603428061999,
+        5.3749481086139195,
+        3.301695910201644
+      ],
+      "triangle_count": 960,
+      "signed_volume": 1.1189138293992131
+    }
+  ],
+  "bounds_min": [
+    -4.530082652845122,
+    4.050461292266846,
+    -3.23835
+  ],
+  "bounds_max": [
+    4.570603428061999,
+    5.445519764100987,
+    3.301695910201644
+  ],
+  "station_pad_size": [
+    9,
+    6.2
+  ],
+  "column_top_y": 4.5,
+  "origin": "station_root_fixed_unity_metres",
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0
+}

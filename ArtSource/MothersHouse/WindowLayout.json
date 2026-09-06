@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "room_width": 10.0,
+  "room_depth": 8.0,
+  "glass_inset": 0.18,
+  "windows": [
+    {"stable_id":"ground-north-west","room":"common_room","wall":"north","across":-2.72,"width":1.35,"floor_elevation":0.0,"sill":0.85,"head":2.25,"frame_part":"FIX_WindowFrame.West","glass_part":"FIX_WindowGlass.West"},
+    {"stable_id":"ground-north-east","room":"common_room","wall":"north","across":2.72,"width":1.35,"floor_elevation":0.0,"sill":0.85,"head":2.25,"frame_part":"FIX_WindowFrame.East","glass_part":"FIX_WindowGlass.East"},
+    {"stable_id":"ground-south-west","room":"common_room","wall":"south","across":-2.55,"width":1.05,"floor_elevation":0.0,"sill":0.85,"head":2.25},
+    {"stable_id":"ground-south-east","room":"common_room","wall":"south","across":4.14,"width":0.70,"floor_elevation":0.0,"sill":0.85,"head":2.25},
+    {"stable_id":"ground-east-south","room":"common_room","wall":"east","across":-2.30,"width":1.05,"floor_elevation":0.0,"sill":0.85,"head":2.25},
+    {"stable_id":"ground-east-north","room":"common_room","wall":"east","across":2.30,"width":1.05,"floor_elevation":0.0,"sill":0.85,"head":2.25},
+    {"stable_id":"ground-west-north","room":"common_room","wall":"west","across":2.80,"width":1.05,"floor_elevation":0.0,"sill":0.85,"head":2.25},
+    {"stable_id":"ground-west-stair","room":"stair","wall":"west","across":-0.10,"width":1.00,"floor_elevation":0.0,"sill":2.15,"head":3.25},
+    {"stable_id":"upper-north-west","room":"parents_bedroom","wall":"north","across":-1.10,"width":1.00,"floor_elevation":3.54,"sill":0.92,"head":2.02,"frame_part":"FIX_UpperNorth.WindowFrame","glass_part":"FIX_UpperNorth.WindowGlass"},
+    {"stable_id":"upper-north-east","room":"parents_bedroom","wall":"north","across":1.30,"width":1.00,"floor_elevation":3.54,"sill":0.92,"head":2.02},
+    {"stable_id":"upper-south-west","room":"hero_childhood_room","wall":"south","across":-0.90,"width":1.00,"floor_elevation":3.54,"sill":0.92,"head":2.02,"frame_part":"FIX_UpperSouth.WindowFrame","glass_part":"FIX_UpperSouth.WindowGlass"},
+    {"stable_id":"upper-south-east","room":"hero_childhood_room","wall":"south","across":1.30,"width":1.00,"floor_elevation":3.54,"sill":0.92,"head":2.02},
+    {"stable_id":"upper-east-south","room":"hero_childhood_room","wall":"east","across":-2.30,"width":1.00,"floor_elevation":3.54,"sill":0.92,"head":2.02},
+    {"stable_id":"upper-east-north","room":"parents_bedroom","wall":"east","across":2.30,"width":1.00,"floor_elevation":3.54,"sill":0.92,"head":2.02},
+    {"stable_id":"upper-west-south","room":"stair_landing","wall":"west","across":-2.30,"width":1.00,"floor_elevation":3.54,"sill":0.92,"head":2.02},
+    {"stable_id":"upper-west-north","room":"upper_hall","wall":"west","across":2.30,"width":1.00,"floor_elevation":3.54,"sill":0.92,"head":2.02}
+  ]
+}

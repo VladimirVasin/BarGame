@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-mothers-house-interior-3d-model.py",
-  "generator_version": "1.5.0",
+  "generator_version": "1.6.0",
   "blender_version": "5.0.1",
   "design_id": "mothers_house_interior_v1",
   "display_name": "Bar Promenade Mother's House Interior",
@@ -84,6 +84,297 @@
     "width": 1.3,
     "height": 2.2
   },
+  "windows_m": [
+    {
+      "stable_id": "ground-north-west",
+      "room": "common_room",
+      "wall": "north",
+      "across": -2.72,
+      "width": 1.35,
+      "floor_elevation": 0.0,
+      "sill": 0.85,
+      "head": 2.25,
+      "frame_part": "FIX_WindowFrame.West",
+      "glass_part": "FIX_WindowGlass.West",
+      "center_unity": [
+        -2.72,
+        1.55,
+        3.82
+      ],
+      "height": 1.4
+    },
+    {
+      "stable_id": "ground-north-east",
+      "room": "common_room",
+      "wall": "north",
+      "across": 2.72,
+      "width": 1.35,
+      "floor_elevation": 0.0,
+      "sill": 0.85,
+      "head": 2.25,
+      "frame_part": "FIX_WindowFrame.East",
+      "glass_part": "FIX_WindowGlass.East",
+      "center_unity": [
+        2.72,
+        1.55,
+        3.82
+      ],
+      "height": 1.4
+    },
+    {
+      "stable_id": "ground-south-west",
+      "room": "common_room",
+      "wall": "south",
+      "across": -2.55,
+      "width": 1.05,
+      "floor_elevation": 0.0,
+      "sill": 0.85,
+      "head": 2.25,
+      "center_unity": [
+        -2.55,
+        1.55,
+        -3.82
+      ],
+      "height": 1.4,
+      "frame_part": "FIX_Window.ground-south-west.Frame",
+      "glass_part": "FIX_Window.ground-south-west.Glass"
+    },
+    {
+      "stable_id": "ground-south-east",
+      "room": "common_room",
+      "wall": "south",
+      "across": 4.14,
+      "width": 0.7,
+      "floor_elevation": 0.0,
+      "sill": 0.85,
+      "head": 2.25,
+      "center_unity": [
+        4.14,
+        1.55,
+        -3.82
+      ],
+      "height": 1.4,
+      "frame_part": "FIX_Window.ground-south-east.Frame",
+      "glass_part": "FIX_Window.ground-south-east.Glass"
+    },
+    {
+      "stable_id": "ground-east-south",
+      "room": "common_room",
+      "wall": "east",
+      "across": -2.3,
+      "width": 1.05,
+      "floor_elevation": 0.0,
+      "sill": 0.85,
+      "head": 2.25,
+      "center_unity": [
+        4.82,
+        1.55,
+        -2.3
+      ],
+      "height": 1.4,
+      "frame_part": "FIX_Window.ground-east-south.Frame",
+      "glass_part": "FIX_Window.ground-east-south.Glass"
+    },
+    {
+      "stable_id": "ground-east-north",
+      "room": "common_room",
+      "wall": "east",
+      "across": 2.3,
+      "width": 1.05,
+      "floor_elevation": 0.0,
+      "sill": 0.85,
+      "head": 2.25,
+      "center_unity": [
+        4.82,
+        1.55,
+        2.3
+      ],
+      "height": 1.4,
+      "frame_part": "FIX_Window.ground-east-north.Frame",
+      "glass_part": "FIX_Window.ground-east-north.Glass"
+    },
+    {
+      "stable_id": "ground-west-north",
+      "room": "common_room",
+      "wall": "west",
+      "across": 2.8,
+      "width": 1.05,
+      "floor_elevation": 0.0,
+      "sill": 0.85,
+      "head": 2.25,
+      "center_unity": [
+        -4.82,
+        1.55,
+        2.8
+      ],
+      "height": 1.4,
+      "frame_part": "FIX_Window.ground-west-north.Frame",
+      "glass_part": "FIX_Window.ground-west-north.Glass"
+    },
+    {
+      "stable_id": "ground-west-stair",
+      "room": "stair",
+      "wall": "west",
+      "across": -0.1,
+      "width": 1.0,
+      "floor_elevation": 0.0,
+      "sill": 2.15,
+      "head": 3.25,
+      "center_unity": [
+        -4.82,
+        2.7,
+        -0.1
+      ],
+      "height": 1.1,
+      "frame_part": "FIX_Window.ground-west-stair.Frame",
+      "glass_part": "FIX_Window.ground-west-stair.Glass"
+    },
+    {
+      "stable_id": "upper-north-west",
+      "room": "parents_bedroom",
+      "wall": "north",
+      "across": -1.1,
+      "width": 1.0,
+      "floor_elevation": 3.54,
+      "sill": 0.92,
+      "head": 2.02,
+      "frame_part": "FIX_UpperNorth.WindowFrame",
+      "glass_part": "FIX_UpperNorth.WindowGlass",
+      "center_unity": [
+        -1.1,
+        5.01,
+        3.82
+      ],
+      "height": 1.1
+    },
+    {
+      "stable_id": "upper-north-east",
+      "room": "parents_bedroom",
+      "wall": "north",
+      "across": 1.3,
+      "width": 1.0,
+      "floor_elevation": 3.54,
+      "sill": 0.92,
+      "head": 2.02,
+      "center_unity": [
+        1.3,
+        5.01,
+        3.82
+      ],
+      "height": 1.1,
+      "frame_part": "FIX_Window.upper-north-east.Frame",
+      "glass_part": "FIX_Window.upper-north-east.Glass"
+    },
+    {
+      "stable_id": "upper-south-west",
+      "room": "hero_childhood_room",
+      "wall": "south",
+      "across": -0.9,
+      "width": 1.0,
+      "floor_elevation": 3.54,
+      "sill": 0.92,
+      "head": 2.02,
+      "frame_part": "FIX_UpperSouth.WindowFrame",
+      "glass_part": "FIX_UpperSouth.WindowGlass",
+      "center_unity": [
+        -0.9,
+        5.01,
+        -3.82
+      ],
+      "height": 1.1
+    },
+    {
+      "stable_id": "upper-south-east",
+      "room": "hero_childhood_room",
+      "wall": "south",
+      "across": 1.3,
+      "width": 1.0,
+      "floor_elevation": 3.54,
+      "sill": 0.92,
+      "head": 2.02,
+      "center_unity": [
+        1.3,
+        5.01,
+        -3.82
+      ],
+      "height": 1.1,
+      "frame_part": "FIX_Window.upper-south-east.Frame",
+      "glass_part": "FIX_Window.upper-south-east.Glass"
+    },
+    {
+      "stable_id": "upper-east-south",
+      "room": "hero_childhood_room",
+      "wall": "east",
+      "across": -2.3,
+      "width": 1.0,
+      "floor_elevation": 3.54,
+      "sill": 0.92,
+      "head": 2.02,
+      "center_unity": [
+        4.82,
+        5.01,
+        -2.3
+      ],
+      "height": 1.1,
+      "frame_part": "FIX_Window.upper-east-south.Frame",
+      "glass_part": "FIX_Window.upper-east-south.Glass"
+    },
+    {
+      "stable_id": "upper-east-north",
+      "room": "parents_bedroom",
+      "wall": "east",
+      "across": 2.3,
+      "width": 1.0,
+      "floor_elevation": 3.54,
+      "sill": 0.92,
+      "head": 2.02,
+      "center_unity": [
+        4.82,
+        5.01,
+        2.3
+      ],
+      "height": 1.1,
+      "frame_part": "FIX_Window.upper-east-north.Frame",
+      "glass_part": "FIX_Window.upper-east-north.Glass"
+    },
+    {
+      "stable_id": "upper-west-south",
+      "room": "stair_landing",
+      "wall": "west",
+      "across": -2.3,
+      "width": 1.0,
+      "floor_elevation": 3.54,
+      "sill": 0.92,
+      "head": 2.02,
+      "center_unity": [
+        -4.82,
+        5.01,
+        -2.3
+      ],
+      "height": 1.1,
+      "frame_part": "FIX_Window.upper-west-south.Frame",
+      "glass_part": "FIX_Window.upper-west-south.Glass"
+    },
+    {
+      "stable_id": "upper-west-north",
+      "room": "upper_hall",
+      "wall": "west",
+      "across": 2.3,
+      "width": 1.0,
+      "floor_elevation": 3.54,
+      "sill": 0.92,
+      "head": 2.02,
+      "center_unity": [
+        -4.82,
+        5.01,
+        2.3
+      ],
+      "height": 1.1,
+      "frame_part": "FIX_Window.upper-west-north.Frame",
+      "glass_part": "FIX_Window.upper-west-north.Glass"
+    }
+  ],
+  "window_layout_source": "ArtSource/MothersHouse/WindowLayout.json",
   "north_windows_m": [
     {
       "center_x": -2.72,
@@ -192,8 +483,8 @@
     6.04,
     4.12
   ],
-  "mesh_count": 97,
-  "triangle_count": 12836,
+  "mesh_count": 127,
+  "triangle_count": 15796,
   "anchors": [
     {
       "name": "ANCHOR_Camera",
@@ -351,8 +642,8 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 144,
+      "triangles": 252,
       "bounds_min": [
         -5.0,
         -4.12,
@@ -412,43 +703,6 @@
       ]
     },
     {
-      "name": "FIX_Wall.Left",
-      "role": "room_wall",
-      "group": "fixed",
-      "sheet": "Wallpaper",
-      "emissive": false,
-      "casts_shadows": true,
-      "tint": [
-        0.72,
-        0.64,
-        0.48,
-        1.0
-      ],
-      "colliders": [],
-      "vertices": 16,
-      "triangles": 28,
-      "bounds_min": [
-        -5.12,
-        -4.0,
-        0.0
-      ],
-      "bounds_max": [
-        -4.88,
-        4.0,
-        3.4
-      ],
-      "unity_bounds_min": [
-        -5.12,
-        0.0,
-        -4.0
-      ],
-      "unity_bounds_max": [
-        -4.88,
-        3.4,
-        4.0
-      ]
-    },
-    {
       "name": "FIX_Wall.EastCutaway",
       "role": "camera_cutaway_wall",
       "group": "fixed",
@@ -462,8 +716,8 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 8,
+      "triangles": 12,
       "bounds_min": [
         4.88,
         -4.0,
@@ -472,7 +726,7 @@
       "bounds_max": [
         5.12,
         4.0,
-        1.04
+        0.62
       ],
       "unity_bounds_min": [
         4.88,
@@ -481,7 +735,118 @@
       ],
       "unity_bounds_max": [
         5.12,
-        1.04,
+        0.62,
+        4.0
+      ]
+    },
+    {
+      "name": "FIX_Wall.EastUpper",
+      "role": "room_wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 56,
+      "triangles": 84,
+      "bounds_min": [
+        4.88,
+        -4.0,
+        0.62
+      ],
+      "bounds_max": [
+        5.12,
+        4.0,
+        3.4
+      ],
+      "unity_bounds_min": [
+        4.88,
+        0.62,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        5.12,
+        3.4,
+        4.0
+      ]
+    },
+    {
+      "name": "FIX_Wall.Left",
+      "role": "room_wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        -5.12,
+        -4.0,
+        0.0
+      ],
+      "bounds_max": [
+        -4.88,
+        4.0,
+        0.62
+      ],
+      "unity_bounds_min": [
+        -5.12,
+        0.0,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        -4.88,
+        0.62,
+        4.0
+      ]
+    },
+    {
+      "name": "FIX_Wall.WestUpper",
+      "role": "room_wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 56,
+      "triangles": 84,
+      "bounds_min": [
+        -5.12,
+        -4.0,
+        0.62
+      ],
+      "bounds_max": [
+        -4.88,
+        4.0,
+        3.4
+      ],
+      "unity_bounds_min": [
+        -5.12,
+        0.62,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        -4.88,
+        3.4,
         4.0
       ]
     },
@@ -832,27 +1197,175 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 160,
-      "triangles": 280,
+      "vertices": 224,
+      "triangles": 392,
       "bounds_min": [
-        -5.12,
+        -5.0,
         -4.12,
         3.54
       ],
       "bounds_max": [
-        5.12,
+        5.0,
         4.12,
         5.9
       ],
       "unity_bounds_min": [
-        -5.12,
+        -5.0,
         3.54,
         -4.12
       ],
       "unity_bounds_max": [
-        5.12,
+        5.0,
         5.9,
         4.12
+      ]
+    },
+    {
+      "name": "FIX_UpperWall.EastBase",
+      "role": "upper_wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        4.88,
+        -4.0,
+        3.54
+      ],
+      "bounds_max": [
+        5.12,
+        4.0,
+        4.16
+      ],
+      "unity_bounds_min": [
+        4.88,
+        3.54,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        5.12,
+        4.16,
+        4.0
+      ]
+    },
+    {
+      "name": "FIX_UpperWall.EastUpper",
+      "role": "upper_wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 56,
+      "triangles": 84,
+      "bounds_min": [
+        4.88,
+        -4.0,
+        4.16
+      ],
+      "bounds_max": [
+        5.12,
+        4.0,
+        5.9
+      ],
+      "unity_bounds_min": [
+        4.88,
+        4.16,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        5.12,
+        5.9,
+        4.0
+      ]
+    },
+    {
+      "name": "FIX_UpperWall.WestBase",
+      "role": "upper_wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        -5.12,
+        -4.0,
+        3.54
+      ],
+      "bounds_max": [
+        -4.88,
+        4.0,
+        4.16
+      ],
+      "unity_bounds_min": [
+        -5.12,
+        3.54,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        -4.88,
+        4.16,
+        4.0
+      ]
+    },
+    {
+      "name": "FIX_UpperWall.WestUpper",
+      "role": "upper_wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 56,
+      "triangles": 84,
+      "bounds_min": [
+        -5.12,
+        -4.0,
+        4.16
+      ],
+      "bounds_max": [
+        -4.88,
+        4.0,
+        5.9
+      ],
+      "unity_bounds_min": [
+        -5.12,
+        4.16,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        -4.88,
+        5.9,
+        4.0
       ]
     },
     {
@@ -1021,7 +1534,7 @@
       "triangles": 168,
       "bounds_min": [
         -1.7,
-        3.76,
+        3.755,
         4.37
       ],
       "bounds_max": [
@@ -1032,7 +1545,7 @@
       "unity_bounds_min": [
         -1.7,
         4.37,
-        3.76
+        3.755
       ],
       "unity_bounds_max": [
         -0.5,
@@ -1100,7 +1613,7 @@
       ],
       "bounds_max": [
         -0.3,
-        -3.76,
+        -3.755,
         5.63
       ],
       "unity_bounds_min": [
@@ -1111,7 +1624,7 @@
       "unity_bounds_max": [
         -0.3,
         5.63,
-        -3.76
+        -3.755
       ]
     },
     {
@@ -1223,6 +1736,894 @@
         -0.455,
         5.662,
         -3.6835
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-south-west.Frame",
+      "role": "window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -3.175,
+        -4.12,
+        0.76
+      ],
+      "bounds_max": [
+        -1.925,
+        -3.7525,
+        2.325
+      ],
+      "unity_bounds_min": [
+        -3.175,
+        0.76,
+        -4.12
+      ],
+      "unity_bounds_max": [
+        -1.925,
+        2.325,
+        -3.7525
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-south-west.Glass",
+      "role": "window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -3.01,
+        -3.829,
+        0.915
+      ],
+      "bounds_max": [
+        -2.09,
+        -3.811,
+        2.185
+      ],
+      "unity_bounds_min": [
+        -3.01,
+        0.915,
+        -3.829
+      ],
+      "unity_bounds_max": [
+        -2.09,
+        2.185,
+        -3.811
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-south-east.Frame",
+      "role": "window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        3.69,
+        -4.12,
+        0.76
+      ],
+      "bounds_max": [
+        4.59,
+        -3.7525,
+        2.325
+      ],
+      "unity_bounds_min": [
+        3.69,
+        0.76,
+        -4.12
+      ],
+      "unity_bounds_max": [
+        4.59,
+        2.325,
+        -3.7525
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-south-east.Glass",
+      "role": "window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        3.855,
+        -3.829,
+        0.915
+      ],
+      "bounds_max": [
+        4.425,
+        -3.811,
+        2.185
+      ],
+      "unity_bounds_min": [
+        3.855,
+        0.915,
+        -3.829
+      ],
+      "unity_bounds_max": [
+        4.425,
+        2.185,
+        -3.811
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-east-south.Frame",
+      "role": "window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        4.7525,
+        -2.925,
+        0.76
+      ],
+      "bounds_max": [
+        5.12,
+        -1.675,
+        2.325
+      ],
+      "unity_bounds_min": [
+        4.7525,
+        0.76,
+        -2.925
+      ],
+      "unity_bounds_max": [
+        5.12,
+        2.325,
+        -1.675
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-east-south.Glass",
+      "role": "window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.811,
+        -2.76,
+        0.915
+      ],
+      "bounds_max": [
+        4.829,
+        -1.84,
+        2.185
+      ],
+      "unity_bounds_min": [
+        4.811,
+        0.915,
+        -2.76
+      ],
+      "unity_bounds_max": [
+        4.829,
+        2.185,
+        -1.84
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-east-north.Frame",
+      "role": "window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        4.7525,
+        1.675,
+        0.76
+      ],
+      "bounds_max": [
+        5.12,
+        2.925,
+        2.325
+      ],
+      "unity_bounds_min": [
+        4.7525,
+        0.76,
+        1.675
+      ],
+      "unity_bounds_max": [
+        5.12,
+        2.325,
+        2.925
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-east-north.Glass",
+      "role": "window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.811,
+        1.84,
+        0.915
+      ],
+      "bounds_max": [
+        4.829,
+        2.76,
+        2.185
+      ],
+      "unity_bounds_min": [
+        4.811,
+        0.915,
+        1.84
+      ],
+      "unity_bounds_max": [
+        4.829,
+        2.185,
+        2.76
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-west-north.Frame",
+      "role": "window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -5.12,
+        2.175,
+        0.76
+      ],
+      "bounds_max": [
+        -4.7525,
+        3.425,
+        2.325
+      ],
+      "unity_bounds_min": [
+        -5.12,
+        0.76,
+        2.175
+      ],
+      "unity_bounds_max": [
+        -4.7525,
+        2.325,
+        3.425
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-west-north.Glass",
+      "role": "window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -4.829,
+        2.34,
+        0.915
+      ],
+      "bounds_max": [
+        -4.811,
+        3.26,
+        2.185
+      ],
+      "unity_bounds_min": [
+        -4.829,
+        0.915,
+        2.34
+      ],
+      "unity_bounds_max": [
+        -4.811,
+        2.185,
+        3.26
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-west-stair.Frame",
+      "role": "window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -5.12,
+        -0.7,
+        2.06
+      ],
+      "bounds_max": [
+        -4.7525,
+        0.5,
+        3.325
+      ],
+      "unity_bounds_min": [
+        -5.12,
+        2.06,
+        -0.7
+      ],
+      "unity_bounds_max": [
+        -4.7525,
+        3.325,
+        0.5
+      ]
+    },
+    {
+      "name": "FIX_Window.ground-west-stair.Glass",
+      "role": "window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -4.829,
+        -0.535,
+        2.215
+      ],
+      "bounds_max": [
+        -4.811,
+        0.335,
+        3.185
+      ],
+      "unity_bounds_min": [
+        -4.829,
+        2.215,
+        -0.535
+      ],
+      "unity_bounds_max": [
+        -4.811,
+        3.185,
+        0.335
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-north-east.Frame",
+      "role": "upper_window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        0.7,
+        3.7525,
+        4.37
+      ],
+      "bounds_max": [
+        1.9,
+        4.12,
+        5.635
+      ],
+      "unity_bounds_min": [
+        0.7,
+        4.37,
+        3.7525
+      ],
+      "unity_bounds_max": [
+        1.9,
+        5.635,
+        4.12
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-north-east.Glass",
+      "role": "upper_window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        0.865,
+        3.811,
+        4.525
+      ],
+      "bounds_max": [
+        1.735,
+        3.829,
+        5.495
+      ],
+      "unity_bounds_min": [
+        0.865,
+        4.525,
+        3.811
+      ],
+      "unity_bounds_max": [
+        1.735,
+        5.495,
+        3.829
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-south-east.Frame",
+      "role": "upper_window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        0.7,
+        -4.12,
+        4.37
+      ],
+      "bounds_max": [
+        1.9,
+        -3.7525,
+        5.635
+      ],
+      "unity_bounds_min": [
+        0.7,
+        4.37,
+        -4.12
+      ],
+      "unity_bounds_max": [
+        1.9,
+        5.635,
+        -3.7525
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-south-east.Glass",
+      "role": "upper_window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        0.865,
+        -3.829,
+        4.525
+      ],
+      "bounds_max": [
+        1.735,
+        -3.811,
+        5.495
+      ],
+      "unity_bounds_min": [
+        0.865,
+        4.525,
+        -3.829
+      ],
+      "unity_bounds_max": [
+        1.735,
+        5.495,
+        -3.811
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-east-south.Frame",
+      "role": "upper_window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        4.7525,
+        -2.9,
+        4.37
+      ],
+      "bounds_max": [
+        5.12,
+        -1.7,
+        5.635
+      ],
+      "unity_bounds_min": [
+        4.7525,
+        4.37,
+        -2.9
+      ],
+      "unity_bounds_max": [
+        5.12,
+        5.635,
+        -1.7
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-east-south.Glass",
+      "role": "upper_window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.811,
+        -2.735,
+        4.525
+      ],
+      "bounds_max": [
+        4.829,
+        -1.865,
+        5.495
+      ],
+      "unity_bounds_min": [
+        4.811,
+        4.525,
+        -2.735
+      ],
+      "unity_bounds_max": [
+        4.829,
+        5.495,
+        -1.865
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-east-north.Frame",
+      "role": "upper_window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        4.7525,
+        1.7,
+        4.37
+      ],
+      "bounds_max": [
+        5.12,
+        2.9,
+        5.635
+      ],
+      "unity_bounds_min": [
+        4.7525,
+        4.37,
+        1.7
+      ],
+      "unity_bounds_max": [
+        5.12,
+        5.635,
+        2.9
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-east-north.Glass",
+      "role": "upper_window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.811,
+        1.865,
+        4.525
+      ],
+      "bounds_max": [
+        4.829,
+        2.735,
+        5.495
+      ],
+      "unity_bounds_min": [
+        4.811,
+        4.525,
+        1.865
+      ],
+      "unity_bounds_max": [
+        4.829,
+        5.495,
+        2.735
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-west-south.Frame",
+      "role": "upper_window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -5.12,
+        -2.9,
+        4.37
+      ],
+      "bounds_max": [
+        -4.7525,
+        -1.7,
+        5.635
+      ],
+      "unity_bounds_min": [
+        -5.12,
+        4.37,
+        -2.9
+      ],
+      "unity_bounds_max": [
+        -4.7525,
+        5.635,
+        -1.7
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-west-south.Glass",
+      "role": "upper_window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -4.829,
+        -2.735,
+        4.525
+      ],
+      "bounds_max": [
+        -4.811,
+        -1.865,
+        5.495
+      ],
+      "unity_bounds_min": [
+        -4.829,
+        4.525,
+        -2.735
+      ],
+      "unity_bounds_max": [
+        -4.811,
+        5.495,
+        -1.865
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-west-north.Frame",
+      "role": "upper_window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -5.12,
+        1.7,
+        4.37
+      ],
+      "bounds_max": [
+        -4.7525,
+        2.9,
+        5.635
+      ],
+      "unity_bounds_min": [
+        -5.12,
+        4.37,
+        1.7
+      ],
+      "unity_bounds_max": [
+        -4.7525,
+        5.635,
+        2.9
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-west-north.Glass",
+      "role": "upper_window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.16,
+        0.24,
+        0.28,
+        0.65
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -4.829,
+        1.865,
+        4.525
+      ],
+      "bounds_max": [
+        -4.811,
+        2.735,
+        5.495
+      ],
+      "unity_bounds_min": [
+        -4.829,
+        4.525,
+        1.865
+      ],
+      "unity_bounds_max": [
+        -4.811,
+        5.495,
+        2.735
       ]
     },
     {
@@ -2723,7 +4124,7 @@
       "triangles": 168,
       "bounds_min": [
         -3.505,
-        3.76,
+        3.7525,
         0.76
       ],
       "bounds_max": [
@@ -2734,7 +4135,7 @@
       "unity_bounds_min": [
         -3.505,
         0.76,
-        3.76
+        3.7525
       ],
       "unity_bounds_max": [
         -1.935,
@@ -2834,7 +4235,7 @@
       "triangles": 168,
       "bounds_min": [
         1.935,
-        3.76,
+        3.7525,
         0.76
       ],
       "bounds_max": [
@@ -2845,7 +4246,7 @@
       "unity_bounds_min": [
         1.935,
         0.76,
-        3.76
+        3.7525
       ],
       "unity_bounds_max": [
         3.505,
@@ -3927,5 +5328,5 @@
       ]
     }
   ],
-  "build_signature": "69154636b0fb68312a8dce29dd0a8327fb25de88ad9a1ccdd47e47a95e133752"
+  "build_signature": "fa9f76e059f7a687f0ea5650532d085f5739d9b157f49a97a8008d17fe9e4083"
 }

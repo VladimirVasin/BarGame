@@ -63,17 +63,20 @@ namespace BarPromenade
         public const float BowlDepth = 1.9f;
 
         /// <summary>
-        /// How far the still water in the catch stands under the plot's
-        /// ground. Shallow: this is a catch basin, not a well.
+        /// The existing channel's trace datum. The catch now stands above
+        /// the uncut ground; retaining this datum preserves every downstream
+        /// sample while only its first section meets the actual overflow.
         /// </summary>
         public const float BowlWaterDrop = 0.14f;
 
-        public const float RunnelWidth = 0.85f;
+        public const float BowlWaterTopOffset = 0.10f;
+
+        public const float RunnelWidth = 0.72f;
         public const float PoolWidth = 1.9f;
 
         /// <summary>Width the brook has reached by the time it leaves.
         /// </summary>
-        public const float OutfallWidth = 2.4f;
+        public const float OutfallWidth = 1.45f;
 
         /// <summary>How far the stone bed sits under the water surface.
         /// </summary>
@@ -203,29 +206,40 @@ namespace BarPromenade
                 spring.Facing *
                 (LedgeSize.z * 0.5f + BowlDepth * 0.5f + LedgeToBowlGap);
             Ground(plan, ref bowlCenter);
-            float bowlWaterTopY = bowlCenter.y - BowlWaterDrop;
+            float bowlWaterTopY = bowlCenter.y + BowlWaterTopOffset;
 
             List<AlpineVillageBrookSeep> seeps = CreateSeeps(
-                plan,
                 ledgeCenter,
                 spring.Facing,
+                bowlCenter,
                 bowlWaterTopY);
 
             // The rim spills on its downhill side, which is the side the fall
             // line leaves by - a bowl that overflowed uphill would be the one
             // thing nobody could unsee.
             Vector2 fall = FallLine(plan, ToXZ(bowlCenter));
-            Vector3 overflowLip = bowlCenter +
+            Vector3 traceLip = bowlCenter +
                 new Vector3(fall.x, 0f, fall.y) * (BowlDepth * 0.5f);
+            traceLip.y = bowlCenter.y - BowlWaterDrop;
+
+            Vector3 catchRight = Vector3.Cross(Vector3.up, spring.Facing).normalized;
+            float outletSide = Vector2.Dot(fall, ToXZ(catchRight)) < 0f ? -1f : 1f;
+            Vector3 bowlFacing = spring.Facing * outletSide;
+            Vector3 outletDirection = catchRight * outletSide;
+            Vector3 overflowLip = bowlCenter + outletDirection *
+                (BowlWidth * 1.12f * 0.5f + 0.04f);
             overflowLip.y = bowlWaterTopY;
 
             Vector3 outfallTarget = ResolveOutfallTarget(plan, bowlCenter);
 
             List<AlpineVillageBrookSample> samples = Trace(
                 plan,
-                overflowLip,
+                traceLip,
                 outfallTarget,
                 out List<AlpineVillageBrookCascade> cascades);
+
+            ConnectOverflow(samples, cascades, overflowLip, -bowlFacing,
+                BowlDepth * 1.12f * 0.28f - 0.04f);
 
             List<AlpineVillageBrookSample> seepLine = CreateSeepLine(
                 plan,
@@ -240,6 +254,7 @@ namespace BarPromenade
                 cascades,
                 ledgeCenter,
                 spring.Facing,
+                bowlFacing,
                 bowlCenter,
                 bowlWaterTopY,
                 new Vector2(BowlWidth, BowlDepth),
@@ -248,6 +263,42 @@ namespace BarPromenade
                 samples.Count > 0
                     ? samples[samples.Count - 1].Position
                     : overflowLip);
+        }
+
+        /// <summary>The existing downstream bed stays exactly where it was.
+        /// Only the first cross-section moves from an arbitrary point inside
+        /// the closed rim to the authored notch's outer edge.</summary>
+        private static void ConnectOverflow(
+            List<AlpineVillageBrookSample> samples,
+            List<AlpineVillageBrookCascade> cascades,
+            Vector3 lip,
+            Vector3 right,
+            float width)
+        {
+            if (samples.Count < 2)
+            {
+                throw new InvalidOperationException("The catch needs a downstream channel.");
+            }
+
+            float distanceChange = Vector2.Distance(ToXZ(lip), ToXZ(samples[1].Position)) -
+                                   samples[1].Distance;
+            samples[0] = new AlpineVillageBrookSample(0f, lip, right,
+                width, BedDepth, AlpineVillageBrookReachKind.Runnel);
+            for (int index = 1; index < samples.Count; index++)
+            {
+                AlpineVillageBrookSample sample = samples[index];
+                samples[index] = new AlpineVillageBrookSample(
+                    sample.Distance + distanceChange, sample.Position, sample.Right,
+                    sample.Width, sample.BedDepth, sample.Reach);
+            }
+
+            for (int index = 0; index < cascades.Count; index++)
+            {
+                AlpineVillageBrookCascade cascade = cascades[index];
+                cascades[index] = new AlpineVillageBrookCascade(cascade.StableId,
+                    cascade.Distance + distanceChange, cascade.Lip, cascade.Forward,
+                    cascade.Drop, cascade.Width);
+            }
         }
 
         /// <summary>
@@ -446,7 +497,11 @@ namespace BarPromenade
                 : index / (float)(count - 1);
             // Narrow at the head, wider as side seepage joins it - the one
             // thing the source plan asked for that costs nothing here.
-            return Mathf.Lerp(RunnelWidth, OutfallWidth, amount * amount);
+            float irregularity = 0.90f +
+                Mathf.Sin(index * 0.67f + 0.4f) * 0.08f +
+                Mathf.Sin(index * 1.41f + 2f) * 0.05f;
+            return Mathf.Lerp(RunnelWidth, OutfallWidth, amount * amount) *
+                irregularity;
         }
 
         private static AlpineVillageBrookReachKind ResolveReach(
@@ -548,9 +603,9 @@ namespace BarPromenade
         }
 
         private static List<AlpineVillageBrookSeep> CreateSeeps(
-            AlpineVillagePlan plan,
             Vector3 ledgeCenter,
             Vector3 facing,
+            Vector3 bowlCenter,
             float bowlWaterTopY)
         {
             var seeps = new List<AlpineVillageBrookSeep>(LedgeSeepCount);
@@ -571,10 +626,14 @@ namespace BarPromenade
                     across * offsets[index] +
                     facing * (LedgeSize.z * 0.5f + LedgeToBowlGap * 0.5f) +
                     Vector3.up * lifts[index];
+                Vector3 landing = bowlCenter + across * offsets[index] -
+                    facing * (BowlDepth * 1.12f * 0.32f - 0.20f);
+                landing.y = bowlWaterTopY;
                 seeps.Add(new AlpineVillageBrookSeep(
                     $"village-spring-seep-{index:00}",
                     mouth,
                     facing,
+                    landing,
                     Mathf.Max(0.05f, mouth.y - bowlWaterTopY),
                     widths[index]));
             }

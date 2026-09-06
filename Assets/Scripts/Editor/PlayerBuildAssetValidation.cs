@@ -53,6 +53,9 @@ namespace BarPromenade.Editor
             RegisterGenerated("Mountain cafe", MountainRoadCafeAssetSetup.ValidateOrThrow, "MountainRoadCafeAssetSetup");
             RegisterGenerated("Mountain misc", MountainRoadMiscAssetSetup.ValidateOrThrow, "MountainRoadMiscAssetSetup");
             RegisterGenerated("Village", VillageAssetSetup.ValidateOrThrow, "VillageAssetSetup");
+            RegisterGenerated("Village facade textures", VillageFacadeTextureSetup.ValidateOrThrow, "VillageFacadeTextureSetup");
+            RegisterGenerated("Village rocks", VillageRockAssetSetup.ValidateOrThrow, "VillageRockAssetSetup");
+            RegisterGenerated("Upper cableway canopy", UpperCablewayCanopyAssetSetup.ValidateOrThrow, "UpperCablewayCanopyAssetSetup");
             RegisterGenerated("Mother's house", MothersHouseInteriorAssetSetup.ValidateOrThrow, "MothersHouseInteriorAssetSetup");
             RegisterGenerated("Mother", MothersHouseMotherAssetSetup.ValidateOrThrow, "MothersHouseMotherAssetSetup");
             RegisterGenerated("Pedestrians", CityPedestrianAssetSetup.ValidateOrThrow, "CityPedestrianAssetSetup");

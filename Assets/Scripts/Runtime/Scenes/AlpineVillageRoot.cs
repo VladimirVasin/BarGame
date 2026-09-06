@@ -423,9 +423,14 @@ namespace BarPromenade
             for (int index = 0; index < renderers.Length; index++)
             {
                 Renderer renderer = renderers[index];
-                if (renderer.name == "Lit Window")
+                if (renderer.name == "Lit Window" ||
+                    renderer.name == "Lit Window Shade")
                 {
                     float power = EvaluateWindowWarmth(renderer);
+                    if (renderer.name == "Lit Window Shade")
+                    {
+                        power *= 0.58f;
+                    }
                     ApplyWarmthColor(
                         renderer,
                         ScaleRgb(
@@ -517,8 +522,17 @@ namespace BarPromenade
         private float EvaluateWindowWarmth(Renderer renderer)
         {
             Transform owner = renderer.transform.parent;
+            // Both pane groups are direct plot children, emitted next to one
+            // another. A veiled pane belongs to exactly the same room/cutoff
+            // as its preceding bright group, including the summit house.
+            int windowIndex = renderer.transform.GetSiblingIndex();
+            if (renderer.name == "Lit Window Shade")
+            {
+                windowIndex--;
+            }
+
             string key = owner.name + "/" +
-                         renderer.transform.GetSiblingIndex();
+                         windowIndex;
             float unit = CitySoundStableHash.ToUnitFloat(
                 CitySoundStableHash.SourceEvent(Plan.Seed, key, 0u));
             bool summit = owner.name ==

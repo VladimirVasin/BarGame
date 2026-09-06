@@ -59,6 +59,9 @@ namespace BarPromenade.Tests.EditMode
                  plotIndex++)
             {
                 AlpineVillagePlotDescriptor plot = plan.Plots[plotIndex];
+                Vector3 approach = plot.Kind == AlpineVillagePlotKind.Spring
+                    ? plan.Brook.ApproachPosition
+                    : plot.DoorDockPosition;
                 bool reachesThreshold = false;
                 for (int pathIndex = 0;
                      pathIndex < paths.Count;
@@ -66,7 +69,7 @@ namespace BarPromenade.Tests.EditMode
                 {
                     if (Vector3.Distance(
                             paths[pathIndex].End,
-                            plot.DoorDockPosition) <= 0.01f)
+                            approach) <= 0.01f)
                     {
                         reachesThreshold = true;
                         break;
@@ -76,7 +79,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     reachesThreshold,
                     Is.True,
-                    $"'{plot.StableId}' has no visible path to its dock.");
+                    $"'{plot.StableId}' has no visible path to its approach.");
             }
         }
 
@@ -115,6 +118,10 @@ namespace BarPromenade.Tests.EditMode
                     {
                         AlpineVillagePlotDescriptor plot =
                             plan.Plots[plotIndex];
+                        if (plot.Kind == AlpineVillagePlotKind.Spring)
+                        {
+                            continue; // Outdoor site, not a building footprint.
+                        }
                         Assert.That(
                             AlpineVillagePathValidator
                                 .MeasureFootprintClearance(path, plot),

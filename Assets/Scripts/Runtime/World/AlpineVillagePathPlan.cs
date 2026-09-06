@@ -327,21 +327,11 @@ namespace BarPromenade
                               (spring.Side * SpringBypassOutwardDistance);
             Ground(plan, ref outside);
 
-            IReadOnlyList<Vector3> bypass = ResolveSpringBypass(
+            IReadOnlyList<Vector3> route = ResolveSpringBypass(
                 plan,
-                spring,
-                outside);
-            var route = new List<Vector3>(bypass.Count + 3)
-            {
                 entry.Position,
-                outside
-            };
-            for (int index = 0; index < bypass.Count; index++)
-            {
-                route.Add(bypass[index]);
-            }
-
-            route.Add(spring.DoorDockPosition);
+                plan.Brook.ApproachPosition,
+                outside);
             for (int index = 0; index < route.Count - 1; index++)
             {
                 Add(
@@ -358,9 +348,15 @@ namespace BarPromenade
 
         private static IReadOnlyList<Vector3> ResolveSpringBypass(
             AlpineVillagePlan plan,
-            AlpineVillagePlotDescriptor spring,
+            Vector3 start,
+            Vector3 approach,
             Vector3 outside)
         {
+            if (SpringSegmentIsClear(plan, start, approach))
+            {
+                return new[] { start, approach };
+            }
+
             AlpineVillagePlotDescriptor blocker = null;
             for (int index = 0; index < plan.Plots.Count; index++)
             {
@@ -406,87 +402,87 @@ namespace BarPromenade
                 Ground(plan, ref corners[index]);
             }
 
-            int best = -1;
-            float bestLength = float.PositiveInfinity;
-            for (int index = 0; index < corners.Length; index++)
+            // Keep the outer clearing as a fallback, not a mandatory detour.
+            // This small visibility graph checks every edge against all houses;
+            // its stable node order also resolves equal-length routes consistently.
+            Vector3[] nodes =
             {
-                if (!SpringSegmentIsClear(plan, outside, corners[index]) ||
-                    !SpringSegmentIsClear(
-                        plan,
-                        corners[index],
-                        spring.DoorDockPosition))
+                start,
+                approach,
+                corners[0],
+                corners[1],
+                corners[2],
+                corners[3],
+                outside
+            };
+            var edges = new float[nodes.Length, nodes.Length];
+            for (int first = 0; first < nodes.Length; first++)
+            {
+                for (int second = first + 1; second < nodes.Length; second++)
                 {
-                    continue;
-                }
-
-                float length = DistanceXZ(outside, corners[index]) +
-                               DistanceXZ(
-                                   corners[index],
-                                   spring.DoorDockPosition);
-                if (length < bestLength - 0.0001f)
-                {
-                    best = index;
-                    bestLength = length;
+                    float length = SpringSegmentIsClear(
+                        plan, nodes[first], nodes[second])
+                        ? DistanceXZ(nodes[first], nodes[second])
+                        : float.PositiveInfinity;
+                    edges[first, second] = length;
+                    edges[second, first] = length;
                 }
             }
 
-            if (best >= 0)
+            var distances = new float[nodes.Length];
+            var previous = new int[nodes.Length];
+            var visited = new bool[nodes.Length];
+            for (int index = 0; index < nodes.Length; index++)
             {
-                return new[] { corners[best] };
+                distances[index] = float.PositiveInfinity;
+                previous[index] = -1;
             }
 
-            int bestFirst = -1;
-            int bestSecond = -1;
-            bestLength = float.PositiveInfinity;
-            for (int first = 0; first < corners.Length; first++)
+            distances[0] = 0f;
+            for (int step = 0; step < nodes.Length; step++)
             {
-                if (!SpringSegmentIsClear(plan, outside, corners[first]))
+                int current = -1;
+                float nearest = float.PositiveInfinity;
+                for (int index = 0; index < nodes.Length; index++)
                 {
-                    continue;
-                }
-
-                for (int second = 0; second < corners.Length; second++)
-                {
-                    if (first == second ||
-                        !SpringSegmentIsClear(
-                            plan,
-                            corners[first],
-                            corners[second]) ||
-                        !SpringSegmentIsClear(
-                            plan,
-                            corners[second],
-                            spring.DoorDockPosition))
+                    if (!visited[index] && distances[index] < nearest)
                     {
-                        continue;
-                    }
-
-                    float length = DistanceXZ(outside, corners[first]) +
-                                   DistanceXZ(
-                                       corners[first],
-                                       corners[second]) +
-                                   DistanceXZ(
-                                       corners[second],
-                                       spring.DoorDockPosition);
-                    if (length < bestLength - 0.0001f)
-                    {
-                        bestFirst = first;
-                        bestSecond = second;
-                        bestLength = length;
+                        current = index;
+                        nearest = distances[index];
                     }
                 }
-            }
 
-            if (bestFirst >= 0)
-            {
-                return new[]
+                if (current < 0)
                 {
-                    corners[bestFirst],
-                    corners[bestSecond]
-                };
+                    break;
+                }
+
+                if (current == 1)
+                {
+                    var route = new List<Vector3>();
+                    for (int index = current; index >= 0; index = previous[index])
+                    {
+                        route.Add(nodes[index]);
+                    }
+
+                    route.Reverse();
+                    return route;
+                }
+
+                visited[current] = true;
+                for (int next = 0; next < nodes.Length; next++)
+                {
+                    float candidate = nearest + edges[current, next];
+                    if (!visited[next] && candidate < distances[next])
+                    {
+                        distances[next] = candidate;
+                        previous[next] = current;
+                    }
+                }
             }
 
             throw new InvalidOperationException(
-                "The authored adit bypass cannot clear the seeded houses.");
+                "The spring approach cannot clear the seeded houses.");
         }
 
         private static bool SpringSegmentIsClear(
@@ -717,6 +713,13 @@ namespace BarPromenade
                      plotIndex++)
                 {
                     AlpineVillagePlotDescriptor plot = plan.Plots[plotIndex];
+                    // The spring plot reserves an outdoor site, not a solid
+                    // building. Its walkable approach enters that site; the
+                    // brook builder owns the actual bowl and ledge colliders.
+                    if (plot.Kind == AlpineVillagePlotKind.Spring)
+                    {
+                        continue;
+                    }
                     float clearance = MeasureFootprintClearance(path, plot);
                     if (clearance + GeometryTolerance >= envelope)
                     {
@@ -766,6 +769,10 @@ namespace BarPromenade
 
             for (int index = 0; index < plan.Plots.Count; index++)
             {
+                if (plan.Plots[index].Kind == AlpineVillagePlotKind.Spring)
+                {
+                    continue;
+                }
                 if (MeasureFootprintClearance(
                         start,
                         end,

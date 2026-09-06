@@ -165,6 +165,123 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// One flat, round water sheet: a fountain basin, not a
+        /// rectangle. The contract is <see cref="CreateSlopedSurface"/>'s
+        /// - TOP FACE ONLY, normals flat up because the shader replaces
+        /// them with the analytic wave normal, and NO UVS AT ALL, because
+        /// every pattern in the water shader is a function of world XZ -
+        /// so a disc and a grid are the same water with different edges.
+        ///
+        /// It exists because a round basin cannot be filled by a square.
+        /// The park fountain was drawn as boxes when its water was
+        /// authored and became a twenty-sided stone ring when the
+        /// scenery moved to Blender; the square sheet stayed, and its
+        /// four corners hung a third of a metre outside the rim, over
+        /// the grass.
+        ///
+        /// <paramref name="radius"/> is the sheet's OUTER radius, so pass
+        /// the circumradius of the wall the water meets: a disc drawn to
+        /// it is buried in the stone between the wall's own corners
+        /// instead of leaving a ring of dry basin floor showing.
+        /// </summary>
+        internal static GameObject CreateDiscSurface(
+            string name,
+            Transform parent,
+            Vector3 centre,
+            float radius,
+            int sides,
+            Material sharedMaterial,
+            float surfacePitch = SurfacePitch)
+        {
+            if (parent == null)
+            {
+                throw new ArgumentNullException(nameof(parent));
+            }
+
+            if (sharedMaterial == null)
+            {
+                throw new ArgumentNullException(nameof(sharedMaterial));
+            }
+
+            if (!(radius > 0f))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(radius),
+                    "A water disc needs a positive radius.");
+            }
+
+            if (sides < 3)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(sides),
+                    "A water disc needs at least three sides.");
+            }
+
+            if (!(surfacePitch > 0f))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(surfacePitch));
+            }
+
+            int rings = Mathf.Max(
+                MinimumSpans,
+                Mathf.RoundToInt(radius / surfacePitch));
+            var vertices = new Vector3[1 + rings * sides];
+            var normals = new Vector3[vertices.Length];
+            var triangles = new int[sides * 3 + (rings - 1) * sides * 6];
+
+            vertices[0] = Vector3.zero;
+            normals[0] = Vector3.up;
+            for (int ring = 1; ring <= rings; ring++)
+            {
+                float ringRadius = radius * ring / rings;
+                for (int side = 0; side < sides; side++)
+                {
+                    float angle = 2f * Mathf.PI * side / sides;
+                    int index = 1 + (ring - 1) * sides + side;
+                    vertices[index] = new Vector3(
+                        Mathf.Cos(angle) * ringRadius,
+                        0f,
+                        Mathf.Sin(angle) * ringRadius);
+                    normals[index] = Vector3.up;
+                }
+            }
+
+            int triangle = 0;
+            for (int side = 0; side < sides; side++)
+            {
+                triangles[triangle++] = 0;
+                triangles[triangle++] = 1 + (side + 1) % sides;
+                triangles[triangle++] = 1 + side;
+            }
+
+            for (int ring = 1; ring < rings; ring++)
+            {
+                int inner = 1 + (ring - 1) * sides;
+                int outer = 1 + ring * sides;
+                for (int side = 0; side < sides; side++)
+                {
+                    int next = (side + 1) % sides;
+                    triangles[triangle++] = inner + side;
+                    triangles[triangle++] = inner + next;
+                    triangles[triangle++] = outer + side;
+                    triangles[triangle++] = inner + next;
+                    triangles[triangle++] = outer + next;
+                    triangles[triangle++] = outer + side;
+                }
+            }
+
+            return CreateSheet(
+                name,
+                parent,
+                centre,
+                vertices,
+                normals,
+                triangles,
+                sharedMaterial);
+        }
+
+        /// <summary>
         /// One water sheet swept along a polyline: a brook, not a rectangle.
         ///
         /// <see cref="CreateSlopedSurface"/> takes a <see cref="Rect"/> and a

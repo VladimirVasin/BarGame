@@ -130,6 +130,12 @@ namespace BarPromenade
         /// </summary>
         internal const float ApronClearance = 1.2f;
 
+        // A foundation is buried by weather; only the door's working apron
+        // is swept by feet. Keeping the terrain shelf clear around all four
+        // walls left every house standing in an identical empty moat.
+        internal const float FoundationClearance = 0.65f;
+        internal const float DoorClearRadius = 0.85f;
+
         /// <summary>How much the crest wanders along a route. Without it the
         /// profile reads as extruded moulding rather than as weather.
         /// </summary>
@@ -270,7 +276,14 @@ namespace BarPromenade
             }
 
             float exposure = MeasureExposure(plan, outward);
-            float profile = SmoothRange(0f, RiseRun(exposure), past);
+            // Change the run of the drift along the edge without pushing it
+            // over the route or turning the whole field into isolated banks.
+            // The small and broad waves are world-locked, including at joins.
+            Vector2 routeEdge = point - outward * outside;
+            float runWander = 1f +
+                Mathf.Sin(routeEdge.x * 0.79f + routeEdge.y * 0.43f) * 0.19f +
+                Mathf.Sin(routeEdge.x * -0.31f + routeEdge.y * 0.61f) * 0.12f;
+            float profile = SmoothRange(0f, RiseRun(exposure) * runWander, past);
             if (profile <= 0f)
             {
                 return 0f;
@@ -318,14 +331,17 @@ namespace BarPromenade
                  index < plan.Plots.Count && weight > 0f;
                  index++)
             {
+                AlpineVillagePlotDescriptor plot = plan.Plots[index];
                 weight = Mathf.Min(
                     weight,
                     SmoothRange(
                         0f,
-                        ApronClearance,
-                        AlpineVillageTerrainSampler.DistanceOutsidePlot(
-                            plan.Plots[index],
-                            point)));
+                        FoundationClearance,
+                        DistanceOutsideFoundation(plot, point)));
+                var door = new Vector2(plot.DoorDockPosition.x,
+                    plot.DoorDockPosition.z);
+                weight = Mathf.Min(weight, SmoothRange(0f, FoundationClearance,
+                    Vector2.Distance(point, door) - DoorClearRadius));
             }
 
             // SNOW DOES NOT LIE ON RUNNING WATER, and it does not lie on the
@@ -351,6 +367,20 @@ namespace BarPromenade
         /// than a door's apron: a thaw margin, not a swept yard.
         /// </summary>
         internal const float WetGroundClearance = 1.4f;
+
+        private static float DistanceOutsideFoundation(
+            AlpineVillagePlotDescriptor plot, Vector2 point)
+        {
+            Vector2 delta = point - new Vector2(
+                plot.GroundCenter.x, plot.GroundCenter.z);
+            var forward = new Vector2(plot.Facing.x, plot.Facing.z);
+            var right = new Vector2(forward.y, -forward.x);
+            float across = Mathf.Max(0f,
+                Mathf.Abs(Vector2.Dot(delta, right)) - plot.FootprintSize.x * 0.5f);
+            float along = Mathf.Max(0f,
+                Mathf.Abs(Vector2.Dot(delta, forward)) - plot.FootprintSize.y * 0.5f);
+            return Mathf.Sqrt(across * across + along * along);
+        }
 
         /// <summary>
         /// Wander, in world space rather than along a route, so two drifts

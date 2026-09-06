@@ -92,12 +92,14 @@ namespace BarPromenade
             string stableId,
             Vector3 mouth,
             Vector3 outward,
+            Vector3 landing,
             float fall,
             float width)
         {
             StableId = stableId ?? string.Empty;
             Mouth = mouth;
             Outward = outward;
+            Landing = landing;
             Fall = fall;
             Width = width;
         }
@@ -109,6 +111,9 @@ namespace BarPromenade
 
         /// <summary>Horizontal direction it leaves in.</summary>
         public Vector3 Outward { get; }
+
+        /// <summary>Where the seep meets the water inside the back rim.</summary>
+        public Vector3 Landing { get; }
 
         /// <summary>Height of the falling column under the mouth.</summary>
         public float Fall { get; }
@@ -168,6 +173,7 @@ namespace BarPromenade
             IList<AlpineVillageBrookCascade> sourceCascades,
             Vector3 ledgeCenter,
             Vector3 ledgeFacing,
+            Vector3 bowlFacing,
             Vector3 bowlCenter,
             float bowlWaterTopY,
             Vector2 bowlSize,
@@ -185,6 +191,7 @@ namespace BarPromenade
                 new List<AlpineVillageBrookCascade>(sourceCascades));
             LedgeCenter = ledgeCenter;
             LedgeFacing = ledgeFacing;
+            BowlFacing = bowlFacing;
             BowlCenter = bowlCenter;
             BowlWaterTopY = bowlWaterTopY;
             BowlSize = bowlSize;
@@ -217,8 +224,23 @@ namespace BarPromenade
         public Vector3 LedgeSize => AlpineVillageBrookPlanner.LedgeSize;
 
         public Vector3 BowlCenter { get; }
+        /// <summary>The catch keeps the ledge's axes, but can turn halfway
+        /// round so its authored +X overflow faces downhill.</summary>
+        public Vector3 BowlFacing { get; }
+        public Vector3 BowlOutletDirection =>
+            Vector3.Cross(Vector3.up, BowlFacing).normalized;
         public float BowlWaterTopY { get; }
         public Vector2 BowlSize { get; }
+
+        public Vector2 CatchOuterSize => BowlSize * 1.12f;
+        public Vector2 BowlInnerHalfSize => new Vector2(
+            CatchOuterSize.x * 0.33f, CatchOuterSize.y * 0.32f);
+        public float OverflowWidth => CatchOuterSize.y * 0.28f - 0.04f;
+
+        /// <summary>Clear standing ground in front of the real stone catch,
+        /// rather than the spring plot's unrelated generic door dock.</summary>
+        public Vector3 ApproachPosition => BowlCenter + LedgeFacing *
+            (CatchOuterSize.y * 0.5f + 0.70f);
 
         /// <summary>The low point of the bowl's rim, where it spills.
         /// </summary>
@@ -302,10 +324,12 @@ namespace BarPromenade
         private float DistanceOutsideBowl(Vector2 point)
         {
             Vector2 delta = point - ToXZ(BowlCenter);
-            float halfX = Mathf.Max(0.05f, BowlSize.x * 0.5f);
-            float halfZ = Mathf.Max(0.05f, BowlSize.y * 0.5f);
-            float outsideX = Mathf.Abs(delta.x) - halfX;
-            float outsideZ = Mathf.Abs(delta.y) - halfZ;
+            Vector2 right = ToXZ(BowlOutletDirection);
+            Vector2 forward = ToXZ(BowlFacing).normalized;
+            float halfX = Mathf.Max(0.05f, CatchOuterSize.x * 0.5f);
+            float halfZ = Mathf.Max(0.05f, CatchOuterSize.y * 0.5f);
+            float outsideX = Mathf.Abs(Vector2.Dot(delta, right)) - halfX;
+            float outsideZ = Mathf.Abs(Vector2.Dot(delta, forward)) - halfZ;
             if (outsideX <= 0f && outsideZ <= 0f)
             {
                 return Mathf.Max(outsideX, outsideZ);

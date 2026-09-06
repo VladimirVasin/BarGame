@@ -116,9 +116,10 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(streams, Is.EqualTo(fountains.Count * 2));
                 Assert.That(splashes, Is.EqualTo(fountains.Count * 2));
 
-                // The water stands in the batched fountain's own
-                // frame: sheet at the basin's level inside the rim,
-                // streams from the spout arms down past the surface.
+                // The water stands in the imported fountain's own
+                // frame: a round sheet at the basin's level inside the
+                // rim, streams from the spout arms down past the
+                // surface.
                 CityDecorationWorldBuilder.GetDecorationFrame(
                     layout,
                     fountains[0],
@@ -128,52 +129,120 @@ namespace BarPromenade.Tests.EditMode
                 float top = origin.y +
                             CityFountainWaterBuilder.BasinWaterTopY;
 
+                Assert.That(
+                    CityFountainWaterBuilder.BasinWaterTopY,
+                    Is.GreaterThan(
+                        CityFountainWaterBuilder.BasinFloorTopY),
+                    "The sheet must stand over the basin floor.");
+                Assert.That(
+                    CityFountainWaterBuilder.BasinWaterTopY,
+                    Is.LessThan(
+                        CityFountainWaterBuilder.BasinRimTopY - 0.10f),
+                    "The rim must still stand out of the water.");
+
                 Transform basin = root.transform.Find(
                     "Fountain Basin Water 0");
                 Assert.That(basin, Is.Not.Null);
                 Assert.That(
                     basin.position.y,
                     Is.EqualTo(top).Within(0.001f));
-                Bounds basinBounds =
-                    basin.GetComponent<MeshFilter>().sharedMesh.bounds;
+
+                // Every vertex inside the rim, and the sheet reaching
+                // it. A square sheet in this round bowl hung its four
+                // corners over the grass; a radius check on the mesh
+                // itself is what catches that, not one on the bounds.
+                Vector3[] basinVertices =
+                    basin.GetComponent<MeshFilter>().sharedMesh.vertices;
+                Assert.That(basinVertices.Length, Is.GreaterThan(3));
+                float widest = 0f;
+                for (int vertex = 0;
+                     vertex < basinVertices.Length;
+                     vertex++)
+                {
+                    Vector3 local = basinVertices[vertex];
+                    Assert.That(
+                        local.y,
+                        Is.EqualTo(0f).Within(0.001f),
+                        "The basin sheet is flat.");
+                    float radius = new Vector2(local.x, local.z)
+                        .magnitude;
+                    Assert.That(
+                        radius,
+                        Is.LessThanOrEqualTo(
+                            CityFountainWaterBuilder
+                                .BasinInnerRadius + 0.001f),
+                        "The sheet must stay inside the basin rim.");
+                    widest = Mathf.Max(widest, radius);
+                }
+
                 Assert.That(
-                    basinBounds.extents.x,
-                    Is.EqualTo(CityFountainWaterBuilder.BasinWaterHalf)
-                        .Within(0.01f));
-                Assert.That(
-                    basinBounds.extents.x,
-                    Is.LessThan(3.20f - 0.40f),
-                    "The sheet must stay inside the basin rim.");
+                    widest,
+                    Is.EqualTo(
+                        CityFountainWaterBuilder.BasinInnerRadius)
+                        .Within(0.01f),
+                    "The sheet must reach the rim, not puddle short.");
 
                 for (int side = -1; side <= 1; side += 2)
                 {
                     Transform stream = root.transform.Find(
                         $"Fountain Stream 0 {side}");
                     Assert.That(stream, Is.Not.Null);
-                    Vector3 expected = origin + tangent *
+
+                    // The pour leans, so its ends are the box's own
+                    // axis, not its bounding height.
+                    Vector3 half = stream.rotation *
+                                   (Vector3.up *
+                                    stream.localScale.y * 0.5f);
+                    Vector3 streamMouth = stream.position + half;
+                    Vector3 streamFoot = stream.position - half;
+
+                    // The arm the pour hangs from is authored, not
+                    // guessed: the imported statue's spout tubes end at
+                    // 0.72 with their tip centre at 3.30 and a 0.07
+                    // radius, so the mouth is inside that cross section
+                    // and the water starts in the stone, not under it.
+                    Assert.That(
+                        CityFountainWaterBuilder.SpoutTipOffset,
+                        Is.EqualTo(0.72f).Within(0.02f),
+                        "The pour must fall from the spout tip.");
+                    Assert.That(
+                        CityFountainWaterBuilder.SpoutMouthY,
+                        Is.InRange(3.23f, 3.37f),
+                        "The pour must start inside the spout mouth.");
+
+                    Vector3 expected = origin +
+                        tangent *
                         (side *
-                         CityFountainWaterBuilder.SpoutTipOffset);
+                         CityFountainWaterBuilder.SpoutTipOffset) +
+                        Vector3.up *
+                        CityFountainWaterBuilder.SpoutMouthY;
                     Assert.That(
-                        stream.position.x,
-                        Is.EqualTo(expected.x).Within(0.001f));
-                    Assert.That(
-                        stream.position.z,
-                        Is.EqualTo(expected.z).Within(0.001f));
-                    float streamTop = stream.position.y +
-                                      stream.localScale.y * 0.5f;
-                    float streamBottom = stream.position.y -
-                                         stream.localScale.y * 0.5f;
-                    Assert.That(
-                        streamTop,
-                        Is.EqualTo(
-                            origin.y +
-                            CityFountainWaterBuilder.SpoutMouthY)
-                            .Within(0.001f),
+                        Vector3.Distance(streamMouth, expected),
+                        Is.LessThan(0.001f),
                         "The pour must leave the spout arm.");
                     Assert.That(
-                        streamBottom,
+                        streamFoot.y,
                         Is.LessThan(top),
                         "The pour must dip below the surface.");
+
+                    // And it must land in the water, not on the stone:
+                    // the pedestal flares back out under the statue.
+                    float landingRadius = Vector3.ProjectOnPlane(
+                        streamFoot - origin,
+                        Vector3.up).magnitude;
+                    Assert.That(
+                        landingRadius -
+                        CityFountainWaterBuilder.SplashSize * 0.5f,
+                        Is.GreaterThan(
+                            CityFountainWaterBuilder
+                                .PedestalWaterlineRadius),
+                        "The pour must clear the statue's pedestal.");
+                    Assert.That(
+                        landingRadius +
+                        CityFountainWaterBuilder.SplashSize * 0.5f,
+                        Is.LessThan(
+                            CityFountainWaterBuilder.BasinInnerRadius),
+                        "The pour must land inside the basin.");
 
                     Transform splash = root.transform.Find(
                         $"Fountain Splash 0 {side}");
@@ -182,6 +251,12 @@ namespace BarPromenade.Tests.EditMode
                         splash.position.y,
                         Is.GreaterThan(top),
                         "The splash ring rides on the surface.");
+                    Assert.That(
+                        Vector3.ProjectOnPlane(
+                            splash.position - streamFoot,
+                            Vector3.up).magnitude,
+                        Is.LessThan(0.001f),
+                        "The splash ring sits where the pour lands.");
                 }
             }
             finally

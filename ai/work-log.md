@@ -6,6 +6,216 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-06 — Matching house windows in both scenes; a continuous shallow brook
+
+The user rejected the preceding four-window reduction: it matched an incomplete
+interior and left the house's side walls blank. The correction uses one authored
+`ArtSource/MothersHouse/WindowLayout.json` for sixteen openings, eight per floor,
+four on every facade. It generates the runtime window table and is consumed by
+both Blender generators. Existing openings remain; the added ones respect the
+entrance, wardrobe, fireplace, bedroom partitions and stair flight. The stair
+window is raised above the flight. All sixteen have real interior wall holes,
+frames and glass, including the masonry wing and upper corridor.
+
+`Village3D` v3.4.1 stays at 25 assemblies / 58 meshes / 14,650 triangles;
+`MothersHouseInterior3D` v1.6.0 has 127 meshes / 15,796 triangles. Generator
+validation checks casing support, source-table correspondence and 144 rays
+through the actual interior openings. Render review caught opaque panes hiding
+the interior mullions and a dark bevel seam in split side walls; both were
+corrected in the final interior export. Local camera cutaway hides the near
+side's windowed upper wall only while an outside game camera renders. Existing
+camera poses, furniture, interaction routes and four practical window lights
+are retained.
+
+The brook's full-width wet-ground overlay was replaced by one profiled bed and
+two banks, with denser water sections, irregular narrower width and small
+partly submerged stones. Its material no longer refracts adjacent snow across
+the narrow channel, and metre UVs receive their pitch once. Actual ground-mesh
+raycasts reproduced the reported white breaks: coarse terrain triangles rose
+up to 0.198 m through the water despite the analytic swale. The ground now
+inserts quarter-metre coordinates near the brook while preserving the original
+coarse vertices. Ground construction and height fitting share those axes.
+The carve follows the nearest finite reach; a small hollow replaces both
+the coarse-grid excavation reserve and raised artificial bank walls. The
+visible bed and narrow wet banks follow that ground and also supply the
+walkable collision surface.
+The independent snow-drift mesh also had coarse triangles bridging the water;
+snow triangles whose XZ extent intersects the spring's wet area are now
+omitted. This preserves the terrain beneath them and the snow treading vertex
+indices while removing the false white sheets over running water.
+
+Verification: the single paired-scene `VillageWindowsAndBrook` reproduction
+passed (1/1, 21.56 s) in an isolated project. It checks all sixteen window
+positions in both scenes, 256 ground-sampler/actual-collider comparisons, and
+22,760 water-mesh probes. Water/ground clearance is 0.076180–0.254372 m;
+minimum bed/bank-to-ground clearance is 0.016624 m. The terrain has 75,110
+vertices after local refinement. Thirty-one final frames cover all exterior
+facades, the source, three moving-camera brook pairs, four gameplay interior
+views and sixteen individual windows. Verified import/binding assets and
+these captures were copied back after source-hash checks; results are in
+`Captures/VillageArtPass/results-windows-brook-snow-clear.xml` and
+`published-windows-brook-snow-clear.json`.
+No full EditMode/PlayMode suites or player build were run for this correction.
+
+## 2026-09-06 — The park fountain is filled by the fountain that is actually there
+
+Reported as "the park fountain looks wrong". An edit-mode probe rendered it
+from seven angles and measured the imported meshes, and the water turned out
+to be built for a fountain that no longer exists. The stone was four boxes
+when the water was authored; the Blender scenery migration replaced it with a
+twenty-sided ring (outer radius `3.20`, inner face `2.72`, floor top `0.28`,
+rim top `0.82`) whose statue carries two spout tubes ending at `+/-0.72` with
+their tip centre at `3.30`. The water kept the boxes' numbers:
+
+- a SQUARE sheet of half-extent `2.59`, whose four corners reach `3.66` from
+  the centre and therefore hung `0.46 m` outside the stone entirely, over the
+  grass - the pale plates visible from every eye-level angle;
+- two pours at `+/-1.01`, `0.29 m` outboard of the arms they are supposed to
+  fall from and topping out at `2.92`, `0.38 m` below the mouths, so they hung
+  in the air;
+- a surface `0.36`, eight centimetres over the floor of a basin walled
+  `0.54` deep: an empty trough with a puddle in it.
+
+`CityWaterSurfaceFactory` gained `CreateDiscSurface` - the same sheet contract
+as the grid and the ribbon (top face only, flat-up normals, no UVs, because
+every pattern in the water shader is a function of world XZ), swept as
+concentric rings. The basin is now a disc drawn to the wall's own circumradius
+`2.72`, so it is buried in the stone between the wall's corners instead of
+leaving a ring of dry floor. The pours hang from the measured spout tips and
+lean `8.8 degrees` out as they fall, landing at `1.15` with their splash
+rings: the pedestal flares back out to `0.70` at the water line, so a plumb
+drop from a `0.72` spout would pour onto the stone. Water raised to `0.58`,
+just over half the rim.
+
+Numbers come off the imported meshes, not the recipe: the probe binned every
+vertex by height and printed the radial range per band, which is what named
+`2.72` and the `3.20..3.40` band holding the spout tips.
+
+Verified by `CityFountainWaterTests` (EditMode) and by re-rendering the same
+seven probe frames. The test's old assertions measured the sheet against the
+box recipe and could never have caught this, so they now measure the mesh
+itself: every basin vertex within the rim radius and the widest reaching it,
+the pour's mouth on the spout tip, and its foot landing clear of the pedestal
+and inside the basin. The splash patches became discs in the same pass - the
+splash shader reads world position alone, so the patch can be any shape, and a
+square one lying on open water reads as a decal rather than as water being
+hit. The temporary probe script was deleted afterwards.
+
+One process note: the neighbouring session had the tree uncompilable for
+twenty minutes in the middle of this, and the poll that waited for it went on
+reporting a break after the missing file had landed - `dotnet build` reads the
+Unity-generated csproj's explicit file list, Unity globs the folder. Gate that
+wait on the file, not on `dotnet build`.
+
+## 2026-09-06 — Upper-house openings, spring water and connected approaches
+
+FAST bug fix for the user's three illustrated defects. The mother's exterior
+now has the four openings of its real interior: two common-room windows,
+the parents' window and the childhood-room window, with their actual floor
+heights. The two-storey wing and timber/plinth volumes meet at a shared
+boundary instead of overlapping coplanar facades. Village3D `3.4.0` has
+`25` assemblies, `58` meshes and `14,650 / 16,000` triangles; the deterministic
+generator validates the interior mapping, seam, door and export signatures.
+
+The spring water now occupies the rotated catch interior above wet stone,
+with seeps landing in the water and a real spill opening joining the brook.
+Downstream samples are preserved. Its path targets the actual standing place
+before the catch and chooses the shortest clear bypass, removing the forced
+zigzag. One tessellated surface joins each path chain; matching metre UVs and
+round bends/ends replace disconnected rectangular strips. The damp contour
+to the chapel is a narrow irregular stain rather than a second broad track.
+
+Targeted captures exposed one remaining terrain occlusion on the shortened
+route: the rendered grid rose up to `0.058 m` through the analytic skin.
+Paths and lane now clear the exact triangulated ground as well as its pure
+sampler. The capture probes the spring mesh against the actual ground
+collider at triangle centres and edge midpoints, and validates the existing
+ten routing regression seeds. The last focused `AreaCaptureFixture.AlpineVillage`
+passed `1/1` in `40.95 s`; reviewed all four exterior windows, front/rear seam
+pairs, the catch/overflow and the complete approach from above. This was
+repeated only to resolve defects visible in the focused frames.
+
+The checked source and generated payloads were matched to the isolated Unity
+project before copying its village provider/import metadata and `35` captures
+back. Final frames: `Captures/AlpineVillage/32-39-*`; passing result:
+`Captures/VillageArtPass/results-repairs-ground.xml`. Preserved the user's
+open editor and concurrent work. No full suites, player build or smoke run.
+
+## 2026-09-06 — Alpine Village follows its artwork
+
+FAST implementation of the accepted village art pass, including the user's
+follow-up for coherent facades with substantially more detail. The principal
+reference is `Art/Collection/16-alpine-village.png`. The closed bowl now exposes
+authored dark rock strata and snow ledges; snow reaches house foundations
+outside the clear thresholds and trodden routes. The Return canopy has a
+profiled roof, beams, braces and fasteners. Terrain collision, the cable cut,
+the two ordinary house archetypes, the mother's landmark and warmth progression
+retain their owners.
+
+Village kit `3.3.0` carries `24` assemblies / `57` role meshes and `14,602`
+triangles within its existing `16,000` budget. House detail includes continuous
+hewn courses, masonry relief, layered roof edges, rafters, framed divided
+windows, shutter joinery and a metre-sized door assembly with boards, frame,
+hinges and handle. Five neutral facade sheets (`1.1.0`) retain directional wear
+at reduced resolution; measured mean compensation keeps colour with the house.
+The rock library contains `1,376` triangles and the upper canopy `4,024`.
+All use deterministic tooling and shared materials.
+
+Visual iterations corrected facade overlap, the mother's low front window,
+overly flat facade textures and snow ledges losing contrast through the ridge
+lighting and PS1 grade. The ridge retains its shared haze and `0.40` visibility
+floor; only its ledge snow receives a local presentation gain.
+
+Validated the directly affected generators and their saved outputs. The final
+focused `AreaCaptureFixture.AlpineVillage` passed `1/1`, including prebuild
+import/binding validation, and produced `27` frames. Reviewed both house types,
+the mother, close joinery, enclosure, canopy, cable cut and dimmed state.
+Captures are under `Captures/VillageArtPass/After` and `Captures/AlpineVillage`.
+Concurrent apartment-camera edits required an isolated verification copy;
+village source and generated payloads were checked against that passing copy
+before publishing only village providers and importer metadata back. Other
+work was preserved. No full suites, player build or startup smoke were run.
+
+## 2026-09-06 — The apartment camera keeps the hero in frame
+
+The main-room shot is hung in the south-west corner of the apartment and no
+single aim from there covers the room: measured against the real frustum over
+the whole walkable floor, the hero left the picture on `53` of `771` sampled
+standing spots — the whole strip along the west wall (his head cut off on the
+left) and the gap between the junk pile and the south wall, where his feet
+dropped below the bottom edge. Worst overshoot was `1.41` of the half-frame.
+
+`FixedCameraFocus` fixes it without giving up the composition. It is a pure
+value: a maximum pan, a safe fraction of the frame and a smooth time. Rotating
+a shot all the way onto the hero's chest centres him exactly, so every
+fraction of that rotation walks him toward the middle of the picture; a
+seven-step bisection over that fraction finds the least turn that puts both
+his soles and the crown of his head inside the safe frame, and the result is
+clamped to the maximum. The dead zone is measured on the real frustum, not on
+naive yaw and pitch: the corner of a picture is much tighter than its corner
+angles suggest, which is exactly why the hero beside the camera slid off the
+bottom while an angle-space dead zone thought him comfortable.
+
+`PlayerCameraFollow` carries it as a layer over the fixed pose, smooth-damped
+and composed through world yaw and pitch so a pan never tips the horizon.
+`SetFixedPose` clears the focus, so every other owner of the camera — shops,
+seats, the opening, the bathroom scenes — gets exactly the frame it composed;
+the home controller re-arms after each shot it applies, and each of those
+owners already calls `ReapplyActiveShot` when it lets go. Only the main-room
+shot carries a focus (`18°` yaw, `9°` pitch): the bathroom and balcony frames
+are tight and stay untouched.
+
+With it, the same sweep frames the hero everywhere at `16:9` and at `4:3`
+(worst `0.84` and `0.94`), and `718` of the `771` spots do not move the camera
+at all — the average pan over the whole floor is `0.7°`.
+
+Verified with `HomeFixedCameraControllerPlayModeTests` (6/6 headless),
+including a new `Focus_HoldsTheAuthoredFrameThenPansTheLeastThatFramesHim`
+that checks viewport containment before and after the pan, the bounds, the
+level horizon, the unmoved camera position and the focus being dropped when
+another owner takes the pose. No suite, build or smoke run beyond that one
+fixture.
+
 ## 2026-09-06 — Local illustrated Art collection
 
 FAST art-only session. Created root `Art/` and excluded the whole directory

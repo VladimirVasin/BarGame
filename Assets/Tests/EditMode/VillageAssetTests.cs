@@ -393,9 +393,9 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// Every house on the lane gets a door at the same real size, which
-        /// is the reason the kit ships none: a modelled door would scale from
-        /// a hatch to a barn opening across these plots.
+        /// Every house gets the same real door size. The authored leaf sits
+        /// inside the kit's larger frame envelope, so measure its rendered
+        /// height rather than the transform scale of the complete assembly.
         /// </summary>
         [Test]
         [Category("AlpineVillage")]
@@ -419,7 +419,7 @@ namespace BarPromenade.Tests.EditMode
                         world.SemanticObjects[plot.StableId].Find("Door Leaf");
                     Assert.That(leaf, Is.Not.Null, plot.StableId);
                     Assert.That(
-                        leaf.localScale.y,
+                        leaf.GetComponent<Renderer>().bounds.size.y,
                         Is.EqualTo(AlpineVillageWorldBuilder.DoorHeight)
                             .Within(0.001f),
                         $"'{plot.StableId}' has a door of its own size.");

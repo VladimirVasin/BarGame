@@ -59,6 +59,8 @@ namespace BarPromenade
                     plan,
                     registry);
                 DisableAuthoredColliders(model.transform);
+                root.gameObject.AddComponent<MothersHouseWindowCutaway>()
+                    .Configure(registry, root);
 
                 Transform collisionRoot = new GameObject(
                     CollisionRootName).transform;
@@ -265,6 +267,9 @@ namespace BarPromenade
             Rect room = plan.RoomBounds;
             float thickness = plan.WallThickness;
             float wallHeight = plan.UpperFloor.CeilingHeight;
+            // Every new window is glazed and non-traversable. The same
+            // continuous boundary therefore guards both piers and panes,
+            // including when a near wall is hidden for a fixed camera.
             AddCollider(
                 parent,
                 "Floor",

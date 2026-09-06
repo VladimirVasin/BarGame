@@ -2090,6 +2090,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
+        [PrebuildSetup(typeof(VillageArtAssetsSetup))]
         public IEnumerator AlpineVillage()
         {
             // Day two at 07:40 keeps the accepted morning light but lands the
@@ -3432,6 +3433,7 @@ namespace BarPromenade.Tests.PlayMode
                 new System.Collections.Generic.List<Shot>(baseShots);
             AppendAlpineVillageRoostShots(root, shots);
             AppendAlpineVillageSpringShots(root, shots);
+            AppendVillageArtShots(root, shots);
             return shots.ToArray();
         }
 

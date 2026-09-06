@@ -27,25 +27,16 @@ namespace BarPromenade
         /// </summary>
         private const int WaterCrossSteps = 4;
 
-        private const int BedCrossSteps = 4;
         private const int WetGroundCrossSteps = 3;
-
-        /// <summary>
-        /// How far the bed's edge stands outside the water's, so the sheet
-        /// never ends over bare terrain at a meander's outer bank.
-        /// </summary>
-        private const float BedOverhang = 0.22f;
 
         /// <summary>
         /// How far the wet ground stands over the terrain it lies on. Enough
         /// to win the depth test against a `2 m` grid's chord, which is the
         /// same problem the lane skin solves with its own lift.
         /// </summary>
-        private const float WetGroundLift = 0.035f;
+        private const float WetGroundLift = 0.045f;
 
-        /// <summary>How far the catch's water stops short of its stone rim,
-        /// so the sheet never pokes through the blocks.</summary>
-        private const float BowlWaterInset = 0.16f;
+        private const float BowlBedLift = 0.02f;
 
         private const float SplashThickness = 0.02f;
         private const float SplashLift = 0.012f;
@@ -69,6 +60,9 @@ namespace BarPromenade
         private static readonly Color WetGroundColor =
             new Color(0.415f, 0.408f, 0.386f, 1f);
 
+        private static readonly Color SeepGroundColor =
+            new Color(0.480f, 0.468f, 0.435f, 1f);
+
         /// <summary>Stone that has water on it: darker and colder than the
         /// village's dry masonry, which is the whole tell.</summary>
         private static readonly Color WetStoneColor =
@@ -86,20 +80,46 @@ namespace BarPromenade
             }
 
             AlpineVillageBrookPlan brook = plan.Brook;
+            List<AlpineVillageBrookSample> renderSamples = CreateRenderSamples(brook);
             var root = new GameObject(RootName);
             root.transform.SetParent(parent, false);
 
             BuildWetGround(root.transform, plan, brook);
             BuildLedge(root.transform, brook, kit);
             BuildCatchStone(root.transform, brook, kit, semanticObjects);
-            BuildBed(root.transform, brook);
+            BuildBed(root.transform, plan, renderSamples);
             BuildBedStones(root.transform, brook, kit);
-            BuildChannelWater(root.transform, brook, semanticObjects);
+            BuildChannelWater(root.transform, renderSamples, semanticObjects);
             BuildBowl(root.transform, brook);
             BuildSeeps(root.transform, brook);
             BuildCascadeStones(root.transform, brook, kit, semanticObjects);
-            BuildCascades(root.transform, brook);
             return root;
+        }
+
+        private static List<AlpineVillageBrookSample> CreateRenderSamples(
+            AlpineVillageBrookPlan brook)
+        {
+            var result = new List<AlpineVillageBrookSample>();
+            for (int index = 0; index < brook.Samples.Count - 1; index++)
+            {
+                AlpineVillageBrookSample first = brook.Samples[index];
+                AlpineVillageBrookSample second = brook.Samples[index + 1];
+                int spans = Mathf.Max(1, Mathf.CeilToInt(
+                    Vector3.Distance(first.Position, second.Position) / 0.20f));
+                int last = index == brook.Samples.Count - 2 ? spans : spans - 1;
+                for (int step = 0; step <= last; step++)
+                {
+                    float amount = step / (float)spans;
+                    result.Add(new AlpineVillageBrookSample(
+                        Mathf.Lerp(first.Distance, second.Distance, amount),
+                        Vector3.Lerp(first.Position, second.Position, amount),
+                        Vector3.Lerp(first.Right, second.Right, amount).normalized,
+                        Mathf.Lerp(first.Width, second.Width, amount),
+                        Mathf.Lerp(first.BedDepth, second.BedDepth, amount),
+                        first.Reach));
+                }
+            }
+            return result;
         }
 
         /// <summary>
@@ -179,16 +199,14 @@ namespace BarPromenade
                 brook.BowlCenter.y - CatchSink,
                 brook.BowlCenter.z);
             host.transform.rotation = Quaternion.LookRotation(
-                brook.LedgeFacing,
+                brook.BowlFacing,
                 Vector3.up);
             AlpineVillageWorldBuilder.PlaceKitAssembly(
                 host.transform,
                 kit,
                 VillageAssetKind.SourceBowl,
-                0,
-                new Vector2(
-                    brook.BowlSize.x * 1.12f,
-                    brook.BowlSize.y * 1.12f),
+                1,
+                brook.CatchOuterSize,
                 CatchHeight,
                 _ => WetStoneColor);
 
@@ -198,9 +216,9 @@ namespace BarPromenade
                 Vector3.up * (CatchHeight * 0.5f);
             BoxCollider box = blocker.AddComponent<BoxCollider>();
             box.size = new Vector3(
-                brook.BowlSize.x * 1.12f,
+                brook.CatchOuterSize.x,
                 CatchHeight,
-                brook.BowlSize.y * 1.12f);
+                brook.CatchOuterSize.y);
         }
 
         /// <summary>How far the catch is bedded into the ground, so its rim
@@ -239,19 +257,22 @@ namespace BarPromenade
                 float side = Unit(stableId, 0x53544E31u) * 2f - 1f;
                 float scale = Mathf.Lerp(
                     0.55f,
-                    1.15f,
+                    0.95f,
                     Unit(stableId, 0x53544E32u));
                 float lift = Mathf.Lerp(
-                    0.02f,
-                    0.09f,
+                    0.015f,
+                    0.060f,
                     Unit(stableId, 0x53544E33u));
+                float height = 0.18f * scale;
+                float bankSide = (side < 0f ? -1f : 1f) *
+                    Mathf.Lerp(0.65f, 1.05f, Mathf.Abs(side));
 
                 var host = new GameObject($"Brook Stone {index:000}");
                 host.transform.SetParent(parent, false);
                 host.transform.position =
                     sample.Position +
-                    sample.Right * (side * sample.HalfWidth * 0.72f) +
-                    Vector3.down * (sample.BedDepth - lift);
+                    sample.Right * (bankSide * sample.HalfWidth) +
+                    Vector3.down * (height - lift);
                 host.transform.rotation = Quaternion.Euler(
                     0f,
                     Unit(stableId, 0x53544E34u) * 360f,
@@ -261,8 +282,9 @@ namespace BarPromenade
                     kit,
                     VillageAssetKind.BedStone,
                     variant,
-                    new Vector2(0.62f, 0.58f) * scale,
-                    0.34f * scale,
+                    new Vector2(Mathf.Min(0.42f * scale, sample.Width * 0.40f),
+                        0.45f * scale),
+                    height,
                     _ => WetStoneColor);
             }
         }
@@ -298,18 +320,24 @@ namespace BarPromenade
                 // Under its own cascade's id: the soundscape names the step
                 // it comes out of, and there is more than one step.
                 Register(semanticObjects, cascade.StableId, host.transform);
-                host.transform.position =
-                    cascade.Lip - Vector3.up * (cascade.Drop + 0.06f);
+                Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+                float side = Unit(cascade.StableId, 0x43535431u) < 0.5f ? -1f : 1f;
+                // Keep the sound owner, but use a submerged rounded stone:
+                // the old authored slab read as a shelf laid on the bank.
+                host.transform.position = cascade.Lip + forward * 0.32f +
+                    right * (side * cascade.Width * 0.44f) -
+                    Vector3.up * (cascade.Drop * 0.32f + 0.14f);
                 host.transform.rotation = Quaternion.LookRotation(
                     forward.normalized,
                     Vector3.up);
                 AlpineVillageWorldBuilder.PlaceKitAssembly(
                     host.transform,
                     kit,
-                    VillageAssetKind.CascadeStep,
-                    0,
-                    new Vector2(cascade.Width * 1.05f, 0.55f),
-                    cascade.Drop + 0.16f,
+                    VillageAssetKind.BedStone,
+                    VillageAssetProvider.SelectVariant(VillageAssetKind.BedStone,
+                        cascade.StableId),
+                    new Vector2(cascade.Width * 0.38f, 0.34f),
+                    0.16f,
                     _ => WetStoneColor);
             }
         }
@@ -355,16 +383,39 @@ namespace BarPromenade
             var rights = new List<Vector3>();
             var halfWidths = new List<float>();
 
-            for (int index = 0; index < brook.SeepLine.Count; index++)
+            // The plan describes a broad damp contour. Its visible centre
+            // is a narrow, uneven stain, not a second paved route. Resample
+            // only this ribbon so the pinches and tapered ends stay smooth.
+            float seepLength = brook.SeepLine.Count == 0 ? 0f :
+                brook.SeepLine[brook.SeepLine.Count - 1].Distance;
+            for (int index = 0; index < brook.SeepLine.Count - 1; index++)
             {
-                AlpineVillageBrookSample sample = brook.SeepLine[index];
-                Vector3 point = sample.Position;
-                point.y = AlpineVillageTerrainSampler.SampleHeight(
-                    plan,
-                    new Vector2(point.x, point.z)) + WetGroundLift;
-                centres.Add(point);
-                rights.Add(sample.Right);
-                halfWidths.Add(sample.HalfWidth * 0.72f);
+                AlpineVillageBrookSample first = brook.SeepLine[index];
+                AlpineVillageBrookSample second = brook.SeepLine[index + 1];
+                int spans = Mathf.Max(1, Mathf.CeilToInt(
+                    (second.Distance - first.Distance) / 0.75f));
+                int last = index == brook.SeepLine.Count - 2 ? spans : spans - 1;
+                for (int step = 0; step <= last; step++)
+                {
+                    float amount = step / (float)spans;
+                    float distance = Mathf.Lerp(first.Distance, second.Distance, amount);
+                    float taper = Mathf.SmoothStep(0f, 1f,
+                        Mathf.Clamp01(Mathf.Min(distance, seepLength - distance) / 3f));
+                    float patch = 0.5f +
+                        Mathf.Sin(distance * 1.13f + 0.8f) * 0.29f +
+                        Mathf.Sin(distance * 2.47f + 2.1f) * 0.21f;
+                    Vector3 right = Vector3.Lerp(first.Right, second.Right, amount).normalized;
+                    Vector3 point = Vector3.Lerp(first.Position, second.Position, amount);
+                    point += right * taper *
+                        (Mathf.Sin(distance * 1.37f + 1.7f) * 0.10f +
+                         Mathf.Sin(distance * 0.51f) * 0.07f);
+                    point.y = AlpineVillageTerrainSampler.SampleHeight(
+                        plan, new Vector2(point.x, point.z)) + WetGroundLift;
+                    centres.Add(point);
+                    rights.Add(right);
+                    halfWidths.Add(Mathf.Lerp(first.HalfWidth, second.HalfWidth, amount) *
+                        Mathf.Lerp(0.10f, 0.30f, patch) * taper);
+                }
             }
 
             if (centres.Count >= 2)
@@ -379,86 +430,115 @@ namespace BarPromenade
                 MountainRoadSurfaceAppearance.Apply(
                     seepLine.GetComponent<Renderer>(),
                     MountainRoadSurfaceKind.ForestFloor,
-                    WetGroundColor);
+                    SeepGroundColor);
             }
 
-            // And a wider apron along the brook itself, so the channel is not
-            // a dark line in unbroken white with nothing between them.
-            centres.Clear();
-            rights.Clear();
-            halfWidths.Clear();
-            for (int index = 0; index < brook.Samples.Count; index++)
-            {
-                AlpineVillageBrookSample sample = brook.Samples[index];
-                Vector3 point = sample.Position;
-                point.y = AlpineVillageTerrainSampler.SampleHeight(
-                    plan,
-                    new Vector2(point.x, point.z)) + WetGroundLift;
-                centres.Add(point);
-                rights.Add(sample.Right);
-                // A damp MARGIN, not an apron. Swept wide this ribbon is a
-                // hard-edged dark polygon lying across the hillside; the
-                // channel and the snow that keeps off it already do the
-                // work, and this only has to soften where they meet.
-                halfWidths.Add(sample.HalfWidth + 0.45f);
-            }
-
-            GameObject banks = CreateGroundRibbon(
-                "Spring Wet Banks",
-                parent,
-                centres,
-                rights,
-                halfWidths,
-                WetGroundCrossSteps);
-            MountainRoadSurfaceAppearance.Apply(
-                banks.GetComponent<Renderer>(),
-                MountainRoadSurfaceKind.ForestFloor,
-                WetGroundColor);
         }
 
         private static void BuildBed(
             Transform parent,
-            AlpineVillageBrookPlan brook)
+            AlpineVillagePlan plan,
+            IReadOnlyList<AlpineVillageBrookSample> samples)
         {
-            var centres = new List<Vector3>();
-            var rights = new List<Vector3>();
-            var halfWidths = new List<float>();
-
-            for (int index = 0; index < brook.Samples.Count; index++)
+            // One cross-section owns bed and both banks. No wet-ground sheet
+            // crosses the water or overlays the bed. Each outer edge follows
+            // the same refined ground triangles as the terrain collider.
+            const int Strips = 8;
+            var profiles = new Vector3[samples.Count][];
+            for (int index = 0; index < samples.Count; index++)
             {
-                AlpineVillageBrookSample sample = brook.Samples[index];
-                Vector3 point = sample.Position;
-                point.y -= sample.BedDepth;
-                centres.Add(point);
-                rights.Add(sample.Right);
-                halfWidths.Add(sample.HalfWidth + BedOverhang);
+                profiles[index] = CreateBedProfile(plan, samples[index]);
             }
+            var vertices = new List<Vector3>(samples.Count * Strips * 2);
+            var uvs = new List<Vector2>(vertices.Capacity);
+            var stoneTriangles = new List<int>();
+            var bankTriangles = new List<int>();
+            for (int strip = 0; strip < Strips; strip++)
+            {
+                bool bank = strip < 2 || strip >= Strips - 2;
+                float pitch = MountainRoadSurfaceAppearance.GetRecipe(bank
+                    ? MountainRoadSurfaceKind.ForestFloor
+                    : MountainRoadSurfaceKind.LayeredStone).MetersPerTile;
+                int start = vertices.Count;
+                for (int index = 0; index < samples.Count; index++)
+                {
+                    for (int edge = 0; edge < 2; edge++)
+                    {
+                        Vector3 point = profiles[index][strip + edge];
+                        vertices.Add(point);
+                        uvs.Add(new Vector2(point.x, point.z) / pitch);
+                    }
+                }
+                List<int> triangles = bank ? bankTriangles : stoneTriangles;
+                for (int index = 0; index < samples.Count - 1; index++)
+                {
+                    int here = start + index * 2;
+                    triangles.Add(here);
+                    triangles.Add(here + 2);
+                    triangles.Add(here + 1);
+                    triangles.Add(here + 1);
+                    triangles.Add(here + 2);
+                    triangles.Add(here + 3);
+                }
+            }
+            var mesh = new Mesh { name = "Spring Brook Bed Mesh",
+                hideFlags = HideFlags.HideAndDontSave, subMeshCount = 2 };
+            mesh.SetVertices(vertices);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(stoneTriangles, 0);
+            mesh.SetTriangles(bankTriangles, 1);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            var host = new GameObject("Spring Brook Bed");
+            host.transform.SetParent(parent, false);
+            host.AddComponent<MeshFilter>().sharedMesh = mesh;
+            host.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+            host.AddComponent<MeshCollider>().sharedMesh = mesh;
+            MeshRenderer renderer = host.AddComponent<MeshRenderer>();
+            renderer.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial,
+                RuntimePrimitiveFactory.DefaultMaterial };
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            MountainRoadSurfaceAppearance.ApplyCombined(renderer,
+                MountainRoadSurfaceKind.LayeredStone, BedColor, 0);
+            MountainRoadSurfaceAppearance.ApplyCombined(renderer,
+                MountainRoadSurfaceKind.ForestFloor, WetGroundColor, 1);
+        }
 
-            GameObject bed = CreateGroundRibbon(
-                "Spring Brook Bed",
-                parent,
-                centres,
-                rights,
-                halfWidths,
-                BedCrossSteps);
-            MountainRoadSurfaceAppearance.Apply(
-                bed.GetComponent<Renderer>(),
-                MountainRoadSurfaceKind.LayeredStone,
-                BedColor);
+        private static Vector3[] CreateBedProfile(AlpineVillagePlan plan,
+            AlpineVillageBrookSample sample)
+        {
+            float half = sample.HalfWidth;
+            float Margin(int side) => 0.30f +
+                Mathf.Sin(sample.Distance * 1.07f + side * 1.3f) * 0.055f +
+                Mathf.Sin(sample.Distance * 2.19f - side * 0.8f) * 0.035f;
+            float left = Margin(-1);
+            float right = Margin(1);
+            float[] offsets = { -half - left, -half - left * 0.5f,
+                -half, -half * 0.55f, 0f, half * 0.55f, half,
+                half + right * 0.5f, half + right };
+            var profile = new Vector3[offsets.Length];
+            for (int edge = 0; edge < profile.Length; edge++)
+            {
+                Vector3 point = sample.Position + sample.Right * offsets[edge];
+                point.y = AlpineVillageTerrainSampler.SampleMeshHeight(plan,
+                    new Vector2(point.x, point.z)) + WetGroundLift;
+                profile[edge] = point;
+            }
+            return profile;
         }
 
         private static void BuildChannelWater(
             Transform parent,
-            AlpineVillageBrookPlan brook,
+            IReadOnlyList<AlpineVillageBrookSample> samples,
             IDictionary<string, Transform> semanticObjects)
         {
             var centres = new List<Vector3>();
             var rights = new List<Vector3>();
             var halfWidths = new List<float>();
 
-            for (int index = 0; index < brook.Samples.Count; index++)
+            for (int index = 0; index < samples.Count; index++)
             {
-                AlpineVillageBrookSample sample = brook.Samples[index];
+                AlpineVillageBrookSample sample = samples[index];
                 centres.Add(sample.Position);
                 rights.Add(sample.Right);
                 halfWidths.Add(sample.HalfWidth);
@@ -487,19 +567,11 @@ namespace BarPromenade
             Transform parent,
             AlpineVillageBrookPlan brook)
         {
-            // A RIBBON, not a Rect. `CreateSlopedSurface` takes an
-            // axis-aligned footprint, and the catch is turned to face the
-            // ledge - so a rect sheet sat across the stonework at an angle
-            // and only a corner of it showed inside the basin. Swept along
-            // the catch's own axis it fits whatever way the trough is
-            // pointing.
-            Vector3 along = brook.LedgeFacing;
-            along.y = 0f;
-            along = along.sqrMagnitude <= 0.000001f
-                ? Vector3.forward
-                : along.normalized;
-            var right = new Vector3(along.z, 0f, -along.x);
-            float half = brook.BowlSize.y * 0.5f - BowlWaterInset;
+            // The authored inner wall faces, after footprint scaling, on
+            // the catch's own rotated axes.
+            Vector3 along = brook.BowlFacing;
+            Vector3 right = brook.BowlOutletDirection;
+            Vector2 inner = brook.BowlInnerHalfSize;
             var centres = new List<Vector3>();
             var rights = new List<Vector3>();
             var halfWidths = new List<float>();
@@ -508,11 +580,26 @@ namespace BarPromenade
             {
                 float amount =
                     index / (float)(Sections - 1) * 2f - 1f;
-                Vector3 point = brook.BowlCenter + along * (amount * half);
-                point.y = brook.BowlWaterTopY;
+                Vector3 point = brook.BowlCenter + along * (amount * inner.y);
+                point.y = brook.BowlCenter.y + BowlBedLift;
                 centres.Add(point);
                 rights.Add(right);
-                halfWidths.Add(brook.BowlSize.x * 0.5f - BowlWaterInset);
+                halfWidths.Add(inner.x);
+            }
+
+            // The swale follows the brook, not the inside of this catch.
+            // Cover uncut ground with wet stone. The former water was buried
+            // in that ground and only 12 mm above the imported floor, making
+            // its exposed sliver entirely intersection foam.
+            GameObject bed = CreateGroundRibbon(
+                "Spring Bowl Bed", parent, centres, rights, halfWidths, 3);
+            MountainRoadSurfaceAppearance.Apply(bed.GetComponent<Renderer>(),
+                MountainRoadSurfaceKind.LayeredStone, BedColor);
+            for (int index = 0; index < centres.Count; index++)
+            {
+                Vector3 point = centres[index];
+                point.y = brook.BowlWaterTopY;
+                centres[index] = point;
             }
 
             GameObject water = CityWaterSurfaceFactory.CreateRibbonSurface(
@@ -524,6 +611,24 @@ namespace BarPromenade
                 3,
                 AlpineSpringWaterResources.PoolMaterial);
             ConfigureWaterRenderer(water);
+
+            // Start at the bowl's edge with no coplanar overlap, then share
+            // the last cross-section and water material with the brook.
+            centres.Clear();
+            rights.Clear();
+            halfWidths.Clear();
+            Vector3 inside = brook.BowlCenter + right * inner.x;
+            inside.y = brook.BowlWaterTopY;
+            centres.Add(inside);
+            centres.Add(brook.OverflowLip);
+            rights.Add(-along);
+            rights.Add(brook.Samples[0].Right);
+            halfWidths.Add(brook.OverflowWidth * 0.5f);
+            halfWidths.Add(brook.Samples[0].HalfWidth);
+            GameObject spill = CityWaterSurfaceFactory.CreateRibbonSurface(
+                "Spring Bowl Overflow", parent, centres, rights, halfWidths,
+                WaterCrossSteps, AlpineSpringWaterResources.BrookMaterial);
+            ConfigureWaterRenderer(spill);
         }
 
         /// <summary>
@@ -540,70 +645,28 @@ namespace BarPromenade
             for (int index = 0; index < brook.Seeps.Count; index++)
             {
                 AlpineVillageBrookSeep seep = brook.Seeps[index];
+                Vector3 fall = seep.Mouth - seep.Landing;
                 var column = RuntimePrimitiveFactory.CreateMaterialBox(
                     $"Spring Seep {index:00}",
                     parent,
-                    seep.Mouth - Vector3.up * (seep.Fall * 0.5f),
-                    new Vector3(seep.Width, seep.Fall, FallThickness),
+                    (seep.Mouth + seep.Landing) * 0.5f,
+                    new Vector3(seep.Width, fall.magnitude, FallThickness),
                     AlpineSpringWaterResources.FallMaterial,
                     false);
+                column.transform.rotation = Quaternion.LookRotation(
+                    Vector3.Cross(Vector3.Cross(Vector3.up, seep.Outward), fall),
+                    fall.normalized);
                 ConfigureWaterRenderer(column);
 
-                Vector3 landing = seep.Mouth;
-                landing.y -= seep.Fall - SplashLift;
+                Vector3 landing = seep.Landing + Vector3.up * SplashLift;
                 var ring = RuntimePrimitiveFactory.CreateMaterialBox(
                     $"Spring Seep Splash {index:00}",
                     parent,
                     landing,
                     new Vector3(
-                        seep.Width * 3.4f,
+                        seep.Width * 2f,
                         SplashThickness,
-                        seep.Width * 3.4f),
-                    AlpineSpringWaterResources.SplashMaterial,
-                    false);
-                ConfigureWaterRenderer(ring);
-            }
-        }
-
-        private static void BuildCascades(
-            Transform parent,
-            AlpineVillageBrookPlan brook)
-        {
-            for (int index = 0; index < brook.Cascades.Count; index++)
-            {
-                AlpineVillageBrookCascade cascade = brook.Cascades[index];
-                Vector3 forward = cascade.Forward;
-                forward.y = 0f;
-                forward = forward.sqrMagnitude <= 0.000001f
-                    ? Vector3.forward
-                    : forward.normalized;
-
-                var face = RuntimePrimitiveFactory.CreateMaterialBox(
-                    $"Spring Cascade {index:00}",
-                    parent,
-                    cascade.Lip - Vector3.up * (cascade.Drop * 0.5f),
-                    new Vector3(
-                        cascade.Width,
-                        cascade.Drop,
-                        FallThickness),
-                    AlpineSpringWaterResources.FallMaterial,
-                    false);
-                face.transform.rotation = Quaternion.LookRotation(
-                    forward,
-                    Vector3.up);
-                ConfigureWaterRenderer(face);
-
-                Vector3 foot = cascade.Lip +
-                    forward * (cascade.Width * 0.35f);
-                foot.y -= cascade.Drop - SplashLift;
-                var ring = RuntimePrimitiveFactory.CreateMaterialBox(
-                    $"Spring Cascade Splash {index:00}",
-                    parent,
-                    foot,
-                    new Vector3(
-                        cascade.Width * 1.25f,
-                        SplashThickness,
-                        cascade.Width * 1.25f),
+                        seep.Width * 2f),
                     AlpineSpringWaterResources.SplashMaterial,
                     false);
                 ConfigureWaterRenderer(ring);

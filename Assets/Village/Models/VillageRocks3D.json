@@ -1,0 +1,146 @@
+{
+  "generator": "tools/build-village-rocks-3d-model.py",
+  "generator_version": "1.0.0",
+  "design_id": "alpine_village_bedded_rock_v1",
+  "build_signature": "253c88c6d4a45f5ae00ee2f3986a3e5d98049817989c10808e4406bfbaf93380",
+  "scale_mode": "fixed_metres",
+  "ridge_rise_per_metre": 3.6,
+  "variant_count": 4,
+  "mesh_count": 8,
+  "triangle_count": 1376,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "uv_mode": "projected_metres",
+  "parts": [
+    {
+      "mesh": "GEO_VillageRock_Variant00_Stone",
+      "variant": 0,
+      "role": "Stone",
+      "bounds_min_unity": [
+        -9.5025,
+        0.0,
+        0.0
+      ],
+      "bounds_max_unity": [
+        9.5025,
+        45.614546655523476,
+        16.770707404312077
+      ],
+      "triangles": 224
+    },
+    {
+      "mesh": "GEO_VillageRock_Variant00_Snow",
+      "variant": 0,
+      "role": "Snow",
+      "bounds_min_unity": [
+        -9.450000000000001,
+        8.27861407124455,
+        0.11
+      ],
+      "bounds_max_unity": [
+        9.450000000000001,
+        46.3348934232037,
+        13.020891953221856
+      ],
+      "triangles": 120
+    },
+    {
+      "mesh": "GEO_VillageRock_Variant01_Stone",
+      "variant": 1,
+      "role": "Stone",
+      "bounds_min_unity": [
+        -10.86,
+        0.0,
+        0.0
+      ],
+      "bounds_max_unity": [
+        10.86,
+        47.68968630629815,
+        17.34713508508282
+      ],
+      "triangles": 224
+    },
+    {
+      "mesh": "GEO_VillageRock_Variant01_Snow",
+      "variant": 1,
+      "role": "Snow",
+      "bounds_min_unity": [
+        -10.8,
+        7.274259497499997,
+        0.11
+      ],
+      "bounds_max_unity": [
+        10.8,
+        48.32295202184774,
+        13.63026117337167
+      ],
+      "triangles": 120
+    },
+    {
+      "mesh": "GEO_VillageRock_Variant02_Stone",
+      "variant": 2,
+      "role": "Stone",
+      "bounds_min_unity": [
+        -8.5975,
+        0.0,
+        0.0
+      ],
+      "bounds_max_unity": [
+        8.5975,
+        43.838500567756306,
+        16.277361268821195
+      ],
+      "triangles": 224
+    },
+    {
+      "mesh": "GEO_VillageRock_Variant02_Snow",
+      "variant": 2,
+      "role": "Snow",
+      "bounds_min_unity": [
+        -8.17,
+        6.0392486863041785,
+        0.11
+      ],
+      "bounds_max_unity": [
+        8.55,
+        42.356635621251606,
+        12.055313413170882
+      ],
+      "triangles": 120
+    },
+    {
+      "mesh": "GEO_VillageRock_Variant03_Stone",
+      "variant": 3,
+      "role": "Stone",
+      "bounds_min_unity": [
+        -10.18125,
+        0.0,
+        0.0
+      ],
+      "bounds_max_unity": [
+        10.18125,
+        46.097027289886334,
+        16.904729802746203
+      ],
+      "triangles": 224
+    },
+    {
+      "mesh": "GEO_VillageRock_Variant03_Snow",
+      "variant": 3,
+      "role": "Snow",
+      "bounds_min_unity": [
+        -10.125,
+        6.692317390981542,
+        0.2932781584585383
+      ],
+      "bounds_max_unity": [
+        9.675,
+        45.75262046561201,
+        12.940260019195506
+      ],
+      "triangles": 120
+    }
+  ]
+}

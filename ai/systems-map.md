@@ -28,6 +28,7 @@ A row never carries a status outside this table. Product-level scope cuts
 
 | System | Guarantee | Key files | Status |
 | --- | --- | --- | --- |
+| Village art pass | Detailed house joinery and neutral facade sheets; rock ledges and Return canopy preserve the bowl and routes. | `VillageAssetProvider`, `VillageFacadeAppearance`, `AlpineVillageRockBuilder` | Current |
 | Independent rules assembly | Calendar/day schedule, input priorities and temporary vehicle ownership have no Unity dependencies. | `Scripts/Rules`, `BarPromenade.Rules.asmdef` | Current |
 | Shared input actions | One binding API serves common actions and preserves existing controls; pause and transitions take priority. | `GameInput`, `GameInputPolicy` | Current |
 | Performance capture | Opt-in CPU/GPU/frame/GC and hot-scope distributions; unavailable counters are not reported as zero. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |
@@ -127,7 +128,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City route planning | Deterministic ordered shortest paths over generated street and park-path edges with a binary min-heap. | `Runtime/Map`, `CityLayout` | Current |
 | Player motor | Shared tank movement/run uses constrained velocity and common input; contextual approaches retain their own owner. | `PlayerMotor`, `PlayerDirectionalInput` | Current |
 | Third-person chase camera | Shared collision-aware chase/orbit blends cinematic motion and yields to owned fixed/modal shots. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
-| Home fixed camera | Home uses authored fixed shots with smooth transitions and explicit contextual camera ownership. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController` | Current |
+| Home fixed camera | Home uses authored fixed shots with smooth transitions and explicit contextual camera ownership; the main-room shot pans up to 18/9 degrees, and only as far as it must, to keep the hero framed. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
 | Modular 3D hero presentation | One Hero V2 in nine gameplay roots: 34 parts / 2,384 triangles, 31 bones and 41 actions. | `Player3D*`, `PlayerFactory` | Current |
 | Silent Hill attention | Layered gaze reacts to nearby authored targets within rig limits and yields to contextual ownership. | `PlayerAttention{Rules,Controller,Magnet}`, `IntoxicationHeadModel` | Current |

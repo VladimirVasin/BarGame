@@ -14,10 +14,10 @@ namespace BarPromenade
         public const int FireLightCount = 1;
 
         /// <summary>
-        /// Four: the two that flank the hearth downstairs and one in each
-        /// upper bedroom. The village facade already lights one upper pane
-        /// per long wall, so the interior is answering openings the exterior
-        /// always showed.
+        /// Four selected practical spills: the two that flank the hearth
+        /// downstairs and one in each upper bedroom. The complete sixteen-
+        /// window layout shares the room lighting; adding a pane does not
+        /// add another realtime lamp or overpower the hearth.
         /// </summary>
         public const int WindowLightCount = 4;
 

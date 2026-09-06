@@ -24,21 +24,51 @@ namespace BarPromenade
     {
         public const string RootName = "Park Fountain Water";
 
-        // The batched fountain's numbers, in recipe space: the water
-        // plane the old grey slab occupied, held inside the rim.
-        internal const float BasinWaterTopY = 0.36f;
-        internal const float BasinWaterHalf = 2.59f;
+        // THE MODEL'S numbers, in recipe space, measured off the
+        // imported meshes rather than the recipe that no longer draws
+        // them (`build_park_fountain_and_statue` in
+        // tools/build-city-misc-3d-model.py): the basin is a twenty
+        // sided stone ring, outer radius 3.20, inner face 2.72, floor
+        // top 0.28, rim top 0.82. The water was authored when the
+        // fountain was still four boxes, and a square sheet in a round
+        // bowl hung its four corners over the grass - so the sheet is
+        // a disc drawn to the wall's own circumradius, buried in the
+        // stone between the wall's corners instead of leaving a ring
+        // of dry floor.
+        internal const float BasinInnerRadius = 2.72f;
+        internal const int BasinSides = 40;
+        internal const float BasinFloorTopY = 0.28f;
+        internal const float BasinRimTopY = 0.82f;
 
-        // The statue's spout arms end at ±1.01 on the tangent axis
-        // (arm centre 0.62, half-length 0.39); the pour leaves just
-        // under the arm's underside and dips below the basin surface
-        // so the join is never a visible seam.
-        internal const float SpoutTipOffset = 1.01f;
-        internal const float SpoutMouthY = 2.92f;
+        // Water halfway up the rim: the old 0.36 was eight centimetres
+        // over the floor of a basin walled 0.54 deep, so the fountain
+        // read as an empty trough with a puddle in it.
+        internal const float BasinWaterTopY = 0.58f;
+
+        // The statue's two spout tubes end at ±0.72 on the tangent
+        // axis with their tip centre at 3.30 and a 0.07 radius, so the
+        // pour leaves just inside the mouth and dips below the basin
+        // surface, and the join is never a visible seam at either end.
+        internal const float SpoutTipOffset = 0.72f;
+        internal const float SpoutMouthY = 3.26f;
         internal const float StreamThickness = 0.11f;
         internal const float StreamPlunge = 0.10f;
         internal const float SplashSize = 0.62f;
-        internal const float SplashThickness = 0.03f;
+
+        // The splash rides this far over the sheet: clear of the
+        // breathing centimetre of chop the basin shader displaces the
+        // surface by, so the two never fight for the same pixel.
+        internal const float SplashThickness = 0.035f;
+        internal const int SplashSides = 16;
+
+        // The pour leans out as it falls. The statue's arms are short
+        // and the pedestal under it flares back out to 0.70 at the
+        // water line, so a plumb drop from the spout would pour onto
+        // the stone instead of into the basin - and water leaving a
+        // spout sideways travels sideways anyway. Nine degrees off
+        // plumb clears the pedestal with the splash ring to spare.
+        internal const float PedestalWaterlineRadius = 0.70f;
+        internal const float StreamLandingOffset = 1.15f;
 
         // The reflection probe point: over the water, stepped off the
         // statue's axis so the statue is IN its own mirror instead of
@@ -108,20 +138,17 @@ namespace BarPromenade
                 out Vector3 tangent,
                 out Vector3 forward);
 
-            // The basin sheet. Decorations are axis-aligned and the
-            // basin is square, so the footprint needs no rotation.
+            // The basin sheet, a disc to the rim's inner face. The
+            // bowl is a ring of revolution, so no rotation of the
+            // footprint can matter and none is applied.
             float top = origin.y + BasinWaterTopY;
             GameObject basin = CityWaterSurfaceFactory
-                .CreateSlopedSurface(
+                .CreateDiscSurface(
                     $"Fountain Basin Water {ordinal}",
                     root,
-                    Rect.MinMaxRect(
-                        origin.x - BasinWaterHalf,
-                        origin.z - BasinWaterHalf,
-                        origin.x + BasinWaterHalf,
-                        origin.z + BasinWaterHalf),
-                    top,
-                    top,
+                    new Vector3(origin.x, top, origin.z),
+                    BasinInnerRadius,
+                    BasinSides,
                     CityFountainWaterResources.BasinMaterial);
             ConfigureRenderer(basin);
 
@@ -148,39 +175,46 @@ namespace BarPromenade
             for (int side = -1; side <= 1; side += 2)
             {
                 Vector3 mouth = origin +
-                                tangent * (side * SpoutTipOffset);
-                float bottom = top - StreamPlunge;
-                float height = origin.y + SpoutMouthY - bottom;
+                                tangent * (side * SpoutTipOffset) +
+                                Vector3.up * SpoutMouthY;
+                Vector3 landing = origin +
+                                  tangent *
+                                  (side * StreamLandingOffset) +
+                                  Vector3.up *
+                                  (BasinWaterTopY - StreamPlunge);
+                Vector3 fall = mouth - landing;
                 GameObject stream =
                     RuntimePrimitiveFactory.CreateMaterialBox(
                         $"Fountain Stream {ordinal} {side}",
                         root,
-                        new Vector3(
-                            mouth.x,
-                            bottom + height * 0.5f,
-                            mouth.z),
+                        (mouth + landing) * 0.5f,
                         new Vector3(
                             StreamThickness,
-                            height,
+                            fall.magnitude,
                             StreamThickness),
                         CityFountainWaterResources.StreamMaterial,
                         false);
+                stream.transform.localRotation =
+                    Quaternion.FromToRotation(
+                        Vector3.up,
+                        fall.normalized);
                 ConfigureRenderer(stream);
 
-                GameObject splash =
-                    RuntimePrimitiveFactory.CreateMaterialBox(
+                // A ring, not a slab: the splash shader reads world
+                // position alone, so the patch can be any shape, and a
+                // square one on open water reads as a decal lying
+                // there rather than as water being hit.
+                GameObject splash = CityWaterSurfaceFactory
+                    .CreateDiscSurface(
                         $"Fountain Splash {ordinal} {side}",
                         root,
                         new Vector3(
-                            mouth.x,
-                            top + SplashThickness * 0.5f,
-                            mouth.z),
-                        new Vector3(
-                            SplashSize,
-                            SplashThickness,
-                            SplashSize),
-                        CityFountainWaterResources.SplashMaterial,
-                        false);
+                            landing.x,
+                            top + SplashThickness,
+                            landing.z),
+                        SplashSize * 0.5f,
+                        SplashSides,
+                        CityFountainWaterResources.SplashMaterial);
                 ConfigureRenderer(splash);
             }
         }

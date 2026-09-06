@@ -437,6 +437,176 @@ namespace BarPromenade.Tests.PlayMode
                 shots[0]);
         }
 
+        /// <summary>
+        /// The apartment is wider than one aim from the corner the main
+        /// room shot stands in: walking to the west wall used to carry the
+        /// hero off the left of the picture. The shot now follows him, but
+        /// only once he reaches the edge of the frame and only by the
+        /// least that brings him back, and the camera itself never leaves
+        /// the spot it was hung on.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator
+            Focus_HoldsTheAuthoredFrameThenPansTheLeastThatFramesHim()
+        {
+            PlayerCameraFollow follow = CreateFollow(
+                true,
+                out Camera camera,
+                out Transform target);
+            follow.SetCinematicMotionEnabled(false);
+            camera.aspect = 16f / 9f;
+            IReadOnlyList<HomeCameraShot> shots =
+                CreateApartmentShots();
+            GameObject controllerObject =
+                CreateObject("Home Focus Camera Controller");
+            HomeFixedCameraController controller =
+                controllerObject.AddComponent<
+                    HomeFixedCameraController>();
+
+            target.position = new Vector3(0f, 100f, -1.2f);
+            controller.Initialize(
+                follow,
+                target,
+                shots);
+            yield return null;
+
+            Assert.That(controller.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.MainRoom));
+            Assert.That(follow.FixedFocusActive, Is.True);
+            Assert.That(
+                follow.FixedFocusOffset.magnitude,
+                Is.LessThan(0.001f),
+                "A hero in the middle of the room must not move the shot.");
+            AssertRotation(
+                camera.transform.rotation,
+                shots[0].Rotation);
+            Assert.That(IsFramed(camera, target), Is.True);
+
+            target.position = new Vector3(-4.65f, 100f, 0.70f);
+            Assert.That(
+                IsFramed(camera, target),
+                Is.False,
+                "The west wall must be outside the authored frame, or " +
+                "this test proves nothing.");
+
+            follow.Snap();
+            Vector2 offset = follow.FixedFocusOffset;
+            Assert.That(
+                offset.x,
+                Is.LessThan(-1f),
+                "The shot must turn west after him.");
+            Assert.That(
+                Mathf.Abs(offset.x),
+                Is.LessThanOrEqualTo(
+                    MainRoomFocus.MaximumYawDegrees + 0.001f));
+            Assert.That(
+                Mathf.Abs(offset.y),
+                Is.LessThanOrEqualTo(
+                    MainRoomFocus.MaximumPitchDegrees + 0.001f));
+            Assert.That(IsFramed(camera, target), Is.True);
+            AssertVector(
+                camera.transform.position,
+                shots[0].Position);
+            Assert.That(
+                camera.transform.rotation.eulerAngles.z,
+                Is.EqualTo(0f).Within(0.01f)
+                    .Or.EqualTo(360f).Within(0.01f),
+                "A pan must not tip the horizon.");
+
+            float panned = follow.FixedFocusOffset.magnitude;
+            target.position = new Vector3(0f, 100f, -1.2f);
+            yield return null;
+            yield return null;
+
+            Assert.That(
+                follow.FixedFocusOffset.magnitude,
+                Is.LessThan(panned),
+                "The pan must ease back once he is framed again.");
+            follow.Snap();
+            Assert.That(
+                follow.FixedFocusOffset.magnitude,
+                Is.LessThan(0.001f),
+                "The shot must settle back onto its authored frame.");
+            AssertRotation(
+                camera.transform.rotation,
+                shots[0].Rotation);
+
+            target.position = new Vector3(-4.65f, 100f, 0.70f);
+            follow.Snap();
+            Assert.That(follow.FixedFocusOffset.magnitude,
+                Is.GreaterThan(1f));
+            follow.SetFixedPose(
+                shots[0].Position,
+                shots[0].Rotation,
+                shots[0].FieldOfView);
+
+            Assert.That(
+                follow.FixedFocusActive,
+                Is.False,
+                "A new owner of the camera must get the pose it asked " +
+                "for, not the pan the room was holding.");
+            AssertRotation(
+                camera.transform.rotation,
+                shots[0].Rotation);
+        }
+
+        private static readonly FixedCameraFocus MainRoomFocus =
+            FixedCameraFocus.Bounded(18f, 9f);
+
+        /// <summary>The home shots as the apartment authors them, lifted
+        /// a hundred metres so the test rig cannot meet the world.</summary>
+        private static IReadOnlyList<HomeCameraShot>
+            CreateApartmentShots()
+        {
+            return new[]
+            {
+                new HomeCameraShot(
+                    HomeCameraShotKind.MainRoom,
+                    new Rect(-4.65f, -3.65f, 9.30f, 4.40f),
+                    new Rect(-4.65f, -3.65f, 9.30f, 4.48f),
+                    new Vector3(-4.48f, 103.00f, -3.25f),
+                    new Vector3(28f, 55f, 0f),
+                    64f)
+                    .WithFocus(MainRoomFocus),
+                new HomeCameraShot(
+                    HomeCameraShotKind.Bathroom,
+                    new Rect(1.69f, 0.89f, 2.82f, 2.64f),
+                    new Rect(1.61f, 0.73f, 2.98f, 2.86f),
+                    new Vector3(1.82f, 102.20f, 0.86f),
+                    new Vector3(30f, 38f, 0f),
+                    92f)
+            };
+        }
+
+        /// <summary>Whether the hero stands whole inside the picture,
+        /// from the ground under his boots to the crown of his head.</summary>
+        private static bool IsFramed(
+            Camera camera,
+            Transform target)
+        {
+            return IsFramed(
+                       camera,
+                       target.position +
+                       Vector3.up * FixedCameraFocus.BodyLowerHeight) &&
+                   IsFramed(
+                       camera,
+                       target.position +
+                       Vector3.up * FixedCameraFocus.BodyUpperHeight);
+        }
+
+        private static bool IsFramed(
+            Camera camera,
+            Vector3 worldPoint)
+        {
+            Vector3 viewport =
+                camera.WorldToViewportPoint(worldPoint);
+            return viewport.z > 0f &&
+                   viewport.x >= 0f &&
+                   viewport.x <= 1f &&
+                   viewport.y >= 0f &&
+                   viewport.y <= 1f;
+        }
+
         private PlayerCameraFollow CreateFollow(
             bool interior,
             out Camera camera,

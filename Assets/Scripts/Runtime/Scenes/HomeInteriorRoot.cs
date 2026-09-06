@@ -536,6 +536,17 @@ namespace BarPromenade
                 FixedCamera);
         }
 
+        /// <summary>
+        /// How far the main-room shot may turn to keep the hero framed.
+        /// One aim from the corner it stands in cannot hold the whole
+        /// apartment - the west wall and the ground beside the camera
+        /// fall outside it - so the shot follows him by the least it can
+        /// and stops there. Everything else in the room stays put: the
+        /// pan is zero until he reaches the edge of the picture.
+        /// </summary>
+        private const float MainRoomFocusYawDegrees = 18f;
+        private const float MainRoomFocusPitchDegrees = 9f;
+
         private static IReadOnlyList<HomeCameraShot>
             CreateCameraShots(
                 HomeInteriorLayoutPlan plan,
@@ -583,7 +594,11 @@ namespace BarPromenade
                     mainHold,
                     new Vector3(-4.48f, 3.00f, -3.25f),
                     new Vector3(28f, 55f, 0f),
-                    64f),
+                    64f)
+                    .WithFocus(
+                        FixedCameraFocus.Bounded(
+                            MainRoomFocusYawDegrees,
+                            MainRoomFocusPitchDegrees)),
                 new HomeCameraShot(
                     HomeCameraShotKind.Bathroom,
                     bathroomActivation,

@@ -32,7 +32,13 @@ namespace BarPromenade
         CascadeStep = 13,
 
         /// <summary>A rounded stone bedded in the channel.</summary>
-        BedStone = 14
+        BedStone = 14,
+
+        /// <summary>A recessed frame and warm panes at human scale.</summary>
+        Window = 15,
+
+        /// <summary>Frame, plank leaf and hardware at the plan's door size.</summary>
+        Door = 16
     }
 
     /// <summary>
@@ -58,7 +64,9 @@ namespace BarPromenade
         Bracket = 13,
         Cable = 14,
         Rails = 15,
-        Sleepers = 16
+        Sleepers = 16,
+        Glass = 17,
+        GlassShade = 18
     }
 
     /// <summary>
@@ -123,10 +131,10 @@ namespace BarPromenade
     public sealed class VillageAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "Village/VillageAssetProvider";
-        public const string GeneratorVersion = "3.1.0";
+        public const string GeneratorVersion = "3.4.1";
         public const string DesignId = "village_house_archetypes_v3";
-        public const int ExpectedAssemblyCount = 22;
-        public const int ExpectedMeshCount = 48;
+        public const int ExpectedAssemblyCount = 25;
+        public const int ExpectedMeshCount = 58;
 
         /// <summary>
         /// The lane alternates two real architectural families. Small
@@ -245,7 +253,7 @@ namespace BarPromenade
         // the generator's `make_assemblies()` cannot drift apart in silence.
         // ----------------------------------------------------------------
 
-        public static int SupportedKindCount => 15;
+        public static int SupportedKindCount => 17;
 
         public static VillageAssetKind GetSupportedKind(int index)
         {
@@ -266,6 +274,8 @@ namespace BarPromenade
                 case 12: return VillageAssetKind.SpringLedge;
                 case 13: return VillageAssetKind.CascadeStep;
                 case 14: return VillageAssetKind.BedStone;
+                case 15: return VillageAssetKind.Window;
+                case 16: return VillageAssetKind.Door;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(index));
             }
@@ -283,6 +293,8 @@ namespace BarPromenade
                     return FacadeDetailVariantCount;
                 case VillageAssetKind.BedStone:
                     return BedStoneVariantCount;
+                case VillageAssetKind.SourceBowl:
+                    return 2;
                 default:
                     return 1;
             }
@@ -299,7 +311,8 @@ namespace BarPromenade
                         VillageMeshRole.Roof,
                         VillageMeshRole.Plinth,
                         VillageMeshRole.Chimney,
-                        VillageMeshRole.Snow
+                        VillageMeshRole.Snow,
+                        VillageMeshRole.Timber
                     };
                 case VillageAssetKind.Chapel:
                     return new[]
@@ -332,7 +345,22 @@ namespace BarPromenade
                         VillageMeshRole.Roof,
                         VillageMeshRole.Plinth,
                         VillageMeshRole.Chimney,
-                        VillageMeshRole.Snow
+                        VillageMeshRole.Snow,
+                        VillageMeshRole.Timber
+                    };
+                case VillageAssetKind.Window:
+                    return new[]
+                    {
+                        VillageMeshRole.Timber,
+                        VillageMeshRole.Glass,
+                        VillageMeshRole.GlassShade
+                    };
+                case VillageAssetKind.Door:
+                    return new[]
+                    {
+                        VillageMeshRole.Timber,
+                        VillageMeshRole.Walls,
+                        VillageMeshRole.Bracket
                     };
                 case VillageAssetKind.FacadeDetail:
                     return new[]
@@ -383,6 +411,10 @@ namespace BarPromenade
                 case VillageMeshRole.Timber:
                 case VillageMeshRole.Shutters:
                 case VillageMeshRole.Sleepers:
+                // Window panes use shared emission when placed, so their
+                // catalog surface is only the passive fallback/preview.
+                case VillageMeshRole.Glass:
+                case VillageMeshRole.GlassShade:
                     return MountainRoadSurfaceKind.Timber;
                 case VillageMeshRole.Plinth:
                 case VillageMeshRole.Rubble:

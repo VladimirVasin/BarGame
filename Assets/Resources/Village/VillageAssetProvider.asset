@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: VillageAssetProvider
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.VillageAssetProvider
   designId: village_house_archetypes_v3
-  buildSignature: b2d1e885de66c338e5f660847d7cd78f0491c239e65fecc50a1f92a05706dfec
+  buildSignature: f1440fbb87301427584fa0b5fb58442a2fa1502b8cec5498bf48822ca231a152
   entries:
   - kind: 0
     variant: 0
@@ -36,6 +36,10 @@ MonoBehaviour:
     role: 10
     mesh: {fileID: -8489142249026293978, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 0
+    variant: 0
+    role: 6
+    mesh: {fileID: -8005000145869252307, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
     variant: 1
     role: 0
     mesh: {fileID: -5768170750635533134, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
@@ -55,6 +59,10 @@ MonoBehaviour:
     variant: 1
     role: 10
     mesh: {fileID: -1414390201386567431, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 1
+    role: 6
+    mesh: {fileID: 2243293507759202677, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 1
     variant: 0
     role: 0
@@ -123,6 +131,10 @@ MonoBehaviour:
     variant: 0
     role: 10
     mesh: {fileID: -487992759908849334, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 6
+    variant: 0
+    role: 6
+    mesh: {fileID: 1194794775775077454, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 7
     variant: 0
     role: 11
@@ -186,7 +198,11 @@ MonoBehaviour:
   - kind: 11
     variant: 0
     role: 8
-    mesh: {fileID: 3959966458069028015, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+    mesh: {fileID: 5946312972798319491, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 11
+    variant: 1
+    role: 8
+    mesh: {fileID: -1150028837909456212, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 12
     variant: 0
     role: 8
@@ -207,3 +223,27 @@ MonoBehaviour:
     variant: 2
     role: 8
     mesh: {fileID: -6136398911055578720, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 15
+    variant: 0
+    role: 6
+    mesh: {fileID: 362773401193420461, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 15
+    variant: 0
+    role: 17
+    mesh: {fileID: 7279489694173237910, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 15
+    variant: 0
+    role: 18
+    mesh: {fileID: -547725672692075192, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 16
+    variant: 0
+    role: 6
+    mesh: {fileID: 612734937107393495, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 16
+    variant: 0
+    role: 0
+    mesh: {fileID: 5540600892794280880, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 16
+    variant: 0
+    role: 13
+    mesh: {fileID: -2524083927480940370, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}

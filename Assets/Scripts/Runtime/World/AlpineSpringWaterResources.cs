@@ -7,9 +7,8 @@ namespace BarPromenade
     /// The spring's water materials.
     ///
     /// Two of the city's shared water shader, told a mountain's numbers, and
-    /// the fountain's falling-column pair borrowed WHOLE for the seeps and
-    /// the cascades: white water is white water wherever it happens, and the
-    /// city already solved "a sheet derived from world XZ cannot fall".
+    /// the fountain's falling-column pair for the source seeps. The brook's
+    /// shallow riffles remain part of its continuous sloped water sheet.
     ///
     /// WHY A MATERIAL PER REACH AND NOT PER SEGMENT. `_FlowDirection` is a
     /// material uniform and the pattern is a function of world position, so a
@@ -41,6 +40,10 @@ namespace BarPromenade
         private const float BrookWaveLength = 1.6f;
         private const float BrookFlowSpeed = 0.85f;
 
+        internal const float VillageBrookWaveHeight = 0.004f;
+        internal const float VillageBrookMaximumWaveOffset =
+            VillageBrookWaveHeight * 1.73f;
+
         // The catch. Still, and shallow enough to see the stones in.
         private const float PoolWaveHeight = 0.006f;
         private const float PoolWaveLength = 1.1f;
@@ -63,7 +66,7 @@ namespace BarPromenade
         /// </summary>
         private const float BrookFoamDistance = 0.06f;
 
-        private const float PoolFoamDistance = 0.05f;
+        private const float PoolFoamDistance = 0.025f;
 
         private const float SlopeGain = 2.1f;
         private const float BrookFacetStrength = 0.35f;
@@ -164,6 +167,7 @@ namespace BarPromenade
                     brookMaterial = CreateMaterial(
                         "Alpine Brook Water (Shared)");
                     Configure(brookMaterial, true);
+                    ConfigureVillageBrook(brookMaterial);
                     CityWaterResources.Register(brookMaterial);
                 }
 
@@ -228,7 +232,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The falling column at a seep or a cascade. The fountain's own
+        /// The falling column at a source seep. The fountain's own
         /// material, unchanged: reusing it is the point, and giving the
         /// mountain a second copy of the same numbers would be a second
         /// thing to keep in step.
@@ -239,6 +243,22 @@ namespace BarPromenade
         /// <summary>The ring where a fall lands.</summary>
         public static Material SplashMaterial =>
             CityFountainWaterResources.SplashMaterial;
+
+        private static void ConfigureVillageBrook(Material material)
+        {
+            // Millimetre relief over a shallow bed. The old centimetre wave
+            // and refracted opaque image alternately exposed bed and snow at
+            // narrow bank clearances; moving normals carry the current here.
+            material.SetFloat(WaveHeightId, VillageBrookWaveHeight);
+            material.SetFloat(FlowSpeedId, 0.48f);
+            material.SetFloat(FoamDistanceId, 0.035f);
+            material.SetFloat(NormalStrengthId, 0.65f);
+            material.SetFloat(RefractionStrengthId, 0f);
+            material.SetFloat(FacetStrengthId, 0.12f);
+            material.SetFloat(CrestFoamStrengthId, 0.10f);
+            material.SetFloat(AdditionalSpecularId, 0.35f);
+            material.SetFloat(FresnelStrengthId, 0.24f);
+        }
 
         private static void Configure(Material material, bool flowing)
         {

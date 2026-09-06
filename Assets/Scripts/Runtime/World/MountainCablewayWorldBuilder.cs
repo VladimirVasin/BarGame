@@ -584,6 +584,12 @@ namespace BarPromenade
             Vector2 stationSize,
             bool drive)
         {
+            if (!drive)
+            {
+                UpperCablewayCanopyAssetProvider.Create(parent, stationSize);
+                return;
+            }
+
             TextureSurface(
                 RuntimePrimitiveFactory.CreateBox(
                     "Corrugated Station Canopy",
@@ -597,13 +603,6 @@ namespace BarPromenade
                     false),
                 MountainRoadSurfaceKind.PaintedMetal,
                 DarkSteel);
-            if (!drive)
-            {
-                // No service hut at the return end: there is no machinery in
-                // it to service.
-                return;
-            }
-
             // The hut's body is in the obstacle plan, on the MACHINE side of
             // the line now. Its door mirrors with it: the leaf faces back in
             // at the pad, which is the side a person reaches it from.

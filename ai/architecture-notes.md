@@ -4,6 +4,115 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted exception — Alpine Village material and mass pass (2026-09-06):**
+  The user accepted the implementation plan for bringing the village closer
+  to its artwork. The local `Art/Collection/16-alpine-village.png` is the
+  principal form reference, with the directed cableway loading paintings
+  grounding the upper station. This explicitly amends art-bible §10g's
+  continuous snow-only ridge surface: the same enclosing physical wall may
+  expose dark layered rock, with snow on its ledges and the bowl floor.
+  Passive deterministic Blender rock assemblies sit beyond the walkable toe;
+  the existing terrain remains the continuous collision and cableway-cut
+  authority. The shared opaque haze handoff, `0.40` wall visibility floor,
+  PS1 snap, closed bowl and absence of any panorama remain binding.
+  Two existing house archetypes gain structural timber courses, stone and
+  roof detail, irregular roof snow and framed divided warm windows. A bounded
+  Blender migration replaces only the Return station's passive canopy;
+  the Drive station, machinery, rope, docking and shelter contracts remain.
+  Lying snow may reach foundations outside each door's clear working area;
+  the old all-around terrain shelf is not a swept snow apron. The field
+  still carries no collision and every trodden route remains clear.
+  The warm haze/light, twelve houses, gentle uphill axis, mother's-house
+  landmark, severe weather and single existing dimming parameter are kept.
+  This adds no story fact, character, prop narrative, text, sound or action.
+  The paintings remain references: their brushwork is not a new world filter.
+  The user's follow-up requires substantially more house detail and more
+  coherent facades together. Authored joinery, door leaves and frames,
+  shutters, roof edges and rafters carry the detail; quieter deterministic
+  facade texture variants remain within the existing timber/stone families.
+  Door dimensions, docks and actions remain plan-owned.
+  The user's explicit follow-up rejects the sparse four-window facade and
+  restores an architectural rhythm with matching interior openings. Current
+  `Village3D` generator `3.4.1` contains `25` assemblies, `58` meshes and
+  `14,650 / 16,000` triangles; `MothersHouseInterior3D` generator `1.6.0`
+  contains `127` meshes and `15,796` triangles. `TopHouse` shares exactly
+  `16` real openings with the interior: eight per floor and four per facade.
+  `ArtSource/MothersHouse/WindowLayout.json` is the single authored table;
+  the interior generator exports `windows_m` and generates
+  `MothersHouseWindowLayout.cs`. `MothersHouseInteriorLayoutPlanner.Windows`
+  exposes that immutable table to both runtime scenes, while the village
+  generator derives its measured facade alignment from the interior manifest.
+  The four previous openings retain their positions and sizes. New openings
+  leave the door, cupboard and stair usable: the narrow south ground-floor
+  window sits at interior `x=4.14 m`, and the west stair window has a raised
+  centre at `2.70 m`. Other lower centres remain `1.55 m`, upper centres
+  `5.01 m`, and the upper floor remains `3.54 m`.
+  Interior axes rotate `180 degrees` into the plot, with interior entry `x=0`
+  aligned to the unchanged exterior door at `x=-0.36 m`. Only each wall's
+  normal coordinate projects onto the authored exterior; position along the
+  facade, size and floor height remain shared. Front/rear planes stay at
+  `z=+/-3.735 m`; side casings seat on the measured asymmetric timber, plinth
+  and masonry faces so their relief cannot obscure the panes. Each exterior
+  opening has a stable `Mothers House Window - {StableId}` parent; its glass
+  children keep their existing names and shared dimming behavior. Shutters
+  follow the retained north common-room opening, and the front snow practical
+  follows the actual upper south window. The whitewashed stair/corridor wing
+  reaches the rear
+  wall; raised eaves fit the existing `5.9 m` upper ceiling within the
+  unchanged `11 x 9 x 7 m` descriptor. Timber, wall and plinth end at
+  `x=1.47 m`, where the masonry begins; roof solids meet edge-to-edge. This
+  removes shared facade area geometrically, without depth bias or moving the
+  door, dock or collision. The generator validates casing support, separation
+  of the material volumes and exact door dimensions against its measured
+  geometry, and records the interior-derived opening table in the manifest
+  and build signature. It checks all sixteen casing envelopes, two openings
+  per floor on every facade, and the unbroken material seam.
+  The interior now authors complete pierced east/west walls on both floors.
+  `MothersHouseWindowCutaway` temporarily hides only the near side's upper
+  wall renderers and window frames/glass for a game camera outside that wall,
+  then restores them after the camera renders. This is local presentation
+  for the unchanged fixed camera poses, not missing authored wall geometry or
+  a change to structural collision, circulation, exterior opacity or the
+  practical-light budget.
+
+- **Current fact — Village spring and connected paths (2026-09-06):**
+  The spring's outdoor plot is not a solid building footprint. Its visible
+  approach targets `Brook.ApproachPosition`, in front of the actual catch;
+  the planner chooses the shortest clear route through its bounded bypass
+  candidates instead of forcing an outward detour. Building clearance and
+  the catch/ledge colliders still apply. A single ground-fitted mesh per path
+  chain joins round bends and ends without layered caps, at a maximum
+  `0.4 m` edge pitch with world-metre UVs shared with the main lane.
+  Its height clears both the analytic terrain and the actual triangle grid:
+  `SampleMeshHeight` interpolates the existing terrain diagonal, without
+  changing the terrain's planning or collision contract. Using only the
+  analytic sample left the spring approach buried by up to `0.058 m`.
+  `SourceBowl` variant `1` has a side spill opening, while variant `0` keeps
+  the chapel catch. The main catch's rotated inner footprint owns the water;
+  its surface stands `0.10 m` above the uncut ground datum over a wet stone
+  floor at `0.02 m`. The spill joins the first brook section, preserving
+  downstream samples. One profiled mesh now owns the bed and both banks;
+  the former full-width wet-ground overlay is removed. Render samples are
+  spaced at most `0.20 m` apart, with irregular `0.6–1.5 m` water width and
+  small stones beside the flow. The village has a separate shared
+  `BrookMaterial`, with wave-height setting `0.004 m` and zero refraction;
+  the mountain-road water keeps its own material settings. Bed and bank UVs
+  use world metres and receive their material pitch once through
+  `ApplyCombined`. `AlpineVillageTerrainGrid` inserts quarter-metre coordinates
+  around the brook into the existing two-metre grid; every old grid vertex
+  is retained and full rows/columns avoid T-junctions. Ground construction
+  and `SampleMeshHeight` use the same axes and triangle diagonal. The carve
+  follows the nearest finite reach and makes a shallow hollow. Bed and narrow
+  bank surfaces follow the actual ground, and the same mesh supplies their
+  collider. There are no raised rim walls or hanging bank edges; short rounded
+  stones replace the former flat cascade shelves while retaining sound
+  anchor identities.
+  The separate snow-drift mesh omits triangles whose conservative XZ extent
+  overlaps the spring's wet area, so coarse snow faces cannot bridge open
+  water. Snow remains visual only and retains its treading vertex indices.
+  The damp contour to the chapel reads as an irregular
+  narrow stain; it has no channel and is not another walking route.
+
 - **Accepted exception — Directed loading illustrations (2026-09-06):**
   The user explicitly requested illustrated loading screens with the progress
   bar at the bottom and approved four static painterly images based on the

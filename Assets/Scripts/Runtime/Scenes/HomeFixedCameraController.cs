@@ -125,6 +125,22 @@ namespace BarPromenade
             Position = position;
             Rotation = Normalize(rotation);
             FieldOfView = fieldOfView;
+            Focus = FixedCameraFocus.None;
+        }
+
+        private HomeCameraShot(
+            in HomeCameraShot source,
+            FixedCameraFocus focus)
+        {
+            Kind = source.Kind;
+            ActivationBounds = source.ActivationBounds;
+            HoldBounds = source.HoldBounds;
+            ActivationHeightRange = source.ActivationHeightRange;
+            HoldHeightRange = source.HoldHeightRange;
+            Position = source.Position;
+            Rotation = source.Rotation;
+            FieldOfView = source.FieldOfView;
+            Focus = focus;
         }
 
         public HomeCameraShotKind Kind { get; }
@@ -136,6 +152,19 @@ namespace BarPromenade
         public Quaternion Rotation { get; }
         public Vector3 EulerAngles => Rotation.eulerAngles;
         public float FieldOfView { get; }
+
+        /// <summary>How far this shot may turn to keep the hero framed.
+        /// A shot without one never moves.</summary>
+        public FixedCameraFocus Focus { get; }
+
+        /// <summary>This shot, allowed to pan onto the hero. The apartment
+        /// is wider than any one aim from its corner covers, so the main
+        /// room carries a focus while the tight rooms keep their authored
+        /// frame exactly.</summary>
+        public HomeCameraShot WithFocus(FixedCameraFocus focus)
+        {
+            return new HomeCameraShot(this, focus);
+        }
 
         public bool IsInActivationArea(Vector3 worldPosition)
         {
@@ -593,6 +622,10 @@ namespace BarPromenade
                 shot.Position,
                 shot.Rotation,
                 shot.FieldOfView);
+            if (shot.Focus.Enabled)
+            {
+                cameraFollow.SetFixedFocus(shot.Focus);
+            }
         }
     }
 }

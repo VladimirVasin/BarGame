@@ -8,12 +8,10 @@ the normalized descriptor cube: its origin is the descriptor centre, its
 ground plane is source ``Z=-0.5`` (Unity ``Y=-0.5``), and Unity scales it
 component-wise by the plot size.
 
-It deliberately ships **no doors and no window panes**.  Both scale with the
-descriptor, and the plots run from a four-metre cottage to the seven-metre
-house at the top of the lane - a door normalized into that cube is either a
-hatch or a barn opening.  They are drawn at real metre scale by the world
-builder instead, which is the church's doctrine: the imported model owns mass
-and material, the plan owns every opening a person uses.
+Openings remain plan-owned. The separate Window and Door assemblies are
+placed at human scale independently of the house descriptor; their frames,
+recesses, crossbars, planks, hinges, handle and warm panes are authored here.
+No opening reveals the empty interior of the closed house shell.
 
 It also introduces **no new surface sheet**.  Art bible 10g requires the
 village to raise no new material family, so every part here wears one of the
@@ -53,9 +51,9 @@ except ImportError as error:  # pragma: no cover - Blender entry point.
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATOR_VERSION = "3.1.0"
+GENERATOR_VERSION = "3.4.1"
 DESIGN_ID = "village_house_archetypes_v3"
-DISPLAY_NAME = "Village House Archetypes 3.0.0"
+DISPLAY_NAME = "Village House Archetypes 3.4.1"
 
 DEFAULT_BLEND = (
     ROOT / "ArtSource" / "Village" / "Blender" / "Village3D.blend"
@@ -88,16 +86,16 @@ Geometry = tuple[list[Vec3], list[Face]]
 
 
 PREVIEW_COLORS = {
-    "HouseWallA": (0.33, 0.185, 0.105, 1.0),
-    "HouseWallB": (0.28, 0.155, 0.088, 1.0),
+    "HouseWallA": (0.140, 0.147, 0.134, 1.0),
+    "HouseWallB": (0.160, 0.166, 0.150, 1.0),
     "HouseWallC": (0.37, 0.215, 0.120, 1.0),
     "HouseWallD": (0.30, 0.170, 0.098, 1.0),
-    "HouseRoof": (0.150, 0.115, 0.090, 1.0),
+    "HouseRoof": (0.130, 0.139, 0.130, 1.0),
     "RoofSnow": (0.690, 0.710, 0.690, 1.0),
     "HousePlinth": (0.235, 0.225, 0.200, 1.0),
     "HouseChimney": (0.265, 0.215, 0.185, 1.0),
     "TopHouseWall": (0.425, 0.385, 0.315, 1.0),
-    "TopHouseTimber": (0.285, 0.160, 0.090, 1.0),
+    "TopHouseTimber": (0.175, 0.180, 0.162, 1.0),
     "ChapelWhitewash": (0.560, 0.525, 0.455, 1.0),
     "ChapelRoof": (0.135, 0.105, 0.082, 1.0),
     "CartIron": (0.215, 0.105, 0.048, 1.0),
@@ -116,6 +114,10 @@ PREVIEW_COLORS = {
     "RailIron": (0.155, 0.082, 0.044, 1.0),
     "RailSleeper": (0.185, 0.115, 0.065, 1.0),
     "SourceStone": (0.300, 0.295, 0.270, 1.0),
+    "LogTimber": (0.125, 0.118, 0.100, 1.0),
+    "WindowFrame": (0.105, 0.110, 0.092, 1.0),
+    "WindowGlass": (0.98, 0.60, 0.25, 1.0),
+    "WindowShade": (0.56, 0.34, 0.15, 1.0),
 }
 
 # Representative plot sizes in source axes (X, Y-forward, Z-up).  The source
@@ -137,6 +139,8 @@ PREVIEW_DESCRIPTOR_SIZES = {
     "SpringLedge": (3.40, 2.10, 1.45),
     "CascadeStep": (1.55, 0.85, 0.40),
     "BedStone": (0.62, 0.58, 0.34),
+    "Window": (0.78, 0.20, 0.96),
+    "Door": (1.14, 0.32, 2.21),
 }
 
 
@@ -524,9 +528,8 @@ def triangular_root(angle: float, reach: float, width: float,
 
 HOUSE_ARCHETYPE_COUNT = 2
 
-# 43 before the spring gained real water: the ledge its seeps come out from
-# under, the step its cascades fall over and three bed stones.
-EXPECTED_MESH_COUNT = 48
+# The existing village/water library plus the separate metre-sized openings.
+EXPECTED_MESH_COUNT = 58
 HOUSE_WALL_TINTS = ("HouseWallA", "HouseWallB")
 HOUSE_FACADE_PLANES = {
     ("House", 0): 0.405,
@@ -610,6 +613,52 @@ def sloped_skin(
     return vertices, faces
 
 
+def settled_roof_drift(
+    x0: float, x1: float, y0: float, y1: float,
+    height_at, pattern: int, depth: float = 0.030,
+) -> Geometry:
+    """Closed faceted snow mass with a wind-shaped edge and uneven crown."""
+    columns = 4
+    rows = 8
+    lower: list[Vec3] = []
+    upper: list[Vec3] = []
+    for row in range(rows + 1):
+        along = row / rows
+        wave = math.sin(row * 1.63 + pattern * 0.89)
+        inset = (x1 - x0) * (0.055 + 0.035 * wave)
+        for column in range(columns + 1):
+            across = column / columns
+            x = x0 + inset + (x1 - x0 - inset * 1.7) * across
+            y = y0 + (y1 - y0) * along
+            y += (0.009 * math.sin(column * 1.4 + pattern)
+                  if row in {0, rows} else 0.0)
+            base = height_at(x) + 0.002
+            crown = math.sin(math.pi * across) ** 0.7
+            crown *= 0.68 + 0.32 * math.sin(along * math.pi)
+            thickness = 0.0045 + depth * crown * (0.88 + wave * 0.12)
+            lower.append((x, y, base))
+            upper.append((x, y, base + thickness))
+    count = len(lower)
+    vertices = lower + upper
+    faces: list[Face] = []
+    stride = columns + 1
+    for row in range(rows):
+        for column in range(columns):
+            a = row * stride + column
+            b, c, d = a + 1, a + stride + 1, a + stride
+            faces.extend(((d, c, b, a),
+                          (count + a, count + b, count + c),
+                          (count + a, count + c, count + d)))
+    border = (list(range(stride)) +
+              [row * stride + columns for row in range(1, rows + 1)] +
+              [rows * stride + column for column in range(columns - 1, -1, -1)] +
+              [row * stride for row in range(rows - 1, 0, -1)])
+    for index, a in enumerate(border):
+        b = border[(index + 1) % len(border)]
+        faces.append((a, b, count + b, count + a))
+    return vertices, faces
+
+
 def broken_roof_snow(
     left_x: float,
     left_z: float,
@@ -620,12 +669,7 @@ def broken_roof_snow(
     depth: float,
     pattern: int,
 ) -> Geometry:
-    """Wind-broken roof cover: one lee patch and two incomplete remnants.
-
-    A continuous white cap would turn the village into a postcard.  These
-    deterministic strips leave timber exposed at the ridge, eaves and one
-    end of every roof, while still making settled snow legible at lane range.
-    """
+    """A deep lee-side mass and a thinner wind-scoured opposite remnant."""
     def height_at(x: float) -> float:
         return roof_surface_height(
             x,
@@ -658,27 +702,14 @@ def broken_roof_snow(
         )
 
     return merge(
-        sloped_skin(
+        settled_roof_drift(
             primary[0], primary[1],
-            -depth * 0.92, depth * 0.20,
-            height_at,
-            far_left_inset=(primary[1] - primary[0]) * 0.07,
-            far_right_inset=(primary[1] - primary[0]) * 0.04),
-        sloped_skin(
-            primary[0] + (primary[1] - primary[0]) * 0.22,
-            primary[1] - (primary[1] - primary[0]) * 0.06,
-            depth * 0.34, depth * 0.88,
-            height_at,
-            0.011,
-            far_left_inset=(primary[1] - primary[0]) * 0.05,
-            far_right_inset=(primary[1] - primary[0]) * 0.11),
-        sloped_skin(
+            -depth * 0.94, depth * 0.94,
+            height_at, pattern),
+        settled_roof_drift(
             remnant[0], remnant[1],
-            -depth * 0.28, depth * 0.58,
-            height_at,
-            0.010,
-            far_left_inset=(remnant[1] - remnant[0]) * 0.16,
-            far_right_inset=(remnant[1] - remnant[0]) * 0.03),
+            -depth * 0.72, depth * 0.64,
+            height_at, pattern + 3, 0.017),
     )
 
 
@@ -721,6 +752,29 @@ def gabled_roof(
             (0.072, half_depth * 2.0, thickness * 0.88),
             0.012),
     )
+    carpentry: list[Geometry] = []
+    for front in (-1, 1):
+        face_y = front * (half_depth - 0.012)
+        # A continuous two-course verge covers the cut rafter ends at the
+        # gable; the silhouette belongs to one roof, not a staircase of logs.
+        for lift, radius in ((0.010, 0.008), (thickness - 0.008, 0.006)):
+            carpentry.append(tube_between(
+                (left_x + 0.015, face_y, left_base + lift),
+                (apex_x, face_y, apex_z + lift), radius, radius, 4))
+            carpentry.append(tube_between(
+                (apex_x, face_y, apex_z + lift),
+                (right_x - 0.015, face_y, right_base + lift), radius, radius, 4))
+    for index in range(6):
+        y = -half_depth + 0.045 + (half_depth * 2.0 - 0.090) * index / 5
+        for eave_x, eave_z, sign in ((left_x, left_base, 1),
+                                      (right_x, right_base, -1)):
+            inside_x = eave_x + sign * 0.090
+            slope = (apex_z - eave_z) / abs(apex_x - eave_x)
+            carpentry.append(tube_between(
+                (eave_x + sign * 0.012, y, eave_z - 0.008),
+                (inside_x, y, eave_z + slope * 0.090 - 0.008),
+                0.007, 0.007, 4))
+    roof = merge(roof, *carpentry)
     snow = broken_roof_snow(
         left_x,
         left_base + thickness,
@@ -731,6 +785,86 @@ def gabled_roof(
         half_depth,
         snow_pattern)
     return roof, snow
+
+
+def blockhouse_timbers(
+    left: float, right: float, half_depth: float,
+    bottom: float, eave: float, apex_x: float, apex_z: float,
+    *, joined_right: bool = False, course_pitch: float = 0.038,
+) -> Geometry:
+    """Close-set hewn courses and a structural sill above the masonry.
+
+    These shallow closed solids leave the original opaque shell and all
+    measured facade planes intact. Their relief is below the window reveal.
+    """
+    pieces: list[Geometry] = []
+    course_count = max(6, round((eave - bottom) / course_pitch))
+    step = (eave - bottom) / course_count
+    for row in range(course_count):
+        z = bottom + step * (row + 0.5)
+        for side in (-1, 1):
+            pieces.append(chamfered_box(
+                ((left + right) * 0.5, side * (half_depth + 0.001), z),
+                (right - left, 0.008, step * 0.90), 0.001))
+        # An attached wing replaces this return. No hidden row ends may
+        # protrude through its perpendicular material seam.
+        return_x = (left - 0.007,) if joined_right else (left - 0.007, right + 0.007)
+        for x in return_x:
+            pieces.append(chamfered_box(
+                (x, 0.0, z),
+                (0.012, half_depth * 2.0, step * 0.90), 0.001))
+    # The front/rear gables keep the same horizontal construction as the wall.
+    for row in range(1, max(2, int((apex_z - eave) / step))):
+        z = eave + row * step
+        amount = (z - eave) / (apex_z - eave)
+        low = left + (apex_x - left) * amount
+        high = right + (apex_x - right) * amount
+        if high - low < 0.055:
+            continue
+        low_z, high_z = z - step * 0.45, z + step * 0.45
+        lower_amount = (low_z - eave) / (apex_z - eave)
+        upper_amount = (high_z - eave) / (apex_z - eave)
+        profile = (
+            (left + (apex_x - left) * lower_amount, low_z),
+            (right + (apex_x - right) * lower_amount, low_z),
+            (right + (apex_x - right) * upper_amount, high_z),
+            (left + (apex_x - left) * upper_amount, high_z),
+        )
+        for side in (-1, 1):
+            centre_y = side * (half_depth + 0.001)
+            pieces.append(prism_y(profile, centre_y - 0.004, centre_y + 0.004))
+    for side in (-1, 1):
+        # The sill has real depth INTO the wall. Its exterior must share the
+        # ordinary course plane: a forward-projecting band cuts through the
+        # plan-owned door and low window panes when scaled by plot depth.
+        pieces.append(chamfered_box(
+            ((left + right) * 0.5 - (0.0045 if joined_right else 0.0),
+             side * (half_depth - 0.014), bottom + 0.006),
+            (right - left + (0.009 if joined_right else 0.018),
+             0.038, 0.038), 0.006))
+    return merge(*pieces)
+
+
+def foundation_courses(
+    left: float, right: float, half_depth: float,
+    bottom: float, top: float, pattern: int,
+) -> Geometry:
+    """Few broad, uneven stone courses rather than a smooth foundation slab."""
+    pieces: list[Geometry] = []
+    rows = max(2, round((top - bottom) / 0.070))
+    step = (top - bottom) / rows
+    for row in range(rows):
+        count = 5 + (row + pattern) % 2
+        width = (right - left) / count
+        for column in range(count):
+            z = bottom + step * (row + 0.5)
+            variation = 0.0008 * math.sin(column * 2.1 + row + pattern)
+            for side in (-1, 1):
+                pieces.append(chamfered_box(
+                    (left + width * (column + 0.5),
+                     side * (half_depth - 0.002), z + variation),
+                    (width - 0.004, 0.010, step - 0.004), 0.0015))
+    return merge(*pieces)
 
 
 def build_heide_house() -> AssemblySpec:
@@ -757,19 +891,6 @@ def build_heide_house() -> AssemblySpec:
         ),
         -wall_depth,
         wall_depth)
-
-    # Short projecting log ends break both side elevations without disturbing
-    # the flat +/-Y facade planes used by plan-owned doors and windows.
-    log_ends: list[Geometry] = []
-    for side in (-1.0, 1.0):
-        x = side * 0.456
-        for index, y in enumerate((-0.29, -0.10, 0.10, 0.29)):
-            z = -0.205 + index * 0.092
-            log_ends.append(chamfered_box(
-                (x, y, z),
-                (0.026, 0.115, 0.024),
-                0.005))
-    walls = merge(walls, *log_ends)
 
     roof, snow = gabled_roof(
         -0.5,
@@ -809,8 +930,12 @@ def build_heide_house() -> AssemblySpec:
             (0.148, 0.154, 0.030),
             0.009),
     )
+    plinth = merge(plinth, foundation_courses(
+        -0.455, 0.455, 0.395, -0.490, -0.280, variant))
+    timbers = blockhouse_timbers(
+        -0.448, 0.448, wall_depth, -0.265, 0.090, apex_x, apex_z)
     return village_house_assembly(
-        variant, walls, roof, plinth, chimney, snow)
+        variant, walls, roof, plinth, chimney, snow, timbers)
 
 
 def build_untergommer_house() -> AssemblySpec:
@@ -891,8 +1016,12 @@ def build_untergommer_house() -> AssemblySpec:
             (0.154, 0.160, 0.030),
             0.009),
     )
+    plinth = merge(plinth, foundation_courses(
+        -0.390, 0.390, 0.430, -0.485, -0.096, variant))
+    timbers = blockhouse_timbers(
+        -0.448, 0.448, wall_depth, -0.090, 0.124, apex_x, apex_z)
     return village_house_assembly(
-        variant, walls, roof, plinth, chimney, snow)
+        variant, walls, roof, plinth, chimney, snow, timbers)
 
 
 def village_house_assembly(
@@ -902,6 +1031,7 @@ def village_house_assembly(
     plinth: Geometry,
     chimney: Geometry,
     snow: Geometry,
+    timbers: Geometry,
 ) -> AssemblySpec:
     tint = HOUSE_WALL_TINTS[variant]
     return AssemblySpec(
@@ -920,6 +1050,9 @@ def village_house_assembly(
             PartSpec("GEO_VIL_House_Variant%02d_Snow" % variant,
                      "House", variant, "Snow", "WindSnow",
                      "RoofSnow", snow),
+            PartSpec("GEO_VIL_House_Variant%02d_Timber" % variant,
+                     "House", variant, "Timber", "Timber",
+                     "LogTimber", timbers),
         ),
     )
 
@@ -1131,120 +1264,73 @@ def build_firewood() -> AssemblySpec:
 
 
 def build_top_house() -> AssemblySpec:
-    """Jost-Sigristen-inspired terminal house, stripped of prestige signs.
+    """Closed two-storey timber house and its attached stair/corridor wing.
 
-    A broad cared-for timber block remains the lane's culmination.  The low
-    weathered masonry wing on local +X makes it a third architectural type,
-    not a larger copy of either cottage.  There is no fresco, heraldry,
-    balcony or museum ornament: mass and upkeep do all the work.
-
-    The five-role import contract is intentionally retained.  ``Walls`` is
-    the timber main block; the masonry material bucket called ``Chimney``
-    carries both the closed side wing and its actual chimney.
+    The ground and upper rooms are those of MothersHouseInterior. Their
+    shared opening table fits the existing upper ceiling at 5.9 metres.
+    The seam sits at the corridor's room-side edge, between real openings.
+    The front plane is unchanged, preserving the metre-sized door assembly.
     """
-    left_eave = 0.108
-    right_eave = 0.090
+    seam = 1.47 / 11.0
+    left_eave = 0.352
+    right_eave = 0.360
     apex_x = -0.142
-    apex_z = 0.370
+    apex_z = 0.430
     wall_depth = 0.415
 
-    # The main block is deliberately asymmetric in X, leaving the right third
-    # of the descriptor to a real attached wing.  Its +/-Y faces remain flat
-    # and share one plane with that wing.
     walls = prism_y(
-        (
-            (-0.460, -0.290),
-            (0.205, -0.290),
-            (0.205, right_eave),
-            (apex_x, apex_z),
-            (-0.460, left_eave),
-        ),
-        -wall_depth,
-        wall_depth)
+        ((-0.460, -0.270), (seam, -0.270),
+         (seam, right_eave), (apex_x, apex_z), (-0.460, left_eave)),
+        -wall_depth, wall_depth)
 
+    # Both roof solids meet edge-to-edge at the same structural seam. Their
+    # touching faces are internal; neither horizontal skin overlays another.
     main_roof, main_snow = gabled_roof(
-        -0.5,
-        left_eave,
-        apex_x,
-        apex_z,
-        0.265,
-        right_eave,
-        0.470,
-        0.050,
-        5)
-
-    # The masonry return is a complete four-sided wedge under its own low
-    # lean-to.  It overlaps the timber block slightly, so no oblique view can
-    # reveal an empty seam between the two closed masses.
+        -0.5, 0.380, apex_x, apex_z, seam, 0.398, 0.470, 0.035, 5)
     side_wing = prism_y(
-        (
-            (0.180, -0.5),
-            (0.470, -0.5),
-            (0.470, 0.040),
-            (0.180, 0.100),
-        ),
-        -0.205,
-        wall_depth)
+        ((seam, -0.5), (0.470, -0.5),
+         (0.470, 0.350), (seam, right_eave)),
+        -wall_depth, wall_depth)
     wing_roof = prism_y(
-        (
-            (0.140, 0.083),
-            (0.5, 0.023),
-            (0.5, 0.075),
-            (0.140, 0.143),
-        ),
-        -0.250,
-        0.465)
+        ((seam, 0.360), (0.5, 0.349), (0.5, 0.384), (seam, 0.395)),
+        -0.470, 0.470)
 
     def wing_roof_height(x: float) -> float:
-        amount = (x - 0.140) / (0.5 - 0.140)
-        return 0.143 + (0.075 - 0.143) * amount
+        amount = (x - seam) / (0.5 - seam)
+        return 0.395 + (0.384 - 0.395) * amount
 
-    wing_snow = sloped_skin(
-        0.185,
-        0.470,
-        -0.190,
-        0.395,
-        wing_roof_height,
-        0.011,
-        0.014,
-        0.028)
+    wing_snow = settled_roof_drift(
+        seam + 0.025, 0.470, -0.390, 0.395,
+        wing_roof_height, 7, 0.022)
     roof = merge(main_roof, wing_roof)
     snow = merge(main_snow, wing_snow)
 
+    # The plinth terminates at exactly the same seam. Closed boxes touch on
+    # an internal face; there is no shared area on the front or rear facade.
     plinth = merge(
         chamfered_box(
-            (-0.1275, 0.0, -0.385),
-            (0.695, 0.830, 0.230),
-            0.018),
-        # Two unmatched foundation repairs say "maintained", not "new".
+            ((-0.475 + seam) * 0.5, 0.0, -0.385),
+            (seam + 0.475, 0.830, 0.230), 0.018),
         chamfered_box(
-            (-0.355, 0.405, -0.392),
-            (0.180, 0.020, 0.175),
-            0.006),
+            (-0.355, 0.405, -0.392), (0.180, 0.020, 0.175), 0.006),
         chamfered_box(
-            (0.105, -0.405, -0.410),
-            (0.150, 0.020, 0.130),
-            0.006),
-    )
+            (0.040, -0.405, -0.410), (0.150, 0.020, 0.130), 0.006),
+        foundation_courses(-0.460, seam, wall_depth, -0.490, -0.280, 2))
 
     chimney_x = 0.335
     chimney = merge(
         side_wing,
         chamfered_box(
-            (chimney_x, -0.045, 0.315),
-            (0.120, 0.125, 0.330),
-            0.014),
+            (chimney_x, -0.045, 0.425), (0.120, 0.125, 0.110), 0.014),
         chamfered_box(
-            (chimney_x, -0.045, 0.485),
-            (0.158, 0.162, 0.030),
-            0.010),
-        # One old collar is enough to keep the whitewashed stack imperfect.
+            (chimney_x, -0.045, 0.485), (0.158, 0.162, 0.030), 0.010),
         chamfered_box(
-            (chimney_x + 0.008, -0.045, 0.235),
-            (0.145, 0.142, 0.050),
-            0.010),
-    )
+            (chimney_x + 0.008, -0.045, 0.410),
+            (0.145, 0.142, 0.050), 0.010))
 
+    timbers = blockhouse_timbers(
+        -0.455, seam, wall_depth, -0.272, left_eave, apex_x, apex_z,
+        joined_right=True, course_pitch=0.047)
     return AssemblySpec(
         "TopHouse", 0, "normalized_to_descriptor",
         (
@@ -1258,15 +1344,117 @@ def build_top_house() -> AssemblySpec:
                      "Chimney", "Masonry", "TopHouseWall", chimney),
             PartSpec("GEO_VIL_TopHouse_Snow", "TopHouse", 0, "Snow",
                      "WindSnow", "RoofSnow", snow),
+            PartSpec("GEO_VIL_TopHouse_Timber", "TopHouse", 0, "Timber",
+                     "Timber", "LogTimber", timbers),
+        ),
+    )
+
+
+def build_window() -> AssemblySpec:
+    """Human-sized opaque window: deep frame and six unequal warm panes.
+
+    Source +Y is outside. The sill reaches -0.5 so the normal library bounds
+    contract also covers this independent one-metre assembly. Glass stays
+    behind the crossbars and ahead of the house's continuous opaque facade.
+    """
+    frame = merge(
+        *(chamfered_box((side * 0.450, -0.05, 0.0),
+                        (0.100, 0.90, 0.94), 0.022)
+          for side in (-1, 1)),
+        chamfered_box((0.0, -0.025, -0.450),
+                      (1.0, 0.95, 0.100), 0.025),
+        chamfered_box((0.0, -0.05, 0.452),
+                      (1.0, 0.90, 0.096), 0.020),
+        chamfered_box((0.0, 0.380, -0.458),
+                      (0.996, 0.240, 0.070), 0.014),
+        chamfered_box((0.0, 0.300, 0.448),
+                      (1.000, 0.280, 0.090), 0.012),
+        box((0.0, 0.225, 0.0), (0.047, 0.19, 0.82)),
+        *(box((0.0, 0.225, z), (0.84, 0.19, 0.037))
+          for z in (-0.137, 0.137)),
+    )
+    bright: list[Geometry] = []
+    shade: list[Geometry] = []
+    for row, z in enumerate((-0.273, 0.0, 0.273)):
+        for column, x in enumerate((-0.216, 0.216)):
+            # Two softly veiled panes interrupt the single flat yellow panel.
+            target = shade if (row, column) in {(0, 0), (2, 1)} else bright
+            target.append(box((x, -0.130, z), (0.386, 0.060, 0.238)))
+    return AssemblySpec(
+        "Window", 0, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_Window_Timber", "Window", 0, "Timber",
+                     "Timber", "WindowFrame", frame),
+            PartSpec("GEO_VIL_Window_Glass", "Window", 0, "Glass",
+                     "Timber", "WindowGlass", merge(*bright)),
+            PartSpec("GEO_VIL_Window_GlassShade", "Window", 0, "GlassShade",
+                     "Timber", "WindowShade", merge(*shade)),
+        ),
+    )
+
+
+def build_door() -> AssemblySpec:
+    """A complete door around the unchanged 0.92 x 2.05 metre usable leaf."""
+    width, depth, height = 1.14, 0.32, 2.21
+
+    def normalize(geometry: Geometry) -> Geometry:
+        vertices, faces = geometry
+        return ([(x / width, y / depth, z / height - 0.5)
+                 for x, y, z in vertices], faces)
+
+    frame = merge(
+        *(chamfered_box((side * 0.515, -0.025, 1.065),
+                        (0.110, 0.160, 2.130), 0.010)
+          for side in (-1, 1)),
+        chamfered_box((0.0, -0.020, 2.145),
+                      (1.140, 0.180, 0.130), 0.008),
+        *(box((side * 0.540, 0.065, 1.055), (0.048, 0.025, 2.110))
+          for side in (-1, 1)),
+        box((0.0, 0.078, 2.153), (1.120, 0.023, 0.040)),
+    )
+    leaf = merge(
+        chamfered_box((0.0, 0.0, 1.025), (0.920, 0.070, 2.050), 0.006),
+        *(chamfered_box((-0.368 + index * 0.184, 0.036, 1.025),
+                        (0.176, 0.012, 2.032), 0.002)
+          for index in range(5)),
+        # A narrow lower rail takes the wear of boots without changing the
+        # door's silhouette or presenting a second board across its opening.
+        chamfered_box((0.0, 0.046, 0.118), (0.908, 0.018, 0.075), 0.003),
+    )
+    handle_x = 0.920 * 0.33
+    hardware = merge(
+        *(box((-0.408, 0.052, z), (0.180, 0.026, 0.042))
+          for z in (0.340, 1.660)),
+        *(tube_between((-0.451, 0.054, z - 0.040),
+                        (-0.451, 0.054, z + 0.040), 0.015, 0.015, 6)
+          for z in (0.340, 1.660)),
+        chamfered_box((handle_x, 0.049, 1.020),
+                      (0.052, 0.018, 0.150), 0.006),
+        tube_between((handle_x, 0.035, 1.020),
+                     (handle_x, 0.055, 1.020), 0.015, 0.015, 8),
+        tube_between((handle_x, 0.055, 1.020),
+                     (handle_x, 0.075, 1.020), 0.028, 0.026, 8),
+        *(box((side * 0.515, 0.060, z), (0.018, 0.022, 0.018))
+          for side in (-1, 1) for z in (0.180, 1.960)),
+    )
+    return AssemblySpec(
+        "Door", 0, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_Door_Timber", "Door", 0, "Timber",
+                     "Timber", "WindowFrame", normalize(frame)),
+            PartSpec("GEO_VIL_Door_Walls", "Door", 0, "Walls",
+                     "Timber", "LogTimber", normalize(leaf)),
+            PartSpec("GEO_VIL_Door_Bracket", "Door", 0, "Bracket",
+                     "RustedIron", "RepairIron", normalize(hardware)),
         ),
     )
 
 
 FACADE_DETAIL_VARIANTS = (
     # left lean, right lean, right lower edge, repair side
-    (0.020, -0.012, -0.50, -1.0),
-    (-0.025, 0.018, -0.31, 1.0),
-    (0.012, 0.030, -0.43, -1.0),
+    (0.003, -0.002, -0.50, -1.0),
+    (-0.002, 0.003, -0.50, 1.0),
+    (0.002, 0.002, -0.50, -1.0),
 )
 
 
@@ -1282,22 +1470,27 @@ def shutter_panel(
         (
             (centre_x - half, bottom),
             (centre_x + half, bottom),
-            (centre_x + half + lean, top - 0.018),
+            (centre_x + half + lean, top),
             (centre_x - half + lean, top),
         ),
         -0.038,
         0.038)
     bars = merge(
         chamfered_box(
-            (centre_x + lean * 0.20, 0.0, bottom + (top - bottom) * 0.24),
-            (width + 0.028, 0.090, 0.052),
+            (centre_x + lean * 0.20, 0.036, bottom + (top - bottom) * 0.24),
+            (width + 0.012, 0.055, 0.045),
             0.008),
         chamfered_box(
-            (centre_x + lean * 0.76, 0.0, bottom + (top - bottom) * 0.74),
-            (width + 0.028, 0.090, 0.052),
+            (centre_x + lean * 0.76, 0.036, bottom + (top - bottom) * 0.74),
+            (width + 0.012, 0.055, 0.045),
             0.008),
     )
-    return merge(shell, bars)
+    boards = [box(
+        (centre_x - width * 0.5 + width * (index + 0.5) / 3,
+         0.039, (bottom + top) * 0.5),
+        (width / 3 - 0.005, 0.012, top - bottom - 0.018))
+        for index in range(3)]
+    return merge(shell, bars, *boards)
 
 
 def build_facade_detail(variant: int) -> AssemblySpec:
@@ -1310,17 +1503,17 @@ def build_facade_detail(variant: int) -> AssemblySpec:
     left_lean, right_lean, right_bottom, repair_side = (
         FACADE_DETAIL_VARIANTS[variant])
     shutters = merge(
-        shutter_panel(-0.335, 0.245, -0.50, 0.315, left_lean),
-        shutter_panel(0.335, 0.245, right_bottom, 0.305, right_lean),
+        shutter_panel(-0.335, 0.245, -0.50, 0.460, left_lean),
+        shutter_panel(0.335, 0.245, right_bottom, 0.460, right_lean),
     )
 
-    patch_x = repair_side * 0.335
+    patch_x = repair_side * 0.475
     repair = prism_y(
         (
-            (patch_x - 0.135, -0.46),
-            (patch_x + 0.125, -0.445),
-            (patch_x + 0.105, -0.10 + variant * 0.025),
-            (patch_x - 0.150, -0.145),
+            (patch_x - 0.020, -0.46),
+            (patch_x + 0.020, -0.460),
+            (patch_x + 0.017, -0.340 + variant * 0.006),
+            (patch_x - 0.020, -0.345),
         ),
         0.040,
         0.064)
@@ -1335,6 +1528,12 @@ def build_facade_detail(variant: int) -> AssemblySpec:
             (hook_x, 0.155, 0.355),
             (hook_x + 0.055, 0.205, 0.315),
             0.017, 0.014, 7),
+        *(box((side * 0.275, 0.072, z), (0.085, 0.022, 0.022))
+          for side in (-1, 1) for z in (-0.250, 0.210)),
+        *(tube_between((side * 0.220, 0.065, z - 0.023),
+                        (side * 0.220, 0.065, z + 0.023),
+                        0.009, 0.009, 6)
+          for side in (-1, 1) for z in (-0.250, 0.210)),
     )
 
     return AssemblySpec(
@@ -1479,7 +1678,7 @@ def build_rail_bridge() -> AssemblySpec:
     )
 
 
-def build_source_bowl() -> AssemblySpec:
+def build_source_bowl(variant: int = 0) -> AssemblySpec:
     """An ordinary open stone catch basin beside the source chapel.
 
     Four unmatched rim blocks sit on one heavy bed.  There is no inscription,
@@ -1503,15 +1702,21 @@ def build_source_bowl() -> AssemblySpec:
             (-0.405, -0.006, 0.020),
             (0.15, 0.64, 0.84),
             0.022),
-        chamfered_box(
-            (0.405, 0.004, 0.040),
-            (0.15, 0.63, 0.92),
-            0.022),
+        *( (chamfered_box(
+                (0.405, 0.004, 0.040), (0.15, 0.63, 0.92), 0.022),)
+           if variant == 0 else (
+               chamfered_box((0.405, 0.004, -0.225),
+                             (0.15, 0.63, 0.390), 0.022),
+               chamfered_box((0.405, -0.2255, 0.235),
+                             (0.15, 0.171, 0.530), 0.018),
+               chamfered_box((0.405, 0.2295, 0.235),
+                             (0.15, 0.179, 0.530), 0.018))),
     )
     return AssemblySpec(
-        "SourceBowl", 0, "normalized_to_descriptor",
+        "SourceBowl", variant, "normalized_to_descriptor",
         (
-            PartSpec("GEO_VIL_SourceBowl_Stone", "SourceBowl", 0,
+            PartSpec("GEO_VIL_SourceBowl_Variant%02d_Stone" % variant,
+                     "SourceBowl", variant,
                      "Stone", "LayeredStone", "SourceStone", stone),
         ),
     )
@@ -1685,10 +1890,12 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         build_garland_post(),
         build_cable_gate(),
         build_rail_bridge(),
-        build_source_bowl(),
+        *(build_source_bowl(index) for index in range(2)),
         build_spring_ledge(),
         build_cascade_step(),
         *(build_bed_stone(index) for index in range(BED_STONE_VARIANT_COUNT)),
+        build_window(),
+        build_door(),
     )
 
 
@@ -1884,6 +2091,124 @@ def validate_house_architecture(
                 f"{key} has no centre facade support at "
                 f"Y={plane_y:.3f}, Z={point_z:.3f}")
 
+    # Every legal ordinary-door offset/width fits this central strip at the
+    # smallest plot width. The mother's fixed offset has its own narrow strip.
+    # No structural timber may project farther here than an ordinary course:
+    # the metre-sized door is deliberately not repositioned with new dressing.
+    door_min_x, door_max_x = ((-0.090, 0.025)
+                             if assembly.kind == "TopHouse"
+                             else (-0.140, 0.140))
+    timber = next(part for part in assembly.parts
+                  if part.part_role == "Timber")
+    vertices, faces = timber.geometry
+    for face in faces:
+        points = [vertices[index] for index in face]
+        if (min(point[0] for point in points) > door_max_x or
+                max(point[0] for point in points) < door_min_x or
+                min(point[2] for point in points) > 0.030):
+            continue
+        if max(point[1] for point in points) > plane_y + 0.005 + BOUNDS_EPSILON:
+            problems.append(f"{key} timber crosses the door's facade clearance")
+            break
+
+
+def top_house_interior_alignment() -> dict:
+    """Read the actual authored room openings, not a decorative facade grid."""
+    source = ROOT / "Assets/MothersHouse/Models/MothersHouseInterior3D.json"
+    interior = json.loads(source.read_text(encoding="utf-8"))
+    upper = interior["upper_storey_m"]
+    facade_planes = {"front": 0.415 * 9.0, "rear": -0.415 * 9.0,
+                     "left": -0.460 * 11.0, "right": 0.470 * 11.0}
+    facade_by_wall = {"north": "rear", "south": "front",
+                      "east": "left", "west": "right"}
+    windows = []
+    for opening in interior["windows_m"]:
+        facade = facade_by_wall[opening["wall"]]
+        x, height, depth = opening["center_unity"]
+        side = facade in {"left", "right"}
+        windows.append({
+            "stable_id": opening["stable_id"],
+            "facade": facade,
+            "center_x_m": facade_planes[facade] if side else -0.36 - x,
+            "center_y_m": height,
+            "center_z_m": -depth if side else facade_planes[facade],
+            "width_m": opening["width"],
+            "height_m": opening["head"] - opening["sill"],
+            "floor_elevation_m": opening["floor_elevation"],
+        })
+    return {
+        "source": source.relative_to(ROOT).as_posix(),
+        "interior_generator_version": interior["generator_version"],
+        "timber_masonry_seam_x_m": 1.47,
+        "upper_floor_elevation_m": upper["floor_elevation"],
+        "upper_ceiling_m": upper["ceiling_height"],
+        "door_across_m": -0.36,
+        "facade_depth_m": 0.415 * 9.0,
+        "facade_planes_m": facade_planes,
+        "windows": windows,
+    }
+
+
+def validate_top_house_interior_alignment(
+    assembly: AssemblySpec, problems: list[str],
+) -> None:
+    contract = top_house_interior_alignment()
+    seam = contract["timber_masonry_seam_x_m"] / 11.0
+    parts = {part.part_role: part for part in assembly.parts}
+    # A separating X plane is a stronger proof than a depth offset: timber,
+    # wall and plinth have no area at all inside the stone wing's half-space.
+    for role in ("Walls", "Timber", "Plinth"):
+        if geometry_bounds(parts[role].geometry)[1][0] > seam + BOUNDS_EPSILON:
+            problems.append(f"TopHouse {role} overlaps the masonry half-space")
+    if geometry_bounds(parts["Chimney"].geometry)[0][0] < seam - BOUNDS_EPSILON:
+        problems.append("TopHouse masonry overlaps the timber half-space")
+    if (geometry_bounds(parts["Walls"].geometry)[0][2] <
+            geometry_bounds(parts["Plinth"].geometry)[1][2] - BOUNDS_EPSILON):
+        problems.append("TopHouse wall and plinth share coplanar facade area")
+
+    windows = contract["windows"]
+    if len(windows) != 16 or len({item["stable_id"] for item in windows}) != 16:
+        problems.append("TopHouse must share sixteen distinct real interior openings")
+    for facade in ("front", "rear", "left", "right"):
+        for floor in (0.0, contract["upper_floor_elevation_m"]):
+            if sum(item["facade"] == facade and
+                   item["floor_elevation_m"] == floor for item in windows) != 2:
+                problems.append(f"TopHouse {facade} needs two openings on floor {floor}")
+    for opening in windows:
+        # Match the runtime's normalized frame: its reveal is 0.8 wide and
+        # 0.804 high. Test the entire casing, not only a centre in empty space.
+        half_width = opening["width_m"] * 1.25 * 0.5
+        half_height = opening["height_m"] / 0.804 * 0.5
+        facade = opening["facade"]
+        side = facade in {"left", "right"}
+        center = opening["center_z_m"] if side else opening["center_x_m"]
+        left, right = center - half_width, center + half_width
+        if not side and left < 1.47 < right:
+            problems.append(f"TopHouse {opening['stable_id']} casing crosses the material seam")
+        candidates = []
+        for role in ("Walls", "Plinth", "Chimney"):
+            geometry = parts[role].geometry
+            if side:
+                bounds = geometry_bounds(geometry)
+                plane = bounds[0 if facade == "left" else 1][0]
+                expected_plane = contract["facade_planes_m"][facade] / 11.0
+                # The plinth projects 0.015 normalized metres beyond timber.
+                # Both are real support on the same wall; the opposite wing
+                # or an internal material seam is never accepted as backing.
+                if abs(plane - expected_plane) > 0.018 + BOUNDS_EPSILON:
+                    continue
+                geometry = ([(y, x, z) for x, y, z in geometry[0]], geometry[1])
+            else:
+                plane = contract["facade_planes_m"][facade] / 9.0
+            candidates.append((geometry, plane))
+        for across in (left, right):
+            for height in (opening["center_y_m"] - half_height,
+                           opening["center_y_m"] + half_height):
+                if not any(face_covers_front_point(
+                        geometry, plane, across / (9.0 if side else 11.0),
+                        height / 7.0 - 0.5) for geometry, plane in candidates):
+                    problems.append(f"TopHouse {opening['stable_id']} casing has no opaque wall support")
+
 
 def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     problems: list[str] = []
@@ -1899,14 +2224,16 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         "GarlandPost": 1,
         "CableGate": 1,
         "RailBridge": 1,
-        "SourceBowl": 1,
+        "SourceBowl": 2,
         "SpringLedge": 1,
         "CascadeStep": 1,
         "BedStone": BED_STONE_VARIANT_COUNT,
+        "Window": 1,
+        "Door": 1,
     }
     expected_roles = {
         **{("House", index):
-           ("Walls", "Roof", "Plinth", "Chimney", "Snow")
+           ("Walls", "Roof", "Plinth", "Chimney", "Snow", "Timber")
            for index in range(HOUSE_ARCHETYPE_COUNT)},
         ("Chapel", 0): ("Walls", "Roof", "Plinth", "Snow"),
         ("MineCart", 0): ("Body", "Wheels"),
@@ -1914,14 +2241,16 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         **{("GraveMarker", index): ("Stone",) for index in range(3)},
         ("Firewood", 0): ("Wood",),
         ("TopHouse", 0):
-            ("Walls", "Roof", "Plinth", "Chimney", "Snow"),
+            ("Walls", "Roof", "Plinth", "Chimney", "Snow", "Timber"),
+        ("Window", 0): ("Timber", "Glass", "GlassShade"),
+        ("Door", 0): ("Timber", "Walls", "Bracket"),
         **{("FacadeDetail", index):
            ("Shutters", "Repair", "Bracket")
            for index in range(3)},
         ("GarlandPost", 0): ("Timber", "Bracket"),
         ("CableGate", 0): ("Timber", "Cable"),
         ("RailBridge", 0): ("Rails", "Sleepers"),
-        ("SourceBowl", 0): ("Stone",),
+        **{("SourceBowl", index): ("Stone",) for index in range(2)},
         ("SpringLedge", 0): ("Stone",),
         ("CascadeStep", 0): ("Stone",),
         **{("BedStone", index): ("Stone",)
@@ -1994,6 +2323,28 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
                 masonry_high[0] < 0.46):
             problems.append(
                 "TopHouse lost its timber-main/masonry-+X-wing composition")
+        validate_top_house_interior_alignment(top_house, problems)
+    door = next(assembly for assembly in assemblies if assembly.kind == "Door")
+    leaf = next(part for part in door.parts if part.part_role == "Walls")
+    leaf_low, leaf_high = geometry_bounds(leaf.geometry)
+    if (abs((leaf_high[0] - leaf_low[0]) * 1.14 - 0.92) > BOUNDS_EPSILON or
+            abs((leaf_high[2] - leaf_low[2]) * 2.21 - 2.05) > BOUNDS_EPSILON or
+            abs((leaf_low[2] + 0.5) * 2.21) > BOUNDS_EPSILON):
+        problems.append("Door leaf changed the plan-owned 0.92 x 2.05 m opening")
+
+    spring_bowl = next(assembly for assembly in assemblies
+                       if (assembly.kind, assembly.variant) == ("SourceBowl", 1))
+    vertices, faces = spring_bowl.parts[0].geometry
+    for face in faces:
+        points = [vertices[index] for index in face]
+        if (min(point[0] for point in points) < 0.33 - BOUNDS_EPSILON or
+                min(point[1] for point in points) > 0.0 or
+                max(point[1] for point in points) < 0.0):
+            continue
+        if max(point[2] for point in points) > -0.03 + BOUNDS_EPSILON:
+            problems.append("SourceBowl spring outlet is obstructed above its sill")
+            break
+
     if len(names) != EXPECTED_MESH_COUNT:
         problems.append(
             f"mesh count is {len(names)}, expected {EXPECTED_MESH_COUNT}")
@@ -2013,6 +2364,7 @@ def signature_payload(assemblies: Sequence[AssemblySpec]) -> dict:
     return {
         "generator_version": GENERATOR_VERSION,
         "design_id": DESIGN_ID,
+        "top_house_interior_alignment": top_house_interior_alignment(),
         "root_contract": {
             "origin": "descriptor_center",
             "source_ground_value": -0.5,
@@ -2215,6 +2567,7 @@ def manifest_for(
         "mesh_count": len(parts),
         "assembly_count": len(assemblies),
         "triangle_count": sum(triangle_count(part.geometry) for part in parts),
+        "top_house_interior_alignment": top_house_interior_alignment(),
         "assemblies": assembly_records,
         "parts": part_records,
         "build_signature": signature,

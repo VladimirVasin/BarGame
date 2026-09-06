@@ -24,10 +24,10 @@ namespace BarPromenade.Editor
         public const string SharedEmissionMaterialPath = "Assets/Resources/Materials/CityNoirEmission.mat";
 
         private const string ExpectedDesignId = "mothers_house_interior_v1";
-        private const string ExpectedGeneratorVersion = "1.5.0";
+        private const string ExpectedGeneratorVersion = "1.6.0";
         private const int ExpectedAnchorCount = 10;
-        private const int MaximumRenderers = 104;
-        private const int MaximumTriangles = 16000;
+        private const int MaximumRenderers = 136;
+        private const int MaximumTriangles = 17000;
         private const float MeasureTolerance = 0.02f;
         private const float RotationToleranceDegrees = 0.1f;
         private const float UvTolerance = 0.00001f;

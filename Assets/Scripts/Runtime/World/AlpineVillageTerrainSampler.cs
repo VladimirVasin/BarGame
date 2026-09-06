@@ -73,6 +73,9 @@ namespace BarPromenade
         /// </summary>
         internal const float TerrainCell = 2f;
 
+        /// <summary>Extra ground samples around the shallow brook only.</summary>
+        internal const float BrookTerrainCell = 0.25f;
+
         /// <summary>
         /// Where the enclosing ridge starts to climb, as a distance outside
         /// the inhabited extent.
@@ -287,17 +290,48 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The hollow the brook runs in.
-        ///
-        /// THE CHANNEL ITSELF CANNOT LIVE HERE, and that is the whole design.
-        /// This mesh is sampled on a <see cref="TerrainCell"/> grid - two
-        /// metres - and a brook is one metre wide; the class already learned
-        /// this the expensive way with the cableway ("a two-metre terrain grid
-        /// can otherwise interpolate across a bend"). So the ground gives a
-        /// WIDE SHALLOW SWALE, which two-metre vertices can express, and the
-        /// bed and the water are ribbon geometry laid inside it - exactly the
-        /// division the lane already uses, where this samples a bed clearance
-        /// and <c>BuildLane</c> lays the skin on top.
+        /// Height on the built ground triangles, with the same grid spacing
+        /// and near-right/far-left diagonal as WorldBuilder.AppendCell.
+        /// Points outside TerrainMeshBounds are clamped to its boundary.
+        /// The analytic height remains the planning contract; visible skins
+        /// also need this height where a coarse triangle bridges a hollow.
+        /// </summary>
+        internal static float SampleMeshHeight(
+            AlpineVillagePlan plan,
+            Vector2 point)
+        {
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            AlpineVillageTerrainGrid grid = AlpineVillageTerrainGrid.Get(plan);
+            int column = grid.FindColumn(point.x);
+            int row = grid.FindRow(point.y);
+            float nearX = grid.XCoordinates[column];
+            float farX = grid.XCoordinates[column + 1];
+            float nearZ = grid.ZCoordinates[row];
+            float farZ = grid.ZCoordinates[row + 1];
+            float u = Mathf.InverseLerp(nearX, farX, point.x);
+            float v = Mathf.InverseLerp(nearZ, farZ, point.y);
+            float nearRight = SampleHeight(plan, new Vector2(farX, nearZ));
+            float farLeft = SampleHeight(plan, new Vector2(nearX, farZ));
+            if (u + v <= 1f)
+            {
+                float nearLeft = SampleHeight(plan, new Vector2(nearX, nearZ));
+                return nearLeft + u * (nearRight - nearLeft) +
+                       v * (farLeft - nearLeft);
+            }
+
+            float farRight = SampleHeight(plan, new Vector2(farX, farZ));
+            return farRight + (1f - v) * (nearRight - farRight) +
+                   (1f - u) * (farLeft - farRight);
+        }
+
+        /// <summary>
+        /// The shallow bed of the existing water route. The local quarter-
+        /// metre terrain grid resolves its banks, so no broad or deep reserve
+        /// excavation is needed underneath a separate raised channel.
         ///
         /// Returns the height unchanged while <c>plan.Brook</c> is null: that
         /// is the state the brook is TRACED in, and a swale that existed
@@ -314,65 +348,67 @@ namespace BarPromenade
                 return height;
             }
 
-            float distance = brook.DistanceToChannel(point, out float bedDepth);
-            if (distance >= BrookSwaleHalfWidth)
-            {
-                return height;
-            }
-
-            float bedY = SampleBrookBedHeight(brook, point) - bedDepth;
-            if (bedY >= height)
-            {
-                return height;
-            }
-
-            float weight = 1f - SmoothRange(0f, BrookSwaleHalfWidth, distance);
-            return Mathf.Lerp(height, bedY, weight);
-        }
-
-        /// <summary>Water-surface height at the nearest point of the channel.
-        /// </summary>
-        private static float SampleBrookBedHeight(
-            AlpineVillageBrookPlan brook,
-            Vector2 point)
-        {
             IReadOnlyList<AlpineVillageBrookSample> samples = brook.Samples;
-            float best = float.MaxValue;
-            float surface = 0f;
+            int nearestIndex = -1;
+            float nearestAmount = 0f;
+            float nearestDistance = float.MaxValue;
             for (int index = 0; index < samples.Count - 1; index++)
             {
+                AlpineVillageBrookSample first = samples[index];
+                AlpineVillageBrookSample second = samples[index + 1];
                 Vector2 start = new Vector2(
-                    samples[index].Position.x,
-                    samples[index].Position.z);
+                    first.Position.x, first.Position.z);
                 Vector2 segment = new Vector2(
-                    samples[index + 1].Position.x,
-                    samples[index + 1].Position.z) - start;
+                    second.Position.x, second.Position.z) - start;
                 float lengthSquared = segment.sqrMagnitude;
-                float amount = lengthSquared <= 0.000001f
-                    ? 0f
-                    : Mathf.Clamp01(
-                        Vector2.Dot(point - start, segment) / lengthSquared);
-                float distance = Vector2.Distance(
-                    point,
-                    start + segment * amount);
-                if (distance >= best)
+                if (lengthSquared <= 0.000001f)
                 {
                     continue;
                 }
-
-                best = distance;
-                surface = Mathf.Lerp(
-                    samples[index].Position.y,
-                    samples[index + 1].Position.y,
-                    amount);
+                float amount = Mathf.Clamp01(
+                    Vector2.Dot(point - start, segment) / lengthSquared);
+                float distance = Vector2.Distance(
+                    point, start + segment * amount);
+                if (distance < nearestDistance)
+                {
+                    nearestIndex = index;
+                    nearestAmount = amount;
+                    nearestDistance = distance;
+                }
+            }
+            if (nearestIndex < 0)
+            {
+                return height;
+            }
+            AlpineVillageBrookSample near = samples[nearestIndex];
+            AlpineVillageBrookSample next = samples[nearestIndex + 1];
+            float halfWidth = Mathf.Lerp(near.HalfWidth, next.HalfWidth, nearestAmount);
+            // One refined cell keeps interpolation at the water
+            // edge below the bed skin instead of borrowing dry bank height.
+            float cutEdge = halfWidth + BrookTerrainCell;
+            float support = cutEdge + BrookBankBlendWidth;
+            if (nearestDistance >= support)
+            {
+                return height;
             }
 
-            return surface;
+            float surface = Mathf.Lerp(near.Position.y, next.Position.y, nearestAmount);
+            const float edgeDepth = 0.15f;
+            float depth = Mathf.Lerp(BrookBedDepth, edgeDepth,
+                SmoothRange(0f, halfWidth, nearestDistance));
+            float ceiling = surface - depth - SampleRidgeRise(plan, point);
+            float weight = 1f - SmoothRange(
+                cutEdge, support, nearestDistance);
+            return Mathf.Lerp(height, Mathf.Min(height, ceiling), weight);
         }
 
+        private const float BrookBedDepth = 0.19f;
+        private const float BrookBankBlendWidth = 0.35f;
+
         /// <summary>
-        /// How wide the ground's hollow is. Well over the terrain cell, or the
-        /// grid samples straight across it and the brook lies on a flat.
+        /// The original swale reach used by route and walkability planning.
+        /// Keep it stable: mesh compensation belongs to the carve above and
+        /// must not move the established water route or its wall clearance.
         /// </summary>
         internal const float BrookSwaleHalfWidth = 2.6f;
 

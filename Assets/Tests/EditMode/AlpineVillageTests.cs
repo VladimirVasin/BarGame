@@ -801,7 +801,8 @@ namespace BarPromenade.Tests.EditMode
         /// <summary>
         /// The two-submesh split of the ground: floor and rise on their own
         /// materials, the cableway cut carved into the rise, one collider on
-        /// the one mesh, shared toe vertices and one baked sheet across it.
+        /// the one mesh and shared toe vertices. The art pass exposes stone
+        /// above the snow floor without changing this physical boundary.
         /// </summary>
         private static void AssertTerrainSubmeshes(
             AlpineVillagePlan plan,
@@ -824,11 +825,10 @@ namespace BarPromenade.Tests.EditMode
                 materials[AlpineVillageWorldBuilder.TerrainRiseMaterialIndex],
                 Is.SameAs(AlpineVillageRidgeAppearance.RidgeMaterial));
 
-            // Re-derive the grid the builder sampled.
-            Rect bounds = plan.TerrainMeshBounds;
-            float cell = AlpineVillageWorldBuilder.TerrainCellSize;
-            int columns = Mathf.Max(1, Mathf.CeilToInt(bounds.width / cell));
-            int rows = Mathf.Max(1, Mathf.CeilToInt(bounds.height / cell));
+            // The shared axes retain coarse vertices and refine the brook.
+            AlpineVillageTerrainGrid grid = AlpineVillageTerrainGrid.Get(plan);
+            int columns = grid.Columns;
+            int rows = grid.Rows;
             int gridVertexCount = (columns + 1) * (rows + 1);
             var riseCells = new bool[rows, columns];
             for (int row = 0; row < rows; row++)
@@ -838,7 +838,7 @@ namespace BarPromenade.Tests.EditMode
                     riseCells[row, column] =
                         AlpineVillageWorldBuilder.IsRiseCellCentre(
                             plan,
-                            CellCentre(bounds, columns, rows, row, column));
+                            CellCentre(grid, row, column));
                 }
             }
 
@@ -877,9 +877,8 @@ namespace BarPromenade.Tests.EditMode
                     vertices,
                     floor,
                     index,
-                    bounds,
-                    cell);
-                Vector2 centre = CellCentre(bounds, columns, rows, row, column);
+                    grid);
+                Vector2 centre = CellCentre(grid, row, column);
                 Assert.That(
                     riseCells[row, column],
                     Is.False,
@@ -903,9 +902,8 @@ namespace BarPromenade.Tests.EditMode
                     vertices,
                     rise,
                     index,
-                    bounds,
-                    cell);
-                Vector2 centre = CellCentre(bounds, columns, rows, row, column);
+                    grid);
+                Vector2 centre = CellCentre(grid, row, column);
                 Assert.That(
                     rise[index] < gridVertexCount &&
                     rise[index + 1] < gridVertexCount &&
@@ -963,19 +961,22 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(AlpineVillageRidgeAppearance.BakedUvTransform));
             Assert.That(
                 riseProperties.GetTexture("_BaseMap"),
-                Is.SameAs(floorProperties.GetTexture("_BaseMap")));
+                Is.SameAs(MountainRoadSurfaceAppearance.GetTexture(
+                    AlpineVillageRidgeAppearance.RockSurface)));
+            Assert.That(
+                floorProperties.GetTexture("_BaseMap"),
+                Is.SameAs(MountainRoadSurfaceAppearance.GetTexture(
+                    AlpineVillageRidgeAppearance.Surface)));
         }
 
         private static Vector2 CellCentre(
-            Rect bounds,
-            int columns,
-            int rows,
+            AlpineVillageTerrainGrid grid,
             int row,
             int column)
         {
             return new Vector2(
-                bounds.xMin + bounds.width * ((column + 0.5f) / columns),
-                bounds.yMin + bounds.height * ((row + 0.5f) / rows));
+                (grid.XCoordinates[column] + grid.XCoordinates[column + 1]) * 0.5f,
+                (grid.ZCoordinates[row] + grid.ZCoordinates[row + 1]) * 0.5f);
         }
 
         /// <summary>
@@ -985,19 +986,12 @@ namespace BarPromenade.Tests.EditMode
             Vector3[] vertices,
             int[] triangles,
             int index,
-            Rect bounds,
-            float cell)
+            AlpineVillageTerrainGrid grid)
         {
             Vector3 centroid = (vertices[triangles[index]] +
                                 vertices[triangles[index + 1]] +
                                 vertices[triangles[index + 2]]) / 3f;
-            // The builder rounds the cell count UP, so the real pitch is a
-            // hair under the nominal cell and must be re-derived from it.
-            int columns = Mathf.Max(1, Mathf.CeilToInt(bounds.width / cell));
-            int rows = Mathf.Max(1, Mathf.CeilToInt(bounds.height / cell));
-            return (
-                Mathf.FloorToInt((centroid.z - bounds.yMin) / (bounds.height / rows)),
-                Mathf.FloorToInt((centroid.x - bounds.xMin) / (bounds.width / columns)));
+            return (grid.FindRow(centroid.z), grid.FindColumn(centroid.x));
         }
 
         [Test]

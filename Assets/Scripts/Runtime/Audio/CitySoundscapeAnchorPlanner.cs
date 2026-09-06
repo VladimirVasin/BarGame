@@ -169,7 +169,7 @@ namespace BarPromenade
                 Vector3 position = origin +
                     Vector3.up * CityFountainWaterBuilder.BasinWaterTopY;
                 float diameter =
-                    CityFountainWaterBuilder.BasinWaterHalf * 2f;
+                    CityFountainWaterBuilder.BasinInnerRadius * 2f;
                 var ownerBounds = new Bounds(
                     position,
                     new Vector3(diameter, 0.24f, diameter));

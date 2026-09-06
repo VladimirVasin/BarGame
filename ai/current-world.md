@@ -34,8 +34,9 @@ The vertical slice contains:
   through a split slab to a narrow west corridor and exactly two separate,
   accessible, furnished upper bedrooms: the parents' room north, still slept in
   and warmed by the hearth flue carried up its outer wall, and the hero's
-  childhood room south, taken out of use under a dust sheet. Each has one real
-  window answering a pane the village facade already lit and one hanging fitting
+  childhood room south, taken out of use under a dust sheet. Each has three real
+  windows; two more light the west corridor. All sixteen house windows match
+  the exterior through one shared opening table. Each bedroom keeps one hanging fitting
   of its own - a fabric bowl over the bed still slept in, a bare bulb over the
   one that is not. Both are furnished rather than indicated: wardrobe, chests,
   chair, peg rail and slippers in the bedroom, linen press, table, chest and
@@ -202,13 +203,19 @@ The vertical slice contains:
   submeshes: the floor on the ordinary primitive material, the rise on
   `AlpineVillageRidgeAppearance`'s `CityMountainPhysical` material (village
   haze colour, breathing density, `0.40` visibility floor and a stable opaque
-  colour handoff over `96-108 m`, a cold snow-shadow tint, no shadow because
+  colour handoff over `96-108 m`, a dark layered-stone tint, no shadow because
   the shader has no caster pass). The village opts into the floor's PS1 vertex
   snap, floor and rise share exact edge indices instead of a buried overlap
-  ring, and floor/rise/lying-snow world UVs bake the `WindSnow` metre pitch
+  ring, and floor/rise/lying-snow world UVs retain the existing baked metre pitch
   once under an identity `_BaseMap_ST`; neither screen-space coverage nor a
   second renderer-size scale can make the distant lower wall crawl. The
   shared shader's zero-default City path retains its existing clip dither.
+  The accepted `2026-09-06` art pass exposes the existing layered-stone
+  surface on the rise and places measured Blender rock/snow ledges beyond
+  the walkable toe. The imported pieces share the rise's stable haze and
+  vertex snap; the original continuous terrain still owns collision and
+  the cableway cut. Snow reaches foundations outside the clear door aprons,
+  and its rise run varies along trodden edges without changing movement.
   The cableway valley remains part of the rise rather than a floor-material
   stripe — a pale strip in a dark wall reads as a hole, not a gorge. Warm fog and warm key light are the zone's whole
   signature, and the fog breathes: `RuntimeSceneSetup.EvaluateAlpineVillageFogDensity`
@@ -250,8 +257,8 @@ The vertical slice contains:
   reducer and shaft, tension carriage and weight stack above with no motor at
   all. Boarding is outboard of the outbound track, because the gap between the
   two tracks is filled by the bullwheel pedestal. The village wears a fourth
-  deterministic Blender kit - generator contract `v3.0.0` /
-  `village_house_archetypes_v3`, `17` assemblies / `43` role meshes. Two
+  deterministic Blender kit - generator contract `v3.3.0` /
+  `village_house_archetypes_v3`, `24` assemblies / `57` role meshes. Two
   ordinary closed-shell house archetypes replace the former four cosmetic
   variants: one is a low dark timber block on a heavy stone plinth with sparse
   irregular openings; the other raises a bracketed projecting timber upper
@@ -266,9 +273,17 @@ The vertical slice contains:
   invisible wall volume. The redesign preserves the planner's normalized
   bounds, footprints, collision proxies, routes, landmark aperture and story
   meaning. It raises no new
-  surface family and ships no doors or window panes, because both scale with
-  the descriptor across plots from `4.2` to `7 m` and are drawn by the world
-  builder at real metres on the wall face the mesh's own bounds report.
+  surface family. Doors retain their plan-owned dimensions and actions;
+  a separate Blender door assembly supplies the frame, leaf and hardware.
+  Framed windows are placed at real opening dimensions on the wall face
+  reported by the house mesh. Coherent timber courses, stone plinth courses,
+  shutter joinery, rafters, layered roof edges and irregular roof snow give
+  the two masses close-range structure. Five deterministic neutral facade
+  sheets carry grain and wear with measured mean compensation and shared
+  materials; bright and shaded panes
+  share each window's existing dimming cutoff. The Return station alone has
+  a fixed-metre Blender canopy with profiled steel, timber supports, fasteners
+  and snow; its machinery, obstacles and docking remain plan-owned.
   Garlands are emissive geometry; two cords and three windows own the five real
   village lights. Six bounded spatial voices belong to the visible station,
   one wire, the cable gate, water catch basin, firewood and a house wall;
@@ -533,7 +548,9 @@ The vertical slice contains:
   a flat fill. Those batches sit on a chunk-offset transform, so the chunk
   origin goes back into the baked UVs and a landmark split across two chunks
   still tiles as one surface. The fountain's standing water stays flat, like
-  the river and the sea;
+  the river and the sea, and round: a disc drawn to the stone ring's own inner
+  face, with both pours hanging from the statue's spout tips and leaning out
+  past its pedestal as they fall;
 - eight legacy district wall albedos plus one shared roof cap, generated by
   `tools/build-city-facade-textures.py`, remain the box/sheet contract for the
   supermarket's crossing-only fallback and a prototype crossing the clipped
