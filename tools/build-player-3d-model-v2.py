@@ -38,7 +38,7 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 import atlas_kit  # noqa: E402  (after the sys.path fix)
 
 COMMON_AUTHORING_PATH = REPO_ROOT / "tools" / "player_3d_model_common.py"
-V2_GENERATOR_VERSION = "1.4.0"
+V2_GENERATOR_VERSION = "1.5.0"
 TORSO_SKIN_MESHES = ("GEO_Torso", "CLO_JacketBody")
 TORSO_SKIN_BONES = ("pelvis", "spine", "chest")
 # Metres at the canonical 1.75 m height. Both garment and shirt use exactly
@@ -95,6 +95,16 @@ DEFAULT_CLOTHING_ATLAS = (
     / "Textures"
     / "PlayerClothingAtlas.png"
 )
+# The undressed hero's skin lives under Resources: the shower loads it by
+# name at runtime and dresses the same prefab in it through a property block.
+DEFAULT_BARE_SKIN_ATLAS = (
+    REPO_ROOT
+    / "Assets"
+    / "Resources"
+    / "Player"
+    / "PlayerBareSkinAtlas.png"
+)
+BARE_SKIN_ATLAS_RESOURCE_PATH = "Player/PlayerBareSkinAtlas"
 DEFAULT_MANIFEST = (
     REPO_ROOT
     / "Assets"
@@ -169,6 +179,63 @@ CLOTHING_RENDERER_REGIONS = {
     for name, (renderer, x, y, width, height) in CLOTHING_REGIONS.items()
 }
 
+# The bare-skin atlas the shower dresses the undressed hero in: a second
+# 256x256 point-filtered texture painted for the UV0 the body already
+# carries. The pelvis, thigh, shin and foot rects are the jeans rects, byte
+# for byte, because those meshes bake one UV0 for both atlases; the torso
+# takes the 128x128 cell the jacket body owns in the clothing atlas, which
+# is free here because the shirt-material torso never samples that atlas.
+# The runtime swaps the texture in through a property block on the hero's
+# own skin material: no second prefab, no new mesh, no new material.
+BARE_SKIN_ATLAS_SIZE = 256
+BARE_SKIN_REGIONS = {
+    "BareTorso": ("GEO_Torso", 0, 128, 128, 128),
+    "BarePelvis": ("GEO_Pelvis", 192, 128, 64, 64),
+    "BareThighLeft": ("GEO_Thigh.L", 0, 64, 64, 64),
+    "BareThighRight": ("GEO_Thigh.R", 64, 64, 64, 64),
+    "BareShinLeft": ("GEO_Shin.L", 128, 64, 64, 64),
+    "BareShinRight": ("GEO_Shin.R", 192, 64, 64, 64),
+    "BareFootLeft": ("GEO_Foot.L", 0, 0, 64, 64),
+    "BareFootRight": ("GEO_Foot.R", 64, 0, 64, 64),
+}
+BARE_SKIN_RENDERER_REGIONS = {
+    renderer: (name, x, y, width, height)
+    for name, (renderer, x, y, width, height) in BARE_SKIN_REGIONS.items()
+}
+BARE_SKIN_ATLAS_REGION_PROP = "bp_bare_skin_atlas_region"
+
+# Ringed body volumes shared by the mesh builder and the bare-skin painter,
+# so a feature painted at a body height lands on the ring that height sits
+# on. Tuples are (z, radius_x, radius_y, y_offset) in metres at 1.75 m.
+TORSO_PROFILES = (
+    (0.878, 0.145, 0.086, 0.012),
+    (0.970, 0.166, 0.094, 0.010),
+    (1.105, 0.170, 0.101, 0.004),
+    (1.250, 0.181, 0.108, -0.004),
+    (1.350, 0.187, 0.109, -0.008),
+    (1.415, 0.170, 0.095, -0.010),
+)
+TORSO_SIDES = 10
+PELVIS_RINGS = (
+    (0.775, 0.105, 0.074, 0.018),
+    (0.820, 0.130, 0.085, 0.017),
+    (0.878, 0.140, 0.090, 0.015),
+    (0.935, 0.132, 0.082, 0.013),
+    (0.972, 0.112, 0.072, 0.011),
+)
+PELVIS_SIDES = 10
+# Ring-strip u of the body's front and back. A ringed ellipsoid starts its
+# ring at +X (the hero's anatomical left) and walks through +Y (his back)
+# at a quarter turn, so the front (-Y) sits three quarters of the way
+# round. A profiled limb segment starts at +22.5 degrees with its own basis,
+# which puts its front an eighth of a turn earlier.
+RING_FRONT_U = 0.75
+RING_BACK_U = 0.25
+LIMB_FRONT_U = 0.6875
+LIMB_BACK_U = 0.1875
+LIMB_OUTER_LEFT_U = 0.4375
+LIMB_OUTER_RIGHT_U = 0.9375
+
 
 def load_common_authoring():
     spec = importlib.util.spec_from_file_location(
@@ -213,7 +280,7 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, bool]:
+def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool]:
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
@@ -240,6 +307,11 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         "--clothing-atlas",
         type=Path,
         default=DEFAULT_CLOTHING_ATLAS,
+    )
+    parser.add_argument(
+        "--bare-skin-atlas",
+        type=Path,
+        default=DEFAULT_BARE_SKIN_ATLAS,
     )
     parser.add_argument(
         "--expression-sheet",
@@ -286,6 +358,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         resolve_path(args.face_atlas),
         resolve_path(args.expression_sheet),
         resolve_path(args.clothing_atlas),
+        resolve_path(args.bare_skin_atlas),
         resolve_path(args.head_front),
         resolve_path(args.head_three_quarter),
         resolve_path(args.lower_body_closeup),
@@ -752,6 +825,284 @@ def build_clothing_atlas(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def bare_skin_region(name: str) -> tuple[int, int, int, int]:
+    _, x, y, width, height = BARE_SKIN_REGIONS[name]
+    return x, y, width, height
+
+
+def blend_rgba(
+    first: tuple[int, int, int, int],
+    second: tuple[int, int, int, int],
+    amount: float,
+) -> tuple[int, int, int, int]:
+    return tuple(
+        int(round(a + (b - a) * amount)) for a, b in zip(first[:3], second[:3])
+    ) + (255,)
+
+
+def lift_for_flat_palette(color: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+    """Encode a palette value so an sRGB sample of it lands where the flat path does.
+
+    The project renders in linear space, and the runtime feeds every flat
+    hero material its palette hex through `_BaseColor` unconverted (the
+    numbers are used as linear values). A texture imported as sRGB is
+    decoded on sampling, so a texel holding the same hex would render
+    darker than the hand beside it. Storing the sRGB encoding of the hex
+    instead makes the decoded texel equal the flat number: one skin tone
+    on the hands, the arms and the atlas.
+    """
+
+    def encode(channel: int) -> int:
+        value = channel / 255.0
+        encoded = value * 12.92 if value <= 0.0031308 else 1.055 * (value ** (1.0 / 2.4)) - 0.055
+        return int(round(max(0.0, min(1.0, encoded)) * 255.0))
+
+    return (encode(color[0]), encode(color[1]), encode(color[2]), 255)
+
+
+def bare_skin_paint() -> dict[str, tuple[int, int, int, int]]:
+    """The painter's palette: the shared skin tones, blended raw, then lifted."""
+
+    skin = rgba_from_hex(V2_PALETTE_HEX["Skin"])
+    shadow = rgba_from_hex(V2_PALETTE_HEX["SkinShadow"])
+    hair = rgba_from_hex(V2_PALETTE_HEX["Hair"])
+    raw = {
+        "skin": skin,
+        "soft": blend_rgba(skin, shadow, 0.22),
+        "mid": blend_rgba(skin, shadow, 0.45),
+        "shadow": shadow,
+        "light": blend_rgba(skin, (255, 255, 255, 255), 0.10),
+        "hair": blend_rgba(hair, shadow, 0.35),
+        "nipple": blend_rgba(shadow, (150, 72, 62, 255), 0.45),
+    }
+    return {name: lift_for_flat_palette(color) for name, color in raw.items()}
+
+
+def ring_strip_pixel_x(x: int, width: int, around: float) -> int:
+    """Atlas column of a ring-strip u (0..1 round the volume) inside the 1px inset."""
+
+    return x + 1 + int(round(around * (width - 2)))
+
+
+def ring_strip_pixel_y(y: int, height: int, along: float) -> int:
+    """Atlas row of a ring-strip v (0 = first ring, 1 = last) inside the 1px inset."""
+
+    return y + 1 + int(round(along * (height - 2)))
+
+
+def ring_height_v(heights: Sequence[float], height_m: float) -> float:
+    """Where a body height falls on a strip whose v is ring index, not metres."""
+
+    if height_m <= heights[0]:
+        return 0.0
+    for index in range(len(heights) - 1):
+        lower, upper = heights[index], heights[index + 1]
+        if height_m <= upper:
+            return (index + (height_m - lower) / (upper - lower)) / (len(heights) - 1)
+    return 1.0
+
+
+def torso_ring_v(height_m: float) -> float:
+    return ring_height_v(
+        [profile[0] for profile in subdivide_torso_profiles(TORSO_PROFILES)],
+        height_m,
+    )
+
+
+def pelvis_ring_v(height_m: float) -> float:
+    return ring_height_v([ring[0] for ring in PELVIS_RINGS], height_m)
+
+
+def atlas_ellipse_bottom_left(
+    canvas: PixelCanvas,
+    center_x: int,
+    center_y: int,
+    radius_x: int,
+    radius_y: int,
+    color: tuple[int, int, int, int],
+) -> None:
+    canvas.ellipse(center_x, canvas.height - 1 - center_y, radius_x, radius_y, color)
+
+
+def speck_hash(px: int, py: int, phase: int = 0) -> int:
+    """A deterministic per-texel hash; linear congruences make lattices."""
+
+    value = (px * 374761393 + py * 668265263 + phase * 1013904223) & 0xFFFFFFFF
+    value ^= value >> 13
+    value = (value * 1274126177) & 0xFFFFFFFF
+    value ^= value >> 16
+    return value
+
+
+def scatter_bottom_left(
+    canvas: PixelCanvas,
+    x0: int,
+    y0: int,
+    x1: int,
+    y1: int,
+    color: tuple[int, int, int, int],
+    modulus: int,
+    phase: int = 0,
+) -> None:
+    """Seed-free sparse specks: about one texel in `modulus`, never a grid."""
+
+    for px in range(x0, x1):
+        for py in range(y0, y1):
+            if speck_hash(px, py, phase) % modulus == 0:
+                atlas_rect_bottom_left(canvas, px, py, px + 1, py + 1, color)
+
+
+def build_bare_skin_atlas(path: Path) -> str:
+    """Paint the undressed hero: bare skin for every part the jeans and shirt cover.
+
+    Same pixel art discipline as the clothing atlas: flat tones from the
+    shared palette, features a few texels wide, no gradients. The shower is
+    the only reader today; the torso strip, pelvis, thighs, shins and feet
+    are painted so a body seen from its own eyes reads as a body, not as a
+    figure in a skin-coloured suit. Every tone is stored gamma-lifted
+    (`lift_for_flat_palette`) so the sRGB sample matches the flat skin the
+    hands and arms wear; the Blender probe therefore renders it bright.
+    """
+
+    canvas = PixelCanvas(BARE_SKIN_ATLAS_SIZE, BARE_SKIN_ATLAS_SIZE)
+    paint = bare_skin_paint()
+    skin = paint["skin"]
+    soft = paint["soft"]
+    mid = paint["mid"]
+    shadow = paint["shadow"]
+    light = paint["light"]
+    hair = paint["hair"]
+    nipple = paint["nipple"]
+    canvas.rect(0, 0, canvas.width, canvas.height, (20, 20, 18, 255))
+    for name in BARE_SKIN_REGIONS:
+        x, y, width, height = bare_skin_region(name)
+        atlas_rect_bottom_left(canvas, x, y, x + width, y + height, skin)
+        # Faint skin variation, the same broken-wear idea as the cloth.
+        scatter_bottom_left(canvas, x + 1, y + 1, x + width - 1, y + height - 1, soft, 140, 11)
+
+    # --- Torso: a ring strip, u round the chest with the front at 0.75. ---
+    x, y, width, height = bare_skin_region("BareTorso")
+
+    def tx(around: float) -> int:
+        return ring_strip_pixel_x(x, width, around)
+
+    def ty(height_m: float) -> int:
+        return ring_strip_pixel_y(y, height, torso_ring_v(height_m))
+
+    # Collarbones under the shoulder plane, sternum between the pectorals.
+    for sign in (-1, 1):
+        atlas_line_bottom_left(
+            canvas, tx(RING_FRONT_U + sign * 0.035), ty(1.395),
+            tx(RING_FRONT_U + sign * 0.115), ty(1.405), soft,
+        )
+    atlas_line_bottom_left(canvas, tx(RING_FRONT_U), ty(1.21), tx(RING_FRONT_U), ty(1.36), soft)
+    # The pectoral underline and the nipples, a hand's width apart.
+    for sign in (-1, 1):
+        centre_u = RING_FRONT_U + sign * 0.095
+        atlas_line_bottom_left(
+            canvas, tx(centre_u - 0.04), ty(1.245), tx(centre_u + 0.045), ty(1.240), soft,
+        )
+        atlas_ellipse_bottom_left(canvas, tx(centre_u), ty(1.290), 3, 2, mid)
+        atlas_ellipse_bottom_left(canvas, tx(centre_u), ty(1.290), 2, 1, nipple)
+    # Sparse chest hair between the nipples, a trail down to the navel.
+    scatter_bottom_left(canvas, tx(RING_FRONT_U - 0.075), ty(1.24), tx(RING_FRONT_U + 0.075), ty(1.34), hair, 11)
+    for py in range(ty(1.02), ty(1.20)):
+        if speck_hash(tx(RING_FRONT_U), py, 5) % 5 != 0:
+            atlas_rect_bottom_left(canvas, tx(RING_FRONT_U), py, tx(RING_FRONT_U) + 1, py + 1, hair)
+    scatter_bottom_left(canvas, tx(RING_FRONT_U) - 3, ty(1.02), tx(RING_FRONT_U) + 4, ty(1.18), hair, 6, 3)
+    # The navel.
+    atlas_ellipse_bottom_left(canvas, tx(RING_FRONT_U), ty(1.00), 2, 2, mid)
+    atlas_rect_bottom_left(canvas, tx(RING_FRONT_U), ty(1.00), tx(RING_FRONT_U) + 1, ty(1.00) + 1, shadow)
+    # The back: a spine groove and the two shoulder-blade edges.
+    atlas_line_bottom_left(canvas, tx(RING_BACK_U), ty(0.90), tx(RING_BACK_U), ty(1.36), soft)
+    for sign in (-1, 1):
+        atlas_line_bottom_left(
+            canvas, tx(RING_BACK_U + sign * 0.10), ty(1.225),
+            tx(RING_BACK_U + sign * 0.075), ty(1.33), soft,
+        )
+
+    # --- Pelvis: the pubic triangle in front, the cleft behind. ---
+    x, y, width, height = bare_skin_region("BarePelvis")
+
+    def px_(around: float) -> int:
+        return ring_strip_pixel_x(x, width, around)
+
+    def py_(height_m: float) -> int:
+        return ring_strip_pixel_y(y, height, pelvis_ring_v(height_m))
+
+    apex = py_(0.880)
+    base = py_(0.790)
+    for py in range(base, apex + 1):
+        fraction = (apex - py) / max(1, apex - base)
+        half = int(round(1 + fraction * 4.5))
+        for px in range(px_(RING_FRONT_U) - half, px_(RING_FRONT_U) + half + 1):
+            edge = abs(px - px_(RING_FRONT_U)) >= half - 1
+            keep = speck_hash(px, py, 2) % 10 < (5 if edge else 8)
+            if keep:
+                atlas_rect_bottom_left(canvas, px, py, px + 1, py + 1, hair)
+    scatter_bottom_left(canvas, px_(RING_FRONT_U) - 8, py_(0.782), px_(RING_FRONT_U) + 9, py_(0.905), hair, 8, 1)
+    atlas_line_bottom_left(canvas, px_(RING_BACK_U), py_(0.776), px_(RING_BACK_U), py_(0.87), shadow, 2)
+    for sign in (-1, 1):
+        atlas_line_bottom_left(
+            canvas, px_(RING_BACK_U + sign * 0.05), py_(0.79),
+            px_(RING_BACK_U + sign * 0.12), py_(0.80), mid,
+        )
+    atlas_rect_bottom_left(canvas, x + 1, y + 1, x + width - 1, py_(0.78), soft)
+
+    # --- Thighs: the kneecap at the top of the strip, hair below it. ---
+    for name, outer_u in (("BareThighLeft", LIMB_OUTER_LEFT_U), ("BareThighRight", LIMB_OUTER_RIGHT_U)):
+        x, y, width, height = bare_skin_region(name)
+        front = ring_strip_pixel_x(x, width, LIMB_FRONT_U)
+        back = ring_strip_pixel_x(x, width, LIMB_BACK_U)
+        knee = ring_strip_pixel_y(y, height, 0.92)
+        atlas_ellipse_bottom_left(canvas, front, knee, 4, 2, soft)
+        atlas_ellipse_bottom_left(canvas, front, knee, 2, 1, light)
+        atlas_line_bottom_left(canvas, back - 3, ring_strip_pixel_y(y, height, 0.96), back + 3, ring_strip_pixel_y(y, height, 0.96), mid)
+        scatter_bottom_left(canvas, x + 1, ring_strip_pixel_y(y, height, 0.08), x + width - 1, ring_strip_pixel_y(y, height, 0.84), mid, 24, 2)
+        scatter_bottom_left(canvas, x + 1, ring_strip_pixel_y(y, height, 0.08), x + width - 1, ring_strip_pixel_y(y, height, 0.84), hair, 70, 4)
+        del outer_u
+
+    # --- Shins: calf behind, shin bone in front, ankle bones at the sides. ---
+    for name in ("BareShinLeft", "BareShinRight"):
+        x, y, width, height = bare_skin_region(name)
+        front = ring_strip_pixel_x(x, width, LIMB_FRONT_U)
+        back = ring_strip_pixel_x(x, width, LIMB_BACK_U)
+        atlas_ellipse_bottom_left(canvas, back, ring_strip_pixel_y(y, height, 0.36), 7, 11, soft)
+        atlas_line_bottom_left(canvas, front, ring_strip_pixel_y(y, height, 0.12), front, ring_strip_pixel_y(y, height, 0.80), light)
+        for around in (LIMB_OUTER_LEFT_U, LIMB_OUTER_RIGHT_U):
+            atlas_ellipse_bottom_left(canvas, ring_strip_pixel_x(x, width, around), ring_strip_pixel_y(y, height, 0.93), 2, 1, mid)
+        scatter_bottom_left(canvas, x + 1, ring_strip_pixel_y(y, height, 0.10), x + width - 1, ring_strip_pixel_y(y, height, 0.86), mid, 24, 5)
+        scatter_bottom_left(canvas, x + 1, ring_strip_pixel_y(y, height, 0.10), x + width - 1, ring_strip_pixel_y(y, height, 0.86), hair, 70, 6)
+
+    # --- Feet: the box-panel split the boots use. Left half is the side view
+    # (heel to toe along u, sole to ankle along v); right half is the front,
+    # top and sole (across the foot along u, heel to toe along v). ---
+    for name in ("BareFootLeft", "BareFootRight"):
+        x, y, width, height = bare_skin_region(name)
+        half = width // 2
+        side_x = x + 1
+        side_w = half - 2
+        atlas_rect_bottom_left(canvas, side_x, y + 1, side_x + side_w, y + 1 + int(0.10 * (height - 2)), mid)
+        atlas_line_bottom_left(
+            canvas, side_x + int(0.30 * side_w), y + 1 + int(0.16 * (height - 2)),
+            side_x + int(0.72 * side_w), y + 1 + int(0.14 * (height - 2)), soft,
+        )
+        atlas_ellipse_bottom_left(canvas, side_x + int(0.32 * side_w), y + 1 + int(0.88 * (height - 2)), 2, 1, mid)
+        top_x = x + half + 1
+        top_w = half - 2
+        toe_row = y + 1 + int(0.84 * (height - 2))
+        tip_row = y + height - 1
+        for fraction in (0.20, 0.41, 0.60, 0.78):
+            gap_x = top_x + int(round(fraction * top_w))
+            atlas_line_bottom_left(canvas, gap_x, toe_row, gap_x, tip_row - 1, mid)
+        atlas_line_bottom_left(canvas, top_x, tip_row - 1, top_x + top_w - 1, tip_row - 1, soft)
+        atlas_line_bottom_left(canvas, top_x + 1, toe_row - 1, top_x + top_w - 2, toe_row - 1, soft)
+        atlas_rect_bottom_left(canvas, top_x, y + 1, top_x + top_w, y + 1 + int(0.06 * (height - 2)), mid)
+
+    canvas.write_png(path)
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def create_static_atlas_material(name: str, path: Path) -> bpy.types.Material:
     material = bpy.data.materials.new(f"MAT_{name}")
     with warnings.catch_warnings():
@@ -966,6 +1317,25 @@ def assign_boot_uv(obj: bpy.types.Object, region_name: str) -> None:
         CLOTHING_ATLAS_SIZE,
         region_name,
         CLOTHING_ATLAS_REGION_PROP,
+    )
+
+
+def assign_bare_skin_ring_strip_uv(
+    obj: bpy.types.Object,
+    region_name: str,
+    sides: int,
+    ring_count: int,
+) -> None:
+    """A ring strip inside the bare-skin atlas, for a part the clothing atlas never paints."""
+
+    x, y, width, height = bare_skin_region(region_name)
+    atlas_kit.assign_ring_strip_uv(
+        obj,
+        atlas_kit.uv_rect_normalized(x, y, width, height, BARE_SKIN_ATLAS_SIZE, 1.0),
+        sides,
+        ring_count,
+        region_name,
+        BARE_SKIN_ATLAS_REGION_PROP,
     )
 
 
@@ -1463,39 +1833,29 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         neck["bp_top_width_m"] = 0.127
         torso_rings = tuple(
             (self.d(z), self.d(rx), self.d(ry), self.d(y_offset))
-            for z, rx, ry, y_offset in subdivide_torso_profiles((
-                (0.878, 0.145, 0.086, 0.012),
-                (0.970, 0.166, 0.094, 0.010),
-                (1.105, 0.170, 0.101, 0.004),
-                (1.250, 0.181, 0.108, -0.004),
-                (1.350, 0.187, 0.109, -0.008),
-                (1.415, 0.170, 0.095, -0.010),
-            ))
+            for z, rx, ry, y_offset in subdivide_torso_profiles(TORSO_PROFILES)
         )
         torso = self.add_part(
             "GEO_Torso",
-            common.make_ringed_ellipsoid(self.v(0, 0, 0), torso_rings, 10),
+            common.make_ringed_ellipsoid(self.v(0, 0, 0), torso_rings, TORSO_SIDES),
             "Shirt", "core", "chest", "Body", "body_part",
         )
         torso["bp_waist_half_width_m"] = 0.166
         torso["bp_chest_half_width_m"] = 0.187
         self.skin_torso(torso)
+        # The shirt is a flat tone and never samples a texture; this strip
+        # exists for the bare-skin atlas the shower swaps in at runtime.
+        assign_bare_skin_ring_strip_uv(torso, "BareTorso", TORSO_SIDES, len(torso_rings))
         pelvis_rings = tuple(
             (self.d(z), self.d(rx), self.d(ry), self.d(y_offset))
-            for z, rx, ry, y_offset in (
-                (0.775, 0.105, 0.074, 0.018),
-                (0.820, 0.130, 0.085, 0.017),
-                (0.878, 0.140, 0.090, 0.015),
-                (0.935, 0.132, 0.082, 0.013),
-                (0.972, 0.112, 0.072, 0.011),
-            )
+            for z, rx, ry, y_offset in PELVIS_RINGS
         )
         pelvis = self.add_part(
             "GEO_Pelvis",
-            common.make_ringed_ellipsoid(self.v(0, 0, 0), pelvis_rings, 10),
+            common.make_ringed_ellipsoid(self.v(0, 0, 0), pelvis_rings, PELVIS_SIDES),
             "JeansAtlas", "core", "pelvis", "Body", "body_part",
         )
-        assign_ring_strip_uv(pelvis, "JeansPelvis", 10, len(pelvis_rings))
+        assign_ring_strip_uv(pelvis, "JeansPelvis", PELVIS_SIDES, len(pelvis_rings))
 
         for side, sign in (("L", 1.0), ("R", -1.0)):
             anatomical = "Left" if side == "L" else "Right"
@@ -1980,11 +2340,69 @@ def measure_relaxed_arm_landmarks(result: common.BuildResult) -> dict[str, float
     return values
 
 
+def validate_bare_skin_atlas(
+    result: common.BuildResult,
+    bare_skin_atlas_path: Path,
+    errors: list[str],
+) -> None:
+    """The bare-skin atlas against the rig: shared rects, the torso strip, the paint."""
+
+    records = {record.obj.name: record for record in result.parts}
+    for name, (renderer, x, y, width, height) in BARE_SKIN_REGIONS.items():
+        clothing = CLOTHING_RENDERER_REGIONS.get(renderer)
+        if clothing is not None and clothing[1:] != (x, y, width, height):
+            errors.append(f"{name} must share {renderer}'s clothing atlas rect: UV0 is baked once")
+        record = records.get(renderer)
+        if record is None:
+            errors.append(f"{name} names a part the rig does not build: {renderer}")
+            continue
+        if clothing is None and record.obj.get(BARE_SKIN_ATLAS_REGION_PROP) != name:
+            errors.append(f"{renderer} lost its bare-skin atlas region metadata {name}")
+        uv_layer = record.obj.data.uv_layers.get("UVMap")
+        if uv_layer is None or not uv_layer.data:
+            errors.append(f"{renderer} has no UV0 for the bare-skin atlas")
+            continue
+        values = [loop.uv for loop in uv_layer.data]
+        if (
+            min(value.x for value in values) < (x + 1) / BARE_SKIN_ATLAS_SIZE - 1e-6
+            or max(value.x for value in values) > (x + width - 1) / BARE_SKIN_ATLAS_SIZE + 1e-6
+            or min(value.y for value in values) < (y + 1) / BARE_SKIN_ATLAS_SIZE - 1e-6
+            or max(value.y for value in values) > (y + height - 1) / BARE_SKIN_ATLAS_SIZE + 1e-6
+        ):
+            errors.append(f"{renderer} UV0 escapes the 1px inset of {name}")
+    if not bare_skin_atlas_path.is_file() or bare_skin_atlas_path.stat().st_size < 256:
+        errors.append("Hero V2 bare-skin atlas was not generated")
+        return
+    width, height, pixels = read_generated_png(bare_skin_atlas_path)
+    if (width, height) != (BARE_SKIN_ATLAS_SIZE, BARE_SKIN_ATLAS_SIZE):
+        errors.append(f"Bare-skin atlas must be 256x256, got {width}x{height}")
+        return
+    paint = bare_skin_paint()
+    boot = rgba_from_hex(V2_PALETTE_HEX["BootLeather"])
+    boot_sole = rgba_from_hex(V2_PALETTE_HEX["BootSole"])
+    jeans = rgba_from_hex(V2_PALETTE_HEX["Jeans"])
+    for name in BARE_SKIN_REGIONS:
+        rect = bare_skin_region(name)
+        area = rect[2] * rect[3]
+        if atlas_kit.count_rect_color(pixels, width, height, rect, {paint["skin"]}) < area * 0.55:
+            errors.append(f"{name} must stay mostly bare skin")
+        if atlas_kit.count_rect_color(pixels, width, height, rect, {boot, boot_sole, jeans}) != 0:
+            errors.append(f"{name} carries clothing pixels; the bare atlas paints skin only")
+    if atlas_kit.count_rect_color(pixels, width, height, bare_skin_region("BareTorso"), {paint["nipple"]}) < 8:
+        errors.append("The bare torso needs both nipples painted")
+    if atlas_kit.count_rect_color(pixels, width, height, bare_skin_region("BarePelvis"), {paint["hair"]}) < 40:
+        errors.append("The bare pelvis needs its pubic hair painted")
+    for foot_region in ("BareFootLeft", "BareFootRight"):
+        if atlas_kit.count_rect_color(pixels, width, height, bare_skin_region(foot_region), {paint["mid"]}) < 30:
+            errors.append(f"{foot_region} needs toes and a sole painted")
+
+
 def validate_v2_result(
     config: common.BuildConfig,
     result: common.BuildResult,
     face_atlas_path: Path,
     clothing_atlas_path: Path,
+    bare_skin_atlas_path: Path,
 ) -> common.ValidationReport:
     bpy.context.view_layer.update()
     errors: list[str] = []
@@ -2388,6 +2806,7 @@ def validate_v2_result(
             for shin_region in ("JeansShinLeft", "JeansShinRight"):
                 if count_region_color(pixels, width, height, shin_region, {boot_color}) < 650:
                     errors.append(f"{shin_region} needs a painted military boot shaft at the ankle")
+    validate_bare_skin_atlas(result, bare_skin_atlas_path, errors)
 
     if errors:
         raise RuntimeError("Hero V2 validation failed:\n" + "\n".join(f"  - {error}" for error in errors))
@@ -2418,6 +2837,7 @@ def content_signature(
     result: common.BuildResult,
     face_atlas_sha256: str,
     clothing_atlas_sha256: str,
+    bare_skin_atlas_sha256: str,
 ) -> str:
     """Hash authored model/rig/action content, independent of FBX timestamps.
 
@@ -2548,6 +2968,7 @@ def content_signature(
         "anatomical_left_axis": "+X",
         "face_atlas_sha256": face_atlas_sha256,
         "clothing_atlas_sha256": clothing_atlas_sha256,
+        "bare_skin_atlas_sha256": bare_skin_atlas_sha256,
         "palette": dict(sorted(V2_PALETTE_HEX.items())),
         "parts": part_records,
         "bones": bone_records,
@@ -2606,6 +3027,8 @@ def write_v2_manifest(
     face_atlas_sha256: str,
     clothing_atlas_path: Path,
     clothing_atlas_sha256: str,
+    bare_skin_atlas_path: Path,
+    bare_skin_atlas_sha256: str,
     content_signature_sha256: str,
 ) -> None:
     # Start with the established model manifest contract, then add only V2 data.
@@ -2734,6 +3157,36 @@ def write_v2_manifest(
                     ],
                 }
             ],
+            "bare_skin_atlas": {
+                "texture_asset": str(bare_skin_atlas_path.relative_to(REPO_ROOT)).replace("\\", "/"),
+                "resource_path": BARE_SKIN_ATLAS_RESOURCE_PATH,
+                "width_px": BARE_SKIN_ATLAS_SIZE,
+                "height_px": BARE_SKIN_ATLAS_SIZE,
+                "shader_property": "_BaseMap",
+                "color_space": "sRGB",
+                "filter_mode": "Point",
+                "wrap_mode": "Clamp",
+                "mipmaps": False,
+                "compression": "Uncompressed",
+                "uv_channel": 0,
+                "uv_origin": "bottom_left",
+                "uv_safe_inset_px": 1,
+                "material_tint_hex": "FFFFFF",
+                "reader": "Player3DBathingAppearance (the home shower); a property block on the hero's own skin material",
+                "sha256": bare_skin_atlas_sha256,
+                "regions": [
+                    {
+                        "name": name,
+                        "renderer": renderer,
+                        "x_px": x,
+                        "y_px": y,
+                        "width_px": width,
+                        "height_px": height,
+                        "shared_with_clothing_atlas": renderer in CLOTHING_RENDERER_REGIONS,
+                    }
+                    for name, (renderer, x, y, width, height) in BARE_SKIN_REGIONS.items()
+                ],
+            },
             "body_contract": {
                 "canonical_height_m": config.height,
                 "head_crown_to_chin_m": round(head_height, 6),
@@ -2813,6 +3266,7 @@ def print_report(
     report: common.ValidationReport,
     face_atlas_path: Path,
     clothing_atlas_path: Path,
+    bare_skin_atlas_path: Path,
     expression_sheet_path: Path,
     head_front_path: Path,
     head_three_quarter_path: Path,
@@ -2835,6 +3289,7 @@ def print_report(
     print(f"  Manifest: {config.manifest}")
     print(f"  Face atlas: {face_atlas_path}")
     print(f"  Clothing atlas: {clothing_atlas_path}")
+    print(f"  Bare-skin atlas: {bare_skin_atlas_path}")
     print(f"  Expression sheet: {expression_sheet_path}")
     print(f"  Head front: {head_front_path}")
     print(f"  Head 3/4: {head_three_quarter_path}")
@@ -2920,6 +3375,7 @@ def main() -> None:
         face_atlas_path,
         expression_sheet_path,
         clothing_atlas_path,
+        bare_skin_atlas_path,
         head_front_path,
         head_three_quarter_path,
         lower_body_closeup_path,
@@ -2932,14 +3388,18 @@ def main() -> None:
         print("Updated face atlas, expression sheet and facial manifest only; model/rig/animations unchanged.")
         return
     clothing_atlas_sha256 = build_clothing_atlas(clothing_atlas_path)
+    bare_skin_atlas_sha256 = build_bare_skin_atlas(bare_skin_atlas_path)
     builder = HeroV2Builder(config, face_atlas_path, clothing_atlas_path)
     result = builder.build()
-    report = validate_v2_result(config, result, face_atlas_path, clothing_atlas_path)
+    report = validate_v2_result(
+        config, result, face_atlas_path, clothing_atlas_path, bare_skin_atlas_path
+    )
     content_signature_sha256 = content_signature(
         config,
         result,
         face_atlas_sha256,
         clothing_atlas_sha256,
+        bare_skin_atlas_sha256,
     )
     result.root["bp_content_signature_sha256"] = content_signature_sha256
     bpy.context.scene["bp_content_signature_sha256"] = content_signature_sha256
@@ -2984,6 +3444,8 @@ def main() -> None:
             face_atlas_sha256,
             clothing_atlas_path,
             clothing_atlas_sha256,
+            bare_skin_atlas_path,
+            bare_skin_atlas_sha256,
             content_signature_sha256,
         )
     common.save_blend(config.output)
@@ -2992,6 +3454,7 @@ def main() -> None:
         report,
         face_atlas_path,
         clothing_atlas_path,
+        bare_skin_atlas_path,
         expression_sheet_path,
         head_front_path,
         head_three_quarter_path,

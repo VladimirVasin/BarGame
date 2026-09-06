@@ -14,28 +14,26 @@ namespace BarPromenade.Tests.PlayMode
         public void Setup()
         {
 #if UNITY_EDITOR
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            // Resolved by assembly-qualified name, like the other prebuild hooks: the
+            // Editor assembly is not referenced from the PlayMode tests, and scanning
+            // AppDomain assemblies is what UAC0005 warns about.
+            Type setup = Type.GetType(
+                "BarPromenade.Editor.CityPedestrianPersonalSpaceAssetSetup, BarPromenade.Editor",
+                false);
+            if (setup == null)
             {
-                Type setup = assembly.GetType(
-                    "BarPromenade.Editor.CityPedestrianPersonalSpaceAssetSetup");
-                if (setup == null)
-                {
-                    continue;
-                }
-
-                MethodInfo build = setup.GetMethod("BuildOrThrow",
-                    BindingFlags.Public | BindingFlags.Static);
-                if (build == null)
-                {
-                    throw new MissingMethodException(setup.FullName, "BuildOrThrow");
-                }
-
-                build.Invoke(null, null);
-                return;
+                throw new InvalidOperationException(
+                    "The personal-space authoring setup must be loaded before PlayMode tests.");
             }
 
-            throw new InvalidOperationException(
-                "The personal-space authoring setup must be loaded before PlayMode tests.");
+            MethodInfo build = setup.GetMethod("BuildOrThrow",
+                BindingFlags.Public | BindingFlags.Static);
+            if (build == null)
+            {
+                throw new MissingMethodException(setup.FullName, "BuildOrThrow");
+            }
+
+            build.Invoke(null, null);
 #endif
         }
     }

@@ -4875,8 +4875,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bathroom shot with the shared smoking drift, debounced stop input,
   commit only on completion, idempotent restore + `ReapplyActiveShot` —
   while replacing authored clips with recorded scoped exceptions:
-  (a) the shower hides the standing Idle hero behind the drawn curtain
-  group (scale-x animation of the folded panels); (b) the former toilet
+  (a) the former curtain hide (the drawn curtain group over the standing
+  Idle hero) is retired by the accepted `2026-09-06` camera-led naked wash
+  below; (b) the former toilet
   privacy cut is retired by the accepted `2026-09-05` replacement below;
   (c) teeth brushing retains the actual standing rig and a RightGrip
   toothbrush, with procedural two-bone hand IK and a connected
@@ -5030,16 +5031,88 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   lease, handoff, cursor, camera, props and gauge. The existing bathroom
   procedural exception remains scoped to this action; no world-canon
   prohibition, fiction text, reaction, comedy beat or light is added.
+- **Accepted — Mirror-camera brushing scene:** The close-up shoots from
+  7 cm in front of the mirror plane back into the hero's face (FOV 36) —
+  the PS1 "reflection" without RenderTextures; the pinned bathroom shot
+  is never edited, scene poses are transient. Foam blobs ride the Mouth
+  anchor; the rinse dips the camera look-at to the basin over two Pour
+  beats. Stress relief is gated once per `GameDayIndex`
+  (`TryCommitTeethBrushingRelief`); toilet and shower commit ungated
+  (`CommitBathroomStressRelief`) — always on completion, never on
+  cancel.
+- **Accepted architecture exception — 2026-09-06, explicit user request —
+  first-person naked shower wash:** The user asked for the shower to be
+  re-staged twice in one morning: first with the camera pushing to the stall
+  while the hero entered naked from below the frame, then — rejected on
+  sight, because the walk in was visible and the flat-tinted body read as a
+  mannequin — from the hero's own eyes with a real bare-skin texture. The
+  accepted form: the camera flies into his head the moment `E` is pressed;
+  his clothes come off only once the lens is inside; he walks into the stall
+  through the opening beside the gathered curtain, braces on the tile with
+  his head under the water, shuts the tap on the second `E`, stands still
+  for three seconds of dying drips, walks out to the opening, dresses with
+  the lens still inside, and the camera returns. This replaces bathroom
+  exception (a). What is lifted, narrowly: the contextual-animation
+  standard's authoring rule 3 in the part that preserves the right-shoulder
+  patch — the patch is jacket-atlas pixels and goes with the jacket for the
+  duration of the wash; nothing else. What is recorded:
+  `HomeBathroomSceneInteraction`'s three opt-in seams (`CameraLeadsApproach`
+  + `OnApproachAdvance`, `TryGetApproachWaypoint`, `protected` guided legs
+  reporting `Walking/Arrived/Stalled`) and the per-change stop-prompt
+  refresh stay as introduced; the shower's dock is the stall dock and the
+  waypoint seam routes a hero outside the stall through the opening. The
+  costume is an owner-scoped lease (`Player3DBathingAppearance`): the four
+  `clothing` renderers off, the shirt torso and the jeans-atlas
+  pelvis/thighs/shins/feet switched to the hero's own borrowed skin material
+  with the bare-skin atlas bound through their property blocks (`_BaseMap`,
+  white tint — the registry's face-atlas idiom; flat tones if the resource is
+  missing), the bandage kept, everything restored exactly. The atlas
+  (`Assets/Resources/Player/PlayerBareSkinAtlas.png`, `build_bare_skin_atlas`
+  in the hero generator, `1.5.0`) reuses the jeans UV0 rects byte for byte —
+  asserted by the generator and by `Player3DV2AssetSetup` — and the torso
+  carries a ring-strip UV0 into the cell the jacket body owns in the clothing
+  atlas; the manifest's `bare_skin_atlas` section is validated like the
+  clothing binding, and its texels are stored gamma-lifted so the sRGB
+  sample equals the flat `_BaseColor` number the hands and arms wear.
+  Three Blender bridge pieces close the nape and shoulder
+  gaps, and the toilet's authored anatomy hangs at rest from the measured
+  bare pelvis; all are placed from bone positions each frame and shown only
+  while the lease is out. The lease is taken and released only while the
+  lens is inside the head (`HomeShowerSceneTimeline.IsInsideHead`, the head
+  geometry hidden by `Player3DHeadVisibility`); `shower_undress_in_view` /
+  `shower_redress_in_view` warn if that ever fails.
+  `HomeShowerFirstPersonView` is the lens: the mouth anchor plus `0.068 m`,
+  the actor's yaw with the scene's base pitch (`6°` on the walks, `38°` — the
+  pose's neck + head — under the water, `55°` down at the tray and his feet for the drips) and a clamped
+  look (`±75°`, `−45..55°`) that never turns the body. The wash pose
+  (`HomeShowerWashPose`) is unchanged in kind: Idle neutral captured under
+  the handoff lock, spine/chest/neck/head pitched about the actor's world
+  right axis, both palms through `LimbTwoBoneIk`, the right hand blending to
+  the hot cross handle (which turns 90°). `HomeShowerSceneTimeline` is
+  `CameraIn 0.9 s` → `Approach` (open; a dock reached during the fly-in is
+  remembered) → `Settle` (one rendered neutral frame) → `Wash` (reward from
+  `6 s`, automatic at `12 s`) → `WaterOff 0.9 s` → `Straighten 0.6 s` (drift
+  to exactly `0`) → `DripHold 3.0 s` (still; the drip model's own schedule)
+  → `StepOut` → `CameraOut 1.4 s`, the hitch carried across every fixed
+  boundary. The curtain never moves (gathered at `0.40`). Not lifted: no
+  second hero model, prefab or material; no new full-body clips; no teleport
+  or fade; exact restoration of every renderer state on completion and on
+  every cancel path (effects first, rig last, each step guarded — the view,
+  the head and the cursor included); the `"shower"` relief literal that
+  clears `HeroMouthSoiled`; and the story bible's mirror test — the lens is
+  his own eyes and never sees his face.
 - **Accepted — Shower stall rebuild:** The stall keeps its footprint,
   tray collider and pinned names while gaining an L-rail, a
-  four-fold animatable curtain group (gathered scale 0.55 <-> drawn 1.0)
+  four-fold curtain group (gathered at scale 0.40 and never drawn since
+  the 2026-09-06 shower; scaling it in x is still how it would open)
   plus a static side run, a wall mixer with red/blue cross handles, a
   four-segment sagging hose, a tilted bell head with a dark nozzle
   plate, tray rims, a drain and a soap shelf. The water is a sixth
   owned `HomeSoundscape` source with a seamless loop-phase hiss
   (`SetShowerWaterAmount`, volume + low-pass crossfade) plus code-built
-  stream/steam particles on the shared atmosphere material — no lights,
-  no colliders.
+  particles on the shared atmosphere material — a gravity-fed stream from
+  under the nozzle plate onto the hero's back, steam, the shut tap's
+  drops and their basin splashes — no lights, no colliders.
 - **Accepted — Clock-driven apartment mood:** `HomeDayNightController`
   now modulates the whole indoor mood, not just the window. The window
   keeps its exact day (`8.25`, warm) and night (`5.25`, blue) poles —

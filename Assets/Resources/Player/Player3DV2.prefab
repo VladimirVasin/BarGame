@@ -747,10 +747,10 @@ MonoBehaviour:
       m_Center: {x: -0.0006814599, y: 0.8749999, z: 0.044000015}
       m_Extent: {x: 0.7793547, y: 0.8749999, z: 0.16800004}
     localForward: {x: 0, y: 0, z: 1}
-  sourceGeneratorVersion: 1.4.0
+  sourceGeneratorVersion: 1.5.0
   sourcePose: apose
   sourceTriangleCount: 2384
-  buildSignature: 3782f9b8005c809dad873a425d388a24
+  buildSignature: ab4c0df25d2e77f137493b1463133ab1
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}

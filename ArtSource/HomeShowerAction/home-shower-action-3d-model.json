@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "generator_version": "1.0.0",
+  "signature": "c2dc8441175954c4f9ed8c8351a361a6e1578977abda90d7249d9790ee261230",
+  "coordinates": "Unity local metres +Y up +Z forward",
+  "source_conversion": "Y/Z swap and face rewinding; FBX -Z forward Y up",
+  "palette_srgb_hex": {
+    "Skin": "AE8D7B",
+    "SkinShadow": "67504B"
+  },
+  "report": {
+    "models": 3,
+    "meshes": 3,
+    "triangles": 396,
+    "deterministic_geometry": true,
+    "outward_faces": true,
+    "yoke_spans_cap_to_neck": true
+  },
+  "models": [
+    {
+      "name": "ShoulderYoke",
+      "resource": "HomeShowerAction/Models/ShoulderYoke",
+      "contract": "fixed metres; origin at the torso cap centre; +Y toward the neck; +X toward the hero's right",
+      "meshes": [
+        {
+          "name": "ShoulderYoke",
+          "material": "Skin",
+          "bounds_min": [
+            -0.191,
+            -0.018,
+            -0.1101668540765461
+          ],
+          "bounds_max": [
+            0.191,
+            0.06,
+            0.11016685407654607
+          ],
+          "triangles": 164
+        }
+      ]
+    },
+    {
+      "name": "DeltoidLeft",
+      "resource": "HomeShowerAction/Models/DeltoidLeft",
+      "contract": "fixed metres; origin at the left shoulder joint",
+      "meshes": [
+        {
+          "name": "DeltoidLeft",
+          "material": "SkinShadow",
+          "bounds_min": [
+            -0.05516127794511891,
+            -0.058,
+            -0.05246149283687348
+          ],
+          "bounds_max": [
+            0.05516127794511891,
+            0.058,
+            0.05246149283687348
+          ],
+          "triangles": 116
+        }
+      ]
+    },
+    {
+      "name": "DeltoidRight",
+      "resource": "HomeShowerAction/Models/DeltoidRight",
+      "contract": "fixed metres; origin at the right shoulder joint",
+      "meshes": [
+        {
+          "name": "DeltoidRight",
+          "material": "SkinShadow",
+          "bounds_min": [
+            -0.05516127794511891,
+            -0.058,
+            -0.05246149283687348
+          ],
+          "bounds_max": [
+            0.05516127794511891,
+            0.058,
+            0.05246149283687348
+          ],
+          "triangles": 116
+        }
+      ]
+    }
+  ],
+  "runtime_contract": "Reuse the hero's shared skin material. No generated runtime geometry. Placed from bone positions each frame; never parented to an imported bone."
+}

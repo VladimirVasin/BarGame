@@ -2184,19 +2184,23 @@ The vertical slice contains:
 - while the Home fixed-camera controller is active, the same world-oriented 3D
   hero remains visible in MainRoom, Bathroom and Balcony; the shots no longer
   require camera-plane or yaw-billboard modes to preserve a sprite aspect;
-- a lived-in bathroom: a rebuilt shower stall (folded curtain on an
+- a lived-in bathroom: a rebuilt shower stall (gathered curtain on an
   L-rail, mixer, hose, tilted head, soap shelf) and three modal scenes on
-  one shared skeleton — a first-person toilet action, a curtained shower
-  with water, steam and a crossfaded hiss loop,
-  and a mirror teeth-brushing close-up shot from the mirror plane. Mouse or
-  right-stick X/Y drives the actual right arm; its gauge credits only
-  commanded brush travel confirmed at the teeth, requiring at least `8 s`
-  of active movement. At full progress the hero lowers the brush, shows his
-  teeth for `1.5 s`, then bends and spits for `1.5 s`; mouth-origin foam
-  follows ballistic flight into the real hollow Blender basin. Stop `E`
-  cancels before full progress. Completion cleans the soiled mouth on every
-  replay and grants stress `-5` once per game day; cancellation does neither.
-  Toilet and shower retain their own completion-only relief;
+  one shared skeleton — a first-person toilet action, a first-person shower
+  in which the lens flies into the hero's eyes on `E`, his clothes come off
+  once it is inside, he washes naked (a bare-skin atlas on the same prefab,
+  the toilet's anatomy at rest) with both palms on the tile under a
+  gravity-fed stream, shuts the tap, stands three seconds of drips and
+  dresses before the lens leaves, and a mirror teeth-brushing close-up shot
+  from the mirror plane. Mouse or right-stick X/Y drives the actual right
+  arm; its gauge credits only commanded brush travel confirmed at the
+  teeth, requiring at least `8 s` of active movement. At full progress the
+  hero lowers the brush, shows his teeth for `1.5 s`, then bends and spits
+  for `1.5 s`; mouth-origin foam follows ballistic flight into the real
+  hollow Blender basin. Stop `E` cancels before full progress. Completion
+  cleans the soiled mouth on every replay and grants stress `-5` once per
+  game day; cancellation does neither. Toilet and shower retain their own
+  completion-only relief;
 - the toilet opens its hinged Blender lid immediately, guides the standing
   hero into place and blends to eye level over `1.5 s`. A hollow ceramic
   pedestal and an actually open annular seat keep the water visible and reachable;

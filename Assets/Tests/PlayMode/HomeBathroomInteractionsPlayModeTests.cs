@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -127,6 +128,15 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThan(50f), "Aiming is not constrained to the toilet.");
             Assert.That(home.ToiletScene.Urine.SurfaceHitCount, Is.GreaterThan(solidBefore));
             Assert.That(home.ToiletScene.Urine.ResidueCount, Is.GreaterThan(0));
+            // The stains are CPU-rebuilt meshes: they must ride the pipeline's
+            // GPU Resident Drawer opt-out, or the drawer submits invalid mesh IDs.
+            Assert.That(HomeUrineEffect.GpuDrivenOptOutAvailable, Is.True, "DisallowGPUDrivenRendering was not found by name.");
+            int optedOut = 0;
+            // Stains re-parent onto the surfaces they mark, so look under the room.
+            foreach (MeshRenderer stainRenderer in home.Room.GetComponentsInChildren<MeshRenderer>(true))
+                if (stainRenderer.name.StartsWith("Urine Stain") &&
+                    stainRenderer.GetComponent("DisallowGPUDrivenRendering") != null) optedOut++;
+            Assert.That(optedOut, Is.GreaterThan(0), "Every stain visual carries the opt-out component.");
             yield return AtPresentation(() => CaptureToilet("02-miss"));
 
             // Real aim input at both pitch limits and after body turns must
@@ -382,8 +392,40 @@ namespace BarPromenade.Tests.PlayMode
 
         private void CaptureToilet(string shot, string interaction = "HomeToilet")
         {
-            Camera camera = home.CameraFollow.GetComponent<Camera>();
-            string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", interaction);
+            CaptureFrame(interaction, shot);
+        }
+
+        private void CaptureShower(string shot)
+        {
+            CaptureFrame("HomeShower", shot);
+        }
+
+        /// <summary>A frame from a throwaway lens, for looking at what the hero's own eyes cannot.</summary>
+        private void CaptureWitness(string shot, Vector3 position, Vector3 lookAt, float fieldOfView)
+        {
+            Camera main = home.CameraFollow.GetComponent<Camera>();
+            var witness = new GameObject("Shower Witness Camera");
+            Camera camera = witness.AddComponent<Camera>();
+            try
+            {
+                camera.CopyFrom(main);
+                camera.transform.SetPositionAndRotation(
+                    home.Room.TransformPoint(position),
+                    Quaternion.LookRotation(home.Room.TransformPoint(lookAt) - home.Room.TransformPoint(position), Vector3.up));
+                camera.fieldOfView = fieldOfView;
+                camera.enabled = false;
+                CaptureFrame("HomeShower", shot, camera);
+            }
+            finally
+            {
+                Object.DestroyImmediate(witness);
+            }
+        }
+
+        private void CaptureFrame(string area, string shot, Camera lens = null)
+        {
+            Camera camera = lens != null ? lens : home.CameraFollow.GetComponent<Camera>();
+            string folder = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Captures", area);
             System.IO.Directory.CreateDirectory(folder);
             var target = new RenderTexture(1280, 720, 24);
             var frame = new Texture2D(1280, 720, TextureFormat.RGB24, false);
@@ -409,50 +451,324 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Shower_DrawsCurtainRunsWaterAndRestores()
+        public IEnumerator Shower_FirstPersonNakedWashDripsAndRestores()
         {
             yield return LoadHome();
             GameSessionState.UpdateNeeds(0, 50);
-            Transform curtain =
-                home.Room.Find("Home Bathroom Shower Curtain");
+            GameSessionState.SetHeroMouthSoiled(true, "test");
+            HomeShowerInteraction shower = home.ShowerScene;
+            var presentation = home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null, "The shower needs the production hero.");
+            Player3DAssetRegistry registry = presentation.Registry;
+            Dictionary<string, RendererSnapshot> before = SnapshotRig(registry);
+            Transform curtain = home.Room.Find("Home Bathroom Shower Curtain");
             Assert.That(curtain, Is.Not.Null);
+            Assert.That(curtain.localScale.x, Is.EqualTo(HomeShowerInteraction.GatheredCurtainScale).Within(0.001f));
+            Camera camera = home.CameraFollow.GetComponent<Camera>();
+            Transform hero = home.Player.GameObject.transform;
+            Texture2D atlas = Player3DBathingAppearance.BareSkinAtlas;
+            var invariants = home.gameObject.AddComponent<HomeShowerInvariantProbe>();
+            invariants.Check = () =>
+            {
+                if (shower.IsUndressed && shower.Timeline.CameraBlend < 0.999f)
+                    return "undressed while the camera was still travelling (blend " + shower.Timeline.CameraBlend + ")";
+                if (shower.IsUndressed && !shower.View.IsHeadHidden)
+                    return "undressed with the lens outside his head";
+                if (shower.Timeline.Phase == HomeShowerScenePhase.Wash && !shower.IsUndressed)
+                    return "washing with his clothes on";
+                return null;
+            };
+            float restFaceDown = FaceDown(registry);
 
-            yield return WalkToAndActivate(
-                home.ShowerScene,
-                new Vector3(3.30f, 0.12f, 2.35f));
+            yield return WalkToAndActivate(shower, new Vector3(3.30f, 0.12f, 2.35f));
+            yield return null;
+            yield return null;
+            Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.CameraIn));
+            Assert.That(shower.Timeline.CameraBlend, Is.GreaterThan(0f), "The camera flies before the hero has arrived anywhere.");
+            Assert.That(shower.View.IsActive, Is.True);
+            Assert.That(home.Player.Motor.InputEnabled, Is.False);
+            Assert.That(shower.IsUndressed, Is.False);
 
             Time.timeScale = FastTimeScale;
-            yield return WaitUntil(
-                () => home.ShowerScene.Timeline.Phase ==
-                      HomeShowerScenePhase.Hold,
-                "The shower never reached its running hold.");
-            Assert.That(
-                curtain.localScale.x,
-                Is.EqualTo(1f).Within(0.01f),
-                "The curtain must be fully drawn while the water " +
-                "runs.");
-            Assert.That(
-                home.Soundscape.ShowerWaterAmount,
-                Is.EqualTo(1f).Within(0.01f));
-            Assert.That(home.ShowerScene.WaterEffect.IsEmitting,
-                Is.True);
+            yield return WaitUntil(() => shower.IsUndressed, "The hero never undressed.");
+            yield return AtPresentation(() =>
+            {
+                Assert.That(shower.Timeline.CameraBlend, Is.EqualTo(1f));
+                Assert.That(shower.View.IsHeadHidden, Is.True, "The lens is inside his head, so the head is off.");
+                Assert.That(shower.View.HiddenHeadRendererCount, Is.GreaterThan(10));
+                Assert.That(Player3DHeadVisibility.IsHeadDrawn(registry), Is.False);
+                Assert.That(
+                    Vector3.Distance(camera.transform.position, registry.Anchors.Mouth.position + Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth),
+                    Is.LessThan(0.03f),
+                    "The lens sits at his eyes.");
+                Assert.That(Find(registry, "CLO_JacketBody").Renderer.enabled, Is.False);
+                Assert.That(Find(registry, "CLO_Bandage.L").Renderer.enabled, Is.True);
+                Assert.That(shower.WashPose.BridgesShown, Is.True);
+                if (atlas != null)
+                {
+                    var block = new MaterialPropertyBlock();
+                    Find(registry, "GEO_Torso").Renderer.GetPropertyBlock(block);
+                    Assert.That(block.GetTexture("_BaseMap"), Is.EqualTo(atlas), "The torso wears the bare-skin atlas.");
+                    Find(registry, "GEO_Foot.L").Renderer.GetPropertyBlock(block);
+                    Assert.That(block.GetTexture("_BaseMap"), Is.EqualTo(atlas), "The feet wear it too.");
+                }
+
+                CaptureShower("00-first-person-in");
+            });
 
             yield return WaitUntil(
-                () => home.Player.Motor.InputEnabled,
-                "The shower scene never restored the player.");
+                () => shower.Timeline.Phase == HomeShowerScenePhase.Wash && shower.Timeline.PhaseElapsed > 1.2f,
+                "The wash never started.");
+            yield return AtPresentation(() =>
+            {
+                CaptureShower("01-wash");
+                Assert.That(shower.WashPose.LeftPalmError, Is.LessThan(0.04f), "Left palm on the tile.");
+                Assert.That(shower.WashPose.RightPalmError, Is.LessThan(0.04f), "Right palm on the tile.");
+                Vector3 leftHand = Bone(registry, Player3DAnatomicalPart.LeftHand).position;
+                Vector3 rightHand = Bone(registry, Player3DAnatomicalPart.RightHand).position;
+                Assert.That(leftHand.z, Is.GreaterThan(3.60f), "The left hand reaches the back tile.");
+                Assert.That(rightHand.z, Is.GreaterThan(3.60f), "The right hand reaches the back tile.");
+                Assert.That(Vector3.Distance(leftHand, rightHand), Is.InRange(0.30f, 0.60f));
+                Assert.That(FaceDown(registry) - restFaceDown, Is.GreaterThan(0.15f), "The head hangs under the water.");
+                Assert.That(
+                    Vector3.Distance(camera.transform.position, registry.Anchors.Mouth.position + Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth),
+                    Is.LessThan(0.08f),
+                    "The lens hangs with the head (plus the breathing drift).");
+                Assert.That(Vector3.Dot(camera.transform.forward, Vector3.down), Is.GreaterThan(0.4f), "The eyes look down at the tray.");
+                Assert.That(Vector3.Dot(camera.transform.forward, hero.forward), Is.GreaterThan(0.3f), "...and forward, at the tile.");
+                Assert.That(home.Soundscape.ShowerWaterAmount, Is.EqualTo(1f).Within(0.01f));
+                Assert.That(shower.WaterEffect.IsEmitting, Is.True);
+                Assert.That(shower.WaterEffect.StreamParticleCount, Is.GreaterThan(5), "Water is actually falling, not just flagged.");
+                Assert.That(home.Player.Visual.InteractionHandoffLocked, Is.True);
+                Assert.That(home.PlayerOcclusion.enabled, Is.False);
+                Assert.That(curtain.localScale.x, Is.EqualTo(HomeShowerInteraction.GatheredCurtainScale).Within(0.001f), "The curtain never moves.");
+                Assert.That(shower.IsUndressed, Is.True);
+                Assert.That(shower.WashPose.HasAnatomy, Is.True, "The toilet's authored anatomy is packaged; the shower borrows it at rest.");
+                Assert.That(shower.WashPose.AnatomyRoot.gameObject.activeInHierarchy, Is.True);
+                Assert.That(
+                    Vector3.Distance(shower.WashPose.AnatomyRoot.position, registry.Anchors.Pelvis.position),
+                    Is.LessThan(0.35f),
+                    "The resting anatomy hangs from the pelvis.");
+                Assert.That(shower.WashPose.AnatomyRoot.position.y, Is.LessThan(registry.Anchors.Pelvis.position.y + 0.05f));
+                Assert.That(
+                    Vector3.Dot(shower.WashPose.AnatomyRoot.forward, Vector3.down),
+                    Is.GreaterThan(0.85f),
+                    "At rest it hangs, it does not aim.");
+                // A witness lens in the stall's corner: the only way to look
+                // at the bare body from outside, for the texture work.
+                CaptureWitness("04-witness-wash", new Vector3(3.45f, 2.45f, 2.45f), new Vector3(3.95f, 1.20f, 3.30f), 56f);
+                CaptureWitness("05-witness-front", new Vector3(4.05f, 1.15f, 3.75f), new Vector3(3.88f, 1.05f, 3.20f), 70f);
+            });
+
+            // A glance down at himself: the look cone tilts the lens, never the body.
+            Quaternion facingBeforeLook = hero.rotation;
+            shower.View.ApplyLookDelta(0f, 35f);
+            yield return AtPresentation(() =>
+            {
+                Assert.That(shower.View.LookPitchDegrees, Is.EqualTo(35f).Within(0.01f));
+                Assert.That(Quaternion.Angle(hero.rotation, facingBeforeLook), Is.LessThan(0.5f));
+                Assert.That(Vector3.Dot(camera.transform.forward, Vector3.down), Is.GreaterThan(0.8f), "Looking down at the body.");
+                CaptureShower("02-look-down");
+            });
+            shower.View.ApplyLookDelta(0f, -35f);
+            shower.View.ApplyLookDelta(500f, 0f);
+            Assert.That(shower.View.LookYawDegrees, Is.EqualTo(HomeShowerFirstPersonView.MaximumLookYawDegrees).Within(0.01f), "The cone clamps.");
+            shower.View.ApplyLookDelta(-500f, 0f);
+            shower.View.ApplyLookDelta(HomeShowerFirstPersonView.MaximumLookYawDegrees, 0f);
+            Assert.That(shower.View.LookYawDegrees, Is.Zero.Within(0.01f));
+
+            // The reward needs the minimum wash; stop only once it is earned.
+            yield return WaitUntil(() => shower.Timeline.ReachedMinimumWash, "The wash never reached its minimum.");
+            Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Wash));
+            shower.RequestStop();
+            Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.WaterOff), "E closes the tap.");
+            yield return WaitUntil(() => shower.Timeline.Phase >= HomeShowerScenePhase.Straighten, "The tap never closed.");
+            Assert.That(shower.HotHandleTurn, Is.EqualTo(1f).Within(0.01f));
+            Assert.That(home.Soundscape.ShowerWaterAmount, Is.Zero.Within(0.001f));
+
+            yield return WaitUntil(() => shower.Timeline.Phase == HomeShowerScenePhase.DripHold, "He never straightened for the drips.");
+            Vector3 heldPosition = default;
+            Quaternion heldRotation = default;
+            Vector3 heldRoot = default;
+            yield return AtPresentation(() =>
+            {
+                heldPosition = camera.transform.position;
+                heldRotation = camera.transform.rotation;
+                heldRoot = hero.position;
+                CaptureShower("03-drip");
+                Assert.That(Vector3.Dot(camera.transform.forward, Vector3.down), Is.GreaterThan(0.5f), "He looks down at the tray while the tap drips.");
+                Assert.That(shower.IsUndressed, Is.True, "Still bare while the lens is in his head.");
+                Assert.That(shower.View.IsHeadHidden, Is.True);
+                Assert.That(shower.HoldsHandoff, Is.False);
+                Assert.That(home.Player.Motor.InputEnabled, Is.False, "Input stays locked through the hold.");
+                Assert.That(home.InteractionPrompt.PromptKey, Is.Empty, "No prompt while he stands for the drips.");
+                Assert.That(shower.Drips.HoldActive, Is.True);
+            });
+            yield return null;
+            yield return AtPresentation(() =>
+            {
+                Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.DripHold));
+                // The root does not move; the lens rides the idle's breathing
+                // and the release of the brace, a few centimetres per frame at
+                // the test's time scale, never a step or a turn.
+                Assert.That(Vector3.Distance(hero.position, heldRoot), Is.LessThan(0.001f), "He stands still.");
+                Assert.That(Vector3.Distance(camera.transform.position, heldPosition), Is.LessThan(0.08f), "Only the idle breathes.");
+                Assert.That(Quaternion.Angle(camera.transform.rotation, heldRotation), Is.LessThan(6f), "Only the idle breathes.");
+            });
+            yield return WaitUntil(
+                () => shower.Drips.HoldEmitted >= 2 || shower.Timeline.Phase != HomeShowerScenePhase.DripHold,
+                "The tap never dripped.");
+            Assert.That(shower.WaterEffect.DropsEmitted, Is.GreaterThanOrEqualTo(2));
+            yield return AtPresentation(() =>
+            {
+                Assert.That(shower.WaterEffect.StreamParticleCount, Is.Zero, "The stream is gone while he stands.");
+            });
+
+            yield return WaitUntil(() => !shower.IsUndressed, "He never dressed again.");
+            yield return AtPresentation(() =>
+            {
+                Assert.That(shower.Timeline.Phase, Is.GreaterThanOrEqualTo(HomeShowerScenePhase.StepOut));
+                Assert.That(shower.Timeline.CameraBlend, Is.GreaterThanOrEqualTo(HomeShowerFirstPersonView.HeadHideBlend), "He dresses with the lens still in his head.");
+                Assert.That(Find(registry, "CLO_JacketBody").Renderer.enabled, Is.True);
+                Assert.That(shower.WashPose.BridgesShown, Is.False);
+            });
+
+            yield return WaitUntil(() => home.Player.Motor.InputEnabled, "The shower scene never restored the player.");
             Time.timeScale = 1f;
-            Assert.That(
-                curtain.localScale.x,
-                Is.EqualTo(
-                    HomeShowerSceneTimeline.GatheredCurtainScale)
-                    .Within(0.01f),
-                "The curtain must gather back after the scene.");
-            Assert.That(
-                home.Soundscape.ShowerWaterAmount,
-                Is.Zero.Within(0.001f));
-            Assert.That(
-                GameSessionState.StressLevel,
-                Is.EqualTo(50 - HomeShowerInteraction.StressRelief));
+            Assert.That(invariants.Violation, Is.Null);
+            Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Idle));
+            AssertRigRestored(before, registry);
+            Assert.That(Player3DHeadVisibility.IsHeadDrawn(registry), Is.True, "The head is back once the lens has left.");
+            Assert.That(shower.View.IsActive, Is.False);
+            Assert.That(home.CameraFollow.FixedBaseFieldOfView, Is.EqualTo(92f).Within(0.01f), "The camera is home.");
+            Assert.That(home.PlayerOcclusion.enabled, Is.True);
+            Assert.That(home.Soundscape.ShowerWaterAmount, Is.Zero.Within(0.001f));
+            Assert.That(shower.WaterEffect.IsDripping, Is.False);
+            Assert.That(shower.WashPose.BridgesShown, Is.False);
+            Assert.That(HomeShowerFraming.IsInsideStall(home.Room.InverseTransformPoint(hero.position)), Is.False, "He ends in the opening, facing the room.");
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(50 - HomeShowerInteraction.StressRelief));
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.False, "A wash always washes the face.");
+            Assert.That(Player3DBathingAppearance.IsActive, Is.False);
+            Object.Destroy(invariants);
+        }
+
+        [UnityTest]
+        public IEnumerator Shower_CancelMidWashDressesHimAndShutsTheWater()
+        {
+            yield return LoadHome();
+            GameSessionState.UpdateNeeds(0, 50);
+            HomeShowerInteraction shower = home.ShowerScene;
+            var presentation = home.Player.Visual as Player3DCharacterPresentation;
+            Assert.That(presentation, Is.Not.Null);
+            Player3DAssetRegistry registry = presentation.Registry;
+            Dictionary<string, RendererSnapshot> before = SnapshotRig(registry);
+            CursorLockMode cursorBefore = Cursor.lockState;
+
+            yield return WalkToAndActivate(shower, new Vector3(3.30f, 0.12f, 2.35f));
+            Time.timeScale = FastTimeScale;
+            yield return WaitUntil(
+                () => shower.Timeline.Phase == HomeShowerScenePhase.Wash && shower.Timeline.PhaseElapsed > 1f,
+                "The wash never started.");
+            Assert.That(shower.IsUndressed, Is.True);
+            Assert.That(shower.View.IsHeadHidden, Is.True);
+            Assert.That(home.Soundscape.ShowerWaterAmount, Is.GreaterThan(0.5f));
+
+            shower.enabled = false; // OnDisable → CancelScene: owned idempotent cleanup
+            yield return null;
+            Time.timeScale = 1f;
+            Assert.That(shower.IsUndressed, Is.False, "A cancelled wash never leaves him undressed.");
+            AssertRigRestored(before, registry);
+            Assert.That(Player3DHeadVisibility.IsHeadDrawn(registry), Is.True, "A cancelled wash never leaves him headless.");
+            Assert.That(shower.View.IsActive, Is.False);
+            Assert.That(Cursor.lockState, Is.EqualTo(cursorBefore));
+            Assert.That(home.Player.Motor.InputEnabled, Is.True);
+            Assert.That(home.Soundscape.ShowerWaterAmount, Is.Zero.Within(0.001f));
+            Assert.That(shower.WaterEffect.IsEmitting, Is.False);
+            Assert.That(shower.WaterEffect.IsDripping, Is.False);
+            Assert.That(home.PlayerOcclusion.enabled, Is.True);
+            Assert.That(shower.HoldsHandoff, Is.False);
+            Assert.That(home.Player.Visual.InteractionHandoffLocked, Is.False);
+            Assert.That(shower.HotHandleTurn, Is.Zero);
+            Assert.That(shower.WashPose.BridgesShown, Is.False);
+            Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Idle));
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(50), "A cancel commits nothing.");
+            Assert.That(Player3DBathingAppearance.IsActive, Is.False);
+            shower.enabled = true;
+        }
+
+        private readonly struct RendererSnapshot
+        {
+            public readonly bool Enabled;
+            public readonly Material Material;
+            public readonly Color Color;
+
+            public RendererSnapshot(bool enabled, Material material, Color color)
+            {
+                Enabled = enabled;
+                Material = material;
+                Color = color;
+            }
+        }
+
+        private static Dictionary<string, RendererSnapshot> SnapshotRig(Player3DAssetRegistry registry)
+        {
+            var block = new MaterialPropertyBlock();
+            var result = new Dictionary<string, RendererSnapshot>(40);
+            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+            {
+                if (binding?.Renderer == null) continue;
+                binding.Renderer.GetPropertyBlock(block);
+                result[binding.MeshName] = new RendererSnapshot(
+                    binding.Renderer.enabled, binding.Renderer.sharedMaterial, block.GetColor("_BaseColor"));
+            }
+
+            Assert.That(result.Count, Is.GreaterThanOrEqualTo(30));
+            return result;
+        }
+
+        private static void AssertRigRestored(Dictionary<string, RendererSnapshot> before, Player3DAssetRegistry registry)
+        {
+            var block = new MaterialPropertyBlock();
+            int compared = 0;
+            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+            {
+                if (binding?.Renderer == null) continue;
+                RendererSnapshot expected = before[binding.MeshName];
+                Assert.That(binding.Renderer.enabled, Is.EqualTo(expected.Enabled), binding.MeshName + " enabled flag");
+                Assert.That(ReferenceEquals(binding.Renderer.sharedMaterial, expected.Material), Is.True, binding.MeshName + " material");
+                binding.Renderer.GetPropertyBlock(block);
+                Color tint = block.GetColor("_BaseColor");
+                Assert.That(tint.r, Is.EqualTo(expected.Color.r).Within(1e-5f), binding.MeshName + " tint");
+                Assert.That(tint.g, Is.EqualTo(expected.Color.g).Within(1e-5f), binding.MeshName + " tint");
+                Assert.That(tint.b, Is.EqualTo(expected.Color.b).Within(1e-5f), binding.MeshName + " tint");
+                compared++;
+            }
+
+            Assert.That(compared, Is.EqualTo(before.Count));
+        }
+
+        private static Player3DMeshBinding Find(Player3DAssetRegistry registry, string meshName)
+        {
+            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+            {
+                if (binding?.Renderer != null && binding.MeshName == meshName) return binding;
+            }
+
+            Assert.Fail("The rig no longer has '" + meshName + "'.");
+            return null;
+        }
+
+        private static Transform Bone(Player3DAssetRegistry registry, Player3DAnatomicalPart part)
+        {
+            Assert.That(registry.TryGetPart(part, out Player3DAnatomicalPartBinding binding), Is.True, part.ToString());
+            return binding.Bone;
+        }
+
+        /// <summary>How far the face points down: the head-to-mouth direction against gravity.</summary>
+        private static float FaceDown(Player3DAssetRegistry registry)
+        {
+            Vector3 direction = registry.Anchors.Mouth.position - registry.Anchors.Head.position;
+            return Vector3.Dot(direction.normalized, Vector3.down);
         }
 
         [UnityTest]
@@ -700,6 +1016,32 @@ namespace BarPromenade.Tests.PlayMode
             System.Action pending = Sample;
             Sample = null;
             pending?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Samples an invariant after every presentation frame and keeps the
+    /// first violation, so a rule like "never undressed in shot" is held
+    /// on every frame of the scene rather than at two chosen moments.
+    /// </summary>
+    [DefaultExecutionOrder(20000)]
+    public sealed class HomeShowerInvariantProbe : MonoBehaviour
+    {
+        public System.Func<string> Check;
+        public string Violation { get; private set; }
+
+        private void LateUpdate()
+        {
+            if (Violation != null || Check == null)
+            {
+                return;
+            }
+
+            string violation = Check();
+            if (violation != null)
+            {
+                Violation = violation + " at t=" + Time.time.ToString("F2");
+            }
         }
     }
 }

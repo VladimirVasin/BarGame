@@ -199,6 +199,100 @@ round-trip. The exact focused selection
 passed `1/1` in `15.81 s` after the visibility correction. Gameplay captures
 of the default pose, camera impulse, aiming and final shake were inspected.
 Full test suites and a player build were not run.
+## 2026-09-06 — The shower from his own eyes, and a bare-skin atlas
+
+The user's re-staging of the apartment shower, built on a worktree (branch
+`feat/home-shower-naked-wash`, rebased onto `999ffc93` beside the neighbour's
+committed toilet/brushing work). The first pass of the morning — the camera
+pushing to a high corner of the stall while the hero walked in naked from
+below the frame — was rejected on sight on two counts: the walk into the
+stall was on screen, and the "naked" hero, flat skin tones painted over the
+shirt and jeans geometry, read as a mannequin in a skin-coloured suit. The
+accepted version answers both. On `E` the camera flies into the hero's own
+eyes (`0.9 s`) while the base walks him to the stall through the opening
+beside the gathered curtain; once the lens is inside his head his clothes come
+off; he braces both palms on the back tile with his head hanging under the
+water (the lens hangs with it, and the mouse or right stick looks round a
+clamped cone — down at himself included); the second `E` closes the hot tap;
+he straightens and stands still for exactly `3 s` of dying drips; walks out to
+the opening, dresses with the lens still inside, and the camera returns to the
+pinned bathroom shot. Recorded as the `2026-09-06` accepted architecture
+exception replacing bathroom exception (a).
+
+Nudity is a texture now, not a tint. The hero generator paints a second
+`256×256` point-filtered atlas, `Assets/Resources/Player/PlayerBareSkinAtlas.png`
+(`build_bare_skin_atlas`): the pelvis, thigh, shin and foot rects are the
+jeans rects byte for byte, because those meshes bake one UV0 for both atlases
+and the generator asserts it; the torso takes the `128×128` cell the jacket
+body owns in the clothing atlas, free here because the shirt-material torso
+never samples that atlas, and `GEO_Torso` gains a ring-strip UV0 into it
+(`bp_bare_skin_atlas_region`, generator `1.5.0`, `34` parts / `2,384`
+triangles unchanged). It is painted from the shared skin tones with a hashed
+scatter — the first probe's `(x·11 + y·7) % 7` scatter drew solid vertical
+bars on the chest and a polka lattice on the legs, which two Blender probe
+renders caught before anything shipped: collarbones, sternum, nipples a
+hand apart, sparse chest hair and a trail to the navel, a spine groove and
+shoulder-blade edges, the pubic patch and the cleft, kneecaps and a
+back-of-knee crease, calves, shin bones, ankle bones, sparse leg hair, and
+toes on the instep of the boot-shaped feet. The first Unity witness capture
+showed the atlas parts a shade darker than the hands and the anatomy beside
+them: the project is linear, the flat materials take their palette hex
+through `_BaseColor` unconverted, and an sRGB texel holding the same hex
+decodes darker — so every atlas tone is stored gamma-lifted
+(`lift_for_flat_palette`) and the decoded sample equals the flat number.
+`Player3DBathingAppearance` binds
+it the way the registry binds the face atlas — `_BaseMap` through the property
+block on the hero's own borrowed skin material, white tint — and falls back
+to the flat tones when the resource is missing. The manifest publishes a
+`bare_skin_atlas` section (sha256, regions, `shared_with_clothing_atlas`),
+and `Player3DV2AssetSetup` validates it (hash, import contract, a torso
+strip present, shared rects identical, every region's UV0 inside its inset)
+the way it validates the clothing binding; the texture importer and the
+dependency stamp know the new path. The toilet's authored anatomy
+(`Anatomy`, `ScrotumLeft/Right`) hangs at rest from the bare pelvis — its
+base measured once from the baked pelvis mesh and stored in the pelvis
+anchor's frame — and shows and hides with the bridge pieces.
+
+`HomeShowerFirstPersonView` is a lean sibling of the toilet view: the eye is
+the mouth anchor plus `0.068 m`, the rotation the actor's yaw with the
+scene's base pitch plus the look, the head geometry off while the blend is
+`≥ 0.9` (`Player3DHeadVisibility`), the cursor locked, the look clamped to
+`±75°` yaw / `−45..55°` pitch and never turning the body.
+`HomeShowerSceneTimeline` is `CameraIn 0.9 s` → `Approach` (open; a dock
+reached during the fly-in is remembered) → `Settle` (one rendered neutral
+frame) → `Wash` (reward from `6 s`, automatic at `12 s`) → `WaterOff 0.9 s`
+→ `Straighten 0.6 s` → `DripHold 3.0 s` → `StepOut` (the corner, then the
+turn to the room) → `CameraOut 1.4 s`; it also owns the view's base pitch
+(`6°` on the walks, `38°` under the water — exactly the pose's neck + head —
+`55°` down at the tray and his feet for the drips — the nozzle is above and behind his own head) and `IsInsideHead`, the undress and redress gate
+(`shower_undress_in_view` / `shower_redress_in_view` warn if the head is not
+hidden by then). `HomeShowerFraming` keeps the stall's geometry only; the
+frustum test, the staging point and the authored shot are gone, the base
+dock is the stall dock itself, and the waypoint seam routes a hero outside
+the stall through the opening. The stop prompt still reads «E — выключить
+воду».
+
+Verification: `dotnet build` Runtime / Editor / EditModeTests / PlayModeTests
+`0` errors (worktree csproj synced by script). Two Blender probe renders of
+the atlas on the body (front, back, side, chest, hips, legs, feet) before any
+Unity run. Three headless Unity chains (prefab rebuild → EditMode → PlayMode,
+one script): `Player3DV2AssetSetup.RunBatch` rebuilt the prefab against the
+new FBX, manifest and atlas; focused EditMode
+`HomeShowerSceneTimelineTests|HomeShowerDripModelTests|HomeShowerFramingTests|Player3DBathingAppearanceTests|HomeShowerBridgeResourcesTests|HomeBathroomSceneTimelineTests|LocalizationCatalogTests|Player3DV2AssetPipelineTests|Player3DHeadVisibilityTests`
+`89` total / `87` passed — the two reds are the pre-existing
+`balance.warning` catalog keys — and `42/42` on the last two reruns; PlayMode
+`HomeBathroomInteractionsPlayModeTests\.(Shower_|Toilet_)` `3/3`, then
+`Shower_` `2/2` after the drip frame was moved inside the `DripHold` sample
+and the "stands still" assert was re-anchored on the root (the lens breathes
+`3 cm` a frame at the test's time scale). Captures looked at:
+`Captures/HomeShower/00-first-person-in` (the tile ahead from his eyes),
+`01-wash` (both bare forearms to the tile, the bandage on the left),
+`02-look-down` (bare feet with toes on the tray, the belly and the pubic
+patch), `03-drip` (the tray and his feet while he stands), and the two
+witness frames `04-witness-wash` / `05-witness-front` (the naked back under
+the bell; the resting anatomy between the thighs). Not
+run: the full PlayMode suite, a player build, a listen. Nothing committed;
+the branch waits in the worktree for review and merge.
 
 ## 2026-09-05 — Toilet body attachment and slower completion
 

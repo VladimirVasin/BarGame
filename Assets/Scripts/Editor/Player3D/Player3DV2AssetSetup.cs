@@ -27,6 +27,8 @@ namespace BarPromenade.Editor
             Player3DV2StaticTextureContract.AssetPath;
         public const string ClothingMaterialPath =
             Player3DV2StaticTextureContract.MaterialPath;
+        public const string BareSkinAtlasPath =
+            Player3DV2StaticTextureContract.BareSkinAtlasAssetPath;
         public const string PortraitPath =
             "Assets/Resources/Player/Player3DV2Portrait.png";
         public const string MaterialPath =
@@ -236,6 +238,7 @@ namespace BarPromenade.Editor
                    File.Exists(AnimationPath) &&
                    File.Exists(AtlasPath) &&
                    File.Exists(ClothingAtlasPath) &&
+                   File.Exists(BareSkinAtlasPath) &&
                    File.Exists(PortraitPath);
         }
 
@@ -472,6 +475,9 @@ namespace BarPromenade.Editor
                     part => part.name,
                     part => part.material,
                     StringComparer.Ordinal));
+            Player3DV2StaticTextureContract.ValidateBareSkinAtlasManifest(
+                manifest.bare_skin_atlas,
+                manifest.texture_bindings[0]);
             ValidateActions(manifest.actions);
             ValidateFaceAtlas(manifest.face_atlas);
             return manifest;
@@ -966,6 +972,9 @@ namespace BarPromenade.Editor
                 Player3DV2StaticTextureContract.ValidateRendererUvs(
                     manifest.texture_bindings[0],
                     renderersByName);
+                Player3DV2StaticTextureContract.ValidateBareSkinAtlasUvs(
+                    manifest.bare_skin_atlas,
+                    renderersByName);
 
                 List<Player3DMeshBinding> meshBindings =
                     new List<Player3DMeshBinding>(manifest.parts.Length);
@@ -1372,6 +1381,7 @@ namespace BarPromenade.Editor
                 DependencyStamp(AnimationPath),
                 DependencyStamp(AtlasPath),
                 DependencyStamp(ClothingAtlasPath),
+                DependencyStamp(BareSkinAtlasPath),
                 DependencyStamp(PortraitPath),
                 DependencyStamp(MaterialPath),
                 DependencyStamp(SetupScriptPath),
@@ -1600,6 +1610,7 @@ namespace BarPromenade.Editor
             public Player3DV2ManifestAction[] actions;
             public Player3DV2ManifestFaceAtlas face_atlas;
             public Player3DV2ManifestTextureBinding[] texture_bindings;
+            public Player3DV2ManifestBareSkinAtlas bare_skin_atlas;
         }
 
         [Serializable]

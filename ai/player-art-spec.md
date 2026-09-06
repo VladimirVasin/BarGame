@@ -250,6 +250,35 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   full-body actions on that rig: `BarDrinkPickupEnter` (`2 s`),
   `BarDrinkSipLoop` (`3 s`) and `BarDrinkReturnExit` (`2 s`). The vessel follows
   the world hands, and completion returns control to the owning seated loop.
+- The shower's undressed hero is runtime state on the same prefab
+  (`Player3DBathingAppearance`): the four `clothing` renderers go off, the
+  shirt torso and the jeans-atlas pelvis/thighs/shins/feet switch to the
+  hero's own borrowed skin material and bind the bare-skin atlas through
+  their property blocks (`_BaseMap`, white tint — the face atlas's idiom),
+  the bandage stays, three Blender bridge pieces
+  (`Assets/Resources/HomeShowerAction/Models`, ~400 triangles) close the
+  nape and shoulder gaps the jacket used to cover, and the toilet's
+  authored anatomy hangs at rest from the measured bare pelvis. The lease
+  restores every flag, material, texture and tint exactly; `34` parts /
+  `2,384` triangles are unchanged. He is seen only from his own eyes.
+- The bare-skin atlas is the generator's second `256 x 256` point-filtered
+  texture, `Assets/Resources/Player/PlayerBareSkinAtlas.png`
+  (`build_bare_skin_atlas`, manifest section `bare_skin_atlas`). Its pelvis,
+  thigh, shin and foot rects are the jeans rects byte for byte — those
+  meshes bake one UV0 for both atlases, and both the generator and
+  `Player3DV2AssetSetup` assert it — and `GEO_Torso` carries a ring-strip
+  UV0 (`bp_bare_skin_atlas_region`) into the `128 x 128` cell the jacket
+  body owns in the clothing atlas, free here because the shirt never
+  samples that atlas. Painted from the shared skin tones with a hashed
+  scatter: collarbones, sternum, nipples, sparse chest hair and a trail to
+  the navel, a spine groove and shoulder blades, the pubic patch and the
+  cleft, kneecaps, calves, shin and ankle bones, sparse leg hair, toes and
+  a sole on the boot-shaped feet. Its texels are stored gamma-lifted
+  (`lift_for_flat_palette`): the project is linear, the runtime feeds the
+  flat materials their palette hex through `_BaseColor` unconverted, and an
+  sRGB texel holding the raw hex would render darker than the hand beside
+  it — the lift makes the decoded sample equal the flat number. A build
+  without the file falls back to flat skin tones.
 - The inventory portrait is the dedicated transparent render
   `Assets/Resources/Player/Player3DV2Portrait.png`; UI uses its full UV rectangle
   rather than cropping a directional sprite atlas.

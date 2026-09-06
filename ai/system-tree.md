@@ -113,6 +113,9 @@ Assets/
     HomeBrushingAction/
       HomeBrushingAction.json            real sink cavity, drain and normalized foam geometry contracts
       Models/                           five Blender FBX: hollow basin, perforated drain, brush handle, droplet and splash
+    HomeShowerAction/
+      HomeShowerAction.json              fixed-metre bridge-piece contracts for the undressed hero
+      Models/                           three Blender FBX: shoulder yoke and two deltoid caps
     Home/
       HomeInteriorModels.asset          named passive Blender mesh library + authored part metadata
       Textures/                         twelve apartment RGB albedos; 1024 source, 512 runtime, Repeat/mips
@@ -604,9 +607,10 @@ Assets/
         HomeRefrigeratorItemView.cs  stable renderers, selection trigger and original root
         HomeAlarmClockPlan.cs       validated bed-relative nightstand/clock placement
         HomeAlarmClockBuilder.cs    low-poly nightstand and alarm-clock composition
-        HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
+        HomeBathroomBuilder.cs   oriented toilet, shower/sink (curtain gathered at 0.40, never drawn) and pipe damage
         HomeToiletLid.cs           authored hinge motion + bowl-water asset composition
         HomeUrineEffect.cs         pooled ballistic packets, contact sounds, splashes and projected marks
+        HomeShowerBridgeResources.cs  the three Blender bridge pieces (yoke, deltoids) for the undressed hero, under runtime pivots
         HomeUrine{Trajectory,SurfaceMap,Residue,Resources}.cs  swept mesh hits, shared assets and bounded session deposits
         HomeBrushingSpitEffect.cs  pooled mouth-origin foam flight and actual sink-triangle impacts
         HomeBrushingResources.cs   shared readable Blender sink/effect meshes and cream PS1 Lit foam
@@ -820,6 +824,7 @@ Assets/
         PlayerRagdollHandoff.cs          the fall's rigid rotation about the boot under the pressure, as a velocity field
         Player3DFirstPersonSubset.cs     prefab-derived camera-local arm filtering
         Player3DHeadVisibility.cs        the whole head off by bone rule, for a camera inside it
+        Player3DBathingAppearance.cs     the clothes off by role rule and the body repainted skin, restored exactly (the shower)
       Inventory/     pure item catalog, ordered session stacks and menu state
         InventoryTypes.cs           stable IDs, definitions and stack values
         InventoryState.cs           atomic bounded stack mutations + starters
@@ -845,14 +850,18 @@ Assets/
         HomeRefrigeratorItemInspection*.cs  nested hover/fly/rotate/return controller + timeline
         HomeRefrigeratorFirstPersonHand.cs  prefab-derived right arm and handle reach
         StairwellCatInteraction.cs     Talk/Interact adapter + paired feeding orchestration
-        HomeBathroomSceneInteraction.cs  shared bathroom-scene skeleton: modal, walk-in, camera
         HomeToiletInteraction.cs       first-person 6 s urine + 2 s shake timeline, natural relief and cancel
         HomeToiletFirstPersonView.cs   actual hero arm IK, head visibility, held Blender anatomy and aim/look
         HomeToiletAnatomyDynamics.cs   camera-driven shaft spring and paired damped gravity pendulums
-        HomeShowerInteraction.cs       curtain/water/steam shower scene + timeline + effect
         HomeTeethBrushingInteraction.cs  manual mirror brush, teeth display, spit and completion-only daily relief
         HomeTeethBrushingModel.cs        contact-qualified travel progress and brush/show/spit/return timeline
         HomeTeethBrushingArmPose.cs      actual rig hand IK and connected spine/chest/neck/head spit bend
+        HomeBathroomSceneInteraction.cs  shared bathroom-scene skeleton: modal, walk-in (opt-in waypoint, camera-led approach), camera, walk steps, per-tick stop prompt
+        HomeShowerInteraction.cs       first-person naked shower scene + ten-phase timeline (fly-in, approach, wash, tap, still drips, walk out) + stream/steam/drip/splash effect
+        HomeShowerFirstPersonView.cs   the lens in the hero's head: mouth anchor + eye offset, scene base pitch, clamped look, head off while inside
+        HomeShowerDripModel.cs         the shut tap's drops: rate patter, then a four-drop geometric run inside the 3 s hold, landings a fall later
+        HomeShowerFraming.cs           the stall's authored points (opening, dock, palms, nozzle, basin, tap) and the inside-the-stall test
+        HomeShowerWashPose.cs          two-palm tile brace, head bow, valve reach, the bridge pieces and the resting anatomy, solved after the presentation
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
         MothersHouse{Entrance,Exit}.cs existing village leaf -> room -> one-shot safe return
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
@@ -1138,6 +1147,7 @@ ArtSource/
     Interior/                    generated HomeInterior3D.blend + home-interior-3d-model.json
   HomeToiletAction/               Blender source, model/anchor manifest and anatomy/lid/liquid preview
   HomeBrushingAction/             Blender sink source, five-model manifest and cavity/drain inspection PNG
+  HomeShowerAction/               Blender source, manifest and true-metre preview of the shower bridge pieces
   PlayerHome/                    generated exterior .blend/preview + nine-sheet manifest/contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
     Cafe/Blender/                generated fixed-metre cafe `.blend`
@@ -1211,6 +1221,7 @@ tools/
   build-home-interior-3d-model.py   deterministic home_interior_v1 mesh set, manifest and validator
   build-home-toilet-action-3d-model.py  eleven toilet models + hollow opening and FBX round-trip validator
   build-home-brushing-action-3d-model.py  five sink/brush/foam models + cavity rays and FBX round-trip validator
+  build-home-shower-action-3d-model.py  shoulder yoke + two deltoid caps sized from the hero generator, outward-face and FBX round-trip validators
 Packages/
 ProjectSettings/
 ```

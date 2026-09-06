@@ -4,6 +4,14 @@ using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
+    /// <summary>One frame of a guided walk: still going, there, or stuck.</summary>
+    public enum HomeGuidedWalkStep
+    {
+        Walking = 0,
+        Arrived = 1,
+        Stalled = 2
+    }
+
     /// <summary>
     /// Shared machinery for the three bathroom scenes (toilet, shower,
     /// teeth brushing): modal capture, the constrained walk-in to the
@@ -13,6 +21,15 @@ namespace BarPromenade
     /// pose, timeline advancement and commit. The full-body clip set
     /// is closed, so these scenes pose the hero procedurally — the
     /// recorded exceptions live in ai/architecture-notes.md.
+    ///
+    /// Two opt-in seams let a scene lead with its camera: the push may
+    /// run while the hero is still walking in
+    /// (<see cref="CameraLeadsApproach"/>), and the approach may route
+    /// through one corner first (<see cref="TryGetApproachWaypoint"/>).
+    /// A scene that owns further guided legs of its own drives them
+    /// with <see cref="AdvanceGuidedWalk"/> and
+    /// <see cref="AdvanceGuidedWaypoint"/>, which report a stall
+    /// rather than cancelling, so the caller decides and returns.
     /// </summary>
     public abstract class HomeBathroomSceneInteraction :
         MonoBehaviour,
@@ -30,11 +47,15 @@ namespace BarPromenade
         private Quaternion cameraTargetRotation;
         private bool cameraPathCaptured;
         private bool approaching;
+        private bool approachingWaypoint;
+        private Vector3 approachWaypoint;
+        private float approachWaypointRadius;
         private bool walkingOut;
         private bool settled;
         private bool exitInputArmed;
         private float exitInputArmTime;
         private bool restoring;
+        private bool stopPromptShown;
 
         protected HomeInteriorRoot Home { get; private set; }
         protected bool OwnsScene { get; private set; }
@@ -72,6 +93,31 @@ namespace BarPromenade
         {
             position = default;
             rotation = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Whether the camera push runs during the walk-in instead of
+        /// waiting for the hero to settle at the dock. A scene that opts
+        /// in owns the blend from the moment it is captured.
+        /// </summary>
+        protected virtual bool CameraLeadsApproach => false;
+
+        /// <summary>Ticks while the base class walks the hero in and the camera leads.</summary>
+        protected virtual void OnApproachAdvance(float deltaTime) { }
+
+        /// <summary>
+        /// A corner the walk-in passes through before the dock, when the
+        /// hero's current position needs one (a stall the straight line
+        /// would cut through). Evaluated once, at capture.
+        /// </summary>
+        protected virtual bool TryGetApproachWaypoint(
+            Vector3 heroPosition,
+            out Vector3 waypoint,
+            out float arrivalRadius)
+        {
+            waypoint = default;
+            arrivalRadius = 0f;
             return false;
         }
 
@@ -205,6 +251,10 @@ namespace BarPromenade
 
             OwnsScene = true;
             approaching = true;
+            approachingWaypoint = TryGetApproachWaypoint(
+                Home.Player.Motor.transform.position,
+                out approachWaypoint,
+                out approachWaypointRadius);
             walkingOut = false;
             settled = false;
             StopQueued = false;
@@ -212,6 +262,7 @@ namespace BarPromenade
             exitInputArmed = false;
             exitInputArmTime =
                 Time.unscaledTime + ExitInputDebounceSeconds;
+            stopPromptShown = false;
             CaptureCameraPath();
             OnSceneCaptured();
         }
@@ -262,14 +313,47 @@ namespace BarPromenade
             }
             if (approaching)
             {
-                AdvanceGuidedWalk(
+                if (CameraLeadsApproach)
+                {
+                    SceneElapsed += deltaTime;
+                    OnApproachAdvance(deltaTime);
+                    if (!OwnsScene)
+                    {
+                        return;
+                    }
+                }
+
+                if (approachingWaypoint)
+                {
+                    HomeGuidedWalkStep corner = AdvanceGuidedWaypoint(
+                        approachWaypoint,
+                        approachWaypointRadius,
+                        deltaTime);
+                    if (corner == HomeGuidedWalkStep.Stalled)
+                    {
+                        CancelScene();
+                    }
+                    else if (corner == HomeGuidedWalkStep.Arrived)
+                    {
+                        approachingWaypoint = false;
+                    }
+
+                    return;
+                }
+
+                HomeGuidedWalkStep step = AdvanceGuidedWalk(
                     DockPosition,
                     DockRotation,
-                    deltaTime,
-                    () =>
-                    {
-                        approaching = false;
-                    });
+                    deltaTime);
+                if (step == HomeGuidedWalkStep.Stalled)
+                {
+                    CancelScene();
+                }
+                else if (step == HomeGuidedWalkStep.Arrived)
+                {
+                    approaching = false;
+                }
+
                 return;
             }
 
@@ -285,11 +369,19 @@ namespace BarPromenade
 
             if (walkingOut)
             {
-                AdvanceGuidedWalk(
+                HomeGuidedWalkStep step = AdvanceGuidedWalk(
                     ExitPosition,
                     ExitRotation,
-                    deltaTime,
-                    CompleteScene);
+                    deltaTime);
+                if (step == HomeGuidedWalkStep.Stalled)
+                {
+                    CancelScene();
+                }
+                else if (step == HomeGuidedWalkStep.Arrived)
+                {
+                    CompleteScene();
+                }
+
                 return;
             }
 
@@ -301,26 +393,43 @@ namespace BarPromenade
             }
 
             OnSceneAdvance(deltaTime);
+            if (!OwnsScene)
+            {
+                return;
+            }
+
             if (SceneCompleted)
             {
                 walkingOut = true;
                 ApplyStopPrompt();
+                return;
+            }
+
+            // The prompt is pushed, not polled: a phase that ends on its
+            // own (an automatic finish) must take the prompt with it.
+            bool shouldShow = SceneRunning && !StopQueued && StopPromptVisible;
+            if (shouldShow != stopPromptShown)
+            {
+                ApplyStopPrompt();
             }
         }
 
-        private void AdvanceGuidedWalk(
+        /// <summary>
+        /// One frame of the constrained walk to a grounded pose. Docks
+        /// are authored at floor level, but the controller root rides at
+        /// its own grounded height and the motor's completion check
+        /// demands a 2 cm vertical match — so the walk target adopts the
+        /// hero's current height and lets gravity own the vertical (the
+        /// tray step included). A stall is reported, never acted on: the
+        /// caller cancels and returns, so nothing after it runs on a
+        /// scene that has already been restored.
+        /// </summary>
+        protected HomeGuidedWalkStep AdvanceGuidedWalk(
             Vector3 target,
             Quaternion rotation,
-            float deltaTime,
-            Action onArrived)
+            float deltaTime)
         {
             PlayerMotor motor = Home.Player.Motor;
-
-            // Docks are authored at floor level, but the controller
-            // root rides at its own grounded height and the motor's
-            // completion check demands a 2 cm vertical match — so the
-            // walk target adopts the hero's current height and lets
-            // gravity own the vertical (the tray step included).
             Vector3 grounded = new Vector3(
                 target.x,
                 motor.transform.position.y,
@@ -331,24 +440,57 @@ namespace BarPromenade
                 deltaTime);
             if (motor.InteractionPoseMoveStalled)
             {
-                Vector3 playerPosition = motor.transform.position;
-                GameLog.Warning(
-                    "home",
-                    "bathroom_scene_stalled",
-                    GameLog.Field("scene", gameObject.name),
-                    GameLog.Field("player_x", playerPosition.x),
-                    GameLog.Field("player_y", playerPosition.y),
-                    GameLog.Field("player_z", playerPosition.z),
-                    GameLog.Field("target_x", grounded.x),
-                    GameLog.Field("target_z", grounded.z));
-                CancelScene();
-                return;
+                LogStall(grounded);
+                return HomeGuidedWalkStep.Stalled;
             }
 
-            if (arrived)
+            return arrived
+                ? HomeGuidedWalkStep.Arrived
+                : HomeGuidedWalkStep.Walking;
+        }
+
+        /// <summary>
+        /// One frame of the walk through a corner: facing and height stay
+        /// free, arrival is a radius, and the stall detection is the
+        /// motor's own.
+        /// </summary>
+        protected HomeGuidedWalkStep AdvanceGuidedWaypoint(
+            Vector3 target,
+            float arrivalRadius,
+            float deltaTime)
+        {
+            PlayerMotor motor = Home.Player.Motor;
+            Vector3 grounded = new Vector3(
+                target.x,
+                motor.transform.position.y,
+                target.z);
+            bool arrived = motor.MoveTowardsApproachWaypoint(
+                grounded,
+                arrivalRadius,
+                deltaTime);
+            if (motor.InteractionPoseMoveStalled)
             {
-                onArrived();
+                LogStall(grounded);
+                return HomeGuidedWalkStep.Stalled;
             }
+
+            return arrived
+                ? HomeGuidedWalkStep.Arrived
+                : HomeGuidedWalkStep.Walking;
+        }
+
+        private void LogStall(Vector3 target)
+        {
+            Vector3 playerPosition = Home.Player.Motor.transform.position;
+            GameLog.Warning(
+                "home",
+                "bathroom_scene_stalled",
+                GameLog.Field("scene", gameObject.name),
+                GameLog.Field("player_x", playerPosition.x),
+                GameLog.Field("player_y", playerPosition.y),
+                GameLog.Field("player_z", playerPosition.z),
+                GameLog.Field("target_x", target.x),
+                GameLog.Field("target_z", target.z));
         }
 
         private void CompleteScene()
@@ -390,6 +532,7 @@ namespace BarPromenade
                 Home?.InteractionPrompt?.SetPrompt(
                     string.Empty,
                     null);
+                stopPromptShown = false;
                 modalLock?.Restore();
                 Home?.FixedCamera?.ReapplyActiveShot();
             }
@@ -397,6 +540,7 @@ namespace BarPromenade
             {
                 OwnsScene = false;
                 approaching = false;
+                approachingWaypoint = false;
                 walkingOut = false;
                 settled = false;
                 StopQueued = false;
@@ -407,12 +551,18 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            if (!OwnsScene || !cameraPathCaptured || !settled)
+            if (!OwnsScene || !cameraPathCaptured ||
+                (!settled && !CameraLeadsApproach))
             {
                 return;
             }
 
             OnScenePresentation(Time.deltaTime);
+            if (!OwnsScene)
+            {
+                return;
+            }
+
             if (TryGetSceneCamera(out Vector3 position, out Quaternion rotation))
             {
                 cameraTargetPosition = position;
@@ -463,6 +613,7 @@ namespace BarPromenade
             Home.InteractionPrompt.SetPrompt(
                 show ? StopPromptKey : string.Empty,
                 show ? stopPromptAction : null);
+            stopPromptShown = show;
         }
 
         private void UpdateExitInputArm()

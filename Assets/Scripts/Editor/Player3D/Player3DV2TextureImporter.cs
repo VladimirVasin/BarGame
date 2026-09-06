@@ -35,6 +35,10 @@ namespace BarPromenade.Editor
             else if (string.Equals(
                          assetPath,
                          Player3DV2AssetSetup.ClothingAtlasPath,
+                         StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(
+                         assetPath,
+                         Player3DV2AssetSetup.BareSkinAtlasPath,
                          StringComparison.OrdinalIgnoreCase))
             {
                 ConfigureAtlas(importer);

@@ -22,6 +22,17 @@ namespace BarPromenade.Editor
         public const int Height = 256;
         public const int UvSafeInsetPixels = 1;
 
+        /// <summary>
+        /// The generator's bare-skin atlas: the shower loads it by name and
+        /// binds it through a property block on the hero's own skin
+        /// material, so it lives under Resources and owns no material.
+        /// </summary>
+        public const string BareSkinAtlasAssetPath =
+            "Assets/Resources/Player/PlayerBareSkinAtlas.png";
+        public const string BareSkinAtlasResourcePath =
+            "Player/PlayerBareSkinAtlas";
+        public const string BareSkinTorsoRenderer = "GEO_Torso";
+
         private static readonly string[] ExpectedMaterials =
         {
             "MAT_JacketAtlas",
@@ -123,10 +134,129 @@ namespace BarPromenade.Editor
             }
 
             ValidateMaterials(binding.materials);
-            ValidateSha256(binding.sha256);
+            ValidateSha256(binding.sha256, AssetPath);
             ValidateRendererContract(partMaterials);
             ValidateRegions(binding, partMaterials);
             return binding;
+        }
+
+        /// <summary>
+        /// The bare-skin atlas against the clothing binding: the same
+        /// import contract, its hash, a torso strip of its own, and every
+        /// other region byte-identical to the clothing rect of the same
+        /// renderer — those meshes bake one UV0 for both atlases.
+        /// </summary>
+        public static void ValidateBareSkinAtlasManifest(
+            Player3DV2ManifestBareSkinAtlas atlas,
+            Player3DV2ManifestTextureBinding clothing)
+        {
+            if (atlas == null)
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 must declare the bare_skin_atlas the shower dresses him in.");
+            }
+
+            if (atlas.texture_asset != BareSkinAtlasAssetPath ||
+                atlas.resource_path != BareSkinAtlasResourcePath ||
+                atlas.width_px != Width ||
+                atlas.height_px != Height ||
+                atlas.shader_property != "_BaseMap" ||
+                atlas.color_space != "sRGB" ||
+                atlas.filter_mode != "Point" ||
+                atlas.wrap_mode != "Clamp" ||
+                atlas.mipmaps ||
+                atlas.compression != "Uncompressed" ||
+                atlas.uv_channel != 0 ||
+                atlas.uv_origin != "bottom_left" ||
+                atlas.uv_safe_inset_px != UvSafeInsetPixels ||
+                atlas.material_tint_hex != "FFFFFF")
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 bare-skin atlas settings differ from the " +
+                    "canonical full-colour _BaseMap contract.");
+            }
+
+            ValidateSha256(atlas.sha256, BareSkinAtlasAssetPath);
+            if (atlas.regions == null || atlas.regions.Length == 0 ||
+                clothing == null || clothing.regions == null)
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 bare-skin atlas must publish renderer regions.");
+            }
+
+            bool torso = false;
+            HashSet<string> renderers = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < atlas.regions.Length; index++)
+            {
+                Player3DV2ManifestTextureRegion region = atlas.regions[index];
+                if (region == null ||
+                    string.IsNullOrWhiteSpace(region.name) ||
+                    string.IsNullOrWhiteSpace(region.renderer) ||
+                    !renderers.Add(region.renderer) ||
+                    region.width_px <= UvSafeInsetPixels * 2 ||
+                    region.height_px <= UvSafeInsetPixels * 2 ||
+                    region.x_px < 0 || region.y_px < 0 ||
+                    region.x_px + region.width_px > Width ||
+                    region.y_px + region.height_px > Height)
+                {
+                    throw new InvalidOperationException(
+                        "Hero V2 bare-skin atlas region " +
+                        $"{index} is malformed.");
+                }
+
+                if (region.renderer == BareSkinTorsoRenderer)
+                {
+                    torso = true;
+                    continue;
+                }
+
+                Player3DV2ManifestTextureRegion shared = null;
+                for (int other = 0; other < clothing.regions.Length; other++)
+                {
+                    if (clothing.regions[other]?.renderer == region.renderer)
+                    {
+                        shared = clothing.regions[other];
+                        break;
+                    }
+                }
+
+                if (shared == null ||
+                    shared.x_px != region.x_px ||
+                    shared.y_px != region.y_px ||
+                    shared.width_px != region.width_px ||
+                    shared.height_px != region.height_px)
+                {
+                    throw new InvalidOperationException(
+                        $"Bare-skin region '{region.name}' must share the " +
+                        $"clothing atlas rect of '{region.renderer}': UV0 is baked once.");
+                }
+            }
+
+            if (!torso)
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 bare-skin atlas must paint a strip for " +
+                    $"'{BareSkinTorsoRenderer}'.");
+            }
+        }
+
+        public static void ValidateBareSkinAtlasUvs(
+            Player3DV2ManifestBareSkinAtlas atlas,
+            IReadOnlyDictionary<string, Renderer> renderers)
+        {
+            if (atlas == null)
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 must declare the bare_skin_atlas the shower dresses him in.");
+            }
+
+            ValidateRegionUvs(
+                atlas.regions,
+                atlas.width_px,
+                atlas.height_px,
+                atlas.uv_safe_inset_px,
+                renderers,
+                "Bare-skin atlas");
         }
 
         public static void ValidateTexture(Texture2D texture)
@@ -145,16 +275,39 @@ namespace BarPromenade.Editor
             Player3DV2ManifestTextureBinding binding,
             IReadOnlyDictionary<string, Renderer> renderers)
         {
+            ValidateRegionUvs(
+                binding.regions,
+                binding.width_px,
+                binding.height_px,
+                binding.uv_safe_inset_px,
+                renderers,
+                "Clothing atlas");
+        }
+
+        private static void ValidateRegionUvs(
+            Player3DV2ManifestTextureRegion[] regions,
+            int widthPx,
+            int heightPx,
+            int insetPx,
+            IReadOnlyDictionary<string, Renderer> renderers,
+            string atlasName)
+        {
+            if (regions == null)
+            {
+                throw new InvalidOperationException(
+                    $"{atlasName} must publish renderer regions.");
+            }
+
             for (int regionIndex = 0;
-                 regionIndex < binding.regions.Length;
+                 regionIndex < regions.Length;
                  regionIndex++)
             {
                 Player3DV2ManifestTextureRegion region =
-                    binding.regions[regionIndex];
+                    regions[regionIndex];
                 if (!renderers.TryGetValue(region.renderer, out Renderer renderer))
                 {
                     throw new InvalidOperationException(
-                        $"Clothing atlas region '{region.name}' references " +
+                        $"{atlasName} region '{region.name}' references " +
                         $"missing renderer '{region.renderer}'.");
                 }
 
@@ -173,17 +326,11 @@ namespace BarPromenade.Editor
                 }
 
                 Vector2 minimum = new Vector2(
-                    (float)(region.x_px + binding.uv_safe_inset_px) /
-                    binding.width_px,
-                    (float)(region.y_px + binding.uv_safe_inset_px) /
-                    binding.height_px);
+                    (float)(region.x_px + insetPx) / widthPx,
+                    (float)(region.y_px + insetPx) / heightPx);
                 Vector2 maximum = new Vector2(
-                    (float)(region.x_px + region.width_px -
-                            binding.uv_safe_inset_px) /
-                    binding.width_px,
-                    (float)(region.y_px + region.height_px -
-                            binding.uv_safe_inset_px) /
-                    binding.height_px);
+                    (float)(region.x_px + region.width_px - insetPx) / widthPx,
+                    (float)(region.y_px + region.height_px - insetPx) / heightPx);
                 Vector2 observedMinimum = uv[0];
                 Vector2 observedMaximum = uv[0];
                 for (int uvIndex = 0; uvIndex < uv.Length; uvIndex++)
@@ -310,16 +457,22 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void ValidateSha256(string declaredHash)
+        private static void ValidateSha256(string declaredHash, string assetPath)
         {
             if (string.IsNullOrEmpty(declaredHash) || declaredHash.Length != 64)
             {
                 throw new InvalidOperationException(
-                    "Hero V2 clothing atlas must publish a SHA-256 hash.");
+                    $"Hero V2 atlas '{assetPath}' must publish a SHA-256 hash.");
+            }
+
+            if (!File.Exists(assetPath))
+            {
+                throw new InvalidOperationException(
+                    $"Hero V2 atlas '{assetPath}' is missing.");
             }
 
             using SHA256 sha = SHA256.Create();
-            using FileStream stream = File.OpenRead(AssetPath);
+            using FileStream stream = File.OpenRead(assetPath);
             string actualHash = BitConverter
                 .ToString(sha.ComputeHash(stream))
                 .Replace("-", string.Empty)
@@ -330,7 +483,7 @@ namespace BarPromenade.Editor
                     StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(
-                    "Hero V2 clothing atlas SHA-256 differs from manifest.");
+                    $"Hero V2 atlas '{assetPath}' SHA-256 differs from manifest.");
             }
         }
 
@@ -536,5 +689,26 @@ namespace BarPromenade.Editor
         public int y_px;
         public int width_px;
         public int height_px;
+    }
+
+    [Serializable]
+    internal sealed class Player3DV2ManifestBareSkinAtlas
+    {
+        public string texture_asset;
+        public string resource_path;
+        public int width_px;
+        public int height_px;
+        public string shader_property;
+        public string color_space;
+        public string filter_mode;
+        public string wrap_mode;
+        public bool mipmaps;
+        public string compression;
+        public int uv_channel;
+        public string uv_origin;
+        public int uv_safe_inset_px;
+        public string material_tint_hex;
+        public string sha256;
+        public Player3DV2ManifestTextureRegion[] regions;
     }
 }

@@ -44,18 +44,20 @@ namespace BarPromenade
         }
 
         // The render pipeline's own "not for the GPU Resident Drawer" marker; internal to the
-        // GPUDriven runtime assembly, so it is found by full name across the loaded assemblies.
+        // GPUDriven runtime assembly, so it is resolved by its assembly-qualified name (the
+        // Core assembly does not carry it, and scanning AppDomain assemblies is what UAC0005
+        // warns about: it can hand back assemblies Unity has already unloaded).
+        private const string DisallowGpuDrivenRenderingTypeName =
+            "UnityEngine.Rendering.DisallowGPUDrivenRendering, Unity.RenderPipelines.GPUDriven.Runtime";
         private static readonly Type DisallowGpuDrivenRenderingType =
-            FindBehaviourType("UnityEngine.Rendering.DisallowGPUDrivenRendering");
+            FindBehaviourType(DisallowGpuDrivenRenderingTypeName);
 
-        private static Type FindBehaviourType(string fullName)
+        private static Type FindBehaviourType(string assemblyQualifiedName)
         {
-            foreach (System.Reflection.Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                Type candidate = assembly.GetType(fullName, false);
-                if (candidate != null && typeof(MonoBehaviour).IsAssignableFrom(candidate)) return candidate;
-            }
-            return null;
+            Type candidate = Type.GetType(assemblyQualifiedName, false);
+            return candidate != null && typeof(MonoBehaviour).IsAssignableFrom(candidate)
+                ? candidate
+                : null;
         }
 
         private readonly Packet[] packets = new Packet[PacketCapacity];

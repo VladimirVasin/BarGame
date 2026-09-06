@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model-v2.py",
-  "generator_version": "1.4.0",
+  "generator_version": "1.5.0",
   "blender_version": "5.0.1",
   "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
   "runtime_integrated": true,
@@ -1288,7 +1288,7 @@
     "action_count": 41,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "27011ab1187882fe19962bcc3ebd021c8257e10685524ca360f5e690d0926678",
+  "content_signature_sha256": "3d72f4b4e7c4d5521712ad26cf7c1d8e7b141738d1d198365010aee19cb75e54",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -1570,6 +1570,98 @@
       ]
     }
   ],
+  "bare_skin_atlas": {
+    "texture_asset": "Assets/Resources/Player/PlayerBareSkinAtlas.png",
+    "resource_path": "Player/PlayerBareSkinAtlas",
+    "width_px": 256,
+    "height_px": 256,
+    "shader_property": "_BaseMap",
+    "color_space": "sRGB",
+    "filter_mode": "Point",
+    "wrap_mode": "Clamp",
+    "mipmaps": false,
+    "compression": "Uncompressed",
+    "uv_channel": 0,
+    "uv_origin": "bottom_left",
+    "uv_safe_inset_px": 1,
+    "material_tint_hex": "FFFFFF",
+    "reader": "Player3DBathingAppearance (the home shower); a property block on the hero's own skin material",
+    "sha256": "496ddd211220f109fd5a1051d86792965d64645764dfc3f7b781e9afe6eb579c",
+    "regions": [
+      {
+        "name": "BareTorso",
+        "renderer": "GEO_Torso",
+        "x_px": 0,
+        "y_px": 128,
+        "width_px": 128,
+        "height_px": 128,
+        "shared_with_clothing_atlas": false
+      },
+      {
+        "name": "BarePelvis",
+        "renderer": "GEO_Pelvis",
+        "x_px": 192,
+        "y_px": 128,
+        "width_px": 64,
+        "height_px": 64,
+        "shared_with_clothing_atlas": true
+      },
+      {
+        "name": "BareThighLeft",
+        "renderer": "GEO_Thigh.L",
+        "x_px": 0,
+        "y_px": 64,
+        "width_px": 64,
+        "height_px": 64,
+        "shared_with_clothing_atlas": true
+      },
+      {
+        "name": "BareThighRight",
+        "renderer": "GEO_Thigh.R",
+        "x_px": 64,
+        "y_px": 64,
+        "width_px": 64,
+        "height_px": 64,
+        "shared_with_clothing_atlas": true
+      },
+      {
+        "name": "BareShinLeft",
+        "renderer": "GEO_Shin.L",
+        "x_px": 128,
+        "y_px": 64,
+        "width_px": 64,
+        "height_px": 64,
+        "shared_with_clothing_atlas": true
+      },
+      {
+        "name": "BareShinRight",
+        "renderer": "GEO_Shin.R",
+        "x_px": 192,
+        "y_px": 64,
+        "width_px": 64,
+        "height_px": 64,
+        "shared_with_clothing_atlas": true
+      },
+      {
+        "name": "BareFootLeft",
+        "renderer": "GEO_Foot.L",
+        "x_px": 0,
+        "y_px": 0,
+        "width_px": 64,
+        "height_px": 64,
+        "shared_with_clothing_atlas": true
+      },
+      {
+        "name": "BareFootRight",
+        "renderer": "GEO_Foot.R",
+        "x_px": 64,
+        "y_px": 0,
+        "width_px": 64,
+        "height_px": 64,
+        "shared_with_clothing_atlas": true
+      }
+    ]
+  },
   "body_contract": {
     "canonical_height_m": 1.75,
     "head_crown_to_chin_m": 0.2335,
@@ -1647,6 +1739,5 @@
     "right_knee_width_m": 0.107155,
     "right_calf_width_m": 0.133021,
     "right_ankle_width_m": 0.08129
-  },
-  "content_signature_scope": "last_full_model_export; current_face_pixels_use_face_atlas.sha256"
+  }
 }

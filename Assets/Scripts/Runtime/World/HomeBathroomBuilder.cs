@@ -438,11 +438,12 @@ namespace BarPromenade
                 new Vector3(0.035f, bounds.height * 0.5f, 0.035f),
                 new Vector3(90f, 0f, 0f)));
 
-            // The animatable curtain: an empty pivot at the left front
-            // corner; the shower scene stretches localScale.x from the
-            // gathered 0.55 to the drawn 1.0. Four overlapping fold
-            // strips alternate depth and tint so the folds read at PS1
-            // fidelity.
+            // The curtain: an empty pivot at the left front corner, its
+            // localScale.x the gathered fraction of the rail. It stays
+            // gathered — the shower scene never draws it — tight enough
+            // to leave the front-right opening the hero walks through.
+            // Four overlapping fold strips alternate depth and tint so
+            // the folds read at PS1 fidelity.
             var curtainGroup = new GameObject(
                 "Home Bathroom Shower Curtain");
             curtainGroup.transform.SetParent(room, false);
@@ -469,8 +470,10 @@ namespace BarPromenade
                 curtainParts.Add(strip);
             }
 
-            curtainGroup.transform.localScale =
-                new Vector3(0.55f, 1f, 1f);
+            curtainGroup.transform.localScale = new Vector3(
+                HomeShowerInteraction.GatheredCurtainScale,
+                1f,
+                1f);
 
             // Static folded run along the left rail.
             for (int side = 0; side < 3; side++)
