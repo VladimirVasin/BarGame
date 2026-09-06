@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace BarPromenade
@@ -65,6 +66,8 @@ namespace BarPromenade
     /// </summary>
     internal sealed class Player3DFootGroundProbe : IDisposable
     {
+        private static readonly ProfilerMarker SoleBakeMarker =
+            new ProfilerMarker("BarPromenade.FootSoleBake");
         public const float ProbeStartHeight = 0.45f;
         public const float ProbeDistance = 1.4f;
 
@@ -170,6 +173,8 @@ namespace BarPromenade
         /// </summary>
         public bool TryGetSoleHeight(FootSide side, out float soleY)
         {
+            using var marker = SoleBakeMarker.Auto();
+            using var measurement = RuntimePerformanceCapture.MeasureFootBake();
             soleY = float.PositiveInfinity;
             SkinnedMeshRenderer[] renderers = soleRenderers[(int)side];
             for (int index = 0; index < renderers.Length; index++)

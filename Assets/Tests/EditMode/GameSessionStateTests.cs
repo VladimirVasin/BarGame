@@ -222,6 +222,8 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void BeginNewGame_RestoresEverySessionContract()
         {
+            GameSessionState.SetRidingTheCableway(true);
+            System.IDisposable previousRide = GameSessionState.AcquireCablewayRide();
             GameSessionState.SetCitySeed(-7001);
             GameSessionState.SetCityBlueprint(
                 CityBlueprintCatalog.LegacyBlueprintId);
@@ -255,6 +257,16 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
 
             GameSessionState.BeginNewGame();
+
+            Assert.That(GameSessionState.IsRidingTheCableway, Is.False);
+            Assert.That(GameSessionState.IsRidingAVehicle, Is.False);
+            // A late scene teardown must not clear the next session's ride.
+            System.IDisposable currentRide = GameSessionState.AcquireCablewayRide();
+            previousRide.Dispose();
+            previousRide.Dispose();
+            Assert.That(GameSessionState.IsRidingTheCableway, Is.True);
+            currentRide.Dispose();
+            Assert.That(GameSessionState.IsRidingTheCableway, Is.False);
 
             Assert.That(
                 GameSessionState.CitySeed,

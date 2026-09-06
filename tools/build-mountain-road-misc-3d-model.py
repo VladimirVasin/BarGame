@@ -21,10 +21,10 @@ the runtime combines meshes per Mountain Road surface/tint bucket.
 
 Run through Blender 5 from the repository root::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-mountain-road-misc-3d-model.py
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-mountain-road-misc-3d-model.py -- --validate-only
 """
 

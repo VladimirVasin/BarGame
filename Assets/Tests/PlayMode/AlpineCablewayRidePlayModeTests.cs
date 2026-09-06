@@ -160,6 +160,13 @@ namespace BarPromenade.Tests.PlayMode
                     Is.True,
                     "The gates that move him are not armed.");
 
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    Assert.That(harness.Ride.CanSkipRide, Is.False);
+                    Assert.That(harness.Ride.TrySkipRide(), Is.False,
+                        "A pause owns input, including the ride skip shortcut.");
+                }
+
                 // He is carried. Measured as the distance he travels against
                 // the distance the cabin travels - anything solved once and
                 // then left alone would stay behind.
@@ -199,11 +206,18 @@ namespace BarPromenade.Tests.PlayMode
                     seat.CanInteract(harness.Player.Interactor),
                     Is.False,
                     "Getting out of a moving cabin must be refused.");
+
+                harness.Ride.enabled = false;
+                Assert.That(GameSessionState.IsRidingTheCableway, Is.False,
+                    "Disabling the ride must release its transient session state.");
             }
             finally
             {
                 Object.DestroyImmediate(scene);
             }
+
+            Assert.That(GameSessionState.IsRidingTheCableway, Is.False,
+                "Scene teardown must leave no cableway ownership behind.");
         }
 
         /// <summary>

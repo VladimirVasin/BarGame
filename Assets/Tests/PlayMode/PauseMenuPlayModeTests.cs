@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
@@ -176,6 +177,11 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Escape_OpensAndCapturesGameplayState()
         {
+            inputFixture.Press(keyboard.wKey, queueEventOnly: true);
+            inputFixture.Press(keyboard.aKey, queueEventOnly: true);
+            yield return null;
+            Assert.That(PlayerDirectionalInput.ReadRaw(), Is.EqualTo(new Vector2(-1f, 1f)),
+                "Tank steering must preserve both full axes on W+A.");
             inputFixture.Press(
                 keyboard.escapeKey,
                 queueEventOnly: true);
@@ -192,6 +198,26 @@ namespace BarPromenade.Tests.PlayMode
                 cameraFollow.CinematicMotionEnabled,
                 Is.False);
             Assert.That(hud.Visible, Is.False);
+            // Queue simultaneous bit-addressed keys in one state: separate
+            // fixture delta snapshots can overlap and overwrite earlier keys.
+            InputSystem.QueueStateEvent(keyboard,
+                new KeyboardState(Key.W, Key.A, Key.E, Key.F10));
+            yield return null;
+            Assert.That(Keyboard.current, Is.SameAs(keyboard));
+            Assert.That(keyboard.eKey.isPressed, Is.True,
+                "The confirmation key must be present in the input snapshot.");
+            Assert.That(keyboard.f10Key.isPressed, Is.True,
+                "The skip key must be present in the input snapshot.");
+            Assert.That(menu.IsOpen, Is.True);
+            Assert.That(SceneTransitionService.IsTransitioning, Is.False);
+            Assert.That(GameInput.CanRead(GameInputContext.PauseMenu), Is.True);
+            Assert.That(PlayerDirectionalInput.ReadRaw(), Is.EqualTo(Vector2.zero));
+            Assert.That(PlayerInteractor.IsInteractHeld(), Is.False);
+            Assert.That(GameInput.WasPressed(
+                GameInputAction.SkipRide, GameInputContext.Gameplay), Is.False);
+            Assert.That(GameInput.IsHeld(
+                GameInputAction.Confirm, GameInputContext.PauseMenu), Is.True,
+                "The paused menu must retain its confirmation aliases.");
         }
 
         [UnityTest]

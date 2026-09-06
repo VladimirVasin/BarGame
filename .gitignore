@@ -67,3 +67,6 @@ Desktop.ini
 
 # Session diagnostics
 /debug*.log
+
+# Local art collection and loading-screen reference copies
+/Art/

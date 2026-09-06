@@ -159,6 +159,7 @@ namespace BarPromenade
         /// </summary>
         public bool CanSkipRide =>
             IsRiding &&
+            GameInput.CanRead(GameInputContext.Gameplay) &&
             !skipRequested &&
             !travelRequested &&
             driver != null &&
@@ -659,8 +660,8 @@ namespace BarPromenade
         /// </summary>
         private static bool WasSkipPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            return keyboard != null && keyboard.f10Key.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.SkipRide, GameInputContext.Gameplay);
         }
 
         private void UpdateSkipOffer()

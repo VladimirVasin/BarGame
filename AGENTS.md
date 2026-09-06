@@ -47,7 +47,7 @@ Rules:
 - Unity `6000.6.0f1`, Universal Render Pipeline `17.6.0`, Input System `1.20.0`.
 - The playable MVP is implemented through runtime composition: scenes are
   near-empty containers and the world is built from validated pure plans.
-- Ten build scenes, in build order:
+- Twelve build scenes, in build order:
   `Assets/Scenes/MainMenu.unity` (index `0`),
   `Assets/Scenes/City.unity`,
   `Assets/Scenes/DoorTransition.unity`,
@@ -56,13 +56,17 @@ Rules:
   `Assets/Scenes/StairwellInterior.unity`,
   `Assets/Scenes/HomeInterior.unity`,
   `Assets/Scenes/MountainRoad.unity`,
-  `Assets/Scenes/AreaLoading.unity`, and
-  `Assets/Scenes/ChurchInterior.unity`.
-  Seven of them are gameplay roots: City, BarInterior, SupermarketInterior,
-  StairwellInterior, HomeInterior, MountainRoad and ChurchInterior. Each
+  `Assets/Scenes/AreaLoading.unity`,
+  `Assets/Scenes/ChurchInterior.unity`,
+  `Assets/Scenes/AlpineVillage.unity`, and
+  `Assets/Scenes/MothersHouseInterior.unity`.
+  Nine of them are gameplay roots: City, BarInterior, SupermarketInterior,
+  StairwellInterior, HomeInterior, MountainRoad, ChurchInterior, AlpineVillage
+  and MothersHouseInterior. Each
   instantiates the same
   `Resources/Player/Player3DV2.prefab` through `PlayerFactory`.
-- `Assets/Scripts/Runtime/` owns gameplay, `Assets/Scripts/Editor/` owns
+- `Assets/Scripts/Rules/` owns engine-independent rules and contracts;
+  `Assets/Scripts/Runtime/` owns gameplay, `Assets/Scripts/Editor/` owns
   authoring tools, and `Assets/Tests/{EditMode,PlayMode}/` owns verification
   over the shared `Assets/Tests/Infrastructure/` support assembly.
 - Deterministic art and model generators live in `tools/` and are run through

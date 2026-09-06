@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deterministic fixed-metre church garden sculpture and small forms.
 
-Blender 5: --background --factory-startup --python tools/build-church-garden-3d-model.py
+Blender 5: --background --factory-startup --python-exit-code 1 --python tools/build-church-garden-3d-model.py
 The passive kit has no collider, light, text, animation, sacred mechanic or rig.
 All pieces stand at their own origin and face Blender +Y / Unity +Z. The water
 and stream deliberately use the same ground origin as the complete fountain.

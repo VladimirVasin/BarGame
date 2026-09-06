@@ -3,7 +3,7 @@
 
 Run through Blender, not CPython::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
         tools/build-ordinary-bartender-3d-model.py
 
 The legacy six-armed bartender has its own generator and assets.  This

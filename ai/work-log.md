@@ -6,6 +6,256 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-06 — Local illustrated Art collection
+
+FAST art-only session. Created root `Art/` and excluded the whole directory
+with `/Art/` in `.gitignore`. Copied the four current loading PNGs unchanged
+to `Art/Loading/`. Built-in image_gen produced 24 separate painterly images
+under `Art/Collection/`, covering current districts, interiors, inhabitants,
+transport and everyday activities in the loading illustrations' visual style.
+Visual inspection and targeted corrections preserved the ordinary active
+bartender/cashier, the hero's physical asymmetry, the Cat's feeding pose and
+the maintained warmth of the mother's house. Prompt/reference/provenance logs,
+a Russian motif inventory and a static local preview gallery accompany them.
+The inventory separates existing content, inactive designs and planned story.
+
+The local `Art/Production/prepare_gallery.py` check decoded all 28 final PNGs,
+verified their approximately 16:9 dimensions, matched every selected source by
+SHA-256, resolved gallery/catalogue links and confirmed no tracked Art files.
+The report is `Art/Production/verification.json`. `git diff --check` passed.
+The system tree records the local directory. No runtime asset, scene, player
+behaviour or canon fact changed; no Unity invocation, suite or build was run.
+
+## 2026-09-06 — Geometric bathroom mirror: wall opening, mirrored room copy and hero twin
+
+The bathroom mirror became a real mirror by the oldest trick there is. The
+plate over the sink no longer draws; behind it the north wall has a hole the
+size of the plate, and behind the hole stands the bathroom again, mirrored,
+with the hero in it.
+
+`HomeMirrorPlane` holds the plane (`z = 3.866`) and the layout arithmetic:
+`HomeMirrorOpeningLayout.CreatePieces` cuts the thick wall around a cavity
+`0.30 m` wider than the hole, closes that cavity with a `2 cm` skin cut to the
+exact hole, and cuts the tile band around the part of the hole that reaches
+into it — eleven boxes in all. Each carries a `_BaseMap_ST` computed from its
+room-local rectangle, because the surface pipeline phases every box by a hash
+of its own name and neighbouring pieces of one wall would otherwise meet at a
+visible jump; the cube face's UV directions are read from the built-in mesh
+rather than assumed. `HomeBathroomMirrorOpeningBuilder` disables the two
+authored renderers but keeps their objects, meshes and the wall's
+`10 × 3.4 × 0.24` collider, so the flat's physics and the authored-geometry
+contract are untouched, and adds a dirty transparent pane in the opening.
+
+`HomeBathroomMirrorWorld` (order `320`, after the bathroom scenes at `260`, the
+vomit effects at `280/281` and the occlusion controller at `300`) parents the
+copy to a `Mirror Space` transform at `(0, 0, 7.732)` scaled `(1, 1, −1)`, so a
+clone that carries its source's local pose lands on its own reflection and no
+reflection matrix appears anywhere. The clones are renderer-only and
+hand-walked (`HomeMirrorSubtreeClone`) instead of instantiated, so no second
+toilet lid, light halo, particle system or audio source wakes up; five patches
+stand in for the apartment-sized floor, ceiling and walls that straddle the
+plane. The reflected hero is a second instance of the one production prefab
+with its animator and every other behaviour off, its bones copied verbatim
+every frame, and one rule of its own: head geometry follows the body rather
+than the source, so a first-person view that takes the real head off leaves the
+reflection whole, while a hero hidden entirely takes his reflection with him.
+The mirrored world lives only inside the pinned bathroom shot; at every other
+moment the original plate is re-enabled and plugs the hole, and the dirty pane
+goes with it.
+
+A 75-agent adversarial audit over six dimensions produced 69 findings, of which
+31 survived an independent refutation pass. Acted on: the replacement pieces
+took their texture phase from the room origin instead of the wall's own centre,
+which slid the whole back wall's wallpaper sideways and 1.7 m down; the
+selection box also caught the near corner of the locked room's front wall, so
+selection now takes the bounds *and* the name every bathroom part carries; the
+glass pane was drawn in every shot, including over the plug; property blocks
+were only re-read on the frame the shot changed, which froze the bathroom
+tube's flicker in the reflection; the five patches did not age with the
+apartment; the twin's property block was reused without clearing; the east-wall
+patch shared 13 cm with the real facade pier and the west fill was 2 mm short;
+the glass material was dropped rather than destroyed on a play-mode reset; a
+closed box with culling off drew the tint twice; and the twin was neutered by
+animator and colliders but not by its other behaviours, audio or particles. The
+builder now refuses to run if the plate it must plug has drifted from the
+hole's constant. Accepted knowingly: no light is mirrored (the user chose a
+darker reflection over a sixth realtime light, and a shadowless mirrored lamp
+would shine back through the hole onto the real tile); nothing attached to the
+hero's bones at runtime is reflected; and the cutaway dither does not reach the
+reflection.
+
+Canon: story bible §6 gained a registry row narrowing the mirror test to what
+it was always about — the camera goes to his face once, at the brushing, and
+his own reflection is not the camera's gaze; §7 «Проверка» and §22 «Тест
+зеркала» carry the same note.
+
+### Verification
+
+`dotnet build` of Runtime, Editor, EditModeTests and PlayModeTests: 0 errors.
+EditMode `HomeBathroomMirrorTests` 11/11, including the built room: the wall
+collider unchanged, both authored renderers off, eleven textured pieces that
+never cover the hole, the seam continuity of neighbouring pieces measured on
+the real property blocks, the cube face's UV directions checked against the
+mesh by a second, independent reading, the transparent pane, and the plate
+toggling with `SetMirrorActive`. EditMode filter `Home`: 222/225 — the three
+failures (`HomeBedDeformableSurfaceTests.Factory_TopGridUvsSpanZeroToOne`,
+`HomeBedDressingGeometryTests.SeatedHip_PlantsBothBootsAndKeepsHimOffTheMattress`,
+`HomeSurfaceAppearanceTests.WorldBuilder_TexturesEveryOrdinaryRendererOrExemptsIt`
+on `Home Balcony Deck`) were reproduced at clean `HEAD` without the mirror and
+are untouched here. That surface test was additionally red on the imported
+toilet models, which carry no home surface texture and were not exempt; since
+the mirror's own eleven pieces are checked by that same test, the exemption was
+extended to whole Blender-authored fixtures by the root the builder names.
+PlayMode `HomeBathroomMirrorPlayModeTests`, `HomeAuthoredModelPlayModeTests`,
+`HomeInteriorPresentation*`, `HomeInteriorAtmosphere*` and
+`HomeBathroomInteractionsPlayModeTests`: 9/9. The reflection is proved in
+pixels, not only in object counts: the same frame rendered with the hole open
+and with the plate plugging it differs inside the plate's projected rectangle
+and nowhere else. The reflected head's room-local position is asserted to be
+the reflection of the real head's, the twin's bone rotations and renderer
+pairing match the hero's, and soiling his mouth moves both faces to the same
+new atlas cell. Captures in `Captures/HomeMirror/`: the bathroom shot with his
+face in the mirror, a witness frame over his head, an oblique frame on the
+opening's edge, and the first-person shower frames.
+
+## 2026-09-06 — Shower plumbing ahead of the first-person hero
+
+FAST correction to the existing shower: moved the mixer, riser, hose and
+head from beside the hero to the back tile on his wash centreline; the soap
+shelf follows that wall. The mixer is raised to `1.24 m` and its red handle
+sits on the right for the existing hand reach. `HomeShowerFraming` now shares
+the mixer, grip and nozzle placement with the builder/effects; the nozzle's
+drips still land inside the existing tray. Reused imported parametric Home
+profiles, with half-height cylinder lengths for the shortened plumbing.
+The dock, palms, approach, camera and scene timeline remain unchanged.
+
+Extended the existing `Shower_FirstPersonNakedWashDripsAndRestores` regression
+with actual fixture placement, first-person mixer visibility, nozzle/tray
+alignment and relocated hot-handle reach. The single focused PlayMode run
+passed `1/1` in `8.52 s` (`TestResults/shower-front-play.xml`), compiling its
+dependencies. Inspected `Captures/HomeShower/01-wash.png`,
+`06-close-front-tap.png` and `04-witness-wash.png`: the mixer is centred
+between the palms and the right hand meets the red handle. `git diff --check`
+passed. No full suites or player build were run. README, current-world,
+systems map, art bible, architecture notes and release notes reflect the move;
+the story meaning and in-fiction text do not change.
+
+## 2026-09-06 — Illustrated area loading and bottom progress
+
+Implemented the approved four-picture loading-screen plan in FAST mode.
+Built-in image_gen produced the two tunnel/car directions and cableway ascent
+and descent from the game's car, station and village references. The series
+uses restrained painterly surfaces, cold grey-green/charcoal and small practical
+lights; the descending view leaves the upper station's warmth behind. Two
+targeted image edits corrected the ascending cable runs. Four final 1672×941
+PNGs are project assets under `Assets/Resources/UI/Loading/`; the complete
+prompt set, input roles and edit prompts are in `tools/loading-art-prompts.json`.
+
+`AreaLoadingArtCatalog` chooses the final directed leg of City—MountainRoad—
+AlpineVillage. City→Village therefore selects ascent; Village→City selects the
+return tunnel. The service supplies its pre-unload source scene, and one image
+stays on the overlay until world construction completes. The bar retains its
+284×12 logical size, now centered 22 scaled logical pixels above the actual
+viewport bottom. Aspect-preserving crop fills the display. Unknown origins or
+missing art retain the dark fallback.
+
+The shared texture cache releases a picture after its last overlay owner.
+The four-resource importer uses sRGB, Bilinear/Clamp, no mipmaps or CPU-readable
+copy, and a Windows BC7 profile capped at 2048. The existing player-build gate
+now requires all four images and their import contract. The dated art-bible
+exception, overview, world catalogue, maps and README reflect this presentation;
+the story canon adds no new fact or text.
+
+Focused `AreaTravelContractTests` passed 27/27 in 0.35 s
+(`TestResults/loading-art-edit.xml`): six directed routes, fallback, bottom-bar
+geometry, shared ownership, resources and import settings. The real IMGUI
+capture passed 1/1 in 2.20 s (`TestResults/loading-art-capture-retry.xml`), with
+six screenshots under `Captures/AreaLoading/20260906-091308-48bda352/`: all four
+images at 1920×1080, plus 1280×960 and 2560×1080. Actual framebuffer and PNG
+dimensions match the request; all six frames were visually inspected for art,
+cropping and bottom-bar readability. The initial graphics Editor launch hit an
+internal Mono crash before the capture started; a clean retry succeeded.
+`git diff --check` passed. Complete suites and a player build were not run.
+
+## 2026-09-06 — Ten technical audit improvements
+
+Implemented the ten requested technical follow-ups in FAST mode:
+
+1. Cableway activity now has session-generation-safe ownership. Restart clears
+   it, and disposal from an outgoing scene cannot clear a new ride's ownership.
+2. `PlayerBuildAssetValidation` checks required resources, generated owners and
+   the Hero dependency stamp before any player build. Failures are aggregated
+   with explicit repair commands; the gate does not regenerate assets.
+3. Runtime puddle and village terrain/path/snow/lane meshes use the shared mesh
+   owner. Its destruction callback also runs in EditMode; shared/imported meshes
+   are not transferred to it.
+4. City, Mountain Road and Alpine Village share synchronous/staged construction
+   iterators. Area travel retains the black overlay until construction finishes,
+   with 20% scene-load and 80% construction progress, owned time/audio pause and
+   a best-effort 8 ms budget between indivisible stages. Water reflection waits
+   for the completed world. A single stage can still exceed that frame budget.
+5. Added engine-free `BarPromenade.Rules` for calendar/day rules, temporary
+   vehicle ownership and input policy. `GameSessionState` remains the runtime
+   facade; this is a bounded extraction, not a rewrite of all gameplay state.
+6. Shared `GameInput` now owns common action aliases and context priorities.
+   Pause/transitions/modal ownership gate gameplay, both F10 ride skips and
+   ordinary movement; balance recovery keeps its intentional directional input.
+   Existing controls remain; look/debug specifics and rebinding UI are outside
+   this change.
+7. Transition services release pending scene activation and owned state on
+   disable/destroy. Ordinary transitions have a nested-coroutine exception and
+   cleanup boundary; failed area construction follows the source recovery path.
+8. Added optional bounded performance reports with actual render context,
+   frame distributions, available CPU/GPU counters, allocation samples and
+   separate foot-bake/reflection scopes. Disabled capture does not collect frames.
+9. Pinned the local Python/packages/Blender/MSVC/SDK toolchain, added a common
+   Blender launcher with Python failure propagation and fresh-output checks,
+   mapped output staging with rollback and .meta preservation, and native DLL
+   validation before publication. Direct commands also propagate Python errors;
+   staging requires mapping every output directory as documented in tools/README.
+10. Reduced AI.md and project-overview.md to entry/index documents, moved the
+    detailed gameplay catalogue to current-world.md, normalized the systems map,
+    corrected versions and 12-scene/9-root facts, and removed the contradictory
+    full-suite FAST instruction. Superseded detailed snapshots remain verbatim
+    in explicitly labelled archives; README reflects player-visible behavior.
+
+Focused verification:
+
+- EditMode selected 42 distinct cases covering composition/progress/disposal,
+  session reset, input policy, mesh ownership, performance reporting and the
+  actual read-only build gate. The first run passed 40; two mesh-destruction
+  regressions exposed the missing EditMode lifecycle callback. Adding
+  `ExecuteAlways` to the common owner made both pass in the focused retry
+  (`technical-edit.xml`, `technical-mesh.xml` under TestResults).
+- The initial four-case PlayMode selection passed real cableway boarding,
+  staged travel through Mountain Road → Alpine Village → City, and interrupted
+  transition cleanup (`TestResults/technical-play.xml`). The pause/input case
+  passed in `TestResults/technical-pause-atomic.xml` after correcting its
+  synthetic keyboard input: separately queued bit-addressed delta snapshots
+  overwrote the E state when adding F10. An explicit input flush did not fix
+  that; one atomic KeyboardState did. The final test retains ordinary frame
+  delivery, raw E/F10 assertions and all blocked/allowed action assertions.
+  All four distinct PlayMode cases therefore passed across the focused runs.
+- Tooling's seven synthetic failure/staging/rollback tests passed; the pinned
+  toolchain check and PowerShell syntax check passed. No model generator or
+  native compiler was run. New Unity asset metas and moved script GUIDs were
+  checked, along with the engine-free assembly setting and documentation links.
+  `git diff --check` passed. Authored resources, models, scenes, package and
+  project settings were unchanged.
+
+Two optional five-second City-idle captures reused the lifecycle test's world
+after two-second warmups. The Editor kept both captures at **640×480**, despite
+requested 1920×1080 and 3840×2160; both ran unfocused on the local i7-10750H /
+RTX 3060 Laptop GPU with Direct3D12. Frame p95 was 7.78/7.67 ms; measured sole
+BakeMesh work averaged 0.048/0.047 ms per frame, with about 957/954 managed
+allocation bytes per frame. GPU/render-thread counters had no samples and
+reflection capture had no calls in these intervals. These are small diagnostic
+samples, not a resolution comparison or a player benchmark. Reports:
+`TestResults/PerformanceCaptures/capture-{0,1}.json`. No visual/performance
+tradeoff was made from these limited measurements.
+
+Complete test suites and a player build were intentionally not run.
+
 ## 2026-09-06 — Forward pressure and a slightly raised vomiting head
 
 The stream keeps its origin at the folded mouth, but its launch now turns

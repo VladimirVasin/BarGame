@@ -4,6 +4,73 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted exception — Directed loading illustrations (2026-09-06):**
+  The user explicitly requested illustrated loading screens with the progress
+  bar at the bottom and approved four static painterly images based on the
+  existing game. This narrowly replaces the empty black `AreaLoading`
+  presentation and art-bible §15a's empty-loading/strict PS1 raster treatment:
+  the paintings retain their painterly detail and fill the actual viewport
+  with aspect-preserving cropping rather than the centered logical canvas;
+  the surrounding UI and the
+  gameplay world's PS1 composite keep their existing contracts.
+  `City -> MountainRoad`, `MountainRoad -> City`, `MountainRoad -> AlpineVillage`
+  and `AlpineVillage -> MountainRoad` each own one fixed image under
+  `Assets/Resources/UI/Loading/`: `city-to-mountain`, `mountain-to-city`,
+  `mountain-to-village` and `village-to-mountain` respectively. A map transfer
+  that skips the middle area uses the last directed leg: `City -> AlpineVillage`
+  uses `mountain-to-village`; `AlpineVillage -> City` uses `mountain-to-city`.
+  One image holds through the existing scene-load and construction boundary;
+  this adds no intermediate trip, slideshow or artificial reading delay.
+  The mood is melancholic, with the village's existing warm inhabited light
+  contrasting against the colder lower places. Only existing places and their
+  established forms may be depicted: no hero portrait, spoiler, new lore,
+  tourist panorama or additional in-fiction text. Story-bible §§12, 16 and 21
+  remain binding; there is no new story fact, dialogue, hint or sound.
+  The bottom bar retains the existing 20% scene-load / 80% construction
+  progress and lifetime, pause and transition ownership.
+
+- **Current — Runtime reliability and tooling (2026-09-06):**
+  `BarPromenade.Rules` is an engine-free assembly containing the calendar/day
+  rules, transient vehicle ownership and input-priority policy. Runtime keeps
+  the existing session facade. Cableway activity is a generation-safe lease:
+  resetting a session or disposing an old scene cannot retain or clear a later
+  ride. Shared `GameInput` owns common bindings; context-specific look/debug
+  controls remain with their callers. Both ride skips respect pause, modal
+  ownership and scene transitions.
+- **Current — Staged area composition (2026-09-06):** City, Mountain Road and
+  Alpine Village register ordered construction iterators during area travel.
+  The existing synchronous builders drain the same iterators for direct scene
+  startup, tests and authoring. The Single-load boundary still unloads the source
+  world first; only the loading overlay persists over destination
+  construction. Scene loading occupies the first 20% of its bar, construction
+  the remaining 80%, and completion requires the destination root to finish.
+  `RuntimeComposition` yields between stages against an 8 ms budget; individual
+  geometry/planning stages are indivisible and can exceed that budget. No Unity
+  work was moved to a worker thread. A tempo lease and owned listener pause hold
+  gameplay during construction, with restoration on completion or teardown.
+  Automatic water cubemap capture waits until the whole world exists.
+- **Current — Transition/resource ownership (2026-09-06):** Both transition
+  services release held scene activation on disable/destruction. Ordinary
+  transitions drive nested routines through one exception/cleanup boundary.
+  Generated puddle and village ground/path/snow/lane meshes use the existing
+  `RuntimeGeneratedMeshOwner`; imported and shared meshes retain their owners.
+- **Current — Opt-in performance evidence (2026-09-06):**
+  `RuntimePerformanceCapture` records bounded frame distributions and render
+  context, with named foot-sole bake and water-reflection work scopes. It does
+  not alter render scale, quality, animation or post-processing. Unavailable
+  counters report zero samples, not zero cost; Editor measurements are
+  diagnostics rather than player benchmarks. See `ai/debug-log.md` for the
+  invocation and interpretation.
+- **Current — Read-only build gate and checked authoring (2026-09-06):**
+  `PlayerBuildAssetValidation` runs on all player-build paths, aggregating
+  required-resource, owner-contract and Hero dependency-stamp failures with
+  repair commands. It never regenerates assets. `tools/toolchain.json` pins
+  the supported environment; `tools/run-blender.py` propagates Python failure
+  and verifies fresh outputs, with mapped staging/publication where output
+  directories are supplied. Native VHS validates its candidate DLL before
+  publishing. See `tools/README.md`; direct generator invocations still own
+  their ordinary output paths.
+
 - **Accepted — Distant passing fishing boats (2026-09-05):** The user
   accepted the decorative offshore plan, requested a soft positional motor,
   then explicitly limited spawning to the hero's position and shore proximity.
@@ -3420,7 +3487,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the ordinary map owns City and Mountain Road tabs, draws the hero only on the
   current area's tab and asks for confirmation before an other-area transfer.
   `AreaTravelService` first Single-loads build index `8`, `AreaLoading`, which
-  owns only a black unscaled progress-bar presentation; it then Single-loads
+  owns the unscaled loading presentation (the illustrated exception accepted
+  on `2026-09-06` replaces its former empty black screen); it then Single-loads
   the destination and passes a one-shot arrival token. Thus the source world is
   destroyed before the destination composes, and City/Mountain Road are never
   resident or rendered together. `MountainRoadRoot` may regenerate the pure
@@ -5101,6 +5169,65 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the head and the cursor included); the `"shower"` relief literal that
   clears `HeroMouthSoiled`; and the story bible's mirror test — the lens is
   his own eyes and never sees his face.
+- **Accepted architecture exception — 2026-09-06, explicit user request — a
+  geometric bathroom mirror:** the user asked for a real reflection «как в
+  старых играх делали с копией комнаты». Accepted as exactly that and nothing
+  else: no `RenderTexture`, no second camera, no stencil, no reflection matrix
+  and no new light. `HomeBathroomMirrorOpeningBuilder` turns the plate's
+  footprint into a real hole — the authored `Home Back Wall` and `Home Bathroom
+  Back Tile` keep their objects, meshes and the wall's `10 × 3.4 × 0.24`
+  collider but stop drawing, and eleven runtime boxes redraw the same wallpaper
+  and tile around the opening: the thick wall around a cavity `0.30 m` wider
+  than the hole (so `24 cm` of wall never reads as a tunnel), a `2 cm` skin cut
+  to the exact hole, and the tile band around the part of the hole that reaches
+  into it. Each box carries a `_BaseMap_ST` computed from its room-local
+  rectangle by `HomeMirrorOpeningLayout.ContinuousBaseMapTransform`, because
+  `SurfaceAppearanceCore` phases every box by a hash of its own name and pieces
+  of one wall would otherwise meet at a jump; the cube face's UV directions are
+  read from the mesh rather than assumed. Behind the hole,
+  `HomeBathroomMirrorWorld` (`DefaultExecutionOrder 320`, after the bathroom
+  scenes at `260`, the vomit effects at `280/281` and the occlusion controller
+  at `300`) parents everything to a `Mirror Space` transform at
+  `(0, 0, 2 × 3.866)` scaled `(1, 1, −1)`: a copy that carries its source's
+  local pose lands on its own reflection, which is why no reflection maths
+  appears at a single call site. The copies are renderer-only and hand-walked
+  (`HomeMirrorSubtreeClone`) instead of instantiated, so no second toilet lid,
+  light halo, particle system or audio source wakes up; five patches stand in
+  for the apartment-sized floor, ceiling and walls that straddle the plane. The
+  reflected hero is a second instance of the one production prefab, neutered
+  (animator, every other `MonoBehaviour`, colliders, lights, audio, particles,
+  shadows) and driven bone for bone every frame, with one rule of its own: head
+  geometry follows the body rather than the source, so the first-person views
+  that take the real head off leave the reflection whole, while a hero hidden
+  entirely takes his reflection with him. The mirrored world exists only while
+  the pinned bathroom shot is active; at every other moment the original plate
+  is re-enabled and plugs the hole, so no shot and no prologue frame ever looks
+  into the void behind the wall, and the dirty pane is switched with it rather
+  than left hanging over a solid plate. What is copied is decided twice over: a
+  selection box in front of the plane, and the name every part of the bathroom
+  carries — the box alone also holds the near corner of the locked room's front
+  wall, which has no business standing in a reflection. Property blocks are
+  re-read every frame, not only on the frame the shot changes: the bathroom
+  tube's flicker and the apartment's day tints live in them, and a reflection
+  whose lamp is frozen while the real one stutters gives the whole trick away.
+  The five patches that stand in for the flat-sized slabs are registered with
+  `HomeApartmentDressing` so they age with the days like the surfaces they
+  continue. The builder refuses to run if the plate it must plug has drifted
+  from the hole's constant rectangle, so a moved sink is caught at build time
+  rather than as a slot in the wall. One asymmetry is accepted knowingly: no
+  light is mirrored, so the reflection loses the bathroom lamp's cold key and
+  keeps only what the sun and the ambient give it. A mirrored point light would
+  have to be shadowless — it would shine straight back through the hole and
+  double the lamp on the real tile — so the user's choice of a darker
+  reflection over a sixth realtime light is also the cheap and correct one. Not lifted: no second hero model, prefab or
+  material — the twin is the same prefab, as `contextual-animation-standard`
+  rule 5 requires; nothing is reflected that the bathroom does not contain
+  (hand props, the toilet anatomy, the shower bridges, water, foam and the
+  contact shadow stay out, and no light is mirrored, so the reflection is
+  deliberately darker — the user chose that over a sixth realtime light); and
+  the story bible's mirror test stands, narrowed by a §6 registry row to what it
+  was always about — the camera still goes to his face exactly once, at the
+  brushing, and his own reflection is not the camera's gaze.
 - **Accepted — Shower stall rebuild:** The stall keeps its footprint,
   tray collider and pinned names while gaining an L-rail, a
   four-fold curtain group (gathered at scale 0.40 and never drawn since
@@ -5113,6 +5240,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   particles on the shared atmosphere material — a gravity-fed stream from
   under the nozzle plate onto the hero's back, steam, the shut tap's
   drops and their basin splashes — no lights, no colliders.
+- **Accepted — 2026-09-06, frontal shower plumbing:** The user's correction
+  places the existing mixer, riser, hose and head ahead of the hero's +Z
+  wash facing, on the back tile between his palms; the soap shelf follows
+  that wall. `HomeShowerFraming` shares the mixer, hot-hand grip and nozzle
+  anchors with the builder and effects. Mixer height is `1.24 m`, with the
+  hot handle on the right; the shortened riser and forward arm use the
+  imported cylinder profiles' half-height convention. The nozzle remains
+  above the existing tray. Dock, wall palms, approach, first-person lens,
+  interaction timeline and costume ownership retain their accepted contract.
 - **Accepted — Clock-driven apartment mood:** `HomeDayNightController`
   now modulates the whole indoor mood, not just the window. The window
   keeps its exact day (`8.25`, warm) and night (`5.25`, blue) poles —

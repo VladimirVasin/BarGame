@@ -1,8 +1,18 @@
 # System tree
 
+Path reference for targeted lookup. Start with [project-overview.md](project-overview.md)
+and [systems-map.md](systems-map.md); world behavior belongs in
+[current-world.md](current-world.md), not in this file inventory.
+
 ## Current repository
 
 ```text
+Art/                              local gitignored art collection; not imported by Unity
+  Loading/                        exact copies of the four loading illustrations
+  Collection/                     standalone paintings of current places, people and activities
+  Production/                     prompts, references and local verification report
+  index.html                      local visual catalogue
+  CATALOG.md                      illustrated motifs and separate future-story inventory
 Assets/
   Plugins/AudioVhs/x86_64/
     AudioPluginIntoxicationVhs.dll  native bounded stereo VHS effect for Windows
@@ -30,6 +40,11 @@ Assets/
       Textures/ExteriorCloudDensity.png      256 px linear broad/detail/erosion channels
       Materials/ExteriorCloud.mat            one shared instanced runtime material
   Resources/
+    UI/Loading/                   four static painterly directed-travel illustrations
+      city-to-mountain.png
+      mountain-to-city.png
+      mountain-to-village.png
+      village-to-mountain.png
     Environment/
       ExteriorCloudDome.prefab     passive 220-triangle cloud shell + asset metadata
     Materials/
@@ -312,18 +327,25 @@ Assets/
       Prefabs/
         StairwellCat.prefab             passive asset outside Resources
   Scripts/
+    Rules/           BarPromenade.Rules; no Unity engine references
+      GameTimeState.cs           frozen 05:59 -> running 06:00; elapsed time and day
+      GameDaySchedule.cs         pure event -> first-day table
+      VehicleActivityState.cs    resettable temporary rides with session-safe leases
+      GameInputPolicy.cs         pure action contexts and pause/modal priority
     Runtime/
       Core/          twelve-scene bootstrap, gameplay roots, session, transitions
         RuntimeSceneSetup.cs       shared camera/grade setup + 0.55 true-interior Gaussian cap
         GraphicsEffectsSettings.cs seven player graphics toggles over PlayerPrefs; polled Version counter
         CityGameRoot.cs           city composition + deferred debug-map arrival
-        AreaTravelTypes.cs        stable City/MountainRoad IDs + arrival token
-        AreaTravelService.cs      guarded Single-load area handoff through AreaLoading
+        AreaTravelTypes.cs        stable City/MountainRoad/AlpineVillage IDs + arrival token
+        AreaTravelService.cs      Single-load handoff; holds loading overlay/pause through staged destination construction
+        AreaLoadingArtCatalog.cs  directed-edge image selection; skipped-area map travel uses the last leg
+        RuntimeComposition.cs     shared IEnumerator traversal; best-effort 8 ms between indivisible stages
+        GameInput.cs              common action bindings and device reads under explicit input contexts
+        SceneTransitionService.cs owned direct/door operations, activation release and terminal cleanup
         GameSessionState.cs       persistent clock/needs + debug day 1..7 + one-shot debug-map handoff
                                   -> SyncDayEvents/ApplyDayEvent: the one place a dated event changes the world
-        GameDaySchedule.cs        pure event -> first-day table, looked up by id; FeedTheCatOpens = day 2
         HomeApartmentDayRules.cs  exact calendar appearance clamp 1..7, separate from story/alcohol
-        GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed delta + one-based day
         GameTimeRuntime.cs        pause-aware real-time calendar/needs + day announcement
         GameTimeScaleState.cs     world factor and independent pause ownership
         GameTimeScaleRuntime.cs   persistent shared 0.7 s level smoothing + sole timeScale/physics writer
@@ -334,6 +356,8 @@ Assets/
         NpcDesignAppearance.cs    exact 28-design Normal/Bizarre catalog (7/21; spawn-neutral)
         NpcSkinnedMeshCullingGuard.cs  live-pose bounds for every modular humanoid renderer
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
+        RuntimePerformanceCapture.cs optional bounded CPU/GPU/frame/GC and foot/reflection measurements
+        PerformanceCaptureSamples.cs options, bounded samples and percentile summaries
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
         IntoxicationAudioDriver.cs         forwards shared tempo-owner intensity to native VHS
@@ -608,6 +632,10 @@ Assets/
         HomeAlarmClockPlan.cs       validated bed-relative nightstand/clock placement
         HomeAlarmClockBuilder.cs    low-poly nightstand and alarm-clock composition
         HomeBathroomBuilder.cs   oriented toilet, shower/sink (curtain gathered at 0.40, never drawn) and pipe damage
+        HomeBathroomMirrorOpeningBuilder.cs  the plate's footprint cut out of the wall and tile as eleven boxes with continuous UVs, plus the dirty glass; the plate becomes the plug
+        HomeMirrorPlane.cs         the mirror plane, the opening layout and the seam-continuous _BaseMap_ST arithmetic
+        HomeMirrorSubtreeClone.cs  renderer-only hand-walked copy of a built subtree, kept in step with its source
+        HomeBathroomMirrorResources.cs  the shared transparent pane material
         HomeToiletLid.cs           authored hinge motion + bowl-water asset composition
         HomeUrineEffect.cs         pooled ballistic packets, contact sounds, splashes and projected marks
         HomeShowerBridgeResources.cs  the three Blender bridge pieces (yoke, deltoids) for the undressed hero, under runtime pivots
@@ -810,7 +838,7 @@ Assets/
         PlayerBalanceController.cs  feeds the model, drifts the motor, probes walls and the brace floor, builds the ragdoll handoff
         PlayerRiseModel.cs          seeded staged rise: settle, stun, stir, push up with slumps, crawl while a key is held, kneel, stand and wobble; scrubs the Rise clip
         PlayerDrunkGaitModel.cs     seeded disorder of the walk: per-swing boot landings (wide, crossed, short/long, toes out, lifted), half-step cadence jitter, pelvis roll; exactly nothing sober
-        PlayerDirectionalInput.cs   the one WASD/left-stick read; camera-relative and body-local conversions for a body on the floor
+        PlayerDirectionalInput.cs   shared GameInput movement plus camera/body-local conversions for a body on the floor
         PlayerFacialMood.cs         the moment's face (Tense/Grimace/Out/Drowsy) as pure rules over the balance phase, the ragdoll and the rise stage
         PlayerFacialExpressionRules.cs  fallbacks from the drink's four atlas faces to the five every rig has
         IntoxicationHeadModel.cs    seeded drunk head: chin droop by level, slow wander, nods when far gone, lagging the lean on a loose spring
@@ -837,7 +865,7 @@ Assets/
       Interaction/   reusable CounterSeat + shared CounterMenu input, shops and location doors
         ChurchGardenPot{Plan,Actions,Interaction,SessionState}.cs  two measured shelf docks, five live-rig clips + session placement
         CounterSeatInteraction.cs    physical authored approach/sit/loop/stand lifecycle
-        CounterMenuInput.cs          shared W/S/D-pad selection and Space/West confirmation
+        CounterMenuInput.cs          counter facade over shared GameInput bindings/context priorities
         BarCounterStation.cs         seated bar E/Enter/South order + Escape-only rest dispatch
         BarJukeboxInteraction.cs     prompt + single-writer three-channel emissive pulse/flash
         CityTunnelTravel{Plan,Planner,Controller}.cs automatic unavailable crossing + visible return
@@ -857,6 +885,7 @@ Assets/
         HomeTeethBrushingModel.cs        contact-qualified travel progress and brush/show/spit/return timeline
         HomeTeethBrushingArmPose.cs      actual rig hand IK and connected spine/chest/neck/head spit bend
         HomeBathroomSceneInteraction.cs  shared bathroom-scene skeleton: modal, walk-in (opt-in waypoint, camera-led approach), camera, walk steps, per-tick stop prompt
+        HomeBathroomMirrorWorld.cs     the mirrored bathroom behind the opening and the hero twin in it; order 320, alive only in the pinned bathroom shot
         HomeShowerInteraction.cs       first-person naked shower scene + ten-phase timeline (fly-in, approach, wash, tap, still drips, walk out) + stream/steam/drip/splash effect
         HomeShowerFirstPersonView.cs   the lens in the hero's head: mouth anchor + eye offset, scene base pitch, clamped look, head off while inside
         HomeShowerDripModel.cs         the shut tap's drops: rate patter, then a four-drop geometric run inside the 3 s hold, landings a fall later
@@ -868,7 +897,8 @@ Assets/
       Scenes/        startup/loading plus nine gameplay roots, including AlpineVillage and MothersHouseInterior
         {Bar,Supermarket,Stairwell,Home,Church,MothersHouse}InteriorAtmosphere.cs  six room grades -> shared 0.55 Gaussian cap
         MainMenuRoot.cs                 black build-index-0 new-run boundary
-        AreaLoadingRoot.cs              black unscaled progress-bar area transfer
+        AreaLoadingRoot.cs              directed loading still + bottom bar: 20% load + 80% construction
+        AreaLoadingArtworkCache.cs      leases the selected texture only for live loading overlays
         MountainRoadRoot.cs             standalone mountain world/player/UI composition
         AlpineVillageRoot.cs            standalone upper-village world/player/UI composition
         MothersHouseInteriorRoot.cs     two-storey world/player/UI, height-aware fixed shots, kettle, exit, sofa seat and the mother
@@ -944,6 +974,8 @@ Assets/
         CounterMenuHintView.cs       shared compact W/S + Space world-menu hint/status
         MountainRoadCafeMenuHintView.cs cafe localization adapter for the shared hint
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
+      PlayerBuildAssetValidation.cs read-only registered asset gate before player packaging
+      PerformanceCaptureMenu.cs     explicit start/stop performance capture in Play
       MothersHouse/  fixed-metre FBX import, passive Resources prefab + manifest validation
       Environment/ExteriorCloud{AssetSetup,ModelImporter,TextureImporter}.cs  deterministic import/prefab validation
       City/CityMiscAssetSetup.cs  FBX import/provider binding + strict manifest/root/bounds validation
@@ -975,6 +1007,8 @@ Assets/
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
+      PerformanceCaptureTests.cs       bounded distributions/arguments and optional graphics capture
+      PlayerBuildAssetValidationTests.cs error aggregation/stamps + explicit read-only project gate
       CityMiscAssetTests.cs       238-entry catalog/signature/provider + affected-builder smoke contract
       CityArchShelterTests.cs     fixed-gap geometry, 15 textured surfaces, resident integration, fire and rain contracts
       CityArchShelterResidentAssetTests.cs  Hero rig/atlas/loop and all-frame mattress-envelope contracts
@@ -1167,6 +1201,11 @@ ArtSource/
     Preview/                     approved wide fixed-camera composition PNG
     Textures/MothersHousePositiveAtlas.prompt.md  4 x 4 clean/aged atlas source prompt + acceptance
 tools/
+  README.md                         generator/publication workflow
+  toolchain.json / toolchain.py      pinned tool versions and executable discovery
+  run-blender.py                     common launcher, expected-output and process-failure checks
+  asset_pipeline.py                  staged publication/rollback while preserving existing metas
+  test_asset_pipeline.py             synthetic tooling regressions
   audio-vhs/                          native Intoxication VHS source, build and validation
   build-exterior-cloud-3d-model.py  deterministic hemisphere, packed density texture and export validator
   build-city-bus-3d-model.py         real-scale bus model/export validator
@@ -1244,7 +1283,7 @@ startup Wake or accepted Home debug city-map skip -> session time 06:00
                                   -> HomeAlarmClock HH:MM / Inventory DAY N + HH:MM
                                   -> CityDayNightController
                                   -> HomeDayNightController
-City/MountainRoad map -> CityMapAreaController -> City / Mountain Road tabs
+City/MountainRoad/Village map -> CityMapAreaController -> three area tabs
                                                -> current-area player marker only
                                                -> XYZ / C / gamepad Y inspection
                                                   -> deterministic per-area point catalog
@@ -1255,8 +1294,10 @@ City/MountainRoad map -> CityMapAreaController -> City / Mountain Road tabs
                                                -> other-area confirmation
                                                   -> AreaTravelService
                                                      -> AreaLoading (Single)
-                                                        -> black progress bar
-                                                        -> destination (Single)
+                                                        -> persistent directed still + bottom progress bar
+                                                        -> destination (Single, load 20%)
+                                                        -> RuntimeComposition (remaining 80%)
+                                                        -> root ready: restore audio/time/input
 MountainRoadRoot -> MountainRoadPlanner -> validated 620 m continuous climb
                                       -> 9 m exit tunnel, spawn at 6 m
                                       -> 4.8 m road / ten 6.4 m, R7.5 m hairpins

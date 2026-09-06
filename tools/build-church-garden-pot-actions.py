@@ -1,6 +1,6 @@
 """Small Hero V2 bone-only church-garden action bank, without rebuilding its bank.
 
-Run in Blender 5: --background --python tools/build-church-garden-pot-actions.py
+Run in Blender 5: --background --factory-startup --python-exit-code 1 --python tools/build-church-garden-pot-actions.py
 The existing production builder supplies the exact anatomy, rig and relaxed
 endpoint. Only these five actions are authored/exported. Hands are solved to the
 two measured rim contacts at every 24 Hz sample; no runtime IK is required.

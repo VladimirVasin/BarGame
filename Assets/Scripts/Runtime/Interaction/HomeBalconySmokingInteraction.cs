@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -591,32 +590,14 @@ namespace BarPromenade
 
         private static bool WasExitPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.eKey.wasPressedThisFrame ||
-                 keyboard.enterKey.wasPressedThisFrame))
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonSouth.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.Interact, GameInputContext.Menu);
         }
 
         private static bool IsExitHeld()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.eKey.isPressed ||
-                 keyboard.enterKey.isPressed))
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonSouth.isPressed;
+            return GameInput.IsHeld(
+                GameInputAction.Interact, GameInputContext.Contextual);
         }
 
         private static void ValidateHome(

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deterministic Blender-authored Home parts and seven calendar-day dressings.
 
-Run Blender --background --factory-startup --python this-file -- [--validate-only].
+Run Blender --background --factory-startup --python-exit-code 1 --python this-file -- [--validate-only].
 Bindings retain the runtime's semantic names, origins, colliders and articulated
 hierarchy. Fixed parts use metres. Explicitly enumerated repeated hardware uses
 measured, profiled library meshes: its fit is deliberately marked parametric.

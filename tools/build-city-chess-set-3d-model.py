@@ -3,7 +3,7 @@
 
 Run through Blender 5, for example::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-city-chess-set-3d-model.py
 
 The deterministic output is a metre-scale editable .blend, an FBX carrying

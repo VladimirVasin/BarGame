@@ -9,7 +9,7 @@ the authored geometry and Unity.
 
 Run with Blender 5 from the repository root::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-church-3d-model.py
 
 The generator validates geometry before writing anything.  A direct in-memory

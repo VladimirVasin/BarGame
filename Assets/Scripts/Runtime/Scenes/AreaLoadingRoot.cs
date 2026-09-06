@@ -9,14 +9,20 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class AreaLoadingRoot : MonoBehaviour
     {
-        private static readonly Rect TrackRect =
-            new Rect(178f, 174f, 284f, 12f);
+        internal const float TrackWidth = 284f;
+        internal const float TrackHeight = 12f;
+        internal const float BottomMargin = 22f;
+
+        private AreaLoadingArtworkCache.Lease artwork;
 
         public Camera Camera { get; private set; }
         public bool IsBound { get; private set; }
         public bool HasFailed { get; private set; }
         public float DisplayedProgress { get; private set; }
         public AreaTravelRequest Request { get; private set; }
+        public GameAreaId? SourceArea { get; private set; }
+        public string ArtResourcePath { get; private set; } = string.Empty;
+        public bool HasArtwork => artwork?.Texture != null;
 
         private void Awake()
         {
@@ -28,12 +34,27 @@ namespace BarPromenade
 
         internal void Bind(AreaTravelRequest request)
         {
+            Bind(request, null);
+        }
+
+        internal void Bind(AreaTravelRequest request, GameAreaId? sourceArea)
+        {
             if (IsBound)
             {
                 return;
             }
 
             Request = request;
+            SourceArea = sourceArea;
+            ArtResourcePath = AreaLoadingArtCatalog.GetResourcePath(
+                sourceArea, request.DestinationArea);
+            artwork = AreaLoadingArtworkCache.Shared.Acquire(ArtResourcePath);
+            if (!string.IsNullOrEmpty(ArtResourcePath) && !HasArtwork)
+            {
+                GameLog.Warning("scene", "area_loading_art_missing",
+                    GameLog.Field("resource", ArtResourcePath));
+            }
+
             IsBound = true;
             HasFailed = false;
             SetProgress(AreaTravelService.Progress);
@@ -49,6 +70,46 @@ namespace BarPromenade
             HasFailed = true;
         }
 
+        internal void KeepDuringComposition()
+        {
+            // Only this overlay survives. The loading scene's camera is
+            // unloaded normally; the destination supplies its own camera.
+            transform.SetParent(null, true);
+            DontDestroyOnLoad(gameObject);
+        }
+
+        internal void Dismiss()
+        {
+            enabled = false;
+            ReleaseArtwork();
+            Destroy(gameObject);
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseArtwork();
+        }
+
+        private void ReleaseArtwork()
+        {
+            artwork?.Dispose();
+            artwork = null;
+        }
+
+        internal static Rect CalculateTrackRect(int screenWidth, int screenHeight)
+        {
+            int width = Mathf.Max(1, screenWidth);
+            int height = Mathf.Max(1, screenHeight);
+            float scale = RetroUiTheme.CalculateCanvas(width, height).Scale;
+            scale = Mathf.Min(scale, Mathf.Min(width / TrackWidth,
+                height / (TrackHeight + BottomMargin)));
+            float trackWidth = TrackWidth * scale;
+            float trackHeight = TrackHeight * scale;
+            return new Rect((width - trackWidth) * 0.5f,
+                height - (BottomMargin + TrackHeight) * scale,
+                trackWidth, trackHeight);
+        }
+
         private void OnGUI()
         {
             if (Event.current.type != EventType.Repaint)
@@ -57,44 +118,51 @@ namespace BarPromenade
             }
 
             int previousDepth = GUI.depth;
-            GUI.depth = -1000;
-            RetroUiTheme.FillRect(
-                new Rect(0f, 0f, Screen.width, Screen.height),
-                RetroUiTheme.Ink);
-
-            RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
-                Screen.width,
-                Screen.height);
-            Matrix4x4 previousMatrix =
-                RetroUiTheme.BeginCanvas(canvas);
+            Matrix4x4 previousMatrix = GUI.matrix;
+            Color previousColor = GUI.color;
             try
             {
-                DrawProgressBar();
+                // The art and bottom anchor use the real viewport, including
+                // the space outside the centered 640x360 interface canvas.
+                GUI.depth = -1000;
+                GUI.matrix = Matrix4x4.identity;
+                GUI.color = Color.white;
+                Rect viewport = new Rect(0f, 0f, Screen.width, Screen.height);
+                RetroUiTheme.FillRect(viewport, RetroUiTheme.Ink);
+                if (HasArtwork)
+                {
+                    GUI.DrawTexture(viewport, artwork.Texture,
+                        ScaleMode.ScaleAndCrop, false);
+                }
+
+                DrawProgressBar(CalculateTrackRect(Screen.width, Screen.height));
             }
             finally
             {
-                RetroUiTheme.EndCanvas(previousMatrix);
+                GUI.matrix = previousMatrix;
+                GUI.color = previousColor;
                 GUI.depth = previousDepth;
             }
         }
 
-        private void DrawProgressBar()
+        private void DrawProgressBar(Rect trackRect)
         {
+            float scale = trackRect.height / TrackHeight;
             RetroUiTheme.FillRect(
-                TrackRect,
+                trackRect,
                 RetroUiTheme.Ink);
             RetroUiTheme.StrokeRect(
-                TrackRect,
-                1f,
+                trackRect,
+                scale,
                 HasFailed
                     ? RetroUiTheme.Bad
                     : RetroUiTheme.BorderMuted);
 
             Rect interior = new Rect(
-                TrackRect.x + 2f,
-                TrackRect.y + 2f,
-                TrackRect.width - 4f,
-                TrackRect.height - 4f);
+                trackRect.x + 2f * scale,
+                trackRect.y + 2f * scale,
+                trackRect.width - 4f * scale,
+                trackRect.height - 4f * scale);
             RetroUiTheme.FillRect(
                 interior,
                 RetroUiTheme.PanelInset);

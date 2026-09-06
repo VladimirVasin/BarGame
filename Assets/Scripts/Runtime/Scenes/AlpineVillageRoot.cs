@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -132,9 +133,18 @@ namespace BarPromenade
 
         private void Initialize()
         {
+            IEnumerator steps = InitializeSteps();
+            if (!AreaTravelService.TryScheduleComposition(this, steps))
+            {
+                RuntimeComposition.RunSynchronously(steps);
+            }
+        }
+
+        private IEnumerator InitializeSteps()
+        {
             if (IsInitialized)
             {
-                return;
+                yield break;
             }
 
             GameAudioMixer.ApplyProfile(GameAudioProfile.City);
@@ -143,8 +153,11 @@ namespace BarPromenade
             Stopwatch timer = Stopwatch.StartNew();
             areaCamera = RuntimeSceneSetup.EnsureAlpineVillage();
             Audio = RetroAudioService.EnsureInstalled();
+            yield return new CompositionStep("runtime_setup", 0.03f);
             Plan = AlpineVillagePlanner.Create(GameSessionState.CitySeed);
-            World = AlpineVillageWorldBuilder.Build(transform, Plan);
+            yield return new CompositionStep("layout", 0.10f);
+            yield return RuntimeComposition.Range(AlpineVillageWorldBuilder.BuildSteps(
+                transform, Plan, value => World = value), 0.10f, 0.72f);
             MothersHouseEntrance = World.MothersHouseEntrance;
 
             // The loading service arms this before destination activation, so
@@ -291,11 +304,13 @@ namespace BarPromenade
                 Player.Motor.SetFootstepSurface(World.SnowTreading);
             }
             BuildAtmosphere();
+            yield return new CompositionStep("player_and_atmosphere", 0.85f);
             BuildCableway();
             BuildCommonUi(ui);
             ApplyCurrentAtmosphere(true);
             ApplyVisibility();
             IsInitialized = true;
+            yield return new CompositionStep("ready", 1f);
 
             timer.Stop();
             GameLog.Info(

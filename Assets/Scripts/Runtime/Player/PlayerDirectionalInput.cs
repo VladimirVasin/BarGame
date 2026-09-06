@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -14,30 +13,7 @@ namespace BarPromenade
         /// <summary>WASD (never the arrows: those orbit the camera) or the left stick, each axis in <c>-1..1</c>.</summary>
         public static Vector2 ReadRaw()
         {
-            Vector2 movement = Vector2.zero;
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null)
-            {
-                movement.x =
-                    (keyboard.dKey.isPressed ? 1f : 0f) -
-                    (keyboard.aKey.isPressed ? 1f : 0f);
-                movement.y =
-                    (keyboard.wKey.isPressed ? 1f : 0f) -
-                    (keyboard.sKey.isPressed ? 1f : 0f);
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            if (gamepad != null &&
-                gamepad.leftStick.ReadValue().sqrMagnitude > movement.sqrMagnitude)
-            {
-                movement = gamepad.leftStick.ReadValue();
-            }
-
-            // The axes are independent channels for the motor: a combined
-            // W+A must keep full forward speed, so no vector clamp here.
-            movement.x = Mathf.Clamp(movement.x, -1f, 1f);
-            movement.y = Mathf.Clamp(movement.y, -1f, 1f);
-            return movement;
+            return GameInput.ReadMovement();
         }
 
         /// <summary>

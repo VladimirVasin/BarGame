@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
@@ -117,6 +118,16 @@ namespace BarPromenade
             MountainRoadPlan plan,
             Camera camera)
         {
+            MountainRoadWorldResult result = null;
+            RuntimeComposition.RunSynchronously(BuildSteps(parent, plan,
+                camera, value => result = value));
+            return result;
+        }
+
+        internal static IEnumerator BuildSteps(Transform parent,
+            MountainRoadPlan plan, Camera camera,
+            Action<MountainRoadWorldResult> completed)
+        {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
@@ -142,6 +153,7 @@ namespace BarPromenade
             GameObject terrainRoot = BuildTerrain(
                 physicalRoot.transform,
                 plan);
+            yield return new CompositionStep("terrain", 0.20f);
             GameObject road = CreateMeshObject(
                 "Continuous Narrow Road",
                 physicalRoot.transform,
@@ -173,6 +185,7 @@ namespace BarPromenade
                 semanticObjects,
                 bridge.SemanticObjects);
             BuildTunnel(physicalRoot.transform, plan.Tunnel);
+            yield return new CompositionStep("road_bridge_tunnel", 0.40f);
             MountainRoadCafeWorldResult cafe =
                 MountainRoadCafeWorldBuilder.Build(
                     physicalRoot.transform,
@@ -180,6 +193,7 @@ namespace BarPromenade
             MergeSemanticObjects(
                 semanticObjects,
                 cafe.SemanticAnchors);
+            yield return new CompositionStep("cafe", 0.55f);
             MountainCablewayWorldResult cableway =
                 MountainCablewayWorldBuilder.Build(
                     physicalRoot.transform,
@@ -194,7 +208,9 @@ namespace BarPromenade
             MergeSemanticObjects(
                 semanticObjects,
                 site.SemanticObjects);
+            yield return new CompositionStep("terminal", 0.70f);
             BuildForest(physicalRoot.transform, plan.Forest);
+            yield return new CompositionStep("forest", 0.80f);
             BuildMisc(
                 physicalRoot.transform,
                 plan.Misc,
@@ -203,13 +219,14 @@ namespace BarPromenade
             // After the misc, because the culvert it crosses under is one of
             // them and the pour has to stand in a bore that exists.
             MountainRoadBrookBuilder.Build(physicalRoot.transform, plan);
+            yield return new CompositionStep("roadside", 0.90f);
             BuildRidges(backdropRoot.transform, plan.Ridges);
             MountainRoadVistaWorldResult vista =
                 MountainRoadVistaWorldBuilder.Build(
                     backdropRoot.transform,
                     plan.Vista);
 
-            return new MountainRoadWorldResult(
+            completed(new MountainRoadWorldResult(
                 root,
                 physicalRoot,
                 backdropRoot,
@@ -222,7 +239,8 @@ namespace BarPromenade
                 cableway,
                 site,
                 vista,
-                semanticObjects);
+                semanticObjects));
+            yield return new CompositionStep("world_complete", 1f);
         }
 
         private static void MergeSemanticObjects(

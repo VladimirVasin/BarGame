@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -968,17 +967,8 @@ namespace BarPromenade
 
         private static bool IsSprintRequested()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.leftShiftKey.isPressed ||
-                 keyboard.rightShiftKey.isPressed))
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.leftStickButton.isPressed;
+            return GameInput.IsHeld(
+                GameInputAction.Sprint, GameInputContext.Movement);
         }
     }
 

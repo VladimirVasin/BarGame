@@ -93,3 +93,34 @@ For a useful report:
 The logger deliberately avoids recording usernames, save paths or arbitrary
 per-frame telemetry. A filesystem path can still appear inside a Unity-provided
 exception stack trace, so logs should be reviewed before public sharing.
+
+## Optional performance capture
+
+Ordinary sessions collect no frame samples. To capture a bounded interval after
+entering an area, launch with:
+
+```text
+-bp-perf-scene=City -bp-perf-label=1080p-walk -bp-perf-warmup=5 -bp-perf-seconds=30 -bp-perf-target-fps=60
+```
+
+The capture waits for the named scene and the end of its transition; it does
+not teleport the hero, change resolution or enable rendering features. The
+Editor Play command is `Tools > Bar Promenade > Diagnostics > Capture Performance
+(30 seconds)`. `RuntimePerformanceCapture.StartCapture(options, outputDirectory)`
+also accepts an explicit output directory for automation.
+
+At most eight JSON reports are retained under `Application.persistentDataPath/
+PerformanceCaptures` by default. A capture holds at most 36,000 samples, runs
+for 1–120 seconds after up to 60 seconds of warmup, and waits at most 300 seconds
+for its scene. A scene/render-context change ends it with a named reason.
+
+Reports include actual resolution, quality/render scale, pacing, hardware,
+weather, time and intoxication alongside p50/p95/p99/max frame intervals,
+main/render-thread counters, GC bytes and measured foot-bake/reflection work.
+Named Profiler markers are `BarPromenade.FootSoleBake` and
+`BarPromenade.WaterReflectionCube`. GPU data requires supported, enabled Frame
+Timing Stats; capture does not turn that setting on. A metric with
+`sampleCount = 0` is unavailable, not free. Frame intervals include pacing;
+thread counters can include waits. Editor results are diagnostic, not player
+benchmarks. Compare the same route and actual rendering context, and retain
+the report's pause/focus counts when interpreting a result.

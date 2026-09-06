@@ -19,9 +19,9 @@ through the source-space door anchor at ``(0, 6, 0)``.
 
 Run from the repository root with Blender 5::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-player-home-exterior-3d-model.py -- --validate-only
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-player-home-exterior-3d-model.py
 """
 

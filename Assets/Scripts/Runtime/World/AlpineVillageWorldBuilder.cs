@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
@@ -229,6 +230,15 @@ namespace BarPromenade
             Transform parent,
             AlpineVillagePlan plan)
         {
+            AlpineVillageWorldResult result = null;
+            RuntimeComposition.RunSynchronously(BuildSteps(parent, plan,
+                value => result = value));
+            return result;
+        }
+
+        internal static IEnumerator BuildSteps(Transform parent,
+            AlpineVillagePlan plan, Action<AlpineVillageWorldResult> completed)
+        {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
@@ -250,6 +260,7 @@ namespace BarPromenade
             GameObject terrainRoot = BuildTerrain(root.transform, plan);
             GameObject laneSurface = BuildLane(root.transform, plan);
             BuildPathSurfaces(root.transform, plan);
+            yield return new CompositionStep("terrain_and_lane", 0.25f);
 
             // Before the snow, so the drifts can be told where the open
             // water is and keep off it.
@@ -260,6 +271,7 @@ namespace BarPromenade
                 semanticObjects);
             AlpineVillageSnowTreading snowTreading =
                 BuildSnowDrifts(root.transform, plan);
+            yield return new CompositionStep("brook_and_snow", 0.45f);
 
             // The station is the cableway builder's, not this one's. Both
             // terminals are the same building and the second must not be a
@@ -281,12 +293,14 @@ namespace BarPromenade
                 cableway.Bullwheel;
 
             var houseDoors = new List<LockedDoorInteraction>();
+            yield return new CompositionStep("cableway", 0.60f);
             BuildPlots(
                 root.transform,
                 plan,
                 kit,
                 semanticObjects,
                 houseDoors);
+            yield return new CompositionStep("houses", 0.80f);
             MothersHouseEntrance mothersHouseEntrance =
                 BuildMothersHouseEntrance(
                     root.transform,
@@ -300,7 +314,7 @@ namespace BarPromenade
             BuildGarlands(root.transform, plan, kit, semanticObjects);
 
             var walkableArea = new AlpineVillageWalkableArea(plan);
-            return new AlpineVillageWorldResult(
+            completed(new AlpineVillageWorldResult(
                 root,
                 terrainRoot,
                 laneSurface,
@@ -309,7 +323,8 @@ namespace BarPromenade
                 semanticObjects,
                 snowTreading,
                 mothersHouseEntrance,
-                houseDoors);
+                houseDoors));
+            yield return new CompositionStep("world_complete", 1f);
         }
 
         /// <summary>
@@ -439,6 +454,7 @@ namespace BarPromenade
             var host = new GameObject("Village Ground");
             host.transform.SetParent(parent, false);
             host.AddComponent<MeshFilter>().sharedMesh = mesh;
+            host.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             MeshRenderer renderer = host.AddComponent<MeshRenderer>();
             // Shadows stay on for the renderer: the floor casts them as
             // before. The rise's shader has no ShadowCaster pass, so the
@@ -594,6 +610,7 @@ namespace BarPromenade
             var host = new GameObject("Visible Path - " + path.StableId);
             host.transform.SetParent(parent, false);
             host.AddComponent<MeshFilter>().sharedMesh = mesh;
+            host.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             MeshRenderer renderer = host.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
@@ -674,6 +691,7 @@ namespace BarPromenade
             var host = new GameObject(SnowDriftObjectName);
             host.transform.SetParent(parent, false);
             host.AddComponent<MeshFilter>().sharedMesh = mesh;
+            host.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             MeshRenderer renderer = host.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
             // A `0.45 m` lip casting into a `640x360` frame is acne, not
@@ -1110,6 +1128,7 @@ namespace BarPromenade
             var host = new GameObject("Village Lane");
             host.transform.SetParent(parent, false);
             host.AddComponent<MeshFilter>().sharedMesh = mesh;
+            host.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             MeshRenderer renderer = host.AddComponent<MeshRenderer>();
             renderer.sharedMaterial =
                 RuntimePrimitiveFactory.DefaultMaterial;

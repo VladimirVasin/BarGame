@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "python": "3.12.10",
+  "packages": {
+    "Pillow": "12.3.0",
+    "numpy": "2.4.4"
+  },
+  "blender": {
+    "version": "5.0.1",
+    "build_hash": "a3db93c5b259",
+    "windows_path": "C:/Program Files/Blender Foundation/Blender 5.0/blender.exe"
+  },
+  "native": {
+    "platform": "win32",
+    "architecture": "x64",
+    "msvc_tools": "14.51.36231",
+    "windows_sdk": "10.0.26100.0",
+    "visual_studio_observed": "18.8.1"
+  }
+}

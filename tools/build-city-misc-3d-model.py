@@ -16,10 +16,10 @@ outward; validation proves positive signed volume for every mesh.
 
 Run through Blender 5 from the repository root:
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-city-misc-3d-model.py -- --validate-only
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-city-misc-3d-model.py
 """
 

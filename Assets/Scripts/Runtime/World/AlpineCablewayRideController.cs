@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -44,10 +43,12 @@ namespace BarPromenade
         private bool fading;
         private bool skipping;
         private bool resumingArrival;
+        private IDisposable rideOwnership;
 
         public bool IsRiding => riding;
         public bool IsAwaitingStart => awaitingArrivalStart;
-        public bool CanSkipRide => riding && !fading && !skipping;
+        public bool CanSkipRide => riding && !fading && !skipping &&
+            GameInput.CanRead(GameInputContext.Gameplay);
         public bool IsSkipping => skipping;
         public LastRouteRideFadeView Fade => fade;
 
@@ -158,10 +159,11 @@ namespace BarPromenade
         {
             if (!seated)
             {
+                ReleaseRideOwnership();
                 return;
             }
 
-            if (riding || resumingArrival)
+            if (!isActiveAndEnabled || riding || resumingArrival)
             {
                 // The arrival seats him itself, with the line already at rest
                 // and the journey already over. That is not a departure.
@@ -176,7 +178,8 @@ namespace BarPromenade
             seat.BeginAttachment();
             line.Resume();
             riding = true;
-            GameSessionState.SetRidingTheCableway(true);
+            rideOwnership?.Dispose();
+            rideOwnership = GameSessionState.AcquireCablewayRide();
             skipHint.Show(SkipPromptKey);
             GameLog.Info(
                 "cableway",
@@ -334,8 +337,7 @@ namespace BarPromenade
                 yield return null;
             }
 
-            riding = false;
-            GameSessionState.SetRidingTheCableway(false);
+            ReleaseRideOwnership();
             seat.EndAttachment();
             AreaTravelService.Request(
                 new AreaTravelRequest(
@@ -371,9 +373,8 @@ namespace BarPromenade
                 yield return null;
             }
 
-            riding = false;
             skipping = false;
-            GameSessionState.SetRidingTheCableway(false);
+            ReleaseRideOwnership();
             seat.EndAttachment();
             AreaTravelService.Request(
                 new AreaTravelRequest(
@@ -397,12 +398,30 @@ namespace BarPromenade
         /// </summary>
         private static bool WasSkipPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            return keyboard != null && keyboard.f10Key.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.SkipRide, GameInputContext.Gameplay);
+        }
+
+        private void ReleaseRideOwnership()
+        {
+            riding = false;
+            rideOwnership?.Dispose();
+            rideOwnership = null;
+            if (skipHint != null)
+            {
+                skipHint.Hide();
+            }
+        }
+
+        private void OnDisable()
+        {
+            StopAllCoroutines();
+            ReleaseRideOwnership();
         }
 
         private void OnDestroy()
         {
+            ReleaseRideOwnership();
             if (line != null)
             {
                 line.Moved -= HandleLineMoved;

@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -805,87 +804,25 @@ namespace BarPromenade
 
         private static bool WasPauseTogglePressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                keyboard.escapeKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.startButton.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.Pause, GameInputContext.PauseMenu);
         }
 
         private static bool WasCancelPressed()
         {
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonEast.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.GamepadCancel, GameInputContext.PauseMenu);
         }
 
         private static int ReadSelectionDelta()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null)
-            {
-                if (keyboard.upArrowKey.wasPressedThisFrame ||
-                    keyboard.wKey.wasPressedThisFrame ||
-                    keyboard.leftArrowKey.wasPressedThisFrame ||
-                    keyboard.aKey.wasPressedThisFrame)
-                {
-                    return -1;
-                }
-
-                if (keyboard.downArrowKey.wasPressedThisFrame ||
-                    keyboard.sKey.wasPressedThisFrame ||
-                    keyboard.rightArrowKey.wasPressedThisFrame ||
-                    keyboard.dKey.wasPressedThisFrame)
-                {
-                    return 1;
-                }
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            if (gamepad == null)
-            {
-                return 0;
-            }
-
-            if (gamepad.dpad.up.wasPressedThisFrame ||
-                gamepad.dpad.left.wasPressedThisFrame ||
-                gamepad.leftStick.up.wasPressedThisFrame ||
-                gamepad.leftStick.left.wasPressedThisFrame)
-            {
-                return -1;
-            }
-
-            if (gamepad.dpad.down.wasPressedThisFrame ||
-                gamepad.dpad.right.wasPressedThisFrame ||
-                gamepad.leftStick.down.wasPressedThisFrame ||
-                gamepad.leftStick.right.wasPressedThisFrame)
-            {
-                return 1;
-            }
-
-            return 0;
+            return GameInput.ReadMenuSelectionDelta(GameInputContext.PauseMenu);
         }
 
         private static bool WasConfirmPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.enterKey.wasPressedThisFrame ||
-                 keyboard.numpadEnterKey.wasPressedThisFrame ||
-                 keyboard.eKey.wasPressedThisFrame ||
-                 keyboard.spaceKey.wasPressedThisFrame))
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonSouth.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.Confirm, GameInputContext.PauseMenu);
         }
     }
 }

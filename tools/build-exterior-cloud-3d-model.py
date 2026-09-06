@@ -3,7 +3,7 @@
 
 Run through Blender 5, not ordinary CPython::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
         tools/build-exterior-cloud-3d-model.py
 
 The output is deliberately small: one unit-radius upper hemisphere, one

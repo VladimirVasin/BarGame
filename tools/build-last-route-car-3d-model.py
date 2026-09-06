@@ -3,7 +3,7 @@
 
 Run through Blender 5, for example::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-last-route-car-3d-model.py
 
 A period saloon, beaten but plainly still running: dents, rust blooms, a

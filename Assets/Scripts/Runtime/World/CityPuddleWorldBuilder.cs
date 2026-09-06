@@ -47,8 +47,9 @@ namespace BarPromenade
 
             var result = new GameObject("Gutter Puddle Water");
             result.transform.SetParent(parent, false);
-            result.AddComponent<MeshFilter>().sharedMesh =
-                CreateCombinedPatchMesh(patches);
+            Mesh mesh = CreateCombinedPatchMesh(patches);
+            result.AddComponent<MeshFilter>().sharedMesh = mesh;
+            result.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             var renderer = result.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = CityPuddleWaterResources.Material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;

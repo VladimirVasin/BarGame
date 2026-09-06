@@ -2,12 +2,15 @@
 
 This directory is the concise, versioned memory for Bar Promenade.
 Read [`AI.md`](../AI.md) first; it is the entry point and states the
-source-of-truth order.
+source-of-truth order. Read the overview and system index next, then only the
+relevant sections of the detailed catalogue and architecture notes. Avoid
+copying world descriptions back into the entry documents.
 
 | File | Purpose |
 | --- | --- |
 | `prompt-templates.md` | Canonical FAST-default, FEATURE, RELEASE, PLAN, BUGFIX, and REFACTOR workflows |
-| `project-overview.md` | Product intent, current baseline, MVP scope |
+| `project-overview.md` | Concise current baseline, technical owners, capability and scope links |
+| `current-world.md` | Detailed current gameplay/MVP catalogue and deferred scope |
 | `system-tree.md` | Current and target repository/system structure |
 | `systems-map.md` | System index: guarantee, key files and status |
 | `architecture-notes.md` | Accepted and proposed technical decisions |
@@ -19,7 +22,7 @@ source-of-truth order.
 | `work-log.md` | Reverse-chronological implementation record |
 | `tutorial-scenario.md` | Planned vertical-slice walkthrough and acceptance path |
 | `release-notes.md` | Player-visible milestone notes |
-| `archive/` | Retired work-log and release-note entries, retained verbatim |
+| `archive/` | Retired logs and explicitly superseded document snapshots, retained verbatim |
 
 ## Status terms
 

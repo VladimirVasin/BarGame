@@ -155,6 +155,8 @@ namespace BarPromenade.Tests.EditMode
             };
 
             var parent = new GameObject("Puddle Water Test");
+            Mesh generatedMesh = null;
+            Material sharedMaterial = CityPuddleWaterResources.Material;
             try
             {
                 GameObject root = CityPuddleWorldBuilder.Build(
@@ -181,6 +183,7 @@ namespace BarPromenade.Tests.EditMode
                 // One 3x3 grid per patch: the centre vertex carries the
                 // rim mask the shader erodes from the edge inward.
                 var filter = root.GetComponent<MeshFilter>();
+                generatedMesh = filter.sharedMesh;
                 Assert.That(
                     filter.sharedMesh.vertexCount,
                     Is.EqualTo(patches.Count * 9));
@@ -211,6 +214,11 @@ namespace BarPromenade.Tests.EditMode
             {
                 Object.DestroyImmediate(parent);
             }
+
+            Assert.That(generatedMesh == null, Is.True,
+                "The hidden native water mesh must die with the rebuilt city.");
+            Assert.That(sharedMaterial != null, Is.True,
+                "Releasing a generated mesh must leave the shared water asset alive.");
         }
     }
 }

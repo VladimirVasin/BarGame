@@ -674,32 +674,14 @@ namespace BarPromenade
 
         private static bool IsConfirmPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.enterKey.wasPressedThisFrame ||
-                 keyboard.numpadEnterKey.wasPressedThisFrame ||
-                 keyboard.eKey.wasPressedThisFrame))
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonSouth.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.Submit, GameInputContext.Menu);
         }
 
         private static bool IsCancelPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                keyboard.escapeKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonEast.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.Cancel, GameInputContext.Menu);
         }
 
         private static string GetFailureKey(

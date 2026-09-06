@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -356,29 +355,12 @@ namespace BarPromenade
 
         private static bool WasJournalTogglePressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.jKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.rightShoulder.wasPressedThisFrame;
+            return GameInput.WasPressed(GameInputAction.Journal);
         }
 
         private static bool WasCancelPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                keyboard.escapeKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonEast.wasPressedThisFrame;
+            return GameInput.WasPressed(GameInputAction.Cancel);
         }
     }
 }

@@ -43,12 +43,16 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView hud;
         private bool previousMotorInput;
+        private bool blocksMotorInput;
         private bool previousInteractorInput;
         private bool previousOrbitInput;
         private bool previousCinematicMotion;
         private bool previousHudVisibility;
 
         public bool IsLocked { get; private set; }
+
+        public static bool BlocksMotorInput =>
+            IsAnyLocked && activeLock.blocksMotorInput;
 
         /// <summary>
         /// Whether anything currently holds the modal lock.
@@ -135,6 +139,7 @@ namespace BarPromenade
                 cameraFollow.CinematicMotionEnabled;
             previousHudVisibility =
                 hud == null || hud.Visible;
+            blocksMotorInput = options.DisableMotorInput;
             IsLocked = true;
             activeLock = this;
 

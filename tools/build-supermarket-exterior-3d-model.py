@@ -15,9 +15,9 @@ logical collider, entrance trigger, transition and yard spotlight.
 
 Run from the repository root with Blender 5::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-supermarket-exterior-3d-model.py -- --validate-only
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-supermarket-exterior-3d-model.py
 """
 

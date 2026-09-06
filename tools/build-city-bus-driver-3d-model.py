@@ -3,7 +3,7 @@
 
 Run this with Blender, not CPython:
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
         tools/build-city-bus-driver-3d-model.py
 
 The driver is an animation-free model on the NpcHumanV2-compatible 31-bone

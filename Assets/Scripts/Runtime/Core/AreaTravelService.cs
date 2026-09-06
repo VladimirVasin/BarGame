@@ -14,6 +14,7 @@ namespace BarPromenade
     public sealed class AreaTravelService : MonoBehaviour
     {
         internal const float MinimumLoadingScreenSeconds = 0.55f;
+        internal const float SceneLoadProgressShare = 0.20f;
 
         private static AreaTravelService instance;
         private static AreaTravelRequest pendingRequest;
@@ -28,6 +29,15 @@ namespace BarPromenade
         private static string sourceScene = string.Empty;
 
         private AsyncOperation activeLoadOperation;
+        private RuntimeComposition composition;
+        private MonoBehaviour compositionOwner;
+        private AreaLoadingRoot activeLoadingRoot;
+        private IDisposable compositionPause;
+        private bool ownsAudioPause;
+        private bool previousAudioPause;
+
+        public static bool IsComposing => instance != null &&
+            instance.composition != null;
 
         public static bool IsTraveling { get; private set; }
         public static float Progress { get; private set; }
@@ -177,18 +187,40 @@ namespace BarPromenade
             float normalizedTime = Mathf.Clamp01(
                 Mathf.Max(0f, visibleSeconds) /
                 MinimumLoadingScreenSeconds);
-            return Mathf.Min(normalizedScene, normalizedTime);
+            return SceneLoadProgressShare *
+                Mathf.Min(normalizedScene, normalizedTime);
+        }
+
+        internal static bool TryScheduleComposition(
+            MonoBehaviour owner, IEnumerator steps)
+        {
+            if (owner == null || instance == null || !IsTraveling ||
+                !hasPendingRequest || owner.gameObject.scene.name !=
+                AreaSceneCatalog.GetSceneName(pendingRequest.DestinationArea))
+            {
+                return false;
+            }
+
+            if (instance.composition != null)
+            {
+                throw new InvalidOperationException(
+                    "The destination has already registered its composition.");
+            }
+
+            instance.compositionOwner = owner;
+            instance.composition = new RuntimeComposition(steps);
+            return true;
         }
 
         private static void EnsureInstance()
         {
-            if (instance != null)
+            if (instance != null && instance.isActiveAndEnabled)
             {
                 return;
             }
 
             instance = FindAnyObjectByType<AreaTravelService>();
-            if (instance != null)
+            if (instance != null && instance.isActiveAndEnabled)
             {
                 DontDestroyOnLoad(instance.gameObject);
                 return;
@@ -268,7 +300,11 @@ namespace BarPromenade
                 loadingRoot =
                     BarPromenadeRuntimeBootstrap
                         .EnsureAreaLoadingInstalled();
-                loadingRoot.Bind(request);
+                // Reserve captured the source before AreaLoading became the
+                // active scene. Keep that origin for the entire presentation.
+                GameAreaId? sourceArea = AreaSceneCatalog.TryGetArea(
+                    sourceScene, out GameAreaId area) ? area : (GameAreaId?)null;
+                loadingRoot.Bind(request, sourceArea);
             }
             catch (Exception exception)
             {
@@ -312,14 +348,19 @@ namespace BarPromenade
                 yield return null;
             }
 
-            Progress = 1f;
+            Progress = SceneLoadProgressShare;
             if (loadingRoot != null)
             {
                 loadingRoot.SetProgress(Progress);
             }
 
-            // Present one complete frame before the loading scene gives up
-            // the screen; fast local loads should still read as a transition.
+            // Keep the same bar over the destination's staged construction.
+            activeLoadingRoot = loadingRoot;
+            loadingRoot?.KeepDuringComposition();
+            compositionPause = GameTimeScaleRuntime.AcquirePause();
+            previousAudioPause = AudioListener.pause;
+            ownsAudioPause = true;
+            AudioListener.pause = true;
             yield return null;
 
             // Arm the token before activation: destination Awake is allowed
@@ -336,7 +377,86 @@ namespace BarPromenade
             }
 
             activeLoadOperation = null;
+            if (composition == null)
+            {
+                yield return RecoverSourceThenFail(
+                    "destination_composition_missing", loadingRoot);
+                ReleaseComposition();
+                yield break;
+            }
+
+            while (composition != null)
+            {
+                bool more = false;
+                Exception failure = null;
+                try
+                {
+                    if (compositionOwner == null)
+                    {
+                        throw new InvalidOperationException(
+                            "The destination root was destroyed during composition.");
+                    }
+
+                    more = composition.AdvanceFrame(ReportCompositionStep);
+                }
+                catch (Exception exception)
+                {
+                    failure = exception;
+                }
+
+                if (failure != null)
+                {
+                    Debug.LogException(failure);
+                    composition.Dispose();
+                    composition = null;
+                    hasArrival = false;
+                    yield return RecoverSourceThenFail(
+                        "destination_composition_failed", loadingRoot);
+                    ReleaseComposition();
+                    yield break;
+                }
+
+                if (!more)
+                {
+                    break;
+                }
+
+                yield return null;
+            }
+
+            Progress = 1f;
+            loadingRoot?.SetProgress(Progress);
+            yield return null;
+            ReleaseComposition();
             Complete(request);
+        }
+
+        private void ReportCompositionStep(CompositionStep step)
+        {
+            Progress = Mathf.Max(Progress, Mathf.Min(0.99f,
+                SceneLoadProgressShare +
+                (1f - SceneLoadProgressShare) * step.Progress));
+            activeLoadingRoot?.SetProgress(Progress);
+        }
+
+        private void ReleaseComposition()
+        {
+            composition?.Dispose();
+            composition = null;
+            compositionOwner = null;
+            compositionPause?.Dispose();
+            compositionPause = null;
+            if (ownsAudioPause)
+            {
+                AudioListener.pause = previousAudioPause;
+                ownsAudioPause = false;
+            }
+
+            if (activeLoadingRoot != null)
+            {
+                activeLoadingRoot.Dismiss();
+                activeLoadingRoot = null;
+            }
         }
 
         private static AsyncOperation TryStartLoad(
@@ -489,7 +609,17 @@ namespace BarPromenade
                 GameLog.Field("reason", reason));
         }
 
+        private void OnDisable()
+        {
+            Shutdown();
+        }
+
         private void OnDestroy()
+        {
+            Shutdown();
+        }
+
+        private void Shutdown()
         {
             if (instance != this)
             {
@@ -497,6 +627,7 @@ namespace BarPromenade
             }
 
             instance = null;
+            StopAllCoroutines();
             if (activeLoadOperation != null &&
                 !activeLoadOperation.isDone)
             {
@@ -507,6 +638,7 @@ namespace BarPromenade
             }
 
             activeLoadOperation = null;
+            ReleaseComposition();
             if (IsTraveling)
             {
                 hasArrival = false;

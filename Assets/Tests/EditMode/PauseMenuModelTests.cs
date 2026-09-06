@@ -4,6 +4,30 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class PauseMenuModelTests
     {
+        [TestCase(GameInputContext.Gameplay, false, true, true, true, true, false)]
+        [TestCase(GameInputContext.Contextual, false, true, true, true, true, false)]
+        [TestCase(GameInputContext.Menu, false, true, true, true, true, false)]
+        [TestCase(GameInputContext.PauseMenu, false, true, true, true, true, true)]
+        [TestCase(GameInputContext.Menu, false, false, true, true, true, true)]
+        [TestCase(GameInputContext.PauseMenu, false, false, true, true, true, false)]
+        [TestCase(GameInputContext.Movement, false, false, false, true, false, true)]
+        [TestCase(GameInputContext.Movement, false, false, false, true, true, false)]
+        [TestCase(GameInputContext.Contextual, false, false, false, true, true, true)]
+        [TestCase(GameInputContext.Gameplay, false, false, false, true, true, false)]
+        [TestCase(GameInputContext.PauseMenu, true, true, true, true, true, false)]
+        [TestCase(GameInputContext.Menu, true, false, false, false, false, false)]
+        [TestCase(GameInputContext.Contextual, true, false, false, false, false, false)]
+        [TestCase(GameInputContext.Movement, true, false, false, false, false, false)]
+        [TestCase(GameInputContext.Gameplay, true, false, false, false, false, false)]
+        public void InputOwnership_PauseMenusTransitionsAndBalanceHaveExplicitPriority(
+            GameInputContext context, bool transitioning, bool pauseMenuOpen,
+            bool timePaused, bool modalLocked, bool blocksMovement, bool expected)
+        {
+            Assert.That(GameInputPolicy.Allows(
+                context, transitioning, pauseMenuOpen, timePaused,
+                modalLocked, blocksMovement), Is.EqualTo(expected));
+        }
+
         [Test]
         public void Open_SelectsResumeAndMainPage()
         {

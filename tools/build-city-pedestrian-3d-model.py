@@ -3,7 +3,7 @@
 
 Run this with Blender, not CPython:
 
-    blender --background --python tools/build-city-pedestrian-3d-model.py
+    blender --background --factory-startup --python-exit-code 1 --python tools/build-city-pedestrian-3d-model.py
 
 The generator owns one editable source and animation-free FBX per authored
 design, one shared animation-only locomotion FBX, manifests and review renders.

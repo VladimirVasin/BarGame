@@ -28,9 +28,9 @@ the runtime combines meshes per surface/tint bucket.
 
 Run through Blender 5 from the repository root::
 
-    blender --background --factory-startup --python       tools/build-village-3d-model.py
+    blender --background --factory-startup --python-exit-code 1 --python       tools/build-village-3d-model.py
 
-    blender --background --factory-startup --python       tools/build-village-3d-model.py -- --validate-only
+    blender --background --factory-startup --python-exit-code 1 --python       tools/build-village-3d-model.py -- --validate-only
 """
 
 from __future__ import annotations

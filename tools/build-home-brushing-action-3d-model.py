@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deterministic Blender sink cavity and normalized brushing liquid assets.
 
-Blender --background --factory-startup --python tools/build-home-brushing-action-3d-model.py -- [--validate-only]
+Blender --background --factory-startup --python-exit-code 1 --python tools/build-home-brushing-action-3d-model.py -- [--validate-only]
 The existing Home sink footprint, placement and player collision stay unchanged.
 """
 from __future__ import annotations

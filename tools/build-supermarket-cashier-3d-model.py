@@ -3,10 +3,10 @@
 
 Run this with Blender, not CPython:
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
         tools/build-supermarket-cashier-3d-model.py -- --variant normal
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
         tools/build-supermarket-cashier-3d-model.py -- --variant watcher
 
 Both variants are animation-free models on the NpcHumanV2-compatible

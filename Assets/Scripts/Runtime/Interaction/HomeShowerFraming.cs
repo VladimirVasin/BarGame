@@ -37,14 +37,17 @@ namespace BarPromenade
         public static readonly Vector3 LeftPalm = new Vector3(3.66f, 1.55f, 3.847f);
         public static readonly Vector3 RightPalm = new Vector3(4.10f, 1.55f, 3.847f);
 
-        /// <summary>Just under the nozzle plate "Home Bathroom Shower Head Face".</summary>
-        public static readonly Vector3 DripOrigin = new Vector3(3.705f, 1.99f, 3.235f);
+        /// <summary>The mixer and riser sit on the tile directly ahead, between the braced hands.</summary>
+        public static readonly Vector3 Mixer = new Vector3(Dock.x, 1.24f, WallZ - 0.08f);
+
+        /// <summary>Just under the nozzle plate "Home Bathroom Shower Head Face", ahead of the dock.</summary>
+        public static readonly Vector3 DripOrigin = new Vector3(Dock.x, 1.99f, 3.42f);
 
         /// <summary>Where a drop meets the basin.</summary>
-        public static readonly Vector3 BasinLanding = new Vector3(3.705f, 0.225f, 3.235f);
+        public static readonly Vector3 BasinLanding = new Vector3(DripOrigin.x, 0.225f, DripOrigin.z);
 
         /// <summary>The top of the hot cross handle the right hand closes on.</summary>
-        public static readonly Vector3 HotHandleGrip = new Vector3(4.23f, 1.045f, 3.28f);
+        public static readonly Vector3 HotHandleGrip = Mixer + new Vector3(0.07f, 0.025f, -0.06f);
 
         public const float WaypointArrivalRadius = 0.06f;
 

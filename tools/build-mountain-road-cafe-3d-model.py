@@ -13,9 +13,9 @@ materials or animation. Unity owns those systems through the model manifest.
 
 Run from the repository root with Blender 5::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-mountain-road-cafe-3d-model.py -- --validate-only
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-mountain-road-cafe-3d-model.py
 """
 

@@ -3,7 +3,7 @@
 
 Run this with Blender, not CPython:
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
         tools/build-stairwell-cat-3d-model.py
 
 The cat is the last sprite conversion: a sitting, near-black shaggy

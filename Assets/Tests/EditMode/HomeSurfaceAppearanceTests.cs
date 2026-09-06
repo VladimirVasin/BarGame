@@ -173,6 +173,13 @@ namespace BarPromenade.Tests.EditMode
                 "Home Refrigerator Lower Hinge",
             };
 
+        private static readonly string[] FlatTintExemptFixtureRoots =
+        {
+            "Home Bathroom Toilet Lid",
+            "Home Bathroom Toilet Water",
+            "Home Bathroom Toilet Paper",
+        };
+
         private static readonly string[] FlatTintExemptPrefixes =
         {
             "Home Balcony Ashtray",
@@ -648,7 +655,8 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(
                             authoredPart != null
                                 ? authoredPart.sheet == "Plain"
-                                : IsFlatTintExempt(renderer.gameObject.name),
+                                : IsFlatTintExempt(renderer.gameObject.name) ||
+                                  IsInFlatTintExemptFixture(renderer.transform),
                             Is.True,
                             $"{renderer.gameObject.name} carries no home " +
                             "surface texture and is not authored as a plain " +
@@ -726,6 +734,31 @@ namespace BarPromenade.Tests.EditMode
                  objectName.EndsWith("Stain", StringComparison.Ordinal)))
             {
                 return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// A whole Blender-authored fixture carried in from Resources and
+        /// tinted flat, like the shower head and the flush plate beside it.
+        /// The exemption is keyed on the root the builder names, so the mesh
+        /// names inside the imported model stay free to change.
+        /// </summary>
+        private static bool IsInFlatTintExemptFixture(Transform node)
+        {
+            for (Transform current = node; current != null; current = current.parent)
+            {
+                foreach (string root in FlatTintExemptFixtureRoots)
+                {
+                    if (string.Equals(
+                            current.name,
+                            root,
+                            StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;

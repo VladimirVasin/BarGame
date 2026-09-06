@@ -108,6 +108,8 @@ namespace BarPromenade
             new HashSet<GameDayEventId>();
         private static readonly CemeteryGraveWorkLedger graveWork =
             new CemeteryGraveWorkLedger();
+        private static readonly VehicleActivityState vehicleActivity =
+            new VehicleActivityState();
         private static readonly GameTimeState gameTime =
             new GameTimeState();
         private static readonly PlayerNeedsProgressionState needsProgression =
@@ -227,15 +229,20 @@ namespace BarPromenade
         /// running.
         ///
         /// Same rule as the car, and for the same reason. Unlike the car this
-        /// is a plain flag rather than a stage of a monotone ladder: the
+        /// is owned by a disposable ride lease, rather than a story stage: the
         /// cableway is a two-way, repeatable link, so there is nothing
         /// permanent to remember - where he is IS which scene is loaded.
         /// </summary>
-        public static bool IsRidingTheCableway { get; private set; }
+        public static bool IsRidingTheCableway => vehicleActivity.IsRidingCableway;
 
         public static void SetRidingTheCableway(bool riding)
         {
-            IsRidingTheCableway = riding;
+            vehicleActivity.SetCablewayActive(riding);
+        }
+
+        public static IDisposable AcquireCablewayRide()
+        {
+            return vehicleActivity.AcquireCablewayRide();
         }
 
         /// <summary>
@@ -447,6 +454,7 @@ namespace BarPromenade
                 ? 1
                 : sessionGeneration + 1;
             nextDrinkOrderSequence = 0L;
+            vehicleActivity.Reset();
             CityWetSurfaceRegistry.ResetForNewSession();
             ChurchGardenPotSessionState.ResetForNewSession();
             HomeUrineEffect.ResetSession();

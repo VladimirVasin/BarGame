@@ -928,6 +928,9 @@ namespace BarPromenade
         }
 }
 
+    // Builders also create previews and test worlds outside Play Mode. The
+    // destruction callback must run there even though this owner never updates.
+    [ExecuteAlways]
     internal sealed class RuntimeGeneratedMeshOwner : MonoBehaviour
     {
         private Mesh ownedMesh;

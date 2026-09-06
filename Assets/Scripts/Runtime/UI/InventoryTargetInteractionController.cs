@@ -741,33 +741,14 @@ namespace BarPromenade
 
         private static bool WasCancelPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                keyboard.escapeKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonEast.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.Cancel, GameInputContext.Menu);
         }
 
         private static bool WasConfirmPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.eKey.wasPressedThisFrame ||
-                 keyboard.enterKey.wasPressedThisFrame ||
-                 keyboard.numpadEnterKey.wasPressedThisFrame ||
-                 keyboard.spaceKey.wasPressedThisFrame))
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonSouth.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.Confirm, GameInputContext.Menu);
         }
 
         private static int ReadSelectionDelta()

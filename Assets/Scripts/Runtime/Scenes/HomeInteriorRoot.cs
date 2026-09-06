@@ -68,6 +68,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public HomeBathroomMirrorWorld BathroomMirror
+        {
+            get;
+            private set;
+        }
         public HomeBalconySmokingInteraction Smoking
         {
             get;
@@ -350,6 +355,7 @@ namespace BarPromenade
             BuildRefrigeratorInteraction();
             BuildBalconySmokingInteraction();
             BuildBathroomSceneInteractions();
+            BuildBathroomMirror();
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
@@ -489,6 +495,29 @@ namespace BarPromenade
                 openingObject.AddComponent<
                     HomeOpeningController>();
             Opening.Initialize(this);
+        }
+
+        /// <summary>
+        /// Built before the occlusion controller swaps registered renderers
+        /// onto the dither material, so the mirrored copies keep the real
+        /// materials for good and never dither.
+        /// </summary>
+        private void BuildBathroomMirror()
+        {
+            HomeBathroomMirrorOpening opening =
+                Room.GetComponentInChildren<HomeBathroomMirrorOpening>(true);
+            if (opening == null)
+            {
+                throw new InvalidOperationException(
+                    "The generated Home is missing its bathroom mirror opening.");
+            }
+
+            GameObject mirrorObject =
+                new GameObject(HomeBathroomMirrorWorld.RootName);
+            mirrorObject.transform.SetParent(transform, false);
+            BathroomMirror =
+                mirrorObject.AddComponent<HomeBathroomMirrorWorld>();
+            BathroomMirror.Initialize(this, opening);
         }
 
         private void BuildPlayerOcclusion(Camera camera)

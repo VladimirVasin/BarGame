@@ -178,6 +178,7 @@ namespace BarPromenade
                 room,
                 plan,
                 occlusionRegistry);
+            HomeBathroomMirrorOpeningBuilder.Build(room);
             if (balcony != null)
             {
                 HomeBalconyWorldBuilder.Build(

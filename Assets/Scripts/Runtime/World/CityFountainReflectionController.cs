@@ -1,4 +1,5 @@
 using System;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -27,6 +28,8 @@ namespace BarPromenade
     {
         private const int Resolution = 128;
         private const float NightRerenderDelta = 0.12f;
+        private static readonly ProfilerMarker MirrorMarker =
+            new ProfilerMarker("BarPromenade.WaterReflectionCube");
 
         private static readonly int ReflectionCubeId =
             Shader.PropertyToID("_ReflectionCube");
@@ -80,6 +83,13 @@ namespace BarPromenade
 
         private void Update()
         {
+            // A staged city can already contain water before its buildings
+            // exist. Keep the first snapshot pending until construction ends.
+            if (AreaTravelService.IsComposing)
+            {
+                return;
+            }
+
             float night = CityWaterResources.NightFactor;
             if (Mathf.Abs(night - lastRenderedNight) <
                 NightRerenderDelta)
@@ -112,7 +122,11 @@ namespace BarPromenade
             }
 
             lastRenderedNight = CityWaterResources.NightFactor;
-            reflectionCamera.RenderToCubemap(cubemap);
+            using (MirrorMarker.Auto())
+            using (RuntimePerformanceCapture.MeasureReflection())
+            {
+                reflectionCamera.RenderToCubemap(cubemap);
+            }
         }
 
         private void OnDestroy()

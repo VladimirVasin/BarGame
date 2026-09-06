@@ -2,6 +2,7 @@
   "name": "BarPromenade.PlayModeTests",
   "rootNamespace": "BarPromenade.Tests.PlayMode",
   "references": [
+    "BarPromenade.Rules",
     "BarPromenade.TestSupport",
     "BarPromenade.Runtime",
     "Unity.InputSystem",

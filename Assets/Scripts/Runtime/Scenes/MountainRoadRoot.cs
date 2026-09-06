@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -129,9 +130,18 @@ namespace BarPromenade
 
         private void Initialize()
         {
+            IEnumerator steps = InitializeSteps();
+            if (!AreaTravelService.TryScheduleComposition(this, steps))
+            {
+                RuntimeComposition.RunSynchronously(steps);
+            }
+        }
+
+        private IEnumerator InitializeSteps()
+        {
             if (IsInitialized)
             {
-                return;
+                yield break;
             }
 
             GameAudioMixer.ApplyProfile(GameAudioProfile.City);
@@ -140,11 +150,13 @@ namespace BarPromenade
             Stopwatch timer = Stopwatch.StartNew();
             Camera camera = RuntimeSceneSetup.EnsureMountainRoad();
             Audio = RetroAudioService.EnsureInstalled();
+            yield return new CompositionStep("runtime_setup", 0.03f);
             Plan = MountainRoadPlanner.Create(GameSessionState.CitySeed);
-            World = MountainRoadWorldBuilder.Build(
+            yield return new CompositionStep("layout", 0.10f);
+            yield return RuntimeComposition.Range(MountainRoadWorldBuilder.BuildSteps(
                 transform,
                 Plan,
-                camera);
+                camera, value => World = value), 0.10f, 0.72f);
 
             // The loading service arms this before destination activation,
             // so consume it before any spawn decision or PlayerFactory call.
@@ -241,6 +253,7 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 false);
             BuildAtmosphere(camera);
+            yield return new CompositionStep("player_and_atmosphere", 0.85f);
             BuildSeats(camera);
             BuildCableway(camera);
             BuildCommonUi(ui);
@@ -249,6 +262,7 @@ namespace BarPromenade
             // rig off the camera to do it.
             BuildLastRoute(camera);
             IsInitialized = true;
+            yield return new CompositionStep("ready", 1f);
 
             timer.Stop();
             GameLog.Info(

@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -631,17 +630,8 @@ namespace BarPromenade
 
         private static bool IsStopHeld()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.eKey.isPressed ||
-                 keyboard.enterKey.isPressed))
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonSouth.isPressed;
+            return GameInput.IsHeld(
+                GameInputAction.Interact, GameInputContext.Contextual);
         }
 
         protected virtual void OnDisable()

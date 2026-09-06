@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using BarPromenade.Rendering;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -572,19 +571,8 @@ namespace BarPromenade
 
         private static bool WasClosePressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.eKey.wasPressedThisFrame ||
-                 keyboard.enterKey.wasPressedThisFrame ||
-                 keyboard.escapeKey.wasPressedThisFrame))
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   (gamepad.buttonSouth.wasPressedThisFrame ||
-                    gamepad.buttonEast.wasPressedThisFrame);
+            return GameInput.WasPressed(GameInputAction.Interact) ||
+                   GameInput.WasPressed(GameInputAction.Cancel);
         }
 
         private static void ValidateHome(HomeInteriorRoot homeRoot)

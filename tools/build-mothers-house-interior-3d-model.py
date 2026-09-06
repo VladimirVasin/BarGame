@@ -14,10 +14,10 @@ from the existing kettle-head NPC prefab; this asset publishes only
 
 Run from the repository root with Blender 5::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-mothers-house-interior-3d-model.py -- --validate-only
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-mothers-house-interior-3d-model.py
 
 Dimensions below are Unity-local metres: +X east, +Y up, +Z north.  Geometry

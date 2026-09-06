@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Author the Home toilet action's fixed-metre anatomy, hinged lid and liquid kit.
 
-Blender --background --factory-startup --python this-file -- [--validate-only]
+Blender --background --factory-startup --python-exit-code 1 --python this-file -- [--validate-only]
 The anatomy is a neutral adult, nonsexual urination prop. The production Hero V2
 owns the hand/arm: this kit deliberately does not author a replacement hand.
 All game meshes are Blender exports; runtime only places/scales these assets.

@@ -8,7 +8,7 @@ hero model generator.
 
 Run with Blender 5.0:
 
-    blender --background --factory-startup \
+    blender --background --factory-startup --python-exit-code 1 \
       --python tools/build-player-3d-model-v2.py
 
 The no-argument invocation writes the production source and Unity assets.

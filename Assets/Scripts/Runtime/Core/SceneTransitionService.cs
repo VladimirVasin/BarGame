@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -19,6 +20,7 @@ namespace BarPromenade
         private static bool activeUsedFallback;
 
         private static bool isSceneTransitioning;
+        private AsyncOperation activeLoadOperation;
 
         public static bool IsTransitioning
         {
@@ -58,7 +60,7 @@ namespace BarPromenade
                 return false;
             }
 
-            instance.StartCoroutine(instance.LoadDirect(sceneName));
+            instance.StartCoroutine(instance.ExecuteSafely(instance.LoadDirect(sceneName)));
             return true;
         }
 
@@ -116,7 +118,7 @@ namespace BarPromenade
             }
 
             instance.StartCoroutine(
-                instance.LoadThroughDoor(sceneName, direction));
+                instance.ExecuteSafely(instance.LoadThroughDoor(sceneName, direction)));
             return true;
         }
 
@@ -191,13 +193,13 @@ namespace BarPromenade
 
         private static void EnsureInstance()
         {
-            if (instance != null)
+            if (instance != null && instance.isActiveAndEnabled)
             {
                 return;
             }
 
             instance = FindAnyObjectByType<SceneTransitionService>();
-            if (instance != null)
+            if (instance != null && instance.isActiveAndEnabled)
             {
                 return;
             }
@@ -210,9 +212,7 @@ namespace BarPromenade
         private IEnumerator LoadDirect(string sceneName)
         {
             yield return null;
-            AsyncOperation operation = SceneManager.LoadSceneAsync(
-                sceneName,
-                LoadSceneMode.Single);
+            AsyncOperation operation = TryStartLoad(sceneName);
             if (operation == null)
             {
                 FinishTransition(
@@ -239,9 +239,7 @@ namespace BarPromenade
         {
             yield return null;
             AsyncOperation transitionOperation =
-                SceneManager.LoadSceneAsync(
-                    SceneIds.DoorTransition,
-                    LoadSceneMode.Single);
+                TryStartLoad(SceneIds.DoorTransition);
             if (transitionOperation == null)
             {
                 FinishTransition(
@@ -290,9 +288,7 @@ namespace BarPromenade
                 yield break;
             }
 
-            AsyncOperation targetOperation = SceneManager.LoadSceneAsync(
-                sceneName,
-                LoadSceneMode.Single);
+            AsyncOperation targetOperation = TryStartLoad(sceneName);
             if (targetOperation == null)
             {
                 FinishTransition(
@@ -488,6 +484,12 @@ namespace BarPromenade
             string outcome,
             bool succeeded)
         {
+            if (!isSceneTransitioning)
+            {
+                return;
+            }
+
+            instance?.ReleasePendingLoad();
             long durationMilliseconds =
                 GetActiveElapsedMilliseconds();
             GameLogField[] fields =
@@ -567,9 +569,7 @@ namespace BarPromenade
 
         private IEnumerator LoadFallback(string sceneName)
         {
-            AsyncOperation operation = SceneManager.LoadSceneAsync(
-                sceneName,
-                LoadSceneMode.Single);
+            AsyncOperation operation = TryStartLoad(sceneName);
             if (operation == null)
             {
                 FinishTransition(
@@ -588,6 +588,108 @@ namespace BarPromenade
             }
 
             FinishTransition("fallback_completed", true);
+        }
+
+        private AsyncOperation TryStartLoad(string sceneName)
+        {
+            try
+            {
+                activeLoadOperation = SceneManager.LoadSceneAsync(
+                    sceneName, LoadSceneMode.Single);
+                return activeLoadOperation;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                return null;
+            }
+        }
+
+        private IEnumerator ExecuteSafely(IEnumerator routine)
+        {
+            // Drive nested routines here so exceptions in a nested preload
+            // cannot escape Unity's coroutine runner and strand the guard.
+            var routines = new Stack<IEnumerator>();
+            routines.Push(routine);
+            try
+            {
+                while (routines.Count > 0)
+                {
+                    IEnumerator current = routines.Peek();
+                    bool more = false;
+                    object yielded = null;
+                    Exception failure = null;
+                    try
+                    {
+                        more = current.MoveNext();
+                        if (more) yielded = current.Current;
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                    }
+
+                    if (failure != null)
+                    {
+                        Debug.LogException(failure);
+                        FinishTransition("load_failed", false);
+                        yield break;
+                    }
+
+                    if (!more)
+                    {
+                        routines.Pop();
+                        DisposePlayback(current);
+                    }
+                    else if (yielded is IEnumerator nested)
+                    {
+                        routines.Push(nested);
+                    }
+                    else
+                    {
+                        yield return yielded;
+                    }
+                }
+            }
+            finally
+            {
+                while (routines.Count > 0) DisposePlayback(routines.Pop());
+                if (instance == this && isSceneTransitioning)
+                {
+                    FinishTransition("interrupted", false);
+                }
+            }
+        }
+
+        private void ReleasePendingLoad()
+        {
+            if (activeLoadOperation != null && !activeLoadOperation.isDone)
+            {
+                // Unity cannot cancel a scene load. Release the activation
+                // gate before discarding the handle so the queue can drain.
+                activeLoadOperation.allowSceneActivation = true;
+            }
+
+            activeLoadOperation = null;
+        }
+
+        private void OnDisable()
+        {
+            Shutdown();
+        }
+
+        private void OnDestroy()
+        {
+            Shutdown();
+        }
+
+        private void Shutdown()
+        {
+            if (instance != this) return;
+            StopAllCoroutines();
+            ReleasePendingLoad();
+            FinishTransition("owner_stopped", false);
+            instance = null;
         }
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -382,58 +381,22 @@ namespace BarPromenade
 
         private static bool WasInventoryTogglePressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.iKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonNorth.wasPressedThisFrame;
+            return GameInput.WasPressed(GameInputAction.Inventory);
         }
 
         private static bool WasCancelPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonEast.wasPressedThisFrame;
+            return GameInput.WasPressed(GameInputAction.Cancel);
         }
 
         private static bool WasConfirmPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null &&
-                (keyboard.eKey.wasPressedThisFrame ||
-                 keyboard.enterKey.wasPressedThisFrame ||
-                 keyboard.numpadEnterKey.wasPressedThisFrame ||
-                 keyboard.spaceKey.wasPressedThisFrame))
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonSouth.wasPressedThisFrame;
+            return GameInput.WasPressed(GameInputAction.Confirm);
         }
 
         private static bool WasUsePressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.uKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonWest.wasPressedThisFrame;
+            return GameInput.WasPressed(GameInputAction.UseItem);
         }
 
         private void SetUseFeedback(InventoryItemUseResult result)
@@ -497,59 +460,7 @@ namespace BarPromenade
 
         private static int ReadSelectionDelta()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null)
-            {
-                if (keyboard.leftArrowKey.wasPressedThisFrame ||
-                    keyboard.aKey.wasPressedThisFrame)
-                {
-                    return -1;
-                }
-
-                if (keyboard.rightArrowKey.wasPressedThisFrame ||
-                    keyboard.dKey.wasPressedThisFrame)
-                {
-                    return 1;
-                }
-
-                if (keyboard.upArrowKey.wasPressedThisFrame ||
-                    keyboard.wKey.wasPressedThisFrame)
-                {
-                    return -GridColumns;
-                }
-
-                if (keyboard.downArrowKey.wasPressedThisFrame ||
-                    keyboard.sKey.wasPressedThisFrame)
-                {
-                    return GridColumns;
-                }
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            if (gamepad != null)
-            {
-                if (gamepad.dpad.left.wasPressedThisFrame)
-                {
-                    return -1;
-                }
-
-                if (gamepad.dpad.right.wasPressedThisFrame)
-                {
-                    return 1;
-                }
-
-                if (gamepad.dpad.up.wasPressedThisFrame)
-                {
-                    return -GridColumns;
-                }
-
-                if (gamepad.dpad.down.wasPressedThisFrame)
-                {
-                    return GridColumns;
-                }
-            }
-
-            return 0;
+            return GameInput.ReadGridSelectionDelta(GridColumns);
         }
     }
 }

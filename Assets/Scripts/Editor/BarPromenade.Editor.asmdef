@@ -2,6 +2,7 @@
   "name": "BarPromenade.Editor",
   "rootNamespace": "BarPromenade.Editor",
   "references": [
+    "BarPromenade.Rules",
     "BarPromenade.Runtime",
     "Unity.RenderPipelines.Core.Runtime",
     "Unity.RenderPipelines.Universal.Runtime"

@@ -32,6 +32,12 @@ On Windows with Visual Studio's Desktop C++ workload, Python and NumPy installed
 ./tools/audio-vhs/build.ps1 -Validate
 ```
 
+`tools/toolchain.json` pins Python, NumPy, MSVC and the Windows SDK. The script
+checks them before compilation, validates the staged DLL, then replaces the
+shipping DLL. Failure preserves the previous DLL and its `.meta`. Validation
+is also the default without switches; `-CompileOnly` leaves a candidate in
+`Captures/AudioVhs/native-build` without publishing it.
+
 The deterministic MSVC x64 `/MT /Brepro` build writes the redistributable plugin
 to `Assets/Plugins/AudioVhs/x86_64/AudioPluginIntoxicationVhs.dll`. Intermediate
 objects, validation report and seven comparative WAVs stay in ignored

@@ -16,10 +16,10 @@ against the layout plan.
 
 Run with Blender 5 from the repository root::
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-bar-3d-model.py
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
       tools/build-bar-3d-model.py -- --validate-only
 
 Source space is metres, Z up, forward -Y.  Unity's axes are reached by

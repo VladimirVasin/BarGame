@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -37,6 +38,16 @@ namespace BarPromenade
             CityLayout layout,
             CityGenerationSettings settings,
             CityNightFixturePlan nightPlan = null)
+        {
+            CityWorldResult result = null;
+            RuntimeComposition.RunSynchronously(BuildSteps(parent, layout,
+                settings, nightPlan, value => result = value));
+            return result;
+        }
+
+        internal static IEnumerator BuildSteps(
+            Transform parent, CityLayout layout, CityGenerationSettings settings,
+            CityNightFixturePlan nightPlan, Action<CityWorldResult> completed)
         {
             if (parent == null)
             {
@@ -98,6 +109,7 @@ namespace BarPromenade
             // the flat municipal slab under it.
             CitySeacoastPlan seacoastPlan =
                 CitySeacoastPlanner.Create(layout);
+            yield return new CompositionStep("world_plans", 0.10f);
             Bounds bounds = BuildGround(
                 world,
                 layout,
@@ -106,6 +118,7 @@ namespace BarPromenade
                 seacoastPlan != null,
                 out GameObject parkLawn,
                 out CityCemeteryGroundExcavation cemeteryExcavation);
+            yield return new CompositionStep("ground", 0.18f);
             CityTerrainSafetyWorldBuilder.Build(
                 world,
                 layout,
@@ -121,6 +134,7 @@ namespace BarPromenade
                 CityFringeYardWorldBuilder.Build(
                     world,
                     fringeYardPlan);
+            yield return new CompositionStep("mountain_and_fringe", 0.30f);
             CityMountainBackdropWorldResult mountainBackdrop =
                 mountainBoundaryPlan.IsEnabled
                     ? CityMountainBackdropWorldBuilder.Build(world)
@@ -133,6 +147,7 @@ namespace BarPromenade
                 out IReadOnlyList<Transform> riverQuayLampAnchors);
             BuildElevationStructures(world, layout);
             RoadFenceWorldBuilder.Build(world, fencePlan);
+            yield return new CompositionStep("roads_and_river", 0.40f);
             GameObject parkRoot = BuildPark(
                 world,
                 layout,
@@ -147,6 +162,7 @@ namespace BarPromenade
                 CityOpenAreaWorldBuilder.Build(
                     world,
                     openAreaDecorationPlan);
+            yield return new CompositionStep("park_and_districts", 0.50f);
             CityCemeteryPlan cemeteryPlan =
                 CityCemeteryPlanner.Create(
                     layout,
@@ -164,6 +180,7 @@ namespace BarPromenade
                 world,
                 churchPlan,
                 walkableArea);
+            yield return new CompositionStep("cemetery_and_church", 0.60f);
 
             if (seacoastPlan != null)
             {
@@ -188,6 +205,7 @@ namespace BarPromenade
             }
 
             var bars = new List<BarEntrance>(settings.BarCount);
+            yield return new CompositionStep("seacoast", 0.68f);
             HomeEntrance playerHome = null;
             SupermarketEntrance supermarket = null;
             for (int i = 0; i < layout.BuildingLots.Count; i++)
@@ -202,6 +220,8 @@ namespace BarPromenade
                     bars,
                     ref playerHome,
                     ref supermarket);
+                yield return new CompositionStep("buildings",
+                    0.68f + 0.17f * (i + 1) / layout.BuildingLots.Count);
             }
 
             // This precinct measures and joins the two already placed
@@ -218,6 +238,7 @@ namespace BarPromenade
                     world,
                     layout,
                     decorationPlan);
+            yield return new CompositionStep("street_dressing", 0.94f);
 
             // The playground's seats hang outside the batched decoration
             // layer on purpose: they are the one piece of it that moves.
@@ -252,7 +273,7 @@ namespace BarPromenade
                     world,
                     windDressingPlan);
 
-            return new CityWorldResult(
+            completed(new CityWorldResult(
                 world.gameObject,
                 walkableArea,
                 bars,
@@ -284,7 +305,8 @@ namespace BarPromenade
                 windDressingRoot,
                 archShelterPlan,
                 archShelter,
-                bounds);
+                bounds));
+            yield return new CompositionStep("world_complete", 1f);
         }
 
         private static Bounds BuildGround(

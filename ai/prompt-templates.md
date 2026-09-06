@@ -14,19 +14,18 @@ runtime changes.
    - tooling/data/art: the directly affected validator;
    - C# code with a suitable focused test: run that EditMode or PlayMode
      selection; it already compiles dependencies, so do not build separately;
-   - C# code without a suitable test: build only the highest affected project.
+   - C# code without a suitable test: build only the highest affected project;
+   - scene/serialization/build settings: choose one affected scene test, manual
+     smoke or requested player build, rather than stacking them.
 4. Use one additional focused check only for a shared-framework change that the
    primary check cannot cover. Default to one Unity invocation; cap shared
    framework work at two narrowly filtered invocations.
-5. Keep iterating on the focused check, then run ONE complete EditMode suite
-   before calling the task done. The focused check is for iteration; it is not
-   evidence of anything outside its filter. A summit rebuild was reported
-   `81/81` green on a `MountainRoad*` filter while it had broken
-   `CityMapAreaPresentationTests`, which that filter never reached; the
-   regression was found much later and by accident. Report the suite's number.
-   Create a player build only when it is the requested deliverable or release
-   gate; use a smoke only when requested or when packaged startup behavior is
-   the changed contract.
+5. Stop once the focused check provides sufficient evidence. Do not add a
+   complete suite by default; use RELEASE VERIFICATION only when the user
+   explicitly requests it. A known unrelated failure does not authorize a
+   broad rerun or an unrelated repair. Create a player build only when it is
+   the requested deliverable or release gate; add a smoke only when requested
+   or when packaged startup behavior is the changed contract.
 6. `-testFilter` is a REGULAR EXPRESSION, not a prefix. `"Bar"` matches every
    test in the project through the `BarPromenade` namespace; a filter intended
    for `96` tests silently ran `1704`. Always read `total` back out of the
@@ -35,7 +34,10 @@ runtime changes.
    see a misplaced object or a mesh at a hundredth of its size: three such
    defects passed `1710` green tests in one session and were caught only by a
    rendered frame. Capture frames for any scene whose appearance changed.
-8. Report the result and mention omitted broad checks in one sentence.
+8. Treat 30 seconds without useful progress as a soft timeout: inspect the
+   process instead of repeating long polls. If the user will test/build
+   manually, stop the matching automated process and hand off exact files.
+9. Report the result and mention omitted broad checks in one sentence.
 
 ## FEATURE
 

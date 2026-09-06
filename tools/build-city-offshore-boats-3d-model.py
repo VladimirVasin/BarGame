@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic, passive fishing boats. Run with Blender 5 --background --python.
+"""Deterministic, passive fishing boats. Run with Blender 5 --background --factory-startup --python-exit-code 1 --python.
 
 Authors Unity metres (+Z bow, Y=0 waterline), swapping Y/Z and reversing
 winding on export. Two full-scale boats are presented smaller by the world.

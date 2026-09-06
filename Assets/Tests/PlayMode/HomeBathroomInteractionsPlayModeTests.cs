@@ -466,6 +466,23 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(curtain.localScale.x, Is.EqualTo(HomeShowerInteraction.GatheredCurtainScale).Within(0.001f));
             Camera camera = home.CameraFollow.GetComponent<Camera>();
             Transform hero = home.Player.GameObject.transform;
+            foreach (string partName in new[] { "Mixer Body", "Riser", "Head", "Head Face" })
+            {
+                Transform part = home.Room.Find("Home Bathroom Shower " + partName);
+                Assert.That(part, Is.Not.Null, partName);
+                Assert.That(part.localPosition.x, Is.EqualTo(HomeShowerFraming.Dock.x).Within(0.005f),
+                    partName + " belongs directly ahead of the hero, not beside his right shoulder.");
+                Assert.That(part.localPosition.z, Is.GreaterThan(HomeShowerFraming.Dock.z + 0.10f), partName);
+            }
+            Transform hotHandle = home.Room.Find(HomeShowerInteraction.HotHandleName);
+            Assert.That(Vector3.Distance(hotHandle.localPosition + Vector3.up * 0.025f,
+                HomeShowerFraming.HotHandleGrip), Is.LessThan(0.001f));
+            Transform nozzle = home.Room.Find("Home Bathroom Shower Head Face");
+            Assert.That(Vector3.Distance(nozzle.localPosition - Vector3.up * 0.015f,
+                HomeShowerFraming.DripOrigin), Is.LessThan(0.001f));
+            Assert.That(home.Layout.TryGetFurniture(HomeFurnitureKind.Shower, out HomeFurnitureFootprint showerFootprint), Is.True);
+            Assert.That(showerFootprint.Bounds.Contains(new Vector2(HomeShowerFraming.BasinLanding.x,
+                HomeShowerFraming.BasinLanding.z)), Is.True, "The relocated nozzle still drips into the tray.");
             Texture2D atlas = Player3DBathingAppearance.BareSkinAtlas;
             var invariants = home.gameObject.AddComponent<HomeShowerInvariantProbe>();
             invariants.Check = () =>
@@ -522,6 +539,10 @@ namespace BarPromenade.Tests.PlayMode
             yield return AtPresentation(() =>
             {
                 CaptureShower("01-wash");
+                Vector3 mixerView = camera.WorldToViewportPoint(home.Room.TransformPoint(HomeShowerFraming.Mixer));
+                Assert.That(mixerView.z, Is.GreaterThan(0f), "The mixer must be in front of the lens.");
+                Assert.That(mixerView.x, Is.InRange(0.35f, 0.65f), "The mixer stays in the centre of the first-person view.");
+                Assert.That(mixerView.y, Is.InRange(0.05f, 0.95f), "The mixer is visible while washing.");
                 Assert.That(shower.WashPose.LeftPalmError, Is.LessThan(0.04f), "Left palm on the tile.");
                 Assert.That(shower.WashPose.RightPalmError, Is.LessThan(0.04f), "Right palm on the tile.");
                 Vector3 leftHand = Bone(registry, Player3DAnatomicalPart.LeftHand).position;
@@ -582,6 +603,14 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.Wash));
             shower.RequestStop();
             Assert.That(shower.Timeline.Phase, Is.EqualTo(HomeShowerScenePhase.WaterOff), "E closes the tap.");
+            Time.timeScale = 1f;
+            yield return WaitUntil(() => shower.Timeline.ValveReach >= 0.99f, "The hand never reached the tap.");
+            yield return AtPresentation(() =>
+            {
+                Assert.That(shower.WashPose.RightPalmError, Is.LessThan(0.04f), "The right hand reaches the relocated hot handle.");
+                CaptureShower("06-close-front-tap");
+            });
+            Time.timeScale = FastTimeScale;
             yield return WaitUntil(() => shower.Timeline.Phase >= HomeShowerScenePhase.Straighten, "The tap never closed.");
             Assert.That(shower.HotHandleTurn, Is.EqualTo(1f).Within(0.01f));
             Assert.That(home.Soundscape.ShowerWaterAmount, Is.Zero.Within(0.001f));

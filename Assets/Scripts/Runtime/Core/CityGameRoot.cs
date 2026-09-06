@@ -289,9 +289,18 @@ namespace BarPromenade
 
         private void Initialize()
         {
+            IEnumerator steps = InitializeSteps();
+            if (!AreaTravelService.TryScheduleComposition(this, steps))
+            {
+                RuntimeComposition.RunSynchronously(steps);
+            }
+        }
+
+        private IEnumerator InitializeSteps()
+        {
             if (IsInitialized)
             {
-                return;
+                yield break;
             }
 
             GameAudioMixer.ApplyProfile(GameAudioProfile.City);
@@ -325,6 +334,7 @@ namespace BarPromenade
             Camera camera = RuntimeSceneSetup.EnsureCityNight();
             Audio = RetroAudioService.EnsureInstalled();
             ReportPhase("runtime_setup", phaseTimer);
+            yield return new CompositionStep("runtime_setup", 0.03f);
 
             phaseTimer.Restart();
             CityGenerationSettings settings = CityGenerationSettings.Default;
@@ -336,17 +346,19 @@ namespace BarPromenade
                 GameSessionState.CitySeed);
             ReportPhase("layout_generation", phaseTimer);
             ReportLayout(Layout);
+            yield return new CompositionStep("layout", 0.10f);
 
             phaseTimer.Restart();
             CityNightFixturePlan nightPlan =
                 CityNightFixturePlanner.CreatePlan(Layout);
-            World = CityWorldBuilder.Build(
+            yield return RuntimeComposition.Range(CityWorldBuilder.BuildSteps(
                 transform,
                 Layout,
                 settings,
-                nightPlan);
+                nightPlan, value => World = value), 0.10f, 0.65f);
             ReportPhase("world_build", phaseTimer);
             ReportWorld(World, Layout);
+            yield return new CompositionStep("world", 0.65f);
 
             phaseTimer.Restart();
             Night = CityNightWorldBuilder.Build(
@@ -354,6 +366,7 @@ namespace BarPromenade
                 nightPlan,
                 World.Bars);
             ReportPhase("night_build", phaseTimer);
+            yield return new CompositionStep("night", 0.68f);
             GameLog.Info(
                 "city",
                 "night_built",
@@ -637,6 +650,7 @@ namespace BarPromenade
             }
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night);
+            yield return new CompositionStep("player_and_pedestrians", 0.76f);
             BusPlan = CityBusPlanner.Create(
                 Layout,
                 World.DecorationPlan);
@@ -871,6 +885,7 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
+            yield return new CompositionStep("residents_and_interactions", 0.87f);
             TargetInteraction =
                 ui.AddComponent<InventoryTargetInteractionController>();
             TargetInteraction.Initialize(
@@ -1250,6 +1265,7 @@ namespace BarPromenade
                 intoxicationHud);
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
+            yield return new CompositionStep("ready", 1f);
             ReportPhase("player_and_ui", phaseTimer);
             totalTimer.Stop();
             GameLog.Info(

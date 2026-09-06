@@ -531,18 +531,23 @@ MonoBehaviour:
     - expression: 0
       column: 0
       row: 3
+      soiled: 0
     - expression: 1
       column: 1
       row: 3
+      soiled: 0
     - expression: 2
       column: 2
       row: 3
+      soiled: 0
     - expression: 3
       column: 0
       row: 2
+      soiled: 0
     - expression: 4
       column: 1
       row: 2
+      soiled: 0
 --- !u!1001 &2385568529097489587
 PrefabInstance:
   m_ObjectHideFlags: 0

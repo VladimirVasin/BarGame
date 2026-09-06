@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
@@ -656,10 +657,32 @@ namespace BarPromenade.Tests.EditMode
                 "The hidden cable turn still lies beyond the ground mesh.");
 
             var host = new GameObject("Alpine Terrain Mesh Test");
+            var generatedMeshes = new List<Mesh>();
+            Mesh importedMesh = null;
             try
             {
                 AlpineVillageWorldResult world =
                     AlpineVillageWorldBuilder.Build(host.transform, plan);
+                foreach (MeshFilter candidate in world.Root.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    Mesh mesh = candidate.sharedMesh;
+                    if (mesh == null) continue;
+                    if (AssetDatabase.Contains(mesh))
+                    {
+                        importedMesh = mesh;
+                        continue;
+                    }
+                    if (mesh.name != "Alpine Village Ground" &&
+                        mesh.name != "Alpine Village Lane" &&
+                        mesh.name != "Alpine Village Snow Drifts" &&
+                        !candidate.name.StartsWith("Visible Path - ", System.StringComparison.Ordinal))
+                        continue;
+                    Assert.That(candidate.GetComponent<RuntimeGeneratedMeshOwner>(), Is.Not.Null,
+                        candidate.name + " creates a scene-owned mesh.");
+                    generatedMeshes.Add(mesh);
+                }
+                Assert.That(generatedMeshes.Count, Is.GreaterThanOrEqualTo(4));
+                Assert.That(importedMesh, Is.Not.Null);
                 MeshFilter filter =
                     world.TerrainRoot.GetComponent<MeshFilter>();
                 MeshCollider collider =
@@ -770,6 +793,9 @@ namespace BarPromenade.Tests.EditMode
             {
                 Object.DestroyImmediate(host);
             }
+            foreach (Mesh mesh in generatedMeshes)
+                Assert.That(mesh == null, Is.True, "Generated village meshes must die with the world.");
+            Assert.That(importedMesh != null, Is.True, "Imported kit meshes must survive world teardown.");
         }
 
         /// <summary>

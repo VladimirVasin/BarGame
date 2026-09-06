@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Author the Home shower action's bridge pieces for the undressed hero.
 
-Blender --background --factory-startup --python this-file -- [--validate-only]
+Blender --background --factory-startup --python-exit-code 1 --python this-file -- [--validate-only]
 
 The production Hero V2 has no bare skin under its jacket: the torso mesh
 caps flat at the shoulders 40 mm below the neck's first ring, and each bare

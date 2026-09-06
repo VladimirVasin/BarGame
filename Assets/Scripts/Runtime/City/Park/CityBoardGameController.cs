@@ -1386,15 +1386,8 @@ namespace BarPromenade
         /// </summary>
         private static bool WasConfirmPressed()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.spaceKey.wasPressedThisFrame)
-            {
-                return true;
-            }
-
-            Gamepad gamepad = Gamepad.current;
-            return gamepad != null &&
-                   gamepad.buttonWest.wasPressedThisFrame;
+            return GameInput.WasPressed(
+                GameInputAction.CounterConfirm, GameInputContext.Menu);
         }
 
         private static bool WasCancelPressed()

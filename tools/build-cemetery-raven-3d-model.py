@@ -3,7 +3,7 @@
 
 Run this with Blender, not CPython:
 
-    blender --background --factory-startup --python \
+    blender --background --factory-startup --python-exit-code 1 --python \
         tools/build-cemetery-raven-3d-model.py
 
 Two of these birds claim the first grave the hero seals: one on the
