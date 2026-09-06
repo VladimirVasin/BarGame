@@ -141,6 +141,10 @@ namespace BarPromenade
                 roomSize.y * -0.5f,
                 roomSize.x * 0.5f,
                 roomSize.y * 0.5f);
+            float wallInset = PlayerHomeBalconyGeometry.WallThickness * 0.5f;
+            InnerRoomBounds = Rect.MinMaxRect(
+                RoomBounds.xMin + wallInset, RoomBounds.yMin + wallInset,
+                RoomBounds.xMax - wallInset, RoomBounds.yMax - wallInset);
             WalkableBounds = walkableBounds;
             PlayerSpawn = playerSpawn;
             ExitPosition = exitPosition;
@@ -156,6 +160,9 @@ namespace BarPromenade
         public Vector2 RoomSize { get; }
         public float RoomHeight { get; }
         public Rect RoomBounds { get; }
+        // Furniture reaches the wall face; the player's walking margin is
+        // deliberately farther inside and must not push furniture away.
+        public Rect InnerRoomBounds { get; }
         public Rect WalkableBounds { get; }
         public Vector3 PlayerSpawn { get; }
         public Vector3 ExitPosition { get; }

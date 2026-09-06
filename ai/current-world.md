@@ -1940,7 +1940,10 @@ The vertical slice contains:
   bathroom, balcony and dressing use the deterministic Blender
   `home_interior_v1` library; Unity retains collision, interaction hierarchies,
   lighting, cameras and deformable bed support. One closed room occupies the
-  north-central pocket; the bookcase stands at `X[-4.55,-3.90], Z[1.05,2.15]`.
+  north-central pocket. The cupboard stands in the north-west corner at
+  `X[-4.86,-4.21], Z[2.76,3.86]`; the bed's head is also two centimetres from
+  the west wall. A shorter left kitchen counter leaves the refrigerator in
+  place, and the compact south-west storage pile clears the bed approach.
   Its ordinary day-one interaction reports the missing key without opening,
   revealing contents or consuming the player's apartment keys;
 - seven calendar apartment appearances through `HomeApartmentDayRules` and

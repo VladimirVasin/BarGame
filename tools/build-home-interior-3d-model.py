@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 SOURCE = ROOT / "ArtSource/Home/Interior"
 MODEL = ROOT / "Assets/Home/Interior/Models/HomeInterior3D.fbx"
 PITCH = {"Plain": 1, "Wallpaper": 1.9, "CeilingPlaster": 2.8,
@@ -284,8 +284,8 @@ def add_bindings(b):
         "Home Battered Cabinet":((.65,2.25,1.10),"DarkWood"),
         "Home Cabinet Shelf 1":((.468,.10,.08),"WornLaminate"),
         "Home Cabinet Shelf 2":((.468,.10,.08),"WornLaminate"),
-        "Home Camera Corner Junk Base":((1.30,.44,2),"DarkWood"),
-        "Home Camera Corner Broken Wardrobe Door":((1.014,.12,1.36),"DarkWood"),
+        "Home Camera Corner Junk Base":((1.30,.44,1.40),"DarkWood"),
+        "Home Camera Corner Broken Wardrobe Door":((1.014,.12,.952),"DarkWood"),
         "Home Camera Corner Suitcase":((.72,.24,.62),"DarkWood"),
         "Home Camera Corner Old Coat":((.78,.10,.72),"Upholstery"),
         "Home Alarm Clock Nightstand":((.68,.72,.46),"DarkWood"),
@@ -329,7 +329,7 @@ def add_bindings(b):
         "Home Balcony North Rail Cap":((2.42,.07,.18),"PaintedMetal"),
     }
     # Exact sizes of the counter runs follow the measured refrigerator gap.
-    for side,width in (("Left",1.5905),("Right",.8095)):
+    for side,width in (("Left",1.4105),("Right",.8095)):
         fixed["Home Kitchen Counter "+side]=((width,.92,.82),"WornLaminate")
         fixed["Home Kitchen Top "+side]=((width+.04,.10,.90),"WornLaminate")
     for i,width in enumerate((.32,.30,.31,.27),1):
@@ -454,13 +454,13 @@ def add_decor(b):
         add(f"Home Radiator Fin {i+1}",(.10,.63,.16),(-3.58+i*.15,.52,3.70),"PaintedMetal")
     for y in (.24,.79):
         add(f"Home Radiator Header {y}",(1.02,.07,.07),(-3.13,y,3.70),"PaintedMetal")
-    add("Home Old Radio",(.56,.30,.36),(-4.225,2.40,1.60),"DarkWood",group="home.furniture.bookcase")
-    add("Home Radio Dial",(.32,.12,.018),(-4.225,2.41,1.41),tint=(.29,.20,.10,1),group="home.furniture.bookcase")
+    add("Home Old Radio",(.56,.30,.36),(-4.535,2.40,3.31),"DarkWood",group="home.furniture.bookcase")
+    add("Home Radio Dial",(.32,.12,.018),(-4.535,2.41,3.12),tint=(.29,.20,.10,1),group="home.furniture.bookcase")
     # No photographs, readable calendar, medicine, new clues or personal lore.
     for i,x in enumerate((-1.26,-.82)):
         add(f"Home Day1 Stacked Plate {i}",(.28,.025,.28),(x,.898,1.65),"Enamel",last=2,geom=dish((.28,.025,.28)),group="home.furniture.table")
-    add("Home Day1 Folded Towel",(.48,.045,.28),(-3.82,1.053,3.08),"BedLinen",last=2,geom=cloth((.48,.045,.28)),group="home.furniture.kitchen.left")
-    for i,x in enumerate((-1.36,-1.12)):
+    add("Home Day1 Folded Towel",(.48,.045,.28),(-3.70,1.053,3.08),"BedLinen",last=2,geom=cloth((.48,.045,.28)),group="home.furniture.kitchen.left")
+    for i,x in enumerate((-1.97,-1.73)):
         add(f"Home Paired Slipper {i}",(.20,.10,.38),(x,.05,-1.08),"Upholstery")
 
     def bottle(name,pos,day,height=.34,side=False,group="shell",brown=False,lean=0):
@@ -492,7 +492,7 @@ def add_decor(b):
             bottle(f"Day{day} Table Bottle {i}",(x,.88+.17+(i//4)*.05,z),day,
                    brown=(i+day)%2==0,group="home.furniture.table",lean=12 if day>=5 and i%3==0 else 0)
         for i in range(max(1,day-2)):
-            x=-3.95+(i%3)*.29;z=2.66+((day+i)%2)*.31
+            x=-3.82+(i%3)*.26;z=2.66+((day+i)%2)*.31
             plate(f"Day{day} Kitchen Plate {i}",(x,1.05+.035*(day-2),z),day,
                   "home.furniture.kitchen.left")
         if day>=3:
@@ -501,18 +501,20 @@ def add_decor(b):
             rag(f"Day{day} Floor Laundry",(2.99,.05+(day-3)*.026,-2.60+(day%2)*.54),day,
                 (.28,.08,.44),tint=(.22,.25,.25,1),rot=0)
         if day>=4:
-            stain(f"Day{day} Kitchen Spill",(-3.60,1.084+(day-4)*.001,2.84),day,
+            stain(f"Day{day} Kitchen Spill",(-3.50,1.084+(day-4)*.001,2.84),day,
                   (.47+(day-4)*.12,.006,.41),"home.furniture.kitchen.left")
             stain(f"Day{day} Table Spill",(-.65,.886+(day-4)*.001,2.07),day,
                   (.38+(day-4)*.11,.004,.35),"home.furniture.table")
             # Foot-end patches leave the sleeper's deforming contact strip clear.
-            rag(f"Day{day} Bed Foot Linen",(-2.02,.62+(day-4)*.014,.13),day,
+            rag(f"Day{day} Bed Foot Linen",(-2.63,.62+(day-4)*.014,.13),day,
                 (.40,.075,.46),"home.bed.surface-clutter",(.30-.02*day,.30-.019*day,.23-.014*day,1),day*13)
         if day>=5:
             for i in range((day-3)*3):
                 slot={5:0,6:6,7:15}[day]+i
                 x=-4.36+(slot%5)*.23+.025*math.sin(slot*2.7)
-                z=-3.39+(slot//5)*.27+.034*math.cos(slot*3.9)
+                # Compress the same calendar composition to the shallower
+                # south-west pile; its front stays behind the bed approach.
+                z=-3.648+(slot//5)*.189+.0238*math.cos(slot*3.9)
                 bottle(f"Day{day} Corner Bottle {i}",(x,.50 if i%3==0 else .61,z),day,
                        side=i%3==0,brown=i%2==0,group="home.furniture.camera-junk")
             for i in range(day-3):
@@ -520,7 +522,7 @@ def add_decor(b):
                 size=(.41,.31,.43)
                 geom=cylinder(size,((.58,-.5),(.91,-.4),(1,-.10),(.84,.26),(.36,.43),(.24,.5)))
                 slot={5:0,6:2,7:5}[day]+i
-                add(f"Day{day} Refuse Bag {i}",size,(-4.10+(slot%2)*.45,.68+(slot//2)*.22,-2.10),
+                add(f"Day{day} Refuse Bag {i}",size,(-4.10+(slot%2)*.45,.68+(slot//2)*.22,-2.745),
                     day=day,geom=geom,tint=(.16,.18,.14,1),group="home.furniture.camera-junk")
             rag(f"Day{day} Bathroom Towel",(2.94+(day-5)*.025,.05+(day-5)*.065,3.44+(day-5)*.035),
                 day,(.39,.08,.46),tint=(.28,.29,.23,1))
@@ -534,7 +536,7 @@ def add_decor(b):
                     day=day,geom=cloth((.19,.09,.16)),tint=(.39,.33,.22,1),group="home.furniture.sofa")
             for i in range((day-4)*3):
                 slot=i+(6 if day==7 else 0)
-                add(f"Day{day} Counter Can {i}",(.12,.15,.12),(-3.95+(slot%4)*.27,1.14+(slot//4)*.15,3.13),
+                add(f"Day{day} Counter Can {i}",(.12,.15,.12),(-3.82+(slot%4)*.24,1.14+(slot//4)*.15,3.13),
                     day=day,geom=cylinder((.12,.15,.12)),tint=(.29,.25,.17,1),group="home.furniture.kitchen.left")
     # Dirt is a matte, shallow surface layer, not standing water or an
     # obstacle. Its larger, broken shapes make the later home read neglected
@@ -560,14 +562,14 @@ def add_decor(b):
     # camera, not merely increase a count behind its foreground furniture.
     # These loose blankets share the bed's clutter root and disappear for
     # the complete lie-down/sleep interaction, leaving its deforming mesh.
-    rag("Day5 Bed Abandoned Duvet",(-2.80,.655,-.38),5,(1.82,.18,1.32),
+    rag("Day5 Bed Abandoned Duvet",(-3.41,.655,-.38),5,(1.82,.18,1.32),
         "home.bed.surface-clutter",(.44,.40,.28,1),-5)
     b.parts[-1]["max_day"]=6
-    rag("Day7 Bed Crumpled Duvet",(-2.91,.70,-.38),7,(2.05,.28,1.40),
+    rag("Day7 Bed Crumpled Duvet",(-3.52,.70,-.38),7,(2.05,.28,1.40),
         "home.bed.surface-clutter",(.36,.33,.23,1),0)
-    rag("Day6 Bed Dirty Sheet",(-2.54,.76,-.54),6,(1.02,.17,.82),
+    rag("Day6 Bed Dirty Sheet",(-3.15,.76,-.54),6,(1.02,.17,.82),
         "home.bed.surface-clutter",(.52,.48,.35,1),17)
-    rag("Day7 Bed Rolled Shirt",(-3.46,.77,-.08),7,(.58,.21,.56),
+    rag("Day7 Bed Rolled Shirt",(-4.07,.77,-.08),7,(.58,.21,.56),
         "home.bed.surface-clutter",(.29,.32,.29,1),-23)
 
     for day,pos,size,tint,angle in (
@@ -639,12 +641,19 @@ def validate(b):
            ("main",(-.80,-3.65,2.82,.82)),
            ("bathroom-access",(1.72,.50,2.82,3.15)),
            ("balcony-access",(2.55,-1.34,4.65,.34)),
-           ("bed-approach",(-2.50,-2.08,-.45,-1.38)),
+           ("bed-approach",(-3.80,-2.08,-.45,-1.38)),
            ("fridge-dock",(-2.4545,1.43,-1.6345,2.17))]
     waypoints=[(-.62,.76),(-1.31,.875),(-1.94,.875),(-2.0445,1.80)]
     for i,(a,c) in enumerate(zip(waypoints,waypoints[1:])):
         paths.append((f"fridge-route-{i}",(min(a[0],c[0])-.35,min(a[1],c[1])-.35,
                       max(a[0],c[0])+.35,max(a[1],c[1])+.35)))
+    # Decor is placed in room coordinates, not parented to its furniture.
+    # Measure every day-gated mesh against its relocated support footprint,
+    # so a furniture move cannot leave last week's props over empty floor.
+    supports={"home.bed.surface-clutter":(-4.86,-1.25,-2.31,.50),
+              "home.furniture.bookcase":(-4.86,2.76,-4.21,3.86),
+              "home.furniture.kitchen.left":(-4.19,2.44,-2.7395,3.34),
+              "home.furniture.camera-junk":(-4.55,-3.76,-3.25,-2.36)}
     placements={}
     for p in b.parts:
         geom=b.geometry[p["name"]];volume=bp.signed_volume(geom)
@@ -683,6 +692,10 @@ def validate(b):
             world=[tuple(a+c for a,c in zip(v,p["position"])) for v in turned]
             lo=[min(v[i] for v in world) for i in range(3)]
             hi=[max(v[i] for v in world) for i in range(3)]
+            if p["group"] in supports:
+                xmin,zmin,xmax,zmax=supports[p["group"]]
+                if lo[0]<xmin-.035 or hi[0]>xmax+.035 or lo[2]<zmin-.035 or hi[2]>zmax+.035:
+                    errors.append(p["name"]+": geometry extends beyond its relocated furniture support")
             if p.get("surface_overlay") and (p["collider"] or hi[1]>.045):
                 errors.append(p["name"]+": overlay is not shallow/collider-free")
             if not p["collider"] and hi[1]>.045:
@@ -701,6 +714,7 @@ def validate(b):
     return {"part_count":len(b.parts),"triangle_count":triangles,"day_decor_counts":counts,
             "positive_volume":True,"measured_bounds":True,"metre_uv":True,
             "main_route_clearance":True,"household_route_clearance":True,
+            "relocated_furniture_supports":True,
             "no_coincident_cumulative_decor":True}
 
 
@@ -713,25 +727,25 @@ def compose_source_preview(b,render=False):
     poses={
         "Home Floor":(0,-.08,0),"Home Back Wall":(0,1.7,4),
         "Home Left Wall":(-5,1.7,0),
-        "Home Bed Frame":(-2.975,.22,-.375),
-        "Home Bed Mattress":(-2.975,.47,-.375),
-        "Home Pillow":(-3.799,.6035,-.375),
-        "Home Bed Crooked Blanket":(-2.525,.60,.17),
+        "Home Bed Frame":(-3.585,.22,-.375),
+        "Home Bed Mattress":(-3.585,.47,-.375),
+        "Home Pillow":(-4.409,.6035,-.375),
+        "Home Bed Crooked Blanket":(-3.135,.60,.17),
         "Home Sofa Base":(3.8,.35,-2.51),"Home Sofa Back":(4.37,.94,-2.51),
         "Home Sofa Sunken Cushion":(3.68,.67,-2.51),
         "Home Scarred Table":(-.825,.82,1.85),"Home Table Base Crooked":(-.97,.40,1.946),
-        "Home Battered Cabinet":(-4.225,1.125,1.60),
-        "Home Cabinet Shelf 1":(-4.275,.46,1.127),"Home Cabinet Shelf 2":(-4.275,1.08,1.127),
-        "Home Camera Corner Junk Base":(-3.90,.22,-2.55),
-        "Home Camera Corner Broken Wardrobe Door":(-3.80,.50,-2.37),
-        "Home Camera Corner Suitcase":(-3.68,.69,-2.91),
-        "Home Camera Corner Old Coat":(-4.14,.86,-2.17),
-        "Home Alarm Clock Nightstand":(-3.87,.36,.80),
-        "Home Alarm Clock Nightstand Top":(-3.87,.745,.80),
-        "Alarm Clock Body":(-3.87,.853,.80),"Alarm Clock Face":(-3.87,.853,.7244),
-        "Alarm Clock Snooze":(-3.87,.9448,.809),
-        "Home Kitchen Counter Left":(-3.55475,.48,2.89),
-        "Home Kitchen Top Left":(-3.55475,.98,2.89),
+        "Home Battered Cabinet":(-4.535,1.125,3.31),
+        "Home Cabinet Shelf 1":(-4.585,.46,2.837),"Home Cabinet Shelf 2":(-4.585,1.08,2.837),
+        "Home Camera Corner Junk Base":(-3.90,.22,-3.06),
+        "Home Camera Corner Broken Wardrobe Door":(-3.80,.50,-2.88),
+        "Home Camera Corner Suitcase":(-3.68,.69,-3.42),
+        "Home Camera Corner Old Coat":(-4.14,.86,-2.68),
+        "Home Alarm Clock Nightstand":(-4.48,.36,.80),
+        "Home Alarm Clock Nightstand Top":(-4.48,.745,.80),
+        "Alarm Clock Body":(-4.48,.853,.80),"Alarm Clock Face":(-4.48,.853,.7244),
+        "Alarm Clock Snooze":(-4.48,.9448,.809),
+        "Home Kitchen Counter Left":(-3.46475,.48,2.89),
+        "Home Kitchen Top Left":(-3.46475,.98,2.89),
         "Home Kitchen Counter Right":(-1.20475,.48,2.89),
         "Home Kitchen Top Right":(-1.20475,.98,2.89),
         "Home Refrigerator Cabinet Left":(-2.6595,1.12,2.9),

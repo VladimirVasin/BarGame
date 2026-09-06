@@ -3692,6 +3692,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   ownership; the bed keeps its live deformation contract. The bookcase moves
   to `X[-4.55,-3.90], Z[1.05,2.15]` on the west wall between bed and kitchen,
   leaving the locked-room pocket and balcony route clear.
+  The user's furniture adjustment on `2026-09-06` supersedes that placement:
+  the cupboard occupies `X[-4.86,-4.21], Z[2.76,3.86]`, and the bed starts at
+  `X=-4.86`, two centimetres from the inner wall. Furniture validation uses
+  physical inner wall bounds; player walking clearance is unchanged. The
+  shortened left counter preserves the refrigerator's right-side inset.
+  Bedside props and all calendar dressing follow the furniture, while the
+  compact south-west pile preserves the bed's standing approach.
   `HomeApartmentDressing` owns visual day groups, and
   `HomeApartmentDayController` reads `HomeApartmentDayRules` at construction
   and safe interaction boundaries, including exact reverse debug selection.

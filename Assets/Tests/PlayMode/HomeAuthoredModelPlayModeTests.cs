@@ -310,6 +310,25 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(authoredRenderers, Is.GreaterThan(20), "Home did not instantiate its authored environment.");
             Assert.That(collisionPairs, Is.GreaterThan(5), "No real authored structure was checked against collision.");
+            Bounds leftWall = root.Room.Find("Home Left Wall").GetComponent<Renderer>().bounds;
+            Bounds backWall = root.Room.Find("Home Back Wall").GetComponent<Renderer>().bounds;
+            Bounds bed = root.Room.Find("Home Bed Frame").GetComponent<Renderer>().bounds;
+            Bounds cupboard = root.Room.Find("Home Battered Cabinet").GetComponent<Renderer>().bounds;
+            Assert.That(bed.min.x - leftWall.max.x, Is.EqualTo(.02f).Within(.01f),
+                "The bed's head must meet the wall with a small fitting gap.");
+            Assert.That(cupboard.min.x - leftWall.max.x, Is.EqualTo(.02f).Within(.01f));
+            Assert.That(backWall.min.z - cupboard.max.z, Is.EqualTo(.02f).Within(.01f),
+                "The kitchen cupboard belongs in the far corner, beside both walls.");
+            Vector3 dock = HomeBedInteractionPlan.Create(root.Layout).EntryRootPosition;
+            foreach (HomeFurnitureFootprint item in root.Layout.Furniture)
+            {
+                if (!item.BlocksMovement) continue;
+                var closest = new Vector2(Mathf.Clamp(dock.x, item.Bounds.xMin, item.Bounds.xMax),
+                    Mathf.Clamp(dock.z, item.Bounds.yMin, item.Bounds.yMax));
+                Assert.That(Vector2.Distance(new Vector2(dock.x, dock.z), closest),
+                    Is.GreaterThan(HomeInteriorLayoutValidator.PlayerClearanceRadius),
+                    $"Moving the bed must keep its standing approach clear of {item.Id}.");
+            }
         }
 
         private static void ValidateBedSurfaces(HomeInteriorRoot root)

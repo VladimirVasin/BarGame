@@ -50,13 +50,13 @@ namespace BarPromenade
                 new HomeFurnitureFootprint(
                     "bed",
                     HomeFurnitureKind.Bed,
-                    new Rect(-4.25f, -1.25f, 2.55f, 1.75f),
+                    new Rect(-4.86f, -1.25f, 2.55f, 1.75f),
                     0.72f,
                     true),
                 new HomeFurnitureFootprint(
                     "kitchen",
                     HomeFurnitureKind.Kitchen,
-                    new Rect(-4.35f, 2.48f, 3.55f, 0.82f),
+                    new Rect(-4.17f, 2.48f, 3.37f, 0.82f),
                     1.08f,
                     true),
                 new HomeFurnitureFootprint(
@@ -74,15 +74,15 @@ namespace BarPromenade
                 new HomeFurnitureFootprint(
                     "bookcase",
                     HomeFurnitureKind.Bookcase,
-                    new Rect(-4.55f, 1.05f, 0.65f, 1.10f),
+                    new Rect(-4.86f, 2.76f, 0.65f, 1.10f),
                     2.35f,
                     true),
                 new HomeFurnitureFootprint(
                     "camera-corner-junk",
                     HomeFurnitureKind.CameraCornerJunk,
-                    // Keep the storage pile against the wall so the middle
-                    // of the bed has a full-width standing approach.
-                    new Rect(-4.55f, -3.55f, 1.30f, 2.00f),
+                    // Compact the pile into the rear corner to preserve
+                    // the standing approach to the bed beside the wall.
+                    new Rect(-4.55f, -3.76f, 1.30f, 1.40f),
                     1.15f,
                     true),
                 new HomeFurnitureFootprint(

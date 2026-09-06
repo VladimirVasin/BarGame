@@ -232,9 +232,11 @@ namespace BarPromenade
                     HomeInteriorPathKind.Main);
 
             var bodySize = new Vector3(1.08f, 2.24f, 0.76f);
+            // Keep the refrigerator and its right counter in place when
+            // the left counter is shortened for the corner cupboard.
+            const float bodyCenterFromKitchenRight = 1.3845f;
             var rootPosition = new Vector3(
-                kitchen.Bounds.center.x +
-                kitchen.Bounds.width * 0.11f,
+                kitchen.Bounds.xMax - bodyCenterFromKitchenRight,
                 0f,
                 kitchen.Bounds.center.y + 0.01f);
             var footprint = new Rect(

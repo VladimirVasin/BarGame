@@ -6,6 +6,26 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-06 — Home cupboard in the corner; bed against the wall
+
+Moved the cupboard to the north-west corner and the bed head to the west
+wall, both with a 2 cm fitting gap. Furniture validation now uses the inner
+wall faces instead of the player's inset walking bounds. The left kitchen
+counter is 18 cm shorter, preserving the refrigerator position and contacts.
+The south-west storage pile is compacted to keep the relocated bed dock clear.
+Clock, radio and all seven days of authored dressing follow the new layout.
+
+HomeInterior3D v1.2.0 keeps 419 parts / 45,416 triangles and day counts
+24/31/40/61/116/202/299. The direct Blender validator passes furniture supports,
+actual dimensions and bed approach. The existing focused
+`HomeAuthoredModelPlayModeTests.AuthoredHome_PreviewsAllDaysAndKeepsLockedRoomClosed`
+passes 1/1 in 18.22 s, including the real wake, wall-gap measurements,
+standing clearance and all calendar states. Fifteen rendered frames were
+captured; the room, late-day dressing, clock view and completed wake were
+visually reviewed. Verified library/import metadata and frames were copied
+back after source checks. Results: `Captures/HomeFurniturePass/results-furniture.xml`.
+No full suites or player build were run.
+
 ## 2026-09-06 — Matching house windows in both scenes; a continuous shallow brook
 
 The user rejected the preceding four-window reduction: it matched an incomplete

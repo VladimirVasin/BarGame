@@ -341,7 +341,7 @@ namespace BarPromenade
                     footprint.Bounds,
                     $"Home furniture '{footprint.Id}'");
                 if (!Contains(
-                        plan.WalkableBounds,
+                        plan.InnerRoomBounds,
                         footprint.Bounds) ||
                     !IsPositiveFinite(footprint.Height) ||
                     footprint.Height > plan.RoomHeight + Tolerance)
