@@ -5217,7 +5217,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   (c) teeth brushing retains the actual standing rig and a RightGrip
   toothbrush, with procedural two-bone hand IK and a connected
   spine/chest/neck/head bend for the spit. Its user-driven replacement
-  is recorded under the mirror-camera brushing decision below; no new
+  is recorded under the first-person mirror-brushing decision below; no new
   full-body animation clip or replacement arm is introduced.
 - **Accepted — First-person toilet replacement (`2026-09-05`):** The user
   approved the plan for a controllable first-person toilet action. This
@@ -5297,12 +5297,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The action adds no fiction text, reaction, comedy beat or story state and
   violates no world-canon prohibition. The focused validation result belongs
   in the `2026-09-05` work-log entry.
-- **Accepted — Manual mirror-camera brushing (`2026-09-05`):** The user's
-  replacement keeps the camera seven centimetres in front of the mirror
-  plane, facing the hero at FOV `36`, with no reflection RenderTexture or
-  replacement rig. `HomeTeethBrushingTimeline` blends in over `2.8 s`,
-  including the real arm's last `0.8 s` of rise, then waits in Brushing for
-  input-qualified completion. Mouse or right-stick X/Y maps to screen-relative
+- **Accepted — Manual brushing (`2026-09-05`, camera and faucet lifecycle
+  replaced by the accepted `2026-09-07` exception below):** The actual
+  production rig performs the action. `HomeTeethBrushingTimeline` waits in
+  Brushing for input-qualified completion. Mouse or right-stick X/Y maps to screen-relative
   movement at the teeth, bounded to `±26 mm` horizontally and `±8 mm`
   vertically. The shared bathroom owner applies `HomeTeethBrushingArmPose`
   after the ordinary pose; two-bone IK keeps the actual brush tip at the
@@ -5324,26 +5322,33 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
   `HomeTeethBrushingProgress` credits the minimum of commanded travel,
   measured tip travel and `0.08 m/s` while contact error is below `12 mm`.
-  It requires `0.64 m`, so at least `8 s` of active movement; waiting,
+  At the user's request on `2026-09-07`, required travel is reduced from
+  `0.64 m` to `0.40 m`: the gauge fills `1.6×` faster, requiring at least
+  `5 s` of active movement. Only progress tuning changes; valve, camera and
+  finishing timings retain their durations. Waiting,
   blocked travel, movement away from contact and uncommanded pose drift
   cannot fill `HomeBrushingGaugeView`. The scrub cue follows credited travel.
-  The first mouse delta is discarded and pause blocks input. Stop `E` during
-  entry or Brushing returns from the current camera/arm blend without
-  relief or cleaning; reaching `100%` commits to the short finishing action.
+  The first mouse delta is discarded and pause blocks input. Stop `E` before
+  full progress cancels without relief or cleaning; the `2026-09-07` lifecycle
+  closes any opened faucet before returning. Reaching `100%` commits to the
+  short finishing action.
 
   Full progress starts `ShowTeeth` for `1.5 s`; the brush lowers over
   `0.45 s` and the atlas shows parted lips and muted teeth without a smile.
   `Spit` then lasts `1.5 s`: the existing spine, chest, neck and head bend
-  together, the mouth uses the compact Spit expression, and a transient side
-  camera at FOV `48` includes the mouth and basin. `HomeBrushingSpitEffect`
+  together and the mouth uses the compact Spit expression. The original
+  mirror-plane and transient side cameras are superseded by the first-person
+  staging below. `HomeBrushingSpitEffect`
   emits cream foam from the live Mouth anchor during phase seconds
   `0.55..0.85`; its world-space droplets follow gravity and stop at the first
   actual visible Home mesh triangle, creating a short splash and one local
   positional spit sound. The effect has bounded pools and leaves no persistent
-  residue. Camera return lasts `2.2 s`, followed by the shared physical exit.
+  residue. After faucet closure, camera return lasts `2.2 s`, followed by the
+  shared physical exit.
 
-  `HomeBrushingAction` is a deterministic Blender kit of five models and five
-  meshes (`1,060` triangles): fixed-metre `SinkBasin` and `BrushHandle`,
+  The original `HomeBrushingAction` contract contains five deterministic Blender
+  models and meshes (`1,060` triangles before the `2026-09-07` faucet extension):
+  fixed-metre `SinkBasin` and `BrushHandle`,
   a perforated `SinkDrain`, plus normalized `Droplet` and `Splash`.
   The sink retains its original
   `0.85 x 0.20 x 0.35 m` collider envelope and occlusion group. The actual
@@ -5366,15 +5371,55 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   lease, handoff, cursor, camera, props and gauge. The existing bathroom
   procedural exception remains scoped to this action; no world-canon
   prohibition, fiction text, reaction, comedy beat or light is added.
-- **Accepted — Mirror-camera brushing scene:** The close-up shoots from
-  7 cm in front of the mirror plane back into the hero's face (FOV 36) —
-  the PS1 "reflection" without RenderTextures; the pinned bathroom shot
-  is never edited, scene poses are transient. Foam blobs ride the Mouth
-  anchor; the rinse dips the camera look-at to the basin over two Pour
-  beats. Stress relief is gated once per `GameDayIndex`
-  (`TryCommitTeethBrushingRelief`); toilet and shower commit ungated
-  (`CommitBathroomStressRelief`) — always on completion, never on
-  cancel.
+- **Accepted architecture exception — 2026-09-07, explicit user acceptance of
+  the first-person mirror-brushing plan:** Brushing now holds the lens in the
+  actual hero's eyes and presents his face and moving right hand through the
+  existing geometric mirror. This replaces the former lens at the mirror
+  plane and side camera during the spit. The same production rig supplies the
+  pose; hiding the real head near the lens never hides the mirror twin's head.
+  The brushing prop, mouth foam, spit and faucet water follow their originals
+  in renderer-only reflections. The old omission of those brushing objects is
+  lifted narrowly; toilet anatomy, shower water, contact shadow and extra
+  lights remain outside that reflection contract.
+
+  A deterministic Blender extension to `HomeBrushingAction` (`1.2.2`, nine
+  models/meshes, `1,788` triangles) supplies a compact worn metal faucet with a
+  short front spout and a rotating valve directly atop its central body and mounting base,
+  authored pivot, grip and outlet.
+  `HomeSinkFaucet` owns hardware/water; `HomeBrushingFirstPersonView` owns the
+  eye pose and scoped head mask. Before the brush rises, the free left hand reaches
+  the valve and turns it open. Water and its local sound follow the valve.
+  The valve wrist solve limits anatomical finger-to-forearm deviation to
+  `25°` and re-solves the wrist offset around the same moving grip. Axial
+  rotation goes into the forearm, measured from its neutral hand frame;
+  body clearance is checked after that rotation.
+  The player controls the right hand by mouse/right-stick X/Y relative to the
+  reflected image; existing contact-qualified progress and body clearance
+  remain in force. Full progress shows teeth for `1.5 s`, then bends and spits
+  for `1.5 s`, all from the same eyes. The left hand turns the valve back after
+  the spit, then camera, rig and input return through the shared bathroom owner.
+  At the user's request (`2026-09-07`), the exit takes one backward step from
+  dock `z=2.86` to exit `z=2.50`, still facing the mirror (`+Z`). The shared
+  owner's opt-in `WalkOutBackward` passes through to `PlayerMotor`'s guided
+  movement: normal backward speed and negative signed forward speed select
+  the existing `WalkBack` gait. Ordinary guided approaches keep their default
+  forward gait; the step retains the existing constraints and footsteps.
+  Stop before full progress closes any opened valve before the cancelled exit;
+  transition, disable, destroy or failed preparation stop water/audio immediately.
+  Only complete finished brushing cleans the mouth and spends the existing
+  once-per-day stress relief.
+
+  Story-bible §6's dated row replaces the literal lens-to-face requirement
+  (§2, §7 and §22) with the same one sustained encounter through an actual
+  reflection. It also permits only the practical gaze needed to grip the
+  valve and spit into the basin: no attention magnet, contemplation or
+  drinking water. No fiction text, reaction, light, poisoning level or story
+  event is added; §16's laws and all nine art-bible acceptance checks remain
+  binding. This stays within the existing procedural bathroom-pose exception
+  and does not authorize a second hero model, teleport, hidden endpoint,
+  visibility fade or new animation framework. `HomeTeethBrushingTimeline`
+  owns `CameraToEyes → OpenFaucet → RaiseBrush → Brushing → ShowTeeth → Spit →
+  CloseFaucet → CameraReturn`; verification is recorded in the work log.
 - **Accepted architecture exception — 2026-09-06, explicit user request —
   first-person naked shower wash:** The user asked for the shower to be
   re-staged twice in one morning: first with the camera pushing to the stall
@@ -5436,6 +5481,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the head and the cursor included); the `"shower"` relief literal that
   clears `HeroMouthSoiled`; and the story bible's mirror test — the lens is
   his own eyes and never sees his face.
+- **Accepted architecture exception — 2026-09-07, explicit user correction —
+  remove the raised bathroom-mirror crack:** the black line crossing the
+  reflected hero was the separate `Home Bathroom Mirror Crack` geometry, a
+  `0.025 × 0.50 × 0.015 m` box in front of the pane. The user requested its
+  removal. `HomeBathroomBuilder` no longer creates it; no replacement crack
+  texture or geometry is added. This narrowly supersedes the earlier art- and
+  story-bible requirement to keep that crack. The cloudy glass, dark geometric
+  reflection, lighting and brushing interaction retain their existing form.
 - **Accepted architecture exception — 2026-09-06, explicit user request — a
   geometric bathroom mirror:** the user asked for a real reflection «как в
   старых играх делали с копией комнаты». Accepted as exactly that and nothing
@@ -5466,8 +5519,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   shadows) and driven bone for bone every frame, with one rule of its own: head
   geometry follows the body rather than the source, so the first-person views
   that take the real head off leave the reflection whole, while a hero hidden
-  entirely takes his reflection with him. The mirrored world exists only while
-  the pinned bathroom shot is active; at every other moment the original plate
+  entirely takes his reflection with him. The mirrored world exists while
+  the pinned bathroom shot is active, including the `2026-09-07` first-person
+  brushing action's owned camera pose; at every other moment the original plate
   is re-enabled and plugs the hole, so no shot and no prologue frame ever looks
   into the void behind the wall, and the dirty pane is switched with it rather
   than left hanging over a solid plate. What is copied is decided twice over: a
@@ -5488,13 +5542,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   double the lamp on the real tile — so the user's choice of a darker
   reflection over a sixth realtime light is also the cheap and correct one. Not lifted: no second hero model, prefab or
   material — the twin is the same prefab, as `contextual-animation-standard`
-  rule 5 requires; nothing is reflected that the bathroom does not contain
-  (hand props, the toilet anatomy, the shower bridges, water, foam and the
-  contact shadow stay out, and no light is mirrored, so the reflection is
-  deliberately darker — the user chose that over a sixth realtime light); and
-  the story bible's mirror test stands, narrowed by a §6 registry row to what it
-  was always about — the camera still goes to his face exactly once, at the
-  brushing, and his own reflection is not the camera's gaze.
+  rule 5 requires; nothing is reflected that the bathroom does not contain.
+  The `2026-09-07` exception above admits the brushing prop, foam, faucet and
+  its water; the toilet anatomy, shower bridges/water and contact shadow stay
+  out. No light is mirrored, so the reflection is deliberately darker — the
+  user chose that over a sixth realtime light. The story bible's mirror test
+  is narrowed by the dated §6 rows: only brushing sustains the face as part of
+  an action, now through the actual reflection, and other appearances of that
+  reflection do not become a separate scene.
 - **Accepted — Shower stall rebuild:** The stall keeps its footprint,
   tray collider and pinned names while gaining an L-rail, a
   four-fold curtain group (gathered at scale 0.40 and never drawn since

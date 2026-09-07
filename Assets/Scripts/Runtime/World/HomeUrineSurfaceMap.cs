@@ -165,6 +165,7 @@ namespace BarPromenade
             {
                 string name = cursor.name;
                 if (name == "Home Exterior View" ||
+                    name.StartsWith("Sink Tap Water ", StringComparison.Ordinal) ||
                     name.IndexOf("Halo", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     name.IndexOf("Smoke", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     name.IndexOf("Urine", StringComparison.OrdinalIgnoreCase) >= 0 ||

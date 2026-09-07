@@ -148,7 +148,6 @@ namespace BarPromenade.Tests.EditMode
                 "Home Bathroom Shower Soap",
                 "Home Bathroom Sink Hollow",
                 "Home Bathroom Cracked Mirror",
-                "Home Bathroom Mirror Crack",
                 "Home Bathroom Leak Stain",
                 "Home Bathroom Floor Drain",
                 "Home Lower Facade Damp Stain",

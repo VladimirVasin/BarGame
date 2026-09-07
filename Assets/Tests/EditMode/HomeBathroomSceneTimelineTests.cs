@@ -96,11 +96,23 @@ namespace BarPromenade.Tests.EditMode
             var progress = new HomeTeethBrushingProgress();
             timeline.Begin();
             Assert.That(timeline.ArmWeight, Is.Zero);
-            timeline.Advance(
-                HomeTeethBrushingTimeline.ArmRaiseStartSeconds +
-                HomeTeethBrushingTimeline.ArmRaiseSeconds * 0.5f);
+            timeline.Advance(HomeTeethBrushingTimeline.CameraToEyesSeconds);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.OpenFaucet));
+            Assert.That(timeline.CameraBlend, Is.EqualTo(1f), "The lens arrives before the hand opens the water.");
+            Assert.That(timeline.FaucetOpen, Is.Zero);
+            timeline.Advance(HomeTeethBrushingTimeline.ValveReachSeconds);
+            Assert.That(timeline.ValveReach, Is.EqualTo(1f));
+            Assert.That(timeline.FaucetOpen, Is.Zero, "Reaching the handle alone cannot start the water.");
+            timeline.Advance(HomeTeethBrushingTimeline.ValveTurnSeconds * 0.5f);
+            Assert.That(timeline.FaucetOpen, Is.EqualTo(0.5f).Within(0.001f));
+            Assert.That(timeline.ArmWeight, Is.Zero, "The brush stays down while the free hand opens the faucet.");
+            timeline.Advance(HomeTeethBrushingTimeline.ValveTurnSeconds * 0.5f +
+                HomeTeethBrushingTimeline.ValveWithdrawSeconds + 0.001f);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.RaiseBrush));
+            Assert.That(timeline.FaucetOpen, Is.EqualTo(1f));
+            timeline.Advance(HomeTeethBrushingTimeline.ArmRaiseSeconds * 0.5f);
             Assert.That(timeline.ArmWeight, Is.GreaterThan(0f).And.LessThan(1f));
-            timeline.Advance(HomeTeethBrushingTimeline.CameraToMirrorSeconds);
+            timeline.Advance(HomeTeethBrushingTimeline.ArmRaiseSeconds);
             Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.Brushing));
             Assert.That(timeline.ArmWeight, Is.EqualTo(1f));
             Assert.That(timeline.CameraBlend, Is.EqualTo(1f));
@@ -137,7 +149,7 @@ namespace BarPromenade.Tests.EditMode
             }
             Assert.That(progress.Complete, Is.True);
             Assert.That(progress.Amount, Is.EqualTo(1f));
-            Assert.That(strokes * Step, Is.GreaterThanOrEqualTo(7.99f));
+            Assert.That(strokes * Step, Is.InRange(4.99f, 5.1f));
             Assert.That(timeline.CanCommit, Is.False);
             timeline.CompleteBrushing();
             Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.ShowTeeth));
@@ -146,6 +158,7 @@ namespace BarPromenade.Tests.EditMode
                 "The completed brush action owns the short teeth/spit finale.");
             timeline.Advance(HomeTeethBrushingTimeline.ShowTeethSeconds);
             Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.Spit));
+            Assert.That(timeline.FaucetOpen, Is.EqualTo(1f), "Water keeps running through the spit.");
             Assert.That(timeline.ArmWeight, Is.Zero);
             Assert.That(timeline.EmissionSeconds, Is.Zero,
                 "Spitting follows the tooth display, never overlaps it.");
@@ -154,10 +167,21 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(timeline.EmissionSeconds, Is.Zero);
             timeline.Advance(HomeTeethBrushingTimeline.SpitSeconds -
                 HomeTeethBrushingTimeline.SpitStartSeconds);
-            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CameraReturn));
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CloseFaucet));
+            Assert.That(timeline.FaucetOpen, Is.EqualTo(1f));
+            Assert.That(timeline.CameraBlend, Is.EqualTo(1f));
             Assert.That(timeline.EmissionSeconds,
                 Is.EqualTo(HomeTeethBrushingTimeline.SpitEndSeconds -
                     HomeTeethBrushingTimeline.SpitStartSeconds).Within(0.0001f));
+            Assert.That(timeline.CanCommit, Is.False);
+            timeline.Advance(HomeTeethBrushingTimeline.ArmLowerSeconds +
+                HomeTeethBrushingTimeline.ValveReachSeconds + HomeTeethBrushingTimeline.ValveTurnSeconds * 0.5f);
+            Assert.That(timeline.FaucetOpen, Is.EqualTo(0.5f).Within(0.001f));
+            Assert.That(timeline.ValveReach, Is.EqualTo(1f));
+            timeline.Advance(HomeTeethBrushingTimeline.ValveTurnSeconds * 0.5f +
+                HomeTeethBrushingTimeline.ValveWithdrawSeconds + 0.001f);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CameraReturn));
+            Assert.That(timeline.FaucetOpen, Is.Zero, "The faucet is closed before the lens leaves the hero.");
             Assert.That(timeline.CanCommit, Is.False);
             timeline.Advance(HomeTeethBrushingTimeline.CameraReturnSeconds);
             Assert.That(timeline.IsCompleted, Is.True);
@@ -165,22 +189,41 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(timeline.CameraBlend, Is.Zero);
         }
 
-        [Test]
-        public void Brushing_CancelsPartialCleaningWithoutTeethSpitOrReward()
+        [TestCase(HomeTeethBrushingPhase.OpenFaucet, 0.25f)]
+        [TestCase(HomeTeethBrushingPhase.OpenFaucet, 0.9f)]
+        [TestCase(HomeTeethBrushingPhase.OpenFaucet, 1.5f)]
+        [TestCase(HomeTeethBrushingPhase.RaiseBrush, 0.4f)]
+        [TestCase(HomeTeethBrushingPhase.Brushing, 0.2f)]
+        public void Brushing_CancelsPartialCleaningWithoutTeethSpitOrReward(HomeTeethBrushingPhase stopPhase, float elapsed)
         {
             var timeline = new HomeTeethBrushingTimeline();
             var progress = new HomeTeethBrushingProgress();
             timeline.Begin();
-            timeline.Advance(HomeTeethBrushingTimeline.CameraToMirrorSeconds);
-            progress.Move(Vector2.right * 100f);
-            progress.Credit(progress.Offset.magnitude, true, 0.2f);
-            Assert.That(progress.Amount, Is.GreaterThan(0f).And.LessThan(1f));
+            float start = HomeTeethBrushingTimeline.CameraToEyesSeconds;
+            if (stopPhase >= HomeTeethBrushingPhase.RaiseBrush) start += HomeTeethBrushingTimeline.OpenFaucetSeconds;
+            if (stopPhase == HomeTeethBrushingPhase.Brushing) start += HomeTeethBrushingTimeline.ArmRaiseSeconds;
+            timeline.Advance(start + elapsed);
+            Assert.That(timeline.Phase, Is.EqualTo(stopPhase));
+            if (stopPhase == HomeTeethBrushingPhase.Brushing)
+            {
+                progress.Move(Vector2.right * 100f);
+                progress.Credit(progress.Offset.magnitude, true, 0.2f);
+                Assert.That(progress.Amount, Is.GreaterThan(0f).And.LessThan(1f));
+            }
+            float openBefore = timeline.FaucetOpen, reachBefore = timeline.ValveReach, armBefore = timeline.ArmWeight;
             Assert.That(timeline.RequestFinish(), Is.True);
-            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CameraReturn));
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CloseFaucet));
+            Assert.That(timeline.FaucetOpen, Is.EqualTo(openBefore).Within(0.0001f), "Cancellation keeps the physical valve angle continuous.");
+            Assert.That(timeline.ValveReach, Is.EqualTo(reachBefore).Within(0.0001f), "The hand cannot jump off the valve when cancelled mid-turn.");
+            Assert.That(timeline.ArmWeight, Is.EqualTo(armBefore).Within(0.0001f));
             Assert.That(timeline.RequestFinish(), Is.False);
             timeline.CompleteBrushing();
-            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CameraReturn),
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CloseFaucet),
                 "A stale completion after cancellation cannot start the finale.");
+            timeline.Advance(HomeTeethBrushingTimeline.CloseFaucetSeconds + 0.001f);
+            Assert.That(timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CameraReturn));
+            Assert.That(timeline.FaucetOpen, Is.Zero);
+            Assert.That(timeline.ValveReach, Is.Zero);
             timeline.Advance(HomeTeethBrushingTimeline.CameraReturnSeconds);
             Assert.That(timeline.IsCompleted, Is.True);
             Assert.That(timeline.WasCancelled, Is.True);

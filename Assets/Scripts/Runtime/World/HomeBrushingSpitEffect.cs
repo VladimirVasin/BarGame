@@ -111,6 +111,12 @@ namespace BarPromenade
             renderer.enabled = false;
             return new Particle { Root = root.transform, Renderer = renderer };
         }
+        public void Stop()
+        {
+            Clear();
+            surfaces = null;
+            remainder = 0f;
+        }
         private void Clear()
         {
             foreach (Particle drop in drops) if (drop != null) { drop.Flying = false; drop.Renderer.enabled = false; }
@@ -134,6 +140,6 @@ namespace BarPromenade
             AudioClip clip = AudioClip.Create("Home Brushing Spit", samples.Length, 1, rate, false);
             clip.SetData(samples, 0); return clip;
         }
-        private void OnDisable() => Clear();
+        private void OnDisable() => Stop();
     }
 }

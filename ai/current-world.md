@@ -2171,9 +2171,10 @@ The vertical slice contains:
   72-frame wake sequence plays over `6.9 s` instead of the ordinary six,
   restoring normal control without a camera cut or another scene load;
 - one fully built bathroom with tiled surfaces, an ajar doorway, toilet,
-  shower tray and curtain, pedestal sink, a cracked mirror that really reflects
+  shower tray and curtain, pedestal sink, a cloudy mirror that really reflects
   (a hole in the wall with a mirrored copy of the bathroom and of the hero behind
-  it, shown only in the pinned bathroom shot), exposed rusty pipes,
+  it, active under the pinned bathroom shot, including owned first-person
+  brushing, without the former raised black crack strip), exposed rusty pipes,
   leak stains and floor drain; the toilet cistern sits against the right wall
   and its bowl faces into the room;
 - one Home-only atmosphere with a weaker hard-shadow directional/ambient base,
@@ -2216,13 +2217,21 @@ The vertical slice contains:
   once it is inside, he washes naked (a bare-skin atlas on the same prefab,
   the toilet's anatomy at rest) with both palms on the tile under a
   gravity-fed stream, shuts the tap, stands three seconds of drips and
-  dresses before the lens leaves, and a mirror teeth-brushing close-up shot
-  from the mirror plane. Mouse or right-stick X/Y drives the actual right
-  arm; its gauge credits only commanded brush travel confirmed at the
-  teeth, requiring at least `8 s` of active movement. At full progress the
+  dresses before the lens leaves, and first-person teeth brushing through the
+  real mirror. The left hand opens an authored faucet valve before brushing;
+  its stream and local water sound follow the valve. Mouse or right-stick X/Y
+  drives the actual right arm relative to the reflection; its gauge credits
+  only commanded brush travel confirmed at the
+  teeth, requiring at least `5 s` of active movement. At full progress the
   hero lowers the brush, shows his teeth for `1.5 s`, then bends and spits
   for `1.5 s`; mouth-origin foam follows ballistic flight into the real
-  hollow Blender basin. Stop `E` cancels before full progress. Completion
+  hollow Blender basin. The camera stays in the hero's eyes throughout;
+  the left hand turns the valve shut after the spit and before camera return.
+  The reflected rig, brush, mouth foam, spit and faucet water stay synchronized.
+  Stop `E` cancels before full progress and closes any opened valve first;
+  after camera return, completion and cancellation both take one ordinary
+  backward step from the sink while facing the mirror, then restore input.
+  Scene interruption immediately stops the owned water and audio. Completion
   cleans the soiled mouth on every replay and grants stress `-5` once per
   game day; cancellation does neither. Toilet and shower retain their own
   completion-only relief;

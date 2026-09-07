@@ -267,7 +267,8 @@ namespace BarPromenade
         public bool MoveTowardsInteractionPose(
             Vector3 targetPosition,
             Quaternion targetRotation,
-            float deltaTime)
+            float deltaTime,
+            bool walkBackward = false)
         {
             ValidateInteractionPose(
                 targetPosition,
@@ -291,7 +292,7 @@ namespace BarPromenade
             float distance = toTarget.magnitude;
             if (distance > 0.000001f)
             {
-                WalkPlanarStep(targetPosition, deltaTime);
+                WalkPlanarStep(targetPosition, deltaTime, walkBackward);
                 return false;
             }
 
@@ -384,7 +385,8 @@ namespace BarPromenade
 
         private void WalkPlanarStep(
             Vector3 targetPosition,
-            float deltaTime)
+            float deltaTime,
+            bool walkBackward = false)
         {
             Vector3 current = transform.position;
             Vector3 toTarget = targetPosition - current;
@@ -399,7 +401,7 @@ namespace BarPromenade
 
             float step = Mathf.Min(
                 distance,
-                MoveSpeed * deltaTime);
+                (walkBackward ? BackwardMoveSpeed : MoveSpeed) * deltaTime);
             Vector3 desired =
                 current + (toTarget / distance) * step;
             desired.y = current.y;
@@ -427,12 +429,12 @@ namespace BarPromenade
                 ? displacement / deltaTime
                 : Vector3.zero;
             momentumVelocity = PlanarVelocity;
-            FaceMovementDirection(PlanarVelocity);
-            // Scripted approaches always face along their travel, so the
-            // presentation sees them as plain forward walking.
+            FaceMovementDirection(walkBackward ? -PlanarVelocity : PlanarVelocity);
+            // A guided backstep uses the same signed motion and WalkBack
+            // gait as manual reverse movement, while keeping its constrained path.
             presentation?.SetMotion(new PlayerMotionSample(
                 PlanarVelocity,
-                PlanarVelocity.magnitude,
+                walkBackward ? -PlanarVelocity.magnitude : PlanarVelocity.magnitude,
                 0f));
             UpdateFootsteps(
                 displacement,

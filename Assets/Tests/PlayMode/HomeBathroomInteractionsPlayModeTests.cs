@@ -829,33 +829,116 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.SetHeroMouthSoiled(true, "brushing_test");
             var brushing = home.TeethBrushing;
             var visual = (Player3DCharacterPresentation)home.Player.Visual;
+            HomeBathroomMirrorWorld mirror = home.BathroomMirror;
+            Camera camera = home.CameraFollow.GetComponent<Camera>();
+            int originalPropCount = mirror.RegisteredPropCount;
             int bodyIntersectionFrames = 0;
+            int valveContactFrames = 0;
+            float maximumValveError = 0f;
+            float maximumValveWristBend = 0f;
+            string maximumValveDetail = null;
+            float maximumEyeError = 0f;
+            float maximumExitFacingError = 0f;
+            float maximumExitPositionError = 0f;
+            int backwardGaitFrames = 0;
+            bool capturedOpening = false, capturedClosing = false;
+            string presentationViolation = null;
             float minimumBodyClearance = float.PositiveInfinity;
             var armProbe = home.gameObject.AddComponent<HomeBathroomPresentationProbe>();
             armProbe.Observe = () =>
             {
                 if (brushing.ArmPose == null || brushing.Timeline.Phase == HomeTeethBrushingPhase.Idle) return;
-                minimumBodyClearance = Mathf.Min(minimumBodyClearance, brushing.ArmPose.BodyClearance);
-                if (brushing.ArmPose.BodyIntersectionCount > 0)
+                if (brushing.Timeline.Phase >= HomeTeethBrushingPhase.CameraReturn)
+                {
+                    maximumExitFacingError = Mathf.Max(maximumExitFacingError, Quaternion.Angle(
+                        home.Player.GameObject.transform.rotation, Quaternion.LookRotation(Vector3.forward)));
+                    if (brushing.Timeline.Phase == HomeTeethBrushingPhase.CameraReturn)
+                    {
+                        Vector3 position = home.Player.GameObject.transform.position;
+                        maximumExitPositionError = Mathf.Max(maximumExitPositionError,
+                            Vector2.Distance(new Vector2(position.x, position.z), new Vector2(2.075f, 2.86f)));
+                    }
+                    else if (Vector3.Dot(home.Player.Motor.PlanarVelocity, Vector3.forward) < -0.01f &&
+                        visual.CurrentLocomotionState == Player3DLocomotionState.WalkBack)
+                    {
+                        if (backwardGaitFrames++ == 0)
+                            CaptureToilet("05a-step-back", "HomeBrushing");
+                    }
+                }
+                minimumBodyClearance = Mathf.Min(minimumBodyClearance,
+                    Mathf.Min(brushing.ArmPose.BodyClearance, brushing.ValvePose.BodyClearance));
+                if (brushing.ArmPose.BodyIntersectionCount > 0 || brushing.ValvePose.BodyIntersectionCount > 0)
                 {
                     if (bodyIntersectionFrames == 0)
                     {
                         CaptureToilet("arm-body-intersection", "HomeBrushing");
-                        Debug.Log($"Brushing arm contact: phase={brushing.Timeline.Phase}, radii={brushing.ArmPose.ArmRadii:F4}, clearances={brushing.ArmPose.ArmClearances:F4}, detail={brushing.ArmPose.BodyIntersectionDetail}");
+                        Debug.Log($"Brushing arm contact: phase={brushing.Timeline.Phase}, right={brushing.ArmPose.BodyIntersectionDetail}, left={brushing.ValvePose.BodyIntersectionDetail}");
                     }
                     bodyIntersectionFrames++;
+                }
+                if (brushing.ValvePose.Weight > 0.05f)
+                {
+                    visual.Registry.TryGetPart(Player3DAnatomicalPart.LeftForearm, out var lower);
+                    visual.Registry.TryGetPart(Player3DAnatomicalPart.LeftHand, out var wrist);
+                    maximumValveWristBend = Mathf.Max(maximumValveWristBend, Vector3.Angle(
+                        visual.Registry.Anchors.LeftGrip.position - wrist.Bone.position,
+                        wrist.Bone.position - lower.Bone.position));
+                }
+                if (brushing.Timeline.ValveReach > 0.999f)
+                {
+                    valveContactFrames++;
+                    if (brushing.ValvePose.ContactError > maximumValveError)
+                    {
+                        maximumValveError = brushing.ValvePose.ContactError;
+                        visual.Registry.TryGetPart(Player3DAnatomicalPart.LeftUpperArm, out var upper);
+                        visual.Registry.TryGetPart(Player3DAnatomicalPart.LeftHand, out var hand);
+                        maximumValveDetail = $"phase={brushing.Timeline.Phase}, time={brushing.Timeline.PhaseElapsed:F3}, valveLean={brushing.ArmPose.ValveLean:F3}, " +
+                            $"upper={upper.Bone.position:F4}, wrist={hand.Bone.position:F4}, grip={visual.Registry.Anchors.LeftGrip.position:F4}, " +
+                            $"target={brushing.Faucet.GripPosition:F4}, clearance={brushing.ValvePose.BodyClearance:F5}";
+                    }
+                }
+                if (brushing.Timeline.CameraBlend > 0.9999f)
+                {
+                    maximumEyeError = Mathf.Max(maximumEyeError,
+                        Vector3.Distance(camera.transform.position, brushing.FirstPersonView.EyePosition));
+                    if (presentationViolation == null && (!brushing.FirstPersonView.IsHeadHidden ||
+                        Player3DHeadVisibility.IsHeadDrawn(visual.Registry) ||
+                        !Player3DHeadVisibility.IsHeadDrawn(mirror.Twin) || !mirror.IsActive))
+                        presentationViolation = "First person must retain the reflected head while hiding only the real head: " + brushing.Timeline.Phase;
+                }
+                bool turning = brushing.Faucet.OpenAmount > 0.05f && brushing.Faucet.OpenAmount < 0.95f &&
+                    brushing.Timeline.ValveReach > 0.999f;
+                if (turning && !capturedOpening && brushing.Timeline.Phase == HomeTeethBrushingPhase.OpenFaucet)
+                {
+                    capturedOpening = true;
+                    CaptureToilet("00a-open-faucet", "HomeBrushing");
+                }
+                if (turning && !capturedClosing && brushing.Timeline.Phase == HomeTeethBrushingPhase.CloseFaucet)
+                {
+                    capturedClosing = true;
+                    CaptureToilet("05-close-faucet", "HomeBrushing");
                 }
             };
             CursorLockMode previousCursor = Cursor.lockState;
             bool previousCursorVisible = Cursor.visible;
             yield return WalkToAndActivate(brushing, new Vector3(2.075f, 0.12f, 2.55f));
-            Time.timeScale = 2f;
+            Time.timeScale = 1f;
             yield return WaitUntil(() => brushing.Timeline.Phase == HomeTeethBrushingPhase.Brushing,
                 "The brushing scene never reached mouse control.");
+            Time.timeScale = 2f;
             yield return new WaitForSeconds(0.4f);
             yield return AtPresentation(() =>
             {
                 CaptureToilet("00-brush-contact", "HomeBrushing");
+                Assert.That(capturedOpening, Is.True, "The free hand must visibly turn the faucet before manual brushing.");
+                AssertBrushingFaucetReflection(true);
+                Assert.That(brushing.Faucet.OpenAmount, Is.EqualTo(1f));
+                Assert.That(mirror.RegisteredPropCount, Is.EqualTo(originalPropCount + 3), "Brush, mouth foam and spit each register once.");
+                Assert.That(mirror.RegisterReflectedProp(brushing.Toothbrush.transform), Is.SameAs(brushing.ReflectedToothbrush));
+                Assert.That(mirror.RegisterReflectedProp(brushing.SpitEffect.transform), Is.SameAs(brushing.ReflectedSpit));
+                Assert.That(mirror.RegisteredPropCount, Is.EqualTo(originalPropCount + 3), "Repeated registration cannot duplicate reflected props.");
+                AssertBrushingPropReflection(brushing.Toothbrush.transform, brushing.ReflectedToothbrush);
+                Assert.That(brushing.ReflectedToothbrush.gameObject.activeInHierarchy, Is.True);
                 Assert.That(brushing.ArmPose.ArmRadii.x, Is.InRange(0.04f, 0.09f), "FBX readback must retain metre-scale arm geometry.");
                 Assert.That(brushing.ArmPose.ArmRadii.y, Is.InRange(0.035f, 0.08f));
                 Assert.That(brushing.ArmPose.ArmRadii.z, Is.InRange(0.025f, 0.10f));
@@ -867,6 +950,19 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(visual.CurrentFacialExpression, Is.EqualTo(PlayerFacialExpression.TeethDisplay));
                 Assert.That(visual.HasContextualFacialExpression, Is.True);
                 Assert.That(home.Player.Motor.InputEnabled, Is.False);
+            });
+            brushing.ApplyBrushDelta(Vector2.left * 300f);
+            brushing.ApplyBrushDelta(Vector2.left * 300f);
+            float reflectedLeftX = 0f;
+            yield return AtPresentation(() => reflectedLeftX = camera.WorldToViewportPoint(
+                brushing.ReflectedToothbrush.Find("Brush Tip").position).x);
+            brushing.ApplyBrushDelta(Vector2.right * 300f);
+            brushing.ApplyBrushDelta(Vector2.right * 300f);
+            yield return AtPresentation(() =>
+            {
+                float reflectedRightX = camera.WorldToViewportPoint(brushing.ReflectedToothbrush.Find("Brush Tip").position).x;
+                Assert.That(reflectedRightX - reflectedLeftX, Is.GreaterThan(0.005f), "Mouse-right must move the reflected bristles right on screen.");
+                AssertBrushingPropReflection(brushing.Toothbrush.transform, brushing.ReflectedToothbrush);
             });
             foreach (Vector2 corner in new[] { new Vector2(-1f, -1f), new Vector2(1f, 1f),
                 new Vector2(-1f, 1f), new Vector2(1f, -1f) })
@@ -889,6 +985,9 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(brushing.Timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.ShowTeeth));
                 Assert.That(brushing.Progress.Amount, Is.EqualTo(1f));
                 Assert.That(brushing.Toothbrush.activeSelf, Is.False, "The clean teeth must be unobstructed.");
+                Assert.That(brushing.ReflectedToothbrush.gameObject.activeInHierarchy, Is.False);
+                Assert.That(brushing.ReflectedFoam.gameObject.activeInHierarchy, Is.False);
+                AssertBrushingFaucetReflection(true);
                 Assert.That(brushing.SpitEffect.EmittedCount, Is.Zero, "Show the teeth before spitting.");
                 Assert.That(visual.IsMouthSoiledVisible, Is.False, "The finishing shot must show the clean teeth atlas cell.");
                 Assert.That(GameSessionState.HeroMouthSoiled, Is.True, "State commits only after the whole action.");
@@ -900,12 +999,20 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(brushing.ArmPose.Bend, Is.GreaterThan(0.9f));
                 Assert.That(visual.CurrentFacialExpression, Is.EqualTo(PlayerFacialExpression.Spit));
                 Assert.That(Vector3.Distance(brushing.SpitEffect.LastMouth, visual.Registry.Anchors.Mouth.position), Is.LessThan(0.03f));
+                AssertBrushingFaucetReflection(true);
+                AssertBrushingPropReflection(brushing.SpitEffect.transform, brushing.ReflectedSpit);
             });
             yield return WaitUntil(() => brushing.SpitEffect.BasinHitCount > 0, "The mouth-origin foam missed the real sink mesh.");
             yield return AtPresentation(() => CaptureToilet("04-sink-impact", "HomeBrushing"));
             Assert.That(home.transform.InverseTransformPoint(brushing.SpitEffect.LastImpact).y, Is.LessThan(0.84f),
                 "The foam must enter the cavity below the rim.");
             yield return WaitUntil(() => home.Player.Motor.InputEnabled, "The brushing scene never restored the player.");
+            yield return AtPresentation(() =>
+            {
+                CaptureToilet("06-restored", "HomeBrushing");
+                Assert.That(capturedClosing, Is.True, "The hand must turn the running faucet back after spitting.");
+                AssertBrushingRestored();
+            });
             Assert.That(brushing.Toothbrush.activeSelf, Is.False);
             Assert.That(brushing.GaugeVisible, Is.False);
             Assert.That(visual.HasContextualFacialExpression, Is.False);
@@ -921,11 +1028,13 @@ namespace BarPromenade.Tests.PlayMode
             yield return WalkToAndActivate(brushing, new Vector3(2.075f, 0.12f, 2.55f));
             Time.timeScale = 3f;
             yield return WaitUntil(() => brushing.Timeline.Phase == HomeTeethBrushingPhase.Brushing, "No second brushing.");
+            Assert.That(mirror.RegisteredPropCount, Is.EqualTo(originalPropCount + 3), "A repeated action reuses its reflected pools.");
             yield return BrushToCompletion(false);
             yield return WaitUntil(() => home.Player.Motor.InputEnabled, "The second brushing never restored the player.");
             Time.timeScale = 1f;
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(stressAfterFirst));
             Assert.That(GameSessionState.HeroMouthSoiled, Is.False);
+            yield return AtPresentation(AssertBrushingRestored);
 
             GameSessionState.SetHeroMouthSoiled(true, "brushing_test_cancel");
             yield return WalkToAndActivate(brushing, new Vector3(2.075f, 0.12f, 2.55f));
@@ -934,14 +1043,36 @@ namespace BarPromenade.Tests.PlayMode
             brushing.ApplyBrushDelta(new Vector2(80f, 0f));
             yield return null;
             brushing.RequestStop();
+            Assert.That(brushing.Timeline.Phase, Is.EqualTo(HomeTeethBrushingPhase.CloseFaucet), "A manual stop closes the running faucet visibly.");
+            Assert.That(home.Player.Motor.InputEnabled, Is.False, "Control returns only after closure and camera exit.");
             yield return WaitUntil(() => home.Player.Motor.InputEnabled, "Cancel did not restore control.");
+            yield return AtPresentation(AssertBrushingRestored);
             Assert.That(GameSessionState.HeroMouthSoiled, Is.True, "A cancelled brush must not clean the mouth.");
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(stressAfterFirst));
             Assert.That(visual.HasContextualFacialExpression, Is.False);
             Assert.That(visual.InteractionHandoffLocked, Is.False);
             Assert.That(brushing.SpitEffect.EmittedCount, Is.Zero, "Cancellation skips the completion spit.");
-            Assert.That(bodyIntersectionFrames, Is.Zero, "The actual arm must stay outside the torso throughout entry, strokes, lowering and spit.");
+            // Disable uses the immediate owned cleanup path, unlike a visible manual stop.
+            yield return WalkToAndActivate(brushing, new Vector3(2.075f, 0.12f, 2.55f));
+            yield return WaitUntil(() => brushing.Timeline.Phase == HomeTeethBrushingPhase.Brushing, "No brushing for disable cleanup.");
+            brushing.enabled = false;
+            Assert.That(brushing.Faucet.OpenAmount, Is.Zero, "Disable closes the water synchronously.");
+            Assert.That(brushing.Faucet.WaterSource.isPlaying, Is.False);
+            Assert.That(Player3DHeadVisibility.IsHeadDrawn(visual.Registry), Is.True);
+            yield return AtPresentation(() => AssertBrushingRestored(true));
+            brushing.enabled = true;
+            Assert.That(GameSessionState.HeroMouthSoiled, Is.True);
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(stressAfterFirst));
+            Assert.That(bodyIntersectionFrames, Is.Zero, "Both actual arms stay outside the torso through entry, valve turns, strokes, lowering and spit.");
             Assert.That(minimumBodyClearance, Is.GreaterThanOrEqualTo(-0.0005f));
+            Assert.That(valveContactFrames, Is.GreaterThan(0));
+            Assert.That(maximumValveError, Is.LessThan(0.025f), "The left grip must stay on the real rotating valve. " + maximumValveDetail);
+            Assert.That(maximumValveWristBend, Is.LessThan(28f), "The wrist must stay aligned with the forearm through reach, turn and withdrawal.");
+            Assert.That(maximumEyeError, Is.LessThan(0.005f), "The lens remains at the posed eyes, including spitting and valve turns.");
+            Assert.That(maximumExitFacingError, Is.LessThan(1f), "Camera return and pose handoff must not turn the hero away from the sink.");
+            Assert.That(maximumExitPositionError, Is.LessThan(0.005f), "The hero remains at the sink until the camera has returned.");
+            Assert.That(backwardGaitFrames, Is.GreaterThan(0), "The exit uses the existing WalkBack gait while travelling away from the sink.");
+            Assert.That(presentationViolation, Is.Null);
             armProbe.Observe = null;
         }
 
@@ -960,7 +1091,16 @@ namespace BarPromenade.Tests.PlayMode
                 if (capture && !captured && brushing.Progress.Amount >= 0.5f)
                 {
                     captured = true;
-                    yield return AtPresentation(() => CaptureToilet("01-brushing", "HomeBrushing"));
+                    yield return AtPresentation(() =>
+                    {
+                        CaptureToilet("01-brushing", "HomeBrushing");
+                        var visual = (Player3DCharacterPresentation)home.Player.Visual;
+                        Transform foam = visual.Registry.Anchors.Mouth.Find("Player Brushing Foam");
+                        Assert.That(foam, Is.Not.Null);
+                        Assert.That(brushing.ReflectedFoam.gameObject.activeInHierarchy, Is.True, "Mouth foam must be visible in the mirror during cleaning.");
+                        AssertBrushingPropReflection(foam, brushing.ReflectedFoam);
+                        AssertBrushingPropReflection(brushing.Toothbrush.transform, brushing.ReflectedToothbrush);
+                    });
                 }
                 else yield return null;
             }
@@ -970,6 +1110,76 @@ namespace BarPromenade.Tests.PlayMode
             // delta has already advanced Time.time before the coroutine starts.
             Assert.That(Time.time - started + Time.maximumDeltaTime, Is.GreaterThanOrEqualTo(remainingSeconds - 0.01f),
                 "Large mouse spikes cannot finish instantly.");
+        }
+
+        private void AssertBrushingPropReflection(Transform source, Transform reflected, bool compareMaterials = true)
+        {
+            Assert.That(reflected, Is.Not.Null, source.name);
+            MeshRenderer[] originals = source.GetComponentsInChildren<MeshRenderer>(true);
+            MeshRenderer[] copies = reflected.GetComponentsInChildren<MeshRenderer>(true);
+            Assert.That(copies.Length, Is.EqualTo(originals.Length), source.name);
+            for (int index = 0; index < originals.Length; index++)
+            {
+                MeshRenderer original = originals[index], copy = copies[index];
+                Assert.That(copy.enabled, Is.EqualTo(original.enabled), original.name);
+                Assert.That(copy.gameObject.activeInHierarchy, Is.EqualTo(original.gameObject.activeInHierarchy), original.name);
+                if (compareMaterials) Assert.That(copy.sharedMaterial, Is.SameAs(original.sharedMaterial), original.name);
+                foreach (Vector3 point in new[] { Vector3.zero, new Vector3(0.03f, 0.05f, 0.01f) })
+                {
+                    Vector3 originalPoint = home.transform.InverseTransformPoint(original.transform.TransformPoint(point));
+                    Vector3 copyPoint = home.transform.InverseTransformPoint(copy.transform.TransformPoint(point));
+                    Assert.That(Vector3.Distance(copyPoint, HomeBathroomMirrorPlane.Reflect(originalPoint)),
+                        Is.LessThan(0.001f), original.name + " must follow its real pose and scale through the mirror.");
+                }
+            }
+            Assert.That(reflected.GetComponentsInChildren<AudioSource>(true), Is.Empty);
+            Assert.That(reflected.GetComponentsInChildren<Collider>(true), Is.Empty);
+            Assert.That(reflected.GetComponentsInChildren<MonoBehaviour>(true), Is.Empty);
+        }
+
+        private void AssertBrushingFaucetReflection(bool running)
+        {
+            HomeSinkFaucet faucet = home.TeethBrushing.Faucet;
+            Transform reflected = home.BathroomMirror.RegisterReflectedProp(faucet.transform);
+            Assert.That(faucet.OpenAmount, Is.EqualTo(running ? 1f : 0f).Within(0.0001f));
+            Transform handle = reflected.Find(faucet.Handle.name);
+            Assert.That(handle, Is.Not.Null);
+            Assert.That(Quaternion.Angle(handle.localRotation, faucet.Handle.localRotation), Is.LessThan(0.01f), "The reflected valve turns with the physical handle.");
+            MeshRenderer sourceWater = faucet.transform.Find("Sink Tap Water Stream 0").GetComponent<MeshRenderer>();
+            MeshRenderer mirrorWater = reflected.Find("Sink Tap Water Stream 0").GetComponent<MeshRenderer>();
+            Assert.That(sourceWater.enabled, Is.EqualTo(running));
+            Assert.That(mirrorWater.enabled, Is.EqualTo(running), "Water starts and stops in the mirror with the source.");
+            // The room's occlusion controller wraps source fixture materials
+            // after mirror construction. Static reflections retain the opaque
+            // authored material; they must not inherit camera-side dithering.
+            AssertBrushingPropReflection(faucet.transform, reflected, false);
+            if (running)
+            {
+                Assert.That(faucet.WaterSource.clip, Is.Not.Null);
+                Assert.That(faucet.WaterSource.volume, Is.GreaterThan(0f));
+            }
+            else Assert.That(faucet.WaterSource.isPlaying, Is.False);
+        }
+
+        private void AssertBrushingRestored() => AssertBrushingRestored(false);
+
+        private void AssertBrushingRestored(bool atSink)
+        {
+            var brushing = home.TeethBrushing;
+            var visual = (Player3DCharacterPresentation)home.Player.Visual;
+            AssertBrushingFaucetReflection(false);
+            Assert.That(home.Player.Motor.InputEnabled, Is.True);
+            Transform hero = home.Player.GameObject.transform;
+            Assert.That(Quaternion.Angle(hero.rotation, Quaternion.LookRotation(Vector3.forward)), Is.LessThan(1f),
+                "Returning control preserves the hero's facing at the sink.");
+            Assert.That(Vector2.Distance(new Vector2(hero.position.x, hero.position.z), new Vector2(2.075f, atSink ? 2.86f : 2.50f)),
+                Is.LessThan(0.005f), "A normal finish/cancel steps back; disable restores immediately at the sink.");
+            Assert.That(brushing.FirstPersonView.IsHeadHidden, Is.False);
+            Assert.That(Player3DHeadVisibility.IsHeadDrawn(visual.Registry), Is.True);
+            Assert.That(brushing.ReflectedToothbrush.gameObject.activeInHierarchy, Is.False);
+            Assert.That(brushing.ReflectedFoam.gameObject.activeInHierarchy, Is.False);
+            foreach (MeshRenderer renderer in brushing.ReflectedSpit.GetComponentsInChildren<MeshRenderer>(true))
+                Assert.That(renderer.enabled, Is.False, "Finished and cancelled brushing leave no reflected foam flight.");
         }
 
         private IEnumerator LoadHome()

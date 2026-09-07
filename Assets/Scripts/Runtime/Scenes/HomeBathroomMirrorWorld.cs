@@ -51,11 +51,11 @@ namespace BarPromenade
         private static readonly string[] ExcludedNames =
         {
             HomeBathroomMirrorPlane.PlateName,
-            HomeBathroomMirrorPlane.CrackName,
             HomeBathroomMirrorOpeningBuilder.RootName
         };
 
         private readonly List<HomeMirrorSubtreeClone> statics = new List<HomeMirrorSubtreeClone>();
+        private readonly List<HomeMirrorSubtreeClone> props = new List<HomeMirrorSubtreeClone>();
         private readonly List<string> clonedSourceNames = new List<string>();
         private HomeInteriorRoot home;
         private HomeBathroomMirrorOpening opening;
@@ -77,6 +77,7 @@ namespace BarPromenade
         public int TwinPairedRendererCount => twin?.PairedRendererCount ?? 0;
         public int TwinUnpairedRendererCount => twin?.UnpairedRendererCount ?? 0;
         public int StaticCloneCount => statics.Count;
+        public int RegisteredPropCount => props.Count;
         public IReadOnlyList<string> ClonedSourceNames => clonedSourceNames;
 
         public void Initialize(HomeInteriorRoot homeRoot, HomeBathroomMirrorOpening mirrorOpening)
@@ -102,6 +103,51 @@ namespace BarPromenade
             twin = HomeMirrorHeroTwin.TryCreate(home, space);
             IsInitialized = true;
             ApplyActive(false);
+        }
+
+        /// <summary>
+        /// Opts an already prepared prop or mesh-effect pool into the mirror.
+        /// Repeated registration returns its existing copy. The prop's full
+        /// transform chain follows the source, but only its mesh renderers
+        /// are copied: no second animation, collision, light, sound or effect
+        /// simulation runs behind the glass. Call again for a replacement
+        /// source; destroyed sources lose their copies on the next sync.
+        /// </summary>
+        public Transform RegisterReflectedProp(Transform source)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (!IsInitialized || home == null || space == null)
+            {
+                throw new InvalidOperationException("The bathroom mirror must be initialized before registering props.");
+            }
+
+            if (source.IsChildOf(content))
+            {
+                throw new ArgumentException("A mirror copy cannot be reflected again.", nameof(source));
+            }
+
+            for (int index = 0; index < props.Count; index++)
+            {
+                if (props[index].Source == source) return props[index].Root;
+            }
+
+            for (int index = 0; index < statics.Count; index++)
+            {
+                if (statics[index].Source == source) return statics[index].Root;
+            }
+
+            HomeMirrorSubtreeClone clone = HomeMirrorSubtreeClone.CreateInFrame(
+                source, space, home.transform, source.name + CloneSuffix);
+            if (clone.RendererCount == 0)
+            {
+                clone.Destroy();
+                throw new ArgumentException("A reflected prop needs a prepared mesh renderer subtree.", nameof(source));
+            }
+
+            props.Add(clone);
+            clone.SyncRenderers(true);
+            clone.SyncPropertyBlocks();
+            return clone.Root;
         }
 
         /// <summary>The rule, pure: the copy shows only behind the pinned bathroom shot.</summary>
@@ -153,6 +199,7 @@ namespace BarPromenade
             }
 
             twin?.Sync();
+            SyncProps();
         }
 
         /// <summary>The plug goes back the moment this stops running.</summary>
@@ -187,6 +234,25 @@ namespace BarPromenade
             }
 
             twin?.Sync();
+            SyncProps();
+        }
+
+        private void SyncProps()
+        {
+            for (int index = props.Count - 1; index >= 0; index--)
+            {
+                HomeMirrorSubtreeClone clone = props[index];
+                if (clone.Source == null)
+                {
+                    clone.Destroy();
+                    props.RemoveAt(index);
+                    continue;
+                }
+
+                clone.SyncTransforms();
+                clone.SyncRenderers(true);
+                clone.SyncPropertyBlocks();
+            }
         }
 
         private void BuildStaticClones()
@@ -356,6 +422,7 @@ namespace BarPromenade
             twin?.Destroy();
             twin = null;
             statics.Clear();
+            props.Clear();
         }
     }
 

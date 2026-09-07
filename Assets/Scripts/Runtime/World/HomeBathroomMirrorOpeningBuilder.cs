@@ -19,7 +19,7 @@ namespace BarPromenade
     {
         public const string RootName = "Home Bathroom Mirror Opening";
 
-        /// <summary>Just in front of the tile's face, behind the crack sliver.</summary>
+        /// <summary>Just in front of the tile's face.</summary>
         public const float GlassCenterZ = 3.850f;
         public const float GlassThickness = 0.004f;
 

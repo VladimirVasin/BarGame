@@ -684,16 +684,7 @@ namespace BarPromenade
                 HomeBrushingResources.Mesh("SinkDrain");
             parts[2].transform.localPosition = center +
                 new Vector3(-0.08f, 0.724f, 0f);
-            parts.Add(CreatePipe(
-                "Home Bathroom Sink Tap",
-                room,
-                center +
-                new Vector3(
-                    0f,
-                    1.02f,
-                    bounds.height * 0.22f),
-                new Vector3(0.045f, 0.13f, 0.045f),
-                Vector3.zero));
+            parts.Add(HomeSinkFaucet.Create(room, center).gameObject);
             RegisterFixture(
                 occlusionRegistry,
                 "home.bathroom.sink",
@@ -710,19 +701,6 @@ namespace BarPromenade
                     0.88f,
                     0.024f),
                 Mirror,
-                false);
-            HomeAuthoredVisualFactory.CreateBox(
-                "Home Bathroom Mirror Crack",
-                room,
-                new Vector3(
-                    center.x + 0.08f,
-                    1.78f,
-                    3.852f),
-                new Vector3(
-                    0.025f,
-                    0.50f,
-                    0.015f),
-                new Color(0.08f, 0.09f, 0.085f),
                 false);
         }
 

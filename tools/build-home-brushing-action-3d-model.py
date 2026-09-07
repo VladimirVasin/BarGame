@@ -15,18 +15,83 @@ from pathlib import Path
 
 import bpy
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "ArtSource/HomeBrushingAction"
 RESOURCES = ROOT / "Assets/Resources/HomeBrushingAction"
 MODELS = RESOURCES / "Models"
-VERSION = "1.1.0"
+VERSION = "1.2.2"
 spec = importlib.util.spec_from_file_location("home_authored_liquid", ROOT / "tools/build-home-toilet-action-3d-model.py")
 kit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(kit)
 kit.COLORS.update({"SinkSteel": "424C46", "Foam": "D2D0B9", "BrushPlastic": "8C261F"})
+kit.COLORS.update({"FaucetMetal": "666B61", "FaucetJoint": "514C3B", "FaucetWorn": "8D8E7C"})
 BASIN_POSITION = (2.075, .78, 3.425)
 DRAIN_POSITION = (1.995, .724, 3.425)
+FAUCET_BASE = (0, .88, .10)
+FAUCET_HANDLE = (0, .195, 0)
+FAUCET_OUTLET = (0, .095, -.145)
+FAUCET_GRIP = (-.025, .023, -.025)
+
+
+def join_geometry(*geometries):
+    vertices, faces = [], []
+    for part_vertices, part_faces in geometries:
+        offset = len(vertices)
+        vertices.extend(part_vertices)
+        faces.extend(tuple(offset + index for index in face) for face in part_faces)
+    return vertices, faces
+
+
+def tube(points, radius, sides=12):
+    """A true swept tube with rings perpendicular to the bent centre line."""
+    vertices = []
+    for index, point in enumerate(points):
+        tangent = Vector(points[min(index + 1, len(points) - 1)]) - Vector(points[max(0, index - 1)])
+        tangent.normalize()
+        seed = Vector((1, 0, 0)) if abs(tangent.x) < .9 else Vector((0, 0, 1))
+        across = tangent.cross(seed).normalized()
+        normal = tangent.cross(across).normalized()
+        for side in range(sides):
+            angle = math.tau * side / sides
+            # Ten-micrometre authoring grid keeps FBX float serialization
+            # away from half-way decimal ties in the strict round-trip check.
+            vertices.append(tuple(round(float(value), 5) for value in
+                                  Vector(point) + radius * (math.cos(angle) * across + math.sin(angle) * normal)))
+    faces = [tuple(reversed(range(sides)))]
+    for ring in range(len(points) - 1):
+        for side in range(sides):
+            a, b = ring * sides + side, ring * sides + (side + 1) % sides
+            faces.append((a, b, b + sides, a + sides))
+    faces.append(tuple(range((len(points) - 1) * sides, len(points) * sides)))
+    return vertices, faces
+
+
+def profile(center, rings, sides=16):
+    return kit.ring_loft([((center[0], center[1] + y, center[2]), r, r) for y, r in rings],
+                         sides=sides, axis="y")
+
+
+def faucet_body():
+    # A compact ordinary tap: cross-wheel directly above the main barrel,
+    # with one short forward/downward outlet below it. No gooseneck, remote
+    # pedestal or lateral handle shoulder remains in this silhouette.
+    base = profile((0,0,0), ((0,.040),(.008,.040),(.018,.030),(.130,.027),
+                            (.150,.027),(.165,.018),(.185,.014),(.195,.014)))
+    points = [(0,.113,0),(0,.120,-.060),(0,.120,-.105),
+              (0,.117,-.128),(0,.113,-.145)]
+    aerator = profile(FAUCET_OUTLET, ((0,.022),(.006,.024),(.020,.024)))
+    return join_geometry(base, tube(points,.021), aerator)
+
+
+def faucet_handle():
+    cap = profile((0,0,0), ((0,.015),(.014,.022),(.024,.022),(.028,.016)))
+    spokes = []
+    for axis in ((1,0,0),(0,0,1)):
+        spokes.append(tube([tuple(-.048 * v + (.017 if i == 1 else 0) for i,v in enumerate(axis)),
+                            tuple(.048 * v + (.017 if i == 1 else 0) for i,v in enumerate(axis))], .009, 8))
+    return join_geometry(cap, *spokes)
 
 
 def sink_basin():
@@ -77,6 +142,15 @@ def sink_drain():
     return vertices, faces
 
 
+def faucet_impact():
+    vertices, faces = sink_basin()
+    bowl = BVHTree.FromPolygons([Vector(point) for point in vertices], faces)
+    outlet = Vector(FAUCET_BASE) + Vector(FAUCET_OUTLET)
+    hit, _, _, _ = bowl.ray_cast(Vector((outlet.x, .5, outlet.z)), Vector((0,-1,0)))
+    assert hit is not None, "Faucet outlet must stay over the sink"
+    return tuple(round(float(value), 6) for value in hit + Vector((0,.78,0)) - Vector(FAUCET_BASE))
+
+
 def definitions():
     droplet = kit.ring_loft([((0, 0, -.5), .025, .025), ((0, 0, -.3), .36, .36),
                              ((0, 0, 0), .5, .5), ((0, 0, .3), .36, .36),
@@ -97,6 +171,17 @@ def definitions():
                    "contract": "Normalized unit XY splash, surface normal +Z; runtime centimetre scale"},
         "BrushHandle": {"meshes": [("BrushHandle", handle, "BrushPlastic")], "anchors": {},
                         "contract": "Fixed .012 metre diameter, .140 metre length, local +Y; place centre at local Y=.045"},
+        "FaucetBody": {"meshes": [("FaucetBody", faucet_body(), "FaucetMetal")],
+                       "anchors": {"HandlePivot": FAUCET_HANDLE, "WaterOutlet": FAUCET_OUTLET,
+                                   "WaterImpact": faucet_impact()},
+                       "contract": "Fixed metres; single deck mount at sink local (0,.88,.10); cross-wheel directly above the central barrel, short forward/downturned outlet; no lateral shoulder or gooseneck"},
+        "FaucetHandle": {"meshes": [("FaucetHandle", faucet_handle(), "FaucetWorn")],
+                         "anchors": {"HandGrip": FAUCET_GRIP},
+                         "contract": "Fixed .114 metre cross wheel; origin is +Y rotation pivot; closed=0, open=-70 degrees"},
+        "FaucetOutlet": {"meshes": [("FaucetOutlet", profile((0,0,0), ((-.0008,.016),(.0008,.016))), "SinkSteel")],
+                         "anchors": {}, "contract": "Fixed dark aerator face at WaterOutlet; local +Y"},
+        "WaterStream": {"meshes": [("FaucetWaterStream", kit.ring_loft([((0,0,0),.5,.5),((0,0,1),.5,.5)], sides=8), "Water")],
+                        "anchors": {}, "contract": "Normalized cylinder, longitudinal +Z from 0 to 1; runtime outlet-to-basin segment"},
     }
 
 
@@ -139,12 +224,34 @@ def validate(defs, objects):
     lo, hi = kit.bounds(defs["BrushHandle"]["meshes"][0][1])
     assert all(abs(hi[i] - lo[i] - size) < 1e-7 for i, size in enumerate((.012,.140,.012)))
     assert abs(lo[1] + .045 + .025) < 1e-7 and abs(hi[1] + .045 - .115) < 1e-7
+    for name in ("FaucetBody", "FaucetHandle", "FaucetOutlet", "FaucetWaterStream"):
+        mesh = objects[name].data
+        volume = sum(mesh.vertices[t.vertices[0]].co.dot(mesh.vertices[t.vertices[1]].co.cross(
+                     mesh.vertices[t.vertices[2]].co)) / 6 for t in mesh.loop_triangles)
+        assert volume > 1e-9, (name, "inverted winding")
+    # Nothing touches the ceramic outside the single common mounting foot.
+    for x, y, z in defs["FaucetBody"]["meshes"][0][1][0]:
+        if y <= .012:
+            assert x * x + z * z <= .04401 ** 2, "Separate valve pedestal is forbidden"
+    outlet = Vector(FAUCET_BASE) + Vector(FAUCET_OUTLET)
+    hit, point, _, _ = basin.ray_cast(Vector(kit.source_point((outlet.x, .5, outlet.z))),
+                                     Vector(kit.source_point((0,-1,0))))
+    assert hit and point.z < 0, "Faucet water must land inside the ceramic cavity"
+    water_impact = [round(point.x,6), round(point.z + .78,6), round(point.y,6)]
+    measured_impact = Vector(defs["FaucetBody"]["anchors"]["WaterImpact"]) + Vector(FAUCET_BASE)
+    assert (measured_impact - Vector(water_impact)).length < .000002
+    assert FAUCET_HANDLE[0] == 0 and FAUCET_HANDLE[2] == 0, "Cross-wheel must sit above the main barrel"
     return {"models": len(defs), "meshes": len(objects), "triangles": triangles,
             "deterministic_geometry": True, "fixed_fixture_bounds": [.85,.20,.35],
             "unobstructed_cavity_rays": rays + 1, "incoming_spit_clearance_rays": 3,
             "floor_local_y": -.06, "floor_world_y": .72,
             "source_palette_and_flat_shading": True,
-            "brush_handle_fixed_metres_and_placed_y_range": [-.025, .115]}
+            "brush_handle_fixed_metres_and_placed_y_range": [-.025, .115],
+            "faucet_base_sink_local_metres": FAUCET_BASE,
+            "faucet_handle_sink_local_metres": list(Vector(FAUCET_BASE) + Vector(FAUCET_HANDLE)),
+            "faucet_outlet_sink_local_metres": list(outlet), "faucet_open_degrees": -70,
+            "water_impact_sink_local_metres": water_impact,
+            "faucet_solids_positive_signed_volume": True}
 
 
 def write_meta(path, folder=False, model=False):
@@ -164,7 +271,10 @@ def write_meta(path, folder=False, model=False):
 def preview(roots):
     for root in roots.values():
         for child in root.children: child.hide_render = True
-    for name, position in (("SinkBasin", (0,0,0)), ("SinkDrain", (-.08,-.056,0))):
+    for name, position in (("SinkBasin", (0,0,0)), ("SinkDrain", (-.08,-.056,0)),
+                           ("FaucetBody", (0,.1,.10)),
+                           ("FaucetHandle", (0,.295,.10)),
+                           ("FaucetOutlet", (0,.195,-.045))):
         for child in roots[name].children:
             if child.type != "MESH": continue
             duplicate = child.copy()
@@ -183,8 +293,8 @@ def preview(roots):
     camera_data = bpy.data.cameras.new("SinkInspectionCamera")
     camera = bpy.data.objects.new("SinkInspectionCamera", camera_data)
     scene.collection.objects.link(camera)
-    camera.location = (.45,-.45,1.15)
-    camera.rotation_euler = (Vector((-.04,0,0)) - camera.location).to_track_quat('-Z','Y').to_euler()
+    camera.location = (.62,-.9,.90)
+    camera.rotation_euler = (Vector((-.04,0,.12)) - camera.location).to_track_quat('-Z','Y').to_euler()
     camera_data.type = "ORTHO"
     camera_data.ortho_scale = 1.04
     scene.camera = camera
@@ -202,11 +312,16 @@ def preview(roots):
 
 
 def main():
+    global SOURCE, RESOURCES, MODELS
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--source-dir", type=Path, default=SOURCE)
+    parser.add_argument("--resource-dir", type=Path, default=RESOURCES)
     parser.add_argument("--only-model", choices=tuple(definitions()),
                         help="Export this model only while refreshing the complete source and manifests")
     args = parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
+    SOURCE, RESOURCES = args.source_dir.resolve(), args.resource_dir.resolve()
+    MODELS = RESOURCES / "Models"
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
     bpy.context.scene.unit_settings.system = "METRIC"

@@ -6,6 +6,89 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-07 — Backward step out of toothbrushing
+
+The brushing exit previously faced the motor along its retreat from the sink,
+turning the hero by `180°`. The exit now requests the existing backward gait:
+one step from `z=2.86` to `z=2.50`, facing the mirror throughout, after the
+camera returns. Completion and manual cancellation share that exit.
+
+`HomeBathroomSceneInteraction.WalkOutBackward` opts into the motor's guided
+backward movement. It uses the ordinary backward speed, signed motion sample,
+`WalkBack` presentation, collision constraints and footsteps. Other guided
+approaches keep their existing defaults.
+
+Verification: `Brushing_MirrorSceneGatesReliefPerDay` passed in `30.798637 s`
+(`TestResults/home-brushing-backstep.xml`). Continuous exit-facing checks,
+the real `WalkBack` gait and restored endpoints pass for finish and cancel;
+disable still restores in place. Inspected refreshed `05a-step-back.png` and
+`06-restored.png` in `Captures/HomeBrushing`. `git diff --check` passes.
+No complete Unity suites or player build were run.
+
+## 2026-09-07 — Faster brushing gauge and natural valve wrist pose
+
+At the user's request, `HomeTeethBrushingProgress.RequiredDistance` changes
+from `0.64 m` to `0.40 m`. The existing `0.08 m/s` credit cap makes the gauge
+fill `1.6×` faster, with a minimum of five active seconds instead of eight.
+Actual commanded brush contact still earns progress; all other animation
+timings and completion-only effects retain their values.
+
+The valve pose now limits finger-to-forearm deviation to `25°`, iteratively
+re-solves the wrist offset to retain the moving grip contact, and transfers
+axial rotation into the forearm using its measured neutral hand frame.
+The existing body-clearance guard runs after that rotation.
+
+`Brushing_MirrorSceneGatesReliefPerDay` passed in `29.888518 s`
+(`TestResults/home-brushing-wrist-speed.xml`), including a new continuous
+wrist-angle assertion alongside the existing contact and body-clearance
+checks. Fresh opening and closing frames in `Captures/HomeBrushing` were
+visually inspected. `git diff --check` passes; no complete Unity suites or
+player build were run.
+
+## 2026-09-07 — Remove the raised black strip from the bathroom mirror
+
+The line reported by the user was the separate `Home Bathroom Mirror Crack`
+box, standing in front of the reflected hero. Removed its creation from
+`HomeBathroomBuilder`; the cloudy pane, reflection and lighting are retained.
+The user's explicit correction is recorded as a narrow architecture exception
+and updates the earlier requirement to keep the crack in both world bibles.
+No replacement crack artwork is introduced.
+
+Verification: `Brushing_MirrorSceneGatesReliefPerDay` passed in `32.385119 s`
+(`TestResults/home-mirror-no-line.xml`). Inspected the refreshed
+`Captures/HomeBrushing/02-clean-teeth.png`: the raised strip is gone and the
+hero's shoulder is visible through that part of the mirror. `git diff --check`
+passes. No complete Unity suites or player build were run.
+
+## 2026-09-07 — First-person mirror brushing and a working sink faucet
+
+The user accepted the planned first-person replacement. A dated architecture
+exception and story-bible §6 row replace the former mirror-plane/side shots
+with the hero's own eyes and his actual reflection; only the practical gaze
+needed for the valve and basin is admitted. No drinking, new fiction, light,
+story event or water-attention target is introduced.
+
+The implementation extends the deterministic `HomeBrushingAction` kit with a
+compact metal faucet: one central body, a short front spout and a valve directly
+on top; only the rotating valve is a separate mesh. The free hand opens it
+before manual right-hand brushing and closes it after the existing teeth/spit
+finish or an early cancellation. Water/audio follow the valve and stop on
+interruption. The mirror repeats the brush, foam and faucet water; the
+first-person head mask leaves the reflected hero whole. Contact-qualified
+progress, the minimum eight active seconds and completion-only daily relief
+remain intact.
+
+The connected body bend now binds to `registry.Anchors.Spine`; Hero V2 has no
+`LowerTorso` part. Restoring that actual lumbar anchor lets the leaning body
+carry the free hand into contact with the valve.
+
+The strict Blender validator passed for the final `1.2.2` kit: nine meshes /
+`1,788` triangles. The focused PlayMode
+`Brushing_MirrorSceneGatesReliefPerDay` passed in `32.329516 s`
+(`TestResults/home-brushing-first-person-v5.xml`). Fresh opening, mirror-brushing,
+spit and closing frames in `Captures/HomeBrushing` were visually inspected.
+Complete Unity suites and a player build were not run.
+
 ## 2026-09-07 — Keep final captures and remove obsolete working output
 
 Reduced `Captures/` from `75,677` files / `5.083 GiB` to `462` retained files /

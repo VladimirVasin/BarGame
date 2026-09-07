@@ -23,10 +23,15 @@ namespace BarPromenade
         private readonly List<Transform> cloneNodes = new List<Transform>();
         private readonly List<Renderer> sourceRenderers = new List<Renderer>();
         private readonly List<Renderer> cloneRenderers = new List<Renderer>();
+        private readonly List<Material> sourceMaterials = new List<Material>();
+        private readonly List<Material> cloneMaterials = new List<Material>();
         private MaterialPropertyBlock scratch;
+        private Transform sourceRoot;
+        private Transform cloneRoot;
+        private Transform ownedRoot;
 
-        public Transform Source => sourceNodes.Count > 0 ? sourceNodes[0] : null;
-        public Transform Root => cloneNodes.Count > 0 ? cloneNodes[0] : null;
+        public Transform Source => sourceRoot;
+        public Transform Root => cloneRoot;
         public int NodeCount => cloneNodes.Count;
         public int RendererCount => cloneRenderers.Count;
 
@@ -56,7 +61,52 @@ namespace BarPromenade
             }
 
             var clone = new HomeMirrorSubtreeClone();
+            clone.sourceRoot = source;
             clone.Copy(source, cloneParent, skipNode, rootName ?? source.name, true);
+            clone.cloneRoot = clone.cloneNodes[0];
+            clone.ownedRoot = clone.cloneRoot;
+            clone.SyncTransforms();
+            return clone;
+        }
+
+        /// <summary>
+        /// Reflects a prop nested anywhere under the source frame. Bare
+        /// ancestor transforms retain imported scales and animated sockets
+        /// exactly, including non-uniform scales that cannot be flattened
+        /// into a world position, rotation and lossyScale without distortion.
+        /// Ancestor renderers and behaviours are never copied.
+        /// </summary>
+        public static HomeMirrorSubtreeClone CreateInFrame(
+            Transform source,
+            Transform cloneParent,
+            Transform sourceFrame,
+            string rootName = null)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (cloneParent == null) throw new ArgumentNullException(nameof(cloneParent));
+            if (sourceFrame == null) throw new ArgumentNullException(nameof(sourceFrame));
+            if (source == sourceFrame || !source.IsChildOf(sourceFrame))
+            {
+                throw new ArgumentException("A reflected prop must be below its source frame.", nameof(source));
+            }
+
+            var clone = new HomeMirrorSubtreeClone { sourceRoot = source };
+            var ancestors = new List<Transform>();
+            for (Transform ancestor = source.parent; ancestor != sourceFrame; ancestor = ancestor.parent)
+            {
+                ancestors.Add(ancestor);
+            }
+
+            Transform parent = cloneParent;
+            for (int index = ancestors.Count - 1; index >= 0; index--)
+            {
+                parent = clone.CopyTransform(ancestors[index], parent, ancestors[index].name);
+            }
+
+            int rootIndex = clone.cloneNodes.Count;
+            clone.Copy(source, parent, null, rootName ?? source.name, true);
+            clone.cloneRoot = clone.cloneNodes[rootIndex];
+            clone.ownedRoot = clone.cloneNodes[0];
             clone.SyncTransforms();
             return clone;
         }
@@ -100,8 +150,14 @@ namespace BarPromenade
             {
                 Transform source = sourceNodes[index];
                 Transform clone = cloneNodes[index];
-                if (source == null || clone == null)
+                if (clone == null)
                 {
+                    continue;
+                }
+
+                if (source == null)
+                {
+                    clone.gameObject.SetActive(false);
                     continue;
                 }
 
@@ -140,9 +196,17 @@ namespace BarPromenade
                     clone.enabled = enabled;
                 }
 
-                if (copyMaterials && !ReferenceEquals(clone.sharedMaterial, source.sharedMaterial))
+                if (copyMaterials)
                 {
-                    clone.sharedMaterials = source.sharedMaterials;
+                    source.GetSharedMaterials(sourceMaterials);
+                    clone.GetSharedMaterials(cloneMaterials);
+                    bool changed = sourceMaterials.Count != cloneMaterials.Count;
+                    for (int material = 0; !changed && material < sourceMaterials.Count; material++)
+                    {
+                        changed = !ReferenceEquals(sourceMaterials[material], cloneMaterials[material]);
+                    }
+
+                    if (changed) clone.SetSharedMaterials(sourceMaterials);
                 }
             }
         }
@@ -168,7 +232,8 @@ namespace BarPromenade
 
         public void Destroy()
         {
-            Transform root = Root;
+            Transform root = ownedRoot;
+            sourceRoot = cloneRoot = ownedRoot = null;
             sourceNodes.Clear();
             cloneNodes.Clear();
             sourceRenderers.Clear();
@@ -200,16 +265,8 @@ namespace BarPromenade
                 return;
             }
 
-            var cloneObject = new GameObject(name);
-            cloneObject.layer = source.gameObject.layer;
-            Transform clone = cloneObject.transform;
-            clone.SetParent(cloneParent, false);
-            clone.localPosition = source.localPosition;
-            clone.localRotation = source.localRotation;
-            clone.localScale = source.localScale;
-            cloneObject.SetActive(source.gameObject.activeSelf);
-            sourceNodes.Add(source);
-            cloneNodes.Add(clone);
+            Transform clone = CopyTransform(source, cloneParent, name);
+            GameObject cloneObject = clone.gameObject;
 
             MeshFilter filter = source.GetComponent<MeshFilter>();
             MeshRenderer renderer = source.GetComponent<MeshRenderer>();
@@ -236,6 +293,22 @@ namespace BarPromenade
                 Transform child = source.GetChild(index);
                 Copy(child, clone, skipNode, child.name, false);
             }
+        }
+
+        private Transform CopyTransform(Transform source, Transform cloneParent, string name)
+        {
+            var cloneObject = new GameObject(name);
+            cloneObject.layer = source.gameObject.layer;
+            Transform clone = cloneObject.transform;
+            clone.SetParent(cloneParent, false);
+            clone.localPosition = source.localPosition;
+            clone.localRotation = source.localRotation;
+            clone.localScale = source.localScale;
+            cloneObject.SetActive(source.gameObject.activeSelf);
+            sourceNodes.Add(source);
+            cloneNodes.Add(clone);
+
+            return clone;
         }
     }
 }

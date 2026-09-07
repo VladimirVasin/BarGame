@@ -102,6 +102,9 @@ namespace BarPromenade
         /// </summary>
         protected virtual bool CameraLeadsApproach => false;
 
+        /// <summary>Uses the motor's ordinary reverse gait for the authored exit leg.</summary>
+        protected virtual bool WalkOutBackward => false;
+
         /// <summary>Ticks while the base class walks the hero in and the camera leads.</summary>
         protected virtual void OnApproachAdvance(float deltaTime) { }
 
@@ -371,7 +374,8 @@ namespace BarPromenade
                 HomeGuidedWalkStep step = AdvanceGuidedWalk(
                     ExitPosition,
                     ExitRotation,
-                    deltaTime);
+                    deltaTime,
+                    WalkOutBackward);
                 if (step == HomeGuidedWalkStep.Stalled)
                 {
                     CancelScene();
@@ -426,7 +430,8 @@ namespace BarPromenade
         protected HomeGuidedWalkStep AdvanceGuidedWalk(
             Vector3 target,
             Quaternion rotation,
-            float deltaTime)
+            float deltaTime,
+            bool walkBackward = false)
         {
             PlayerMotor motor = Home.Player.Motor;
             Vector3 grounded = new Vector3(
@@ -436,7 +441,8 @@ namespace BarPromenade
             bool arrived = motor.MoveTowardsInteractionPose(
                 grounded,
                 rotation,
-                deltaTime);
+                deltaTime,
+                walkBackward);
             if (motor.InteractionPoseMoveStalled)
             {
                 LogStall(grounded);

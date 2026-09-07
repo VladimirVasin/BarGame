@@ -46,6 +46,89 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void ARegisteredPropRetainsItsAnimatedAncestorFrameAndCopiesOnlyRenderers()
+        {
+            var room = new GameObject("Mirror Prop Frame");
+            HomeMirrorSubtreeClone clone = null;
+            try
+            {
+                room.transform.SetPositionAndRotation(new Vector3(8f, 2f, -3f), Quaternion.Euler(0f, 27f, 0f));
+                room.transform.localScale = Vector3.one * 1.2f;
+                Transform space = new GameObject("Mirror Space").transform;
+                space.SetParent(room.transform, false);
+                space.localPosition = HomeBathroomMirrorPlane.SpaceLocalPosition;
+                space.localScale = HomeBathroomMirrorPlane.SpaceLocalScale;
+                Transform imported = new GameObject("Imported Rig").transform;
+                imported.SetParent(room.transform, false);
+                imported.localPosition = new Vector3(2.075f, 0.12f, 2.78f);
+                imported.localScale = Vector3.one * 100f;
+                Transform grip = new GameObject("Animated Grip").transform;
+                grip.SetParent(imported, false);
+                grip.localPosition = new Vector3(0.001f, 0.014f, 0.002f);
+                grip.localScale = new Vector3(0.01f, 0.015f, 0.007f);
+                grip.localRotation = Quaternion.Euler(24f, 51f, 12f);
+                GameObject prop = RuntimePrimitiveFactory.CreateBox(
+                    "Prepared Brush", grip, new Vector3(0f, 0.045f, 0f),
+                    new Vector3(0.014f, 0.15f, 0.010f), Color.white, true);
+                MeshRenderer sourceRenderer = prop.GetComponent<MeshRenderer>();
+                var sound = new GameObject("Original Voice");
+                sound.transform.SetParent(prop.transform, false);
+                sound.AddComponent<AudioSource>();
+
+                clone = HomeMirrorSubtreeClone.CreateInFrame(prop.transform, space, room.transform);
+                Assert.That(clone.Source, Is.EqualTo(prop.transform));
+                Assert.That(clone.RendererCount, Is.EqualTo(1));
+                Assert.That(clone.Root.GetComponentsInChildren<Collider>(true), Is.Empty);
+                Assert.That(clone.Root.GetComponentsInChildren<AudioSource>(true), Is.Empty);
+                Assert.That(clone.Root.GetComponentsInChildren<MonoBehaviour>(true), Is.Empty);
+                Assert.That(clone.Root.GetComponent<MeshFilter>().sharedMesh,
+                    Is.SameAs(prop.GetComponent<MeshFilter>().sharedMesh));
+
+                foreach (Vector3 point in new[] { Vector3.zero, Vector3.right, Vector3.up, Vector3.forward })
+                {
+                    Vector3 sourcePoint = room.transform.InverseTransformPoint(prop.transform.TransformPoint(point));
+                    Vector3 reflectedPoint = room.transform.InverseTransformPoint(clone.Root.TransformPoint(point));
+                    AssertVector(reflectedPoint, HomeBathroomMirrorPlane.Reflect(sourcePoint));
+                }
+
+                grip.localRotation = Quaternion.Euler(62f, -19f, 35f);
+                var block = new MaterialPropertyBlock();
+                block.SetColor("_BaseColor", Color.red);
+                sourceRenderer.SetPropertyBlock(block);
+                sourceRenderer.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial, RuntimePrimitiveFactory.DefaultMaterial };
+                clone.SyncTransforms();
+                clone.SyncRenderers(true);
+                clone.SyncPropertyBlocks();
+                sourceRenderer.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial, (Material)null };
+                clone.SyncRenderers(true);
+                Assert.That(clone.CloneRenderer(0).sharedMaterials, Is.EqualTo(sourceRenderer.sharedMaterials));
+                clone.CloneRenderer(0).GetPropertyBlock(block);
+                Assert.That(block.GetColor("_BaseColor"), Is.EqualTo(Color.red));
+                foreach (Vector3 point in new[] { Vector3.zero, Vector3.right, Vector3.up, Vector3.forward })
+                {
+                    Vector3 sourcePoint = room.transform.InverseTransformPoint(prop.transform.TransformPoint(point));
+                    Vector3 reflectedPoint = room.transform.InverseTransformPoint(clone.Root.TransformPoint(point));
+                    AssertVector(reflectedPoint, HomeBathroomMirrorPlane.Reflect(sourcePoint));
+                }
+
+                sourceRenderer.enabled = false;
+                clone.SyncRenderers(true);
+                Assert.That(clone.CloneRenderer(0).enabled, Is.False);
+                grip.gameObject.SetActive(false);
+                clone.SyncTransforms();
+                Assert.That(clone.Root.gameObject.activeSelf, Is.True);
+                Assert.That(clone.Root.gameObject.activeInHierarchy, Is.False, "A hidden source ancestor hides the reflected prop too.");
+                clone.Destroy();
+                Assert.That(space.childCount, Is.Zero, "Disposal removes the prop's private ancestor chain too.");
+            }
+            finally
+            {
+                clone?.Destroy();
+                UnityEngine.Object.DestroyImmediate(room);
+            }
+        }
+
+        [Test]
         public void TheOpeningTilesTheWallAndTheTileAroundTheHole()
         {
             Rect opening = HomeBathroomMirrorPlane.OpeningXY;

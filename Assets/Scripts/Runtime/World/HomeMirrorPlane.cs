@@ -16,7 +16,6 @@ namespace BarPromenade
         public const float PlaneZ = 3.866f;
 
         public const string PlateName = "Home Bathroom Cracked Mirror";
-        public const string CrackName = "Home Bathroom Mirror Crack";
         public const string GlassName = "Home Bathroom Mirror Glass";
         public const string BackWallName = "Home Back Wall";
         public const string BackTileName = "Home Bathroom Back Tile";

@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generator_version": "1.1.0",
-  "signature": "e5b02875ed7f31134760df63da0e6fba91d7c9ce4c3b51e654bdd6fd9854800f",
+  "generator_version": "1.2.2",
+  "signature": "5caeea1d68e90385a8e8ee6c9d4d6eea5eb4ff31a9eb0db41be1f13a0b57f23d",
   "coordinates": "Unity local metres +Y up +Z forward",
   "report": {
-    "models": 5,
-    "meshes": 5,
-    "triangles": 1060,
+    "models": 9,
+    "meshes": 9,
+    "triangles": 1788,
     "deterministic_geometry": true,
     "fixed_fixture_bounds": [
       0.85,
@@ -21,7 +21,29 @@
     "brush_handle_fixed_metres_and_placed_y_range": [
       -0.025,
       0.115
-    ]
+    ],
+    "faucet_base_sink_local_metres": [
+      0,
+      0.88,
+      0.1
+    ],
+    "faucet_handle_sink_local_metres": [
+      0.0,
+      1.0750000476837158,
+      0.10000000149011612
+    ],
+    "faucet_outlet_sink_local_metres": [
+      0.0,
+      0.9750000238418579,
+      -0.044999994337558746
+    ],
+    "faucet_open_degrees": -70,
+    "water_impact_sink_local_metres": [
+      0.0,
+      0.742566,
+      -0.045
+    ],
+    "faucet_solids_positive_signed_volume": true
   },
   "basin_world_position": [
     2.075,
@@ -153,6 +175,120 @@
             0.006
           ],
           "triangles": 92
+        }
+      ]
+    },
+    {
+      "name": "FaucetBody",
+      "resource": "HomeBrushingAction/Models/FaucetBody",
+      "contract": "Fixed metres; single deck mount at sink local (0,.88,.10); cross-wheel directly above the central barrel, short forward/downturned outlet; no lateral shoulder or gooseneck",
+      "anchors": {
+        "HandlePivot": [
+          0,
+          0.195,
+          0
+        ],
+        "WaterOutlet": [
+          0,
+          0.095,
+          -0.145
+        ],
+        "WaterImpact": [
+          0.0,
+          -0.137434,
+          -0.145
+        ]
+      },
+      "meshes": [
+        {
+          "name": "FaucetBody",
+          "material": "FaucetMetal",
+          "bounds_min": [
+            -0.04,
+            0,
+            -0.16899999999999998
+          ],
+          "bounds_max": [
+            0.04,
+            0.195,
+            0.04
+          ],
+          "triangles": 460
+        }
+      ]
+    },
+    {
+      "name": "FaucetHandle",
+      "resource": "HomeBrushingAction/Models/FaucetHandle",
+      "contract": "Fixed .114 metre cross wheel; origin is +Y rotation pivot; closed=0, open=-70 degrees",
+      "anchors": {
+        "HandGrip": [
+          -0.025,
+          0.023,
+          -0.025
+        ]
+      },
+      "meshes": [
+        {
+          "name": "FaucetHandle",
+          "material": "FaucetWorn",
+          "bounds_min": [
+            -0.048,
+            0,
+            -0.048
+          ],
+          "bounds_max": [
+            0.048,
+            0.028,
+            0.048
+          ],
+          "triangles": 180
+        }
+      ]
+    },
+    {
+      "name": "FaucetOutlet",
+      "resource": "HomeBrushingAction/Models/FaucetOutlet",
+      "contract": "Fixed dark aerator face at WaterOutlet; local +Y",
+      "anchors": {},
+      "meshes": [
+        {
+          "name": "FaucetOutlet",
+          "material": "SinkSteel",
+          "bounds_min": [
+            -0.016,
+            -0.0008,
+            -0.016
+          ],
+          "bounds_max": [
+            0.016,
+            0.0008,
+            0.016
+          ],
+          "triangles": 60
+        }
+      ]
+    },
+    {
+      "name": "WaterStream",
+      "resource": "HomeBrushingAction/Models/WaterStream",
+      "contract": "Normalized cylinder, longitudinal +Z from 0 to 1; runtime outlet-to-basin segment",
+      "anchors": {},
+      "meshes": [
+        {
+          "name": "FaucetWaterStream",
+          "material": "Water",
+          "bounds_min": [
+            -0.5,
+            -0.5,
+            0
+          ],
+          "bounds_max": [
+            0.5,
+            0.5,
+            1
+          ],
+          "triangles": 28
         }
       ]
     }

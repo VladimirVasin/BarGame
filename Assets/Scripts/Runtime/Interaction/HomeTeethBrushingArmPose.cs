@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Owns the brushing hand, its outside approach and a body-connected spit bend.</summary>
+    /// <summary>A measured arm/contact guard for the brush or free-hand valve reach, with a connected spit bend.</summary>
     public sealed class HomeTeethBrushingArmPose : MonoBehaviour
     {
         public const float MinimumBodyClearance = 0.002f;
@@ -33,9 +33,13 @@ namespace BarPromenade
         private Transform[] bones;
         private Quaternion[] neutral;
         private Quaternion socketInHand;
+        private Quaternion handFrameInHand;
+        private Quaternion handInForearm;
+        private Vector3 handCenter, thumbCenter;
         private Vector3 rightInActor, forwardInActor, faceRightInHead, faceUpInHead, faceForwardInHead, outsideInHead;
         private Quaternion[] safePose;
         private float safeBend;
+        private float safeValveLean;
         private bool hasSafePose;
         private Vector3 Outside => actor.rotation * rightInActor;
         private Vector3 Forward => actor.rotation * forwardInActor;
@@ -48,11 +52,14 @@ namespace BarPromenade
         private Mesh sample;
         private Vector2 previousTip;
         private bool captured, sampled;
+        private bool leftHand;
+        private Transform Grip => leftHand ? registry.Anchors.LeftGrip : registry.Anchors.RightGrip;
         public float Weight { get; private set; }
         public Transform Effector { get; set; }
         public float ContactError { get; private set; }
         public float ActualBrushTravel { get; private set; }
         public float Bend { get; private set; }
+        public float ValveLean { get; private set; }
         /// <summary>Measured broad-phase radii: upper arm, forearm and hand, in metres.</summary>
         public Vector3 ArmRadii => new Vector3(upperArmRadius, forearmRadius, handRadius);
         /// <summary>Clearances after mesh confirmation: upper arm, forearm and hand.</summary>
@@ -63,16 +70,18 @@ namespace BarPromenade
         public int BodyIntersectionCount { get; private set; }
         /// <summary>First confirmed body surface, limb and intersection type in the current pose.</summary>
         public string BodyIntersectionDetail { get; private set; } = string.Empty;
-        public void Initialize(Player3DAssetRegistry value, Transform player)
+        public void Initialize(Player3DAssetRegistry value, Transform player, bool useLeftHand = false)
         {
-            registry = value; actor = player;
-            upperArm = Bone(Player3DAnatomicalPart.RightUpperArm);
-            forearm = Bone(Player3DAnatomicalPart.RightForearm);
-            hand = Bone(Player3DAnatomicalPart.RightHand);
+            registry = value; actor = player; leftHand = useLeftHand;
+            upperArm = Bone(leftHand ? Player3DAnatomicalPart.LeftUpperArm : Player3DAnatomicalPart.RightUpperArm);
+            forearm = Bone(leftHand ? Player3DAnatomicalPart.LeftForearm : Player3DAnatomicalPart.RightForearm);
+            hand = Bone(leftHand ? Player3DAnatomicalPart.LeftHand : Player3DAnatomicalPart.RightHand);
             head = Bone(Player3DAnatomicalPart.Head);
             neck = Bone(Player3DAnatomicalPart.Neck);
             chest = Bone(Player3DAnatomicalPart.Torso);
-            spine = Bone(Player3DAnatomicalPart.LowerTorso);
+            // Hero V2's continuous torso has no LowerTorso mesh binding;
+            // its authored lumbar bone is exposed by the anchor registry.
+            spine = registry.Anchors.Spine;
             bones = new[] { spine, chest, neck, head, upperArm, forearm, hand };
             neutral = new Quaternion[bones.Length];
             safePose = new Quaternion[bones.Length];
@@ -87,12 +96,13 @@ namespace BarPromenade
         {
             for (int index = 0; index < bones.Length; index++)
                 if (bones[index] != null) neutral[index] = bones[index].localRotation;
-            socketInHand = Quaternion.Inverse(hand.rotation) * registry.Anchors.RightGrip.rotation;
+            socketInHand = Quaternion.Inverse(hand.rotation) * Grip.rotation;
+            handInForearm = Quaternion.Inverse(forearm.rotation) * hand.rotation;
             tipInHand = Quaternion.Inverse(hand.rotation) * (Effector.position - hand.position);
             // Neither imported bone axes nor actor.right name the anatomical
             // side: the production model has its own 180-degree root rotation.
-            Transform leftShoulder = Bone(Player3DAnatomicalPart.LeftUpperArm);
-            Vector3 outside = Vector3.ProjectOnPlane(upperArm.position - leftShoulder.position, actor.up).normalized;
+            Transform otherShoulder = Bone(leftHand ? Player3DAnatomicalPart.RightUpperArm : Player3DAnatomicalPart.LeftUpperArm);
+            Vector3 outside = Vector3.ProjectOnPlane(upperArm.position - otherShoulder.position, actor.up).normalized;
             Vector3 forward = Vector3.ProjectOnPlane(registry.Anchors.Mouth.position - head.position, actor.up).normalized;
             if (forward.sqrMagnitude < 0.001f) forward = actor.forward;
             rightInActor = Quaternion.Inverse(actor.rotation) * outside;
@@ -103,23 +113,30 @@ namespace BarPromenade
             faceUpInHead = Quaternion.Inverse(head.rotation) * actor.up;
             faceForwardInHead = Quaternion.Inverse(head.rotation) * forward;
             MeasureArmVolumes();
+            Vector3 fingers = Grip.position - hand.position;
+            Vector3 thumb = Vector3.ProjectOnPlane(thumbCenter - handCenter, fingers);
+            handFrameInHand = Quaternion.Inverse(hand.rotation) *
+                Quaternion.LookRotation(fingers.normalized, thumb.normalized);
             sampled = false; captured = true;
             RefreshBody();
             MeasureBodyClearance();
             hasSafePose = false;
             RememberSafePose();
         }
-        public void Apply(Vector2 brushOffset, float weight, float bend)
+        public void Apply(Vector2 brushOffset, float weight, float bend, float valveReach = 0f)
         {
             if (!captured || Effector == null) return;
             RestoreBones();
-            Weight = Mathf.Clamp01(weight); Bend = Mathf.Clamp01(bend);
-            Pitch(spine, 8f * Bend); Pitch(chest, 12f * Bend);
-            Pitch(neck, 10f * Bend); Pitch(head, 18f * Bend);
+            Weight = Mathf.Clamp01(weight); Bend = Mathf.Clamp01(bend); ValveLean = Mathf.Clamp01(valveReach);
+            // Reaching the central tap needs a waist/chest lean, not the
+            // predominantly neck/head dip used to spit. Feet and root stay
+            // at the grounded dock while the shoulder moves within arm reach.
+            Pitch(spine, 8f * Bend + 25f * ValveLean); Pitch(chest, 12f * Bend + 20f * ValveLean);
+            Pitch(neck, 10f * Bend + 5f * ValveLean); Pitch(head, 18f * Bend + 8f * ValveLean);
             Vector3 faceRight = head.rotation * faceRightInHead;
             Vector3 faceUp = head.rotation * faceUpInHead;
             Vector3 faceForward = head.rotation * faceForwardInHead;
-            Vector3 target = registry.Anchors.Mouth.position - faceRight * brushOffset.x +
+            Vector3 target = registry.Anchors.Mouth.position + faceRight * brushOffset.x +
                 faceUp * brushOffset.y + faceForward * 0.007f;
             RefreshBody();
             if (Weight > 0f)
@@ -157,15 +174,51 @@ namespace BarPromenade
                 for (int index = 0; index < bones.Length; index++)
                     if (bones[index] != null) bones[index].localRotation = safePose[index];
                 Bend = safeBend;
+                ValveLean = safeValveLean;
                 RefreshBody();
                 MeasureBodyClearance();
             }
             RememberSafePose();
             Vector3 relative = Effector.position - registry.Anchors.Mouth.position;
-            Vector2 tip = new Vector2(-Vector3.Dot(relative, faceRight), Vector3.Dot(relative, faceUp));
+            Vector2 tip = new Vector2(Vector3.Dot(relative, faceRight), Vector3.Dot(relative, faceUp));
             ContactError = Vector3.Distance(Effector.position, target);
             ActualBrushTravel = sampled && Weight > 0.99f && BodyIntersectionCount == 0 ? Vector2.Distance(tip, previousTip) : 0f;
             previousTip = tip; sampled = Weight > 0.99f && BodyIntersectionCount == 0;
+        }
+
+        /// <summary>The free hand follows the physical valve, after the brushing/body pose.</summary>
+        public void ApplyValveGrip(Vector3 target, Quaternion gripRotation, float weight)
+        {
+            if (!captured || Effector == null) return;
+            // The other pose owns the spine/head. Restore only this arm.
+            for (int index = 4; index < bones.Length; index++)
+                if (bones[index] != null) bones[index].localRotation = neutral[index];
+            Weight = Mathf.Clamp01(weight);
+            RefreshBody();
+            if (Weight > 0f)
+            {
+                Vector3 rest = hand.position, restElbow = forearm.position;
+                Quaternion restRotation = hand.rotation;
+                // A valve's frame describes the physical fingers and thumb,
+                // measured from this hand. The imported grip socket axes do
+                // not name those anatomical directions.
+                Quaternion destinationRotation = gripRotation * Quaternion.Inverse(handFrameInHand);
+                Vector3 destination = target - destinationRotation * tipInHand;
+                Vector3 wrist = Vector3.Lerp(rest, destination, Weight) +
+                    (Outside * 0.10f + Forward * 0.08f) * Mathf.Sin(Mathf.PI * Weight);
+                Vector3 hint = upperArm.position + Outside * 0.30f + Forward * 0.20f - actor.up * 0.25f;
+                SolveClearPose(wrist, Quaternion.Slerp(restRotation, destinationRotation, Weight),
+                    hint, rest, restRotation, restElbow);
+            }
+            else MeasureBodyClearance();
+            if (BodyIntersectionCount > 0 && hasSafePose)
+            {
+                for (int index = 4; index < bones.Length; index++)
+                    if (bones[index] != null) bones[index].localRotation = safePose[index];
+                MeasureBodyClearance();
+            }
+            RememberSafePose();
+            ContactError = Vector3.Distance(Effector.position, target);
         }
         private void SolveClearPose(Vector3 wrist, Quaternion rotation, Vector3 hint,
             Vector3 restWrist, Quaternion restRotation, Vector3 restElbow)
@@ -201,7 +254,8 @@ namespace BarPromenade
                     candidateRotation = Quaternion.Slerp(rotation, restRotation, amount);
                     candidateHint = Vector3.Lerp(hint, restElbow + Outside * 0.14f + Forward * 0.18f, amount);
                 }
-                LimbTwoBoneIk.Solve(upperArm, forearm, hand, candidateWrist, candidateRotation,
+                if (leftHand) SolveValveWrist(candidateWrist, candidateRotation, candidateHint);
+                else LimbTwoBoneIk.Solve(upperArm, forearm, hand, candidateWrist, candidateRotation,
                     candidateHint, 1f, float.PositiveInfinity, true);
                 MeasureBodyClearance();
                 if (BodyClearance > bestClearance)
@@ -214,26 +268,76 @@ namespace BarPromenade
             upperArm.localRotation = bestUpper; forearm.localRotation = bestLower; hand.localRotation = bestHand;
             MeasureBodyClearance();
         }
+        private void SolveValveWrist(Vector3 wrist, Quaternion rotation, Vector3 hint)
+        {
+            // Keep the grip on its moving contact point while limiting wrist
+            // deviation. Changing the hand angle also changes its wrist target,
+            // so solve both together instead of rotating the hand after IK.
+            Vector3 contact = wrist + rotation * tipInHand;
+            Quaternion requestedFrame = rotation * handFrameInHand;
+            Vector3 requestedFingers = requestedFrame * Vector3.forward;
+            Vector3 requestedThumb = requestedFrame * Vector3.up;
+            for (int pass = 0; pass < 6; pass++)
+            {
+                LimbTwoBoneIk.Solve(upperArm, forearm, hand, contact - rotation * tipInHand,
+                    rotation, hint, 1f, float.PositiveInfinity, true);
+                Vector3 armAxis = (hand.position - forearm.position).normalized;
+                Vector3 fingers = Vector3.RotateTowards(armAxis, requestedFingers,
+                    25f * Mathf.Deg2Rad, 0f);
+                Vector3 thumb = Vector3.ProjectOnPlane(requestedThumb, fingers);
+                if (thumb.sqrMagnitude < 0.0001f)
+                    thumb = Vector3.ProjectOnPlane(
+                        forearm.rotation * handInForearm * handFrameInHand * Vector3.up, fingers);
+                Vector3.OrthoNormalize(ref fingers, ref thumb);
+                Quaternion next = Quaternion.LookRotation(fingers, thumb) * Quaternion.Inverse(handFrameInHand);
+                if (Quaternion.Angle(next, rotation) < 0.05f) break;
+                rotation = next;
+            }
+            LimbTwoBoneIk.Solve(upperArm, forearm, hand, contact - rotation * tipInHand,
+                rotation, hint, 1f, float.PositiveInfinity, true);
+
+            // Pronation belongs to the forearm, not an axial kink in the wrist.
+            // Rolling about elbow-to-wrist leaves the solved wrist in place.
+            Vector3 axis = (hand.position - forearm.position).normalized;
+            Quaternion neutralFrame = forearm.rotation * handInForearm * handFrameInHand;
+            Vector3 neutralThumb = Vector3.ProjectOnPlane(neutralFrame * Vector3.up, axis);
+            Vector3 turnedThumb = Vector3.ProjectOnPlane(rotation * handFrameInHand * Vector3.up, axis);
+            float roll = Vector3.SignedAngle(neutralThumb, turnedThumb, axis);
+            forearm.rotation = Quaternion.AngleAxis(roll, axis) * forearm.rotation;
+            hand.rotation = rotation;
+        }
         private void RememberSafePose()
         {
             if (BodyIntersectionCount != 0) return;
             for (int index = 0; index < bones.Length; index++)
                 if (bones[index] != null) safePose[index] = bones[index].localRotation;
             safeBend = Bend;
+            safeValveLean = ValveLean;
             hasSafePose = true;
         }
         private void MeasureArmVolumes()
         {
             upperArmRadius = forearmRadius = 0f;
+            handCenter = thumbCenter = Vector3.zero;
             handVertices.Clear();
             armSurfaces.Clear();
             foreach (Player3DMeshBinding binding in registry.MeshBindings)
             {
-                bool isUpper = binding.MeshName == "GEO_UpperArm.R" || binding.MeshName == "CLO_JacketSleeve.R";
-                bool isForearm = binding.MeshName == "GEO_Forearm.R" || binding.MeshName == "CLO_JacketForearm.R";
-                bool isHand = binding.MeshName == "GEO_Hand.R" || binding.MeshName == "GEO_Thumb.R";
+                string side = leftHand ? ".L" : ".R";
+                bool isUpper = binding.MeshName == "GEO_UpperArm" + side || binding.MeshName == "CLO_JacketSleeve" + side;
+                bool isForearm = binding.MeshName == "GEO_Forearm" + side || binding.MeshName == "CLO_JacketForearm" + side ||
+                    (leftHand && binding.MeshName == "CLO_Bandage.L");
+                bool isHand = binding.MeshName == "GEO_Hand" + side || binding.MeshName == "GEO_Thumb" + side;
                 if ((!isUpper && !isForearm && !isHand) || !(binding.Renderer is SkinnedMeshRenderer renderer)) continue;
                 ReadWorldVertices(renderer);
+                if (isHand)
+                {
+                    Vector3 center = Vector3.zero;
+                    foreach (Vector3 vertex in sampledVertices) center += vertex;
+                    center /= sampledVertices.Count;
+                    if (binding.MeshName == "GEO_Hand" + side) handCenter = center;
+                    else thumbCenter = center;
+                }
                 CaptureArmSurface(isUpper ? 0 : isForearm ? 1 : 2,
                     isUpper ? upperArm : isForearm ? forearm : hand);
                 foreach (Vector3 vertex in sampledVertices)
@@ -245,7 +349,7 @@ namespace BarPromenade
                     if (isHand) handVertices.Add(vertex);
                 }
             }
-            Vector3 axis = (registry.Anchors.RightGrip.position - hand.position).normalized;
+            Vector3 axis = (Grip.position - hand.position).normalized;
             float start = 0f, end = 0f;
             foreach (Vector3 vertex in handVertices)
             {
@@ -551,7 +655,7 @@ namespace BarPromenade
                 RefreshBody();
                 MeasureBodyClearance();
             }
-            Weight = Bend = ActualBrushTravel = 0f;
+            Weight = Bend = ValveLean = ActualBrushTravel = 0f;
             captured = sampled = false;
         }
         private void RestoreBones()

@@ -12,12 +12,14 @@ namespace BarPromenade
         public const string StopPromptKeyName = "interaction.stop_brushing";
         public const int StressRelief = 5;
         public const float BrushVisibleWeight = 0.15f;
-        private static readonly Vector3 MirrorCamera = new Vector3(2.075f, 1.66f, 3.79f);
-        private static readonly Vector3 MirrorLookAt = new Vector3(2.075f, 1.55f, 2.98f);
+        private static readonly Vector3 EntryEye = new Vector3(2.075f, 1.75f, 3.02f);
         public static readonly Vector3 BasinTarget = new Vector3(1.995f, 0.724f, 3.425f);
         private readonly HomeTeethBrushingTimeline timeline = new HomeTeethBrushingTimeline();
         private readonly HomeTeethBrushingProgress progress = new HomeTeethBrushingProgress();
         private HomeTeethBrushingArmPose armPose;
+        private HomeTeethBrushingArmPose valvePose;
+        private HomeBrushingFirstPersonView firstPerson;
+        private HomeSinkFaucet faucet;
         private HomeBrushingSpitEffect spit;
         private Player3DCharacterPresentation visual;
         private GameObject toothbrush, foam;
@@ -33,25 +35,33 @@ namespace BarPromenade
         public HomeTeethBrushingTimeline Timeline => timeline;
         public HomeTeethBrushingProgress Progress => progress;
         public HomeTeethBrushingArmPose ArmPose => armPose;
+        public HomeTeethBrushingArmPose ValvePose => valvePose;
+        public HomeBrushingFirstPersonView FirstPersonView => firstPerson;
+        public HomeSinkFaucet Faucet => faucet;
+        public Transform ReflectedToothbrush { get; private set; }
+        public Transform ReflectedFoam { get; private set; }
+        public Transform ReflectedSpit { get; private set; }
         public GameObject Toothbrush => toothbrush;
         public HomeBrushingSpitEffect SpitEffect => spit;
         public bool GaugeVisible => OwnsScene && timeline.Phase == HomeTeethBrushingPhase.Brushing;
         public override string PromptKey => OwnsScene ? string.Empty : BrushPromptKey;
         protected override string StopPromptKey => StopPromptKeyName;
-        protected override Vector3 CameraLocalPosition => MirrorCamera;
-        protected override Vector3 CameraLocalLookAt => MirrorLookAt;
-        protected override float CameraFieldOfView => Mathf.Lerp(36f, 48f, timeline.SpitCameraWeight);
+        protected override Vector3 CameraLocalPosition => EntryEye;
+        protected override Vector3 CameraLocalLookAt => EntryEye + Vector3.forward;
+        protected override float CameraFieldOfView => HomeBrushingFirstPersonView.FieldOfView;
         protected override float CameraBlend => timeline.CameraBlend;
         protected override float CameraDriftWeight => 0f;
         protected override bool SceneCompleted => timeline.IsCompleted;
         protected override bool StopPromptVisible => timeline.Phase == HomeTeethBrushingPhase.Brushing;
+        protected override bool WalkOutBackward => true;
 
         public void Initialize(HomeInteriorRoot homeRoot)
         {
             stopAction = () => { RequestStop(); return true; };
-            InitializeScene(homeRoot, new Vector3(2.075f, 0f, 2.78f),
+            // Step back with the ordinary reverse gait, still facing the sink.
+            InitializeScene(homeRoot, new Vector3(2.075f, 0f, 2.86f),
                 Quaternion.LookRotation(Vector3.forward), new Vector3(2.075f, 0f, 2.50f),
-                Quaternion.LookRotation(Vector3.back), new Vector3(2.075f, 0f, 2.78f));
+                Quaternion.LookRotation(Vector3.forward), new Vector3(2.075f, 0f, 2.78f));
             gameObject.AddComponent<HomeBrushingGaugeView>().Bind(this);
             var effects = new GameObject("Home Brushing Spit");
             effects.transform.SetParent(homeRoot.transform, false);
@@ -63,6 +73,8 @@ namespace BarPromenade
         {
             if (!(Home.Player.Visual is Player3DCharacterPresentation presentation)) return false;
             visual = presentation;
+            faucet = Home.Room.GetComponentInChildren<HomeSinkFaucet>(true);
+            if (faucet == null || Home.BathroomMirror == null) return false;
             EnsureProps(visual.Registry);
             if (armPose == null)
             {
@@ -70,6 +82,17 @@ namespace BarPromenade
                 armPose.Initialize(visual.Registry, Home.Player.GameObject.transform);
             }
             armPose.Effector = brushTip;
+            if (valvePose == null)
+            {
+                valvePose = gameObject.AddComponent<HomeTeethBrushingArmPose>();
+                valvePose.Initialize(visual.Registry, Home.Player.GameObject.transform, true);
+                valvePose.Effector = visual.Registry.Anchors.LeftGrip;
+            }
+            if (firstPerson == null) firstPerson = gameObject.AddComponent<HomeBrushingFirstPersonView>();
+            if (!firstPerson.Initialize(Home)) return false;
+            ReflectedToothbrush = Home.BathroomMirror.RegisterReflectedProp(toothbrush.transform);
+            ReflectedFoam = Home.BathroomMirror.RegisterReflectedProp(foam.transform);
+            ReflectedSpit = Home.BathroomMirror.RegisterReflectedProp(spit.transform);
             return true;
         }
 
@@ -81,9 +104,11 @@ namespace BarPromenade
             visual.SetInteractionHandoffLocked(true);
             ownsHandoff = true;
             armPose.Capture();
+            valvePose.Capture();
+            firstPerson.Begin();
             previousCursorLock = Cursor.lockState; previousCursorVisible = Cursor.visible;
             Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; cursorCaptured = true;
-            timeline.Begin(); progress.Reset(); spit.Begin();
+            timeline.Begin(); progress.Reset(); spit.Begin(); faucet.SetOpen(0f);
             pendingSpitSeconds = scrubDistance = 0f; committed = false; discardMouse = true;
         }
 
@@ -108,7 +133,9 @@ namespace BarPromenade
         {
             if (armPose == null || visual == null) return;
             float bend = pendingSpitSeconds > 0f ? Mathf.Max(0.95f, timeline.SpitBend) : timeline.SpitBend;
-            armPose.Apply(progress.Offset, timeline.ArmWeight, bend);
+            armPose.Apply(progress.Offset, timeline.ArmWeight, bend, timeline.ValveReach);
+            faucet.SetOpen(timeline.FaucetOpen);
+            valvePose.ApplyValveGrip(faucet.GripPosition, faucet.GripRotation, timeline.ValveReach);
             if (timeline.Phase == HomeTeethBrushingPhase.Brushing)
             {
                 float credit = progress.Credit(armPose.ActualBrushTravel, armPose.ContactError < 0.012f, deltaTime);
@@ -131,6 +158,8 @@ namespace BarPromenade
                 spit.EmitStep(visual.Registry.Anchors.Mouth.position, Home.transform.TransformPoint(BasinTarget), pendingSpitSeconds);
                 pendingSpitSeconds = 0f;
             }
+            firstPerson.Present(timeline.CameraBlend, faucet.GripPosition, timeline.ValveReach,
+                Home.transform.TransformPoint(BasinTarget), bend);
             if (timeline.IsCompleted) ReleasePose();
             bool showPrompt = timeline.Phase == HomeTeethBrushingPhase.Brushing;
             if (showPrompt != brushingPromptVisible)
@@ -143,16 +172,8 @@ namespace BarPromenade
 
         protected override bool TryGetSceneCamera(out Vector3 position, out Quaternion rotation)
         {
-            float side = timeline.SpitCameraWeight;
-            position = Home.transform.TransformPoint(Vector3.Lerp(MirrorCamera, new Vector3(2.85f, 1.72f, 3.00f), side));
-            Vector3 target = Home.transform.TransformPoint(MirrorLookAt);
-            if (visual != null)
-            {
-                Vector3 spitTarget = Vector3.Lerp(visual.Registry.Anchors.Mouth.position,
-                    Home.transform.TransformPoint(BasinTarget), 0.50f);
-                target = Vector3.Lerp(target, spitTarget, side);
-            }
-            rotation = Quaternion.LookRotation(target - position, Vector3.up);
+            position = firstPerson.Position;
+            rotation = firstPerson.Rotation;
             return true;
         }
 
@@ -166,11 +187,15 @@ namespace BarPromenade
         private void ReleasePose()
         {
             armPose?.End();
+            valvePose?.End();
             if (ownsHandoff && visual != null) visual.SetInteractionHandoffLocked(previousHandoff);
             ownsHandoff = false;
         }
         protected override void OnSceneRestore()
         {
+            faucet?.SetOpen(0f);
+            firstPerson?.End();
+            spit?.Stop();
             ReleasePose();
             visual?.ReleaseContextualFacialExpression(this);
             timeline.Reset(); progress.Reset(); pendingSpitSeconds = 0f;

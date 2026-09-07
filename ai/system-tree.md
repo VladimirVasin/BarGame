@@ -126,8 +126,8 @@ Assets/
       HomeToiletAction.json              fixed-metre model, grip/outlet and liquid-mesh contracts
       Models/                           thirteen Blender FBX: anatomy, two scrotum lobes, lid, open seat, hollow pedestal, water, paper roll and five liquid meshes
     HomeBrushingAction/
-      HomeBrushingAction.json            real sink cavity, drain and normalized foam geometry contracts
-      Models/                           five Blender FBX: hollow basin, perforated drain, brush handle, droplet and splash
+      HomeBrushingAction.json            sink cavity/drain, faucet pivot/grip/outlet and normalized foam contracts
+      Models/                           nine Blender FBX: basin, drain, brush, droplet, splash, faucet body/handle/outlet and water stream
     HomeShowerAction/
       HomeShowerAction.json              fixed-metre bridge-piece contracts for the undressed hero
       Models/                           three Blender FBX: shoulder yoke and two deltoid caps
@@ -649,7 +649,8 @@ Assets/
         HomeShowerBridgeResources.cs  the three Blender bridge pieces (yoke, deltoids) for the undressed hero, under runtime pivots
         HomeUrine{Trajectory,SurfaceMap,Residue,Resources}.cs  swept mesh hits, shared assets and bounded session deposits
         HomeBrushingSpitEffect.cs  pooled mouth-origin foam flight and actual sink-triangle impacts
-        HomeBrushingResources.cs   shared readable Blender sink/effect meshes and cream PS1 Lit foam
+        HomeBrushingResources.cs   shared readable Blender sink/faucet/effect meshes and cream PS1 Lit foam
+        HomeSinkFaucet.cs          authored valve rotation, grip/outlet, bounded stream and owned water sound
         SupermarketInteriorLayout*.cs  room/aisles/fixtures, 3 shelves + 5 slots
         SupermarketInteriorWorldBuilder.cs  authored shop placement + plan-owned collision and finite products
         SupermarketSecurityCameraWorldBuilder.cs  four authored corner CCTV pivots servoed at the hero
@@ -894,11 +895,12 @@ Assets/
         HomeToiletInteraction.cs       first-person 6 s urine + 2 s shake timeline, natural relief and cancel
         HomeToiletFirstPersonView.cs   actual hero arm IK, head visibility, held Blender anatomy and aim/look
         HomeToiletAnatomyDynamics.cs   camera-driven shaft spring and paired damped gravity pendulums
-        HomeTeethBrushingInteraction.cs  manual mirror brush, teeth display, spit and completion-only daily relief
-        HomeTeethBrushingModel.cs        contact-qualified travel progress and brush/show/spit/return timeline
-        HomeTeethBrushingArmPose.cs      actual rig hand IK and connected spine/chest/neck/head spit bend
-        HomeBathroomSceneInteraction.cs  shared bathroom-scene skeleton: modal, walk-in (opt-in waypoint, camera-led approach), camera, walk steps, per-tick stop prompt
-        HomeBathroomMirrorWorld.cs     the mirrored bathroom behind the opening and the hero twin in it; order 320, alive only in the pinned bathroom shot
+        HomeTeethBrushingInteraction.cs  first-person reflected brushing, open/close faucet and completion-only daily relief
+        HomeTeethBrushingModel.cs        contact-qualified progress and eyes/tap/brush/show/spit/close/return timeline
+        HomeTeethBrushingArmPose.cs      parameterized actual arm IK, mesh clearance and connected spit bend
+        HomeBrushingFirstPersonView.cs  eye camera, practical tap/basin gaze and owner-scoped real-head visibility
+        HomeBathroomSceneInteraction.cs  shared bathroom scene: modal, guided approach, camera, opt-in backward exit and stop prompt
+        HomeBathroomMirrorWorld.cs     bathroom/hero twin plus registered mesh props; order 320, pinned Bathroom includes owned brushing
         HomeShowerInteraction.cs       first-person naked shower scene + ten-phase timeline (fly-in, approach, wash, tap, still drips, walk out) + stream/steam/drip/splash effect
         HomeShowerFirstPersonView.cs   the lens in the hero's head: mouth anchor + eye offset, scene base pitch, clamped look, head off while inside
         HomeShowerDripModel.cs         the shut tap's drops: rate patter, then a four-drop geometric run inside the 3 s hold, landings a fall later
@@ -1196,7 +1198,7 @@ ArtSource/
   Home/                          apartment albedo contract, manifest and contact sheet
     Interior/                    generated HomeInterior3D.blend + home-interior-3d-model.json
   HomeToiletAction/               Blender source, model/anchor manifest and anatomy/lid/liquid preview
-  HomeBrushingAction/             Blender sink source, five-model manifest and cavity/drain inspection PNG
+  HomeBrushingAction/             Blender sink/faucet source, manifest and cavity/drain inspection PNG
   HomeShowerAction/               Blender source, manifest and true-metre preview of the shower bridge pieces
   PlayerHome/                    generated exterior .blend/preview + nine-sheet manifest/contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
@@ -1280,7 +1282,7 @@ tools/
   build-home-textures.py            deterministic apartment surface albedos + validator
   build-home-interior-3d-model.py   deterministic home_interior_v1 mesh set, manifest and validator
   build-home-toilet-action-3d-model.py  eleven toilet models + hollow opening and FBX round-trip validator
-  build-home-brushing-action-3d-model.py  five sink/brush/foam models + cavity rays and FBX round-trip validator
+  build-home-brushing-action-3d-model.py  sink/faucet/brush/foam models + cavity rays and FBX round-trip validator
   build-home-shower-action-3d-model.py  shoulder yoke + two deltoid caps sized from the hero generator, outward-face and FBX round-trip validators
 Packages/
 ProjectSettings/

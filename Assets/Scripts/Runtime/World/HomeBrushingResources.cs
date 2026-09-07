@@ -10,6 +10,33 @@ namespace BarPromenade
     {
         private static readonly Dictionary<string, Mesh> meshes = new Dictionary<string, Mesh>();
         private static Material foam;
+        private static Material water;
+
+        public static Material Water
+        {
+            get
+            {
+                if (water != null) return water;
+                water = new Material(Foam)
+                {
+                    name = "Home Sink Water Shared",
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                water.SetColor("_BaseColor", new Color(0.47f, 0.57f, 0.52f, 0.66f));
+                water.SetFloat("_Smoothness", 0.65f);
+                return water;
+            }
+        }
+
+        public static Vector3 Anchor(string model, string name)
+        {
+            GameObject asset = Resources.Load<GameObject>("HomeBrushingAction/Models/" + model);
+            if (asset == null) throw new InvalidOperationException("Missing authored brushing resource: " + model);
+            foreach (Transform node in asset.GetComponentsInChildren<Transform>(true))
+                // World space includes the imported FBX unit conversion.
+                if (node.name == name) return node.position;
+            throw new InvalidOperationException("Missing brushing anchor: " + model + "/" + name);
+        }
 
         public static Material Foam
         {
@@ -71,6 +98,8 @@ namespace BarPromenade
             meshes.Clear();
             Destroy(foam);
             foam = null;
+            Destroy(water);
+            water = null;
         }
 
         private static void Destroy(UnityEngine.Object value)
