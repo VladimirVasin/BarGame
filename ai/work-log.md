@@ -6,6 +6,154 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-08 — Take the bandage off his arm, for good
+
+The left forearm no longer wears a pale bandage. `CLO_Bandage.L` is gone as
+a mesh, a material and an atlas cell; in its place the left arm gets
+`CLO_JacketForearm.L`, built from the same profile, the same `JacketAtlas`
+material, the same `clothing` role and the same UV strip as the right. The
+`signature_detail` role and the `MAT_BandageAtlas` material no longer exist
+anywhere, `Bandage`/`BandageDark` left the palette, and
+`build_asymmetric_details` was deleted along with its abstract hook in
+`ProductionPlayerBuilderBase`, whose only subclass is `HeroV2Builder`. The
+ochre right-shoulder patch stays: it is now the hero's only asymmetry.
+
+"Identical" is exact here, not approximate. In the exported A-pose the left
+forearm's elbow-to-wrist vector is a perfect mirror of the right's
+(`(0.225, -0.008, -0.175)` against `(-0.225, -0.008, -0.175)`, both
+`0.285156098 m`), displaced by a rigid `7.48 mm`; the shells are therefore
+congruent, and the build now asserts it. The old check compared vertex and
+polygon counts, which the bandage also satisfied (`30` / `22` on both). It
+now compares the sorted multiset of all `435` pairwise vertex distances,
+invariant under the rotation that carries one shell onto the other:
+measured, the two forearms agree to `2.776e-16 m`, while the retired
+bandage shell would have missed by `1.985e-03 m`, two thousand times the
+`1e-6 m` threshold. The two atlas cells are likewise compared pixel for
+pixel, and any mesh whose name contains `Bandage` now fails the build, the
+prefab importer and the texture contract by name.
+
+`Player3DBathingAppearance` loses `keepBandage` and `SignatureDetailRole`
+outright: the shower now takes off five `clothing` renderers instead of
+four, and the undressed hero shows bare `GEO_Forearm.L` and `.R` alike, so
+removing the bandage opened no texture hole. Shipped renders were
+regenerated in the same pass, including `Player3DV2Portrait.png` — the
+inventory portrait is drawn in the running game, so a stale file would have
+kept the bandage where the player actually sees it.
+
+Verification: the Blender build passed with `34` parts and `2,384`
+triangles unchanged — the bandage and the jacket forearm were always the
+same `30` vertices and `56` triangles, so no count contract moved. Focused
+EditMode passed `67/69`; `AreaCaptureFixture.AlpineVillageColdHero` passed
+`1/1` in `43.13 s` over `996` poses and `35,856` pair checks with zero
+penetrating samples. That last run answered a real worry: the new left
+shell is `1 mm` thicker at its middle ring than the bandage was, and the
+cold self-hug had only `0.024 mm` of margin there before. Measured after
+the change, the tightest pair involving the left forearm is `+0.0809 mm`
+against `CLO_JacketSleeve.R`, the forearm-on-forearm minimum is
+`+5.385 mm`, and the worst signed clearance in the whole run is the
+unchanged `-0.626 mm` palm/sleeve contact. The shower curtain clips were
+regenerated and their closest clearance is bit-identical to before
+(`0.013372653163969517 m`), now reported against `CLO_JacketForearm.L`.
+The hero was compared against his own previous render: the pale wrapped
+forearm is an olive sleeve matching the other arm.
+
+Two failures in the working tree are NOT from this change and were left
+alone. Each was re-run with every file of this change stashed, against the
+same working tree, and each failed identically.
+`Shower_FirstPersonNakedWashDripsAndRestores` fails on the soap's viewport
+x at `0.9735` against a `0.97` limit, and at `0.9734` with the change
+reverted — the same number, so it belongs to the parallel toilet session's
+`HomeInteriorRoot` rework, which moved `HomeToiletInteraction` off its
+authored position into a sibling of the new choice trigger.
+`BedContract_MatchesTheMeasuredGeneratorValues` fails at `0.610000134` in
+the bed pelvis path and
+`GeneratedV2_UsesOwnAvatarAndCanonicalFacialAtlas` inside the cold action
+contract, both with identical values reverted; `bed_contract` and all `47`
+actions are also byte-identical to `HEAD` in the regenerated manifest, so
+neither reads anything this change touched. No complete suites, no player
+build.
+
+## 2026-09-08 — Toilet choice and underwater bowl camera
+
+The approved scope adds a two-option toilet menu. `По-маленькому` keeps
+the existing first-person stream, shaking, cancellation and completion
+relief. `По-большому` owns only a camera episode: `2.5 s` down into the
+real bowl below its water, `3 s` looking upward, and `2.5 s` back along
+the same path. The clothed hero remains outside; this branch adds no
+seated action, defecation, flush, relief or session transaction.
+
+The shallow legacy ceramic dish is replaced by a hollow Blender-authored
+`ToiletBowl` from the existing kit. Its water top stays at local
+`Y = 0.4373 m`; the actual bowl bottom, rather than only the pedestal,
+provides the camera clearance. Underwater presentation belongs to the
+active sequence and must release with its camera/audio/input ownership.
+The bounded camera exception is recorded in both world bibles and
+architecture notes; new labels retain the common RU/EN menu register.
+
+`HomeToiletChoiceInteraction` is the only toilet trigger; its menu releases
+its modal ownership and synchronously starts one of two colliderless action
+owners. `HomeToiletPlungeInteraction` reuses the shared guided approach,
+neutral endpoint, camera path and cleanup. The lens is `12.23 cm` below
+the unchanged water plane and `3.5 cm` above the new floor; its final view
+tilts `10 degrees` toward the cistern so it does not hold the hero's face.
+Near clipping temporarily falls to `8 mm` and restores exactly.
+
+The two-sided water material retains shallow absorption and a meniscus;
+`HomeToiletUnderwaterPass` applies camera-local optical ripple/tint before
+post-processing and the PS1 finish. Its initial audio version used temporary
+source low-pass filters; the user's further `2026-09-08` request replaces
+them with a pronounced underwater world mix and a real surface-entry cue.
+Visual inspection caught the furniture occlusion system replacing the
+water material with opaque dither. Only the transparent water is now outside
+that registry; its semantic name and urine triangle receiver are unchanged.
+The focused test explicitly checks the final composed water shader.
+
+The refined `Master/Perception` bus places a low-pass after the existing
+VHS effect: `22000 → 420 Hz` and up to `-5 dB`, using log-frequency depth
+blending with `80 ms` attack and `160 ms` release. World music, ambience and
+pooled effects share it; `Master/UI` bypasses it. Source filters, volume,
+pitch and VHS controls are untouched. Two reused camera-owned sources play
+the shared procedural `0.72 s` splash/resonance cue once at the actual
+downward crossing and a quiet `3 s` water loop faded by submersion. They
+obey listener pause; exit stops them and returns exposed mixer controls to
+the scene snapshots. `UnderwaterAudioMixerSetup` reproduces this setup.
+
+The same refinement applies one quintic time ease to each complete camera
+leg. A quintic Hermite approach joins the vertical descent with continuous
+velocity and acceleration at the mouth; rotation overlaps that join rather
+than waiting at it. Early cancellation retains path velocity/acceleration
+while braking for at most `0.22 s`, then returns smoothly. The nominal
+`2.5 / 3 / 2.5 s` schedule, path bounds and upward endpoint are unchanged.
+Verification of this audio/camera refinement: the expanded single
+`ChoicePlungeReturnsAndPreservesSmallAction` selection passed `1/1` in
+`20.47 s`. It checks world/pool routing and UI exclusion, actual water
+crossing before the single entry cue, audible non-clipping clip data,
+submerged mix and loop gain, listener pause, snapshot restoration after
+normal/early/disabled exit, symmetric camera travel and the continuous
+mouth tangent. The mixer was authored through Unity; the final run loads
+that saved asset directly. Two compile corrections and a test timing fix
+(snapshot release is observed on the audio update, not the same rendered
+frame) preceded this pass. Final approach, underwater and returned frames
+were inspected. `water-entry.wav` and `underwater-texture.wav` are dry clip
+previews, not a recording of the final world mix. No listening assessment
+of the final mix, full suite or player build was performed.
+
+Initial implementation verification, before that refinement: the pinned
+Blender generation/export validator passed with
+`14` models, `16` meshes and `2,864` triangles, including `102` camera-path
+rays, `288` inner-wall/pedestal checks and FBX unit/axis/anchor round trips.
+The single selected PlayMode scenario
+`HomeToiletPlungePlayModeTests.ChoicePlungeReturnsAndPreservesSmallAction`
+passed `1/1` on the initially completed revision. It covers menu cancellation, normal
+completion, early return from current progress, disable cleanup, restored
+camera/input/HUD/cursor/filter state and the old urine hitting the water.
+The same selection was repeated after two capture/test-harness corrections
+(Game View UI requires a non-batch editor; test spawn gravity is not guided
+movement) and the visually discovered water-material/framing fixes.
+Initial completed images `00` through `05` in `Captures/HomeToiletPlunge/` were inspected;
+the directory contains the result XML, Unity log and capture report.
+Scoped `git diff --check` passed. No complete suite or player build ran.
+
 ## 2026-09-07 — Let the hero leave before the shower camera returns
 
 After valve closure, the hero remains undressed through straightening,

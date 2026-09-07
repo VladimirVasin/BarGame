@@ -48,8 +48,8 @@ MonoBehaviour:
   animator: {fileID: 3368336057995897938}
   modelRoot: {fileID: 8673536065614771752}
   renderers:
-  - {fileID: 558538487707650996}
   - {fileID: 8691505841665134098}
+  - {fileID: 2596173523500609025}
   - {fileID: 1041106136008671339}
   - {fileID: 7879705368247287701}
   - {fileID: 1112451817915653802}
@@ -83,15 +83,6 @@ MonoBehaviour:
   - {fileID: 4688491048656370843}
   - {fileID: 4650837828654637243}
   meshBindings:
-  - meshName: CLO_Bandage.L
-    role: signature_detail
-    boneName: forearm.L
-    bodyGroup: LeftLowerArm
-    anatomicalSide: Left
-    paletteMaterialName: MAT_BandageAtlas
-    renderer: {fileID: 558538487707650996}
-    bone: {fileID: 4000893682187503971}
-    baseColor: {r: 1, g: 1, b: 1, a: 1}
   - meshName: CLO_JacketBody
     role: clothing
     boneName: chest
@@ -100,6 +91,15 @@ MonoBehaviour:
     paletteMaterialName: MAT_JacketAtlas
     renderer: {fileID: 8691505841665134098}
     bone: {fileID: 4273993289442049000}
+    baseColor: {r: 1, g: 1, b: 1, a: 1}
+  - meshName: CLO_JacketForearm.L
+    role: clothing
+    boneName: forearm.L
+    bodyGroup: LeftLowerArm
+    anatomicalSide: Left
+    paletteMaterialName: MAT_JacketAtlas
+    renderer: {fileID: 2596173523500609025}
+    bone: {fileID: 4000893682187503971}
     baseColor: {r: 1, g: 1, b: 1, a: 1}
   - meshName: CLO_JacketForearm.R
     role: clothing
@@ -786,7 +786,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 1.7.0
   sourcePose: apose
   sourceTriangleCount: 2384
-  buildSignature: b47689289890aebefe5c35cc6206fa5b
+  buildSignature: 8ae5db3176279bd268df95fe247530a6
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}
@@ -1058,6 +1058,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 3495ad8595657f84e8a1b09b1754eaf6, type: 2}
+    - target: {fileID: 6616729537419657154, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 3495ad8595657f84e8a1b09b1754eaf6, type: 2}
     - target: {fileID: 6781347641551055572, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1067,10 +1071,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 7532042321488784634, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 3495ad8595657f84e8a1b09b1754eaf6, type: 2}
-    - target: {fileID: 8652678970599168631, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 3495ad8595657f84e8a1b09b1754eaf6, type: 2}
@@ -1086,11 +1086,6 @@ PrefabInstance:
 --- !u!137 &471649020633539675 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 8745863124579087768, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
-  m_PrefabInstance: {fileID: 9211038151743410627}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &558538487707650996 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 8652678970599168631, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_PrefabInstance: {fileID: 9211038151743410627}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &955768063430601893 stripped
@@ -1171,6 +1166,11 @@ SkinnedMeshRenderer:
 --- !u!4 &2525178327773059568 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6692087546959169587, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
+  m_PrefabInstance: {fileID: 9211038151743410627}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &2596173523500609025 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6616729537419657154, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_PrefabInstance: {fileID: 9211038151743410627}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &2813401561251745980 stripped

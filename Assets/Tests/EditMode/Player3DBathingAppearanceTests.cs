@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -8,7 +9,8 @@ namespace BarPromenade.Tests.EditMode
     /// <summary>
     /// Undressing the production hero for the shower, and dressing him
     /// again exactly. The rule is stated against roles and bones; on the
-    /// V2 prefab it takes off the four jacket parts, keeps the bandage,
+    /// V2 prefab it takes off all five jacket parts — both forearms
+    /// included, since the left one stopped being a bandage — then
     /// paints the shirt and the jeans-wearing body parts skin on the
     /// hero's own material, and puts every flag, material and tint back
     /// byte for byte.
@@ -20,12 +22,15 @@ namespace BarPromenade.Tests.EditMode
             "CLO_JacketBody",
             "CLO_JacketSleeve.L",
             "CLO_JacketSleeve.R",
+            "CLO_JacketForearm.L",
             "CLO_JacketForearm.R"
         };
 
         private static readonly string[] MustStayVisible =
         {
-            "CLO_Bandage.L",
+            // Both forearms are jacket now, so both bare arms show.
+            "GEO_Forearm.L",
+            "GEO_Forearm.R",
             "GEO_Torso",
             "GEO_Pelvis",
             "GEO_Head",
@@ -46,17 +51,15 @@ namespace BarPromenade.Tests.EditMode
             "GEO_Foot.R"
         };
 
-        [TestCase("clothing", true, true)]
-        [TestCase("clothing", false, true)]
-        [TestCase("signature_detail", true, false)]
-        [TestCase("signature_detail", false, true)]
-        [TestCase("body_part", true, false)]
-        [TestCase("hair", false, false)]
-        [TestCase("", true, false)]
-        [TestCase(null, true, false)]
-        public void TheHidingRule_IsStatedAgainstTheRole(string role, bool keepBandage, bool expected)
+        [TestCase("clothing", true)]
+        [TestCase("body_part", false)]
+        [TestCase("hair", false)]
+        [TestCase("signature_detail", false)]
+        [TestCase("", false)]
+        [TestCase(null, false)]
+        public void TheHidingRule_IsStatedAgainstTheRole(string role, bool expected)
         {
-            Assert.That(Player3DBathingAppearance.IsHidden(role, keepBandage), Is.EqualTo(expected));
+            Assert.That(Player3DBathingAppearance.IsHidden(role), Is.EqualTo(expected));
         }
 
         [TestCase("MAT_Shirt", "chest", Player3DBathingAppearance.BareTone.Skin)]
@@ -161,7 +164,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(block.GetTexture("_BaseMap"), Is.Null, "The hands were skin already.");
 
                 // Untouched parts are exactly as they were.
-                foreach (string name in new[] { "GEO_Head", "GEO_Hand.L", "GEO_Forearm.R", "CLO_Bandage.L" })
+                foreach (string name in new[] { "GEO_Head", "GEO_Hand.L", "GEO_Forearm.L", "GEO_Forearm.R" })
                 {
                     AssertSame(before[name], Find(bindings, name), name);
                 }
@@ -276,7 +279,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void TheBandageComesOffOnlyWhenAsked()
+        public void BothForearmsComeOffTogether()
         {
             GameObject prefab = Player3DResources.LoadPrefab();
             if (prefab == null)
@@ -289,15 +292,35 @@ namespace BarPromenade.Tests.EditMode
             try
             {
                 var registry = instance.GetComponentInChildren<Player3DAssetRegistry>(true);
-                Player3DMeshBinding bandage = Find(registry.MeshBindings, "CLO_Bandage.L");
-                Assert.That(bandage.Role, Is.EqualTo(Player3DBathingAppearance.SignatureDetailRole));
-                lease = Player3DBathingAppearance.Apply(registry, keepBandage: false);
-                Assert.That(lease.HiddenRendererCount, Is.EqualTo(MustBeHidden.Length + 1));
-                Assert.That(bandage.Renderer.enabled, Is.False);
+                Assert.That(
+                    registry.MeshBindings.Any(
+                        binding => binding != null &&
+                                   binding.MeshName.IndexOf(
+                                       "Bandage",
+                                       StringComparison.Ordinal) >= 0),
+                    Is.False,
+                    "The bandage was removed from the hero, mesh and all.");
+
+                Player3DMeshBinding left =
+                    Find(registry.MeshBindings, "CLO_JacketForearm.L");
+                Player3DMeshBinding right =
+                    Find(registry.MeshBindings, "CLO_JacketForearm.R");
+                Assert.That(
+                    left.Role,
+                    Is.EqualTo(Player3DBathingAppearance.ClothingRole));
+                Assert.That(left.Role, Is.EqualTo(right.Role));
+                Assert.That(
+                    left.PaletteMaterialName,
+                    Is.EqualTo(right.PaletteMaterialName),
+                    "One sleeve material dresses both forearms.");
+
+                lease = Player3DBathingAppearance.Apply(registry);
+                Assert.That(left.Renderer.enabled, Is.False);
+                Assert.That(right.Renderer.enabled, Is.False);
                 lease.Restore();
                 lease = null;
-                Assert.That(bandage.Renderer.enabled, Is.True);
-                Assert.That(lease, Is.Null);
+                Assert.That(left.Renderer.enabled, Is.True);
+                Assert.That(right.Renderer.enabled, Is.True);
             }
             finally
             {

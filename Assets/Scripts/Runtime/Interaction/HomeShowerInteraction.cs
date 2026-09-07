@@ -1464,7 +1464,7 @@ namespace BarPromenade
             bool inside = view != null && view.IsHeadHidden;
             if (!inside) return;
 
-            lease = Player3DBathingAppearance.Apply(registry, true);
+            lease = Player3DBathingAppearance.Apply(registry);
             washPose?.SetBridgesShown(true);
         }
 

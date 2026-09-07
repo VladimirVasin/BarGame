@@ -92,7 +92,7 @@ namespace BarPromenade.Tests.PlayMode
                 Surface surface = BuildSurface(binding.MeshName, renderer);
                 (isLeft ? left : right).Add(surface);
             }
-            Assert.That(left.Count, Is.EqualTo(6), "Measure all left arm skin, sleeve, thumb and bandage meshes.");
+            Assert.That(left.Count, Is.EqualTo(6), "Measure all left arm skin, sleeve and thumb meshes.");
             Assert.That(right.Count, Is.EqualTo(6), "Measure all right arm skin, sleeve and thumb meshes.");
             pairReports = new PairReport[left.Count * right.Count];
             for (int a = 0; a < left.Count; a++)

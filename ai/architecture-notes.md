@@ -46,7 +46,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `1/60 s` through cycles/transitions: `35,856` pair checks, none beyond the
   unchanged `2 mm` penetration tolerance, with no opposing pair exempted.
   All four forearm pairs keep positive separation (minimum `+0.505 mm`;
-  bandage/right-forearm shell `+4.730 mm`).
+  the two jacket forearm shells `+5.385 mm` since the left one stopped
+  being a bandage on 2026-09-08). That wording covers only forearm-on-
+  forearm pairs; the tightest pair the left shell has at all is
+  `+0.081 mm` against `CLO_JacketSleeve.R`, an upper-arm sleeve.
   Worst signed clearance is `-0.626 mm` at the intentional palm/sleeve contact
   during TurnRight/rubbing; this is bounded contact, not a claim of strictly
   positive separation everywhere. Same-frame protective IK also passes.
@@ -5254,6 +5257,58 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   spine/chest/neck/head bend for the spit. Its user-driven replacement
   is recorded under the first-person mirror-brushing decision below; no new
   full-body animation clip or replacement arm is introduced.
+- **Accepted — Toilet choice and bowl-camera exception (`2026-09-07`):**
+  The user approved two explicit options at the existing toilet trigger:
+  `По-маленькому` retains the existing first-person action, and
+  `По-большому` introduces only a camera sequence at this stage. After
+  the shared grounded approach and neutral settle, the clothed production
+  hero remains outside the bowl while the camera leaves the normal shot,
+  enters the real bowl cavity below the water and turns upward over `2.5 s`,
+  holds for `3 s`, then retraces the path over `2.5 s`. The fixed path has
+  no free look, cut or teleport. The user's `2026-09-08` refinement gives
+  entry and exit one quintic time ease; the quintic Hermite approach meets
+  the vertical descent with continuous velocity and acceleration at
+  `AboveBowl`, without a stop. Overlapping orientation changes preserve the
+  upward endpoint. An early stop captures travel velocity and acceleration,
+  brakes along the existing path for at most `0.22 s`, then smoothly returns;
+  scene teardown restores owned state immediately.
+
+  This is a bounded exception to art-bible §7's toilet eye-level framing
+  and the contextual standard's authored action-clip requirement, recorded
+  in story-bible §6. The shared bathroom lifecycle still owns constrained
+  positioning, modal input, rendered endpoints and idempotent cleanup.
+  It introduces no seated pose, new full-body clip, anatomy presentation,
+  defecation, flush, reward or needs transaction. The camera is not the
+  hero's eyes; his head does not acquire water attention, and the shot does
+  not hold his face or reflection. Story §16 and all nine art checks remain
+  binding; the episode adds no cleansing metaphor, lore or comedy beat.
+
+  The existing deterministic toilet kit supplies a separate hollow
+  `ToiletBowl`, replacing only the shallow legacy ceramic dish. Its real
+  inside wall and bottom provide room beneath the unchanged local water
+  top `Y = 0.4373 m`; the deeper pedestal cavity alone was insufficient.
+  The existing lid, annular seat, plumbing footprint and approach collision
+  remain authoritative. Both sides of the actual water surface must render
+  correctly from the path, using shared resources and the ordinary Home
+  light. A scoped underwater presentation blends restrained water tint and
+  optical ripple across the surface. The user explicitly refined its sound
+  on `2026-09-08`: the existing `Master/Perception` bus receives a low-pass
+  after VHS, from `22000` to `420 Hz`, and up to `-5 dB` attenuation.
+  Log-frequency depth blending uses `80 ms` attack and `160 ms` release.
+  This covers world music, ambience and pooled effects without modifying
+  their source filters, volume or pitch; `Master/UI` and VHS parameters
+  remain independent. `UnderwaterAudioMixerSetup` reproduces the mixer setup.
+  `HomeToiletWaterAudioResources` shares deterministic `0.72 s` entry and
+  `3 s` looping water clips. Two reused camera-owned sources play one soft
+  splash with decaying water resonances at the actual downward crossing and
+  a quiet filtered water layer whose gain follows submersion. Both obey
+  `AudioListener.pause`; neither represents the hero's breath or bodily act.
+  Exit stops the voices and clears the scoped mixer overrides, returning
+  control to the scene snapshots. No light, music, voice or independent fog
+  is added. Camera, audio ownership, cursor, HUD, lid, occlusion and input
+  restore on every exit.
+  Ownership and current verification are indexed in the system maps and
+  the `2026-09-08` work-log entry.
 - **Accepted — First-person toilet replacement (`2026-09-05`):** The user
   approved the plan for a controllable first-person toilet action. This
   replaces only bathroom exception (b) with a scoped procedural 3D action;
@@ -5302,7 +5357,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   hinge-origin lid, true annular seat, hollow ceramic pedestal, correctly seated bowl-water
   surface and paper roll with an open cardboard core plus segment, droplet,
   splash, stain and wall-drip meshes, plus two upper-pivot scrotum lobes:
-  thirteen FBX models, fifteen meshes, `2,376` triangles, source `.blend`,
+  initially thirteen FBX models, fifteen meshes, `2,376` triangles, source `.blend`,
   manifests and a direct export validator.
   The pedestal replaces only the visible solid footprint while preserving its
   logical collision and `0.82 x 0.48 x 0.858 m` envelope; the cavity centres
@@ -5472,12 +5527,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   reporting `Walking/Arrived/Stalled`) and the per-change stop-prompt
   refresh stay as introduced; grounded guided legs carry the hero through
   the curtain's opening and between its action docks and the wash dock. The
-  costume is an owner-scoped lease (`Player3DBathingAppearance`): the four
-  `clothing` renderers off, the shirt torso and the jeans-atlas
-  pelvis/thighs/shins/feet switched to the hero's own borrowed skin material
-  with the bare-skin atlas bound through their property blocks (`_BaseMap`,
-  white tint — the registry's face-atlas idiom; flat tones if the resource is
-  missing), the bandage kept, everything restored exactly. The atlas
+  costume is an owner-scoped lease (`Player3DBathingAppearance`): the
+  `clothing` renderers off — four until 2026-09-08, five once the left
+  forearm stopped being a bandage and became jacket — the shirt torso and
+  the jeans-atlas pelvis/thighs/shins/feet switched to the hero's own
+  borrowed skin material with the bare-skin atlas bound through their
+  property blocks (`_BaseMap`, white tint — the registry's face-atlas
+  idiom; flat tones if the resource is missing), everything restored
+  exactly. The atlas
   (`Assets/Resources/Player/PlayerBareSkinAtlas.png`, `build_bare_skin_atlas`
   in the hero generator, `1.5.0`) reuses the jeans UV0 rects byte for byte —
   asserted by the generator and by `Player3DV2AssetSetup` — and the torso
@@ -6341,6 +6398,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   burgundy overshirt/strap target in story-bible §7. Pocket construction,
   cuffs, seams, the right ochre repair patch and the left bandage are painted;
   no readable insignia or copied film marking implies a military biography.
+  Amended 2026-09-08 at the user's request: the bandage is gone outright and
+  the left forearm is now the right forearm — same profile, same atlas cell
+  painting — leaving the ochre patch as the only asymmetry.
   The same user also required Hero V1 not be removed, so its byte-frozen
   burgundy/strap prefab remains the temporary gameplay default until a later
   explicit promotion. That bounded production/canon mismatch is accepted and

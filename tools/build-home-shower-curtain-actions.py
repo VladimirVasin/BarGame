@@ -188,7 +188,7 @@ def validate_body_clearance(builder):
             "GEO_Thigh.L", "GEO_Thigh.R")
     arm = {side: (f"GEO_UpperArm.{side}", f"CLO_JacketSleeve.{side}",
                   f"GEO_Forearm.{side}", f"GEO_Hand.{side}", f"GEO_Thumb.{side}",
-                  "CLO_Bandage.L" if side == "L" else "CLO_JacketForearm.R")
+                  f"CLO_JacketForearm.{side}")
            for side in ("L", "R")}
     distal = {side: arm[side][2:] for side in arm}
     names = set(body + arm["L"] + arm["R"])

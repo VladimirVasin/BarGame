@@ -36,8 +36,7 @@ namespace BarPromenade.Editor
         private static readonly string[] ExpectedMaterials =
         {
             "MAT_JacketAtlas",
-            "MAT_JeansAtlas",
-            "MAT_BandageAtlas"
+            "MAT_JeansAtlas"
         };
 
         private static readonly ISet<string> TexturedMaterials =
@@ -54,6 +53,7 @@ namespace BarPromenade.Editor
                             "CLO_JacketBody",
                             "CLO_JacketSleeve.L",
                             "CLO_JacketSleeve.R",
+                            "CLO_JacketForearm.L",
                             "CLO_JacketForearm.R"
                         }
                     },
@@ -68,13 +68,6 @@ namespace BarPromenade.Editor
                             "GEO_Thigh.R",
                             "GEO_Shin.R",
                             "GEO_Foot.R"
-                        }
-                    },
-                    {
-                        "MAT_BandageAtlas",
-                        new HashSet<string>(StringComparer.Ordinal)
-                        {
-                            "CLO_Bandage.L"
                         }
                     }
                 };
@@ -514,9 +507,7 @@ namespace BarPromenade.Editor
             foreach (string partName in partMaterials.Keys)
             {
                 if (ForbiddenDetailMeshes.Contains(partName) ||
-                    partName.StartsWith(
-                        "ACC_BandageWrap.",
-                        StringComparison.Ordinal) ||
+                    partName.IndexOf("Bandage", StringComparison.Ordinal) >= 0 ||
                     partName.StartsWith("ACC_Strap", StringComparison.Ordinal) ||
                     partName.IndexOf("Buckle", StringComparison.Ordinal) >= 0)
                 {

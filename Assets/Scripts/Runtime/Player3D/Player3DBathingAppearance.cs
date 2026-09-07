@@ -16,8 +16,9 @@ namespace BarPromenade
     /// garment as its material is repainted skin through a property
     /// block on the hero's own borrowed skin material — never a new
     /// Material, never a second prefab (the art spec locks Hero V2 as
-    /// the sole packaged player). The left forearm's bandage is a
-    /// signature detail and stays on unless asked otherwise.
+    /// the sole packaged player). Both forearms wear the same jacket
+    /// sleeve, so both come off together; the left one carried a bandage
+    /// that stayed on until it was removed from the hero on 2026-09-08.
     ///
     /// The repaint is a texture, not a flat tone: the generator paints a
     /// bare-skin atlas for the same UV0 the jeans regions already carry
@@ -38,7 +39,6 @@ namespace BarPromenade
     public sealed class Player3DBathingAppearance
     {
         public const string ClothingRole = "clothing";
-        public const string SignatureDetailRole = "signature_detail";
         public const string SkinMaterialName = "MAT_Skin";
         public const string SkinShadowMaterialName = "MAT_SkinShadow";
         public const string ShirtMaterialName = "MAT_Shirt";
@@ -109,20 +109,10 @@ namespace BarPromenade
         public bool UsesBareSkinAtlas { get; private set; }
 
         /// <summary>Which roles come off with the clothes.</summary>
-        public static bool IsHidden(string role, bool keepBandage)
+        public static bool IsHidden(string role)
         {
-            if (string.IsNullOrEmpty(role))
-            {
-                return false;
-            }
-
-            if (string.Equals(role, ClothingRole, StringComparison.Ordinal))
-            {
-                return true;
-            }
-
-            return !keepBandage &&
-                   string.Equals(role, SignatureDetailRole, StringComparison.Ordinal);
+            return !string.IsNullOrEmpty(role) &&
+                   string.Equals(role, ClothingRole, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -166,8 +156,7 @@ namespace BarPromenade
         /// wrong order would leave the hero half dressed.
         /// </summary>
         public static Player3DBathingAppearance Apply(
-            Player3DAssetRegistry registry,
-            bool keepBandage = true)
+            Player3DAssetRegistry registry)
         {
             if (registry == null)
             {
@@ -206,7 +195,7 @@ namespace BarPromenade
                 }
 
                 Renderer target = binding.Renderer;
-                if (IsHidden(binding.Role, keepBandage))
+                if (IsHidden(binding.Role))
                 {
                     if (!target.enabled)
                     {

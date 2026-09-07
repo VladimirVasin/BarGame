@@ -777,8 +777,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     "MAT_JacketAtlas",
-                    "MAT_JeansAtlas",
-                    "MAT_BandageAtlas"
+                    "MAT_JeansAtlas"
                 }));
             Assert.That(binding.shader_property, Is.EqualTo("_BaseMap"));
             Assert.That(binding.color_space, Is.EqualTo("sRGB"));
@@ -837,8 +836,6 @@ namespace BarPromenade.Tests.EditMode
                 new HashSet<string>(StringComparer.Ordinal);
             HashSet<string> jeansRenderers =
                 new HashSet<string>(StringComparer.Ordinal);
-            HashSet<string> bandageRenderers =
-                new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < manifest.parts.Length; index++)
             {
                 V2Part part = manifest.parts[index];
@@ -858,7 +855,9 @@ namespace BarPromenade.Tests.EditMode
                         .And.Not.EqualTo("MAT_BootLeather")
                         .And.Not.EqualTo("MAT_BootSole")
                         .And.Not.EqualTo("MAT_Bandage")
-                        .And.Not.EqualTo("MAT_BandageDark"));
+                        .And.Not.EqualTo("MAT_BandageDark")
+                        .And.Not.EqualTo("MAT_BandageAtlas"));
+                Assert.That(part.name, Does.Not.Contain("Bandage"));
                 if (part.name.IndexOf("Boot", StringComparison.Ordinal) >= 0 ||
                     ((part.bone == "foot.L" || part.bone == "foot.R") &&
                      part.name != "GEO_Foot.L" &&
@@ -884,10 +883,6 @@ namespace BarPromenade.Tests.EditMode
                 {
                     jeansRenderers.Add(part.name);
                 }
-                else if (part.material == "MAT_BandageAtlas")
-                {
-                    bandageRenderers.Add(part.name);
-                }
             }
 
             Assert.That(binding.regions.Length, Is.EqualTo(texturedPartCount));
@@ -898,6 +893,7 @@ namespace BarPromenade.Tests.EditMode
                     "CLO_JacketBody",
                     "CLO_JacketSleeve.L",
                     "CLO_JacketSleeve.R",
+                    "CLO_JacketForearm.L",
                     "CLO_JacketForearm.R"
                 }));
             Assert.That(
@@ -912,16 +908,19 @@ namespace BarPromenade.Tests.EditMode
                     "GEO_Shin.R",
                     "GEO_Foot.R"
                 }));
-            Assert.That(
-                bandageRenderers,
-                Is.EquivalentTo(new[] { "CLO_Bandage.L" }));
-            V2TextureRegion rightForearm = Array.Find(
-                binding.regions,
-                region => region.name == "JacketForearmRight");
-            Assert.That(rightForearm, Is.Not.Null);
-            Assert.That(
-                rightForearm.renderer,
-                Is.EqualTo("CLO_JacketForearm.R"));
+            foreach (string side in new[] { "Left", "Right" })
+            {
+                V2TextureRegion forearm = Array.Find(
+                    binding.regions,
+                    region => region.name == "JacketForearm" + side);
+                Assert.That(
+                    forearm,
+                    Is.Not.Null,
+                    "Each forearm owns its own cell in the jacket atlas.");
+                Assert.That(
+                    forearm.renderer,
+                    Is.EqualTo("CLO_JacketForearm." + side.Substring(0, 1)));
+            }
         }
 
         private static void AssertStaticTextureBindings(
@@ -1042,8 +1041,7 @@ namespace BarPromenade.Tests.EditMode
         private static bool UsesClothingAtlas(string materialName)
         {
             return materialName == "MAT_JacketAtlas" ||
-                   materialName == "MAT_JeansAtlas" ||
-                   materialName == "MAT_BandageAtlas";
+                   materialName == "MAT_JeansAtlas";
         }
 
         private static void AssertModelImport()

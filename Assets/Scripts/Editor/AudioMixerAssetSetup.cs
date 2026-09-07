@@ -366,6 +366,10 @@ namespace BarPromenade.Editor
                 api, mixer, perception, int.MaxValue,
                 IntoxicationAudioDriver.EffectName);
             IntoxicationAudioMixerSetup.Configure(controller, tape);
+            object underwater = EnsureRequiredEffect(
+                api, mixer, perception, int.MaxValue, "Lowpass");
+            UnderwaterAudioMixerSetup.Configure(
+                controller, perception, tape, underwater);
 
             api.RemoveEffectsByName(controller, ui, "Send");
 

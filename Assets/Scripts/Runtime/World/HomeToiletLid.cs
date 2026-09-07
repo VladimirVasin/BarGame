@@ -45,8 +45,9 @@ namespace BarPromenade
             GameObject model = Instantiate(asset, root.transform, false);
             foreach (Renderer renderer in model.GetComponentsInChildren<Renderer>(true))
             {
-                renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-                RuntimePrimitiveFactory.SetColor(renderer, new Color(0.14f, 0.16f, 0.12f));
+                renderer.sharedMaterial = HomeToiletWaterResources.Surface;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
             }
             return root;
         }

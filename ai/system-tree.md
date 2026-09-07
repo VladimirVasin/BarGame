@@ -86,6 +86,8 @@ Assets/
       HomeOccluderDither.shader   Forward+ grouped cutaway with shadow/depth/normals
       HomeWindowGlass.shader      shared transparent Home window/door glass
       HomeShowerTrayWater.shader  shared shallow shower water, ripples and flow to the authored drain
+      HomeToiletBowlWater.shader  shared double-sided bowl surface with restrained ripples
+      HomeToiletUnderwater.shader camera-owned underwater tint and optical ripple before PS1
       StairwellCatGrin.shader     arc-length reveal of the Cheshire grin, shader teeth seams
       Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale; Begotten passes
       BegottenFilm.hlsl           the stock of the Begotten print: hash, grain octaves, dust, hairs, scratches
@@ -125,8 +127,8 @@ Assets/
       CityBus3D.prefab                  passive real-scale pooled midibus presentation
       CityBusDriver3D.prefab            passive 31-bone seated production driver
     HomeToiletAction/
-      HomeToiletAction.json              fixed-metre model, grip/outlet and liquid-mesh contracts
-      Models/                           thirteen Blender FBX: anatomy, two scrotum lobes, lid, open seat, hollow pedestal, water, paper roll and five liquid meshes
+      HomeToiletAction.json              fixed-metre model, hollow bowl/camera, grip/outlet and liquid-mesh contracts
+      Models/                           fourteen Blender FBX: anatomy, two scrotum lobes, lid, open seat, hollow pedestal/bowl, water, paper roll and five liquid meshes
     HomeBrushingAction/
       HomeBrushingAction.json            sink cavity/drain, faucet pivot/grip/outlet and normalized foam contracts
       Models/                           nine Blender FBX: basin, drain, brush, droplet, splash, faucet body/handle/outlet and water stream
@@ -362,6 +364,7 @@ Assets/
         PerformanceCaptureSamples.cs options, bounded samples and percentile summaries
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
+        HomeToiletWaterAudioResources.cs shared procedural entry cue and seamless submerged water loop
         IntoxicationAudioDriver.cs         forwards shared tempo-owner intensity to native VHS
         CityRainSound.cs                   deterministic rain noise loop + intensity player
         CitySurfSound.cs                   one nearest-waterline spatial surf voice
@@ -398,6 +401,7 @@ Assets/
         BegottenFilmModel.cs        seeded 24 fps projector: held/new picture, flicker, weave, slips, scratches
         DepthOfFieldSettingsBinder.cs player setting -> authored Gaussian grades
         CinematicDepthOfField.cs priority-10 modal Bokeh; immediate release for camera handoffs
+        HomeToiletUnderwaterPass.cs camera-scoped RenderGraph pass before URP post-processing, registered by Ps1CompositeRendererFeature
       Games/         pure rules and engines for the two park boards, no Unity
         BoardGameContracts.cs  side/status/placement/action/turn contract both games answer
         ChessRules.cs          legal chess: make/unmake, castling, en passant, promotion, attack map
@@ -646,7 +650,8 @@ Assets/
         HomeMirrorPlane.cs         the mirror plane, the opening layout and the seam-continuous _BaseMap_ST arithmetic
         HomeMirrorSubtreeClone.cs  renderer-only hand-walked copy of a built subtree, kept in step with its source
         HomeBathroomMirrorResources.cs  the shared transparent pane material
-        HomeToiletLid.cs           authored hinge motion + bowl-water asset composition
+        HomeToiletLid.cs           authored hinge motion + hollow bowl/water asset composition
+        HomeToiletWaterResources.cs shared bowl-water material and subsystem-reset cleanup
         HomeUrineEffect.cs         pooled ballistic packets, contact sounds, splashes and projected marks
         HomeShowerBridgeResources.cs  the three Blender bridge pieces (yoke, deltoids) for the undressed hero, under runtime pivots
         HomeUrine{Trajectory,SurfaceMap,Residue,Resources}.cs  swept mesh hits, shared assets and bounded session deposits
@@ -895,7 +900,11 @@ Assets/
         HomeRefrigeratorItemInspection*.cs  nested hover/fly/rotate/return controller + timeline
         HomeRefrigeratorFirstPersonHand.cs  prefab-derived right arm and handle reach
         StairwellCatInteraction.cs     Talk/Interact adapter + paired feeding orchestration
-        HomeToiletInteraction.cs       first-person 6 s urine + 2 s shake timeline, natural relief and cancel
+        HomeToiletChoiceInteraction.cs  single world trigger, two-option modal menu and exclusive action handoff
+        HomeToiletInteraction.cs       small option: first-person 6 s urine + 2 s shake, natural relief and cancel
+        HomeToiletPlungeInteraction.cs  large option: owned 2.5/3/2.5 s bowl-camera sequence and reversible return
+        HomeToiletPlungeTimeline.cs    quintic travel, hold and velocity-preserving brake before early return
+        HomeToiletUnderwaterEffect.cs  camera water optics, Perception-bus low-pass/gain, entry/loop voices and release
         HomeToiletFirstPersonView.cs   actual hero arm IK, head visibility, held Blender anatomy and aim/look
         HomeToiletAnatomyDynamics.cs   camera-driven shaft spring and paired damped gravity pendulums
         HomeTeethBrushingInteraction.cs  first-person reflected brushing, open/close faucet and completion-only daily relief
@@ -1000,6 +1009,7 @@ Assets/
         CounterMenuHintView.cs       shared compact W/S + Space world-menu hint/status
         MountainRoadCafeMenuHintView.cs cafe localization adapter for the shared hint
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
+      UnderwaterAudioMixerSetup.cs  reproducible post-VHS low-pass and scoped Perception gain exposures
       PlayerBuildAssetValidation.cs read-only registered asset gate before player packaging
       PerformanceCaptureMenu.cs     explicit start/stop performance capture in Play
       MothersHouse/  fixed-metre FBX import, passive Resources prefab + manifest validation
@@ -1209,7 +1219,7 @@ ArtSource/
   Bar/                           pub v3 interior/exterior/service `.blend`, 1024 px albedo sources + preview nodes
   Home/                          apartment albedo contract, manifest and contact sheet
     Interior/                    generated HomeInterior3D.blend + home-interior-3d-model.json
-  HomeToiletAction/               Blender source, model/anchor manifest and anatomy/lid/liquid preview
+  HomeToiletAction/               Blender source, model/anchor manifest and anatomy/lid/hollow-bowl/liquid preview
   HomeBrushingAction/             Blender sink/faucet source, manifest and cavity/drain inspection PNG
   HomeShowerAction/               Blender source, manifest and true-metre preview of the shower bridge pieces
   PlayerHome/                    generated exterior .blend/preview + nine-sheet manifest/contact sheet

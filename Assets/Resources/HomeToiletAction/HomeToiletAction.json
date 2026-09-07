@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generator_version": "1.4.1",
-  "signature": "4b7a12e73b74915215cb49bd808a5e3c710ab9fe39d9509dad654598acedff2c",
+  "generator_version": "1.5.0",
+  "signature": "a552c2094480d3d672496515e8923a1df0dd95b4ee53291d31a1cc7045f3b27b",
   "coordinates": "Unity local metres +Y up +Z forward",
   "source_conversion": "Y/Z swap and face rewinding; FBX -Z forward Y up",
   "palette_srgb_hex": {
@@ -14,9 +14,9 @@
     "Urine": "B9A343"
   },
   "report": {
-    "models": 13,
-    "meshes": 15,
-    "triangles": 2376,
+    "models": 14,
+    "meshes": 16,
+    "triangles": 2864,
     "deterministic_geometry": true,
     "grip_and_outlet": true,
     "lid_hinge_raise_sign": "+90 local X",
@@ -24,7 +24,15 @@
     "pedestal_hollow_water_clearance_rays": 18,
     "paper_roll_open_core": true,
     "seat_through_aperture_rays": 25,
-    "scrotum_pair_fixed_metres_and_connected_necks": true
+    "scrotum_pair_fixed_metres_and_connected_necks": true,
+    "bowl_camera_vertical_clearance_rays": 102,
+    "bowl_inward_normals_and_pedestal_clearance_rays": 288,
+    "bowl_inner_floor_world_y": 0.28,
+    "water_surface_world_y": 0.4373,
+    "submerged_camera_world_y": 0.315,
+    "water_open_surface_upward_normals": true,
+    "ceramic_positive_signed_volumes": true,
+    "fbx_round_trip_metres_axes_and_anchors": true
   },
   "models": [
     {
@@ -153,7 +161,7 @@
     {
       "name": "BowlWater",
       "resource": "HomeToiletAction/Models/BowlWater",
-      "contract": "horizontal XZ oval .34 x .314; top Y0; place world (4.05,.4373,1.40) to meet existing inner bowl slope",
+      "contract": "single open horizontal XZ oval .34 x .314; upward normals at Y0; two-sided shared water shader; world (4.05,.4373,1.40) meets the bowl's inner slope",
       "anchors": {},
       "meshes": [
         {
@@ -161,7 +169,7 @@
           "material": "Water",
           "bounds_min": [
             -0.17,
-            -0.001,
+            0,
             -0.157
           ],
           "bounds_max": [
@@ -169,7 +177,46 @@
             0,
             0.157
           ],
-          "triangles": 92
+          "triangles": 24
+        }
+      ]
+    },
+    {
+      "name": "ToiletBowl",
+      "resource": "HomeToiletAction/Models/ToiletBowl",
+      "contract": "fixed metres at (4.05,.49,1.40); original .62 x .572 rim at worldY .61; real inner floor worldY .28 and waterY .4373; camera at worldY .315; lower ceramic nests inside hollow pedestal",
+      "anchors": {
+        "CameraSubmerged": [
+          0,
+          -0.175,
+          0
+        ],
+        "CameraAboveBowl": [
+          0,
+          0.35,
+          0
+        ],
+        "WaterSurface": [
+          0,
+          -0.0527,
+          0
+        ]
+      },
+      "meshes": [
+        {
+          "name": "ToiletBowl",
+          "material": "Enamel",
+          "bounds_min": [
+            -0.31,
+            -0.232,
+            -0.286
+          ],
+          "bounds_max": [
+            0.31,
+            0.12,
+            0.286
+          ],
+          "triangles": 524
         }
       ]
     },
@@ -192,7 +239,7 @@
             0.24,
             0.429
           ],
-          "triangles": 348
+          "triangles": 380
         }
       ]
     },

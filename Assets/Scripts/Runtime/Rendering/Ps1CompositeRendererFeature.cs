@@ -19,6 +19,7 @@ namespace BarPromenade.Rendering
 
         private Ps1CompositePass pass;
         private Ps1VertexSnapGlobalsPass snapPass;
+        private HomeToiletUnderwaterPass toiletUnderwaterPass;
         private bool loggedMissingResources;
 
         public Ps1PresentationSettings PresentationSettings =>
@@ -42,6 +43,8 @@ namespace BarPromenade.Rendering
             ResolveResources();
 
             pass?.Dispose();
+            toiletUnderwaterPass?.Dispose();
+            toiletUnderwaterPass = new HomeToiletUnderwaterPass();
             pass = new Ps1CompositePass
             {
                 renderPassEvent = injectionPoint
@@ -61,6 +64,9 @@ namespace BarPromenade.Rendering
             ref RenderingData renderingData)
         {
             CameraData cameraData = renderingData.cameraData;
+            if (toiletUnderwaterPass != null && cameraData.resolveFinalTarget &&
+                toiletUnderwaterPass.IsNeeded(cameraData.camera))
+                renderer.EnqueuePass(toiletUnderwaterPass);
             // The composite draws only on a game camera that owns the
             // final image. The vertex snap, though, has to be told its
             // parameters on EVERY camera this renderer serves - a camera
@@ -218,6 +224,8 @@ namespace BarPromenade.Rendering
             pass?.Dispose();
             pass = null;
             snapPass = null;
+            toiletUnderwaterPass?.Dispose();
+            toiletUnderwaterPass = null;
         }
 
         private void ResolveResources()

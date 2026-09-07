@@ -82,7 +82,6 @@ namespace BarPromenade.Editor
                 { "MAT_Metal", "58514A" },
                 { "MAT_JacketAtlas", "FFFFFF" },
                 { "MAT_JeansAtlas", "FFFFFF" },
-                { "MAT_BandageAtlas", "FFFFFF" },
                 // The atlas contains final sRGB face colours. White prevents
                 // the registry's _BaseColor property block from tinting it a
                 // second time.
@@ -535,6 +534,17 @@ namespace BarPromenade.Editor
                         $"Hero V2 part '{part.name}' still uses obsolete " +
                         $"solid-colour material '{part.material}'; jacket, " +
                         "trousers and boots must use the full-colour atlas.");
+                }
+
+                // The left forearm wore a bandage until 2026-09-08. It was
+                // removed outright, so neither its mesh nor its material may
+                // come back: the left sleeve is the right sleeve now.
+                if (part.name.IndexOf("Bandage", StringComparison.Ordinal) >= 0 ||
+                    part.material == "MAT_BandageAtlas")
+                {
+                    throw new InvalidOperationException(
+                        $"Hero V2 part '{part.name}' brings back the removed " +
+                        "bandage; both forearms wear the jacket atlas.");
                 }
 
                 if (!PaletteHex.ContainsKey(part.material))

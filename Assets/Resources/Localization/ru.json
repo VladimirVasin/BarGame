@@ -281,6 +281,14 @@
       "value": "E — закончить"
     },
     {
+      "key": "interaction.toilet.small",
+      "value": "По-маленькому"
+    },
+    {
+      "key": "interaction.toilet.large",
+      "value": "По-большому"
+    },
+    {
       "key": "interaction.take_shower",
       "value": "E — принять душ"
     },

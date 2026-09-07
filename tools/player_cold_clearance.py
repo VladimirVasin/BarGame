@@ -13,7 +13,7 @@ import numpy as np
 
 TOLERANCE_M = 0.002
 LEFT_PARTS = ("GEO_UpperArm.L", "GEO_Forearm.L", "GEO_Hand.L", "GEO_Thumb.L",
-              "CLO_JacketSleeve.L", "CLO_Bandage.L")
+              "CLO_JacketSleeve.L", "CLO_JacketForearm.L")
 RIGHT_PARTS = ("GEO_UpperArm.R", "GEO_Forearm.R", "GEO_Hand.R", "GEO_Thumb.R",
                "CLO_JacketSleeve.R", "CLO_JacketForearm.R")
 

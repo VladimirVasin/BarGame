@@ -6,8 +6,9 @@
 - Clothing: faded, unfastened dark olive-drab field jacket with long sleeves
   over a charcoal shirt, desaturated navy trousers and dark military boots.
 - Persistent physical asymmetry:
-  - pale bandage over the character's **left** jacket forearm;
-  - muted ochre patch on the **right** shoulder;
+  - muted ochre patch on the **right** shoulder, and nothing answering it on
+    the left: the left forearm wore a pale bandage until 2026-09-08, when it
+    was removed outright and that sleeve became the right sleeve;
   - no diagonal strap, buckle or copied military insignia.
 - Mood: restrained low-poly PS1 survival horror, with readable dark outlines
   and value separation against gray-green City fog and the warm Bar interior.
@@ -31,14 +32,16 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   military boots end at `0.263/0.267 m`, so they no longer dominate the leg.
 - Clothing is a faded, unfastened dark olive-drab field jacket with long
   sleeves over the charcoal shirt, desaturated navy trousers and dark military
-  boots. There is no satchel strap or buckle. The left-forearm bandage lies
-  over the sleeve and the right-shoulder ochre repair patch remains; neither is
-  mirrored. No insignia, text or literal film-costume marking assigns the hero
-  a military history.
-- Geometry owns only silhouette: body, hair, jacket, sleeve segments, trousers,
-  boots and one flush bandage shell. A full-colour `256 x 256` point-filtered
-  clothing atlas paints the open jacket edges, pockets, seams, patch, bandage
-  wraps, cuffs and boot construction. The result has `34` mesh parts and
+  boots. There is no satchel strap or buckle, and no bandage. Both forearms
+  wear the same sleeve — one profile, one atlas cell painted by the same lines
+  — so the right-shoulder ochre repair patch is the hero's only remaining
+  asymmetry; it is not mirrored. No insignia, text or literal film-costume
+  marking assigns the hero a military history.
+- Geometry owns only silhouette: body, hair, jacket, sleeve segments, trousers
+  and boots. A full-colour `256 x 256` point-filtered clothing atlas paints the
+  open jacket edges, pockets, seams, patch, cuffs and boot construction. The
+  two forearm cells are painted identically, and the generator compares them
+  pixel for pixel. The result has `34` mesh parts and
   `2,384` triangles, with the same `31` bones, six sockets and `47` bone-only
   production actions.
 - One curved head surface uses an `8 x 4` face atlas (`512 x 256`) with
@@ -90,9 +93,9 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   independently addressable through `Player3DAssetRegistry`:
   `Head`, `Neck`, `Torso`, `Pelvis`, left/right upper arm, forearm, hand,
   thigh, shin and foot.
-- Geometry owns the body-changing hair, jacket, sleeve, trouser, boot and flush
-  bandage silhouettes. Face states, jacket construction, patch, bandage wraps,
-  cuffs and boot details are atlas pixels. Meshes use unique source datablocks
+- Geometry owns the body-changing hair, jacket, sleeve, trouser and boot
+  silhouettes. Face states, jacket construction, patch, cuffs and boot details
+  are atlas pixels. Meshes use unique source datablocks
   and deterministic bone weights. The continuous `GEO_Torso` shirt and
   `CLO_JacketBody` shell have horizontal rings over three regions: pelvis,
   lower spine and chest, with smooth transitions using at most two adjacent
@@ -274,7 +277,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   shirt torso and the jeans-atlas pelvis/thighs/shins/feet switch to the
   hero's own borrowed skin material and bind the bare-skin atlas through
   their property blocks (`_BaseMap`, white tint — the face atlas's idiom),
-  the bandage stays, three Blender bridge pieces
+  both forearms come off with the rest of the jacket, three Blender bridge pieces
   (`Assets/Resources/HomeShowerAction/Models`, ~400 triangles) close the
   nape and shoulder gaps the jacket used to cover, and the toilet's
   authored anatomy hangs at rest from the measured bare pelvis. The lease

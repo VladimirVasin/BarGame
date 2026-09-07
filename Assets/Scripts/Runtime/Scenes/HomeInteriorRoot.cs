@@ -58,6 +58,8 @@ namespace BarPromenade
             get;
             private set;
         }
+        public HomeToiletPlungeInteraction ToiletPlunge { get; private set; }
+        public HomeToiletChoiceInteraction ToiletChoice { get; private set; }
         public HomeShowerInteraction ShowerScene
         {
             get;
@@ -749,11 +751,26 @@ namespace BarPromenade
         /// </summary>
         private void BuildBathroomSceneInteractions()
         {
-            ToiletScene = BuildBathroomScene<HomeToiletInteraction>(
-                "Home Toilet Interaction",
-                new Vector3(3.30f, 0.9f, 1.40f),
-                new Vector3(0.9f, 1.8f, 1.1f));
+            // Only the choice has a trigger. The two action owners are siblings,
+            // outside its parent chain, so the interactor cannot bypass the menu.
+            var toiletObject = new GameObject("Home Toilet Interaction");
+            toiletObject.transform.SetParent(transform, false);
+            ToiletScene = toiletObject.AddComponent<HomeToiletInteraction>();
             ToiletScene.Initialize(this);
+
+            var plungeObject = new GameObject("Home Toilet Plunge Interaction");
+            plungeObject.transform.SetParent(transform, false);
+            ToiletPlunge = plungeObject.AddComponent<HomeToiletPlungeInteraction>();
+            ToiletPlunge.Initialize(this);
+
+            var choiceObject = new GameObject("Home Toilet Choice Interaction");
+            choiceObject.transform.SetParent(transform, false);
+            choiceObject.transform.localPosition = new Vector3(3.30f, 0.9f, 1.40f);
+            BoxCollider toiletTrigger = choiceObject.AddComponent<BoxCollider>();
+            toiletTrigger.isTrigger = true;
+            toiletTrigger.size = new Vector3(0.9f, 1.8f, 1.1f);
+            ToiletChoice = choiceObject.AddComponent<HomeToiletChoiceInteraction>();
+            ToiletChoice.Initialize(this);
 
             ShowerScene = BuildBathroomScene<HomeShowerInteraction>(
                 "Home Shower Interaction",

@@ -46,8 +46,6 @@ PALETTE_HEX = {
     "JeansEdge": "26334A",
     "BootLeather": "1E1A16",
     "BootSole": "09090A",
-    "Bandage": "B6A899",
-    "BandageDark": "746B61",
     "Patch": "99743A",
     "Strap": "211B18",
     "StrapEdge": "433127",
@@ -967,11 +965,6 @@ class ProductionPlayerBuilderBase:
     def build_face_and_hair(self) -> None:
         raise NotImplementedError(
             "The production subclass must define its own face and hair."
-        )
-
-    def build_asymmetric_details(self) -> None:
-        raise NotImplementedError(
-            "The production subclass must define its own asymmetric details."
         )
 
     @staticmethod

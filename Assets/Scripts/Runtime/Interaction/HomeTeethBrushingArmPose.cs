@@ -450,8 +450,7 @@ namespace BarPromenade
             {
                 string side = leftHand ? ".L" : ".R";
                 bool isUpper = binding.MeshName == "GEO_UpperArm" + side || binding.MeshName == "CLO_JacketSleeve" + side;
-                bool isForearm = binding.MeshName == "GEO_Forearm" + side || binding.MeshName == "CLO_JacketForearm" + side ||
-                    (leftHand && binding.MeshName == "CLO_Bandage.L");
+                bool isForearm = binding.MeshName == "GEO_Forearm" + side || binding.MeshName == "CLO_JacketForearm" + side;
                 bool isHand = binding.MeshName == "GEO_Hand" + side || binding.MeshName == "GEO_Thumb" + side;
                 if ((!isUpper && !isForearm && !isHand) || !(binding.Renderer is SkinnedMeshRenderer renderer)) continue;
                 ReadWorldVertices(renderer);

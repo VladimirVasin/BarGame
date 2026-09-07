@@ -2305,7 +2305,10 @@ The vertical slice contains:
   cleans the soiled mouth on every replay and grants stress `-5` once per
   game day; cancellation does neither. Toilet and shower retain their own
   completion-only relief;
-- the toilet opens its hinged Blender lid immediately, guides the standing
+- the toilet's single world trigger opens `HomeToiletChoiceInteraction`
+  with `По-маленькому` / `По-большому`. Common menu navigation and mouse
+  selection dispatch to one bathroom owner; cancellation closes the menu
+  without starting either action. The small option opens the hinged Blender lid immediately, guides the standing
   hero into place and blends to eye level over `1.5 s`. A hollow ceramic
   pedestal and an actually open annular seat keep the water visible and reachable;
   a layered paper roll with
@@ -2327,6 +2330,23 @@ The vertical slice contains:
   flushes and commits stress `-6` once; stop input cancels without relief and
   retains existing marks. The shared lifecycle restores pose, head visibility,
   camera, cursor, occlusion, HUD, lid and modal input on completion or interruption;
+- the large toilet option is a camera-only sequence. The clothed hero stays
+  outside while the lens moves into the actual hollow Blender `ToiletBowl`
+  below the existing local water top `Y = 0.4373 m` and turns upward over
+  `2.5 s`. It holds for `3 s`, then follows the same path back over `2.5 s`.
+  One time ease carries each full leg through the bowl mouth without a stop;
+  early cancellation preserves velocity and acceleration during a short
+  brake before returning. Water tint and optical ripple follow the surface.
+  A scoped `Master/Perception` low-pass after VHS reaches `420 Hz` and
+  `-5 dB`, with smooth depth response; UI bypasses it. One `0.72 s` water-entry
+  cue plays at the actual downward crossing, and a quiet shared `3 s` water
+  loop fades with submersion. Source filters and VHS parameters remain
+  untouched. Completion or interruption stops the owned voices and returns
+  mixer control to scene snapshots. The branch reuses the
+  bathroom positioning, modal and cleanup lifecycle; it adds no sitting,
+  defecation, flush, stress relief or session transaction. The camera
+  exception and its world-canon boundaries are recorded in architecture notes
+  and story-bible §6;
 - a deterministic `11`-person bar crowd drawn from ordinary city pedestrian
   prefabs: six compatible designs sit at the booth anchors on concrete
   `0.48 m` seats, two sit at the counter on the exact cafe `0.8175 m` stools,

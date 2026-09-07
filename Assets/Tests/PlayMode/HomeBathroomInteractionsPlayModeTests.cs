@@ -985,7 +985,8 @@ namespace BarPromenade.Tests.PlayMode
                     Is.LessThan(0.03f),
                     "The lens sits at his eyes.");
                 Assert.That(Find(registry, "CLO_JacketBody").Renderer.enabled, Is.False);
-                Assert.That(Find(registry, "CLO_Bandage.L").Renderer.enabled, Is.True);
+                Assert.That(Find(registry, "CLO_JacketForearm.L").Renderer.enabled, Is.False, "Both sleeves come off; the left one is no longer a bandage.");
+                Assert.That(Find(registry, "GEO_Forearm.L").Renderer.enabled, Is.True);
                 Assert.That(shower.WashPose.BridgesShown, Is.True);
                 if (atlas != null)
                 {
@@ -2276,7 +2277,7 @@ namespace BarPromenade.Tests.PlayMode
                         name.StartsWith("GEO_Thigh.") || name.StartsWith("GEO_Shin.") ||
                         name.StartsWith("GEO_UpperArm.") || name.StartsWith("GEO_Forearm.");
                     bool arm = name.StartsWith("GEO_Hand.") || name.StartsWith("GEO_Thumb.") ||
-                        name.StartsWith("GEO_Forearm.") || name.StartsWith("CLO_JacketForearm.") || name == "CLO_Bandage.L";
+                        name.StartsWith("GEO_Forearm.") || name.StartsWith("CLO_JacketForearm.");
                     if (!body && !arm) continue;
                     if (body) bodies.Add(new Surface { Name = name, Renderer = renderer });
                     if (arm) arms.Add(new Surface { Name = name, Renderer = renderer });
@@ -2965,15 +2966,22 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 approachPosition)
         {
             home.Player.Motor.Teleport(approachPosition);
+            IInteractable target = scene == home.ToiletScene
+                ? (IInteractable)home.ToiletChoice : scene;
             float deadline =
                 Time.realtimeSinceStartup + TimeoutSeconds;
             while (Time.realtimeSinceStartup < deadline)
             {
                 if (ReferenceEquals(
                         home.Player.Interactor.ActiveInteractable,
-                        scene))
+                        target))
                 {
-                    scene.Interact(home.Player.Interactor);
+                    target.Interact(home.Player.Interactor);
+                    if (scene == home.ToiletScene)
+                    {
+                        home.ToiletChoice.SelectChoice(HomeToiletChoice.Small);
+                        Assert.That(home.ToiletChoice.Confirm(), Is.True);
+                    }
                     yield break;
                 }
 

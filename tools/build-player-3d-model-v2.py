@@ -173,7 +173,7 @@ CLOTHING_REGIONS = {
     "JacketBody": ("CLO_JacketBody", 0, 128, 128, 128),
     "JacketSleeveLeft": ("CLO_JacketSleeve.L", 128, 192, 64, 64),
     "JacketSleeveRight": ("CLO_JacketSleeve.R", 192, 192, 64, 64),
-    "BandageLeft": ("CLO_Bandage.L", 128, 128, 64, 64),
+    "JacketForearmLeft": ("CLO_JacketForearm.L", 128, 128, 64, 64),
     "JeansPelvis": ("GEO_Pelvis", 192, 128, 64, 64),
     "JeansThighLeft": ("GEO_Thigh.L", 0, 64, 64, 64),
     "JeansThighRight": ("GEO_Thigh.R", 64, 64, 64, 64),
@@ -726,8 +726,6 @@ def build_clothing_atlas(path: Path) -> str:
     metal = rgba_from_hex(V2_PALETTE_HEX["Metal"])
     jeans = rgba_from_hex(V2_PALETTE_HEX["Jeans"])
     jeans_edge = rgba_from_hex(V2_PALETTE_HEX["JeansEdge"])
-    bandage = rgba_from_hex(V2_PALETTE_HEX["Bandage"])
-    bandage_dark = rgba_from_hex(V2_PALETTE_HEX["BandageDark"])
     canvas.rect(0, 0, canvas.width, canvas.height, unused)
 
     # JacketBody is one 128x128 region: left half is front, right half back.
@@ -791,20 +789,17 @@ def build_clothing_atlas(path: Path) -> str:
     atlas_rect_bottom_left(canvas, sx + 20, sy + 11, sx + 44, sy + 30, patch)
     atlas_line_bottom_left(canvas, sx + 20, sy + 11, sx + 44, sy + 11, jacket_dark)
 
-    fx, fy, fw, fh = clothing_region("JacketForearmRight")
-    atlas_rect_bottom_left(canvas, fx, fy, fx + fw, fy + fh, jacket)
-    atlas_line_bottom_left(canvas, fx + fw // 2, fy + 2, fx + fw // 2, fy + fh - 3, jacket_edge)
-    for fold_y in (15, 29, 43):
-        atlas_line_bottom_left(canvas, fx + 5, fy + fold_y, fx + fw - 7, fy + fold_y + 3, jacket_dark)
-    atlas_rect_bottom_left(canvas, fx, fy + fh - 9, fx + fw, fy + fh, jacket_dark)
-    atlas_line_bottom_left(canvas, fx, fy + fh - 10, fx + fw - 1, fy + fh - 10, jacket_edge)
-
-    bx, by, bw, bh = clothing_region("BandageLeft")
-    atlas_rect_bottom_left(canvas, bx, by, bx + bw, by + bh, bandage)
-    for fraction in (0.15, 0.31, 0.48, 0.66, 0.82):
-        wrap_y = by + round(fraction * (bh - 1))
-        atlas_line_bottom_left(canvas, bx, wrap_y, bx + bw - 1, wrap_y, bandage_dark, 2)
-    atlas_line_bottom_left(canvas, bx + 3, by + 2, bx + bw - 5, by + bh - 3, bandage_dark)
+    # One set of lines paints both forearm cells, so the sleeve below the
+    # elbow reads the same on either arm. The ochre patch above stays the
+    # only painted asymmetry.
+    for region_name in ("JacketForearmLeft", "JacketForearmRight"):
+        fx, fy, fw, fh = clothing_region(region_name)
+        atlas_rect_bottom_left(canvas, fx, fy, fx + fw, fy + fh, jacket)
+        atlas_line_bottom_left(canvas, fx + fw // 2, fy + 2, fx + fw // 2, fy + fh - 3, jacket_edge)
+        for fold_y in (15, 29, 43):
+            atlas_line_bottom_left(canvas, fx + 5, fy + fold_y, fx + fw - 7, fy + fold_y + 3, jacket_dark)
+        atlas_rect_bottom_left(canvas, fx, fy + fh - 9, fx + fw, fy + fh, jacket_dark)
+        atlas_line_bottom_left(canvas, fx, fy + fh - 10, fx + fw - 1, fy + fh - 10, jacket_edge)
 
     for region_name in (
         "JeansPelvis", "JeansThighLeft", "JeansThighRight",
@@ -1414,7 +1409,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
             for name, color in V2_PALETTE_HEX.items()
         }
         materials["FaceAtlas"] = create_face_atlas_material(self.face_atlas_path)
-        for name in ("JacketAtlas", "JeansAtlas", "BandageAtlas"):
+        for name in ("JacketAtlas", "JeansAtlas"):
             materials[name] = create_static_atlas_material(name, self.clothing_atlas_path)
         self.points = self.create_pose_points()
         root = self.create_root(collections["export"])
@@ -1431,7 +1426,6 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         self.build_core_anatomy()
         self.build_clothing()
         self.build_face_and_hair()
-        self.build_asymmetric_details()
         self.build_actions()
         self.build_presentation()
         self.configure_scene_metadata()
@@ -2066,58 +2060,33 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
             sleeve["bp_sleeve_coverage"] = "shoulder_to_elbow"
             sleeve["bp_shoulder_overlap_m"] = 0.008
 
-        elbow = p["elbow.R"]
-        wrist = p["wrist.R"]
-        forearm = self.add_part(
-            "CLO_JacketForearm.R",
-            make_profiled_segment_geometry(
-                elbow,
-                wrist,
-                (
-                    (0.0, self.d(0.052), 0.86),
-                    (0.52, self.d(0.045), 0.85),
-                    (1.0, self.d(0.036), 0.83),
+        # Both forearms wear the same sleeve. The left one carried the
+        # bandage until 2026-09-08; now the two sides are built from one
+        # profile, one atlas and one UV strip, so nothing but the mirrored
+        # elbow and wrist tells them apart.
+        for side in ("L", "R"):
+            anatomical = "Left" if side == "L" else "Right"
+            forearm = self.add_part(
+                f"CLO_JacketForearm.{side}",
+                make_profiled_segment_geometry(
+                    p[f"elbow.{side}"],
+                    p[f"wrist.{side}"],
+                    (
+                        (0.0, self.d(0.052), 0.86),
+                        (0.52, self.d(0.045), 0.85),
+                        (1.0, self.d(0.036), 0.83),
+                    ),
+                    sides=10,
                 ),
-                sides=10,
-            ),
-            "JacketAtlas",
-            "clothing",
-            "forearm.R",
-            "RightLowerArm",
-            "clothing",
-            "Right",
-        )
-        assign_ring_strip_uv(forearm, "JacketForearmRight", 10, 3)
-        forearm["bp_sleeve_coverage"] = "elbow_to_wrist"
-
-    def build_asymmetric_details(self) -> None:
-        # The left forearm keeps one near-flush silhouette shell. All five
-        # wraps are pigment in BandageLeft, not stacked torus-like meshes.
-        elbow = self.points["elbow.L"]
-        wrist = self.points["wrist.L"]
-        start = elbow
-        end = wrist
-        bandage = self.add_part(
-            "CLO_Bandage.L",
-            make_profiled_segment_geometry(
-                start,
-                end,
-                (
-                    (0.0, self.d(0.052), 0.86),
-                    (0.52, self.d(0.044), 0.85),
-                    (1.0, self.d(0.036), 0.84),
-                ),
-                sides=10,
-            ),
-            "BandageAtlas",
-            "clothing",
-            "forearm.L",
-            "LeftLowerArm",
-            "signature_detail",
-            "Left",
-        )
-        assign_ring_strip_uv(bandage, "BandageLeft", 10, 3)
-        bandage["bp_sleeve_coverage"] = "elbow_to_wrist"
+                "JacketAtlas",
+                "clothing",
+                f"forearm.{side}",
+                f"{anatomical}LowerArm",
+                "clothing",
+                anatomical,
+            )
+            assign_ring_strip_uv(forearm, f"JacketForearm{anatomical}", 10, 3)
+            forearm["bp_sleeve_coverage"] = "elbow_to_wrist"
 
     def _build_face_surface(self) -> None:
         # A curved UV patch follows the head's front planes; it is not a flat
@@ -2310,6 +2279,35 @@ def count_region_color(
     )
 
 
+def mesh_distance_signature(obj) -> list[float]:
+    """Sorted pairwise vertex distances: equal iff the shells are congruent.
+
+    Rigid placement, and the ring frame's own rotation, drop out; a radius
+    that differs by a millimetre does not.
+    """
+
+    points = [obj.matrix_world @ vertex.co for vertex in obj.data.vertices]
+    return sorted(
+        (points[first] - points[second]).length
+        for first in range(len(points))
+        for second in range(first + 1, len(points))
+    )
+
+
+def read_region_pixels(
+    pixels: bytes,
+    width: int,
+    height: int,
+    region_name: str,
+) -> list[tuple[int, int, int, int]]:
+    x, y, region_width, region_height = clothing_region(region_name)
+    return [
+        png_pixel_bottom_left(pixels, width, height, px, py)
+        for py in range(y, y + region_height)
+        for px in range(x, x + region_width)
+    ]
+
+
 def measure_visual_neck_height(records: dict[str, object]) -> float:
     """Measure neckline-to-jaw attachment instead of chin-tip clearance."""
 
@@ -2464,16 +2462,22 @@ def validate_v2_result(
         "ACC_ShoulderPatch.R",
     }
     forbidden_found = sorted(forbidden_exact.intersection(records))
-    forbidden_found.extend(sorted(name for name in records if name.startswith("ACC_BandageWrap.")))
     if forbidden_found:
         errors.append(f"Decorative clothing geometry must be atlas-painted, found {forbidden_found}")
+
+    # The left forearm wore a bandage until 2026-09-08. It was removed
+    # outright rather than hidden, so no mesh, wrap or material may bring
+    # it back under any name.
+    returned_bandage = sorted(name for name in records if "Bandage" in name)
+    if returned_bandage:
+        errors.append(f"The bandage was removed; the hero must not carry {returned_bandage}")
 
     expected_atlas_material = {
         "CLO_JacketBody": "MAT_JacketAtlas",
         "CLO_JacketSleeve.L": "MAT_JacketAtlas",
         "CLO_JacketSleeve.R": "MAT_JacketAtlas",
+        "CLO_JacketForearm.L": "MAT_JacketAtlas",
         "CLO_JacketForearm.R": "MAT_JacketAtlas",
-        "CLO_Bandage.L": "MAT_BandageAtlas",
         "GEO_Pelvis": "MAT_JeansAtlas",
         "GEO_Thigh.L": "MAT_JeansAtlas",
         "GEO_Thigh.R": "MAT_JeansAtlas",
@@ -2797,20 +2801,57 @@ def validate_v2_result(
         if average_normal_y > -0.65:
             errors.append("GEO_FaceSurface must face source -Y")
 
-    bandage = bpy.data.objects.get("CLO_Bandage.L")
-    if bandage is None or common.object_center_world(bandage).x <= 0:
-        errors.append("Bandage must remain on physical left (+X)")
     for sleeve_name in ("CLO_JacketSleeve.L", "CLO_JacketSleeve.R"):
         sleeve = bpy.data.objects.get(sleeve_name)
         if sleeve is None or sleeve.get("bp_sleeve_coverage") != "shoulder_to_elbow":
             errors.append(f"{sleeve_name} must cover shoulder to elbow")
         elif sleeve.get("bp_shoulder_overlap_m", 0.0) < 0.005:
             errors.append(f"{sleeve_name} must overlap the anatomical shoulder seam")
-    right_forearm = bpy.data.objects.get("CLO_JacketForearm.R")
-    if right_forearm is None or right_forearm.get("bp_sleeve_coverage") != "elbow_to_wrist":
-        errors.append("CLO_JacketForearm.R must cover elbow to wrist")
-    if bandage is not None and bandage.get("bp_sleeve_coverage") != "elbow_to_wrist":
-        errors.append("CLO_Bandage.L must cover elbow to wrist without bare gaps")
+
+    # Since 2026-09-08 the two forearms are one shell built twice. The
+    # authored A-pose makes the left forearm segment an exact mirror of the
+    # right, offset by a rigid 7.5 mm, so "identical" is literally true and
+    # is checked as congruence, not as a family resemblance: the sorted
+    # multiset of all pairwise vertex distances is invariant under the
+    # rotation that carries one shell onto the other, and it separates the
+    # shells by radius. The bandage shared this mesh's vertex and polygon
+    # counts, so counting alone would have let it back in.
+    forearms = {}
+    for side, sign, where in (("L", 1.0, "physical left (+X)"),
+                              ("R", -1.0, "physical right (-X)")):
+        forearm = bpy.data.objects.get(f"CLO_JacketForearm.{side}")
+        if forearm is None:
+            errors.append(f"CLO_JacketForearm.{side} is missing")
+            continue
+        forearms[side] = forearm
+        if forearm.get("bp_sleeve_coverage") != "elbow_to_wrist":
+            errors.append(
+                f"CLO_JacketForearm.{side} must cover elbow to wrist without bare gaps"
+            )
+        if common.object_center_world(forearm).x * sign <= 0:
+            errors.append(f"CLO_JacketForearm.{side} must stay on {where}")
+    if len(forearms) == 2:
+        signatures = {
+            side: mesh_distance_signature(forearm)
+            for side, forearm in forearms.items()
+        }
+        if len(signatures["L"]) != len(signatures["R"]):
+            errors.append(
+                "Both jacket forearms must be the same shell, got "
+                f"{len(forearms['L'].data.vertices)} and "
+                f"{len(forearms['R'].data.vertices)} vertices"
+            )
+        else:
+            worst = max(
+                (abs(left - right)
+                 for left, right in zip(signatures["L"], signatures["R"])),
+                default=0.0,
+            )
+            if worst > 1e-6:
+                errors.append(
+                    "CLO_JacketForearm.L must be the right forearm's shell "
+                    f"exactly; the two differ by {worst * 1000.0:.4f} mm"
+                )
     if not face_atlas_path.is_file() or face_atlas_path.stat().st_size < 256:
         errors.append("Hero V2 face atlas was not generated")
     if not clothing_atlas_path.is_file() or clothing_atlas_path.stat().st_size < 256:
@@ -2821,7 +2862,6 @@ def validate_v2_result(
             errors.append(f"Clothing atlas must be 256x256, got {width}x{height}")
         else:
             patch_color = rgba_from_hex(V2_PALETTE_HEX["Patch"])
-            wrap_color = rgba_from_hex(V2_PALETTE_HEX["BandageDark"])
             shirt_color = rgba_from_hex(V2_PALETTE_HEX["Shirt"])
             jacket_dark = rgba_from_hex(V2_PALETTE_HEX["JacketDark"])
             boot_color = rgba_from_hex(V2_PALETTE_HEX["BootLeather"])
@@ -2829,10 +2869,15 @@ def validate_v2_result(
                 errors.append("Ochre patch pixels are missing from physical-right sleeve region")
             if count_region_color(pixels, width, height, "JacketSleeveLeft", {patch_color}) != 0:
                 errors.append("Ochre patch pixels leaked onto physical-left sleeve region")
-            if count_region_color(pixels, width, height, "BandageLeft", {wrap_color}) < 250:
-                errors.append("Bandage wrap lines are missing from the single left sleeve region")
-            if count_region_color(pixels, width, height, "JacketForearmRight", {jacket_dark}) < 150:
-                errors.append("Right jacket forearm needs painted cuff and fold pixels")
+            for forearm_region in ("JacketForearmLeft", "JacketForearmRight"):
+                if count_region_color(pixels, width, height, forearm_region, {jacket_dark}) < 150:
+                    errors.append(f"{forearm_region} needs painted cuff and fold pixels")
+            if (read_region_pixels(pixels, width, height, "JacketForearmLeft")
+                    != read_region_pixels(pixels, width, height, "JacketForearmRight")):
+                errors.append(
+                    "Both forearm cells must be painted identically: the left "
+                    "sleeve is the right one, not a bandage"
+                )
             if count_region_color(pixels, width, height, "JacketBody", {shirt_color}) < 500:
                 errors.append("Open jacket front must reveal a readable charcoal shirt")
             for shin_region in ("JeansShinLeft", "JeansShinRight"):
@@ -3130,7 +3175,6 @@ def write_v2_manifest(
                 "MAT_FaceAtlas": "FFFFFF",
                 "MAT_JacketAtlas": "FFFFFF",
                 "MAT_JeansAtlas": "FFFFFF",
-                "MAT_BandageAtlas": "FFFFFF",
             },
             "face_material_contract": {
                 "material": "MAT_FaceAtlas",
@@ -3166,7 +3210,7 @@ def write_v2_manifest(
                     "texture_asset": asset_reference(clothing_atlas_path),
                     "width_px": CLOTHING_ATLAS_SIZE,
                     "height_px": CLOTHING_ATLAS_SIZE,
-                    "materials": ["MAT_JacketAtlas", "MAT_JeansAtlas", "MAT_BandageAtlas"],
+                    "materials": ["MAT_JacketAtlas", "MAT_JeansAtlas"],
                     "shader_property": "_BaseMap",
                     "color_space": "sRGB",
                     "filter_mode": "Point",
@@ -3226,7 +3270,6 @@ def write_v2_manifest(
                 "head_crown_to_chin_m": round(head_height, 6),
                 "heads_tall": round(config.height / head_height, 4),
                 "silhouette": "lean weary adult",
-                "bandage_side": "Left",
                 "shoulder_patch_side": "Right",
                 "jacket": "faded dark olive-drab field jacket; original ochre patch; no copied insignia",
                 "face_baseline": "weary flat neutral; no guilt, tears, or theatrical sadness",
@@ -3235,11 +3278,10 @@ def write_v2_manifest(
                 "painted_not_modeled": [
                     "lapels", "collar", "placket", "four pocket panels and flaps",
                     "right shoulder patch", "jacket cuffs",
-                    "jeans seams and cuffs", "bandage wraps", "boot shaft panels",
+                    "jeans seams and cuffs", "boot shaft panels",
                     "laces", "eyelets", "toe cap", "sole edge",
                 ],
-                "forbidden_detail_mesh_prefixes": ["ACC_BandageWrap"],
-                "bandage_meshes": ["CLO_Bandage.L"],
+                "forbidden_detail_mesh_names": ["ACC_BandageWrap", "CLO_Bandage"],
                 "foot_meshes": ["GEO_Foot.L", "GEO_Foot.R"],
             },
             "design_metrics": {

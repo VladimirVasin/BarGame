@@ -23,11 +23,15 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "ArtSource/HomeToiletAction"
 RESOURCES = ROOT / "Assets/Resources/HomeToiletAction"
 MODELS = RESOURCES / "Models"
-VERSION = "1.4.1"
+VERSION = "1.5.0"
 ANCHORS = {"AimPivot": (0, 0, 0), "Grip": (0, -.0015, .025),
            "Outlet": (0, -.020, .130)}
 SCROTUM_ATTACHMENTS = {"ScrotumLeft": (-.011, -.016, -.006),
                        "ScrotumRight": (.011, -.016, -.006)}
+BOWL_ORIGIN = (4.05, .49, 1.40)
+BOWL_ANCHORS = {"CameraSubmerged": (0, -.175, 0),
+                "CameraAboveBowl": (0, .35, 0),
+                "WaterSurface": (0, -.0527, 0)}
 COLORS = {"Skin": "AE8D7B", "SkinDark": "392D2E", "Enamel": "919982", "Water": "3F4941",
           "Paper": "C5BEAD", "Cardboard": "80684D",
           "Urine": "B9A343"}
@@ -118,6 +122,14 @@ def hollow_vertical_profile(profile, sides=16):
     return vertices, faces
 
 
+def water_surface():
+    """One open oval, facing +Y; the shared water shader draws both sides."""
+    vertices = [(0, 0, 0)]
+    vertices += [(.17 * math.cos(math.tau * i / 24), 0,
+                  .157 * math.sin(math.tau * i / 24)) for i in range(24)]
+    return vertices, [(0, (i + 1) % 24 + 1, i + 1) for i in range(24)]
+
+
 def scrotum_lobe(side):
     """Suspended skin volume with an overlapping broad neck, never a loose ball.
 
@@ -164,8 +176,22 @@ def definitions():
                          ((0, 0, 0), .5, .5),
                          ((0, 0, .30), .36, .36),
                          ((0, 0, .5), .025, .025)], sides=8)
-    water = ring_loft([((0, -.001, 0), .17, .157),
-                       ((0, 0, 0), .17, .157)], sides=24, axis="y")
+    water = water_surface()
+    # Keep the old rim, seat and water positions. Only the lower ceramic
+    # extends into the existing hollow pedestal to hold the real camera.
+    bowl = ring_loft([
+        ((0, -.232, 0), .065, .060),
+        ((0, -.225, 0), .085, .079),
+        ((0, -.195, 0), .125, .114),
+        ((0, -.120, 0), .1953, .18018),
+        ((0, .0816, 0), .310, .286),
+        ((0, .120, 0), .310, .286),
+        ((0, .120, 0), .2666, .24596),
+        ((0, .060, 0), .248, .229),
+        ((0, -.0527, 0), .170, .157),
+        ((0, -.170, 0), .118, .105),
+        ((0, -.210, 0), .050, .045),
+    ], sides=24, axis="y")
     # Footprint centre is X4.15; bowl centre is X4.05. The hollow mouth is
     # deliberately offset -0.10 X, and its floor stays below the water level.
     pedestal = ring_loft([
@@ -173,13 +199,14 @@ def definitions():
         ((0, -.225, 0), .410, .429),
         ((0, -.195, 0), .410, .429),
         ((0, -.170, 0), .330, .350),
-        ((-.020, -.120, 0), .150, .170),
-        ((-.050, .080, 0), .140, .170),
+        ((-.040, -.120, 0), .170, .170),
+        ((-.100, .080, 0), .160, .158),
         ((-.100, .150, 0), .240, .225),
         ((-.100, .240, 0), .280, .258),
         ((-.100, .240, 0), .265, .244),
         ((-.100, .140, 0), .215, .198),
-        ((-.060, .020, 0), .100, .110),
+        ((-.100, .090, 0), .145, .134),
+        ((-.100, .010, 0), .115, .110),
     ], sides=16, axis="y")
     paper = hollow_vertical_profile([
         (.050,-.0475),(.050,.0470),(.0495,.0475),(.046,.0475),
@@ -201,7 +228,9 @@ def definitions():
         "ToiletLid": {"meshes": [("ToiletLid", lid, "Enamel")], "anchors": {},
                       "contract": "hinge at origin; extends -Z; local X +90 raises to +Y"},
         "BowlWater": {"meshes": [("BowlWater", water, "Water")], "anchors": {},
-                      "contract": "horizontal XZ oval .34 x .314; top Y0; place world (4.05,.4373,1.40) to meet existing inner bowl slope"},
+                      "contract": "single open horizontal XZ oval .34 x .314; upward normals at Y0; two-sided shared water shader; world (4.05,.4373,1.40) meets the bowl's inner slope"},
+        "ToiletBowl": {"meshes": [("ToiletBowl", bowl, "Enamel")], "anchors": BOWL_ANCHORS,
+                       "contract": "fixed metres at (4.05,.49,1.40); original .62 x .572 rim at worldY .61; real inner floor worldY .28 and waterY .4373; camera at worldY .315; lower ceramic nests inside hollow pedestal"},
         "ToiletPedestal": {"meshes": [("ToiletPedestal", pedestal, "Enamel")], "anchors": {},
                            "contract": "fixed .82 x .48 x .858 m; footprint centre (4.15,.24,1.40); hollow mouth centred localX -.10; water disk at worldY .4373 unobstructed"},
         "ToiletPaperRoll": {"meshes": [("ToiletPaper", paper, "Paper"),
@@ -278,7 +307,7 @@ def validate(defs, objects):
             assert all(math.isfinite(v) for point in geometry[0] for v in point)
             assert all(not p.use_smooth for p in mesh.polygons), mesh_name
             total_triangles += len(mesh.loop_triangles)
-    assert total_triangles < 2500, total_triangles
+    assert total_triangles < 3000, total_triangles
     anatomy_bounds = bounds(defs["Anatomy"]["meshes"][0][1])
     assert abs(anatomy_bounds[1][2] - ANCHORS["Outlet"][2]) < 1e-8
     assert all(anatomy_bounds[0][i] <= ANCHORS["Grip"][i] <= anatomy_bounds[1][i]
@@ -344,12 +373,75 @@ def validate(defs, objects):
     assert hit and abs(point.z - .025) < 1e-6, "Seat must retain its physical annular rim"
     lo, hi = bounds(defs["ToiletSeat"]["meshes"][0][1])
     assert all(abs(hi[i]-lo[i]-size) < 1e-7 for i,size in enumerate((.54,.05,.506)))
+    camera_report = validate_bowl_camera(defs, objects)
     return {"models": len(defs), "meshes": len(objects), "triangles": total_triangles,
             "deterministic_geometry": True, "grip_and_outlet": True,
             "lid_hinge_raise_sign": "+90 local X", "unit_vfx_bounds": True,
             "pedestal_hollow_water_clearance_rays": 18, "paper_roll_open_core": True,
             "seat_through_aperture_rays": 25,
-            "scrotum_pair_fixed_metres_and_connected_necks": True}
+            "scrotum_pair_fixed_metres_and_connected_necks": True, **camera_report}
+
+
+def validate_bowl_camera(defs, objects):
+    """Measure actual assembled solids, including the otherwise hidden pedestal."""
+    placements = {"ToiletBowl": BOWL_ORIGIN,
+                  "ToiletPedestal": (4.15, .24, 1.40),
+                  "ToiletSeat": (4.05, .62, 1.40)}
+    bpy.context.view_layer.update()
+
+    def ray(name, origin, direction, distance=2):
+        local = Vector(source_point(origin)) - Vector(source_point(placements[name]))
+        hit, point, normal, _ = objects[name].ray_cast(
+            local, Vector(source_point(direction)), distance=distance)
+        return ((point-local).length, normal) if hit else None
+
+    origin = tuple(BOWL_ORIGIN[i] + BOWL_ANCHORS["CameraSubmerged"][i] for i in range(3))
+    assert abs(origin[1] - .315) < 1e-7
+    assert abs(BOWL_ORIGIN[1] + BOWL_ANCHORS["WaterSurface"][1] - .4373) < 1e-7
+    water = objects["BowlWater"].data
+    assert all(p.normal.z > .999 for p in water.polygons), "Water must face upward"
+    assert all(abs(v.co.z) < 1e-8 for v in water.vertices), "Water must be one open plane"
+    # With a reduced near clip the camera retains at least 35 mm of floor
+    # clearance and a 70 mm wide unobstructed vertical travel corridor.
+    for index in range(17):
+        angle = math.tau * index / 16
+        radius = 0 if index == 16 else .035
+        bottom = (origin[0] + radius * math.cos(angle), origin[1],
+                  origin[2] + radius * math.sin(angle))
+        above = (bottom[0], .84, bottom[2])
+        for name in placements:
+            assert ray(name, bottom, (0, 1, 0), .525) is None, (name, "camera rise blocked", index)
+            assert ray(name, above, (0, -1, 0), .525) is None, (name, "camera dive blocked", index)
+        floor = ray("ToiletBowl", bottom, (0, -1, 0))
+        assert floor and .0349 <= floor[0] <= .0351, ("bowl floor", index, floor)
+        assert floor[1].z > .99, "Bowl floor must face the submerged camera"
+    # Every downward/sideways viewing direction meets inward-facing ceramic
+    # before the pedestal. This catches a pedestal wall inside the new well.
+    view_rays = 0
+    for elevation_degrees in (-80, -45, -10, 0, 20, 40):
+        elevation = math.radians(elevation_degrees)
+        for index in range(48):
+            angle = math.tau * (index + .5) / 48
+            direction = (math.cos(elevation) * math.cos(angle), math.sin(elevation),
+                         math.cos(elevation) * math.sin(angle))
+            bowl_hit = ray("ToiletBowl", origin, direction)
+            assert bowl_hit, ("Bowl interior has a hole", elevation_degrees, index)
+            assert bowl_hit[1].dot(Vector(source_point(direction))) < -.01, "Bowl interior normal inverted"
+            pedestal_hit = ray("ToiletPedestal", origin, direction)
+            assert pedestal_hit is None or pedestal_hit[0] > bowl_hit[0] + .001, (
+                "Pedestal intrudes into bowl", elevation_degrees, index, pedestal_hit, bowl_hit)
+            view_rays += 1
+    for name in placements:
+        mesh = objects[name].data
+        signed_volume = sum(mesh.vertices[t.vertices[0]].co.dot(
+            mesh.vertices[t.vertices[1]].co.cross(mesh.vertices[t.vertices[2]].co))
+            for t in mesh.loop_triangles) / 6
+        assert signed_volume > 0, (name, "inverted solid winding", signed_volume)
+    return {"bowl_camera_vertical_clearance_rays": 102,
+            "bowl_inward_normals_and_pedestal_clearance_rays": view_rays,
+            "bowl_inner_floor_world_y": .28, "water_surface_world_y": .4373,
+            "submerged_camera_world_y": origin[1], "water_open_surface_upward_normals": True,
+            "ceramic_positive_signed_volumes": True}
 
 
 def guid(path):
@@ -433,6 +525,8 @@ def compose_preview(roots):
     # readable main scale-comparison sheet.
     pedestal_preview = copy_model("ToiletPedestal", (1.30, .10, .24))
     water_preview = copy_model("BowlWater", (1.20, .10, .4373))
+    bowl_preview = copy_model("ToiletBowl", (1.20, .10, .49))
+    assembled_seat_preview = copy_model("ToiletSeat", (1.20, .10, .62))
     seat_preview = copy_model("ToiletSeat", (2.50, .10, .025))
     outlet = anatomy_origin + Vector(source_point(ANCHORS["Outlet"]))
     velocity = Vector((0, 1.5, -.10))
@@ -484,6 +578,21 @@ def compose_preview(roots):
     scene.render.filepath = str(SOURCE / "ToiletPedestal-Opening.png")
     bpy.ops.render.render(write_still=True)
     for obj in collection.objects:
+        if obj.type == "MESH": obj.hide_render = obj not in pedestal_preview + bowl_preview + assembled_seat_preview
+    camera.location = (1.75, -.75, 1.22)
+    camera.rotation_euler = (Vector((1.20,.10,.38)) - camera.location).to_track_quat("-Z", "Y").to_euler()
+    camera_data.ortho_scale = .95
+    scene.render.filepath = str(SOURCE / "ToiletBowl-DeepWell.png")
+    bpy.ops.render.render(write_still=True)
+    camera_data.type = "PERSP"
+    camera_data.lens = 24
+    camera_data.clip_start = .005
+    camera.location = (1.20, .10, .315)
+    camera.rotation_euler = Vector((0,.12,1)).to_track_quat("-Z", "Y").to_euler()
+    scene.render.filepath = str(SOURCE / "ToiletBowl-SubmergedGeometry.png")
+    bpy.ops.render.render(write_still=True)
+    camera_data.type = "ORTHO"
+    for obj in collection.objects:
         if obj.type == "MESH": obj.hide_render = obj not in seat_preview
     camera.location = (3.10, -.65, .75)
     camera.rotation_euler = (Vector((2.50,.10,0)) - camera.location).to_track_quat("-Z", "Y").to_euler()
@@ -509,8 +618,8 @@ def main():
     parser.add_argument("--preview", action="store_true")
     parser.add_argument("--preview-only", action="store_true",
                         help="Render true-scale authoring view; do not touch Unity assets or manifests")
-    parser.add_argument("--only-model", choices=tuple(definitions()),
-                        help="Export only this model; refresh full manifests and Blender source")
+    parser.add_argument("--only-model", choices=tuple(definitions()), action="append",
+                        help="Export only selected models; repeat as needed; refresh full manifests and Blender source")
     args = parser.parse_args(args_list)
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -567,7 +676,7 @@ def main():
             child.select_set(True)
         bpy.context.view_layer.objects.active = root
         path = MODELS / (name + ".fbx")
-        if args.only_model is None or args.only_model == name:
+        if args.only_model is None or name in args.only_model:
             bpy.ops.export_scene.fbx(filepath=str(path), use_selection=True,
                 object_types={"EMPTY", "MESH"}, axis_forward="-Z", axis_up="Y",
                 apply_scale_options="FBX_SCALE_ALL", bake_space_transform=False,
@@ -587,15 +696,17 @@ def main():
                "palette_srgb_hex": COLORS, "report": report, "models": model_records,
                "scrotum_attachments_relative_to_anatomy_aim_pivot": SCROTUM_ATTACHMENTS,
                "runtime_contract": "Reuse shared materials. No generated runtime geometry. Hero arm remains Player3DV2. Use model hierarchy for unit and axis conversion."}
+    if args.preview:
+        compose_preview(roots)
+    bpy.context.preferences.filepaths.save_version = 0
+    bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE / "HomeToiletAction.blend"))
+    validate_exported_geometry(defs)
+    report["fbx_round_trip_metres_axes_and_anchors"] = True
     text = json.dumps(payload, indent=2) + "\n"
     (SOURCE / "home-toilet-action-3d-model.json").write_text(text, encoding="utf-8")
     runtime_manifest = RESOURCES / "HomeToiletAction.json"
     runtime_manifest.write_text(text, encoding="utf-8")
     write_meta(runtime_manifest)
-    if args.preview:
-        compose_preview(roots)
-    bpy.context.preferences.filepaths.save_version = 0
-    bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE / "HomeToiletAction.blend"))
     print("HOME_TOILET_ACTION_EXPORTED " + json.dumps(report) + " sha256=" + signature, flush=True)
 
 

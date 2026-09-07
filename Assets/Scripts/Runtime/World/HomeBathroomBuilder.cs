@@ -294,6 +294,10 @@ namespace BarPromenade
                 HomeSurfaceKind.Enamel,
                 SurfaceProjection.CylinderCapXZ,
                 false));
+            // The deep Blender well keeps the old rim and water height while
+            // its inner floor reaches 0.28 m inside the hollow pedestal.
+            parts[1].GetComponent<MeshFilter>().sharedMesh =
+                HomeUrineResources.Mesh("ToiletBowl");
             parts.Add(HomeSurfacePrimitives.CreateCylinder(
                 "Home Bathroom Toilet Seat",
                 room,
@@ -347,7 +351,9 @@ namespace BarPromenade
                 parts);
             HomeToiletLid lid = HomeToiletLid.Create(room);
             occlusionRegistry.AddRenderers("home.bathroom.toilet", lid.gameObject);
-            occlusionRegistry.AddRenderers("home.bathroom.toilet", HomeToiletLid.CreateWater(room));
+            // Transparent water must retain its two-sided optical material;
+            // furniture occlusion replaces registered materials with opaque dither.
+            HomeToiletLid.CreateWater(room);
             occlusionRegistry.AddRenderers("home.bathroom.toilet",
                 HomeToiletLid.CreatePaper(room, parts[3].GetComponent<Renderer>().bounds));
         }

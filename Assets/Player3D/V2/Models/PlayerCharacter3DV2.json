@@ -992,16 +992,6 @@
   ],
   "parts": [
     {
-      "name": "CLO_Bandage.L",
-      "role": "signature_detail",
-      "bone": "forearm.L",
-      "sprite_part": "LeftLowerArm",
-      "side": "Left",
-      "material": "MAT_BandageAtlas",
-      "vertices": 30,
-      "triangles": 56
-    },
-    {
       "name": "CLO_JacketBody",
       "role": "clothing",
       "bone": "chest",
@@ -1010,6 +1000,16 @@
       "material": "MAT_JacketAtlas",
       "vertices": 216,
       "triangles": 428
+    },
+    {
+      "name": "CLO_JacketForearm.L",
+      "role": "clothing",
+      "bone": "forearm.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_JacketAtlas",
+      "vertices": 30,
+      "triangles": 56
     },
     {
       "name": "CLO_JacketForearm.R",
@@ -1361,12 +1361,11 @@
     "action_count": 47,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "96c1d25cb2a98843b352e8801d6c52a5a099534e9ca355c6c8fc740a4b18b5ca",
+  "content_signature_sha256": "8f1445f3ae88e81f30bce03f702671886178e1b14349979f0034f01d3e88d613",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
-    "MAT_JeansAtlas": "FFFFFF",
-    "MAT_BandageAtlas": "FFFFFF"
+    "MAT_JeansAtlas": "FFFFFF"
   },
   "face_material_contract": {
     "material": "MAT_FaceAtlas",
@@ -1529,8 +1528,7 @@
       "height_px": 256,
       "materials": [
         "MAT_JacketAtlas",
-        "MAT_JeansAtlas",
-        "MAT_BandageAtlas"
+        "MAT_JeansAtlas"
       ],
       "shader_property": "_BaseMap",
       "color_space": "sRGB",
@@ -1542,7 +1540,7 @@
       "uv_origin": "bottom_left",
       "uv_safe_inset_px": 1,
       "material_tint_hex": "FFFFFF",
-      "sha256": "63adad4281c00b00010d48506660b9a8e42cc1637a0ad0dbbdb351df17eb11e3",
+      "sha256": "88eb4765f615c2bb5e20216a00920c4635a881cb7cc4fe3b585e3a65d7cc91ee",
       "regions": [
         {
           "name": "JacketBody",
@@ -1569,8 +1567,8 @@
           "height_px": 64
         },
         {
-          "name": "BandageLeft",
-          "renderer": "CLO_Bandage.L",
+          "name": "JacketForearmLeft",
+          "renderer": "CLO_JacketForearm.L",
           "x_px": 128,
           "y_px": 128,
           "width_px": 64,
@@ -1740,7 +1738,6 @@
     "head_crown_to_chin_m": 0.2335,
     "heads_tall": 7.4946,
     "silhouette": "lean weary adult",
-    "bandage_side": "Left",
     "shoulder_patch_side": "Right",
     "jacket": "faded dark olive-drab field jacket; original ochre patch; no copied insignia",
     "face_baseline": "weary flat neutral; no guilt, tears, or theatrical sadness"
@@ -1754,18 +1751,15 @@
       "right shoulder patch",
       "jacket cuffs",
       "jeans seams and cuffs",
-      "bandage wraps",
       "boot shaft panels",
       "laces",
       "eyelets",
       "toe cap",
       "sole edge"
     ],
-    "forbidden_detail_mesh_prefixes": [
-      "ACC_BandageWrap"
-    ],
-    "bandage_meshes": [
-      "CLO_Bandage.L"
+    "forbidden_detail_mesh_names": [
+      "ACC_BandageWrap",
+      "CLO_Bandage"
     ],
     "foot_meshes": [
       "GEO_Foot.L",
