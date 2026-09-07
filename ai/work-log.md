@@ -6,6 +6,176 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-07 — Keep final captures and remove obsolete working output
+
+Reduced `Captures/` from `75,677` files / `5.083 GiB` to `462` retained files /
+`237.79 MiB` (`418` images), plus `cleanup-2026-09-07.json`: `463` files total.
+Removed `4.851 GiB`; all `462` retained SHA-256 hashes match, with no missing,
+changed or newly appearing files. Kept final subject sets, media and evidence
+under the new `ai/README.md` retention policy; no Unity/Blender process was active.
+`git diff --check` passes. No Unity checks or Git commit/push; the user deferred Git.
+
+## 2026-09-07 — The hero feels the Alpine Village cold
+
+The user accepted the planned exterior cold presentation. The dated story-bible
+§6 row and architecture exception narrowly amend art-bible §1's uniform
+animation rule: a hunched self-hug, periodic shoulder rubbing, small shivers
+and breath condensation from the first village visit. The open canopy remains
+cold; the mother's house and enclosed cableway cabin suppress the profile.
+Weather, emotional warmth and story dimming stay independent.
+
+`Player3DCharacterPresentation.Cold` inserts separately masked torso and arms
+below owned full-body actions. `ColdHold` and `ColdShoulderRub` use the existing
+rig with solved opposite-sleeve palm contacts; ordinary legs and motor remain
+untouched. Running releases the arms, and balance/falling/interactions keep
+priority. The pure `PlayerColdPresentationModel` synchronizes a four-second
+breath with a first rub after ten seconds and subsequent eight-to-fourteen-second
+start intervals. `PlayerColdBreathEffect` emits at the final mouth socket into
+a bounded world-space particle field driven by the existing village wind.
+The root owns eligibility; scaled time and cleanup cover pause and transitions.
+
+Verification began with the authored timing/contact validator and production
+generation of `47` actions. Unity compiled/imported the bank and passed the
+focused `AreaCaptureFixture.AlpineVillageColdHero` in `29.064 s`; inspection
+found that its capture preceded the final late pose. Correcting capture timing
+through `ReapplyLatePresentationPose()` justified repeating that selection,
+which passed in `27.624 s` with thirteen corrected captures.
+
+The user's separate arm-interpenetration check then found an `85.5 mm`
+authored crossing missed by the palm-contact test. The corrected left forearm
+runs above/ahead of the lower supporting right arm, with rub travel capped at
+`2.5 cm`. The generator's `tools/player_cold_clearance.py` checks all `36`
+opposing pairs of twelve actual convex meshes every half source frame: no
+crossings, minimum signed separations `+1.406 mm` (Hold, frame `29.5`) and
+`+0.939 mm` (Rub, frame `32`). The original source curves and helper hashes
+still pass; `.gitattributes` pins helper LF endings across checkouts.
+
+The focused Unity scenario gained `PlayerColdArmSeparationProbe` over final
+meshes at `1/60 s`. Initial geometry qualification needed actor-relative
+coordinates/local topology welding to preserve numerical precision; its
+`2 mm` penetration tolerance was unchanged. The first complete `995`-pose
+measurement found `20` penetrating pair-samples, worst `73.287 mm`, during
+nausea's protective hand-to-mouth transition: that state arrives after the
+hero's Update, while the hug was still blended in. `ReleaseColdForProtectivePose`
+now clears conflicting weights and reevaluates the graph in the same final
+pose before protective IK; reentry remains smooth. A same-frame assertion
+immediately after `SetNausea` covers this ordering regression.
+
+Final result: `1/1` in `45.099 s`, process exited; `996` poses × `36` pairs =
+`35,856` checks, none beyond the unchanged `2 mm` tolerance, no opposing pair
+excluded. The four forearm pairs remain positively separated, minimum
+`+0.505 mm`; bandage/right-forearm shell clearance is `+4.730 mm`.
+Worst signed clearance is `-0.626 mm` at intentional left-sleeve /
+right-hand contact during TurnRight/rubbing (sample `662`, cold time `11.15 s`,
+rub `0.46`); this is not a claim of zero geometric overlap at every contact.
+Thirteen frames were refreshed; inspected default-camera, idle, rub, walk,
+turn, run and protective views retain the intended gestures and readable breath. Evidence:
+`Captures/ColdHeroVerification/{results-arms.xml,arm-separation.json,unity-arms-final-pass.log}`
+and `Captures/AlpineVillage/cold-*.png`. Profile/visibility gates were exercised;
+cabin ownership was inspected in code, without actual house/cabin travel.
+`git diff --check` passes. No full suite or player build was run.
+
+## 2026-09-07 — The shower hero gets his anatomy back in front of his scrotum
+
+The user reported that the shower hero had no visible penis and that it read
+as hanging UNDER the testicles. He was right, and the authored meshes were
+innocent. The three genital models are authored for the toilet's standing
+pose: the shaft is a ring loft along local `+Z` to an `Outlet` at
+`(0,-.020,.130)`, and each scrotum lobe's neck is deliberately curved FORWARD
+so its mass clears the hero's coat — the generator asserts that reach into
+`[.075,.085]`. The shower hung the shaft at `74` degrees and gave the lobes
+the actor's yaw only, exactly as the toilet does. But at `74` degrees a
+`0.130 m` shaft travels only `0.0166 m` forward, so it landed `0.047 m`
+BEHIND the lobes' forward mass and `0.048 m` below it, with its lower half
+inside `GEO_Thigh.*` — the inter-thigh gap is `0.024 m` at the tip's height
+against a `0.026-0.034 m` shaft. Measured over the real ring vertices, the
+shaft stops reaching past the lobes at about `48` degrees. The toilet's own
+rest aim is `37`, which is why the identical kit always read correctly there.
+The same steepness caused a second, independent symptom: at rest the root sat
+`2.2` degrees below the bottom edge of the first-person frame while a lobe
+cleared it by `1.9` — only the scrotum was in shot.
+
+The user's instruction was "как в туалете аналогично", so the shower now hangs
+the kit the toilet's way, and the code says so instead of repeating numbers.
+`HomeToiletFirstPersonView` names the authored facts it already owned —
+`RestAimPitchDegrees` (its own `37`), `AnatomyHeightAbovePelvis`,
+`AnatomyShaftLengthMetres` and `ScrotumForwardReachMetres` — and
+`HomeShowerWashPose` derives its rest pitch and base height from the first
+two. The height reference moved with it: `AnatomyAboveCrotchMetres = 0.045`
+measured up from the pelvis MESH's lowest vertex, which is a flat bottom cap
+`0.060 m` under the pelvis bone and not the crotch at all, so the root sat
+`0.035 m` below the toilet's; it is now `AnatomyAbovePelvisMetres` off the
+pelvis ANCHOR. The bare pelvis is still baked, because only the naked body can
+say where its FRONT surface is — the toilet reads the coat there, and there is
+no coat in the shower.
+
+The PlayMode assertion that should have caught this could not:
+`Dot(AnatomyRoot.forward, Vector3.down) > 0.85` passes every pitch from `58`
+to `90` degrees — the whole broken range — and never looked at the scrotum.
+It is replaced by the contract that actually failed: the shaft's reach along
+the hero's facing must exceed the lobes' by at least `0.01 m`.
+`HomeShowerWashPose` grew `LeftScrotum`/`RightScrotum` so the test can say it.
+
+Verification: the one PlayMode selection that owns this,
+`Shower_FirstPersonNakedWashDripsAndRestores`, `1/1` passed with the new
+ordering assertion live, and it rewrote `Captures/HomeShower/`. Accepted by
+LOOKING at `05-witness-front.png` before and after: the shaft now lies in
+front of and across the lobes instead of hiding behind them. Two limitations
+recorded rather than papered over. First, the fixture has no first-person
+crotch frame at all — `02-look-down` is the braced wash pose, where the eye is
+ahead of the crotch and the crotch is out of frame by construction, and
+`03-drip` looks forward — so the first-person read is argued from geometry
+(the shaft's tip moves from `94.2` to `88.6` degrees below the DripHold eye,
+inside the frame edge at `94`), not photographed. Second, the neighbour Codex
+session is mid-flight on the player model, animations, prefab and importer, so
+the captures include its uncommitted work; nothing in this change touches
+those files. No full suite, EditMode run or player build.
+
+## 2026-09-07 — The street stops dealing the same twenty insults in the same order
+
+The user reported that the walkers' insults did not look randomly chosen. The
+draw itself was: `CityPedestrianInsultLines.NextIndex` is a uniform xorshift
+pick with a back-to-back guard, and a 200000-draw simulation of it comes out
+flat. Everything around the draw was fixed. The stream is seeded from
+`GameSessionState.CitySeed`, which is the compile-time constant `20260727`, and
+the walk lived on `CityPedestrianInsultController`, which the City root builds
+— and City is loaded `LoadSceneMode.Single` behind every bar, stairwell and
+front door. So the street opened with line `05`, then `02`, then `10`, then
+`06`, after every door, in every playthrough, on every machine; and with six or
+so lines heard per drunk walk, that fixed head is all a player ever hears.
+
+Two fixes. `CityPedestrianInsultWalk` turns the pool into a shuffle bag:
+`CityPedestrianInsultLines.Shuffle` is Fisher-Yates on the same seeded stream,
+so a round is a permutation and all twenty are heard before any comes round
+again; the seam between rounds is the one place a bag can repeat, and the head
+is swapped away from the line just said rather than reshuffled, which would
+bias what follows it. Peek and take are separate, because the line is chosen
+before the shared bubble view has agreed to show it and a refused line must not
+cost the bag a card. `CityPedestrianInsultSessionState` holds one walk above
+the scene for the whole playthrough, so the street carries on where the last
+City left it, and salts it through the new
+`CreateState(citySeed, sessionSalt)` from `DateTime.UtcNow.Ticks` folded to an
+`int`. It resets on a fresh domain and in `GameSessionState.ResetToDefaults`,
+beside the wet surfaces and the garden pots.
+
+That salt is deliberately the one number in the street not reproducible from
+the city seed: nothing plans, lays out or captures on which of twenty insults a
+stranger picks, and the pure walk still takes an explicit seed, so both halves
+stay pinned by tests. Recorded in the §6 exception note in
+`ai/architecture-notes.md`; no canon change — the row of `2026-09-05` already
+owns one shared pool of twenty lines, and nothing here touches the words, the
+register, the trigger or who may speak.
+
+Verification: one focused EditMode selection —
+`CityPedestrianInsultTests|HeroMutterTests`. `Lines_NeverRepeatBackToBackAndEveryLineComesUp`
+became `Lines_DealTheWholePoolBeforeAnyComesRoundAgain` (exact `200` deals of
+each line over `200` rounds, no repeat inside a round, twins from one seed walk
+alike), and `Walk_OutlivesTheCityAndDiffersBetweenPlaythroughs` is the new
+regression: the same walk object survives a second `Create`, and two salts open
+differently. `HeroMutterTests` guards the two new types by name as well, so
+§16.2 still fails the build on any mutter type reaching them. No full suite,
+PlayMode run or player build.
+
 ## 2026-09-06 — The Ferryman refuses to drive a drunk
 
 On the last two drunkenness stages — «Шатает» from `61` and «В стельку» from
@@ -271,7 +441,9 @@ Validated the directly affected generators and their saved outputs. The final
 focused `AreaCaptureFixture.AlpineVillage` passed `1/1`, including prebuild
 import/binding validation, and produced `27` frames. Reviewed both house types,
 the mother, close joinery, enclosure, canopy, cable cut and dimmed state.
-Captures are under `Captures/VillageArtPass/After` and `Captures/AlpineVillage`.
+Final captures are consolidated under `Captures/AlpineVillage` and
+`Captures/MothersHouseInterior`; the `2026-09-07` audit confirmed these copies
+are byte-for-byte identical to the duplicate `VillageArtPass/After` set.
 Concurrent apartment-camera edits required an isolated verification copy;
 village source and generated payloads were checked against that passing copy
 before publishing only village providers and importer metadata back. Other

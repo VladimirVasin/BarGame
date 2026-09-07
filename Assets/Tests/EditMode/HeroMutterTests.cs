@@ -611,7 +611,9 @@ namespace BarPromenade.Tests.EditMode
             {
                 typeof(CityPedestrianInsultController),
                 typeof(CityPedestrianInsultRules),
-                typeof(CityPedestrianInsultLines)
+                typeof(CityPedestrianInsultLines),
+                typeof(CityPedestrianInsultWalk),
+                typeof(CityPedestrianInsultSessionState)
             };
             Type[] mutterTypes =
             {

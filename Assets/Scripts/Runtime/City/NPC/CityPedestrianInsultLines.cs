@@ -1,11 +1,14 @@
+using System;
+
 namespace BarPromenade
 {
     /// <summary>
     /// The street's one shared pool of insults: twenty localized lines in
-    /// the voice of the anonymous passer-by, drawn by a deterministic
-    /// seeded walk that never says the same thing twice running. Pure —
-    /// the insult controller owns the state, the tests own the
-    /// distribution, and the register test owns the words.
+    /// the voice of the anonymous passer-by, dealt out of a bag that is
+    /// shuffled on a seeded stream — the street works through all twenty
+    /// before any of them comes round again. Pure — the walk owns the
+    /// place in the bag, the session state owns the walk, and the register
+    /// test owns the words.
     ///
     /// One pool for every design that speaks, on purpose: the six roaming
     /// bodies are anonymous copies on the promenade, and the bible's §21
@@ -58,6 +61,22 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// The same stream moved off the city seed by a salt the session
+        /// draws once. The city seed is a compile-time constant, so on it
+        /// alone every playthrough of the same city heard the twenty lines
+        /// in one fixed order; the salt is what makes tonight sound unlike
+        /// last night. Explicit, so a fixture can pin it.
+        /// </summary>
+        public static uint CreateState(int citySeed, int sessionSalt)
+        {
+            unchecked
+            {
+                return CreateState(
+                    citySeed ^ (int)((uint)sessionSalt * 2246822519u));
+            }
+        }
+
         public static uint NextRandomState(ref uint state)
         {
             uint value = state;
@@ -68,24 +87,50 @@ namespace BarPromenade
             return value;
         }
 
-        /// <summary>The next line index: uniform over the pool, but a draw
-        /// landing on the previous line slides to its neighbour — the
-        /// street never says the same thing twice running.</summary>
-        public static int NextIndex(ref uint state, int previousIndex)
+        /// <summary>
+        /// Lays the whole pool out in a fresh order — Fisher–Yates on the
+        /// seeded stream, so every round is a permutation and a man hears
+        /// all twenty lines before he hears one of them twice. A round can
+        /// only repeat at its own seam, and the head is swapped away from
+        /// <paramref name="previousIndex"/> rather than reshuffled, which
+        /// would bias everything behind it.
+        /// </summary>
+        public static void Shuffle(ref uint state, int[] order, int previousIndex)
         {
-            if (LineKeys.Length == 0)
+            if (order == null)
             {
-                return -1;
+                throw new ArgumentNullException(nameof(order));
             }
 
-            int index = (int)(NextRandomState(ref state) %
-                              (uint)LineKeys.Length);
-            if (index == previousIndex && LineKeys.Length > 1)
+            if (order.Length != LineKeys.Length)
             {
-                index = (index + 1) % LineKeys.Length;
+                throw new ArgumentException(
+                    "The bag holds the whole pool and nothing else.",
+                    nameof(order));
             }
 
-            return index;
+            for (int index = 0; index < order.Length; index++)
+            {
+                order[index] = index;
+            }
+
+            for (int index = order.Length - 1; index > 0; index--)
+            {
+                int pick = (int)(NextRandomState(ref state) %
+                                 (uint)(index + 1));
+                int held = order[index];
+                order[index] = order[pick];
+                order[pick] = held;
+            }
+
+            if (order.Length > 1 && order[0] == previousIndex)
+            {
+                int swap = 1 + (int)(NextRandomState(ref state) %
+                                     (uint)(order.Length - 1));
+                int head = order[0];
+                order[0] = order[swap];
+                order[swap] = head;
+            }
         }
     }
 }

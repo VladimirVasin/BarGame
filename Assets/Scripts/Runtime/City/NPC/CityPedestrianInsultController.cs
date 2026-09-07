@@ -28,6 +28,11 @@ namespace BarPromenade
     /// declared; worse, a released presentation keeps its head bone alive,
     /// so the view's own sweep would never notice that a walker left and
     /// a bubble would go on hanging over the pool root.
+    ///
+    /// Which line he hears is not this controller's to remember. The City
+    /// is rebuilt behind every door, so the walk through the pool lives in
+    /// <see cref="CityPedestrianInsultSessionState"/>, above the scene and
+    /// off a salt the playthrough draws once.
     /// </summary>
     [DefaultExecutionOrder(315)]
     [DisallowMultipleComponent]
@@ -40,8 +45,7 @@ namespace BarPromenade
         private Transform player;
         private NpcSpeechBubbleView bubbles;
         private bool[] encounterUsed = Array.Empty<bool>();
-        private uint lineState;
-        private int lastLineIndex = -1;
+        private CityPedestrianInsultWalk walk;
         private float cooldown;
         private CityPedestrianActor activeActor;
         private CityPedestrianPresentation activePresentation;
@@ -120,7 +124,10 @@ namespace BarPromenade
             controller.player = playerTransform;
             controller.bubbles = bubbleView;
             controller.encounterUsed = new bool[routeActors.Count];
-            controller.lineState = CityPedestrianInsultLines.CreateState(citySeed);
+            // The walk is the session's, not this City's: the street goes
+            // on through the bag where it left off when he last stepped
+            // through a door, instead of dealing the same order again.
+            controller.walk = CityPedestrianInsultSessionState.Walk(citySeed);
             controller.IsInitialized = true;
             return controller;
         }
@@ -313,9 +320,14 @@ namespace BarPromenade
                 return;
             }
 
-            int lineIndex = CityPedestrianInsultLines.NextIndex(
-                ref lineState,
-                lastLineIndex);
+            // Peeked, not taken: a line the view refuses was never said,
+            // and it keeps its place in the bag.
+            int lineIndex = walk.Peek();
+            if (lineIndex < 0)
+            {
+                return;
+            }
+
             string key = CityPedestrianInsultLines.LineKeys[lineIndex];
             if (!bubbles.Show(owner, LocalizationService.Get(key)))
             {
@@ -324,7 +336,7 @@ namespace BarPromenade
                 return;
             }
 
-            lastLineIndex = lineIndex;
+            walk.Take();
             encounterUsed[nearestIndex] = true;
             activeActor = nearest;
             activePresentation = owner;

@@ -4,6 +4,60 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted exception — Alpine Village cold presentation (2026-09-07):**
+  The user explicitly accepted the plan for a hunched, self-hugging idle and
+  walk, periodic shoulder rubbing, restrained shivers and visible breath in
+  the village. This narrowly lifts art-bible §1's uniform-animation rule for
+  the exterior of `AlpineVillage`, from story level `0`; the dated §6 registry
+  row and art-bible §10g own the same boundary. The shared motor, leg gait,
+  speed and controls remain unchanged. Running frees the arms while retaining
+  the cold posture; balance, falling and contextual actions take precedence.
+  The open station canopy remains cold; the mother's house and enclosed
+  cableway cabin suppress this presentation. Cold is ordinary weather,
+  independent of intoxication, degradation and the village's dimming grade.
+  No new fiction text, sound, NPC response, damage or gameplay meter is added,
+  and the village's emotionally warm light remains binding.
+
+  `Player3DCharacterPresentation.Cold` places authored `ColdHold` (`4 s`) and
+  `ColdShoulderRub` (`2.5 s`, three strokes) on separately masked torso and
+  arm layers below owned actions. The left forearm crosses above and ahead
+  of the lower supporting right arm; rubbing travels `2.5 cm` along the sleeve.
+  `PlayerColdPresentationModel` drives one
+  `4 s` breath and rub starts after `10 s`, then at varying `8–14 s` intervals.
+  The torso keeps breathing while the arms rub; running releases the hug.
+  Protective actions clear conflicting cold weights in the same final-pose
+  evaluation before their IK runs, including a nausea state written after the
+  hero's Update. Return to cold remains a `0.45 s` blend.
+  `PlayerColdBreathEffect` reuses the fog-particle
+  material with at most `40` world-space particles, emitted after the final
+  mouth pose and advected by the same shaped village wind. The root opts in
+  only while outside vehicle/cabin, scene-transition and hidden-renderer
+  ownership. The mother's-house root does not opt in. Scaled time freezes the
+  clock and particles on pause; contextual ownership and lifecycle cleanup
+  clear the profile. This is ordinary rig presentation, not a replacement
+  contextual atlas; it creates no exception to `contextual-animation-standard.md`.
+  **Verification:** the production bank contains `47` imported clips; timing,
+  contacts, original source curves and helper hashes pass their validators.
+  `tools/player_cold_clearance.py` measures all `36` opposing pairs of twelve
+  actual deformed convex meshes every half source frame: minimum authored
+  separation `+1.406 mm` for Hold and `+0.939 mm` for Rub, no crossings.
+  `AreaCaptureFixture.AlpineVillageColdHero` passes `1/1` in `45.099 s`.
+  Its `PlayerColdArmSeparationProbe` measures `996` final Unity poses at
+  `1/60 s` through cycles/transitions: `35,856` pair checks, none beyond the
+  unchanged `2 mm` penetration tolerance, with no opposing pair exempted.
+  All four forearm pairs keep positive separation (minimum `+0.505 mm`;
+  bandage/right-forearm shell `+4.730 mm`).
+  Worst signed clearance is `-0.626 mm` at the intentional palm/sleeve contact
+  during TurnRight/rubbing; this is bounded contact, not a claim of strictly
+  positive separation everywhere. Same-frame protective IK also passes.
+  Thirteen updated frames show the corrected pose; inspected default-camera,
+  idle, rub, walk, turn, run and protective views retain the intended gestures
+  and readable breath. Evidence lives in
+  `Captures/ColdHeroVerification/{results-arms.xml,arm-separation.json,unity-arms-final-pass.log}`
+  and `Captures/AlpineVillage/cold-*.png`. Profile/visibility gates were exercised;
+  cabin ownership was inspected in code, without actual house/cabin travel.
+  No broad suite or player build was run; rerun causes are in `work-log.md`.
+
 - **Accepted and verified 2026-09-06 — recovery follows the lying body and
   preserves the complete moving pose:** the user reported visible
   switches between falling and staggering, and every landing recovering via
@@ -2274,7 +2328,29 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   asked this man anything. (2) ONE SHARED POOL of twenty lines in the voice
   of the anonymous role, the user's choice over per-design pools; the
   walker's own design id still picks the voice through
-  `NpcVoiceCatalog.ResolveOrdinal`. (3) THE TRIGGER is the walker's own
+  `NpcVoiceCatalog.ResolveOrdinal`. **Corrected 2026-09-07 on the user's
+  report that the choice was not random.** It was: uniform xorshift draws
+  off `CityPedestrianInsultLines.CreateState(citySeed)`. What was not
+  random was everything around the draw — `GameSessionState.CitySeed` is
+  the compile-time constant `20260727`, and the City is reloaded
+  `LoadSceneMode.Single` behind every door, so the controller was rebuilt
+  and the stream restarted at the same first line after every bar, every
+  stairwell and in every playthrough on every machine. Two changes.
+  `CityPedestrianInsultWalk` is a shuffle bag: Fisher-Yates on the same
+  stream deals all twenty before any comes round again, with the round
+  seam swapped away from the line just said, so the pool is heard out
+  rather than sampled with the birthday effect a twenty-line pool has at
+  six draws. `CityPedestrianInsultSessionState` holds that one walk above
+  the scene for the whole playthrough — the street carries on through the
+  bag where the last City left it — and salts it from
+  `CreateState(citySeed, sessionSalt)` with `DateTime.UtcNow.Ticks` folded
+  to an `int`, reset on a fresh domain and in `ResetToDefaults`. This is
+  the one number in the street that is deliberately not reproducible from
+  the city seed; nothing plans, lays out or captures on it, and the pure
+  walk still takes an explicit seed so
+  `CityPedestrianInsultTests.Walk_OutlivesTheCityAndDiffersBetweenPlaythroughs`
+  pins both halves. Peek and take are separate on the walk: a line the
+  shared view refuses was never said and keeps its place in the bag. (3) THE TRIGGER is the walker's own
   glance: `CityPedestrianActor.IsAttending` (the hero's notice cone run
   from the walker), `3 m`, facing dot `> 0.2`, the personal-space
   controller's chest-height sight ray and its `IsHeroAvailable` gate, so the
@@ -5440,6 +5516,44 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   imported cylinder profiles' half-height convention. The nozzle remains
   above the existing tray. Dock, wall palms, approach, first-person lens,
   interaction timeline and costume ownership retain their accepted contract.
+- **Corrected 2026-09-07 on the user's report that the shower hero had no
+  visible penis — "он как будто бы висит ПОД яичками":** he did, and the
+  authored models were innocent. The three genital meshes
+  (`Anatomy`, `ScrotumLeft`, `ScrotumRight`) are authored for the TOILET's
+  standing pose: the shaft is a ring loft along local `+Z` to an `Outlet`
+  at `(0,-.020,.130)`, and each lobe's neck is deliberately curved FORWARD
+  so its mass clears the hero's coat — the generator asserts that reach
+  into `[.075,.085]` (`build-home-toilet-action-3d-model.py:127,291`). The
+  shower hung the shaft at `74` degrees while giving the lobes the actor's
+  yaw only, which is what the toilet does too; but at `74` degrees a
+  `0.130 m` shaft travels only `0.0166 m` forward, so it fell `0.047 m`
+  BEHIND the lobes' forward-curved mass and `0.048 m` below it, with its
+  lower half inside `GEO_Thigh.*` (the inter-thigh gap is `0.024 m` at the
+  tip's height against a `0.026-0.034 m` shaft). Measured over the real
+  ring vertices, the shaft stops reaching past the lobes at about `48`
+  degrees; the toilet's own rest aim is `37`, which is why the same kit
+  always read correctly there. A second, independent symptom came from the
+  same steepness: at rest the root sat `2.2` degrees BELOW the bottom edge
+  of the first-person frame while a lobe cleared it by `1.9` — literally
+  only the scrotum was in shot. The user's instruction was "как в туалете
+  аналогично", so the shower now hangs the kit the toilet's way and says
+  so in code: `HomeToiletFirstPersonView` names `RestAimPitchDegrees` (its
+  own `37`), `AnatomyHeightAbovePelvis`, `AnatomyShaftLengthMetres` and
+  `ScrotumForwardReachMetres`, and `HomeShowerWashPose` derives its rest
+  pitch and base height from the first two. The height reference changed
+  with it: `AnatomyAboveCrotchMetres = 0.045` measured up from the pelvis
+  MESH's lowest vertex, which is a flat bottom cap `0.060 m` under the
+  pelvis bone and not the crotch at all, putting the root `0.035 m` below
+  the toilet's; it is now `AnatomyAbovePelvisMetres` off the pelvis ANCHOR.
+  The bare pelvis is still baked, because only the naked body can say where
+  its FRONT surface is — the toilet reads the coat there, and there is no
+  coat in the shower. The old PlayMode assertion
+  `Dot(AnatomyRoot.forward, Vector3.down) > 0.85` could not see any of this:
+  it passes every pitch from `58` to `90` degrees, the whole broken range,
+  and never looked at the scrotum at all. It is replaced by the contract
+  that actually failed — the shaft's reach along the hero's facing must
+  exceed the lobes' by at least `0.01 m`. Not changed: the authored meshes,
+  the shared attachment offsets, and the toilet scene.
 - **Accepted — Clock-driven apartment mood:** `HomeDayNightController`
   now modulates the whole indoor mood, not just the window. The window
   keeps its exact day (`8.25`, warm) and night (`5.25`, blue) poles —

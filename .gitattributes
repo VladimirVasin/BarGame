@@ -14,6 +14,9 @@
 *.uxml text eol=lf
 *.uss text eol=lf
 
+# This authoring source is hashed by the hero asset manifest.
+tools/player_cold_actions.py text eol=lf
+
 # Configure UnityYAMLMerge as the `unityyamlmerge` driver in local Git config.
 [attr]unity-yaml text eol=lf merge=unityyamlmerge
 *.meta unity-yaml
@@ -47,4 +50,3 @@
 *.ttf binary
 *.otf binary
 *.dll binary
-

@@ -304,6 +304,17 @@ namespace BarPromenade
                 Player.Motor.SetFootstepSurface(World.SnowTreading);
             }
             BuildAtmosphere();
+            if (Player.Visual is Player3DCharacterPresentation coldHero)
+            {
+                // A roof stops snow, not cold: only the closed cabin and
+                // scene/presentation ownership suppress this exterior profile.
+                coldHero.ConfigureCold(
+                    () => !GameSessionState.IsRidingAVehicle &&
+                          (CabinSeat == null || !CabinSeat.IsSeated) &&
+                          !SceneTransitionService.IsTransitioning &&
+                          !Player.PresentationVisibility.RenderersHidden,
+                    () => Weather.CurrentWind);
+            }
             yield return new CompositionStep("player_and_atmosphere", 0.85f);
             BuildCableway();
             BuildCommonUi(ui);

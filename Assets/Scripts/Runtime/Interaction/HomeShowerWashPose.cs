@@ -18,8 +18,9 @@ namespace BarPromenade
     /// The same component carries the authored pieces the undressed rig
     /// needs and the clothed rig hides: the three bridges that close the
     /// jacket's holes at the nape and the shoulders, and the toilet's
-    /// authored anatomy, hanging at rest from the front of the pelvis.
-    /// All of them are placed from bone positions only, every frame.
+    /// authored anatomy, hanging at rest from the front of the pelvis on
+    /// the toilet's own height and pitch. All of them are placed from bone
+    /// positions only, every frame.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class HomeShowerWashPose : MonoBehaviour
@@ -42,14 +43,30 @@ namespace BarPromenade
         public const float DeltoidAlongArmMetres = 0.03f;
 
         /// <summary>
-        /// The resting anatomy hangs from the front of the bare pelvis: its
-        /// base sits this far above the pelvis mesh's lowest point, set into
-        /// the front surface by the same inset the toilet uses, and the shaft
-        /// points this far below the horizontal.
+        /// The resting anatomy hangs from the front of the bare pelvis, and
+        /// it hangs the way the toilet hangs the same three authored
+        /// models: the base measured up from the pelvis ANCHOR by the
+        /// toilet's own height, set into the front surface by the toilet's
+        /// own inset, and the shaft resting at the toilet's own pitch.
+        ///
+        /// Both numbers used to be this scene's own, and both were wrong.
+        /// The height was taken from the pelvis MESH's lowest vertex — a
+        /// flat bottom cap 0.060 m under the pelvis bone — which put the
+        /// root 0.035 m below the toilet's. The pitch was 74 degrees, and
+        /// that is the one that hid him: each scrotum lobe's neck is
+        /// authored curving FORWARD (the generator asserts a reach of
+        /// 0.075-0.085 m, so the mass clears the hero's coat in the
+        /// toilet's standing pose), and a shaft steeper than roughly 48
+        /// degrees no longer reaches past that mass. At 74 degrees the
+        /// shaft's frontmost point sat 0.047 m behind the lobes' and its
+        /// tip 0.048 m below them, with its lower half inside the thighs —
+        /// the hero looked down at himself and saw only the scrotum.
         /// </summary>
-        public const float AnatomyAboveCrotchMetres = 0.045f;
+        public const float AnatomyAbovePelvisMetres =
+            HomeToiletFirstPersonView.AnatomyHeightAbovePelvis;
         public const float AnatomyBaseInsetMetres = 0.008f;
-        public const float AnatomyRestPitchDegrees = 74f;
+        public const float AnatomyRestPitchDegrees =
+            HomeToiletFirstPersonView.RestAimPitchDegrees;
         public const float AnatomyFallbackForwardMetres = 0.07f;
 
         private Player3DAssetRegistry registry;
@@ -81,6 +98,11 @@ namespace BarPromenade
         public bool HasBridges => yoke != null && deltoidLeft != null && deltoidRight != null;
         public bool HasAnatomy => anatomyRoot != null && scrotumLeft != null && scrotumRight != null;
         public Transform AnatomyRoot => anatomyRoot;
+
+        /// <summary>The two hanging masses, so a test can say out loud
+        /// which of the three reads in front of the others.</summary>
+        public Transform LeftScrotum => scrotumLeft;
+        public Transform RightScrotum => scrotumRight;
         public float LeftPalmError { get; private set; }
         public float RightPalmError { get; private set; }
         public float LeftChainLength => left.ChainLength;
@@ -481,9 +503,11 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The bare pelvis mesh, baked once in whatever pose the hero holds
-        /// at preparation: the base sits a set height above its lowest
-        /// point, on its front surface at that height, and both are then
+        /// Where the kit sits on the bare body. The HEIGHT comes off the
+        /// pelvis anchor, the way the toilet takes it. The bare pelvis mesh
+        /// is still baked once at preparation, because only the naked body
+        /// can say where its FRONT surface is at that height — the toilet
+        /// reads the coat instead, and there is no coat here. Both are then
         /// stored in the pelvis anchor's own frame so the walk, the lean
         /// and the sway carry them along.
         /// </summary>
@@ -516,16 +540,16 @@ namespace BarPromenade
                 }
 
                 Matrix4x4 toWorld = skinned.transform.localToWorldMatrix;
-                float lowest = float.PositiveInfinity;
                 var local = new Vector3[vertices.Length];
                 for (int index = 0; index < vertices.Length; index++)
                 {
                     local[index] = actor.InverseTransformPoint(
                         toWorld.MultiplyPoint3x4(vertices[index]));
-                    lowest = Mathf.Min(lowest, local[index].y);
                 }
 
-                float baseHeight = lowest + AnatomyAboveCrotchMetres;
+                float baseHeight =
+                    actor.InverseTransformPoint(pelvisAnchor.position).y +
+                    AnatomyAbovePelvisMetres;
                 float front = float.NegativeInfinity;
                 for (int index = 0; index < local.Length; index++)
                 {

@@ -51,3 +51,18 @@ most likely to crowd out useful context.
 
 Other files under `ai/` are living documents: correct them in place rather than
 appending. If a document only grows, it needs a retention rule too.
+
+## Capture retention
+
+- Keep the latest complete verified capture set per subject (area, feature or
+  motion sequence), with its final report, finished video and referenced audio.
+  A newer partial run does not replace a complete set.
+- Discard superseded attempts, duplicate copies and build/cache output. Raw
+  motion frames may be removed once the finished video has been verified;
+  retain any distinct final stills needed to inspect the subject.
+- Reusable capture and analysis tools belong in `tools/`. Keep isolated Unity
+  projects outside `Captures/` and remove those temporary copies after their
+  validated assets and final captures have been published.
+- Never clean an active capture series or staging directory. Check its owner
+  and running processes first; update current document links when final
+  captures are consolidated, leaving archived records unchanged.

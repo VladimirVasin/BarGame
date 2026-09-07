@@ -573,8 +573,28 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(shower.WashPose.AnatomyRoot.position.y, Is.LessThan(registry.Anchors.Pelvis.position.y + 0.05f));
                 Assert.That(
                     Vector3.Dot(shower.WashPose.AnatomyRoot.forward, Vector3.down),
-                    Is.GreaterThan(0.85f),
+                    Is.GreaterThan(0.4f),
                     "At rest it hangs, it does not aim.");
+                // And it never hangs so steeply that the scrotum stands in
+                // front of it. Each lobe's neck is authored curving forward
+                // for the toilet's coat clearance, so past roughly 48
+                // degrees the shaft no longer reaches past that mass and
+                // the hero looks down at himself and sees only the pair.
+                // A pitch check alone cannot say this: the old assertion
+                // here passed every angle from 58 to 90 degrees, the whole
+                // broken range included.
+                Vector3 facing = hero.forward;
+                Vector3 anatomyBase = shower.WashPose.AnatomyRoot.position;
+                float shaftReach =
+                    Vector3.Dot(shower.WashPose.AnatomyRoot.forward, facing) *
+                    HomeToiletFirstPersonView.AnatomyShaftLengthMetres;
+                float lobeReach = Mathf.Max(
+                        Vector3.Dot(shower.WashPose.LeftScrotum.position - anatomyBase, facing),
+                        Vector3.Dot(shower.WashPose.RightScrotum.position - anatomyBase, facing)) +
+                    HomeToiletFirstPersonView.ScrotumForwardReachMetres;
+                Assert.That(
+                    shaftReach, Is.GreaterThan(lobeReach + 0.01f),
+                    "The shaft has to read in front of the scrotum, never behind it.");
                 // A witness lens in the stall's corner: the only way to look
                 // at the bare body from outside, for the texture work.
                 CaptureWitness("04-witness-wash", new Vector3(3.45f, 2.45f, 2.45f), new Vector3(3.95f, 1.20f, 3.30f), 56f);

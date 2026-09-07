@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model-v2.py",
-  "generator_version": "1.6.0",
+  "generator_version": "1.7.0",
   "blender_version": "5.0.1",
   "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
   "runtime_integrated": true,
@@ -12,7 +12,7 @@
   "object_count": 36,
   "mesh_count": 34,
   "triangle_count": 2384,
-  "action_count": 45,
+  "action_count": 47,
   "socket_count": 6,
   "bounds_min": [
     -0.778674,
@@ -539,6 +539,30 @@
       "source_fps": 8,
       "frame_start": 0.0,
       "frame_end": 96.0,
+      "root_motion": false,
+      "event_count": 0
+    },
+    {
+      "name": "ColdHold",
+      "category": "cold",
+      "duration_seconds": 4.0,
+      "loop": true,
+      "source_frame_count": 96,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 96.0,
+      "root_motion": false,
+      "event_count": 0
+    },
+    {
+      "name": "ColdShoulderRub",
+      "category": "cold",
+      "duration_seconds": 2.5,
+      "loop": false,
+      "source_frame_count": 60,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 60.0,
       "root_motion": false,
       "event_count": 0
     },
@@ -1309,6 +1333,7 @@
     }
   ],
   "design_version": "HeroV2",
+  "cold_authoring_sha256": "d27bd3157c1aa2ebb847561841bd8f30320fa0b11adb891beed0194e20b2e042",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
   "torso_skin": {
     "contract": "pelvis_spine_chest_v1",
@@ -1333,10 +1358,10 @@
       ]
     ],
     "maximum_ring_gap_m": 0.05,
-    "action_count": 45,
+    "action_count": 47,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "d33de4fb2cba31b1aaaba3b44c27e57943237a0fcab8e4d790374bed9eb61f0c",
+  "content_signature_sha256": "96c1d25cb2a98843b352e8801d6c52a5a099534e9ca355c6c8fc740a4b18b5ca",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",

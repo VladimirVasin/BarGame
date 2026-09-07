@@ -555,6 +555,18 @@ MonoBehaviour:
     authoredDuration: 4
     looping: 1
     facialExpressionKeys: []
+  - clipName: ColdHold
+    category: cold
+    clip: {fileID: 4577242172035637811, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 4
+    looping: 1
+    facialExpressionKeys: []
+  - clipName: ColdShoulderRub
+    category: cold
+    clip: {fileID: -2058030670615486719, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 2.5
+    looping: 0
+    facialExpressionKeys: []
   - clipName: DoorUseEnter
     category: door_use
     clip: {fileID: -3819571249170146038, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
@@ -771,10 +783,10 @@ MonoBehaviour:
       m_Center: {x: -0.0006814599, y: 0.8749999, z: 0.044000015}
       m_Extent: {x: 0.7793547, y: 0.8749999, z: 0.16800004}
     localForward: {x: 0, y: 0, z: 1}
-  sourceGeneratorVersion: 1.6.0
+  sourceGeneratorVersion: 1.7.0
   sourcePose: apose
   sourceTriangleCount: 2384
-  buildSignature: 1f624654ef65ce4be0a0434b7cdd9ec5
+  buildSignature: ee2e3f399fa5af945226f07fc28b98c3
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}

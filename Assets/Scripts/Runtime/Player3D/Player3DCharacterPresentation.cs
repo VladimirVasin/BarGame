@@ -929,6 +929,8 @@ namespace BarPromenade
                 balanceLeanTarget,
                 StatusBlendSpeed * deltaTime);
 
+            AdvanceColdPose(deltaTime);
+
             if (ragdollPoseActive)
             {
                 SetFootPlant(0.25f, 0.25f, 0.25f, false);
@@ -973,6 +975,7 @@ namespace BarPromenade
 
             RememberRecoveryPose(Time.deltaTime);
             AdvanceRecoveryPresentationClock(Time.deltaTime);
+            UpdateColdBreath();
 
             if (releaseInteractionHandoffAfterLateUpdate)
             {
@@ -1081,6 +1084,7 @@ namespace BarPromenade
         /// <summary>The late pass: the rise's limbs while a rise is on, the balance pose otherwise.</summary>
         private void ApplyLatePose(float deltaTime)
         {
+            ReleaseColdForProtectivePose();
             if (risePose.Active)
             {
                 ApplyRisePose(deltaTime);
@@ -1110,6 +1114,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ResetColdPose();
             ClearRecoveryPresentation();
             ClearContextualFacialExpression();
             interactionHandoffLocked = false;
@@ -1872,6 +1877,13 @@ namespace BarPromenade
             float armForward = armSpread * ArmForwardRaiseFraction +
                                Mathf.Abs(torsoPitch) * TorsoArmForwardCoupling;
             float armHunt = stagger * IntoxicationArmHuntDegrees;
+            // The cold mask owns a closed hand-to-shoulder contact. Fade the
+            // ambient arm spread out as it takes hold; protective reaches
+            // release the mask and recover the ordinary balance pose.
+            armSpread *= 1f - coldArmWeight;
+            armLean *= 1f - coldArmWeight;
+            armForward *= 1f - coldArmWeight;
+            armHunt *= 1f - coldArmWeight;
             float armFloor = armSpread * MinimumArmSpreadFraction;
             float leftArmOutward = Mathf.Clamp(
                 armSpread + armLean,
@@ -3019,12 +3031,14 @@ namespace BarPromenade
             RestoreAttentionPoseBase();
             if (graph.IsValid())
             {
+                SampleColdPose();
                 graph.Evaluate(Mathf.Max(0f, deltaTime));
             }
         }
 
         private void DestroyGraph()
         {
+            DisposeColdGraph();
             layer.Restore();
             RestoreAttentionPoseBase();
             ResetClipSpatialOffset();

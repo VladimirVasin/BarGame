@@ -380,8 +380,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(anchors.Spine.parent, Is.SameAs(anchors.Pelvis));
                 Assert.That(anchors.Chest.parent, Is.SameAs(anchors.Spine));
                 Assert.That(registry.AnatomicalParts.Count, Is.EqualTo(16));
-                Assert.That(registry.Animations.Count, Is.EqualTo(45));
-                Assert.That(manifest.actions, Has.Length.EqualTo(45));
+                Assert.That(registry.Animations.Count, Is.EqualTo(47));
+                Assert.That(manifest.actions, Has.Length.EqualTo(47));
 
                 SkinnedMeshRenderer renderer =
                     FindBinding(registry, meshName).Renderer as SkinnedMeshRenderer;
@@ -502,7 +502,7 @@ namespace BarPromenade.Tests.EditMode
                 }
 
                 Assert.That(maximumDepartureFromRigidChest, Is.GreaterThan(0.01f),
-                    $"{meshName} still moves as a rigid chest through all 45 actions.");
+                    $"{meshName} still moves as a rigid chest through all {manifest.actions.Length} actions.");
             }
             finally
             {
@@ -588,8 +588,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest, Is.Not.Null);
             Assert.That(manifest.design_version, Is.EqualTo("HeroV2"));
             Assert.That(manifest.runtime_integrated, Is.True);
-            Assert.That(manifest.action_count, Is.EqualTo(45));
-            Assert.That(manifest.actions, Has.Length.EqualTo(45));
+            Assert.That(manifest.action_count, Is.EqualTo(47));
+            Assert.That(manifest.actions, Has.Length.EqualTo(47));
             Assert.That(manifest.face_atlas, Is.Not.Null);
             Assert.That(
                 manifest.face_atlas.texture_asset,
@@ -632,6 +632,7 @@ namespace BarPromenade.Tests.EditMode
             AssertCell(manifest, "TeethDisplay", 6, 1, soiled: true);
             AssertCell(manifest, "Spit", 7, 1, soiled: true);
             AssertRunManifestContract(manifest);
+            AssertColdManifestContract(manifest);
             AssertBarDrinkManifestContract(manifest);
             AssertStaticTextureManifestContract(manifest);
 
@@ -693,6 +694,29 @@ namespace BarPromenade.Tests.EditMode
                 expectedDuration: 2f,
                 expectedFramesPerSecond: 12f,
                 expectedLoop: false);
+        }
+
+        private static void AssertColdManifestContract(V2Manifest manifest)
+        {
+            foreach (string name in new[] { "ColdHold", "ColdShoulderRub" })
+            {
+                bool held = name == "ColdHold";
+                V2Action action = Array.Find(manifest.actions,
+                    candidate => candidate.name == name);
+                Assert.That(action, Is.Not.Null, $"Missing Hero V2 action {name}.");
+                Assert.That(action.category, Is.EqualTo("cold"));
+                Assert.That(action.duration_seconds,
+                    Is.EqualTo(held ? 4f : 2.5f).Within(0.0001f));
+                Assert.That(action.loop, Is.EqualTo(held));
+                Assert.That(action.source_frame_count, Is.EqualTo(held ? 96 : 60));
+                Assert.That(action.source_fps, Is.EqualTo(24f));
+                Assert.That(action.frame_start, Is.Zero);
+                Assert.That(action.frame_end, Is.EqualTo(held ? 96f : 60f));
+                Assert.That(action.root_motion, Is.False);
+                Assert.That(action.event_count, Is.Zero);
+                Assert.That(action.bone_only, Is.True);
+                Assert.That(action.in_place, Is.True);
+            }
         }
 
         private static void AssertBarDrinkAction(
@@ -1069,6 +1093,15 @@ namespace BarPromenade.Tests.EditMode
                 clip => clip.name == "BarDrinkSipLoop");
             Assert.That(sipSettings, Is.Not.Null);
             Assert.That(sipSettings.loopTime, Is.True);
+
+            foreach (string name in new[] { "ColdHold", "ColdShoulderRub" })
+            {
+                ModelImporterClipAnimation coldSettings = Array.Find(
+                    importer.clipAnimations, clip => clip.name == name);
+                Assert.That(coldSettings, Is.Not.Null);
+                Assert.That(coldSettings.loopTime, Is.EqualTo(name == "ColdHold"));
+                Assert.That(coldSettings.loopPose, Is.EqualTo(name == "ColdHold"));
+            }
 
             AnimationClip runClip = null;
             int clipCount = 0;

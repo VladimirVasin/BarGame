@@ -458,6 +458,9 @@ namespace BarPromenade
             CityWetSurfaceRegistry.ResetForNewSession();
             ChurchGardenPotSessionState.ResetForNewSession();
             HomeUrineEffect.ResetSession();
+            // A new game gets a new salt, so the street does not open with
+            // the insult the last playthrough opened with.
+            CityPedestrianInsultSessionState.ResetForNewSession();
             CitySeed = DefaultCitySeed;
             CityBlueprintId = DefaultCityBlueprintId;
             ActiveBarId = string.Empty;

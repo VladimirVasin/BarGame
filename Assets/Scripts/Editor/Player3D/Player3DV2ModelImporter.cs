@@ -15,6 +15,7 @@ namespace BarPromenade.Editor
             new HashSet<string>(StringComparer.Ordinal)
             {
                 "Idle",
+                "ColdHold",
                 "Walk",
                 "WalkBack",
                 "Run",

@@ -52,6 +52,7 @@ namespace BarPromenade.Editor
             "Player3DV2StaticTextureContract.cs";
         private const string RegistryScriptPath =
             "Assets/Scripts/Runtime/Player3D/Player3DAssetRegistry.cs";
+        private const string ColdAuthoringPath = "tools/player_cold_actions.py";
         private const float ExpectedHeight = 1.75f;
         private const int MaximumTriangleCount = 4500;
         // Eight columns: the expressions on the left, their soiled twins four
@@ -131,6 +132,8 @@ namespace BarPromenade.Editor
                 { "ChessSeatEnter", new ActionContract("chess_seat", false) },
                 { "ChessSeatExit", new ActionContract("chess_seat", false) },
                 { "ChessSeatPlayLoop", new ActionContract("chess_seat", true) },
+                { "ColdHold", new ActionContract("cold", true, 4f, 96, 24f) },
+                { "ColdShoulderRub", new ActionContract("cold", false, 2.5f, 60, 24f) },
                 { "DoorUseEnter", new ActionContract("door_use", false) },
                 { "DoorUseExit", new ActionContract("door_use", false) },
                 { "DoorUseLoop", new ActionContract("door_use", true) },
@@ -419,6 +422,15 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "Hero V2 manifest must be marked runtime_integrated after " +
                     "the isolated Unity packaging pipeline exists.");
+            }
+
+            if (!string.Equals(manifest.cold_authoring_sha256,
+                    ColdAuthoringSignature(), StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Hero V2 cold actions do not match tools/player_cold_actions.py. " +
+                    "Regenerate them with tools/run-blender.py " +
+                    "tools/build-player-3d-model-v2.py before packaging.");
             }
 
             if (!string.Equals(
@@ -1392,7 +1404,8 @@ namespace BarPromenade.Editor
                 DependencyStamp(ModelImporterScriptPath),
                 DependencyStamp(TextureImporterScriptPath),
                 DependencyStamp(StaticTextureContractScriptPath),
-                DependencyStamp(RegistryScriptPath)
+                DependencyStamp(RegistryScriptPath),
+                ColdAuthoringSignature()
             };
             return Hash128.Compute(string.Join("|", inputs)).ToString();
         }
@@ -1400,6 +1413,18 @@ namespace BarPromenade.Editor
         private static string DependencyStamp(string assetPath)
         {
             return AssetDatabase.GetAssetDependencyHash(assetPath).ToString();
+        }
+
+        private static string ColdAuthoringSignature()
+        {
+            string path = Path.Combine(
+                Directory.GetParent(Application.dataPath).FullName,
+                ColdAuthoringPath);
+            using (var hash = System.Security.Cryptography.SHA256.Create())
+            {
+                return BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(path)))
+                    .Replace("-", string.Empty).ToLowerInvariant();
+            }
         }
 
         private static Avatar FindModelAvatar()
@@ -1601,6 +1626,7 @@ namespace BarPromenade.Editor
         private sealed class Player3DV2Manifest
         {
             public string generator_version;
+            public string cold_authoring_sha256;
             public string design_version;
             public bool runtime_integrated;
             public float height_m;

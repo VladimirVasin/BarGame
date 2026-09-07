@@ -28,7 +28,32 @@ namespace BarPromenade
         private const float EyeHeightAboveMouth = 0.068f;
         private const float ShakeHertz = 2.5f;
         private const float ShakeDegrees = 11f;
-        private const float AnatomyHeightAbovePelvis = 0.020f;
+        /// <summary>
+        /// The authored anatomy's own facts, read off the generator
+        /// (tools/build-home-toilet-action-3d-model.py) and named here
+        /// because this view owns the asset: the shaft is a ring loft
+        /// along local +Z from the AimPivot to an Outlet at
+        /// <c>(0, -.020, .130)</c>, and each scrotum lobe's neck is
+        /// deliberately curved forward so its mass clears the hero's coat
+        /// — the generator asserts that reach into <c>[.075, .085]</c>.
+        /// The two numbers together decide whether the shaft reads in
+        /// front of the lobes or behind them, so anything that hangs this
+        /// kit at rest has to know both.
+        /// </summary>
+        public const float AnatomyShaftLengthMetres = 0.130f;
+        public const float ScrotumForwardReachMetres = 0.082f;
+
+        /// <summary>
+        /// Where the kit sits on the body, and how steeply it rests. Both
+        /// are public because the shower hangs the same three models at
+        /// rest and has to do it the way this scene does: measured up from
+        /// the pelvis ANCHOR, and pitched shallow enough that the shaft
+        /// still reaches past the lobes' forward-curved mass. Past roughly
+        /// 48 degrees it no longer does, and the scrotum stands in front
+        /// of the shaft.
+        /// </summary>
+        public const float AnatomyHeightAbovePelvis = 0.020f;
+        public const float RestAimPitchDegrees = 37f;
         private const float AnatomyBaseInset = 0.008f;
         public static readonly Vector3 LeftScrotumAttachment = new Vector3(-0.011f, -0.016f, -0.006f);
         public static readonly Vector3 RightScrotumAttachment = new Vector3(0.011f, -0.016f, -0.006f);
@@ -467,7 +492,7 @@ namespace BarPromenade
                 ? home.Room.Find("Home Bathroom Toilet Water") : null;
             if (water == null)
             {
-                return 37f;
+                return RestAimPitchDegrees;
             }
 
             Vector3 facing = entryRotation * Vector3.forward;

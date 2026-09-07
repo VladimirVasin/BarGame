@@ -2,7 +2,7 @@
 """Build Bar Promenade's production Hero V2 model.
 
 Hero V2 owns the adult proportions, lean low-poly body, UV-driven expression
-face and complete 45-action bank. Shared rig, action, export and validation
+face and complete 47-action bank. Shared rig, action, export and validation
 helpers live in ``player_3d_model_common.py`` so this remains the only runnable
 hero model generator.
 
@@ -36,9 +36,18 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 
 import atlas_kit  # noqa: E402  (after the sys.path fix)
+import player_cold_actions  # noqa: E402
+
+PUBLISHED_PATHS: dict[Path, Path] = {}
+
+
+def asset_reference(path: Path) -> str:
+    """Staged files retain the published asset references in their manifests."""
+    resolved = path.resolve()
+    return PUBLISHED_PATHS.get(resolved, resolved).relative_to(REPO_ROOT).as_posix()
 
 COMMON_AUTHORING_PATH = REPO_ROOT / "tools" / "player_3d_model_common.py"
-V2_GENERATOR_VERSION = "1.6.0"
+V2_GENERATOR_VERSION = "1.7.0"
 TORSO_SKIN_MESHES = ("GEO_Torso", "CLO_JacketBody")
 TORSO_SKIN_BONES = ("pelvis", "spine", "chest")
 # Metres at the canonical 1.75 m height. Both garment and shirt use exactly
@@ -254,7 +263,8 @@ def load_common_authoring():
 
 
 common = load_common_authoring()
-V2_REQUIRED_ACTIONS = (*common.REQUIRED_ACTIONS, RUN_ACTION_NAME)
+V2_REQUIRED_ACTIONS = (*common.REQUIRED_ACTIONS, RUN_ACTION_NAME,
+                       player_cold_actions.HOLD_NAME, player_cold_actions.RUB_NAME)
 
 V2_PALETTE_HEX = dict(common.PALETTE_HEX)
 V2_PALETTE_HEX.update(
@@ -330,6 +340,13 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         default=DEFAULT_LOWER_BODY_CLOSEUP,
     )
     parser.add_argument("--glb", type=Path)
+    parser.add_argument("--model-dir", type=Path)
+    parser.add_argument("--animation-dir", type=Path)
+    parser.add_argument("--source-dir", type=Path)
+    parser.add_argument("--texture-dir", type=Path)
+    parser.add_argument("--resource-dir", type=Path)
+    parser.add_argument("--no-previews", action="store_true",
+                        help="Skip study renders, portrait and expression sheet; keep production assets.")
     parser.add_argument("--height", type=float, default=1.75)
     parser.add_argument("--seed", type=int, default=17301)
     parser.add_argument(
@@ -341,10 +358,24 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
     if not 1.40 <= args.height <= 2.10:
         parser.error("--height must be between 1.40 and 2.10 metres")
 
+    # Directory flags make the launcher's checked staged publication possible;
+    # existing per-file and no-argument production invocations keep their paths.
+    for directory, names in ((args.model_dir, ("fbx", "manifest")),
+                             (args.animation_dir, ("animation_fbx",)),
+                             (args.source_dir, ("output",)),
+                             (args.texture_dir, ("face_atlas", "clothing_atlas")),
+                             (args.resource_dir, ("bare_skin_atlas",))):
+        if directory is not None:
+            for name in names:
+                published = resolve_path(getattr(args, name))
+                staged = resolve_path(directory / published.name)
+                PUBLISHED_PATHS[staged] = published
+                setattr(args, name, staged)
+
     config = common.BuildConfig(
         output=resolve_path(args.output),
-        preview=resolve_path(args.preview),
-        portrait=resolve_path(args.portrait),
+        preview=None if args.no_previews else resolve_path(args.preview),
+        portrait=None if args.no_previews else resolve_path(args.portrait),
         manifest=resolve_path(args.manifest),
         glb=resolve_path(args.glb) if args.glb is not None else None,
         fbx=resolve_path(args.fbx),
@@ -356,12 +387,12 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
     return (
         config,
         resolve_path(args.face_atlas),
-        resolve_path(args.expression_sheet),
+        None if args.no_previews else resolve_path(args.expression_sheet),
         resolve_path(args.clothing_atlas),
         resolve_path(args.bare_skin_atlas),
-        resolve_path(args.head_front),
-        resolve_path(args.head_three_quarter),
-        resolve_path(args.lower_body_closeup),
+        None if args.no_previews else resolve_path(args.head_front),
+        None if args.no_previews else resolve_path(args.head_three_quarter),
+        None if args.no_previews else resolve_path(args.lower_body_closeup),
         args.face_atlas_only,
     )
 
@@ -645,7 +676,8 @@ def build_face_atlas(path: Path, expression_sheet_path: Path) -> str:
     canvas = draw_face_atlas()
     validate_face_atlas(canvas)
     canvas.write_png(path)
-    build_expression_sheet(canvas, expression_sheet_path)
+    if expression_sheet_path is not None:
+        build_expression_sheet(canvas, expression_sheet_path)
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
@@ -661,7 +693,7 @@ def update_face_atlas_manifest(path: Path, texture_path: Path, sha256: str) -> N
     manifest = json.loads(path.read_text(encoding="utf-8"))
     atlas = manifest["face_atlas"]
     assert atlas["columns"] == ATLAS_COLUMNS and atlas["rows"] == ATLAS_ROWS
-    atlas["texture_asset"] = texture_path.relative_to(REPO_ROOT).as_posix()
+    atlas["texture_asset"] = asset_reference(texture_path)
     atlas["sha256"] = sha256
     atlas["cells"] = face_atlas_cells_manifest()
     # The exported model's signature stays attached to that unchanged FBX.
@@ -1684,6 +1716,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         run_action["bp_gait_style"] = "heavy_weary"
         run_action["bp_landmark_count"] = 8
         run_action["bp_short_flight"] = True
+        player_cold_actions.build_cold_actions(self, common, V2_GENERATOR_VERSION)
         for record in self.result.actions.values():
             record.action["bp_torso_skin"] = "pelvis_spine_chest_v1"
             record.action["bp_generator_version"] = V2_GENERATOR_VERSION
@@ -2254,8 +2287,8 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         scene["bp_design_version"] = "HeroV2"
         scene["bp_design_source"] = "ai/player-art-spec.md + city story/art bibles"
         scene["bp_lineage_reference"] = "ArtSource/Player/PlayerDirectionalTurntable.png"
-        scene["bp_face_atlas"] = str(self.face_atlas_path.relative_to(REPO_ROOT)).replace("\\", "/")
-        scene["bp_clothing_atlas"] = str(self.clothing_atlas_path.relative_to(REPO_ROOT)).replace("\\", "/")
+        scene["bp_face_atlas"] = asset_reference(self.face_atlas_path)
+        scene["bp_clothing_atlas"] = asset_reference(self.clothing_atlas_path)
 
 
 read_generated_png = atlas_kit.read_generated_png
@@ -2413,6 +2446,7 @@ def validate_v2_result(
     # Runtime IK still adapts those authored contacts to the probed terrain.
     common.validate_fall_recovery_dense(result, errors)
     common.validate_recovery_routes(result, errors)
+    player_cold_actions.validate_cold_actions(result, common, errors)
     records = {record.obj.name: record for record in result.parts}
     if len(records) != len(result.parts):
         errors.append("Export mesh names are not unique")
@@ -2461,7 +2495,7 @@ def validate_v2_result(
         missing_actions = sorted(set(V2_REQUIRED_ACTIONS) - set(result.actions))
         extra_actions = sorted(set(result.actions) - set(V2_REQUIRED_ACTIONS))
         errors.append(
-            "Hero V2 must export exactly its 38-Action contract: "
+            f"Hero V2 must export exactly its {len(V2_REQUIRED_ACTIONS)}-Action contract: "
             f"missing={missing_actions}, extra={extra_actions}"
         )
     for name, record in result.actions.items():
@@ -3076,6 +3110,8 @@ def write_v2_manifest(
             "generator": "tools/build-player-3d-model-v2.py",
             "generator_version": V2_GENERATOR_VERSION,
             "design_version": "HeroV2",
+            "cold_authoring_sha256": hashlib.sha256(
+                Path(player_cold_actions.__file__).read_bytes()).hexdigest(),
             "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
             "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
             "runtime_integrated": True,
@@ -3107,7 +3143,7 @@ def write_v2_manifest(
                 "compression": "Uncompressed",
             },
             "face_atlas": {
-                "texture_asset": str(face_atlas_path.relative_to(REPO_ROOT)).replace("\\", "/"),
+                "texture_asset": asset_reference(face_atlas_path),
                 "renderer": "GEO_FaceSurface",
                 "columns": ATLAS_COLUMNS,
                 "rows": ATLAS_ROWS,
@@ -3127,7 +3163,7 @@ def write_v2_manifest(
             },
             "texture_bindings": [
                 {
-                    "texture_asset": str(clothing_atlas_path.relative_to(REPO_ROOT)).replace("\\", "/"),
+                    "texture_asset": asset_reference(clothing_atlas_path),
                     "width_px": CLOTHING_ATLAS_SIZE,
                     "height_px": CLOTHING_ATLAS_SIZE,
                     "materials": ["MAT_JacketAtlas", "MAT_JeansAtlas", "MAT_BandageAtlas"],
@@ -3156,7 +3192,7 @@ def write_v2_manifest(
                 }
             ],
             "bare_skin_atlas": {
-                "texture_asset": str(bare_skin_atlas_path.relative_to(REPO_ROOT)).replace("\\", "/"),
+                "texture_asset": asset_reference(bare_skin_atlas_path),
                 "resource_path": BARE_SKIN_ATLAS_RESOURCE_PATH,
                 "width_px": BARE_SKIN_ATLAS_SIZE,
                 "height_px": BARE_SKIN_ATLAS_SIZE,
@@ -3326,6 +3362,8 @@ def render_relaxed_study(
 ) -> None:
     """Render a deterministic close crop used for silhouette acceptance."""
 
+    if path is None:
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     scene = bpy.context.scene
     camera_data = bpy.data.cameras.new("CAM_HeroV2Study_Data")

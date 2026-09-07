@@ -243,6 +243,18 @@ The vertical slice contains:
   vertex deformation: both anchors remain fixed while bulbs and the two real
   lights follow each moving midpoint. The enclosing ridge closes sight and traversal rather than sheltering
   the bowl; only the station canopy and moving cabin are locally dry.
+  The exterior root also opts the existing hero rig into cold presentation:
+  a hunched self-hug during idle and walking, periodic shoulder rubs and small
+  shivers. Running releases the arms while keeping the hunch. The ordinary
+  leg gait, motor and speed remain shared. `PlayerColdPresentationModel`
+  synchronizes the body breath with bounded, wind-carried mouth condensation
+  from `PlayerColdBreathEffect`. The open canopy remains cold; cabin seating,
+  vehicle ownership, transitions and hidden/contextual presentation suppress
+  the profile, and the mother's-house root never enables it. Balance, falling
+  and nausea/vomiting retain their protective gestures. Pause freezes the
+  scaled-time clock and particles; scene/presentation cleanup clears the effect.
+  This is level-`0` weather, independent of the village's dimming grade; see
+  the accepted `2026-09-07` exception in `architecture-notes.md`.
   Particle alpha stays capped, and the haze wave is the one thing allowed to
   close the top of the lane — only for the seconds of a gust, with the
   uphill axis and the nearest walls readable throughout and the house back
@@ -1414,7 +1426,7 @@ The vertical slice contains:
   seated bar-drinking actions with a right-hand mug-handle grip and a
   patron-aligned rim-to-mouth pose, and the inventory portrait. It keeps the
   `1.75 m`,
-  31-bone contract with 45 bone-only Actions
+  31-bone contract with 47 bone-only Actions
   in 34 mesh parts and 2,384 triangles, but uses adult `7.4946`-head
   proportions, an atlas-driven
   five-state face and a full-colour point-filtered clothing atlas. Its open
@@ -1422,7 +1434,7 @@ The vertical slice contains:
   construction replace protruding detail meshes. The continuous shirt and
   jacket bend over pelvis, lower spine and chest through horizontal mesh rings
   and at most two adjacent bone weights per vertex; the original `41` actions
-  and four seated-recovery additions use that shared 31-bone hierarchy. Runtime
+  plus four seated-recovery and two cold additions use that shared 31-bone hierarchy. Runtime
   torso lean is split `40/60` between spine and chest with complete pose reset;
 - one manual PlayableGraph presentation that damp-blends the in-place
   four-second `Idle`, one-second `Walk` and `0.75 s`/18-frame `Run` actions

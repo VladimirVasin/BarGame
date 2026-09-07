@@ -101,7 +101,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City street surface presentation | Road/sidewalk/apron meshes share the deterministic street plan and measured surface recipes. | `CityGenerationSettings`, `CityStreetSurface{Plan,Planner}` | Current |
 | Central Park surfaces | The divided park uses shared gravel, paths and bridge geometry from its pure surface plan. | `CityParkSurfaceAppearance`, `CityWorldBuilder` | Current |
 | Pedestrian personal space | Above alcohol `60`: guarding palm; above `80`: close shove. | `CityPedestrianPersonalSpace{Rules,Controller}`, `PlayerMotor` | Current |
-| Pedestrian street insults | Local insult responses require the authored proximity/facing gates and reuse pooled speakers. | `CityPedestrianInsult{Rules,Lines,Controller}`, `CityPedestrianPersonalSpaceController.IsHeroAvailable` | Current |
+| Pedestrian street insults | Local insult responses require the authored proximity/facing gates and reuse pooled speakers; the twenty-line bag is dealt out once per round and survives City reloads. | `CityPedestrianInsult{Rules,Lines,Walk,SessionState,Controller}`, `CityPedestrianPersonalSpaceController.IsHeroAvailable` | Current |
 | City and Home street pedestrians | City streams a bounded walker population; Home reconstructs only its bounded exterior context. | `Runtime/City/NPC`, `CityPedestrianHandProps` | Current |
 | NPC Human V2 anatomy, appearance and visibility | `26` rigged humanoid designs exist on disk; the cashier swap is one-for-one and does not grow the active cast. | `NpcHumanV2AssetSetup`, `NpcDesignAppearanceCatalog` | Current |
 | City Route 01 bus | One validated route and pooled bus run in City. Gap: no Home simulation or live map vehicle marker. | `Runtime/Vehicles`, `CityBus{Plan,Planner,Actor,Audio,Director,Presentation,Factory,AssetRegistry}` | Partial |
@@ -130,7 +130,8 @@ A row never carries a status outside this table. Product-level scope cuts
 | Third-person chase camera | Shared collision-aware chase/orbit blends cinematic motion and yields to owned fixed/modal shots. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home fixed camera | Home uses authored fixed shots with smooth transitions and explicit contextual camera ownership; the main-room shot pans up to 18/9 degrees, and only as far as it must, to keep the hero framed. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
-| Modular 3D hero presentation | Hero V2: 34 parts / 2,384 triangles, 31 bones and 45 validated actions. | `Player3D*`, `PlayerFactory` | Current |
+| Modular 3D hero presentation | Hero V2: 34 parts / 2,384 triangles, 31 bones and 47 validated actions. | `Player3D*`, `PlayerFactory` | Current |
+| Alpine Village cold hero | Exterior self-hug, shoulder rubs and synchronized breath; shared movement and action ownership remain intact. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
 | Silent Hill attention | Layered gaze reacts to nearby authored targets within rig limits and yields to contextual ownership. | `PlayerAttention{Rules,Controller,Magnet}`, `IntoxicationHeadModel` | Current |
 | Continuous 3D player interactions | Shared positioned actions preserve visible entry/exit continuity and clean up presentation/input ownership. | `PlayerAnimatedInteraction{Timeline,Controller}`, `PlayerDoorAction{Plan,Controller,Target}` | Current |
 | Bed sleep and wake | Two hand-supported pelvis steps with seated stops in both directions; a domed pillow dents and recovers. | `HomeBedInteraction{,Plan}`, `PlayerAnimatedInteractionPelvisPath` | Current |
@@ -216,7 +217,7 @@ blueprint ID + seed -> immutable blueprint -> validated sparse layout
   -> fence plan -> rails with clearance openings
 
 nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
-  -> 45 authored Actions: Idle / Walk / heavy Run + seated drink 2/3/2 + seated/fours recovery
+  -> 47 authored Actions: Idle / Walk / heavy Run + seated drink 2/3/2 + seated/fours recovery + cold gestures
   -> Shift or L3 + forward -> 4.2 m/s run; backpedal and scripted approaches walk
   -> actual constrained speed owns Run weight; intoxication scales it, fatigue does not
   -> contextual actions: bed, smoking, cat feeding, bus board/ride/exit

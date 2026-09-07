@@ -207,7 +207,7 @@ Assets/
       Player3DLit.mat                   shared URP/Lit hero material
     V2/
       Models/PlayerCharacter3DV2.{fbx,json}  production 34-part model + deterministic metrics
-      Animations/PlayerCharacter3DV2Animations.fbx  validated 45-action V2 rig, including seated recovery and seated-to-crawl transfer
+      Animations/PlayerCharacter3DV2Animations.fbx  validated 47-action V2 rig, including seated recovery, seated-to-crawl transfer and cold gestures
       Textures/PlayerFaceAtlas.png       8x4 point-filtered atlas: eleven expressions + soiled twins; 22 occupied cells, 10 free
       Textures/PlayerClothingAtlas.png   full-colour open-jacket/trouser/boot atlas
       Materials/Player3DV2Clothing.mat  shared white-tint atlas material
@@ -857,6 +857,9 @@ Assets/
         Player3DResources.cs            single packaged V2 prefab instantiation
         Player3DCharacterPresentation.cs Idle/Walk/Run gait + physics handoff + full-body Rise sampling
         Player3DCharacterPresentation.Recovery.cs final pose/velocity transitions, frozen-body composition and supported hand contacts
+        Player3DCharacterPresentation.Cold.cs exterior-only torso/arm masks; locomotion legs and owned actions retain priority
+        PlayerColdPresentationModel.cs   shared scaled-time breath and periodic shoulder-rub clock
+        PlayerColdBreathEffect.cs        bounded wind-carried condensation at the authored mouth socket
         Player3DFaceAtlasPresenter.cs    merge-safe MPB face-cell texture selection
         Player3DRagdollController.cs     bounded 14-body physics; calibrated lying orientation and support costs choose the recovery route
         PlayerRagdollHandoff.cs          the fall's rigid rotation about the boot under the pressure, as a velocity field
@@ -1126,6 +1129,7 @@ Assets/
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
       Audio/CitySound*.cs                   causal plan/schedule/rewind/synthesis/occlusion contracts
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
+      PlayerColdArmSeparationProbe.cs    final-pose mesh clearance for all 36 opposing arm pairs during cold cycles/transitions
       CityPedestrianPersonalSpacePlayModeTests.cs  stage/contact/rearm/ownership regressions
       CityPedestrianPersonalSpaceCapture.cs  isolated production-rig reaction frames
       CityPedestrianHandPropCapturePlayModeTests.cs  explicit eight-frame prop-in-hand capture under Captures/HandProps (needs a GPU)
@@ -1226,6 +1230,8 @@ tools/
   build-city-chess-set-3d-model.py   turned chessmen/draught meshes + height-ladder validator
   player_3d_model_common.py         shared production rig/action/export/bed validators
   build-player-3d-model-v2.py       sole runnable production V2 anatomy/atlas/rig/export generator
+  player_cold_actions.py          Hero-only self-hug/shoulder-rub authoring and sleeve-contact validation
+  player_cold_clearance.py        all 36 opposing pairs of actual convex arm meshes, sampled each half source frame
   build-player-puppet-atlas.py      retired 2D player source tooling
   extract-player-bed-sleep-frames.py      retired player-sprite source tooling
   build-player-bed-sleep-atlas.py         retired player-sprite source tooling
@@ -1578,7 +1584,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> below darker bone-toned player route; no live bus marker
 nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
                                       -> 34 mesh bindings + 16 core parts
-                                      -> 45 Generic in-place Actions
+                                      -> 47 Generic in-place Actions
                                          -> Idle/Walk/Run/atlas-face/status/fall
                                          -> full-body all-fours/seated Rise + seated-to-crawl transfer
                                          -> DoorUseEnter/DoorUseLoop/DoorUseExit

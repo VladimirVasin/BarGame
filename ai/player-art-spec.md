@@ -39,7 +39,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   boots and one flush bandage shell. A full-colour `256 x 256` point-filtered
   clothing atlas paints the open jacket edges, pockets, seams, patch, bandage
   wraps, cuffs and boot construction. The result has `34` mesh parts and
-  `2,384` triangles, with the same `31` bones, six sockets and `45` bone-only
+  `2,384` triangles, with the same `31` bones, six sockets and `47` bone-only
   production actions.
 - One curved head surface uses an `8 x 4` face atlas (`512 x 256`) with
   twenty-two cells: eleven expressions in columns `c0..c3` and their eleven soiled
@@ -108,6 +108,25 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
 
 ## Animation contract
 
+- The accepted `2026-09-07` exterior-AlpineVillage exception adds `ColdHold`
+  (`4 s`) and `ColdShoulderRub` (`2.5 s`) on this same rig. The generator solves
+  each palm onto the opposite upper sleeve; the held self-hug has a restrained
+  hunch, raised shoulders, a breathing phrase and a short shoulder shiver. The
+  left forearm crosses above/ahead of the lower supporting right arm. The rub
+  contains three strokes of at most `2.5 cm` and returns to the held contact. The
+  `player_cold_clearance.py` generator check measures all `36` opposing pairs
+  of the twelve actual deformed convex meshes every half source frame; no
+  opposing palm/sleeve pair is exempt from the `2 mm` numerical tolerance.
+  `Player3DCharacterPresentation.Cold` masks torso and arms separately above
+  locomotion: legs and pelvis retain the ordinary gait, running releases the
+  arms, and owned actions/falling override the profile. Protective arm poses
+  release conflicting cold weights before their IK in that same frame;
+  returning to the cold pose retains its smooth blend. The shared pure cold
+  clock starts its first rub at `10 s`, then varies start intervals through
+  `8–14 s`; its `4 s` breath drives the mouth condensation too. The open station
+  canopy stays cold; the enclosed cabin and mother's house do not use this
+  presentation. Canon boundaries live in the story-bible §6 registry and
+  art-bible §10g; this is ordinary rig animation without an atlas replacement.
 - All `41` existing actions are regenerated with the independent
   `pelvis -> spine -> chest` tracks on the preserved 31-bone hierarchy. Their
   timings, sockets, hand/foot contacts and contextual seams remain the same;

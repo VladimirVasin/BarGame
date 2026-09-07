@@ -9,7 +9,7 @@ namespace BarPromenade.Tests.EditMode
     /// <summary>
     /// The street's insults: the twenty lines against the register the
     /// story bible's §6 registry row of 2026-09-05 holds them to, the
-    /// seeded walk that hands them out, and the pure rules that decide who
+    /// shuffled bag that hands them out, and the pure rules that decide who
     /// may say one and when. This is the canon test that keeps the lift
     /// exactly as narrow as the row says: a line that raises its voice,
     /// asks, swears, names a number, reaches for an abstraction or touches
@@ -104,33 +104,95 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Lines_NeverRepeatBackToBackAndEveryLineComesUp()
+        public void Lines_DealTheWholePoolBeforeAnyComesRoundAgain()
         {
-            uint state = CityPedestrianInsultLines.CreateState(Seed);
-            uint twin = CityPedestrianInsultLines.CreateState(Seed);
-            var counts = new int[CityPedestrianInsultLines.LineKeys.Length];
+            var walk = new CityPedestrianInsultWalk(
+                CityPedestrianInsultLines.CreateState(Seed));
+            var twin = new CityPedestrianInsultWalk(
+                CityPedestrianInsultLines.CreateState(Seed));
+            int poolSize = CityPedestrianInsultLines.LineKeys.Length;
+            var counts = new int[poolSize];
+            var round = new HashSet<int>();
             int previous = -1;
-            int twinPrevious = -1;
-            for (int draw = 0; draw < 4000; draw++)
+            const int Rounds = 200;
+            for (int draw = 0; draw < Rounds * poolSize; draw++)
             {
-                int index = CityPedestrianInsultLines.NextIndex(ref state, previous);
-                int twinIndex = CityPedestrianInsultLines.NextIndex(ref twin, twinPrevious);
-                Assert.That(index, Is.InRange(0, counts.Length - 1));
+                int index = walk.Take();
+                Assert.That(index, Is.InRange(0, poolSize - 1));
+                Assert.That(twin.Take(), Is.EqualTo(index),
+                    "The same seed must walk the same way.");
                 Assert.That(index, Is.Not.EqualTo(previous),
                     "The street never says the same thing twice running.");
-                Assert.That(twinIndex, Is.EqualTo(index),
-                    "The same seed must walk the same way.");
+                Assert.That(round.Add(index), Is.True,
+                    "A line came round again before the bag was empty.");
+                if (round.Count == poolSize)
+                {
+                    round.Clear();
+                }
+
                 counts[index]++;
                 previous = index;
-                twinPrevious = twinIndex;
             }
 
-            Assert.That(counts.Min(), Is.GreaterThan(0), "Every line has to come up.");
+            Assert.That(counts.Min(), Is.EqualTo(Rounds),
+                "Every line is dealt exactly once a round.");
+            Assert.That(counts.Max(), Is.EqualTo(Rounds));
             Assert.That(CityPedestrianInsultLines.CreateState(Seed), Is.Not.Zero);
             Assert.That(
                 CityPedestrianInsultLines.CreateState(Seed),
                 Is.Not.EqualTo(CemeteryWatchmanQuips.CreateState(Seed)),
                 "The street must not walk the watchman's walk.");
+        }
+
+        /// <summary>
+        /// The regression the walk was moved off the controller for: the
+        /// City is rebuilt behind every door, and on the city seed alone —
+        /// a compile-time constant — the street dealt the same order after
+        /// each one, and in every playthrough.
+        /// </summary>
+        [Test]
+        public void Walk_OutlivesTheCityAndDiffersBetweenPlaythroughs()
+        {
+            try
+            {
+                CityPedestrianInsultSessionState.BeginWithSalt(11);
+                CityPedestrianInsultWalk evening =
+                    CityPedestrianInsultSessionState.Walk(Seed);
+                Assert.That(CityPedestrianInsultSessionState.Salt, Is.EqualTo(11));
+                var opening = new List<int>();
+                for (int draw = 0; draw < 5; draw++)
+                {
+                    opening.Add(evening.Take());
+                }
+
+                // He steps into the bar and comes back out: another City,
+                // another controller, the same walk carried on.
+                Assert.That(
+                    CityPedestrianInsultSessionState.Walk(Seed),
+                    Is.SameAs(evening),
+                    "A door must not deal the pool from the top again.");
+                Assert.That(
+                    CityPedestrianInsultSessionState.Walk(Seed).Remaining,
+                    Is.EqualTo(CityPedestrianInsultLines.LineKeys.Length - 5));
+
+                // Another evening: the same city, a different order.
+                CityPedestrianInsultSessionState.BeginWithSalt(12);
+                CityPedestrianInsultWalk later =
+                    CityPedestrianInsultSessionState.Walk(Seed);
+                Assert.That(later, Is.Not.SameAs(evening));
+                var second = new List<int>();
+                for (int draw = 0; draw < 5; draw++)
+                {
+                    second.Add(later.Take());
+                }
+
+                CollectionAssert.AreNotEqual(opening, second,
+                    "Two playthroughs must not open with the same insults.");
+            }
+            finally
+            {
+                CityPedestrianInsultSessionState.ResetForNewSession();
+            }
         }
 
         [Test]
