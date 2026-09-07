@@ -23,7 +23,7 @@ namespace BarPromenade
     /// owns bone-only, in-place animation and deterministic clip sampling.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class Player3DCharacterPresentation :
+    public sealed partial class Player3DCharacterPresentation :
         MonoBehaviour,
         IPlayerPresentation,
         IPlayerClipPresentation,
@@ -499,6 +499,7 @@ namespace BarPromenade
             }
 
             interactionHandoffLocked = true;
+            CancelRecoveryPoseTransition();
             releaseInteractionHandoffAfterLateUpdate = false;
             planarSpeed = 0f;
             ResetGaitWeights();
@@ -533,6 +534,11 @@ namespace BarPromenade
         /// </summary>
         public void SetBalance(in PlayerBalancePose pose)
         {
+            if (!risePose.Active && !ragdollPoseActive &&
+                (balancePose.Phase == BalancePhase.Toppling) != (pose.Phase == BalancePhase.Toppling))
+            {
+                BeginRecoveryPoseTransition(0.24f);
+            }
             balancePose = pose;
         }
 
@@ -545,6 +551,14 @@ namespace BarPromenade
         /// </summary>
         public void SetRise(in PlayerRisePose pose)
         {
+            if (risePose.Active && pose.Active && risePose.Stage != pose.Stage)
+            {
+                BeginRecoveryPoseTransition(0.22f);
+            }
+            if (!risePose.Active || !pose.Active || risePose.Route != pose.Route)
+            {
+                ResetRiseHandContacts();
+            }
             risePose = pose;
         }
 
@@ -695,6 +709,8 @@ namespace BarPromenade
             }
 
             ReapplyLatePresentationPose();
+            recoveryTransitionDuration = 0f;
+            recoveryPhysics = null;
             layer.ForgetBase();
             ReleaseBalanceStep();
             attentionBaseCaptured = false;
@@ -736,7 +752,9 @@ namespace BarPromenade
                     clipName = "Down" + side;
                     break;
                 case PlayerFallAnimationPhase.Rising:
-                    clipName = "Rise" + side;
+                    clipName = risePose.Stage == PlayerRiseStage.SeatedToCrawl
+                        ? "RiseSeatedToCrawl" + side
+                        : (risePose.Route == PlayerRiseRoute.Seated ? "RiseSeated" : "Rise") + side;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -788,6 +806,7 @@ namespace BarPromenade
 
         public bool TryBeginClip(string clipName)
         {
+            CancelRecoveryPoseTransition();
             CaptureClipSpatialState();
             if (BeginClip(clipName, ClipOwner.External))
             {
@@ -949,7 +968,11 @@ namespace BarPromenade
             if (!ragdollPoseActive)
             {
                 ApplyAttentionPose(Time.deltaTime);
+                CompleteRecoveryPresentation(Time.deltaTime);
             }
+
+            RememberRecoveryPose(Time.deltaTime);
+            AdvanceRecoveryPresentationClock(Time.deltaTime);
 
             if (releaseInteractionHandoffAfterLateUpdate)
             {
@@ -1051,6 +1074,7 @@ namespace BarPromenade
                 ApplyLatePose(0f);
                 ReapplyFacialPose();
                 ApplyAttentionPose(0f);
+                CompleteRecoveryPresentation(0f);
             }
         }
 
@@ -1086,6 +1110,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ClearRecoveryPresentation();
             ClearContextualFacialExpression();
             interactionHandoffLocked = false;
             releaseInteractionHandoffAfterLateUpdate = false;
@@ -2091,7 +2116,7 @@ namespace BarPromenade
                 risePose.RightHandLift,
                 right,
                 forward);
-            if (risePose.HandOnKnee)
+            if (risePose.HandOnKneeWeight > 0f)
             {
                 bool kneeRight = risePose.KneeSide == FootSide.Right;
                 Transform shin = kneeRight ? rightShinBone : leftShinBone;
@@ -2100,11 +2125,13 @@ namespace BarPromenade
                     : risePose.LeftHandWeight;
                 if (shin != null && weight > 0.0001f)
                 {
+                    PlayerArmReachPose floorHand = kneeRight ? rightHand : leftHand;
                     var knee = new PlayerArmReachPose(
                         true,
                         kneeRight,
-                        shin.position + Vector3.up * RiseKneeHandLift,
-                        Vector3.up,
+                        Vector3.Lerp(floorHand.WorldPosition,
+                            shin.position + Vector3.up * RiseKneeHandLift, risePose.HandOnKneeWeight),
+                        Vector3.Slerp(floorHand.WorldNormal, Vector3.up, risePose.HandOnKneeWeight),
                         weight,
                         0.15f,
                         0.05f);
@@ -2129,10 +2156,8 @@ namespace BarPromenade
                 stepWorld.y = ProbeRiseFloor(stepWorld, out _);
             }
 
-            // The knees find the floor the way the hands do: on all fours
-            // and in the half-kneel the clip leaves them hanging (its
-            // contacts were fitted to another rig), so the hips come down
-            // until the resting knee sits on the probed floor.
+            // Adapt the authored support to the actual floor: lower the
+            // hips until the resting knee reaches its probed contact.
             float kneeDrop = RestingKneeDrop();
             layer.ApplyRise(
                 new Player3DRiseLayerInput(
@@ -2171,7 +2196,9 @@ namespace BarPromenade
                     rightSide = true;
                     break;
                 case PlayerRiseStage.Kneeling:
-                    weight = 1f;
+                    weight = risePose.Route == PlayerRiseRoute.Seated
+                        ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((risePose.StageProgress - 0.4f) / 0.6f))
+                        : 1f;
                     left = risePose.KneeSide != FootSide.Left;
                     rightSide = risePose.KneeSide != FootSide.Right;
                     break;
@@ -2455,12 +2482,36 @@ namespace BarPromenade
                 return PlayerArmReachPose.None;
             }
 
-            Transform shoulder = rightHand ? rightUpperArmBone : leftUpperArmBone;
-            Vector3 origin = shoulder != null
-                ? shoulder.position
-                : actorFacingTransform.position + Vector3.up;
-            Vector3 point = origin + right * offsetLocal.x + forward * offsetLocal.y;
+            int index = rightHand ? 1 : 0;
+            Transform hand = rightHand ? rightHandBone : leftHandBone;
+            Vector3 point = hand != null ? hand.position : actorFacingTransform.position;
+            float authoredHeight = point.y;
             point.y = ProbeRiseFloor(point, out Vector3 normal);
+            bool gathering = risePose.Stage == PlayerRiseStage.Stirring ||
+                             risePose.Stage == PlayerRiseStage.SeatedToCrawl ||
+                             (risePose.Stage == PlayerRiseStage.SittingUp && risePose.StageProgress < 0.7f);
+            if (gathering)
+            {
+                // An authored hand in transit has not planted yet. Preserve
+                // its lift instead of dragging it along the floor through
+                // the roll from lying, or the turn out of the seated pose.
+                riseHandContactValid[index] = false;
+                float clearance = Mathf.Max(RisePalmClearance, authoredHeight - point.y);
+                if (risePose.Stage == PlayerRiseStage.SittingUp)
+                    clearance = Mathf.Lerp(clearance, RisePalmClearance,
+                        Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 0.7f, risePose.StageProgress)));
+                return new PlayerArmReachPose(true, rightHand,
+                    point + normal * clearance,
+                    normal, weight, 0.15f, 0.05f);
+            }
+            if (!riseHandContactValid[index])
+            {
+                riseHandContacts[index] = point;
+                riseHandNormals[index] = normal;
+                riseHandContactValid[index] = true;
+            }
+            point = riseHandContacts[index];
+            normal = riseHandNormals[index];
             return new PlayerArmReachPose(
                 true,
                 rightHand,

@@ -313,6 +313,144 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        // ------------------------------------------------- refusing a drunk
+
+        [Test]
+        public void Ride_IsRefusedOnTheLastTwoStagesAndNoOther()
+        {
+            for (int level = 0;
+                 level <= IntoxicationStageRules.MaximumLevel;
+                 level++)
+            {
+                IntoxicationStage stage =
+                    IntoxicationStageRules.GetStage(level);
+                bool refused =
+                    stage == IntoxicationStage.Unsteady ||
+                    stage == IntoxicationStage.VeryDrunk;
+                Assert.That(
+                    LastRouteFerrymanRideRules.RefusesToDrive(level),
+                    Is.EqualTo(refused),
+                    $"Level {level} is {stage}: he should " +
+                    (refused ? "refuse." : "drive."));
+            }
+
+            // The two ends of the rule, stated in numbers as well, because
+            // this is the boundary a player feels.
+            Assert.That(
+                LastRouteFerrymanRideRules.RefusesToDrive(
+                    LastRouteFerrymanRideRules.FirstRefusedLevel - 1),
+                Is.False);
+            Assert.That(
+                LastRouteFerrymanRideRules.RefusesToDrive(
+                    LastRouteFerrymanRideRules.FirstRefusedLevel),
+                Is.True);
+        }
+
+        [Test]
+        public void Refusal_IsOneLineOfHisOwnAtBothEndsOfTheRoad()
+        {
+            LastRouteFerrymanVoice island =
+                LastRouteFerrymanVoice.Island(4242);
+            LastRouteFerrymanVoice mountain =
+                LastRouteFerrymanVoice.Mountain(4242);
+            Assert.That(
+                island.RefusalLineKey,
+                Is.EqualTo(LastRouteFerrymanQuips.RefusalLineKey));
+            Assert.That(
+                mountain.RefusalLineKey,
+                Is.EqualTo(island.RefusalLineKey),
+                "It is the same refusal by the same man either way.");
+
+            // It answers the second option, so it must never be drawn as
+            // small talk at either end.
+            Assert.That(
+                Array.IndexOf(
+                    LastRouteFerrymanQuips.LineKeys,
+                    LastRouteFerrymanQuips.RefusalLineKey),
+                Is.LessThan(0));
+            Assert.That(
+                Array.IndexOf(
+                    LastRouteFerrymanQuips.MountainLineKeys,
+                    LastRouteFerrymanQuips.RefusalLineKey),
+                Is.LessThan(0));
+        }
+
+        [Test]
+        public void Menu_CarriesHisRefusalExactlyOnTheRefusedStages()
+        {
+            LastRouteFerrymanVoice voice =
+                LastRouteFerrymanVoice.Island(4242);
+
+            InventoryTargetInteractionDefinition sober =
+                LastRouteFerrymanInteraction.BuildDefinition(
+                    voice.LineKeys[0],
+                    voice.ConfirmationPromptKey,
+                    voice.RefusalLineKey,
+                    default,
+                    LastRouteFerrymanRideRules.FirstRefusedLevel - 1);
+            Assert.That(
+                sober.IsRefused,
+                Is.False,
+                "Below «Шатает» the road is open and the menu asks its " +
+                "question.");
+            Assert.That(
+                sober.ConfirmationPromptKey,
+                Is.EqualTo(voice.ConfirmationPromptKey));
+
+            InventoryTargetInteractionDefinition drunk =
+                LastRouteFerrymanInteraction.BuildDefinition(
+                    voice.LineKeys[0],
+                    voice.ConfirmationPromptKey,
+                    voice.RefusalLineKey,
+                    default,
+                    IntoxicationStageRules.MaximumLevel);
+            Assert.That(drunk.IsRefused, Is.True);
+            Assert.That(
+                drunk.RefusalResponseKey,
+                Is.EqualTo(voice.RefusalLineKey));
+            Assert.That(
+                drunk.TalkResponseKey,
+                Is.EqualTo(voice.LineKeys[0]),
+                "Being refused the ride costs him none of his small talk.");
+            Assert.That(
+                drunk.HasRequirement,
+                Is.False,
+                "Saying no takes nothing off the hero.");
+        }
+
+        [Test]
+        public void Refusal_ResolvesInBothCatalogsAndKeepsHisRegister()
+        {
+            Dictionary<string, string> russian =
+                LoadCatalog("Localization/ru");
+            Dictionary<string, string> english =
+                LoadCatalog("Localization/en");
+
+            string key = LastRouteFerrymanQuips.RefusalLineKey;
+            Assert.That(russian.ContainsKey(key), Is.True, $"ru: {key}");
+            Assert.That(english.ContainsKey(key), Is.True, $"en: {key}");
+
+            string[] forbidden =
+            {
+                "садись", "поехали", "поедем", "подвезу", "довезу",
+                "get in", "let's go", "i'll drive you", "hop in",
+                "ride with me"
+            };
+            AssertNoOffer(key, russian[key], forbidden);
+            AssertNoOffer(key, english[key], forbidden);
+
+            string line = russian[key];
+            Assert.That(
+                line.Length,
+                Is.LessThanOrEqualTo(48),
+                "Saying no takes him no longer than anything else does.");
+            Assert.That(line.Contains("!"), Is.False);
+            Assert.That(
+                line.Contains("?"),
+                Is.False,
+                "He does not ask the hero about the hero.");
+        }
+
         // -------------------------------------------------------- helpers
 
         private static void AssertNoOffer(

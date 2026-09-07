@@ -490,6 +490,8 @@ namespace BarPromenade
         public void ResetBlend()
         {
             ikBlend = 0f;
+            for (int index = 0; index < legs.Length; index++)
+                legs[index].ResetHingeRoll();
         }
 
         /// <summary>
@@ -514,7 +516,7 @@ namespace BarPromenade
 
         public void ReleaseFoot(FootSide side)
         {
-            legs[(int)side].Release();
+            legs[(int)side].Release(registry != null);
         }
 
         /// <summary>
@@ -982,6 +984,10 @@ namespace BarPromenade
                 Vector3.Distance(hip, leg.Foot.position));
             Vector3 clamped = ClampToReach(hip, target, reach);
             Vector3 hint = KneeHint(leg, hip, clamped);
+            Quaternion thighBefore = leg.Thigh.rotation;
+            Vector3 thighAxisBefore = leg.Shin.position - leg.Thigh.position;
+            Quaternion shinBefore = leg.Shin.rotation;
+            Vector3 shinAxisBefore = leg.Foot.position - leg.Shin.position;
             LimbTwoBoneIk.Solve(
                 leg.Thigh,
                 leg.Shin,
@@ -992,7 +998,43 @@ namespace BarPromenade
                 input.StepWeight,
                 float.PositiveInfinity,
                 false);
-            AlignHingeRoll(leg.Thigh, leg.Shin, leg.Foot, leg.KneeForward(), input.StepWeight);
+            PreserveLegTwist(leg, thighBefore, thighAxisBefore, shinBefore, shinAxisBefore);
+            AlignHingeRoll(leg.Thigh, leg.Shin, leg.Foot, leg.KneeForward(),
+                input.StepWeight, continuousLeg: leg);
+        }
+
+        /// <summary>
+        /// A two-bone positional solution does not determine either bone's
+        /// rotation about its own length. Near a straight knee the hint's
+        /// bend plane can reverse, spinning the mesh while both joints
+        /// barely move. Transport both authored frames by the shortest
+        /// swing onto their solved axes; retain the solved knee/ankle
+        /// positions and the boot's world rotation. Anatomical hip roll is
+        /// then aligned relative to that stable authored frame.
+        /// </summary>
+        private static void PreserveLegTwist(
+            Leg leg,
+            Quaternion thighBefore,
+            Vector3 thighAxisBefore,
+            Quaternion shinBefore,
+            Vector3 shinAxisBefore)
+        {
+            Vector3 solvedThighAxis = leg.Shin.position - leg.Thigh.position;
+            Vector3 solvedShinAxis = leg.Foot.position - leg.Shin.position;
+            if (thighAxisBefore.sqrMagnitude < 0.000001f ||
+                solvedThighAxis.sqrMagnitude < 0.000001f ||
+                shinAxisBefore.sqrMagnitude < 0.000001f ||
+                solvedShinAxis.sqrMagnitude < 0.000001f)
+            {
+                return;
+            }
+
+            Quaternion footWorld = leg.Foot.rotation;
+            Quaternion shinWorld = leg.Shin.rotation;
+            leg.Thigh.rotation = Quaternion.FromToRotation(thighAxisBefore, solvedThighAxis) * thighBefore;
+            leg.Shin.rotation = shinWorld;
+            leg.Shin.rotation = Quaternion.FromToRotation(shinAxisBefore, solvedShinAxis) * shinBefore;
+            leg.Foot.rotation = footWorld;
         }
 
         /// <summary>
@@ -1014,16 +1056,19 @@ namespace BarPromenade
             Transform lower,
             Transform tip,
             Vector3 bendReference,
-            float weight)
+            float weight,
+            Leg continuousLeg = null)
         {
             if (upper == null || lower == null || tip == null || weight <= 0.0001f)
             {
+                continuousLeg?.ResetHingeRoll();
                 return;
             }
 
             Vector3 axis = lower.position - upper.position;
             if (axis.sqrMagnitude < 0.000001f)
             {
+                continuousLeg?.ResetHingeRoll();
                 return;
             }
 
@@ -1035,10 +1080,24 @@ namespace BarPromenade
             if (fold.magnitude < HingeAlignMinimumFoldMetres ||
                 facing.sqrMagnitude < 0.000001f)
             {
+                continuousLeg?.ResetHingeRoll();
                 return;
             }
 
-            float roll = Vector3.SignedAngle(facing, fold, axis) * Mathf.Clamp01(weight);
+            // A tiny fold has an ill-conditioned plane. Let that plane take
+            // ownership continuously, instead of enabling a full hip twist
+            // on the first frame that crosses the minimum bend.
+            float alignment = continuousLeg != null ? Mathf.SmoothStep(0f, 1f,
+                Mathf.InverseLerp(HingeAlignMinimumFoldMetres,
+                    HingeAlignFullFoldMetres, fold.magnitude)) : 1f;
+            float roll = Vector3.SignedAngle(facing, fold, axis);
+            // SignedAngle switches from +180 to -180 on the same smooth
+            // path. Those rotations agree only at full weight: blending
+            // them independently makes a partially folded hip jump sides.
+            // Keep the raw angle on the leg's continuous branch first.
+            if (continuousLeg != null)
+                roll = continuousLeg.UnwrapHingeRoll(roll);
+            roll *= Mathf.Clamp01(weight) * alignment;
             if (Mathf.Abs(roll) < 0.01f)
             {
                 return;
@@ -1051,6 +1110,9 @@ namespace BarPromenade
 
         /// <summary>Below this fold off straight a hinge has no plane to align to.</summary>
         public const float HingeAlignMinimumFoldMetres = 0.02f;
+
+        /// <summary>A stable fold at which the anatomical hip roll applies fully.</summary>
+        public const float HingeAlignFullFoldMetres = 0.06f;
 
         /// <summary>
         /// Where the knee should point: the way the kneecap will face
@@ -1452,6 +1514,7 @@ namespace BarPromenade
 
                 if (!stepping &&
                     !leg.Locked &&
+                    !leg.Releasing &&
                     !disordered &&
                     Mathf.Abs(target.y - footPosition.y) < 0.001f)
                 {
@@ -1475,13 +1538,19 @@ namespace BarPromenade
                 {
                     // The stance foot has been carried out of reach; let it
                     // go rather than drag the hip after it.
-                    leg.Release();
+                    leg.Release(registry != null);
                     target = new Vector3(
                         footPosition.x,
                         leg.TargetBoneY,
                         footPosition.z);
-                    clamped = ClampToReach(hip, target, reach);
                 }
+
+                // A released support returns to the moving clip from its
+                // last solved contact. Dropping the lock must not teleport
+                // a boot from a wide catching step back below the pelvis.
+                if (!stepping && !leg.Locked && leg.Releasing)
+                    target = leg.BlendReleasedTarget(target, deltaTime);
+                clamped = ClampToReach(hip, target, reach);
 
                 Quaternion footRotation = leg.ClipFootRotation;
                 if (Mathf.Abs(gaitYaw) > 0.001f)
@@ -1517,6 +1586,10 @@ namespace BarPromenade
                 }
 
                 Vector3 hint = KneeHint(leg, hip, clamped);
+                Quaternion thighBefore = leg.Thigh.rotation;
+                Vector3 thighAxisBefore = leg.Shin.position - leg.Thigh.position;
+                Quaternion shinBefore = leg.Shin.rotation;
+                Vector3 shinAxisBefore = leg.Foot.position - leg.Shin.position;
                 LimbTwoBoneIk.Solve(
                     leg.Thigh,
                     leg.Shin,
@@ -1527,7 +1600,14 @@ namespace BarPromenade
                     weight,
                     float.PositiveInfinity,
                     true);
-                AlignHingeRoll(leg.Thigh, leg.Shin, leg.Foot, leg.KneeForward(), weight);
+                // Pedestrians bind this layer without the hero registry;
+                // their established leg contract is independent of recovery.
+                if (registry != null)
+                {
+                    PreserveLegTwist(leg, thighBefore, thighAxisBefore, shinBefore, shinAxisBefore);
+                }
+                AlignHingeRoll(leg.Thigh, leg.Shin, leg.Foot, leg.KneeForward(),
+                    weight, continuousLeg: registry != null ? leg : null);
                 leg.LastAnklePosition = leg.Foot.position;
                 leg.HasLastAnklePosition = true;
             }
@@ -1741,6 +1821,8 @@ namespace BarPromenade
             private Vector3 footForwardLocal = Vector3.forward;
             private Vector3 soleUpLocal = Vector3.up;
             private Vector3 kneeForwardLocal = Vector3.forward;
+            private bool hasHingeRoll;
+            private float unwrappedHingeRoll;
 
             public Transform Thigh { get; private set; }
             public Transform Shin { get; private set; }
@@ -1753,6 +1835,10 @@ namespace BarPromenade
             public Vector3 LockPosition { get; private set; }
             public Vector3 LastAnklePosition;
             public bool HasLastAnklePosition;
+            private Vector3 releasedFrom;
+            private float releaseElapsed = ReleaseSeconds;
+            private const float ReleaseSeconds = 0.24f;
+            public bool Releasing => releaseElapsed < ReleaseSeconds;
 
             public float SoleY;
             public float TargetBoneY;
@@ -1775,8 +1861,10 @@ namespace BarPromenade
                 Foot = foot;
                 Length = 0f;
                 Locked = false;
+                releaseElapsed = ReleaseSeconds;
                 HasSmoothedTarget = false;
                 Prepared = false;
+                ResetHingeRoll();
             }
 
             public void Calibrate(Vector3 actorForward)
@@ -1792,6 +1880,21 @@ namespace BarPromenade
                 soleUpLocal = inverse * Vector3.up;
                 kneeForwardLocal = Quaternion.Inverse(Thigh.rotation) *
                                    actorForward;
+                ResetHingeRoll();
+            }
+
+            public void ResetHingeRoll()
+            {
+                hasHingeRoll = false;
+            }
+
+            public float UnwrapHingeRoll(float roll)
+            {
+                unwrappedHingeRoll = hasHingeRoll
+                    ? unwrappedHingeRoll + Mathf.DeltaAngle(unwrappedHingeRoll, roll)
+                    : roll;
+                hasHingeRoll = true;
+                return unwrappedHingeRoll;
             }
 
             /// <summary>
@@ -1824,11 +1927,26 @@ namespace BarPromenade
             {
                 Locked = true;
                 LockPosition = worldPosition;
+                releaseElapsed = ReleaseSeconds;
             }
 
-            public void Release()
+            public void Release(bool smooth = false)
             {
+                if (Locked && smooth && HasLastAnklePosition)
+                {
+                    releasedFrom = LastAnklePosition;
+                    releaseElapsed = 0f;
+                }
                 Locked = false;
+            }
+
+            public Vector3 BlendReleasedTarget(Vector3 target, float deltaTime)
+            {
+                releaseElapsed = Mathf.Min(ReleaseSeconds, releaseElapsed + Mathf.Max(0f, deltaTime));
+                float t = Mathf.SmoothStep(0f, 1f, releaseElapsed / ReleaseSeconds);
+                target.x = Mathf.Lerp(releasedFrom.x, target.x, t);
+                target.z = Mathf.Lerp(releasedFrom.z, target.z, t);
+                return target;
             }
         }
 

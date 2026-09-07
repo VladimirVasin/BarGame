@@ -22,7 +22,7 @@ import bpy
 from mathutils import Euler, Matrix, Quaternion, Vector
 
 
-ACTION_LIBRARY_VERSION = "2.8.0"
+ACTION_LIBRARY_VERSION = "2.9.0"
 CANONICAL_HEIGHT = 1.75
 DEFAULT_SEED = 7301
 MAX_TRIANGLES = 4500
@@ -247,6 +247,10 @@ REQUIRED_ACTIONS = (
     "FallRight",
     "DownRight",
     "RiseRight",
+    "RiseSeatedLeft",
+    "RiseSeatedRight",
+    "RiseSeatedToCrawlLeft",
+    "RiseSeatedToCrawlRight",
     "BedEnter",
     "BedSleepLoop",
     "BedExit",
@@ -1088,6 +1092,8 @@ class ProductionPlayerBuilderBase:
         source_fps: float,
         keys: Sequence[ActionKey],
         interpolation: str = "LINEAR",
+        armature_sweep: bool = False,
+        sweep_stops: tuple[float, ...] = (0.0, 1.0),
     ) -> None:
         if self.result is None:
             raise RuntimeError("BuildResult has not been initialized")
@@ -1163,6 +1169,82 @@ class ProductionPlayerBuilderBase:
                     frame=frame,
                     group=group_name,
                 )
+
+        if armature_sweep:
+            # Interpolating parent-local leg rotations between a forward
+            # seat and a backward kneel swings the foot UNDER the floor,
+            # even when each landmark is sound. Bake the authored limb arcs
+            # in armature space, then store ordinary local bone tracks. The
+            # intermediate lateral keys choose the side of the sweep.
+            animation_data.action = None
+            snapshots = []
+            for normalized_time, pose in keys:
+                self._reset_pose()
+                self._apply_pose(pose)
+                snapshots.append((round(action.frame_end * normalized_time), {
+                    bone_name: (
+                        rig.pose.bones[bone_name].matrix.to_quaternion().copy(),
+                        (rig.pose.bones[bone_name].tail - rig.pose.bones[bone_name].head).normalized(),
+                        rig.pose.bones[bone_name].head.copy(),
+                        rig.pose.bones[bone_name].scale.copy(),
+                    ) for bone_name in keyed_bones
+                }))
+            # A boot turning from forward to backward crosses the rest-axis
+            # antipode. Re-solving every key from rest can choose opposite
+            # axial rolls there even while the toe directions are adjacent.
+            # Transport its orientation along the authored arc, distributing
+            # the remaining endpoint twist over the complete support phase.
+            # Shared endpoints retain their exact full-rig orientation.
+            stop_frames = [round(action.frame_end * t) for t in sweep_stops]
+            for start_frame, end_frame in zip(stop_frames, stop_frames[1:]):
+                phase = [(frame, pose) for frame, pose in snapshots if start_frame <= frame <= end_frame]
+                for bone_name in ("foot.L", "foot.R"):
+                    rotation = phase[0][1][bone_name][0].copy()
+                    previous_axis = phase[0][1][bone_name][1]
+                    transported = []
+                    for frame, pose in phase:
+                        axis = pose[bone_name][1]
+                        rotation = previous_axis.rotation_difference(axis) @ rotation
+                        transported.append(rotation.copy())
+                        previous_axis = axis
+                    target = phase[-1][1][bone_name][0]
+                    residual = target @ transported[-1].inverted()
+                    if residual.w < 0.0:
+                        residual.negate()
+                    twist = 2.0 * math.atan2(Vector((residual.x, residual.y, residual.z)).dot(previous_axis), residual.w)
+                    for (frame, pose), rotation in zip(phase, transported):
+                        _, axis, head, scale = pose[bone_name]
+                        t = (frame - start_frame) / max(1, end_frame - start_frame)
+                        t = t * t * (3.0 - 2.0 * t)
+                        pose[bone_name] = (Quaternion(axis, twist * t) @ rotation, axis, head, scale)
+            previous_quaternions.clear()
+            for (first_frame, first), (last_frame, last) in zip(snapshots, snapshots[1:]):
+                for frame in range(first_frame, last_frame + 1):
+                    t = (frame - first_frame) / max(1, last_frame - first_frame)
+                    t = t * t * (3.0 - 2.0 * t)
+                    self._reset_pose()
+                    for bone_name in keyed_bones:
+                        start_rotation, start_axis, start_head, start_scale = first[bone_name]
+                        end_rotation, end_axis, end_head, end_scale = last[bone_name]
+                        bone = rig.pose.bones[bone_name]
+                        rotation = start_rotation.slerp(end_rotation, t)
+                        direction = start_axis.slerp(end_axis, t)
+                        current_direction = rotation @ Vector((0.0, 1.0, 0.0))
+                        rotation = current_direction.rotation_difference(direction) @ rotation
+                        bpy.context.view_layer.update()
+                        position = start_head.lerp(end_head, t) if bone_name in ("root", "pelvis") else bone.head.copy()
+                        bone.matrix = Matrix.Translation(position) @ rotation.to_matrix().to_4x4()
+                        bone.scale = start_scale.lerp(end_scale, t)
+                        quaternion = bone.rotation_quaternion.copy()
+                        previous = previous_quaternions.get(bone_name)
+                        if previous is not None:
+                            quaternion.make_compatible(previous)
+                            bone.rotation_quaternion = quaternion
+                        previous_quaternions[bone_name] = quaternion.copy()
+                        animation_data.action = action
+                        for path in ("location", "rotation_quaternion", "scale"):
+                            bone.keyframe_insert(data_path=path, frame=frame, group=bone_name.split(".")[0])
+                        animation_data.action = None
 
         for fcurve in iter_action_fcurves(action):
             for keyframe in fcurve.keyframe_points:
@@ -1929,7 +2011,7 @@ class ProductionPlayerBuilderBase:
                 {
                     "pelvis": BonePose(
                         rotation_degrees=(68.0, 0.0, sign * 2.0),
-                        armature_location_m=(sign * 0.015, 0.03, -0.39),
+                        armature_location_m=(sign * 0.015, 0.03, -0.48),
                     ),
                     "spine": BonePose(
                         rotation_degrees=(-10.0, 0.0, -sign * 1.0)
@@ -1982,7 +2064,7 @@ class ProductionPlayerBuilderBase:
                 {
                     "pelvis": BonePose(
                         rotation_degrees=(66.0, 0.0, -sign * 3.0),
-                        armature_location_m=(-sign * 0.018, 0.025, -0.385),
+                        armature_location_m=(-sign * 0.018, 0.025, -0.475),
                     ),
                     "spine": BonePose(
                         rotation_degrees=(-8.0, 0.0, sign * 2.0)
@@ -2316,7 +2398,146 @@ class ProductionPlayerBuilderBase:
                     (0.92, near_upright),
                     (1.0, relaxed),
                 ),
+                interpolation="BEZIER",
             )
+
+            # A face-up body gathers its weight onto its seat. These are
+            # separate anatomical actions, not a mirrored side-down roll.
+            # All armature-space directions are authored on the real rig;
+            # the late layer may adapt contacts to the ground, but does not
+            # have to invent a seated silhouette from an all-fours clip.
+            def seated_pose(pitch, height, thigh, shin, upper_arm, forearm):
+                pose = self.merge_pose(
+                    relaxed,
+                    {
+                        "pelvis": BonePose(
+                            rotation_degrees=(pitch, 0.0, sign * 2.0),
+                            armature_location_m=(0.0, 0.0, height - 0.835),
+                        ),
+                        "spine": BonePose(rotation_degrees=(8.0, 0.0, -sign)),
+                        "chest": BonePose(rotation_degrees=(6.0, 0.0, sign)),
+                        "neck": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+                        "head": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+                    },
+                )
+                for suffix, lateral in (("L", 1.0), ("R", -1.0)):
+                    pose.update({
+                        f"thigh.{suffix}": BonePose(armature_direction=(lateral * 0.025, *thigh)),
+                        f"shin.{suffix}": BonePose(armature_direction=(lateral * 0.008, *shin)),
+                        f"foot.{suffix}": BonePose(armature_direction=(0.0, -0.20, 0.0)),
+                        f"upper_arm.{suffix}": BonePose(armature_direction=(lateral * 0.06, *upper_arm)),
+                        f"forearm.{suffix}": BonePose(armature_direction=(lateral * 0.025, *forearm)),
+                        f"hand.{suffix}": BonePose(armature_direction=(0.0, -0.09, -0.015)),
+                    })
+                return pose
+
+            supine = seated_pose(-88.0, 0.125, (-0.36, 0.06), (-0.35, -0.08),
+                                 (-0.20, -0.04), (-0.24, 0.06))
+            supine_brace = seated_pose(-62.0, 0.12, (-0.35, 0.10), (-0.34, -0.11),
+                                       (-0.10, -0.25), (-0.24, 0.12))
+            seated_elbows = seated_pose(-35.0, 0.10, (-0.35, 0.10), (-0.34, -0.11),
+                                        (0.06, -0.30), (-0.20, -0.10))
+            seated = seated_pose(-8.0, 0.075, (-0.35, 0.10), (-0.34, -0.11),
+                                (0.11, -0.30), (0.08, -0.26))
+            # Fold the lead knee while the trailing leg sweeps sideways
+            # throughout the lift. Delaying that sweep until the hips were
+            # high compressed almost a half-turn into two authored frames.
+            seated_gather = self.merge_pose(seated, {
+                "pelvis": BonePose(rotation_degrees=(7.0, 0.0, -sign * 6.0),
+                                   armature_location_m=(-sign * 0.035, 0.015, -0.49)),
+                f"thigh.{lead_suffix}": BonePose(armature_direction=(lead_sign * 0.04, -0.31, 0.08)),
+                f"shin.{lead_suffix}": BonePose(armature_direction=(lead_sign * 0.01, -0.06, -0.30)),
+                f"thigh.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.31, -0.06, -0.08)),
+                f"shin.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.30, 0.01, 0.02)),
+                f"foot.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.17, -0.06, 0.0)),
+            })
+            seated_knee_lift = self.merge_pose(seated, {
+                "pelvis": BonePose(rotation_degrees=(0.0, 0.0, -sign * 3.0),
+                                   armature_location_m=(-sign * 0.015, 0.008, -0.635)),
+                f"thigh.{lead_suffix}": BonePose(armature_direction=(lead_sign * 0.04, -0.30, 0.13)),
+                f"shin.{lead_suffix}": BonePose(armature_direction=(lead_sign * 0.01, -0.24, -0.20)),
+                f"thigh.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.20, -0.26, 0.12)),
+                f"shin.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.25, -0.20, -0.02)),
+                f"foot.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.10, -0.17, 0.0)),
+            })
+            seated_lift = self.merge_pose(half_kneel, {
+                "pelvis": BonePose(rotation_degrees=(22.0, 0.0, -sign * 5.0),
+                                   armature_location_m=(-sign * 0.03, 0.015, -0.22)),
+                f"thigh.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.07, 0.02, -0.36)),
+                f"shin.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.01, 0.30, 0.04)),
+                f"foot.{trail_suffix}": BonePose(armature_direction=(0.0, 0.14, -0.14)),
+            })
+            seated_leg_sweep = self.merge_pose(seated_gather, {
+                "pelvis": BonePose(rotation_degrees=(18.0, 0.0, -sign * 5.0),
+                                   armature_location_m=(-sign * 0.03, 0.015, -0.34)),
+                f"thigh.{lead_suffix}": BonePose(armature_direction=(lead_sign * 0.04, -0.31, -0.03)),
+                f"shin.{lead_suffix}": BonePose(armature_direction=(lead_sign * 0.01, 0.0, -0.30)),
+                f"thigh.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.25, 0.10, -0.18)),
+                f"shin.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.20, 0.23, 0.02)),
+                f"foot.{trail_suffix}": BonePose(armature_direction=(-lead_sign * 0.14, 0.12, -0.02)),
+            })
+            for pose, upper_y, lower_y in ((seated_knee_lift, 0.06, 0.03),
+                                            (seated_gather, 0.0, -0.01),
+                                            (seated_leg_sweep, -0.04, -0.05)):
+                for suffix, lateral in (("L", 1.0), ("R", -1.0)):
+                    pose[f"upper_arm.{suffix}"] = BonePose(armature_direction=(lateral * 0.06, upper_y, -0.30))
+                    pose[f"forearm.{suffix}"] = BonePose(armature_direction=(lateral * 0.025, lower_y, -0.25))
+            self._create_action(
+                f"RiseSeated{side_name}", "fall", 50.0 / 30.0, False, 50, 30,
+                ((0.0, supine), (0.10, supine_brace), (0.24, seated_elbows),
+                 (0.38, seated), (0.43, seated_knee_lift), (0.48, seated_gather),
+                 (0.52, seated_leg_sweep), (0.58, seated_lift),
+                 (0.64, half_kneel), (0.72, crouch_leg_lift), (0.80, low_crouch),
+                 (0.92, near_upright), (1.0, relaxed)),
+                interpolation="BEZIER",
+                armature_sweep=True,
+                sweep_stops=(0.0, 0.10, 0.38, 0.64, 1.0),
+            )
+            seat_turn = self.merge_pose(seated_knee_lift, {
+                "pelvis": BonePose(rotation_degrees=(20.0, sign * 20.0, sign * 26.0),
+                                   armature_location_m=(sign * 0.06, 0.025, -0.60)),
+            })
+            seat_roll = self.merge_pose(prone_tuck, {
+                "pelvis": BonePose(rotation_degrees=(52.0, sign * 10.0, sign * 20.0),
+                                   armature_location_m=(sign * 0.04, 0.025, -0.43)),
+            })
+            seat_side = self.merge_pose(seated_leg_sweep, {
+                "pelvis": BonePose(rotation_degrees=(35.0, sign * 15.0, sign * 20.0),
+                                   armature_location_m=(sign * 0.04, 0.025, -0.39)),
+            })
+            for pose, thigh, shin, foot in (
+                (seat_turn, (0.20, -0.26, 0.12), (0.25, -0.20, -0.02), (0.10, -0.17, 0.0)),
+                (seat_side, (0.31, -0.08, -0.10), (0.30, 0.10, 0.02), (0.20, 0.0, 0.0)),
+                (seat_roll, (0.20, 0.23, -0.16), (0.20, 0.23, 0.02), (0.12, 0.17, 0.0)),
+            ):
+                for suffix, lateral in (("L", 1.0), ("R", -1.0)):
+                    for bone, direction in (("thigh", thigh), ("shin", shin), ("foot", foot)):
+                        pose[f"{bone}.{suffix}"] = BonePose(armature_direction=(lateral * direction[0], *direction[1:]))
+            self._create_action(
+                f"RiseSeatedToCrawl{side_name}", "fall", 1.20, False, 36, 30,
+                ((0.0, seated), (0.24, seat_turn), (0.48, seat_side), (0.70, seat_roll),
+                 (0.82, prone_tuck), (1.0, all_fours)),
+                interpolation="BEZIER",
+                armature_sweep=True,
+            )
+
+            # Stationary shared endpoints have stationary tangents too. A
+            # held sitting/all-fours pose can transfer ownership on any frame
+            # without the next action leaving at a different initial speed.
+            for action_name, stops in (
+                (f"Rise{side_name}", (0.0, 0.10, 0.38, 0.64, 1.0)),
+                (f"RiseSeated{side_name}", (0.0, 0.10, 0.38, 0.64, 1.0)),
+                (f"RiseSeatedToCrawl{side_name}", (0.0, 1.0)),
+            ):
+                action = self.result.actions[action_name].action
+                stop_frames = {round(action.frame_end * t) for t in stops}
+                for curve in iter_action_fcurves(action):
+                    for key in curve.keyframe_points:
+                        if round(key.co.x) in stop_frames:
+                            key.handle_left_type = "FREE"
+                            key.handle_right_type = "FREE"
+                            key.handle_left.y = key.co.y
+                            key.handle_right.y = key.co.y
 
         # A tired man shifts his weight before he folds. The lead-in gives
         # the sit something to come out of instead of starting at speed.
@@ -5450,6 +5671,10 @@ def validate_fall_recovery_dense(
         "FallRight",
         "DownRight",
         "RiseRight",
+        "RiseSeatedLeft",
+        "RiseSeatedRight",
+        "RiseSeatedToCrawlLeft",
+        "RiseSeatedToCrawlRight",
     )
     if any(result.actions.get(name) is None for name in action_names):
         return
@@ -5498,11 +5723,12 @@ def validate_fall_recovery_dense(
             # their hinges are held to account.
             floor_reported = action_name.startswith("Fall")
             hinge_reported: set[str] = set()
-            for frame in range(
-                math.ceil(record.action.frame_start),
-                math.floor(record.action.frame_end) + 1,
+            for half_frame in range(
+                math.ceil(record.action.frame_start * 2),
+                math.floor(record.action.frame_end * 2) + 1,
             ):
-                scene.frame_set(frame)
+                frame = half_frame * 0.5
+                scene.frame_set(math.floor(frame), subframe=frame % 1.0)
                 bpy.context.view_layer.update()
                 if not floor_reported:
                     minimum, part = visible_minimum()
@@ -5536,6 +5762,131 @@ def validate_fall_recovery_dense(
         scene.frame_set(previous_frame)
         for bone_name, matrix_basis in previous_basis.items():
             rig.pose.bones[bone_name].matrix_basis = matrix_basis
+        bpy.context.view_layer.update()
+
+
+def validate_recovery_routes(result: BuildResult, errors: list[str]) -> None:
+    """Shared route endpoints and support landmarks on the production rig.
+
+    Dense floor/anatomy checks above cover the intervening motion. These
+    checks use actual posed bones and visible meshes, so a valid manifest
+    cannot conceal the old V2 all-fours contact-height mismatch.
+    """
+
+    rig = result.rig
+    animation_data = rig.animation_data_create()
+    previous_action = animation_data.action
+    previous_frame = bpy.context.scene.frame_current
+    previous_basis = {bone.name: bone.matrix_basis.copy() for bone in rig.pose.bones}
+
+    def sample(name, t):
+        action = result.actions[name].action
+        animation_data.action = action
+        bpy.context.scene.frame_set(round(action.frame_end * t))
+        bpy.context.view_layer.update()
+        return {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
+
+    def minimum(bone_names):
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        value = math.inf
+        for part in result.parts:
+            if part.bone not in bone_names:
+                continue
+            evaluated = part.obj.evaluated_get(depsgraph)
+            mesh = evaluated.to_mesh()
+            try:
+                value = min(value, min((evaluated.matrix_world @ vertex.co).z for vertex in mesh.vertices))
+            finally:
+                evaluated.to_mesh_clear()
+        return value
+
+    def check_motion(name, start, end, duration):
+        # Match the shortest runtime support-phase duration at 60 Hz.
+        # Floor-safe landmarks alone did not catch a boot travelling 38 cm
+        # or rolling 78 degrees between two displayed recovery frames.
+        action = result.actions[name].action
+        animation_data.action = action
+        previous = None
+        maximum_position = 0.0
+        maximum_rotation = 0.0
+        count = math.ceil(duration * 60.0)
+        for step in range(count + 1):
+            progress = step / count
+            progress = progress * progress * (3.0 - 2.0 * progress)
+            frame = action.frame_end * (start + (end - start) * progress)
+            bpy.context.scene.frame_set(math.floor(frame), subframe=frame % 1.0)
+            bpy.context.view_layer.update()
+            current = {bone.name: bone.matrix.copy() for bone in rig.pose.bones}
+            if previous is not None:
+                for name in current:
+                    maximum_position = max(maximum_position, (current[name].translation - previous[name].translation).length)
+                    angle = math.degrees(current[name].to_quaternion().rotation_difference(previous[name].to_quaternion()).angle)
+                    maximum_rotation = max(maximum_rotation, min(angle, 360.0 - angle))
+            previous = current
+        print(f"  {action.name} support motion: {maximum_position:.4f} m / {maximum_rotation:.2f} degrees per 60 Hz frame")
+        if maximum_position > 0.12 or maximum_rotation > 15.0:
+            errors.append(f"{action.name} support motion jumps {maximum_position:.4f} m / {maximum_rotation:.2f} degrees in one 60 Hz frame")
+
+    try:
+        sample("Relaxed", 0.0)
+        floor = minimum({"foot.L", "foot.R"})
+        for side in ("Left", "Right"):
+            crawl = f"Rise{side}"
+            seated = f"RiseSeated{side}"
+            transfer = f"RiseSeatedToCrawl{side}"
+            for first_name, first_t, last_name, last_t in (
+                (seated, 0.38, transfer, 0.0),
+                (transfer, 1.0, crawl, 0.38),
+                (seated, 0.64, crawl, 0.64),
+                (seated, 1.0, "Relaxed", 0.0),
+                (crawl, 1.0, "Relaxed", 0.0),
+            ):
+                first = sample(first_name, first_t)
+                last = sample(last_name, last_t)
+                for name in first:
+                    error = max(abs(first[name][row][column] - last[name][row][column])
+                                for row in range(4) for column in range(4))
+                    if error > 1e-5:
+                        errors.append(f"Recovery seam {first_name}({first_t})->{last_name}({last_t}) differs on {name}: {error:.6f}")
+                        break
+            for t in (0.38, 0.48):
+                sample(crawl, t)
+                for name in ("SOCKET_Grip.L", "SOCKET_Grip.R", "shin.L", "shin.R"):
+                    height = (rig.matrix_world @ rig.pose.bones[name].head).z - floor
+                    if not -0.02 <= height <= 0.14:
+                        errors.append(f"{crawl}({t}) {name} must support the real V2 rig near the floor, got {height:.4f}m")
+            sample(seated, 0.38)
+            seat_height = minimum({"pelvis"}) - floor
+            if not -0.02 <= seat_height <= 0.025:
+                errors.append(f"{seated}(0.38) must visibly rest on its seat, got {seat_height:.4f}m")
+            chest_height = (rig.matrix_world @ rig.pose.bones["chest"].head).z
+            pelvis_height = (rig.matrix_world @ rig.pose.bones["pelvis"].head).z
+            if chest_height - pelvis_height < 0.30:
+                errors.append(f"{seated}(0.38) must have a clearly upright seated torso")
+            for name in (crawl, seated, transfer):
+                record = result.actions[name]
+                if record.loop:
+                    errors.append(f"{name} must be a deterministic non-looping recovery action")
+                for curve in iter_action_fcurves(record.action):
+                    if any(key.interpolation != "BEZIER" for key in curve.keyframe_points):
+                        errors.append(f"{name} must retain its curved recovery interpolation")
+                        break
+                for t in (0.0, 0.38, 0.64, 1.0):
+                    sample(name, t)
+                    matrix = rig.pose.bones["root"].matrix_basis
+                    if any(abs(matrix[row][column] - (1.0 if row == column else 0.0)) > 1e-5
+                           for row in range(4) for column in range(4)):
+                        errors.append(f"{name} must remain bone-only and in-place")
+                if name == transfer:
+                    check_motion(name, 0.0, 1.0, 1.0)
+                else:
+                    check_motion(name, 0.38, 0.64, 0.9)
+        print("  Recovery route seams and seated/all-fours V2 supports checked")
+    finally:
+        animation_data.action = previous_action
+        bpy.context.scene.frame_set(previous_frame)
+        for name, basis in previous_basis.items():
+            rig.pose.bones[name].matrix_basis = basis
         bpy.context.view_layer.update()
 
 

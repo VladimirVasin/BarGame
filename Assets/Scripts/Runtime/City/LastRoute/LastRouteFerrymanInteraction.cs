@@ -19,6 +19,13 @@ namespace BarPromenade
     /// bonnet and into the car, and from then on <see cref="CanInteract"/>
     /// is false: there is nobody on the bonnet to talk to any more.
     ///
+    /// **He will not drive a man in the state of the last two stages.**
+    /// The menu opens as it always does and the small talk is unchanged;
+    /// the second option answers with one line and closes, the way the cat
+    /// answers a hero with no tin. See
+    /// <see cref="LastRouteFerrymanRideRules"/> for the rule and the
+    /// registry row behind it.
+    ///
     /// **One component, both ends of the road.** The island asks "уехать из
     /// города?" and the terrace by the cafe asks "вернуться в город?", from a
     /// different pool of small talk and a different seeded stream, and that is
@@ -54,6 +61,7 @@ namespace BarPromenade
         private Vector3 standPosition;
         private string[] repertoire;
         private string confirmationKey;
+        private string refusalKey;
         private uint quipState;
         private int lastLineIndex = -1;
         private NpcSpeaker speaker = NpcSpeaker.None;
@@ -76,6 +84,15 @@ namespace BarPromenade
             interactionDefinition;
 
         /// <summary>
+        /// Whether the road is closed to the hero as he stands right now.
+        /// Read off his level and nothing else, so it answers the same in
+        /// a test as it does on the island.
+        /// </summary>
+        public static bool IsRefusingToDrive =>
+            LastRouteFerrymanRideRules.RefusesToDrive(
+                GameSessionState.IntoxicationLevel);
+
+        /// <summary>
         /// Whichever pool he is speaking from, whichever question is on the
         /// second line, and the stream that pool walks - all three chosen
         /// together, in <see cref="LastRouteFerrymanVoice"/>, because they
@@ -90,6 +107,7 @@ namespace BarPromenade
             InventoryTargetInteractionController interactionController,
             string[] lineKeys,
             string confirmationPromptKey,
+            string refusalLineKey,
             uint quipStream)
         {
             if (ferrymanPresentation == null)
@@ -121,9 +139,17 @@ namespace BarPromenade
                     nameof(confirmationPromptKey));
             }
 
+            if (string.IsNullOrEmpty(refusalLineKey))
+            {
+                throw new ArgumentException(
+                    "The Ferryman has to have a way of saying no.",
+                    nameof(refusalLineKey));
+            }
+
             standPosition = configuredStandPosition;
             repertoire = lineKeys;
             confirmationKey = confirmationPromptKey;
+            refusalKey = refusalLineKey;
             quipState = quipStream;
             lastLineIndex = -1;
             presentation = ferrymanPresentation;
@@ -135,15 +161,46 @@ namespace BarPromenade
         private InventoryTargetInteractionDefinition BuildDefinition(
             string talkResponseKey)
         {
-            // His line is the one thing here somebody says out loud, so
-            // it carries him with it: the shared menu controller serves
-            // the stairwell cat too, and that line is the hero's own
-            // thought rather than the cat talking.
-            return InventoryTargetInteractionDefinition.WithoutRequirement(
+            return BuildDefinition(
                 talkResponseKey,
                 confirmationKey,
+                refusalKey,
+                speaker,
+                GameSessionState.IntoxicationLevel);
+        }
+
+        /// <summary>
+        /// What his menu offers a hero at this level. Pure and static so
+        /// the drunk branch can be read off without a player, a scene or a
+        /// modal panel to hold it.
+        ///
+        /// His line is the one thing here somebody says out loud, so it
+        /// carries him with it: the shared menu controller serves the
+        /// stairwell cat too, and that line is the hero's own thought
+        /// rather than the cat talking. His refusal is the second such
+        /// line and travels the same way.
+        ///
+        /// Whether he is refusing is decided when the menu OPENS and
+        /// stands for as long as it is open. Nothing can raise the level
+        /// while a modal panel holds the world, so the only drift possible
+        /// is the hero sobering under an already open menu - and then the
+        /// road is his again the next time he asks.
+        /// </summary>
+        public static InventoryTargetInteractionDefinition BuildDefinition(
+            string talkResponseKey,
+            string confirmationPromptKey,
+            string refusalLineKey,
+            in NpcSpeaker responseSpeaker,
+            int intoxicationLevel)
+        {
+            return InventoryTargetInteractionDefinition.WithoutRequirement(
+                talkResponseKey,
+                confirmationPromptKey,
                 ResponseDurationSeconds,
-                speaker);
+                responseSpeaker,
+                LastRouteFerrymanRideRules.RefusesToDrive(intoxicationLevel)
+                    ? refusalLineKey
+                    : null);
         }
 
         /// <summary>
@@ -203,8 +260,13 @@ namespace BarPromenade
 
         public bool TryPrepareInventoryInteraction()
         {
+            // The refusal is read again rather than trusted from the
+            // definition: this is the last gate before he is committed to
+            // the drive, and a man who will not drive must not be carried
+            // into it by a stale snapshot.
             return isInitialized &&
                    isActiveAndEnabled &&
+                   !IsRefusingToDrive &&
                    !ownsExecution &&
                    presentation != null &&
                    presentation.IsWaiting &&

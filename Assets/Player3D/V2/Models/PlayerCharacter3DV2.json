@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model-v2.py",
-  "generator_version": "1.5.0",
+  "generator_version": "1.6.0",
   "blender_version": "5.0.1",
   "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
   "runtime_integrated": true,
@@ -12,7 +12,7 @@
   "object_count": 36,
   "mesh_count": 34,
   "triangle_count": 2384,
-  "action_count": 41,
+  "action_count": 45,
   "socket_count": 6,
   "bounds_min": [
     -0.778674,
@@ -817,6 +817,54 @@
       ]
     },
     {
+      "name": "RiseSeatedLeft",
+      "category": "fall",
+      "duration_seconds": 1.6666666666666667,
+      "loop": false,
+      "source_frame_count": 50,
+      "source_fps": 30,
+      "frame_start": 0.0,
+      "frame_end": 40.0,
+      "root_motion": false,
+      "event_count": 0
+    },
+    {
+      "name": "RiseSeatedRight",
+      "category": "fall",
+      "duration_seconds": 1.6666666666666667,
+      "loop": false,
+      "source_frame_count": 50,
+      "source_fps": 30,
+      "frame_start": 0.0,
+      "frame_end": 40.0,
+      "root_motion": false,
+      "event_count": 0
+    },
+    {
+      "name": "RiseSeatedToCrawlLeft",
+      "category": "fall",
+      "duration_seconds": 1.2,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 30,
+      "frame_start": 0.0,
+      "frame_end": 29.0,
+      "root_motion": false,
+      "event_count": 0
+    },
+    {
+      "name": "RiseSeatedToCrawlRight",
+      "category": "fall",
+      "duration_seconds": 1.2,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 30,
+      "frame_start": 0.0,
+      "frame_end": 29.0,
+      "root_motion": false,
+      "event_count": 0
+    },
+    {
       "name": "Run",
       "category": "locomotion",
       "duration_seconds": 0.75,
@@ -1285,10 +1333,10 @@
       ]
     ],
     "maximum_ring_gap_m": 0.05,
-    "action_count": 41,
+    "action_count": 45,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "3d72f4b4e7c4d5521712ad26cf7c1d8e7b141738d1d198365010aee19cb75e54",
+  "content_signature_sha256": "d33de4fb2cba31b1aaaba3b44c27e57943237a0fcab8e4d790374bed9eb61f0c",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",

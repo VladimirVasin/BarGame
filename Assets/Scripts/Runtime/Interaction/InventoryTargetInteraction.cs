@@ -82,6 +82,9 @@ namespace BarPromenade
 
             FeedbackDurationSeconds = feedbackDurationSeconds;
             Speaker = speaker;
+            // A target that asks for an item already has its own refusal:
+            // the missing item. Nothing else can withhold its second choice.
+            RefusalResponseKey = string.Empty;
         }
 
         /// <summary>
@@ -99,20 +102,23 @@ namespace BarPromenade
             string confirmationPromptKey,
             float feedbackDurationSeconds =
                 DefaultFeedbackDurationSeconds,
-            NpcSpeaker speaker = default)
+            NpcSpeaker speaker = default,
+            string refusalResponseKey = null)
         {
             return new InventoryTargetInteractionDefinition(
                 talkResponseKey,
                 confirmationPromptKey,
                 feedbackDurationSeconds,
-                speaker);
+                speaker,
+                refusalResponseKey);
         }
 
         private InventoryTargetInteractionDefinition(
             string talkResponseKey,
             string confirmationPromptKey,
             float feedbackDurationSeconds,
-            NpcSpeaker speaker)
+            NpcSpeaker speaker,
+            string refusalResponseKey)
         {
             Requirement = default;
             HasRequirement = false;
@@ -136,6 +142,10 @@ namespace BarPromenade
 
             FeedbackDurationSeconds = feedbackDurationSeconds;
             Speaker = speaker;
+            RefusalResponseKey = string.IsNullOrWhiteSpace(
+                refusalResponseKey)
+                ? string.Empty
+                : refusalResponseKey.Trim();
         }
 
         public InventoryItemRequirement Requirement { get; }
@@ -165,6 +175,31 @@ namespace BarPromenade
         /// because the controller is shared between the two of them.
         /// </summary>
         public NpcSpeaker Speaker { get; }
+
+        /// <summary>
+        /// What the target says instead of doing the thing, when the
+        /// second choice is his to withhold and he is withholding it
+        /// right now. Empty on every definition that cannot refuse.
+        ///
+        /// It is not the missing requirement. A missing item is the
+        /// hero's own pocket answering him, silent and instant; this is
+        /// the target saying no, in his own voice — so it closes with
+        /// <see cref="Speaker"/>, exactly as the talk answer does. The
+        /// Ferryman refuses the drunk on the last two stages and this is
+        /// the line he refuses with.
+        ///
+        /// It rides on the DEFINITION, which the target rebuilds every
+        /// time the menu opens, so the answer is the one his state
+        /// justified when he was asked.
+        /// </summary>
+        public string RefusalResponseKey { get; }
+
+        /// <summary>True while the second choice is refused outright.
+        /// The panel then never asks "are you sure" about something that
+        /// cannot happen — it answers and closes, as it does for the tin
+        /// the hero has not got.</summary>
+        public bool IsRefused =>
+            !string.IsNullOrWhiteSpace(RefusalResponseKey);
 
         public bool IsValid =>
             (!HasRequirement || Requirement.IsValid) &&
@@ -221,7 +256,8 @@ namespace BarPromenade
         ShowTalkFeedback = 1,
         ShowMissingRequirementFeedback = 2,
         BeginExecution = 3,
-        Close = 4
+        Close = 4,
+        ShowRefusalFeedback = 5
     }
 
     public sealed class InventoryTargetInteractionModel
@@ -292,8 +328,16 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// <paramref name="refused"/> is the target withholding the
+        /// second choice for a reason of his own — the Ferryman will not
+        /// drive a man in this state — and it is answered before the
+        /// requirement, because a target who is saying no does not care
+        /// what is in the hero's pockets.
+        /// </summary>
         public InventoryTargetInteractionAction Confirm(
-            bool requirementSatisfied)
+            bool requirementSatisfied,
+            bool refused = false)
         {
             if (State == InventoryTargetInteractionState.Choice)
             {
@@ -303,6 +347,13 @@ namespace BarPromenade
                     State = InventoryTargetInteractionState.Closed;
                     return InventoryTargetInteractionAction
                         .ShowTalkFeedback;
+                }
+
+                if (refused)
+                {
+                    State = InventoryTargetInteractionState.Closed;
+                    return InventoryTargetInteractionAction
+                        .ShowRefusalFeedback;
                 }
 
                 if (!requirementSatisfied)
@@ -327,6 +378,13 @@ namespace BarPromenade
             {
                 State = InventoryTargetInteractionState.Choice;
                 return InventoryTargetInteractionAction.None;
+            }
+
+            if (refused)
+            {
+                State = InventoryTargetInteractionState.Closed;
+                return InventoryTargetInteractionAction
+                    .ShowRefusalFeedback;
             }
 
             if (!requirementSatisfied)

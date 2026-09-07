@@ -681,6 +681,30 @@ MonoBehaviour:
       expression: 3
     - normalizedTime: 1
       expression: 0
+  - clipName: RiseSeatedLeft
+    category: fall
+    clip: {fileID: 7781018258566934877, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 1.6666666
+    looping: 0
+    facialExpressionKeys: []
+  - clipName: RiseSeatedRight
+    category: fall
+    clip: {fileID: -5281567767100526290, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 1.6666666
+    looping: 0
+    facialExpressionKeys: []
+  - clipName: RiseSeatedToCrawlLeft
+    category: fall
+    clip: {fileID: 8755959253263957403, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 1.2
+    looping: 0
+    facialExpressionKeys: []
+  - clipName: RiseSeatedToCrawlRight
+    category: fall
+    clip: {fileID: 5016182592072879635, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 1.2
+    looping: 0
+    facialExpressionKeys: []
   - clipName: Run
     category: locomotion
     clip: {fileID: 7315205767777509915, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
@@ -747,10 +771,10 @@ MonoBehaviour:
       m_Center: {x: -0.0006814599, y: 0.8749999, z: 0.044000015}
       m_Extent: {x: 0.7793547, y: 0.8749999, z: 0.16800004}
     localForward: {x: 0, y: 0, z: 1}
-  sourceGeneratorVersion: 1.5.0
+  sourceGeneratorVersion: 1.6.0
   sourcePose: apose
   sourceTriangleCount: 2384
-  buildSignature: 6f8faa2d8a8a09064cb5b1acbbb16bb7
+  buildSignature: 1f624654ef65ce4be0a0434b7cdd9ec5
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}

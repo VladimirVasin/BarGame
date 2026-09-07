@@ -39,7 +39,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   boots and one flush bandage shell. A full-colour `256 x 256` point-filtered
   clothing atlas paints the open jacket edges, pockets, seams, patch, bandage
   wraps, cuffs and boot construction. The result has `34` mesh parts and
-  `2,384` triangles, with the same `31` bones, six sockets and `41` bone-only
+  `2,384` triangles, with the same `31` bones, six sockets and `45` bone-only
   production actions.
 - One curved head surface uses an `8 x 4` face atlas (`512 x 256`) with
   twenty-two cells: eleven expressions in columns `c0..c3` and their eleven soiled

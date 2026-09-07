@@ -130,13 +130,13 @@ A row never carries a status outside this table. Product-level scope cuts
 | Third-person chase camera | Shared collision-aware chase/orbit blends cinematic motion and yields to owned fixed/modal shots. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home fixed camera | Home uses authored fixed shots with smooth transitions and explicit contextual camera ownership; the main-room shot pans up to 18/9 degrees, and only as far as it must, to keep the hero framed. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
-| Modular 3D hero presentation | One Hero V2 in nine gameplay roots: 34 parts / 2,384 triangles, 31 bones and 41 actions. | `Player3D*`, `PlayerFactory` | Current |
+| Modular 3D hero presentation | Hero V2: 34 parts / 2,384 triangles, 31 bones and 45 validated actions. | `Player3D*`, `PlayerFactory` | Current |
 | Silent Hill attention | Layered gaze reacts to nearby authored targets within rig limits and yields to contextual ownership. | `PlayerAttention{Rules,Controller,Magnet}`, `IntoxicationHeadModel` | Current |
 | Continuous 3D player interactions | Shared positioned actions preserve visible entry/exit continuity and clean up presentation/input ownership. | `PlayerAnimatedInteraction{Timeline,Controller}`, `PlayerDoorAction{Plan,Controller,Target}` | Current |
 | Bed sleep and wake | Two hand-supported pelvis steps with seated stops in both directions; a domed pillow dents and recovers. | `HomeBedInteraction{,Plan}`, `PlayerAnimatedInteractionPelvisPath` | Current |
 | City bench and park game-table seats | Plan-owned seats reuse shared contextual sit/rest/stand with measured contacts and camera cleanup. | `CityParkBenchPlanner`, `CityBenchSit{Plan,WorldBuilder}` | Current |
 | The Ferryman's car and its passenger seat | An imported car, driver and passenger seat own doors, attachment, camera, audio and cross-area arrival. | `LastRouteCar{Plan,Factory,Doors,Suspension}`, `LastRouteCarDashboard{,State,Target,Gaze}` | Current |
-| The last route | Session journey stages coordinate Ferryman dialogue, car legs, blackouts and arrivals; pause blocks skipping. | `LastRouteRideController`, `LastRouteCar{DrivePath,DriveModel,Driver,GiveWay,GiveWayModel}` | Current |
+| The last route | Session journey stages coordinate Ferryman dialogue, car legs, blackouts and arrivals; pause blocks skipping. The ride itself is refused on the last two drunkenness stages. | `LastRouteRideController`, `LastRouteFerrymanRideRules`, `LastRouteCar{DrivePath,DriveModel,Driver,GiveWay,GiveWayModel}` | Current |
 | Home bed sleep | One trigger on the door-side bed edge; guided walk, neutral settle, then `BedEnter`/`BedSleepLoop`/`BedExit` through a real bedside sit. | `HomeBedInteraction{Plan,}`, `PlayerAnimatedInteractionController` | Current |
 | Home balcony smoking | One modal balcony smoking sequence owns its prop, sound, camera and completion-only stress relief. | `HomeBalconySmoking{Plan,Interaction,Timeline,CameraDrift,ExhaleEffect}`, `HomeBalconyWorldBuilder` | Current |
 | Home refrigerator | Physical shelf browsing, first-person inspection and atomic collection work. Gap: `Use` is registered but unavailable. | `HomeRefrigerator{Plan,WorldBuilder,View,Interaction,InteractionTimeline,FirstPersonHand}` | Partial |
@@ -154,7 +154,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Session state | Session facade delegates temporary vehicle ownership; resets and stale leases cannot leak ride state into a new game. | `GameSessionState`, `CityBlueprintCatalog` | Current |
 | Bar drink retail and physical service | The inset 2x2 menu offers exactly four low-grade drinks; either order-key family pays once. | `BarDrink{Catalog,MenuPresentation,ServicePlan,ServiceTimeline,ShopController,VesselView}` | Current |
 | Intoxication stages and presentation | Session alcohol drives reversible visual/audio/body presentation and bounded passive recovery. | `IntoxicationStageRules`, `IntoxicationStatusController` | Current |
-| Continuous balance and falling | One balance model coordinates drift, wall support, fall/ragdoll/crawl/rise and directional recovery. | `PlayerBalanceModel`, `PlayerBalanceRules` | Current |
+| Continuous balance and falling | Settled pose selects seated/all-fours recovery; complete pose and motion persist across handoffs. | `PlayerBalanceModel`, `PlayerRiseModel`, `Player3D*` | Current |
 | Hero drunk muttering | A seeded stage-dependent clock drives short authored mutters, slurring and an owned speech bubble. | `HeroMutterModel`, `HeroMutterLines` | Current |
 | Hero nausea bouts | High intoxication drives the walking gauge, cancellation gates, vomiting relief and session mouth-soiling. | `HeroNauseaClock`, `HeroNauseaGaugeModel` | Current |
 | Bar interior and exterior | Imported bar shell/service assets keep plan-owned collision, entrance geometry and shared resources. | `BarInteriorLayout{Plan,Planner,Validator}`, `Bar{AssetRegistry,ServicePropFactory}` | Current |
@@ -216,11 +216,11 @@ blueprint ID + seed -> immutable blueprint -> validated sparse layout
   -> fence plan -> rails with clearance openings
 
 nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
-  -> 41 Actions: Idle / Walk / heavy Run + seated drink 2/3/2 + face atlas/status bones
+  -> 45 authored Actions: Idle / Walk / heavy Run + seated drink 2/3/2 + seated/fours recovery
   -> Shift or L3 + forward -> 4.2 m/s run; backpedal and scripted approaches walk
   -> actual constrained speed owns Run weight; intoxication scales it, fatigue does not
   -> contextual actions: bed, smoking, cat feeding, bus board/ride/exit
-  -> continuous balance model: drift, recovery steps, wall hand; lost capture point -> Fall clip -> bounded ragdoll -> Rise -> Relaxed
+  -> continuous balance: drift / support / topple -> bounded ragdoll -> seated or all-fours rise -> stagger
   -> first-person refrigerator arm; bar drink stays on nested full-body seated rig
   -> inventory portrait
 

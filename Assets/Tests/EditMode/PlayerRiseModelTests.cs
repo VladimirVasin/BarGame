@@ -75,7 +75,10 @@ namespace BarPromenade.Tests.EditMode
                     Is.InRange(PlayerRiseRules.AllFoursKey, PlayerRiseRules.AllFoursShiftKey),
                     "a crawl rocks between the two all-fours keys");
                 Assert.That(model.Output.Progress, Is.EqualTo(progress).Within(0.00001f), "the rise does not advance while he crawls");
-                Assert.That(model.Output.CrawlVelocityLocal.y, Is.GreaterThan(0.1f), "a key straight ahead moves him forward");
+                if (model.StageElapsed >= PlayerRiseRules.SupportTransitionSeconds)
+                {
+                    Assert.That(model.Output.CrawlVelocityLocal.y, Is.GreaterThan(0.1f), "a key straight ahead moves him forward after the supported entry");
+                }
                 Assert.That(model.Output.CrawlVelocityLocal.x, Is.Zero);
                 Assert.That(model.Output.CrawlYawDegreesPerSecond, Is.EqualTo(0f).Within(0.0001f));
                 Assert.That(model.Output.LegsWeight, Is.Zero);
@@ -193,6 +196,10 @@ namespace BarPromenade.Tests.EditMode
         {
             var model = new PlayerRiseModel(5, 1f);
             RunToStage(model, PlayerRiseStage.Crawling, Vector2.up);
+            while (model.StageElapsed < PlayerRiseRules.SupportTransitionSeconds)
+            {
+                model.Advance(Frame, Still(1f));
+            }
 
             model.SetDownedInput(Vector2.right);
             model.Advance(Frame, Still(1f));
@@ -233,13 +240,17 @@ namespace BarPromenade.Tests.EditMode
 
             model.SetDownedInput(Vector2.zero);
             int released = 0;
+            PlayerRiseOutput beforeKneel = model.Output;
             while (model.Stage == PlayerRiseStage.Crawling && released < 60)
             {
+                beforeKneel = model.Output;
                 model.Advance(Frame, Still(1f));
                 released++;
             }
 
             Assert.That(model.Stage, Is.EqualTo(PlayerRiseStage.Kneeling));
+            Assert.That(model.Output.ClipTime, Is.EqualTo(beforeKneel.ClipTime).Within(0.00001f), "the kneel starts at the crawl's actual phase");
+            Assert.That(model.Output.LeftHandLift, Is.EqualTo(beforeKneel.LeftHandLift).Within(0.00001f));
             Assert.That(
                 released * Frame,
                 Is.EqualTo(PlayerRiseRules.CrawlReleaseSeconds).Within(2f * Frame),
@@ -262,9 +273,17 @@ namespace BarPromenade.Tests.EditMode
             var early = new PlayerRiseModel(5, 1f);
             RunToStage(early, PlayerRiseStage.Kneeling, Vector2.zero);
             Assert.That(early.Stage, Is.EqualTo(PlayerRiseStage.Kneeling));
+            while (early.Output.StageProgress < 0.15f)
+            {
+                early.Advance(Frame, Still(1f));
+            }
+
+            PlayerRiseOutput beforeAbort = early.Output;
             early.SetDownedInput(Vector2.up);
             early.Advance(Frame, Still(1f));
             Assert.That(early.Stage, Is.EqualTo(PlayerRiseStage.Crawling), "a key at the start of the kneel takes him back to all fours");
+            Assert.That(early.Output.ClipTime, Is.EqualTo(beforeAbort.ClipTime).Within(0.00001f), "returning to the crawl retains the pose before easing back");
+            Assert.That(early.Output.LeftHandOffsetLocal, Is.EqualTo(beforeAbort.LeftHandOffsetLocal));
 
             var late = new PlayerRiseModel(5, 1f);
             RunToStage(late, PlayerRiseStage.Kneeling, Vector2.zero);
@@ -320,27 +339,96 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.StunSeconds, Is.EqualTo(stirring));
         }
 
-        [Test]
-        public void Stages_AdvanceInOrder()
+        [TestCase(PlayerRiseRoute.AllFours)]
+        [TestCase(PlayerRiseRoute.Seated)]
+        public void Stages_AdvanceInOrder(PlayerRiseRoute route)
         {
             var model = new PlayerRiseModel(1, 1f);
+            model.SetRecoveryRoute(route);
             List<PlayerRiseStage> stages = RunToDone(model, Still(1f));
+            var expected = new List<PlayerRiseStage>
+            {
+                PlayerRiseStage.Settling,
+                PlayerRiseStage.Stunned,
+                PlayerRiseStage.Stirring,
+                route == PlayerRiseRoute.Seated ? PlayerRiseStage.SittingUp : PlayerRiseStage.PushingUp
+            };
+            if (route == PlayerRiseRoute.Seated)
+            {
+                expected.Add(PlayerRiseStage.Seated);
+            }
 
-            Assert.That(
-                stages,
-                Is.EqualTo(new[]
-                {
-                    PlayerRiseStage.Settling,
-                    PlayerRiseStage.Stunned,
-                    PlayerRiseStage.Stirring,
-                    PlayerRiseStage.PushingUp,
-                    PlayerRiseStage.Kneeling,
-                    PlayerRiseStage.Standing,
-                    PlayerRiseStage.Done
-                }));
+            expected.Add(PlayerRiseStage.Kneeling);
+            expected.Add(PlayerRiseStage.Standing);
+            expected.Add(PlayerRiseStage.Done);
+
+            Assert.That(stages, Is.EqualTo(expected));
             Assert.That(model.Output.Progress, Is.EqualTo(1f));
             Assert.That(model.Output.ClipTime, Is.EqualTo(1f));
             Assert.That(model.Output.LegsWeight, Is.EqualTo(1f));
+            Assert.That(model.Output.Route, Is.EqualTo(route));
+        }
+
+        [TestCase(FootSide.Left)]
+        [TestCase(FootSide.Right)]
+        public void Seated_HeldInputShowsTheSeatAndAuthoredTransferBeforeCrawling(FootSide side)
+        {
+            var model = new PlayerRiseModel(5, 1f);
+            model.SetLyingSide(side);
+            model.SetRecoveryRoute(PlayerRiseRoute.Seated);
+            RunToStage(model, PlayerRiseStage.Seated, Vector2.up);
+            Assert.That(model.Stage, Is.EqualTo(PlayerRiseStage.Seated));
+            Assert.That(model.Output.ClipTime, Is.EqualTo(PlayerRiseRules.AllFoursKey));
+            Assert.That(model.Output.CrawlVelocityLocal, Is.EqualTo(Vector2.zero));
+            float seatedAt = model.Elapsed;
+            model.SetRecoveryRoute(PlayerRiseRoute.AllFours);
+            Assert.That(model.Route, Is.EqualTo(PlayerRiseRoute.Seated), "the chosen route is committed once the support attempt starts");
+            while (model.Stage == PlayerRiseStage.Seated)
+            {
+                model.Advance(Frame, Still(1f));
+            }
+
+            Assert.That(model.Elapsed - seatedAt, Is.GreaterThanOrEqualTo(PlayerRiseRules.SeatedHoldSeconds(1f)));
+            Assert.That(model.Stage, Is.EqualTo(PlayerRiseStage.SeatedToCrawl));
+            Assert.That(model.Output.ClipTime, Is.Zero, "the transfer action begins at the shared seated endpoint");
+            Assert.That(model.Route, Is.EqualTo(PlayerRiseRoute.Seated));
+            float transferAt = model.Elapsed;
+            while (model.Stage == PlayerRiseStage.SeatedToCrawl)
+            {
+                Assert.That(model.Output.CrawlVelocityLocal, Is.EqualTo(Vector2.zero), "the transfer plants its supports before travelling");
+                model.Advance(Frame, Still(1f));
+            }
+
+            Assert.That(model.Elapsed - transferAt, Is.GreaterThanOrEqualTo(PlayerRiseRules.SeatedToCrawlSeconds));
+            Assert.That(model.Stage, Is.EqualTo(PlayerRiseStage.Crawling));
+            Assert.That(model.Route, Is.EqualTo(PlayerRiseRoute.AllFours));
+            Assert.That(model.Output.ClipTime, Is.EqualTo(PlayerRiseRules.AllFoursKey));
+            Assert.That(model.LeadFoot, Is.EqualTo(side));
+            Assert.That(PlayerRisePose.FromOutput(model.Output).Route, Is.EqualTo(PlayerRiseRoute.AllFours));
+        }
+
+        [Test]
+        public void Seated_KneelAbortReturnsThroughTheSeatedSupport()
+        {
+            var model = new PlayerRiseModel(5, 1f);
+            model.SetRecoveryRoute(PlayerRiseRoute.Seated);
+            RunToStage(model, PlayerRiseStage.Kneeling, Vector2.zero);
+            while (model.Output.StageProgress < 0.15f)
+            {
+                model.Advance(Frame, Still(1f));
+            }
+
+            float clipBefore = model.Output.ClipTime;
+            model.SetDownedInput(Vector2.up);
+            model.Advance(Frame, Still(1f));
+            Assert.That(model.Stage, Is.EqualTo(PlayerRiseStage.Seated));
+            Assert.That(model.Output.ClipTime, Is.EqualTo(clipBefore));
+            while (model.Stage == PlayerRiseStage.Seated)
+            {
+                model.Advance(Frame, Still(1f));
+            }
+
+            Assert.That(model.Stage, Is.EqualTo(PlayerRiseStage.SeatedToCrawl));
         }
 
         [Test]
@@ -419,6 +507,7 @@ namespace BarPromenade.Tests.EditMode
             PlayerRiseStage previousStage = model.Stage;
             int slumpFrames = 0;
             int retreatFrames = 0;
+            float maximumResumeStep = 0f;
             for (int frame = 0; frame < 20 * 60 && model.Stage != PlayerRiseStage.Done; frame++)
             {
                 model.Advance(Frame, input);
@@ -430,6 +519,8 @@ namespace BarPromenade.Tests.EditMode
                     {
                         retreatFrames++;
                     }
+
+                    maximumResumeStep = Mathf.Max(maximumResumeStep, output.ClipTime - previous);
                 }
                 else if (model.Stage == previousStage)
                 {
@@ -445,6 +536,8 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(slumpFrames, Is.GreaterThan(20), "two slumps were played");
             Assert.That(retreatFrames, Is.GreaterThan(3), "a slump runs the clip back");
+            Assert.That(maximumResumeStep, Is.LessThanOrEqualTo(0.0085f),
+                "resuming the failed effort must not compress the authored arm sweep into a few frames");
             Assert.That(model.SlumpsTaken, Is.EqualTo(2));
         }
 
@@ -507,7 +600,7 @@ namespace BarPromenade.Tests.EditMode
                 float start = model.Elapsed;
                 RunToDone(model, input);
                 float seconds = model.Elapsed - start;
-                Assert.That(seconds, Is.GreaterThan(2.7f).And.LessThan(5.3f), $"seed {seed}: {seconds:F2} s from stirring to done");
+                Assert.That(seconds, Is.GreaterThan(2.7f).And.LessThan(6.0f), $"seed {seed}: {seconds:F2} s from stirring to done");
                 Assert.That(model.Elapsed, Is.LessThan(11f), "the whole rise, stun included, is under eleven seconds");
             }
         }
@@ -617,6 +710,7 @@ namespace BarPromenade.Tests.EditMode
             PlayerRiseInput input = Still(1f);
             float peakWobble = 0f;
             float earlyWobble = 0f;
+            Vector2 lastStandingWobble = Vector2.zero;
             for (int frame = 0; frame < 20 * 60 && model.Stage != PlayerRiseStage.Done; frame++)
             {
                 model.Advance(Frame, input);
@@ -629,12 +723,15 @@ namespace BarPromenade.Tests.EditMode
                     }
 
                     peakWobble = Mathf.Max(peakWobble, wobble);
+                    lastStandingWobble = model.Output.WobbleLeanDegrees;
                 }
             }
 
             Assert.That(earlyWobble, Is.EqualTo(0f), "no wobble before the top");
             Assert.That(peakWobble, Is.GreaterThan(1f).And.LessThanOrEqualTo(PlayerRiseRules.WobbleDegreesAtMaximum + 0.001f));
             Assert.That(model.HandbackVelocity.magnitude, Is.LessThanOrEqualTo(0.4f));
+            Assert.That(Vector2.Distance(model.Output.WobbleLeanDegrees, lastStandingWobble), Is.LessThan(0.8f), "Done keeps the terminal wobble instead of resetting upright");
+            Assert.That(PlayerRisePose.FromOutput(model.Output).Active, Is.True, "the owner presents the terminal rise before clearing it");
             Assert.That(
                 new PlayerRiseModel(13, 1f).HandbackVelocity,
                 Is.EqualTo(Vector2.zero),

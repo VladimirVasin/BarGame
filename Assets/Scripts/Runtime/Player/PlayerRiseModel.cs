@@ -3,6 +3,13 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    /// <summary>The support the lying body gathers into, independent of its left/right side.</summary>
+    public enum PlayerRiseRoute
+    {
+        AllFours = 0,
+        Seated
+    }
+
     /// <summary>Where the hero is in getting up.</summary>
     public enum PlayerRiseStage
     {
@@ -17,6 +24,15 @@ namespace BarPromenade
 
         /// <summary>Pushing up onto all fours, with a slump or two on the way.</summary>
         PushingUp,
+
+        /// <summary>From the back or side onto the pelvis, using the seated rise action.</summary>
+        SittingUp,
+
+        /// <summary>A supported seated pause before another attempt or a transfer to crawling.</summary>
+        Seated,
+
+        /// <summary>The authored seated-to-all-fours transfer; never a direct pose switch.</summary>
+        SeatedToCrawl,
 
         /// <summary>On all fours and told to go somewhere: crawling, hands alternating, as long as the key is held.</summary>
         Crawling,
@@ -124,9 +140,12 @@ namespace BarPromenade
             PlayerCrawlLimb leftHandCrawl = default,
             PlayerCrawlLimb rightHandCrawl = default,
             PlayerCrawlLimb leftKneeCrawl = default,
-            PlayerCrawlLimb rightKneeCrawl = default)
+            PlayerCrawlLimb rightKneeCrawl = default,
+            PlayerRiseRoute route = PlayerRiseRoute.AllFours,
+            float handOnKneeWeight = -1f)
         {
             Stage = stage;
+            Route = route;
             LeftHandLift = Mathf.Max(0f, leftHandLift);
             RightHandLift = Mathf.Max(0f, rightHandLift);
             CrawlVelocityLocal = crawlVelocityLocal;
@@ -144,7 +163,10 @@ namespace BarPromenade
             LeftHandOffsetLocal = leftHandOffsetLocal;
             RightHandWeight = Mathf.Clamp01(rightHandWeight);
             RightHandOffsetLocal = rightHandOffsetLocal;
-            HandOnKnee = handOnKnee;
+            HandOnKneeWeight = handOnKneeWeight < 0f
+                ? (handOnKnee ? 1f : 0f)
+                : Mathf.Clamp01(handOnKneeWeight);
+            HandOnKnee = HandOnKneeWeight > 0f;
             KneeSide = kneeSide;
             Step = step;
             HeadLiftDegrees = headLiftDegrees;
@@ -174,6 +196,7 @@ namespace BarPromenade
                 false);
 
         public PlayerRiseStage Stage { get; }
+        public PlayerRiseRoute Route { get; }
 
         /// <summary>How far through the current stage (<c>0..1</c>).</summary>
         public float StageProgress { get; }
@@ -198,6 +221,7 @@ namespace BarPromenade
 
         /// <summary>The hand on the knee side is on the knee, not the floor.</summary>
         public bool HandOnKnee { get; }
+        public float HandOnKneeWeight { get; }
         public FootSide KneeSide { get; }
         public PlayerRiseStepPose Step { get; }
 
@@ -259,7 +283,7 @@ namespace BarPromenade
         /// <summary>The slump: the clip runs back this far, the pelvis dips this much, in these three parts.</summary>
         public const float SlumpRetreatSeconds = 0.15f;
         public const float SlumpHoldSeconds = 0.20f;
-        public const float SlumpResumeSeconds = 0.10f;
+        public const float SlumpResumeSeconds = 0.20f;
         public const float SlumpSeconds =
             SlumpRetreatSeconds + SlumpHoldSeconds + SlumpResumeSeconds;
         public const float SlumpRetreatClip = 0.06f;
@@ -274,6 +298,13 @@ namespace BarPromenade
         public const float WobbleHertz = 1.5f;
         public const float HandbackVelocityScale = 0.5f;
         public const float HandsReleaseSeconds = 0.3f;
+        public const float SupportTransitionSeconds = 0.30f;
+        public const float SeatedToCrawlSeconds = 1.0f;
+
+        public static float SeatedHoldSeconds(float intoxication)
+        {
+            return Mathf.Lerp(0.30f, 0.55f, Mathf.Clamp01(intoxication));
+        }
 
         /// <summary>
         /// The crawl: a key past the dead zone once he is on all fours
@@ -353,12 +384,12 @@ namespace BarPromenade
 
         public static float KneelingSeconds(float unit)
         {
-            return Mathf.Lerp(0.6f, 0.9f, Mathf.Clamp01(unit));
+            return Mathf.Lerp(0.9f, 1.2f, Mathf.Clamp01(unit));
         }
 
         public static float StandingSeconds(float unit)
         {
-            return Mathf.Lerp(0.8f, 1.2f, Mathf.Clamp01(unit));
+            return Mathf.Lerp(1.0f, 1.4f, Mathf.Clamp01(unit));
         }
 
         /// <summary>How many times the push-up fails first: none sober-ish, up to two blind drunk.</summary>
@@ -401,10 +432,11 @@ namespace BarPromenade
     /// Getting up, staged and seeded: the ragdoll lies until it is still,
     /// then a drunk lies a while longer; the frozen body stirs — the head
     /// lifts, the hands find the floor — and blends into the authored
-    /// Rise's brace; he pushes up onto all fours, slumping back once or
-    /// twice on the way when he is far gone; one boot comes forward and
-    /// a hand goes to the knee; he stands, and wobbles at the top before
-    /// the balance model has him again.
+    /// rise's brace. The settled orientation selects either all fours
+    /// or a seated support, with a slump or two when he is far gone.
+    /// A seated body visibly transfers onto all fours before crawling;
+    /// either route can bring one boot forward and a hand to the knee.
+    /// He stands and keeps the last wobble for the balance handback.
     ///
     /// The authored clip supplies the trunk; this model supplies the
     /// TIME — how the clip is scrubbed, where it pauses and runs back —
@@ -437,6 +469,9 @@ namespace BarPromenade
         private Vector2 downedInput;
         private float crawlPhase;
         private float crawlReleaseTimer;
+        private PlayerRiseRoute route;
+        private PlayerRiseOutput transitionFrom;
+        private bool supportTransition;
 
         public PlayerRiseModel(int seed, float intoxication)
         {
@@ -467,6 +502,7 @@ namespace BarPromenade
         public int SlumpsPlanned => slumpsPlanned;
         public int SlumpsTaken => slumpsTaken;
         public FootSide LeadFoot => leadFoot;
+        public PlayerRiseRoute Route => route;
         public float Intoxication => intoxication;
 
         /// <summary>Seconds this rise lies stunned once the ragdoll is still.</summary>
@@ -489,6 +525,17 @@ namespace BarPromenade
             if (stage <= PlayerRiseStage.Stirring)
             {
                 leadFoot = side;
+                output = BuildOutput();
+            }
+        }
+
+        /// <summary>The settled body chooses once, before the first support attempt begins.</summary>
+        public void SetRecoveryRoute(PlayerRiseRoute value)
+        {
+            if (stage <= PlayerRiseStage.Stirring)
+            {
+                route = value;
+                output = BuildOutput();
             }
         }
 
@@ -569,13 +616,45 @@ namespace BarPromenade
                 case PlayerRiseStage.Stirring:
                     if (stageElapsed >= stirringSeconds)
                     {
-                        Enter(PlayerRiseStage.PushingUp);
+                        Enter(route == PlayerRiseRoute.Seated
+                            ? PlayerRiseStage.SittingUp
+                            : PlayerRiseStage.PushingUp);
                     }
 
                     break;
 
                 case PlayerRiseStage.PushingUp:
+                case PlayerRiseStage.SittingUp:
                     AdvancePushingUp(deltaTime);
+                    break;
+
+                case PlayerRiseStage.Seated:
+                    if (stageElapsed >= PlayerRiseRules.SeatedHoldSeconds(intoxication))
+                    {
+                        Enter(HasDownedInput
+                            ? PlayerRiseStage.SeatedToCrawl
+                            : PlayerRiseStage.Kneeling);
+                    }
+
+                    break;
+
+                case PlayerRiseStage.SeatedToCrawl:
+                    if (stageElapsed >= PlayerRiseRules.SeatedToCrawlSeconds)
+                    {
+                        // The two actions share this exact all-fours endpoint.
+                        // Do not blend their unrelated normalized clip times.
+                        route = PlayerRiseRoute.AllFours;
+                        output = new PlayerRiseOutput(
+                            PlayerRiseStage.SeatedToCrawl, 1f,
+                            PlayerRiseRules.StirringShare + PlayerRiseRules.PushingUpShare,
+                            PlayerRiseRules.AllFoursKey, 1f, 0f,
+                            1f, new Vector2(-0.05f, 0.1f),
+                            1f, new Vector2(0.05f, 0.1f),
+                            false, leadFoot, PlayerRiseStepPose.None,
+                            0f, Vector2.zero, 0f, false);
+                        Enter(HasDownedInput ? PlayerRiseStage.Crawling : PlayerRiseStage.Kneeling);
+                    }
+
                     break;
 
                 case PlayerRiseStage.Crawling:
@@ -588,7 +667,9 @@ namespace BarPromenade
                     {
                         // Only just kneeling and told to go: back to all
                         // fours and crawl.
-                        Enter(PlayerRiseStage.Crawling);
+                        Enter(route == PlayerRiseRoute.Seated
+                            ? PlayerRiseStage.Seated
+                            : PlayerRiseStage.Crawling);
                         break;
                     }
 
@@ -614,6 +695,19 @@ namespace BarPromenade
 
         private void Enter(PlayerRiseStage next)
         {
+            PlayerRiseOutput source =
+                (stage == PlayerRiseStage.PushingUp || stage == PlayerRiseStage.SittingUp) &&
+                pushProgress >= 1f ? BuildOutput() : output;
+            supportTransition = next == PlayerRiseStage.Crawling ||
+                                stage == PlayerRiseStage.Crawling ||
+                                (stage == PlayerRiseStage.Kneeling && next == PlayerRiseStage.Seated);
+            transitionFrom = source;
+            if (next == PlayerRiseStage.Crawling)
+            {
+                crawlPhase = 0f;
+                crawlReleaseTimer = 0f;
+            }
+
             stage = next;
             stageElapsed = 0f;
         }
@@ -651,7 +745,9 @@ namespace BarPromenade
             if (pushProgress >= 1f)
             {
                 pushProgress = 1f;
-                Enter(HasDownedInput ? PlayerRiseStage.Crawling : PlayerRiseStage.Kneeling);
+                Enter(route == PlayerRiseRoute.Seated
+                    ? PlayerRiseStage.Seated
+                    : (HasDownedInput ? PlayerRiseStage.Crawling : PlayerRiseStage.Kneeling));
             }
         }
 
@@ -720,9 +816,79 @@ namespace BarPromenade
 
         private PlayerRiseOutput BuildOutput()
         {
+            PlayerRiseOutput target = BuildStageOutput();
+            float blend = supportTransition
+                ? Ease(stageElapsed / PlayerRiseRules.SupportTransitionSeconds)
+                : 1f;
+            PlayerRiseOutput from = supportTransition ? transitionFrom : target;
+            PlayerRiseStepPose targetStep = target.Step;
+            PlayerRiseStepPose fromStep = from.Step;
+            float stepWeight = Mathf.Lerp(fromStep.Weight, targetStep.Weight, blend);
+            var step = new PlayerRiseStepPose(
+                stepWeight > 0f,
+                targetStep.Active ? targetStep.Side : fromStep.Side,
+                Vector2.Lerp(fromStep.TargetLocal, targetStep.TargetLocal, blend),
+                Mathf.Lerp(fromStep.Lift, targetStep.Lift, blend),
+                stepWeight);
+            return new PlayerRiseOutput(
+                target.Stage,
+                target.StageProgress,
+                target.Progress,
+                Mathf.Lerp(from.ClipTime, target.ClipTime, blend),
+                target.BlendProgress,
+                Mathf.Lerp(from.PelvisOffsetMetres, target.PelvisOffsetMetres, blend),
+                Mathf.Lerp(from.LeftHandWeight, target.LeftHandWeight, blend),
+                Vector2.Lerp(from.LeftHandOffsetLocal, target.LeftHandOffsetLocal, blend),
+                Mathf.Lerp(from.RightHandWeight, target.RightHandWeight, blend),
+                Vector2.Lerp(from.RightHandOffsetLocal, target.RightHandOffsetLocal, blend),
+                target.HandOnKnee,
+                target.KneeSide,
+                step,
+                Mathf.Lerp(from.HeadLiftDegrees, target.HeadLiftDegrees, blend),
+                Vector2.Lerp(from.WobbleLeanDegrees, target.WobbleLeanDegrees, blend),
+                Mathf.Lerp(from.LegsWeight, target.LegsWeight, blend),
+                target.SlumpActive,
+                Mathf.Lerp(from.LeftHandLift, target.LeftHandLift, blend),
+                Mathf.Lerp(from.RightHandLift, target.RightHandLift, blend),
+                Vector2.Lerp(from.CrawlVelocityLocal, target.CrawlVelocityLocal, blend),
+                Mathf.Lerp(from.CrawlYawDegreesPerSecond, target.CrawlYawDegreesPerSecond, blend),
+                target.LeftHandCrawl,
+                target.RightHandCrawl,
+                target.LeftKneeCrawl,
+                target.RightKneeCrawl,
+                route,
+                Mathf.Lerp(from.HandOnKneeWeight, target.HandOnKneeWeight, blend));
+        }
+
+        private static float Ease(float progress)
+        {
+            return Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(progress));
+        }
+
+        private float TerminalWobble()
+        {
+            return PlayerRiseRules.WobbleDegrees(intoxication) * Mathf.Sin(
+                Mathf.PI * 2f * PlayerRiseRules.WobbleHertz * standingSeconds + wobblePhase);
+        }
+
+        private PlayerRiseOutput BuildStageOutput()
+        {
             float leadSign = leadFoot == FootSide.Right ? 1f : -1f;
             Vector2 leftHand = new Vector2(-0.05f, 0.1f);
             Vector2 rightHand = new Vector2(0.05f, 0.1f);
+            if (route == PlayerRiseRoute.Seated)
+            {
+                // While seated the palms support him behind the pelvis;
+                // they travel forward during the authored support transfer.
+                float seated = stage == PlayerRiseStage.SittingUp ? Ease(pushProgress) :
+                    stage == PlayerRiseStage.Seated ? 1f :
+                    stage == PlayerRiseStage.SeatedToCrawl
+                        ? 1f - Ease(stageElapsed / PlayerRiseRules.SeatedToCrawlSeconds) :
+                    stage == PlayerRiseStage.Kneeling
+                        ? 1f - Ease(stageElapsed / kneelingSeconds) : 0f;
+                leftHand.y = Mathf.Lerp(0.1f, -0.16f, seated);
+                rightHand.y = leftHand.y;
+            }
             switch (stage)
             {
                 case PlayerRiseStage.Settling:
@@ -732,16 +898,16 @@ namespace BarPromenade
                 case PlayerRiseStage.Stirring:
                 {
                     float p = Mathf.Clamp01(stageElapsed / stirringSeconds);
-                    float hands = Mathf.Clamp01(p / 0.5f);
+                    float hands = Ease(p);
                     float head = p < 0.5f
-                        ? PlayerRiseRules.HeadLiftPeakDegrees * (p / 0.5f)
-                        : PlayerRiseRules.HeadLiftPeakDegrees * (1f - 0.5f * ((p - 0.5f) / 0.5f));
+                        ? PlayerRiseRules.HeadLiftPeakDegrees * Ease(p / 0.5f)
+                        : PlayerRiseRules.HeadLiftPeakDegrees * (1f - 0.5f * Ease((p - 0.5f) / 0.5f));
                     return new PlayerRiseOutput(
                         stage,
                         p,
                         PlayerRiseRules.StirringShare * p,
-                        Mathf.Lerp(PlayerRiseRules.DownKey, PlayerRiseRules.BraceKey, p),
-                        Mathf.SmoothStep(0f, 1f, p),
+                        Mathf.Lerp(PlayerRiseRules.DownKey, PlayerRiseRules.BraceKey, Ease(p)),
+                        p,
                         0f,
                         hands,
                         leftHand,
@@ -757,12 +923,13 @@ namespace BarPromenade
                 }
 
                 case PlayerRiseStage.PushingUp:
+                case PlayerRiseStage.SittingUp:
                 {
                     float shape = inSlump ? PlayerRiseRules.SlumpShape(slumpElapsed) : 0f;
                     float clip = Mathf.Lerp(
                                      PlayerRiseRules.BraceKey,
                                      PlayerRiseRules.AllFoursKey,
-                                     pushProgress) -
+                                     Ease(pushProgress)) -
                                  PlayerRiseRules.SlumpRetreatClip * shape;
                     return new PlayerRiseOutput(
                         stage,
@@ -779,10 +946,27 @@ namespace BarPromenade
                         false,
                         leadFoot,
                         PlayerRiseStepPose.None,
-                        PlayerRiseRules.HeadLiftPeakDegrees * 0.5f * (1f - pushProgress),
+                        PlayerRiseRules.HeadLiftPeakDegrees * 0.5f * (1f - Ease(pushProgress)),
                         Vector2.zero,
                         0f,
                         inSlump);
+                }
+
+                case PlayerRiseStage.Seated:
+                case PlayerRiseStage.SeatedToCrawl:
+                {
+                    bool transfer = stage == PlayerRiseStage.SeatedToCrawl;
+                    float p = Mathf.Clamp01(stageElapsed / (transfer
+                        ? PlayerRiseRules.SeatedToCrawlSeconds
+                        : PlayerRiseRules.SeatedHoldSeconds(intoxication)));
+                    return new PlayerRiseOutput(
+                        stage, p,
+                        PlayerRiseRules.StirringShare + PlayerRiseRules.PushingUpShare,
+                        transfer ? Ease(p) : PlayerRiseRules.AllFoursKey,
+                        1f, 0f,
+                        1f, leftHand, 1f, rightHand,
+                        false, leadFoot, PlayerRiseStepPose.None,
+                        0f, Vector2.zero, 0f, false);
                 }
 
                 case PlayerRiseStage.Crawling:
@@ -800,7 +984,9 @@ namespace BarPromenade
                     float leftSwing = firstHalf ? Mathf.Sin(progress * Mathf.PI) : 0f;
                     float rightSwing = firstHalf ? 0f : Mathf.Sin(progress * Mathf.PI);
                     var swinging = new PlayerCrawlLimb(true, progress);
-                    float rock = 0.5f + 0.5f * Mathf.Sin(crawlPhase * 2f);
+                    // Both ends of a half-cycle are the authored .38
+                    // contact pose, including the very first crawl frame.
+                    float rock = 0.5f - 0.5f * Mathf.Cos(crawlPhase * 2f);
                     CrawlMotion(out Vector2 velocity, out float yaw);
                     return new PlayerRiseOutput(
                         stage,
@@ -840,8 +1026,8 @@ namespace BarPromenade
                 case PlayerRiseStage.Kneeling:
                 {
                     float p = Mathf.Clamp01(stageElapsed / kneelingSeconds);
-                    float stepPhase = Mathf.Clamp01((p - 0.55f) / 0.45f);
-                    bool handOnKnee = p >= 0.6f;
+                    float stepPhase = Ease((p - 0.55f) / 0.45f);
+                    float handOnKneeWeight = Ease((p - 0.45f) / 0.40f);
                     var step = new PlayerRiseStepPose(
                         stepPhase > 0f,
                         leadFoot,
@@ -856,28 +1042,29 @@ namespace BarPromenade
                         PlayerRiseRules.StirringShare +
                         PlayerRiseRules.PushingUpShare +
                         PlayerRiseRules.KneelingShare * p,
-                        Mathf.Lerp(PlayerRiseRules.AllFoursKey, PlayerRiseRules.HalfKneelKey, p),
+                        Mathf.Lerp(PlayerRiseRules.AllFoursKey, PlayerRiseRules.HalfKneelKey, Ease(p)),
                         1f,
                         0f,
                         1f,
                         leftHand,
                         1f,
                         rightHand,
-                        handOnKnee,
+                        handOnKneeWeight > 0f,
                         leadFoot,
                         step,
                         0f,
                         Vector2.zero,
                         0f,
-                        false);
+                        false,
+                        handOnKneeWeight: handOnKneeWeight);
                 }
 
                 case PlayerRiseStage.Standing:
                 {
                     float p = Mathf.Clamp01(stageElapsed / standingSeconds);
-                    float hands = 1f - Mathf.Clamp01(
+                    float hands = 1f - Ease(
                         stageElapsed / PlayerRiseRules.HandsReleaseSeconds);
-                    float wobbleGain = Mathf.Clamp01((p - 0.7f) / 0.3f);
+                    float wobbleGain = Ease((p - 0.7f) / 0.3f);
                     float rate = Mathf.PI * 2f * PlayerRiseRules.WobbleHertz;
                     float wobble = PlayerRiseRules.WobbleDegrees(intoxication) *
                                    wobbleGain *
@@ -889,7 +1076,7 @@ namespace BarPromenade
                         PlayerRiseRules.PushingUpShare +
                         PlayerRiseRules.KneelingShare +
                         PlayerRiseRules.StandingShare * p,
-                        Mathf.Lerp(PlayerRiseRules.HalfKneelKey, PlayerRiseRules.RelaxedKey, p),
+                        Mathf.Lerp(PlayerRiseRules.HalfKneelKey, PlayerRiseRules.RelaxedKey, Ease(p)),
                         1f,
                         0f,
                         hands,
@@ -901,7 +1088,7 @@ namespace BarPromenade
                         PlayerRiseStepPose.None,
                         0f,
                         new Vector2(wobble, wobble * 0.5f),
-                        Mathf.Clamp01(p / 0.4f),
+                        Ease(p / 0.4f),
                         false);
                 }
 
@@ -921,7 +1108,7 @@ namespace BarPromenade
                         leadFoot,
                         PlayerRiseStepPose.None,
                         0f,
-                        Vector2.zero,
+                        new Vector2(TerminalWobble(), TerminalWobble() * 0.5f),
                         1f,
                         false);
             }

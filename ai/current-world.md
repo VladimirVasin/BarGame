@@ -1414,15 +1414,15 @@ The vertical slice contains:
   seated bar-drinking actions with a right-hand mug-handle grip and a
   patron-aligned rim-to-mouth pose, and the inventory portrait. It keeps the
   `1.75 m`,
-  31-bone contract with 41 bone-only Actions
+  31-bone contract with 45 bone-only Actions
   in 34 mesh parts and 2,384 triangles, but uses adult `7.4946`-head
   proportions, an atlas-driven
   five-state face and a full-colour point-filtered clothing atlas. Its open
   olive field jacket has long sleeves and no strap; painted garment and boot
   construction replace protruding detail meshes. The continuous shirt and
   jacket bend over pelvis, lower spine and chest through horizontal mesh rings
-  and at most two adjacent bone weights per vertex; all `41` actions retain
-  their timing and contacts on the same shared 31-bone hierarchy. Runtime
+  and at most two adjacent bone weights per vertex; the original `41` actions
+  and four seated-recovery additions use that shared 31-bone hierarchy. Runtime
   torso lean is split `40/60` between spine and chest with complete pose reset;
 - one manual PlayableGraph presentation that damp-blends the in-place
   four-second `Idle`, one-second `Walk` and `0.75 s`/18-frame `Run` actions
@@ -1544,16 +1544,23 @@ The vertical slice contains:
   `CharacterController`, while other non-overlapping body pairs collide, and the expanded
   analytic contact shadow slides along the fall's own axis. He lies until the
   ragdoll is still and, drunk, a while longer; then the capsule is brought
-  under him and turned to match how he lies, the frozen body blends into the
-  side-specific `RiseLeft/Right` brace while his hands find the floor and his
-  head lifts, he pushes up onto all fours (slumping back once or twice when far
-  gone), steps a lead boot under himself with a hand on the knee, stands and
-  wobbles. The distinct left/right `50`-source-frame full-body actions supply
-  the trunk; a seeded rise model supplies the time and the limbs, and the
-  wobble's last swing is the next stagger's first push. Completion,
-  cancellation, transition, disable and destroy all restore the graph, neutral
-  rig, kinematic bodies, disabled ragdoll colliders and ordinary contact
-  shadow;
+  under him and turned to match how he lies. Calibrated chest/pelvis fronts
+  against the probed floor distinguish stomach from back; a side landing
+  compares the required rotation and reachable supports. The selected route
+  stays fixed during the attempt, independently of the lead side. Stomach
+  goes through `RiseLeft/Right` onto all fours; back goes through
+  `RiseSeatedLeft/Right` into a supported seated pause. Both can slump, bring
+  a boot under the body and rise with a hand on the knee. Held movement keeps
+  the existing crawl; from sitting it first completes the visible
+  `RiseSeatedToCrawlLeft/Right` transfer. A seeded model scrubs the authored
+  actions, eases internal support changes and retains the terminal wobble.
+  Final pose transitions run after the clip and limb solve, carrying the last
+  visible pose and velocity through a saved topple and back into the stagger.
+  The frozen ragdoll also blends against that complete solved pose, so the
+  hands cannot reach their new pose before the chest. Completion and owned
+  cleanup restore the graph, kinematic bodies, disabled ragdoll colliders and
+  ordinary contact shadow. Dense source validation and the focused ten-sequence
+  runtime capture verify the `2026-09-06` recovery change; see the work log;
 - a full-screen city map projected from a display envelope seeded by the
   blueprint's centered map bounds,
   with area colors and labels anchored on real active cells, distinct park,
@@ -1746,7 +1753,9 @@ The vertical slice contains:
   height and lit after dark with no Light at all. One mercury practical burns
   over the freight dock and the brink stays dark. The Ferryman answers on the
   summit from a second repertoire that offers nothing, the road having
-  ended. With the
+  ended. At either end of that road he refuses to drive a hero on the last
+  two drunkenness stages: the menu opens, the small talk is untouched, and
+  the second option answers «Не в таком виде. Я подожду.» and closes. With the
   test teleport enabled through the City F9 toggle or the Home debug-map arrival,
   every map lot becomes selectable,
   the side panel asks for an explicit confirmation and a

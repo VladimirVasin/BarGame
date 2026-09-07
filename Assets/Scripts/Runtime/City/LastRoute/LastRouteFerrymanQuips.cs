@@ -69,6 +69,23 @@ namespace BarPromenade
             "lastroute.ferryman.mountain.line.12"
         };
 
+        /// <summary>
+        /// The one thing he says that is not small talk: what he answers
+        /// when the hero asks for the ride on the last two drunkenness
+        /// stages and he will not give it
+        /// (<see cref="LastRouteFerrymanRideRules"/>).
+        ///
+        /// It is not in either pool and is never drawn - it is not an
+        /// answer to "поговорить", it is the answer to the second option -
+        /// and it is the same line at both ends of the road, because it is
+        /// the same refusal by the same man. It still obeys his rules: it
+        /// offers nothing, explains nothing, asks nothing, and says
+        /// neither what the hero has been doing nor what he should do
+        /// about it.
+        /// </summary>
+        public const string RefusalLineKey =
+            "lastroute.ferryman.refuse.drunk";
+
         /// <summary>Seed stream from the city seed - the watchman's hash
         /// idiom, never zero so xorshift never sticks.</summary>
         public static uint CreateState(int citySeed)
@@ -183,6 +200,14 @@ namespace BarPromenade
         public string[] LineKeys { get; }
         public string ConfirmationPromptKey { get; }
         public uint QuipStream { get; }
+
+        /// <summary>What he says when he will not drive. One line for both
+        /// ends, carried here rather than read from the rules at the point
+        /// of use, so a voice that ever wants its own refusal is a change
+        /// in this one place, exactly as the pool and the question
+        /// are.</summary>
+        public string RefusalLineKey =>
+            LastRouteFerrymanQuips.RefusalLineKey;
 
         public bool IsPresent => LineKeys != null && LineKeys.Length > 0;
     }

@@ -207,7 +207,7 @@ Assets/
       Player3DLit.mat                   shared URP/Lit hero material
     V2/
       Models/PlayerCharacter3DV2.{fbx,json}  production 34-part model + deterministic metrics
-      Animations/PlayerCharacter3DV2Animations.fbx  production 41-action V2 rig, including Run and seated drink 2/3/2
+      Animations/PlayerCharacter3DV2Animations.fbx  validated 45-action V2 rig, including seated recovery and seated-to-crawl transfer
       Textures/PlayerFaceAtlas.png       8x4 point-filtered atlas: eleven expressions + soiled twins; 22 occupied cells, 10 free
       Textures/PlayerClothingAtlas.png   full-colour open-jacket/trouser/boot atlas
       Materials/Player3DV2Clothing.mat  shared white-tint atlas material
@@ -798,6 +798,7 @@ Assets/
         LastRouteFerrymanPresentation.cs  five postures on one manual graph, and the metres the clips do not carry
         LastRouteFerrymanBoarding{Plan,Timeline}.cs  the drop, the walk round the nose and the door-open-sit-shut clock
         LastRouteFerryman{Coin,Coat,RigAnchors,Quips,Interaction}.cs  the toss, the hem, the sockets, the twelve lines and the one question
+        LastRouteFerrymanRideRules.cs  the two drunkenness stages on which the one question is answered with a no
         LastRouteFerrymanAlightingTimeline.cs  the same three beats run backwards, to get him out at the far end
         LastRouteFerrymanRideStage.cs  the monotone ladder both areas build him from
         LastRouteCarDrive{Path,Model}.cs  one drivable centreline with the one place on it the car gives way, and how fast a car will take it - corners, the end of the road and a stop line all braked to the same way
@@ -844,7 +845,7 @@ Assets/
         PlayerBalanceModel.cs       seeded LIP + torso flywheel + steps; Steady/Recovering/Toppling/Fallen with lunges, brace and the fall's motion
         PlayerBalanceRules.cs       support polygon, tuning table, capture point, lunge/flywheel/brace formulas
         PlayerBalanceController.cs  feeds the model, drifts the motor, probes walls and the brace floor, builds the ragdoll handoff
-        PlayerRiseModel.cs          seeded staged rise: settle, stun, stir, push up with slumps, crawl while a key is held, kneel, stand and wobble; scrubs the Rise clip
+        PlayerRiseModel.cs          seeded seated/all-fours routes, visible seated-to-crawl transfer, continuous support channels and terminal wobble
         PlayerDrunkGaitModel.cs     seeded disorder of the walk: per-swing boot landings (wide, crossed, short/long, toes out, lifted), half-step cadence jitter, pelvis roll; exactly nothing sober
         PlayerDirectionalInput.cs   shared GameInput movement plus camera/body-local conversions for a body on the floor
         PlayerFacialMood.cs         the moment's face (Tense/Grimace/Out/Drowsy) as pure rules over the balance phase, the ragdoll and the rise stage
@@ -855,8 +856,9 @@ Assets/
         Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
         Player3DResources.cs            single packaged V2 prefab instantiation
         Player3DCharacterPresentation.cs Idle/Walk/Run gait + physics handoff + full-body Rise sampling
+        Player3DCharacterPresentation.Recovery.cs final pose/velocity transitions, frozen-body composition and supported hand contacts
         Player3DFaceAtlasPresenter.cs    merge-safe MPB face-cell texture selection
-        Player3DRagdollController.cs     bounded 14-body failed-balance physics with separate lower back and chest; frozen lying pose blended into the rise
+        Player3DRagdollController.cs     bounded 14-body physics; calibrated lying orientation and support costs choose the recovery route
         PlayerRagdollHandoff.cs          the fall's rigid rotation about the boot under the pressure, as a velocity field
         Player3DFirstPersonSubset.cs     prefab-derived camera-local arm filtering
         Player3DHeadVisibility.cs        the whole head off by bone rule, for a camera inside it
@@ -1576,9 +1578,9 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> below darker bone-toned player route; no live bus marker
 nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
                                       -> 34 mesh bindings + 16 core parts
-                                      -> 41 Generic in-place Actions
+                                      -> 45 Generic in-place Actions
                                          -> Idle/Walk/Run/atlas-face/status/fall
-                                         -> 50-frame full-body Rise via all fours
+                                         -> full-body all-fours/seated Rise + seated-to-crawl transfer
                                          -> DoorUseEnter/DoorUseLoop/DoorUseExit
                                          -> BusBoardEnter/BusRideLoop/BusAlightExit
                                          -> ChessSeatEnter/ChessSeatPlayLoop/ChessSeatExit
@@ -1854,10 +1856,10 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
 GameSessionState intoxication -> IntoxicationStageRules
                               -> motor + 3D status bones + camera
                               -> IntoxicationRenderState -> PS1 world composite
-                              -> above 60 -> balance scheduler/model
-                                 -> BalanceCheckView
-                                 -> success or Fall clip -> bounded ragdoll
-                                    -> one 50-frame Rise phase via all fours/crouch
+                              -> above 60 -> continuous balance / recovery steps / topple
+                                 -> caught step or bounded ragdoll from the visible pose
+                                    -> settled front/back + support costs -> seated/all-fours route
+                                    -> final pose/velocity blend -> ordinary stagger
                              -> IntoxicationPerceptionRules -> exponential intensity
                                 -> IntoxicationAudioDriver -> Perception/VHS DSP
                                 -> GameTimeScaleRuntime -> world motion + physics

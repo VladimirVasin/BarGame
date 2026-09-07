@@ -222,6 +222,9 @@ namespace BarPromenade
         private ConfigurableJoint pelvisTether;
         private BonePose[] recoveryStart;
         private bool initialized;
+        private Vector3 chestFrontLocal;
+        private Vector3 pelvisFrontLocal;
+        private static readonly RaycastHit[] RecoveryGroundHits = new RaycastHit[24];
 
         // The head joint kept aside for the bout's drive, and the actor's
         // forward as the chest and head bodies carried it when the joints
@@ -265,6 +268,9 @@ namespace BarPromenade
                 : throw new ArgumentNullException(nameof(assetRegistry));
 
             CacheRequiredBones();
+            // Imported Generic bone axes are not anatomical axes.
+            chestFrontLocal = bones[Player3DAnatomicalPart.Torso].InverseTransformDirection(gameplayRoot.forward);
+            pelvisFrontLocal = bones[Player3DAnatomicalPart.Pelvis].InverseTransformDirection(gameplayRoot.forward);
             BuildBodies();
             BuildColliders();
             BuildJoints();
@@ -360,8 +366,19 @@ namespace BarPromenade
             for (int index = 0; index < bodyList.Count; index++)
             {
                 Rigidbody body = bodyList[index];
-                body.linearVelocity = handoff.VelocityAt(body.worldCenterOfMass);
-                body.angularVelocity = angular;
+                if (handoff.AngularSpeed >= SlowToppleAngularVelocity &&
+                    presentation.TryGetPresentedBoneVelocity(body.transform, out Vector3 visibleLinear,
+                        out Vector3 visibleAngular))
+                {
+                    body.angularVelocity = visibleAngular;
+                    body.linearVelocity = visibleLinear + Vector3.Cross(visibleAngular,
+                        body.worldCenterOfMass - body.transform.position);
+                }
+                else
+                {
+                    body.linearVelocity = handoff.VelocityAt(body.worldCenterOfMass);
+                    body.angularVelocity = angular;
+                }
             }
 
             // A hair of downward push keeps a body that is only just past
@@ -448,7 +465,8 @@ namespace BarPromenade
                 {
                     maximum = Mathf.Max(
                         maximum,
-                        bodyList[index].linearVelocity.magnitude);
+                        Mathf.Max(bodyList[index].linearVelocity.magnitude,
+                            bodyList[index].angularVelocity.magnitude * 0.35f));
                 }
 
                 return maximum;
@@ -474,14 +492,79 @@ namespace BarPromenade
             recoveryStart = CapturePose();
             Transform leftShoulder = bones[Player3DAnatomicalPart.LeftUpperArm];
             Transform rightShoulder = bones[Player3DAnatomicalPart.RightUpperArm];
+            Vector3 pelvisPoint = PelvisBody.transform.position;
+            Vector3 chestPoint = ChestBody.transform.position;
+            RecoveryGround(pelvisPoint, out _, out Vector3 pelvisNormal);
+            RecoveryGround(chestPoint, out _, out Vector3 chestNormal);
+            Vector3 groundNormal = (pelvisNormal + chestNormal).normalized;
+            Vector3 headward = Vector3.ProjectOnPlane(chestPoint - pelvisPoint, groundNormal).normalized;
+            if (headward.sqrMagnitude < 0.001f)
+                headward = Vector3.ProjectOnPlane(gameplayRoot.forward, groundNormal).normalized;
+            Vector3 across = Vector3.Cross(groundNormal, headward).normalized;
+            float allFoursSupport = RecoverySupportCost(chestPoint, headward, across, 0.12f);
+            float seatedSupport = RecoverySupportCost(pelvisPoint, headward, across, -0.12f);
             lying = new PlayerRagdollLyingPose(
-                PelvisBody.transform.position,
-                ChestBody.transform.position,
+                pelvisPoint,
+                chestPoint,
                 leftShoulder.position.y,
-                rightShoulder.position.y);
+                rightShoulder.position.y,
+                ChestBody.transform.TransformDirection(chestFrontLocal),
+                PelvisBody.transform.TransformDirection(pelvisFrontLocal),
+                groundNormal,
+                allFoursSupport,
+                seatedSupport,
+                Vector3.Dot(leftShoulder.position - rightShoulder.position, groundNormal));
             IsSimulating = false;
             IsRecovering = true;
             return true;
+        }
+
+        private bool RecoveryGround(Vector3 point, out Vector3 contact, out Vector3 normal)
+        {
+            contact = point;
+            normal = Vector3.up;
+            float closest = float.PositiveInfinity;
+            int count = Physics.RaycastNonAlloc(point + Vector3.up * 0.6f, Vector3.down,
+                RecoveryGroundHits, 2f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit hit = RecoveryGroundHits[i];
+                if (hit.collider == null || hit.collider.transform.IsChildOf(gameplayRoot) ||
+                    hit.normal.y < 0.45f || hit.distance >= closest) continue;
+                closest = hit.distance;
+                contact = hit.point;
+                normal = hit.normal;
+            }
+            return !float.IsPositiveInfinity(closest);
+        }
+
+        private float RecoverySupportCost(Vector3 centre, Vector3 headward, Vector3 across, float reach)
+        {
+            float cost = 0f;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 target = centre + across * (0.26f * side) + headward * reach;
+                if (!RecoveryGround(target, out Vector3 contact, out Vector3 normal))
+                {
+                    cost += 1f;
+                    continue;
+                }
+                cost += Mathf.Clamp01((Vector3.Distance(centre, contact) - 0.45f) / 0.4f);
+                Vector3 travel = contact + normal * 0.06f - centre;
+                int count = Physics.RaycastNonAlloc(centre, travel.normalized, RecoveryGroundHits,
+                    Mathf.Max(0f, travel.magnitude - 0.08f), Physics.DefaultRaycastLayers,
+                    QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < count; i++)
+                {
+                    Collider collider = RecoveryGroundHits[i].collider;
+                    if (collider != null && !collider.transform.IsChildOf(gameplayRoot))
+                    {
+                        cost += 1f;
+                        break;
+                    }
+                }
+            }
+            return cost * 0.5f;
         }
 
         /// <summary>
@@ -1419,14 +1502,19 @@ namespace BarPromenade
             }
         }
 
-        private readonly struct BonePose
+        private struct BonePose
         {
+            private Quaternion previousTargetDelta;
+            private bool hasTargetDelta;
+
             public BonePose(Transform target, bool worldSpace)
             {
                 WorldSpace = worldSpace;
                 Position = worldSpace ? target.position : target.localPosition;
                 Rotation = worldSpace ? target.rotation : target.localRotation;
                 LocalScale = target.localScale;
+                previousTargetDelta = Quaternion.identity;
+                hasTargetDelta = false;
             }
 
             /// <summary>Captured in world space (the pelvis) rather than the parent's.</summary>
@@ -1446,7 +1534,7 @@ namespace BarPromenade
                 {
                     target.SetPositionAndRotation(
                         Vector3.LerpUnclamped(Position, target.position, progress),
-                        Quaternion.SlerpUnclamped(Rotation, target.rotation, progress));
+                        BlendRotation(target.rotation, progress));
                 }
                 else
                 {
@@ -1454,16 +1542,33 @@ namespace BarPromenade
                         Position,
                         target.localPosition,
                         progress);
-                    target.localRotation = Quaternion.SlerpUnclamped(
-                        Rotation,
-                        target.localRotation,
-                        progress);
+                    target.localRotation = BlendRotation(target.localRotation, progress);
                 }
 
                 target.localScale = Vector3.LerpUnclamped(
                     LocalScale,
                     target.localScale,
                     progress);
+            }
+
+            private Quaternion BlendRotation(Quaternion target, float progress)
+            {
+                Quaternion delta = target * Quaternion.Inverse(Rotation);
+                // Choose the short route once, then follow that same route
+                // as the target moves. A fresh shortest-path Slerp each
+                // frame flips its arc when a ragdoll limb's target crosses
+                // 180 degrees, spinning the visible limb during the blend.
+                bool reverse = hasTargetDelta
+                    ? Quaternion.Dot(previousTargetDelta, delta) < 0f
+                    : delta.w < 0f;
+                if (reverse) delta = new Quaternion(-delta.x, -delta.y, -delta.z, -delta.w);
+                previousTargetDelta = delta;
+                hasTargetDelta = true;
+                if (progress >= 1f) return target;
+                delta.ToAngleAxis(out float angle, out Vector3 axis);
+                if (axis.sqrMagnitude < 0.000001f || float.IsNaN(axis.x) || float.IsInfinity(axis.x))
+                    return Rotation;
+                return Quaternion.AngleAxis(angle * progress, axis) * Rotation;
             }
         }
     }
@@ -1475,18 +1580,56 @@ namespace BarPromenade
             Vector3 pelvisWorld,
             Vector3 chestWorld,
             float leftShoulderY,
-            float rightShoulderY)
+            float rightShoulderY,
+            Vector3 chestFront = default,
+            Vector3 pelvisFront = default,
+            Vector3 groundNormal = default,
+            float allFoursSupportCost = 0f,
+            float seatedSupportCost = 0f,
+            float shoulderHeightDifference = float.NaN)
         {
             PelvisWorld = pelvisWorld;
             ChestWorld = chestWorld;
             LeftShoulderY = leftShoulderY;
             RightShoulderY = rightShoulderY;
+            ChestFront = chestFront.normalized;
+            PelvisFront = pelvisFront.normalized;
+            GroundNormal = groundNormal.sqrMagnitude > 0.001f ? groundNormal.normalized : Vector3.up;
+            AllFoursSupportCost = allFoursSupportCost;
+            SeatedSupportCost = seatedSupportCost;
+            ShoulderHeightDifference = float.IsNaN(shoulderHeightDifference)
+                ? leftShoulderY - rightShoulderY : shoulderHeightDifference;
         }
 
         public Vector3 PelvisWorld { get; }
         public Vector3 ChestWorld { get; }
         public float LeftShoulderY { get; }
         public float RightShoulderY { get; }
+        public Vector3 ChestFront { get; }
+        public Vector3 PelvisFront { get; }
+        public Vector3 GroundNormal { get; }
+        public float AllFoursSupportCost { get; }
+        public float SeatedSupportCost { get; }
+        public float ShoulderHeightDifference { get; }
+
+        /// <summary>Choose once from the settled torso and reachable support, never the fall direction.</summary>
+        public PlayerRiseRoute SelectRecoveryRoute()
+        {
+            float chest = Vector3.Dot(ChestFront, GroundNormal);
+            float pelvis = Vector3.Dot(PelvisFront, GroundNormal);
+            float facing = chest * 0.65f + pelvis * 0.35f;
+            if (facing >= 0.4f) return PlayerRiseRoute.Seated;
+            if (facing <= -0.4f) return PlayerRiseRoute.AllFours;
+            // On a side, measure the rotation needed in BOTH torso
+            // segments. Obstructed or unreachable supports lose to a
+            // slightly longer supported turn. A perfect tie is stable.
+            float seated = Mathf.Acos(Mathf.Clamp(chest, -1f, 1f)) * 0.65f +
+                           Mathf.Acos(Mathf.Clamp(pelvis, -1f, 1f)) * 0.35f +
+                           SeatedSupportCost * 0.55f;
+            float fours = Mathf.PI - (seated - SeatedSupportCost * 0.55f) +
+                          AllFoursSupportCost * 0.55f;
+            return seated + 0.035f < fours ? PlayerRiseRoute.Seated : PlayerRiseRoute.AllFours;
+        }
 
         /// <summary>The planar direction from the hips to the chest: which way he lies.</summary>
         public Vector3 LyingAxis
@@ -1506,7 +1649,7 @@ namespace BarPromenade
         /// </summary>
         public FootSide LowerShoulder(FootSide fallback, float deadBand = 0.06f)
         {
-            float difference = LeftShoulderY - RightShoulderY;
+            float difference = ShoulderHeightDifference;
             if (Mathf.Abs(difference) <= deadBand)
             {
                 return fallback;

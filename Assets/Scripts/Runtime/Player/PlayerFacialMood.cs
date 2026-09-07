@@ -109,9 +109,14 @@ namespace BarPromenade
                             ? PlayerFacialMood.Grimace
                             : PlayerFacialMood.Tense;
                     case PlayerRiseStage.PushingUp:
+                    case PlayerRiseStage.SittingUp:
                         return context.SlumpActive
                             ? PlayerFacialMood.Grimace
                             : PlayerFacialMood.Tense;
+                    case PlayerRiseStage.Seated:
+                        return PlayerFacialMood.Drowsy;
+                    case PlayerRiseStage.SeatedToCrawl:
+                        return PlayerFacialMood.Tense;
                     case PlayerRiseStage.Crawling:
                         return PlayerFacialMood.Grimace;
                     case PlayerRiseStage.Kneeling:

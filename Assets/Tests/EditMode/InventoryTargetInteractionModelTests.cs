@@ -130,6 +130,83 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void RefusedInteraction_AnswersInsteadOfAsking()
+        {
+            var model = new InventoryTargetInteractionModel();
+            model.Open();
+            model.SelectChoice(
+                InventoryTargetInteractionChoice.Interact);
+
+            // Refused before the requirement is even looked at: a target
+            // saying no of his own accord does not care what is in the
+            // hero's pockets, and the panel never asks "are you sure"
+            // about something that cannot happen.
+            Assert.That(
+                model.Confirm(true, true),
+                Is.EqualTo(
+                    InventoryTargetInteractionAction
+                        .ShowRefusalFeedback));
+            Assert.That(
+                model.State,
+                Is.EqualTo(InventoryTargetInteractionState.Closed));
+        }
+
+        [Test]
+        public void RefusalOnAConfirmedYes_StillNeverBeginsExecution()
+        {
+            var model = new InventoryTargetInteractionModel();
+            model.Open();
+            model.SelectChoice(
+                InventoryTargetInteractionChoice.Interact);
+            model.Confirm(true);
+            model.SelectConfirmation(true);
+
+            Assert.That(
+                model.Confirm(true, true),
+                Is.EqualTo(
+                    InventoryTargetInteractionAction
+                        .ShowRefusalFeedback));
+            Assert.That(
+                model.State,
+                Is.EqualTo(InventoryTargetInteractionState.Closed));
+        }
+
+        [Test]
+        public void Definition_CarriesARefusalOnlyWhereOneIsGiven()
+        {
+            InventoryTargetInteractionDefinition plain =
+                InventoryTargetInteractionDefinition.WithoutRequirement(
+                    "interaction.talk",
+                    "interaction.confirm");
+            Assert.That(plain.IsRefused, Is.False);
+            Assert.That(plain.RefusalResponseKey, Is.Empty);
+
+            InventoryTargetInteractionDefinition refusing =
+                InventoryTargetInteractionDefinition.WithoutRequirement(
+                    "interaction.talk",
+                    "interaction.confirm",
+                    InventoryTargetInteractionDefinition
+                        .DefaultFeedbackDurationSeconds,
+                    default,
+                    "interaction.refusal");
+            Assert.That(refusing.IsRefused, Is.True);
+            Assert.That(
+                refusing.RefusalResponseKey,
+                Is.EqualTo("interaction.refusal"));
+            Assert.That(refusing.IsValid, Is.True);
+
+            // A target that asks for an item refuses with the item it is
+            // missing and with nothing else.
+            var withItem = new InventoryTargetInteractionDefinition(
+                new InventoryItemRequirement(
+                    InventoryItemId.OpenStewCan),
+                "interaction.talk",
+                "interaction.confirm",
+                "interaction.missing");
+            Assert.That(withItem.IsRefused, Is.False);
+        }
+
+        [Test]
         public void RequirementAndDefinition_RejectInvalidContracts()
         {
             Assert.Throws<ArgumentOutOfRangeException>(

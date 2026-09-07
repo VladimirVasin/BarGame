@@ -4,6 +4,64 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted and verified 2026-09-06 — recovery follows the lying body and
+  preserves the complete moving pose:** the user reported visible
+  switches between falling and staggering, and every landing recovering via
+  all fours. The runtime now separates `PlayerRiseRoute.AllFours/Seated` from
+  the left/right lead side. `Player3DRagdollController` calibrates chest and
+  pelvis front vectors against the imported rest frame, measures them against
+  the floor normal, and records support costs. Back and stomach choose their
+  respective seated and all-fours routes; side poses compare the required
+  torso turn and reachable support. The decision is made once at the settled
+  recovery handoff, with a deterministic tie, rather than from fall direction.
+  Shoulder height still chooses the lead side independently.
+
+  `PlayerRiseModel` adds `SittingUp`, a `0.30–0.55 s` supported `Seated` hold,
+  and a `1.0 s` `SeatedToCrawl` transfer. Held movement cannot skip sitting or
+  jump directly to crawling; an early seated-kneel reversal returns through
+  that support. `RiseSeatedLeft/Right` share the existing normalized landmarks
+  (`0` lying, `.10` brace, `.38` seated, `.64` supported half-kneel, `1`
+  relaxed); `RiseSeatedToCrawlLeft/Right` join the seated `.38` pose to the
+  all-fours `.38` pose. Hero V2 generator `1.6.0` and shared action library
+  `2.9.0` define `45` actions on the same 31 bones. Smooth authored curves,
+  eased timeline channels, continuous hand-to-knee weight and a `0.30 s`
+  crawl/kneel channel transition replace stage resets. `Done` keeps the last
+  wobble until the presentation owner completes the return to locomotion.
+  A failed effort takes `0.55 s`: `0.15 s` retreat, `0.20 s` hold and a
+  gradual `0.20 s` return. The former `0.10 s` return packed the seated arm
+  sweep into too few frames even though the scalar curve was continuous.
+  Both routes take `0.9–1.2 s` to bring the lead leg under the supported body
+  during `Kneeling`, allowing the authored sweep to complete without a rush.
+  `Standing` takes `1.0–1.4 s`, including the boot's final adjustment to a
+  sloping support and the hand release before ordinary balance returns.
+  Existing facial moods follow the new stages: tense while sitting up or
+  transferring, grimacing during a slump, and drowsy in the seated hold.
+  This uses the existing face atlas.
+
+  `Player3DCharacterPresentation.Recovery` composes transitions after clip,
+  limb grounding and attention, preserving the last visible pose and bounded
+  bone motion. The ragdoll-to-rise blend targets that complete solved pose;
+  IK no longer reaches the new support ahead of a still-frozen trunk. Saved
+  topples, internal support changes and the return to staggering share this
+  final-pose transition path. Root reconciliation retains the world-space
+  pelvis and absorbs the camera target shift as before. Foot locks release
+  over `0.24 s`; leg IK transports both authored thigh and shin frames onto
+  their solved axes and unwraps the hip's angle before applying partial
+  weight. The frozen ragdoll's `BonePose` follows one continuous quaternion
+  arc as its target moves across `180°`, avoiding a new shortest-arc choice
+  each frame. These corrections remove twists that position-only checks
+  could miss. This refines ordinary
+  body animation and adds no fiction text, sound, NPC response or canon
+  exception. The exclusive all-fours route and earlier blend details in the
+  `2026-09-04` fall/rise decision below are superseded.
+
+  **Verification:** dense authored contact, seam and motion validation passes.
+  `Player3DToppleRiseCapturePlayModeTests.ToppleAndRise_RenderSheet` passes
+  `1/1` across ten directed/live sequences, with consecutive rig-sample
+  maxima `0.10781 m` and `14.865°` below the unchanged `0.12 m / 16°`
+  limits. Details, captures and bounded coverage are recorded in
+  `ai/work-log.md`; no broad regression is implied.
+
 - **Accepted exception — Alpine Village material and mass pass (2026-09-06):**
   The user accepted the implementation plan for bringing the village closer
   to its artwork. The local `Art/Collection/16-alpine-village.png` is the
@@ -3634,6 +3692,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   moving value is set, for the reason it refuses while the area service is
   travelling — the hero is between two places rather than standing in either,
   and a chart with a teleport on it would let him step out of a moving car.
+- **Accepted — the shared target menu can be refused, and the refusal is the
+  target talking:** by the story bible's §6 registry row of `2026-09-06` the
+  Ferryman does not drive a hero on the last two drunkenness stages
+  (`LastRouteFerrymanRideRules`, «Шатает» from `61`). The shape chosen is the
+  cat's missing tin rather than a withdrawn option: the menu opens unchanged,
+  the small talk is untouched, and picking the second choice answers once and
+  closes — no "are you sure" is ever shown for something that cannot happen.
+  So `InventoryTargetInteractionDefinition` grew one optional
+  `RefusalResponseKey`, the model answers it with `ShowRefusalFeedback` BEFORE
+  it looks at any requirement, and the controller closes that one with the
+  definition's `Speaker`, because unlike an empty pocket a refusal is somebody
+  speaking. The definition is rebuilt every time the Ferryman opens his menu,
+  so the decision is the one his level justified when he was asked; nothing can
+  raise a level under a modal panel, and `TryPrepareInventoryInteraction` reads
+  the rule again anyway before the drive is committed. Withdrawing the option
+  instead was rejected: it would have taken his twelve lines away with it, and
+  a man who says nothing about it is not a refusal.
 - **Accepted — the chart bringing the hero to the mountain brings the car with
   him:** every way into `MountainRoad` that is not the ride and not the
   cableway is the map, and a map that can put the hero on a mountain six

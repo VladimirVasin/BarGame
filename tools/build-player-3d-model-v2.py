@@ -2,7 +2,7 @@
 """Build Bar Promenade's production Hero V2 model.
 
 Hero V2 owns the adult proportions, lean low-poly body, UV-driven expression
-face and complete 41-action bank. Shared rig, action, export and validation
+face and complete 45-action bank. Shared rig, action, export and validation
 helpers live in ``player_3d_model_common.py`` so this remains the only runnable
 hero model generator.
 
@@ -38,7 +38,7 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 import atlas_kit  # noqa: E402  (after the sys.path fix)
 
 COMMON_AUTHORING_PATH = REPO_ROOT / "tools" / "player_3d_model_common.py"
-V2_GENERATOR_VERSION = "1.5.0"
+V2_GENERATOR_VERSION = "1.6.0"
 TORSO_SKIN_MESHES = ("GEO_Torso", "CLO_JacketBody")
 TORSO_SKIN_BONES = ("pelvis", "spine", "chest")
 # Metres at the canonical 1.75 m height. Both garment and shirt use exactly
@@ -2408,13 +2408,11 @@ def validate_v2_result(
     errors: list[str] = []
     common.validate_bed_support_contract(result, errors)
     common.validate_bed_sleep_pose(result, errors)
-    # The shared fall, lie and rise poses predate the current proportions.
-    # Their landmark contacts (hands and knees on the floor at all fours,
-    # the low crouch's boots) float on this rig — known debt the runtime's hand
-    # and boot IK hides. What is held here is what no rig may do: pass a
-    # limb through the floor on any frame, or bend a knee or an elbow the
-    # wrong way.
+    # Both recovery routes are checked on the actual production proportions:
+    # dense floor/anatomy plus shared endpoints and seated/all-fours support.
+    # Runtime IK still adapts those authored contacts to the probed terrain.
     common.validate_fall_recovery_dense(result, errors)
+    common.validate_recovery_routes(result, errors)
     records = {record.obj.name: record for record in result.parts}
     if len(records) != len(result.parts):
         errors.append("Export mesh names are not unique")
@@ -3448,6 +3446,11 @@ def main() -> None:
             bare_skin_atlas_sha256,
             content_signature_sha256,
         )
+    # A staged source file must remain self-contained after its temporary
+    # texture paths disappear. Runtime textures stay separate Unity assets.
+    for authored_image in bpy.data.images:
+        if authored_image.source == "FILE" and authored_image.has_data:
+            authored_image.pack()
     common.save_blend(config.output)
     print_report(
         config,

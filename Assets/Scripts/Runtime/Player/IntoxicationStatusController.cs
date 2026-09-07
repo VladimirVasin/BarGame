@@ -123,6 +123,7 @@ namespace BarPromenade
 
         /// <summary>Which side he lay on, as the rise decided it.</summary>
         public FootSide RiseSide => riseSide;
+        public PlayerRiseRoute RiseRoute => riseModel != null ? riseModel.Route : PlayerRiseRoute.AllFours;
 
         /// <summary>What the walkable area refused of the root's move under the lying body.</summary>
         public Vector3 RiseResidual => riseResidual;
@@ -491,14 +492,9 @@ namespace BarPromenade
 
         private void UpdateBalance(float deltaTime)
         {
-            if (GameSessionState.IntoxicationLevel <=
+            if (balanceState == BalanceState.Idle && GameSessionState.IntoxicationLevel <=
                 IntoxicationStageRules.BalanceThreshold)
             {
-                if (balanceState != BalanceState.Idle)
-                {
-                    CancelFall(false);
-                }
-
                 sawExternalBlock = false;
                 GameSessionState.SetBalanceCheckDelay(0f);
                 balance?.SetFallsAllowedByLevel(false);
@@ -655,6 +651,29 @@ namespace BarPromenade
             debugDownedInput = cameraRelative;
         }
 
+        /// <summary>Capture seam: freeze the actual supplied body and use the production route/handoff.</summary>
+        internal bool DebugBeginRiseFromCurrentPose()
+        {
+            if (ragdoll == null || !ragdoll.IsSimulating) return false;
+            riseModel ??= CreateRiseModel();
+            for (int i = 0; i < 200 && riseModel.Stage < PlayerRiseStage.Stirring; i++)
+                riseModel.Advance(0.05f, new PlayerRiseInput(currentProfile.Normalized, true, 0f));
+            BeginRising();
+            ApplyPresentation();
+            ApplyRiseBlend();
+            heroPresentation?.DebugAdvanceRecoveryPresentation(0f);
+            return true;
+        }
+
+        /// <summary>The same recovery/controller/presentation path under a deterministic capture clock.</summary>
+        internal void DebugAdvanceRise(float deltaTime)
+        {
+            if (balanceState != BalanceState.Idle) AdvanceFallState(deltaTime);
+            ApplyPresentation();
+            ApplyRiseBlend();
+            heroPresentation?.DebugAdvanceRecoveryPresentation(deltaTime);
+        }
+
         /// <summary>
         /// WASD or the stick, read relative to the camera — a lying body
         /// has no forward of its own — as a planar world direction no
@@ -762,6 +781,9 @@ namespace BarPromenade
             riseSide = hasLying ? lying.LowerShoulder(fallSide) : fallSide;
             fallDirection = riseSide == FootSide.Left ? -1f : 1f;
             riseModel?.SetLyingSide(riseSide);
+            riseModel?.SetRecoveryRoute(hasLying ? lying.SelectRecoveryRoute() : PlayerRiseRoute.AllFours);
+            if (riseModel != null)
+                risePresentation?.SetRise(PlayerRisePose.FromOutput(riseModel.Output));
             heroPresentation?.SetRagdollPoseActive(false);
             playerPresentation?.SetFallPose(fallDirection, 1f);
             playerPresentation?.SetFallAnimation(
@@ -777,6 +799,7 @@ namespace BarPromenade
             }
 
             ragdoll?.ApplyRecoveryBlend(0f);
+            heroPresentation?.SetRecoveryPhysicsBlend(ragdoll, 0f);
             balanceState = BalanceState.Rising;
             balanceStateElapsed = 0f;
             fallAmount = 1f;
@@ -785,6 +808,7 @@ namespace BarPromenade
                 "rising",
                 GameLog.Field("sequence", episodeSequence),
                 GameLog.Field("rise_side", riseSide.ToString()),
+                GameLog.Field("rise_route", RiseRoute.ToString()),
                 GameLog.Field("lying_pose", hasLying),
                 GameLog.Field("residual", riseResidual.magnitude),
                 GameLog.Field(
@@ -843,11 +867,12 @@ namespace BarPromenade
             {
                 if (riseModel.Stage == PlayerRiseStage.Stirring)
                 {
-                    ragdoll.ApplyRecoveryBlend(rise.BlendProgress);
+                    heroPresentation?.SetRecoveryPhysicsBlend(ragdoll, rise.BlendProgress);
                 }
                 else
                 {
                     ragdoll.EndRise();
+                    heroPresentation?.SetRecoveryPhysicsBlend(null, 1f);
                 }
             }
 
@@ -962,6 +987,7 @@ namespace BarPromenade
             Vector2 handback = riseModel != null
                 ? riseModel.HandbackVelocity
                 : Vector2.zero;
+            heroPresentation?.BeginRecoveryPoseTransition(0.48f);
             risePresentation?.SetRise(PlayerRisePose.None);
             ragdoll?.Cancel();
             fallLock.Restore();
@@ -981,6 +1007,7 @@ namespace BarPromenade
 
         private void CancelFall(bool keepGrace)
         {
+            heroPresentation?.CancelRecoveryPoseTransition();
             GameLog.Info(
                 "balance",
                 "cancelled",
@@ -1126,6 +1153,8 @@ namespace BarPromenade
             playerPresentation?.SetFallPose(
                 fallDirection,
                 fallAmount);
+            if (balanceState == BalanceState.Rising && riseModel != null)
+                risePresentation?.SetRise(PlayerRisePose.FromOutput(riseModel.Output));
             playerPresentation?.SetFallAnimation(
                 GetFallAnimationPhase(),
                 GetFallAnimationProgress());

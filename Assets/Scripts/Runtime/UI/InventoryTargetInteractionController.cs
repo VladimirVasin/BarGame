@@ -159,7 +159,8 @@ namespace BarPromenade
 
             InventoryTargetInteractionState previousState = model.State;
             InventoryTargetInteractionAction action = model.Confirm(
-                HasRequiredItem());
+                HasRequiredItem(),
+                definition.IsRefused);
             bool handled = action !=
                                InventoryTargetInteractionAction.None ||
                            model.State != previousState;
@@ -290,6 +291,16 @@ namespace BarPromenade
                     .ShowMissingRequirementFeedback:
                     CloseWithFeedback(
                         definition.MissingRequirementResponseKey);
+                    return;
+                case InventoryTargetInteractionAction
+                    .ShowRefusalFeedback:
+                    // The one other line here somebody says out loud. A
+                    // target refusing his own second choice is talking,
+                    // so it carries his speaker the way the talk answer
+                    // does — see RefusalResponseKey.
+                    CloseWithFeedback(
+                        definition.RefusalResponseKey,
+                        definition.Speaker);
                     return;
                 case InventoryTargetInteractionAction.BeginExecution:
                     TryBeginExecution();

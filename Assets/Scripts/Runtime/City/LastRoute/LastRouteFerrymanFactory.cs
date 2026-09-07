@@ -210,6 +210,7 @@ namespace BarPromenade
                         targetInteraction,
                         voice.LineKeys,
                         voice.ConfirmationPromptKey,
+                        voice.RefusalLineKey,
                         voice.QuipStream);
                     menu.AttachSpeaker(speaker);
                 }

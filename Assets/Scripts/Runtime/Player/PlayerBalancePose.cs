@@ -276,10 +276,13 @@ namespace BarPromenade
             PlayerCrawlLimb leftHandCrawl = default,
             PlayerCrawlLimb rightHandCrawl = default,
             PlayerCrawlLimb leftKneeCrawl = default,
-            PlayerCrawlLimb rightKneeCrawl = default)
+            PlayerCrawlLimb rightKneeCrawl = default,
+            PlayerRiseRoute route = PlayerRiseRoute.AllFours,
+            float handOnKneeWeight = -1f)
         {
             Active = active;
             Stage = stage;
+            Route = route;
             LeftHandLift = Mathf.Max(0f, leftHandLift);
             RightHandLift = Mathf.Max(0f, rightHandLift);
             StageProgress = Mathf.Clamp01(stageProgress);
@@ -292,7 +295,10 @@ namespace BarPromenade
             LeftHandOffsetLocal = leftHandOffsetLocal;
             RightHandWeight = Mathf.Clamp01(rightHandWeight);
             RightHandOffsetLocal = rightHandOffsetLocal;
-            HandOnKnee = handOnKnee;
+            HandOnKneeWeight = handOnKneeWeight < 0f
+                ? (handOnKnee ? 1f : 0f)
+                : Mathf.Clamp01(handOnKneeWeight);
+            HandOnKnee = HandOnKneeWeight > 0f;
             KneeSide = kneeSide;
             Step = step;
             PelvisOffsetMetres = pelvisOffsetMetres;
@@ -307,8 +313,9 @@ namespace BarPromenade
         /// <summary>The rise model's output as the presentation wants it.</summary>
         public static PlayerRisePose FromOutput(in PlayerRiseOutput output)
         {
-            bool active = output.Stage >= PlayerRiseStage.Stirring &&
-                          output.Stage < PlayerRiseStage.Done;
+            // Done is the held terminal rise frame, including its last
+            // wobble. The owner clears this pose after the locomotion handback.
+            bool active = output.Stage >= PlayerRiseStage.Stirring;
             return new PlayerRisePose(
                 active,
                 output.Stage,
@@ -331,7 +338,9 @@ namespace BarPromenade
                 output.LeftHandCrawl,
                 output.RightHandCrawl,
                 output.LeftKneeCrawl,
-                output.RightKneeCrawl);
+                output.RightKneeCrawl,
+                output.Route,
+                output.HandOnKneeWeight);
         }
 
         /// <summary>How far each hand is held off the floor, metres (a crawl's swinging hand).</summary>
@@ -350,11 +359,13 @@ namespace BarPromenade
 
         public bool Active { get; }
         public PlayerRiseStage Stage { get; }
+        public PlayerRiseRoute Route { get; }
         public float LeftHandWeight { get; }
         public Vector2 LeftHandOffsetLocal { get; }
         public float RightHandWeight { get; }
         public Vector2 RightHandOffsetLocal { get; }
         public bool HandOnKnee { get; }
+        public float HandOnKneeWeight { get; }
         public FootSide KneeSide { get; }
         public PlayerRiseStepPose Step { get; }
 

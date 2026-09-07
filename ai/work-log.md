@@ -6,6 +6,87 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-06 — The Ferryman refuses to drive a drunk
+
+On the last two drunkenness stages — «Шатает» from `61` and «В стельку» from
+`81` — the Ferryman no longer starts the ride. The menu at the bonnet opens as
+before and his twelve lines are untouched; the second choice answers once, in
+his own voice, and closes: «Не в таком виде. Я подожду.» The confirmation step
+is never reached, nothing is taken or spent, and the same ride is available
+again as soon as the hero comes down off those two stages. The rule holds at
+both ends of the road, the island and the mountain terrace, from the one
+component both ends already share.
+
+The shape reuses the stairwell cat's missing-requirement beat rather than
+withdrawing the option, which would have taken his small talk with it. The
+shared definition grew one optional `RefusalResponseKey`; the pure model
+answers it with a new `ShowRefusalFeedback` before it looks at any requirement,
+and the controller closes that one with the definition's speaker, because a
+refusal is somebody speaking rather than an empty pocket. The stage threshold
+lives in `LastRouteFerrymanRideRules`; the Ferryman's own definition build is
+now pure and static, so the drunk branch reads without a scene, and
+`TryPrepareInventoryInteraction` re-reads the rule before the drive is
+committed.
+
+Canon: the refusal is an NPC reacting to intoxication, so it went in as a §6
+registry row of `2026-09-06` with §16.6, §24.44, §17 «Перевозчик» and §2
+amended to match, plus §24.47; the new line is his thirteenth, outside both
+pools of twelve. The story bible, README, `ai/current-world.md`, the two
+indices and `ai/architecture-notes.md` updated.
+
+Verification: one focused EditMode selection —
+`LastRouteFerrymanTests|InventoryTargetInteractionModelTests|LastRouteReturnRideTests`,
+45 passed, 0 failed, with all seven new tests named in the results. Runtime and
+EditModeTests assemblies compile. No full suite, PlayMode run or player build
+was executed; the neighbouring session's in-progress Player3D recovery work was
+in the tree throughout and is unrelated to this change.
+
+## 2026-09-06 — Continuous fall recovery through seated or all-fours support
+
+Addressed the reported pose switches around drunk falls and the single
+all-fours recovery path. The settled body's calibrated chest/pelvis fronts,
+floor normal and support costs now select a seated or all-fours route,
+independently of the lead side. Four authored seated-rise/transfer actions
+extend the Hero V2 contract to 45 actions. The seated route includes a visible
+hold and an explicit transfer before held-input crawling.
+
+Recovery transitions preserve the complete presented pose and bone motion;
+the frozen-body blend runs after the target clip and limb solve. Crawl/kneel
+channels and the hand-to-knee target ease across their boundaries, while the
+terminal wobble remains available for the return to staggering. Existing
+focused model coverage now includes both routes, held-input sitting and
+transfer, seated-kneel reversal and internal/terminal continuity. Updated the
+current-world description, system indices, README and the affected bible facts;
+no canon exception or new in-fiction text was introduced.
+
+The focused reproduction also exposed a frozen-pose quaternion arc reversal,
+axial twists in the leg IK, an abrupt foot-lock release and authored effort
+compressed into too few frames. Frozen `BonePose` now retains a continuous
+quaternion arc, thigh and shin frames are transported onto their solved axes,
+the hip angle keeps a continuous branch, and foot locks release over `0.24 s`.
+The failed-effort return takes `0.20 s`, kneeling `0.9–1.2 s`, and standing
+`1.0–1.4 s`; the authored seated leg sweep and boot turn are spread across
+the support transfer while preserving shared endpoints.
+
+Verification: the final dense Blender validator passes contact, seam and
+60 Hz motion checks for all four new actions and the existing recovery
+actions (`Captures/Tooling/drunk-recovery/generation.log`, content signature
+`d33de4fb2cba31b1aaaba3b44c27e57943237a0fcab8e4d790374bed9eb61f0c`).
+The animation FBX and manifest are published; static rig, mesh and textures
+are unchanged. The focused
+`Player3DToppleRiseCapturePlayModeTests.ToppleAndRise_RenderSheet` passes
+`1/1`, `0` failed, in `15.1446325 s` (`TestResults/drunk-recovery.xml`). Ten
+sequences cover back/stomach, both sides, held-input crawl, a `5°` slope,
+an obstacle, a saved topple and live physical fall/recovery. More than 3,000
+consecutive rig samples stay within the unchanged `0.12 m / 16°` limits
+(hitch-scaled); measured maxima are `0.10781 m / 14.865°`. Frozen entry also
+meets `0.003 m / 0.3°`. Ordered sheets and the motion report are under
+`TestResults/topple-rise/`; seated rise, crawl transfer, saved-lunge return
+to sway and live physical recovery were visually reviewed. Existing facial
+moods cover the new seated stages without additional facial assets. Model
+tests compiled with the focused run but were not separately
+executed. No full suites or player build were run.
+
 ## 2026-09-06 — Home cupboard in the corner; bed against the wall
 
 Moved the cupboard to the north-west corner and the bed head to the west

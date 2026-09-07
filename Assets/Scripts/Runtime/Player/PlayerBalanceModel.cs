@@ -1145,13 +1145,19 @@ namespace BarPromenade
                     // The ground under him changed its mind mid-topple
                     // (a stair, a slope): the fight is called off and he
                     // is only staggering again.
-                    phase = BalancePhase.Steady;
+                    phase = BalancePhase.Recovering;
+                    recoveringTimer = PlayerBalanceRules.RecoveringSeconds;
                     lungesTaken = 0;
                     toppleElapsed = 0f;
                 }
 
-                recoveringTimer = 0f;
-                braceWeight = 0f;
+                braceWeight = Mathf.MoveTowards(braceWeight, 0f,
+                    h / PlayerBalanceRules.BraceReleaseSeconds);
+                if (phase == BalancePhase.Recovering)
+                {
+                    recoveringTimer = Mathf.Max(0f, recoveringTimer - h);
+                    if (recoveringTimer <= 0f) phase = BalancePhase.Steady;
+                }
                 return;
             }
 
