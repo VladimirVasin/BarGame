@@ -7,43 +7,58 @@ namespace BarPromenade
     public enum HomeShowerScenePhase
     {
         Idle = 0,
-        CameraIn = 1,
-        Approach = 2,
-        Settle = 3,
-        Wash = 4,
-        WaterOff = 5,
-        Straighten = 6,
-        DripHold = 7,
-        StepOut = 8,
-        CameraOut = 9,
-        Completed = 10
+        Approach = 1,
+        OpenCurtain = 2,
+        StepIn = 3,
+        CloseCurtain = 4,
+        CameraIn = 5,
+        Settle = 6,
+        WaterOn = 7,
+        Wash = 8,
+        WaterOff = 9,
+        Straighten = 10,
+        DripHold = 11,
+        ApproachExit = 12,
+        OpenExitCurtain = 13,
+        StepOut = 14,
+        CameraOut = 15,
+        ApproachCloseCurtain = 16,
+        CloseExitCurtain = 17,
+        Completed = 18
     }
 
     /// <summary>
-    /// The shower, beat by beat: the moment E is pressed the camera flies
-    /// into the hero's own eyes while he sets off for the stall; once the
-    /// lens is inside his head his clothes come off, unseen; he walks into
-    /// the stall, braces on the tile under the water, and washes; E shuts
-    /// the tap; he straightens and stands still while the last drops fall;
-    /// he walks out to the opening, dresses, and the camera goes home. Pure
+    /// The shower: the camera approaches from E, enters through the opening
+    /// curtain and reaches the future eye dock before the hero steps in,
+    /// closes the curtain, bends into place and opens the closed tap by hand.
+    /// After shutting both valves, leave the lens at its entry endpoint.
+    /// Draw the curtain, step fully out of view, dress, return the camera
+    /// along the entry path in reverse, then close the curtain. Pure
     /// and EditMode-testable: fixed phases carry their overshoot into the
     /// next like the toilet's timeline, open phases wait for the scene to
     /// report the dock, the rendered neutral frame or the walk out.
     /// </summary>
     public sealed class HomeShowerSceneTimeline
     {
-        public const float CameraInSeconds = 0.9f;
-        public const float UndressGuardSeconds = 0.45f;
+        public const float CameraApproachSeconds = 1.8f;
+        // Full time from the open curtain to the future eyes, not the
+        // duration of a normalized scale whose first 40% is already spent.
+        public const float CameraInSeconds = 2.2f;
         public const float PoseRaiseSeconds = 0.7f;
-        public const float WaterStartSeconds = 1.0f;
-        public const float MinimumWashSeconds = 6f;
-        public const float AutomaticWashSeconds = 12f;
-        public const float WaterOffSeconds = 0.9f;
         public const float ValveReachSeconds = 0.45f;
-        public const float WaterCutStartSeconds = 0.35f;
+        public const float ValveTurnSeconds = 0.55f;
+        public const float ValveReleaseSeconds = 0.45f;
+        public const float ValveActionSeconds = ValveReachSeconds + ValveTurnSeconds + ValveReleaseSeconds;
+        public const float WaterOffSeconds = 2f * ValveActionSeconds;
+        public const float WaterOnReachEndSeconds = PoseRaiseSeconds + ValveReachSeconds;
+        public const float WaterOnTurnEndSeconds = WaterOnReachEndSeconds + ValveTurnSeconds;
+        public const float ColdWaterOnReachEndSeconds = WaterOnReachEndSeconds + ValveActionSeconds;
+        public const float ColdWaterOnTurnEndSeconds = WaterOnTurnEndSeconds + ValveActionSeconds;
+        public const float WaterOnSeconds = PoseRaiseSeconds + 2f * ValveActionSeconds;
+        public const float WaterCutStartSeconds = ValveActionSeconds + ValveReachSeconds;
         public const float StraightenSeconds = 0.6f;
         public const float DripHoldSeconds = 3.0f;
-        public const float CameraOutSeconds = 1.4f;
+        public const float CameraOutSeconds = CameraInSeconds + CameraApproachSeconds;
         public const float SteamLagSeconds = 1.5f;
 
         /// <summary>
@@ -60,15 +75,26 @@ namespace BarPromenade
         private bool dockReached;
         private bool settleFrameRendered;
         private bool valveCuePending;
-        private float stopStartWater = 1f;
+        private int valveCueMask;
+        private int valveFramesRendered;
         private float steam;
         private float dripClock;
+        private float cameraProgress;
+        private bool startedInside;
+        private bool gestureStartRendered;
+        private bool gestureEndRendered;
+        private bool cameraFrameRendered;
+        private bool cameraReturnFrameRendered;
+        private bool exitAppearanceReady;
 
         public HomeShowerScenePhase Phase { get; private set; } =
             HomeShowerScenePhase.Idle;
         public float PhaseElapsed => phaseElapsed;
         public bool ReachedMinimumWash { get; private set; }
         public bool DockReached => dockReached;
+        public bool CameraArrived => cameraFrameRendered;
+        public bool CameraReturned => cameraReturnFrameRendered;
+        public bool ExitAppearanceReady => exitAppearanceReady;
         public bool IsCompleted => Phase == HomeShowerScenePhase.Completed;
         public bool StopPromptVisible => Phase == HomeShowerScenePhase.Wash;
 
@@ -80,10 +106,29 @@ namespace BarPromenade
             Phase >= HomeShowerScenePhase.WaterOff &&
             Phase <= HomeShowerScenePhase.DripHold;
 
-        /// <summary>The lens is inside his head: from the end of the fly-in until it starts back.</summary>
+        public bool IsCurtainGesture =>
+            Phase == HomeShowerScenePhase.OpenCurtain ||
+            Phase == HomeShowerScenePhase.CloseCurtain ||
+            Phase == HomeShowerScenePhase.OpenExitCurtain ||
+            Phase == HomeShowerScenePhase.CloseExitCurtain;
+        public bool CurtainOpening => Phase == HomeShowerScenePhase.OpenCurtain ||
+            Phase == HomeShowerScenePhase.OpenExitCurtain;
+        public bool CurtainFromInside => Phase == HomeShowerScenePhase.CloseCurtain ||
+            Phase == HomeShowerScenePhase.OpenExitCurtain;
+        public float GestureNormalized => gestureStartRendered
+            ? Mathf.Clamp01(phaseElapsed / HomeShowerCurtainPose.DurationSeconds) : 0f;
+
+        /// <summary>The live head owns the lens until the exit detaches it before straightening.</summary>
         public bool IsInsideHead =>
-            Phase > HomeShowerScenePhase.CameraIn &&
-            Phase < HomeShowerScenePhase.CameraOut;
+            Phase >= HomeShowerScenePhase.Settle &&
+            Phase <= HomeShowerScenePhase.WaterOff;
+
+        /// <summary>Return the last wash look to the fixed entry endpoint before the hero starts walking out.</summary>
+        public float ExitViewBlend => Phase == HomeShowerScenePhase.Straighten
+            ? phaseElapsed / (StraightenSeconds + DripHoldSeconds)
+            : Phase == HomeShowerScenePhase.DripHold
+                ? (StraightenSeconds + phaseElapsed) / (StraightenSeconds + DripHoldSeconds)
+                : Phase >= HomeShowerScenePhase.ApproachExit ? 1f : 0f;
 
         public float CameraBlend
         {
@@ -91,18 +136,29 @@ namespace BarPromenade
             {
                 switch (Phase)
                 {
-                    case HomeShowerScenePhase.CameraIn:
-                        return Smooth(phaseElapsed / CameraInSeconds);
                     case HomeShowerScenePhase.Approach:
+                    case HomeShowerScenePhase.OpenCurtain:
+                    case HomeShowerScenePhase.CameraIn:
+                    case HomeShowerScenePhase.StepIn:
+                    case HomeShowerScenePhase.CloseCurtain:
+                        return cameraProgress;
                     case HomeShowerScenePhase.Settle:
+                    case HomeShowerScenePhase.WaterOn:
                     case HomeShowerScenePhase.Wash:
                     case HomeShowerScenePhase.WaterOff:
                     case HomeShowerScenePhase.Straighten:
                     case HomeShowerScenePhase.DripHold:
+                    case HomeShowerScenePhase.ApproachExit:
+                    case HomeShowerScenePhase.OpenExitCurtain:
                     case HomeShowerScenePhase.StepOut:
                         return 1f;
                     case HomeShowerScenePhase.CameraOut:
-                        return 1f - Smooth(phaseElapsed / CameraOutSeconds);
+                        // Reverse the two entry legs with their original
+                        // durations. Evaluate applies the same easing as entry.
+                        return phaseElapsed <= CameraInSeconds
+                            ? 1f - (1f - HomeShowerCameraPath.CurtainApproachEnd) * phaseElapsed / CameraInSeconds
+                            : HomeShowerCameraPath.CurtainApproachEnd *
+                              (1f - Mathf.Clamp01((phaseElapsed - CameraInSeconds) / CameraApproachSeconds));
                     default:
                         return 0f;
                 }
@@ -133,8 +189,9 @@ namespace BarPromenade
             {
                 switch (Phase)
                 {
-                    case HomeShowerScenePhase.Wash:
+                    case HomeShowerScenePhase.WaterOn:
                         return Smooth(phaseElapsed / PoseRaiseSeconds);
+                    case HomeShowerScenePhase.Wash:
                     case HomeShowerScenePhase.WaterOff:
                         return 1f;
                     case HomeShowerScenePhase.Straighten:
@@ -152,8 +209,9 @@ namespace BarPromenade
             {
                 switch (Phase)
                 {
-                    case HomeShowerScenePhase.Wash:
+                    case HomeShowerScenePhase.WaterOn:
                         return Mathf.Lerp(WalkPitchDegrees, WashPitchDegrees, PoseWeight);
+                    case HomeShowerScenePhase.Wash:
                     case HomeShowerScenePhase.WaterOff:
                         return WashPitchDegrees;
                     case HomeShowerScenePhase.Straighten:
@@ -163,6 +221,9 @@ namespace BarPromenade
                             Smooth(phaseElapsed / StraightenSeconds));
                     case HomeShowerScenePhase.DripHold:
                         return HoldPitchDegrees;
+                    case HomeShowerScenePhase.CameraOut:
+                        return Mathf.Lerp(HoldPitchDegrees, WalkPitchDegrees,
+                            Smooth(phaseElapsed / CameraOutSeconds));
                     default:
                         return WalkPitchDegrees;
                 }
@@ -176,35 +237,61 @@ namespace BarPromenade
             {
                 switch (Phase)
                 {
+                    case HomeShowerScenePhase.WaterOn:
+                        return HandReach(phaseElapsed - PoseRaiseSeconds);
                     case HomeShowerScenePhase.WaterOff:
-                        return Smooth(phaseElapsed / ValveReachSeconds);
-                    case HomeShowerScenePhase.Straighten:
-                        return 1f;
+                        return HandReach(phaseElapsed - ValveActionSeconds);
                     default:
                         return 0f;
                 }
             }
         }
 
-        /// <summary>How far the cross handle has turned, once the hand is on it.</summary>
+        public float ColdValveReach => Phase == HomeShowerScenePhase.WaterOn
+            ? HandReach(phaseElapsed - PoseRaiseSeconds - ValveActionSeconds)
+            : Phase == HomeShowerScenePhase.WaterOff ? HandReach(phaseElapsed) : 0f;
+
+        public bool WorkingValveIsCold => Phase == HomeShowerScenePhase.WaterOn
+            ? phaseElapsed >= PoseRaiseSeconds + ValveActionSeconds
+            : Phase == HomeShowerScenePhase.WaterOff && phaseElapsed < ValveActionSeconds;
+
+        private static float HandReach(float elapsed) => elapsed <= ValveReachSeconds + ValveTurnSeconds
+            ? Smooth(elapsed / ValveReachSeconds)
+            : 1f - Smooth((elapsed - ValveReachSeconds - ValveTurnSeconds) / ValveReleaseSeconds);
+
+        /// <summary>Closed at one, open at zero; entry and idle always keep the tap closed.</summary>
         public float ValveTurn
         {
             get
             {
                 switch (Phase)
                 {
-                    case HomeShowerScenePhase.WaterOff:
-                        return Smooth(
-                            (phaseElapsed - ValveReachSeconds) /
-                            (WaterOffSeconds - ValveReachSeconds));
-                    case HomeShowerScenePhase.Straighten:
-                    case HomeShowerScenePhase.DripHold:
-                    case HomeShowerScenePhase.StepOut:
-                    case HomeShowerScenePhase.CameraOut:
-                    case HomeShowerScenePhase.Completed:
-                        return 1f;
-                    default:
+                    case HomeShowerScenePhase.WaterOn:
+                        return 1f - Smooth((phaseElapsed - WaterOnReachEndSeconds) / ValveTurnSeconds);
+                    case HomeShowerScenePhase.Wash:
                         return 0f;
+                    case HomeShowerScenePhase.WaterOff:
+                        return Smooth((phaseElapsed - WaterCutStartSeconds) / ValveTurnSeconds);
+                    default:
+                        return 1f;
+                }
+            }
+        }
+
+        public float ColdValveTurn
+        {
+            get
+            {
+                switch (Phase)
+                {
+                    case HomeShowerScenePhase.WaterOn:
+                        return 1f - Smooth((phaseElapsed - ColdWaterOnReachEndSeconds) / ValveTurnSeconds);
+                    case HomeShowerScenePhase.Wash:
+                        return 0f;
+                    case HomeShowerScenePhase.WaterOff:
+                        return Smooth((phaseElapsed - ValveReachSeconds) / ValveTurnSeconds);
+                    default:
+                        return 1f;
                 }
             }
         }
@@ -215,12 +302,10 @@ namespace BarPromenade
             {
                 switch (Phase)
                 {
+                    case HomeShowerScenePhase.WaterOn:
                     case HomeShowerScenePhase.Wash:
-                        return Mathf.Clamp01(phaseElapsed / WaterStartSeconds);
                     case HomeShowerScenePhase.WaterOff:
-                        return stopStartWater * (1f - Smooth(
-                            (phaseElapsed - WaterCutStartSeconds) /
-                            (WaterOffSeconds - WaterCutStartSeconds)));
+                        return 1f - (ValveTurn + ColdValveTurn) * 0.5f;
                     default:
                         return 0f;
                 }
@@ -269,10 +354,39 @@ namespace BarPromenade
             }
         }
 
-        public void Begin()
+        public void Begin(bool alreadyInside = false)
         {
             Reset();
-            Phase = HomeShowerScenePhase.CameraIn;
+            startedInside = alreadyInside;
+            Phase = HomeShowerScenePhase.Approach;
+        }
+
+        public void NotifyEntryReached()
+        {
+            if (Phase == HomeShowerScenePhase.Approach)
+                SetPhase(startedInside ? HomeShowerScenePhase.CameraIn : HomeShowerScenePhase.OpenCurtain);
+        }
+
+        /// <summary>Both neutral endpoints of each authored gesture must actually be presented.</summary>
+        public void NotifyGestureFrameRendered()
+        {
+            if (!IsCurtainGesture) return;
+            if (GestureNormalized >= 1f) gestureEndRendered = true;
+            gestureStartRendered = true;
+        }
+
+        /// <summary>The empty eye dock must be presented before the hero follows the lens.</summary>
+        public void NotifyCameraFrameRendered()
+        {
+            if (cameraProgress >= 1f) cameraFrameRendered = true;
+            if (Phase == HomeShowerScenePhase.CameraOut && phaseElapsed >= CameraOutSeconds)
+                cameraReturnFrameRendered = true;
+        }
+
+        /// <summary>The naked hero has rendered outside the frame and restored his clothes before the camera follows.</summary>
+        public void NotifyExitAppearanceReady()
+        {
+            if (Phase == HomeShowerScenePhase.CameraOut) exitAppearanceReady = true;
         }
 
         public void Advance(float deltaTime)
@@ -303,12 +417,6 @@ namespace BarPromenade
                 float step = Mathf.Min(remaining, Mathf.Max(0f, duration - phaseElapsed));
                 Integrate(step);
                 remaining -= step;
-                if (Phase == HomeShowerScenePhase.Wash &&
-                    phaseElapsed >= MinimumWashSeconds)
-                {
-                    ReachedMinimumWash = true;
-                }
-
                 if (phaseElapsed < duration)
                 {
                     break;
@@ -326,14 +434,9 @@ namespace BarPromenade
         /// <summary>The base has walked him onto the dock; remembered if the fly-in is still running.</summary>
         public void NotifyDockReached()
         {
-            if (Phase == HomeShowerScenePhase.CameraIn ||
-                Phase == HomeShowerScenePhase.Approach)
+            if (Phase == HomeShowerScenePhase.CameraIn)
             {
                 dockReached = true;
-                if (Phase == HomeShowerScenePhase.Approach)
-                {
-                    SetPhase(HomeShowerScenePhase.Settle);
-                }
             }
         }
 
@@ -346,12 +449,52 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>Present each hand on its wheel before turning and at the completed turn before releasing.</summary>
+        public void NotifyValveFrameRendered()
+        {
+            if (Phase != HomeShowerScenePhase.WaterOn && Phase != HomeShowerScenePhase.WaterOff) return;
+            if (valveFramesRendered < 4 && phaseElapsed >= ValveFrameTime(valveFramesRendered))
+                valveFramesRendered++;
+        }
+
+        private float ValveFrameTime(int frame)
+        {
+            if (Phase == HomeShowerScenePhase.WaterOn)
+            {
+                switch (frame)
+                {
+                    case 0: return WaterOnReachEndSeconds;
+                    case 1: return WaterOnTurnEndSeconds;
+                    case 2: return ColdWaterOnReachEndSeconds;
+                    default: return ColdWaterOnTurnEndSeconds;
+                }
+            }
+            switch (frame)
+            {
+                case 0: return ValveReachSeconds;
+                case 1: return ValveReachSeconds + ValveTurnSeconds;
+                case 2: return WaterCutStartSeconds;
+                default: return WaterCutStartSeconds + ValveTurnSeconds;
+            }
+        }
+
         /// <summary>He has walked out to the opening and turned to the room.</summary>
         public void NotifyWalkArrived()
         {
-            if (Phase == HomeShowerScenePhase.StepOut)
+            switch (Phase)
             {
-                SetPhase(HomeShowerScenePhase.CameraOut);
+                case HomeShowerScenePhase.StepIn:
+                    SetPhase(HomeShowerScenePhase.CloseCurtain);
+                    break;
+                case HomeShowerScenePhase.ApproachExit:
+                    SetPhase(HomeShowerScenePhase.OpenExitCurtain);
+                    break;
+                case HomeShowerScenePhase.StepOut:
+                    SetPhase(HomeShowerScenePhase.CameraOut);
+                    break;
+                case HomeShowerScenePhase.ApproachCloseCurtain:
+                    SetPhase(HomeShowerScenePhase.CloseExitCurtain);
+                    break;
             }
         }
 
@@ -370,7 +513,13 @@ namespace BarPromenade
             return true;
         }
 
-        /// <summary>One-shot: the hand has closed on the tap.</summary>
+        /// <summary>Only measured soap coverage completes the wash; waiting never does.</summary>
+        public void NotifyWashingCompleted()
+        {
+            if (Phase == HomeShowerScenePhase.Wash) ReachedMinimumWash = true;
+        }
+
+        /// <summary>One-shot at the first actual turn, opening or closing.</summary>
         public bool ConsumeValveCue()
         {
             if (!valveCuePending)
@@ -389,9 +538,17 @@ namespace BarPromenade
             dockReached = false;
             settleFrameRendered = false;
             valveCuePending = false;
-            stopStartWater = 1f;
+            valveCueMask = 0;
+            valveFramesRendered = 0;
             steam = 0f;
             dripClock = 0f;
+            cameraProgress = 0f;
+            cameraFrameRendered = false;
+            cameraReturnFrameRendered = false;
+            exitAppearanceReady = false;
+            startedInside = false;
+            gestureStartRendered = false;
+            gestureEndRendered = false;
             ReachedMinimumWash = false;
         }
 
@@ -399,22 +556,37 @@ namespace BarPromenade
         {
             switch (phase)
             {
-                case HomeShowerScenePhase.CameraIn: return CameraInSeconds;
-                case HomeShowerScenePhase.Wash: return AutomaticWashSeconds;
-                case HomeShowerScenePhase.WaterOff: return WaterOffSeconds;
                 case HomeShowerScenePhase.Straighten: return StraightenSeconds;
                 case HomeShowerScenePhase.DripHold: return DripHoldSeconds;
-                case HomeShowerScenePhase.CameraOut: return CameraOutSeconds;
                 default: return float.PositiveInfinity;
             }
         }
 
         private bool TryLeaveOpenPhase()
         {
+            if (IsCurtainGesture && gestureEndRendered &&
+                (Phase != HomeShowerScenePhase.OpenCurtain || cameraFrameRendered))
+            {
+                switch (Phase)
+                {
+                    case HomeShowerScenePhase.OpenCurtain: SetPhase(HomeShowerScenePhase.StepIn); break;
+                    case HomeShowerScenePhase.CloseCurtain: SetPhase(HomeShowerScenePhase.CameraIn); break;
+                    case HomeShowerScenePhase.OpenExitCurtain: SetPhase(HomeShowerScenePhase.StepOut); break;
+                    case HomeShowerScenePhase.CloseExitCurtain: SetPhase(HomeShowerScenePhase.Completed); break;
+                }
+                return true;
+            }
             switch (Phase)
             {
-                case HomeShowerScenePhase.Approach:
-                    if (dockReached)
+                case HomeShowerScenePhase.CameraOut:
+                    if (cameraReturnFrameRendered)
+                    {
+                        SetPhase(HomeShowerScenePhase.ApproachCloseCurtain);
+                        return true;
+                    }
+                    return false;
+                case HomeShowerScenePhase.CameraIn:
+                    if (dockReached && cameraFrameRendered)
                     {
                         SetPhase(HomeShowerScenePhase.Settle);
                         return true;
@@ -424,10 +596,20 @@ namespace BarPromenade
                 case HomeShowerScenePhase.Settle:
                     if (settleFrameRendered)
                     {
-                        SetPhase(HomeShowerScenePhase.Wash);
+                        SetPhase(HomeShowerScenePhase.WaterOn);
                         return true;
                     }
 
+                    return false;
+                case HomeShowerScenePhase.WaterOn:
+                case HomeShowerScenePhase.WaterOff:
+                    float seconds = Phase == HomeShowerScenePhase.WaterOn ? WaterOnSeconds : WaterOffSeconds;
+                    if (valveFramesRendered == 4 && phaseElapsed >= seconds)
+                    {
+                        SetPhase(Phase == HomeShowerScenePhase.WaterOn
+                            ? HomeShowerScenePhase.Wash : HomeShowerScenePhase.Straighten);
+                        return true;
+                    }
                     return false;
                 default:
                     return false;
@@ -438,32 +620,17 @@ namespace BarPromenade
         {
             switch (Phase)
             {
-                case HomeShowerScenePhase.CameraIn:
-                    SetPhase(HomeShowerScenePhase.Approach);
-                    break;
-                case HomeShowerScenePhase.Wash:
-                    ReachedMinimumWash = true;
-                    BeginWaterOff();
-                    break;
-                case HomeShowerScenePhase.WaterOff:
-                    SetPhase(HomeShowerScenePhase.Straighten);
-                    break;
                 case HomeShowerScenePhase.Straighten:
                     SetPhase(HomeShowerScenePhase.DripHold);
                     break;
                 case HomeShowerScenePhase.DripHold:
-                    SetPhase(HomeShowerScenePhase.StepOut);
-                    break;
-                case HomeShowerScenePhase.CameraOut:
-                    SetPhase(HomeShowerScenePhase.Completed);
+                    SetPhase(HomeShowerScenePhase.ApproachExit);
                     break;
             }
         }
 
         private void BeginWaterOff()
         {
-            stopStartWater = WaterAmount;
-            valveCuePending = true;
             SetPhase(HomeShowerScenePhase.WaterOff);
         }
 
@@ -474,7 +641,49 @@ namespace BarPromenade
                 return;
             }
 
-            phaseElapsed += step;
+            float previousValveTurn = ValveTurn;
+            float previousColdValveTurn = ColdValveTurn;
+            if (Phase == HomeShowerScenePhase.WaterOn || Phase == HomeShowerScenePhase.WaterOff)
+            {
+                // Each hand presents contact and the completed turn before it releases the wheel.
+                float limit = valveFramesRendered < 4 ? ValveFrameTime(valveFramesRendered)
+                    : Phase == HomeShowerScenePhase.WaterOn ? WaterOnSeconds : WaterOffSeconds;
+                phaseElapsed = Mathf.Min(phaseElapsed + step, limit);
+            }
+            else if (Phase == HomeShowerScenePhase.CameraOut)
+                phaseElapsed = exitAppearanceReady ? Mathf.Min(phaseElapsed + step, CameraOutSeconds) : 0f;
+            else if (!IsCurtainGesture || gestureStartRendered)
+                phaseElapsed += step;
+            int valveBit = WorkingValveIsCold ? 2 : 1;
+            if ((valveCueMask & valveBit) == 0 &&
+                (Phase == HomeShowerScenePhase.WaterOn || Phase == HomeShowerScenePhase.WaterOff) &&
+                (!Mathf.Approximately(previousValveTurn, ValveTurn) ||
+                 !Mathf.Approximately(previousColdValveTurn, ColdValveTurn)))
+            {
+                valveCuePending = true;
+                valveCueMask |= valveBit;
+            }
+            if (Phase == HomeShowerScenePhase.Approach || Phase == HomeShowerScenePhase.OpenCurtain)
+            {
+                float approachEnd = HomeShowerCameraPath.CurtainApproachEnd;
+                float approachStep = Mathf.Min(step,
+                    Mathf.Max(0f, approachEnd - cameraProgress) * CameraApproachSeconds / approachEnd);
+                cameraProgress = Mathf.Min(1f,
+                    cameraProgress + approachStep * approachEnd / CameraApproachSeconds);
+                if (Phase == HomeShowerScenePhase.OpenCurtain && gestureStartRendered)
+                {
+                    // Finish approaching at the same speed even if the hero
+                    // docks early. The entry clock begins only after the cloth
+                    // is fully gathered; it no longer chases the gesture curve.
+                    float openSeconds = Mathf.Max(0f, phaseElapsed -
+                        HomeShowerCurtainPose.ReleaseStart * HomeShowerCurtainPose.DurationSeconds);
+                    float entryStep = Mathf.Min(step - approachStep, openSeconds);
+                    cameraProgress = Mathf.Min(1f,
+                        cameraProgress + entryStep * (1f - approachEnd) / CameraInSeconds);
+                }
+            }
+            else if (Phase == HomeShowerScenePhase.CameraIn && startedInside)
+                cameraProgress = Mathf.Min(1f, cameraProgress + step / CameraInSeconds);
             if (IsDripping)
             {
                 dripClock += step;
@@ -488,6 +697,10 @@ namespace BarPromenade
         {
             Phase = phase;
             phaseElapsed = 0f;
+            gestureStartRendered = false;
+            gestureEndRendered = false;
+            valveCueMask = 0;
+            valveFramesRendered = 0;
         }
 
         private static float Smooth(float amount)
@@ -506,9 +719,9 @@ namespace BarPromenade
     /// by one from the drip model.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class HomeShowerWaterEffect : MonoBehaviour
+    public sealed partial class HomeShowerWaterEffect : MonoBehaviour
     {
-        public const float StreamRatePerSecond = 48f;
+        public const float StreamRatePerSecond = 120f;
         public const float SteamRatePerSecond = 7f;
         public const int SplashParticlesPerLanding = 2;
 
@@ -525,6 +738,7 @@ namespace BarPromenade
 
         /// <summary>Live particles in flight, for tests that must see water, not a flag.</summary>
         public int StreamParticleCount => stream != null ? stream.particleCount : 0;
+        public ParticleSystem StreamParticles => stream;
         public int DripParticleCount => drips != null ? drips.particleCount : 0;
         public int SteamParticleCount => steam != null ? steam.particleCount : 0;
 
@@ -535,37 +749,46 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(parent));
             }
 
-            // The plate faces 35° forward and down; the water leaves it
-            // nearly straight down with a little of that lean and falls
-            // under gravity onto the nape and the basin.
+            InitializeTrayWater(parent);
+
+            // The visible plate and the jets share one direction and outlet.
             stream = CreateSystem(
                 parent,
                 "Shower Water Stream",
                 HomeShowerFraming.DripOrigin,
-                Quaternion.Euler(105f, 0f, 0f),
+                Quaternion.LookRotation(HomeShowerFraming.StreamDirection, Vector3.up),
                 system =>
                 {
                     ParticleSystem.MainModule main = system.main;
                     main.startLifetime =
-                        new ParticleSystem.MinMaxCurve(0.55f, 0.62f);
+                        new ParticleSystem.MinMaxCurve(0.50f, 0.56f);
                     main.startSpeed =
                         new ParticleSystem.MinMaxCurve(0.9f, 1.2f);
                     main.startSize =
-                        new ParticleSystem.MinMaxCurve(0.02f, 0.045f);
+                        new ParticleSystem.MinMaxCurve(0.007f, 0.011f);
                     main.gravityModifier = 1f;
-                    main.maxParticles = 80;
+                    main.maxParticles = 96;
                     main.startColor = new ParticleSystem.MinMaxGradient(
-                        new Color(0.58f, 0.63f, 0.64f, 0.35f),
-                        new Color(0.52f, 0.58f, 0.60f, 0.22f));
+                        new Color(0.72f, 0.77f, 0.78f, 0.72f),
+                        new Color(0.62f, 0.69f, 0.72f, 0.58f));
                     ParticleSystem.ShapeModule shape = system.shape;
                     shape.shapeType = ParticleSystemShapeType.Cone;
-                    shape.angle = 6f;
+                    shape.angle = 30f;
                     shape.radius = 0.045f;
                     ParticleSystemRenderer renderer = system
                         .GetComponent<ParticleSystemRenderer>();
                     renderer.renderMode =
                         ParticleSystemRenderMode.Stretch;
-                    renderer.lengthScale = 3.5f;
+                    renderer.lengthScale = 2.5f;
+                    renderer.velocityScale = 0.035f;
+                    renderer.cameraVelocityScale = 0f;
+                    // The shared fog material normally fades over a metre,
+                    // erasing nearby water against the skin and tile. Give
+                    // only these thin jets a two-centimetre contact fade.
+                    var properties = new MaterialPropertyBlock();
+                    properties.SetFloat("_SoftParticleDistance", 0.02f);
+                    properties.SetFloat("_EdgePower", 0.65f);
+                    renderer.SetPropertyBlock(properties);
                 });
             steam = CreateSystem(
                 parent,
@@ -589,18 +812,24 @@ namespace BarPromenade
                     shape.shapeType = ParticleSystemShapeType.Box;
                     shape.scale = new Vector3(0.9f, 0.3f, 0.9f);
                 });
+            // Residual drops leave the same real plate and land at the tray's
+            // existing splash point, with the drip model's exact flight time.
+            float dripFlight = HomeShowerDripModel.FallSeconds;
+            Vector3 localGravity = parent.InverseTransformDirection(Physics.gravity);
+            Vector3 dripVelocity = (HomeShowerFraming.BasinLanding - HomeShowerFraming.DripOrigin -
+                localGravity * (0.5f * dripFlight * dripFlight)) / dripFlight;
             drips = CreateSystem(
                 parent,
                 "Shower Drip",
                 HomeShowerFraming.DripOrigin,
-                Quaternion.Euler(90f, 0f, 0f),
+                Quaternion.LookRotation(dripVelocity.normalized, Vector3.up),
                 system =>
                 {
                     ParticleSystem.MainModule main = system.main;
                     main.startLifetime =
                         new ParticleSystem.MinMaxCurve(HomeShowerDripModel.FallSeconds);
                     main.startSpeed =
-                        new ParticleSystem.MinMaxCurve(0.05f);
+                        new ParticleSystem.MinMaxCurve(dripVelocity.magnitude);
                     main.startSize =
                         new ParticleSystem.MinMaxCurve(0.012f, 0.018f);
                     main.gravityModifier = 1f;
@@ -673,6 +902,7 @@ namespace BarPromenade
             }
 
             float flow = Mathf.Clamp01(water);
+            trayInflow = flow;
             IsEmitting = flow > 0.05f;
             SetRate(stream, StreamRatePerSecond * flow);
             SetRate(steam, SteamRatePerSecond * Mathf.Clamp01(steamAmount));
@@ -716,6 +946,7 @@ namespace BarPromenade
 
             IsEmitting = false;
             IsDripping = false;
+            ClearTrayWater();
             Clear(stream);
             Clear(steam);
             Clear(drips);
@@ -784,18 +1015,16 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// The shower scene on the shared bathroom skeleton, seen from the
-    /// hero's own eyes: E flies the camera into his head while the base
-    /// walks him to the stall through the opening beside the gathered
-    /// curtain; his clothes come off once the lens is inside; he braces
-    /// on the tile and washes; E shuts the tap; he straightens, stands
-    /// still through the last drops, walks out to the opening, dresses
-    /// with the lens still inside, and the camera returns. A finished
-    /// wash relieves stress.
+    /// The shared bathroom lifecycle stages the visible curtain gesture
+    /// before the camera enters the hero's eyes at the wash dock. The
+    /// same authored gesture closes the entrance behind him. After the
+    /// wash and drips he opens the curtain and walks out while the lens
+    /// stays inside. It then retraces its entry before he closes the
+    /// curtain and releases control. A finished wash relieves stress.
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(260)]
-    public sealed class HomeShowerInteraction :
+    public sealed partial class HomeShowerInteraction :
         HomeBathroomSceneInteraction
     {
         public const string TakePromptKey = "interaction.take_shower";
@@ -803,14 +1032,17 @@ namespace BarPromenade
             "interaction.stop_shower";
         public const int StressRelief = 12;
         public const string HotHandleName = "Home Bathroom Shower Mixer Handle Hot";
-        public const float ValveTurnDegrees = 90f;
+        public const string ColdHandleName = "Home Bathroom Shower Mixer Handle Cold";
+        // Turning inward keeps the measured palm-to-wrist offset under
+        // the right shoulder throughout the shared wheel's quarter turn.
+        public const float ValveTurnDegrees = -90f;
 
         /// <summary>
-        /// The curtain never moves any more; it stays gathered at the
-        /// rail's left end, tight enough to leave the opening the hero
-        /// walks through.
+        /// The front curtain's two endpoints. Only the authored hand pull
+        /// changes the gathered amount; the side run stays fully closed.
         /// </summary>
         public const float GatheredCurtainScale = 0.40f;
+        public const float ClosedCurtainScale = 1f;
 
         private readonly HomeShowerSceneTimeline timeline =
             new HomeShowerSceneTimeline();
@@ -820,51 +1052,86 @@ namespace BarPromenade
         private HomeShowerWaterEffect waterEffect;
         private HomeShowerWashPose washPose;
         private HomeShowerFirstPersonView view;
+        private HomeShowerCurtainPose curtainPose;
+        private Transform curtain;
+        private Vector3 curtainRestScale;
         private Player3DAssetRegistry registry;
         private Player3DBathingAppearance lease;
         private Transform hotHandle;
+        private Transform coldHandle;
         private Quaternion hotHandleRest = Quaternion.identity;
+        private Quaternion coldHandleRest = Quaternion.identity;
         private bool previousHandoff;
         private bool ownsHandoff;
         private bool braceCaptured;
         private bool occlusionCaptured;
         private bool previousOcclusionEnabled;
-        private bool stepOutCornerPassed;
+        private bool walkingCornerPassed;
+        private bool startedInside;
+        private HomeShowerScenePhase presentedGesture = HomeShowerScenePhase.Idle;
+        private HomeShowerScenePhase previousWalkPhase = HomeShowerScenePhase.Idle;
         private bool holdBegun;
         private bool redressed;
+        private Vector3 futureEyeLocal;
+        private bool futureEyeCaptured;
+        private bool liveEyeReached;
+        private bool exitCameraCaptured;
+        private Vector3 exitCameraStartPosition;
+        private Quaternion exitCameraStartRotation;
+        private bool outsideFrameRendered;
+        private bool stepOutArrived;
+        private float stepOutSettleElapsed;
+        private const float StepOutSettleSeconds = 0.25f;
+        private Camera sceneCamera;
+        private Renderer[] exitVisibilityRenderers = Array.Empty<Renderer>();
+        private readonly Plane[] exitFrustum = new Plane[6];
+
+        public Vector3 EntryCameraStartWorld { get; private set; }
+        public Quaternion EntryCameraStartRotation { get; private set; }
+        public float EntryCameraStartFieldOfView { get; private set; }
 
         public HomeShowerSceneTimeline Timeline => timeline;
         public HomeShowerDripModel Drips => drips;
         public HomeShowerWaterEffect WaterEffect => waterEffect;
         public HomeShowerWashPose WashPose => washPose;
         public HomeShowerFirstPersonView View => view;
+        public HomeShowerCurtainPose CurtainPose => curtainPose;
         public bool IsUndressed => lease != null;
         public bool HoldsOcclusionLease => occlusionCaptured;
         public bool HoldsHandoff => ownsHandoff;
+        public Vector3 TargetEyeWorld => Home.transform.TransformPoint(futureEyeLocal);
+        public bool CameraArrived => timeline.CameraArrived;
         public float HotHandleTurn => timeline.ValveTurn;
+        public float ColdHandleTurn => timeline.ColdValveTurn;
         public override string PromptKey =>
             OwnsScene ? string.Empty : TakePromptKey;
 
         protected override string StopPromptKey => StopPromptKeyName;
 
-        /// <summary>The eye at the moment of E: the fly-in's Bézier is captured against it; the live eye then leads it.</summary>
+        /// <summary>The predicted wash eye stays fixed while the hero follows the camera into place.</summary>
         protected override Vector3 CameraLocalPosition =>
+            futureEyeCaptured ? futureEyeLocal :
             view != null && view.TryGetEyeLocal(Home.transform, out Vector3 eye, out _)
                 ? eye
                 : HomeShowerFraming.Stand + Vector3.up * 1.6f;
 
         protected override Vector3 CameraLocalLookAt =>
+            futureEyeCaptured ? futureEyeLocal + Quaternion.Euler(HomeShowerSceneTimeline.WashPitchDegrees,
+                HomeShowerFirstPersonView.InitialLookYawDegrees, 0f) * Vector3.forward :
             view != null && view.TryGetEyeLocal(Home.transform, out Vector3 eye, out Vector3 forward)
                 ? eye + forward
                 : HomeShowerFraming.Stand + Vector3.up * 1.6f + Vector3.forward;
 
         protected override float CameraFieldOfView =>
             HomeShowerFirstPersonView.FieldOfView;
-        protected override float CameraBlend => timeline.CameraBlend;
-        protected override float CameraDriftWeight => timeline.DriftWeight;
+        // Only an interaction begun inside uses the base-class curve.
+        // An ordinary entry and exit share the open-curtain corridor.
+        protected override float CameraPathControlLift => 1.30f;
         protected override bool CameraLeadsApproach => true;
+        protected override float CameraBlend => timeline.CameraBlend;
+        protected override float CameraDriftWeight => 0f;
         protected override bool SceneCompleted => timeline.IsCompleted;
-        protected override bool StopPromptVisible => timeline.StopPromptVisible;
+        protected override bool StopPromptVisible => false;
 
         public void Initialize(HomeInteriorRoot homeRoot)
         {
@@ -875,20 +1142,31 @@ namespace BarPromenade
 
             InitializeScene(
                 homeRoot,
-                HomeShowerFraming.Dock,
-                Quaternion.LookRotation(Vector3.forward, Vector3.up),
+                HomeShowerCurtainPose.OutsideDock,
+                HomeShowerCurtainPose.OutsideFacing,
                 HomeShowerFraming.Exit,
-                Quaternion.LookRotation(Vector3.back, Vector3.up),
+                HomeShowerCurtainPose.OutsideFacing,
                 HomeShowerFraming.Stand);
             Transform room = homeRoot.Room != null ? homeRoot.Room : homeRoot.transform;
             waterEffect = gameObject.AddComponent<HomeShowerWaterEffect>();
             waterEffect.Initialize(room);
+            homeRoot.Soundscape?.SetShowerWaterPosition(room.TransformPoint(HomeShowerFraming.BasinLanding));
             washPose = gameObject.AddComponent<HomeShowerWashPose>();
             view = gameObject.AddComponent<HomeShowerFirstPersonView>();
+            curtainPose = gameObject.AddComponent<HomeShowerCurtainPose>();
+            curtain = room.Find("Home Bathroom Shower Curtain");
             hotHandle = room.Find(HotHandleName);
+            coldHandle = room.Find(ColdHandleName);
+            InitializeWashing(room);
             if (hotHandle != null)
             {
                 hotHandleRest = hotHandle.localRotation;
+                hotHandle.localRotation = hotHandleRest * Quaternion.Euler(0f, ValveTurnDegrees, 0f);
+            }
+            if (coldHandle != null)
+            {
+                coldHandleRest = coldHandle.localRotation;
+                coldHandle.localRotation = coldHandleRest * Quaternion.Euler(0f, ValveTurnDegrees, 0f);
             }
         }
 
@@ -902,10 +1180,12 @@ namespace BarPromenade
             out Vector3 waypoint,
             out float arrivalRadius)
         {
+            // A hero left of the stall first rounds its front corner,
+            // instead of cutting through the fully closed side run.
             Vector3 local = Home.transform.InverseTransformPoint(heroPosition);
-            waypoint = HomeShowerFraming.Waypoint;
+            waypoint = Home.transform.TransformPoint(new Vector3(3.00f, 0f, 2.18f));
             arrivalRadius = HomeShowerFraming.WaypointArrivalRadius;
-            return !HomeShowerFraming.IsInsideStall(local);
+            return !startedInside && local.x <= 3.35f && local.z > 2.30f;
         }
 
         /// <summary>All fallible preparation precedes the modal capture.</summary>
@@ -919,7 +1199,7 @@ namespace BarPromenade
             }
 
             registry = visual.Registry;
-            if (washPose == null || view == null)
+            if (washPose == null || view == null || curtainPose == null || curtain == null)
             {
                 return false;
             }
@@ -937,18 +1217,57 @@ namespace BarPromenade
                 return false;
             }
 
-            return hotHandle != null && !Player3DBathingAppearance.IsActive;
+            if (!curtainPose.Initialize(Home, curtain)) return false;
+            if (!PrepareWashing()) return false;
+            startedInside = HomeShowerFraming.IsInsideStall(
+                Home.transform.InverseTransformPoint(Home.Player.Motor.transform.position));
+            SetEntryPose(
+                startedInside ? HomeShowerCurtainPose.InsideDock : HomeShowerCurtainPose.OutsideDock,
+                startedInside ? HomeShowerCurtainPose.InsideFacing : HomeShowerCurtainPose.OutsideFacing);
+            return hotHandle != null && coldHandle != null && !Player3DBathingAppearance.IsActive;
         }
 
         protected override void OnSceneCaptured()
         {
-            timeline.Begin();
+            futureEyeCaptured = liveEyeReached = false;
+            exitCameraCaptured = false;
+            outsideFrameRendered = false;
+            stepOutArrived = false;
+            stepOutSettleElapsed = 0f;
+            sceneCamera = Home.CameraFollow.GetComponent<Camera>();
+            exitVisibilityRenderers = Home.Player.GameObject.GetComponentsInChildren<Renderer>(true);
+            EntryCameraStartWorld = Home.CameraFollow.FixedBasePosition;
+            EntryCameraStartRotation = Home.CameraFollow.FixedBaseRotation;
+            EntryCameraStartFieldOfView = Home.CameraFollow.FixedBaseFieldOfView;
+            timeline.Begin(startedInside);
             drips.Reset();
             braceCaptured = false;
-            stepOutCornerPassed = false;
+            walkingCornerPassed = false;
+            previousWalkPhase = HomeShowerScenePhase.Idle;
+            presentedGesture = HomeShowerScenePhase.Idle;
+            curtainRestScale = curtain.localScale;
             holdBegun = false;
             redressed = false;
+            ResetWashing();
             waterEffect?.Begin();
+            // Capture the same neutral rig used at the wash dock, then predict
+            // its eye position mathematically. The actor is never posed there early.
+            AcquireHandoff();
+            washPose.Capture();
+            Vector3 groundedDock = HomeShowerFraming.Dock;
+            Vector3 actorPosition = Home.Player.GameObject.transform.position;
+            float rootFloorOffset = actorPosition.y - FindFloorHeight(actorPosition);
+            Vector3 dockWorld = Home.transform.TransformPoint(groundedDock);
+            dockWorld.y = FindFloorHeight(dockWorld) + Mathf.Clamp(rootFloorOffset, -0.03f, 0.08f);
+            groundedDock = Home.transform.InverseTransformPoint(dockWorld);
+            futureEyeCaptured = washPose.TryPredictEyeLocal(groundedDock, Vector3.forward, 1f, out futureEyeLocal);
+            washPose.End();
+            ReleaseHandoff();
+            if (!futureEyeCaptured)
+            {
+                CancelScene();
+                return;
+            }
             // The occluder cutaways would dither the curtain and the
             // fixtures around the hero with the lens inside his head.
             if (Home.PlayerOcclusion != null)
@@ -960,17 +1279,27 @@ namespace BarPromenade
             }
 
             view.Begin(timeline.ViewPitchDegrees);
+            CaptureCameraPath();
         }
 
-        protected override void OnApproachAdvance(float deltaTime)
+        private float FindFloorHeight(Vector3 position)
         {
-            Tick(deltaTime);
+            float highest = float.NegativeInfinity;
+            Transform actor = Home.Player.GameObject.transform;
+            foreach (RaycastHit hit in Physics.RaycastAll(position + Vector3.up * 0.6f,
+                         Vector3.down, 2f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                if (!hit.transform.IsChildOf(actor) && hit.normal.y > 0.6f && hit.point.y > highest)
+                    highest = hit.point.y;
+            if (float.IsNegativeInfinity(highest))
+                throw new InvalidOperationException("The shower camera dock requires a real grounded floor.");
+            return highest;
         }
+
+        protected override void OnApproachAdvance(float deltaTime) => timeline.Advance(deltaTime);
 
         protected override void OnSceneBegin()
         {
-            // The base settled him at the dock, facing the tile.
-            timeline.NotifyDockReached();
+            timeline.NotifyEntryReached();
         }
 
         protected override void OnSceneAdvance(float deltaTime)
@@ -980,10 +1309,17 @@ namespace BarPromenade
 
         private void Tick(float deltaTime)
         {
+            if (timeline.Phase == HomeShowerScenePhase.CameraOut && outsideFrameRendered && !redressed)
+            {
+                // The previous presentation actually put the entire naked
+                // model outside the parked camera. Only now may clothing swap.
+                Redress(false);
+                timeline.NotifyExitAppearanceReady();
+            }
             timeline.Advance(deltaTime);
             ApplyPhaseEntries();
-            if (timeline.Phase == HomeShowerScenePhase.StepOut &&
-                !AdvanceStepOut(deltaTime))
+            if (!OwnsScene) return;
+            if (!AdvanceSceneWalk(deltaTime))
             {
                 return;
             }
@@ -995,16 +1331,28 @@ namespace BarPromenade
 
             ApplyPhaseEntries();
             ApplyEffects(deltaTime);
+            AdvanceWashing(deltaTime);
         }
 
         /// <summary>
-        /// One frame of the walk out through the stall's opening: the
-        /// corner first, then the turn to the room. False when the scene
-        /// was cancelled by a stall, so the caller stops touching it.
+        /// Every leg uses the shared constrained motor. The curtain plane
+        /// is crossed at the front-right waypoint, never while closed.
         /// </summary>
-        private bool AdvanceStepOut(float deltaTime)
+        private bool AdvanceSceneWalk(float deltaTime)
         {
-            if (!stepOutCornerPassed)
+            HomeShowerScenePhase phase = timeline.Phase;
+            if (phase == HomeShowerScenePhase.CameraIn && !timeline.CameraArrived) return true;
+            if (phase == HomeShowerScenePhase.StepOut && stepOutArrived) return true;
+            bool crossesCurtain = phase == HomeShowerScenePhase.StepIn || phase == HomeShowerScenePhase.StepOut;
+            if (!crossesCurtain && phase != HomeShowerScenePhase.CameraIn &&
+                phase != HomeShowerScenePhase.ApproachExit && phase != HomeShowerScenePhase.ApproachCloseCurtain)
+                return true;
+            if (previousWalkPhase != phase)
+            {
+                previousWalkPhase = phase;
+                walkingCornerPassed = false;
+            }
+            if (crossesCurtain && !walkingCornerPassed)
             {
                 HomeGuidedWalkStep corner = AdvanceGuidedWaypoint(
                     HomeShowerFraming.Waypoint,
@@ -1018,16 +1366,20 @@ namespace BarPromenade
 
                 if (corner == HomeGuidedWalkStep.Arrived)
                 {
-                    stepOutCornerPassed = true;
+                    walkingCornerPassed = true;
                 }
 
                 return true;
             }
 
-            HomeGuidedWalkStep step = AdvanceGuidedWalk(
-                HomeShowerFraming.Exit,
-                Quaternion.LookRotation(Vector3.back, Vector3.up),
-                deltaTime);
+            bool washDock = phase == HomeShowerScenePhase.CameraIn;
+            bool outside = phase == HomeShowerScenePhase.StepOut;
+            bool closing = phase == HomeShowerScenePhase.ApproachCloseCurtain;
+            Vector3 target = washDock ? HomeShowerFraming.Dock : outside ? HomeShowerFraming.ExitCameraDock
+                : closing ? HomeShowerCurtainPose.OutsideDock : HomeShowerCurtainPose.InsideDock;
+            Quaternion facing = outside ? HomeShowerFraming.ExitCameraFacing : washDock || closing
+                ? HomeShowerCurtainPose.OutsideFacing : HomeShowerCurtainPose.InsideFacing;
+            HomeGuidedWalkStep step = AdvanceGuidedWalk(target, facing, deltaTime);
             if (step == HomeGuidedWalkStep.Stalled)
             {
                 CancelScene();
@@ -1036,7 +1388,9 @@ namespace BarPromenade
 
             if (step == HomeGuidedWalkStep.Arrived)
             {
-                timeline.NotifyWalkArrived();
+                if (washDock) timeline.NotifyDockReached();
+                else if (outside) stepOutArrived = true;
+                else timeline.NotifyWalkArrived();
             }
 
             return true;
@@ -1045,7 +1399,23 @@ namespace BarPromenade
         private void ApplyPhaseEntries()
         {
             HomeShowerScenePhase phase = timeline.Phase;
-            if (timeline.IsInsideHead && lease == null && !redressed)
+            if (presentedGesture != HomeShowerScenePhase.Idle && presentedGesture != phase)
+            {
+                curtainPose.End();
+                presentedGesture = HomeShowerScenePhase.Idle;
+                ReleaseHandoff();
+            }
+            if (timeline.IsCurtainGesture && presentedGesture != phase)
+            {
+                AcquireHandoff();
+                if (!curtainPose.Begin(timeline.CurtainOpening, timeline.CurtainFromInside))
+                {
+                    CancelScene();
+                    return;
+                }
+                presentedGesture = phase;
+            }
+            if (timeline.IsInsideHead && timeline.PoseWeight >= 0.999f && lease == null && !redressed)
             {
                 TryUndress();
             }
@@ -1054,14 +1424,12 @@ namespace BarPromenade
             {
                 // Lock first: the lock writes the Idle neutral synchronously,
                 // and the capture must read that, not the last stride.
-                previousHandoff = Home.Player.Visual.InteractionHandoffLocked;
-                Home.Player.Visual.SetInteractionHandoffLocked(true);
-                ownsHandoff = true;
+                AcquireHandoff();
                 washPose?.Capture();
                 braceCaptured = true;
             }
 
-            if (phase >= HomeShowerScenePhase.Straighten && ownsHandoff)
+            if (phase >= HomeShowerScenePhase.Straighten && ownsHandoff && !timeline.IsCurtainGesture)
             {
                 // Released a phase early: the unlock lands after the next
                 // presentation LateUpdate, before he stands for the drips.
@@ -1076,10 +1444,13 @@ namespace BarPromenade
                 drips.BeginHold();
             }
 
-            if (phase >= HomeShowerScenePhase.StepOut && lease != null)
+            if (phase >= HomeShowerScenePhase.Straighten && !exitCameraCaptured)
             {
-                // Dressed for the walk out, with the lens still in his head.
-                Redress(true);
+                // Leave the camera behind as the naked hero straightens and
+                // walks away. Clothing is restored only after an offscreen frame.
+                exitCameraStartPosition = Home.CameraFollow.FixedBasePosition;
+                exitCameraStartRotation = Home.CameraFollow.FixedBaseRotation;
+                exitCameraCaptured = true;
             }
         }
 
@@ -1091,20 +1462,7 @@ namespace BarPromenade
             }
 
             bool inside = view != null && view.IsHeadHidden;
-            if (!inside &&
-                timeline.Phase == HomeShowerScenePhase.Approach &&
-                timeline.PhaseElapsed < HomeShowerSceneTimeline.UndressGuardSeconds)
-            {
-                return;
-            }
-
-            if (!inside)
-            {
-                GameLog.Warning(
-                    "home",
-                    "shower_undress_in_view",
-                    GameLog.Field("scene", gameObject.name));
-            }
+            if (!inside) return;
 
             lease = Player3DBathingAppearance.Apply(registry, true);
             washPose?.SetBridgesShown(true);
@@ -1136,20 +1494,31 @@ namespace BarPromenade
             float water = timeline.WaterAmount;
             Home.Soundscape?.SetShowerWaterAmount(water);
             waterEffect?.SetWater(water, timeline.SteamAmount);
+            waterEffect?.AdvanceTrayWater(deltaTime);
             int drops = timeline.IsDripping
                 ? this.drips.Advance(deltaTime, timeline.DripSteadyRate)
                 : 0;
             waterEffect?.EmitDrops(drops);
-            waterEffect?.EmitSplashes(this.drips.ConsumeLandings());
+            int landings = this.drips.ConsumeLandings();
+            waterEffect?.EmitSplashes(landings);
+            if (landings > 0)
+                Home.Soundscape?.PlayShowerDripLandings(landings,
+                    Home.transform.TransformPoint(HomeShowerFraming.BasinLanding));
             waterEffect?.SetDripping(
                 timeline.IsDripping &&
                 (this.drips.PendingLandings > 0 || !this.drips.IsDry));
-            timeline.ConsumeValveCue();
+            Transform workingHandle = timeline.WorkingValveIsCold ? coldHandle : hotHandle;
+            if (timeline.ConsumeValveCue() && workingHandle != null)
+                Home.Soundscape?.PlayBathroomValveTurn(Home.Audio, workingHandle.position,
+                    timeline.Phase == HomeShowerScenePhase.WaterOn);
             if (hotHandle != null)
             {
                 hotHandle.localRotation = hotHandleRest *
                     Quaternion.Euler(0f, ValveTurnDegrees * timeline.ValveTurn, 0f);
             }
+            if (coldHandle != null)
+                coldHandle.localRotation = coldHandleRest *
+                    Quaternion.Euler(0f, ValveTurnDegrees * timeline.ColdValveTurn, 0f);
         }
 
         protected override void OnScenePresentation(float deltaTime)
@@ -1160,27 +1529,90 @@ namespace BarPromenade
             }
 
             HomeShowerScenePhase phase = timeline.Phase;
+            if (timeline.IsCurtainGesture && presentedGesture == phase)
+            {
+                curtainPose.Apply(timeline.GestureNormalized);
+                Vector3 scale = curtain.localScale;
+                scale.x = Mathf.Lerp(ClosedCurtainScale, GatheredCurtainScale, curtainPose.OpeningAmount);
+                curtain.localScale = scale;
+                timeline.NotifyGestureFrameRendered();
+            }
             switch (phase)
             {
                 case HomeShowerScenePhase.Settle:
                     timeline.NotifySettleFrameRendered();
                     break;
+                case HomeShowerScenePhase.WaterOn:
                 case HomeShowerScenePhase.Wash:
                 case HomeShowerScenePhase.WaterOff:
                 case HomeShowerScenePhase.Straighten:
                     washPose.ApplyBrace(
                         timeline.PoseWeight,
                         timeline.ValveReach,
-                        timeline.SwayEnvelope,
-                        SceneElapsed);
+                        0f,
+                        SceneElapsed,
+                        timeline.ColdValveReach);
+                    float valveError = timeline.WorkingValveIsCold ? washPose.LeftPalmError : washPose.RightPalmError;
+                    float valveReach = timeline.WorkingValveIsCold ? timeline.ColdValveReach : timeline.ValveReach;
+                    if ((phase == HomeShowerScenePhase.WaterOn || phase == HomeShowerScenePhase.WaterOff) &&
+                        valveError < 0.04f && valveReach >= 0.999f)
+                        timeline.NotifyValveFrameRendered();
                     break;
             }
 
+            if (phase == HomeShowerScenePhase.Wash) PresentWashing(deltaTime);
             washPose.FollowBridges();
+            if ((phase == HomeShowerScenePhase.WaterOn || phase == HomeShowerScenePhase.Wash) &&
+                timeline.PoseWeight >= 0.999f)
+                liveEyeReached = true;
             bool lookAllowed =
-                phase >= HomeShowerScenePhase.Wash &&
-                phase <= HomeShowerScenePhase.DripHold;
-            view.Tick(deltaTime, timeline.CameraBlend, timeline.ViewPitchDegrees, lookAllowed);
+                phase >= HomeShowerScenePhase.WaterOn &&
+                phase <= HomeShowerScenePhase.WaterOff;
+            bool interactive = phase == HomeShowerScenePhase.Wash;
+            view.SetPointerMode(interactive && WashingPointerAvailable && !washingLookHeld);
+            float headBlend = timeline.IsInsideHead &&
+                (liveEyeReached || Vector3.Distance(TargetEyeWorld,
+                    registry.Anchors.Mouth.position + Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth) < 0.10f)
+                ? 1f : 0f;
+            if (exitCameraCaptured)
+            {
+                // Visibility follows the real separation, not the flight
+                // progress: the hero leaves the parked lens before it moves.
+                EvaluateExitEye(out Vector3 parkedEye, out _);
+                bool parked = phase < HomeShowerScenePhase.CameraOut;
+                headBlend = parked && Vector3.Distance(parkedEye,
+                    registry.Anchors.Mouth.position + Vector3.up * HomeShowerFirstPersonView.EyeHeightAboveMouth) < 0.10f
+                    ? 1f : 0f;
+            }
+            view.Tick(deltaTime, headBlend, timeline.ViewPitchDegrees,
+                lookAllowed && (!interactive || WashingPointerAvailable));
+            if (phase == HomeShowerScenePhase.StepOut && stepOutArrived)
+            {
+                // Let the ordinary 0.2 s gait blend finish with the toes
+                // pointing into the room before declaring the complete exit.
+                stepOutSettleElapsed += Mathf.Max(0f, deltaTime);
+                if (stepOutSettleElapsed >= StepOutSettleSeconds)
+                    timeline.NotifyWalkArrived();
+            }
+            if (phase == HomeShowerScenePhase.CameraOut && !outsideFrameRendered &&
+                IsHeroOutsideCamera())
+                outsideFrameRendered = true;
+            timeline.NotifyCameraFrameRendered();
+        }
+
+        private bool IsHeroOutsideCamera()
+        {
+            if (sceneCamera == null) return false;
+            GeometryUtility.CalculateFrustumPlanes(sceneCamera, exitFrustum);
+            bool foundVisibleModel = false;
+            foreach (Renderer renderer in exitVisibilityRenderers)
+            {
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy ||
+                    renderer.shadowCastingMode == ShadowCastingMode.ShadowsOnly) continue;
+                foundVisibleModel = true;
+                if (GeometryUtility.TestPlanesAABB(exitFrustum, renderer.bounds)) return false;
+            }
+            return foundVisibleModel;
         }
 
         protected override bool TryGetSceneCamera(out Vector3 position, out Quaternion rotation)
@@ -1192,19 +1624,55 @@ namespace BarPromenade
                 return false;
             }
 
-            view.EvaluateCamera(out position, out rotation);
+            if (exitCameraCaptured)
+                EvaluateExitEye(out position, out rotation);
+            else if (!liveEyeReached && futureEyeCaptured)
+            {
+                position = TargetEyeWorld;
+                rotation = Home.transform.rotation * Quaternion.Euler(HomeShowerSceneTimeline.WashPitchDegrees,
+                    HomeShowerFirstPersonView.InitialLookYawDegrees, 0f);
+            }
+            else view.EvaluateCamera(out position, out rotation);
+            return true;
+        }
+
+        private void EvaluateExitEye(out Vector3 position, out Quaternion rotation)
+        {
+            float amount = HomeShowerCameraPath.Ease(timeline.ExitViewBlend);
+            position = Vector3.Lerp(exitCameraStartPosition, TargetEyeWorld, amount);
+            Quaternion entryRotation = Home.transform.rotation * Quaternion.Euler(
+                HomeShowerSceneTimeline.WashPitchDegrees,
+                HomeShowerFirstPersonView.InitialLookYawDegrees, 0f);
+            rotation = Quaternion.Slerp(exitCameraStartRotation, entryRotation, amount);
+        }
+
+        protected override bool TryEvaluateCameraPath(float amount, Vector3 start, Quaternion startRotation,
+            Vector3 target, Quaternion targetRotation, out Vector3 position, out Quaternion rotation)
+        {
+            position = default;
+            rotation = default;
+            if (startedInside) return false;
+            Vector3 before = Home.transform.TransformPoint(HomeShowerCameraPath.BeforeCurtain);
+            Vector3 after = Home.transform.TransformPoint(HomeShowerCameraPath.AfterCurtain);
+            position = HomeShowerCameraPath.Evaluate(start, before, after, target, amount);
+            Quaternion throughCurtain = Home.transform.rotation;
+            rotation = amount <= HomeShowerCameraPath.CurtainApproachEnd
+                ? Quaternion.Slerp(startRotation, throughCurtain,
+                    HomeShowerCameraPath.Ease(amount / HomeShowerCameraPath.CurtainApproachEnd))
+                : Quaternion.Slerp(throughCurtain, targetRotation,
+                    HomeShowerCameraPath.Ease((amount - HomeShowerCameraPath.CurtainApproachEnd) /
+                        (1f - HomeShowerCameraPath.CurtainApproachEnd)));
             return true;
         }
 
         protected override bool OnRequestStop()
         {
-            return timeline.RequestFinish();
+            return RequestWashingStop();
         }
 
         protected override void OnSceneCommit()
         {
-            // An interrupted wash that never reached the minimum ends
-            // gracefully but relieves nothing.
+            // Early exit returns the soap and water but commits no washing benefit.
             if (!timeline.ReachedMinimumWash)
             {
                 return;
@@ -1221,14 +1689,27 @@ namespace BarPromenade
         /// </summary>
         protected override void OnSceneRestore()
         {
+            RestoreStep("soap", RestoreWashing);
             RestoreStep("water", () =>
             {
                 if (waterEffect != null) waterEffect.StopAndClear();
             });
-            RestoreStep("sound", () => Home?.Soundscape?.SetShowerWaterAmount(0f));
+            RestoreStep("sound", () =>
+            {
+                Home?.Soundscape?.SetShowerWaterAmount(0f);
+                Home?.Soundscape?.StopBathroomActionSounds();
+            });
+            RestoreStep("curtain", () =>
+            {
+                curtainPose?.End();
+                if (curtain != null) curtain.localScale = curtainRestScale;
+            });
             RestoreStep("handle", () =>
             {
-                if (hotHandle != null) hotHandle.localRotation = hotHandleRest;
+                if (hotHandle != null)
+                    hotHandle.localRotation = hotHandleRest * Quaternion.Euler(0f, ValveTurnDegrees, 0f);
+                if (coldHandle != null)
+                    coldHandle.localRotation = coldHandleRest * Quaternion.Euler(0f, ValveTurnDegrees, 0f);
             });
             timeline.Reset();
             drips.Reset();
@@ -1261,7 +1742,23 @@ namespace BarPromenade
             braceCaptured = false;
             holdBegun = false;
             redressed = false;
-            stepOutCornerPassed = false;
+            futureEyeCaptured = liveEyeReached = exitCameraCaptured = false;
+            outsideFrameRendered = false;
+            stepOutArrived = false;
+            stepOutSettleElapsed = 0f;
+            exitVisibilityRenderers = Array.Empty<Renderer>();
+            sceneCamera = null;
+            walkingCornerPassed = false;
+            presentedGesture = HomeShowerScenePhase.Idle;
+            previousWalkPhase = HomeShowerScenePhase.Idle;
+        }
+
+        private void AcquireHandoff()
+        {
+            if (ownsHandoff) return;
+            previousHandoff = Home.Player.Visual.InteractionHandoffLocked;
+            Home.Player.Visual.SetInteractionHandoffLocked(true);
+            ownsHandoff = true;
         }
 
         private void ReleaseHandoff()

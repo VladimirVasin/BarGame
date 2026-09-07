@@ -37,7 +37,7 @@ namespace BarPromenade
     {
         public const int SampleRate =
             HomeSoundscapeSynthesis.SampleRate;
-        public const int OwnedSourceCount = 6;
+        public const int OwnedSourceCount = 8;
         public const int RuntimeClipCount = 9;
 
         public const float RefrigeratorGain = 1.5848932f;
@@ -49,7 +49,7 @@ namespace BarPromenade
         public const float OpenRefrigeratorCutoff = 3850f;
         public const float BathroomLightCrackleVolume = 0.18f;
         public const float BathroomLightCrackleCutoff = 5200f;
-        public const float ShowerWaterVolume = 0.145f;
+        public const float ShowerWaterVolume = 0.29f;
         public const float ShowerWaterClosedCutoff = 1400f;
         public const float ShowerWaterOpenCutoff = 4600f;
 
@@ -67,6 +67,8 @@ namespace BarPromenade
         [SerializeField] private AudioSource rareCueSource;
         [SerializeField] private AudioSource bathroomLightCrackleSource;
         [SerializeField] private AudioSource showerWaterSource;
+        [SerializeField] private AudioSource bathroomValveSource;
+        [SerializeField] private AudioSource showerDripSource;
         [SerializeField] private AudioLowPassFilter refrigeratorFilter;
         [SerializeField]
         private AudioLowPassFilter openRefrigeratorFilter;
@@ -111,6 +113,11 @@ namespace BarPromenade
         public AudioSource BathroomLightCrackleSource =>
             bathroomLightCrackleSource;
         public AudioSource ShowerWaterSource => showerWaterSource;
+        public AudioSource BathroomValveSource => bathroomValveSource;
+        public AudioSource ShowerDripSource => showerDripSource;
+        public int ValveTurnPlayCount { get; private set; }
+        public bool LastValveOpening { get; private set; }
+        public int ShowerDripLandingCount { get; private set; }
         public AudioClip ClosedRefrigeratorClip => refrigeratorClip;
         public AudioClip OpenRefrigeratorClip =>
             openRefrigeratorClip;
@@ -167,6 +174,45 @@ namespace BarPromenade
             ApplyShowerWaterAudio();
         }
 
+        public void SetShowerWaterPosition(Vector3 worldPosition)
+        {
+            if (showerWaterSource != null)
+                showerWaterSource.transform.position = worldPosition;
+        }
+
+        /// <summary>One short metal turn, at the actual grip. The shared clip remains owned by RetroAudioService.</summary>
+        public bool PlayBathroomValveTurn(RetroAudioService audio, Vector3 worldPosition, bool opening)
+        {
+            if (!IsInitialized || !isActiveAndEnabled || AudioListener.pause || audio == null)
+                return false;
+            AudioClip clip = audio.GetClip(RetroSfxId.RefrigeratorHinge);
+            if (clip == null) return false;
+            bathroomValveSource.transform.position = worldPosition;
+            bathroomValveSource.clip = clip;
+            bathroomValveSource.pitch = opening ? 1.10f : 0.96f;
+            bathroomValveSource.Play();
+            ValveTurnPlayCount++;
+            LastValveOpening = opening;
+            return true;
+        }
+
+        /// <summary>Only actual falling-drop landings trigger the existing pipe/water detail.</summary>
+        public void PlayShowerDripLandings(int count, Vector3 worldPosition)
+        {
+            if (count <= 0 || !IsInitialized || !isActiveAndEnabled || AudioListener.pause)
+                return;
+            showerDripSource.transform.position = worldPosition;
+            showerDripSource.clip = bathroomDetailClip;
+            showerDripSource.PlayOneShot(bathroomDetailClip, Mathf.Min(1.5f, Mathf.Sqrt(count)));
+            ShowerDripLandingCount += count;
+        }
+
+        public void StopBathroomActionSounds()
+        {
+            bathroomValveSource?.Stop();
+            showerDripSource?.Stop();
+        }
+
         public void Initialize(
             int seed,
             HomeSoundscapeAnchors worldAnchors)
@@ -191,6 +237,8 @@ namespace BarPromenade
             LastPlayedCue = default;
             LastPlayedPosition = rareCueSource.transform.position;
             BathroomLightCracklePlayCount = 0;
+            ValveTurnPlayCount = ShowerDripLandingCount = 0;
+            LastValveOpening = false;
             secondsUntilNextCue =
                 HomeSoundscapeSchedule
                     .GetCue(deterministicSeed, cueSequence)
@@ -203,6 +251,7 @@ namespace BarPromenade
             rareCueSource.Stop();
             bathroomLightCrackleSource.Stop();
             showerWaterSource.Stop();
+            StopBathroomActionSounds();
             ApplyShowerWaterAudio();
             rareCueSource.clip = null;
             if (isActiveAndEnabled)
@@ -303,6 +352,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            StopBathroomActionSounds();
             refrigeratorSource?.Stop();
             openRefrigeratorSource?.Stop();
             showerWaterSource?.Stop();
@@ -320,6 +370,8 @@ namespace BarPromenade
             StopAndClear(rareCueSource);
             StopAndClear(bathroomLightCrackleSource);
             StopAndClear(showerWaterSource);
+            StopAndClear(bathroomValveSource);
+            StopAndClear(showerDripSource);
 
             DestroyRuntimeClip(ref refrigeratorClip);
             DestroyRuntimeClip(ref openRefrigeratorClip);
@@ -336,6 +388,8 @@ namespace BarPromenade
             DestroyOwnedSource(rareCueSource);
             DestroyOwnedSource(bathroomLightCrackleSource);
             DestroyOwnedSource(showerWaterSource);
+            DestroyOwnedSource(bathroomValveSource);
+            DestroyOwnedSource(showerDripSource);
 
             refrigeratorSource = null;
             openRefrigeratorSource = null;
@@ -343,6 +397,8 @@ namespace BarPromenade
             rareCueSource = null;
             bathroomLightCrackleSource = null;
             showerWaterSource = null;
+            bathroomValveSource = null;
+            showerDripSource = null;
             refrigeratorFilter = null;
             openRefrigeratorFilter = null;
             balconyFilter = null;
@@ -436,6 +492,11 @@ namespace BarPromenade
                     out showerWaterFilter);
             }
 
+            if (bathroomValveSource == null)
+                bathroomValveSource = CreateBathroomActionSource("Spatial Bathroom Valve", 0.19f, 3900f);
+            if (showerDripSource == null)
+                showerDripSource = CreateBathroomActionSource("Spatial Shower Drips", 0.14f, 5200f);
+
             ConfigureRefrigeratorSource();
             ConfigureOpenRefrigeratorSource();
             ConfigureBalconySource();
@@ -455,6 +516,16 @@ namespace BarPromenade
                 sourceObject.AddComponent<AudioSource>();
             filter =
                 sourceObject.AddComponent<AudioLowPassFilter>();
+            return source;
+        }
+
+        private AudioSource CreateBathroomActionSource(string objectName, float volume, float cutoff)
+        {
+            AudioSource source = CreateOwnedSource(objectName, out AudioLowPassFilter filter);
+            ConfigureSpatialSource(source, false, volume, 0.7f, 4f, 90, 0f);
+            filter.cutoffFrequency = cutoff;
+            filter.lowpassResonanceQ = 1f;
+            GameAudioMixer.Route(source, GameAudioGroup.SfxWorld);
             return source;
         }
 

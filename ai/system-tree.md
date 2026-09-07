@@ -85,8 +85,9 @@ Assets/
       CityRiverWater.shader      quantized animated river flow with night/rain response
       HomeOccluderDither.shader   Forward+ grouped cutaway with shadow/depth/normals
       HomeWindowGlass.shader      shared transparent Home window/door glass
+      HomeShowerTrayWater.shader  shared shallow shower water, ripples and flow to the authored drain
       StairwellCatGrin.shader     arc-length reveal of the Cheshire grin, shader teeth seams
-      Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale; Begotten soft/glow/print passes
+      Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale; Begotten passes
       BegottenFilm.hlsl           the stock of the Begotten print: hash, grain octaves, dust, hairs, scratches
     Audio/
       Mixers/
@@ -112,6 +113,7 @@ Assets/
     Player/
       Player3DV2.prefab                 production adult-proportion modular hero
       Player3DV2Portrait.png            live inventory portrait from production V2
+      HomeShowerCurtainActions.{fbx,json}  two bone-only in-place actions on the production skeleton; reversed for the matching exits
     Pedestrians/
       CityPedestrian3D.prefab           pooled Lampshade Walker presentation
       ChairCarrierPedestrian3D.prefab   pooled Chair Carrier presentation
@@ -639,7 +641,7 @@ Assets/
         HomeRefrigeratorItemView.cs  stable renderers, selection trigger and original root
         HomeAlarmClockPlan.cs       validated bed-relative nightstand/clock placement
         HomeAlarmClockBuilder.cs    low-poly nightstand and alarm-clock composition
-        HomeBathroomBuilder.cs   oriented toilet, shower/sink (curtain gathered at 0.40, never drawn) and pipe damage
+        HomeBathroomBuilder.cs   oriented toilet, shower/sink, closed entrance curtain and overlapping side run to the tile, pipe damage
         HomeBathroomMirrorOpeningBuilder.cs  the plate's footprint cut out of the wall and tile as eleven boxes with continuous UVs, plus the dirty glass; the plate becomes the plug
         HomeMirrorPlane.cs         the mirror plane, the opening layout and the seam-continuous _BaseMap_ST arithmetic
         HomeMirrorSubtreeClone.cs  renderer-only hand-walked copy of a built subtree, kept in step with its source
@@ -838,6 +840,7 @@ Assets/
         PlayerFactory.cs           shared prefab spawn in all nine gameplay roots
         PlayerAttention.cs         Silent Hill head: notice cone rules, target picker + magnets
         PlayerCameraFollow.cs      bounded yaw/pitch chase, fixed pose + shared mouse/stick/arrow orbit sampling
+        FixedCameraZoom.cs         re-lenses a held fixed pose so the hero keeps one share of the frame
         PlayerContactShadow.cs     slope-aligned planted/fall-aware analytic ground patch
         PlayerNeedsProgressionState.cs  fractional clock-driven hunger/fatigue
         PlayerNeedsRules.cs        shared 0-100 need bounds + hunger/stress relief
@@ -901,11 +904,18 @@ Assets/
         HomeBrushingFirstPersonView.cs  eye camera, practical tap/basin gaze and owner-scoped real-head visibility
         HomeBathroomSceneInteraction.cs  shared bathroom scene: modal, guided approach, camera, opt-in backward exit and stop prompt
         HomeBathroomMirrorWorld.cs     bathroom/hero twin plus registered mesh props; order 320, pinned Bathroom includes owned brushing
-        HomeShowerInteraction.cs       first-person naked shower scene + ten-phase timeline (fly-in, approach, wash, tap, still drips, walk out) + stream/steam/drip/splash effect
-        HomeShowerFirstPersonView.cs   the lens in the hero's head: mouth anchor + eye offset, scene base pitch, clamped look, head off while inside
+        HomeShowerInteraction.cs       hero exits, offscreen redress, reversed camera return and outside curtain close; wash/tap/water
+        HomeShowerCameraPath.cs        eased entry to the predicted eye and the same path reversed after the hero exits
+        HomeShowerWashingInteraction.cs  E soap pickup, held-button repeated strokes at selected skin, mouse/gamepad routing and completion-only relief
+        HomeShowerWashingModel.cs       one shared 10-second active-contact gauge; body region IDs carry no quotas
+        HomeShowerSoapPose.cs          right-hand soap grip/contact, body picking excluding the right arm, bounded travel and shared mesh clearance
+        HomeShowerSoapAffordance.cs    shared soap/Q-exit outlines and connected labels, body pointer and contact foam
+        HomeShowerCurtainPose.cs       deterministic authored-clip sampling and pelvis alignment; hand contact with the moving curtain hem
+        HomeShowerFirstPersonView.cs   exact eye lens, arrow look alongside the pointer, held mouse/stick look, absolute pitch limits
         HomeShowerDripModel.cs         the shut tap's drops: rate patter, then a four-drop geometric run inside the 3 s hold, landings a fall later
+        HomeShowerTrayWater.cs         water-effect partial: shared authored sheet, 0..1 cm accumulation and flow to the corner drain
         HomeShowerFraming.cs           the stall's authored points (opening, dock, palms, nozzle, basin, tap) and the inside-the-stall test
-        HomeShowerWashPose.cs          two-palm tile brace, head bow, valve reach, the bridge pieces and the resting anatomy, solved after the presentation
+        HomeShowerWashPose.cs          both-palm tile brace, neutral-pivot eye prediction, valve reach and passive soap-contact anatomy response
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
         MothersHouse{Entrance,Exit}.cs existing village leaf -> room -> one-shot safe return
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
@@ -929,7 +939,7 @@ Assets/
         HomeApartmentDayController.cs  exact day groups; defer midnight changes while Home is busy
         HomeAlarmClock.cs              session-following 28-segment time, ring and rattle
         HomeDayNightController.cs      window and balcony time-of-day lighting
-        HomeSoundscape*.cs               louder fridge hum, lamp crackle + domestic cues
+        HomeSoundscape*.cs               fridge hum, lamp crackle, water loop + causal valve/drop voices
         StairwellSoundscape*.cs          uneasy spatial beds and industrial cues
         HomeFixedCameraController.cs  three fixed shots + activation/hold hysteresis
         HomeBalconyExteriorAtmosphere.cs  Balcony-only City fog/lights + pedestrian/smoker gate
@@ -986,6 +996,7 @@ Assets/
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
         HomeToiletGaugeView.cs       right-edge local remaining-volume gauge
         HomeBrushingGaugeView.cs     manual brush-contact progress in the existing HUD frame language
+        HomeShowerGaugeView.cs       shared soap-contact progress on the existing bathroom gauge track
         CounterMenuHintView.cs       shared compact W/S + Space world-menu hint/status
         MountainRoadCafeMenuHintView.cs cafe localization adapter for the shared hint
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
@@ -1177,6 +1188,7 @@ ArtSource/
   Pedestrians/
     Blender/                    production/staged model sources, previews, animation contact sheets + the hand-prop library .blend/contact sheet
   Player/
+    Blender/                    HomeShowerCurtainActions.blend and authored reach/pull previews
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
     BedSleep/                    retired player-sprite source history
     BalconySmoking/              retired player-sprite source history
@@ -1284,6 +1296,7 @@ tools/
   build-home-toilet-action-3d-model.py  eleven toilet models + hollow opening and FBX round-trip validator
   build-home-brushing-action-3d-model.py  sink/faucet/brush/foam models + cavity rays and FBX round-trip validator
   build-home-shower-action-3d-model.py  shoulder yoke + two deltoid caps sized from the hero generator, outward-face and FBX round-trip validators
+  build-home-shower-curtain-actions.py  two production-rig curtain actions with neutral endpoints and measured contact; standalone animation bank
 Packages/
 ProjectSettings/
 ```

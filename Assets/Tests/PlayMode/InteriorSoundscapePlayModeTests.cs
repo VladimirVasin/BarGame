@@ -137,7 +137,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         public IEnumerator
-            Home_UsesSixSpatialSourcesAndDeterministicCues()
+            Home_UsesEightSpatialSourcesAndDeterministicCues()
         {
             var root = new GameObject("Home Soundscape Test");
             root.AddComponent<AudioListener>();
@@ -155,7 +155,7 @@ namespace BarPromenade.Tests.PlayMode
                     HomeSoundscape.OwnedSourceCount));
             Assert.That(
                 HomeSoundscape.OwnedSourceCount,
-                Is.EqualTo(6));
+                Is.EqualTo(8));
             AudioSource[] sources =
             {
                 soundscape.ClosedRefrigeratorSource,
@@ -171,6 +171,11 @@ namespace BarPromenade.Tests.PlayMode
             AssertSourceConfiguration(sources[3], false);
             AssertSourceConfiguration(sources[4], false);
             AssertSourceConfiguration(sources[5], true);
+            foreach (AudioSource actionSource in new[] { soundscape.BathroomValveSource, soundscape.ShowerDripSource })
+            {
+                AssertSourceConfiguration(actionSource, false);
+                Assert.That(actionSource.outputAudioMixerGroup, Is.SameAs(GameAudioMixer.SfxWorldGroup));
+            }
             Assert.That(
                 soundscape.RefrigeratorSource,
                 Is.SameAs(soundscape.ClosedRefrigeratorSource));

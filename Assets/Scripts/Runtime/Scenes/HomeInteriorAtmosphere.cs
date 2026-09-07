@@ -32,9 +32,9 @@ namespace BarPromenade
         internal static readonly Vector3 MainLightPosition =
             new Vector3(-2.35f, 2.00f, 0.45f);
         internal static readonly Vector3 BathroomEmitterPosition =
-            new Vector3(3.15f, 2.16f, 3.755f);
+            new Vector3(3.15f, 2.50f, 3.755f);
         internal static readonly Vector3 BathroomLightPosition =
-            new Vector3(3.15f, 2.04f, 3.38f);
+            new Vector3(3.15f, 2.38f, 3.38f);
         internal static readonly Vector3 WindowLightPosition =
             new Vector3(
                 PlayerHomeBalconyGeometry.HomeFacadeX + 1.35f,

@@ -100,7 +100,7 @@ namespace BarPromenade.Tests.EditMode
                 first.BathroomLight);
             Assert.That(
                 first.BathroomLight,
-                Is.EqualTo(new Vector3(3.15f, 2.16f, 3.755f)),
+                Is.EqualTo(new Vector3(3.15f, 2.50f, 3.755f)),
                 "The crackle must originate at the visible bathroom tube.");
             AssertPointInside(
                 balcony.BalconyBounds,

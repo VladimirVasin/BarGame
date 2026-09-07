@@ -17,9 +17,9 @@ namespace BarPromenade
     /// dock (no teleports), the Bézier camera push from the pinned
     /// bathroom shot with the shared drift, the debounced stop input
     /// and the idempotent restore. Scenes supply their dock, camera
-    /// pose, timeline advancement and commit. The full-body clip set
-    /// is closed, so these scenes pose the hero procedurally — the
-    /// recorded exceptions live in ai/architecture-notes.md.
+    /// pose, timeline advancement and commit. Authored action banks use
+    /// the shared hero sampler; scoped procedural bathroom poses retain
+    /// their recorded exceptions in ai/architecture-notes.md.
     ///
     /// Two opt-in seams let a scene lead with its camera: the push may
     /// run while the hero is still walking in
@@ -77,6 +77,15 @@ namespace BarPromenade
         protected abstract Vector3 CameraLocalPosition { get; }
         protected abstract Vector3 CameraLocalLookAt { get; }
         protected abstract float CameraFieldOfView { get; }
+        protected virtual float CameraPathControlLift => 0.22f;
+        /// <summary>An authored corridor may replace the default curve within the same camera lease.</summary>
+        protected virtual bool TryEvaluateCameraPath(float amount, Vector3 start, Quaternion startRotation,
+            Vector3 target, Quaternion targetRotation, out Vector3 position, out Quaternion rotation)
+        {
+            position = default;
+            rotation = default;
+            return false;
+        }
         protected abstract float CameraBlend { get; }
         protected abstract float CameraDriftWeight { get; }
         protected abstract bool SceneCompleted { get; }
@@ -85,6 +94,15 @@ namespace BarPromenade
         // Optional presentation hooks keep moving first-person targets on
         // the same approach, modal ownership and cleanup path as fixed shots.
         protected virtual bool PrepareScene() => true;
+
+        /// <summary>Selects a grounded entry before modal capture; movement still belongs to the shared motor.</summary>
+        protected void SetEntryPose(Vector3 position, Quaternion rotation)
+        {
+            if (OwnsScene)
+                throw new InvalidOperationException("An active bathroom entry cannot be replaced.");
+            DockPosition = position;
+            DockRotation = rotation;
+        }
         protected virtual void OnSceneCaptured() { }
         protected virtual void OnScenePresentation(float deltaTime) { }
         protected virtual bool TryGetSceneCamera(out Vector3 position,
@@ -133,6 +151,9 @@ namespace BarPromenade
         /// </summary>
         protected abstract bool OnRequestStop();
 
+        /// <summary>A nested action may consume the contextual key before it requests exit.</summary>
+        protected virtual bool TryHandleSceneAction() => false;
+
         protected abstract void OnSceneCommit();
         protected abstract void OnSceneRestore();
 
@@ -177,7 +198,7 @@ namespace BarPromenade
         {
             if (OwnsScene)
             {
-                RequestStop();
+                RequestSceneAction();
                 return;
             }
 
@@ -191,7 +212,14 @@ namespace BarPromenade
 
         public void RequestStop()
         {
-            if (!SceneRunning || StopQueued || !exitInputArmed)
+            if (!exitInputArmed) return;
+            RequestStopFromSceneInput();
+        }
+
+        /// <summary>A distinct, edge-triggered scene control does not inherit the E-release debounce.</summary>
+        protected void RequestStopFromSceneInput()
+        {
+            if (!SceneRunning || StopQueued)
             {
                 return;
             }
@@ -202,6 +230,21 @@ namespace BarPromenade
             }
 
             StopQueued = true;
+            ApplyStopPrompt();
+        }
+
+        public void RequestSceneAction()
+        {
+            if (!SceneRunning || StopQueued || !exitInputArmed) return;
+            if (!TryHandleSceneAction())
+            {
+                RequestStop();
+                return;
+            }
+            // The E press that picks up an item cannot turn into an exit
+            // on its next held frame. Require release and the usual debounce.
+            exitInputArmed = false;
+            exitInputArmTime = Time.unscaledTime + ExitInputDebounceSeconds;
             ApplyStopPrompt();
         }
 
@@ -269,7 +312,7 @@ namespace BarPromenade
             OnSceneCaptured();
         }
 
-        private void CaptureCameraPath()
+        protected void CaptureCameraPath()
         {
             PlayerCameraFollow cameraFollow = Home.CameraFollow;
             cameraStartPosition = cameraFollow.FixedBasePosition;
@@ -295,7 +338,7 @@ namespace BarPromenade
                     cameraStartPosition,
                     cameraTargetPosition,
                     0.52f) +
-                Home.transform.up * 0.22f +
+                Home.transform.up * CameraPathControlLift +
                 cameraStartRotation * Vector3.right * 0.06f;
             cameraPathCaptured = true;
         }
@@ -392,7 +435,7 @@ namespace BarPromenade
             UpdateExitInputArm();
             if (exitInputArmed && IsStopHeld())
             {
-                RequestStop();
+                RequestSceneAction();
             }
 
             OnSceneAdvance(deltaTime);
@@ -588,6 +631,12 @@ namespace BarPromenade
                 cameraStartRotation,
                 cameraTargetRotation,
                 amount);
+            if (TryEvaluateCameraPath(amount, cameraStartPosition, cameraStartRotation,
+                    cameraTargetPosition, cameraTargetRotation, out Vector3 corridorPosition, out Quaternion corridorRotation))
+            {
+                basePosition = corridorPosition;
+                baseRotation = corridorRotation;
+            }
             HomeBalconySmokingCameraDriftSample drift =
                 HomeBalconySmokingCameraDrift.Evaluate(
                     SceneElapsed,

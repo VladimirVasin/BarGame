@@ -49,3 +49,17 @@ process, without generating art or compiling native code:
 ```powershell
 python tools/test_asset_pipeline.py
 ```
+
+The shower's independent bone-only action bank uses the production hero rig:
+
+```powershell
+python tools/run-blender.py tools/build-home-shower-curtain-actions.py --expect Assets/Resources/Player/HomeShowerCurtainActions.fbx --expect Assets/Resources/Player/HomeShowerCurtainActions.json -- --preview
+python tools/run-blender.py tools/build-home-shower-curtain-actions.py --validate-only -- --validate-only
+```
+
+Keep Unity closed while publishing the bank. Its generator checks neutral
+entry/exit, fixed pelvis/feet, moving grip contact and both arms against the
+evaluated body meshes throughout each action at 60 Hz. The second command
+rebuilds and compares the manifest without publishing. Unity's
+`Bar Promenade/Player 3D/Validate Shower Curtain Actions` additionally checks
+the imported clips against the production Idle pose and world grip targets.

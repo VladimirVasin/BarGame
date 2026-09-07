@@ -25,8 +25,30 @@ namespace BarPromenade
             UpperFloorElevation / StairStepCount;
         public const float StairStepDepth = 0.25f;
         public const float StairWidth = 1.3f;
-        public const float CameraVerticalFieldOfView = 60f;
+        public const float CameraVerticalFieldOfView = 36f;
         public const float UpperCameraVerticalFieldOfView = 58f;
+
+        /// <summary>
+        /// How far the ground-floor shot may turn to keep the hero framed.
+        /// The tighter lens can no longer hold the whole room from the
+        /// corner it stands in, so the shot follows him by the least angle
+        /// that brings him back and stops there; it is still at rest for
+        /// everything in the middle of the room.
+        /// </summary>
+        public const float MainRoomFocusYawDegrees = 30f;
+        public const float MainRoomFocusPitchDegrees = 15f;
+
+        /// <summary>
+        /// How large the hero is kept in the ground-floor shot. The room
+        /// is deep enough that the far corner is nine metres from the lens
+        /// and the near one two and a half, so one authored lens makes him
+        /// either a doll by the stair or a coat across the picture. The
+        /// shot re-lenses onto him instead, between limits the room's own
+        /// composition can live with.
+        /// </summary>
+        public const float MainRoomHeroFrameFraction = 0.45f;
+        public const float MainRoomMinimumFieldOfView = 26f;
+        public const float MainRoomMaximumFieldOfView = 50f;
         public const string ModelResourcePath =
             "MothersHouse/MothersHouseInterior3D";
 
@@ -47,9 +69,9 @@ namespace BarPromenade
         public static readonly Vector3 ExitAnchorPosition =
             new Vector3(0f, 0f, -3.15f);
         public static readonly Vector3 CameraPosition =
-            new Vector3(5.8f, 2.75f, -2.8f);
+            new Vector3(4.6f, 2.6f, -3.4f);
         public static readonly Vector3 CameraTarget =
-            new Vector3(-0.2f, 0.8f, 1f);
+            new Vector3(0f, 1.05f, 0.6f);
         public static readonly Vector3 StairCameraPosition =
             new Vector3(-5.9f, 5.1f, 2.65f);
         public static readonly Vector3 StairCameraTarget =
@@ -331,7 +353,16 @@ namespace BarPromenade
                     new Vector2(-0.1f, 1.72f),
                     CameraPosition,
                     CameraTarget,
-                    CameraVerticalFieldOfView),
+                    CameraVerticalFieldOfView)
+                    .WithFocus(
+                        FixedCameraFocus.Bounded(
+                            MainRoomFocusYawDegrees,
+                            MainRoomFocusPitchDegrees))
+                    .WithZoom(
+                        FixedCameraZoom.Bounded(
+                            MainRoomHeroFrameFraction,
+                            MainRoomMinimumFieldOfView,
+                            MainRoomMaximumFieldOfView)),
                 CreateShot(
                     HomeCameraShotKind.StairAndUpperCorridor,
                     stairAndCorridorBounds,

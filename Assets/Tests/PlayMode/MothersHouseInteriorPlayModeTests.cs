@@ -906,6 +906,26 @@ namespace BarPromenade.Tests.PlayMode
                 interior.FixedCamera.ActiveShot.FieldOfView,
                 Is.EqualTo(shot.FieldOfView).Within(0.001f));
             Assert.That(interior.CameraFollow.FixedPoseActive, Is.True);
+
+            // The shot re-lenses onto the hero, so the LIVE lens is the one
+            // his distance asks for - the authored value is only where the
+            // zoom starts from.
+            Assert.That(shot.Zoom.Enabled, Is.True);
+            float expectedLens = shot.Zoom.Resolve(
+                shot.Position,
+                shot.Rotation,
+                shot.FieldOfView,
+                interior.Player.GameObject.transform.position);
+            Assert.That(
+                interior.CameraFollow.FixedBaseFieldOfView,
+                Is.EqualTo(expectedLens).Within(0.25f),
+                "The ground shot did not take the lens the hero's " +
+                "distance asks for.");
+            Assert.That(
+                interior.CameraFollow.FixedBaseFieldOfView,
+                Is.InRange(
+                    shot.Zoom.MinimumFieldOfView - 0.001f,
+                    shot.Zoom.MaximumFieldOfView + 0.001f));
             AssertVectorApproximately(
                 interior.CameraFollow.FixedBasePosition,
                 shot.Position,
@@ -916,9 +936,6 @@ namespace BarPromenade.Tests.PlayMode
                     interior.CameraFollow.FixedBaseRotation,
                     shot.Rotation),
                 Is.LessThan(0.01f));
-            Assert.That(
-                interior.CameraFollow.FixedBaseFieldOfView,
-                Is.EqualTo(shot.FieldOfView).Within(0.001f));
 
             MothersHouseInteriorAtmosphere atmosphere = interior.Atmosphere;
             Assert.That(atmosphere.FireLight, Is.Not.Null);

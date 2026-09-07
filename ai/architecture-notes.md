@@ -146,7 +146,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The user's explicit follow-up rejects the sparse four-window facade and
   restores an architectural rhythm with matching interior openings. Current
   `Village3D` generator `3.4.1` contains `25` assemblies, `58` meshes and
-  `14,650 / 16,000` triangles; `MothersHouseInterior3D` generator `1.6.0`
+  `14,650 / 16,000` triangles; `MothersHouseInterior3D` generator `1.7.0`
   contains `127` meshes and `15,796` triangles. `TopHouse` shares exactly
   `16` real openings with the interior: eight per floor and four per facade.
   `ArtSource/MothersHouse/WindowLayout.json` is the single authored table;
@@ -945,6 +945,41 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   southeast side, target `(-0.2, 0.8, 1.0)`, `60°` vertical FOV and required
   fireplace/windows/table/rocker/sofa composition remain unchanged. The finer
   floor planks alter surface scale only and add no world or story fact.
+- **Accepted architecture exception — 2026-09-07, explicit user request — the
+  mother's-house ground-floor shot is a close shot ON THE HERO:** The user's
+  words: «сейчас план наружный, камера должна быть более сфокусирована на
+  главном герое». This supersedes the anchor `(5.8, 2.75, -2.8)`, the target
+  and the `60°` lens of the `2026-09-01` clause above, and art-bible §10g's
+  «широкий диагональный ракурс» wording. The shot keeps the southeast
+  diagonal but MOVES INSIDE the room to `(4.6, 2.6, -3.4)`, aimed at
+  `(0, 1.05, 0.6)` — chest height at the middle of the room — with an
+  authored `36°` lens. It gains two rules, both bounded:
+  `FixedCameraFocus` `30°/15°` turns it onto the hero when he reaches the
+  edge of the picture, and a new `FixedCameraZoom` re-lenses between `26°`
+  and `50°` so he stays about `45%` of the frame's height wherever he
+  stands. Measured over the walkable floor: he is fully framed on `93%` of
+  it and his median height went from `21%` of the picture to `45%`.
+  **Two things were measured and rejected before this.** A camera that
+  TRACKS him at a fixed offset — his own words for what he wanted — does not
+  fit: the shot must stand `4.8 m` southeast of him, which puts it outside
+  the south and east walls for most of the room, and out there the floor
+  ends. The skirting the cutaway leaves behind rises over him (his feet sit
+  at `-0.49` of frame height, the skirt's top edge at `+0.10`), and hiding
+  the skirting too replaces him with a cut edge across the middle of the
+  picture. And the shot could not stay OUTSIDE the east wall as it always
+  had: `MothersHouseWindowCutaway` hides that wall's upper half for it, so
+  the moment the focus panned it north its right edge swung past the hidden
+  wall and a THIRD of the frame was the empty outside
+  (`Captures/MothersHouseInterior/04-pan-north-*` is that frame). From
+  inside the room every ray ends on a wall, which is what makes a `30°` pan
+  safe. The composition the room still owes — hearth, both north windows,
+  table, rocker, sofa, stair foot — is all still in the resting frame; only
+  the east window is clipped at its far corner. The plan's validator refuses
+  a ground shot without both the focus and the zoom. No fixture, light,
+  anchor or upper-storey shot moves; `ANCHOR_Camera` and
+  `ANCHOR_CameraTarget` follow the shot in the Blender model (generator
+  `1.8.0`), because the world builder validates the plan against them.
+
 - **Accepted architecture exception — 2026-09-01, explicit user request — the
   mother's house gains a traversable upper storey:** This supersedes only art-
   bible §10g's one-useful-room and single-fixed-camera wording. The existing
@@ -5421,26 +5456,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   owns `CameraToEyes → OpenFaucet → RaiseBrush → Brushing → ShowTeeth → Spit →
   CloseFaucet → CameraReturn`; verification is recorded in the work log.
 - **Accepted architecture exception — 2026-09-06, explicit user request —
-  first-person naked shower wash:** The user asked for the shower to be
-  re-staged twice in one morning: first with the camera pushing to the stall
-  while the hero entered naked from below the frame, then — rejected on
-  sight, because the walk in was visible and the flat-tinted body read as a
-  mannequin — from the hero's own eyes with a real bare-skin texture. The
-  accepted form: the camera flies into his head the moment `E` is pressed;
-  his clothes come off only once the lens is inside; he walks into the stall
-  through the opening beside the gathered curtain, braces on the tile with
-  his head under the water, shuts the tap on the second `E`, stands still
-  for three seconds of dying drips, walks out to the opening, dresses with
-  the lens still inside, and the camera returns. This replaces bathroom
-  exception (a). What is lifted, narrowly: the contextual-animation
-  standard's authoring rule 3 in the part that preserves the right-shoulder
-  patch — the patch is jacket-atlas pixels and goes with the jacket for the
-  duration of the wash; nothing else. What is recorded:
+  first-person naked shower wash:** This replaces bathroom exception (a)
+  with a wash seen from the production hero's own eyes and a real bare-skin
+  texture. The entry/exit staging is revised by the accepted `2026-09-07`
+  decision below. Clothes come off only while the lens is inside his head;
+  the latest explicit exit exception below restores them only after the
+  entire hero has left a rendered camera frame. The existing procedural tile brace, head bow and tap reach keep
+  their scoped bathroom exception; the new curtain actions do not extend it.
+  The additional narrow exception to the contextual-animation standard's
+  authoring rule 3 allows the right-shoulder patch to disappear: the patch
+  is jacket-atlas pixels and goes with the jacket for the
+  duration of the wash. What is recorded:
   `HomeBathroomSceneInteraction`'s three opt-in seams (`CameraLeadsApproach`
   + `OnApproachAdvance`, `TryGetApproachWaypoint`, `protected` guided legs
   reporting `Walking/Arrived/Stalled`) and the per-change stop-prompt
-  refresh stay as introduced; the shower's dock is the stall dock and the
-  waypoint seam routes a hero outside the stall through the opening. The
+  refresh stay as introduced; grounded guided legs carry the hero through
+  the curtain's opening and between its action docks and the wash dock. The
   costume is an owner-scoped lease (`Player3DBathingAppearance`): the four
   `clothing` renderers off, the shirt torso and the jeans-atlas
   pelvis/thighs/shins/feet switched to the hero's own borrowed skin material
@@ -5456,31 +5487,293 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   sample equals the flat `_BaseColor` number the hands and arms wear.
   Three Blender bridge pieces close the nape and shoulder
   gaps, and the toilet's authored anatomy hangs at rest from the measured
-  bare pelvis; all are placed from bone positions each frame and shown only
-  while the lease is out. The lease is taken and released only while the
-  lens is inside the head (`HomeShowerSceneTimeline.IsInsideHead`, the head
-  geometry hidden by `Player3DHeadVisibility`); `shower_undress_in_view` /
+  bare pelvis. A further user correction rotates only the shower's two
+  scrotum lobes down by `30°` around their unchanged attachments; their
+  authored forward reach falls from `82 mm` to `47.514/49.514 mm`, removing
+  the coat clearance needed by the toilet pose. The shared meshes, shaft
+  rest pitch and toilet constants remain unchanged; the bounded contact
+  springs and mesh sweep guard act around the same fixed roots.
+  All are placed from bone positions each frame and shown only
+  while the lease is out. The lease is taken while the rendered lens is
+  inside the head and released after the entire visible model leaves the
+  exit frame. `Player3DHeadVisibility` follows actual head/lens separation after
+  camera detachment, not merely the timeline phase; `shower_undress_in_view` /
   `shower_redress_in_view` warn if that ever fails.
   `HomeShowerFirstPersonView` is the lens: the mouth anchor plus `0.068 m`,
-  the actor's yaw with the scene's base pitch (`6°` on the walks, `38°` — the
-  pose's neck + head — under the water, `55°` down at the tray and his feet for the drips) and a clamped
-  look (`±75°`, `−45..55°`) that never turns the body. The wash pose
+  the actor's yaw with the scene's wash base pitch (`38°` — the pose's
+  neck + head) and a clamped
+  look (`±75°` yaw, absolute pitch `−75°…115°`) that never turns the body.
+  The bent head sits ahead of the chest, so the downward limit passes
+  vertical far enough to leave room for a visible washing stroke there.
+  Arrow keys turn the view at `90°/s` while the soap pointer remains active;
+  mouse/right-stick motion belongs to the held RMB/LT look mode. The wash pose
   (`HomeShowerWashPose`) is unchanged in kind: Idle neutral captured under
   the handoff lock, spine/chest/neck/head pitched about the actor's world
-  right axis, both palms through `LimbTwoBoneIk`, the right hand blending to
-  the hot cross handle (which turns 90°). `HomeShowerSceneTimeline` is
-  `CameraIn 0.9 s` → `Approach` (open; a dock reached during the fly-in is
-  remembered) → `Settle` (one rendered neutral frame) → `Wash` (reward from
-  `6 s`, automatic at `12 s`) → `WaterOff 0.9 s` → `Straighten 0.6 s` (drift
-  to exactly `0`) → `DripHold 3.0 s` (still; the drip model's own schedule)
-  → `StepOut` → `CameraOut 1.4 s`, the hitch carried across every fixed
-  boundary. The curtain never moves (gathered at `0.40`). Not lifted: no
-  second hero model, prefab or material; no new full-body clips; no teleport
-  or fade; exact restoration of every renderer state on completion and on
-  every cancel path (effects first, rig last, each step guarded — the view,
-  the head and the cursor included); the `"shower"` relief literal that
-  clears `HeroMouthSoiled`; and the story bible's mirror test — the lens is
-  his own eyes and never sees his face.
+  right axis, both palms on the tile in their default brace
+  through `LimbTwoBoneIk`, the right hand blending to
+  the hot cross handle (which turns 90°). The core wash is now `Settle`
+  (one rendered neutral frame) → `WaterOn 3.6 s` (pose, then separate
+  reach/turn/release of hot and cold wheels) → `Wash` (open, owned by the accepted
+  interactive soap action below) → `WaterOff 2.9 s` (cold then hot) → `Straighten 0.6 s`
+  → `DripHold 3.0 s` (still; the drip model's own schedule) → `ApproachExit`
+  → `OpenExitCurtain` → `StepOut` → `CameraOut 4.0 s`
+  → `ApproachCloseCurtain` → `CloseExitCurtain`
+  → `Completed`. Fixed phases
+  carry hitch overshoot, while physical arrival and rendered endpoints stay
+  explicit gates. Owned cleanup restores every renderer, camera, head and
+  cursor state; completed shower relief clears `HeroMouthSoiled`. There is
+  one hero model and no teleport or visibility fade. The story bible's mirror
+  test still excludes a held view of his face or a separate reflection shot.
+- **Accepted architecture exception — 2026-09-07, explicit user-approved
+  shower staging correction:** This supersedes the art bible's former
+  immediate eye-level entry and stationary curtain. The hero first visibly
+  opens the entrance curtain opposite the tap wall, walks into the stall and
+  closes it behind him. A later explicit correction on the same day sends
+  the lens ahead: it flies from `E`, crosses the opening curtain and occupies
+  the future eye position before the hero enters and leans into place.
+  `HomeShowerCameraPath` owns the bounded approach, curtain crossing and
+  final arrival through two points immediately outside/inside the opening.
+  The next user correction softens the flight's pacing: after the curtain
+  opens, one eased cubic arc reaches the eyes without an intermediate stop
+  inside the stall. Position and rotation ease in and out together; the
+  start on `E` and arrival before the hero are preserved.
+  `HomeShowerWashPose.Capture` records the neutral pivots; `TryPredictEyeLocal`
+  rotates copies of those positions mathematically to predict the grounded
+  full-brace eye. It never poses, relocates or hides the actual actor to
+  obtain that endpoint. The lens waits there, and after the real full pose
+  arrives it follows the eye exactly; this scene's camera drift is zero.
+  He undresses only when his actual head encloses the lens and begins the
+  existing interactive wash. At the start of Straighten, the camera
+  captures the last wash position/rotation and detaches from
+  the rig. Over `Straighten 0.6 s + DripHold 3.0 s`, its position and last
+  look ease back to the fixed entry eye endpoint and entry-facing rotation.
+  The lens then stays parked while the hero approaches the curtain, opens
+  it from inside and walks out. It never rotates to track that movement.
+
+  The explicit follow-up on `2026-09-07` narrowly supersedes the former
+  inside-head redressing rule: the hero remains undressed through
+  Straighten, DripHold, ApproachExit, OpenExitCurtain and StepOut. StepOut
+  ends at the unchanged `ExitCameraDock=(4.20, 0, 2.18)`, facing `180°`
+  toward the room so the toes point away from the curtain. After physical
+  arrival, StepOut waits `0.25 s` of rendered gait settling, covering the
+  existing `0.2 s` walking-pose fade. The verified rendered foot reaches
+  `z=2.31132`, leaving `72.68 mm` to the entrance plane at `z=2.384`.
+  CameraOut holds elapsed time `0` and blend `1` until an actual rendered
+  frame has every enabled actor renderer outside the view frustum, tested
+  against its six planes.
+  Cached renderer bounds and plane storage avoid mesh baking and per-frame
+  allocation. On the next Update, the owner restores clothes out of frame
+  and calls `NotifyExitAppearanceReady`. This is an accepted presentation
+  exception for costume restoration, not a fade, teleport or hidden rig swap.
+
+  Only after that rendered offscreen gate does CameraOut traverse the original
+  `HomeShowerCameraPath.Evaluate` backwards: `2.2 s` inside plus `1.8 s`
+  outside, reusing the captured entry position, rotation and field of view.
+  There is no separate upper arc or 180-degree follow turn. The outside
+  closing approach waits for the actual default camera frame to render;
+  `ApproachCloseCurtain` turns the hero in place to OutsideFacing at the
+  original dock, preserving the authored clip's grip and existing Blender
+  asset. The camera does not follow that turn. Input remains locked
+  through the terminal closing frame. Completion
+  adds no actor turnaround. Head visibility follows measured lens distance
+  while the actor departs from the parked camera.
+
+  `HomeShowerCurtainPose` samples two `1.5 s` bone-only, in-place clips from
+  `Resources/Player/HomeShowerCurtainActions`; their reversed samples supply
+  the two exit gestures. `tools/build-home-shower-curtain-actions.py` authors
+  them against the production Generic skeleton with neutral endpoints,
+  independent entry/action/exit data and measured grip contact. The existing
+  shared sampler and pelvis alignment drive the same visible rig; the
+  deterministic bathroom timeline owns time, neutral/terminal rendered
+  holds, guided movement and restoration. This follows the contextual
+  animation standard and creates no additional procedural exception.
+
+  The outside action dock is `(4.20, 0, 2.18)`, facing `+Z`; the shared
+  opening waypoint remains `(4.26, 0, 2.28)`; the inside action dock is
+  `(4.20, 0.18, 2.74)`, facing `−Z`. The later camera/stance correction moves
+  the wash dock another `0.10 m` back, from `z=3.18` to `3.08`, and raises
+  spine pitch from `12°` to `20°` while chest pitch stays `12°`. The left
+  palm keeps its tile brace. The latest explicit correction restores the
+  right palm to the tile too, making both wall contacts the neutral pose
+  before and after its soap/tap actions.
+  The independent entrance transform starts closed at scale `1` and gathers
+  to `0.40` only while the authored hand moves its leading hem. The Home
+  generator's five fixed-metre side folds overlap by `25.75 mm` and cover
+  `z=2.372…3.869`, reaching `12 mm` into the wall at `3.857`; the return rail
+  reaches the same wall. No new fiction, sound, text or held face view is
+  introduced, and the story bible's prohibitions remain in force.
+
+  The further user-requested hardware correction removes all four green
+  hose segments. Both shower valves use `HomeSinkFaucet.CreateValve` and
+  the same `HomeBrushingResources` `FaucetHandle` mesh as the sink; their
+  pivots put the cross wheels on top of the mixer. The wash hand follows the
+  rotating resource's `HandGrip` anchor. The bathroom lamp and practical
+  light move up `0.34 m`, leaving `0.1925 m` between the casing and curtain
+  rail; the crackle source follows the fixture anchor. This remains ordinary
+  plumbing within the same interaction and canon scope.
+
+  The user's follow-up requires the hands and forearms to stay outside the
+  body throughout the action. The authored elbow travels forward of the
+  jacket and the inactive arm counterposes away from the thigh. The generator
+  validates both full clips at `60 Hz` against the posed meshes; the focused
+  scene regression checks the imported arms against visible body geometry
+  through all four curtain gestures and the wash/tap/straighten transitions.
+- **Accepted architecture exception — 2026-09-07, user-approved interactive
+  shower washing:** The existing wash gains a nested soap interaction on the
+  same production rig. This narrowly extends the bathroom wash/brushing
+  procedural-arm exception to measured right-hand soap pickup, body contact
+  and return to the shelf. The path keeps bounded movement,
+  zero-weight rendered endpoints, the shared neutral/handoff and idempotent
+  cleanup; it adds no root motion, snap, replacement hero or visibility fade.
+  The outer curtain actions retain their authored-clip contract.
+
+  The next explicit user-approved extension keeps the same procedural rig
+  and contact guard, but allows repeated right-hand rubbing at a selected
+  body point and a stronger bounded passive response to real soap contact.
+  In `SelectSoap`, `E` takes the known shelf soap independently of mouse,
+  viewing direction or look mode. Pickup takes priority over exit and
+  consumes the press until release; the stop footer stays hidden in that
+  phase. The localized prompt and its outline appear when the soap is
+  visible, without gating the action. This is action UI, not fictional speech;
+  it introduces no story line or change to the story bible's prohibitions.
+  Pressing on the body selects a skin-anchored stroke target; repeated
+  movement continues only while LMB is held, without requiring pointer travel.
+  Release stops strokes and credit and withdraws safely; a new press selects
+  another point. RMB look temporarily pauses rubbing, and pause freezes the action.
+  On a gamepad, the right stick moves the pointer or, with the look trigger,
+  the view; the interaction button picks up soap and the scrub trigger holds
+  rubbing at the selected point. Surface picking and measured contact use
+  the visible body meshes. The soap and
+  arm path must remain clear of other body geometry and travel between
+  targets with bounded movement. A later explicit user decision removes
+  handover entirely: the soap stays in the right hand, and all right-arm
+  surfaces are excluded from selection and washing. Any other reachable
+  region can still fill the whole gauge. `IsWashableRegion` shares that
+  exclusion across targets, credit and markers; `RightArm` remains a region
+  ID for body classification and clearance. Existing anatomy responds
+  passively to body motion and measured soap contact, with bounded displacement
+  and settling after release; this is ordinary washing without sexual behavior,
+  new narrative text, face-holding or a water-attention scene.
+
+  Bathroom audio follows the presented action. `HomeSoundscape` owns eight
+  spatial sources and nine generated clips. Two short SfxWorld voices serve
+  valve turns and actual shower-drop landings: the first borrows the existing
+  `RefrigeratorHinge` metal clip from `RetroAudioService`, the second reuses
+  its own `BathroomDetailClip`. They do not replace the ambient cue voice or
+  generate additional clips. Valve calls carry opening/closing direction and
+  the actual grip position. The shower loop follows water amount at the stream
+  impact; drop sounds follow the drip model's landing count. Brushing emits
+  its valve cue on the first presented opening change and on reversal to
+  closure, including cancellation. The existing sink loop, measured-travel
+  brush scrub and mouth-origin spit voice remain. Listener pause suspends
+  playback; each exclusive bathroom owner stops its action voices on cleanup.
+
+  `Wash` becomes an indefinite parent of `SelectSoap → Pickup → Washing →
+  PutDown → Finished`. Only commanded stroke travel confirmed at actual soap
+  contact earns progress; `HomeShowerWashingProgress` takes the lesser of
+  commanded metres, measured contact metres and `0.10 m/s`. The user's
+  explicit follow-up removes regional quotas, and the next speed correction
+  reduces the shared gauge from `4 m` to `1 m`: at least `10 s` of active
+  washing at the unchanged speed cap, four times faster. Any reachable region can
+  fill it completely. Region IDs describe contact surfaces only. A stationary
+  pointer earns progress only while the button is held and its selected
+  stroke makes real contact. No selected target, missing contact, pause,
+  hitches and contact jumps earn nothing.
+  Hot turns use the right hand; cold turns use the left hand through
+  `coldValveReach`. Each returns to its wall brace after the turn. Right-hand-only
+  ownership applies to soap, not to operating both valves.
+  Exit `Q` first queues soap return, then closes cold and hot wheels in
+  sequence before the existing drips/curtain exit. `E` is consumed inside
+  every Wash subphase and only picks up soap in SelectSoap; it cannot fall
+  through to the base exit action. Q dispatches the protected
+  `RequestStopFromSceneInput` independently of cursor, prompt visibility
+  and held E. It bypasses only E's release debounce; scene ownership,
+  StopQueued and OnRequestStop guards remain. Public RequestStop keeps
+  the existing E guard. The cold-wheel prompt
+  uses the same outline, label and connector helpers as soap, but places
+  its label on the left and starts the leader on the label's right edge.
+  Water amount is the mean openness of the two valves; four cues accompany
+  the opening/closing cycle. ShowerWaterVolume rises from `0.145` to `0.29`
+  (about `+6 dB`), leaving other sources unchanged.
+  Early departure earns no relief, and elapsed wash time alone cannot finish
+  the action. The one total gauge keeps the existing bathroom HUD's frame
+  and footprint. The current owners are the `HomeShowerWashingInteraction`
+  partial of the outer scene, `HomeShowerSoapPose`, `HomeShowerSoapAffordance`,
+  `HomeShowerWashingProgress` and `HomeShowerGaugeView`. Pickup/return attach
+  and release the existing soap only at measured contact. The soap grip
+  starts from the production palm's measured surface point and hand frame;
+  its centre uses `SoapHalfThickness` beyond that contact instead
+  of using an arbitrary palm offset. The underlying `ApplyBrace` receives
+  zero sway during the interactive wash, tap closure and straighten, so passive
+  rocking cannot displace the contact pose. Its small foam
+  cue is emitted only for credited scrubbing. Runtime verification of this
+  addition is recorded separately in the work log.
+
+  The contact-path optimization retains the same physical checks.
+  `HomeShowerWashPose` caches obstacle vertices and prepared ray-triangle
+  data until exact bone/actor transforms change, and invalidates exposed
+  samples when their obstacle revision or rest frame changes. Bounds in
+  the ray's perpendicular plane reject impossible triangle hits. The
+  four intermediate angular samples, five backoff iterations and `12°`
+  limit remain. `HomeShowerSoapPose` refreshes only the selected mesh when
+  reprojecting a held stroke; a new body pick still refreshes all eligible
+  surfaces. Static attachments read their shared mesh directly instead of
+  uploading vertices through a temporary native mesh. The shared arm
+  guard rejects inside tests outside the body's bounding box and skips
+  capsule/triangle distances only when bounding boxes prove they cannot
+  improve the current minimum. Actual contact and intersection tests keep
+  their tolerances; this is reduced redundant work, not disabled physics.
+
+  The next user-requested water presentation uses the imported Blender
+  water sheet and a real perforated `0.15 m` corner drain at local
+  `(4.32, 0.215, 3.32)`. `HomeShowerTrayWater`, a partial of the existing
+  water effect, accumulates a `0…0.01 m` layer from inflow and drains it
+  after shutoff. One shared `HomeShowerTrayWater.shader` material shows
+  radial ripples and current toward the drain; the basin and water sheet
+  preserve matching physical apertures. Per-instance amount, flow and time
+  are property-block data. The transparent sheet is excluded from the
+  solid-fixture occlusion registry, preserving its shared water shader.
+  It is also excluded from mirror-world selection, retaining the existing
+  rule that shower-water effects stay outside the mirror copy.
+
+  The later head/stream correction rigidly rotates the existing imported
+  neck, bell and face from `35°` to `20°` around their joint and shifts them
+  `0.09 m` toward the wall; the horizontal connector is shortened. No new
+  geometry or generator run is required. The face centre is
+  `(3.88, 1.982925, 3.556352)`, with emission normal
+  `(0, −0.939693, −0.342020)`; the outlet is `14 mm` along that normal,
+  `2 mm` outside the plate. The same origin/axis drives the stream's `30°`
+  fan: `120` particles/s, maximum `96`, width `7–11 mm`, lifetime
+  `0.50–0.56 s`, speed `0.9–1.2 m/s` and gravity scale `1`.
+  It reuses the shared atmosphere material with renderer property-block
+  `_SoftParticleDistance=0.02` and `_EdgePower=0.65`; the old metre-long
+  fade hid water near skin. Residual drops use ballistic velocity toward
+  unchanged `BasinLanding=(3.88, 0.225, 3.42)` with the same fall time and
+  final four-drop schedule. The tray ripple anchor follows that landing
+  point rather than the nozzle's vertical projection.
+
+  A later explicit user correction on `2026-09-07` removes the entire
+  camera-lens water presentation. The component, lifecycle hooks and
+  per-camera composite payload are deleted; `Ps1Composite` again samples
+  the scene through its ordinary existing distortion path. Tray water,
+  the stream, steam and final nozzle drips retain their world-space
+  presentation and cleanup. No replacement overlay is introduced.
+- **Planned — shower runoff on the skin:** the user requested a design,
+  not implementation. The proposed layers are modest wet darkening, sparse
+  moving beads with `2–5 cm` trails following gravity along the skin, and
+  optionally a few drops leaving body edges in a later pass. None belongs
+  on the camera image. A skin-only GPU shader would use stable authored
+  runoff UVs on the existing meshes; torso skinning and moving limbs would
+  carry those coordinates with the body. Current skinned surface/UV
+  derivatives would orient flow along gravity. One shared material and
+  cached renderer property blocks would carry wetness and a pause-aware
+  clock, with runoff fading after shutoff and exact restoration before
+  redressing. No per-frame mesh baking, raycasts, managed allocation or
+  extra load on joint/contact physics is proposed. The current shared skin
+  material disables specular highlights, so a smoothness change alone is
+  insufficient. The visual risks are limb-angle changes, UV seams and
+  subpixel trails at the game's low resolution; authored UVs, derivative
+  filtering and restrained bead size would need a focused visual check.
 - **Accepted architecture exception — 2026-09-07, explicit user correction —
   remove the raised bathroom-mirror crack:** the black line crossing the
   reflected hero was the separate `Home Bathroom Mirror Crack` geometry, a
@@ -5552,9 +5845,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   reflection do not become a separate scene.
 - **Accepted — Shower stall rebuild:** The stall keeps its footprint,
   tray collider and pinned names while gaining an L-rail, a
-  four-fold curtain group (gathered at scale 0.40 and never drawn since
-  the 2026-09-06 shower; scaling it in x is still how it would open)
-  plus a static side run, a wall mixer with red/blue cross handles, a
+  four-fold entrance curtain group (closed at scale `1`, gathered by hand
+  to `0.40` under the accepted `2026-09-07` staging) plus five overlapping
+  static side folds reaching the tile, a wall mixer with red/blue cross handles, a
   four-segment sagging hose, a tilted bell head with a dark nozzle
   plate, tray rims, a drain and a soap shelf. The water is a sixth
   owned `HomeSoundscape` source with a seamless loop-phase hiss

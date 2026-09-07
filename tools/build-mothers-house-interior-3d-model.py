@@ -51,7 +51,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
 import bar_parts as bp  # noqa: E402
-GENERATOR_VERSION = "1.6.0"
+GENERATOR_VERSION = "1.8.0"
 DESIGN_ID = "mothers_house_interior_v1"
 DISPLAY_NAME = "Bar Promenade Mother's House Interior"
 
@@ -293,8 +293,8 @@ ANCHORS_UNITY = {
     "ANCHOR_Entry": (DOOR_CENTER_X, 0.0, -3.86),
     "ANCHOR_Spawn": (DOOR_CENTER_X, 0.0, -2.45),
     "ANCHOR_Exit": (DOOR_CENTER_X, 0.0, -3.15),
-    "ANCHOR_Camera": (5.80, 2.75, -2.80),
-    "ANCHOR_CameraTarget": (-0.20, 0.80, 1.00),
+    "ANCHOR_Camera": (4.60, 2.60, -3.40),
+    "ANCHOR_CameraTarget": (0.00, 1.05, 0.60),
     "ANCHOR_Fireplace": (0.0, 0.0, 3.61),
     "ANCHOR_FireLight": (0.0, 0.78, 3.28),
     "ANCHOR_Tabletop": (0.0, TABLE_HEIGHT, 0.0),
@@ -3553,9 +3553,9 @@ def validate(asset: AssetBuild) -> dict:
             abs(floor_lamp[1] - 1.54) > 0.002):
         problems.append("the floor-lamp light left its visible shade")
 
-    if ANCHORS_UNITY["ANCHOR_Camera"] != (5.80, 2.75, -2.80):
+    if ANCHORS_UNITY["ANCHOR_Camera"] != (4.60, 2.60, -3.40):
         problems.append("the approved fixed camera position changed")
-    if ANCHORS_UNITY["ANCHOR_CameraTarget"] != (-0.20, 0.80, 1.00):
+    if ANCHORS_UNITY["ANCHOR_CameraTarget"] != (0.00, 1.05, 0.60):
         problems.append("the approved fixed camera target changed")
 
     stair_run = STAIR_STEP_COUNT * STAIR_STEP_DEPTH

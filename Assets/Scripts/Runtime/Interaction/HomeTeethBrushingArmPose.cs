@@ -10,9 +10,10 @@ namespace BarPromenade
         // The authored Idle0 shoulder/axilla junction extends 0.19 m along
         // this 0.301 m bone. Exclude that joined seam, not the free arm.
         private const float ShoulderJoinLength = 0.195f;
+        private static readonly Vector3 InsideRayDirection = new Vector3(0.173f, 0.469f, 0.866f).normalized;
         private sealed class BodySurface
         {
-            public SkinnedMeshRenderer Renderer;
+            public Renderer Renderer;
             public Vector3[] Vertices;
             public int[] Triangles;
             public Bounds Bounds;
@@ -23,6 +24,7 @@ namespace BarPromenade
         private sealed class ArmSurface
         {
             public int Kind;
+            public bool IsPalm;
             public Transform Bone;
             // Independent clipped triangles in bone space, measured in metres.
             public Vector3[] LocalVertices;
@@ -36,6 +38,7 @@ namespace BarPromenade
         private Quaternion handFrameInHand;
         private Quaternion handInForearm;
         private Vector3 handCenter, thumbCenter;
+        private Vector3 measuredHandCenterInHand;
         private Vector3 rightInActor, forwardInActor, faceRightInHead, faceUpInHead, faceForwardInHead, outsideInHead;
         private Quaternion[] safePose;
         private float safeBend;
@@ -53,6 +56,7 @@ namespace BarPromenade
         private Vector2 previousTip;
         private bool captured, sampled;
         private bool leftHand;
+        private bool inputDrivenContact;
         private Transform Grip => leftHand ? registry.Anchors.LeftGrip : registry.Anchors.RightGrip;
         public float Weight { get; private set; }
         public Transform Effector { get; set; }
@@ -70,6 +74,43 @@ namespace BarPromenade
         public int BodyIntersectionCount { get; private set; }
         /// <summary>First confirmed body surface, limb and intersection type in the current pose.</summary>
         public string BodyIntersectionDetail { get; private set; } = string.Empty;
+        public string LastContactRejectReason { get; private set; } = string.Empty;
+        /// <summary>Measured anatomical frame: forward is fingers, up is thumb.</summary>
+        public Quaternion PhysicalHandFrame => hand.rotation * handFrameInHand;
+        public Vector3 PalmCenter => hand.position + hand.rotation * measuredHandCenterInHand;
+
+        /// <summary>The actual bare palm surface along its measured inward normal.</summary>
+        public bool TryGetPalmSurfacePoint(out Vector3 point)
+        {
+            point = PalmCenter;
+            if (!captured) return false;
+            Vector3 direction = (leftHand ? 1f : -1f) * (handFrameInHand * Vector3.right);
+            float nearest = float.PositiveInfinity;
+            foreach (ArmSurface surface in armSurfaces)
+            {
+                if (!surface.IsPalm) continue;
+                for (int index = 0; index < surface.LocalVertices.Length; index += 3)
+                    if (RayTriangle(measuredHandCenterInHand, direction, surface.LocalVertices[index],
+                            surface.LocalVertices[index + 1], surface.LocalVertices[index + 2], out float distance) &&
+                        distance >= 0f && distance < nearest) nearest = distance;
+            }
+            if (float.IsPositiveInfinity(nearest)) return false;
+            point = hand.position + hand.rotation * (measuredHandCenterInHand + direction * nearest);
+            return true;
+        }
+
+        /// <summary>
+        /// A related contact interaction can check its own complete body set,
+        /// including static authored attachments. Ordinary brushing keeps its
+        /// existing torso/pelvis set unless this explicit opt-in is used.
+        /// </summary>
+        public void ConfigureContactBody(IEnumerable<Renderer> renderers)
+        {
+            bodySurfaces.Clear();
+            foreach (Renderer renderer in renderers)
+                if (renderer != null && (renderer is SkinnedMeshRenderer || renderer.GetComponent<MeshFilter>() != null))
+                    bodySurfaces.Add(new BodySurface { Renderer = renderer });
+        }
         public void Initialize(Player3DAssetRegistry value, Transform player, bool useLeftHand = false)
         {
             registry = value; actor = player; leftHand = useLeftHand;
@@ -113,6 +154,7 @@ namespace BarPromenade
             faceUpInHead = Quaternion.Inverse(head.rotation) * actor.up;
             faceForwardInHead = Quaternion.Inverse(head.rotation) * forward;
             MeasureArmVolumes();
+            measuredHandCenterInHand = Quaternion.Inverse(hand.rotation) * (handCenter - hand.position);
             Vector3 fingers = Grip.position - hand.position;
             Vector3 thumb = Vector3.ProjectOnPlane(thumbCenter - handCenter, fingers);
             handFrameInHand = Quaternion.Inverse(hand.rotation) *
@@ -122,6 +164,77 @@ namespace BarPromenade
             MeasureBodyClearance();
             hasSafePose = false;
             RememberSafePose();
+        }
+
+        /// <summary>
+        /// Solve an input-driven world contact on the already captured body
+        /// endpoint. The caller owns bounded contact travel. Every new pose,
+        /// including intermediate joint blends from the last accepted pose,
+        /// must pass the same real-mesh guard used by brushing.
+        /// </summary>
+        public bool ApplyWorldContact(Vector3 target, Quaternion physicalHandFrame)
+        {
+            if (!captured || Effector == null) return false;
+            LastContactRejectReason = string.Empty;
+            Quaternion[] previous = hasSafePose ? (Quaternion[])safePose.Clone() : null;
+            // ApplyBrace has already written this frame's neutral arm. The
+            // contact path must resume the last accepted arm in the current
+            // torso frame, otherwise CCD can choose the opposite elbow branch
+            // while the wrist turns and the joint blend cuts through the body.
+            for (int index = 4; index < bones.Length; index++)
+                if (bones[index] != null) bones[index].localRotation = previous != null ? previous[index] : neutral[index];
+            Vector3 previousElbow = forearm.position;
+            RefreshBody();
+            Quaternion rotation = physicalHandFrame * Quaternion.Inverse(handFrameInHand);
+            Vector3 wrist = target - rotation * tipInHand;
+            Vector3 hint = previous != null ? previousElbow :
+                upperArm.position + Outside * 0.36f + Forward * 0.34f - actor.up * 0.20f;
+            inputDrivenContact = true;
+            try { SolveClearPose(wrist, rotation, hint, hand.position, hand.rotation, forearm.position); }
+            finally { inputDrivenContact = false; }
+            Quaternion[] destination = new Quaternion[3];
+            for (int index = 0; index < 3; index++) destination[index] = bones[index + 4].localRotation;
+            bool clear = BodyIntersectionCount == 0;
+            if (!clear) LastContactRejectReason = "candidate: " + BodyIntersectionDetail;
+            if (clear && previous != null)
+            {
+                for (int step = 1; step <= 4 && clear; step++)
+                {
+                    for (int index = 0; index < 3; index++)
+                        bones[index + 4].localRotation = Quaternion.Slerp(previous[index + 4], destination[index], step * 0.25f);
+                    MeasureBodyClearance();
+                    clear = BodyIntersectionCount == 0;
+                    if (!clear) LastContactRejectReason = "swept blend " + step + ": " + BodyIntersectionDetail;
+                }
+            }
+            if (!clear && previous != null)
+                for (int index = 4; index < bones.Length; index++) bones[index].localRotation = previous[index];
+            MeasureBodyClearance();
+            RememberSafePose();
+            ContactError = Vector3.Distance(Effector.position, target);
+            if (ContactError > 0.015f)
+                LastContactRejectReason = "target error " + ContactError.ToString("F4") + "; " + LastContactRejectReason;
+            return clear && BodyIntersectionCount == 0 && ContactError <= 0.015f;
+        }
+
+        /// <summary>Restore only this arm; the parent interaction owns the body.</summary>
+        public void RestoreContactArm()
+        {
+            if (!captured) return;
+            for (int index = 4; index < bones.Length; index++)
+                if (bones[index] != null) bones[index].localRotation = neutral[index];
+            RefreshBody();
+            MeasureBodyClearance();
+            RememberSafePose();
+        }
+
+        /// <summary>Re-present the last accepted arm on the current torso before picking its visible skin.</summary>
+        public bool RestoreLastContactArm()
+        {
+            if (!captured || !hasSafePose) return false;
+            for (int index = 4; index < bones.Length; index++)
+                if (bones[index] != null) bones[index].localRotation = safePose[index];
+            return true;
         }
         public void Apply(Vector2 brushOffset, float weight, float bend, float valveReach = 0f)
         {
@@ -228,36 +341,48 @@ namespace BarPromenade
             float bestClearance = float.NegativeInfinity;
             // First retain the exact brush target, changing only the elbow's
             // outside bend plane. Only an obstructed target moves outwards.
-            for (int attempt = 0; attempt < 15; attempt++)
+            for (int attempt = 0; attempt < (inputDrivenContact ? 19 : 15); attempt++)
             {
                 upperArm.localRotation = baseUpper; forearm.localRotation = baseLower; hand.localRotation = baseHand;
                 Vector3 candidateWrist = wrist;
                 Quaternion candidateRotation = rotation;
                 Vector3 candidateHint = hint;
-                if (attempt > 0 && attempt < 5)
+                // Soap can touch a low central surface while the forearm
+                // stays in front of the belly. Search these extra elbow
+                // planes at the exact target before moving the contact out.
+                bool forwardContactPlane = inputDrivenContact && attempt >= 5 && attempt < 9;
+                int fallbackAttempt = inputDrivenContact && attempt >= 9 ? attempt - 4 : attempt;
+                if (forwardContactPlane)
                 {
-                    candidateHint = upperArm.position + Outside * (0.32f + attempt * 0.05f) +
-                        Forward * (0.12f + attempt * 0.11f) - actor.up * (0.26f - attempt * 0.035f);
+                    float outside = attempt == 5 ? 0.20f : attempt == 6 ? 0.08f : attempt == 7 ? -0.08f : 0.42f;
+                    candidateHint = upperArm.position + Outside * outside + Forward * 0.75f - actor.up * 0.18f;
                 }
-                else if (attempt >= 5 && attempt < 10)
+                else if (fallbackAttempt > 0 && fallbackAttempt < 5)
                 {
-                    float distance = (attempt - 4) * 0.025f;
+                    candidateHint = upperArm.position + Outside * (0.32f + fallbackAttempt * 0.05f) +
+                        Forward * (0.12f + fallbackAttempt * 0.11f) - actor.up * (0.26f - fallbackAttempt * 0.035f);
+                }
+                else if (fallbackAttempt >= 5 && fallbackAttempt < 10)
+                {
+                    float distance = (fallbackAttempt - 4) * 0.025f;
                     candidateWrist += (Outside * 0.7f + Forward) * distance;
                     candidateHint = upperArm.position + Outside * 0.48f + Forward * 0.35f - actor.up * 0.15f;
                 }
-                else if (attempt >= 10)
+                else if (fallbackAttempt >= 10)
                 {
                     // A blocked brushing target is rejected in favour of an
                     // outside holding pose. It cannot earn brushing progress.
-                    float amount = (attempt - 9) / 5f;
+                    float amount = (fallbackAttempt - 9) / 5f;
                     candidateWrist = Vector3.Lerp(wrist, restWrist + Outside * 0.06f + Forward * 0.10f, amount);
                     candidateRotation = Quaternion.Slerp(rotation, restRotation, amount);
                     candidateHint = Vector3.Lerp(hint, restElbow + Outside * 0.14f + Forward * 0.18f, amount);
                 }
-                if (leftHand) SolveValveWrist(candidateWrist, candidateRotation, candidateHint);
+                if (leftHand && !inputDrivenContact) SolveValveWrist(candidateWrist, candidateRotation, candidateHint);
                 else LimbTwoBoneIk.Solve(upperArm, forearm, hand, candidateWrist, candidateRotation,
                     candidateHint, 1f, float.PositiveInfinity, true);
                 MeasureBodyClearance();
+                if (inputDrivenContact && attempt == 0 && BodyIntersectionCount > 0)
+                    LastContactRejectReason = "requested pose: " + BodyIntersectionDetail;
                 if (BodyClearance > bestClearance)
                 {
                     bestClearance = BodyClearance;
@@ -339,7 +464,7 @@ namespace BarPromenade
                     else thumbCenter = center;
                 }
                 CaptureArmSurface(isUpper ? 0 : isForearm ? 1 : 2,
-                    isUpper ? upperArm : isForearm ? forearm : hand);
+                    isUpper ? upperArm : isForearm ? forearm : hand, binding.MeshName == "GEO_Hand" + side);
                 foreach (Vector3 vertex in sampledVertices)
                 {
                     if (isUpper) upperArmRadius = Mathf.Max(upperArmRadius,
@@ -366,7 +491,7 @@ namespace BarPromenade
             handStartInHand = Quaternion.Inverse(hand.rotation) * (worldStart - hand.position);
             handEndInHand = Quaternion.Inverse(hand.rotation) * (worldEnd - hand.position);
         }
-        private void CaptureArmSurface(int kind, Transform bone)
+        private void CaptureArmSurface(int kind, Transform bone, bool isPalm)
         {
             int[] triangles = sample.triangles;
             var vertices = new List<Vector3>();
@@ -395,7 +520,7 @@ namespace BarPromenade
             }
             armSurfaces.Add(new ArmSurface
             {
-                Kind = kind, Bone = bone, LocalVertices = vertices.ToArray(),
+                Kind = kind, IsPalm = isPalm, Bone = bone, LocalVertices = vertices.ToArray(),
                 WorldVertices = new Vector3[vertices.Count]
             });
         }
@@ -410,15 +535,34 @@ namespace BarPromenade
             Matrix4x4 world = renderer.transform.localToWorldMatrix;
             for (int index = 0; index < sampledVertices.Count; index++) sampledVertices[index] = world.MultiplyPoint3x4(sampledVertices[index]);
         }
+        private Mesh ReadWorldVertices(Renderer renderer)
+        {
+            if (renderer is SkinnedMeshRenderer skinned)
+            {
+                ReadWorldVertices(skinned);
+                return sample;
+            }
+            MeshFilter filter = renderer.GetComponent<MeshFilter>();
+            sampledVertices.Clear();
+            if (filter == null || filter.sharedMesh == null) return null;
+            // Static attachments only move as transforms. Reading their shared
+            // vertices avoids uploading unchanged geometry to the bake mesh.
+            Mesh source = filter.sharedMesh;
+            source.GetVertices(sampledVertices);
+            Matrix4x4 world = renderer.transform.localToWorldMatrix;
+            for (int index = 0; index < sampledVertices.Count; index++) sampledVertices[index] = world.MultiplyPoint3x4(sampledVertices[index]);
+            return source;
+        }
         private void RefreshBody()
         {
             foreach (BodySurface surface in bodySurfaces)
             {
-                ReadWorldVertices(surface.Renderer);
+                Mesh source = ReadWorldVertices(surface.Renderer);
+                if (source == null || sampledVertices.Count == 0) continue;
                 if (surface.Vertices == null || surface.Vertices.Length != sampledVertices.Count)
                 {
                     surface.Vertices = new Vector3[sampledVertices.Count];
-                    surface.Triangles = sample.triangles;
+                    surface.Triangles = source.triangles;
                     surface.TriangleBounds = new Bounds[surface.Triangles.Length / 3];
                     surface.TopologyChecked = false;
                 }
@@ -513,15 +657,29 @@ namespace BarPromenade
         private float CapsuleClearance(Vector3 start, Vector3 end, float radius)
         {
             float closest = float.PositiveInfinity;
+            Bounds segmentBounds = new Bounds(start, Vector3.zero);
+            segmentBounds.Encapsulate(end);
             foreach (BodySurface surface in bodySurfaces)
             {
                 Vector3[] vertices = surface.Vertices;
                 int[] triangles = surface.Triangles;
                 if (vertices == null || triangles == null) continue;
+                float possibleDistance = Mathf.Max(0f, closest + radius);
+                if (!surface.Bounds.Contains(start) && !surface.Bounds.Contains((start + end) * .5f) &&
+                    !surface.Bounds.Contains(end) &&
+                    BoundsDistanceSquared(segmentBounds, surface.Bounds) > possibleDistance * possibleDistance + .000000001f)
+                    continue;
                 float distanceSquared = float.PositiveInfinity;
                 for (int index = 0; index < triangles.Length; index += 3)
+                {
+                    // Both bounds contain the exact queried shapes. Their gap
+                    // is a lower bound, so a farther pair cannot improve the
+                    // current minimum and needs no triangle-distance evaluation.
+                    if (BoundsDistanceSquared(segmentBounds, surface.TriangleBounds[index / 3]) > distanceSquared + .000000001f)
+                        continue;
                     distanceSquared = Mathf.Min(distanceSquared, SegmentTriangleSquared(start, end,
                         vertices[triangles[index]], vertices[triangles[index + 1]], vertices[triangles[index + 2]]));
+                }
                 float distance = Mathf.Sqrt(distanceSquared);
                 bool inside = IsInside(start, surface) || IsInside((start + end) * 0.5f, surface) || IsInside(end, surface);
                 closest = Mathf.Min(closest, (inside ? -distance : distance) - radius);
@@ -572,14 +730,23 @@ namespace BarPromenade
         private static bool IsInside(Vector3 point, BodySurface surface)
         {
             // An open garment has a surface but does not enclose a volume.
-            if (!surface.IsClosed) return false;
-            Vector3 direction = new Vector3(0.173f, 0.469f, 0.866f).normalized;
+            if (!surface.IsClosed || !surface.Bounds.Contains(point)) return false;
+            Vector3 direction = InsideRayDirection;
             int crossings = 0;
             for (int index = 0; index < surface.Triangles.Length; index += 3)
                 if (RayTriangle(point, direction, surface.Vertices[surface.Triangles[index]],
                     surface.Vertices[surface.Triangles[index + 1]], surface.Vertices[surface.Triangles[index + 2]], out float distance) && distance > 0.000001f)
                     crossings++;
             return (crossings & 1) != 0;
+        }
+        private static float BoundsDistanceSquared(Bounds a, Bounds b)
+        {
+            Vector3 gap = a.center - b.center;
+            Vector3 extents = a.extents + b.extents;
+            float x = Mathf.Max(0f, Mathf.Abs(gap.x) - extents.x);
+            float y = Mathf.Max(0f, Mathf.Abs(gap.y) - extents.y);
+            float z = Mathf.Max(0f, Mathf.Abs(gap.z) - extents.z);
+            return x * x + y * y + z * z;
         }
         private static float SegmentTriangleSquared(Vector3 start, Vector3 end, Vector3 a, Vector3 b, Vector3 c)
         {

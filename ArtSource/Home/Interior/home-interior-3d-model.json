@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "design_id": "home_interior_v1",
-  "generator_version": "1.2.0",
-  "signature": "441fa2cd4c3e2ec8dde4b82edfeb5d92d9bad96a267a082392e55ad721e7d760",
+  "generator_version": "1.4.0",
+  "signature": "e7ca52b6264b0ff073b1aa747216f64951641c8bfdead0d560d28b07f4453489",
   "coordinates": "Unity local metres +X east +Y up +Z north",
   "source_conversion": "Y/Z swap and face rewinding; FBX -Z forward Y up",
   "report": {
-    "part_count": 419,
-    "triangle_count": 45416,
+    "part_count": 422,
+    "triangle_count": 47020,
     "day_decor_counts": [
       24,
       31,
@@ -23,6 +23,11 @@
     "main_route_clearance": true,
     "household_route_clearance": true,
     "relocated_furniture_supports": true,
+    "shower_side_curtain_closed_to_wall": true,
+    "shower_hose_bindings_removed": true,
+    "shower_valves_use_shared_sink_resource": true,
+    "shower_drain_open_grate_and_recess": true,
+    "shower_basin_and_water_drain_apertures": true,
     "no_coincident_cumulative_decor": true
   },
   "parts": [
@@ -2509,7 +2514,7 @@
         1.01
       ],
       "bounds_min": [
-        -0.505,
+        -0.5050000000000001,
         -0.0225,
         -0.505
       ],
@@ -2518,7 +2523,7 @@
         0.0225,
         0.505
       ],
-      "triangles": 28,
+      "triangles": 520,
       "collider": false,
       "grid_columns": 0,
       "grid_rows": 0,
@@ -4027,6 +4032,156 @@
       "grid_bottom_heights": []
     },
     {
+      "name": "Home Bathroom Shower Drain",
+      "semantic_name": "Home Bathroom Shower Drain",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "PaintedMetal",
+      "tint": [
+        0.38,
+        0.39,
+        0.34,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        4.32,
+        0.215,
+        3.32
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.15,
+        0.012,
+        0.15
+      ],
+      "bounds_min": [
+        -0.075,
+        -0.006,
+        -0.075
+      ],
+      "bounds_max": [
+        0.075,
+        0.006,
+        0.075
+      ],
+      "triangles": 524,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Bathroom Shower Drain Well",
+      "semantic_name": "Home Bathroom Shower Drain Well",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "Plain",
+      "tint": [
+        0.065,
+        0.075,
+        0.065,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        4.32,
+        0.197,
+        3.32
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.12,
+        0.03,
+        0.12
+      ],
+      "bounds_min": [
+        -0.06,
+        -0.015,
+        -0.06
+      ],
+      "bounds_max": [
+        0.06,
+        0.015,
+        0.06
+      ],
+      "triangles": 316,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Bathroom Shower Collected Water",
+      "semantic_name": "Home Bathroom Shower Collected Water",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "Plain",
+      "tint": [
+        0.3,
+        0.38,
+        0.34,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        3.925,
+        0.2135,
+        2.925
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        1,
+        0.002,
+        1
+      ],
+      "bounds_min": [
+        -0.5,
+        -0.001,
+        -0.5000000000000001
+      ],
+      "bounds_max": [
+        0.5,
+        0.001,
+        0.5
+      ],
+      "triangles": 400,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
       "name": "Home Bathroom Shower Curtain Side 1",
       "semantic_name": "Home Bathroom Shower Curtain Side 1",
       "aliases": [],
@@ -4044,9 +4199,9 @@
       "min_day": 1,
       "max_day": 7,
       "position": [
-        0,
-        0,
-        0
+        3.348,
+        1.3,
+        2.532
       ],
       "rotation": [
         0,
@@ -4094,9 +4249,9 @@
       "min_day": 1,
       "max_day": 7,
       "position": [
-        0,
-        0,
-        0
+        3.372,
+        1.3,
+        2.82625
       ],
       "rotation": [
         0,
@@ -4144,9 +4299,109 @@
       "min_day": 1,
       "max_day": 7,
       "position": [
+        3.348,
+        1.3,
+        3.1205000000000003
+      ],
+      "rotation": [
         0,
         0,
         0
+      ],
+      "size": [
+        0.03,
+        1.82,
+        0.32
+      ],
+      "bounds_min": [
+        -0.015,
+        -0.91,
+        -0.16
+      ],
+      "bounds_max": [
+        0.015,
+        0.91,
+        0.16
+      ],
+      "triangles": 28,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Bathroom Shower Curtain Side 4",
+      "semantic_name": "Home Bathroom Shower Curtain Side 4",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "BedLinen",
+      "tint": [
+        0.55,
+        0.52,
+        0.42,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        3.372,
+        1.3,
+        3.41475
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        0.03,
+        1.82,
+        0.32
+      ],
+      "bounds_min": [
+        -0.015,
+        -0.91,
+        -0.16
+      ],
+      "bounds_max": [
+        0.015,
+        0.91,
+        0.16
+      ],
+      "triangles": 28,
+      "collider": false,
+      "grid_columns": 0,
+      "grid_rows": 0,
+      "max_depth": 0,
+      "grid_top_heights": [],
+      "grid_bottom_heights": []
+    },
+    {
+      "name": "Home Bathroom Shower Curtain Side 5",
+      "semantic_name": "Home Bathroom Shower Curtain Side 5",
+      "aliases": [],
+      "patterns": [],
+      "role": "binding",
+      "group": "shell",
+      "sheet": "BedLinen",
+      "tint": [
+        0.55,
+        0.52,
+        0.42,
+        1
+      ],
+      "fit": "fixed",
+      "min_day": 1,
+      "max_day": 7,
+      "position": [
+        3.348,
+        1.3,
+        3.7090000000000005
       ],
       "rotation": [
         0,
@@ -5253,56 +5508,6 @@
       "grid_bottom_heights": []
     },
     {
-      "name": "Home Bathroom Shower Drain",
-      "semantic_name": "Home Bathroom Shower Drain",
-      "aliases": [],
-      "patterns": [],
-      "role": "binding",
-      "group": "shell",
-      "sheet": "Plain",
-      "tint": [
-        0.3,
-        0.27,
-        0.21,
-        1
-      ],
-      "fit": "fixed",
-      "min_day": 1,
-      "max_day": 7,
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "size": [
-        0.09,
-        0.024,
-        0.09
-      ],
-      "bounds_min": [
-        -0.045,
-        -0.012,
-        -0.045
-      ],
-      "bounds_max": [
-        0.045,
-        0.012,
-        0.045
-      ],
-      "triangles": 92,
-      "collider": false,
-      "grid_columns": 0,
-      "grid_rows": 0,
-      "max_depth": 0,
-      "grid_top_heights": [],
-      "grid_bottom_heights": []
-    },
-    {
       "name": "Home Bathroom Shower Head",
       "semantic_name": "Home Bathroom Shower Head",
       "aliases": [],
@@ -5343,56 +5548,6 @@
         0.075,
         0.06,
         0.075
-      ],
-      "triangles": 92,
-      "collider": false,
-      "grid_columns": 0,
-      "grid_rows": 0,
-      "max_depth": 0,
-      "grid_top_heights": [],
-      "grid_bottom_heights": []
-    },
-    {
-      "name": "Home Bathroom Shower Mixer Handle Cold",
-      "semantic_name": "Home Bathroom Shower Mixer Handle Cold",
-      "aliases": [],
-      "patterns": [],
-      "role": "binding",
-      "group": "shell",
-      "sheet": "Plain",
-      "tint": [
-        0.3,
-        0.27,
-        0.21,
-        1
-      ],
-      "fit": "fixed",
-      "min_day": 1,
-      "max_day": 7,
-      "position": [
-        0,
-        0,
-        0
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "size": [
-        0.085,
-        0.06,
-        0.085
-      ],
-      "bounds_min": [
-        -0.0425,
-        -0.03,
-        -0.0425
-      ],
-      "bounds_max": [
-        0.0425,
-        0.03,
-        0.0425
       ],
       "triangles": 92,
       "collider": false,
@@ -5640,19 +5795,16 @@
         "Home Bathroom Exposed Pipe",
         "Home Bathroom Floor Drain",
         "Home Bathroom Leak Stain",
-        "Home Bathroom Mirror Crack",
         "Home Bathroom Shower Arm",
         "Home Bathroom Shower Curtain",
         "Home Bathroom Shower Head Face",
         "Home Bathroom Shower Head Neck",
         "Home Bathroom Shower Mixer Body",
-        "Home Bathroom Shower Mixer Handle Hot",
         "Home Bathroom Shower Rail",
         "Home Bathroom Shower Rail Return",
         "Home Bathroom Shower Riser",
         "Home Bathroom Shower Shelf",
         "Home Bathroom Shower Soap",
-        "Home Bathroom Sink Tap",
         "Home Bathroom Toilet Flush",
         "Home Bathroom Tube Halo",
         "Home Entry Door Lamp",
@@ -5734,7 +5886,6 @@
         "^Home Balcony (Window|Door) (Frame|Glass|Handle).*$",
         "^Home\\ Bathroom\\ Shower\\ Curtain\\ Fold\\ .*$",
         "^Home\\ Bathroom\\ Shower\\ Curtain\\ Side\\ .*$",
-        "^Home\\ Bathroom\\ Shower\\ Hose\\ .*$",
         "^Home\\ Cabinet\\ Shelf\\ .*$",
         "^Home\\ Kitchen\\ Counter\\ .*$",
         "^Home\\ Kitchen\\ Top\\ .*$",
@@ -5835,19 +5986,16 @@
         "Home Bathroom Exposed Pipe",
         "Home Bathroom Floor Drain",
         "Home Bathroom Leak Stain",
-        "Home Bathroom Mirror Crack",
         "Home Bathroom Shower Arm",
         "Home Bathroom Shower Curtain",
         "Home Bathroom Shower Head Face",
         "Home Bathroom Shower Head Neck",
         "Home Bathroom Shower Mixer Body",
-        "Home Bathroom Shower Mixer Handle Hot",
         "Home Bathroom Shower Rail",
         "Home Bathroom Shower Rail Return",
         "Home Bathroom Shower Riser",
         "Home Bathroom Shower Shelf",
         "Home Bathroom Shower Soap",
-        "Home Bathroom Sink Tap",
         "Home Bathroom Toilet Flush",
         "Home Bathroom Tube Halo",
         "Home Entry Door Lamp",
@@ -5929,7 +6077,6 @@
         "^Home Balcony (Window|Door) (Frame|Glass|Handle).*$",
         "^Home\\ Bathroom\\ Shower\\ Curtain\\ Fold\\ .*$",
         "^Home\\ Bathroom\\ Shower\\ Curtain\\ Side\\ .*$",
-        "^Home\\ Bathroom\\ Shower\\ Hose\\ .*$",
         "^Home\\ Cabinet\\ Shelf\\ .*$",
         "^Home\\ Kitchen\\ Counter\\ .*$",
         "^Home\\ Kitchen\\ Top\\ .*$",
@@ -21589,6 +21736,16 @@
       0,
       2.384
     ],
+    "ShowerDrain": [
+      4.32,
+      0.215,
+      3.32
+    ],
+    "ShowerCollectedWater": [
+      3.925,
+      0.2135,
+      2.925
+    ],
     "LockedRoomDoor": [
       0.68,
       1.1,
@@ -21598,6 +21755,22 @@
   "import_contract": {
     "fixed_mesh_scale": 1,
     "parametric_size": "full metre envelope; cylinder caller Y is half-height",
+    "external_bindings": {
+      "Home Bathroom Shower Mixer Handle Hot": "HomeBrushingAction/Models/FaucetHandle",
+      "Home Bathroom Shower Mixer Handle Cold": "HomeBrushingAction/Models/FaucetHandle"
+    },
+    "shower_water": {
+      "basin_top_y": 0.2125,
+      "water_top_y": 0.2145,
+      "drain_xz": [
+        4.32,
+        3.32
+      ],
+      "basin_hole_radius": 0.06,
+      "water_hole_radius": 0.075,
+      "water_uv": "Unity local XZ metres, centred on the mesh origin",
+      "water_visibility": "runtime water effect; hidden at construction"
+    },
     "grid": "flat mattress: independent top quads and five rest faces; profiled pillow: top/bottom height samples and imported top vertex-to-sample mapping",
     "dynamic_hierarchy": "runtime-owned; binding changes meshes only"
   }

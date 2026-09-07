@@ -44,7 +44,7 @@ namespace BarPromenade.Tests.PlayMode
                 9.0f);
             AssertPracticalLight(
                 bathroomLight,
-                new Vector3(3.15f, 2.04f, 3.38f),
+                new Vector3(3.15f, 2.38f, 3.38f),
                 new Color(0.52f, 0.68f, 0.72f),
                 2.20f,
                 4.0f);

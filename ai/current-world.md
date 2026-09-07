@@ -47,6 +47,10 @@ The vertical slice contains:
   visible collider-free steps continuously walkable; structural slabs,
   partitions, door openings and well guards are runtime collision. Four
   height-aware fixed shots cover the ground room, stair/corridor and both rooms.
+  The ground shot stands inside the room's southeast corner and is a close shot
+  on the hero: it pans onto him within `30°/15°` when he reaches the edge of
+  the picture and re-lenses between `26°` and `50°` so he keeps about half the
+  frame's height wherever he stands.
   Repairs, fading and soft wear carry age without dirt or abandonment. One dedicated `MothersHousePositiveAtlas`
   owns every room-authored surface instead of reusing Home or City albedos.
   Its centred south-wall entrance faces the north-wall hearth and spawns the
@@ -932,7 +936,7 @@ The vertical slice contains:
   category pools, per-effect cooldowns and voice limits, all routed through
   canonical mixer groups;
 - separate scene-local procedural City, Bar, Home and Stairwell ambience beds,
-  plus a nine-voice causal City runtime, a five-source Home spatial soundscape
+  plus a nine-voice causal City runtime, an eight-source Home spatial soundscape
   and a three-source Stairwell soundscape. City's former non-spatial electrical
   content is gone: its bed is only a quiet diffuse air floor. Ten immutable
   descriptors bind five loops, three autonomous details and two physical-action
@@ -2208,18 +2212,84 @@ The vertical slice contains:
 - while the Home fixed-camera controller is active, the same world-oriented 3D
   hero remains visible in MainRoom, Bathroom and Balcony; the shots no longer
   require camera-plane or yaw-billboard modes to preserve a sprite aspect;
-- a lived-in bathroom: a rebuilt shower stall (gathered curtain on an
-  L-rail, mixer, hose, tilted head, soap shelf); its plumbing stands on the
-  back wall directly ahead of the washing hero, with the raised hot handle
-  in reach of his right hand. Three modal scenes run on
+- a lived-in bathroom: a rebuilt shower stall (hand-operated entrance curtain on an
+  L-rail, mixer, rusty pipe, tilted head, soap shelf); the green hose segments
+  alongside the pipe are removed. Its red/blue cross valves share the sink's
+  authored wheel and stand on top of the mixer; the right hand follows the
+  hot wheel's turning grip. The bathroom lamp sits above the curtain rail,
+  with its practical light and crackle source raised alongside it. The plumbing
+  stands on the back wall directly ahead of the washing hero. The existing
+  imported head is tilted `20°` instead of `35°` and moved `0.09 m` toward
+  the wall, with its connecting arm shortened. Narrow water streaks emit
+  in a `30°` fan along the actual nozzle axis; their local depth fade is `0.02 m`, preserving
+  visibility near skin. Residual drops still land inside the tray at the
+  fixed landing point, which also anchors the water ripples. Three modal scenes run on
   one shared skeleton — a first-person toilet action, a first-person shower
-  in which the lens flies into the hero's eyes on `E`, his clothes come off
-  once it is inside, he washes naked (a bare-skin atlas on the same prefab,
-  the toilet's anatomy at rest) with both palms on the tile under a
-  gravity-fed stream, shuts the tap, stands three seconds of drips and
-  dresses before the lens leaves, and first-person teeth brushing through the
+  in which the hero visibly opens the curtain opposite the tap wall, steps
+  into the stall and closes it behind him. The lens starts a gentler flight on `E`,
+  crosses the opening curtain and reaches the future eye position before
+  the hero. He walks to the wash dock and leans into that view; costume
+  changes wait for the actual head/camera alignment, then the lens follows
+  his eyes exactly with no independent drift. The feet stand farther from
+  the wall and the torso leans toward the water without automatic sway.
+  Both palms rest on the tile. Before taking soap, the right hand opens
+  the hot wheel, then the left opens the cold wheel. Each returns to its brace;
+  each opening contributes half the final flow.
+  Valve turns sound at the grip, running water at the actual stream impact,
+  and final drops sound only when they land in the tray.
+  He washes naked (a bare-skin atlas on the same prefab,
+  the toilet's anatomy with passive motion) under the gravity-fed stream.
+  Until the soap is held, `E` takes it from the shelf regardless of cursor
+  position or viewing direction. A localized prompt, yellow outline and
+  connecting line appear beside the soap when it is visible; they do not
+  gate pickup. Pickup takes priority over exit. Pressing on
+  the body selects a surface point; holding left mouse repeats right-hand
+  strokes there with a stationary cursor. Release stops washing and safely
+  withdraws the hand; a new press selects another point. RMB/LT look pauses
+  rubbing. Arrow keys turn the view at `90°/s` alongside the
+  pointer, and held right mouse also enables look. Absolute pitch is bounded
+  to `−75°…115°`, allowing a view of the shower head and room to wash the
+  chest in view even with the bent head ahead of the torso.
+  The gamepad's interaction button picks up soap, right stick moves the
+  pointer, right trigger holds washing, and left
+  trigger changes the stick to look. Measured contact travel fills one shared
+  gauge over at least `10 s` of active washing; any single selectable body
+  region can fill it completely, with no regional quotas. The soap stays in
+  the right hand throughout pickup, washing and return; every part of that
+  arm is excluded from body picking and washing. The soap rests against the
+  measured production palm and follows its hand frame; travel uses the same
+  body-mesh guard. Actual soap contact drives a stronger bounded passive
+  anatomy response that settles after release. The two scrotum lobes rest
+  closer to the bare body, rotated down around their fixed attachments.
+  A shallow water layer grows to `1 cm` in the tray, with ripples and flow
+  toward a real perforated `15 cm` drain in the far-right corner when facing
+  the tap wall. The layer drains after shutoff. The user-requested removal
+  of camera-lens drops leaves the scene image unobstructed by a water overlay.
+  `E` is consumed as soap pickup throughout washing. Exit `Q` works without
+  aiming or a visible prompt. When the cold wheel is visible, a label sits
+  to its left with the same yellow outline and leader used for soap.
+  Full progress or exit `Q` returns the soap before the left hand closes
+  the cold wheel and the right closes the hot wheel. The shower loop gain is doubled to `0.29`;
+  other bathroom sounds retain their levels. The hero remains undressed
+  through straightening, drips, opening the curtain and stepping out.
+  The camera detaches before straightening, returning the last wash look to its
+  fixed entry endpoint during `0.6 s` straightening and `3 s` of drips.
+  It stays there while he opens the curtain and steps out first, stopping
+  at the existing outside dock facing the room. A `0.25 s` rendered settle
+  lets the walking pose fade before the offscreen check. Clothing
+  restores only after a rendered frame shows every active body part outside
+  the camera frustum, including his feet. The lens then retraces its entry path over `4 s`, preserving the entry rotation/FOV
+  interpolation rather than turning to follow him. Only the rendered default
+  frame allows an in-place turn toward the curtain at the authored outside
+  dock and the closing gesture; input returns after its terminal
+  frame, with no extra actor turn. The static left curtain overlaps all
+  the way to the tile. Only full progress grants shower relief and mouth
+  cleaning; waiting without starting a stroke or leaving early does not.
+  The third scene is first-person teeth brushing through the
   real mirror. The left hand opens an authored faucet valve before brushing;
-  its stream and local water sound follow the valve. Mouse or right-stick X/Y
+  its stream and local water sound follow the valve. Opening and closing
+  each play one local mechanical cue, including a reversed turn on cancellation.
+  Mouse or right-stick X/Y
   drives the actual right arm relative to the reflection; its gauge credits
   only commanded brush travel confirmed at the
   teeth, requiring at least `5 s` of active movement. At full progress the

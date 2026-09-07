@@ -25,9 +25,18 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit
 import bar_parts as bp
 
-VERSION = "1.2.0"
+VERSION = "1.4.0"
 SOURCE = ROOT / "ArtSource/Home/Interior"
 MODEL = ROOT / "Assets/Home/Interior/Models/HomeInterior3D.fbx"
+SHOWER_CURTAIN_FRONT_Z = 2.384
+SHOWER_CURTAIN_WALL_Z = 3.857
+SHOWER_CURTAIN_SIDE_COUNT = 5
+SHOWER_CURTAIN_SIDE_WIDTH = .32
+SHOWER_CURTAIN_END_OVERLAP = .012
+SHOWER_BASIN_CENTER = (3.925, .19, 2.925)
+SHOWER_DRAIN_POSITION = (4.32, .215, 3.32)
+SHOWER_DRAIN_HOLE = (.395, .395)
+SHOWER_WATER_POSITION = (3.925, .2135, 2.925)
 PITCH = {"Plain": 1, "Wallpaper": 1.9, "CeilingPlaster": 2.8,
          "PlankFloor": 1.6, "DarkWood": 1.1, "WornLaminate": 1.2,
          "Upholstery": .85, "BedLinen": .9, "BathroomTile": 1.2,
@@ -42,6 +51,12 @@ COLORS = {"Plain": (.30,.27,.21,1), "Wallpaper": (.34,.30,.23,1),
 BUILDER_NAMES = ("HomeInteriorWorldBuilder", "HomeBathroomBuilder",
                  "HomeBalconyWorldBuilder", "HomeAlarmClockBuilder",
                  "HomeRefrigeratorWorldBuilder")
+# These retain their runtime names but use the sink's actual cross-wheel mesh.
+# Do not leave obsolete round-handle aliases in the generic interior library.
+EXTERNAL_BINDINGS = {
+    "Home Bathroom Shower Mixer Handle Hot": "HomeBrushingAction/Models/FaucetHandle",
+    "Home Bathroom Shower Mixer Handle Cold": "HomeBrushingAction/Models/FaucetHandle",
+}
 
 
 def swap(v):
@@ -172,6 +187,56 @@ def dish(size,deep=False):
     return cylinder(size,profile)
 
 
+def closed_rings(rings):
+    """Join a closed cross-section of Unity-space rings, retaining its hole."""
+    count=len(rings[0]);vertices=[point for ring in rings for point in ring];faces=[]
+    for row in range(len(rings)):
+        next_row=(row+1)%len(rings)
+        for i in range(count):
+            next_i=(i+1)%count
+            faces.append((row*count+i,next_row*count+i,next_row*count+next_i,row*count+next_i))
+    return bp.to_source((vertices,faces))
+
+
+def rectangular_drain_surface(size,hole_radius,bevel=0):
+    """A closed slab around a real drain aperture; no polygon covers its hole."""
+    x,y,z=size;cx,cz=SHOWER_DRAIN_HOLE
+    angles={math.tau*i/48 for i in range(48)}
+    # Include every rectangular corner at each bevel radius. A radial ring
+    # without these angles would cut the slab's corner off diagonally.
+    for inset in (0,bevel):
+        for px in (-x*.5+inset,x*.5-inset):
+            for pz in (-z*.5+inset,z*.5-inset):
+                angles.add(math.atan2(pz-cz,px-cx)%math.tau)
+    angles=sorted({round(angle,12) for angle in angles})
+    def outer(height,inset):
+        result=[]
+        for angle in angles:
+            dx,dz=math.cos(angle),math.sin(angle)
+            distance=min((((x*.5-inset if dx>0 else -x*.5+inset)-cx)/dx) if abs(dx)>1e-9 else math.inf,
+                         (((z*.5-inset if dz>0 else -z*.5+inset)-cz)/dz) if abs(dz)>1e-9 else math.inf)
+            result.append((cx+dx*distance,height,cz+dz*distance))
+        return result
+    def inner(height):
+        return [(cx+math.cos(a)*hole_radius,height,cz+math.sin(a)*hole_radius) for a in angles]
+    rings=[outer(-y*.5,0)]
+    if bevel:rings.append(outer(y*.5-bevel,0))
+    rings.extend([outer(y*.5,bevel),inner(y*.5),inner(-y*.5)])
+    return closed_rings(rings)
+
+
+def shower_drain_grille():
+    """A bevelled metal rim and five seated bars, with visible open slots."""
+    profile=((.072,-.006),(.075,.002),(.073,.006),(.057,.006),(.055,.004),(.055,-.006))
+    rings=[[(math.cos(math.tau*i/32)*radius,height,math.sin(math.tau*i/32)*radius)
+            for i in range(32)] for radius,height in profile]
+    pieces=[closed_rings(rings)]
+    for x in (-.040,-.020,0,.020,.040):
+        half_length=math.sqrt(.055**2-(abs(x)+.0045)**2)+.004
+        pieces.append(kit.translated(box((.009,.010,half_length*2),.0015),swap((x,.001,0))))
+    return kit.merge_all(pieces)
+
+
 def irregular_patch(size,seed=0,wall=False):
     """Closed matte surface fleck with genuinely concave, non-circular edges."""
     if wall:
@@ -249,6 +314,14 @@ class Build:
             obj["bp_"+key]=item[key]
         self.parts.append(item);self.geometry[name]=geometry
         return item
+
+
+def shower_side_position(index):
+    """The fixed folded run reaches the tile, beyond the tray's back edge."""
+    span = SHOWER_CURTAIN_WALL_Z - SHOWER_CURTAIN_FRONT_Z
+    step = (span + 2 * SHOWER_CURTAIN_END_OVERLAP - SHOWER_CURTAIN_SIDE_WIDTH) / (SHOWER_CURTAIN_SIDE_COUNT - 1)
+    return (3.36 + (-.012 if index % 2 == 0 else .012), 1.30,
+            SHOWER_CURTAIN_FRONT_Z - SHOWER_CURTAIN_END_OVERLAP + SHOWER_CURTAIN_SIDE_WIDTH * .5 + index * step)
 
 
 def add_bindings(b):
@@ -334,8 +407,6 @@ def add_bindings(b):
         fixed["Home Kitchen Top "+side]=((width+.04,.10,.90),"WornLaminate")
     for i,width in enumerate((.32,.30,.31,.27),1):
         fixed[f"Home Bathroom Shower Curtain Fold {i}"]=((width,1.82,.03),"BedLinen")
-    for i in range(1,4):
-        fixed[f"Home Bathroom Shower Curtain Side {i}"]=((.03,1.82,.32),"BedLinen")
     for name,(size,sheet) in fixed.items():
         geom=None
         if "Blanket" in name or "Coat" in name or "Cushion" in name:
@@ -343,7 +414,20 @@ def add_bindings(b):
         if name=="Home Battered Cabinet":geom=cupboard(size)
         if name=="Home Table Base Crooked":
             geom=cylinder(size,((1,-.5),(1,-.46),(.62,-.42),(.52,.38),(.70,.45),(1,.5)))
+        if name=="Home Bathroom Shower Basin":geom=rectangular_drain_surface(size,.060,.012)
         b.add(name,size,sheet,geometry=geom)
+    b.add("Home Bathroom Shower Drain",(.15,.012,.15),"PaintedMetal",
+          position=SHOWER_DRAIN_POSITION,tint=(.38,.39,.34,1),geometry=shower_drain_grille())
+    b.add("Home Bathroom Shower Drain Well",(.12,.030,.12),"Plain",
+          position=(SHOWER_DRAIN_POSITION[0],.197,SHOWER_DRAIN_POSITION[2]),tint=(.065,.075,.065,1),
+          geometry=kit.lathe(((.060,-.015),(.060,.015),(.054,.015),(.050,-.010),(.001,-.010)),32))
+    b.add("Home Bathroom Shower Collected Water",(1,.002,1),"Plain",
+          position=SHOWER_WATER_POSITION,tint=(.30,.38,.34,1),
+          geometry=rectangular_drain_surface((1,.002,1),.075))
+    for i in range(SHOWER_CURTAIN_SIDE_COUNT):
+        b.add(f"Home Bathroom Shower Curtain Side {i + 1}",
+              (.03,1.82,SHOWER_CURTAIN_SIDE_WIDTH), "BedLinen",
+              position=shower_side_position(i))
     for name,size,cols,rows,depth in (
             ("Home Bed Mattress",(2.39,.18,1.57),17,11,.10),):
         b.add(name,size,"BedLinen",role="grid",semantic=name,
@@ -379,7 +463,7 @@ def add_bindings(b):
             if interpolated and "{" in label:
                 expression="^"+".*".join(re.escape(s) for s in re.split(r"\{[^}]+\}",label))+"$"
                 patterns.add(expression)
-            else:exact.add(label)
+            elif label not in EXTERNAL_BINDINGS:exact.add(label)
         # Literal full-size call vectors are frozen as fixed authored meshes.
         for match in re.finditer(r'(CreateBox|CreateCylinder|CreateEnamelBox|CreatePipe|CreateExteriorSurfaceBox)\s*\(\s*"([^"]+)"',text):
             tail=text[match.end():];depth=1;stop=0
@@ -392,7 +476,7 @@ def add_bindings(b):
             vectors=re.findall(r'new Vector3\(\s*([-+\d.]+)f?\s*,\s*([-+\d.]+)f?\s*,\s*([-+\d.]+)f?\s*\)',args)
             # Last vector can be pipe rotation: infer size from second argument
             # position only when two direct literals occur, never from a tint.
-            if len(vectors)>=2 and match.group(2) not in fixed:
+            if len(vectors)>=2 and match.group(2) not in fixed and match.group(2) not in EXTERNAL_BINDINGS:
                 vector=vectors[1];size=tuple(float(v) for v in vector)
                 if min(size)>0:
                     if match.group(1) in ("CreateCylinder","CreatePipe"):
@@ -635,6 +719,46 @@ def add_decor(b):
 
 def validate(b):
     errors=[];triangles=0
+    def vertical_hits(name,x,z):
+        vertices,faces=b.geometry[name];vertices=[swap(v) for v in vertices];heights=[]
+        for face in faces:
+            for i in range(1,len(face)-1):
+                a,c,d=(vertices[j] for j in (face[0],face[i],face[i+1]))
+                dx,dz=c[0]-a[0],c[2]-a[2];ex,ez=d[0]-a[0],d[2]-a[2]
+                determinant=dx*ez-dz*ex
+                if abs(determinant)<1e-12:continue
+                u=((x-a[0])*ez-(z-a[2])*ex)/determinant
+                v=(dx*(z-a[2])-dz*(x-a[0]))/determinant
+                if u>=-1e-8 and v>=-1e-8 and u+v<=1+1e-8:
+                    heights.append(a[1]+u*(c[1]-a[1])+v*(d[1]-a[1]))
+        return heights
+    # Ray-test the exported solids themselves: the drain is not a painted
+    # disc, and neither the enamel floor nor the water covers its opening.
+    for surface in ("Home Bathroom Shower Basin","Home Bathroom Shower Collected Water"):
+        if vertical_hits(surface,*SHOWER_DRAIN_HOLE):errors.append(surface+": drain aperture is capped")
+    for x in (.010,.030,-.010,-.030):
+        if vertical_hits("Home Bathroom Shower Drain",x,0):errors.append("shower grate slot is capped")
+    if not vertical_hits("Home Bathroom Shower Drain",0,0):errors.append("shower drain is missing its central bar")
+    well=vertical_hits("Home Bathroom Shower Drain Well",.010,0)
+    if not well or max(well)>-.009:errors.append("shower drain well lacks visible recess")
+    if min(.505-SHOWER_DRAIN_HOLE[0],.505-SHOWER_DRAIN_HOLE[1])-.075<.034:
+        errors.append("shower drain overlaps the basin's far corner bevel")
+    for p in b.parts:
+        names=[p["name"],p["semantic_name"],*p["aliases"]]
+        if any(name in EXTERNAL_BINDINGS for name in names):
+            errors.append("shower valve duplicates its shared sink resource")
+        if any(name.startswith("Home Bathroom Shower Hose ") for name in names) or any(
+                re.fullmatch(pattern,"Home Bathroom Shower Hose 1") for pattern in p["patterns"]):
+            errors.append("removed shower hose still has an interior binding")
+    # Measure the actual authored folds in their planned placement, including
+    # overlaps, instead of accepting a count that can still leave a wall gap.
+    side_folds=sorted((p for p in b.parts if p["name"].startswith("Home Bathroom Shower Curtain Side ")),
+                      key=lambda p:p["position"][2])
+    intervals=[(p["position"][2]+p["bounds_min"][2],p["position"][2]+p["bounds_max"][2]) for p in side_folds]
+    if len(intervals)!=SHOWER_CURTAIN_SIDE_COUNT or intervals[0][0]>SHOWER_CURTAIN_FRONT_Z or intervals[-1][1]<SHOWER_CURTAIN_WALL_Z:
+        errors.append("shower side curtain does not cover entrance-to-tile span")
+    if any(left[1]-right[0]<.024 for left,right in zip(intervals,intervals[1:])):
+        errors.append("shower side curtain folds do not overlap beyond their bevels")
     # The same plan-derived rectangles as HomeApartmentDressing. Coarse
     # gameplay reserves remain independent from authored furniture surfaces.
     paths=[("entry",(-.80,-3.65,.80,-1.50)),
@@ -715,6 +839,11 @@ def validate(b):
             "positive_volume":True,"measured_bounds":True,"metre_uv":True,
             "main_route_clearance":True,"household_route_clearance":True,
             "relocated_furniture_supports":True,
+            "shower_side_curtain_closed_to_wall":True,
+            "shower_hose_bindings_removed":True,
+            "shower_valves_use_shared_sink_resource":True,
+            "shower_drain_open_grate_and_recess":True,
+            "shower_basin_and_water_drain_apertures":True,
             "no_coincident_cumulative_decor":True}
 
 
@@ -763,6 +892,8 @@ def compose_source_preview(b,render=False):
         "Home Bathroom Toilet Cistern":(4.49,.76,1.40),
         "Home Bathroom Shower Tray":(3.925,.09,2.925),
         "Home Bathroom Shower Basin":(3.925,.19,2.925),
+        "Home Bathroom Shower Drain":SHOWER_DRAIN_POSITION,
+        "Home Bathroom Shower Drain Well":(SHOWER_DRAIN_POSITION[0],.197,SHOWER_DRAIN_POSITION[2]),
         "Home Bathroom Shower Rim Front":(3.925,.225,2.375),
         "Home Bathroom Shower Rim Left":(3.375,.225,2.925),
         "Home Bathroom Sink Pedestal":(2.075,.36,3.425),
@@ -775,6 +906,8 @@ def compose_source_preview(b,render=False):
         "Home Balcony South Rail Cap":(6.15,1.085,-3.35),
         "Home Balcony North Rail Cap":(6.15,1.085,.45),
     }
+    poses.update({f"Home Bathroom Shower Curtain Side {i + 1}":shower_side_position(i)
+                  for i in range(SHOWER_CURTAIN_SIDE_COUNT)})
     collection=bpy.data.collections.new("COMPOSED_PREVIEW_Frames_1_to_7")
     bpy.context.scene.collection.children.link(collection)
     for part in b.parts:
@@ -822,10 +955,14 @@ def compose_source_preview(b,render=False):
 
 
 def main():
+    global SOURCE, MODEL
     argv=sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
     parser=argparse.ArgumentParser();parser.add_argument("--validate-only",action="store_true")
     parser.add_argument("--preview",action="store_true")
+    parser.add_argument("--source-dir",type=Path,default=SOURCE)
+    parser.add_argument("--model-dir",type=Path,default=MODEL.parent)
     args=parser.parse_args(argv)
+    SOURCE=args.source_dir.resolve();MODEL=args.model_dir.resolve()/"HomeInterior3D.fbx"
     b=Build();add_bindings(b);add_decor(b);report=validate(b)
     canonical={"parts":b.parts,"geometry":b.geometry,"uv_pitch":PITCH}
     signature=hashlib.sha256(json.dumps(canonical,sort_keys=True,separators=(",",":"),ensure_ascii=True).encode()).hexdigest()
@@ -838,8 +975,16 @@ def main():
              "report":report,"parts":b.parts,
              "anchors":{"FridgeDoorPivot":[-2.6845,1.12,2.47],
                         "ShowerCurtainPivot":[3.40,0,2.384],
+                        "ShowerDrain":list(SHOWER_DRAIN_POSITION),
+                        "ShowerCollectedWater":list(SHOWER_WATER_POSITION),
                         "LockedRoomDoor":[.68,1.1,.855]},
              "import_contract":{"fixed_mesh_scale":1,"parametric_size":"full metre envelope; cylinder caller Y is half-height",
+                                "external_bindings":EXTERNAL_BINDINGS,
+                                "shower_water":{"basin_top_y":.2125,"water_top_y":.2145,
+                                                "drain_xz":[SHOWER_DRAIN_POSITION[0],SHOWER_DRAIN_POSITION[2]],
+                                                "basin_hole_radius":.060,"water_hole_radius":.075,
+                                                "water_uv":"Unity local XZ metres, centred on the mesh origin",
+                                                "water_visibility":"runtime water effect; hidden at construction"},
                                 "grid":"flat mattress: independent top quads and five rest faces; profiled pillow: top/bottom height samples and imported top vertex-to-sample mapping",
                                 "dynamic_hierarchy":"runtime-owned; binding changes meshes only"}}
     (SOURCE/"home-interior-3d-model.json").write_text(json.dumps(payload,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")

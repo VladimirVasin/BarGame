@@ -246,7 +246,44 @@ namespace BarPromenade
                 !RectMatch(ground.HoldBounds, plan.WalkableBounds))
             {
                 throw new InvalidOperationException(
-                    "The approved wide southeast ground-floor shot drifted.");
+                    "The approved southeast ground-floor shot drifted.");
+            }
+
+            // The close lens cannot hold the whole room from one aim, so the
+            // shot is only accepted together with the bounded focus that
+            // keeps the hero inside it.
+            if (!ground.Focus.Enabled ||
+                Mathf.Abs(
+                    ground.Focus.MaximumYawDegrees -
+                    MothersHouseInteriorLayoutPlanner
+                        .MainRoomFocusYawDegrees) > Tolerance ||
+                Mathf.Abs(
+                    ground.Focus.MaximumPitchDegrees -
+                    MothersHouseInteriorLayoutPlanner
+                        .MainRoomFocusPitchDegrees) > Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "The ground-floor shot must keep its bounded hero focus.");
+            }
+
+            // And the lens rule that keeps him one size across a room whose
+            // near and far corners are six metres apart.
+            if (!ground.Zoom.Enabled ||
+                Mathf.Abs(
+                    ground.Zoom.TargetHeroFraction -
+                    MothersHouseInteriorLayoutPlanner
+                        .MainRoomHeroFrameFraction) > Tolerance ||
+                Mathf.Abs(
+                    ground.Zoom.MinimumFieldOfView -
+                    MothersHouseInteriorLayoutPlanner
+                        .MainRoomMinimumFieldOfView) > Tolerance ||
+                Mathf.Abs(
+                    ground.Zoom.MaximumFieldOfView -
+                    MothersHouseInteriorLayoutPlanner
+                        .MainRoomMaximumFieldOfView) > Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "The ground-floor shot must keep its hero-sized lens.");
             }
         }
 

@@ -29,6 +29,8 @@ namespace BarPromenade
         private bool previousCursorVisible;
         private PlayerFacialExpression previousExpression;
         private float pendingSpitSeconds, scrubDistance;
+        private float presentedFaucetOpen;
+        private int valveSoundDirection;
         private bool brushingPromptVisible;
         private Func<bool> stopAction;
 
@@ -110,6 +112,7 @@ namespace BarPromenade
             Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; cursorCaptured = true;
             timeline.Begin(); progress.Reset(); spit.Begin(); faucet.SetOpen(0f);
             pendingSpitSeconds = scrubDistance = 0f; committed = false; discardMouse = true;
+            presentedFaucetOpen = 0f; valveSoundDirection = 0;
         }
 
         public void ApplyBrushDelta(Vector2 mousePixels)
@@ -136,6 +139,7 @@ namespace BarPromenade
             armPose.Apply(progress.Offset, timeline.ArmWeight, bend, timeline.ValveReach);
             faucet.SetOpen(timeline.FaucetOpen);
             valvePose.ApplyValveGrip(faucet.GripPosition, faucet.GripRotation, timeline.ValveReach);
+            PlayValveTurnCue();
             if (timeline.Phase == HomeTeethBrushingPhase.Brushing)
             {
                 float credit = progress.Credit(armPose.ActualBrushTravel, armPose.ContactError < 0.012f, deltaTime);
@@ -170,6 +174,20 @@ namespace BarPromenade
             }
         }
 
+        private void PlayValveTurnCue()
+        {
+            float change = faucet.OpenAmount - presentedFaucetOpen;
+            presentedFaucetOpen = faucet.OpenAmount;
+            if (Mathf.Abs(change) <= 0.000001f) return;
+            int direction = change > 0f ? 1 : -1;
+            if (direction == valveSoundDirection) return;
+            // A reversed turn also covers cancellation while opening. Reaching,
+            // holding and forced cleanup do not produce a mechanical cue.
+            if (Home.Soundscape != null && Home.Soundscape.PlayBathroomValveTurn(
+                    Home.Audio, faucet.GripPosition, direction > 0))
+                valveSoundDirection = direction;
+        }
+
         protected override bool TryGetSceneCamera(out Vector3 position, out Quaternion rotation)
         {
             position = firstPerson.Position;
@@ -194,11 +212,13 @@ namespace BarPromenade
         protected override void OnSceneRestore()
         {
             faucet?.SetOpen(0f);
+            Home?.Soundscape?.StopBathroomActionSounds();
             firstPerson?.End();
             spit?.Stop();
             ReleasePose();
             visual?.ReleaseContextualFacialExpression(this);
             timeline.Reset(); progress.Reset(); pendingSpitSeconds = 0f;
+            presentedFaucetOpen = 0f; valveSoundDirection = 0;
             brushingPromptVisible = false;
             if (toothbrush != null) toothbrush.SetActive(false);
             if (foam != null) foam.SetActive(false);

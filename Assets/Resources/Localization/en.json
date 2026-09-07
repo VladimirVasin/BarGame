@@ -285,6 +285,14 @@
       "value": "E — take a shower"
     },
     {
+      "key": "interaction.take_shower_soap",
+      "value": "E — take soap"
+    },
+    {
+      "key": "interaction.exit_shower",
+      "value": "Q — leave the shower"
+    },
+    {
       "key": "interaction.stop_shower",
       "value": "E — turn off the water"
     },

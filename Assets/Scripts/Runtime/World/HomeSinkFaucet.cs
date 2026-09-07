@@ -43,9 +43,8 @@ namespace BarPromenade
             MeshRenderer body = CreateMesh("Home Bathroom Sink Tap Body", "FaucetBody", transform);
             body.transform.localPosition = deck;
             ApplyMetal(body, new Color(0.40f, 0.42f, 0.38f));
-            Handle = CreateMesh("Home Bathroom Sink Tap Handle", "FaucetHandle", transform).transform;
-            Handle.localPosition = deck + HomeBrushingResources.Anchor("FaucetBody", "HandlePivot");
-            ApplyMetal(Handle.GetComponent<MeshRenderer>(), new Color(0.55f, 0.56f, 0.49f));
+            Handle = CreateValve("Home Bathroom Sink Tap Handle", transform,
+                deck + HomeBrushingResources.Anchor("FaucetBody", "HandlePivot"), new Color(0.55f, 0.56f, 0.49f));
             grip = new GameObject("Sink Tap Hand Grip").transform;
             grip.SetParent(Handle, false);
             grip.localPosition = HomeBrushingResources.Anchor("FaucetHandle", "HandGrip");
@@ -76,6 +75,15 @@ namespace BarPromenade
             waterSource.maxDistance = 4f;
             GameAudioMixer.Route(waterSource, GameAudioGroup.SfxWorld);
             SetOpen(0f);
+        }
+
+        /// <summary>The same fixed-metre Blender cross wheel serves sink and shower controls.</summary>
+        internal static Transform CreateValve(string name, Transform parent, Vector3 pivot, Color tint)
+        {
+            MeshRenderer renderer = CreateMesh(name, "FaucetHandle", parent);
+            renderer.transform.localPosition = pivot;
+            ApplyMetal(renderer, tint);
+            return renderer.transform;
         }
 
         private static void ApplyMetal(Renderer renderer, Color tint)

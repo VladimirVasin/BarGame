@@ -1,0 +1,130 @@
+{
+  "generator": "home_shower_curtain_v1",
+  "rig": "HeroV2",
+  "bone_count": 31,
+  "root_motion": false,
+  "animation_events": 0,
+  "fps": 24,
+  "duration": 1.5,
+  "outside_entry_ground": [
+    4.2,
+    0.0,
+    2.18
+  ],
+  "outside_exit_ground": [
+    4.2,
+    0.0,
+    2.18
+  ],
+  "inside_entry_ground": [
+    4.2,
+    0.18,
+    2.74
+  ],
+  "inside_exit_ground": [
+    4.2,
+    0.18,
+    2.74
+  ],
+  "outside_entry_facing": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "outside_exit_facing": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "inside_entry_facing": [
+    0.0,
+    0.0,
+    -1.0
+  ],
+  "inside_exit_facing": [
+    0.0,
+    0.0,
+    -1.0
+  ],
+  "closed_edge_x": 4.515,
+  "open_edge_x": 3.846,
+  "edge_z": 2.396,
+  "grip_above_root": 1.38,
+  "reach_end": 0.25,
+  "release_start": 0.75,
+  "maximum_grip_error": 5.479090306416224e-07,
+  "maximum_endpoint_error": 1.7881393432617188e-07,
+  "body_clearance": {
+    "method": "evaluated mesh BVH intersections and ray-parity containment",
+    "sample_fps": 60,
+    "tolerance_m": 0.001,
+    "pairs_per_sample": 96,
+    "actions": {
+      "ShowerCurtainOpenOutside": {
+        "sample_count": 91,
+        "intersecting_pairs": 0,
+        "closest": {
+          "clearance_m": 0.004878298379480839,
+          "time": 0.9222222222222223,
+          "first": "CLO_JacketForearm.R",
+          "second": "CLO_JacketBody"
+        },
+        "first_intersections": []
+      },
+      "ShowerCurtainCloseInside": {
+        "sample_count": 91,
+        "intersecting_pairs": 0,
+        "closest": {
+          "clearance_m": 0.013372653163969517,
+          "time": 0.06666666666666667,
+          "first": "CLO_Bandage.L",
+          "second": "CLO_JacketBody"
+        },
+        "first_intersections": []
+      }
+    }
+  },
+  "clips": [
+    {
+      "name": "ShowerCurtainCloseInside",
+      "duration": 1.5,
+      "loop": false,
+      "entry_pelvis_relative_to_root": [
+        -0.0,
+        0.8349999785423279,
+        -0.00800000037997961
+      ],
+      "action_pelvis_relative_to_root": [
+        -0.0,
+        0.8349999785423279,
+        -0.00800000037997961
+      ],
+      "exit_pelvis_relative_to_root": [
+        -0.0,
+        0.8349999785423279,
+        -0.00800000037997961
+      ]
+    },
+    {
+      "name": "ShowerCurtainOpenOutside",
+      "duration": 1.5,
+      "loop": false,
+      "entry_pelvis_relative_to_root": [
+        -0.0,
+        0.8349999785423279,
+        -0.00800000037997961
+      ],
+      "action_pelvis_relative_to_root": [
+        -0.0,
+        0.8349999785423279,
+        -0.00800000037997961
+      ],
+      "exit_pelvis_relative_to_root": [
+        -0.0,
+        0.8349999785423279,
+        -0.00800000037997961
+      ]
+    }
+  ],
+  "signature": "8740c6833200cd0dc9bceca5b8601f4fa24dd0068a47031a3aada455356b723e"
+}

@@ -285,6 +285,14 @@
       "value": "E — принять душ"
     },
     {
+      "key": "interaction.take_shower_soap",
+      "value": "E — взять мыло"
+    },
+    {
+      "key": "interaction.exit_shower",
+      "value": "Q — выйти из душа"
+    },
+    {
       "key": "interaction.stop_shower",
       "value": "E — выключить воду"
     },

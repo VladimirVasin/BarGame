@@ -337,6 +337,39 @@ namespace BarPromenade
             ApplyFixedPose(FixedFocusedRotation);
         }
 
+        /// <summary>
+        /// Re-lenses the pose that is already held, leaving its position
+        /// and authored aim exactly where they are. A shot that keeps the
+        /// hero one size uses this every frame; nothing else about the
+        /// held pose is disturbed, so the focus that is panning onto him
+        /// keeps its solve and its smoothing.
+        /// </summary>
+        public void SetFixedFieldOfView(float fieldOfView)
+        {
+            if (!fixedPoseActive)
+            {
+                throw new InvalidOperationException(
+                    "A fixed camera lens needs a fixed pose to sit in.");
+            }
+
+            if (!IsFinite(fieldOfView) ||
+                fieldOfView < 20f ||
+                fieldOfView > 100f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(fieldOfView),
+                    "Fixed camera field of view must be between 20 and 100 degrees.");
+            }
+
+            if (Mathf.Approximately(fixedBaseFieldOfView, fieldOfView))
+            {
+                return;
+            }
+
+            fixedBaseFieldOfView = fieldOfView;
+            ConfigureCamera();
+        }
+
         public void ClearFixedFocus()
         {
             if (!fixedFocus.Enabled)

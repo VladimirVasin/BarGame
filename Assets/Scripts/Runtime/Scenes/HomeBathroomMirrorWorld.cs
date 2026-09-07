@@ -51,7 +51,8 @@ namespace BarPromenade
         private static readonly string[] ExcludedNames =
         {
             HomeBathroomMirrorPlane.PlateName,
-            HomeBathroomMirrorOpeningBuilder.RootName
+            HomeBathroomMirrorOpeningBuilder.RootName,
+            HomeShowerWaterEffect.TrayWaterName
         };
 
         private readonly List<HomeMirrorSubtreeClone> statics = new List<HomeMirrorSubtreeClone>();

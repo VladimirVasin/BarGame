@@ -2244,8 +2244,48 @@ namespace BarPromenade.Tests.PlayMode
                 MothersHouseShot(
                     root,
                     HomeCameraShotKind.UpperNorthRoom,
-                    "03-parents-bedroom")
+                    "03-parents-bedroom"),
+
+                // Diagnostics, not compositions. The ground shot pans onto
+                // the hero and re-lenses onto him, so these frames stand at
+                // both ends of that travel. They are what caught the shot
+                // standing OUTSIDE the east wall: panned north from there,
+                // a third of the picture was the empty outside behind the
+                // wall the cutaway had hidden. From inside the room every
+                // ray ends on a wall, and these two prove it.
+                MothersHousePannedShot(root, 30f, 0f, "04-pan-north-limit"),
+                MothersHousePannedShot(root, -30f, 0f, "05-pan-west-limit"),
+                MothersHousePannedShot(
+                    root,
+                    0f,
+                    0f,
+                    "06-lens-near",
+                    MothersHouseInteriorLayoutPlanner
+                        .MainRoomMaximumFieldOfView)
             };
+        }
+
+        private static Shot MothersHousePannedShot(
+            MothersHouseInteriorRoot root,
+            float yawDegrees,
+            float pitchDegrees,
+            string name,
+            float fieldOfView = -1f)
+        {
+            Assert.That(
+                root.Layout.TryGetCameraShot(
+                    HomeCameraShotKind.MainRoom,
+                    out HomeCameraShot shot),
+                Is.True);
+            Quaternion rotation =
+                Quaternion.AngleAxis(yawDegrees, Vector3.up) *
+                shot.Rotation *
+                Quaternion.AngleAxis(pitchDegrees, Vector3.right);
+            return Shot.At(
+                name,
+                shot.Position,
+                shot.Position + rotation * Vector3.forward * 10f,
+                fieldOfView > 0f ? fieldOfView : shot.FieldOfView);
         }
 
         private static Shot MothersHouseShot(

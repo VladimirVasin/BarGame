@@ -126,6 +126,7 @@ namespace BarPromenade
             Rotation = Normalize(rotation);
             FieldOfView = fieldOfView;
             Focus = FixedCameraFocus.None;
+            Zoom = FixedCameraZoom.None;
         }
 
         private HomeCameraShot(
@@ -141,6 +142,23 @@ namespace BarPromenade
             Rotation = source.Rotation;
             FieldOfView = source.FieldOfView;
             Focus = focus;
+            Zoom = source.Zoom;
+        }
+
+        private HomeCameraShot(
+            in HomeCameraShot source,
+            FixedCameraZoom zoom)
+        {
+            Kind = source.Kind;
+            ActivationBounds = source.ActivationBounds;
+            HoldBounds = source.HoldBounds;
+            ActivationHeightRange = source.ActivationHeightRange;
+            HoldHeightRange = source.HoldHeightRange;
+            Position = source.Position;
+            Rotation = source.Rotation;
+            FieldOfView = source.FieldOfView;
+            Focus = source.Focus;
+            Zoom = zoom;
         }
 
         public HomeCameraShotKind Kind { get; }
@@ -164,6 +182,20 @@ namespace BarPromenade
         public HomeCameraShot WithFocus(FixedCameraFocus focus)
         {
             return new HomeCameraShot(this, focus);
+        }
+
+        /// <summary>The lens rule that keeps the hero one size in this
+        /// shot. A shot without one keeps its authored lens forever.
+        /// </summary>
+        public FixedCameraZoom Zoom { get; }
+
+        /// <summary>This shot, allowed to re-lens itself onto the hero.
+        /// A room deep enough that its far corner and its near corner are
+        /// four metres apart cannot hold him at one size on one lens.
+        /// </summary>
+        public HomeCameraShot WithZoom(FixedCameraZoom zoom)
+        {
+            return new HomeCameraShot(this, zoom);
         }
 
         public bool IsInActivationArea(Vector3 worldPosition)
@@ -481,8 +513,14 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private Transform target;
         private HomeCameraShotSelector selector;
+        private float zoomFieldOfView;
+        private float zoomVelocity;
 
         public bool IsInitialized { get; private set; }
+
+        /// <summary>The lens the active shot's zoom is currently holding.
+        /// Equal to the authored lens for a shot without a zoom.</summary>
+        public float ZoomFieldOfView => zoomFieldOfView;
         public HomeCameraShotKind ActiveShotKind =>
             ActiveShot.Kind;
         public HomeCameraShot ActiveShot { get; private set; }
@@ -575,7 +613,48 @@ namespace BarPromenade
             if (IsInitialized)
             {
                 RefreshSelection(false);
+                UpdateZoom(Time.deltaTime);
             }
+        }
+
+        /// <summary>
+        /// Walks the held lens toward the one the active shot's zoom asks
+        /// for. Smoothed, because the hero's own walk changes his distance
+        /// every step and a lens that answered each of them instantly
+        /// would breathe.
+        /// </summary>
+        private void UpdateZoom(float deltaTime)
+        {
+            HomeCameraShot shot = ActiveShot;
+            if (!shot.Zoom.Enabled ||
+                cameraFollow == null ||
+                target == null ||
+                !cameraFollow.FixedPoseActive)
+            {
+                return;
+            }
+
+            float desired = ResolveZoom(shot);
+            zoomFieldOfView =
+                shot.Zoom.SmoothTime <= 0f || deltaTime <= 0f
+                    ? desired
+                    : Mathf.SmoothDamp(
+                        zoomFieldOfView,
+                        desired,
+                        ref zoomVelocity,
+                        shot.Zoom.SmoothTime,
+                        Mathf.Infinity,
+                        deltaTime);
+            cameraFollow.SetFixedFieldOfView(zoomFieldOfView);
+        }
+
+        private float ResolveZoom(HomeCameraShot shot)
+        {
+            return shot.Zoom.Resolve(
+                shot.Position,
+                shot.Rotation,
+                shot.FieldOfView,
+                target.position);
         }
 
         private void OnDisable()
@@ -625,6 +704,17 @@ namespace BarPromenade
             if (shot.Focus.Enabled)
             {
                 cameraFollow.SetFixedFocus(shot.Focus);
+            }
+
+            // A cut arrives already lensed, exactly as it arrives already
+            // framed: the zoom resolves and lands, and only afterwards
+            // does it start following him.
+            zoomVelocity = 0f;
+            zoomFieldOfView = shot.FieldOfView;
+            if (shot.Zoom.Enabled && target != null)
+            {
+                zoomFieldOfView = ResolveZoom(shot);
+                cameraFollow.SetFixedFieldOfView(zoomFieldOfView);
             }
         }
     }
