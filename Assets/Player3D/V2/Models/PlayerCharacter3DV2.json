@@ -12,7 +12,7 @@
   "object_count": 36,
   "mesh_count": 34,
   "triangle_count": 2384,
-  "action_count": 47,
+  "action_count": 48,
   "socket_count": 6,
   "bounds_min": [
     -0.778674,
@@ -551,6 +551,18 @@
       "source_fps": 24,
       "frame_start": 0.0,
       "frame_end": 96.0,
+      "root_motion": false,
+      "event_count": 0
+    },
+    {
+      "name": "ColdShiver",
+      "category": "cold",
+      "duration_seconds": 1.0,
+      "loop": false,
+      "source_frame_count": 24,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 24.0,
       "root_motion": false,
       "event_count": 0
     },
@@ -1333,7 +1345,7 @@
     }
   ],
   "design_version": "HeroV2",
-  "cold_authoring_sha256": "d27bd3157c1aa2ebb847561841bd8f30320fa0b11adb891beed0194e20b2e042",
+  "cold_authoring_sha256": "706426832d41b83ebebbccde7ed613a639381a856583d97477883a268683a2fc",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
   "torso_skin": {
     "contract": "pelvis_spine_chest_v1",
@@ -1358,10 +1370,10 @@
       ]
     ],
     "maximum_ring_gap_m": 0.05,
-    "action_count": 47,
+    "action_count": 48,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "6adb2f9042d9cec7b468b71e40b0cbfe8c05f923b1afeb8cc34121001835fa54",
+  "content_signature_sha256": "611cfcfcd01c8510df9b37459da72b2ddb2366ccb98789c4651b364173ac0b0c",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -1830,5 +1842,14 @@
     "right_knee_width_m": 0.107155,
     "right_calf_width_m": 0.133021,
     "right_ankle_width_m": 0.08129
+  },
+  "cold_motion": {
+    "hold_minimum_sleeve_travel_m": 0.012,
+    "rub_sleeve_stroke_m": 0.06,
+    "rub_strokes": 3,
+    "continuous_hold": true,
+    "shared_endpoints": true,
+    "shiver_seconds": 1.0,
+    "shiver_contractions": 5.5
   }
 }

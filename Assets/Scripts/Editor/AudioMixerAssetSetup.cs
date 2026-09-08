@@ -94,11 +94,18 @@ namespace BarPromenade.Editor
         {
             var api = new MixerEditorApi();
             api.RefreshEffectDefinitions();
-            if (!api.EffectExists(IntoxicationAudioDriver.EffectName))
+            foreach (string native in new[]
+                     {
+                         IntoxicationAudioDriver.EffectName,
+                         BegottenAudioRules.EffectName
+                     })
             {
-                throw new InvalidOperationException(
-                    "Required AudioMixer effect is unavailable: " +
-                    IntoxicationAudioDriver.EffectName);
+                if (!api.EffectExists(native))
+                {
+                    throw new InvalidOperationException(
+                        "Required AudioMixer effect is unavailable: " +
+                        native);
+                }
             }
 
             EnsureFolder("Assets/Resources");
@@ -370,6 +377,11 @@ namespace BarPromenade.Editor
                 api, mixer, perception, int.MaxValue, "Lowpass");
             UnderwaterAudioMixerSetup.Configure(
                 controller, perception, tape, underwater);
+            object projector = EnsureRequiredEffect(
+                api, mixer, perception, int.MaxValue,
+                BegottenAudioRules.EffectName);
+            BegottenAudioMixerSetup.Configure(
+                controller, perception, projector);
 
             api.RemoveEffectsByName(controller, ui, "Send");
 

@@ -20,6 +20,7 @@ namespace BarPromenade.Rendering
         private Ps1CompositePass pass;
         private Ps1VertexSnapGlobalsPass snapPass;
         private HomeToiletUnderwaterPass toiletUnderwaterPass;
+        private AlpineColdFrostPass coldFrostPass;
         private bool loggedMissingResources;
         private int rampFrame = -1;
 
@@ -59,7 +60,15 @@ namespace BarPromenade.Rendering
 
             pass?.Dispose();
             toiletUnderwaterPass?.Dispose();
+            coldFrostPass?.Dispose();
             toiletUnderwaterPass = new HomeToiletUnderwaterPass();
+            coldFrostPass = new AlpineColdFrostPass
+            {
+                // URP groups 550..599 before its DOF, bloom and tonemapping.
+                // Share the composite's after-post event, then enqueue frost
+                // first: URP's stable sort preserves that order within it.
+                renderPassEvent = injectionPoint
+            };
             pass = new Ps1CompositePass
             {
                 renderPassEvent = injectionPoint
@@ -195,6 +204,16 @@ namespace BarPromenade.Rendering
             snapPass.Setup(snapGrid, snapStrength);
             renderer.EnqueuePass(snapPass);
 
+            bool frostNeeded = coldFrostPass != null && cameraData.resolveFinalTarget &&
+                coldFrostPass.IsNeeded(cameraData.camera);
+            if (frostNeeded)
+            {
+                // The frost uses the same visible window that the following
+                // composite crops, including the arriving Begotten gate.
+                coldFrostPass.Setup(present ? aspectFraction : 1f);
+                renderer.EnqueuePass(coldFrostPass);
+            }
+
             if (!present)
             {
                 return;
@@ -289,6 +308,8 @@ namespace BarPromenade.Rendering
             snapPass = null;
             toiletUnderwaterPass?.Dispose();
             toiletUnderwaterPass = null;
+            coldFrostPass?.Dispose();
+            coldFrostPass = null;
         }
 
         private void ResolveResources()

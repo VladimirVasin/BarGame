@@ -382,8 +382,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(anchors.Spine.parent, Is.SameAs(anchors.Pelvis));
                 Assert.That(anchors.Chest.parent, Is.SameAs(anchors.Spine));
                 Assert.That(registry.AnatomicalParts.Count, Is.EqualTo(16));
-                Assert.That(registry.Animations.Count, Is.EqualTo(47));
-                Assert.That(manifest.actions, Has.Length.EqualTo(47));
+                Assert.That(registry.Animations.Count, Is.EqualTo(48));
+                Assert.That(manifest.actions, Has.Length.EqualTo(48));
 
                 SkinnedMeshRenderer renderer =
                     FindBinding(registry, meshName).Renderer as SkinnedMeshRenderer;
@@ -590,8 +590,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest, Is.Not.Null);
             Assert.That(manifest.design_version, Is.EqualTo("HeroV2"));
             Assert.That(manifest.runtime_integrated, Is.True);
-            Assert.That(manifest.action_count, Is.EqualTo(47));
-            Assert.That(manifest.actions, Has.Length.EqualTo(47));
+            Assert.That(manifest.action_count, Is.EqualTo(48));
+            Assert.That(manifest.actions, Has.Length.EqualTo(48));
             Assert.That(manifest.face_atlas, Is.Not.Null);
             Assert.That(
                 manifest.face_atlas.texture_asset,
@@ -704,20 +704,21 @@ namespace BarPromenade.Tests.EditMode
 
         private static void AssertColdManifestContract(V2Manifest manifest)
         {
-            foreach (string name in new[] { "ColdHold", "ColdShoulderRub" })
+            foreach (string name in new[] { "ColdHold", "ColdShoulderRub", "ColdShiver" })
             {
                 bool held = name == "ColdHold";
+                float duration = held ? 4f : name == "ColdShoulderRub" ? 2.5f : 1f;
                 V2Action action = Array.Find(manifest.actions,
                     candidate => candidate.name == name);
                 Assert.That(action, Is.Not.Null, $"Missing Hero V2 action {name}.");
                 Assert.That(action.category, Is.EqualTo("cold"));
                 Assert.That(action.duration_seconds,
-                    Is.EqualTo(held ? 4f : 2.5f).Within(0.0001f));
+                    Is.EqualTo(duration).Within(0.0001f));
                 Assert.That(action.loop, Is.EqualTo(held));
-                Assert.That(action.source_frame_count, Is.EqualTo(held ? 96 : 60));
+                Assert.That(action.source_frame_count, Is.EqualTo((int)(duration * 24f)));
                 Assert.That(action.source_fps, Is.EqualTo(24f));
                 Assert.That(action.frame_start, Is.Zero);
-                Assert.That(action.frame_end, Is.EqualTo(held ? 96f : 60f));
+                Assert.That(action.frame_end, Is.EqualTo(duration * 24f));
                 Assert.That(action.root_motion, Is.False);
                 Assert.That(action.event_count, Is.Zero);
                 Assert.That(action.bone_only, Is.True);
@@ -1098,7 +1099,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(sipSettings, Is.Not.Null);
             Assert.That(sipSettings.loopTime, Is.True);
 
-            foreach (string name in new[] { "ColdHold", "ColdShoulderRub" })
+            foreach (string name in new[] { "ColdHold", "ColdShoulderRub", "ColdShiver" })
             {
                 ModelImporterClipAnimation coldSettings = Array.Find(
                     importer.clipAnimations, clip => clip.name == name);

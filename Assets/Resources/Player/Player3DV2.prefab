@@ -561,6 +561,12 @@ MonoBehaviour:
     authoredDuration: 4
     looping: 1
     facialExpressionKeys: []
+  - clipName: ColdShiver
+    category: cold
+    clip: {fileID: -7740586661957562788, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 1
+    looping: 0
+    facialExpressionKeys: []
   - clipName: ColdShoulderRub
     category: cold
     clip: {fileID: -2058030670615486719, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
@@ -786,7 +792,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 1.7.0
   sourcePose: apose
   sourceTriangleCount: 2384
-  buildSignature: d2313655aaca304967cbc1d4c5d60953
+  buildSignature: 6c63723d570bf5278e28c3abaadf8791
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}

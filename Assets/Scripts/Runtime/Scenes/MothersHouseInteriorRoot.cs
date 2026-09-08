@@ -191,6 +191,7 @@ namespace BarPromenade
                 IntoxicationHud);
 
             IsInitialized = true;
+            AlpineColdExposure.Bind(this, camera, () => IsInitialized, () => true);
             timer.Stop();
             GameLog.Info(
                 "mothers_house",

@@ -348,21 +348,6 @@ MonoBehaviour:
       height: 2.6833334
     baseMapTransform: {x: 0.11509284, y: 0.09197895, z: 0.18381801, w: 0.5000619}
     renderer: {fileID: 4940964997027438234}
-  - sourceName: DRESS_Sofa.PatchedThrow
-    role: patched_throw
-    group: fixed
-    sheet: BedLinen
-    emissive: 0
-    castsShadows: 1
-    tint: {r: 0.33, g: 0.27, b: 0.17, a: 1}
-    sourceUvBounds:
-      serializedVersion: 2
-      x: -3.0194445
-      y: -0.11111111
-      width: 3.7083335
-      height: 1.6444445
-    baseMapTransform: {x: 0.06655556, y: 0.15008728, z: 0.45255572, w: 0.51827127}
-    renderer: {fileID: 4797788055294646423}
   - sourceName: DRESS_TeaService.CupsAndSugar
     role: tea_service
     group: fixed
@@ -2460,10 +2445,10 @@ MonoBehaviour:
     wallThickness: 0.24
     doorWidth: 1.3
     doorHeight: 2.2
-  sourceTriangleCount: 21844
-  sourceGeneratorVersion: 1.11.0
+  sourceTriangleCount: 21760
+  sourceGeneratorVersion: 1.11.1
   designId: mothers_house_interior_v1
-  buildSignature: fff7177cacc52b5c018798aeeaa8c26bdda3915dc2f940fb9ddf8af299326132
+  buildSignature: 01fc5412432b5f9c835a442b4587d2d20545e8c6911e81a263e2ce90cf49b1b2
 --- !u!1001 &4490380615483208827
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3344,10 +3329,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
-    - target: {fileID: 8990350003337571564, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
     - target: {fileID: 9116708886448747824, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
       propertyPath: m_CastShadows
       value: 0
@@ -3778,11 +3759,6 @@ MeshRenderer:
 --- !u!23 &4671366474449912139 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 9116708886448747824, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
-  m_PrefabInstance: {fileID: 4490380615483208827}
-  m_PrefabAsset: {fileID: 0}
---- !u!23 &4797788055294646423 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 8990350003337571564, guid: e5dddd69d8c1169439cb90274a43f62d, type: 3}
   m_PrefabInstance: {fileID: 4490380615483208827}
   m_PrefabAsset: {fileID: 0}
 --- !u!23 &4805353231336649375 stripped

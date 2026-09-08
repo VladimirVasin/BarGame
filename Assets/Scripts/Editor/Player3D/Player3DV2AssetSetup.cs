@@ -133,6 +133,7 @@ namespace BarPromenade.Editor
                 { "ChessSeatPlayLoop", new ActionContract("chess_seat", true) },
                 { "ColdHold", new ActionContract("cold", true, 4f, 96, 24f) },
                 { "ColdShoulderRub", new ActionContract("cold", false, 2.5f, 60, 24f) },
+                { "ColdShiver", new ActionContract("cold", false, 1f, 24, 24f) },
                 { "DoorUseEnter", new ActionContract("door_use", false) },
                 { "DoorUseExit", new ActionContract("door_use", false) },
                 { "DoorUseLoop", new ActionContract("door_use", true) },

@@ -304,6 +304,7 @@ namespace BarPromenade
             ResetToDefaults();
             GameTimeScaleRuntime.ResetSession();
             IntoxicationAudioDriver.ResetSession();
+            BegottenAudioDriver.ResetSession();
             GameLog.Info(
                 "session",
                 "new_game_started",
@@ -458,6 +459,7 @@ namespace BarPromenade
             CityWetSurfaceRegistry.ResetForNewSession();
             ChurchGardenPotSessionState.ResetForNewSession();
             HomeUrineEffect.ResetSession();
+            AlpineColdExposure.ResetSession();
             // A new game gets a new salt, so the street does not open with
             // the insult the last playthrough opened with.
             CityPedestrianInsultSessionState.ResetForNewSession();

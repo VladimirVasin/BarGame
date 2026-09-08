@@ -25,7 +25,7 @@ namespace BarPromenade.Editor
         public const string SharedFlameMaterialPath = "Assets/Resources/Materials/MothersHouseFlame.mat";
 
         private const string ExpectedDesignId = "mothers_house_interior_v1";
-        private const string ExpectedGeneratorVersion = "1.11.0";
+        private const string ExpectedGeneratorVersion = "1.11.1";
         private const int ExpectedAnchorCount = 15;
         private const int MaximumRenderers = 160;
         private const int MaximumTriangles = 22000;

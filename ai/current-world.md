@@ -77,14 +77,18 @@ The vertical slice contains:
   shade. The user's final accepted frame keeps the mother in partial shadow
   beside the hearth, without adding story meaning. All five lamps and five window sources
   cast soft realtime shadows. The hearth's warm source sits in the open firebox
-  and moves slightly with the irregular flame, keeping it the main warm light
+  and keeps its existing gentle movement and light variation. The flame
+  tongues carry faster independent rising eddies within their existing bounds,
+  keeping the hearth the main warm light
   without adding ceiling fill. A small existing floor bounce stays under the
   rocking chair, limited to `1.1 m`. Its strength follows the floor lamp and
   hearth; both off leaves no reflected light. Fire, muffled wind, alternating clock ticks and
-  sparse timber settling form its calm sound bed, with gains and local falloff
+  sparse timber settling form its calm sound bed. The hearth has its own
+  broadband wood-crackle loop, audible from the sofa, with gains and local falloff
   adjusted for the fixed camera. Shared camera setup restores its missing or
   disabled audio listener and leaves only one active listener across scene loads.
-  The table
+  The sofa's free cushion is clear: the former three-plate patched throw has
+  been removed without changing the frame, cushions or seat contacts. The table
   instantiates the literal Kettle Hat pedestrian
   prefab and leaves only its ten authored kettle renderers visible, preserving
   the source meshes, material and detail atlas as the explicit atlas exception;
@@ -276,17 +280,46 @@ The vertical slice contains:
   lights follow each moving midpoint. The enclosing ridge closes sight and traversal rather than sheltering
   the bowl; only the station canopy and moving cabin are locally dry.
   The exterior root also opts the existing hero rig into cold presentation:
-  a hunched self-hug during idle and walking, periodic shoulder rubs and small
-  shivers. Running releases the arms while keeping the hunch. The ordinary
+  a hunched self-hug during idle, walking and running, with noticeable shoulder
+  rubbing in short series and small hand movements between them. A separate
+  one-second upper-body shiver interrupts these gaps roughly every `5–9 s`,
+  keeping both palms on the opposite sleeves. Running
+  preserves both the arm pose and rub clock. The ordinary
   leg gait, motor and speed remain shared. `PlayerColdPresentationModel`
   synchronizes the body breath with bounded, wind-carried mouth condensation
   from `PlayerColdBreathEffect`. The open canopy remains cold; cabin seating,
   vehicle ownership, transitions and hidden/contextual presentation suppress
   the profile, and the mother's-house root never enables it. Balance, falling
   and nausea/vomiting retain their protective gestures. Pause freezes the
-  scaled-time clock and particles; scene/presentation cleanup clears the effect.
+  scaled-time body clock and particles; scene/presentation cleanup clears this
+  body profile.
+  A separate session presentation gradually freezes the game image's edges:
+  the first `6 s` outdoors stay clear, then the layer grows to its capped maximum
+  at `43 s`, slightly longer than the walk from the cableway platform to the
+  mother's door. Thin branching grey-cream crystals occupy `8.5–12 %` of ordinary
+  edges and up to `18 %` in corners; the central `64 %` rectangle remains clear.
+  A fixed bitmap supplies the natural fern-crystal pattern. Its numerical mask
+  appears in irregular patches with an uneven growth front. Background blur
+  grows only beneath the already frozen mask, leaving clear gaps and the centre
+  unaffected. The layer is applied after URP post-processing and before the shared PS1/Begotten
+  composite, inside its visible image window; HUD, black bars and loading art
+  remain clear. Quiet dry crackles and a thin icy ring arrive in irregular
+  swells while frost grows. Thaw has its own soft ice-release sounds and tiny
+  damp clicks, fading with the remaining frost; neither phase uses sharp impacts
+  or breaking glass. The open canopy stays cold. The mother's house and enclosed cabin
+  thaw a full layer over about `8 s`, half over `4 s`, and a light layer over
+  roughly `1–2 s`, while body cold and breath are already off. Thaw duration
+  follows the remaining exposure. Pausing and scene/loading transitions freeze
+  exposure and its clock; the first ready frame discards the loading delta.
+  Re-entry resumes the remaining level. A new game or unrelated gameplay scene
+  resets it. The focused real-controller walk measures `93.9022 m` in
+  `36.1163 s`, reaching the door with frost amount `0.90904`; the separate
+  indoor render check verifies the visible full, half-thawed and clear images.
+  The later uneven-growth, masked-blur and separate thaw-sound refinement is
+  recorded independently in the work log.
   This is level-`0` weather, independent of the village's dimming grade; see
-  the accepted `2026-09-07` exception in `architecture-notes.md`.
+  the accepted `2026-09-07` exception and its explicit `2026-09-08`
+  refinements in `architecture-notes.md`; it adds no health, damage or meter.
   Particle alpha stays capped, and the haze wave is the one thing allowed to
   close the top of the lane — only for the seconds of a gust, with the
   uphill axis and the nearest walls readable throughout and the house back
@@ -1458,7 +1491,7 @@ The vertical slice contains:
   seated bar-drinking actions with a right-hand mug-handle grip and a
   patron-aligned rim-to-mouth pose, and the inventory portrait. It keeps the
   `1.75 m`,
-  31-bone contract with 47 bone-only Actions
+  31-bone contract with 48 bone-only Actions
   in 34 mesh parts and 2,384 triangles, but uses adult `7.4946`-head
   proportions, an atlas-driven
   five-state face and a full-colour point-filtered clothing atlas. Its open
@@ -1466,7 +1499,7 @@ The vertical slice contains:
   construction replace protruding detail meshes. The continuous shirt and
   jacket bend over pelvis, lower spine and chest through horizontal mesh rings
   and at most two adjacent bone weights per vertex; the original `41` actions
-  plus four seated-recovery and two cold additions use that shared 31-bone hierarchy. Runtime
+  plus four seated-recovery and three cold additions use that shared 31-bone hierarchy. Runtime
   torso lean is split `40/60` between spine and chest with complete pose reset;
 - one manual PlayableGraph presentation that damp-blends the in-place
   four-second `Idle`, one-second `Walk` and `0.75 s`/18-frame `Run` actions

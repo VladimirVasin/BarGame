@@ -83,6 +83,9 @@ namespace BarPromenade
             ClockTickStart + ClockBeatInterval;
         public const float ClockPulseDuration = 0.14f;
         public const float WoodSettleDuration = 0.72f;
+        public const float HearthLoopDuration = 8f;
+        public const float MaximumHearthSampleAmplitude = 0.62f;
+        public const float HearthTargetRms = 0.11f;
         public const float MaximumWindSampleAmplitude = 0.26f;
         public const float MaximumClockSampleAmplitude = 0.22f;
         public const float MaximumWoodSettleSampleAmplitude = 0.18f;
@@ -93,6 +96,85 @@ namespace BarPromenade
             947, 1123, 1327, 1559, 1811, 2089,
             2389, 2729, 3083, 3469, 3877, 4339
         };
+
+        internal static AudioClip CreateHearthRuntimeClip(int seed)
+        {
+            return CreateRuntimeClip("MothersHouseWarmWoodFire", GenerateHearthSamples(seed));
+        }
+
+        public static float[] GenerateHearthSamples(int seed)
+        {
+            int count = Mathf.RoundToInt(SampleRate * HearthLoopDuration);
+            var samples = new float[count];
+            uint random = unchecked((uint)seed) ^ 0x48454152u;
+            float warmNoise = 0f;
+            float slowNoise = 0f;
+            for (int index = 0; index < count; index++)
+            {
+                float noise = HearthNoise(ref random);
+                warmNoise += 0.30f * (noise - warmNoise);
+                slowNoise += 0.014f * (noise - slowNoise);
+                double phase = index / (double)count * Math.PI * 2d;
+                float breath = (float)(0.76d + 0.11d * Math.Sin(phase + 0.6d) +
+                    0.06d * Math.Sin(phase * 3d + 1.2d));
+                // Air and embers occupy the audible low-mid band. Subtract
+                // the slow pole so the bed is not mostly inaudible sub-bass.
+                samples[index] = (warmNoise - slowNoise) * 0.25f * breath;
+            }
+
+            const int crackCount = 29;
+            for (int crack = 0; crack < crackCount; crack++)
+            {
+                float jitter = (HearthNoise(ref random) + 1f) * 0.5f;
+                int start = Mathf.RoundToInt((crack + 0.16f + jitter * 0.65f) /
+                    crackCount * count);
+                float variation = (HearthNoise(ref random) + 1f) * 0.5f;
+                double duration = 0.065d + variation * 0.065d;
+                double amplitude = 0.12d + variation * 0.14d;
+                double frequencyHz = 290d + jitter * 460d;
+                float grain = 0f;
+                int pulseSamples = (int)(duration * SampleRate);
+                for (int offset = 0; offset < pulseSamples; offset++)
+                {
+                    double seconds = offset / (double)SampleRate;
+                    float noise = HearthNoise(ref random);
+                    grain += 0.42f * (noise - grain);
+                    double envelope = Math.Min(1d, seconds / 0.0018d) *
+                        Math.Exp(-seconds * (35d + jitter * 28d)) *
+                        Math.Min(1d, (duration - seconds) / 0.012d);
+                    // The short woody body is measured in Hz and seconds,
+                    // while noise supplies the fine, irregular crack itself.
+                    double body = Math.Sin(seconds * frequencyHz * Math.PI * 2d) *
+                        Math.Exp(-seconds * 58d);
+                    samples[(start + offset) % count] += (float)(amplitude * envelope *
+                        (grain * 0.90d + noise * 0.16d + body * 0.14d));
+                }
+            }
+
+            double squares = 0d;
+            float peak = 0f;
+            int edgeSamples = SampleRate / 50;
+            for (int index = 0; index < count; index++)
+            {
+                float edge = Mathf.Min(1f, Mathf.Min(index, count - 1 - index) /
+                    (float)edgeSamples);
+                samples[index] *= edge;
+                squares += (double)samples[index] * samples[index];
+                peak = Mathf.Max(peak, Mathf.Abs(samples[index]));
+            }
+            float gain = Mathf.Min(HearthTargetRms / (float)Math.Sqrt(squares / count),
+                MaximumHearthSampleAmplitude / peak);
+            for (int index = 0; index < count; index++) samples[index] *= gain;
+            return samples;
+        }
+
+        private static float HearthNoise(ref uint state)
+        {
+            state ^= state << 13;
+            state ^= state >> 17;
+            state ^= state << 5;
+            return (state & 0x00ffffffu) / 8388608f - 1f;
+        }
 
         internal static AudioClip CreateMuffledWindRuntimeClip(int seed)
         {

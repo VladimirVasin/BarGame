@@ -42,7 +42,7 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   open jacket edges, pockets, seams, patch, cuffs and boot construction. The
   two forearm cells are painted identically, and the generator compares them
   pixel for pixel. The result has `34` mesh parts and
-  `2,384` triangles, with the same `31` bones, six sockets and `47` bone-only
+  `2,384` triangles, with the same `31` bones, six sockets and `48` bone-only
   production actions.
 - One curved head surface uses an `8 x 4` face atlas (`512 x 256`) with
   twenty-six cells: thirteen expressions in columns `c0..c3` and their
@@ -140,25 +140,40 @@ This opt-in applies only during the interaction handoff without an active clip.
 
 ## Animation contract
 
-- The accepted `2026-09-07` exterior-AlpineVillage exception adds `ColdHold`
-  (`4 s`) and `ColdShoulderRub` (`2.5 s`) on this same rig. The generator solves
+- The accepted `2026-09-07` exterior-AlpineVillage exception, refined by the
+  user's direct request on `2026-09-08`, adds `ColdHold`
+  (`4 s`), `ColdShoulderRub` (`2.5 s`) and non-looping `ColdShiver`
+  (`1 s`, `24` source frames at `24 fps`) on this same rig. The generator solves
   each palm onto the opposite upper sleeve; the held self-hug has a restrained
-  hunch, raised shoulders, a breathing phrase and a short shoulder shiver. The
-  left forearm crosses above/ahead of the lower supporting right arm. The rub
-  contains three strokes of at most `2.5 cm` and returns to the held contact. The
+  hunch, raised shoulders and a breathing phrase. The separate shiver adds
+  five–six quick shoulder/chest contractions with the neck drawn in, while
+  palms keep their opposite-sleeve contacts; root, pelvis and legs stay neutral.
+  Its endpoints match Hold-zero. The left forearm crosses above/ahead of the
+  lower supporting right arm.
+  Three `60 mm` sleeve passes return to the held contact; between series,
+  two quiet passes per Hold loop move the left/right contacts `18/16 mm`.
+  The left hand rubs down and the right hand up the opposite sleeve. The
   `player_cold_clearance.py` generator check measures all `36` opposing pairs
   of the twelve actual deformed convex meshes every half source frame; no
   opposing palm/sleeve pair is exempt from the `2 mm` numerical tolerance.
   `Player3DCharacterPresentation.Cold` masks torso and arms separately above
-  locomotion: legs and pelvis retain the ordinary gait, running releases the
-  arms, and owned actions/falling override the profile. Protective arm poses
+  locomotion: legs and pelvis retain the ordinary gait, running preserves
+  the cold arms and rub clock, and owned actions/falling override the profile.
+  Protective arm poses
   release conflicting cold weights before their IK in that same frame;
   returning to the cold pose retains its smooth blend. The shared pure cold
-  clock starts its first rub at `10 s`, then varies start intervals through
-  `8–14 s`; its `4 s` breath drives the mouth condensation too. The open station
-  canopy stays cold; the enclosed cabin and mother's house do not use this
-  presentation. Canon boundaries live in the story-bible §6 registry and
-  art-bible §10g; this is ordinary rig animation without an atlas replacement.
+  clock starts its first `2.5 s` rub series at `1.8 s`, then cycles through
+  start-to-start intervals `5.5/4.25/6/4.75/5/6.25/4.5 s`. The intervening
+  `1.75–3.75 s` use the moving Hold; its `4 s` breath drives the mouth
+  condensation too. Separate `1 s` shiver bouts occur roughly every `5–9 s`
+  between rub series under the same masks and protective priorities, with
+  `0.12 s` blends. The open station canopy stays cold; the enclosed cabin and
+  mother's house do not use this
+  body presentation. The separately approved screen frost and its quiet
+  crackle/icy ring can linger and thaw there; their session clock never owns
+  the hero, changes his gait or drives health. Canon boundaries live in the
+  story-bible §6 registry and art-bible §10g; this is ordinary rig animation
+  without an atlas replacement.
 - All `41` existing actions are regenerated with the independent
   `pelvis -> spine -> chest` tracks on the preserved 31-bone hierarchy. Their
   timings, sockets, hand/foot contacts and contextual seams remain the same;

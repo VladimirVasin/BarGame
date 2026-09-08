@@ -1,3 +1,4 @@
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
@@ -96,7 +97,12 @@ namespace BarPromenade
             {
                 return;
             }
-            AppliedIntensity = GameTimeScaleRuntime.PerceptionIntensity;
+            // The tape and the Begotten print are mutually exclusive: the
+            // print is the mode a hangover will drive, and a hangover is not
+            // drunkenness. The tape therefore leaves exactly as far as the
+            // print has arrived, so the two apparatus are never stacked.
+            AppliedIntensity = GameTimeScaleRuntime.PerceptionIntensity *
+                BegottenAudioRules.TapeShare(BegottenModeRamp.Weight);
             // Inventory/journal freeze gameplay but intentionally keep ambient audio.
             bool paused = AudioListener.pause;
             bool intensitySet = mixer.SetFloat(IntensityParameter, AppliedIntensity);

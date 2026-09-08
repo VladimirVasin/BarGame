@@ -11,10 +11,13 @@ namespace BarPromenade
         private readonly PlayerColdPresentationModel coldModel = new PlayerColdPresentationModel();
         private Func<bool> coldEnvironment;
         private AnimationLayerMixerPlayable coldLayers;
+        private AnimationMixerPlayable coldTorso;
         private AnimationMixerPlayable coldArms;
         private AnimationClipPlayable coldTorsoHold;
         private AnimationClipPlayable coldArmsHold;
         private AnimationClipPlayable coldRub;
+        private AnimationClipPlayable coldTorsoShiver;
+        private AnimationClipPlayable coldArmsShiver;
         private AvatarMask coldTorsoMask;
         private AvatarMask coldArmsMask;
         private float coldBodyWeight;
@@ -39,24 +42,34 @@ namespace BarPromenade
             if (!graph.IsValid() || registry == null)
                 throw new InvalidOperationException("Initialize the hero before configuring cold.");
             if (!TryResolveAnimation("ColdHold", out var hold) ||
-                !TryResolveAnimation("ColdShoulderRub", out var rub))
-                throw new InvalidOperationException("The alpine hero requires ColdHold and ColdShoulderRub.");
+                !TryResolveAnimation("ColdShoulderRub", out var rub) ||
+                !TryResolveAnimation("ColdShiver", out var shiver))
+                throw new InvalidOperationException(
+                    "The alpine hero requires ColdHold, ColdShoulderRub and ColdShiver.");
 
             if (!coldLayers.IsValid())
             {
                 coldLayers = AnimationLayerMixerPlayable.Create(graph, 3);
-                coldArms = AnimationMixerPlayable.Create(graph, 2);
+                coldTorso = AnimationMixerPlayable.Create(graph, 2);
+                coldArms = AnimationMixerPlayable.Create(graph, 3);
                 coldTorsoHold = CreateLocomotionPlayable(hold);
                 coldArmsHold = CreateLocomotionPlayable(hold);
                 coldRub = CreateLocomotionPlayable(rub);
+                coldTorsoShiver = CreateLocomotionPlayable(shiver);
+                coldArmsShiver = CreateLocomotionPlayable(shiver);
                 coldTorsoHold.SetSpeed(0d);
                 coldArmsHold.SetSpeed(0d);
                 coldRub.SetSpeed(0d);
+                coldTorsoShiver.SetSpeed(0d);
+                coldArmsShiver.SetSpeed(0d);
+                graph.Connect(coldTorsoHold, 0, coldTorso, 0);
+                graph.Connect(coldTorsoShiver, 0, coldTorso, 1);
                 graph.Connect(coldArmsHold, 0, coldArms, 0);
                 graph.Connect(coldRub, 0, coldArms, 1);
+                graph.Connect(coldArmsShiver, 0, coldArms, 2);
                 graph.Disconnect(layerMixer, 0);
                 graph.Connect(locomotionMixer, 0, coldLayers, 0);
-                graph.Connect(coldTorsoHold, 0, coldLayers, 1);
+                graph.Connect(coldTorso, 0, coldLayers, 1);
                 graph.Connect(coldArms, 0, coldLayers, 2);
                 graph.Connect(coldLayers, 0, layerMixer, 0);
                 coldTorsoMask = CreateColdMask(false);
@@ -146,13 +159,14 @@ namespace BarPromenade
             bool unwell = ColdUnwell;
             bool protective = ColdProtectiveArmsOwned;
             coldBodyWeight = unwell ? 0f : Mathf.MoveTowards(coldBodyWeight, 1f, step);
-            float armsTarget = 1f - Mathf.Clamp01(runBlend);
-            coldArmWeight = protective ? 0f : Mathf.MoveTowards(coldArmWeight, armsTarget, step);
-            coldModel.Step(deltaTime, !protective && CurrentLocomotionState != Player3DLocomotionState.Run);
+            coldArmWeight = protective ? 0f : Mathf.MoveTowards(coldArmWeight, 1f, step);
+            // Running retains the warming gesture. The leg/pelvis channels
+            // remain unmasked locomotion, while protective reaches still win.
+            coldModel.Step(deltaTime, !protective);
             if (coldModel.IsRubbing)
                 coldRubTime = coldModel.RubNormalizedTime;
-            // A run can interrupt the rub halfway through a stroke. Keep that
-            // sample during its release instead of snapping to the hold clip.
+            // Keep the last stroke sample through a protective release instead
+            // of snapping to the hold clip.
             coldRubWeight = Mathf.MoveTowards(coldRubWeight,
                 coldModel.RubWeight01, Mathf.Max(0f, deltaTime) / 0.2f);
         }
@@ -166,8 +180,18 @@ namespace BarPromenade
             coldTorsoHold.SetTime(coldModel.BreathPhase01 * PlayerColdPresentationModel.BreathCycleSeconds);
             coldArmsHold.SetTime(coldModel.BreathPhase01 * PlayerColdPresentationModel.BreathCycleSeconds);
             coldRub.SetTime(coldRubTime * PlayerColdPresentationModel.ShoulderRubDurationSeconds);
-            coldArms.SetInputWeight(0, 1f - coldRubWeight);
+            double shiverTime = coldModel.ShiverNormalizedTime * PlayerColdPresentationModel.ShiverDurationSeconds;
+            coldTorsoShiver.SetTime(shiverTime);
+            coldArmsShiver.SetTime(shiverTime);
+            // A late protective reach suppresses the whole shiver immediately.
+            // Its original cold hold can still yield through the existing masks.
+            float shiverWeight = ColdProtectiveArmsOwned ? 0f : coldModel.ShiverWeight01;
+            shiverWeight = Mathf.Min(shiverWeight, 1f - coldRubWeight);
+            coldTorso.SetInputWeight(0, 1f - shiverWeight);
+            coldTorso.SetInputWeight(1, shiverWeight);
+            coldArms.SetInputWeight(0, 1f - coldRubWeight - shiverWeight);
             coldArms.SetInputWeight(1, coldRubWeight);
+            coldArms.SetInputWeight(2, shiverWeight);
             coldLayers.SetInputWeight(1, coldBodyWeight);
             coldLayers.SetInputWeight(2, coldArmWeight);
         }
@@ -200,6 +224,7 @@ namespace BarPromenade
             if (coldArmsMask != null) Destroy(coldArmsMask);
             coldTorsoMask = coldArmsMask = null;
             coldLayers = default;
+            coldTorso = default;
             coldArms = default;
             if (coldBreath != null) Destroy(coldBreath.gameObject);
             coldBreath = null;

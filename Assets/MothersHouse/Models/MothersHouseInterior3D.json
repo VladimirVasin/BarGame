@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-mothers-house-interior-3d-model.py",
-  "generator_version": "1.11.0",
+  "generator_version": "1.11.1",
   "blender_version": "5.0.1",
   "fire_contract": {
     "layers": [
@@ -572,8 +572,8 @@
     6.04,
     5.02
   ],
-  "mesh_count": 153,
-  "triangle_count": 21844,
+  "mesh_count": 152,
+  "triangle_count": 21760,
   "anchors": [
     {
       "name": "ANCHOR_BathroomCamera",
@@ -6365,45 +6365,6 @@
       ]
     },
     {
-      "name": "DRESS_Sofa.PatchedThrow",
-      "role": "patched_throw",
-      "group": "fixed",
-      "sheet": "BedLinen",
-      "emissive": false,
-      "casts_shadows": true,
-      "tint": [
-        0.33,
-        0.27,
-        0.17,
-        1.0
-      ],
-      "colliders": [],
-      "vertices": 48,
-      "triangles": 84,
-      "uv_channel_count": 1,
-      "flame_field_vertex_count": 0,
-      "bounds_min": [
-        -2.7175,
-        -0.1,
-        0.31
-      ],
-      "bounds_max": [
-        -2.1725,
-        0.62,
-        1.38
-      ],
-      "unity_bounds_min": [
-        -2.7175,
-        0.31,
-        -0.1
-      ],
-      "unity_bounds_max": [
-        -2.1725,
-        1.38,
-        0.62
-      ]
-    },
-    {
       "name": "DRESS_FloorLamp.Frame",
       "role": "floor_lamp",
       "group": "fixed",
@@ -6755,5 +6716,5 @@
       ]
     }
   ],
-  "build_signature": "fff7177cacc52b5c018798aeeaa8c26bdda3915dc2f940fb9ddf8af299326132"
+  "build_signature": "01fc5412432b5f9c835a442b4587d2d20545e8c6911e81a263e2ce90cf49b1b2"
 }

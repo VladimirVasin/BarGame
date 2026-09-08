@@ -53,6 +53,7 @@ Assets/
       Ps1Composite.mat
       RuntimePrimitiveLit.mat      shared packaged URP/Lit runtime geometry
     Textures/
+      AlpineColdFrostMask.png     image-generated fern frost mask, 1536x1024; linear/Clamp/no mips, runtime growth only
       CityBuildingSurfaces/       24 deterministic district/semantic sheets; facade/plinth Clamp, micro surfaces Repeat
       CityGroundSoilAlbedo.png     generated compacted-soil ground; 512 runtime, Repeat/mips
       CityFringeServiceTrackAlbedo.png measured compacted aggregate; 512 runtime, Repeat/mips
@@ -88,7 +89,8 @@ Assets/
       HomeShowerTrayWater.shader  shared shallow shower water, ripples and flow to the authored drain
       HomeToiletBowlWater.shader  shared double-sided bowl surface with restrained ripples
       HomeToiletUnderwater.shader camera-owned underwater tint and optical ripple before PS1
-      MothersHouseFlame.shader    authored hearth tongues, rising heat and bounded tip motion
+      AlpineColdFrost.shader      crisp bitmap ice + connected film; separable Gaussian diffusion, clean centre and HUD
+      MothersHouseFlame.shader    fast independent rising eddies within authored tongue bounds
       StairwellCatGrin.shader     arc-length reveal of the Cheshire grin, shader teeth seams
       Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale; Begotten passes
       BegottenFilm.hlsl           the stock of the Begotten print: hash, grain octaves, dust, hairs, scratches
@@ -216,7 +218,7 @@ Assets/
       Player3DLit.mat                   shared URP/Lit hero material
     V2/
       Models/PlayerCharacter3DV2.{fbx,json}  production 34-part model + deterministic metrics
-      Animations/PlayerCharacter3DV2Animations.fbx  validated 47-action V2 rig, including seated recovery, seated-to-crawl transfer and cold gestures
+      Animations/PlayerCharacter3DV2Animations.fbx  source-validated 48-action V2 rig, including seated recovery, seated-to-crawl transfer and cold hold/rub/shiver
       Textures/PlayerFaceAtlas.png       8x4 point-filtered atlas: thirteen expressions + soiled twins; 26 occupied cells, 6 free
       Textures/PlayerClothingAtlas.png   full-colour open-jacket/trouser/boot atlas
       Materials/Player3DV2Clothing.mat  shared white-tint atlas material
@@ -341,6 +343,7 @@ Assets/
       GameDaySchedule.cs         pure event -> first-day table
       VehicleActivityState.cs    resettable temporary rides with session-safe leases
       GameInputPolicy.cs         pure action contexts and pause/modal priority
+      BegottenAudioRules.cs      the print's optical track as numbers; mirrors the native header
     Runtime/
       Core/          twelve-scene bootstrap, gameplay roots, session, transitions
         RuntimeSceneSetup.cs       shared camera/grade setup + 0.55 true-interior Gaussian cap
@@ -370,7 +373,8 @@ Assets/
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
         HomeToiletWaterAudioResources.cs shared procedural entry cue and seamless submerged water loop
-        IntoxicationAudioDriver.cs         forwards shared tempo-owner intensity to native VHS
+        IntoxicationAudioDriver.cs         forwards shared tempo-owner intensity to native VHS, less the print
+        BegottenAudioDriver.cs             forwards the picture's own print weight to the native projector
         CityRainSound.cs                   deterministic rain noise loop + intensity player
         CitySurfSound.cs                   one nearest-waterline spatial surf voice
         CityThunderSound.cs                deterministic azimuthal thunder + distance delay
@@ -394,6 +398,7 @@ Assets/
         RetroAmbience.cs                   diffuse scene beds including occupied bar air
         InteriorSoundscapeSynthesis.cs    quantized PCM, fridge hum + lamp crackle
         InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
+        AlpineFrostAudio.cs                quiet synthesized frost crackle/ring, following exposure and thaw
       Ambient/       scene-neutral outdoor raven roosts over the cemetery raven family
         RavenRoostPlan.cs  roost descriptors, per-scene settings and the ground perch-B ring resolver
         CityRavenRoostPlanner.cs  authored City candidates, 70 m spacing + hard exclusions
@@ -408,6 +413,9 @@ Assets/
         DepthOfFieldSettingsBinder.cs player setting -> authored Gaussian grades
         CinematicDepthOfField.cs priority-10 modal Bokeh; immediate release for camera handoffs
         HomeToiletUnderwaterPass.cs camera-scoped RenderGraph pass before URP post-processing, registered by Ps1CompositeRendererFeature
+        AlpineColdExposure.cs       camera-scoped frost facade over the persistent session driver
+        AlpineColdExposureDriver.cs pause/loading freeze and first-ready-frame guard; village/house/cabin warmth and sound
+        AlpineColdFrostPass.cs      quarter-resolution horizontal/vertical diffusion + full-resolution ice, before PS1/Begotten
       Games/         pure rules and engines for the two park boards, no Unity
         BoardGameContracts.cs  side/status/placement/action/turn contract both games answer
         ChessRules.cs          legal chess: make/unmake, castling, en passant, promotion, attack map
@@ -873,8 +881,9 @@ Assets/
         Player3DCharacterPresentation.cs gait, physics handoff, Rise sampling and opt-in interaction Idle0 support
         Player3DCharacterPresentation.Recovery.cs final pose/velocity transitions, frozen-body composition and supported hand contacts
         Player3DCharacterPresentation.Cold.cs exterior-only torso/arm masks; locomotion legs and owned actions retain priority
-        PlayerColdPresentationModel.cs   shared scaled-time breath and periodic shoulder-rub clock
+        PlayerColdPresentationModel.cs   scaled breath, rub series and separate shiver bouts, preserved during running
         PlayerColdBreathEffect.cs        bounded wind-carried condensation at the authored mouth socket
+        AlpineColdExposureModel.cs       pure 6/43-second frost growth; full/half thaw in 8/4 seconds
         Player3DFaceAtlasPresenter.cs    merge-safe MPB face-cell texture selection
         Player3DRagdollController.cs     bounded 14-body physics; calibrated lying orientation and support costs choose the recovery route
         PlayerRagdollHandoff.cs          the fall's rigid rotation about the boot under the pressure, as a velocity field
@@ -952,7 +961,7 @@ Assets/
         MothersHouseMother{Presentation,Factory,Provider}.cs  the seated mother: manual PlayableGraph, hips aligned to the drawn cushion VERTICALLY only, an open SetExpression nothing calls
         MothersHouseRockingChairMotion.cs  one angle turns the chair's two meshes AND her root; pivot derived from the runners' parabola, world poses driven, nothing reparented
         MothersHouseInteriorAtmosphere.cs  shadowed hearth, five lamps/five window sources; causal floor bounce limited to 1.1 m
-        MothersHouseFireFlicker.cs     shared flame rhythm, one warm light with bounded drift, reversible renderer properties
+        MothersHouseFireFlicker.cs     paused fire clock, one warm light with bounded drift, reversible renderer properties
         MothersHouseInteriorSoundscape.cs  muffled wind + tick/tock + sparse timber settling
         MountainRoadWeather{Rules,Shaper}.cs  the city's own weather slot re-read by altitude, as snow and harder wind
         MountainRoadWindDriver.cs       carries that wind to the crowns, the cloth and the sound bed
@@ -1080,6 +1089,7 @@ Assets/
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       BegottenFilmModelTests.cs            24 fps cadence with stutters, roll bounds, seed determinism, forced picture
       BegottenRampModelTests.cs            15 s in, 3 s out, armed while paused, a change outside the menu snaps
+      BegottenAudioRulesTests.cs           exact ends, the gate closes in log frequency, stage order, 24 Hz lock, header mirror
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
       PlayerNeedsRulesTests.cs        relief floors, clamping and drink fractions
       PlayerNeedsProgressionStateTests.cs  rates, chunking, cap and fractional reset
@@ -1175,6 +1185,7 @@ Assets/
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
       BegottenFilmRenderGraphPlayModeTests.cs  soot-and-bone print, forced 4:3 gate, held vs boiling frames, marked cameras, a half-arrived gate that really narrows, begotten-sheet.png, [Explicit] begotten-ramp-sheet.png
+      BegottenAudioPlayModeTests.cs        the projector follows the print's own weight, holds while paused, threads a fresh reel, and silences the tape
       CityKettleHatBoilPlayModeTests.cs    lid rides the head in idle/walk/seated, steam on the spout, pool release, cabin clamp
       CityKettleHatVisualCapturePlayModeTests.cs  [Explicit] 3/6/12 m boil strips into Captures/KettleHat
       AlpineVillageStormVisibilityPlayModeTests.cs  600 running frames: far plane 110, fog == pure wave function, ridge density == fog, trough + crest reached; run alone
@@ -1263,7 +1274,7 @@ tools/
   run-blender.py                     common launcher, expected-output and process-failure checks
   asset_pipeline.py                  staged publication/rollback while preserving existing metas
   test_asset_pipeline.py             synthetic tooling regressions
-  audio-vhs/                          native Intoxication VHS source, build and validation
+  audio-vhs/                          native Intoxication VHS and Begotten Optical source, build and validation
   build-exterior-cloud-3d-model.py  deterministic hemisphere, packed density texture and export validator
   build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
@@ -1271,7 +1282,8 @@ tools/
   build-city-chess-set-3d-model.py   turned chessmen/draught meshes + height-ladder validator
   player_3d_model_common.py         shared production rig/action/export/bed validators
   build-player-3d-model-v2.py       sole production V2 generator; anatomy/atlas/rig/export and mouth/skull clearance rays
-  player_cold_actions.py          Hero-only self-hug/shoulder-rub authoring and sleeve-contact validation
+  player_cold_actions.py          Hero-only self-hug, shoulder rub and one-second shiver authoring with sleeve contacts
+  alpine-cold-frost-mask.md        built-in image generation prompt, source hash and frost-mask import contract
   player_cold_clearance.py        all 36 opposing pairs of actual convex arm meshes, sampled each half source frame
   build-player-puppet-atlas.py      retired 2D player source tooling
   extract-player-bed-sleep-frames.py      retired player-sprite source tooling
@@ -1628,7 +1640,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> below darker bone-toned player route; no live bus marker
 nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
                                       -> 34 mesh bindings + 16 core parts
-                                      -> 47 Generic in-place Actions
+                                      -> 48 Generic in-place Actions
                                          -> Idle/Walk/Run/atlas-face/status/fall
                                          -> full-body all-fours/seated Rise + seated-to-crawl transfer
                                          -> DoorUseEnter/DoorUseLoop/DoorUseExit
@@ -1913,6 +1925,9 @@ GameSessionState intoxication -> IntoxicationStageRules
                              -> IntoxicationPerceptionRules -> exponential intensity
                                 -> IntoxicationAudioDriver -> Perception/VHS DSP
                                 -> GameTimeScaleRuntime -> world motion + physics
+graphics.begotten -> BegottenModeRamp weight -> Ps1CompositeRendererFeature -> the print
+                                            -> BegottenAudioDriver -> Perception/Optical DSP
+                                            -> IntoxicationAudioDriver -> the tape leaves
 pause/inventory/journal -> pause leases -> world/calendar freeze
 unpaused real time -> calendar/needs + modal-aware alcohol recovery
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20

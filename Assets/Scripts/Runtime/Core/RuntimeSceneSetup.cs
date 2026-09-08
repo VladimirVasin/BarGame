@@ -648,7 +648,7 @@ namespace BarPromenade
             // perspective; repeated setup must neither lose it nor double it.
             AudioListener listener = camera.GetComponent<AudioListener>();
             AudioListener[] listeners =
-                Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None);
+                Object.FindObjectsByType<AudioListener>();
             for (int index = 0; index < listeners.Length; index++)
             {
                 AudioListener other = listeners[index];

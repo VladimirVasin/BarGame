@@ -51,7 +51,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
 import bar_parts as bp  # noqa: E402
-GENERATOR_VERSION = "1.11.0"
+GENERATOR_VERSION = "1.11.1"
 DESIGN_ID = "mothers_house_interior_v1"
 DISPLAY_NAME = "Bar Promenade Mother's House Interior"
 
@@ -3090,20 +3090,6 @@ def build_sofa(asset: AssetBuild, materials: dict) -> None:
         "sofa_cushion",
         "Upholstery",
         tint=(0.255, 0.11, 0.078, 1.0),
-    )
-    throw = merge((
-        bp.u_plate((x + 0.29, 0.59, z + 0.34), (0.035, 0.56, 0.72)),
-        bp.u_plate((x - 0.22, 1.07, z + 0.34), (0.035, 0.62, 0.72)),
-        bp.u_plate((x - 0.205, 1.08, z + 0.50), (0.018, 0.22, 0.24)),
-    ))
-    add_part(
-        asset,
-        materials,
-        "DRESS_Sofa.PatchedThrow",
-        throw,
-        "patched_throw",
-        "BedLinen",
-        tint=(0.33, 0.27, 0.17, 1.0),
     )
 
 

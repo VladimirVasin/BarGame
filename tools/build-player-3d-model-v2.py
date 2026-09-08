@@ -2,7 +2,7 @@
 """Build Bar Promenade's production Hero V2 model.
 
 Hero V2 owns the adult proportions, lean low-poly body, UV-driven expression
-face and complete 47-action bank. Shared rig, action, export and validation
+face and complete 48-action bank. Shared rig, action, export and validation
 helpers live in ``player_3d_model_common.py`` so this remains the only runnable
 hero model generator.
 
@@ -265,7 +265,8 @@ def load_common_authoring():
 
 common = load_common_authoring()
 V2_REQUIRED_ACTIONS = (*common.REQUIRED_ACTIONS, RUN_ACTION_NAME,
-                       player_cold_actions.HOLD_NAME, player_cold_actions.RUB_NAME)
+                       player_cold_actions.HOLD_NAME, player_cold_actions.RUB_NAME,
+                       player_cold_actions.SHIVER_NAME)
 
 V2_PALETTE_HEX = dict(common.PALETTE_HEX)
 V2_PALETTE_HEX.update(

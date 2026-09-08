@@ -321,6 +321,9 @@ namespace BarPromenade
             ApplyCurrentAtmosphere(true);
             ApplyVisibility();
             IsInitialized = true;
+            AlpineColdExposure.Bind(this, areaCamera, () => IsInitialized,
+                () => GameSessionState.IsRidingAVehicle ||
+                      (CabinSeat != null && CabinSeat.IsSeated));
             yield return new CompositionStep("ready", 1f);
 
             timer.Stop();

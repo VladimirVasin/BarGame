@@ -446,7 +446,7 @@ namespace BarPromenade
 
         private void ConfigureCrackle(Vector3 position, int seed)
         {
-            crackleClip = CityArchShelterPresentation.CreateCrackleClip(
+            crackleClip = MothersHouseInteriorSoundSynthesis.CreateHearthRuntimeClip(
                 seed ^ 0x6D6F7468);
             GameObject soundObject = new GameObject("Hearth Crackle");
             soundObject.transform.SetParent(transform, false);
@@ -457,9 +457,12 @@ namespace BarPromenade
             FireCrackleSource.playOnAwake = false;
             FireCrackleSource.spatialBlend = 1f;
             FireCrackleSource.dopplerLevel = 0f;
-            FireCrackleSource.volume = 0.22f;
-            FireCrackleSource.minDistance = 2f;
-            FireCrackleSource.maxDistance = 13f;
+            FireCrackleSource.priority = 160;
+            // The fixed camera is also the listener, about 8.5 m from the
+            // hearth even when the hero is seated beside it.
+            FireCrackleSource.volume = 0.38f;
+            FireCrackleSource.minDistance = 3f;
+            FireCrackleSource.maxDistance = 14f;
             FireCrackleSource.rolloffMode = AudioRolloffMode.Linear;
             GameAudioMixer.Route(
                 FireCrackleSource,

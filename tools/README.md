@@ -1,5 +1,10 @@
 # Art and native tool entry points
 
+The image-generated Alpine frost texture is a fixed source asset; its final
+prompt, hash and linear-mask import settings are recorded in
+[alpine-cold-frost-mask.md](alpine-cold-frost-mask.md). Runtime only reveals and
+tints that bitmap; it does not generate images.
+
 `toolchain.json` records the supported tool versions. Check the local installation
 without producing assets:
 
@@ -42,6 +47,20 @@ running Unity importer: keep Unity closed during staged publication.
 The native command `tools/audio-vhs/build.ps1` validates the staged DLL before
 publishing it. `-Validate` remains compatible; `-CompileOnly` leaves its output
 in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.md).
+
+To refresh only the hero's two cold actions from the existing production
+source, without rebuilding its geometry, atlases or other 45 actions:
+
+```powershell
+python tools/run-blender.py tools/player_cold_actions.py --expect Captures/Tooling/cold-actions/PlayerCharacter3DV2Animations.fbx --expect Captures/Tooling/cold-actions/PlayerCharacter3DV2.json --expect Captures/Tooling/cold-actions/PlayerCharacter3DV2.blend -- --refresh-actions --stage-dir Captures/Tooling/cold-actions
+```
+
+This writes staging files only. It checks the source manifest, fixed lower
+body, shared endpoints, continuous hand travel, evaluated arm separation and
+exact cold-curve determinism, and verifies that the rig, meshes, weights and
+other actions remain unchanged. Publish the staged animation bank, manifest
+and Blender source together with Unity closed, preserving their `.meta` files;
+then refresh `Player3DV2` through its existing asset setup.
 
 Pipeline failure/rollback regressions use synthetic files and a mocked Blender
 process, without generating art or compiling native code:

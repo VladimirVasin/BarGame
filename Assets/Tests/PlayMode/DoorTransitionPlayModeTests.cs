@@ -210,8 +210,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cameraListeners, Has.Length.EqualTo(1));
             Assert.That(cameraListeners[0].isActiveAndEnabled, Is.True);
             AudioListener[] activeListeners = Array.FindAll(
-                UnityEngine.Object.FindObjectsByType<AudioListener>(
-                    FindObjectsSortMode.None),
+                UnityEngine.Object.FindObjectsByType<AudioListener>(),
                 listener => listener.isActiveAndEnabled);
             Assert.That(activeListeners, Has.Length.EqualTo(1));
             Assert.That(activeListeners[0], Is.SameAs(cameraListeners[0]));

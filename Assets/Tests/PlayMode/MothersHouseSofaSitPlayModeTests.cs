@@ -338,8 +338,8 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(Vector3.Distance(atmosphere.FloorLampLight.transform.position,
                 interior.World.FloorLampLightAnchor.position), Is.LessThan(0.005f));
-            AudioListener[] listeners = UnityEngine.Object.FindObjectsByType<AudioListener>(
-                FindObjectsSortMode.None).Where(value => value.isActiveAndEnabled).ToArray();
+            AudioListener[] listeners = UnityEngine.Object.FindObjectsByType<AudioListener>()
+                .Where(value => value.isActiveAndEnabled).ToArray();
             Assert.That(listeners, Has.Length.EqualTo(1));
             Assert.That(listeners[0].GetComponent<Camera>(), Is.SameAs(Camera.main));
             foreach (AudioSource source in new[] { atmosphere.FireCrackleSource,

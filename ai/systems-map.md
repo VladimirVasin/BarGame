@@ -49,7 +49,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Residential balcony life | Bounded pooled smokers occupy authored Residential docks; Home reconstructs its own balcony-gated selection. | `City/Balcony/CityBalconySmoker*`, `CityPedestrianHandProps` | Current |
 | City Blender low-rise landmarks | Bar, supermarket and 209-1-inspired `player_home_exterior_v1` are complete passive semantic exteriors with inset foundations. | `CityBarFacadeWorldBuilder`, `CitySupermarketFacadeWorldBuilder` | Current |
 | Unity URP foundation | Twelve build scenes and PC renderer settings with an explicit project-owned Neutral/Bloom/Vignette baseline volume instead of a sample-scene profile. | `6000.6.0f1`, `17.6.0` | Current |
-| PS1 presentation | Shared low-resolution composite; optional 4:3, vertex jitter and Begotten mode preserve gameplay controls. Begotten arrives over 15 s of real time once the player is back in the game, and leaves over 3. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
+| PS1 presentation | Shared low-resolution composite; optional 4:3, vertex jitter and Begotten mode preserve gameplay controls. Begotten arrives over 15 s of real time once the player is back in the game, and leaves over 3, picture and sound on one weight. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exterior grades retain broad Gaussian far blur; Bar, Supermarket, Stairwell, Home, Church and Mother's House cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Twelve scenes/nine gameplay roots; three area roots construct incrementally during area travel. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Startup waking opening | Frozen `05:59`, five-second input lock, Wake Up/Quit, then continuous wake. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Current |
@@ -120,7 +120,8 @@ A row never carries a status outside this table. Product-level scope cuts
 | City wind dressing | Shared wind drives authored trees/props/cloth while preserving causal movement limits. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
 | Scene and place music | Shared handoff rules mix shipped scene/place themes. Gap: cemetery and church music slots are empty. | `MusicMix`, `SceneMusicPlayer` | Partial |
 | Common audio mix | One shared mixer routes scene themes, causal ambience, effects and reversible intoxication processing. | `GameAudioMixer`, `BarPromenadeAudio.mixer` | Current |
-| Intoxication sound perception | Shared bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
+| Intoxication sound perception | Shared bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober; it leaves as the Begotten print arrives. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
+| Begotten sound perception | The print's optical track closes the world bus, adds its own surface and projector on a 24-per-second grid, and rides the picture's own ramp. | `BegottenAudioRules`, `BegottenAudioDriver`, `OpticalProcessor.h` | Current |
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
 | Home alarm clock | Bed-relative 27.6 cm clock; readable opening close-up, frozen flickering `05:59`, solid `06:00` on Wake and then session time. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
@@ -130,8 +131,9 @@ A row never carries a status outside this table. Product-level scope cuts
 | Third-person chase camera | Shared collision-aware chase/orbit blends cinematic motion and yields to owned fixed/modal shots. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home fixed camera | Home uses authored fixed shots with smooth transitions and explicit contextual camera ownership; the main-room shot pans up to 18/9 degrees, and only as far as it must, to keep the hero framed. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
-| Modular 3D hero presentation | Hero V2: 34 parts / 2,384 triangles, 31 bones and 47 validated actions. | `Player3D*`, `PlayerFactory` | Current |
-| Alpine Village cold hero | Exterior self-hug, shoulder rubs and synchronized breath; shared movement and action ownership remain intact. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
+| Modular 3D hero presentation | Hero V2: 34 parts / 2,384 triangles, 31 bones and 48 source-validated actions. | `Player3D*`, `PlayerFactory` | Current |
+| Alpine Village cold hero | Self-hug, rubs and short shiver bouts persist through running; shared gait, breath and protective-action priority remain intact. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
+| Alpine frost presentation | Uneven frost and local blur grow at the image rim; separate thaw sounds follow warming. State survives village/house travel. | `AlpineColdExposure{Model,Driver}`, `AlpineColdFrostPass`, `AlpineFrostAudio` | Current |
 | Silent Hill attention | Layered gaze reacts to nearby authored targets within rig limits and yields to contextual ownership. | `PlayerAttention{Rules,Controller,Magnet}`, `IntoxicationHeadModel` | Current |
 | Continuous 3D player interactions | Shared positioned actions preserve visible entry/exit continuity and clean up presentation/input ownership. | `PlayerAnimatedInteraction{Timeline,Controller}`, `PlayerDoorAction{Plan,Controller,Target}` | Current |
 | Bed sleep and wake | Two hand-supported pelvis steps with seated stops in both directions; a domed pillow dents and recovers. | `HomeBedInteraction{,Plan}`, `PlayerAnimatedInteractionPelvisPath` | Current |
@@ -224,7 +226,7 @@ blueprint ID + seed -> immutable blueprint -> validated sparse layout
   -> fence plan -> rails with clearance openings
 
 nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
-  -> 47 authored Actions: Idle / Walk / heavy Run + seated drink 2/3/2 + seated/fours recovery + cold gestures
+  -> 48 authored Actions: Idle / Walk / heavy Run + seated drink 2/3/2 + seated/fours recovery + cold hold/rub/shiver
   -> Shift or L3 + forward -> 4.2 m/s run; backpedal and scripted approaches walk
   -> actual constrained speed owns Run weight; intoxication scales it, fatigue does not
   -> contextual actions: bed, smoking, cat feeding, bus board/ride/exit

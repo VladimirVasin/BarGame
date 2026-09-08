@@ -6,6 +6,311 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-08 — Connected frost diffusion follows the frozen percentage
+
+- The earlier blur operated mainly on individual crystal needles. In the
+  left window sample, about 81% of pixels had no diffusion, leaving most
+  background detail sharp despite the larger kernel. A coarse filtered mask
+  now joins tiny gaps into a connected ice film while preserving large clear
+  gaps and the original crisp crystal drawing. Its soft irregular fringe is
+  up to 3% wider, bounded by the outer 18% of the image.
+- Replaced the single masked kernel with two quarter-resolution 13-tap
+  Gaussian passes and full-resolution composition. Sigma is
+  `0.045 * FrostAmount` image height; final blend also scales by frost amount.
+  Both radius and strength therefore rise with freezing and fall with thaw.
+  Existing exposure, thaw timing, audio, geometry and lighting are unchanged.
+- Focused `AlpineFrostDiffusion` passed in `3.761200 s`
+  (`TestResults/alpine-frost-diffusion.xml`). Frozen same-frame GPU captures
+  hold camera, lighting and crystals fixed for the diffusion A/B. Blur-only
+  edge difference increases at 25/50/100%; full-frost clear-scene gradient
+  contrast falls to 0.327 on the left window and 0.264 on the ceiling beam.
+  Half-thawed pixels exactly match half growth, and fully thawed pixels match
+  the clear frame. Protected centre and black bars remain unchanged in 16:9
+  and 4:3. Visually inspected the final A/B under
+  `Captures/MothersHouseInterior/diffusion-04-comparison-left-off-right-on.png`.
+- Updated README, art bible, architecture, system tree, mask provenance and
+  release notes. The prior journey/audio evidence remains explicitly tied to
+  the earlier renderer. Full suites and player build were not run.
+
+## 2026-09-08 — Stronger frost blur, clear sofa and audible wood fire
+
+- Increased masked frost diffusion from 13 to 25 taps and its maximum radius
+  from `0.014` to `0.036` image height (about `26 px` at 720p). The denser
+  three-ring kernel and stronger deposit-dependent blend soften the scene
+  beneath ice while keeping crystal detail, clear gaps and centre unchanged.
+  Exposure/thaw timing and irregular growth stay intact.
+- Removed only `DRESS_Sofa.PatchedThrow`, a separate mesh of three flat plates
+  that appeared as a rigid rectangle beside the seated hero. Generator and
+  import contract `1.11.1` publish `152` meshes / `21,760` triangles / `15`
+  anchors. Every retained part record, anchor and other manifest field is
+  identical to the prior model; deterministic validation passed. Proof:
+  `Captures/Tooling/mothers-house-sofa-throw-20260908/preservation-report.json`.
+- Replaced the hearth's borrowed barrel clip with an eight-second dedicated
+  wood fire in `MothersHouseInteriorSoundSynthesis`. The old harmonic values
+  were divided by their four-second loop duration: `99.7%` of the energy was
+  below `150 Hz`, source RMS `0.03856`. The fixed camera/listener is `8.49 m`
+  from the hearth even while sitting, making the old sound still quieter.
+  New source RMS is `0.11`, with soft broadband air/embers and 29 irregular
+  short wood cracks. Local gain is `0.38`, linear rolloff `3–14 m`; other
+  room sources, the listener, mixer and accepted lighting stay unchanged.
+- Focused `AlpineFrostJourney` passed in `52.339248 s`
+  (`TestResults/mothers-hearth-frost.xml`) after the required house asset
+  publication. It checks the real sofa enter/exit, missing throw and retained
+  sofa parts; frost/blur leave the centre exactly unchanged and 4:3 bars black.
+  The real door round trip and 8-second thaw still pass.
+- Captured the hearth alone through its actual low-pass, distance attenuation
+  and mixer: gameplay-camera RMS `0.007914`, sofa-head `0.013354`, rocker-head
+  `0.015800`, with strong above-150-Hz energy and no clipping. At the gameplay
+  camera the same new clip under previous gain/rolloff measures `0.003750`,
+  so source settings alone provide `2.11×` the amplitude. This is not a claim
+  that the old synthesized clip was used for that A/B. Unnormalized stereo
+  WAVs are `Captures/MothersHouseInterior/hearth-{gameplay,sofa,rocker}.wav`.
+- Visually inspected `frost-06-sofa-clear.png` and refreshed the frost captures
+  and real eight-second thaw video. Video decoded with all `160` frames before
+  raw-frame cleanup. Targeted diff checks passed; full suites and player build
+  were not run.
+
+## 2026-09-08 — Uneven frost, local diffusion and separate thaw audio
+
+- Replaced the moving rectangular reveal with fixed patch arrival times from
+  three spatial noise scales and the authored crystal mask. The final rim
+  fades to an uneven boundary; corners no longer share a flat reveal depth.
+  The accepted bitmap stays fixed and the centre stays clear.
+- Added a 13-tap scene diffusion kernel beneath deposited frost, before the
+  sharp crystal drawing and the shared PS1 finish. Radius and blend increase
+  with the same deposit that controls the ice. Samples stay inside the active
+  image crop; clear gaps, centre, black bars and overlay HUD remain unaffected.
+- Added three deterministic `1.2 s` thaw clips: soft damp ice releases and tiny
+  drops. Warm entry releases the old source tail over `0.12 s` and schedules
+  its first thaw cue at `0.22 s`, then every `1.5–2.5 s`, independent of the
+  previous cold-cue timer. Gain follows remaining frost. Cold re-entry cancels
+  the thaw schedule; the existing source, ambience bus and pause/reset survive.
+- Timing remains `6 s` initial delay / `43 s` full exposure and `8 s` full /
+  `4 s` half thaw. No scene geometry, lighting, animation or fiction text changed.
+- Focused `AlpineFrostJourney` passed in `49.705604 s`
+  (`TestResults/alpine-frost-organic.xml`): real village/house round trip,
+  partial/full thaw, pause, separate thaw scheduling and cold re-entry.
+  GPU comparisons have exactly zero centre difference in village 16:9,
+  village 4:3 and house 16:9; black bars remain zero. Mean rim differences
+  are `19.208`, `19.597` and `28.461/255`. Captures at 10/25/50/75/100 percent
+  were visually inspected. The fixture now pins ordinary presentation without
+  changing saved preferences: an initial attempt inherited enabled BEGOTTEN,
+  whose frame-wide exposure response invalidated the ordinary-image comparison.
+- Refreshed `MothersHouseInterior/frost-thaw.mp4`: `160` frames at `20 fps`,
+  exactly `8 s`, fully decoded before discarding raw frames. Added separate
+  `AlpineVillage/frost-thaw-{0,1,2}.wav` clips and `frost-thaw-preview.wav`
+  at the actual maximum thaw source gain (`0.18`), with no normalization gain.
+  Full suites and a player build were not run.
+
+## 2026-09-08 — Alpine shivers, textured frost and proportional thaw
+
+- Added `ColdShiver`: one second, 24 source frames, 5–6 shoulder/chest
+  contractions between sleeve rubs at irregular `5.25–8.75 s` intervals during
+  idle, walking and running. Protective ownership and lower-body locomotion
+  remain authoritative. All 47 previous source actions and exported FBX
+  tracks are unchanged; the bank now contains 48. Source SAT minimum
+  clearance is `+1.849 mm`.
+- Added `AlpineColdExposureModel`, a persistent session driver and a frost
+  pass before the PS1/Begotten finish. Following user feedback, schematic
+  branches were replaced with an imagegen-authored `1536×1024` fern/rime mask,
+  sampled as a linear clamped texture. Prompt/provenance lives in
+  `tools/alpine-cold-frost-mask.md`. The image center and 4:3 bars stay clear;
+  overlay HUD is composed afterward.
+- Full coverage takes `43 s`, including the first `6 s` clear delay. A real
+  CharacterController traversed the boarding dock, actual street bends and
+  house entrance: `93.902237 m` in `36.116318 s` at `2.6 m/s`. The door and
+  prompt were reachable; coverage was `90.904 %` at arrival. Maximum frost
+  takes about `6.9 s` / `19 %` longer than that uninterrupted walk.
+- Warmth removes the remaining exposure gradually: full coverage takes `8 s`,
+  half coverage `4 s`, and a light deposit roughly `1–2 s`. The house and
+  closed cabin warm; the open canopy stays cold. Door/loading views and pause
+  freeze the state; re-entry resumes it; a new game or unrelated scene clears
+  it. The first ready frame discards the unscaled delta inherited from scene
+  construction, preventing a loading-time jump. Tiny floating-point residue
+  at complete thaw is clamped to zero.
+- Added three deterministic dry crystalline crackles, synthesized once per
+  driver as `1.35 s` mono clips at `22050 Hz`. One 2D source uses the ambience
+  details mixer bus, irregular timing/pitch/pan and coverage-dependent gain;
+  thaw makes cues quieter/sparser, pause holds playback, and clear frost stops
+  it. No health, need, movement rule or fiction text was added.
+- Targeted verification: `AlpineVillageColdHero` passed in `99.136954 s`
+  (`TestResults/alpine-shiver-frost.xml`): shoulder travel `15.8/13.8 mm`,
+  chest rotation `0.98°`, unchanged legs at the same idle/run time, and
+  `1,704` final poses / `61,344` arm-pair checks with no violation of the
+  existing `2 mm` tolerance (tightest sleeve contact `-0.359 mm`).
+  `StationToMotherHouseFrostTiming` passed in `8.868760 s`
+  (`TestResults/alpine-frost-walk.xml`). Final `AlpineFrostJourney` passed in
+  `51.434980 s` (`TestResults/alpine-frost-final.xml`): real door
+  round trip, pause/audio, 4:3, full/partial thaw and session reset. Frozen and
+  clear indoor images differ by `30.377/255` on average at their edges.
+- The image check exposed the mask's missing ShaderLab texture property;
+  the pass now declares, retains and rebinds the resource across scene loads.
+  Frost runs after URP post-processing at event 600, before PS1. Temporary
+  render diagnostics were removed after proof. Final videos include
+  `cold-shiver.mp4`, updated idle/run clips and the real eight-second
+  `MothersHouseInterior/frost-thaw.mp4`; all were decoded and raw frames removed.
+  Full suites, actual cabin travel and a player build were not run.
+
+## 2026-09-08 — The Begotten print acquires its optical soundtrack
+
+- A second native mixer effect, `Begotten Optical`, now ships from the same
+  DLL as the tape: shared plumbing (one lock-free three-parameter mailbox,
+  pause, epoch) as a template over the processor type, so
+  `UnityGetAudioEffectDefinitions` returns two and `Intoxication VHS` is
+  untouched. `tools/audio-vhs/OpticalProcessor.h` is the new processor.
+- It sits LAST on `Master/Perception`, after the tape and the underwater
+  low-pass, and never on `Master` or `Master/UI`: the room, the water and the
+  drink happen to the world, while the print happens to the picture of it, and
+  the interface is no more printed in the ear than IMGUI is on the screen.
+- `BegottenAudioDriver` mirrors `IntoxicationAudioDriver` and only READS
+  `BegottenModeRamp.Weight`. The composite owns that clock; a second caller
+  would have run the fifteen seconds at double speed.
+  `Assets/Scripts/Rules/BegottenAudioRules.cs` mirrors the header's published
+  constants, and `TheRules_MirrorTheNativeHeader` parses the header so a
+  retune on either side fails the build.
+- User decisions taken first, before any code: the full treatment (filter plus
+  the print's surface plus the projector), `Master/Perception` rather than
+  `Master`, music printed along with everything else, and the tape and print
+  mutually exclusive because the mode is being prepared for a hangover rather
+  than for drunkenness. The last of those is one line in the tape's driver:
+  its intensity is multiplied by `1 - weight`.
+- **Three assertions of the tape's validator are FALSE for an effect that
+  generates sound, and transplanting them would have been the whole bug.**
+  Silence in no longer means silence out (a projector runs over a quiet room,
+  so an all-zero input is not a bypass condition here); the output may exceed
+  the input peak by the declared noise floor; and the tape's DC arrival probe
+  cannot be used at all, because an optical track has no DC and the print's own
+  highpass reads as an abrupt arrival. A 300 Hz tone measured as a windowed
+  level replaced it — a sample-difference measure would have been reading the
+  dust clicks, which are deliberate transients.
+- **A plain difference-from-dry measure is useless for this effect and was
+  removed after it failed:** the swim is a VARIABLE delay, so on the tonal
+  reference bed the difference is a phase reading that rises and falls rather
+  than growing. It was replaced by three phase-insensitive measures of what the
+  print actually does — energy above 5 kHz `0.79 → 0.09`, channel correlation
+  `0.005 → 1.000`, quiet floor `0 → 0.0029` — each asserted monotonic.
+- **Two defects found only by measuring.** A single one-pole gate still passed
+  `58 %` of the energy above 5 kHz, so each end of the band became a cascade
+  (two poles up, three down). And the projector, injected before the band, was
+  being eaten by the print's own highpass: it is not on the film but in the
+  room, so it now joins after the track has been read and is neither
+  band-limited nor compressed.
+- Wow and flutter are `0.75 %` peak speed error, held below a tired machine's
+  `1.2 %` because the player's own themes ride this bus. Its four components
+  are spool `0.9 Hz`, flywheel `2.4 Hz`, **intermittent `24 Hz`** and shutter
+  `48 Hz`; the third is the point of the model, because the screen is held at
+  twenty-four pictures a second and one term in a sum locks the ear to the eye.
+  Dust and transport ride the same grid, counted with a fractional accumulator
+  because `22050/24` is not an integer, and the validator proves the lock at
+  `22050` and `48000` Hz alike (`39x` and `58x` over the noise floor).
+- Accepted exception recorded in `ai/architecture-notes.md`: the tape's rule
+  «transforms existing audio only: no generated hiss, voice, new sound source»
+  does not bind this effect, by explicit user decision. The art bible's §16
+  «Тест звука» is amended for it exactly as it was amended for the tape on
+  `2026-09-05`.
+- Residual, recorded rather than fixed: the mixer carries `m_EnableSuspend: 1`
+  at `-80 dB`, so a bus that fell digitally silent could in principle suspend
+  the graph and stop the projector. Gameplay always carries ambience, so it has
+  not been observed.
+- **Follow-up the same day: the user heard NOTHING, and the missing assertion
+  was the whole reason.** Every check so far proved the C# side stored the
+  mixer parameter; none proved audio passes THROUGH the effect. A native
+  effect the running plug-in never provided reports nothing at all and leaves
+  the sound untouched — which is exactly what a Unity Editor started before
+  the DLL was rebuilt sees, because native audio plug-ins load once at process
+  start. `ThePrint_ActuallyReachesTheWorldBus` now renders the real mix
+  offline through `AudioRenderer` and measures it: energy above 5 kHz
+  `0.505 -> 0.107` and channel correlation `-0.003 -> 1.000` on a noise probe
+  routed to the Music bus, which is the print doing its work in the live
+  mixer. Four traps on the way, all in the test rather than the product: an
+  isolated PlayMode scene has NO `AudioListener` and mixes nothing; the FIRST
+  recording session of a play session always returns zero samples, so a
+  throwaway one must prime it; `AudioRenderer.Render` must be called on every
+  capture frame, including frames that offer no samples, because that call is
+  what advances the offline clock; and the phases must be sized in SAMPLES,
+  not frames — a frame-counted settle gave 21 ms of audio, less than the
+  effect's own 60 ms de-zipper, and measured a half-arrived print.
+- **Second follow-up: with the plug-in loaded the user heard it, and called it
+  almost indistinguishable beside a picture that changes extremely.** They were
+  right, and one cause was a real mistake rather than timid taste: the surface
+  levels are injected PRE-band, and a three-pole gate throws away roughly nine
+  tenths of white noise's energy, so the `-42 dBFS` hiss reached the ear at
+  about `-51 dBFS`. Those numbers must be tuned by the measured settled floor,
+  never by their own dB names. Strengthened together rather than one knob at a
+  time: band `150 Hz - 5 kHz` to `200 Hz - 3.8 kHz`, hiss `-42 -> -30 dBFS`,
+  dust `-34 -> -24 dBFS` and `4 -> 11` a second, transport `-38 -> -31 dBFS`
+  and its exponent `3 -> 2.2`, surface exponent `2 -> 1.6` so the arrival is
+  present earlier, swim `0.75 % -> 1.25 %` (a worn dupe through a tired
+  machine), saturation drive `0.9 -> 1.8`. **New: the frame line**, a `22 %`
+  dip once per picture as it crosses the sound slit — the strongest tie the ear
+  has to a screen held at twenty-four, and a dip rather than a gate because
+  picture and sound are read at different points of the film precisely so the
+  intermittent cannot reach the sound. Measured: settled floor
+  `0.0029 -> 0.0074`, energy above 5 kHz at full strength `0.090 -> 0.041`
+  offline and `0.107 -> 0.075` in the live Unity mixer.
+- Two of the print's own validator measures had to be re-shaped, for the same
+  reason as before — they were reading deliberate content. Windows are now one
+  picture long so the frame line's dip cancels exactly; the settled stretches
+  are judged by the MEDIAN curvature because eleven dust clicks a second land
+  in about half the windows and a maximum simply finds them; and the arrival is
+  judged only by never stepping upward, because a de-zipper's own bend is
+  legitimate curvature and a threshold tight enough to forbid it would forbid
+  the effect.
+- Verification: `tools/audio-vhs/build.ps1 -Validate` — the tape's own ten
+  checks still pass and the print's ten new ones pass at four sample rates;
+  EditMode `BegottenAudioRulesTests` + `GameAudioMixerAssetTests` 30/30;
+  PlayMode `BegottenAudioPlayModeTests` 1/1. The mixer was regenerated through
+  `Bar Promenade/Audio/Create or Update Audio Mixer`, never by hand. Listening
+  clips for tuning are in ignored `Captures/AudioVhs`, including
+  `begotten-fifteen-second-arrival.wav`, which is the real ramp. **The numbers
+  have been measured but not yet judged by ear** — that is the outstanding
+  step, and the levels are meant to move after it.
+
+## 2026-09-08 — Active cold gestures, cold running and quicker hearth flames
+
+- Re-authored only `ColdHold` and `ColdShoulderRub`: the `4 s` Hold now has
+  two continuous quiet sleeve passes (`18/16 mm` left/right); the `2.5 s`
+  Rub has three `60 mm` passes, left down and right up the opposite sleeve.
+  Shared endpoints and fixed lower-body channels remain intact. The first
+  series starts at `1.8 s`, followed by start intervals
+  `5.5/4.25/6/4.75/5/6.25/4.5 s`, with moving Hold between them.
+- Running preserves the cold arm layer and rub clock over its ordinary
+  running legs. Protective actions, owned interactions, visibility and
+  exterior gating keep priority; no movement or gameplay rule changed.
+- Added `player_cold_actions.py --refresh-actions --stage-dir` for a bounded
+  refresh from the production Blender source. It verifies unchanged rig,
+  meshes, skin weights and 45 other actions, exact cold-curve determinism,
+  continuous hand movement and evaluated-mesh contact. Published only the
+  source blend, animation FBX and JSON; Unity refreshed the existing prefab.
+  The actual exported bank still contains 47 actions and no meshes, and its
+  45 unrelated animation tracks match exactly. Content signature:
+  `4500c5b52abe31c5f54a8798fab74d88e0321466f1ece32530524db8c08f2988`.
+- Source SAT checks all 36 opposing arm pairs every half frame, with minimum
+  clearances `+0.893 mm` Hold / `+0.168 mm` Rub. Report:
+  `Captures/Tooling/cold-active-20260908/cold-refresh-validation.json`.
+- The hearth shader replaces slow periodic bends with independent smooth
+  rising noise and faster thermal flow. Its fixed roots, displacement bounds,
+  palette and all runtime light positions/intensities remain unchanged.
+- One focused Unity invocation passed **2/2**:
+  `AreaCaptureFixture.AlpineVillageColdHero` (`89.228449 s`) and
+  `AreaCaptureFixture.MothersHouseFireMotion` (`9.844095 s`). Report/log:
+  `TestResults/cold-hero-and-hearth-motion.{xml,log}`. The cold regression
+  checks active hand travel during idle/running, 1,566 final rig poses,
+  protective/visibility/interaction gates and pause. All 56,376 arm pair
+  checks stay within the existing `2 mm` tolerance; the tightest palm/sleeve
+  contact is `-0.360 mm`. Fire materials compile and their owned clock freezes
+  on pause, then advances four seconds across the captured 96 frames.
+- Inspected the imported stroke extremes, running pose, gameplay lighting
+  and close fire frames. Final silent videos, all `1280×720`:
+  `Captures/AlpineVillage/cold-idle.mp4` and `cold-run.mp4` (160 frames,
+  20 fps, 8 s each); `Captures/MothersHouseInterior/fire-motion.mp4`
+  (96 frames, 24 fps, 4 s), plus gameplay/close stills and the cold pose set.
+  Videos decode and their frame counts match; removed raw frame folders and
+  three hash-identical staging assets, retaining reports and finished media.
+- Updated current world/art/player/tool documentation and refined the
+  existing cold-pose canon exception with the user's explicit running request.
+  Diff check passes. No broad suites, player build or actual cabin travel.
+
 ## 2026-09-08 — Mother's rocking chair keeps its runner contact
 
 - Replaced rotation around the fixed curvature centre at `Y=2.039 m` with

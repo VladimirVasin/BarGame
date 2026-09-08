@@ -92,18 +92,28 @@ Shader "BarPromenade/MothersHouseFlame"
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
                 float height = saturate(input.tongueUV.y);
                 float phase = _FirePhase + input.variation.r * 19.37 + input.variation.b * 2.41;
-                float speed = 1.6 + input.variation.g * 0.85;
-                float bend = sin(_FireTime * speed + phase + height * 3.1) * 0.66 +
-                    sin(_FireTime * speed * 1.93 + phase * 1.37 - height * 2.7) * 0.34;
-                float twist = sin(_FireTime * 2.47 + phase * 1.73 + height * 4.2);
+                // Different rising eddies carry each tongue. Smooth noise
+                // changes its direction and tempo without a pendulum beat.
+                float flowTime = _FireTime * (3.8 + input.variation.g * 1.8);
+                float curl = (FireNoise(float2(phase + 11.2,
+                    height * 2.1 - flowTime * 0.43)) - 0.5) * 0.9;
+                float bend = (FireNoise(float2(phase + curl,
+                    height * 3.1 - flowTime)) * 2.0 - 1.0) * 0.72 +
+                    (FireNoise(float2(phase * 1.37 - 13.7,
+                    height * 6.8 - flowTime * 1.73)) * 2.0 - 1.0) * 0.28;
+                float twist = FireNoise(float2(phase * 1.73 + curl + 23.1,
+                    height * 4.7 - flowTime * 1.31)) * 2.0 - 1.0;
+                float lift = FireNoise(float2(phase + 57.1,
+                    height * 2.7 - flowTime * 0.93)) * 2.0 - 1.0;
+                float lick = FireNoise(float2(phase * 1.63 + 91.3,
+                    height * 6.7 - flowTime * 1.79)) * 2.0 - 1.0;
                 float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 // Deform in metres after the FBX scale. The first section
                 // never moves: every tongue continues to rise from its log.
                 float tip = height * height;
                 positionWS.x += tip * _FireSway * bend;
                 positionWS.z += tip * _FireSway * 0.55 * twist;
-                positionWS.y += height * 0.025 * sin(_FireTime * 2.13 + phase) +
-                    tip * 0.015 * sin(_FireTime * 4.71 + phase * 0.79);
+                positionWS.y += height * 0.025 * lift + tip * 0.015 * lick;
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.atlasUV = input.uv * _BaseMap_ST.xy + _BaseMap_ST.zw;
                 output.tongueUV = input.tongueUV;
@@ -120,10 +130,13 @@ Shader "BarPromenade/MothersHouseFlame"
                 float phase = input.phaseAndHeat.x;
                 // Smooth irregular heat moves upward through every tongue;
                 // it is not a flashing opacity or an independent particle.
-                float flow = FireNoise(float2(across * 1.9 + phase,
-                    height * 4.3 - _FireTime * (1.45 + input.phaseAndHeat.y * 0.3)));
-                float fine = FireNoise(float2(across * 4.1 - phase * 0.7,
-                    height * 8.7 - _FireTime * 2.31));
+                float flowTime = _FireTime * (3.6 + input.phaseAndHeat.y * 1.8);
+                float curl = (FireNoise(float2(phase + 7.9,
+                    height * 2.1 - flowTime * 0.47)) - 0.5) * 0.8;
+                float flow = FireNoise(float2(across * 1.9 + phase + curl,
+                    height * 4.3 - flowTime));
+                float fine = FireNoise(float2(across * 4.1 - phase * 0.7 + curl * 0.45,
+                    height * 8.7 - flowTime * 1.67));
                 float centerShift = (flow - 0.5) * 0.28 * height;
                 float distanceFromCore = abs(across + centerShift);
                 float edge = 1.0 - smoothstep(0.48, 0.99, distanceFromCore);

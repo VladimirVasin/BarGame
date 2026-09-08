@@ -10,16 +10,26 @@ namespace BarPromenade
     {
         public const float BreathCycleSeconds = 4f;
         public const float ShoulderRubDurationSeconds = 2.5f;
-        public const float FirstShoulderRubSeconds = 10f;
+        public const float FirstShoulderRubSeconds = 1.8f;
+        public const float ShiverDurationSeconds = 1f;
+        public const float FirstShiverSeconds = 5.75f;
 
         private const float RubBlendSeconds = 0.2f;
-        private const double IntervalSequenceSeconds = 77d;
+        private const float ShiverBlendSeconds = 0.12f;
+        private const double IntervalSequenceSeconds = 36.25d;
         private static readonly double[] RubStartIntervals =
-            { 13d, 9d, 12d, 8d, 14d, 11d, 10d };
+            { 5.5d, 4.25d, 6d, 4.75d, 5d, 6.25d, 4.5d };
+        // Shares the rub schedule's period, with every one-second shiver
+        // placed inside a gap. No gesture is delayed or queued by the other.
+        private static readonly double[] ShiverStartIntervals =
+            { 8.75d, 5.75d, 5.25d, 5.5d, 5.25d, 5.75d };
 
         private double secondsUntilRub = FirstShoulderRubSeconds;
         private double rubElapsedSeconds = -1d;
         private int intervalIndex;
+        private double secondsUntilShiver = FirstShiverSeconds;
+        private double shiverElapsedSeconds = -1d;
+        private int shiverIntervalIndex;
 
         public double ElapsedSeconds { get; private set; }
         public float BreathPhase01 =>
@@ -29,6 +39,12 @@ namespace BarPromenade
         public float RubNormalizedTime => IsRubbing
             ? (float)(rubElapsedSeconds / ShoulderRubDurationSeconds)
             : 0f;
+        public bool IsShivering => shiverElapsedSeconds >= 0d;
+        public float ShiverNormalizedTime => IsShivering
+            ? (float)(shiverElapsedSeconds / ShiverDurationSeconds)
+            : 0f;
+        public float ShiverWeight01 => GestureWeight(
+            shiverElapsedSeconds, ShiverDurationSeconds, ShiverBlendSeconds);
 
         public float ExhaleEnvelope01
         {
@@ -41,21 +57,15 @@ namespace BarPromenade
             }
         }
 
-        public float RubWeight01
-        {
-            get
-            {
-                if (!IsRubbing)
-                {
-                    return 0f;
-                }
+        public float RubWeight01 => GestureWeight(
+            rubElapsedSeconds, ShoulderRubDurationSeconds, RubBlendSeconds);
 
-                double edge = Math.Min(
-                    rubElapsedSeconds,
-                    ShoulderRubDurationSeconds - rubElapsedSeconds);
-                double blend = Math.Min(1d, Math.Max(0d, edge / RubBlendSeconds));
-                return (float)(blend * blend * (3d - 2d * blend));
-            }
+        private static float GestureWeight(double elapsed, float duration, float blendSeconds)
+        {
+            if (elapsed < 0d) return 0f;
+            double edge = Math.Min(elapsed, duration - elapsed);
+            double blend = Math.Min(1d, Math.Max(0d, edge / blendSeconds));
+            return (float)(blend * blend * (3d - 2d * blend));
         }
 
         public void Step(float deltaTime, bool allowRub = true)
@@ -69,37 +79,47 @@ namespace BarPromenade
             ElapsedSeconds += deltaTime;
             if (!allowRub)
             {
-                // Running releases the hands and defers the next gesture.
-                // Its elapsed time must not queue several gestures on stopping.
+                // Protective actions own the hands and defer both gestures.
+                // Their elapsed time must not queue gestures on release.
                 rubElapsedSeconds = -1d;
+                shiverElapsedSeconds = -1d;
                 return;
             }
 
-            if (IsRubbing)
+            AdvanceGesture(deltaTime, RubStartIntervals, ShoulderRubDurationSeconds,
+                ref secondsUntilRub, ref rubElapsedSeconds, ref intervalIndex);
+            AdvanceGesture(deltaTime, ShiverStartIntervals, ShiverDurationSeconds,
+                ref secondsUntilShiver, ref shiverElapsedSeconds, ref shiverIntervalIndex);
+        }
+
+        private static void AdvanceGesture(double deltaTime, double[] intervals, float duration,
+            ref double untilStart, ref double elapsed, ref int nextInterval)
+        {
+            if (elapsed >= 0d)
             {
-                rubElapsedSeconds += deltaTime;
+                elapsed += deltaTime;
             }
 
-            secondsUntilRub -= deltaTime;
-            if (secondsUntilRub <= -IntervalSequenceSeconds)
+            untilStart -= deltaTime;
+            if (untilStart <= -IntervalSequenceSeconds)
             {
                 // Skip whole repeating schedules after an unusually large
                 // externally supplied step without iterating once per gesture.
-                secondsUntilRub += Math.Floor(
-                    -secondsUntilRub / IntervalSequenceSeconds) *
+                untilStart += Math.Floor(
+                    -untilStart / IntervalSequenceSeconds) *
                     IntervalSequenceSeconds;
             }
 
-            while (secondsUntilRub <= 0d)
+            while (untilStart <= 0d)
             {
-                rubElapsedSeconds = -secondsUntilRub;
-                secondsUntilRub += RubStartIntervals[intervalIndex];
-                intervalIndex = (intervalIndex + 1) % RubStartIntervals.Length;
+                elapsed = -untilStart;
+                untilStart += intervals[nextInterval];
+                nextInterval = (nextInterval + 1) % intervals.Length;
             }
 
-            if (rubElapsedSeconds >= ShoulderRubDurationSeconds)
+            if (elapsed >= duration)
             {
-                rubElapsedSeconds = -1d;
+                elapsed = -1d;
             }
         }
 
@@ -109,6 +129,9 @@ namespace BarPromenade
             secondsUntilRub = FirstShoulderRubSeconds;
             rubElapsedSeconds = -1d;
             intervalIndex = 0;
+            secondsUntilShiver = FirstShiverSeconds;
+            shiverElapsedSeconds = -1d;
+            shiverIntervalIndex = 0;
         }
     }
 }
