@@ -6,6 +6,116 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-08 — Toilet inspection, flush whirlpool and concurrent dressing
+
+The user's further request adds a practical downward inspection after
+rising, a normal flush and a rotating underwater return. The latest explicit
+clarification starts dressing immediately when the camera starts leaving;
+only lid closure waits for the completed return. Architecture and both
+world bibles record the exact water-look/brief lower-face exception without
+reward, cleansing, new dialogue or story meaning.
+
+The independent bank expands to nine Hero V2 clips with `Inspect 2 s` and
+`Flush 2.5 s`. The real hand presents the button press at `1.5 s`; the
+timeline holds this marker until rendered, so a long frame cannot skip the
+contact before starting the flush. `HomeToiletFlushVortex` accelerates below
+water for `1 s`, then continues through the `2.5 s` camera return, completing
+`720 degrees` in one direction with continuous speed and a smooth stop.
+Its orbit radius is `9 mm`. `Dress 2 s` starts with `Exit 2.5 s`, keeping
+the exit corridor clear, and `CloseLid` starts after the camera is back.
+
+The water surface has three curling arms; six existing bubble meshes orbit.
+An owned audio source reuses
+the existing `2.6 s` `ToiletFlush` clip through the underwater mix. Vortex
+surface/underwater parameters, playback and owned state reset on exit;
+early cancellation skips inspection/flush and retains the safe return.
+The `1.1.0` lower-body model sharpens buttock form as one closed
+`958`-triangle bare pelvis; the module totals `1,602` triangles and retains
+the production garment endpoints and original outlet.
+
+The user's latest refinement replaces the fixed post-contact floor pose
+and timed first-second drain with physical buoyancy, wobble/current-driven
+rotation and capture by the flush flow after the existing lens contact.
+`HomeToiletFloatingBody` now owns `1/120 s` steps, five distributed buoyancy
+volumes at relative density `0.76`, drag/current and angular state. After
+the `0.28 s`/`70 mm` lens-clearance move, it constrains the solid against the
+authored bowl and actual camera, independently of the player's solid fixture
+collider. The flush applies capture/drain forces; hiding requires arrival
+inside the lower bowl zone after a `0.75 s` minimum guard, not a one-second
+disappearance timer. `Advance(0)` freezes the state; `End` clears it. Public
+state includes world centre of mass, linear/angular velocity, rotation,
+submerged fraction and drained status. This ordinary fluid-motion change
+introduces no additional effects, sound or cleansing meaning.
+
+Verification: the changed geometry validator and FBX vertex/shape/metre/
+anchor round trip and the final nine-clip action validator passed. The
+expanded focused
+`HomeToiletPlungePlayModeTests.ChoicePlungeReturnsAndPreservesSmallAction`
+finished `Passed`, `1/1`, in `61.21 s` total; the final
+[Captures/HomeToiletWhirlpool/results.xml](../Captures/HomeToiletWhirlpool/results.xml)
+records end time `2026-09-08 06:22:48Z`. Geometry, buoyancy, inspection,
+flush, concurrent dressing, clear camera return and restoration captures
+were reviewed, including
+[07b-floating-at-surface.png](../Captures/HomeToiletWhirlpool/07b-floating-at-surface.png)
+and the corrected
+[09-inspects-from-bottom.png](../Captures/HomeToiletWhirlpool/09-inspects-from-bottom.png).
+The face is now readable from the lower shot.
+
+The same focused selection was repeated only because the first capture
+showed an overly dark inspection face. The same scoped
+`HomeToiletBowlLighting` fill now rises `0.32 m` during `Inspect`, with
+range `0.78 → 1.2 m` and intensity `0.17 → 0.25`, easing back by the end
+of `Flush`. The rendering layer and scene exposure remain unchanged.
+The previous complete `Captures/HomeToiletSeated/` series and its recorded
+validation remain intact. Documentation diff review and `git diff --check`
+passed. No full suite or player build was run for this refinement.
+
+## 2026-09-08 — Seated toilet action and real-hand lid contact
+
+The user approved implementation of the expanded toilet plan. Architecture
+notes and both world bibles record the bodily action and invisible local
+bowl fill as accepted exceptions, superseding the initial camera-only scope.
+Both options now use `HomeToiletActorPresentation` for `2 s` opening and
+closing with the actual hero's hand. The small branch retains its urine,
+wet marks, completion-only flush and stress `-6`.
+
+The separate `HomeToiletSeatedActions` bank supplies seven Hero V2 clips:
+`2 s` each except `Seated 3 s`, with no gameplay root motion. The large
+branch's timeline coordinates preparation, the `2.5 s` dive with sitting
+starting at `1.8 s`, the remaining `1.3 s` sit, `3 s` seated action,
+`2 s` rise, `2.5 s` return and `2 s` dress, plus grounded turns and lid
+actions. The body clears the camera route before return, including ordinary
+cancellation; teardown restores owned state immediately.
+
+`HomeToiletSeatedAppearance` owns ten skinned lower-body/garment renderers
+and five `Lowered` shapes, restoring the production garment endpoints and
+materials. Bare geometry binds to actual bones; fabric proxies follow those
+bones toward the knees. `HomeToiletBowelEffect` emits at seated `0.5 s`,
+releases at `1.05 s`, falls through air, slows under water and triggers one
+surface ripple/splash/bubble/audio contact. A presented `26 mm` near-lens
+contact precedes movement aside to the floor. The new local fill uses an
+owned rendering layer without changing scene exposure. The large branch
+has no flush or needs transaction; scoped water audio retains its prior mix.
+
+Verification: the directly affected Blender asset validators passed,
+including seven-clip contact/endpoint contracts and lower-body FBX
+vertex/shape/metre/anchor round trips. The seated model manifest records
+five lowered shapes and `1,312` triangles. The expanded focused
+`HomeToiletPlungePlayModeTests.ChoicePlungeReturnsAndPreservesSmallAction`
+passed in Unity (`1/1`, approximately `49 s`) after fixing the imported
+ancestor-bone remap, garment proxy scale and posed-bounds scale. Its checks
+cover the actual lid contact, five garment Basis handoffs within `1 mm`,
+seated pelvis, water/lens contact, cleared exit, early cancellation, disable
+cleanup, underwater mix and the existing small action. The seven-clip Unity
+import/endpoint validator also passed in the same invocation.
+The captures in `Captures/HomeToiletSeated/` were visually reviewed through
+opening, lowering trousers, seated emission, near-lens contact, rise, closing,
+restoration and the small action. Audio routing and generated waveform data
+were verified; no listening audition is claimed. Unity's unrelated material,
+prefab-signature and importer rewrites were restored. Documentation diff
+review and `git diff --check` passed. No full suite or player build was run
+for this session.
+
 ## 2026-09-08 — Take the bandage off his arm, for good
 
 The left forearm no longer wears a pale bandage. `CLO_Bandage.L` is gone as

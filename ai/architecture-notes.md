@@ -5257,6 +5257,133 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   spine/chest/neck/head bend for the spit. Its user-driven replacement
   is recorded under the first-person mirror-brushing decision below; no new
   full-body animation clip or replacement arm is introduced.
+- **Accepted — Physical toilet actions and scoped bowl light (`2026-09-08`):**
+  The user approved the expanded plan and explicitly requested its
+  implementation. Implementation status is `Current`; the new integration's
+  targeted Unity verification is tracked separately in the work log. It supersedes
+  the initial camera-only limits below on seating, clothing, lower anatomy,
+  defecation, its water impact and local presentation light.
+
+  In both toilet branches the production hero's real hand visibly takes
+  the lid, opens it and later closes it. The large branch lowers his
+  trousers, seats the same hero over the real opening and presents lower
+  anatomy compatible with his body and proportions. Excrement visibly
+  separates from that anatomy and falls toward the underwater lens, with
+  a water impact and the scoped underwater background. The camera crosses
+  the empty opening before the hero completes sitting; the return crosses
+  it after he rises. Ordinary cancellation first makes that path clear
+  through the same visible bodily exit, then returns the camera, restores
+  clothing and closes the lid. Scene teardown still uses immediate,
+  idempotent owned cleanup.
+
+  `HomeToiletActorPresentation` samples the independent Hero V2
+  `HomeToiletSeatedActions` bank: nine authored in-place clips, `2 s`
+  each except the `3 s` seated action and `2.5 s` flush. Both branches share
+  its real-hand lid opening/closing. `HomeToiletSeatedTimeline` coordinates `Prepare 2 s`,
+  camera dive `2.5 s` with sitting starting at `1.8 s`, remaining sit
+  `1.3 s`, seated `3 s`, rise `2 s`, inspection `2 s` and flush `2.5 s`,
+  with grounded turns and presented endpoints. Its natural exit now follows
+  the flush refinement below: camera return `2.5 s` and dressing `2 s`
+  begin together; closure waits for the camera.
+  `HomeToiletSeatedAppearance` binds ten lower-body/garment renderers to
+  the original bones and bone-following fabric proxies; five `Lowered`
+  shapes preserve exact source garment endpoints and restore materials.
+  The deterministic seated model and action generators, plus
+  `HomeToiletSeatedActionAssetSetup`, own their separate resources without
+  rebuilding the production hero's main clip bank.
+
+  `HomeToiletBowelEffect` starts emission at seated `0.5 s` and releases
+  at `1.05 s`. Air fall uses gravity, underwater travel applies drag, and
+  one surface contact produces ripple, splash, bubbles and audio. It
+  presents one near-lens contact at `26 mm`. The latest post-contact fluid
+  refinement is recorded below. `HomeToiletBowlLighting` scopes the invisible fill to an
+  owned rendering layer and restores prior masks; scene exposure is untouched.
+  `Present(amount, inspectionAmount)` raises that same source by `0.32 m`
+  during `Inspect`, blending range `0.78 → 1.2 m` and intensity
+  `0.17 → 0.25` so the bent face lies within its reach. The inspection
+  blend eases back after the button press and reaches the bowl setting
+  at the end of `Flush`; it introduces no extra light or lamp model.
+
+  Deterministic Blender assets and the original rig remain authoritative:
+  no replacement hero, detached screen hand, concealed teleport or image
+  fade masks a handoff. Authored body clips extend the existing bathroom
+  presentation while retaining the shared constrained approach, neutral and
+  terminal presentation, modal ownership and safe exit contract. A scoped
+  invisible local fill may make the bowl action readable without a lamp
+  model. This is an explicit presentation exception to the previous
+  ordinary-light-only bowl rule, confined to this action; it adds no
+  fictional fixture and does not relight Home globally.
+
+  Story-bible §6 and art-bible §7 record the same accepted design. The
+  camera remains separate from the hero's eyes; the short inspection below
+  may reveal his face from that existing lower shot. Ordinary bodily action
+  gains no cleansing meaning, new dialogue, music, comedy beat, NPC reaction
+  or story event. Existing
+  needs transactions are not expanded by the ordinary flush. Story §16,
+  text register §21 and all nine art acceptance checks remain binding.
+
+  **Accepted refinement (`2026-09-08`), implementation `Current`:** The
+  user's next explicit request extends the same action after `Rise`. The
+  hero bends and looks into the bowl while the camera stays below the
+  water. This permits only that practical downward look and a brief view
+  of his face from the existing lower camera if the pose reveals it;
+  it introduces no self-reflection, dialogue, reaction or broader automatic
+  water attention. A normal flush follows the inspection. The camera
+  spends `1 s` in its whirlpool, then returns smoothly with rotation.
+  The user's latest clarification starts `Dress` immediately when the
+  camera begins returning, in parallel; only lid closure waits for the
+  completed return. The existing safe exit and owned cleanup still apply.
+  The lower-body asset gains more defined buttock form within the same hero proportions,
+  garment handoff, palette and low-poly language.
+
+  This supersedes the earlier limits on a post-action look, brief visible
+  face and flush in the large branch; it adds no needs reward, cleansing
+  metaphor, new meaning or story event. The whirlpool and sound represent
+  ordinary toilet water. The existing scoped fill remains local, with no
+  new lamp model or global exposure change. Story §6/§7/§22 and art §7
+  record this exact boundary; targeted Unity validation is tracked in the
+  work log without claiming a pass for this refinement in advance.
+
+  `HomeToiletFlushVortex` integrates one continuous `720 degree` forward
+  roll across `1 s` of submerged acceleration and the `2.5 s` camera
+  return. Angular speed starts and ends at zero; the join stays continuous.
+  A `9 mm` orbit radius follows strength. The real hand presents the flush
+  button press at clip time `1.5 s`; the timeline clamps at this marker
+  until rendered, so a hitch cannot start the flush before contact. That
+  press starts the water and one-second hold; `Dress 2 s` begins with
+  `Exit 2.5 s`. `HomeToiletBowelEffect` reuses six bubbles plus the existing
+  `2.6 s` `ToiletFlush`
+  clip on an owned source routed through the underwater mix. Three curling
+  surface arms and scoped underwater distortion follow the same vortex.
+  All parameters, source playback and render state release on every exit.
+  The `1.1.0` lower-body module has `1,602` triangles, including one closed
+  `958`-triangle bare pelvis with more defined buttocks; existing garment
+  endpoints and the outlet remain authoritative.
+
+  **Accepted fluid refinement (`2026-09-08`), implementation `Current`:**
+  After the existing near-lens contact, the solid floats, wobbles and turns
+  under ordinary buoyancy and water-current forces. Flush flow subsequently
+  captures and drains it. This replaces the fixed floor pose and prescribed
+  first-second disappearance. It adds no separate effect, sound, reward,
+  cleansing meaning or other world detail.
+
+  `HomeToiletBowelEffect` hands off after the near-lens contact and a
+  `0.28 s`, `70 mm` clearance move to `HomeToiletFloatingBody`. This owned
+  solver uses fixed `1/120 s` steps, five distributed displaced volumes,
+  relative density `0.76`, water drag/current and angular motion. It resolves
+  contact against the actual bowl profile and camera. It deliberately does
+  not use a Unity `Rigidbody`: the existing solid fixture footprint remains
+  the player's collision representation, not this inner water cavity.
+
+  `IsFloating` and `FloatingBody` expose active state; the solver reports
+  world-space centre-of-mass `Position`, `Velocity`, `AngularVelocity`,
+  `Rotation`, `SubmergedFraction` and `IsDrained`. `TipPosition` drives the
+  imported mesh's lower-tip root. `BeginFlush` adds rotational and downward
+  current forces. Retirement requires entry into the lower inner bowl zone
+  after a `0.75 s` minimum guard, rather than a fixed disappearance time.
+  `Advance(0)` leaves the state unchanged; owner `End` resets positions,
+  velocities, rotations and accumulated time. Unity validation remains
+  separate in the work log.
 - **Accepted — Toilet choice and bowl-camera exception (`2026-09-07`):**
   The user approved two explicit options at the existing toilet trigger:
   `По-маленькому` retains the existing first-person action, and
@@ -5277,8 +5404,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and the contextual standard's authored action-clip requirement, recorded
   in story-bible §6. The shared bathroom lifecycle still owns constrained
   positioning, modal input, rendered endpoints and idempotent cleanup.
-  It introduces no seated pose, new full-body clip, anatomy presentation,
-  defecation, flush, reward or needs transaction. The camera is not the
+  The initial implementation introduces no seated pose, new full-body
+  clip, anatomy presentation, defecation, flush, reward or needs transaction;
+  its camera-only scope is extended by the accepted `2026-09-08` design
+  above. The camera is not the
   hero's eyes; his head does not acquire water attention, and the shot does
   not hold his face or reflection. Story §16 and all nine art checks remain
   binding; the episode adds no cleansing metaphor, lore or comedy beat.

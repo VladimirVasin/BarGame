@@ -42,7 +42,7 @@ namespace BarPromenade.Rendering
             if (resources.isActiveTargetBackBuffer) return;
             TextureHandle source = resources.activeColorTexture;
             if (!source.IsValid()) return;
-            material.SetVector(StateId, new Vector4(effect.Amount, effect.Clock, 0f, 0f));
+            material.SetVector(StateId, new Vector4(effect.Amount, effect.Clock, effect.VortexStrength, effect.VortexAngle));
             TextureDesc descriptor = graph.GetTextureDesc(source);
             descriptor.name = "Home Toilet Submerged View";
             descriptor.depthBufferBits = DepthBits.None;

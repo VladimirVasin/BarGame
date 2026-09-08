@@ -125,7 +125,9 @@ namespace BarPromenade
         }
     }
 
-    /// <summary>First-person toilet action on the shared bathroom lifecycle.</summary>
+    public enum HomeToiletActionPhase { Idle, Opening, Using, Closing, Completed }
+
+    /// <summary>Hand-operated lid around the existing first-person toilet action.</summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(260)]
     public sealed class HomeToiletInteraction : HomeBathroomSceneInteraction
@@ -136,6 +138,7 @@ namespace BarPromenade
         public const float FlushHandlePressDepth = 0.03f;
         private readonly HomeToiletSceneTimeline timeline = new HomeToiletSceneTimeline();
         private HomeToiletFirstPersonView firstPerson;
+        private HomeToiletActorPresentation actor;
         private HomeUrineEffect urine;
         private HomeToiletLid lid;
         private Transform flushHandle;
@@ -145,11 +148,16 @@ namespace BarPromenade
         private float pendingShakeSeconds;
         private bool previousHandoff;
         private bool ownsHandoff;
+        private float lidPhaseElapsed;
+        private bool terminalPresented;
+        private bool stopBeforeUsing;
 
         public HomeToiletSceneTimeline Timeline => timeline;
         public HomeToiletFirstPersonView FirstPerson => firstPerson;
         public HomeUrineEffect Urine => urine;
         public HomeToiletLid Lid => lid;
+        public HomeToiletActorPresentation Actor => actor;
+        public HomeToiletActionPhase ActionPhase { get; private set; }
         public bool GaugeVisible => OwnsScene && timeline.GaugeVisible;
         public override string PromptKey => OwnsScene ? string.Empty : UsePromptKey;
         protected override string StopPromptKey => StopPromptKeyName;
@@ -158,8 +166,9 @@ namespace BarPromenade
         protected override float CameraFieldOfView => HomeToiletFirstPersonView.FieldOfView;
         protected override float CameraBlend => timeline.CameraBlend;
         protected override float CameraDriftWeight => 0f;
-        protected override bool SceneCompleted => timeline.IsCompleted;
-        protected override bool StopPromptVisible => timeline.GaugeVisible;
+        protected override bool SceneCompleted => ActionPhase == HomeToiletActionPhase.Completed;
+        protected override bool StopPromptVisible => ActionPhase == HomeToiletActionPhase.Opening ||
+            ActionPhase == HomeToiletActionPhase.Using && timeline.GaugeVisible;
 
         public void Initialize(HomeInteriorRoot homeRoot)
         {
@@ -170,6 +179,8 @@ namespace BarPromenade
             lid = homeRoot.Room.GetComponentInChildren<HomeToiletLid>(true);
             firstPerson = gameObject.AddComponent<HomeToiletFirstPersonView>();
             firstPerson.Initialize(homeRoot);
+            actor = gameObject.AddComponent<HomeToiletActorPresentation>();
+            actor.Initialize(homeRoot);
             // Flying liquid and residue outlive this modal action.
             var effectObject = new GameObject("Home Urine");
             effectObject.transform.SetParent(homeRoot.transform, false);
@@ -180,10 +191,20 @@ namespace BarPromenade
             if (flushHandle != null) flushHandleRest = flushHandle.localPosition;
         }
 
-        protected override bool PrepareScene() => lid != null && firstPerson.Prepare();
-        protected override void OnSceneCaptured() => lid.Open();
+        protected override bool PrepareScene() => lid != null && actor.Prepare() && firstPerson.Prepare();
         protected override void OnSceneBegin()
         {
+            timeline.Reset();
+            pendingUrineSeconds = pendingShakeSeconds = 0f;
+            stopBeforeUsing = terminalPresented = false;
+            BeginLidPhase(HomeToiletActionPhase.Opening);
+        }
+
+        private void BeginUsing()
+        {
+            actor.End();
+            ActionPhase = HomeToiletActionPhase.Using;
+            terminalPresented = false;
             timeline.Begin();
             pendingUrineSeconds = pendingShakeSeconds = 0f;
             previousHandoff = Home.Player.Visual.InteractionHandoffLocked;
@@ -195,16 +216,46 @@ namespace BarPromenade
 
         protected override void OnSceneAdvance(float deltaTime)
         {
-            float previousUrine = timeline.TotalUrinatingSeconds;
-            float previousShake = timeline.TotalShakingSeconds;
-            timeline.Advance(deltaTime);
-            pendingUrineSeconds += timeline.TotalUrinatingSeconds - previousUrine;
-            pendingShakeSeconds += timeline.TotalShakingSeconds - previousShake;
-            if (timeline.ConsumeFlushCue())
+            if (deltaTime <= 0f) return;
+            if (ActionPhase == HomeToiletActionPhase.Opening || ActionPhase == HomeToiletActionPhase.Closing)
             {
-                Home.Audio?.TryPlay(RetroSfxId.ToiletFlush,
-                    Home.transform.TransformPoint(new Vector3(4.49f, 0.9f, 1.40f)));
-                flushPress = 1f;
+                if (terminalPresented)
+                {
+                    bool wasOpening = ActionPhase == HomeToiletActionPhase.Opening;
+                    actor.End();
+                    if (!wasOpening) ActionPhase = HomeToiletActionPhase.Completed;
+                    else if (stopBeforeUsing) BeginLidPhase(HomeToiletActionPhase.Closing);
+                    else BeginUsing();
+                }
+                else
+                {
+                    HomeToiletActorPhase phase = ActionPhase == HomeToiletActionPhase.Opening
+                        ? HomeToiletActorPhase.OpenLid : HomeToiletActorPhase.CloseLid;
+                    lidPhaseElapsed = Mathf.Min(HomeToiletActorPresentation.Duration(phase), lidPhaseElapsed + deltaTime);
+                }
+            }
+            else if (ActionPhase == HomeToiletActionPhase.Using)
+            {
+                if (terminalPresented)
+                {
+                    firstPerson.End();
+                    ReleaseHandoff();
+                    BeginLidPhase(HomeToiletActionPhase.Closing);
+                }
+                else
+                {
+                    float previousUrine = timeline.TotalUrinatingSeconds;
+                    float previousShake = timeline.TotalShakingSeconds;
+                    timeline.Advance(deltaTime);
+                    pendingUrineSeconds += timeline.TotalUrinatingSeconds - previousUrine;
+                    pendingShakeSeconds += timeline.TotalShakingSeconds - previousShake;
+                    if (timeline.ConsumeFlushCue())
+                    {
+                        Home.Audio?.TryPlay(RetroSfxId.ToiletFlush,
+                            Home.transform.TransformPoint(new Vector3(4.49f, 0.9f, 1.40f)));
+                        flushPress = 1f;
+                    }
+                }
             }
             flushPress = Mathf.MoveTowards(flushPress, 0f, deltaTime * 1.25f);
             if (flushHandle != null)
@@ -213,6 +264,16 @@ namespace BarPromenade
 
         protected override void OnScenePresentation(float deltaTime)
         {
+            if (ActionPhase == HomeToiletActionPhase.Opening || ActionPhase == HomeToiletActionPhase.Closing)
+            {
+                HomeToiletActorPhase phase = ActionPhase == HomeToiletActionPhase.Opening
+                    ? HomeToiletActorPhase.OpenLid : HomeToiletActorPhase.CloseLid;
+                float duration = HomeToiletActorPresentation.Duration(phase);
+                actor.Present(phase, lidPhaseElapsed / duration);
+                terminalPresented = lidPhaseElapsed >= duration;
+                return;
+            }
+            if (ActionPhase != HomeToiletActionPhase.Using) return;
             firstPerson.Tick(deltaTime, timeline.CameraBlend,
                 timeline.Phase == HomeToiletScenePhase.Shaking ? timeline.PhaseElapsed : -1f,
                 timeline.Phase == HomeToiletScenePhase.Urinating);
@@ -228,10 +289,11 @@ namespace BarPromenade
             if (timeline.Phase >= HomeToiletScenePhase.Exiting) urine.StopEmission();
             if (timeline.IsCompleted)
             {
-                // This is the terminal rendered endpoint. Release the pose
-                // now so the subsequent guided walk-out has its normal gait.
+                // Render the old zero-blend exit endpoint before transferring
+                // ownership to the closing hand clip on the following frame.
                 firstPerson.End();
                 ReleaseHandoff();
+                terminalPresented = true;
             }
         }
 
@@ -240,7 +302,15 @@ namespace BarPromenade
             firstPerson.EvaluateCamera(out position, out rotation);
             return firstPerson.IsActive;
         }
-        protected override bool OnRequestStop() => timeline.RequestFinish();
+        protected override bool OnRequestStop()
+        {
+            if (ActionPhase == HomeToiletActionPhase.Opening && !stopBeforeUsing)
+            {
+                stopBeforeUsing = true;
+                return true;
+            }
+            return ActionPhase == HomeToiletActionPhase.Using && timeline.RequestFinish();
+        }
         protected override void OnSceneCommit()
         {
             if (timeline.CanCommit) GameSessionState.CommitBathroomStressRelief("toilet", StressRelief);
@@ -250,8 +320,12 @@ namespace BarPromenade
             urine?.StopEmission();
             firstPerson?.End();
             ReleaseHandoff();
+            actor?.End();
             lid?.Close();
             timeline.Reset();
+            ActionPhase = HomeToiletActionPhase.Idle;
+            lidPhaseElapsed = 0f;
+            terminalPresented = stopBeforeUsing = false;
             pendingUrineSeconds = pendingShakeSeconds = flushPress = 0f;
             if (flushHandle != null) flushHandle.localPosition = flushHandleRest;
         }
@@ -263,6 +337,14 @@ namespace BarPromenade
                 Home.Player.Visual.SetInteractionHandoffLocked(previousHandoff);
                 ownsHandoff = false;
             }
+        }
+
+        private void BeginLidPhase(HomeToiletActionPhase phase)
+        {
+            if (!actor.Begin()) throw new InvalidOperationException("The authored toilet lid action is unavailable.");
+            ActionPhase = phase;
+            lidPhaseElapsed = 0f;
+            terminalPresented = false;
         }
     }
 }

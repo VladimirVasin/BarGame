@@ -85,6 +85,9 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 - Separate mountain/village areas, cableway travel and accessible interiors.
 - One shared animated hero, contextual interactions, intoxication/balance,
   session clock, needs, inventory, purchases, dated quests and grave work.
+- Home toilet choices share actual hand-operated lid actions; the seated
+  branch coordinates the original rig, lowered clothing, inspection/flush
+  and an underwater camera that returns while the hero dresses.
 - Map, inventory, journal, pause/options and localized interaction interfaces.
 - Shared PS1 presentation, causal audio and bounded diagnostics.
 

@@ -67,7 +67,10 @@ namespace BarPromenade
             }
         }
 
-        public bool RequestFinish()
+        public bool RequestFinish() => BeginReturn(true);
+
+        /// <summary>The seated actor may hold the camera until its corridor is clear.</summary>
+        public bool BeginReturn(bool cancelled = false)
         {
             if (Phase != HomeToiletPlungePhase.Entering && Phase != HomeToiletPlungePhase.SubmergedHold)
                 return false;
@@ -88,7 +91,7 @@ namespace BarPromenade
             exitPeak = BrakeTravel(1f);
             returnSeconds = ExitSeconds * Math.Max(.20f, (float)Math.Sqrt(exitPeak));
             exitDuration = brakeSeconds + returnSeconds;
-            WasCancelled = true;
+            WasCancelled = cancelled;
             PhaseElapsed = 0f;
             Phase = HomeToiletPlungePhase.Exiting;
             return true;

@@ -786,7 +786,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 1.7.0
   sourcePose: apose
   sourceTriangleCount: 2384
-  buildSignature: 8ae5db3176279bd268df95fe247530a6
+  buildSignature: e4b040b45f28b4210beb7698c09ff3b7
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}
@@ -1060,7 +1060,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 3495ad8595657f84e8a1b09b1754eaf6, type: 2}
     - target: {fileID: 6616729537419657154, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 3495ad8595657f84e8a1b09b1754eaf6, type: 2}
     - target: {fileID: 6781347641551055572, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'

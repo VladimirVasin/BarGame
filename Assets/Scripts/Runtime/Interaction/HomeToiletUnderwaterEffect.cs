@@ -21,10 +21,13 @@ namespace BarPromenade
         private MaterialPropertyBlock properties;
         private float waterHeight;
         private static readonly int ClockId = Shader.PropertyToID("_BowlWaterClock");
+        private static readonly int VortexId = Shader.PropertyToID("_BowlVortex");
         public bool IsActive { get; private set; }
         public float Amount { get; private set; }
         public float AudioAmount { get; private set; }
         public float Clock { get; private set; }
+        public float VortexStrength { get; private set; }
+        public float VortexAngle { get; private set; }
         public bool IsAudioConfigured => ownsAudio;
         public int EntryPlayCount { get; private set; }
         public AudioSource EntryVoice => entryVoice;
@@ -93,6 +96,17 @@ namespace BarPromenade
             }
         }
 
+        public void PresentVortex(float strength, float angle)
+        {
+            if (!IsActive) return;
+            VortexStrength = Mathf.Clamp01(strength);
+            VortexAngle = angle;
+            if (surface == null) return;
+            surface.GetPropertyBlock(properties);
+            properties.SetVector(VortexId, new Vector4(VortexStrength, VortexAngle, 0f, 0f));
+            surface.SetPropertyBlock(properties);
+        }
+
         private void LateUpdate()
         {
             if (!IsActive) return;
@@ -105,13 +119,14 @@ namespace BarPromenade
                 Mathf.Log(Mathf.Min(previousCutoff, SubmergedCutoffHz)), AudioAmount));
             mixer.SetFloat(CutoffParameter, cutoff);
             mixer.SetFloat(GainParameter, previousGain + SubmergedGainDb * AudioAmount);
-            submergedVoice.volume = .22f * AudioAmount;
+            submergedVoice.volume = (.22f + .1f * VortexStrength) * AudioAmount;
         }
 
         public void End()
         {
             IsActive = false;
             Amount = AudioAmount = Clock = 0f;
+            VortexStrength = VortexAngle = 0f;
             if (ownsAudio && mixer != null)
             {
                 mixer.SetFloat(CutoffParameter, previousCutoff);
@@ -128,6 +143,7 @@ namespace BarPromenade
             {
                 surface.GetPropertyBlock(properties);
                 properties.SetFloat(ClockId, 0f);
+                properties.SetVector(VortexId, Vector4.zero);
                 surface.SetPropertyBlock(properties);
             }
             surface = null;

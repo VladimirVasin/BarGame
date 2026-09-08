@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "generator_version": "1.1.0",
+  "source_hero_sha256": "a54e879bed8a1e7af80b6c95546901d49e39cf96acf6d90b7d4500ce99696639",
+  "coordinates": "Same FBX axis/unit/import contract as production Hero V2; stool localY up",
+  "report": {
+    "trousers_source_endpoints_exact": true,
+    "lowered_shape_count": 5,
+    "triangles": 1602,
+    "real_bones_only": true,
+    "closed_positive_volumes": true,
+    "bare_pelvis_watertight_components": 1,
+    "bare_pelvis_outlet_surface_exact": true,
+    "bare_pelvis_cleft_above_support": 0.01483,
+    "bare_pelvis_triangles": 958,
+    "bare_pelvis_source_min_z": 0.77517,
+    "seat_pelvis_world_y": 0.70483,
+    "outlet_relative_pelvis_source": [
+      0.0,
+      0.02499999850988388,
+      -0.04499995708465576
+    ],
+    "fbx_round_trip_vertices_shapes_metres_anchors": true
+  },
+  "models": [
+    "SeatedLowerBody",
+    "Stool01",
+    "Stool02"
+  ],
+  "outlet_source_world": [
+    0,
+    0.033,
+    0.79
+  ],
+  "source_parts": {
+    "GEO_Pelvis": "pelvis",
+    "GEO_Thigh.L": "thigh.L",
+    "GEO_Thigh.R": "thigh.R",
+    "GEO_Shin.L": "shin.L",
+    "GEO_Shin.R": "shin.R"
+  },
+  "geometry_sha256": "c44e3e6e374a87fcc4b58390c12346405a2fee27b77bf6ecf2d17419f4ca6e65",
+  "trousers_contract": "Exact production source position/UV at Basis; Lowered shape gathers at knee via actual-bone presentation proxies",
+  "stools": [
+    {
+      "name": "Stool01",
+      "length": 0.08,
+      "diameter": 0.038
+    },
+    {
+      "name": "Stool02",
+      "length": 0.07,
+      "diameter": 0.034
+    }
+  ],
+  "signature": "7dea13cf650b203dced047f6f07f69ba4e8d0924744baf7ee949ed0adec866e7"
+}

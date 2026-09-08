@@ -1,0 +1,5387 @@
+{
+  "generator": "home_toilet_seated_actions_v2",
+  "rig": "HeroV2",
+  "bone_count": 31,
+  "root_motion": false,
+  "animation_events": 0,
+  "fps": 24,
+  "grounded_root_offset": 0.04,
+  "entry_ground": [
+    3.32,
+    0.0,
+    1.4
+  ],
+  "exit_ground": [
+    3.32,
+    0.0,
+    1.4
+  ],
+  "lid_entry_facing": [
+    1.0,
+    0.0,
+    0.0
+  ],
+  "lid_exit_facing": [
+    1.0,
+    0.0,
+    0.0
+  ],
+  "seat_entry_facing": [
+    -1.0,
+    0.0,
+    0.0
+  ],
+  "seat_exit_facing": [
+    -1.0,
+    0.0,
+    0.0
+  ],
+  "seated_pelvis_world": [
+    4.05,
+    0.705,
+    1.4
+  ],
+  "lid_grip_local": [
+    0.0,
+    0.0125,
+    -0.49
+  ],
+  "flush_handle_world": [
+    4.49,
+    1.14,
+    1.6
+  ],
+  "flush_handle_top": 0.025,
+  "flush_cue_seconds": 1.5,
+  "flush_contact_start": 0.8,
+  "flush_contact_end": 1.65,
+  "flush_press_depth": 0.03,
+  "bowl_look_world": [
+    4.05,
+    0.4373,
+    1.4
+  ],
+  "reach_end": 0.25,
+  "release_start": 0.75,
+  "maximum_grip_error": 3.6703418345438225e-07,
+  "maximum_flush_grip_error": 3.998401124775034e-07,
+  "minimum_inspect_gaze_alignment": 1.0,
+  "maximum_endpoint_error": 5.364418029785156e-07,
+  "minimum_dress_camera_clearance": 0.11024510622024541,
+  "flush_lid_clearance_samples": 61,
+  "maximum_root_motion": 0.0,
+  "minimum_foot_anchor_height": 0.09499967098236084,
+  "clips": [
+    {
+      "name": "ToiletCloseLid",
+      "duration": 2.0,
+      "loop": false,
+      "samples": [
+        {
+          "time": 0.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.020833333333333332,
+          "source_pelvis": [
+            0.0,
+            0.005638890899717808,
+            0.8338194489479065
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.041666666666666664,
+          "source_pelvis": [
+            0.0,
+            -0.0008888915181159973,
+            0.8305555582046509
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.0625,
+          "source_pelvis": [
+            0.0,
+            -0.01075000036507845,
+            0.8256250023841858
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.08333333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.023111116141080856,
+            0.8194444179534912
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.10416666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.037138890475034714,
+            0.8124305605888367
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.125,
+          "source_pelvis": [
+            0.0,
+            -0.052000001072883606,
+            0.8050000071525574
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.14583333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.0668611153960228,
+            0.7975694537162781
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.16666666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.08088888972997665,
+            0.7905555367469788
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1875,
+          "source_pelvis": [
+            0.0,
+            -0.09324999898672104,
+            0.784375011920929
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.20833333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.10311111807823181,
+            0.7794444561004639
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.22916666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.10963889956474304,
+            0.7761805653572083
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.25,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2708333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.9949363425925926,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2916666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.980324074074074,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3125,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.95703125,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3333333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.9259259259259259,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3541666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.8878761574074072,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.375,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.84375,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3958333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.7944155092592594,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4166666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.7407407407407406,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4375,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.68359375,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4583333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.6238425925925928,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4791666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.5623553240740738,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.5,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5208333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.43764467592592576,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5416666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.3761574074074075,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5625,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.31640625,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5833333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.2592592592592592,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6041666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.20558449074074084,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.625,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.15625,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6458333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.11212384259259252,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6666666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.07407407407407414,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6875,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.04296875,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7083333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.019675925925925892,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7291666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.0050636574074074256,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.75,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7708333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.10963889956474304,
+            0.7761805653572083
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7916666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.10311111807823181,
+            0.7794444561004639
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8125,
+          "source_pelvis": [
+            0.0,
+            -0.09324999898672104,
+            0.784375011920929
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8333333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.08088888227939606,
+            0.7905555367469788
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8541666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.0668611153960228,
+            0.7975694537162781
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.875,
+          "source_pelvis": [
+            0.0,
+            -0.052000001072883606,
+            0.8050000071525574
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8958333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.037138890475034714,
+            0.8124305605888367
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9166666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.02311110869050026,
+            0.8194444179534912
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9375,
+          "source_pelvis": [
+            0.0,
+            -0.01075000036507845,
+            0.8256250023841858
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9583333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.0008888915181159973,
+            0.8305555582046509
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9791666666666666,
+          "source_pelvis": [
+            0.0,
+            0.005638890899717808,
+            0.8338194489479065
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 1.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        }
+      ]
+    },
+    {
+      "name": "ToiletDress",
+      "duration": 2.0,
+      "loop": false,
+      "samples": [
+        {
+          "time": 0.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.020833333333333332,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8289417028427124
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.041666666666666664,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8125752210617065
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.0625,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.7886132597923279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.08333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7597684860229492
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.10416666666666667,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7287535667419434
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.125,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.6982812285423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.14583333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.6710640788078308
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.16666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.649814784526825
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1875,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6372460722923279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.20833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6351146697998047
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.22916666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.6363718509674072
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.25,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.6389351487159729
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2708333333333333,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.6427041292190552
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2916666666666667,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.647578239440918
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3125,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6534570455551147
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.6602400541305542
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3541666666666667,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.6678268909454346
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.375,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.6761168837547302
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3958333333333333,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.685009777545929
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4166666666666667,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6944049596786499
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4375,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.7042020559310913
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4583333333333333,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.7143006324768066
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4791666666666667,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.724600076675415
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.73499995470047
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5208333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.7453998923301697
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5416666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7556993961334229
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5625,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7657978534698486
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.77559494972229
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6041666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.7849901914596558
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.625,
+          "source_pelvis": [
+            0.0,
+            0.007999996654689312,
+            0.7938831448554993
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6458333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.8021731376647949
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.8097599148750305
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6875,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.8165429830551147
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7083333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.8224217295646667
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7291666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.8272958397865295
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.75,
+          "source_pelvis": [
+            0.0,
+            0.007999996654689312,
+            0.8310648798942566
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7708333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.8336281180381775
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7916666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.8348853588104248
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8125,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8333333333333334,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8541666666666666,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.875,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8958333333333334,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9166666666666666,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9375,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9583333333333334,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9791666666666666,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 1.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        }
+      ]
+    },
+    {
+      "name": "ToiletFlush",
+      "duration": 2.5,
+      "loop": false,
+      "samples": [
+        {
+          "time": 0.0,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.016666666666666666,
+          "source_pelvis": [
+            0.0009426569449715316,
+            -0.11357109993696213,
+            0.7745286822319031
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.03333333333333333,
+          "source_pelvis": [
+            0.0036349797155708075,
+            -0.11805830895900726,
+            0.7731825113296509
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.05,
+          "source_pelvis": [
+            0.00787353515625,
+            -0.1251225620508194,
+            0.7710632085800171
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.06666666666666667,
+          "source_pelvis": [
+            0.013454861007630825,
+            -0.13442479074001312,
+            0.7682725787162781
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.08333333333333333,
+          "source_pelvis": [
+            0.02017551101744175,
+            -0.14562585949897766,
+            0.7649122476577759
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1,
+          "source_pelvis": [
+            0.02783203125,
+            -0.1583867371082306,
+            0.7610839605331421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.11666666666666667,
+          "source_pelvis": [
+            0.0362209789454937,
+            -0.17236831784248352,
+            0.7568894624710083
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.13333333333333333,
+          "source_pelvis": [
+            0.0451388880610466,
+            -0.18723149597644806,
+            0.7524305582046509
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.15,
+          "source_pelvis": [
+            0.05438232421875,
+            -0.2026372253894806,
+            0.7478088140487671
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.16666666666666666,
+          "source_pelvis": [
+            0.0637478306889534,
+            -0.21824641525745392,
+            0.7431260347366333
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.18333333333333332,
+          "source_pelvis": [
+            0.0730319544672966,
+            -0.23371995985507965,
+            0.7384840250015259
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2,
+          "source_pelvis": [
+            0.08203125,
+            -0.24871878325939178,
+            0.7339843511581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.21666666666666667,
+          "source_pelvis": [
+            0.0905422642827034,
+            -0.2629038393497467,
+            0.7297288179397583
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.23333333333333334,
+          "source_pelvis": [
+            0.0983615443110466,
+            -0.27593597769737244,
+            0.7258191704750061
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.25,
+          "source_pelvis": [
+            0.10528564453125,
+            -0.28747615218162537,
+            0.7223571538925171
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.26666666666666666,
+          "source_pelvis": [
+            0.1111111044883728,
+            -0.2971852123737335,
+            0.7194443941116333
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2833333333333333,
+          "source_pelvis": [
+            0.1156344935297966,
+            -0.30472421646118164,
+            0.7171826958656311
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3,
+          "source_pelvis": [
+            0.11865234375,
+            -0.309753954410553,
+            0.7156738042831421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.31666666666666665,
+          "source_pelvis": [
+            0.1199612095952034,
+            -0.3119354248046875,
+            0.7150193452835083
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3333333333333333,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.35,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.36666666666666664,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.38333333333333336,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.4,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.4166666666666667,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.43333333333333335,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.45,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.4666666666666667,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.48333333333333334,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.5,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.5166666666666667,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.5333333333333333,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.55,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.5666666666666667,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.5833333333333334,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.6,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.6166666666666667,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.6333333333333333,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.65,
+          "source_pelvis": [
+            0.11999999731779099,
+            -0.312000036239624,
+            0.7149999737739563
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": true
+        },
+        {
+          "time": 0.6666666666666666,
+          "source_pelvis": [
+            0.11986339837312698,
+            -0.3116357624530792,
+            0.7151365280151367
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6833333333333333,
+          "source_pelvis": [
+            0.11838206648826599,
+            -0.30768558382987976,
+            0.7166178822517395
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7,
+          "source_pelvis": [
+            0.11540810018777847,
+            -0.2997550070285797,
+            0.7195918560028076
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7166666666666667,
+          "source_pelvis": [
+            0.1111111044883728,
+            -0.28829634189605713,
+            0.7238888740539551
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7333333333333333,
+          "source_pelvis": [
+            0.10566071420907974,
+            -0.2737619876861572,
+            0.7293392419815063
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.75,
+          "source_pelvis": [
+            0.09922654181718826,
+            -0.2566041648387909,
+            0.7357734441757202
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7666666666666667,
+          "source_pelvis": [
+            0.09197819232940674,
+            -0.23727521300315857,
+            0.7430217862129211
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7833333333333333,
+          "source_pelvis": [
+            0.08408530801534653,
+            -0.21622751653194427,
+            0.7509146332740784
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8,
+          "source_pelvis": [
+            0.0757174864411354,
+            -0.1939133256673813,
+            0.7592824697494507
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8166666666666667,
+          "source_pelvis": [
+            0.06704435497522354,
+            -0.17078498005867004,
+            0.7679556012153625
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8333333333333334,
+          "source_pelvis": [
+            0.058235518634319305,
+            -0.14729474484920502,
+            0.776764452457428
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.85,
+          "source_pelvis": [
+            0.04946061223745346,
+            -0.12389498949050903,
+            0.7855393290519714
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8666666666666667,
+          "source_pelvis": [
+            0.040889251977205276,
+            -0.10103803128004074,
+            0.7941107153892517
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8833333333333333,
+          "source_pelvis": [
+            0.032691050320863724,
+            -0.07917614281177521,
+            0.8023089170455933
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9,
+          "source_pelvis": [
+            0.025035616010427475,
+            -0.05876164883375168,
+            0.8099643588066101
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9166666666666666,
+          "source_pelvis": [
+            0.01809258572757244,
+            -0.04024690389633179,
+            0.8169074058532715
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9333333333333333,
+          "source_pelvis": [
+            0.012031573802232742,
+            -0.024084199219942093,
+            0.8229684233665466
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.95,
+          "source_pelvis": [
+            0.007022187579423189,
+            -0.010725838132202625,
+            0.8279777765274048
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9666666666666667,
+          "source_pelvis": [
+            0.0032340502366423607,
+            -0.0006241351366043091,
+            0.8317659497261047
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9833333333333333,
+          "source_pelvis": [
+            0.0008367848349735141,
+            0.005768573842942715,
+            0.8341631889343262
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 1.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        }
+      ]
+    },
+    {
+      "name": "ToiletInspect",
+      "duration": 2.0,
+      "loop": false,
+      "samples": [
+        {
+          "time": 0.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.020833333333333332,
+          "source_pelvis": [
+            0.0,
+            0.007727366406470537,
+            0.8348636627197266
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.041666666666666664,
+          "source_pelvis": [
+            0.0,
+            0.006930042058229446,
+            0.8344650268554688
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.0625,
+          "source_pelvis": [
+            0.0,
+            0.005638890899717808,
+            0.8338194489479065
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.08333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.003884776495397091,
+            0.8329423666000366
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.10416666666666667,
+          "source_pelvis": [
+            0.0,
+            0.0016985610127449036,
+            0.8318492770195007
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.125,
+          "source_pelvis": [
+            0.0,
+            -0.0008888915181159973,
+            0.8305555582046509
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.14583333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.003846709616482258,
+            0.8290766477584839
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.16666666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.007144032046198845,
+            0.8274279832839966
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1875,
+          "source_pelvis": [
+            0.0,
+            -0.01075000036507845,
+            0.8256250023841858
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.20833333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.01463374774903059,
+            0.8236830830574036
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.22916666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.018764406442642212,
+            0.8216177821159363
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.25,
+          "source_pelvis": [
+            0.0,
+            -0.02311110869050026,
+            0.8194444179534912
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2708333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.027643006294965744,
+            0.81717848777771
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2916666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.03232922405004501,
+            0.8148353695869446
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3125,
+          "source_pelvis": [
+            0.0,
+            -0.037138890475034714,
+            0.8124305605888367
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3333333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.042041148990392685,
+            0.8099794387817383
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3541666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.04700514301657677,
+            0.8074974417686462
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.375,
+          "source_pelvis": [
+            0.0,
+            -0.052000001072883606,
+            0.8050000071525574
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3958333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.05699484795331955,
+            0.8025025725364685
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4166666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.06195884943008423,
+            0.8000205755233765
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4375,
+          "source_pelvis": [
+            0.0,
+            -0.0668611153960228,
+            0.7975694537162781
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4583333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.07167079299688339,
+            0.7951645851135254
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4791666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.07635699957609177,
+            0.79282146692276
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5,
+          "source_pelvis": [
+            0.0,
+            -0.08088888227939606,
+            0.7905555367469788
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5208333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.0852356031537056,
+            0.7883821725845337
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5416666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.08936625719070435,
+            0.7863168716430664
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5625,
+          "source_pelvis": [
+            0.0,
+            -0.09324999898672104,
+            0.784375011920929
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5833333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.09685597568750381,
+            0.7825720310211182
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6041666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.10015329718589783,
+            0.7809233665466309
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.625,
+          "source_pelvis": [
+            0.0,
+            -0.10311111807823181,
+            0.7794444561004639
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6458333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.10569856315851212,
+            0.778150737285614
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6666666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.10788478702306747,
+            0.7770575881004333
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6875,
+          "source_pelvis": [
+            0.0,
+            -0.10963889956474304,
+            0.7761805653572083
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7083333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.11093004792928696,
+            0.775534987449646
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7291666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.11172737181186676,
+            0.7751362919807434
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.75,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7708333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7916666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8125,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8333333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8541666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.875,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8958333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9166666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9375,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9583333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9791666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 1.0,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        }
+      ]
+    },
+    {
+      "name": "ToiletOpenLid",
+      "duration": 2.0,
+      "loop": false,
+      "samples": [
+        {
+          "time": 0.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.020833333333333332,
+          "source_pelvis": [
+            0.0,
+            0.005638890899717808,
+            0.8338194489479065
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.041666666666666664,
+          "source_pelvis": [
+            0.0,
+            -0.0008888915181159973,
+            0.8305555582046509
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.0625,
+          "source_pelvis": [
+            0.0,
+            -0.01075000036507845,
+            0.8256250023841858
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.08333333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.02311110869050026,
+            0.8194444179534912
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.10416666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.037138890475034714,
+            0.8124305605888367
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.125,
+          "source_pelvis": [
+            0.0,
+            -0.052000001072883606,
+            0.8050000071525574
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.14583333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.0668611153960228,
+            0.7975694537162781
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.16666666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.08088888227939606,
+            0.7905555367469788
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1875,
+          "source_pelvis": [
+            0.0,
+            -0.09324999898672104,
+            0.784375011920929
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.20833333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.10311111807823181,
+            0.7794444561004639
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.22916666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.10963889956474304,
+            0.7761805653572083
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.25,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.0,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2708333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.005063657407407399,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2916666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.019675925925925944,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3125,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.04296875,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3333333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.07407407407407406,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3541666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.11212384259259262,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.375,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.15625,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3958333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.2055844907407407,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4166666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.2592592592592593,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4375,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.31640625,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4583333333333333,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.3761574074074074,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4791666666666667,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.43764467592592593,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.5,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5208333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.5623553240740742,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5416666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.6238425925925924,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5625,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.68359375,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5833333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.7407407407407408,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6041666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.7944155092592592,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.625,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.84375,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6458333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.8878761574074076,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6666666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.9259259259259258,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6875,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.95703125,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7083333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.9803240740740741,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7291666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 0.9949363425925927,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.75,
+          "source_pelvis": [
+            0.0,
+            -0.1120000034570694,
+            0.7749999761581421
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": true,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7708333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.10963889956474304,
+            0.7761805653572083
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7916666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.10311111807823181,
+            0.7794444561004639
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8125,
+          "source_pelvis": [
+            0.0,
+            -0.09324999898672104,
+            0.784375011920929
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8333333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.08088888972997665,
+            0.7905555367469788
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8541666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.0668611153960228,
+            0.7975694537162781
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.875,
+          "source_pelvis": [
+            0.0,
+            -0.052000001072883606,
+            0.8050000071525574
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8958333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.037138890475034714,
+            0.8124305605888367
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9166666666666666,
+          "source_pelvis": [
+            0.0,
+            -0.023111116141080856,
+            0.8194444179534912
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9375,
+          "source_pelvis": [
+            0.0,
+            -0.01075000036507845,
+            0.8256250023841858
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9583333333333334,
+          "source_pelvis": [
+            0.0,
+            -0.0008888915181159973,
+            0.8305555582046509
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9791666666666666,
+          "source_pelvis": [
+            0.0,
+            0.005638890899717808,
+            0.8338194489479065
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 1.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": 1.0,
+          "hand_contact": false,
+          "flush_contact": false
+        }
+      ]
+    },
+    {
+      "name": "ToiletPrepare",
+      "duration": 2.0,
+      "loop": false,
+      "samples": [
+        {
+          "time": 0.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.020833333333333332,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.041666666666666664,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.0625,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.08333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.10416666666666667,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.125,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.14583333333333334,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.16666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1875,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.20833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.8349083065986633
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.22916666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999996654689312,
+            0.8339024782180786
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.25,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.8318518400192261
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2708333333333333,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.8288366794586182
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2916666666666667,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.8249374032020569
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3125,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.8202343583106995
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.8148079514503479
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3541666666666667,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8087385296821594
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.375,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.8021064400672913
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3958333333333333,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.7949921488761902
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4166666666666667,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.7874759435653687
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4375,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.7796383500099182
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4583333333333333,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.771559476852417
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4791666666666667,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7633199095726013
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.7550000548362732
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5208333333333334,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.7466800212860107
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5416666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7384404540061951
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5625,
+          "source_pelvis": [
+            0.0,
+            0.007999997586011887,
+            0.7303617596626282
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7225239872932434
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6041666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7150077819824219
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.625,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.7078934907913208
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6458333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.7012614607810974
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6951920390129089
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6875,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6897655725479126
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7083333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6850625276565552
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7291666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6811633110046387
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.75,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6781481504440308
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7708333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.6760975122451782
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7916666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999998517334461,
+            0.6750917434692383
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8125,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.6767968535423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8333333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.6868518590927124
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8541666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7038512229919434
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.875,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7256249785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8958333333333334,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.7500028610229492
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9166666666666666,
+          "source_pelvis": [
+            0.0,
+            0.007999999448657036,
+            0.774814784526825
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9375,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.7978906035423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9583333333333334,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8170601725578308
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9791666666666666,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8301533460617065
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 1.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        }
+      ]
+    },
+    {
+      "name": "ToiletRise",
+      "duration": 2.0,
+      "loop": false,
+      "samples": [
+        {
+          "time": 0.0,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.020833333333333332,
+          "source_pelvis": [
+            0.0,
+            0.7290729880332947,
+            0.6649158000946045
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.041666666666666664,
+          "source_pelvis": [
+            0.0,
+            0.7263441681861877,
+            0.6646678447723389
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.0625,
+          "source_pelvis": [
+            0.0,
+            0.7218915820121765,
+            0.6642636060714722
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.08333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.7157941460609436,
+            0.6637119054794312
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.10416666666666667,
+          "source_pelvis": [
+            0.0,
+            0.7081295847892761,
+            0.6630229949951172
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.125,
+          "source_pelvis": [
+            0.0,
+            0.6989766359329224,
+            0.6622111797332764
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.14583333333333334,
+          "source_pelvis": [
+            0.0,
+            0.6884135603904724,
+            0.6612943410873413
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.16666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.6765185594558716,
+            0.6602964401245117
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1875,
+          "source_pelvis": [
+            0.0,
+            0.6633702516555786,
+            0.659247636795044
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.20833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.6490466594696045,
+            0.6581854224205017
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.22916666666666666,
+          "source_pelvis": [
+            0.0,
+            0.633626401424408,
+            0.6571547389030457
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.25,
+          "source_pelvis": [
+            0.0,
+            0.6171875596046448,
+            0.656207799911499
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2708333333333333,
+          "source_pelvis": [
+            0.0,
+            0.5998086929321289,
+            0.655403733253479
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2916666666666667,
+          "source_pelvis": [
+            0.0,
+            0.5815680623054504,
+            0.6548078060150146
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3125,
+          "source_pelvis": [
+            0.0,
+            0.5625439882278442,
+            0.6544895172119141
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.5428148508071899,
+            0.654521107673645
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3541666666666667,
+          "source_pelvis": [
+            0.0,
+            0.5224590301513672,
+            0.6549751162528992
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.375,
+          "source_pelvis": [
+            0.0,
+            0.5015546679496765,
+            0.6559222340583801
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3958333333333333,
+          "source_pelvis": [
+            0.0,
+            0.48018038272857666,
+            0.6574283242225647
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4166666666666667,
+          "source_pelvis": [
+            0.0,
+            0.45841434597969055,
+            0.6595519781112671
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4375,
+          "source_pelvis": [
+            0.0,
+            0.4363349676132202,
+            0.6623416543006897
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4583333333333333,
+          "source_pelvis": [
+            0.0,
+            0.41402050852775574,
+            0.6658340692520142
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4791666666666667,
+          "source_pelvis": [
+            0.0,
+            0.3915494382381439,
+            0.6700512766838074
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5,
+          "source_pelvis": [
+            0.0,
+            0.36899998784065247,
+            0.6750000715255737
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5208333333333334,
+          "source_pelvis": [
+            0.0,
+            0.346450537443161,
+            0.6806701421737671
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5416666666666666,
+          "source_pelvis": [
+            0.0,
+            0.3239794671535492,
+            0.6870348453521729
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5625,
+          "source_pelvis": [
+            0.0,
+            0.3016650080680847,
+            0.694050669670105
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.27958565950393677,
+            0.7016583681106567
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6041666666666666,
+          "source_pelvis": [
+            0.0,
+            0.25781959295272827,
+            0.709784746170044
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.625,
+          "source_pelvis": [
+            0.0,
+            0.23644530773162842,
+            0.7183440923690796
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6458333333333334,
+          "source_pelvis": [
+            0.0,
+            0.2155410796403885,
+            0.727241039276123
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.19518519937992096,
+            0.7363729476928711
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6875,
+          "source_pelvis": [
+            0.0,
+            0.17545606195926666,
+            0.7456320524215698
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7083333333333334,
+          "source_pelvis": [
+            0.0,
+            0.15643200278282166,
+            0.7549090385437012
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7291666666666666,
+          "source_pelvis": [
+            0.0,
+            0.13819138705730438,
+            0.7640947699546814
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.75,
+          "source_pelvis": [
+            0.0,
+            0.12081250548362732,
+            0.7730827927589417
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7708333333333334,
+          "source_pelvis": [
+            0.0,
+            0.10437373071908951,
+            0.7817709445953369
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7916666666666666,
+          "source_pelvis": [
+            0.0,
+            0.0889534205198288,
+            0.7900633215904236
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8125,
+          "source_pelvis": [
+            0.0,
+            0.073881596326828,
+            0.7982876896858215
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8333333333333334,
+          "source_pelvis": [
+            0.0,
+            0.05751989409327507,
+            0.8073252439498901
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8541666666666666,
+          "source_pelvis": [
+            0.0,
+            0.04208764806389809,
+            0.8159102201461792
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.875,
+          "source_pelvis": [
+            0.0,
+            0.02920742705464363,
+            0.8231066465377808
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8958333333333334,
+          "source_pelvis": [
+            0.0,
+            0.01961829885840416,
+            0.8284785747528076
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9166666666666666,
+          "source_pelvis": [
+            0.0,
+            0.013343697413802147,
+            0.8319990038871765
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9375,
+          "source_pelvis": [
+            0.0,
+            0.009880609810352325,
+            0.8339436054229736
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9583333333333334,
+          "source_pelvis": [
+            0.0,
+            0.008409920148551464,
+            0.8347696661949158
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9791666666666666,
+          "source_pelvis": [
+            0.0,
+            0.008028081618249416,
+            0.8349841833114624
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 1.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        }
+      ]
+    },
+    {
+      "name": "ToiletSeated",
+      "duration": 3.0,
+      "loop": true,
+      "samples": [
+        {
+          "time": 0.0,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.013888888888888888,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.027777777777777776,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.041666666666666664,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.05555555555555555,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.06944444444444445,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.08333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.09722222222222222,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1111111111111111,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.125,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1388888888888889,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1527777777777778,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.16666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.18055555555555555,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.19444444444444445,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.20833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2222222222222222,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2361111111111111,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.25,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2638888888888889,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2777777777777778,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2916666666666667,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3055555555555556,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3194444444444444,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3472222222222222,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3611111111111111,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.375,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3888888888888889,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4027777777777778,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4166666666666667,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4305555555555556,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4444444444444444,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4583333333333333,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4722222222222222,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4861111111111111,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5138888888888888,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5277777777777778,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5416666666666666,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5555555555555556,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5694444444444444,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5972222222222222,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6111111111111112,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.625,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6388888888888888,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6527777777777778,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6805555555555556,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6944444444444444,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7083333333333334,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7222222222222222,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7361111111111112,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.75,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7638888888888888,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7777777777777778,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7916666666666666,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8055555555555556,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8194444444444444,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8333333333333334,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8472222222222222,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8611111111111112,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.875,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8888888888888888,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9027777777777778,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9166666666666666,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9305555555555556,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9444444444444444,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9583333333333334,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9722222222222222,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9861111111111112,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 1.0,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        }
+      ]
+    },
+    {
+      "name": "ToiletSit",
+      "duration": 2.0,
+      "loop": false,
+      "samples": [
+        {
+          "time": 0.0,
+          "source_pelvis": [
+            0.0,
+            0.00800000037997961,
+            0.8349999785423279
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.020833333333333332,
+          "source_pelvis": [
+            0.0,
+            0.008028081618249416,
+            0.8349841833114624
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.041666666666666664,
+          "source_pelvis": [
+            0.0,
+            0.008409920148551464,
+            0.8347696661949158
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.0625,
+          "source_pelvis": [
+            0.0,
+            0.009880609810352325,
+            0.8339436054229736
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.08333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.013343697413802147,
+            0.8319990038871765
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.10416666666666667,
+          "source_pelvis": [
+            0.0,
+            0.01961829885840416,
+            0.8284785747528076
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.125,
+          "source_pelvis": [
+            0.0,
+            0.02920742705464363,
+            0.8231066465377808
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.14583333333333334,
+          "source_pelvis": [
+            0.0,
+            0.04208764806389809,
+            0.8159102201461792
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.16666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.05751989409327507,
+            0.8073252439498901
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.1875,
+          "source_pelvis": [
+            0.0,
+            0.073881596326828,
+            0.7982876896858215
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.20833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.0889534205198288,
+            0.7900633215904236
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.22916666666666666,
+          "source_pelvis": [
+            0.0,
+            0.10437373071908951,
+            0.7817709445953369
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.25,
+          "source_pelvis": [
+            0.0,
+            0.12081250548362732,
+            0.7730827927589417
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2708333333333333,
+          "source_pelvis": [
+            0.0,
+            0.13819138705730438,
+            0.7640947699546814
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.2916666666666667,
+          "source_pelvis": [
+            0.0,
+            0.15643200278282166,
+            0.7549090385437012
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3125,
+          "source_pelvis": [
+            0.0,
+            0.17545606195926666,
+            0.7456320524215698
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3333333333333333,
+          "source_pelvis": [
+            0.0,
+            0.19518519937992096,
+            0.7363729476928711
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3541666666666667,
+          "source_pelvis": [
+            0.0,
+            0.2155410796403885,
+            0.727241039276123
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.375,
+          "source_pelvis": [
+            0.0,
+            0.23644530773162842,
+            0.7183440923690796
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.3958333333333333,
+          "source_pelvis": [
+            0.0,
+            0.25781959295272827,
+            0.709784746170044
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4166666666666667,
+          "source_pelvis": [
+            0.0,
+            0.27958565950393677,
+            0.7016583681106567
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4375,
+          "source_pelvis": [
+            0.0,
+            0.3016650080680847,
+            0.694050669670105
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4583333333333333,
+          "source_pelvis": [
+            0.0,
+            0.3239794671535492,
+            0.6870348453521729
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.4791666666666667,
+          "source_pelvis": [
+            0.0,
+            0.346450537443161,
+            0.6806701421737671
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5,
+          "source_pelvis": [
+            0.0,
+            0.36899998784065247,
+            0.6750000715255737
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5208333333333334,
+          "source_pelvis": [
+            0.0,
+            0.3915494382381439,
+            0.6700512766838074
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5416666666666666,
+          "source_pelvis": [
+            0.0,
+            0.41402050852775574,
+            0.6658340692520142
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5625,
+          "source_pelvis": [
+            0.0,
+            0.4363349676132202,
+            0.6623416543006897
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.5833333333333334,
+          "source_pelvis": [
+            0.0,
+            0.45841434597969055,
+            0.6595519781112671
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6041666666666666,
+          "source_pelvis": [
+            0.0,
+            0.48018038272857666,
+            0.6574283242225647
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.625,
+          "source_pelvis": [
+            0.0,
+            0.5015546679496765,
+            0.6559222340583801
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6458333333333334,
+          "source_pelvis": [
+            0.0,
+            0.5224590301513672,
+            0.6549751162528992
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6666666666666666,
+          "source_pelvis": [
+            0.0,
+            0.5428148508071899,
+            0.654521107673645
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.6875,
+          "source_pelvis": [
+            0.0,
+            0.5625439882278442,
+            0.6544895172119141
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7083333333333334,
+          "source_pelvis": [
+            0.0,
+            0.5815680623054504,
+            0.6548078060150146
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7291666666666666,
+          "source_pelvis": [
+            0.0,
+            0.5998086929321289,
+            0.655403733253479
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.75,
+          "source_pelvis": [
+            0.0,
+            0.6171875596046448,
+            0.656207799911499
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7708333333333334,
+          "source_pelvis": [
+            0.0,
+            0.633626401424408,
+            0.6571547389030457
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.7916666666666666,
+          "source_pelvis": [
+            0.0,
+            0.6490466594696045,
+            0.6581854224205017
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8125,
+          "source_pelvis": [
+            0.0,
+            0.6633702516555786,
+            0.659247636795044
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8333333333333334,
+          "source_pelvis": [
+            0.0,
+            0.6765185594558716,
+            0.6602964401245117
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8541666666666666,
+          "source_pelvis": [
+            0.0,
+            0.6884135603904724,
+            0.6612943410873413
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.875,
+          "source_pelvis": [
+            0.0,
+            0.6989766359329224,
+            0.6622111797332764
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.8958333333333334,
+          "source_pelvis": [
+            0.0,
+            0.7081295847892761,
+            0.6630229949951172
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9166666666666666,
+          "source_pelvis": [
+            0.0,
+            0.7157941460609436,
+            0.6637119054794312
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9375,
+          "source_pelvis": [
+            0.0,
+            0.7218915820121765,
+            0.6642636060714722
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9583333333333334,
+          "source_pelvis": [
+            0.0,
+            0.7263441681861877,
+            0.6646678447723389
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 0.9791666666666666,
+          "source_pelvis": [
+            0.0,
+            0.7290729880332947,
+            0.6649158000946045
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        },
+        {
+          "time": 1.0,
+          "source_pelvis": [
+            0.0,
+            0.7300001382827759,
+            0.6649999618530273
+          ],
+          "lid_amount": null,
+          "hand_contact": false,
+          "flush_contact": false
+        }
+      ]
+    }
+  ],
+  "signature": "898046bfce5b317c8f9b5a7b0f094a4c933980c943be32846c17564db1f7aba6"
+}

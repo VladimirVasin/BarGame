@@ -10,9 +10,13 @@ namespace BarPromenade
         // degrees its rear face retains the measured hinge-to-tank gap.
         public const float OpenDegrees = 90f;
         private float angle;
+        private float targetAngle;
         private bool open;
+        private object angleOwner;
         public float Angle => angle;
         public bool IsOpen => open;
+        public Transform Grip { get; private set; }
+        public bool HasAngleOwner => angleOwner != null;
 
         public static HomeToiletLid Create(Transform room)
         {
@@ -30,6 +34,8 @@ namespace BarPromenade
                 RuntimePrimitiveFactory.SetColor(renderer, new Color(0.33f, 0.31f, 0.24f));
             }
             HomeToiletLid lid = hinge.AddComponent<HomeToiletLid>();
+            foreach (Transform child in model.GetComponentsInChildren<Transform>(true))
+                if (child.name == "LidGrip") { lid.Grip = child; break; }
             lid.Apply();
             return lid;
         }
@@ -71,11 +77,37 @@ namespace BarPromenade
             return root;
         }
 
-        public void Open() { open = true; }
-        public void Close() { open = false; }
+        public void Open() { open = true; targetAngle = OpenDegrees; }
+        public void Close() { open = false; targetAngle = 0f; }
+
+        public bool TryAcquireAngleControl(object owner)
+        {
+            if (owner == null || (angleOwner != null && !ReferenceEquals(angleOwner, owner))) return false;
+            angleOwner = owner;
+            return true;
+        }
+
+        public void SetOwnedAngle(object owner, float degrees)
+        {
+            if (!ReferenceEquals(angleOwner, owner) || owner == null)
+                throw new System.InvalidOperationException("The toilet lid angle belongs to its current hand gesture.");
+            angle = targetAngle = Mathf.Clamp(degrees, 0f, OpenDegrees);
+            open = angle > .01f;
+            Apply();
+        }
+
+        /// <summary>Retain the presented angle; only the interaction decides whether to close.</summary>
+        public void ReleaseAngleControl(object owner)
+        {
+            if (!ReferenceEquals(angleOwner, owner)) return;
+            angleOwner = null;
+            targetAngle = angle;
+        }
+
         private void Update()
         {
-            angle = Mathf.MoveTowards(angle, open ? OpenDegrees : 0f, Time.deltaTime * 300f);
+            if (angleOwner != null) return;
+            angle = Mathf.MoveTowards(angle, targetAngle, Time.deltaTime * 300f);
             Apply();
         }
         private void Apply() => transform.localRotation = Quaternion.Euler(0f, 90f, 0f) *

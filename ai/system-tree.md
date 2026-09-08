@@ -116,6 +116,7 @@ Assets/
       Player3DV2.prefab                 production adult-proportion modular hero
       Player3DV2Portrait.png            live inventory portrait from production V2
       HomeShowerCurtainActions.{fbx,json}  two bone-only in-place actions on the production skeleton; reversed for the matching exits
+      HomeToiletSeatedActions.{fbx,json} nine independent Hero V2 lid/prepare/sit/seated/rise/dress/inspect/flush clips
     Pedestrians/
       CityPedestrian3D.prefab           pooled Lampshade Walker presentation
       ChairCarrierPedestrian3D.prefab   pooled Chair Carrier presentation
@@ -129,6 +130,9 @@ Assets/
     HomeToiletAction/
       HomeToiletAction.json              fixed-metre model, hollow bowl/camera, grip/outlet and liquid-mesh contracts
       Models/                           fourteen Blender FBX: anatomy, two scrotum lobes, lid, open seat, hollow pedestal/bowl, water, paper roll and five liquid meshes
+    HomeToiletSeated/
+      HomeToiletSeated.json              production-bone/garment endpoints, Lowered shapes and seated outlet contract
+      Models/                           SeatedLowerBody with ten skinned renderers, Stool01 and Stool02
     HomeBrushingAction/
       HomeBrushingAction.json            sink cavity/drain, faucet pivot/grip/outlet and normalized foam contracts
       Models/                           nine Blender FBX: basin, drain, brush, droplet, splash, faucet body/handle/outlet and water stream
@@ -902,8 +906,15 @@ Assets/
         StairwellCatInteraction.cs     Talk/Interact adapter + paired feeding orchestration
         HomeToiletChoiceInteraction.cs  single world trigger, two-option modal menu and exclusive action handoff
         HomeToiletInteraction.cs       small option: first-person 6 s urine + 2 s shake, natural relief and cancel
-        HomeToiletPlungeInteraction.cs  large option: owned 2.5/3/2.5 s bowl-camera sequence and reversible return
+        HomeToiletPlungeInteraction.cs  large option: shared actor/camera choreography and clear-path return
         HomeToiletPlungeTimeline.cs    quintic travel, hold and velocity-preserving brake before early return
+        HomeToiletSeatedTimeline.cs    synchronized body/camera phases, rendered endpoints and safe cancellation
+        HomeToiletActorPresentation.cs nine Hero V2 clips, real-hand lid/button contact, inspection and body clearance
+        HomeToiletSeatedAppearance.cs  production-bone lower anatomy and five lowered garment shapes with exact restore
+        HomeToiletBowelEffect.cs       emission, air/water and lens contact, flush drain/bubbles and owned flush sound
+        HomeToiletFloatingBody.cs      fixed-step buoyancy/current/angular forces with bowl/camera bounds and spatial drain
+        HomeToiletFlushVortex.cs       one-second bottom acceleration, continuous two-turn return and scoped camera orbit
+        HomeToiletBowlLighting.cs      invisible local fill with inspection lift, isolated rendering layer and exact cleanup
         HomeToiletUnderwaterEffect.cs  camera water optics, Perception-bus low-pass/gain, entry/loop voices and release
         HomeToiletFirstPersonView.cs   actual hero arm IK, head visibility, held Blender anatomy and aim/look
         HomeToiletAnatomyDynamics.cs   camera-driven shaft spring and paired damped gravity pendulums
@@ -1023,6 +1034,7 @@ Assets/
       City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
       City/ChurchGardenAssetSetup.cs ten-piece passive garden import, measured prefabs + provider
       Player3D/ChurchGardenPotActionAssetSetup.cs isolated five-clip bank + imported metre/contact checks
+      Player3D/HomeToiletSeatedActionAssetSetup.cs isolated nine-clip Hero V2 bank, import and measured endpoint/contact checks
       Bar/BarAssetSetup.cs       v3 interior/exterior/service-pack import, prefab and manifest validation
       Bar/BarBartenderV2AssetSetup.cs ordinary bartender import/prefab/provider setup
       Supermarket/SupermarketExterior{AssetSetup,ModelImporter}.cs passive exterior import, Resources prefab + manifest validation
@@ -1198,7 +1210,7 @@ ArtSource/
   Pedestrians/
     Blender/                    production/staged model sources, previews, animation contact sheets + the hand-prop library .blend/contact sheet
   Player/
-    Blender/                    HomeShowerCurtainActions.blend and authored reach/pull previews
+    Blender/                    HomeShowerCurtainActions.blend, HomeToiletSeatedActions.blend and authored action sources
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
     BedSleep/                    retired player-sprite source history
     BalconySmoking/              retired player-sprite source history
@@ -1220,6 +1232,7 @@ ArtSource/
   Home/                          apartment albedo contract, manifest and contact sheet
     Interior/                    generated HomeInterior3D.blend + home-interior-3d-model.json
   HomeToiletAction/               Blender source, model/anchor manifest and anatomy/lid/hollow-bowl/liquid preview
+  HomeToiletSeated/               Blender lower-body/stool source and garment/anchor/export manifest
   HomeBrushingAction/             Blender sink/faucet source, manifest and cavity/drain inspection PNG
   HomeShowerAction/               Blender source, manifest and true-metre preview of the shower bridge pieces
   PlayerHome/                    generated exterior .blend/preview + nine-sheet manifest/contact sheet
@@ -1303,7 +1316,9 @@ tools/
   build-mountain-road-textures.py   six measured mountain albedos + nine borrowed-sheet contracts + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
   build-home-interior-3d-model.py   deterministic home_interior_v1 mesh set, manifest and validator
-  build-home-toilet-action-3d-model.py  eleven toilet models + hollow opening and FBX round-trip validator
+  build-home-toilet-action-3d-model.py  fourteen toilet models + hollow opening, lid hand grip and FBX round-trip validator
+  build-home-toilet-seated-3d-model.py production-compatible lower body, five garment shapes, stool models and direct validator
+  build-home-toilet-seated-actions.py nine in-place Hero V2 clips with lid/seat/button contact and independent FBX bank
   build-home-brushing-action-3d-model.py  sink/faucet/brush/foam models + cavity rays and FBX round-trip validator
   build-home-shower-action-3d-model.py  shoulder yoke + two deltoid caps sized from the hero generator, outward-face and FBX round-trip validators
   build-home-shower-curtain-actions.py  two production-rig curtain actions with neutral endpoints and measured contact; standalone animation bank

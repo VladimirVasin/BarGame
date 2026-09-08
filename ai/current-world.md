@@ -2308,8 +2308,9 @@ The vertical slice contains:
 - the toilet's single world trigger opens `HomeToiletChoiceInteraction`
   with `По-маленькому` / `По-большому`. Common menu navigation and mouse
   selection dispatch to one bathroom owner; cancellation closes the menu
-  without starting either action. The small option opens the hinged Blender lid immediately, guides the standing
-  hero into place and blends to eye level over `1.5 s`. A hollow ceramic
+  without starting either action. Both branches use the actual hero's hand
+  and shared authored `2 s` lid-opening/closing actions after the grounded
+  approach. The small option blends to eye level over `1.5 s`. A hollow ceramic
   pedestal and an actually open annular seat keep the water visible and reachable;
   a layered paper roll with
   an open cardboard core stands on the cistern. The actual production
@@ -2330,23 +2331,59 @@ The vertical slice contains:
   flushes and commits stress `-6` once; stop input cancels without relief and
   retains existing marks. The shared lifecycle restores pose, head visibility,
   camera, cursor, occlusion, HUD, lid and modal input on completion or interruption;
-- the large toilet option is a camera-only sequence. The clothed hero stays
-  outside while the lens moves into the actual hollow Blender `ToiletBowl`
-  below the existing local water top `Y = 0.4373 m` and turns upward over
-  `2.5 s`. It holds for `3 s`, then follows the same path back over `2.5 s`.
-  One time ease carries each full leg through the bowl mouth without a stop;
-  early cancellation preserves velocity and acceleration during a short
-  brake before returning. Water tint and optical ripple follow the surface.
+- the large toilet option uses `HomeToiletSeatedTimeline` to coordinate the
+  same hero, lowered trousers and a camera inside the actual hollow Blender
+  `ToiletBowl`, below local water top `Y = 0.4373 m`. After opening the lid
+  and a grounded turn, `Prepare` takes `2 s`; the `2.5 s` dive starts sitting
+  at `1.8 s`, followed by its remaining `1.3 s`, a `3 s` seated action,
+  `2 s` rise, grounded turn and `2 s` inspection while the lens stays below
+  the water. The `2.5 s` flush action presents the real button press at
+  `1.5 s`; a long frame cannot skip that contact marker. The camera
+  accelerates in the whirlpool for `1 s` after pressing, then returns over
+  `2.5 s`. Dressing starts immediately with that return and lasts `2 s`;
+  lid closure waits until the camera is back.
+  The lens passes the empty opening before seating and after the body rises.
+  `HomeToiletActorPresentation` samples nine independent Hero V2 clips;
+  `HomeToiletSeatedAppearance` owns ten skinned lower-body/garment renderers
+  and five `Lowered` shapes, using the production bones and garment proxies
+  that follow those bones. Original garment endpoints and materials restore.
+  `HomeToiletBowelEffect` starts visible emission at seated `0.5 s`, releases
+  at `1.05 s`, falls ballistically through air and slows under water. One
+  contact produces a ripple, splash, bubbles and sound. The solid approaches
+  within `26 mm` of the lens. A scoped invisible
+  `HomeToiletBowlLighting` fill affects only its rendering layer, without
+  changing scene exposure. During inspection the same fill rises `0.32 m`,
+  its range blends `0.78 → 1.2 m` and intensity `0.17 → 0.25` to reach the
+  bent face; it returns to the bowl setting by the end of the flush action.
+  Water tint and optical ripple follow the surface.
   A scoped `Master/Perception` low-pass after VHS reaches `420 Hz` and
   `-5 dB`, with smooth depth response; UI bypasses it. One `0.72 s` water-entry
   cue plays at the actual downward crossing, and a quiet shared `3 s` water
   loop fades with submersion. Source filters and VHS parameters remain
   untouched. Completion or interruption stops the owned voices and returns
   mixer control to scene snapshots. The branch reuses the
-  bathroom positioning, modal and cleanup lifecycle; it adds no sitting,
-  defecation, flush, stress relief or session transaction. The camera
-  exception and its world-canon boundaries are recorded in architecture notes
-  and story-bible §6;
+  bathroom positioning, modal and cleanup lifecycle. Ordinary cancellation
+  clears the body from the camera's exit route before returning and restores
+  clothes and the lid without flushing; teardown immediately releases owned
+  state. Natural completion uses `HomeToiletFlushVortex`: two forward roll
+  turns (`720 degrees`) with continuous angular speed, a `9 mm` orbit radius
+  and a smooth stop at the ordinary shot. Three curling surface arms and
+  six reused orbiting bubble meshes follow its strength. After lens contact
+  and a `0.28 s`/`70 mm` clearance move, `HomeToiletFloatingBody` integrates
+  buoyancy, drag, current and angular motion at `1/120 s`, with relative
+  density `0.76`. The authored bowl profile and actual camera constrain it;
+  the solid player-footprint collider remains outside this scoped simulation.
+  Flush forces capture it and hide it only inside the lower bowl zone,
+  after a minimum guard; disappearance is not prescribed at one second.
+  Zero elapsed time freezes the state, and `End` resets it. An owned source
+  reuses the existing `2.6 s`
+  `ToiletFlush` sound through the underwater mix. Surface/underwater parameters
+  and audio restore on exit. The `1.1.0` seated module has `1,602` triangles;
+  its more defined buttocks form one closed `958`-triangle pelvis component.
+  The branch adds no stress relief or session transaction. The accepted
+  practical inspection, brief lower face view, flush and local-light boundaries
+  are recorded in architecture notes and story-bible §6; current Unity
+  verification is recorded in the work log;
 - a deterministic `11`-person bar crowd drawn from ordinary city pedestrian
   prefabs: six compatible designs sit at the booth anchors on concrete
   `0.48 m` seats, two sit at the counter on the exact cafe `0.8175 m` stools,

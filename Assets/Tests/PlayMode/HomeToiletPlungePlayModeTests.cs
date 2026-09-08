@@ -15,7 +15,7 @@ namespace BarPromenade.Tests.PlayMode
         private HomeInteriorRoot home;
         private Camera camera;
         private HomeBathroomPresentationProbe probe;
-        private string CaptureDirectory => Path.Combine(Directory.GetCurrentDirectory(), "Captures", "HomeToiletPlunge");
+        private string CaptureDirectory => Path.Combine(Directory.GetCurrentDirectory(), "Captures", "HomeToiletWhirlpool");
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -50,6 +50,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator ChoicePlungeReturnsAndPreservesSmallAction()
         {
             AssertTimelineBoundaries();
+            AssertVortexContinuity();
             AsyncOperation load = SceneManager.LoadSceneAsync(SceneIds.HomeInterior, LoadSceneMode.Single);
             while (load != null && !load.isDone) yield return null;
             yield return WaitFor(() =>
@@ -90,6 +91,23 @@ namespace BarPromenade.Tests.PlayMode
             Choose(HomeToiletChoice.Large);
             Assert.That(home.ToiletPlunge.IsActive, Is.True);
             Assert.That(home.ToiletScene.FirstPerson.IsActive, Is.False);
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Actor.IsLidContact &&
+                home.ToiletPlunge.Sequence.Progress > .48f, () =>
+            {
+                Assert.That(home.ToiletPlunge.Actor.ContactError, Is.LessThan(.012f), "The rendered hand must hold the actual lid grip.");
+                Assert.That(home.ToiletPlunge.Timeline.Travel, Is.Zero);
+                CaptureWorld("01-hand-opens-lid");
+            }, "The hand never lifted the lid.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Preparing &&
+                home.ToiletPlunge.Sequence.Progress < .18f, AssertClothingBasis,
+                "The dressed garment handoff was never presented.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Preparing &&
+                home.ToiletPlunge.Sequence.Progress > .9f, () =>
+            {
+                Assert.That(home.ToiletPlunge.Appearance.Renderers.Count, Is.EqualTo(10));
+                Assert.That(home.ToiletPlunge.Appearance.TrousersDown, Is.GreaterThan(.99f));
+                CaptureWorld("02-trousers-lowered");
+            }, "The real hero never lowered his trousers.");
             yield return AtPresentationWhen(() =>
                 home.ToiletPlunge.Timeline.Phase == HomeToiletPlungePhase.Entering &&
                 camera.transform.position.y > home.ToiletPlunge.WaterHeight + .015f &&
@@ -99,10 +117,12 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(home.ToiletPlunge.Underwater.Amount, Is.Zero.Within(.001f));
                     Assert.That(home.ToiletPlunge.Underwater.EntryPlayCount, Is.Zero,
                         "The entry sound must wait for the actual surface crossing.");
-                    CaptureWorld("01-above-water");
+                    Assert.That(home.ToiletPlunge.Actor.Phase, Is.EqualTo(HomeToiletActorPhase.Prepare),
+                        "The pelvis may enter the seat only after the lens passes inside.");
+                    CaptureWorld("03-above-water");
                 }, "The lens never approached the water from above.");
             yield return AtPresentationWhen(() =>
-                home.ToiletPlunge.Timeline.Phase == HomeToiletPlungePhase.SubmergedHold,
+                home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Seated,
                 () =>
                 {
                     Assert.That(camera.transform.position.y, Is.LessThan(home.ToiletPlunge.WaterHeight - .05f));
@@ -114,7 +134,11 @@ namespace BarPromenade.Tests.PlayMode
                     AssertSubmergedAudio();
                     Assert.That(home.Player.Motor.InputEnabled, Is.False);
                     Assert.That(home.ToiletScene.FirstPerson.IsActive, Is.False);
-                    CaptureWorld("02-underwater-up");
+                    Assert.That(home.ToiletPlunge.Actor.SeatPelvisError, Is.LessThan(.003f));
+                    Assert.That(home.ToiletPlunge.Lighting.Fill.enabled, Is.True);
+                    Assert.That(home.ToiletPlunge.Lighting.Fill.intensity, Is.GreaterThan(.1f));
+                    Assert.That(home.ToiletPlunge.Lighting.Fill.GetComponent<Renderer>(), Is.Null);
+                    CaptureWorld("04-seated-underwater");
                 }, "The plunge never held underwater looking up.");
             int entryCount = home.ToiletPlunge.Underwater.EntryPlayCount;
             float audioAmount = home.ToiletPlunge.Underwater.AudioAmount;
@@ -124,14 +148,117 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.ToiletPlunge.Underwater.AudioAmount, Is.EqualTo(audioAmount).Within(.00001f));
             AudioListener.pause = false;
             Assert.That(home.ToiletPlunge.Underwater.EntryPlayCount, Is.EqualTo(entryCount));
+            yield return AtPresentationWhen(() => home.ToiletPlunge.BowelEffect.EmissionCount == 1 &&
+                !home.ToiletPlunge.BowelEffect.HasReleased && home.ToiletPlunge.Sequence.PhaseElapsed > .8f,
+                () => CaptureWorld("05-emerging"), "The seated body never emitted the authored prop.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.BowelEffect.WaterContactCount == 1,
+                () => CaptureWorld("06-water-contact"), "The prop never crossed the actual water surface.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.BowelEffect.HasHitLens, () =>
+            {
+                Assert.That(home.ToiletPlunge.BowelEffect.EmissionCount, Is.EqualTo(1));
+                Assert.That(home.ToiletPlunge.BowelEffect.WaterContactCount, Is.EqualTo(1));
+                Assert.That(home.ToiletPlunge.BowelEffect.ClosestLensDistance, Is.InRange(.024f, .030f));
+                CaptureWorld("07-lens-contact");
+            }, "The falling prop never reached the camera.");
+            Vector3 floatingPosition = Vector3.zero;
+            Quaternion floatingRotation = Quaternion.identity;
+            yield return AtPresentationWhen(() => home.ToiletPlunge.BowelEffect.IsFloating &&
+                home.ToiletPlunge.BowelEffect.Position.y > home.ToiletPlunge.WaterHeight - .025f, () =>
+            {
+                HomeToiletFloatingBody body = home.ToiletPlunge.BowelEffect.FloatingBody;
+                Assert.That(body.SubmergedFraction, Is.InRange(.1f, .99f));
+                Assert.That(body.AngularVelocity.magnitude, Is.GreaterThan(.01f));
+                floatingPosition = body.Position;
+                floatingRotation = body.Rotation;
+                CaptureWorld("07b-floating-at-surface");
+                Time.timeScale = 0f;
+            }, "The prop never floated back toward the water surface.");
+            yield return null;
+            yield return null;
+            Assert.That(home.ToiletPlunge.BowelEffect.Position, Is.EqualTo(floatingPosition),
+                "The scoped physics must pause with the scene clock.");
+            Assert.That(home.ToiletPlunge.BowelEffect.FloatingBody.Rotation, Is.EqualTo(floatingRotation));
+            Time.timeScale = 1f;
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Rising &&
+                home.ToiletPlunge.Sequence.AtEnd, () =>
+            {
+                CaptureWorld("08-rise-end");
+                Assert.That(home.ToiletPlunge.Actor.SeatClear, Is.True,
+                    "The rendered rise endpoint still obstructs the exit: " + home.ToiletPlunge.Actor.SeatBlocker);
+            }, "The rise never presented its authored endpoint.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Inspecting &&
+                home.ToiletPlunge.Sequence.Progress > .9f, () =>
+            {
+                Assert.That(home.ToiletPlunge.Actor.GazeAlignment, Is.GreaterThan(.98f));
+                Assert.That(home.ToiletPlunge.Appearance.TrousersDown, Is.EqualTo(1f));
+                Assert.That(home.ToiletPlunge.Timeline.Phase, Is.EqualTo(HomeToiletPlungePhase.SubmergedHold));
+                Assert.That(Vector3.Distance(camera.transform.position, home.ToiletPlunge.SubmergedPosition), Is.LessThan(.003f));
+                Assert.That(home.ToiletPlunge.BowelEffect.FlushPlayCount, Is.Zero);
+                Assert.That(home.ToiletPlunge.BowelEffect.IsFloating, Is.True);
+                Assert.That(home.ToiletPlunge.BowelEffect.Position.y,
+                    Is.InRange(home.ToiletPlunge.WaterHeight - .03f, home.ToiletPlunge.WaterHeight + .025f));
+                Assert.That(Vector3.Distance(home.ToiletPlunge.BowelEffect.Position, floatingPosition), Is.GreaterThan(.002f));
+                Assert.That(Quaternion.Angle(home.ToiletPlunge.BowelEffect.FloatingBody.Rotation, floatingRotation),
+                    Is.GreaterThan(.5f), "Water must change the prop's orientation while it floats.");
+                CaptureWorld("09-inspects-from-bottom");
+            }, "The hero never bent to inspect the bowl before flushing.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.BowelEffect.FlushPlayCount == 1, () =>
+            {
+                Assert.That(home.ToiletPlunge.Actor.IsFlushContact, Is.True);
+                Assert.That(home.ToiletPlunge.Actor.FlushContactError, Is.LessThan(.012f));
+                Assert.That(home.ToiletPlunge.Vortex.Elapsed, Is.Zero);
+                Assert.That(home.ToiletPlunge.BowelEffect.FlushVoice.isPlaying, Is.True);
+                SaveAudioPreview(home.ToiletPlunge.BowelEffect.FlushVoice.clip, "flush.wav");
+                CaptureWorld("10-physical-flush");
+            }, "The real hand never pressed the flush button.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Vortex.Elapsed > .5f &&
+                home.ToiletPlunge.Vortex.Elapsed < .9f, () =>
+            {
+                Assert.That(home.ToiletPlunge.Timeline.Travel, Is.EqualTo(1f));
+                Assert.That(camera.transform.position.y, Is.EqualTo(home.ToiletPlunge.SubmergedPosition.y).Within(.003f));
+                Assert.That(home.ToiletPlunge.Underwater.VortexStrength, Is.GreaterThan(.45f));
+                Assert.That(home.ToiletPlunge.Vortex.RollDegrees, Is.GreaterThan(20f));
+                Assert.That(home.ToiletPlunge.Appearance.TrousersDown, Is.EqualTo(1f));
+                CaptureWorld("11-bottom-whirlpool");
+            }, "The camera never whirled on the bottom before departure.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Exiting,
+                () =>
+                {
+                    Assert.That(home.ToiletPlunge.Actor.SeatClear, Is.True, "Rise must free the camera exit column.");
+                    Assert.That(home.ToiletPlunge.Vortex.Elapsed, Is.InRange(1f, 1.15f));
+                    Assert.That(home.ToiletPlunge.Actor.Phase, Is.EqualTo(HomeToiletActorPhase.Dress));
+                    CaptureWorld("12-spiralling-departure");
+                }, "The hero never rose before the camera returned.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Exiting &&
+                home.ToiletPlunge.Sequence.PhaseElapsed > .85f, () =>
+            {
+                Assert.That(home.ToiletPlunge.Actor.Phase, Is.EqualTo(HomeToiletActorPhase.Dress));
+                Assert.That(home.ToiletPlunge.Appearance.TrousersDown, Is.InRange(.1f, .8f));
+                Assert.That(home.ToiletPlunge.Timeline.Travel, Is.InRange(.01f, .99f));
+                Assert.That(home.ToiletPlunge.Vortex.Strength, Is.GreaterThan(.2f));
+                CaptureWorld("13-dressing-during-return");
+            }, "Trousers must rise while the camera is still returning.");
+            yield return AtPresentationWhen(() => home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.ClosingLid &&
+                home.ToiletPlunge.Actor.IsLidContact && home.ToiletPlunge.Sequence.Progress > .48f, () =>
+            {
+                Assert.That(home.ToiletPlunge.Actor.ContactError, Is.LessThan(.012f));
+                Assert.That(home.ToiletPlunge.Appearance.IsActive, Is.False);
+                Assert.That(home.ToiletPlunge.Timeline.IsCompleted, Is.True);
+                Assert.That(home.ToiletPlunge.Vortex.RollDegrees, Is.EqualTo(720f).Within(.001f));
+                Assert.That(home.ToiletPlunge.BowelEffect.FlushPlayCount, Is.EqualTo(1));
+                Assert.That(home.ToiletPlunge.BowelEffect.FloatingBody.IsDrained, Is.True,
+                    "The flush must carry the floating prop into the lower cavity before lid closure.");
+                Assert.That(home.ToiletPlunge.BowelEffect.Solid.gameObject.activeSelf, Is.False);
+                CaptureWorld("14-hand-closes-lid");
+            }, "The dressed hero never closed the lid by hand.");
             yield return WaitFor(() => !home.ToiletPlunge.IsActive, "The full plunge never returned control.");
             yield return AtPresentationWhen(() => true, () =>
             {
                 AssertRestored(original);
-                CaptureWorld("03-returned");
+                CaptureWorld("15-returned");
             }, "No restored presentation frame.");
             yield return WaitForAudioRestored(original);
-            Assert.That(GameSessionState.StressLevel, Is.EqualTo(40), "The camera-only branch must not grant bathroom relief.");
+            Assert.That(GameSessionState.StressLevel, Is.EqualTo(40), "The seated branch has no approved needs transaction.");
 
             yield return FindChoice();
             original = new OwnedState(home, camera);
@@ -154,7 +281,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return AtPresentationWhen(() => true, () =>
             {
                 AssertRestored(original);
-                CaptureWorld("04-early-return");
+                Assert.That(home.ToiletPlunge.BowelEffect.FlushPlayCount, Is.Zero, "Early cancellation cannot flush.");
+                CaptureWorld("16-early-return");
             }, "No cancellation restoration frame.");
             yield return WaitForAudioRestored(original);
 
@@ -162,13 +290,13 @@ namespace BarPromenade.Tests.PlayMode
             original = new OwnedState(home, camera);
             Choose(HomeToiletChoice.Large);
             yield return AtPresentationWhen(() =>
-                home.ToiletPlunge.Timeline.Phase == HomeToiletPlungePhase.SubmergedHold,
+                home.ToiletPlunge.Vortex.IsActive && home.ToiletPlunge.Vortex.Elapsed > .35f,
                 () =>
                 {
                     home.ToiletPlunge.enabled = false;
                     AssertRestored(original);
                     home.ToiletPlunge.enabled = true;
-                }, "The disable cleanup never reached submerged presentation.");
+                }, "The disable cleanup never reached the active whirlpool.");
             yield return WaitForAudioRestored(original);
             Assert.That(GameSessionState.StressLevel, Is.EqualTo(40));
 
@@ -185,7 +313,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(home.ToiletScene.GaugeVisible, Is.True);
                     Assert.That(home.ToiletPlunge.Underwater.IsActive, Is.False);
                     Assert.That(camera.nearClipPlane, Is.EqualTo(original.Near).Within(.0001f));
-                    CaptureWorld("05-small-preserved");
+                    CaptureWorld("17-small-preserved");
                 }, "The small choice no longer reaches the existing bowl water.");
             home.ToiletScene.enabled = false;
             yield return AtPresentationWhen(() => true, () => AssertRestored(original), "The small action did not restore.");
@@ -233,6 +361,46 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private void AssertClothingBasis()
+        {
+            var registry = ((Player3DCharacterPresentation)home.Player.Visual).Registry;
+            var sourceMesh = new Mesh();
+            var replacementMesh = new Mesh();
+            int checkedParts = 0;
+            try
+            {
+                foreach (Renderer renderer in home.ToiletPlunge.Appearance.Renderers)
+                {
+                    if (!renderer.name.StartsWith("Trousers_", StringComparison.Ordinal)) continue;
+                    string sourceName = "GEO_" + renderer.name.Substring("Trousers_".Length);
+                    foreach (Player3DMeshBinding binding in registry.MeshBindings)
+                    {
+                        if (binding.MeshName != sourceName) continue;
+                        var original = (SkinnedMeshRenderer)binding.Renderer;
+                        var replacement = (SkinnedMeshRenderer)renderer;
+                        original.BakeMesh(sourceMesh, true);
+                        replacement.BakeMesh(replacementMesh, true);
+                        Vector3[] sourceVertices = sourceMesh.vertices;
+                        Vector3[] replacementVertices = replacementMesh.vertices;
+                        float worst = 0f;
+                        foreach (Vector3 vertex in replacementVertices)
+                        {
+                            Vector3 world = replacement.transform.TransformPoint(vertex);
+                            float nearest = float.PositiveInfinity;
+                            foreach (Vector3 sourceVertex in sourceVertices)
+                                nearest = Mathf.Min(nearest, Vector3.Distance(world, original.transform.TransformPoint(sourceVertex)));
+                            worst = Mathf.Max(worst, nearest);
+                        }
+                        Assert.That(worst, Is.LessThan(.001f), sourceName + " must not jump when its authored garment replaces it.");
+                        Assert.That(original.enabled, Is.False);
+                        checkedParts++;
+                    }
+                }
+                Assert.That(checkedParts, Is.EqualTo(5));
+            }
+            finally { Object.DestroyImmediate(sourceMesh); Object.DestroyImmediate(replacementMesh); }
+        }
+
         private static void AssertAudioRouting()
         {
             var mixer = GameAudioMixer.Mixer;
@@ -248,6 +416,37 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(source.outputAudioMixerGroup == GameAudioMixer.UiGroup ||
                     Array.IndexOf(worldGroups, source.outputAudioMixerGroup) >= 0, Is.True,
                     "Persistent pooled effects must participate in the same world-bus absorption.");
+        }
+
+        private static void AssertVortexContinuity()
+        {
+            const float step = .0005f;
+            Assert.That(HomeToiletFlushVortex.EvaluateRoll(0f), Is.Zero);
+            Assert.That(HomeToiletFlushVortex.EvaluateRoll(HomeToiletFlushVortex.Duration), Is.EqualTo(720f).Within(.001f));
+            Assert.That(HomeToiletFlushVortex.EvaluateSpeed(0f), Is.Zero);
+            Assert.That(HomeToiletFlushVortex.EvaluateSpeed(HomeToiletFlushVortex.Duration), Is.Zero);
+            float previous = -1f;
+            for (int index = 0; index <= 70; index++)
+            {
+                float time = HomeToiletFlushVortex.Duration * index / 70f;
+                float angle = HomeToiletFlushVortex.EvaluateRoll(time);
+                Assert.That(angle, Is.GreaterThanOrEqualTo(previous));
+                previous = angle;
+            }
+            float incoming = (HomeToiletFlushVortex.EvaluateRoll(1f) - HomeToiletFlushVortex.EvaluateRoll(1f - step)) / step;
+            float outgoing = (HomeToiletFlushVortex.EvaluateRoll(1f + step) - HomeToiletFlushVortex.EvaluateRoll(1f)) / step;
+            Assert.That(incoming, Is.EqualTo(outgoing).Within(.2f), "Departure cannot restart or reverse the whirl.");
+            var sequence = new HomeToiletSeatedTimeline();
+            sequence.Begin();
+            sequence.MoveTo(HomeToiletSeatedPhase.Flushing);
+            sequence.Advance(20f);
+            Assert.That(sequence.PhaseElapsed, Is.EqualTo(HomeToiletActorPresentation.FlushCueSeconds));
+            Assert.That(sequence.CanAdvance, Is.False, "A hitch must present the physical press before flushing.");
+            sequence.MarkFlushPresented();
+            sequence.Advance(20f);
+            Assert.That(sequence.CanAdvance, Is.False);
+            sequence.MarkPresented();
+            Assert.That(sequence.CanAdvance, Is.True);
         }
 
         private void AssertSubmergedAudio()
@@ -335,6 +534,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.ToiletChoice.IsOpen, Is.False);
             Assert.That(home.ToiletPlunge.IsActive, Is.False);
             Assert.That(home.ToiletPlunge.Underwater.IsActive, Is.False);
+            Assert.That(home.ToiletPlunge.Actor.IsActive, Is.False);
+            Assert.That(home.ToiletPlunge.Appearance.IsActive, Is.False);
+            Assert.That(home.ToiletPlunge.BowelEffect.IsActive, Is.False);
+            Assert.That(home.ToiletPlunge.BowelEffect.FloatingBody.IsActive, Is.False);
+            Assert.That(home.ToiletPlunge.Lighting.IsActive, Is.False);
+            Assert.That(home.ToiletPlunge.Vortex.IsActive, Is.False);
+            Assert.That(home.ToiletPlunge.Underwater.VortexStrength, Is.Zero);
+            if (home.ToiletPlunge.BowelEffect.FlushVoice != null)
+                Assert.That(home.ToiletPlunge.BowelEffect.FlushVoice.isPlaying, Is.False);
             Assert.That(home.ToiletPlunge.Underwater.Amount, Is.Zero);
             Assert.That(home.ToiletPlunge.Underwater.AudioAmount, Is.Zero);
             Assert.That(home.ToiletPlunge.Underwater.Clock, Is.Zero);
@@ -382,6 +590,9 @@ namespace BarPromenade.Tests.PlayMode
                 if (complete) return;
                 try
                 {
+                    if (home.ToiletPlunge.Sequence.Phase == HomeToiletSeatedPhase.Exiting && home.ToiletPlunge.Vortex.IsActive)
+                        Assert.That(home.ToiletPlunge.Actor.SeatClear, Is.True,
+                            "Dressing must leave the returning lens a clear corridor: " + home.ToiletPlunge.Actor.SeatBlocker);
                     if (!condition()) return;
                     complete = true;
                     sample();

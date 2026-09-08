@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "ArtSource/HomeToiletAction"
 RESOURCES = ROOT / "Assets/Resources/HomeToiletAction"
 MODELS = RESOURCES / "Models"
-VERSION = "1.5.0"
+VERSION = "1.5.1"
 ANCHORS = {"AimPivot": (0, 0, 0), "Grip": (0, -.0015, .025),
            "Outlet": (0, -.020, .130)}
 SCROTUM_ATTACHMENTS = {"ScrotumLeft": (-.011, -.016, -.006),
@@ -225,7 +225,7 @@ def definitions():
                          "anchors": {}, "contract": "fixed metres; upper pendulum pivot at origin; hang -Y; attach (-.011,-.016,-.006) relative to Anatomy AimPivot; broad neck overlaps shaft and right neck"},
         "ScrotumRight": {"meshes": [("ScrotumRight_Skin", scrotum_lobe(1), "Skin")],
                           "anchors": {}, "contract": "fixed metres; upper pendulum pivot at origin; hang -Y; attach (+.011,-.016,-.006) relative to Anatomy AimPivot; broad neck overlaps shaft and left neck"},
-        "ToiletLid": {"meshes": [("ToiletLid", lid, "Enamel")], "anchors": {},
+        "ToiletLid": {"meshes": [("ToiletLid", lid, "Enamel")], "anchors": {"LidGrip": (0,.0125,-.49)},
                       "contract": "hinge at origin; extends -Z; local X +90 raises to +Y"},
         "BowlWater": {"meshes": [("BowlWater", water, "Water")], "anchors": {},
                       "contract": "single open horizontal XZ oval .34 x .314; upward normals at Y0; two-sided shared water shader; world (4.05,.4373,1.40) meets the bowl's inner slope"},
