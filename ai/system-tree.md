@@ -88,6 +88,7 @@ Assets/
       HomeShowerTrayWater.shader  shared shallow shower water, ripples and flow to the authored drain
       HomeToiletBowlWater.shader  shared double-sided bowl surface with restrained ripples
       HomeToiletUnderwater.shader camera-owned underwater tint and optical ripple before PS1
+      MothersHouseFlame.shader    authored hearth tongues, rising heat and bounded tip motion
       StairwellCatGrin.shader     arc-length reveal of the Cheshire grin, shader teeth seams
       Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale; Begotten passes
       BegottenFilm.hlsl           the stock of the Begotten print: hash, grain octaves, dust, hairs, scratches
@@ -155,7 +156,7 @@ Assets/
         HomeConcreteAlbedo.png          stucco, offset formwork seams, damp streaks
         HomeRugAlbedo.png               diamond lattice, medallions, worn walking track
     MothersHouse/
-      MothersHouseInterior3D.prefab     passive 10 x 8 m two-storey shell, stair/furnished bedrooms + typed anchors/parts; no gameplay components
+      MothersHouseInterior3D.prefab     passive 10 x 8 m main shell + 0.9 m rear wing, stair/two bedrooms/bathroom + typed anchors/parts
       Textures/
         MothersHousePositiveAtlas.png   dedicated light, clean 4 x 4 room atlas; no Home/City sheets
     Stairwell/
@@ -173,7 +174,7 @@ Assets/
       CemeteryRavenProvider.asset     serialized link to the passive 3D raven prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
-      CityMiscAssetProvider.asset   259 passive City role-mesh bindings / 46,546 triangles + v4.9.0 signature
+      CityMiscAssetProvider.asset   259 passive City role-mesh bindings / 46,546 triangles + v4.10.0 signature
       CityBuildingAssetProvider.asset  four district prototype-prefab bindings + signature
       Buildings/
         OldTownPrototype01.prefab      passive fixed-metre wrapper + semantic registry
@@ -403,6 +404,7 @@ Assets/
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
         BegottenFilmModel.cs        seeded 24 fps projector: held/new picture, flicker, weave, slips, scratches
+        BegottenRampModel.cs        the mode's 0..1 strength: armed in the menu, 15 s in / 3 s out on unscaled time
         DepthOfFieldSettingsBinder.cs player setting -> authored Gaussian grades
         CinematicDepthOfField.cs priority-10 modal Bokeh; immediate release for camera handoffs
         HomeToiletUnderwaterPass.cs camera-scoped RenderGraph pass before URP post-processing, registered by Ps1CompositeRendererFeature
@@ -416,8 +418,8 @@ Assets/
         DraughtsMatch.cs       lattice-native adapter, capture-compulsory flag
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket/mother-house plans and builders
-        MothersHouseInterior{LayoutPlan,LayoutPlanner,LayoutValidator,WorldBuilder,WorldResult}.cs  ground + stair/corridor/two furnished bedrooms, floor-aware fixtures/routes and collision
-        MothersHouseWindowLayout.cs    generated shared 16-window table for interior openings and exterior placement
+        MothersHouseInterior{LayoutPlan,LayoutPlanner,LayoutValidator,WorldBuilder,WorldResult}.cs  ground/niche + stair/corridor/two bedrooms/bathroom, floor-aware fixtures/routes and collision
+        MothersHouseWindowLayout.cs    generated shared 17-window table with stepped wall planes and frosted bathroom panes
         MothersHouseWindowCutaway.cs   mother-only render visibility of camera-side walls/windows; keeps collision and camera poses
         MothersHouseMotherPlan.cs       where she sits, measured off the drawn cushion; one of her, no seed, no spawn band
         MothersHouseSofaSeatPlanner.cs  the sofa as one authored CityBenchSeat: south cushion, front-approach-only past the stair ramp
@@ -949,7 +951,8 @@ Assets/
         MothersHouseInteriorRoot.cs     two-storey world/player/UI, height-aware fixed shots, kettle, exit, sofa seat and the mother
         MothersHouseMother{Presentation,Factory,Provider}.cs  the seated mother: manual PlayableGraph, hips aligned to the drawn cushion VERTICALLY only, an open SetExpression nothing calls
         MothersHouseRockingChairMotion.cs  one angle turns the chair's two meshes AND her root; pivot derived from the runners' parabola, world poses driven, nothing reparented
-        MothersHouseInteriorAtmosphere.cs  hearth + two windows + one floor practical, and one sourceless Hearth Floor Bounce leashed to 1.1 m so it can never be the banned ceiling fill
+        MothersHouseInteriorAtmosphere.cs  shadowed hearth, five lamps/five window sources; causal floor bounce limited to 1.1 m
+        MothersHouseFireFlicker.cs     shared flame rhythm, one warm light with bounded drift, reversible renderer properties
         MothersHouseInteriorSoundscape.cs  muffled wind + tick/tock + sparse timber settling
         MountainRoadWeather{Rules,Shaper}.cs  the city's own weather slot re-read by altitude, as snow and harder wind
         MountainRoadWindDriver.cs       carries that wind to the crowns, the cloth and the sound bed
@@ -1076,6 +1079,7 @@ Assets/
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       BegottenFilmModelTests.cs            24 fps cadence with stutters, roll bounds, seed determinism, forced picture
+      BegottenRampModelTests.cs            15 s in, 3 s out, armed while paused, a change outside the menu snaps
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
       PlayerNeedsRulesTests.cs        relief floors, clamping and drink fractions
       PlayerNeedsProgressionStateTests.cs  rates, chunking, cap and fractional reset
@@ -1170,7 +1174,7 @@ Assets/
       CityPedestrianHandPropCapturePlayModeTests.cs  explicit eight-frame prop-in-hand capture under Captures/HandProps (needs a GPU)
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
-      BegottenFilmRenderGraphPlayModeTests.cs  soot-and-bone print, forced 4:3 gate, held vs boiling frames, marked cameras, begotten-sheet.png
+      BegottenFilmRenderGraphPlayModeTests.cs  soot-and-bone print, forced 4:3 gate, held vs boiling frames, marked cameras, a half-arrived gate that really narrows, begotten-sheet.png, [Explicit] begotten-ramp-sheet.png
       CityKettleHatBoilPlayModeTests.cs    lid rides the head in idle/walk/seated, steam on the spout, pool release, cabin clamp
       CityKettleHatVisualCapturePlayModeTests.cs  [Explicit] 3/6/12 m boil strips into Captures/KettleHat
       AlpineVillageStormVisibilityPlayModeTests.cs  600 running frames: far plane 110, fog == pure wave function, ridge density == fog, trough + crest reached; run alone
@@ -1194,7 +1198,7 @@ Assets/
       IntoxicationStatusPlayModeTests.cs hybrid handoff, fixed root, one-phase Rise cleanup
       PlayerAnimatedInteraction3DPlayModeTests.cs   clip sampling, pelvis alignment and cleanup
       PlayerDoorActionPlayModeTests.cs terminal transition commit + cancellation cleanup
-      MothersHouseInteriorPlayModeTests.cs room/kettle/light + real stair/two rooms + village-door round trip
+      MothersHouseInteriorPlayModeTests.cs room/kettle/light + real stair/three rooms + village-door round trip
       Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  seated renderer suppression + retained compatibility attachment root
@@ -1407,10 +1411,10 @@ AlpineVillageRoot -> AlpineVillagePlanner -> validated village above the rope
                                            -> canopy/cabin dry; uphill axis remains readable
                   -> pure City + mountain plans for the other two map tabs
                   -> existing top-house door -> MothersHouseInterior (Single)
-MothersHouseInteriorRoot -> pure layout -> passive 10 x 8 m two-storey imported interior
+MothersHouseInteriorRoot -> pure layout -> passive 10 x 8 m main interior + supported 0.9 m rear wing
                                          -> ground southeast shot: hearth + both windows + furniture
                                          -> north-entry stair rising south -> west upper corridor
-                                         -> two separate empty rooms -> height-aware fixed shots
+                                         -> two furnished bedrooms + passive bathroom -> five height-aware shots
                                          -> hidden ramp + split slabs/partitions/guards as runtime collision
                                          -> centred south entrance -> north-facing player spawn
                                          -> floor lamp; no invisible ceiling fill

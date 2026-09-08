@@ -31,22 +31,40 @@ The vertical slice contains:
   a low central tea table, north rocking chair, west sofa, a burning fireplace
   between two north windows and a light, clean, cared-for but old and modest
   domestic dressing. Behind the sofa, a real north-entry stair rises south
-  through a split slab to a narrow west corridor and exactly two separate,
-  accessible, furnished upper bedrooms: the parents' room north, still slept in
+  through a split slab to a narrow west corridor and three separate,
+  accessible, furnished upper rooms: the parents' room north, still slept in
   and warmed by the hearth flue carried up its outer wall, and the hero's
-  childhood room south, taken out of use under a dust sheet. Each has three real
-  windows; two more light the west corridor. All sixteen house windows match
-  the exterior through one shared opening table. Each bedroom keeps one hanging fitting
+  childhood room south, taken out of use under a dust sheet, and a combined
+  bathroom at the corridor's north end. Each bedroom has three real windows;
+  one lights the stair landing and two frosted windows serve the bathroom.
+  All seventeen house windows match the exterior through one shared opening
+  table. Each bedroom keeps one hanging fitting
   of its own - a fabric bowl over the bed still slept in, a bare bulb over the
   one that is not. Both are furnished rather than indicated: wardrobe, chests,
   chair, peg rail and slippers in the bedroom, linen press, table, chest and
-  wicker basket in the childhood room, a high linen shelf and a pail in the
-  corridor, and a skirting the upper storey previously lacked. Nothing up
+  wicker basket in the childhood room, a shortened high linen shelf, peg rail
+  and a warm opal ceiling fitting in the corridor, and skirting along the upper walls.
+  The cleaning pail/broom stand against the bathroom's south wall, leaving
+  the full stair landing and its turn clear. The `3.05 x 2.8 m` bathroom
+  contains a `1.70 x 0.75 m` enamel bath, toilet and cistern, basin on a wooden
+  cabinet, mirror, one warm wall fitting and modest linen/soap furnishings.
+  Its cream tile, matte stone and worn wood use the house's own atlas.
+  The west stone wing continues `0.9 m` behind the main body from foundation
+  to roof, with a shallow open common-room niche below it and the northwest
+  ground window on that niche's rear wall. The main body, stair, bedroom
+  sizes, front threshold and `3.54/5.90 m` upper floor/ceiling remain fixed.
+  The parents' doorway moves slightly south; the northern corridor chest
+  moves into that bedroom and the linen shelf is shortened. Nothing up
   there is interactive. One
   hidden plan-owned ramp makes the
   visible collider-free steps continuously walkable; structural slabs,
-  partitions, door openings and well guards are runtime collision. Four
-  height-aware fixed shots cover the ground room, stair/corridor and both rooms.
+  partitions, door openings and well guards are runtime collision. Five
+  height-aware fixed shots cover the ground room, stair/corridor and all three
+  rooms. The stair/corridor shot stands inside the southwest corner above the
+  stair's upper exit. It keeps its position while bounded focus (`25°/35°`)
+  and a `64°–84°` lens frame the nearby hero. The west wall, bathroom's
+  south partition and doorway remain visible. Only the bathroom's own shot
+  temporarily hides that partition and doorframe, leaving collision intact.
   The ground shot stands inside the room's southeast corner and is a close shot
   on the hero: it pans onto him within `30°/15°` when he reaches the edge of
   the picture and re-lenses between `26°` and `50°` so he keeps about half the
@@ -54,16 +72,26 @@ The vertical slice contains:
   Repairs, fading and soft wear carry age without dirt or abandonment. One dedicated `MothersHousePositiveAtlas`
   owns every room-authored surface instead of reusing Home or City albedos.
   Its centred south-wall entrance faces the north-wall hearth and spawns the
-  hero looking north. Cool window spill and a shaded floor lamp create one
-  restrained local pool without displacing the hearth as
-  the warm key or adding invisible ceiling fill. Fire, muffled wind,
-  alternating clock ticks and sparse timber settling form its calm sound bed.
+  hero looking north. The floor lamp stands at the sofa's front southeast
+  corner; its Point source lights the hero and sofa from inside the fabric
+  shade. The user's final accepted frame keeps the mother in partial shadow
+  beside the hearth, without adding story meaning. All five lamps and five window sources
+  cast soft realtime shadows. The hearth's warm source sits in the open firebox
+  and moves slightly with the irregular flame, keeping it the main warm light
+  without adding ceiling fill. A small existing floor bounce stays under the
+  rocking chair, limited to `1.1 m`. Its strength follows the floor lamp and
+  hearth; both off leaves no reflected light. Fire, muffled wind, alternating clock ticks and
+  sparse timber settling form its calm sound bed, with gains and local falloff
+  adjusted for the fixed camera. Shared camera setup restores its missing or
+  disabled audio listener and leaves only one active listener across scene loads.
   The table
   instantiates the literal Kettle Hat pedestrian
   prefab and leaves only its ten authored kettle renderers visible, preserving
   the source meshes, material and detail atlas as the explicit atlas exception;
-  the mother sits silently in the rocking chair, while cat, dinner and dialogue
-  remain outside this MVP;
+  the mother sits silently in the rocking chair. Its measured runner edges
+  stay on the rug at `Y=0.032 m` throughout the unchanged `±2.5° / 3.2 s`
+  cycle; chair and sitter share one motion, with hip contact corrected along
+  the tilted chair's local up. Cat, dinner and dialogue remain outside this MVP;
 - a black `MainMenu` launch boundary at build index `0` that resets every
   session-owned value, writes the one-shot `OpeningSleep` Home arrival and
   Single-loads the existing `HomeInterior` instead of duplicating the room;

@@ -4,6 +4,114 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-08, mother's chair follows its measured runner
+  contacts:** `MothersHouseRockingChairMotion` uses the imported FBX's lower
+  contact edges at `Y=0.01781656 m`, `Z=1.55 ± 0.0069744 m`, rather than
+  the sampled parabola's centre of curvature. These edges support the full
+  existing `±2.5°` lean; the next profile transition begins near `±3.02870°`.
+  Each edge stays on the rug's `Y=0.032 m` top while it supports the chair,
+  and both branches meet at the same neutral pose. Frame, cushion and mother
+  retain one shared transform and the existing `3.2 s` period.
+  `AlignHipsToCushion` corrects along the tilted chair's local up, preserving
+  her contact with its cushion. The Blender model, collision, accepted
+  lighting and silent, indifferent presentation remain unchanged. This
+  corrects physical support within the existing canon; no exception is added.
+
+- **Accepted — 2026-09-08, final user choice — mother's living-room light
+  and household audio:** The user accepted the last captured frame:
+  «оставь вот так последний вариант, что-то в этом даже есть художественное».
+  The real floor lamp lights the hero and sofa; the mother intentionally
+  remains in partial shadow beside the hearth. This adds no story meaning
+  and ends further light adjustments. The floor-lamp anchor moves
+  to `(-1.95, 1.50, -1.62)`, at the sofa's front southeast corner. Its shade
+  clears the sofa by `0.11 m` and the spawn-to-seat approach remains open.
+  One Point source sits inside its fabric shade at intensity `5.4`, range
+  `5.5 m`; all five visible lamps and five window sources use
+  soft realtime shadows. The hearth source moves to `(0, 0.78, 3.50)`, inside
+  the actual open firebox instead of its solid back panel. Its one warm light
+  follows irregular flame brightness and colour with at most `0.04 m` of
+  local movement. Blender generator `1.11.0` owns the revised lamp, open
+  firebox and seven curved flame tongues in two layers. `MothersHouseFlame`
+  uses their thermal UV channel for rising heat and restrained tip movement;
+  `MothersHouseFireFlicker` owns the shared rhythm and restores render/light
+  state on disable. The presentation remains local to the existing hearth. These are
+  ordinary causal shadows and fire within art-bible §10g, with no new story
+  exception or interaction.
+
+  The existing small floor bounce remains at `(0.02, 1.05, 0.95)`: intensity
+  `0.24`, range `1.1 m`, spot angle `100°`, without shadows. It approximates
+  a little reflected light under the rocking chair; it is not a face fill
+  or ray-traced GI. Intensity follows the actual enabled sources: `55%`
+  floor lamp and `45%` hearth, relative to their authored power. Both off
+  means zero reflected light. No additional visible fitting is introduced.
+
+  Shared `RuntimeSceneSetup` repairs a missing/disabled listener even when
+  reusing a camera and disables other active listeners without changing global
+  pause or volume. The existing wind/clock/timber gains are `0.12/0.12/0.10`,
+  with linear ranges `2–16/1.2–7.5/1.2–7 m`. Hearth crackle uses `0.22` and
+  linear `2–13 m`; synthesis, mixer hierarchy and sparse timber timing remain
+  unchanged. The existing door-transition test covers listener repair,
+  idempotence and Single-load cleanup. The final frame is user-approved;
+  audio was checked through source/listener state and RMS, without hardware
+  listening. No new music, voice or lore is introduced.
+
+- **Accepted architecture exception — 2026-09-08, explicit user request —
+  a bathroom is the third upstairs room in the mother's house:** The user
+  accepted the proposed combined bathroom and its matching exterior volume.
+  This supersedes the exactly-two-room limit of the `2026-09-01` decision,
+  the north corridor dead end and the corresponding art-bible §10g and
+  story-bible §6/§25 wording. A roughly `3.05 x 2.8 m` bathroom opens directly
+  from the north end of the upper corridor. The parents' doorway moves a
+  little south; both bedrooms retain their dimensions. The upper floor
+  remains at `3.54 m`, with its ceiling at `5.90 m` (`2.36 m` clear height).
+  The existing west stone wing continues about `0.9 m` rearward from its
+  foundation to its low roof; the broad timber body and front door retain
+  their proportions and position. A shallow open ground-floor niche sits
+  beneath the extension, with the northwest common-room window moved onto
+  its new rear wall. Collision follows the stepped footprint and preserves
+  exterior circulation.
+
+  The ordinary passive furnishing is an enamel bath `1.70 x 0.75 m`, toilet
+  and cistern, basin on a worn wooden cabinet, mirror and one visible warm
+  wall fitting. A small high frosted rear window and the former north west-wall
+  corridor window, shifted north to clear the new partition, serve the bathroom;
+  the shared opening table governs both
+  interior and exterior. Cream tile, pale plaster, matte stone flooring,
+  faded linen, a towel rail, wicker laundry basket and soap dish
+  express age through use and repair. They use the mother's-house atlas.
+  The northern chest moves into the parents' bedroom and the corridor linen
+  shelf is shortened to clear the passage. A fifth
+  height-aware fixed shot covers the bathroom from the corridor side;
+  render-only cutaway hides its south partition and doorframe only for the
+  bathroom shot while preserving physical boundaries. The user's follow-up
+  on `2026-09-08` moves the corridor camera to the opposite, southwest corner
+  above the stair's upper exit. The subsequent correction puts the lens
+  physically inside the walls at `(-4.6, 5.7, -3.6)`, target
+  `(-2.8, 3.7, 0.2)`, authored vertical FOV `64`. Bounded focus (`25/35`
+  degrees) and a `64–84` degree lens keep the nearby hero framed without
+  moving the camera through walls. The west wall and bathroom partition
+  remain visible in this shot.
+  The close stair exit uses a `0.65` safe-frame fraction and short
+  focus/lens response (`0.08/0.12 s`), so the camera begins following before
+  the hero reaches the near edge of the landing.
+
+  **Accepted architecture exception — 2026-09-08, direct user correction:**
+  the former art-bible §10g rule that the upper corridor has no light of its
+  own is superseded by one warm opal ceiling fitting. Its measured source
+  at `(-2.5, 5.62, -0.6)` lights the corridor and stair exit; it adds one
+  practical, not ambient fill or another window source. The cleaning pail
+  and broom move from the south stair landing to the bathroom's south wall,
+  left of its doorway, clearing the actual turn at `z=-3.30`. The protected
+  corridor route now includes the whole south landing to `z=-3.65`.
+
+  This authorizes form, furnishing and circulation from story level `0`,
+  not a new action: the bath, toilet, basin and mirror are passive. No
+  upstairs prompt, water use, hygiene reward, reflection scene, sound,
+  fiction text, clue, diagnosis, family history, dialogue or event is added.
+  The silent mother, unwritten Cat/dinner/news, story §16/§21 and all nine
+  art-bible §16 checks remain binding. Generation and focused verification
+  evidence are recorded in the work log.
+
 - **Accepted exception — Alpine Village cold presentation (2026-09-07):**
   The user explicitly accepted the plan for a hunched, self-hugging idle and
   walk, periodic shoulder rubbing, restrained shivers and visible breath in
@@ -147,17 +255,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   facade texture variants remain within the existing timber/stone families.
   Door dimensions, docks and actions remain plan-owned.
   The user's explicit follow-up rejects the sparse four-window facade and
-  restores an architectural rhythm with matching interior openings. Current
-  `Village3D` generator `3.4.1` contains `25` assemblies, `58` meshes and
-  `14,650 / 16,000` triangles; `MothersHouseInterior3D` generator `1.7.0`
-  contains `127` meshes and `15,796` triangles. `TopHouse` shares exactly
-  `16` real openings with the interior: eight per floor and four per facade.
+  restores an architectural rhythm with matching interior openings. The
+  `2026-09-08` bathroom exception extends that scheme: `TopHouse` shares
+  `17` real openings with the interior, eight downstairs and nine upstairs.
   `ArtSource/MothersHouse/WindowLayout.json` is the single authored table;
   the interior generator exports `windows_m` and generates
   `MothersHouseWindowLayout.cs`. `MothersHouseInteriorLayoutPlanner.Windows`
   exposes that immutable table to both runtime scenes, while the village
   generator derives its measured facade alignment from the interior manifest.
-  The four previous openings retain their positions and sizes. New openings
+  The northwest common-room opening follows the extended wing's rear wall;
+  the former north corridor window shifts from `z=2.30` to `2.65 m` to clear
+  the bathroom partition, and it and one added rear opening receive frosted
+  glass. The other existing openings retain their
+  positions and sizes. New openings
   leave the door, cupboard and stair usable: the narrow south ground-floor
   window sits at interior `x=4.14 m`, and the west stair window has a raised
   centre at `2.70 m`. Other lower centres remain `1.55 m`, upper centres
@@ -165,28 +275,32 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Interior axes rotate `180 degrees` into the plot, with interior entry `x=0`
   aligned to the unchanged exterior door at `x=-0.36 m`. Only each wall's
   normal coordinate projects onto the authored exterior; position along the
-  facade, size and floor height remain shared. Front/rear planes stay at
-  `z=+/-3.735 m`; side casings seat on the measured asymmetric timber, plinth
+  facade, size and floor height remain shared. The opening table's optional
+  wall plane distinguishes the wing's stepped rear wall from the main rear
+  wall. Side casings seat on the measured asymmetric timber, plinth
   and masonry faces so their relief cannot obscure the panes. Each exterior
   opening has a stable `Mothers House Window - {StableId}` parent; its glass
   children keep their existing names and shared dimming behavior. Shutters
   follow the retained north common-room opening, and the front snow practical
   follows the actual upper south window. The whitewashed stair/corridor wing
-  reaches the rear
-  wall; raised eaves fit the existing `5.9 m` upper ceiling within the
-  unchanged `11 x 9 x 7 m` descriptor. Timber, wall and plinth end at
+  extends `0.9 m` behind the main rear wall from foundation to roof. Its
+  `11 x 9.9 x 7 m` descriptor uses a `0.45 m` local depth shift to retain the
+  original timber geometry and front door in world space; it does not stretch
+  the house to fill the new bounds. Raised eaves still fit the existing
+  `5.9 m` upper ceiling. Timber, wall and plinth end at
   `x=1.47 m`, where the masonry begins; roof solids meet edge-to-edge. This
   removes shared facade area geometrically, without depth bias or moving the
-  door, dock or collision. The generator validates casing support, separation
+  door or dock. Collision follows the main body and supported wing separately,
+  preserving the open exterior corner. The generator validates casing support, separation
   of the material volumes and exact door dimensions against its measured
   geometry, and records the interior-derived opening table in the manifest
-  and build signature. It checks all sixteen casing envelopes, two openings
-  per floor on every facade, and the unbroken material seam.
+  and build signature. It checks all seventeen casing envelopes, the extra
+  upper rear opening, the supported wing's depth and the unbroken material seam.
   The interior now authors complete pierced east/west walls on both floors.
   `MothersHouseWindowCutaway` temporarily hides only the near side's upper
   wall renderers and window frames/glass for a game camera outside that wall,
   then restores them after the camera renders. This is local presentation
-  for the unchanged fixed camera poses, not missing authored wall geometry or
+  for the applicable fixed camera poses, not missing authored wall geometry or
   a change to structural collision, circulation, exterior opacity or the
   practical-light budget.
 
@@ -988,8 +1102,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bible §10g's one-useful-room and single-fixed-camera wording. The existing
   west sofa remains; its blank back wall opens onto a real straight stair whose
   north end is low and whose south end reaches the upper landing inside the
-  summit house's existing opaque envelope. The landing joins a west corridor
-  and exactly two separate, accessible, currently unfurnished rooms. The
+  summit house's existing opaque envelope. The original landing joined a west
+  corridor and two accessible unfurnished rooms; the `2026-09-04` furnishing
+  and `2026-09-08` bathroom decisions supersede that empty state and room count. The
   visible stair body closes its narrow west seam and continues its solid south
   end to the exterior wall without moving the flight; runtime mirrors that
   south closure with plan-derived collision.
@@ -3408,7 +3523,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   contains `82` semantic kinds, `122` assemblies and `259` role meshes
   (`46,546` triangles) under build
   signature
-  `3da71d7b938810af85fb4d8f2e26a0d1cc141765e621f90e69e8405b1f83a52f`.
+  `8ec083eb3d9653652f114f7dec4c22aaab5589f99702d3b1ff2ca883281e32f2`.
   The provider resolves kind, stable variant and semantic role; the affected
   builders then place or combine those meshes from their existing plans. The
   catalog spans the 24-family decoration layer and parks, street lamps and
@@ -3425,7 +3540,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   contract. The earlier wave-one and v2 subsets remain frozen
   by compatibility signatures
   `dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6`
-  and `267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7`.
+  and `4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c`.
   Unity still owns world plans, placement, terrain, collision proxies,
   dynamics, interactions, realtime lights and halos, cloth and NPCs. Tilted
   cemetery monuments deliberately stay on the legacy builder because their
@@ -6553,7 +6668,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   field including the name, so the descriptor is pinned field by field; a
   reallocated texture holds nothing and always prints. `Application.targetFrameRate`
   stays `60` because hero handling is calibrated to it. The mode forces the
-  4:3 gate, mutes dither, RGB555 and scanlines (meaningless under it), keeps
+  4:3 gate, mutes dither, RGB555 and scanlines (meaningless under it) —
+  amended 2026-09-08: all four now cross the ramp below rather than
+  switching, and everything here describes the mode at full strength. Keeps
   the vertex jitter and the drunk lens as the player set them, and skips
   cameras marked `Ps1VertexJitterExclusion` — the inventory preview stays in
   colour (a documented residual) and the reflection probe never holds a
@@ -6561,6 +6678,44 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   camera, so the print never touches it. The grain is sized in output
   pixels (`≈2.9 px` at 1080p), not on the internal grid, so it reads as
   emulsion rather than blocks over the `640x360` upscale.
+- **Accepted (2026-09-08) — the Begotten mode arrives over fifteen seconds,
+  and the ramp belongs to the transition rather than to the setting:** the
+  boolean the composite read each frame is a strength in `0..1`
+  (`BegottenRampModel`, `BegottenModeRamp`), and the governing contract is
+  that at strength one the output is the picture the mode has always made,
+  so every existing print assertion stays meaningful. In takes `15 s`, out
+  takes `3 s` — coming in is the effect, going out is only getting out of
+  the way. Only a change made with the menu up is an arrival: it is armed
+  there and started by `PauseMenuController`'s deferred close, because the
+  world behind a paused menu is a still and a mode that arrived over that
+  still would have finished before the player saw a frame of it. A flag
+  moving with no menu open (a test, a debug key, a saved preference first
+  read) snaps, which is why the PlayMode print suite needed no change. A
+  scene that loads with the mode on starts at full strength. The clock is
+  `GameTimeScaleRuntime.CalendarDeltaTime`, so `Time.timeScale = 0` cannot
+  stop it, and the eased value is `c²(3−2c)` — exact at both ends.
+  **The gate genuinely narrows**: the aspect fraction is
+  `Lerp(1, AspectFraction43, weight)` and the output width is rounded from
+  it, so the picture is resampled into a shrinking window rather than
+  covered by growing bars (the user's choice, and
+  `Begotten_HalfArrivedNarrowsPartWayAndKeepsColour` is the regression).
+  **The blend is in `FragUpscale`, not `FragPrint`**: blending inside the
+  print writes into the persistent held texture, so at weight `0.01` the
+  whole game would drop to 24 fps — the exact snap the ramp exists to
+  remove. The colour layer stays live at 60 fps and the print composites
+  over it, sampled through `_BegottenStruckAspect` because a held picture
+  may be a tick old, from when the window was a hair wider. Both uniforms
+  are pushed from `Setup` every frame: written only inside the compose pass,
+  the shared material carried the last value into the ordinary path and the
+  picture stayed grained and vignetted after the mode was switched off.
+- **A measuring test threads a fresh reel (`DebugResetProjector`):** the
+  print's threshold and exposure drift on a five second cycle of the film's
+  own clock, so a measured picture depends on how much film has already run
+  through the gate — which is to say on whatever else rendered first. Six
+  extra pictures ahead of `Begotten_Sheet` moved its day median from `34 %`
+  to `66 %` and its night measure from `51.5 %` to `60.7 %` against a `60 %`
+  ceiling. A median over three pictures does not help: all three move
+  together, because this is phase and not noise.
 - **Accepted — the opt-in 4:3 mode is a composite crop, not a camera change:**
   when `graphics.aspect_4_3` is on (default off), the feature computes the
   internal resolution for the centered 4:3 window (`480x360` from a 16:9
