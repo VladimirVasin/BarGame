@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -128,19 +129,74 @@ namespace BarPromenade.Tests.PlayMode
 
             float firstAngle = motion.AngleDegrees;
             Vector3 firstHead = registry.HeadAnchor.position;
+            Transform room = interior.World.Root;
+            Assert.That(interior.World.Registry.TryGetPart(
+                MothersHouseInteriorRoot.RockingChairFrameName, out var framePart), Is.True);
+            Assert.That(interior.World.Registry.TryGetPart("DRESS_Rug", out var rug), Is.True);
+            Transform frame = framePart.Renderer.transform;
+            Vector3[] vertices = ReadVertices(frame.GetComponent<MeshFilter>().sharedMesh);
+            float rugTop = room.InverseTransformPoint(rug.Renderer.bounds.max).y;
+            Vector3 motherInFrame = frame.InverseTransformPoint(interior.Mother.transform.position);
+            float minAngle = firstAngle, maxAngle = firstAngle;
+            float maxContactError = 0f, maxSlip = 0f, headTravel = 0f;
 
-            // A quarter of the period at a pinned 1/60 clock.
+            CaptureRockingFrame("mother-rocking-gameplay", false, room);
+
+            // One complete cycle checks both support edges and the handover
+            // through zero. Inspect real imported vertices, not renderer AABBs
+            // or a repeated copy of the runtime pivot calculation.
             int frames = Mathf.CeilToInt(
-                MothersHouseRockingChairMotion.PeriodSeconds * 0.25f * 60f);
+                MothersHouseRockingChairMotion.PeriodSeconds * 60f);
             for (int index = 0; index < frames; index++)
             {
                 yield return null;
+                minAngle = Mathf.Min(minAngle, motion.AngleDegrees);
+                maxAngle = Mathf.Max(maxAngle, motion.AngleDegrees);
+                headTravel = Mathf.Max(headTravel,
+                    Vector3.Distance(firstHead, registry.HeadAnchor.position));
+                Vector3 left = new Vector3(0f, float.PositiveInfinity, 0f);
+                Vector3 right = left;
+                foreach (Vector3 vertex in vertices)
+                {
+                    Vector3 point = room.InverseTransformPoint(frame.TransformPoint(vertex));
+                    if (point.x < 0f && point.y < left.y) left = point;
+                    if (point.x > 0f && point.y < right.y) right = point;
+                }
+
+                maxContactError = Mathf.Max(maxContactError,
+                    Mathf.Abs(left.y - rugTop), Mathf.Abs(right.y - rugTop));
+                Assert.That(left.y, Is.EqualTo(rugTop).Within(0.0002f),
+                    $"Left runner lost the rug at {motion.AngleDegrees:F3} degrees.");
+                Assert.That(right.y, Is.EqualTo(rugTop).Within(0.0002f),
+                    "Both runners must remain supported throughout the cycle.");
+                if (Mathf.Abs(motion.AngleDegrees) > 0.02f)
+                {
+                    float expectedZ = motion.AngleDegrees > 0f ? 1.55697441f : 1.54302561f;
+                    maxSlip = Mathf.Max(maxSlip,
+                        Mathf.Abs(left.z - expectedZ), Mathf.Abs(right.z - expectedZ));
+                    Assert.That(left.z, Is.EqualTo(expectedZ).Within(0.0002f),
+                        "The supporting edge must stay planted, not slide over the rug.");
+                    Assert.That(right.z, Is.EqualTo(expectedZ).Within(0.0002f));
+                }
+
+                Assert.That(Vector3.Distance(motherInFrame,
+                        frame.InverseTransformPoint(interior.Mother.transform.position)),
+                    Is.LessThan(0.000002f), "The chair and sitter share one rigid motion.");
+                Assert.That(interior.Mother.transform.InverseTransformPoint(
+                        registry.PelvisAnchor.position).y,
+                    Is.EqualTo(MothersHouseMotherPresentation.CushionTopY +
+                        MothersHouseMotherPresentation.PerchPelvisLiftMeters).Within(0.0001f),
+                    "Pelvis height follows the tilted seat normal, not world vertical.");
+                if (index % 3 == 0)
+                {
+                    CaptureRockingFrame($"mother-rocking-motion/{index / 3:D3}", true, room);
+                }
             }
 
             Assert.That(
-                Mathf.Abs(motion.AngleDegrees - firstAngle),
-                Is.GreaterThan(0.2f),
-                "The chair must actually be moving.");
+                maxAngle - minAngle,
+                Is.GreaterThan(4.99f),
+                "The complete quiet swing remains visible in both directions.");
             Assert.That(
                 Mathf.Abs(motion.AngleDegrees),
                 Is.LessThanOrEqualTo(
@@ -151,9 +207,86 @@ namespace BarPromenade.Tests.PlayMode
             // head must travel with the timber rather than hang still while
             // the chair swings out from under her.
             Assert.That(
-                Vector3.Distance(registry.HeadAnchor.position, firstHead),
-                Is.GreaterThan(0.005f),
+                headTravel,
+                Is.GreaterThan(0.08f),
                 "She must move with the chair, not sit through it.");
+
+            float previousTimeScale = Time.timeScale;
+            try
+            {
+                Time.timeScale = 0f;
+                // A coroutine resumes before LateUpdate; the current frame
+                // still carries the delta computed before timeScale changed.
+                yield return null;
+                float pausedAngle = motion.AngleDegrees;
+                Vector3 pausedPosition = interior.Mother.transform.position;
+                yield return null;
+                yield return null;
+                Assert.That(motion.AngleDegrees, Is.EqualTo(pausedAngle).Within(0.00001f));
+                Assert.That(Vector3.Distance(pausedPosition, interior.Mother.transform.position),
+                    Is.LessThan(0.00001f));
+            }
+            finally { Time.timeScale = previousTimeScale; }
+            TestContext.Out.WriteLine($"Runner contact error {maxContactError:F7} m; " +
+                $"support slip {maxSlip:F7} m; head travel {headTravel:F4} m; " +
+                $"angles {minAngle:F3}..{maxAngle:F3}. Captured 64 frames at 20 fps.");
+        }
+
+        private static Vector3[] ReadVertices(Mesh mesh)
+        {
+#if UNITY_EDITOR
+            using (Mesh.MeshDataArray data = UnityEditor.MeshUtility.AcquireReadOnlyMeshData(mesh))
+            using (var positions = new Unity.Collections.NativeArray<Vector3>(
+                       data[0].vertexCount, Unity.Collections.Allocator.Temp))
+            {
+                data[0].GetVertices(positions);
+                return positions.ToArray();
+            }
+#else
+            return mesh.vertices;
+#endif
+        }
+
+        private static void CaptureRockingFrame(string name, bool profile, Transform room)
+        {
+            Camera camera = Camera.main;
+            Assert.That(camera, Is.Not.Null);
+            var target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            var pixels = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            RenderTexture active = RenderTexture.active, previousTarget = camera.targetTexture;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float aspect = camera.aspect, fov = camera.fieldOfView;
+            try
+            {
+                if (profile)
+                {
+                    camera.transform.position = room.TransformPoint(new Vector3(-2.2f, 1.08f, 1.1f));
+                    camera.transform.LookAt(room.TransformPoint(new Vector3(0f, 0.77f, 1.55f)), room.up);
+                    camera.fieldOfView = 50f;
+                }
+                camera.aspect = 16f / 9f;
+                camera.targetTexture = target;
+                camera.Render();
+                RenderTexture.active = target;
+                pixels.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+                pixels.Apply();
+                string path = Path.GetFullPath(Path.Combine(Application.dataPath,
+                    "../Captures/MothersHouseInterior", name + ".png"));
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllBytes(path, pixels.EncodeToPNG());
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fov;
+                camera.aspect = aspect;
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = active;
+                target.Release();
+                UnityEngine.Object.DestroyImmediate(target);
+                UnityEngine.Object.DestroyImmediate(pixels);
+            }
         }
 
         [UnityTest]

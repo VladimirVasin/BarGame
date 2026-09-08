@@ -19,13 +19,33 @@ namespace BarPromenade
         public const float UpperDoorOpeningWidth = 1.2f;
         public const float UpperDoorOpeningHeight = 2.2f;
         public const float UpperSouthDoorCenterZ = -1.85f;
-        public const float UpperNorthDoorCenterZ = 1.85f;
+        public const float UpperNorthDoorCenterZ = 1.10f;
+        public const float WingRearWallZ = 4.9f;
+        public const float BathroomSouthWallZ = 1.9f;
+        public const float BathroomDoorCenterX = -2.505f;
+        public const float BathroomDoorWidth = 1.2f;
+        public static readonly Rect WingExtensionBounds = Rect.MinMaxRect(-5f, 4f, -1.75f, 4.9f);
+        public static readonly Rect BathroomBounds = Rect.MinMaxRect(-4.88f, 1.98f, -1.83f, 4.78f);
+        public static readonly Rect BathroomTubBounds = Rect.MinMaxRect(-4.55f, 3.93f, -2.85f, 4.68f);
+        public static readonly Rect BathroomToiletBounds = Rect.MinMaxRect(-4.78f, 2.34f, -4.04f, 2.79f);
+        public static readonly Rect BathroomVanityBounds = Rect.MinMaxRect(-2.42f, 3.14f, -1.87f, 3.84f);
+        public static readonly Rect BathroomLaundryBasketBounds = Rect.MinMaxRect(-4.755f, 3.16f, -4.285f, 3.70f);
+        public static readonly Vector3 BathroomCameraPosition = new Vector3(-2.4f, 5.4f, 0.7f);
+        public static readonly Vector3 BathroomCameraTarget = new Vector3(-3.2f, 4.4f, 3.5f);
+        public static readonly Vector3 BathroomLampPosition = new Vector3(-2.13f, 5.25f, 3.55f);
+        public static readonly Vector3 BathroomWindowLightPosition = new Vector3(-3.55f, 5f, 4.62f);
+        public static readonly Vector3 UpperCorridorLampPosition = new Vector3(-2.5f, 5.62f, -0.6f);
         public const int StairStepCount = 19;
         public const float StairStepRise =
             UpperFloorElevation / StairStepCount;
         public const float StairStepDepth = 0.25f;
         public const float StairWidth = 1.3f;
         public const float CameraVerticalFieldOfView = 36f;
+        public const float StairCameraVerticalFieldOfView = 64f;
+        public const float StairCameraFocusYawDegrees = 25f;
+        public const float StairCameraFocusPitchDegrees = 35f;
+        public const float StairCameraMinimumFieldOfView = 64f;
+        public const float StairCameraMaximumFieldOfView = 84f;
         public const float UpperCameraVerticalFieldOfView = 58f;
 
         /// <summary>
@@ -56,8 +76,8 @@ namespace BarPromenade
             MothersHouseWindowLayout.Windows;
 
         public static readonly Bounds ModelLocalBounds = new Bounds(
-            new Vector3(0f, 2.93f, 0f),
-            new Vector3(10.24f, 6.22f, 8.24f));
+            new Vector3(0f, 2.93f, 0.45f),
+            new Vector3(10.24f, 6.22f, 9.14f));
         public static readonly Rect RoomBounds =
             new Rect(-5f, -4f, RoomWidth, RoomDepth);
         public static readonly Rect WalkableBounds =
@@ -73,9 +93,9 @@ namespace BarPromenade
         public static readonly Vector3 CameraTarget =
             new Vector3(0f, 1.05f, 0.6f);
         public static readonly Vector3 StairCameraPosition =
-            new Vector3(-5.9f, 5.1f, 2.65f);
+            new Vector3(-4.6f, 5.7f, -3.6f);
         public static readonly Vector3 StairCameraTarget =
-            new Vector3(-2.85f, 4.25f, -0.3f);
+            new Vector3(-2.8f, 3.7f, 0.2f);
         public static readonly Vector3 SouthRoomCameraPosition =
             new Vector3(5.8f, 5.1f, -3.05f);
         public static readonly Vector3 SouthRoomCameraTarget =
@@ -85,15 +105,15 @@ namespace BarPromenade
         public static readonly Vector3 NorthRoomCameraTarget =
             new Vector3(1.25f, 4.25f, 1.9f);
         public static readonly Vector3 WestWindowPosition =
-            new Vector3(-2.72f, 1.55f, 3.82f);
+            new Vector3(-2.72f, 1.55f, 4.72f);
         public static readonly Vector3 EastWindowPosition =
             new Vector3(2.72f, 1.55f, 3.82f);
         public static readonly Vector3 FireplaceAnchorPosition =
             new Vector3(0f, 0f, 3.61f);
         public static readonly Vector3 FireLightAnchorPosition =
-            new Vector3(0f, 0.78f, 3.28f);
+            new Vector3(0f, 0.78f, 3.50f);
         public static readonly Vector3 FloorLampLightAnchorPosition =
-            new Vector3(-1.72f, 1.5f, 1.45f);
+            new Vector3(-1.95f, 1.5f, -1.62f);
         public static readonly Vector3 TabletopAnchorPosition =
             new Vector3(0f, 0.48f, 0f);
         public static readonly Vector3 TeapotDockAnchorPosition =
@@ -113,10 +133,10 @@ namespace BarPromenade
         public const float YarnBasketBaseHeight = 0.02f;
         public const float YarnBasketHeight = 0.5f;
         public static readonly Rect FloorLampBounds = Rect.MinMaxRect(
-            -2.02f,
-            1.15f,
-            -1.42f,
-            1.75f);
+            -2.25f,
+            -1.92f,
+            -1.65f,
+            -1.32f);
         public const float FloorLampHeight = 1.82f;
         public static readonly Rect StairOpeningBounds = Rect.MinMaxRect(
             -4.88f,
@@ -127,7 +147,7 @@ namespace BarPromenade
             -3.18f,
             -3.65f,
             -1.83f,
-            3.65f);
+            1.82f);
         public static readonly Rect UpperSouthRoomBounds = Rect.MinMaxRect(
             -1.67f,
             -3.88f,
@@ -179,7 +199,7 @@ namespace BarPromenade
             -3.13f);
         public const float UpperSouthChairHeight = 0.89f;
         public static readonly Rect UpperCorridorChestBounds =
-            Rect.MinMaxRect(-3.05f, 2.85f, -1.95f, 3.55f);
+            Rect.MinMaxRect(-1.55f, 2.05f, -0.45f, 2.75f);
         public const float UpperCorridorChestHeight = 0.55f;
 
         // Second furnishing pass. The divider wall at z = 0 stands square to
@@ -207,7 +227,9 @@ namespace BarPromenade
             Rect.MinMaxRect(3.35f, -1.6f, 3.9f, -1.05f);
         public const float UpperSouthBasketHeight = 0.52f;
         public static readonly Rect UpperCorridorPailBounds =
-            Rect.MinMaxRect(-3.12f, -3.62f, -2.72f, -3.28f);
+            // The cleaning set now stands inside the bathroom, clear of the
+            // stair landing. Keep its existing asset/fixture identity.
+            Rect.MinMaxRect(-3.95f, 2.08f, -3.55f, 2.42f);
         public const float UpperCorridorPailHeight = 0.46f;
 
         /// <summary>
@@ -314,12 +336,12 @@ namespace BarPromenade
                 -4.65f,
                 -3.65f,
                 -1.67f,
-                3.65f);
+                1.98f);
             Rect stairAndCorridorHold = Rect.MinMaxRect(
                 -4.65f,
                 -3.65f,
                 -1.30f,
-                3.65f);
+                2.08f);
             Rect southRoomActivation = Rect.MinMaxRect(
                 -1.65f,
                 -3.65f,
@@ -371,6 +393,21 @@ namespace BarPromenade
                     new Vector2(1.5f, 5.6f),
                     StairCameraPosition,
                     StairCameraTarget,
+                    StairCameraVerticalFieldOfView)
+                    .WithFocus(new FixedCameraFocus(
+                        StairCameraFocusYawDegrees, StairCameraFocusPitchDegrees,
+                        0.65f, 0.08f))
+                    .WithZoom(new FixedCameraZoom(
+                        0.45f, StairCameraMinimumFieldOfView,
+                        StairCameraMaximumFieldOfView, 0.12f)),
+                CreateShot(
+                    HomeCameraShotKind.UpperBathroom,
+                    BathroomBounds,
+                    Rect.MinMaxRect(-4.9f, 1.80f, -1.82f, 4.8f),
+                    upperActivationHeight,
+                    upperHoldHeight,
+                    BathroomCameraPosition,
+                    BathroomCameraTarget,
                     UpperCameraVerticalFieldOfView),
                 CreateShot(
                     HomeCameraShotKind.UpperSouthRoom,
@@ -440,13 +477,19 @@ namespace BarPromenade
                 new MothersHouseInteriorPathPlan(
                     "upper-corridor-run",
                     MothersHouseInteriorPathKind.UpperCorridorRun,
-                    Rect.MinMaxRect(-3.18f, -3.2f, -1.83f, 2.45f),
+                    Rect.MinMaxRect(-3.18f, -3.65f, -1.83f, 1.82f),
                     1.2f,
                     UpperFloorElevation),
                 new MothersHouseInteriorPathPlan(
                     "upper-north-approach",
                     MothersHouseInteriorPathKind.UpperNorthApproach,
-                    Rect.MinMaxRect(-1.67f, 0.6f, 0.53f, 2.45f),
+                    Rect.MinMaxRect(-1.67f, 0.50f, 0.53f, 1.70f),
+                    1.2f,
+                    UpperFloorElevation),
+                new MothersHouseInteriorPathPlan(
+                    "upper-bathroom-approach",
+                    MothersHouseInteriorPathKind.UpperBathroomApproach,
+                    Rect.MinMaxRect(-3.105f, 1.80f, -1.905f, 3.02f),
                     1.2f,
                     UpperFloorElevation),
                 new MothersHouseInteriorPathPlan(
@@ -462,6 +505,18 @@ namespace BarPromenade
         {
             return new List<MothersHouseInteriorFixturePlan>
             {
+                new MothersHouseInteriorFixturePlan("bathroom-tub",
+                    MothersHouseInteriorFixtureKind.BathroomTub,
+                    BathroomTubBounds, UpperFloorElevation, 0.58f, true),
+                new MothersHouseInteriorFixturePlan("bathroom-toilet",
+                    MothersHouseInteriorFixtureKind.BathroomToilet,
+                    BathroomToiletBounds, UpperFloorElevation, 0.83f, true),
+                new MothersHouseInteriorFixturePlan("bathroom-vanity",
+                    MothersHouseInteriorFixtureKind.BathroomVanity,
+                    BathroomVanityBounds, UpperFloorElevation, 0.86f, true),
+                new MothersHouseInteriorFixturePlan("bathroom-laundry-basket",
+                    MothersHouseInteriorFixtureKind.BathroomLaundryBasket,
+                    BathroomLaundryBasketBounds, UpperFloorElevation, 0.49f, true),
                 new MothersHouseInteriorFixturePlan(
                     "low-table",
                     MothersHouseInteriorFixtureKind.LowTable,

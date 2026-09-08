@@ -153,8 +153,9 @@ namespace BarPromenade
         /// <summary>
         /// Sets the seat of her dress on the cushion.
         ///
-        /// ONLY THE VERTICAL is corrected, exactly as the park bench sitters
-        /// do it. The factory has already placed her across the chair, and
+        /// Only height in the chair's tilted frame is corrected. World Y
+        /// would hold her upright against a cushion that has already tilted.
+        /// The factory has already placed her across the chair, and
         /// letting the clip's own lean slide her along the seat would carry
         /// her knees out past the chair's front rail.
         /// </summary>
@@ -166,12 +167,12 @@ namespace BarPromenade
                 return;
             }
 
-            Vector3 moved = registry.ModelRoot.position;
-            float targetPelvisY = transform.position.y +
-                                  CushionTopY +
-                                  PerchPelvisLiftMeters;
-            moved.y += targetPelvisY - pelvis.position.y;
-            registry.ModelRoot.position = moved;
+            float localPelvisY = transform.InverseTransformPoint(
+                pelvis.position).y;
+            float correction = CushionTopY + PerchPelvisLiftMeters -
+                               localPelvisY;
+            registry.ModelRoot.position += transform.TransformVector(
+                Vector3.up * correction);
         }
 
         private void OnDestroy()

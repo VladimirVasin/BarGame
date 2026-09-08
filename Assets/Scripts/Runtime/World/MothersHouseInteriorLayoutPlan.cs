@@ -12,7 +12,8 @@ namespace BarPromenade
         TableApproach = 2,
         UpperCorridorRun = 3,
         UpperNorthApproach = 4,
-        UpperSouthApproach = 5
+        UpperSouthApproach = 5,
+        UpperBathroomApproach = 6
     }
 
     public enum MothersHouseInteriorFixtureKind
@@ -38,7 +39,11 @@ namespace BarPromenade
         UpperSouthTable = 18,
         UpperSouthTrunk = 19,
         UpperSouthBasket = 20,
-        UpperCorridorPail = 21
+        UpperCorridorPail = 21,
+        BathroomTub = 22,
+        BathroomToilet = 23,
+        BathroomVanity = 24,
+        BathroomLaundryBasket = 25
     }
 
     public readonly struct MothersHouseInteriorPathPlan
@@ -153,6 +158,9 @@ namespace BarPromenade
         public Rect CorridorBounds { get; }
         public Rect SouthRoomBounds { get; }
         public Rect NorthRoomBounds { get; }
+        public Rect BathroomBounds => MothersHouseInteriorLayoutPlanner.BathroomBounds;
+        public Vector3 BathroomCenter => new Vector3(-3.25f,
+            FloorElevation + PlayerFactory.GroundedRootOffset, 3.12f);
         public float PartitionX { get; }
         public float PartitionThickness { get; }
         public float RoomDividerZ { get; }
@@ -260,6 +268,9 @@ namespace BarPromenade
         public Rect RoomBounds { get; }
         public Bounds ModelLocalBounds { get; }
         public Rect WalkableBounds { get; }
+        // The main rectangular room is retained; the stone wing adds a real
+        // rear niche on both floors, rather than stretching the whole house.
+        public Rect WingExtensionBounds => MothersHouseInteriorLayoutPlanner.WingExtensionBounds;
         public Vector3 EntryPosition { get; }
         public Vector3 PlayerSpawn { get; }
         public Vector3 ExitPosition { get; }

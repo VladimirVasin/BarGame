@@ -46,6 +46,17 @@ namespace BarPromenade.Tests.PlayMode
                     FindObjectsInactive.Include),
                 Is.Empty);
 
+            GameObject existingCameraObject =
+                new GameObject("Existing Scene Camera");
+            Camera existingCamera = existingCameraObject.AddComponent<Camera>();
+            existingCamera.tag = "MainCamera";
+            Assert.That(existingCamera.GetComponent<AudioListener>(), Is.Null);
+            Assert.That(
+                RuntimeSceneSetup.EnsureDoorTransition(),
+                Is.SameAs(existingCamera));
+            AudioListener originalListener =
+                AssertSingleActiveCameraListener(existingCamera);
+
             root.Initialize(DoorTransitionDirection.EnterBar);
             yield return null;
 
@@ -58,6 +69,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.Direction,
                 Is.EqualTo(DoorTransitionDirection.EnterBar));
             Assert.That(root.Camera, Is.Not.Null);
+            Assert.That(root.Camera, Is.SameAs(existingCamera));
             Assert.That(root.Camera, Is.SameAs(Camera.main));
             Assert.That(
                 root.Camera.transform.IsChildOf(root.transform),
@@ -119,6 +131,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 listeners[0].gameObject,
                 Is.SameAs(root.Camera.gameObject));
+            Assert.That(
+                AssertSingleActiveCameraListener(root.Camera),
+                Is.SameAs(originalListener));
 
             int presentationCount = root.transform.childCount;
             Camera originalCamera = root.Camera;
@@ -134,12 +149,73 @@ namespace BarPromenade.Tests.PlayMode
                 root.transform.childCount,
                 Is.EqualTo(presentationCount));
 
+            // Reusing a disabled listener must repair it without unpausing the
+            // game, unmuting test/player output or leaving a second listener.
+            originalListener.enabled = false;
+            AudioListener extraListener = new GameObject("Stale Scene Listener")
+                .AddComponent<AudioListener>();
+            bool previousPause = AudioListener.pause;
+            float previousVolume = AudioListener.volume;
+            try
+            {
+                AudioListener.pause = true;
+                Assert.That(
+                    RuntimeSceneSetup.EnsureDoorTransition(),
+                    Is.SameAs(originalCamera));
+                Assert.That(extraListener.enabled, Is.False);
+                Assert.That(
+                    AssertSingleActiveCameraListener(originalCamera),
+                    Is.SameAs(originalListener));
+                Assert.That(
+                    RuntimeSceneSetup.EnsureDoorTransition(),
+                    Is.SameAs(originalCamera));
+                Assert.That(
+                    AssertSingleActiveCameraListener(originalCamera),
+                    Is.SameAs(originalListener));
+                Assert.That(AudioListener.pause, Is.True);
+                Assert.That(AudioListener.volume, Is.EqualTo(previousVolume));
+            }
+            finally
+            {
+                AudioListener.pause = previousPause;
+            }
+
             yield return root.Play();
 
             Assert.That(
                 Vector3.Dot(root.DoorPivot.right, Vector3.back),
                 Is.GreaterThan(0.95f),
                 "The door leaf must swing toward the camera/player.");
+
+            // A Single scene load must discard both old listeners. The next
+            // scene then owns one fresh camera/listener, with no persistent tail.
+            yield return LoadSceneAndWaitForRoot(foundRoot => root = foundRoot);
+            Assert.That(originalCamera == null, Is.True);
+            Assert.That(originalListener == null, Is.True);
+            Assert.That(extraListener == null, Is.True);
+            root.Initialize(DoorTransitionDirection.ExitBar);
+            yield return null;
+            AssertSingleActiveCameraListener(root.Camera);
+            Assert.That(
+                UnityEngine.Object.FindObjectsByType<AudioListener>(
+                    FindObjectsInactive.Include),
+                Has.Length.EqualTo(1));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        private static AudioListener AssertSingleActiveCameraListener(
+            Camera camera)
+        {
+            AudioListener[] cameraListeners = camera.GetComponents<AudioListener>();
+            Assert.That(cameraListeners, Has.Length.EqualTo(1));
+            Assert.That(cameraListeners[0].isActiveAndEnabled, Is.True);
+            AudioListener[] activeListeners = Array.FindAll(
+                UnityEngine.Object.FindObjectsByType<AudioListener>(
+                    FindObjectsSortMode.None),
+                listener => listener.isActiveAndEnabled);
+            Assert.That(activeListeners, Has.Length.EqualTo(1));
+            Assert.That(activeListeners[0], Is.SameAs(cameraListeners[0]));
+            return cameraListeners[0];
         }
 
         private static IEnumerator LoadSceneAndWaitForRoot(

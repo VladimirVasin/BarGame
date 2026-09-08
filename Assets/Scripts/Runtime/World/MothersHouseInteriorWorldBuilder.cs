@@ -204,6 +204,14 @@ namespace BarPromenade
                 registry.ModelRoot,
                 anchors.TeapotDock,
                 "teapot_dock");
+            ValidateAnchor(worldRoot, RequireAnchor(registry, "bathroom_camera"),
+                MothersHouseInteriorLayoutPlanner.BathroomCameraPosition, "bathroom_camera");
+            ValidateAnchor(worldRoot, RequireAnchor(registry, "bathroom_camera_target"),
+                MothersHouseInteriorLayoutPlanner.BathroomCameraTarget, "bathroom_camera_target");
+            ValidateAnchor(worldRoot, RequireAnchor(registry, "bathroom_lamp_light"),
+                MothersHouseInteriorLayoutPlanner.BathroomLampPosition, "bathroom_lamp_light");
+            ValidateAnchor(worldRoot, RequireAnchor(registry, "bathroom_window_light"),
+                MothersHouseInteriorLayoutPlanner.BathroomWindowLightPosition, "bathroom_window_light");
             return anchors;
         }
 
@@ -298,11 +306,12 @@ namespace BarPromenade
                 parent,
                 "North Wall",
                 new Vector3(
-                    room.center.x,
+                    (plan.WingExtensionBounds.xMax + room.xMax) * 0.5f,
                     wallHeight * 0.5f,
                     room.yMax - thickness * 0.5f),
-                new Vector3(room.width, wallHeight, thickness),
+                new Vector3(room.xMax - plan.WingExtensionBounds.xMax, wallHeight, thickness),
                 colliders);
+            BuildWingCollision(parent, plan, colliders);
 
             float doorMin = plan.EntryPosition.x -
                 plan.DoorOpeningWidth * 0.5f;
@@ -350,6 +359,7 @@ namespace BarPromenade
                 plan.UpperFloor.StairFlight,
                 colliders);
             BuildUpperPartitionCollision(parent, plan, colliders);
+            BuildBathroomPartitionCollision(parent, plan, colliders);
             BuildStairGuards(parent, plan, colliders);
             AddCollider(
                 parent,
@@ -361,6 +371,47 @@ namespace BarPromenade
                 new Vector3(room.width, 0.14f, room.height),
                 colliders);
             return stairRamp;
+        }
+
+        private static void BuildWingCollision(Transform parent,
+            MothersHouseInteriorLayoutPlan plan, ICollection<Collider> colliders)
+        {
+            Rect wing = plan.WingExtensionBounds;
+            float height = plan.UpperFloor.CeilingHeight;
+            float thickness = plan.WallThickness;
+            AddHorizontalSlab(parent, "Wing Niche Floor", wing.xMin, wing.xMax,
+                wing.yMin, wing.yMax, -0.125f, 0.25f, colliders);
+            AddHorizontalSlab(parent, "Bathroom Rear Floor", wing.xMin, wing.xMax,
+                wing.yMin, wing.yMax, plan.UpperFloor.FloorElevation - 0.09f, 0.18f, colliders);
+            AddHorizontalSlab(parent, "Bathroom Rear Ceiling", wing.xMin, wing.xMax,
+                wing.yMin, wing.yMax, height + 0.07f, 0.14f, colliders);
+            AddCollider(parent, "Wing Rear Wall", new Vector3(wing.center.x, height * 0.5f, wing.yMax),
+                new Vector3(wing.width, height, thickness), colliders);
+            AddCollider(parent, "Wing West Wall", new Vector3(wing.xMin, height * 0.5f, wing.center.y),
+                new Vector3(thickness, height, wing.height), colliders);
+            AddCollider(parent, "Wing East Return", new Vector3(wing.xMax, height * 0.5f, wing.center.y),
+                new Vector3(thickness, height, wing.height), colliders);
+        }
+
+        private static void BuildBathroomPartitionCollision(Transform parent,
+            MothersHouseInteriorLayoutPlan plan, ICollection<Collider> colliders)
+        {
+            var upper = plan.UpperFloor;
+            float bottom = upper.FloorElevation;
+            float height = upper.CeilingHeight - bottom;
+            float x = MothersHouseInteriorLayoutPlanner.BathroomDoorCenterX;
+            float halfDoor = MothersHouseInteriorLayoutPlanner.BathroomDoorWidth * 0.5f;
+            float z = MothersHouseInteriorLayoutPlanner.BathroomSouthWallZ;
+            float west = plan.RoomBounds.xMin;
+            float east = upper.PartitionX;
+            AddCollider(parent, "Bathroom South Wall West", new Vector3((west + x - halfDoor) * 0.5f,
+                bottom + height * 0.5f, z), new Vector3(x - halfDoor - west, height, upper.PartitionThickness), colliders);
+            AddCollider(parent, "Bathroom South Wall East", new Vector3((east + x + halfDoor) * 0.5f,
+                bottom + height * 0.5f, z), new Vector3(east - x - halfDoor, height, upper.PartitionThickness), colliders);
+            float lintel = height - upper.DoorOpeningHeight;
+            AddCollider(parent, "Bathroom Door Lintel", new Vector3(x,
+                bottom + upper.DoorOpeningHeight + lintel * 0.5f, z),
+                new Vector3(halfDoor * 2f, lintel, upper.PartitionThickness), colliders);
         }
 
         private static void BuildStairSouthClosure(
@@ -633,18 +684,8 @@ namespace BarPromenade
                     guardHeight,
                     opening.yMax - eastGuardStartZ),
                 colliders);
-            AddCollider(
-                parent,
-                "Upper Stair North Guard",
-                new Vector3(
-                    opening.center.x,
-                    plan.UpperFloor.FloorElevation + guardHeight * 0.5f,
-                    opening.yMax),
-                new Vector3(
-                    opening.width,
-                    guardHeight,
-                    guardThickness),
-                colliders);
+            // The bathroom's full south wall now guards the north end of
+            // the stair well; a second guard here would overlap that wall.
         }
 
         private static void AddSouthWallSegment(

@@ -13,7 +13,7 @@ namespace BarPromenade
         public MothersHouseWindowDescriptor(string stableId, string room,
             MothersHouseWindowWall wall, Vector3 centerPosition, float width,
             float floorElevation, float sill, float head,
-            string framePartName, string glassPartName)
+            string framePartName, string glassPartName, float wallPlane, bool frosted)
         {
             StableId = stableId;
             Room = room;
@@ -25,6 +25,8 @@ namespace BarPromenade
             Head = head;
             FramePartName = framePartName;
             GlassPartName = glassPartName;
+            WallPlane = wallPlane;
+            Frosted = frosted;
         }
         public string StableId { get; }
         public string Room { get; }
@@ -37,6 +39,8 @@ namespace BarPromenade
         public float Head { get; }
         public string FramePartName { get; }
         public string GlassPartName { get; }
+        public float WallPlane { get; }
+        public bool Frosted { get; }
         public Vector3 Outward => Wall == MothersHouseWindowWall.North ? Vector3.forward :
             Wall == MothersHouseWindowWall.South ? Vector3.back :
             Wall == MothersHouseWindowWall.East ? Vector3.right : Vector3.left;
@@ -44,58 +48,61 @@ namespace BarPromenade
 
     public static class MothersHouseWindowLayout
     {
-        public const int WindowCount = 16;
+        public const int WindowCount = 17;
         public static IReadOnlyList<MothersHouseWindowDescriptor> Windows { get; } =
             Array.AsReadOnly(new[]
         {
             new MothersHouseWindowDescriptor("ground-north-west", "common_room", MothersHouseWindowWall.North,
-                new Vector3(-2.72f, 1.55f, 3.82f), 1.35f, 0f, 0.85f, 2.25f,
-                "FIX_WindowFrame.West", "FIX_WindowGlass.West"),
+                new Vector3(-2.72f, 1.55f, 4.72f), 1.35f, 0f, 0.85f, 2.25f,
+                "FIX_WindowFrame.West", "FIX_WindowGlass.West", 4.9f, false),
             new MothersHouseWindowDescriptor("ground-north-east", "common_room", MothersHouseWindowWall.North,
                 new Vector3(2.72f, 1.55f, 3.82f), 1.35f, 0f, 0.85f, 2.25f,
-                "FIX_WindowFrame.East", "FIX_WindowGlass.East"),
+                "FIX_WindowFrame.East", "FIX_WindowGlass.East", 4f, false),
             new MothersHouseWindowDescriptor("ground-south-west", "common_room", MothersHouseWindowWall.South,
                 new Vector3(-2.55f, 1.55f, -3.82f), 1.05f, 0f, 0.85f, 2.25f,
-                "FIX_Window.ground-south-west.Frame", "FIX_Window.ground-south-west.Glass"),
+                "FIX_Window.ground-south-west.Frame", "FIX_Window.ground-south-west.Glass", -4f, false),
             new MothersHouseWindowDescriptor("ground-south-east", "common_room", MothersHouseWindowWall.South,
                 new Vector3(4.14f, 1.55f, -3.82f), 0.7f, 0f, 0.85f, 2.25f,
-                "FIX_Window.ground-south-east.Frame", "FIX_Window.ground-south-east.Glass"),
+                "FIX_Window.ground-south-east.Frame", "FIX_Window.ground-south-east.Glass", -4f, false),
             new MothersHouseWindowDescriptor("ground-east-south", "common_room", MothersHouseWindowWall.East,
                 new Vector3(4.82f, 1.55f, -2.3f), 1.05f, 0f, 0.85f, 2.25f,
-                "FIX_Window.ground-east-south.Frame", "FIX_Window.ground-east-south.Glass"),
+                "FIX_Window.ground-east-south.Frame", "FIX_Window.ground-east-south.Glass", 5f, false),
             new MothersHouseWindowDescriptor("ground-east-north", "common_room", MothersHouseWindowWall.East,
                 new Vector3(4.82f, 1.55f, 2.3f), 1.05f, 0f, 0.85f, 2.25f,
-                "FIX_Window.ground-east-north.Frame", "FIX_Window.ground-east-north.Glass"),
+                "FIX_Window.ground-east-north.Frame", "FIX_Window.ground-east-north.Glass", 5f, false),
             new MothersHouseWindowDescriptor("ground-west-north", "common_room", MothersHouseWindowWall.West,
                 new Vector3(-4.82f, 1.55f, 2.8f), 1.05f, 0f, 0.85f, 2.25f,
-                "FIX_Window.ground-west-north.Frame", "FIX_Window.ground-west-north.Glass"),
+                "FIX_Window.ground-west-north.Frame", "FIX_Window.ground-west-north.Glass", -5f, false),
             new MothersHouseWindowDescriptor("ground-west-stair", "stair", MothersHouseWindowWall.West,
                 new Vector3(-4.82f, 2.7f, -0.1f), 1f, 0f, 2.15f, 3.25f,
-                "FIX_Window.ground-west-stair.Frame", "FIX_Window.ground-west-stair.Glass"),
+                "FIX_Window.ground-west-stair.Frame", "FIX_Window.ground-west-stair.Glass", -5f, false),
             new MothersHouseWindowDescriptor("upper-north-west", "parents_bedroom", MothersHouseWindowWall.North,
                 new Vector3(-1.1f, 5.01f, 3.82f), 1f, 3.54f, 0.92f, 2.02f,
-                "FIX_UpperNorth.WindowFrame", "FIX_UpperNorth.WindowGlass"),
+                "FIX_UpperNorth.WindowFrame", "FIX_UpperNorth.WindowGlass", 4f, false),
             new MothersHouseWindowDescriptor("upper-north-east", "parents_bedroom", MothersHouseWindowWall.North,
                 new Vector3(1.3f, 5.01f, 3.82f), 1f, 3.54f, 0.92f, 2.02f,
-                "FIX_Window.upper-north-east.Frame", "FIX_Window.upper-north-east.Glass"),
+                "FIX_Window.upper-north-east.Frame", "FIX_Window.upper-north-east.Glass", 4f, false),
             new MothersHouseWindowDescriptor("upper-south-west", "hero_childhood_room", MothersHouseWindowWall.South,
                 new Vector3(-0.9f, 5.01f, -3.82f), 1f, 3.54f, 0.92f, 2.02f,
-                "FIX_UpperSouth.WindowFrame", "FIX_UpperSouth.WindowGlass"),
+                "FIX_UpperSouth.WindowFrame", "FIX_UpperSouth.WindowGlass", -4f, false),
             new MothersHouseWindowDescriptor("upper-south-east", "hero_childhood_room", MothersHouseWindowWall.South,
                 new Vector3(1.3f, 5.01f, -3.82f), 1f, 3.54f, 0.92f, 2.02f,
-                "FIX_Window.upper-south-east.Frame", "FIX_Window.upper-south-east.Glass"),
+                "FIX_Window.upper-south-east.Frame", "FIX_Window.upper-south-east.Glass", -4f, false),
             new MothersHouseWindowDescriptor("upper-east-south", "hero_childhood_room", MothersHouseWindowWall.East,
                 new Vector3(4.82f, 5.01f, -2.3f), 1f, 3.54f, 0.92f, 2.02f,
-                "FIX_Window.upper-east-south.Frame", "FIX_Window.upper-east-south.Glass"),
+                "FIX_Window.upper-east-south.Frame", "FIX_Window.upper-east-south.Glass", 5f, false),
             new MothersHouseWindowDescriptor("upper-east-north", "parents_bedroom", MothersHouseWindowWall.East,
                 new Vector3(4.82f, 5.01f, 2.3f), 1f, 3.54f, 0.92f, 2.02f,
-                "FIX_Window.upper-east-north.Frame", "FIX_Window.upper-east-north.Glass"),
+                "FIX_Window.upper-east-north.Frame", "FIX_Window.upper-east-north.Glass", 5f, false),
             new MothersHouseWindowDescriptor("upper-west-south", "stair_landing", MothersHouseWindowWall.West,
                 new Vector3(-4.82f, 5.01f, -2.3f), 1f, 3.54f, 0.92f, 2.02f,
-                "FIX_Window.upper-west-south.Frame", "FIX_Window.upper-west-south.Glass"),
-            new MothersHouseWindowDescriptor("upper-west-north", "upper_hall", MothersHouseWindowWall.West,
-                new Vector3(-4.82f, 5.01f, 2.3f), 1f, 3.54f, 0.92f, 2.02f,
-                "FIX_Window.upper-west-north.Frame", "FIX_Window.upper-west-north.Glass"),
+                "FIX_Window.upper-west-south.Frame", "FIX_Window.upper-west-south.Glass", -5f, false),
+            new MothersHouseWindowDescriptor("upper-west-north", "bathroom", MothersHouseWindowWall.West,
+                new Vector3(-4.82f, 5.01f, 2.65f), 1f, 3.54f, 0.92f, 2.02f,
+                "FIX_Window.upper-west-north.Frame", "FIX_Window.upper-west-north.Glass", -5f, true),
+            new MothersHouseWindowDescriptor("upper-north-bathroom", "bathroom", MothersHouseWindowWall.North,
+                new Vector3(-3.55f, 5.18f, 4.72f), 0.78f, 3.54f, 1.26f, 2.02f,
+                "FIX_Window.upper-north-bathroom.Frame", "FIX_Window.upper-north-bathroom.Glass", 4.9f, true),
         });
     }
 }

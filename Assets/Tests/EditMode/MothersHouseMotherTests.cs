@@ -38,24 +38,20 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void TheRockCentreIsTheRunnersOwnCurvature()
+        public void TheRockUsesTheDrawnRunnerUnderside()
         {
-            // y = 0.055 + 0.2520 dz^2, so the radius of curvature at the
-            // vertex is 1 / (2 * 0.2520). The constant must be the geometry's,
-            // not a number that happened to look right.
-            const float curvature = 0.2520f;
-            float expectedRadius = 1f / (2f * curvature);
-            Assert.That(
-                MothersHouseRockingChairMotion.RunnerRadius,
-                Is.EqualTo(expectedRadius).Within(0.001f));
-
-            Vector3 centre =
-                MothersHouseRockingChairMotion.GetRockCenter(null);
-            Assert.That(centre.x, Is.EqualTo(0f).Within(0.0001f));
-            Assert.That(centre.z, Is.EqualTo(1.55f).Within(0.0001f));
-            Assert.That(
-                centre.y,
-                Is.EqualTo(0.055f + expectedRadius).Within(0.001f));
+            // Measured FBX lower hull: the rail is thick and chamfered;
+            // the sampled parabola describes its centre, not its underside.
+            Vector3 front = MothersHouseRockingChairMotion.GetRunnerContact(-2.5f);
+            Vector3 rear = MothersHouseRockingChairMotion.GetRunnerContact(2.5f);
+            Assert.That(front.y, Is.EqualTo(0.01781656f).Within(0.000001f));
+            Assert.That(front.z, Is.EqualTo(1.54302561f).Within(0.000001f));
+            Assert.That(rear.y, Is.EqualTo(front.y));
+            Assert.That(rear.z, Is.EqualTo(1.55697441f).Within(0.000001f));
+            Assert.That(MothersHouseRockingChairMotion.AmplitudeDegrees,
+                Is.LessThan(3.02869f), "Beyond this the next runner facet takes contact.");
+            Assert.That(MothersHouseRockingChairMotion.SupportSurfaceY,
+                Is.EqualTo(0.032f), "The chair stands on the rug.");
         }
 
         [Test]
@@ -64,9 +60,7 @@ namespace BarPromenade.Tests.EditMode
             // The fixture blocker is 0.8 x 1.3 m centred on (0, 1.55) and it
             // does not move. Rolling the runners must not push the chair out
             // of it, or the hero would walk through timber.
-            float travel = Mathf.Abs(
-                MothersHouseRockingChairMotion.RunnerRadius *
-                Mathf.Sin(
+            float travel = 1.54f * Mathf.Abs(Mathf.Sin(
                     MothersHouseRockingChairMotion.AmplitudeDegrees *
                     Mathf.Deg2Rad));
             Assert.That(

@@ -320,15 +320,18 @@ namespace BarPromenade
         public const int MaximumOwnedSourceCount = 3;
         public const int LoopingSourceCount = 2;
         public const int ScheduledSourceCount = 1;
-        public const float MuffledWindVolume = 0.022f;
-        public const float ClockVolume = 0.033f;
-        public const float WoodSettleVolume = 0.035f;
-        public const float MuffledWindMinimumDistance = 1.4f;
-        public const float MuffledWindMaximumDistance = 12f;
-        public const float ClockMinimumDistance = 0.7f;
-        public const float ClockMaximumDistance = 4.6f;
-        public const float WoodSettleMinimumDistance = 0.8f;
-        public const float WoodSettleMaximumDistance = 4.2f;
+        // The synthesized clips are already quiet. These gains account for
+        // the shared mix headroom and a fixed listener across the room, while
+        // retaining source-local falloff as the camera moves upstairs.
+        public const float MuffledWindVolume = 0.12f;
+        public const float ClockVolume = 0.12f;
+        public const float WoodSettleVolume = 0.10f;
+        public const float MuffledWindMinimumDistance = 2f;
+        public const float MuffledWindMaximumDistance = 16f;
+        public const float ClockMinimumDistance = 1.2f;
+        public const float ClockMaximumDistance = 7.5f;
+        public const float WoodSettleMinimumDistance = 1.2f;
+        public const float WoodSettleMaximumDistance = 7f;
         public const float MuffledWindLowPassCutoff = 620f;
         public const float ClockLowPassCutoff = 1800f;
         public const float WoodSettleLowPassCutoff = 1450f;

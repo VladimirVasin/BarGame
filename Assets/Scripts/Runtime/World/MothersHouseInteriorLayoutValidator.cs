@@ -6,11 +6,11 @@ namespace BarPromenade
 {
     public static class MothersHouseInteriorLayoutValidator
     {
-        public const int RequiredPathCount = 6;
-        public const int RequiredFixtureCount = 22;
+        public const int RequiredPathCount = 7;
+        public const int RequiredFixtureCount = 26;
         public const float MinimumRouteClearance = 1.2f;
         public const float MaximumExteriorWidth = 11f;
-        public const float MaximumExteriorDepth = 9f;
+        public const float MaximumExteriorDepth = 9.9f;
 
         private const float Tolerance = 0.001f;
         private const float AnchorTolerance = 0.015f;
@@ -29,6 +29,16 @@ namespace BarPromenade
             ValidateAnchors(plan);
             ValidateUpperFloor(plan);
             ValidateFixtures(plan);
+            foreach (MothersHouseInteriorFixtureKind kind in new[] {
+                MothersHouseInteriorFixtureKind.BathroomTub, MothersHouseInteriorFixtureKind.BathroomToilet,
+                MothersHouseInteriorFixtureKind.BathroomVanity, MothersHouseInteriorFixtureKind.BathroomLaundryBasket })
+            {
+                var fixture = RequireFixture(plan, kind);
+                if (!Contains(plan.UpperFloor.BathroomBounds, fixture.Bounds) ||
+                    Mathf.Abs(fixture.BaseHeight - plan.UpperFloor.FloorElevation) > Tolerance ||
+                    !fixture.BlocksMovement)
+                    throw new InvalidOperationException($"Bathroom fixture '{kind}' must stand within its room on the upper floor.");
+            }
             ValidatePaths(plan);
             ValidateComposition(plan);
         }
@@ -107,7 +117,7 @@ namespace BarPromenade
                 !IsFinite(plan.EntryPosition) ||
                 !IsPositive(plan.ExitTriggerSize) ||
                 !Contains(plan.RoomBounds, plan.CameraTarget) ||
-                !Contains(plan.RoomBounds, plan.WestWindowPosition) ||
+                !ContainsHouse(plan, plan.WestWindowPosition) ||
                 !Contains(plan.RoomBounds, plan.EastWindowPosition) ||
                 !Contains(plan.RoomBounds, plan.FireplacePosition) ||
                 !Contains(plan.RoomBounds, plan.FireLightPosition) ||
@@ -190,10 +200,10 @@ namespace BarPromenade
         private static void ValidateCameraShots(
             MothersHouseInteriorLayoutPlan plan)
         {
-            if (plan.CameraShots.Count != 4)
+            if (plan.CameraShots.Count != 5)
             {
                 throw new InvalidOperationException(
-                    "The two-storey mother's house requires four fixed " +
+                    "The two-storey mother's house requires five fixed " +
                     "gameplay shots.");
             }
 
@@ -221,7 +231,7 @@ namespace BarPromenade
                 MothersHouseInteriorLayoutPlanner.StairCameraPosition,
                 MothersHouseInteriorLayoutPlanner.StairCameraTarget,
                 MothersHouseInteriorLayoutPlanner
-                    .UpperCameraVerticalFieldOfView);
+                    .StairCameraVerticalFieldOfView);
             ValidateCameraShot(
                 RequireCameraShot(
                     plan,
@@ -240,6 +250,25 @@ namespace BarPromenade
                     .UpperCameraVerticalFieldOfView);
 
             HomeCameraShot ground = plan.CameraShot;
+            HomeCameraShot stairView = RequireCameraShot(
+                plan, HomeCameraShotKind.StairAndUpperCorridor);
+            const float lensClearance = 0.12f;
+            if (stairView.Position.x <= plan.RoomBounds.xMin + plan.WallThickness * 0.5f + lensClearance ||
+                stairView.Position.x >= plan.UpperFloor.PartitionX - plan.WallThickness ||
+                stairView.Position.z <= plan.RoomBounds.yMin + plan.WallThickness * 0.5f + lensClearance ||
+                stairView.Position.z >= plan.UpperFloor.StairOpeningBounds.yMin ||
+                stairView.Position.y >= plan.UpperFloor.CeilingHeight - lensClearance ||
+                !stairView.Focus.Enabled || !stairView.Zoom.Enabled)
+            {
+                throw new InvalidOperationException(
+                    "The stair camera must stand inside the south landing walls " +
+                    "and retain bounded framing of the nearby hero.");
+            }
+            ValidateCameraShot(
+                RequireCameraShot(plan, HomeCameraShotKind.UpperBathroom),
+                MothersHouseInteriorLayoutPlanner.BathroomCameraPosition,
+                MothersHouseInteriorLayoutPlanner.BathroomCameraTarget,
+                MothersHouseInteriorLayoutPlanner.UpperCameraVerticalFieldOfView);
             if (ground.Kind != HomeCameraShotKind.MainRoom ||
                 !ground.IsInActivationArea(plan.PlayerSpawn) ||
                 !RectMatch(ground.ActivationBounds, plan.WalkableBounds) ||
@@ -352,6 +381,9 @@ namespace BarPromenade
                     MothersHouseInteriorLayoutPlanner
                         .UpperNorthRoomBounds) ||
                 upper.SouthRoomBounds.Overlaps(upper.NorthRoomBounds) ||
+                upper.BathroomBounds.Overlaps(upper.NorthRoomBounds) ||
+                upper.BathroomBounds.Overlaps(upper.StairOpeningBounds) ||
+                !ContainsHouse(plan, upper.BathroomBounds) ||
                 Mathf.Abs(
                     upper.PartitionX -
                     MothersHouseInteriorLayoutPlanner.UpperPartitionX) >
@@ -402,7 +434,7 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The upper storey must keep one continuous safe stair, " +
-                    "a real corridor and exactly two furnished rooms.");
+                    "a real corridor, two bedrooms and a separate bathroom.");
             }
 
             float halfDoor = upper.DoorOpeningWidth * 0.5f;
@@ -448,7 +480,7 @@ namespace BarPromenade
                         typeof(MothersHouseInteriorFixtureKind),
                         fixture.Kind) ||
                     !IsPositive(fixture.Bounds.size) ||
-                    !Contains(plan.RoomBounds, fixture.Bounds) ||
+                    !ContainsHouse(plan, fixture.Bounds) ||
                     !IsFinite(fixture.BaseHeight) ||
                     fixture.BaseHeight < 0f ||
                     !IsPositiveFinite(fixture.Height) ||
@@ -582,6 +614,20 @@ namespace BarPromenade
             MothersHouseInteriorPathPlan south = RequirePath(
                 plan,
                 MothersHouseInteriorPathKind.UpperSouthApproach);
+            MothersHouseInteriorPathPlan bathroom = RequirePath(
+                plan, MothersHouseInteriorPathKind.UpperBathroomApproach);
+            float bathroomHalfDoor = MothersHouseInteriorLayoutPlanner.BathroomDoorWidth * 0.5f;
+            float bathroomDoorX = MothersHouseInteriorLayoutPlanner.BathroomDoorCenterX;
+            if (Mathf.Abs(bathroom.FloorElevation - upper.FloorElevation) > Tolerance ||
+                bathroom.Bounds.xMin > bathroomDoorX - bathroomHalfDoor + Tolerance ||
+                bathroom.Bounds.xMax < bathroomDoorX + bathroomHalfDoor - Tolerance ||
+                bathroom.Bounds.yMin > corridor.Bounds.yMax ||
+                bathroom.Bounds.yMax < upper.BathroomBounds.yMin + MinimumRouteClearance - 0.2f ||
+                upper.NorthDoorCenterZ + upper.DoorOpeningWidth * 0.5f >=
+                    MothersHouseInteriorLayoutPlanner.BathroomSouthWallZ - upper.PartitionThickness * 0.5f)
+            {
+                throw new InvalidOperationException("The bathroom must connect through its own clear doorway beyond the bedroom door.");
+            }
 
             float corridorFace =
                 upper.PartitionX - upper.PartitionThickness * 0.5f;
@@ -668,9 +714,8 @@ namespace BarPromenade
                     plan.RoomBounds.yMax - Tolerance ||
                 plan.WestWindowPosition.x >= fireplace.Bounds.xMin ||
                 plan.EastWindowPosition.x <= fireplace.Bounds.xMax ||
-                Mathf.Abs(
-                    plan.WestWindowPosition.z -
-                    plan.EastWindowPosition.z) > Tolerance ||
+                Mathf.Abs(plan.WestWindowPosition.z -
+                    MothersHouseInteriorLayoutPlanner.WestWindowPosition.z) > Tolerance ||
                 !Contains(table.Bounds, plan.TabletopPosition) ||
                 !Contains(table.Bounds, plan.TeapotDockPosition) ||
                 Mathf.Abs(
@@ -794,7 +839,7 @@ namespace BarPromenade
                 !Contains(upper.NorthRoomBounds, bedside.Bounds) ||
                 !Contains(upper.SouthRoomBounds, childBed.Bounds) ||
                 !Contains(upper.SouthRoomBounds, chair.Bounds) ||
-                !Contains(upper.CorridorBounds, linenChest.Bounds))
+                !Contains(upper.NorthRoomBounds, linenChest.Bounds))
             {
                 throw new InvalidOperationException(
                     "Every upper fixture must stand in the room it belongs " +
@@ -973,6 +1018,19 @@ namespace BarPromenade
                    inner.xMax <= outer.xMax + Tolerance &&
                    inner.yMin >= outer.yMin - Tolerance &&
                    inner.yMax <= outer.yMax + Tolerance;
+        }
+
+        private static bool ContainsHouse(MothersHouseInteriorLayoutPlan plan, Rect inner)
+        {
+            if (Contains(plan.RoomBounds, inner)) return true;
+            Rect wing = Rect.MinMaxRect(plan.WingExtensionBounds.xMin, plan.RoomBounds.yMin,
+                plan.WingExtensionBounds.xMax, plan.WingExtensionBounds.yMax);
+            return Contains(wing, inner);
+        }
+
+        private static bool ContainsHouse(MothersHouseInteriorLayoutPlan plan, Vector3 point)
+        {
+            return Contains(plan.RoomBounds, point) || Contains(plan.WingExtensionBounds, point);
         }
 
         private static bool Contains(Rect bounds, Vector3 point)

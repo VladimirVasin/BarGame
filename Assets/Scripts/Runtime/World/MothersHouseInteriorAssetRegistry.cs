@@ -549,6 +549,14 @@ namespace BarPromenade
             }
 
             Color cleanTint = Color.white;
+            // Local soot and char belong only inside the hearth. The rest
+            // of the cared-for room keeps its unmultiplied positive atlas.
+            if (string.Equals(part.Role, "firebox", StringComparison.Ordinal) ||
+                string.Equals(part.Role, "fire_logs", StringComparison.Ordinal) ||
+                string.Equals(part.Role, "fire_ash", StringComparison.Ordinal))
+            {
+                cleanTint = part.Tint;
+            }
             if (string.Equals(part.Sheet, "Glass", StringComparison.Ordinal))
             {
                 cleanTint.a = part.Tint.a;

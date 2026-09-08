@@ -176,12 +176,6 @@ namespace BarPromenade
             Camera.farClipPlane = 18f;
             Camera.allowHDR = true;
             Camera.allowMSAA = false;
-
-            if (cameraObject.GetComponent<AudioListener>() == null &&
-                FindAnyObjectByType<AudioListener>() == null)
-            {
-                cameraObject.AddComponent<AudioListener>();
-            }
         }
 
         private void BuildLights(

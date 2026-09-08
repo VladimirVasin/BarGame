@@ -22,12 +22,13 @@ namespace BarPromenade.Editor
         public const string PositiveAtlasPath = "Assets/Resources/MothersHouse/Textures/MothersHousePositiveAtlas.png";
         public const string SharedLitMaterialPath = "Assets/Resources/Materials/RuntimePrimitiveLit.mat";
         public const string SharedEmissionMaterialPath = "Assets/Resources/Materials/CityNoirEmission.mat";
+        public const string SharedFlameMaterialPath = "Assets/Resources/Materials/MothersHouseFlame.mat";
 
         private const string ExpectedDesignId = "mothers_house_interior_v1";
-        private const string ExpectedGeneratorVersion = "1.8.0";
-        private const int ExpectedAnchorCount = 10;
-        private const int MaximumRenderers = 136;
-        private const int MaximumTriangles = 17000;
+        private const string ExpectedGeneratorVersion = "1.11.0";
+        private const int ExpectedAnchorCount = 15;
+        private const int MaximumRenderers = 160;
+        private const int MaximumTriangles = 22000;
         private const float MeasureTolerance = 0.02f;
         private const float RotationToleranceDegrees = 0.1f;
         private const float UvTolerance = 0.00001f;
@@ -61,7 +62,10 @@ namespace BarPromenade.Editor
             "fire_light",
             "floor_lamp_light",
             "tabletop",
-            "teapot_dock"
+            "teapot_dock",
+            "bathroom_camera", "bathroom_camera_target",
+            "bathroom_lamp_light", "bathroom_window_light",
+            "upper_corridor_lamp_light"
         };
 
         private static readonly string[] RequiredFireParts = {
@@ -96,6 +100,10 @@ namespace BarPromenade.Editor
         /// anything that explains what he was like as a child.
         /// </summary>
         private static readonly string[] RequiredUpperFurnitureParts = {
+            "FIX_BathroomTub", "FIX_BathroomToilet", "FIX_BathroomVanity",
+            "FIX_BathroomMirror", "FIX_BathroomLamp", "FIX_BathroomTextiles",
+            "DRESS_Bathroom.LaundryBasket", "FIX_BathroomSouthWall",
+            "FIX_BathroomDoor.Frame", "FIX_BathroomDoor.OpenLeaf",
             "FIX_UpperChimney",
             "FIX_UpperNorth.WindowFrame",
             "FIX_UpperNorth.WindowGlass",
@@ -141,6 +149,9 @@ namespace BarPromenade.Editor
             "DRESS_UpperCorridor.HighShelf",
             "DRESS_UpperCorridor.ShelfLinen",
             "DRESS_UpperCorridor.Pail",
+            "DRESS_UpperCorridor.CeilingLamp",
+            "DRESS_UpperCorridor.LampGlass",
+            "DRESS_UpperCorridor.LampBulb",
             "FIX_UpperSkirting"
         };
 
@@ -387,6 +398,7 @@ namespace BarPromenade.Editor
                 renderers,
                 sharedLit,
                 sharedEmission,
+                AssetDatabase.LoadAssetAtPath<Material>(SharedFlameMaterialPath),
                 problems);
             ValidateAnchorBindings(registry, manifest, prefab, problems);
 
@@ -562,6 +574,7 @@ namespace BarPromenade.Editor
             Material sharedEmission =
                 AssetDatabase.LoadAssetAtPath<Material>(
                     SharedEmissionMaterialPath);
+            Material sharedFlame = EnsureSharedFlameMaterial();
             if (sharedLit == null || sharedEmission == null)
             {
                 throw new InvalidOperationException(
@@ -600,9 +613,9 @@ namespace BarPromenade.Editor
                 foreach (MothersHouseManifestPart source in manifest.parts)
                 {
                     Renderer renderer = renderers[source.name];
-                    renderer.sharedMaterial = source.emissive
-                        ? sharedEmission
-                        : sharedLit;
+                    renderer.sharedMaterial = source.role == "fire_flame"
+                        ? sharedFlame
+                        : source.emissive ? sharedEmission : sharedLit;
                     renderer.shadowCastingMode = source.casts_shadows
                         ? ShadowCastingMode.On
                         : ShadowCastingMode.Off;
@@ -761,7 +774,7 @@ namespace BarPromenade.Editor
                 2.20f,
                 "upper door height");
             if (manifest.upper_storey_m.stair_step_count != 19 ||
-                manifest.upper_storey_m.room_count != 2 ||
+                manifest.upper_storey_m.room_count != 3 ||
                 !manifest.upper_storey_m.furnished ||
                 manifest.upper_storey_m.stair_opening == null ||
                 manifest.upper_storey_m.stair_opening.Length != 4 ||
@@ -1110,6 +1123,7 @@ namespace BarPromenade.Editor
             IReadOnlyDictionary<string, Renderer> renderers,
             Material sharedLit,
             Material sharedEmission,
+            Material sharedFlame,
             List<string> problems)
         {
             if (registry.Parts.Count != manifest.parts.Length)
@@ -1157,14 +1171,29 @@ namespace BarPromenade.Editor
                     problems.Add(
                         $"part '{binding.SourceName}' metadata drifted");
                 }
-                Material expected = part.emissive
-                    ? sharedEmission
-                    : sharedLit;
+                Material expected = part.role == "fire_flame"
+                    ? sharedFlame
+                    : part.emissive ? sharedEmission : sharedLit;
                 if (renderer.sharedMaterial != expected)
                 {
                     problems.Add(
                         $"part '{binding.SourceName}' uses wrong shared " +
                         "material");
+                }
+                if (part.role == "fire_flame")
+                {
+                    Mesh mesh = renderer.GetComponent<MeshFilter>()?.sharedMesh;
+                    if (mesh == null ||
+                        !mesh.HasVertexAttribute(VertexAttribute.TexCoord1) ||
+                        !mesh.HasVertexAttribute(VertexAttribute.Color))
+                    {
+                        problems.Add($"flame '{part.name}' lost its imported thermal UV1/colors");
+                    }
+                    if (sharedFlame == null || sharedFlame.shader == null ||
+                        sharedFlame.shader.name != "BarPromenade/MothersHouseFlame")
+                    {
+                        problems.Add("the shared flame material has no dedicated thermal shader");
+                    }
                 }
 
                 Rect expectedUvBounds = CalculateUvBounds(renderer);
@@ -1541,6 +1570,28 @@ namespace BarPromenade.Editor
             {
                 problems.Add($"authored prefab contains {count} {label}(s)");
             }
+        }
+
+        private static Material EnsureSharedFlameMaterial()
+        {
+            Shader shader = Shader.Find("BarPromenade/MothersHouseFlame");
+            if (shader == null)
+            {
+                throw new InvalidOperationException("The mother's-house flame shader failed to import.");
+            }
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(SharedFlameMaterialPath);
+            if (material == null)
+            {
+                EnsureFolderForAsset(SharedFlameMaterialPath);
+                material = new Material(shader) { name = "MothersHouseFlame" };
+                AssetDatabase.CreateAsset(material, SharedFlameMaterialPath);
+            }
+            else if (material.shader != shader)
+            {
+                material.shader = shader;
+                EditorUtility.SetDirty(material);
+            }
+            return material;
         }
 
         private static void EnsureFolderForAsset(string assetPath)

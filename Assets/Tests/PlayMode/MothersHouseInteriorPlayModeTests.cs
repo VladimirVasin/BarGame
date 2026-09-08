@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -8,6 +9,20 @@ using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
 {
+    public sealed class MothersHouseBathroomAssetsSetup : IPrebuildSetup
+    {
+        public void Setup()
+        {
+#if UNITY_EDITOR
+            foreach (string name in new[] { "MothersHouseInteriorAssetSetup", "VillageAssetSetup" })
+            {
+                Type setup = Type.GetType("BarPromenade.Editor." + name + ", BarPromenade.Editor", true);
+                setup.GetMethod("BuildOrThrow", Type.EmptyTypes).Invoke(null, null);
+            }
+#endif
+        }
+    }
+
     public sealed class MothersHouseInteriorPlayModeTests
     {
         private const string InteriorRootName =
@@ -110,7 +125,8 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator PlayerClimbsTheRealStairAndEntersBothBedrooms()
+        [PrebuildSetup(typeof(MothersHouseBathroomAssetsSetup))]
+        public IEnumerator PlayerClimbsTheRealStairAndEntersAllThreeRooms()
         {
             MothersHouseInteriorRoot interior = null;
             yield return LoadSceneAndWaitForRoot(
@@ -130,20 +146,35 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(controller, Is.Not.Null);
             Assert.That(interior.World.StairRampCollider, Is.Not.Null);
             Assert.That(interior.World.StairRampCollider.enabled, Is.True);
+            AssertCorridorLampContract(interior);
 
             yield return MoveControllerTo(controller, new Vector2(1.70f, 2.56f));
             yield return MoveControllerTo(controller, new Vector2(-4f, 2.56f));
             yield return MoveControllerTo(controller, new Vector2(-4f, 1.80f));
-            yield return MoveControllerTo(controller, new Vector2(-4f, -2.93f));
+            yield return MoveControllerTo(controller, new Vector2(-4f, -1.20f));
+            yield return null;
+            CaptureStairPlayerFrame(interior, "stair-camera-00-player-climbing");
+            // Step fully onto the south landing before turning. The old
+            // z=-2.93 crossing just grazed past the pail's expanded bounds
+            // and missed the obstruction encountered by an ordinary exit.
+            yield return MoveControllerTo(controller, new Vector2(-4f, -3.30f));
             Assert.That(
                 controller.transform.position.y,
                 Is.GreaterThan(3.45f),
                 "The stair must physically carry the player to the upper floor.");
+            yield return null;
+            CaptureStairPlayerFrame(interior, "stair-camera-01a-player-top-step");
 
-            yield return MoveControllerTo(controller, new Vector2(-2.45f, -2.93f));
+            yield return MoveControllerTo(controller, new Vector2(-2.45f, -3.30f));
+            Assert.That(controller.transform.position.y,
+                Is.EqualTo(interior.Layout.UpperFloor.FloorElevation +
+                    PlayerFactory.GroundedRootOffset).Within(0.12f),
+                "The complete turn from the top step must stay on the landing.");
             Assert.That(
                 interior.FixedCamera.ActiveShotKind,
                 Is.EqualTo(HomeCameraShotKind.StairAndUpperCorridor));
+            yield return null;
+            CaptureStairPlayerFrame(interior, "stair-camera-01-player-landing");
 
             yield return MoveControllerTo(controller, new Vector2(-2.45f, -1.85f));
             yield return MoveControllerTo(controller, new Vector2(-1.25f, -1.85f));
@@ -163,8 +194,11 @@ namespace BarPromenade.Tests.PlayMode
 
             yield return MoveControllerTo(controller, new Vector2(-1.25f, -1.85f));
             yield return MoveControllerTo(controller, new Vector2(-2.45f, -1.85f));
-            yield return MoveControllerTo(controller, new Vector2(-2.45f, 1.85f));
-            yield return MoveControllerTo(controller, new Vector2(-1.25f, 1.85f));
+            float northDoor = interior.Layout.UpperFloor.NorthDoorCenterZ;
+            yield return MoveControllerTo(controller, new Vector2(-2.45f, northDoor));
+            yield return null;
+            CaptureStairPlayerFrame(interior, "stair-camera-02-player-corridor");
+            yield return MoveControllerTo(controller, new Vector2(-1.25f, northDoor));
             yield return MoveControllerTo(
                 controller,
                 new Vector2(
@@ -178,7 +212,266 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     interior.Layout.UpperFloor.FloorElevation +
                     PlayerFactory.GroundedRootOffset).Within(0.12f));
+            yield return MoveControllerTo(controller, new Vector2(-1.25f, northDoor));
+            yield return MoveControllerTo(controller, new Vector2(-2.505f, northDoor));
+            yield return MoveControllerTo(controller, new Vector2(-2.505f, 2.6f));
+            CaptureBathroomPlayerFrame("bathroom-07-player-entry");
+            yield return MoveControllerTo(controller, new Vector2(-3.25f, 3.12f));
+            CaptureBathroomPlayerFrame("bathroom-08-player-centre");
+            Assert.That(interior.FixedCamera.ActiveShotKind, Is.EqualTo(HomeCameraShotKind.UpperBathroom));
+            Assert.That(controller.transform.position.y,
+                Is.EqualTo(interior.Layout.UpperFloor.FloorElevation + PlayerFactory.GroundedRootOffset).Within(0.12f));
+            foreach (var kind in new[] { MothersHouseInteriorFixtureKind.BathroomTub,
+                MothersHouseInteriorFixtureKind.BathroomToilet, MothersHouseInteriorFixtureKind.BathroomVanity,
+                MothersHouseInteriorFixtureKind.BathroomLaundryBasket })
+                AssertBlockingFixtureCollider(interior, kind);
+            Assert.That(interior.Atmosphere.BathroomLampLight, Is.Not.Null);
+            Assert.That(interior.Atmosphere.BathroomLampLight.intensity,
+                Is.GreaterThan(interior.Atmosphere.WindowLights.Min(light => light.intensity)));
+            // Return through the same doorway: a valid centre alone cannot
+            // prove that a chair, door leaf or partition leaves a way out.
+            yield return MoveControllerTo(controller, new Vector2(-2.505f, 2.6f));
+            yield return MoveControllerTo(controller, new Vector2(-2.505f, northDoor));
+            Assert.That(interior.FixedCamera.ActiveShotKind, Is.EqualTo(HomeCameraShotKind.StairAndUpperCorridor));
+            yield return MoveControllerTo(controller, new Vector2(-2.45f, -1.85f));
+            yield return MoveControllerTo(controller, new Vector2(-2.45f, -3.30f));
+            yield return null;
+            CaptureStairPlayerFrame(interior, "stair-camera-03-player-return-landing");
+            yield return MoveControllerTo(controller, new Vector2(-4f, -3.30f));
+            yield return null;
+            CaptureStairPlayerFrame(interior, "stair-camera-04-player-return-top-step");
+            yield return MoveControllerTo(controller, new Vector2(-4f, -1.20f));
+            yield return MoveControllerTo(controller, new Vector2(-4f, 1.80f));
+            yield return MoveControllerTo(controller, new Vector2(-4f, 2.56f));
+            Assert.That(controller.transform.position.y,
+                Is.LessThan(0.4f),
+                "The same landing must also allow an ordinary return down the stair.");
             LogAssert.NoUnexpectedReceived();
+        }
+
+        /// <summary>
+        /// The chart names her house from the bottom of the mountain.
+        ///
+        /// This is the defect the feature shipped with: the City and the
+        /// mountain road configured the chart without a village overlay or
+        /// its plots, so `BuildVillageMapPoints` returned on its first line
+        /// and the third tab drew an empty rectangle. Her point did not
+        /// exist down there, which meant the button under it could not be
+        /// pressed - the chart offered a place it could not describe.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator CityChart_NamesHerHouseAndOffersItsDoor()
+        {
+            AssertSceneIsStreamable(SceneIds.City);
+
+            CityGameRoot city = null;
+            yield return LoadSceneAndWaitForRoot(
+                SceneIds.City,
+                "[Bar Promenade] City Runtime",
+                (CityGameRoot root) => city = root);
+            yield return WaitUntil(
+                () => city.IsInitialized &&
+                      !SceneTransitionService.IsTransitioning,
+                "The City did not finish its direct boot.");
+
+            CityMapController map = city.Map;
+            Assert.That(map, Is.Not.Null);
+            Assert.That(map.Open(), Is.True);
+            Assert.That(map.SetMapPointInspectionEnabled(true), Is.True);
+            Assert.That(
+                map.SelectArea(GameAreaId.AlpineVillage),
+                Is.True,
+                "The chart has a village tab down here too.");
+
+            IReadOnlyList<CityMapPointDescriptor> points =
+                map.GetMapPoints(GameAreaId.AlpineVillage);
+            Assert.That(
+                points,
+                Is.Not.Empty,
+                "The village tab charted nothing at all from the City: no " +
+                "house, no chapel, nothing to select and nothing to press.");
+
+            int doorIndex = -1;
+            for (int index = 0; index < points.Count; index++)
+            {
+                if (points[index].Kind == CityMapPointKind.MothersHouse)
+                {
+                    doorIndex = index;
+                    break;
+                }
+            }
+
+            Assert.That(
+                doorIndex,
+                Is.GreaterThanOrEqualTo(0),
+                "Her house must be named on the village tab from anywhere.");
+            Assert.That(map.SelectMapPoint(doorIndex), Is.True);
+            Assert.That(
+                map.CanEnterSelectedMapPointDoor,
+                Is.True,
+                "And her door must be pressable from here.");
+            Assert.That(
+                map.CanTravelToSelectedMapPoint,
+                Is.True,
+                "The ordinary trip to her doorstep is offered beside it.");
+
+            // And pressing it from down here actually arrives.
+            AssertSceneIsStreamable(SceneIds.MothersHouseInterior);
+            AssertSceneIsStreamable(SceneIds.DoorTransition);
+            Assert.That(map.ConfirmMapPointDoorEntry(), Is.True);
+            Assert.That(map.IsOpen, Is.False);
+            yield return WaitUntil(
+                () => SceneTransitionService.IsTransitioning,
+                "The chart never requested its door transition.");
+
+            MothersHouseInteriorRoot interior = null;
+            yield return WaitForLoadedRoot(
+                SceneIds.MothersHouseInterior,
+                InteriorRootName,
+                (MothersHouseInteriorRoot root) => interior = root);
+            yield return WaitUntil(
+                () => interior.IsInitialized &&
+                      !SceneTransitionService.IsTransitioning,
+                "Her house did not settle after the chart entry.");
+            Assert.That(
+                interior.Player.Motor.InputEnabled,
+                Is.True,
+                "He arrives in control, from the bottom of the mountain.");
+        }
+
+        /// <summary>
+        /// The village chart opens her door without walking to it.
+        ///
+        /// The map draws her house by its door dock, so confirming the point
+        /// only ever put the hero on the doorstep. This is the same door
+        /// load the entrance itself performs, from across the village, and
+        /// the proof that it is the same is the way out: the exit is not
+        /// told how the hero got in, it asks the village for its own dock,
+        /// so he leaves through the door he never opened.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator VillageChart_OpensHerDoorFromAcrossTheVillage()
+        {
+            AssertSceneIsStreamable(SceneIds.AlpineVillage);
+            AssertSceneIsStreamable(SceneIds.MothersHouseInterior);
+            AssertSceneIsStreamable(SceneIds.DoorTransition);
+
+            AlpineVillageRoot village = null;
+            yield return LoadSceneAndWaitForRoot(
+                SceneIds.AlpineVillage,
+                VillageRootName,
+                (AlpineVillageRoot root) => village = root);
+            yield return WaitUntil(
+                () => village.IsInitialized &&
+                      !SceneTransitionService.IsTransitioning,
+                "AlpineVillage did not finish its direct boot.");
+
+            CityMapController map = village.Map;
+            Assert.That(map, Is.Not.Null, "The village carries the chart.");
+            Assert.That(map.Open(), Is.True);
+            Assert.That(map.SetMapPointInspectionEnabled(true), Is.True);
+            Assert.That(
+                map.SelectedArea,
+                Is.EqualTo(GameAreaId.AlpineVillage),
+                "The chart opens on the tab the hero is standing in.");
+
+            IReadOnlyList<CityMapPointDescriptor> points =
+                map.GetMapPoints(GameAreaId.AlpineVillage);
+            int doorIndex = -1;
+            for (int index = 0; index < points.Count; index++)
+            {
+                if (points[index].Kind == CityMapPointKind.MothersHouse)
+                {
+                    doorIndex = index;
+                    break;
+                }
+            }
+
+            Assert.That(
+                doorIndex,
+                Is.GreaterThanOrEqualTo(0),
+                "The village chart names her house.");
+            Assert.That(map.SelectMapPoint(doorIndex), Is.True);
+            Assert.That(map.CanEnterSelectedMapPointDoor, Is.True);
+
+            // Far from the door, so nothing about this is the door trigger.
+            Vector3 doorstep = village.MothersHouseEntrance.ReturnPosition;
+            Assert.That(
+                Vector3.Distance(
+                    village.Player.GameObject.transform.position,
+                    doorstep),
+                Is.GreaterThan(3f),
+                "The hero must not be standing on her doorstep already.");
+
+            Assert.That(map.ConfirmMapPointDoorEntry(), Is.True);
+            Assert.That(map.IsOpen, Is.False, "The chart closes behind it.");
+            yield return WaitUntil(
+                () => SceneTransitionService.IsTransitioning,
+                "The chart never requested its door transition.");
+
+            DoorTransitionRoot enteringDoor = null;
+            yield return WaitForLoadedRoot(
+                SceneIds.DoorTransition,
+                DoorRootName,
+                (DoorTransitionRoot root) => enteringDoor = root);
+            yield return WaitUntil(
+                () => enteringDoor.IsInitialized,
+                "The entering door vignette did not initialize.");
+            Assert.That(
+                enteringDoor.Direction,
+                Is.EqualTo(DoorTransitionDirection.EnterApartment),
+                "The chart opens her door exactly as her door opens.");
+
+            MothersHouseInteriorRoot interior = null;
+            yield return WaitForLoadedRoot(
+                SceneIds.MothersHouseInterior,
+                InteriorRootName,
+                (MothersHouseInteriorRoot root) => interior = root);
+            yield return WaitUntil(
+                () => interior.IsInitialized &&
+                      !SceneTransitionService.IsTransitioning,
+                "The mother's house did not settle after the chart entry.");
+            Assert.That(
+                GameSessionState.AlpineVillageArrival,
+                Is.EqualTo(AlpineVillageArrivalKind.Default));
+            Assert.That(interior.Player, Is.Not.Null);
+            Assert.That(
+                interior.Player.Motor.InputEnabled,
+                Is.True,
+                "The destination builds its own hero, in control.");
+
+            // The way out is the door, and it does not know he never
+            // opened it coming in.
+            PlacePlayerAtDoor(interior.Player, interior.Exit);
+            yield return null;
+            Assert.That(
+                interior.Exit.CanInteract(interior.Player.Interactor),
+                Is.True);
+            interior.Exit.Interact(interior.Player.Interactor);
+            yield return WaitUntil(
+                () => GameSessionState.AlpineVillageArrival ==
+                      AlpineVillageArrivalKind.MothersHouseDoor,
+                "The exit never armed the mother's-door return token.");
+
+            AlpineVillageRoot returned = null;
+            yield return WaitForLoadedRoot(
+                SceneIds.AlpineVillage,
+                VillageRootName,
+                (AlpineVillageRoot root) => returned = root);
+            yield return WaitUntil(
+                () => returned.IsInitialized &&
+                      !SceneTransitionService.IsTransitioning,
+                "The village did not settle after leaving the house.");
+            AssertVectorApproximately(
+                returned.Player.GameObject.transform.position,
+                returned.MothersHouseEntrance.ReturnPosition,
+                PositionTolerance,
+                "He walks out onto her dock, however he got in.");
+
+            // No log-cleanliness assertion here: this scenario crosses four
+            // scene loads and Unity reports a listener-less frame between
+            // them. The sibling door test owns that guard on the shorter
+            // path; this one owns the chart.
         }
 
         [UnityTest]
@@ -319,6 +612,169 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThan(0.995f),
                 "Leaving the house must face the hero away from its leaf.");
             LogAssert.NoUnexpectedReceived();
+        }
+
+        private static void CaptureStairPlayerFrame(
+            MothersHouseInteriorRoot interior,
+            string name)
+        {
+            Assert.That(interior.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.StairAndUpperCorridor), name);
+
+            CaptureBathroomPlayerFrame(name, camera =>
+            {
+                var cutaway = interior.World.Root
+                    .GetComponentInChildren<MothersHouseWindowCutaway>(true);
+                Assert.That(cutaway, Is.Not.Null);
+                // EndCamera restores the renderers. Checking their state
+                // after Render would miss a wall hidden during the frame.
+                cutaway.RefreshForCamera(camera);
+                Vector3 localCamera = interior.World.Root.InverseTransformPoint(
+                    camera.transform.position);
+                Rect room = interior.Layout.RoomBounds;
+                float wallInset = interior.Layout.WallThickness + camera.nearClipPlane;
+                Assert.That(localCamera.x,
+                    Is.GreaterThan(room.xMin + wallInset),
+                    name + ": the stair camera must stand inside the west wall.");
+                Assert.That(localCamera.z,
+                    Is.GreaterThan(room.yMin + wallInset),
+                    name + ": the stair camera must stand inside the south wall.");
+                Assert.That(localCamera.y,
+                    Is.LessThan(interior.Layout.UpperFloor.CeilingHeight - camera.nearClipPlane),
+                    name + ": the stair camera must stay below the ceiling.");
+                var nearWallParts = new List<string>
+                {
+                    "FIX_Wall.WestUpper", "FIX_UpperWall.WestUpper"
+                };
+                foreach (MothersHouseWindowDescriptor opening in
+                         MothersHouseInteriorLayoutPlanner.Windows.Where(
+                             opening => opening.Wall == MothersHouseWindowWall.West))
+                {
+                    nearWallParts.Add(opening.FramePartName);
+                    nearWallParts.Add(opening.GlassPartName);
+                }
+                foreach (string partName in nearWallParts)
+                {
+                    Assert.That(interior.World.Registry.TryGetPart(partName,
+                        out MothersHouseInteriorPartBinding part), Is.True, partName);
+                    Assert.That(part.Renderer, Is.Not.Null, partName);
+                    Assert.That(part.Renderer.enabled, Is.True,
+                        $"{name}: the camera must not hide the real west wall/window {partName}.");
+                }
+                Plane[] frustum = GeometryUtility.CalculateFrustumPlanes(camera);
+                foreach (string partName in new[]
+                         { "FIX_BathroomSouthWall", "FIX_BathroomDoor.Frame" })
+                {
+                    Assert.That(interior.World.Registry.TryGetPart(
+                        partName, out MothersHouseInteriorPartBinding part),
+                        Is.True, partName);
+                    Assert.That(part.Renderer, Is.Not.Null, partName);
+                    Assert.That(part.Renderer.enabled, Is.True,
+                        $"{name}: the corridor must show {partName} before rendering.");
+                    if (name == "stair-camera-02-player-corridor")
+                        Assert.That(GeometryUtility.TestPlanesAABB(
+                                frustum, part.Renderer.bounds), Is.True,
+                            $"{name}: {partName} must be inside the long corridor view.");
+                }
+
+                var hero = interior.Player.GameObject
+                    .GetComponentInChildren<Player3DAssetRegistry>();
+                Assert.That(hero, Is.Not.Null);
+                Assert.That(hero.GetComponentsInChildren<Renderer>(true)
+                    .Any(renderer => renderer.enabled && renderer.gameObject.activeInHierarchy),
+                    Is.True, name + ": capture must retain the visible hero.");
+                Transform[] anchors =
+                    { hero.Anchors.Head, hero.Anchors.LeftFoot, hero.Anchors.RightFoot };
+                var projected = new Vector3[anchors.Length];
+                for (int index = 0; index < anchors.Length; index++)
+                {
+                    Assert.That(anchors[index], Is.Not.Null);
+                    projected[index] = camera.WorldToViewportPoint(anchors[index].position);
+                    Assert.That(projected[index].z, Is.GreaterThan(camera.nearClipPlane),
+                        $"{name}: {anchors[index].name} is behind the camera.");
+                    Assert.That(projected[index].x, Is.InRange(0.02f, 0.98f),
+                        $"{name}: {anchors[index].name} is clipped horizontally.");
+                    Assert.That(projected[index].y, Is.InRange(0.02f, 0.98f),
+                        $"{name}: {anchors[index].name} is clipped vertically. " +
+                        $"Camera={camera.transform.position}, angles={camera.transform.eulerAngles}, " +
+                        $"FOV={camera.fieldOfView}, focus={interior.CameraFollow.FixedFocusOffset}, " +
+                        $"hero={interior.Player.GameObject.transform.position}.");
+                }
+
+                float heroHeight = projected[0].y -
+                    Mathf.Min(projected[1].y, projected[2].y);
+                Assert.That(heroHeight, Is.GreaterThanOrEqualTo(0.12f),
+                    name + ": the hero must remain readable, not a distant speck.");
+            });
+        }
+
+        private static void AssertCorridorLampContract(MothersHouseInteriorRoot interior)
+        {
+            MothersHouseInteriorAtmosphere atmosphere = interior.Atmosphere;
+            Light lamp = atmosphere.CorridorLampLight;
+            Assert.That(lamp, Is.Not.Null);
+            Assert.That(lamp.enabled, Is.True);
+            Assert.That(lamp.type, Is.EqualTo(LightType.Spot));
+            Assert.That(atmosphere.LampLights.Count(candidate => candidate == lamp), Is.EqualTo(1),
+                "The corridor fitting must own exactly one practical light.");
+            Assert.That(lamp.intensity,
+                Is.GreaterThan(atmosphere.WindowLights.Min(window => window.intensity)),
+                "The corridor needs a visible fitting's pool, not only remote window spill.");
+            Assert.That(interior.World.Registry.TryGetAnchor("upper_corridor_lamp_light",
+                out Transform anchor), Is.True);
+            AssertVectorApproximately(lamp.transform.position, anchor.position, 0.001f,
+                "The corridor light moved off its authored fitting anchor.");
+            foreach (string partName in new[] { "DRESS_UpperCorridor.CeilingLamp",
+                         "DRESS_UpperCorridor.LampGlass", "DRESS_UpperCorridor.LampBulb" })
+            {
+                Assert.That(interior.World.Registry.TryGetPart(partName,
+                    out MothersHouseInteriorPartBinding part), Is.True, partName);
+                Assert.That(part.Renderer, Is.Not.Null, partName);
+                Assert.That(part.Renderer.enabled, Is.True, partName);
+                if (partName == "DRESS_UpperCorridor.LampBulb")
+                    Assert.That(part.Renderer.bounds.SqrDistance(anchor.position),
+                        Is.LessThan(0.08f * 0.08f),
+                        "The practical's anchor must remain inside its visible bulb.");
+            }
+        }
+
+        private static void CaptureBathroomPlayerFrame(
+            string name,
+            Action<Camera> beforeRender = null)
+        {
+            Camera camera = Camera.main;
+            Assert.That(camera, Is.Not.Null);
+            var target = new RenderTexture(1280, 720, 24);
+            var pixels = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            RenderTexture previousTarget = camera.targetTexture;
+            RenderTexture previousActive = RenderTexture.active;
+            try
+            {
+                camera.targetTexture = target;
+                // Keep the failing frame as evidence too. Cutaway assertions
+                // still run before rendering; only their rethrow is deferred.
+                Exception frameFailure = null;
+                try { beforeRender?.Invoke(camera); }
+                catch (Exception error) { frameFailure = error; }
+                camera.Render();
+                RenderTexture.active = target;
+                pixels.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+                pixels.Apply();
+                string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(
+                    Application.dataPath, "../Captures/MothersHouseInterior"));
+                System.IO.Directory.CreateDirectory(folder);
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(folder, name + ".png"), pixels.EncodeToPNG());
+                if (frameFailure != null)
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(frameFailure).Throw();
+            }
+            finally
+            {
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+                UnityEngine.Object.DestroyImmediate(pixels);
+                target.Release();
+                UnityEngine.Object.DestroyImmediate(target);
+            }
         }
 
         private static void AssertDirectBootContract(
@@ -744,9 +1200,8 @@ namespace BarPromenade.Tests.PlayMode
                 parts.Select(part => part.Renderer.sharedMaterial)
                     .Distinct()
                     .Count(),
-                Is.EqualTo(2),
-                "The room must retain one shared lit and one shared " +
-                "emission material.");
+                Is.EqualTo(3),
+                "The room shares its lit, emission and animated flame materials.");
 
             int baseMapId = Shader.PropertyToID("_BaseMap");
             int baseMapTransformId = Shader.PropertyToID("_BaseMap_ST");
@@ -794,7 +1249,8 @@ namespace BarPromenade.Tests.PlayMode
                     $"'{part.SourceName}' UV bounds were not normalized.");
 
                 Color expectedTint = Color.white;
-                if (part.Emissive ||
+                if (part.Emissive || part.Role == "firebox" ||
+                    part.Role == "fire_logs" || part.Role == "fire_ash" ||
                     string.Equals(
                         part.Sheet,
                         "Fire",
@@ -809,11 +1265,17 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     expectedTint.a = part.Tint.a;
                 }
-                AssertColorApproximately(
-                    properties.GetColor(baseColorId),
-                    expectedTint,
-                    0.0001f,
-                    $"'{part.SourceName}' does not use its clean tint.");
+                Color liveTint = properties.GetColor(baseColorId);
+                if (part.SourceName == "FIX_Fire.Embers")
+                {
+                    Assert.That(liveTint.r, Is.InRange(0.70f, 1.1f));
+                    Assert.That(liveTint.g, Is.InRange(liveTint.b, liveTint.r));
+                }
+                else
+                {
+                    AssertColorApproximately(liveTint, expectedTint, 0.0001f,
+                        $"'{part.SourceName}' does not use its authored tint.");
+                }
 
                 Material[] sharedMaterials = part.Renderer.sharedMaterials;
                 for (int materialIndex = 0;
@@ -887,7 +1349,7 @@ namespace BarPromenade.Tests.PlayMode
                     true),
                 Has.Length.EqualTo(1),
                 "The house owns one controller for its planned fixed shots.");
-            Assert.That(interior.Layout.CameraShots, Has.Count.EqualTo(4));
+            Assert.That(interior.Layout.CameraShots, Has.Count.EqualTo(5));
             HomeCameraShot shot = interior.Layout.CameraShot;
             Assert.That(
                 interior.FixedCamera.ActiveShotKind,
@@ -944,15 +1406,15 @@ namespace BarPromenade.Tests.PlayMode
             AssertVectorApproximately(
                 atmosphere.FireLight.transform.position,
                 interior.World.FireLightAnchor.position,
-                0.001f,
-                "The fire light moved off its authored hearth anchor.");
+                0.10f,
+                "The moving fire light must stay within its authored hearth.");
             Assert.That(
                 atmosphere.WindowLights,
                 Has.Length.EqualTo(
                     MothersHouseInteriorAtmosphere.WindowLightCount));
             Assert.That(
                 MothersHouseInteriorAtmosphere.PracticalLightCount,
-                Is.EqualTo(8));
+                Is.EqualTo(11));
             Assert.That(
                 atmosphere.GetComponentsInChildren<Light>(true),
                 Has.Length.EqualTo(
@@ -963,13 +1425,8 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Null,
                 "The scene must not return to an invisible global fill.");
 
-            // THE ONE SOURCELESS LIGHT, and the leash that keeps it from
-            // becoming the fill that was banned above. The hearth burns
-            // behind the mother's chair and there is no global illumination
-            // to carry its bounce off the boards back onto her face, so this
-            // stands in for it - but it may only ever reach her. A range that
-            // dies inside the chair and an intensity a twentieth of the floor
-            // lamp's are what make "local" a fact rather than an intention.
+            // Small local reflection near the chair, subordinate to the
+            // real practical that illuminates both seated faces.
             Light bounce = atmosphere.HearthBounceLight;
             Assert.That(bounce, Is.Not.Null);
             Assert.That(bounce.enabled, Is.True);
@@ -978,7 +1435,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 bounce.range,
                 Is.LessThan(1.5f),
-                "A sourceless light must not be able to reach a wall.");
+                "The local reflection must remain confined to the chair.");
             Assert.That(
                 bounce.intensity,
                 Is.LessThan(
@@ -995,11 +1452,11 @@ namespace BarPromenade.Tests.PlayMode
                     bounce.transform.position,
                     atmosphere.FireLight.transform.position),
                 Is.GreaterThan(bounce.range),
-                "It stands in for the fire's bounce and must not sit in it.");
+                "The reflection belongs to the lit floor, not inside the hearth.");
             Assert.That(
                 MothersHouseInteriorAtmosphere.LampLightCount,
-                Is.EqualTo(3));
-            Assert.That(atmosphere.LampLights, Has.Length.EqualTo(3));
+                Is.EqualTo(5));
+            Assert.That(atmosphere.LampLights, Has.Length.EqualTo(5));
             Assert.That(
                 atmosphere.LampLights[0],
                 Is.SameAs(atmosphere.FloorLampLight));
@@ -1009,6 +1466,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 atmosphere.LampLights[2],
                 Is.SameAs(atmosphere.UpperChildLampLight));
+            Assert.That(atmosphere.LampLights[3], Is.SameAs(atmosphere.BathroomLampLight));
+            Assert.That(atmosphere.LampLights[4], Is.SameAs(atmosphere.CorridorLampLight));
+            AssertCorridorLampContract(interior);
 
             // Both bedrooms are wired, and each fitting hangs over its own
             // room above a standing hero. What separates the rooms is the
@@ -1047,20 +1507,17 @@ namespace BarPromenade.Tests.PlayMode
                     light =>
                         light != null &&
                         light.enabled &&
-                        light.type == LightType.Spot &&
-                        light.shadows == LightShadows.None &&
+                        light.shadows == LightShadows.Soft &&
                         light.intensity < atmosphere.FireLight.intensity &&
                         light.range < interior.Layout.RoomSize.x &&
-                        Vector3.Dot(
-                            light.transform.forward,
-                            Vector3.down) > 0.8f),
+                        (light == atmosphere.FloorLampLight
+                            ? light.type == LightType.Point
+                            : light.type == LightType.Spot && Vector3.Dot(
+                                light.transform.forward, Vector3.down) > 0.8f)),
                 Is.True,
                 "Visible lamps must own restrained local pools of light.");
-            Assert.That(
-                atmosphere.FloorLampLight.spotAngle,
-                Is.EqualTo(
-                    MothersHouseInteriorAtmosphere.FloorLampSpotAngle)
-                    .Within(0.001f));
+            Assert.That(atmosphere.FloorLampLight.type,
+                Is.EqualTo(LightType.Point));
             AssertVectorApproximately(
                 atmosphere.FloorLampLight.transform.position,
                 interior.World.FloorLampLightAnchor.position,
@@ -1077,7 +1534,7 @@ namespace BarPromenade.Tests.PlayMode
                         light != null &&
                         light.enabled &&
                         light.type == LightType.Spot &&
-                        light.shadows == LightShadows.None &&
+                        light.shadows == LightShadows.Soft &&
                         light.intensity < atmosphere.FireLight.intensity),
                 Is.True,
                 "Four weak window spills must remain subordinate to the fire.");
@@ -1764,9 +2221,12 @@ namespace BarPromenade.Tests.PlayMode
             CharacterController controller,
             Vector2 target)
         {
-            const int maximumSteps = 220;
-            const float stepDistance = 0.055f;
-            for (int index = 0; index < maximumSteps; index++)
+            // The camera damps on unscaled time. A fixed distance per frame
+            // under captureDeltaTime moved the hero many times faster in a
+            // headless run, so even a correctly framed camera lagged behind.
+            const float walkSpeed = 3.3f;
+            float deadline = Time.realtimeSinceStartup + 8f;
+            while (Time.realtimeSinceStartup < deadline)
             {
                 Vector3 position = controller.transform.position;
                 Vector2 remaining = target -
@@ -1776,10 +2236,9 @@ namespace BarPromenade.Tests.PlayMode
                     yield break;
                 }
 
-                Vector2 planar = Vector2.ClampMagnitude(
-                    remaining,
-                    stepDistance);
-                controller.Move(new Vector3(planar.x, -0.08f, planar.y));
+                float stepTime = Mathf.Min(Time.unscaledDeltaTime, 1f / 60f);
+                Vector2 planar = Vector2.ClampMagnitude(remaining, walkSpeed * stepTime);
+                controller.Move(new Vector3(planar.x, -6f * stepTime, planar.y));
                 yield return null;
             }
 

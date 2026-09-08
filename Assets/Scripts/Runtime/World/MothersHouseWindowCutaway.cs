@@ -13,12 +13,14 @@ namespace BarPromenade
     public sealed class MothersHouseWindowCutaway : MonoBehaviour
     {
         private readonly List<Binding> bindings = new List<Binding>();
+        private readonly List<Binding> bathroomFront = new List<Binding>();
         private Transform coordinateRoot;
 
         public void Configure(MothersHouseInteriorAssetRegistry registry, Transform root)
         {
             Restore();
             bindings.Clear();
+            bathroomFront.Clear();
             coordinateRoot = root;
             foreach (MothersHouseInteriorPartBinding part in registry.Parts)
             {
@@ -28,6 +30,8 @@ namespace BarPromenade
                 }
 
                 string name = part.SourceName;
+                if (name == "FIX_BathroomSouthWall" || name == "FIX_BathroomDoor.Frame")
+                    bathroomFront.Add(new Binding(part.Renderer, false));
                 bool east = name == "FIX_Wall.EastUpper" ||
                             name == "FIX_UpperWall.EastUpper";
                 bool west = name == "FIX_Wall.WestUpper" ||
@@ -56,6 +60,15 @@ namespace BarPromenade
                 return;
             }
             float x = coordinateRoot.InverseTransformPoint(camera.transform.position).x;
+            Vector3 localCamera = coordinateRoot.InverseTransformPoint(camera.transform.position);
+            // Only the bathroom camera looks through this partition. The
+            // corridor camera is above the south stair landing and must see
+            // the complete wall and doorway at the far end of the corridor.
+            bool bathroomShot = camera.cameraType == CameraType.Game &&
+                Vector3.Distance(localCamera, MothersHouseInteriorLayoutPlanner.BathroomCameraPosition) < 0.05f;
+            foreach (Binding binding in bathroomFront)
+                if (binding.Renderer != null)
+                    binding.Renderer.enabled = binding.InitiallyEnabled && !bathroomShot;
             bool hideEast = camera.cameraType == CameraType.Game &&
                             x > MothersHouseInteriorLayoutPlanner.RoomWidth * 0.5f;
             bool hideWest = camera.cameraType == CameraType.Game &&
@@ -90,6 +103,9 @@ namespace BarPromenade
 
         private void Restore()
         {
+            foreach (Binding binding in bathroomFront)
+                if (binding.Renderer != null)
+                    binding.Renderer.enabled = binding.InitiallyEnabled;
             foreach (Binding binding in bindings)
             {
                 if (binding.Renderer != null)

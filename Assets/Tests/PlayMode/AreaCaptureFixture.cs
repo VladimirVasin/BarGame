@@ -2218,6 +2218,34 @@ namespace BarPromenade.Tests.PlayMode
                 () => MothersHouseShots(interiorRoot));
         }
 
+        [UnityTest]
+        [Explicit("Bathroom, neighbouring rooms and the extended house facade only.")]
+        [PrebuildSetup(typeof(MothersHouseBathroomAssetsSetup))]
+        public IEnumerator MothersHouseBathroom()
+        {
+            MothersHouseInteriorRoot inside = null;
+            yield return Capture(SceneIds.MothersHouseInterior,
+                () => inside = Object.FindAnyObjectByType<MothersHouseInteriorRoot>(),
+                () => new[] {
+                    MothersHouseShot(inside, HomeCameraShotKind.MainRoom, "bathroom-00-ground-niche"),
+                    MothersHouseShot(inside, HomeCameraShotKind.StairAndUpperCorridor, "bathroom-01-corridor"),
+                    MothersHouseShot(inside, HomeCameraShotKind.UpperNorthRoom, "bathroom-02-parents-room"),
+                    MothersHouseShot(inside, HomeCameraShotKind.UpperBathroom, "bathroom-03-room") });
+            AlpineVillageRoot outside = null;
+            yield return Capture(SceneIds.AlpineVillage,
+                () => outside = Object.FindAnyObjectByType<AlpineVillageRoot>(),
+                () => {
+                    var house = outside.Plan.MothersHouse;
+                    Vector3 right = Vector3.Cross(Vector3.up, house.Facing);
+                    Vector3 Local(float x, float y, float z) => house.GroundCenter +
+                        right * x + Vector3.up * y + house.Facing * z;
+                    return new[] {
+                        Shot.At("bathroom-04-front-mass", Local(-10, 4.5f, 14), Local(0, 3, 0), 55),
+                        Shot.At("bathroom-05-rear-wing", Local(11, 5, -13), Local(1.5f, 3, -2), 56),
+                        Shot.At("bathroom-06-stone-side", Local(13, 3, 0), Local(3, 3.5f, -.5f), 59) };
+                });
+        }
+
         private static Shot[] MothersHouseShots(
             MothersHouseInteriorRoot root)
         {
@@ -2226,7 +2254,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.FixedCamera, Is.Not.Null);
             Assert.That(root.FixedCamera.IsInitialized, Is.True);
             Assert.That(root.CameraFollow.FixedPoseActive, Is.True);
-            Assert.That(root.Layout.CameraShots, Has.Count.EqualTo(4));
+            Assert.That(root.Layout.CameraShots, Has.Count.EqualTo(5));
             return new[]
             {
                 MothersHouseShot(
@@ -2245,6 +2273,7 @@ namespace BarPromenade.Tests.PlayMode
                     root,
                     HomeCameraShotKind.UpperNorthRoom,
                     "03-parents-bedroom"),
+                MothersHouseShot(root, HomeCameraShotKind.UpperBathroom, "07-bathroom"),
 
                 // Diagnostics, not compositions. The ground shot pans onto
                 // the hero and re-lenses onto him, so these frames stand at

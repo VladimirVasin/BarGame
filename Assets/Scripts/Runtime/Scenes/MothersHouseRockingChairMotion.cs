@@ -4,8 +4,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Rocks the chair, and whoever is sitting in it, about the arc its own
-    /// runners were drawn on.
+    /// Rolls the chair and its sitter on the authored runner contact edges.
     ///
     /// ONE ANGLE MOVES BOTH. The chair's two meshes and the woman are driven
     /// from a single angle; neither carries a sway of its own. The
@@ -23,45 +22,34 @@ namespace BarPromenade
     /// pose is recorded once and re-placed each frame; the imported hierarchy
     /// is left exactly as it was imported.
     ///
-    /// THE PIVOT IS DERIVED, NOT CHOSEN. The runners are a parabola in the
-    /// room's own coordinates: `rocker_rail` samples `y = 0.055 + 0.10 t^2`
-    /// at `z = 1.55 + 0.63 t`, which in z is `y = 0.055 + 0.2520 dz^2`. A
-    /// parabola `y = a z^2` has radius of curvature `1 / 2a` at its vertex,
-    /// so these runners roll on a circle of `1.984 m` centred `2.039 m` above
-    /// the floor. Turning about the X axis through that point rolls the
-    /// runners along the boards WITHOUT SLIDING, which is what a rocking
-    /// chair does and what an arbitrary pivot would not.
+    /// The generator approximates its parabola with chamfered straight
+    /// sections. The actual FBX lower hull has a short flat at its centre;
+    /// up to +/-3.02869 degrees it rolls about one end of that flat. These
+    /// measured edges, not the parabola's centre of curvature, are the
+    /// instantaneous pivots. Both give the same pose at zero tilt. The rug
+    /// under the contacts is 0.032 m high, above the floor boards.
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(300)]
     public sealed class MothersHouseRockingChairMotion : MonoBehaviour
     {
-        /// <summary>Where the runners touch the floor, in room space.
-        /// </summary>
+        /// <summary>Centre of the runners' bottom flat in room space.</summary>
         public const float ContactZ = 1.55f;
 
-        /// <summary>The lowest point of the runner arc.</summary>
-        public const float ContactY = 0.055f;
+        /// <summary>Measured underside, including thickness and chamfers.</summary>
+        public const float ContactY = 0.01781656f;
+
+        public const float ContactHalfSpan = 0.0069744f;
+        public const float SupportSurfaceY = 0.032f;
 
         /// <summary>
-        /// The runners' own curvature, `1 / (2 * 0.2520)`. Not a tuned
-        /// number: change the generator's parabola and this must follow it.
-        /// </summary>
-        public const float RunnerRadius = 1.9845f;
-
-        /// <summary>
-        /// How far the chair leans either way. Two and a half degrees moves
-        /// the contact point about nine centimetres along the floor, which is
-        /// a real rocking chair's travel and stays well inside the fixture's
-        /// own collider - so the blocker never has to move.
+        /// The quiet authored lean stays inside the central contact edges'
+        /// supported angle range and the chair's static fixture blocker.
         /// </summary>
         public const float AmplitudeDegrees = 2.5f;
 
         /// <summary>
-        /// Seconds for one full rock. A rocking chair's period is set by its
-        /// runner radius and gravity, and for `1.98 m` a pendulum comes out
-        /// near `2.8 s`; this is a little slower, because she is old and
-        /// barely pushing.
+        /// Seconds for one full quiet, even cycle, unchanged by arrivals.
         /// </summary>
         public const float PeriodSeconds = 3.2f;
 
@@ -85,13 +73,14 @@ namespace BarPromenade
         public float AngleDegrees { get; private set; }
 
         /// <summary>
-        /// Where the pivot stands, given the room root. Exposed so a test can
-        /// assert the derivation rather than re-type the number.
+        /// Rest-space edge in contact with the rug at this lean. The two
+        /// edges exchange support through the flat neutral pose.
         /// </summary>
-        public static Vector3 GetRockCenter(Transform roomRoot)
+        public static Vector3 GetRunnerContact(float angleDegrees)
         {
-            var local = new Vector3(0f, ContactY + RunnerRadius, ContactZ);
-            return roomRoot == null ? local : roomRoot.TransformPoint(local);
+            float offset = angleDegrees > 0f ? ContactHalfSpan :
+                angleDegrees < 0f ? -ContactHalfSpan : 0f;
+            return new Vector3(0f, ContactY, ContactZ + offset);
         }
 
         public void Initialize(
@@ -131,7 +120,7 @@ namespace BarPromenade
                 return;
             }
 
-            riders.Add(new Rider(rider));
+            riders.Add(new Rider(rider, roomRoot));
             if (initialized)
             {
                 Apply();
@@ -158,9 +147,10 @@ namespace BarPromenade
         {
             AngleDegrees = AmplitudeDegrees * Mathf.Sin(
                 phaseSeconds / PeriodSeconds * 2f * Mathf.PI);
-            Vector3 center = GetRockCenter(roomRoot);
+            Vector3 contact = GetRunnerContact(AngleDegrees);
+            Vector3 lift = Vector3.up * (SupportSurfaceY - ContactY);
             Quaternion rock = Quaternion.AngleAxis(
-                AngleDegrees, roomRoot.right);
+                AngleDegrees, Vector3.right);
             for (int index = 0; index < riders.Count; index++)
             {
                 Rider rider = riders[index];
@@ -170,18 +160,19 @@ namespace BarPromenade
                 }
 
                 rider.Transform.SetPositionAndRotation(
-                    center + rock * (rider.Position - center),
-                    rock * rider.Rotation);
+                    roomRoot.TransformPoint(contact + lift +
+                        rock * (rider.Position - contact)),
+                    roomRoot.rotation * rock * rider.Rotation);
             }
         }
 
         private readonly struct Rider
         {
-            public Rider(Transform transform)
+            public Rider(Transform transform, Transform room)
             {
                 Transform = transform;
-                Position = transform.position;
-                Rotation = transform.rotation;
+                Position = room.InverseTransformPoint(transform.position);
+                Rotation = Quaternion.Inverse(room.rotation) * transform.rotation;
             }
 
             public Transform Transform { get; }

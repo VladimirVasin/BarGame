@@ -1,7 +1,31 @@
 {
   "generator": "tools/build-mothers-house-interior-3d-model.py",
-  "generator_version": "1.8.0",
+  "generator_version": "1.11.0",
   "blender_version": "5.0.1",
+  "fire_contract": {
+    "layers": [
+      "FIX_Fire.Flame.Back",
+      "FIX_Fire.Flame.Front"
+    ],
+    "tongues_per_layer": [
+      3,
+      4
+    ],
+    "sections_per_tongue": 8,
+    "radial_vertices_per_section": 8,
+    "uv0": "existing positive atlas Fire sheet",
+    "uv1": "u across tongue; v rooted base 0 to curved tip 1",
+    "vertex_color": "R tongue phase; G heat variation; B back 0/front 1; A 1",
+    "maximum_tip_axis_displacement_m": 0.04,
+    "firebox_rear_plane_z": 3.835,
+    "light_unity": [
+      0.0,
+      0.78,
+      3.5
+    ],
+    "light_position_envelope_m": 0.04,
+    "shared_shader": "BarPromenade/MothersHouseFlame"
+  },
   "design_id": "mothers_house_interior_v1",
   "display_name": "Bar Promenade Mother's House Interior",
   "dimensions_m": {
@@ -30,11 +54,27 @@
     "door_height": 2.2,
     "door_centers_z": [
       -1.85,
-      1.85
+      1.1
     ],
-    "room_count": 2,
+    "room_count": 3,
     "furnished": true,
     "rooms": {
+      "bathroom": {
+        "use": "shared_bathroom",
+        "state": "lived_in",
+        "bounds_x": [
+          -4.88,
+          -1.83
+        ],
+        "bounds_z": [
+          1.98,
+          4.78
+        ],
+        "door_center_x": -2.505,
+        "door_center_z": 1.9,
+        "door_width": 1.2,
+        "interactive": false
+      },
       "north": {
         "use": "parents_bedroom",
         "state": "lived_in",
@@ -63,6 +103,11 @@
       }
     ],
     "ceiling_lamps": {
+      "corridor": [
+        -2.5,
+        5.62,
+        -0.6
+      ],
       "north": [
         1.3,
         5.515000000000001,
@@ -74,6 +119,13 @@
         -1.75
       ]
     }
+  },
+  "wing_extension_m": {
+    "x_min": -5.0,
+    "x_max": -1.75,
+    "original_rear": 4.0,
+    "rear_wall_plane": 4.9,
+    "depth": 0.9
   },
   "wall_thickness_m": 0.24,
   "floor_thickness_m": 0.18,
@@ -96,10 +148,11 @@
       "head": 2.25,
       "frame_part": "FIX_WindowFrame.West",
       "glass_part": "FIX_WindowGlass.West",
+      "wall_plane": 4.9,
       "center_unity": [
         -2.72,
         1.55,
-        3.82
+        4.720000000000001
       ],
       "height": 1.4
     },
@@ -114,6 +167,7 @@
       "head": 2.25,
       "frame_part": "FIX_WindowFrame.East",
       "glass_part": "FIX_WindowGlass.East",
+      "wall_plane": 4.0,
       "center_unity": [
         2.72,
         1.55,
@@ -130,6 +184,7 @@
       "floor_elevation": 0.0,
       "sill": 0.85,
       "head": 2.25,
+      "wall_plane": -4.0,
       "center_unity": [
         -2.55,
         1.55,
@@ -148,6 +203,7 @@
       "floor_elevation": 0.0,
       "sill": 0.85,
       "head": 2.25,
+      "wall_plane": -4.0,
       "center_unity": [
         4.14,
         1.55,
@@ -166,6 +222,7 @@
       "floor_elevation": 0.0,
       "sill": 0.85,
       "head": 2.25,
+      "wall_plane": 5.0,
       "center_unity": [
         4.82,
         1.55,
@@ -184,6 +241,7 @@
       "floor_elevation": 0.0,
       "sill": 0.85,
       "head": 2.25,
+      "wall_plane": 5.0,
       "center_unity": [
         4.82,
         1.55,
@@ -202,6 +260,7 @@
       "floor_elevation": 0.0,
       "sill": 0.85,
       "head": 2.25,
+      "wall_plane": -5.0,
       "center_unity": [
         -4.82,
         1.55,
@@ -220,6 +279,7 @@
       "floor_elevation": 0.0,
       "sill": 2.15,
       "head": 3.25,
+      "wall_plane": -5.0,
       "center_unity": [
         -4.82,
         2.7,
@@ -240,6 +300,7 @@
       "head": 2.02,
       "frame_part": "FIX_UpperNorth.WindowFrame",
       "glass_part": "FIX_UpperNorth.WindowGlass",
+      "wall_plane": 4.0,
       "center_unity": [
         -1.1,
         5.01,
@@ -256,6 +317,7 @@
       "floor_elevation": 3.54,
       "sill": 0.92,
       "head": 2.02,
+      "wall_plane": 4.0,
       "center_unity": [
         1.3,
         5.01,
@@ -276,6 +338,7 @@
       "head": 2.02,
       "frame_part": "FIX_UpperSouth.WindowFrame",
       "glass_part": "FIX_UpperSouth.WindowGlass",
+      "wall_plane": -4.0,
       "center_unity": [
         -0.9,
         5.01,
@@ -292,6 +355,7 @@
       "floor_elevation": 3.54,
       "sill": 0.92,
       "head": 2.02,
+      "wall_plane": -4.0,
       "center_unity": [
         1.3,
         5.01,
@@ -310,6 +374,7 @@
       "floor_elevation": 3.54,
       "sill": 0.92,
       "head": 2.02,
+      "wall_plane": 5.0,
       "center_unity": [
         4.82,
         5.01,
@@ -328,6 +393,7 @@
       "floor_elevation": 3.54,
       "sill": 0.92,
       "head": 2.02,
+      "wall_plane": 5.0,
       "center_unity": [
         4.82,
         5.01,
@@ -346,6 +412,7 @@
       "floor_elevation": 3.54,
       "sill": 0.92,
       "head": 2.02,
+      "wall_plane": -5.0,
       "center_unity": [
         -4.82,
         5.01,
@@ -357,21 +424,43 @@
     },
     {
       "stable_id": "upper-west-north",
-      "room": "upper_hall",
+      "room": "bathroom",
       "wall": "west",
-      "across": 2.3,
+      "across": 2.65,
       "width": 1.0,
       "floor_elevation": 3.54,
       "sill": 0.92,
       "head": 2.02,
+      "frosted": true,
+      "wall_plane": -5.0,
       "center_unity": [
         -4.82,
         5.01,
-        2.3
+        2.65
       ],
       "height": 1.1,
       "frame_part": "FIX_Window.upper-west-north.Frame",
       "glass_part": "FIX_Window.upper-west-north.Glass"
+    },
+    {
+      "stable_id": "upper-north-bathroom",
+      "room": "bathroom",
+      "wall": "north",
+      "across": -3.55,
+      "width": 0.78,
+      "floor_elevation": 3.54,
+      "sill": 1.26,
+      "head": 2.02,
+      "wall_plane": 4.9,
+      "frosted": true,
+      "center_unity": [
+        -3.55,
+        5.18,
+        4.720000000000001
+      ],
+      "height": 0.76,
+      "frame_part": "FIX_Window.upper-north-bathroom.Frame",
+      "glass_part": "FIX_Window.upper-north-bathroom.Glass"
     }
   ],
   "window_layout_source": "ArtSource/MothersHouse/WindowLayout.json",
@@ -412,11 +501,11 @@
     ],
     "fireplace_wall": "north",
     "floor_lamp_light": [
-      -1.72,
+      -1.95,
       1.5,
-      1.45
+      -1.62
     ],
-    "upper_room_count": 2,
+    "upper_room_count": 3,
     "upper_rooms_furnished": true
   },
   "spawn_forward_unity": [
@@ -470,7 +559,7 @@
   ],
   "bounds_max": [
     5.12,
-    4.12,
+    5.02,
     6.04
   ],
   "unity_bounds_min": [
@@ -481,11 +570,67 @@
   "unity_bounds_max": [
     5.12,
     6.04,
-    4.12
+    5.02
   ],
-  "mesh_count": 127,
-  "triangle_count": 15796,
+  "mesh_count": 153,
+  "triangle_count": 21844,
   "anchors": [
+    {
+      "name": "ANCHOR_BathroomCamera",
+      "role": "bathroom_camera",
+      "local_position": [
+        -2.4,
+        0.7,
+        5.4
+      ],
+      "unity_local_position": [
+        -2.4,
+        5.4,
+        0.7
+      ]
+    },
+    {
+      "name": "ANCHOR_BathroomCameraTarget",
+      "role": "bathroom_camera_target",
+      "local_position": [
+        -3.2,
+        3.5,
+        4.4
+      ],
+      "unity_local_position": [
+        -3.2,
+        4.4,
+        3.5
+      ]
+    },
+    {
+      "name": "ANCHOR_BathroomColdWindowLight",
+      "role": "bathroom_window_light",
+      "local_position": [
+        -3.55,
+        4.62,
+        5.0
+      ],
+      "unity_local_position": [
+        -3.55,
+        5.0,
+        4.62
+      ]
+    },
+    {
+      "name": "ANCHOR_BathroomLampLight",
+      "role": "bathroom_lamp_light",
+      "local_position": [
+        -2.13,
+        3.55,
+        5.25
+      ],
+      "unity_local_position": [
+        -2.13,
+        5.25,
+        3.55
+      ]
+    },
     {
       "name": "ANCHOR_Camera",
       "role": "camera",
@@ -547,13 +692,13 @@
       "role": "fire_light",
       "local_position": [
         0.0,
-        3.28,
+        3.5,
         0.78
       ],
       "unity_local_position": [
         0.0,
         0.78,
-        3.28
+        3.5
       ]
     },
     {
@@ -574,14 +719,14 @@
       "name": "ANCHOR_FloorLampLight",
       "role": "floor_lamp_light",
       "local_position": [
-        -1.72,
-        1.45,
+        -1.95,
+        -1.62,
         1.5
       ],
       "unity_local_position": [
-        -1.72,
+        -1.95,
         1.5,
-        1.45
+        -1.62
       ]
     },
     {
@@ -625,6 +770,20 @@
         0.51,
         0.05
       ]
+    },
+    {
+      "name": "ANCHOR_UpperCorridorLampLight",
+      "role": "upper_corridor_lamp_light",
+      "local_position": [
+        -2.5,
+        -0.6,
+        5.62
+      ],
+      "unity_local_position": [
+        -2.5,
+        5.62,
+        -0.6
+      ]
     }
   ],
   "parts": [
@@ -642,8 +801,10 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 144,
-      "triangles": 252,
+      "vertices": 72,
+      "triangles": 108,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.0,
         -4.12,
@@ -679,8 +840,10 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 112,
-      "triangles": 196,
+      "vertices": 64,
+      "triangles": 96,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.0,
         3.88,
@@ -688,7 +851,7 @@
       ],
       "bounds_max": [
         5.0,
-        4.12,
+        5.02,
         3.4
       ],
       "unity_bounds_min": [
@@ -699,7 +862,7 @@
       "unity_bounds_max": [
         5.0,
         3.4,
-        4.12
+        5.02
       ]
     },
     {
@@ -716,27 +879,29 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 8,
-      "triangles": 12,
+      "vertices": 16,
+      "triangles": 24,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        4.88,
+        -1.83,
         -4.0,
         0.0
       ],
       "bounds_max": [
         5.12,
-        4.0,
+        4.9,
         0.62
       ],
       "unity_bounds_min": [
-        4.88,
+        -1.83,
         0.0,
         -4.0
       ],
       "unity_bounds_max": [
         5.12,
         0.62,
-        4.0
+        4.9
       ]
     },
     {
@@ -753,27 +918,29 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 56,
-      "triangles": 84,
+      "vertices": 64,
+      "triangles": 96,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        4.88,
+        -1.83,
         -4.0,
         0.62
       ],
       "bounds_max": [
         5.12,
-        4.0,
+        4.9,
         3.4
       ],
       "unity_bounds_min": [
-        4.88,
+        -1.83,
         0.62,
         -4.0
       ],
       "unity_bounds_max": [
         5.12,
         3.4,
-        4.0
+        4.9
       ]
     },
     {
@@ -792,6 +959,8 @@
       "colliders": [],
       "vertices": 8,
       "triangles": 12,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.12,
         -4.0,
@@ -799,7 +968,7 @@
       ],
       "bounds_max": [
         -4.88,
-        4.0,
+        4.9,
         0.62
       ],
       "unity_bounds_min": [
@@ -810,7 +979,7 @@
       "unity_bounds_max": [
         -4.88,
         0.62,
-        4.0
+        4.9
       ]
     },
     {
@@ -829,6 +998,8 @@
       "colliders": [],
       "vertices": 56,
       "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.12,
         -4.0,
@@ -836,7 +1007,7 @@
       ],
       "bounds_max": [
         -4.88,
-        4.0,
+        4.9,
         3.4
       ],
       "unity_bounds_min": [
@@ -847,7 +1018,7 @@
       "unity_bounds_max": [
         -4.88,
         3.4,
-        4.0
+        4.9
       ]
     },
     {
@@ -864,8 +1035,10 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 12,
-      "triangles": 20,
+      "vertices": 28,
+      "triangles": 48,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.0,
         -4.0,
@@ -873,7 +1046,7 @@
       ],
       "bounds_max": [
         5.0,
-        4.0,
+        4.9,
         0.0
       ],
       "unity_bounds_min": [
@@ -884,7 +1057,7 @@
       "unity_bounds_max": [
         5.0,
         0.0,
-        4.0
+        4.9
       ]
     },
     {
@@ -901,8 +1074,10 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 60,
-      "triangles": 100,
+      "vertices": 84,
+      "triangles": 140,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -4.906,
         -3.906,
@@ -910,7 +1085,7 @@
       ],
       "bounds_max": [
         4.906,
-        3.906,
+        4.806,
         0.15
       ],
       "unity_bounds_min": [
@@ -921,7 +1096,7 @@
       "unity_bounds_max": [
         4.906,
         0.15,
-        3.906
+        4.806
       ]
     },
     {
@@ -938,27 +1113,29 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 40,
-      "triangles": 64,
+      "vertices": 60,
+      "triangles": 96,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -4.985,
-        -3.985,
+        -4.88,
+        -3.88,
         3.295
       ],
       "bounds_max": [
-        4.985,
-        3.985,
+        4.88,
+        4.78,
         3.4
       ],
       "unity_bounds_min": [
-        -4.985,
+        -4.88,
         3.295,
-        -3.985
+        -3.88
       ],
       "unity_bounds_max": [
-        4.985,
+        4.88,
         3.4,
-        3.985
+        4.78
       ]
     },
     {
@@ -977,6 +1154,8 @@
       "colliders": [],
       "vertices": 48,
       "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.735,
         -4.12,
@@ -1014,6 +1193,8 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.65,
         -3.8525,
@@ -1049,8 +1230,10 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 64,
+      "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.0,
         -4.0,
@@ -1058,7 +1241,7 @@
       ],
       "bounds_max": [
         5.0,
-        4.0,
+        4.9,
         3.54
       ],
       "unity_bounds_min": [
@@ -1069,7 +1252,7 @@
       "unity_bounds_max": [
         5.0,
         3.54,
-        4.0
+        4.9
       ]
     },
     {
@@ -1086,8 +1269,10 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 64,
+      "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.0,
         -4.0,
@@ -1095,7 +1280,7 @@
       ],
       "bounds_max": [
         5.0,
-        4.0,
+        4.9,
         3.558
       ],
       "unity_bounds_min": [
@@ -1106,7 +1291,7 @@
       "unity_bounds_max": [
         5.0,
         3.558,
-        4.0
+        4.9
       ]
     },
     {
@@ -1125,6 +1310,8 @@
       "colliders": [],
       "vertices": 624,
       "triangles": 1092,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -4.886,
         -3.886,
@@ -1162,6 +1349,8 @@
       "colliders": [],
       "vertices": 128,
       "triangles": 224,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -3.3325,
         -2.8625,
@@ -1197,8 +1386,10 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 224,
-      "triangles": 392,
+      "vertices": 144,
+      "triangles": 216,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.0,
         -4.12,
@@ -1206,7 +1397,7 @@
       ],
       "bounds_max": [
         5.0,
-        4.12,
+        5.02,
         5.9
       ],
       "unity_bounds_min": [
@@ -1217,7 +1408,7 @@
       "unity_bounds_max": [
         5.0,
         5.9,
-        4.12
+        5.02
       ]
     },
     {
@@ -1234,27 +1425,29 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 8,
-      "triangles": 12,
+      "vertices": 16,
+      "triangles": 24,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        4.88,
+        -1.83,
         -4.0,
         3.54
       ],
       "bounds_max": [
         5.12,
-        4.0,
+        4.9,
         4.16
       ],
       "unity_bounds_min": [
-        4.88,
+        -1.83,
         3.54,
         -4.0
       ],
       "unity_bounds_max": [
         5.12,
         4.16,
-        4.0
+        4.9
       ]
     },
     {
@@ -1271,27 +1464,29 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 56,
-      "triangles": 84,
+      "vertices": 64,
+      "triangles": 96,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        4.88,
+        -1.83,
         -4.0,
         4.16
       ],
       "bounds_max": [
         5.12,
-        4.0,
+        4.9,
         5.9
       ],
       "unity_bounds_min": [
-        4.88,
+        -1.83,
         4.16,
         -4.0
       ],
       "unity_bounds_max": [
         5.12,
         5.9,
-        4.0
+        4.9
       ]
     },
     {
@@ -1310,6 +1505,8 @@
       "colliders": [],
       "vertices": 8,
       "triangles": 12,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.12,
         -4.0,
@@ -1317,7 +1514,7 @@
       ],
       "bounds_max": [
         -4.88,
-        4.0,
+        4.9,
         4.16
       ],
       "unity_bounds_min": [
@@ -1328,7 +1525,7 @@
       "unity_bounds_max": [
         -4.88,
         4.16,
-        4.0
+        4.9
       ]
     },
     {
@@ -1347,6 +1544,8 @@
       "colliders": [],
       "vertices": 56,
       "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.12,
         -4.0,
@@ -1354,7 +1553,7 @@
       ],
       "bounds_max": [
         -4.88,
-        4.0,
+        4.9,
         5.9
       ],
       "unity_bounds_min": [
@@ -1365,7 +1564,7 @@
       "unity_bounds_max": [
         -4.88,
         5.9,
-        4.0
+        4.9
       ]
     },
     {
@@ -1384,6 +1583,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.83,
         -4.0,
@@ -1421,6 +1622,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.87,
         -2.54,
@@ -1428,7 +1631,7 @@
       ],
       "bounds_max": [
         -1.63,
-        2.54,
+        1.79,
         5.83
       ],
       "unity_bounds_min": [
@@ -1439,7 +1642,7 @@
       "unity_bounds_max": [
         -1.63,
         5.83,
-        2.54
+        1.79
       ]
     },
     {
@@ -1456,27 +1659,29 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 16,
+      "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -4.88,
+        -3.2325,
         -2.3,
         3.54
       ],
       "bounds_max": [
         -3.1275,
-        1.8725,
+        1.82,
         4.54
       ],
       "unity_bounds_min": [
-        -4.88,
+        -3.2325,
         3.54,
         -2.3
       ],
       "unity_bounds_max": [
         -3.1275,
         4.54,
-        1.8725
+        1.82
       ]
     },
     {
@@ -1493,8 +1698,10 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 32,
+      "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.0,
         -4.0,
@@ -1502,7 +1709,7 @@
       ],
       "bounds_max": [
         5.0,
-        4.0,
+        4.9,
         6.04
       ],
       "unity_bounds_min": [
@@ -1513,7 +1720,7 @@
       "unity_bounds_max": [
         5.0,
         6.04,
-        4.0
+        4.9
       ]
     },
     {
@@ -1532,6 +1739,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.7,
         3.755,
@@ -1569,6 +1778,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.535,
         3.811,
@@ -1606,6 +1817,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.5,
         -4.12,
@@ -1643,6 +1856,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.335,
         -3.829,
@@ -1680,6 +1895,8 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.7925,
         3.68,
@@ -1717,6 +1934,8 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.5225,
         -3.7525,
@@ -1754,6 +1973,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -3.175,
         -4.12,
@@ -1791,6 +2012,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -3.01,
         -3.829,
@@ -1828,6 +2051,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         3.69,
         -4.12,
@@ -1865,6 +2090,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         3.855,
         -3.829,
@@ -1902,6 +2129,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         4.7525,
         -2.925,
@@ -1939,6 +2168,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         4.811,
         -2.76,
@@ -1976,6 +2207,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         4.7525,
         1.675,
@@ -2013,6 +2246,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         4.811,
         1.84,
@@ -2050,6 +2285,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.12,
         2.175,
@@ -2087,6 +2324,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -4.829,
         2.34,
@@ -2124,6 +2363,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.12,
         -0.7,
@@ -2161,6 +2402,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -4.829,
         -0.535,
@@ -2198,6 +2441,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.7,
         3.7525,
@@ -2235,6 +2480,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.865,
         3.811,
@@ -2272,6 +2519,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.7,
         -4.12,
@@ -2309,6 +2558,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.865,
         -3.829,
@@ -2346,6 +2597,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         4.7525,
         -2.9,
@@ -2383,6 +2636,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         4.811,
         -2.735,
@@ -2420,6 +2675,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         4.7525,
         1.7,
@@ -2457,6 +2714,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         4.811,
         1.865,
@@ -2494,6 +2753,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.12,
         -2.9,
@@ -2531,6 +2792,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -4.829,
         -2.735,
@@ -2568,25 +2831,27 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -5.12,
-        1.7,
+        2.05,
         4.37
       ],
       "bounds_max": [
         -4.7525,
-        2.9,
+        3.25,
         5.635
       ],
       "unity_bounds_min": [
         -5.12,
         4.37,
-        1.7
+        2.05
       ],
       "unity_bounds_max": [
         -4.7525,
         5.635,
-        2.9
+        3.25
       ]
     },
     {
@@ -2597,33 +2862,113 @@
       "emissive": false,
       "casts_shadows": false,
       "tint": [
-        0.16,
-        0.24,
-        0.28,
-        0.65
+        0.48,
+        0.57,
+        0.58,
+        0.92
       ],
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -4.829,
-        1.865,
+        2.215,
         4.525
       ],
       "bounds_max": [
         -4.811,
-        2.735,
+        3.085,
         5.495
       ],
       "unity_bounds_min": [
         -4.829,
         4.525,
-        1.865
+        2.215
       ],
       "unity_bounds_max": [
         -4.811,
         5.495,
-        2.735
+        3.085
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-north-bathroom.Frame",
+      "role": "upper_window_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.04,
+        4.6525,
+        4.71
+      ],
+      "bounds_max": [
+        -3.06,
+        5.02,
+        5.635
+      ],
+      "unity_bounds_min": [
+        -4.04,
+        4.71,
+        4.6525
+      ],
+      "unity_bounds_max": [
+        -3.06,
+        5.635,
+        5.02
+      ]
+    },
+    {
+      "name": "FIX_Window.upper-north-bathroom.Glass",
+      "role": "upper_window_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.48,
+        0.57,
+        0.58,
+        0.92
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -3.875,
+        4.711,
+        4.865
+      ],
+      "bounds_max": [
+        -3.225,
+        4.729,
+        5.495
+      ],
+      "unity_bounds_min": [
+        -3.875,
+        4.865,
+        4.711
+      ],
+      "unity_bounds_max": [
+        -3.225,
+        5.495,
+        4.729
       ]
     },
     {
@@ -2642,6 +2987,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.525,
         3.53,
@@ -2679,6 +3026,8 @@
       "colliders": [],
       "vertices": 112,
       "triangles": 196,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.15,
         1.85,
@@ -2716,6 +3065,8 @@
       "colliders": [],
       "vertices": 48,
       "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.185,
         1.9,
@@ -2753,6 +3104,8 @@
       "colliders": [],
       "vertices": 80,
       "triangles": 140,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.1475,
         1.91,
@@ -2790,6 +3143,8 @@
       "colliders": [],
       "vertices": 112,
       "triangles": 196,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.6275,
         3.2825,
@@ -2827,6 +3182,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.595,
         3.43,
@@ -2864,6 +3221,8 @@
       "colliders": [],
       "vertices": 80,
       "triangles": 144,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.485,
         3.4,
@@ -2901,6 +3260,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.55,
         2.0,
@@ -2938,6 +3299,8 @@
       "colliders": [],
       "vertices": 52,
       "triangles": 92,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.12,
         1.52,
@@ -2975,6 +3338,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.2525,
         1.6525,
@@ -3012,6 +3377,8 @@
       "colliders": [],
       "vertices": 112,
       "triangles": 196,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.15,
         -3.8,
@@ -3049,6 +3416,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.18,
         -3.755,
@@ -3086,6 +3455,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.31,
         -3.62,
@@ -3123,6 +3494,8 @@
       "colliders": [],
       "vertices": 144,
       "triangles": 252,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.67,
         -3.55,
@@ -3160,6 +3533,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.9588,
         -3.905922,
@@ -3197,6 +3572,8 @@
       "colliders": [],
       "vertices": 44,
       "triangles": 76,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.1475,
         -1.8025,
@@ -3234,6 +3611,8 @@
       "colliders": [],
       "vertices": 20,
       "triangles": 36,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.1425,
         -1.804686,
@@ -3271,6 +3650,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.64,
         -3.6,
@@ -3308,6 +3689,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -3.05,
         -2.55,
@@ -3315,7 +3698,7 @@
       ],
       "bounds_max": [
         -2.0,
-        2.4,
+        1.45,
         3.562
       ],
       "unity_bounds_min": [
@@ -3326,7 +3709,7 @@
       "unity_bounds_max": [
         -2.0,
         3.562,
-        2.4
+        1.45
       ]
     },
     {
@@ -3345,25 +3728,27 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.9535,
-        0.3,
+        -0.7,
         5.0425
       ],
       "bounds_max": [
         -1.8305,
-        1.2,
+        0.2,
         5.1375
       ],
       "unity_bounds_min": [
         -1.9535,
         5.0425,
-        0.3
+        -0.7
       ],
       "unity_bounds_max": [
         -1.8305,
         5.1375,
-        1.2
+        0.2
       ]
     },
     {
@@ -3382,25 +3767,27 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.9725,
-        0.3375,
+        -0.6625,
         4.35
       ],
       "bounds_max": [
         -1.9125,
-        1.1375,
+        0.1375,
         5.07
       ],
       "unity_bounds_min": [
         -1.9725,
         4.35,
-        0.3375
+        -0.6625
       ],
       "unity_bounds_max": [
         -1.9125,
         5.07,
-        1.1375
+        0.1375
       ]
     },
     {
@@ -3419,25 +3806,27 @@
       "colliders": [],
       "vertices": 80,
       "triangles": 140,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -3.0725,
-        2.83,
+        -1.5725,
+        2.03,
         3.54
       ],
       "bounds_max": [
-        -1.9275,
-        3.57,
+        -0.4275,
+        2.77,
         4.0925
       ],
       "unity_bounds_min": [
-        -3.0725,
+        -1.5725,
         3.54,
-        2.83
+        2.03
       ],
       "unity_bounds_max": [
-        -1.9275,
+        -0.4275,
         4.0925,
-        3.57
+        2.77
       ]
     },
     {
@@ -3456,6 +3845,8 @@
       "colliders": [],
       "vertices": 176,
       "triangles": 308,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.42,
         0.1175,
@@ -3493,6 +3884,8 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.23,
         1.262,
@@ -3530,6 +3923,8 @@
       "colliders": [],
       "vertices": 48,
       "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.43,
         1.35,
@@ -3567,6 +3962,8 @@
       "colliders": [],
       "vertices": 112,
       "triangles": 196,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.705,
         2.72,
@@ -3604,6 +4001,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.73,
         2.8,
@@ -3641,6 +4040,8 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.9,
         0.0805,
@@ -3678,6 +4079,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.2075,
         0.1625,
@@ -3715,6 +4118,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.6775,
         2.2125,
@@ -3752,6 +4157,8 @@
       "colliders": [],
       "vertices": 44,
       "triangles": 76,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.124,
         -0.746,
@@ -3789,6 +4196,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.1125,
         -0.755,
@@ -3826,6 +4235,8 @@
       "colliders": [],
       "vertices": 112,
       "triangles": 196,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.15,
         -3.74,
@@ -3863,6 +4274,8 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         3.23,
         -3.568,
@@ -3900,6 +4313,8 @@
       "colliders": [],
       "vertices": 48,
       "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         3.356,
         -3.49,
@@ -3937,6 +4352,8 @@
       "colliders": [],
       "vertices": 104,
       "triangles": 184,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         3.35,
         -1.586541,
@@ -3974,6 +4391,8 @@
       "colliders": [],
       "vertices": 48,
       "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -2.07,
         -1.1,
@@ -3981,7 +4400,7 @@
       ],
       "bounds_max": [
         -1.83,
-        1.1,
+        0.24,
         5.499
       ],
       "unity_bounds_min": [
@@ -3992,7 +4411,7 @@
       "unity_bounds_max": [
         -1.83,
         5.499,
-        1.1
+        0.24
       ]
     },
     {
@@ -4011,6 +4430,8 @@
       "colliders": [],
       "vertices": 112,
       "triangles": 196,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -2.0525,
         -0.96,
@@ -4018,7 +4439,7 @@
       ],
       "bounds_max": [
         -1.8475,
-        0.99,
+        0.13,
         5.688
       ],
       "unity_bounds_min": [
@@ -4029,7 +4450,7 @@
       "unity_bounds_max": [
         -1.8475,
         5.688,
-        0.99
+        0.13
       ]
     },
     {
@@ -4048,25 +4469,144 @@
       "colliders": [],
       "vertices": 104,
       "triangles": 184,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -3.051,
-        -3.612631,
-        3.537397
+        -3.921,
+        2.020625,
+        3.53689
       ],
       "bounds_max": [
-        -2.709,
-        -3.214199,
-        4.768677
+        -3.579,
+        2.412631,
+        4.759625
       ],
       "unity_bounds_min": [
-        -3.051,
-        3.537397,
-        -3.612631
+        -3.921,
+        3.53689,
+        2.020625
       ],
       "unity_bounds_max": [
-        -2.709,
-        4.768677,
-        -3.214199
+        -3.579,
+        4.759625,
+        2.412631
+      ]
+    },
+    {
+      "name": "DRESS_UpperCorridor.CeilingLamp",
+      "role": "upper_corridor_lamp",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.56,
+        0.52,
+        0.41,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 120,
+      "triangles": 220,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.5875,
+        -0.6875,
+        5.704
+      ],
+      "bounds_max": [
+        -2.4125,
+        -0.5125,
+        5.9
+      ],
+      "unity_bounds_min": [
+        -2.5875,
+        5.704,
+        -0.6875
+      ],
+      "unity_bounds_max": [
+        -2.4125,
+        5.9,
+        -0.5125
+      ]
+    },
+    {
+      "name": "DRESS_UpperCorridor.LampGlass",
+      "role": "upper_corridor_lamp_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": true,
+      "casts_shadows": false,
+      "tint": [
+        0.94,
+        0.78,
+        0.52,
+        0.62
+      ],
+      "colliders": [],
+      "vertices": 280,
+      "triangles": 556,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.658,
+        -0.758,
+        5.52
+      ],
+      "bounds_max": [
+        -2.342,
+        -0.442,
+        5.72
+      ],
+      "unity_bounds_min": [
+        -2.658,
+        5.52,
+        -0.758
+      ],
+      "unity_bounds_max": [
+        -2.342,
+        5.72,
+        -0.442
+      ]
+    },
+    {
+      "name": "DRESS_UpperCorridor.LampBulb",
+      "role": "upper_corridor_lamp_bulb",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": true,
+      "casts_shadows": false,
+      "tint": [
+        1.0,
+        0.82,
+        0.52,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 60,
+      "triangles": 116,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.537,
+        -0.637,
+        5.574
+      ],
+      "bounds_max": [
+        -2.463,
+        -0.563,
+        5.685
+      ],
+      "unity_bounds_min": [
+        -2.537,
+        5.574,
+        -0.637
+      ],
+      "unity_bounds_max": [
+        -2.463,
+        5.685,
+        -0.563
       ]
     },
     {
@@ -4085,6 +4625,8 @@
       "colliders": [],
       "vertices": 208,
       "triangles": 364,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.852,
         -4.0,
@@ -4092,7 +4634,7 @@
       ],
       "bounds_max": [
         4.88,
-        4.0,
+        3.88,
         3.675
       ],
       "unity_bounds_min": [
@@ -4103,7 +4645,787 @@
       "unity_bounds_max": [
         4.88,
         3.675,
-        4.0
+        3.88
+      ]
+    },
+    {
+      "name": "FIX_BathroomSouthWall",
+      "role": "bathroom_partition",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -5.0,
+        1.82,
+        3.54
+      ],
+      "bounds_max": [
+        -1.75,
+        1.98,
+        5.9
+      ],
+      "unity_bounds_min": [
+        -5.0,
+        3.54,
+        1.82
+      ],
+      "unity_bounds_max": [
+        -1.75,
+        5.9,
+        1.98
+      ]
+    },
+    {
+      "name": "FIX_BathroomDoor.Frame",
+      "role": "bathroom_door_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -3.17,
+        1.788,
+        3.54
+      ],
+      "bounds_max": [
+        -1.84,
+        2.012,
+        5.805
+      ],
+      "unity_bounds_min": [
+        -3.17,
+        3.54,
+        1.788
+      ],
+      "unity_bounds_max": [
+        -1.84,
+        5.805,
+        2.012
+      ]
+    },
+    {
+      "name": "FIX_BathroomDoor.OpenLeaf",
+      "role": "bathroom_door",
+      "group": "fixed",
+      "sheet": "PaleWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.55,
+        0.34,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -1.9575,
+        2.025,
+        3.54
+      ],
+      "bounds_max": [
+        -1.8675,
+        3.155,
+        5.69
+      ],
+      "unity_bounds_min": [
+        -1.9575,
+        3.54,
+        2.025
+      ],
+      "unity_bounds_max": [
+        -1.8675,
+        5.69,
+        3.155
+      ]
+    },
+    {
+      "name": "FIX_BathroomFloor",
+      "role": "bathroom_floor",
+      "group": "fixed",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.76,
+        0.73,
+        0.63,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 336,
+      "triangles": 504,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.877,
+        1.983,
+        3.56
+      ],
+      "bounds_max": [
+        -1.833,
+        4.777,
+        3.566
+      ],
+      "unity_bounds_min": [
+        -4.877,
+        3.56,
+        1.983
+      ],
+      "unity_bounds_max": [
+        -1.833,
+        3.566,
+        4.777
+      ]
+    },
+    {
+      "name": "FIX_BathroomSplashback",
+      "role": "bathroom_splashback",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.83,
+        0.86,
+        0.76,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 288,
+      "triangles": 432,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.837,
+        3.153,
+        3.5505
+      ],
+      "bounds_max": [
+        -1.842,
+        4.7725,
+        4.897
+      ],
+      "unity_bounds_min": [
+        -4.837,
+        3.5505,
+        3.153
+      ],
+      "unity_bounds_max": [
+        -1.842,
+        4.897,
+        4.7725
+      ]
+    },
+    {
+      "name": "FIX_BathroomTub",
+      "role": "bathroom_tub",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.9,
+        0.87,
+        0.77,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 380,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.55,
+        3.93,
+        3.575
+      ],
+      "bounds_max": [
+        -2.85,
+        4.68,
+        4.12
+      ],
+      "unity_bounds_min": [
+        -4.55,
+        3.575,
+        3.93
+      ],
+      "unity_bounds_max": [
+        -2.85,
+        4.12,
+        4.68
+      ]
+    },
+    {
+      "name": "DRESS_Bathroom.TubFittings",
+      "role": "bathroom_fittings",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.56,
+        0.55,
+        0.46,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 184,
+      "triangles": 328,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.035,
+        4.27,
+        3.705
+      ],
+      "bounds_max": [
+        -2.995,
+        4.715,
+        4.365
+      ],
+      "unity_bounds_min": [
+        -4.035,
+        3.705,
+        4.27
+      ],
+      "unity_bounds_max": [
+        -2.995,
+        4.365,
+        4.715
+      ]
+    },
+    {
+      "name": "FIX_BathroomToilet",
+      "role": "bathroom_toilet",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.88,
+        0.85,
+        0.76,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 372,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.785,
+        2.34,
+        3.565
+      ],
+      "bounds_max": [
+        -4.09,
+        2.79,
+        4.37
+      ],
+      "unity_bounds_min": [
+        -4.785,
+        3.565,
+        2.34
+      ],
+      "unity_bounds_max": [
+        -4.09,
+        4.37,
+        2.79
+      ]
+    },
+    {
+      "name": "DRESS_Bathroom.ToiletSeat",
+      "role": "bathroom_toilet_seat",
+      "group": "fixed",
+      "sheet": "PaleWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.71,
+        0.64,
+        0.46,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 156,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.6675,
+        2.34,
+        3.97
+      ],
+      "bounds_max": [
+        -4.0825,
+        2.79,
+        4.002
+      ],
+      "unity_bounds_min": [
+        -4.6675,
+        3.97,
+        2.34
+      ],
+      "unity_bounds_max": [
+        -4.0825,
+        4.002,
+        2.79
+      ]
+    },
+    {
+      "name": "FIX_BathroomVanity",
+      "role": "bathroom_vanity",
+      "group": "fixed",
+      "sheet": "PaleWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.69,
+        0.53,
+        0.32,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 144,
+      "triangles": 252,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.44,
+        3.14,
+        3.54
+      ],
+      "bounds_max": [
+        -1.89,
+        3.84,
+        4.29
+      ],
+      "unity_bounds_min": [
+        -2.44,
+        3.54,
+        3.14
+      ],
+      "unity_bounds_max": [
+        -1.89,
+        4.29,
+        3.84
+      ]
+    },
+    {
+      "name": "DRESS_Bathroom.Basin",
+      "role": "bathroom_basin",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.88,
+        0.85,
+        0.76,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 100,
+      "triangles": 196,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.42,
+        3.14,
+        4.295
+      ],
+      "bounds_max": [
+        -1.87,
+        3.84,
+        4.4
+      ],
+      "unity_bounds_min": [
+        -2.42,
+        4.295,
+        3.14
+      ],
+      "unity_bounds_max": [
+        -1.87,
+        4.4,
+        3.84
+      ]
+    },
+    {
+      "name": "DRESS_Bathroom.BasinTap",
+      "role": "bathroom_fittings",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.56,
+        0.44,
+        0.25,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 56,
+      "triangles": 100,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.12,
+        3.47,
+        4.38
+      ],
+      "bounds_max": [
+        -1.92,
+        3.51,
+        4.585
+      ],
+      "unity_bounds_min": [
+        -2.12,
+        4.38,
+        3.47
+      ],
+      "unity_bounds_max": [
+        -1.92,
+        4.585,
+        3.51
+      ]
+    },
+    {
+      "name": "FIX_BathroomMirror",
+      "role": "bathroom_mirror_frame",
+      "group": "fixed",
+      "sheet": "PaleWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.55,
+        0.34,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.015,
+        3.14,
+        4.5625
+      ],
+      "bounds_max": [
+        -1.865,
+        3.84,
+        5.33
+      ],
+      "unity_bounds_min": [
+        -2.015,
+        4.5625,
+        3.14
+      ],
+      "unity_bounds_max": [
+        -1.865,
+        5.33,
+        3.84
+      ]
+    },
+    {
+      "name": "DRESS_Bathroom.MirrorGlass",
+      "role": "bathroom_mirror_glass",
+      "group": "fixed",
+      "sheet": "Glass",
+      "emissive": false,
+      "casts_shadows": false,
+      "tint": [
+        0.6,
+        0.65,
+        0.61,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -1.9235,
+        3.24,
+        4.66
+      ],
+      "bounds_max": [
+        -1.9105,
+        3.74,
+        5.28
+      ],
+      "unity_bounds_min": [
+        -1.9235,
+        4.66,
+        3.24
+      ],
+      "unity_bounds_max": [
+        -1.9105,
+        5.28,
+        3.74
+      ]
+    },
+    {
+      "name": "FIX_BathroomLamp",
+      "role": "bathroom_lamp",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.56,
+        0.44,
+        0.25,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.13,
+        3.45,
+        5.15
+      ],
+      "bounds_max": [
+        -1.8525,
+        3.65,
+        5.35
+      ],
+      "unity_bounds_min": [
+        -2.13,
+        5.15,
+        3.45
+      ],
+      "unity_bounds_max": [
+        -1.8525,
+        5.35,
+        3.65
+      ]
+    },
+    {
+      "name": "DRESS_Bathroom.LampGlobe",
+      "role": "bathroom_lamp_globe",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": true,
+      "casts_shadows": false,
+      "tint": [
+        0.88,
+        0.82,
+        0.69,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 124,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.225,
+        3.455,
+        5.14
+      ],
+      "bounds_max": [
+        -2.035,
+        3.645,
+        5.35
+      ],
+      "unity_bounds_min": [
+        -2.225,
+        5.14,
+        3.455
+      ],
+      "unity_bounds_max": [
+        -2.035,
+        5.35,
+        3.645
+      ]
+    },
+    {
+      "name": "DRESS_Bathroom.LaundryBasket",
+      "role": "bathroom_laundry_basket",
+      "group": "fixed",
+      "sheet": "Wicker",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.63,
+        0.5,
+        0.3,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 156,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.755,
+        3.16,
+        3.58
+      ],
+      "bounds_max": [
+        -4.285,
+        3.7,
+        4.03
+      ],
+      "unity_bounds_min": [
+        -4.755,
+        3.58,
+        3.16
+      ],
+      "unity_bounds_max": [
+        -4.285,
+        4.03,
+        3.7
+      ]
+    },
+    {
+      "name": "DRESS_Bathroom.TowelRail",
+      "role": "bathroom_fittings",
+      "group": "fixed",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.56,
+        0.44,
+        0.25,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.9,
+        3.14,
+        4.625
+      ],
+      "bounds_max": [
+        -4.795,
+        3.72,
+        4.715
+      ],
+      "unity_bounds_min": [
+        -4.9,
+        4.625,
+        3.14
+      ],
+      "unity_bounds_max": [
+        -4.795,
+        4.715,
+        3.72
+      ]
+    },
+    {
+      "name": "FIX_BathroomTextiles",
+      "role": "bathroom_textiles",
+      "group": "fixed",
+      "sheet": "TeaCloth",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.82,
+        0.8,
+        0.69,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -4.8025,
+        3.235,
+        3.955
+      ],
+      "bounds_max": [
+        -4.355,
+        3.625,
+        4.67
+      ],
+      "unity_bounds_min": [
+        -4.8025,
+        3.955,
+        3.235
+      ],
+      "unity_bounds_max": [
+        -4.355,
+        4.67,
+        3.625
+      ]
+    },
+    {
+      "name": "DRESS_Bathroom.Soap",
+      "role": "bathroom_soap",
+      "group": "fixed",
+      "sheet": "Ceramic",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.77,
+        0.64,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -2.03,
+        3.71,
+        4.4045
+      ],
+      "bounds_max": [
+        -1.94,
+        3.77,
+        4.4395
+      ],
+      "unity_bounds_min": [
+        -2.03,
+        4.4045,
+        3.71
+      ],
+      "unity_bounds_max": [
+        -1.94,
+        4.4395,
+        3.77
       ]
     },
     {
@@ -4122,25 +5444,27 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -3.505,
-        3.7525,
+        4.6525,
         0.76
       ],
       "bounds_max": [
         -1.935,
-        4.12,
+        5.02,
         2.325
       ],
       "unity_bounds_min": [
         -3.505,
         0.76,
-        3.7525
+        4.6525
       ],
       "unity_bounds_max": [
         -1.935,
         2.325,
-        4.12
+        5.02
       ]
     },
     {
@@ -4159,25 +5483,27 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -3.32,
-        3.811,
+        4.711,
         0.915
       ],
       "bounds_max": [
         -2.12,
-        3.829,
+        4.729,
         2.185
       ],
       "unity_bounds_min": [
         -3.32,
         0.915,
-        3.811
+        4.711
       ],
       "unity_bounds_max": [
         -2.12,
         2.185,
-        3.829
+        4.729
       ]
     },
     {
@@ -4196,25 +5522,27 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -3.6075,
-        3.6775,
+        4.5775,
         0.79
       ],
       "bounds_max": [
         -1.8325,
-        3.7475,
+        4.6475,
         2.31
       ],
       "unity_bounds_min": [
         -3.6075,
         0.79,
-        3.6775
+        4.5775
       ],
       "unity_bounds_max": [
         -1.8325,
         2.31,
-        3.7475
+        4.6475
       ]
     },
     {
@@ -4233,6 +5561,8 @@
       "colliders": [],
       "vertices": 96,
       "triangles": 168,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.935,
         3.7525,
@@ -4270,6 +5600,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.12,
         3.811,
@@ -4307,6 +5639,8 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.8325,
         3.6775,
@@ -4344,6 +5678,8 @@
       "colliders": [],
       "vertices": 256,
       "triangles": 448,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.175,
         2.91,
@@ -4373,33 +5709,35 @@
       "emissive": false,
       "casts_shadows": true,
       "tint": [
-        0.035,
-        0.022,
-        0.017,
+        0.15,
+        0.13,
+        0.115,
         1.0
       ],
       "colliders": [],
-      "vertices": 16,
-      "triangles": 28,
+      "vertices": 48,
+      "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -0.65,
-        3.245,
+        -0.6625,
+        3.35,
         0.205
       ],
       "bounds_max": [
-        0.65,
-        3.325,
-        1.255
+        0.6625,
+        3.915,
+        1.27
       ],
       "unity_bounds_min": [
-        -0.65,
+        -0.6625,
         0.205,
-        3.245
+        3.35
       ],
       "unity_bounds_max": [
-        0.65,
-        1.255,
-        3.325
+        0.6625,
+        1.27,
+        3.915
       ]
     },
     {
@@ -4410,33 +5748,74 @@
       "emissive": false,
       "casts_shadows": true,
       "tint": [
-        0.1,
-        0.035,
-        0.016,
+        0.25,
+        0.21,
+        0.18,
         1.0
       ],
       "colliders": [],
-      "vertices": 32,
-      "triangles": 56,
+      "vertices": 72,
+      "triangles": 132,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -0.6,
-        3.115,
-        0.225
+        -0.559333,
+        3.377088,
+        0.204111
       ],
       "bounds_max": [
-        0.59,
-        3.265,
-        0.405
+        0.489436,
+        3.824506,
+        0.425399
       ],
       "unity_bounds_min": [
-        -0.6,
-        0.225,
-        3.115
+        -0.559333,
+        0.204111,
+        3.377088
       ],
       "unity_bounds_max": [
-        0.59,
-        0.405,
-        3.265
+        0.489436,
+        0.425399,
+        3.824506
+      ]
+    },
+    {
+      "name": "FIX_Fire.Ash",
+      "role": "fire_ash",
+      "group": "fixed",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.21,
+        0.19,
+        0.16,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 150,
+      "triangles": 240,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
+      "bounds_min": [
+        -0.554883,
+        3.3408,
+        0.202
+      ],
+      "bounds_max": [
+        0.545417,
+        3.729508,
+        0.238
+      ],
+      "unity_bounds_min": [
+        -0.554883,
+        0.202,
+        3.3408
+      ],
+      "unity_bounds_max": [
+        0.545417,
+        0.238,
+        3.729508
       ]
     },
     {
@@ -4448,32 +5827,34 @@
       "casts_shadows": false,
       "tint": [
         1.0,
-        0.18,
-        0.03,
+        0.21,
+        0.025,
         1.0
       ],
       "colliders": [],
-      "vertices": 42,
-      "triangles": 72,
+      "vertices": 212,
+      "triangles": 356,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -0.348116,
-        3.047382,
-        0.18
+        -0.490027,
+        3.345772,
+        0.231
       ],
       "bounds_max": [
-        0.42,
-        3.24337,
-        0.315
+        0.523762,
+        3.694536,
+        0.311671
       ],
       "unity_bounds_min": [
-        -0.348116,
-        0.18,
-        3.047382
+        -0.490027,
+        0.231,
+        3.345772
       ],
       "unity_bounds_max": [
-        0.42,
-        0.315,
-        3.24337
+        0.523762,
+        0.311671,
+        3.694536
       ]
     },
     {
@@ -4485,32 +5866,34 @@
       "casts_shadows": false,
       "tint": [
         1.0,
-        0.28,
-        0.045,
+        0.47,
+        0.12,
         1.0
       ],
       "colliders": [],
-      "vertices": 20,
-      "triangles": 32,
+      "vertices": 192,
+      "triangles": 372,
+      "uv_channel_count": 2,
+      "flame_field_vertex_count": 192,
       "bounds_min": [
-        -0.321353,
-        3.090139,
-        0.23
+        -0.467776,
+        3.6068,
+        0.27
       ],
       "bounds_max": [
-        0.38,
-        3.295106,
-        1.01
+        0.373315,
+        3.754603,
+        1.11
       ],
       "unity_bounds_min": [
-        -0.321353,
-        0.23,
-        3.090139
+        -0.467776,
+        0.27,
+        3.6068
       ],
       "unity_bounds_max": [
-        0.38,
-        1.01,
-        3.295106
+        0.373315,
+        1.11,
+        3.754603
       ]
     },
     {
@@ -4522,32 +5905,34 @@
       "casts_shadows": false,
       "tint": [
         1.0,
-        0.48,
-        0.075,
+        0.7,
+        0.26,
         1.0
       ],
       "colliders": [],
-      "vertices": 10,
-      "triangles": 16,
+      "vertices": 256,
+      "triangles": 496,
+      "uv_channel_count": 2,
+      "flame_field_vertex_count": 256,
       "bounds_min": [
-        -0.125623,
-        3.000629,
-        0.24
+        -0.443036,
+        3.393093,
+        0.28
       ],
       "bounds_max": [
-        0.2,
-        3.219371,
-        0.82
+        0.468374,
+        3.542231,
+        0.88
       ],
       "unity_bounds_min": [
-        -0.125623,
-        0.24,
-        3.000629
+        -0.443036,
+        0.28,
+        3.393093
       ],
       "unity_bounds_max": [
-        0.2,
-        0.82,
-        3.219371
+        0.468374,
+        0.88,
+        3.542231
       ]
     },
     {
@@ -4566,6 +5951,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -1.825,
         -1.375,
@@ -4603,6 +5990,8 @@
       "colliders": [],
       "vertices": 112,
       "triangles": 196,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.88,
         -3.95,
@@ -4640,6 +6029,8 @@
       "colliders": [],
       "vertices": 24,
       "triangles": 44,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.53,
         -3.868,
@@ -4677,6 +6068,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.788064,
         -3.7975,
@@ -4714,6 +6107,8 @@
       "colliders": [],
       "vertices": 104,
       "triangles": 184,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.9016,
         1.388323,
@@ -4751,6 +6146,8 @@
       "colliders": [],
       "vertices": 52,
       "triangles": 96,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.94,
         1.48,
@@ -4788,6 +6185,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         0.53,
         1.97,
@@ -4825,6 +6224,8 @@
       "colliders": [],
       "vertices": 128,
       "triangles": 224,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         1.12,
         3.385,
@@ -4862,6 +6263,8 @@
       "colliders": [],
       "vertices": 32,
       "triangles": 56,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         2.0225,
         3.36,
@@ -4899,6 +6302,8 @@
       "colliders": [],
       "vertices": 128,
       "triangles": 224,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -2.91,
         -1.2,
@@ -4936,6 +6341,8 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 112,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -2.748477,
         -1.055,
@@ -4973,6 +6380,8 @@
       "colliders": [],
       "vertices": 48,
       "triangles": 84,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -2.7175,
         -0.1,
@@ -5010,25 +6419,27 @@
       "colliders": [],
       "vertices": 64,
       "triangles": 116,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -1.97,
-        1.2,
+        -2.2,
+        -1.87,
         0.0
       ],
       "bounds_max": [
-        -1.47,
-        1.7,
-        1.37
+        -1.7,
+        -1.37,
+        1.455
       ],
       "unity_bounds_min": [
-        -1.97,
+        -2.2,
         0.0,
-        1.2
+        -1.87
       ],
       "unity_bounds_max": [
-        -1.47,
-        1.37,
-        1.7
+        -1.7,
+        1.455,
+        -1.37
       ]
     },
     {
@@ -5037,7 +6448,7 @@
       "group": "fixed",
       "sheet": "BedLinen",
       "emissive": false,
-      "casts_shadows": true,
+      "casts_shadows": false,
       "tint": [
         0.8,
         0.66,
@@ -5045,27 +6456,29 @@
         1.0
       ],
       "colliders": [],
-      "vertices": 24,
-      "triangles": 44,
+      "vertices": 64,
+      "triangles": 128,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -2.03,
-        1.14,
+        -2.26,
+        -1.93,
         1.27
       ],
       "bounds_max": [
-        -1.41,
-        1.76,
+        -1.64,
+        -1.31,
         1.81
       ],
       "unity_bounds_min": [
-        -2.03,
+        -2.26,
         1.27,
-        1.14
+        -1.93
       ],
       "unity_bounds_max": [
-        -1.41,
+        -1.64,
         1.81,
-        1.76
+        -1.31
       ]
     },
     {
@@ -5084,25 +6497,27 @@
       "colliders": [],
       "vertices": 20,
       "triangles": 36,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
-        -1.79,
-        1.383426,
-        1.235
+        -2.02,
+        -1.686574,
+        1.435
       ],
       "bounds_max": [
-        -1.65,
-        1.516574,
-        1.365
+        -1.88,
+        -1.553426,
+        1.565
       ],
       "unity_bounds_min": [
-        -1.79,
-        1.235,
-        1.383426
+        -2.02,
+        1.435,
+        -1.686574
       ],
       "unity_bounds_max": [
-        -1.65,
-        1.365,
-        1.516574
+        -1.88,
+        1.565,
+        -1.553426
       ]
     },
     {
@@ -5121,6 +6536,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.725,
         -0.45,
@@ -5158,6 +6575,8 @@
       "colliders": [],
       "vertices": 256,
       "triangles": 480,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.6525,
         -0.4025,
@@ -5195,6 +6614,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.23,
         -0.2,
@@ -5232,6 +6653,8 @@
       "colliders": [],
       "vertices": 216,
       "triangles": 380,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.505,
         -0.29,
@@ -5269,6 +6692,8 @@
       "colliders": [],
       "vertices": 400,
       "triangles": 700,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.3925,
         0.905289,
@@ -5306,6 +6731,8 @@
       "colliders": [],
       "vertices": 16,
       "triangles": 28,
+      "uv_channel_count": 1,
+      "flame_field_vertex_count": 0,
       "bounds_min": [
         -0.27,
         1.26,
@@ -5328,5 +6755,5 @@
       ]
     }
   ],
-  "build_signature": "8b01cba251ca00bcfeb2d84735cae68ce80e75766ccfc7fd45533ad004d2846c"
+  "build_signature": "fff7177cacc52b5c018798aeeaa8c26bdda3915dc2f940fb9ddf8af299326132"
 }

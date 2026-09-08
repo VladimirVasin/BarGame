@@ -620,9 +620,9 @@ namespace BarPromenade
             {
                 GameObject cameraObject = new GameObject("Main Camera");
                 camera = cameraObject.AddComponent<Camera>();
-                cameraObject.AddComponent<AudioListener>();
             }
 
+            EnsureSingleAudioListener(camera);
             camera.tag = "MainCamera";
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = backgroundColor;
@@ -639,6 +639,32 @@ namespace BarPromenade
             cameraData.renderShadows = true;
             cameraData.requiresDepthTexture = true;
             return camera;
+        }
+
+        private static void EnsureSingleAudioListener(Camera camera)
+        {
+            // A reused camera may have no listener, or one disabled by an
+            // earlier scene. The selected scene camera owns the audible
+            // perspective; repeated setup must neither lose it nor double it.
+            AudioListener listener = camera.GetComponent<AudioListener>();
+            AudioListener[] listeners =
+                Object.FindObjectsByType<AudioListener>(FindObjectsSortMode.None);
+            for (int index = 0; index < listeners.Length; index++)
+            {
+                AudioListener other = listeners[index];
+                if (other != listener && other.enabled)
+                {
+                    other.enabled = false;
+                }
+            }
+
+            if (listener == null)
+            {
+                listener = camera.gameObject.AddComponent<AudioListener>();
+            }
+
+            // Global pause and volume belong to travel, UI and player settings.
+            listener.enabled = true;
         }
 
         public static void EnsureLighting(Color ambientColor)

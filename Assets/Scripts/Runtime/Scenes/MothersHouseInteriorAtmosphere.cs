@@ -14,21 +14,25 @@ namespace BarPromenade
         public const int FireLightCount = 1;
 
         /// <summary>
-        /// Four selected practical spills: the two that flank the hearth
-        /// downstairs and one in each upper bedroom. The complete sixteen-
-        /// window layout shares the room lighting; adding a pane does not
+        /// Five selected practical spills: two by the hearth, one per
+        /// bedroom and one in the bathroom. The complete seventeen-window
+        /// layout shares the room lighting; adding a pane does not
         /// add another realtime lamp or overpower the hearth.
         /// </summary>
-        public const int WindowLightCount = 4;
+        public const int WindowLightCount = 5;
 
         /// <summary>
-        /// Three: the fabric-shaded floor lamp beside the sofa, the enamel
+        /// Five: the fabric-shaded floor lamp beside the sofa, the enamel
         /// bowl hanging in the parents' bedroom, and the bare bulb in the
-        /// childhood room. Both upper rooms are wired; what separates them is
+        /// childhood room, the bathroom wall lamp and the corridor ceiling
+        /// fitting. Both bedrooms are wired; what separates them is
         /// the KIND of light, not its absence - a shade over the bed that is
         /// still slept in, an unshaded flex over the one that is not.
         /// </summary>
-        public const int LampLightCount = 3;
+        public const int LampLightCount = 5;
+        public const float CorridorLampIntensity = 4.6f;
+        public const float CorridorLampRange = 5f;
+        public const float CorridorLampSpotAngle = 155f;
 
         /// <summary>
         /// Hung two metres over the bedroom floor and sized by
@@ -55,80 +59,17 @@ namespace BarPromenade
             new Color(1f, 0.82f, 0.62f);
         public const int PracticalLightCount =
             FireLightCount + WindowLightCount + LampLightCount;
-        /// <summary>
-        /// The lamp stands BETWEEN the two places anyone sits, and that is
-        /// what sets these two numbers.
-        ///
-        /// At `112` degrees the cone's half-angle was `56`, and both sitters
-        /// fell outside it: the hero on the sofa lies `60` degrees off the
-        /// axis and the mother in her chair `65`. The pool landed on bare
-        /// floor at about `(-1.35, 0.78)`, between the sofa and the chair,
-        /// touching neither - so both of them read as black shapes, and the
-        /// mother read as a silhouette because the only light on her came
-        /// from the hearth BEHIND her.
-        ///
-        /// No aim can fix that. The sofa sits at `x = -2.475` and the chair
-        /// at `x = 0.02`, two and a half metres apart with the lamp in
-        /// between, so any tilt that finds one loses the other - and the
-        /// contract holds the axis within `37` degrees of straight down
-        /// anyway. Width is the only answer, and it is the physically honest
-        /// one: a fabric shade open at the bottom throws a wide skirt of
-        /// light, not a beam.
-        /// </summary>
-        public const float FloorLampSpotAngle = 158f;
-
-        /// <summary>
-        /// Raised with the cone, because reach without strength only makes a
-        /// dimmer shape. The hearth delivers about `3.0` on the mother's back
-        /// from `1.7 m`; at `1.8 m` this now delivers about `1.7` to her
-        /// front, which lets her face read without ever pretending to be the
-        /// brighter light in the room. It stays well under the fire's `8.2`,
-        /// which the room's own test requires.
-        /// </summary>
+        // A bulb behind transmitting fabric throws light sideways as well
+        // as down. One real point light keeps both seated faces in its pool.
         public const float FloorLampIntensity = 5.4f;
+        public const float FloorLampRange = 5.5f;
 
-        /// <summary>
-        /// The one light in this room with no visible source, and it is kept
-        /// honest by being TINY, SHORT and CLOSE rather than by pretending
-        /// otherwise.
-        ///
-        /// What it stands in for is real: the hearth burns a metre and a half
-        /// behind the mother's chair and throws hard light onto pale boards
-        /// and a pale rug in front of her, and that floor would bounce warmth
-        /// back onto her face. There is no global illumination here to carry
-        /// it, so without this she is lit from behind and from nowhere else,
-        /// and a woman between a camera and a fire is a silhouette whatever
-        /// she is made of.
-        ///
-        /// It is NOT the banned `Warm Ceiling Fill`. That one hung over the
-        /// whole room and lifted everything from nowhere; this one cannot,
-        /// and the room's test pins the reason - a `1.1 m` range that dies
-        /// before any wall, floor or fixture, and an intensity a twentieth of
-        /// the floor lamp's. It reaches her and the rail in front of her
-        /// knees, and physically nothing else.
-        ///
-        /// It sits CLOSE on purpose. Placed out in the room it would have to
-        /// be strong to carry, and inverse-square would then blast whatever
-        /// stood nearest it - the low table, the chair's own front rail -
-        /// brighter than the face it was aimed at.
-        /// </summary>
+        // The real lamp lights both faces from the front. A small nearby
+        // reflection stands in for the hearth's bounce off the pale floor.
         public const float HearthBounceIntensity = 0.24f;
         public const float HearthBounceRange = 1.1f;
         public const float HearthBounceSpotAngle = 100f;
         public const int HearthBounceLightCount = 1;
-
-        /// <summary>
-        /// Where it sits and what it looks at, in room space: low and just in
-        /// front of her knees, angled UP at her face, the way light off a
-        /// floor arrives.
-        ///
-        /// Low is not a stylistic choice. At chest height the nearest thing
-        /// to the source is her knee, and inverse-square would put the
-        /// brightest note in the room on the blanket over her lap while her
-        /// face stayed dim. Kept low the gradient runs the way the real
-        /// phenomenon runs - lap first, face last - so the falloff reads as
-        /// floor bounce instead of as a lamp nobody can see.
-        /// </summary>
         public static readonly Vector3 HearthBouncePosition =
             new Vector3(0.02f, 1.05f, 0.95f);
         public static readonly Vector3 HearthBounceTarget =
@@ -153,17 +94,15 @@ namespace BarPromenade
         public Light FloorLampLight { get; private set; }
         public Light UpperBedroomLampLight { get; private set; }
         public Light UpperChildLampLight { get; private set; }
+        public Light BathroomLampLight { get; private set; }
+        public Light CorridorLampLight { get; private set; }
         public Light[] LampLights { get; private set; } =
             Array.Empty<Light>();
         public Light[] WindowLights { get; private set; } =
             Array.Empty<Light>();
 
-        /// <summary>
-        /// Deliberately NOT counted among the practicals. A practical has a
-        /// drawn source you can point at in the room; this one is a stand-in
-        /// for a floor bounce and has nothing to show, which is exactly why
-        /// it is held to a range that cannot leave the chair.
-        /// </summary>
+        // Reflected energy shares the visible lamp/hearth ownership;
+        // it is counted separately from their direct practical lights.
         public Light HearthBounceLight { get; private set; }
         public MothersHouseFireFlicker FireFlicker { get; private set; }
         public AudioSource FireCrackleSource { get; private set; }
@@ -199,15 +138,8 @@ namespace BarPromenade
             atmosphere.ConfigureSceneFill();
             atmosphere.FireLight = atmosphere.CreateFireLight(
                 world.FireLightAnchor.position);
-            atmosphere.FloorLampLight = atmosphere.CreateLampLight(
-                "Fabric-Shaded Floor Lamp Light",
-                world.FloorLampLightAnchor.position,
-                world.Root.TransformDirection(
-                    new Vector3(0.25f, -1f, -0.45f)),
-                FloorLampColor,
-                FloorLampIntensity,
-                4.5f,
-                FloorLampSpotAngle);
+            atmosphere.FloorLampLight = atmosphere.CreateFloorLampLight(
+                world.FloorLampLightAnchor.position);
             atmosphere.UpperBedroomLampLight = atmosphere.CreateLampLight(
                 "Upper Bedroom Bowl Lamp",
                 world.Root.TransformPoint(
@@ -226,11 +158,24 @@ namespace BarPromenade
                 UpperChildLampIntensity,
                 UpperChildLampRange,
                 UpperChildLampSpotAngle);
+            atmosphere.BathroomLampLight = atmosphere.CreateLampLight(
+                "Bathroom Opal Wall Lamp",
+                world.Root.TransformPoint(MothersHouseInteriorLayoutPlanner.BathroomLampPosition),
+                world.Root.TransformDirection(new Vector3(-0.4f, -1f, -0.1f)),
+                new Color(1f, 0.81f, 0.59f), 3.8f, 3.8f, 150f);
+            atmosphere.CorridorLampLight = atmosphere.CreateLampLight(
+                "Upper Corridor Opal Ceiling Lamp",
+                world.Root.TransformPoint(MothersHouseInteriorLayoutPlanner.UpperCorridorLampPosition),
+                world.Root.TransformDirection(Vector3.down),
+                new Color(1f, 0.79f, 0.55f),
+                CorridorLampIntensity, CorridorLampRange, CorridorLampSpotAngle);
             atmosphere.LampLights = new[]
             {
                 atmosphere.FloorLampLight,
                 atmosphere.UpperBedroomLampLight,
-                atmosphere.UpperChildLampLight
+                atmosphere.UpperChildLampLight,
+                atmosphere.BathroomLampLight,
+                atmosphere.CorridorLampLight
             };
             atmosphere.WindowLights = atmosphere.CreateWindowLights(
                 parent,
@@ -256,7 +201,9 @@ namespace BarPromenade
                 atmosphere.FireLight,
                 flames,
                 embers,
-                unchecked((uint)GameSessionState.CitySeed) ^ 0x4D4F5448u);
+                unchecked((uint)GameSessionState.CitySeed) ^ 0x4D4F5448u,
+                atmosphere.HearthBounceLight,
+                atmosphere.FloorLampLight);
             atmosphere.ConfigureCrackle(
                 world.FireLightAnchor.position,
                 GameSessionState.CitySeed);
@@ -296,32 +243,54 @@ namespace BarPromenade
             light.intensity = 8.2f;
             light.range = 9.5f;
             light.shadows = LightShadows.Soft;
-            light.shadowStrength = 0.68f;
-            light.shadowBias = RuntimeSceneSetup.PlayerMeshShadowBias;
-            light.shadowNormalBias =
-                RuntimeSceneSetup.PlayerMeshShadowNormalBias;
-            light.shadowNearPlane =
-                RuntimeSceneSetup.PlayerMeshShadowNearPlane;
+            light.shadowStrength = 0.9f;
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0.15f;
             light.lightmapBakeType = LightmapBakeType.Realtime;
-            if (Application.isPlaying)
-            {
-                UniversalAdditionalLightData lightData =
-                    light.GetUniversalAdditionalLightData();
-                lightData.additionalLightsShadowResolutionTier =
-                    UniversalAdditionalLightData
-                        .AdditionalLightsShadowResolutionTierLow;
-            }
+            ConfigureLocalShadows(light, true);
             return light;
         }
 
-        /// <summary>
-        /// The hearth's bounce off the boards in front of her chair.
-        ///
-        /// Shadowless on purpose: a bounce is not a source and must not draw
-        /// a second set of edges under a woman who already has the fire's.
-        /// </summary>
+        private Light CreateFloorLampLight(Vector3 position)
+        {
+            var holder = new GameObject("Fabric-Shaded Floor Lamp Light");
+            holder.transform.SetParent(transform, false);
+            holder.transform.position = position;
+            Light light = holder.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = FloorLampColor;
+            light.intensity = FloorLampIntensity;
+            light.range = FloorLampRange;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+            light.bounceIntensity = 0f;
+            ConfigureLocalShadows(light, true);
+            return light;
+        }
+
+        private static void ConfigureLocalShadows(Light light, bool keyLight)
+        {
+            light.shadows = LightShadows.Soft;
+            light.shadowStrength = 0.9f;
+            light.shadowBias = 0.02f;
+            light.shadowNormalBias = 0.08f;
+            light.shadowNearPlane = 0.05f;
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+
+            UniversalAdditionalLightData data = light.GetUniversalAdditionalLightData();
+            // Otherwise URP replaces these indoor metre-scale biases with
+            // the much larger project defaults and loses contact shadows.
+            data.usePipelineSettings = false;
+            data.additionalLightsShadowResolutionTier = keyLight
+                ? UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierMedium
+                : UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierLow;
+        }
+
+        // This restrained reflection stays at the chair; the lamp itself
+        // is responsible for the readable seated faces.
         private Light CreateHearthBounceLight(Transform roomRoot)
         {
             var lightObject = new GameObject("Hearth Floor Bounce");
@@ -380,7 +349,10 @@ namespace BarPromenade
                         plan.UpperFloor.SouthWindowPosition.x + 0.45f,
                         plan.UpperFloor.FloorElevation + 0.45f,
                         -2.6f),
-                    1.05f)
+                    1.05f),
+                CreateUpperWindowLight(roomRoot, "Bathroom Frosted Window Spill",
+                    MothersHouseInteriorLayoutPlanner.BathroomWindowLightPosition,
+                    new Vector3(-3.3f, plan.UpperFloor.FloorElevation + 0.45f, 3.15f), 0.72f)
             };
         }
 
@@ -410,7 +382,7 @@ namespace BarPromenade
             light.range = 7f;
             light.spotAngle = 76f;
             light.innerSpotAngle = 48f;
-            light.shadows = LightShadows.None;
+            ConfigureLocalShadows(light, false);
             light.bounceIntensity = 0f;
             light.lightmapBakeType = LightmapBakeType.Realtime;
             return light;
@@ -438,7 +410,7 @@ namespace BarPromenade
             light.range = range;
             light.spotAngle = spotAngle;
             light.innerSpotAngle = spotAngle * 0.62f;
-            light.shadows = LightShadows.None;
+            ConfigureLocalShadows(light, false);
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0f;
             light.lightmapBakeType = LightmapBakeType.Realtime;
@@ -466,7 +438,9 @@ namespace BarPromenade
             light.range = 8f;
             light.spotAngle = 78f;
             light.innerSpotAngle = 50f;
-            light.shadows = LightShadows.None;
+            ConfigureLocalShadows(light, false);
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
             return light;
         }
 
@@ -483,10 +457,10 @@ namespace BarPromenade
             FireCrackleSource.playOnAwake = false;
             FireCrackleSource.spatialBlend = 1f;
             FireCrackleSource.dopplerLevel = 0f;
-            FireCrackleSource.volume = 0.12f;
-            FireCrackleSource.minDistance = 1.2f;
-            FireCrackleSource.maxDistance = 11f;
-            FireCrackleSource.rolloffMode = AudioRolloffMode.Logarithmic;
+            FireCrackleSource.volume = 0.22f;
+            FireCrackleSource.minDistance = 2f;
+            FireCrackleSource.maxDistance = 13f;
+            FireCrackleSource.rolloffMode = AudioRolloffMode.Linear;
             GameAudioMixer.Route(
                 FireCrackleSource,
                 GameAudioGroup.AmbienceDetails);
