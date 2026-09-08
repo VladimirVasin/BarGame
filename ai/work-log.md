@@ -6,6 +6,115 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-08 — Three-second mirror teeth inspection and visible mouth
+
+Brushing completion now uses a three-second inspection: the hero lowers the
+brush, leans towards the actual mirror, opens his lips, holds head turns at
+`−18°` and `+18°`, and returns before the existing spit and faucet closure.
+Two added atlas expressions give the mouth separate upper/lower ivory tooth
+rows and a dark gap; clean and soiled variants keep the existing atlas size.
+The eye camera eases from `48°` to `34°` and back. A brushing-only reflected
+head/neck base-colour multiplier, up to `2.5`, makes the face readable and
+restores immediately during cleanup. The bibles and architecture notes
+record this user-requested readability refinement.
+
+The reported shape over the mouth was the underlying skull penetrating the
+face surface. Its two mouth rows now sit `5/7 mm` farther forward; the nose,
+upper face, UVs and topology counts are preserved. The generator checks
+actual triangles over `12,230` rays from five inspection angles: minimum
+clearance is `3.630 mm`. FBX, manifest, packed authoring blend and the Unity
+prefab are updated. Animation FBX is unchanged. Source and Unity front/side
+renders were inspected: both tooth rows are free of skull overlap. The
+focused scene check also exposed ordinary Idle motion shifting the feet;
+brushing now samples its captured Idle0 support pose before procedural
+upper-body posing, through an opt-in presentation method.
+
+Verification: the affected Blender model/atlas validators passed. The
+expanded existing PlayMode scenario
+`HomeBathroomInteractionsPlayModeTests.Brushing_MirrorSceneGatesReliefPerDay`
+passed `1/1` in `30.69 s`, including the exact timeline, side holds, planted
+feet, eye-camera framing, spit/sink contact, faucet closure, repeated daily
+reward, cancellation and disable cleanup. Measured eye approach was
+`0.273/0.275 m` at the two turns. Results, log and sequence frames are in
+`Captures/HomeBrushingInspection/`. Earlier focused attempts exposed the
+foot drift and a premature exact-FOV assertion during the final easing
+frames; both are resolved. Fast verification only: no full Unity suites or
+player build. Unrelated concurrent park-bandstand changes were preserved.
+
+## 2026-09-08 — The park bandstand stands on itself again
+
+Its four columns and its balustrade were standing beside the deck, in the
+air, and its pennant hung a quarter of its span past the eave. The cause is
+one substitution made on 2026-08-26, when the misc catalog moved to Blender:
+the rectangular platform became a stack of twelve-sided elliptical rings,
+and the columns and rails kept the coordinates of the rectangle's corners —
+which an inscribed ellipse is exactly the shape that cuts off. Measured on
+the deck ellipse (`3.18 x 2.54`), every column sat at `1.630` of the way out
+and the outer rail uprights at `1.769`, where the deck ends at `1.000`; the
+rails overhung it by `1.81 m` on each side. Nothing else about the bandstand
+had ever been touched: `git log -L` over the function returns that one
+commit.
+
+The repair keeps the twelve-sided bandstand the migration intended and puts
+the pieces on it. Positions now come from the deck plan through one local
+`on_deck(degrees, inset)` rather than from a bounding box: four columns on
+the diagonals at `0.40 m` in from the edge, and a balustrade of four chords
+and three uprights running between the two front columns, on the same ring.
+The roof's apex was the same mistake in miniature — a `0.17 x 1.90` ring
+that made a lopsided ridge out of a twelve-gon cone — and is now a `0.16 x
+0.14` finial. The piece count is the one the migration shipped, so the four
+parts, their names, roles and surfaces are untouched, and the assembly's
+bounds and its `0.0` minimum are unchanged.
+
+The pennant was the same defect one file away. `CityWindDressingPlanner`
+pinned it from a comment quoting the eave's old rectangular half-extents;
+against the real ring (`3.68 x 3.08`) it hung at `1.573`. It now hangs at
+`0.886`, just inside the edge where a pennant belongs.
+
+Repairing this meant deliberately re-freezing the v2 catalog. The bandstand
+is assembly `35` of `122`, inside the `37`-assembly prefix whose vertices,
+faces and UVs are hashed into `V2_COMPATIBILITY_SIGNATURE`, and that prefix
+is append-only by convention — the generator refuses to write anything when
+the hash moves. The freeze had been protecting this bug since the migration,
+and no runtime placement or UV mode can re-seat a column, so the constant was
+moved on purpose in all three hand-maintained copies (the generator,
+`CityMiscAssetSetup`, `CityMiscAssetTests`), each with a comment saying why.
+The whole-catalog build signature moved with it. Triangles went `46,542` to
+`46,546`, and `82` kinds / `122` assemblies / `259` meshes are unchanged.
+
+Verification: the Blender validation and the full build both passed, and the
+Unity rebind reported `CITY MISC UNITY ASSET BUILD OK`. The focused EditMode
+selection over the misc catalog, decoration planner, wind dressing, raven
+roosts, park surfaces and chess tables passed `69/69`. A throwaway sweep run
+against the generator — every connected island dropped straight down onto
+the real triangles of the rest of its assembly, because a bounding box is
+what hid this in the first place — reported the two rear columns carrying
+`0` of `9` feet, the two front columns `1` of `9` and the outer uprights `2`
+of `7` before the repair, and `9/9`, `6/6` and `7/7` for every raised piece
+after it.
+
+Then it was looked at, which is the thing that never happened. The migration
+entry's own verification is a list of hashes, contract rebinds and test
+counts, and the neighbouring entry from the same day says three defects had
+just passed `1710` green tests and were caught only by looking at a picture.
+So `AreaCaptureFixture.CityParkBandstand` is new: it finds the bandstand's
+descriptor, resolves the frame the mesh and the pennant share, asserts the
+pennant is inside the eave ellipse, and writes four frames from the ground —
+the open side, the balustrade, a column foot at the deck edge and the view up
+into the eave. It passed `1/1` in `14.46 s`, and the frames show every column
+footed in the boards.
+
+Left alone deliberately: `CityStaticCollisionBuilder` still blocks the
+bandstand with the pre-migration rectangle, `6.80 x 5.60`, around a deck
+that is `7.44 x 6.24` at its widest. It is the same migration's third
+leftover — the hero is stopped at four empty corners and admitted where the
+plinth is widest — but it is invisible and it changes where the player may
+walk, so it is reported rather than quietly retuned. Nothing pins those
+extents. `CityDecorationWorldBuilder.BuildBandstand`, the pre-migration box
+recipe, is also unchanged: it is dead in the city but still draws the
+bandstand in the view from the apartment window, where its own rectangle is
+self-consistent.
+
 ## 2026-09-08 — Toilet inspection, flush whirlpool and concurrent dressing
 
 The user's further request adds a practical downward inspection after

@@ -455,11 +455,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.animation_count, Is.Zero);
             Assert.That(manifest.mesh_count, Is.EqualTo(259));
             Assert.That(manifest.assembly_count, Is.EqualTo(122));
-            Assert.That(manifest.triangle_count, Is.EqualTo(46542));
+            Assert.That(manifest.triangle_count, Is.EqualTo(46546));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "85a8abea90e03d189d069dca36ed5a6f401b1b3fbf08d313dc51ff77ee3a4e21"));
+                    "3da71d7b938810af85fb4d8f2e26a0d1cc141765e621f90e69e8405b1f83a52f"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -467,7 +467,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.v2_compatibility_signature,
                 Is.EqualTo(
-                    "8ec3ffe04ffbcfba94cbf708d9c8263afbe853aeea4ffdeabfe638857a043193"));
+                    "267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7"));
             Assert.That(manifest.root_contract, Is.Not.Null);
             Assert.That(
                 manifest.root_contract.origin,

@@ -786,7 +786,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 1.7.0
   sourcePose: apose
   sourceTriangleCount: 2384
-  buildSignature: e4b040b45f28b4210beb7698c09ff3b7
+  buildSignature: d2313655aaca304967cbc1d4c5d60953
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}
@@ -837,6 +837,14 @@ MonoBehaviour:
       column: 3
       row: 1
       soiled: 0
+    - expression: 11
+      column: 0
+      row: 0
+      soiled: 0
+    - expression: 12
+      column: 1
+      row: 0
+      soiled: 0
     - expression: 0
       column: 4
       row: 3
@@ -880,6 +888,14 @@ MonoBehaviour:
     - expression: 10
       column: 7
       row: 1
+      soiled: 1
+    - expression: 11
+      column: 4
+      row: 0
+      soiled: 1
+    - expression: 12
+      column: 5
+      row: 0
       soiled: 1
   applyPaletteOnEnable: 1
 --- !u!1001 &9211038151743410627

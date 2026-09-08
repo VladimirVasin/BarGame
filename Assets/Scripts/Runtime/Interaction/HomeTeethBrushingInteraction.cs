@@ -35,6 +35,7 @@ namespace BarPromenade
         private Func<bool> stopAction;
 
         public HomeTeethBrushingTimeline Timeline => timeline;
+        public float MirrorHeadExposureBlend => OwnsScene && isActiveAndEnabled ? timeline.CameraBlend : 0f;
         public HomeTeethBrushingProgress Progress => progress;
         public HomeTeethBrushingArmPose ArmPose => armPose;
         public HomeTeethBrushingArmPose ValvePose => valvePose;
@@ -50,7 +51,8 @@ namespace BarPromenade
         protected override string StopPromptKey => StopPromptKeyName;
         protected override Vector3 CameraLocalPosition => EntryEye;
         protected override Vector3 CameraLocalLookAt => EntryEye + Vector3.forward;
-        protected override float CameraFieldOfView => HomeBrushingFirstPersonView.FieldOfView;
+        protected override float CameraFieldOfView => Mathf.Lerp(HomeBrushingFirstPersonView.FieldOfView,
+            HomeBrushingFirstPersonView.InspectionFieldOfView, timeline.InspectionLean);
         protected override float CameraBlend => timeline.CameraBlend;
         protected override float CameraDriftWeight => 0f;
         protected override bool SceneCompleted => timeline.IsCompleted;
@@ -135,8 +137,10 @@ namespace BarPromenade
         protected override void OnScenePresentation(float deltaTime)
         {
             if (armPose == null || visual == null) return;
+            visual.SampleInteractionNeutralPose();
             float bend = pendingSpitSeconds > 0f ? Mathf.Max(0.95f, timeline.SpitBend) : timeline.SpitBend;
-            armPose.Apply(progress.Offset, timeline.ArmWeight, bend, timeline.ValveReach);
+            armPose.Apply(progress.Offset, timeline.ArmWeight, bend, timeline.ValveReach,
+                timeline.InspectionLean, timeline.InspectionYaw);
             faucet.SetOpen(timeline.FaucetOpen);
             valvePose.ApplyValveGrip(faucet.GripPosition, faucet.GripRotation, timeline.ValveReach);
             PlayValveTurnCue();
@@ -154,7 +158,8 @@ namespace BarPromenade
             toothbrush.SetActive(timeline.ArmWeight > BrushVisibleWeight);
             foam.SetActive(timeline.Phase == HomeTeethBrushingPhase.Brushing && progress.Amount >= 0.1f);
             PlayerFacialExpression expression = timeline.Phase == HomeTeethBrushingPhase.Spit ? PlayerFacialExpression.Spit :
-                timeline.Phase == HomeTeethBrushingPhase.Brushing || timeline.Phase == HomeTeethBrushingPhase.ShowTeeth ?
+                timeline.Phase == HomeTeethBrushingPhase.ShowTeeth ? InspectionExpression() :
+                timeline.Phase == HomeTeethBrushingPhase.Brushing ?
                 PlayerFacialExpression.TeethDisplay : previousExpression;
             visual.TrySetContextualFacialExpression(this, expression, timeline.Cleaned);
             if (pendingSpitSeconds > 0f)
@@ -172,6 +177,14 @@ namespace BarPromenade
                 Home.InteractionPrompt?.SetPrompt(showPrompt ? StopPromptKeyName : string.Empty,
                     showPrompt ? stopAction : null);
             }
+        }
+
+        private PlayerFacialExpression InspectionExpression()
+        {
+            float reveal = timeline.InspectionMouthReveal;
+            if (reveal >= 0.75f) return PlayerFacialExpression.TeethInspect;
+            if (reveal > 0.05f) return PlayerFacialExpression.TeethInspectHalf;
+            return timeline.PhaseElapsed < 0.9f ? PlayerFacialExpression.TeethDisplay : previousExpression;
         }
 
         private void PlayValveTurnCue()
@@ -218,6 +231,7 @@ namespace BarPromenade
             ReleasePose();
             visual?.ReleaseContextualFacialExpression(this);
             timeline.Reset(); progress.Reset(); pendingSpitSeconds = 0f;
+            Home?.BathroomMirror?.RestoreBrushingHeadExposure();
             presentedFaucetOpen = 0f; valveSoundDirection = 0;
             brushingPromptVisible = false;
             if (toothbrush != null) toothbrush.SetActive(false);

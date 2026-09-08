@@ -72,7 +72,7 @@
     }
   },
   "wave1_compatibility_signature": "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6",
-  "v2_compatibility_signature": "8ec3ffe04ffbcfba94cbf708d9c8263afbe853aeea4ffdeabfe638857a043193",
+  "v2_compatibility_signature": "267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7",
   "colliders": false,
   "lights": false,
   "cameras": false,
@@ -81,7 +81,7 @@
   "animation_count": 0,
   "mesh_count": 259,
   "assembly_count": 122,
-  "triangle_count": 46542,
+  "triangle_count": 46546,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -8949,24 +8949,24 @@
       "vertices": 72,
       "triangles": 128,
       "bounds_min_source": [
-        -3.061873,
-        -2.381557,
+        -2.10363,
+        -1.644765,
         0.42
       ],
       "bounds_max_source": [
-        3.061873,
-        2.39,
+        2.10363,
+        1.653209,
         4.08
       ],
       "bounds_min_unity": [
-        -3.061873,
+        -2.10363,
         0.42,
-        -2.381557
+        -1.644765
       ],
       "bounds_max_unity": [
-        3.061873,
+        2.10363,
         4.08,
-        2.39
+        1.653209
       ],
       "uv_min": [
         0.0,
@@ -8986,25 +8986,25 @@
       "tint_role": "Street_PaintedMetal",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 140,
-      "triangles": 248,
+      "vertices": 142,
+      "triangles": 252,
       "bounds_min_source": [
-        -3.093872,
+        -2.66,
         -2.45,
         0.46
       ],
       "bounds_max_source": [
-        3.093872,
+        2.66,
         2.45,
         5.6
       ],
       "bounds_min_unity": [
-        -3.093872,
+        -2.66,
         0.46,
         -2.45
       ],
       "bounds_max_unity": [
-        3.093872,
+        2.66,
         5.6,
         2.45
       ],
@@ -15938,5 +15938,5 @@
       ]
     }
   ],
-  "build_signature": "85a8abea90e03d189d069dca36ed5a6f401b1b3fbf08d313dc51ff77ee3a4e21"
+  "build_signature": "3da71d7b938810af85fb4d8f2e26a0d1cc141765e621f90e69e8405b1f83a52f"
 }

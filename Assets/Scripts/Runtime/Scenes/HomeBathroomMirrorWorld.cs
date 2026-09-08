@@ -27,6 +27,7 @@ namespace BarPromenade
         public const string SpaceName = "Mirror Space";
         public const string TwinName = "Home Bathroom Mirror Hero Twin";
         public const string CloneSuffix = " (Mirror)";
+        public const float MaximumBrushingHeadExposure = 2.5f;
 
         /// <summary>
         /// The bathroom's contents that lie entirely in front of the plane,
@@ -71,6 +72,7 @@ namespace BarPromenade
         public Transform MirrorSpace => space;
         public HomeBathroomMirrorOpening Opening => opening;
         public bool HasTwin => twin != null;
+        public float HeadExposure { get; private set; } = 1f;
         public Player3DAssetRegistry Twin => twin?.Registry;
         public Transform TwinRoot => twin?.Root;
         public int TwinPairedBoneCount => twin?.PairedBoneCount ?? 0;
@@ -199,8 +201,19 @@ namespace BarPromenade
                 statics[index].SyncPropertyBlocks();
             }
 
-            twin?.Sync();
+            HomeTeethBrushingInteraction brushing = home.TeethBrushing;
+            HeadExposure = brushing != null
+                ? Mathf.Lerp(1f, MaximumBrushingHeadExposure, brushing.MirrorHeadExposureBlend)
+                : 1f;
+            twin?.Sync(HeadExposure);
             SyncProps();
+        }
+
+        /// <summary>Release the brushing-only tint immediately, including cleanup before LateUpdate.</summary>
+        public void RestoreBrushingHeadExposure()
+        {
+            HeadExposure = 1f;
+            twin?.Sync();
         }
 
         /// <summary>The plug goes back the moment this stops running.</summary>
@@ -223,6 +236,7 @@ namespace BarPromenade
             opening?.SetMirrorActive(active);
             if (!active)
             {
+                RestoreBrushingHeadExposure();
                 return;
             }
 
@@ -234,7 +248,7 @@ namespace BarPromenade
                 statics[index].SyncPropertyBlocks();
             }
 
-            twin?.Sync();
+            RestoreBrushingHeadExposure();
             SyncProps();
         }
 
@@ -437,6 +451,7 @@ namespace BarPromenade
     /// </summary>
     internal sealed class HomeMirrorHeroTwin
     {
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private readonly List<Transform> sourceBones = new List<Transform>();
         private readonly List<Transform> twinBones = new List<Transform>();
         private readonly List<Renderer> sourceRenderers = new List<Renderer>();
@@ -635,7 +650,7 @@ namespace BarPromenade
         }
 
         /// <summary>Root pose in the home frame, bones verbatim, renderer state with the head rule.</summary>
-        public void Sync()
+        public void Sync(float headExposure = 1f)
         {
             Transform root = Root;
             if (root == null || heroRoot == null)
@@ -712,6 +727,17 @@ namespace BarPromenade
                 // renderer put in it, and the face atlas would smear onto skin.
                 scratch.Clear();
                 source.GetPropertyBlock(scratch);
+                if (headFlags[index] && headExposure > 1f)
+                {
+                    // Compensate the mirrored head's dim lighting only while
+                    // brushing. Keep the source tint, alpha, atlas and shared
+                    // material intact; a factor of one copies the exact block.
+                    Material material = source.sharedMaterial;
+                    Color tint = scratch.HasColor(BaseColorId) ? scratch.GetColor(BaseColorId) :
+                        material != null && material.HasProperty(BaseColorId) ? material.GetColor(BaseColorId) : Color.white;
+                    scratch.SetColor(BaseColorId, new Color(
+                        tint.r * headExposure, tint.g * headExposure, tint.b * headExposure, tint.a));
+                }
                 mirror.SetPropertyBlock(scratch);
             }
         }

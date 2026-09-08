@@ -1361,7 +1361,7 @@
     "action_count": 47,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "8f1445f3ae88e81f30bce03f702671886178e1b14349979f0034f01d3e88d613",
+  "content_signature_sha256": "6adb2f9042d9cec7b468b71e40b0cbfe8c05f923b1afeb8cc34121001835fa54",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -1385,7 +1385,7 @@
     "cell_size_px": 64,
     "uv_origin": "bottom_left",
     "filter_mode": "Point",
-    "sha256": "c0413e3f353804c7c1b1dec61e938d7d9dbcf2e7329a4eae0afff578cbbe8188",
+    "sha256": "91aea0e3956334283dcf7dba0374b41b33c7f756827d9eb379869e0ad8a0b799",
     "cells": [
       {
         "expression": "Neutral",
@@ -1454,6 +1454,18 @@
         "soiled": false
       },
       {
+        "expression": "TeethInspectHalf",
+        "column": 0,
+        "row": 0,
+        "soiled": false
+      },
+      {
+        "expression": "TeethInspect",
+        "column": 1,
+        "row": 0,
+        "soiled": false
+      },
+      {
         "expression": "Neutral",
         "column": 4,
         "row": 3,
@@ -1517,6 +1529,18 @@
         "expression": "Spit",
         "column": 7,
         "row": 1,
+        "soiled": true
+      },
+      {
+        "expression": "TeethInspectHalf",
+        "column": 4,
+        "row": 0,
+        "soiled": true
+      },
+      {
+        "expression": "TeethInspect",
+        "column": 5,
+        "row": 0,
         "soiled": true
       }
     ]

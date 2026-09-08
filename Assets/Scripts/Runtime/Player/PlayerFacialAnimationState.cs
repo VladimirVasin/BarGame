@@ -22,11 +22,17 @@ namespace BarPromenade
         /// <summary>The wince of a fall coming, or of the floor just met.</summary>
         Grimace = 8,
 
-        /// <summary>Lips drawn back just enough to inspect the teeth at the mirror.</summary>
+        /// <summary>Lips parted around the brush during cleaning.</summary>
         TeethDisplay = 9,
 
         /// <summary>Pursed lips for the short spit into the basin.</summary>
-        Spit = 10
+        Spit = 10,
+
+        /// <summary>Lips beginning to draw back for the close mirror inspection.</summary>
+        TeethInspectHalf = 11,
+
+        /// <summary>Both tooth rows exposed for inspection, with the same weary eyes.</summary>
+        TeethInspect = 12
     }
 
     /// <summary>

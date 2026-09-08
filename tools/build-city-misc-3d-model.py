@@ -56,8 +56,12 @@ DISPLAY_NAME = (
 )
 V2_GENERATOR_VERSION = "2.0.0"
 V2_DESIGN_ID = "city_misc_all_decor_v2"
+# Moved once, on 2026-09-08, to accept the park bandstand repair: its four
+# columns and its balustrade were standing beside the deck in mid air because
+# the 2026-08-26 migration made the platform elliptical and left them at the
+# old rectangle's corners. Geometry inside this slice is otherwise pinned.
 V2_COMPATIBILITY_SIGNATURE = (
-    "8ec3ffe04ffbcfba94cbf708d9c8263afbe853aeea4ffdeabfe638857a043193"
+    "267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7"
 )
 WAVE1_COMPATIBILITY_SIGNATURE = (
     "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6"
@@ -2236,38 +2240,64 @@ def build_park_fountain_and_statue() -> AssemblySpec:
 
 
 def build_park_bandstand() -> AssemblySpec:
+    """A twelve-sided bandstand whose columns and balustrade stand on it.
+
+    Every ring here is an ellipse, so nothing may be placed from the plan's
+    bounding box: an inscribed ellipse cuts off exactly the corners a
+    rectangle has. The 2026-08-26 Blender migration converted the old
+    rectangular platform into these rings but left the four columns and the
+    three rails at the rectangle's corner coordinates, which put them beside
+    the deck with nothing underneath - the shape the park has been wearing
+    since. Positions are taken from the deck plan itself through
+    ``on_deck``, and the piece count is the one the migration shipped.
+    """
+
     kind = "ParkBandstand"
     variant = 0
-    width = 6.80
+    sides = 12
+    deck_rx, deck_ry = 3.18, 2.54
+    # The columns carry the eave, so the balustrade is hung from the same
+    # ring and meets them instead of running past the deck edge.
+    stand_inset = 0.40
+    column_degrees = (45.0, 135.0, 225.0, 315.0)
+    # Across the front, between the two front columns; the back stays open.
+    balustrade_degrees = (225.0, 240.0, 270.0, 300.0, 315.0)
+
+    def on_deck(degrees: float, inset: float) -> tuple[float, float]:
+        """A point on the deck plan, `inset` metres in from its edge."""
+        angle = math.radians(degrees)
+        return ((deck_rx - inset) * math.cos(angle),
+                (deck_ry - inset) * math.sin(angle))
+
     stone = [
         ring_solid_z(((0.0, 0.0, 0.0, 3.72, 3.12, 0.0),
-                      (0.36, 0.0, 0.0, 3.55, 2.95, 0.08)), 12),
+                      (0.36, 0.0, 0.0, 3.55, 2.95, 0.08)), sides),
     ]
     residential_timber = [
         ring_solid_z(((0.36, 0.0, 0.0, 3.22, 2.58, 0.0),
-                      (0.54, 0.0, 0.0, 3.18, 2.54, 0.04)), 12),
+                      (0.54, 0.0, 0.0, 3.18, 2.54, 0.04)), sides),
         ring_solid_z(((4.00, 0.0, 0.0, 3.68, 3.08, 0.0),
-                      (4.30, 0.0, 0.0, 3.50, 2.88, 0.05)), 12),
+                      (4.30, 0.0, 0.0, 3.50, 2.88, 0.05)), sides),
     ]
     masonry_timber: list[Geometry] = []
-    for x_side in (-1, 1):
-        for z_side in (-1, 1):
-            masonry_timber.append(recipe_tube(
-                (x_side * width * 0.43, 0.42, z_side * 2.25),
-                (x_side * width * 0.43, 4.08, z_side * 2.25),
-                0.14, sides=9, end_radius=0.11))
+    for degrees in column_degrees:
+        x, forward = on_deck(degrees, stand_inset)
+        masonry_timber.append(recipe_tube(
+            (-x, 0.42, forward), (-x, 4.08, forward),
+            0.14, sides=9, end_radius=0.11))
     painted: list[Geometry] = [
         ring_solid_z(((4.28, 0.0, 0.0, 2.66, 2.45, 0.0),
                       (4.82, 0.0, 0.0, 2.22, 2.00, 0.06),
-                      (5.60, 0.0, 0.0, 0.17, 1.90, 0.0)), 12),
+                      (5.60, 0.0, 0.0, 0.16, 0.14, 0.0)), sides),
     ]
-    for x in (-2.15, 0.0, 2.15):
+    balustrade = [on_deck(degrees, stand_inset)
+                  for degrees in balustrade_degrees]
+    for (x0, forward0), (x1, forward1) in zip(balustrade, balustrade[1:]):
         painted.append(recipe_tube(
-            (x - 0.90, 1.14, -2.34),
-            (x + 0.90, 1.14, -2.34), 0.06, sides=8))
-    for x in (-3.05, -1.10, 1.10, 3.05):
+            (-x0, 1.14, forward0), (-x1, 1.14, forward1), 0.06, sides=8))
+    for x, forward in balustrade[1:-1]:
         painted.append(recipe_tube(
-            (x, 0.46, -2.34), (x, 1.16, -2.34), 0.045, sides=7))
+            (-x, 0.46, forward), (-x, 1.20, forward), 0.045, sides=7))
     return AssemblySpec(
         kind, variant,
         (

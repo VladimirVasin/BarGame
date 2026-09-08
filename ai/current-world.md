@@ -1187,7 +1187,7 @@ The vertical slice contains:
 - one deterministic `city_misc_citywide_v4` mesh library at generator version
   `4.9.0` supplies the passive visuals for the broad City misc pass: `82`
   semantic kinds resolve to `122` assemblies, `259` role meshes and
-  `46,542` triangles. It covers the 24-family
+  `46,546` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
   Route 01 shelters/poles, the eastern yard, cemetery graves and vegetation,
     the church-yard surfaces and planting plus the modified cemetery
@@ -2293,9 +2293,21 @@ The vertical slice contains:
   drives the actual right arm relative to the reflection; its gauge credits
   only commanded brush travel confirmed at the
   teeth, requiring at least `5 s` of active movement. At full progress the
-  hero lowers the brush, shows his teeth for `1.5 s`, then bends and spits
-  for `1.5 s`; mouth-origin foam follows ballistic flight into the real
-  hollow Blender basin. The camera stays in the hero's eyes throughout;
+  hero inspects his teeth over `3 s`: `0–0.6 s` lowers the brush and leans
+  closer, `0.6–0.9 s` opens his lips, `0.9–1.65 s` turns left,
+  `1.65–2.4 s` turns right, and `2.4–3 s` returns to centre and the standing
+  pose. The feet and gameplay root stay at the dock. `TeethInspectHalf` and
+  `TeethInspect` reveal two distinct muted tooth rows on the existing curved
+  face, preserving the weary eyes and straight mouth corners. The eye camera
+  holds the reflection through the head turns, easing FOV from `48°` to
+  `34°` with the lean and back before spit; faucet water keeps flowing.
+  Only the reflected head/neck receives a scoped base-colour multiplier
+  `1–2.5` following the brushing camera blend. Source hero, shared materials,
+  alpha, light/shadow response, room lights and glass are preserved; cleanup
+  restores the ordinary dark reflection. The inspection's tooth rows use
+  muted cream `(210, 204, 181)`.
+  He then bends and spits for `1.5 s`; mouth-origin foam follows ballistic
+  flight into the real hollow Blender basin. The camera stays in the hero's eyes throughout;
   the left hand turns the valve shut after the spit and before camera return.
   The reflected rig, brush, mouth foam, spit and faucet water stay synchronized.
   Stop `E` cancels before full progress and closes any opened valve first;

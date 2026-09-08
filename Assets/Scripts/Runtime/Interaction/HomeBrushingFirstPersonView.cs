@@ -6,6 +6,7 @@ namespace BarPromenade
     public sealed class HomeBrushingFirstPersonView : MonoBehaviour
     {
         public const float FieldOfView = 48f;
+        public const float InspectionFieldOfView = 34f;
         public const float EyeHeightAboveMouth = 0.068f;
         public const float HeadHideBlend = 0.90f;
         private HomeInteriorRoot home;

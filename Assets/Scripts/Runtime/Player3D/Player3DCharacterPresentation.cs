@@ -521,6 +521,17 @@ namespace BarPromenade
             intoxicationTarget = Mathf.Clamp01(intensity);
         }
 
+        /// <summary>Keep a procedural interaction on its captured Idle0 support pose.</summary>
+        public void SampleInteractionNeutralPose()
+        {
+            if (!interactionHandoffLocked || IsClipActive || !idlePlayable.IsValid()) return;
+            // The handoff suppresses additive status, but the ordinary idle
+            // clip still shifts the pelvis and knees. The action opts into a
+            // fixed support pose before applying its own upper-body motion.
+            idlePlayable.SetTime(0d);
+            EvaluateGraph(0f);
+        }
+
         public void SetBalancePose(float signedLean)
         {
             balanceLeanTarget = Mathf.Clamp(signedLean, -1f, 1f);

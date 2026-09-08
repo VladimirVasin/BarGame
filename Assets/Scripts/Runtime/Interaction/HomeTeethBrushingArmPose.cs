@@ -43,6 +43,7 @@ namespace BarPromenade
         private Quaternion[] safePose;
         private float safeBend;
         private float safeValveLean;
+        private float safeInspectionLean, safeInspectionYaw;
         private bool hasSafePose;
         private Vector3 Outside => actor.rotation * rightInActor;
         private Vector3 Forward => actor.rotation * forwardInActor;
@@ -64,6 +65,8 @@ namespace BarPromenade
         public float ActualBrushTravel { get; private set; }
         public float Bend { get; private set; }
         public float ValveLean { get; private set; }
+        public float InspectionLean { get; private set; }
+        public float InspectionYaw { get; private set; }
         /// <summary>Measured broad-phase radii: upper arm, forearm and hand, in metres.</summary>
         public Vector3 ArmRadii => new Vector3(upperArmRadius, forearmRadius, handRadius);
         /// <summary>Clearances after mesh confirmation: upper arm, forearm and hand.</summary>
@@ -236,16 +239,26 @@ namespace BarPromenade
                 if (bones[index] != null) bones[index].localRotation = safePose[index];
             return true;
         }
-        public void Apply(Vector2 brushOffset, float weight, float bend, float valveReach = 0f)
+        public void Apply(Vector2 brushOffset, float weight, float bend, float valveReach = 0f,
+            float inspectionLean = 0f, float inspectionYaw = 0f)
         {
             if (!captured || Effector == null) return;
             RestoreBones();
             Weight = Mathf.Clamp01(weight); Bend = Mathf.Clamp01(bend); ValveLean = Mathf.Clamp01(valveReach);
+            InspectionLean = Mathf.Clamp01(inspectionLean);
+            InspectionYaw = Mathf.Clamp(inspectionYaw, -HomeTeethBrushingTimeline.InspectionTurnDegrees,
+                HomeTeethBrushingTimeline.InspectionTurnDegrees);
             // Reaching the central tap needs a waist/chest lean, not the
             // predominantly neck/head dip used to spit. Feet and root stay
             // at the grounded dock while the shoulder moves within arm reach.
-            Pitch(spine, 8f * Bend + 25f * ValveLean); Pitch(chest, 12f * Bend + 20f * ValveLean);
-            Pitch(neck, 10f * Bend + 5f * ValveLean); Pitch(head, 18f * Bend + 8f * ValveLean);
+            Pitch(spine, 8f * Bend + 25f * ValveLean + 32f * InspectionLean);
+            Pitch(chest, 12f * Bend + 20f * ValveLean + 15f * InspectionLean);
+            // Counter-pitch the neck/head so the face remains upright while
+            // the actual eyes approach the mirror. Root and feet never slide.
+            Pitch(neck, 10f * Bend + 5f * ValveLean - 20f * InspectionLean);
+            Pitch(head, 18f * Bend + 8f * ValveLean - 27f * InspectionLean);
+            if (neck != null) neck.rotation = Quaternion.AngleAxis(InspectionYaw * 0.35f, actor.up) * neck.rotation;
+            if (head != null) head.rotation = Quaternion.AngleAxis(InspectionYaw * 0.65f, actor.up) * head.rotation;
             Vector3 faceRight = head.rotation * faceRightInHead;
             Vector3 faceUp = head.rotation * faceUpInHead;
             Vector3 faceForward = head.rotation * faceForwardInHead;
@@ -288,6 +301,8 @@ namespace BarPromenade
                     if (bones[index] != null) bones[index].localRotation = safePose[index];
                 Bend = safeBend;
                 ValveLean = safeValveLean;
+                InspectionLean = safeInspectionLean;
+                InspectionYaw = safeInspectionYaw;
                 RefreshBody();
                 MeasureBodyClearance();
             }
@@ -438,6 +453,8 @@ namespace BarPromenade
                 if (bones[index] != null) safePose[index] = bones[index].localRotation;
             safeBend = Bend;
             safeValveLean = ValveLean;
+            safeInspectionLean = InspectionLean;
+            safeInspectionYaw = InspectionYaw;
             hasSafePose = true;
         }
         private void MeasureArmVolumes()
@@ -821,7 +838,7 @@ namespace BarPromenade
                 RefreshBody();
                 MeasureBodyClearance();
             }
-            Weight = Bend = ValveLean = ActualBrushTravel = 0f;
+            Weight = Bend = ValveLean = InspectionLean = InspectionYaw = ActualBrushTravel = 0f;
             captured = sampled = false;
         }
         private void RestoreBones()

@@ -3406,9 +3406,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — City misc is one citywide role-mesh library, not world
   prefabs:** current design `city_misc_citywide_v4` at generator `4.9.0`
   contains `82` semantic kinds, `122` assemblies and `259` role meshes
-  (`46,542` triangles) under build
+  (`46,546` triangles) under build
   signature
-  `85a8abea90e03d189d069dca36ed5a6f401b1b3fbf08d313dc51ff77ee3a4e21`.
+  `3da71d7b938810af85fb4d8f2e26a0d1cc141765e621f90e69e8405b1f83a52f`.
   The provider resolves kind, stable variant and semantic role; the affected
   builders then place or combine those meshes from their existing plans. The
   catalog spans the 24-family decoration layer and parks, street lamps and
@@ -3425,7 +3425,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   contract. The earlier wave-one and v2 subsets remain frozen
   by compatibility signatures
   `dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6`
-  and `8ec3ffe04ffbcfba94cbf708d9c8263afbe853aeea4ffdeabfe638857a043193`.
+  and `267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7`.
   Unity still owns world plans, placement, terrain, collision proxies,
   dynamics, interactions, realtime lights and halos, cloth and NPCs. Tilted
   cemetery monuments deliberately stay on the legacy builder because their
@@ -5543,8 +5543,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   measured tip travel and `0.08 m/s` while contact error is below `12 mm`.
   At the user's request on `2026-09-07`, required travel is reduced from
   `0.64 m` to `0.40 m`: the gauge fills `1.6×` faster, requiring at least
-  `5 s` of active movement. Only progress tuning changes; valve, camera and
-  finishing timings retain their durations. Waiting,
+  `5 s` of active movement. That tuning changed only progress; the inspection
+  timing is separately refined by the accepted `2026-09-08` decision below. Waiting,
   blocked travel, movement away from contact and uncommanded pose drift
   cannot fill `HomeBrushingGaugeView`. The scrub cue follows credited travel.
   The first mouse delta is discarded and pause blocks input. Stop `E` before
@@ -5552,8 +5552,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   closes any opened faucet before returning. Reaching `100%` commits to the
   short finishing action.
 
-  Full progress starts `ShowTeeth` for `1.5 s`; the brush lowers over
-  `0.45 s` and the atlas shows parted lips and muted teeth without a smile.
+  Full progress starts `ShowTeeth`, expanded from the original `1.5 s` hold
+  to the `3 s` inspection accepted on `2026-09-08` below.
   `Spit` then lasts `1.5 s`: the existing spine, chest, neck and head bend
   together and the mouth uses the compact Spit expression. The original
   mirror-plane and transient side cameras are superseded by the first-person
@@ -5577,8 +5577,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   imported meshes and one PS1 Lit cream material. Sixteen downward cavity
   rays, three incoming rays and FBX round trips validate the authored opening.
 
-  The face atlas adds `TeethDisplay` and `Spit` plus their soiled twins:
-  eleven expressions, `22` occupied cells and ten free cells in the unchanged
+  The face atlas originally added `TeethDisplay` and `Spit` plus their soiled
+  twins. The `2026-09-08` inspection adds two more expressions and their twins:
+  thirteen expressions, `26` occupied cells and six free cells in the unchanged
   `8 x 4` layout. A contextual expression owner prevents ordinary mood/blink
   updates from overwriting the gesture and releases it on every exit. The
   finished teeth preview uses the clean face locally; persistent mouth
@@ -5614,7 +5615,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   body clearance is checked after that rotation.
   The player controls the right hand by mouse/right-stick X/Y relative to the
   reflected image; existing contact-qualified progress and body clearance
-  remain in force. Full progress shows teeth for `1.5 s`, then bends and spits
+  remain in force. Full progress runs the `3 s` teeth inspection refined on
+  `2026-09-08` below, then bends and spits
   for `1.5 s`, all from the same eyes. The left hand turns the valve back after
   the spit, then camera, rig and input return through the shared bathroom owner.
   At the user's request (`2026-09-07`), the exit takes one backward step from
@@ -5639,6 +5641,73 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   visibility fade or new animation framework. `HomeTeethBrushingTimeline`
   owns `CameraToEyes → OpenFaucet → RaiseBrush → Brushing → ShowTeeth → Spit →
   CloseFaucet → CameraReturn`; verification is recorded in the work log.
+- **Accepted refinement of the bathroom procedural-pose exception —
+  2026-09-08, explicit user acceptance of the three-second teeth-inspection
+  plan:** `ShowTeeth` replaces its short static hold with one `3 s` action.
+  `0–0.6 s` lowers the brush and leans the real upper body closer to the
+  mirror, `0.6–0.9 s` opens the lips, `0.9–1.65 s` turns the head left with
+  a short hold, `1.65–2.4 s` turns right, and `2.4–3 s` centres the head,
+  relaxes the mouth and returns the body before the existing `1.5 s` spit.
+  The feet and gameplay root stay at the sink dock. The same eye camera
+  follows the posed head position while maintaining its gaze on the actual
+  reflection; the mirror twin continues to copy the production rig.
+  Brushing explicitly calls
+  `Player3DCharacterPresentation.SampleInteractionNeutralPose` before its
+  upper-body pose. The handoff alone left ordinary Idle moving the pelvis
+  and knees; sampling `Idle0` fixes that support pose. The method applies
+  only under the interaction handoff without an active clip and leaves
+  other interactions unchanged unless they opt in.
+  The same-day readability refinement below additionally narrows the lens
+  and compensates only the reflected head/neck colour during brushing.
+
+  `TeethDisplay` remains the brushing expression. `TeethInspectHalf` and
+  `TeethInspect` supply intermediate and fully opened lips on the existing
+  curved face, with a dark mouth cavity, separately readable upper and lower
+  muted tooth rows and sparse divisions. The atlas keeps the same resolution
+  and existing cell addresses, adding clean `c0r0`/`c1r0` cells and their
+  `+4` soiled twins. The mouth corners remain straight and the eyes weary;
+  there is no smile. The owner uses the locally clean finishing face as
+  before, and persistent cleaning still waits for completion.
+
+  Water continues through inspection and spit; the existing left-hand valve
+  closure, camera return, backward exit, cancellation and relief ownership
+  retain their contracts. This is a practical check of cleaned teeth inside
+  the existing mirror-brushing scene, with the dated story-bible §6 row
+  refined accordingly. It adds no self-analysis, water attention, story
+  event, fiction text, light, replacement model or root relocation. Story
+  laws §16 and all nine art-bible acceptance checks remain binding;
+  verification evidence belongs in the work log.
+- **Accepted architecture exception — 2026-09-08, user follow-up that the
+  reflected face and mouth remain difficult to see:** The inspection eases
+  FOV `48° → 34° → 48°` with its lean, retaining the actual eye position
+  and gaze on the reflection. During brushing only, the reflected hero's
+  head and neck receive a base-colour multiplier `1–2.5` following
+  `CameraBlend`. Their source property blocks are still copied each frame,
+  then only the reflected head/neck RGB is multiplied. Alpha, texture/UV
+  properties and the ordinary shader's light/shadow response remain intact;
+  the source hero and shared materials are never tinted. This is the sole
+  bounded exception to the mirror's verbatim property-block copy and darker
+  appearance. No light, emission, room exposure or glass change is added.
+  Completion, cancellation and disable release the scoped compensation and
+  restore the ordinary dark reflection outside brushing.
+
+  `TeethInspectHalf` and `TeethInspect` use brighter muted cream
+  `(210, 204, 181)` for both tooth rows. `TeethDisplay` keeps its former
+  pixels. The new soiled twins paint the mouth after the soil so neither
+  tooth row nor the dark gap is obscured. The scene remains the accepted
+  practical teeth inspection without a smile, new story event or fiction
+  text; the dated story-bible §6 row bounds this visual correction, and
+  verification results belong in the work log.
+
+  A further same-day user report identified the underlying `GEO_Head`
+  protruding through `GEO_FaceSurface` over the upper mouth. The generator
+  moves only the lower face rows at source `z=1.512/1.542 m` outward
+  `5/7 mm`; nose, upper face, UVs and topology counts remain unchanged.
+  `validate_mouth_skull_clearance` measures the real meshes across `12,230`
+  rays at yaw `−18/−9/0/9/18°`, with source minimum clearance `3.63 mm`.
+  The corrected geometry is exported and published; source and Unity
+  inspection frames show no skull overlap over the mouth. This visual
+  result is separate from the focused PlayMode result recorded in the work log.
 - **Accepted architecture exception — 2026-09-06, explicit user request —
   first-person naked shower wash:** This replaces bathroom exception (a)
   with a wash seen from the production hero's own eyes and a real bare-skin
@@ -6010,6 +6079,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   re-read every frame, not only on the frame the shot changes: the bathroom
   tube's flicker and the apartment's day tints live in them, and a reflection
   whose lamp is frozen while the real one stutters gives the whole trick away.
+  The accepted `2026-09-08` brushing readability refinement above multiplies
+  only the reflected head/neck RGB after that copy while the eye camera owns
+  the action; all other property-block values still follow their sources.
   The five patches that stand in for the flat-sized slabs are registered with
   `HomeApartmentDressing` so they age with the days like the surfaces they
   continue. The builder refuses to run if the plate it must plug has drifted
@@ -6024,8 +6096,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   rule 5 requires; nothing is reflected that the bathroom does not contain.
   The `2026-09-07` exception above admits the brushing prop, foam, faucet and
   its water; the toilet anatomy, shower bridges/water and contact shadow stay
-  out. No light is mirrored, so the reflection is deliberately darker — the
-  user chose that over a sixth realtime light. The story bible's mirror test
+  out. No light is mirrored, so the reflection remains deliberately darker
+  outside the scoped head/neck compensation during brushing accepted on
+  `2026-09-08`; the room reflection keeps that dark baseline throughout.
+  The story bible's mirror test
   is narrowed by the dated §6 rows: only brushing sustains the face as part of
   an action, now through the actual reflection, and other appearances of that
   reflection do not become a separate scene.
@@ -7255,7 +7329,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   lumps, `6 %` pale crumbs, point-filtered) — an irregular, textured, lit
   polygon, never a rectangle, with dark cubes sunk `40 %` into it for the
   pieces. THE SOILED MOUTH IS AN ATLAS FLAG, not a second face pipeline:
-  the face atlas became `8×4` (`512×256`), each of the now eleven expressions has a
+  the face atlas became `8×4` (`512×256`), each of the now thirteen expressions has a
   soiled twin at column `+4`, `Player3DFaceAtlasCell` gained `Soiled` (the
   three-argument constructor stays for the mother),
   `Player3DFaceAtlasBinding.TryGetTextureTransform(expression, soiled, …)`

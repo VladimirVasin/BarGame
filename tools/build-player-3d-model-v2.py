@@ -30,6 +30,7 @@ from typing import Sequence
 
 import bpy
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -313,6 +314,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         "--face-atlas-only", action="store_true",
         help="Update only face pixels, expression sheet and face manifest data.",
     )
+    parser.add_argument("--skip-animation-export", action="store_true",
+                        help="Keep the existing animation FBX when only model geometry changes.")
     parser.add_argument(
         "--clothing-atlas",
         type=Path,
@@ -379,7 +382,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         manifest=resolve_path(args.manifest),
         glb=resolve_path(args.glb) if args.glb is not None else None,
         fbx=resolve_path(args.fbx),
-        animation_fbx=resolve_path(args.animation_fbx),
+        animation_fbx=None if args.skip_animation_export else resolve_path(args.animation_fbx),
         height=args.height,
         seed=args.seed,
         pose=args.pose,
@@ -416,6 +419,7 @@ CHEEK = (183, 145, 125, 255)
 LIP = (88, 58, 58, 255)
 # Warm, dull enamel: legible at the mirror without a bright white smile.
 TEETH = (175, 165, 143, 255)
+INSPECTION_TEETH = (210, 204, 181, 255)
 TEETH_SHADOW = (128, 119, 105, 255)
 # What the drink left on his chin: a wet ochre band under the lip, darker
 # where it ran, a few pale crumbs. Skin reads ~150 in luma, the soil ~85, so
@@ -525,6 +529,12 @@ def draw_face_tile(
             canvas.rect(ox + pupil_x - 1, oy + top + 1, ox + pupil_x + 2, oy + bottom + 1, HAIR)
         canvas.line(ox + left + 1, oy + bottom + 2, ox + right - 1, oy + bottom + 3, UNDER_EYE)
 
+    inspection = expression in ("TeethInspectHalf", "TeethInspect")
+    if soiled and inspection:
+        # These lips open below the old soil band's y=50 edge. Paint the
+        # surrounding chin/cheek traces first so neither row nor the gap is
+        # mistaken for grime on the teeth. Older cells retain their pixels.
+        draw_mouth_soil(canvas, ox, oy, column)
     mouth_y = 47
     if expression == "Tense":
         canvas.line(ox + 23, oy + mouth_y, ox + 41, oy + mouth_y, LIP, 2)
@@ -559,6 +569,29 @@ def draw_face_tile(
         canvas.ellipse(ox + 32, oy + mouth_y + 1, 3, 2, SKIN_DARK)
         canvas.line(ox + 24, oy + mouth_y, ox + 26, oy + mouth_y + 1, SKIN_SHADOW)
         canvas.line(ox + 38, oy + mouth_y + 1, ox + 41, oy + mouth_y, SKIN_SHADOW)
+    elif expression in ("TeethInspectHalf", "TeethInspect"):
+        # Pull the lips apart vertically, leaving their corners level. Two
+        # broad ivory rows and a dark gap survive the small PS1 mirror image;
+        # the unchanged upper face keeps this an inspection, not a smile.
+        full = expression == "TeethInspect"
+        left, right = (18, 47) if full else (21, 44)
+        bottom = 58 if full else 55
+        canvas.rect(ox + left, oy + 44, ox + right, oy + bottom, SKIN_DARK)
+        canvas.line(ox + left + 2, oy + 44, ox + right - 3, oy + 44, LIP)
+        canvas.line(ox + left + 2, oy + bottom, ox + right - 3, oy + bottom, LIP)
+        upper_left, upper_right = (20, 45) if full else (23, 42)
+        upper_bottom = 50 if full else 49
+        lower_top, lower_bottom = (53, 57) if full else (51, 54)
+        canvas.rect(ox + upper_left, oy + 45, ox + upper_right, oy + upper_bottom, INSPECTION_TEETH)
+        canvas.rect(ox + upper_left + 2, oy + lower_top,
+                    ox + upper_right - 2, oy + lower_bottom, INSPECTION_TEETH)
+        canvas.line(ox + upper_left, oy + upper_bottom - 1,
+                    ox + upper_right - 1, oy + upper_bottom - 1, TEETH_SHADOW)
+        canvas.line(ox + upper_left + 2, oy + lower_top,
+                    ox + upper_right - 3, oy + lower_top, TEETH_SHADOW)
+        for x in (26, 32, 38):
+            canvas.line(ox + x, oy + 47, ox + x, oy + upper_bottom - 1, TEETH_SHADOW)
+            canvas.put(ox + x, oy + lower_bottom - 1, TEETH_SHADOW)
     else:
         canvas.line(ox + 22, oy + mouth_y, ox + 35, oy + mouth_y, LIP)
         canvas.line(ox + 35, oy + mouth_y, ox + 43, oy + mouth_y + 1, LIP)
@@ -566,7 +599,7 @@ def draw_face_tile(
     canvas.put(ox + 21, oy + mouth_y, SKIN_SHADOW)
     canvas.put(ox + 44, oy + mouth_y + 1, SKIN_SHADOW)
 
-    if soiled:
+    if soiled and not inspection:
         draw_mouth_soil(canvas, ox, oy, column)
 
 
@@ -612,6 +645,8 @@ FACE_ATLAS_CLEAN_CELLS = (
     ("Grimace", 1, 2),
     ("TeethDisplay", 2, 2),
     ("Spit", 3, 2),
+    ("TeethInspectHalf", 0, 3),
+    ("TeethInspect", 1, 3),
 )
 FACE_ATLAS_CELLS = tuple(
     (expression, column, row, False) for expression, column, row in FACE_ATLAS_CLEAN_CELLS
@@ -653,13 +688,13 @@ def draw_face_atlas() -> PixelCanvas:
 def validate_face_atlas(canvas: PixelCanvas) -> None:
     pairs = {(expression, soiled) for expression, _, _, soiled in FACE_ATLAS_CELLS}
     positions = {(column, row) for _, column, row, _ in FACE_ATLAS_CELLS}
-    assert len(pairs) == len(positions) == 22, "Face cells must have unique pairs and positions"
+    assert len(pairs) == len(positions) == 26, "Face cells must have unique pairs and positions"
     assert all(0 <= c < ATLAS_COLUMNS and 0 <= r < ATLAS_ROWS
                for _, c, r, _ in FACE_ATLAS_CELLS), "Face cell outside atlas"
     assert all(alpha == 255 for alpha in canvas.pixels[3::4]), "Opaque facial atlas required"
     assert canvas.pixels == draw_face_atlas().pixels, "Face generation is not deterministic"
     for expression, column, row, soiled in FACE_ATLAS_CELLS:
-        if expression not in ("TeethDisplay", "Spit") or soiled:
+        if expression not in ("TeethDisplay", "Spit", "TeethInspectHalf", "TeethInspect") or soiled:
             continue
         neutral = PixelCanvas(ATLAS_WIDTH, ATLAS_HEIGHT)
         draw_face_tile(neutral, column, row, "Neutral")
@@ -670,6 +705,19 @@ def validate_face_atlas(canvas: PixelCanvas) -> None:
             assert canvas.pixels[start:start + ATLAS_CELL_SIZE * 4] == neutral.pixels[start:start + ATLAS_CELL_SIZE * 4]
     teeth_start = ((2 * ATLAS_CELL_SIZE + 47) * ATLAS_WIDTH + 2 * ATLAS_CELL_SIZE + 25) * 4
     assert tuple(canvas.pixels[teeth_start:teeth_start + 4]) == TEETH, "Teeth must remain visible"
+    for expression, column, row, soiled in FACE_ATLAS_CELLS:
+        if expression not in ("TeethInspectHalf", "TeethInspect"):
+            continue
+        def pixel(x: int, y: int) -> tuple[int, ...]:
+            offset = ((row * ATLAS_CELL_SIZE + y) * ATLAS_WIDTH + column * ATLAS_CELL_SIZE + x) * 4
+            return tuple(canvas.pixels[offset:offset + 4])
+        assert all(pixel(x, 46) == INSPECTION_TEETH for x in range(24, 41)), "Upper inspection teeth must form a readable row"
+        assert all(pixel(x, 50) == SKIN_DARK for x in range(24, 41)), "Inspection rows need a dark separation"
+        lower_y = 55 if expression == "TeethInspect" else 52
+        assert sum(pixel(x, lower_y) == INSPECTION_TEETH for x in range(24, 41)) >= 14, "Lower inspection teeth must remain visible"
+        assert not any(pixel(x, y) in (SOIL, SOIL_DARK, SOIL_PALE)
+                       for y in range(44, 59 if expression == "TeethInspect" else 56)
+                       for x in range(23, 42)), "Inspection lips and teeth must remain clear in the soiled twin"
 
 
 def build_face_atlas(path: Path, expression_sheet_path: Path) -> str:
@@ -2090,11 +2138,13 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
 
     def _build_face_surface(self) -> None:
         # A curved UV patch follows the head's front planes; it is not a flat
-        # billboard. A 0.8 mm offset avoids z-fighting while preserving profile.
+        # billboard. The lower two rows clear the separate skull mesh, including
+        # the wider inspection mouth. A nominal offset on independent profiles
+        # did not prevent the skull from crossing the upper teeth by 2-4 mm.
         rows = (
             (1.490, 0.030, 0.036),
-            (1.512, 0.049, 0.054),
-            (1.542, 0.068, 0.066),
+            (1.512, 0.049, 0.059),
+            (1.542, 0.068, 0.073),
             (1.582, 0.081, 0.082),
             (1.624, 0.086, 0.088),
             (1.664, 0.080, 0.082),
@@ -2146,6 +2196,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         uv_layer.active_render = True
         face["bp_face_atlas_renderer"] = True
         face["bp_uv_contract"] = "local_0_1_runtime_cell_scale_offset"
+        validate_mouth_skull_clearance(face, bpy.data.objects["GEO_Head"], self.scale)
 
     def build_face_and_hair(self) -> None:
         self._build_face_surface()
@@ -2428,6 +2479,47 @@ def validate_bare_skin_atlas(
             errors.append(f"{foot_region} needs toes and a sole painted")
 
 
+def validate_mouth_skull_clearance(face: bpy.types.Object, head: bpy.types.Object, scale: float) -> float:
+    """Ray-check the actual mouth triangles against the skull at inspection angles."""
+    head.data.calc_loop_triangles()
+    head_vertices = [head.matrix_local @ vertex.co for vertex in head.data.vertices]
+    skull = BVHTree.FromPolygons(head_vertices,
+                                [tuple(triangle.vertices) for triangle in head.data.loop_triangles],
+                                all_triangles=True)
+    mesh = face.data
+    mesh.calc_loop_triangles()
+    uv_layer = mesh.uv_layers["UVMap"]
+    vertices = [face.matrix_local @ vertex.co for vertex in mesh.vertices]
+    minimum = float("inf")
+    samples = 0
+    directions = [Vector((math.sin(math.radians(yaw)), -math.cos(math.radians(yaw)), 0.0))
+                  for yaw in (-18, -9, 0, 9, 18)]
+    for triangle in mesh.loop_triangles:
+        points = [vertices[index] for index in triangle.vertices]
+        uv = [uv_layer.data[index].uv for index in triangle.loops]
+        for first in range(25):
+            for second in range(25 - first):
+                a, b = first / 24.0, second / 24.0
+                c = 1.0 - a - b
+                texel = uv[0] * a + uv[1] * b + uv[2] * c
+                # The complete opened lips and both rows, including their
+                # curved corners. Atlas PNG coordinates are top-down.
+                if not (18 / 64 <= texel.x <= 47 / 64 and 1 - 59 / 64 <= texel.y <= 1 - 44 / 64):
+                    continue
+                point = points[0] * a + points[1] * b + points[2] * c
+                for toward_camera in directions:
+                    location, _, _, distance = skull.ray_cast(point + toward_camera * scale, -toward_camera, scale * 2)
+                    if location is None:
+                        continue
+                    clearance = (distance - scale) / scale
+                    minimum = min(minimum, clearance)
+                    samples += 1
+    if samples < 500 or minimum < 0.0008:
+        raise RuntimeError(f"Mouth surface intersects skull: minimum clearance {minimum:.6f} m across {samples} rays")
+    print(f"Mouth/skull clearance: {minimum:.6f} m across {samples} rays at -18..18 degrees", flush=True)
+    return minimum
+
+
 def validate_v2_result(
     config: common.BuildConfig,
     result: common.BuildResult,
@@ -2437,14 +2529,13 @@ def validate_v2_result(
 ) -> common.ValidationReport:
     bpy.context.view_layer.update()
     errors: list[str] = []
-    common.validate_bed_support_contract(result, errors)
-    common.validate_bed_sleep_pose(result, errors)
-    # Both recovery routes are checked on the actual production proportions:
-    # dense floor/anatomy plus shared endpoints and seated/all-fours support.
-    # Runtime IK still adapts those authored contacts to the probed terrain.
-    common.validate_fall_recovery_dense(result, errors)
-    common.validate_recovery_routes(result, errors)
-    player_cold_actions.validate_cold_actions(result, common, errors)
+    if config.animation_fbx is not None:
+        common.validate_bed_support_contract(result, errors)
+        common.validate_bed_sleep_pose(result, errors)
+        # Exporting animation retains the complete authored motion contract.
+        common.validate_fall_recovery_dense(result, errors)
+        common.validate_recovery_routes(result, errors)
+        player_cold_actions.validate_cold_actions(result, common, errors)
     records = {record.obj.name: record for record in result.parts}
     if len(records) != len(result.parts):
         errors.append("Export mesh names are not unique")
@@ -2800,6 +2891,7 @@ def validate_v2_result(
         average_normal_y = sum(polygon.normal.y for polygon in face.obj.data.polygons) / len(face.obj.data.polygons)
         if average_normal_y > -0.65:
             errors.append("GEO_FaceSurface must face source -Y")
+        validate_mouth_skull_clearance(face.obj, records["GEO_Head"].obj, config.height / 1.75)
 
     for sleeve_name in ("CLO_JacketSleeve.L", "CLO_JacketSleeve.R"):
         sleeve = bpy.data.objects.get(sleeve_name)
@@ -3462,7 +3554,7 @@ def main() -> None:
     face_atlas_sha256 = build_face_atlas(face_atlas_path, expression_sheet_path)
     if face_atlas_only:
         update_face_atlas_manifest(config.manifest, face_atlas_path, face_atlas_sha256)
-        print(f"Face atlas validated: 22 cells, deterministic opaque pixels; {face_atlas_sha256}")
+        print(f"Face atlas validated: {len(FACE_ATLAS_CELLS)} cells, deterministic opaque pixels; {face_atlas_sha256}")
         print("Updated face atlas, expression sheet and facial manifest only; model/rig/animations unchanged.")
         return
     clothing_atlas_sha256 = build_clothing_atlas(clothing_atlas_path)
@@ -3529,7 +3621,9 @@ def main() -> None:
     # A staged source file must remain self-contained after its temporary
     # texture paths disappear. Runtime textures stay separate Unity assets.
     for authored_image in bpy.data.images:
-        if authored_image.source == "FILE" and authored_image.has_data:
+        if authored_image.source == "FILE":
+            # --no-previews leaves images lazy-loaded. Pack their source files
+            # as well, before the staged .blend moves away from those paths.
             authored_image.pack()
     common.save_blend(config.output)
     print_report(

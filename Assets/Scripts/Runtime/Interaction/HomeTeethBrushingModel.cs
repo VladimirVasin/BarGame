@@ -48,7 +48,8 @@ namespace BarPromenade
         public const float OpenFaucetSeconds = ValveReachSeconds + ValveTurnSeconds + ValveWithdrawSeconds;
         public const float ArmRaiseSeconds = 0.8f;
         public const float ArmLowerSeconds = 0.45f;
-        public const float ShowTeethSeconds = 1.5f;
+        public const float ShowTeethSeconds = 3f;
+        public const float InspectionTurnDegrees = 18f;
         public const float SpitSeconds = 1.5f;
         public const float SpitStartSeconds = 0.55f;
         public const float SpitEndSeconds = 0.85f;
@@ -74,6 +75,24 @@ namespace BarPromenade
             Phase == HomeTeethBrushingPhase.CloseFaucet || Phase == HomeTeethBrushingPhase.CameraReturn ?
                 returnStartArm * (1f - Smooth(phaseElapsed / ArmLowerSeconds)) : 0f;
         public float SpitBend => Phase == HomeTeethBrushingPhase.Spit ? Smooth(phaseElapsed / 0.5f) * (1f - Smooth((phaseElapsed - 1.05f) / 0.45f)) : 0f;
+        // One continuous inspection: approach, open the lips, left/right holds,
+        // then return to the exact standing endpoint before the existing spit.
+        public float InspectionLean => Phase == HomeTeethBrushingPhase.ShowTeeth ?
+            Smooth(phaseElapsed / 0.6f) * (1f - Smooth((phaseElapsed - 2.4f) / 0.6f)) : 0f;
+        public float InspectionMouthReveal => Phase == HomeTeethBrushingPhase.ShowTeeth ?
+            Smooth((phaseElapsed - 0.6f) / 0.3f) * (1f - Smooth((phaseElapsed - 2.4f) / 0.6f)) : 0f;
+        public float InspectionYaw
+        {
+            get
+            {
+                if (Phase != HomeTeethBrushingPhase.ShowTeeth) return 0f;
+                if (phaseElapsed < 1.65f)
+                    return -InspectionTurnDegrees * Smooth((phaseElapsed - 0.9f) / 0.45f);
+                if (phaseElapsed < 2.4f)
+                    return Mathf.Lerp(-InspectionTurnDegrees, InspectionTurnDegrees, Smooth((phaseElapsed - 1.65f) / 0.5f));
+                return InspectionTurnDegrees * (1f - Smooth((phaseElapsed - 2.4f) / 0.6f));
+            }
+        }
         public float ValveReach => Phase == HomeTeethBrushingPhase.OpenFaucet ? Reach(phaseElapsed, 0f) :
             Phase == HomeTeethBrushingPhase.CloseFaucet ?
                 phaseElapsed < ArmLowerSeconds ? closeStartReach : Reach(phaseElapsed - ArmLowerSeconds, closeStartReach) : 0f;

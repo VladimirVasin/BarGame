@@ -29,8 +29,11 @@ namespace BarPromenade.Editor
         private const float ContractTolerance = 0.0001f;
         private const string Wave1CompatibilitySignature =
             "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6";
+        // Moved once, on 2026-09-08, with the generator's own pin, to accept
+        // the park bandstand repair: its columns and balustrade had stood
+        // beside the deck since the platform became elliptical.
         private const string V2CompatibilitySignature =
-            "8ec3ffe04ffbcfba94cbf708d9c8263afbe853aeea4ffdeabfe638857a043193";
+            "267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7";
 
         private static readonly ExpectedPart[] ExpectedParts =
             CreateExpectedParts();

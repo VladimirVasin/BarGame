@@ -173,7 +173,7 @@ Assets/
       CemeteryRavenProvider.asset     serialized link to the passive 3D raven prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
-      CityMiscAssetProvider.asset   259 passive City role-mesh bindings / 46,542 triangles + v4.9.0 signature
+      CityMiscAssetProvider.asset   259 passive City role-mesh bindings / 46,546 triangles + v4.9.0 signature
       CityBuildingAssetProvider.asset  four district prototype-prefab bindings + signature
       Buildings/
         OldTownPrototype01.prefab      passive fixed-metre wrapper + semantic registry
@@ -216,7 +216,7 @@ Assets/
     V2/
       Models/PlayerCharacter3DV2.{fbx,json}  production 34-part model + deterministic metrics
       Animations/PlayerCharacter3DV2Animations.fbx  validated 47-action V2 rig, including seated recovery, seated-to-crawl transfer and cold gestures
-      Textures/PlayerFaceAtlas.png       8x4 point-filtered atlas: eleven expressions + soiled twins; 22 occupied cells, 10 free
+      Textures/PlayerFaceAtlas.png       8x4 point-filtered atlas: thirteen expressions + soiled twins; 26 occupied cells, 6 free
       Textures/PlayerClothingAtlas.png   full-colour open-jacket/trouser/boot atlas
       Materials/Player3DV2Clothing.mat  shared white-tint atlas material
   Pedestrians/
@@ -868,7 +868,7 @@ Assets/
       Player3D/
         Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
         Player3DResources.cs            single packaged V2 prefab instantiation
-        Player3DCharacterPresentation.cs Idle/Walk/Run gait + physics handoff + full-body Rise sampling
+        Player3DCharacterPresentation.cs gait, physics handoff, Rise sampling and opt-in interaction Idle0 support
         Player3DCharacterPresentation.Recovery.cs final pose/velocity transitions, frozen-body composition and supported hand contacts
         Player3DCharacterPresentation.Cold.cs exterior-only torso/arm masks; locomotion legs and owned actions retain priority
         PlayerColdPresentationModel.cs   shared scaled-time breath and periodic shoulder-rub clock
@@ -918,12 +918,12 @@ Assets/
         HomeToiletUnderwaterEffect.cs  camera water optics, Perception-bus low-pass/gain, entry/loop voices and release
         HomeToiletFirstPersonView.cs   actual hero arm IK, head visibility, held Blender anatomy and aim/look
         HomeToiletAnatomyDynamics.cs   camera-driven shaft spring and paired damped gravity pendulums
-        HomeTeethBrushingInteraction.cs  first-person reflected brushing, open/close faucet and completion-only daily relief
-        HomeTeethBrushingModel.cs        contact-qualified progress and eyes/tap/brush/show/spit/close/return timeline
-        HomeTeethBrushingArmPose.cs      parameterized actual arm IK, mesh clearance and connected spit bend
-        HomeBrushingFirstPersonView.cs  eye camera, practical tap/basin gaze and owner-scoped real-head visibility
+        HomeTeethBrushingInteraction.cs  reflected brushing on fixed Idle0 support, faucet and completion-only daily relief
+        HomeTeethBrushingModel.cs        contact-qualified progress and eyes/tap/brush/three-second inspection/spit/close/return timeline
+        HomeTeethBrushingArmPose.cs      actual arm IK, mesh clearance, grounded inspection lean/head turns and connected spit bend
+        HomeBrushingFirstPersonView.cs  eye camera, inspection framing, tap/basin gaze and scoped real-head visibility
         HomeBathroomSceneInteraction.cs  shared bathroom scene: modal, guided approach, camera, opt-in backward exit and stop prompt
-        HomeBathroomMirrorWorld.cs     bathroom/hero twin plus registered mesh props; order 320, pinned Bathroom includes owned brushing
+        HomeBathroomMirrorWorld.cs     bathroom/hero twin, mesh props and scoped brushing head/neck tint; order 320
         HomeShowerInteraction.cs       hero exits, offscreen redress, reversed camera return and outside curtain close; wash/tap/water
         HomeShowerCameraPath.cs        eased entry to the predicted eye and the same path reversed after the hero exits
         HomeShowerWashingInteraction.cs  E soap pickup, held-button repeated strokes at selected skin, mouse/gamepad routing and completion-only relief
@@ -1266,7 +1266,7 @@ tools/
   build-city-pedestrian-3d-model.py  compatible rig/model/export validator; --personal-space-only isolates the 12 reaction actions; --hand-props-only builds the nine-prop library (also after --archetype all)
   build-city-chess-set-3d-model.py   turned chessmen/draught meshes + height-ladder validator
   player_3d_model_common.py         shared production rig/action/export/bed validators
-  build-player-3d-model-v2.py       sole runnable production V2 anatomy/atlas/rig/export generator
+  build-player-3d-model-v2.py       sole production V2 generator; anatomy/atlas/rig/export and mouth/skull clearance rays
   player_cold_actions.py          Hero-only self-hug/shoulder-rub authoring and sleeve-contact validation
   player_cold_clearance.py        all 36 opposing pairs of actual convex arm meshes, sampled each half source frame
   build-player-puppet-atlas.py      retired 2D player source tooling

@@ -183,6 +183,8 @@ namespace BarPromenade.Editor
             new CanonicalFaceCell(PlayerFacialExpression.Grimace, 1, 1),
             new CanonicalFaceCell(PlayerFacialExpression.TeethDisplay, 2, 1),
             new CanonicalFaceCell(PlayerFacialExpression.Spit, 3, 1),
+            new CanonicalFaceCell(PlayerFacialExpression.TeethInspectHalf, 0, 0),
+            new CanonicalFaceCell(PlayerFacialExpression.TeethInspect, 1, 0),
             new CanonicalFaceCell(
                 PlayerFacialExpression.Neutral, SoiledAtlasColumnOffset + 0, 3, true),
             new CanonicalFaceCell(
@@ -204,7 +206,11 @@ namespace BarPromenade.Editor
             new CanonicalFaceCell(
                 PlayerFacialExpression.TeethDisplay, SoiledAtlasColumnOffset + 2, 1, true),
             new CanonicalFaceCell(
-                PlayerFacialExpression.Spit, SoiledAtlasColumnOffset + 3, 1, true)
+                PlayerFacialExpression.Spit, SoiledAtlasColumnOffset + 3, 1, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.TeethInspectHalf, SoiledAtlasColumnOffset + 0, 0, true),
+            new CanonicalFaceCell(
+                PlayerFacialExpression.TeethInspect, SoiledAtlasColumnOffset + 1, 0, true)
         };
 
         private static bool isBuilding;

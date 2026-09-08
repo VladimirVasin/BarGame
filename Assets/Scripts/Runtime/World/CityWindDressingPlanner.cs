@@ -819,16 +819,20 @@ namespace BarPromenade
             Vector3 origin = bandstand.Position;
             uint hash = HashAt(layout.Seed, origin, BannerSalt);
 
-            // The eave slab's underside runs at 4.00, half-extents
-            // 3.675 along the tangent and 3.075 along forward.
+            // The eave is not a slab: its underside at 4.00 is a twelve
+            // sided ring, 3.68 along the tangent and 3.08 along forward.
+            // The pin used to be read off the rectangle that ring replaced,
+            // which hung the pennant a quarter of its span past the eave,
+            // in the air. These reach 0.886 of the ellipse, just inside its
+            // edge where a pennant belongs.
             cloths.Add(new CityWindDressingClothDescriptor(
                 "wind-park-bandstand-pennant-00",
                 CityWindDressingKind.BandstandPennant,
                 CityWindDressingZone.Park,
                 origin +
                 (tangent *
-                    (3.30f * ((hash & 1u) == 0u ? 1f : -1f))) +
-                (forward * 2.70f) +
+                    (2.45f * ((hash & 1u) == 0u ? 1f : -1f))) +
+                (forward * 2.05f) +
                 (Vector3.up * (4.00f + PinSink)),
                 YawFromForward(forward),
                 0.28f,

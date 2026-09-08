@@ -45,8 +45,8 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   `2,384` triangles, with the same `31` bones, six sockets and `47` bone-only
   production actions.
 - One curved head surface uses an `8 x 4` face atlas (`512 x 256`) with
-  twenty-two cells: eleven expressions in columns `c0..c3` and their eleven soiled
-  twins at column `+4`. The five sober faces `Neutral`, `HalfBlink`,
+  twenty-six cells: thirteen expressions in columns `c0..c3` and their
+  thirteen soiled twins at column `+4`. The five sober faces `Neutral`, `HalfBlink`,
   `ClosedBlink`, `Watchful` and `Tense`
   (Unity cells `c0r3`, `c1r3`, `c2r3`, `c0r2`, `c1r2`) remain readable without
   separate 3D features, and the drink's four sit beside them: `Drowsy` (`c2r2`,
@@ -55,23 +55,52 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   a dark slit of open mouth) and `Grimace` (`c1r1`, brows knitted, the corners
   of the mouth pulled down). Mirror brushing adds `TeethDisplay` (`c2r1`,
   slightly parted straight lips and visible muted teeth, without a smile)
-  and `Spit` (`c3r1`, a small opening at the same mouth centre); the weary
-  eyes and brows keep their identity. The actual rig owns the brushing hand
-  and the short spine/chest/neck/head bend; no replacement face or body is
-  introduced. Python draws rows from the top, so a manifest
+  and `Spit` (`c3r1`, a small opening at the same mouth centre). The finishing
+  inspection adds `TeethInspectHalf` (`c0r0`, opening lips) and `TeethInspect`
+  (`c1r0`, an open dark mouth with distinct upper and lower muted cream
+  `(210, 204, 181)` tooth rows and sparse tooth divisions). The brighter
+  inspection colour leaves the existing `TeethDisplay` unchanged.
+  Straight mouth corners and the weary eyes
+  and brows keep their identity; the inspection is not a smile. Both new
+  expressions use the existing curved face surface. Over `3 s`, the actual
+  rig lowers the brush, leans closer, turns its head left and right, then
+  returns to its standing pose before the short spine/chest/neck/head spit
+  bend. Its feet and gameplay root remain at the dock; no replacement face or
+  body is introduced. Python draws rows from the top, so a manifest
   row is `3 - r`. Each soiled twin (`c4..c7`, the same row, `soiled: true`
-  in the manifest) repeats its clean face and adds the vomit after the mouth
-  is drawn: a band of slurry under the lower lip running down the chin with
+  in the manifest) repeats its clean face with vomit: a band of slurry
+  under the lower lip running down the chin with
   two darker drips, smears out from both corners of the mouth and sparse
   dark and pale specks over the chin and cheeks; the lips, the Slack mouth
-  slit and the eyes are left untouched, and the soil reads at about `85`
+  slit and the eyes are left untouched. Existing cells paint the soil after
+  the mouth; the inspection twins paint their larger mouth over the soil to
+  protect both tooth rows and the dark gap. The soil reads at about `85`
   grey against skin at `150` in the monochrome print. The runtime asks for
   the twin by an `(expression, soiled)` pair and falls back to the clean
   cell when a twin is missing, so an atlas without them still draws every
-  face. The remaining ten cells are free. Neutral is weary, flat and
+  face. The remaining six cells are free. Neutral is weary, flat and
   predominantly depressive, never guilty, tearful or theatrical; the smaller
   cranium preserves extra vertical room for the existing nose, mouth, jaw
   and chin identity.
+- The mouth patch of `GEO_FaceSurface` sits outside the underlying `GEO_Head`.
+  Its source rows at `z=1.512/1.542 m` move outward `5/7 mm`; the nose,
+  upper face, UVs and topology counts remain unchanged. Source validation
+  measures a minimum `3.63 mm` clearance across `12,230` rays at yaw
+  `−18/−9/0/9/18°`. The corrected model is exported and published; source
+  and Unity inspection frames show the mouth without skull overlap.
+
+During mirror brushing only, the reflected head and neck use a scoped
+base-colour multiplier up to `2.5`, following the eye-camera blend. The source
+hero and shared materials retain their colours; alpha and ordinary shading
+remain active. The inspection eases eye-camera FOV `48° → 34° → 48°` with
+the lean. Completion, cancellation and disable restore the ordinary dark
+reflection. This bounded readability refinement is accepted in
+`architecture-notes.md` on `2026-09-08`.
+
+Before each procedural brushing pose, the interaction explicitly samples
+`Idle0` through `Player3DCharacterPresentation.SampleInteractionNeutralPose`:
+the ordinary idle no longer shifts the pelvis and knees under the held feet.
+This opt-in applies only during the interaction handoff without an active clip.
 
 ## Production model and prefab
 
