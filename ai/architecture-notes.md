@@ -6893,6 +6893,149 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `-80 dB` threshold, so a bus that fell digitally silent could in principle
   suspend the graph and stop the projector with it. Gameplay always carries
   ambience, so this has not been observed; it is recorded rather than fixed.
+- **Accepted (2026-09-08) — the print's soundtrack is a GEOMETRY, not a
+  channel with a waveshaper on it:** the user heard the effect above and said
+  it was still badly done, and that it should be distorted and sharp. Measuring
+  the shipping DLL proved him right and named the bug: the saturator was
+  `tanh(value·drive)/drive` with `drive = 1 + 1.8·w`, and at the levels a game
+  bus actually carries that curve is a straight line. **The print measured
+  1.4–4 % distortion at bus peaks of −8 to −26 dBFS — a warm tint, not a
+  distortion — sat 5 LU under the music it replaced and kept about a per cent
+  of its energy in 1–6 kHz.** Quiet, dull and warm: the exact opposite of the
+  brief. The `4.13 %` reading at `−26 dBFS` was not even distortion; it was the
+  print's own hiss landing in the harmonic bands, which is why the effect's
+  real behaviour was only ever discoverable by ear.
+  The fix is a change of topology, not of tuning. A variable-area track carries
+  the programme as the WIDTH of a clear wedge and gives it back as the AREA of
+  light through a slit, and the wedge cannot open past the mask nor close past
+  base fog — so **the nonlinearity must be referenced to the medium's own
+  100 % modulation and never to dBFS.** A PPM-ballistic meter reads the
+  post-highpass programme, a dubbing mixer's hand rides the dub so PEAKS sit
+  `9 dB` over full modulation, and the emulsion clips that modulation against a
+  mask spread `20 %` wider on the clear side than the dark. **Peak and not
+  RMS**: an RMS reference is crest-blind, so a 3 dB-crest sine would never
+  reach the knee while a 12 dB-crest bed tore, and the amount of grind would be
+  set by the source's crest factor rather than by the medium. The result is
+  measured at **37 % distortion, identical to two decimal places from `−34` to
+  `−8 dBFS`** — the whisper and the shout tear alike, which is the property the
+  whole redesign exists for.
+  Four supporting changes, each with its own measurement. **The slit was never
+  a slit:** three exponential poles at `3800 Hz` are `−3 dB` at `1937 Hz`, a
+  telephone, and they threw the harsh band away before the nonlinearity ever
+  saw it; it is now four TPT poles at the `29 µm` aperture null (`6307 Hz`,
+  `−3 dB` at `2740`). **The topology is part of the contract**: the exponential
+  pole `y += c(x−y)` has a stopband floor of `c/(2−c)`, which at `22050 Hz` is
+  `−2.9 dB` per pole, so the old cascade could never close the slit at that
+  rate at all — invisible because the old spectral loop ran only at `48000`.
+  **Record-side pre-emphasis, never undone** (`4×`, zero at `1200 Hz`), because
+  prints were cut bright to survive the Academy curve and the slit and horn
+  were the de-emphasis. **The cone in the lid**, a `+10 dB` bell at `4200 Hz`,
+  `Q 1.60` — the cheapest sharpness in the machine. And **cross-modulation**,
+  the classic named distortion of an optical track and the one mechanism that
+  makes this a print rather than a fuzz pedal. Measured linear response at full
+  weight, relative to `1 kHz`: `−18 dB` at `120 Hz`, `+11.2 dB` at `4.2 kHz`,
+  `−0.2` at `6.3 k` and `−15` at `10 k` — a presence peak with a cliff
+  immediately above it, and identical within `0.6 dB` at all four sample rates.
+  **The projector's fader is FIXED and is not the reciprocal of the ride.** A
+  reciprocal make-up was designed, attacked and rejected: it pins the output
+  peak to the bus level, so the rail becomes a permanent second clipper on a
+  hot bus, and it is a content-dependent compensation for a band loss. Fixed,
+  the printed peak is the mask's own height times the fader **for any input at
+  all** — a full-scale square prints at `0.153`, full-scale noise at `0.209`, a
+  quiet room at `0.181`, and DC and anything under the meter's hold peak print
+  exactly as silence does. The `2.5:1` compressor is deleted outright (it was
+  fed a signal whose crest the clipper had already destroyed) and the
+  input-referenced bound goes with it: the bound is now the amplifier's own
+  rail, absolute at `−6 dBFS`, with twelve decibels of headroom it provably
+  never uses. The price is stated rather than hidden: **a bus quieter than the
+  reference prints LOUDER**, bounded by `ExposureMaxGainDb + ProjectorGainDb`.
+  That also means the fader must be referenced to the level the GAME carries —
+  set on the validator's bed, which is six decibels under the themes, it put
+  the print `7.3 LU` below the music, which reads as the game turning itself
+  down rather than as a projector in the room; at `−19 dB` it lands `3.4 LU`
+  under `city_theme` with its peak still inside the master compressor's own
+  threshold.
+  **The frame line went `22 % → 34 %` and its sharpness `14 → 9`**: at the
+  first tuning its `24 Hz` comb line was a quarter of a decibel, far under the
+  roughness threshold, which is why the strongest tie between ear and eye read
+  as nothing. The emulsion runs at twice the rate with first-order
+  antiderivative antialiasing (naive is `−32 dBc` in band, either measure alone
+  about `−40`, the two together `−89`), and **both antiderivatives are
+  evaluated with the CURRENT sample's mask** — the mask moves every sample, so
+  a cached `F(m[n−1])` carries a term divided by a difference that is smallest
+  exactly where the material is quietest. The wet path's `15`-sample
+  oversampler latency is subtracted from the swim and bridged by a `64`-sample
+  crossfade into the exact bypass, because without it every disable was a
+  `0.31 ms` time jump of a full-amplitude signal that no test could see.
+  **Three of the old assertions encoded the old taste and were rewritten, not
+  loosened.** «Output ≤ input peak + noise floor» is false for a medium whose
+  density sets its own level; the monotone `energy_above_5k` decrease measured
+  a LINEAR claim with a NONLINEAR probe and is replaced by a multitone below
+  the meter's hold peak — where the mixer's hand stays off the fader and the
+  print is genuinely linear — run at all four rates; and every ramp threshold
+  became relative, because an absolute one silently loosens the moment the
+  print's level moves. Everything is now measured on the signal path,
+  `effect(x) − effect(zeros)` from two identically seeded instances, exact
+  while the rail is idle, which every probe asserts. New contracts the first
+  tuning had no equivalent of: the print tears above `20 %` at every bus level
+  and within `40 %` of itself across them; the tearing arrives monotonically
+  (`0 → 0.8 → 6 → 37 %`) and is exactly zero at rest; and **everything loud in
+  the apparatus must sit on the picture grid**, with nothing off that grid
+  louder than the picture itself — which is what polices the exciter lamp's
+  `100 Hz` ripple. `48 Hz` is not a rival there: the claw pulls once a picture
+  and the shutter's second blade falls halfway through it, so it is the
+  picture's own second harmonic.
+  **A constant published as an expression is a number nothing checks.** The
+  mirror's regex reads plain literals only, so `IntermittentHz` and
+  `ShutterHz`, written as products of `PicturesPerSecond`, were invisible to it
+  and `TheSwimIsLockedToThePictureRate` was vacuous against the header for a
+  whole release: `24` could have been retuned to `25` with a green build. Both
+  are literals now on both sides, and
+  `TheHeaderPublishesLiterals_BecauseTheMirrorCannotReadExpressions` fails the
+  build on any published constant that is not one. `SaturationDrive` and the
+  four compressor constants are gone from the header, the C# mirror and the
+  whitelist in the same commit; `CompressorRatioAt` is replaced by
+  `ModulationLimitAt`, and «at rest the track is not compressed» becomes «at
+  rest the emulsion is a straight line», which is the honest at-rest statement
+  for a chain whose point is that it tears.
+- **Accepted (2026-09-09) — the print must arrive THROUGHOUT the ramp, and a
+  quantity heard on a log scale cannot be interpolated linearly against the
+  weight:** the user judged the redesign above by ear and rejected its ARRIVAL —
+  «я ощущаю изменения только при 100 % применении фильтра, а оно должно
+  изменяться в звуке прям плавно, прям так же как визуал». The number was
+  already in the previous session's own report and had been read as a success:
+  tearing across the ramp went `0 → 0.79 → 1.4 → 16.5 → 37 %`, which is
+  monotone — the property that was asserted — while being five sixths spent in
+  the last fifth of the fifteen seconds. **Monotone is not the same as
+  gradual, and only the first was ever tested.**
+  Three causes, all the same mistake. The DRIVE is a RATIO against the mask;
+  scaled by the weight it left the dub twelve decibels under the reference at
+  half weight, where nothing tears however wide the mask stands. The BANDS
+  sweep four and a half octaves at the bottom and under two at the top, so at
+  half weight the slit stood at `11.8 kHz` and the highpass at `55 Hz`, neither
+  audible as it leaves. And the AMPLIFIER's voice sat on `w²`, put there in the
+  same session to hold down a mid-ramp swell — measured afterwards, that swell
+  was `0.1 LU` and the cost was the print's whole bite moving into the last
+  fifth.
+  The drive now starts a published `ArrivalHeadroomDb = 20` under the track's
+  own reference and closes on it as `w^0.20`. **Fixed decibels, not a fraction
+  of the mixer's ride:** the ride is `9 − 20log10(peak)` and therefore depends
+  on how loud the room happens to be, so scaling by it made a quiet scene reach
+  the tearing far later in the ramp than a loud one — the shape of an arrival
+  is a property of the print, not of the room. The projector's fader takes back
+  exactly what the early drive adds, so the published gain
+  `10^(w·(ride + fader)/20)` is arithmetically unchanged and **the loudness of
+  the ramp did not move at all**; only the ratio the emulsion sees moves
+  forward. The bands take `w^0.50` and the amplifier goes back to `w^1`. The
+  mixer also acquires his level on the first picture instead of slewing to it,
+  because otherwise six seconds of every threaded reel passed with the hand
+  still climbing; he still rides slowly afterwards, which is what keeps a loud
+  passage tearing harder than a quiet one.
+  Measured, the ramp is now `0 → 3.08 → 11.41 → 18.10 → 23.15 → 27.36 → 31.32 →
+  37.32 %` at weights `0, .1, .2, .35, .5, .65, .8, 1`, and **the shape is a
+  contract rather than a taste**: the validator fails under `4 %` a fifth of
+  the way in, `8 %` a third of the way and `15 %` at half. The response at full
+  weight, the rail, the 24 Hz grid and the exact bypass are untouched.
 - **A measuring test threads a fresh reel (`DebugResetProjector`):** the
   print's threshold and exposure drift on a five second cycle of the film's
   own clock, so a measured picture depends on how much film has already run

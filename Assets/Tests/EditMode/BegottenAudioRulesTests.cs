@@ -33,11 +33,32 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(BegottenAudioRules.SurfaceLevel(0.0), Is.Zero);
             Assert.That(BegottenAudioRules.DustLevel(0.0), Is.Zero);
             Assert.That(BegottenAudioRules.TransportLevel(0.0), Is.Zero);
-            Assert.That(BegottenAudioRules.NoiseCeiling(0.0), Is.Zero);
+            Assert.That(BegottenAudioRules.QuietCeiling(0.0), Is.Zero);
             Assert.That(
-                BegottenAudioRules.CompressorRatioAt(0.0),
-                Is.EqualTo(1.0).Within(1e-9),
-                "At rest the track must not be compressed at all.");
+                BegottenAudioRules.ModulationLimitAt(0.0),
+                Is.EqualTo(BegottenAudioRules.ModulationRest).Within(1e-9),
+                "At rest the mask stands wide open.");
+            Assert.That(
+                BegottenAudioRules.ExposureGainAt(0.0, 30.0),
+                Is.EqualTo(1.0).Within(1e-12),
+                "At rest the mixer's hand is off the fader.");
+            Assert.That(
+                BegottenAudioRules.PublishedGainAt(0.0, 30.0),
+                Is.EqualTo(1.0).Within(1e-12),
+                "At rest the whole chain is unity gain, however far the hand " +
+                "has ridden - the fader takes back exactly what it added.");
+            Assert.That(
+                BegottenAudioRules.ProjectorGainAt(0.0),
+                Is.EqualTo(1.0).Within(1e-12));
+            Assert.That(
+                BegottenAudioRules.PreEmphasisShelfAt(0.0),
+                Is.EqualTo(1.0).Within(1e-12),
+                "At rest the recording characteristic is flat.");
+            Assert.That(BegottenAudioRules.PresenceGainDbAt(0.0), Is.Zero);
+            Assert.That(
+                BegottenAudioRules.OutputCeilingAt(0.0),
+                Is.EqualTo(BegottenAudioRules.BypassCeiling).Within(1e-12),
+                "At rest the rail is the bypass ceiling, so it clips nothing.");
         }
 
         [Test]
@@ -60,8 +81,13 @@ namespace BarPromenade.Tests.EditMode
                 BegottenAudioRules.TransportLevel(1.0),
                 Is.EqualTo(BegottenAudioRules.TransportAmplitude).Within(1e-9));
             Assert.That(
-                BegottenAudioRules.CompressorRatioAt(1.0),
-                Is.EqualTo(BegottenAudioRules.CompressorRatio).Within(1e-9));
+                BegottenAudioRules.ModulationLimitAt(1.0),
+                Is.EqualTo(1.0).Within(1e-9),
+                "At full strength the mask is at a hundred per cent " +
+                "modulation, which is what the whole chain is referenced to.");
+            Assert.That(
+                BegottenAudioRules.OutputCeilingAt(1.0),
+                Is.EqualTo(BegottenAudioRules.OutputCeiling).Within(1e-9));
         }
 
         [Test]
@@ -93,11 +119,19 @@ namespace BarPromenade.Tests.EditMode
             // Interpolated linearly, half the ramp would sit above hearing and
             // the arrival would be inaudible for most of the fifteen seconds.
             // The geometric mean is the whole point of the log sweep.
+            // Half the band's own travel, which the arrival exponent places
+            // EARLIER than half the weight: a linear sweep spent most of the
+            // ramp between 22 and 12 kHz, where nothing can be heard leaving.
+            double halfway = Math.Pow(0.5, 1.0 / BegottenAudioRules.BandArrivalExponent);
             Assert.That(
-                BegottenAudioRules.LowpassHz(0.5),
+                BegottenAudioRules.LowpassHz(halfway),
                 Is.EqualTo(Math.Sqrt(
                     BegottenAudioRules.LowpassRestHz *
                     BegottenAudioRules.LowpassPrintHz)).Within(1e-6));
+            Assert.That(
+                halfway,
+                Is.LessThan(0.5),
+                "The band must be half closed before the ramp is half done.");
             Assert.That(
                 BegottenAudioRules.LowpassHz(0.5),
                 Is.LessThan(
@@ -201,6 +235,119 @@ namespace BarPromenade.Tests.EditMode
                 BegottenAudioRules.HighpassRestHz,
                 BegottenAudioRules.HighpassPrintHz));
             Assert.That(BegottenAudioRules.TapeShare(weight), Is.InRange(0f, 1f));
+            Assert.That(BegottenAudioRules.ModulationLimitAt(weight), Is.InRange(
+                1.0, BegottenAudioRules.ModulationRest));
+            Assert.That(BegottenAudioRules.DriveArrivalAt(weight), Is.InRange(0.0, 1.0));
+            Assert.That(BegottenAudioRules.BandArrivalAt(weight), Is.InRange(0.0, 1.0));
+            Assert.That(BegottenAudioRules.PublishedGainAt(weight, double.NaN), Is.InRange(
+                Math.Pow(10.0, BegottenAudioRules.ProjectorGainDb / 20.0),
+                Math.Pow(10.0,
+                    (BegottenAudioRules.ExposureMaxGainDb +
+                     BegottenAudioRules.ProjectorGainDb) / 20.0)));
+            Assert.That(BegottenAudioRules.ExposureGainAt(weight, double.NaN), Is.InRange(
+                Math.Pow(10.0, BegottenAudioRules.ExposureMinGainDb / 20.0),
+                Math.Pow(10.0, BegottenAudioRules.ExposureMaxGainDb / 20.0)));
+            Assert.That(BegottenAudioRules.ProjectorGainAt(weight), Is.InRange(
+                Math.Pow(10.0, BegottenAudioRules.ProjectorGainDb / 20.0), 1.0));
+            Assert.That(BegottenAudioRules.OutputCeilingAt(weight), Is.InRange(
+                BegottenAudioRules.OutputCeiling, BegottenAudioRules.BypassCeiling));
+            Assert.That(BegottenAudioRules.QuietCeiling(weight), Is.InRange(
+                0.0, BegottenAudioRules.QuietCeiling(1.0)));
+        }
+
+        [Test]
+        public void TheEmulsionArrives_AfterTheGateAndBeforeTheApparatus()
+        {
+            // The mask is the one stage that must arrive EARLY: the track has
+            // to be tearing well inside the fifteen seconds, or the mode ends
+            // with a bang instead of arriving. It is also the stage the first
+            // tuning had no equivalent of at all.
+            double previous = BegottenAudioRules.ModulationLimitAt(0.0);
+            for (int step = 1; step <= 100; step++)
+            {
+                double limit = BegottenAudioRules.ModulationLimitAt(step / 100.0);
+                Assert.That(
+                    limit,
+                    Is.LessThan(previous),
+                    $"The mask opens again at {step / 100.0}.");
+                previous = limit;
+            }
+
+            foreach (double weight in Between)
+            {
+                Assert.That(
+                    BegottenAudioRules.ModulationLimitAt(weight),
+                    Is.LessThan(Math.Exp(
+                        Math.Log(BegottenAudioRules.ModulationRest) * (1.0 - weight))),
+                    $"The mask must close ahead of the weight at {weight}, " +
+                    "or the print does not tear until the last second.");
+                Assert.That(
+                    BegottenAudioRules.DriveArrivalAt(weight),
+                    Is.GreaterThan(weight),
+                    $"The mixer's hand must be ahead of the weight at {weight}, " +
+                    "or the ratio the emulsion sees arrives only at the end.");
+                Assert.That(
+                    BegottenAudioRules.BandArrivalAt(weight),
+                    Is.GreaterThan(weight),
+                    $"The band must be ahead of the weight at {weight}, or its " +
+                    "audible part is spent in the last quarter of the ramp.");
+                Assert.That(
+                    BegottenAudioRules.AmplifierArrivalAt(weight),
+                    Is.EqualTo(weight).Within(1e-9),
+                    $"The amplifier arrives with the weight at {weight}: it was " +
+                    "measured behind it, and that moved the print's whole bite " +
+                    "into the last fifth of the arrival.");
+            }
+        }
+
+        [Test]
+        public void TheRecordingCharacteristic_IsOneShelfWithOneKnee()
+        {
+            // The shelf and its knee are two names for one number, and a
+            // retune that moves one without the other would be a filter no
+            // recorder ever had.
+            Assert.That(
+                BegottenAudioRules.PreEmphasisPoleHz /
+                BegottenAudioRules.PreEmphasisZeroHz,
+                Is.EqualTo(BegottenAudioRules.PreEmphasisShelf).Within(1e-9),
+                "The pre-emphasis shelf is the ratio of its own pole to its " +
+                "own zero; the three numbers cannot drift apart.");
+            Assert.That(
+                BegottenAudioRules.PreEmphasisShelfAt(1.0),
+                Is.EqualTo(BegottenAudioRules.PreEmphasisShelf).Within(1e-9));
+        }
+
+        [Test]
+        public void TheHeaderPublishesLiterals_BecauseTheMirrorCannotReadExpressions()
+        {
+            // The mirror below reads plain literals and nothing else, so a
+            // constant written as an expression is silently unmirrored: that
+            // is exactly how the twenty-four per second lock came to be
+            // published as a product and checked against nothing for a whole
+            // release.
+            // Only the PUBLISHED block: the processor's own private helpers
+            // are implementation and may be derived from each other.
+            string header = File.ReadAllText(HeaderPath());
+            int implementation = header.IndexOf("private:", StringComparison.Ordinal);
+            Assert.That(
+                implementation,
+                Is.GreaterThan(0),
+                "The native processor no longer separates its published " +
+                "contract from its implementation.");
+            header = header.Substring(0, implementation);
+            var declaration = new Regex(
+                @"static\s+constexpr\s+(?:double|int)\s+(\w+)\s*=\s*([^;]+);");
+            var literal = new Regex(@"^\s*-?\d+(?:\.\d+)?\s*$");
+            foreach (Match match in declaration.Matches(header))
+            {
+                Assert.That(
+                    literal.IsMatch(match.Groups[2].Value),
+                    Is.True,
+                    $"'{match.Groups[1].Value}' is published as " +
+                    $"'{match.Groups[2].Value.Trim()}'. The mirror reads plain " +
+                    "literals only, so an expression here is a number nothing " +
+                    "checks. Write it out.");
+            }
         }
 
         [Test]
@@ -210,8 +357,7 @@ namespace BarPromenade.Tests.EditMode
             // and cannot be called from here, so the two share these numbers
             // by being read against each other - a retune of either side fails
             // the build rather than a listening session.
-            string headerPath = Path.GetFullPath(Path.Combine(
-                Application.dataPath, "../tools/audio-vhs/OpticalProcessor.h"));
+            string headerPath = HeaderPath();
             Assert.That(
                 File.Exists(headerPath),
                 Is.True,
@@ -234,6 +380,9 @@ namespace BarPromenade.Tests.EditMode
                     $"'{pair.Key}' disagrees between the header and the rules.");
             }
         }
+
+        private static string HeaderPath() => Path.GetFullPath(Path.Combine(
+            Application.dataPath, "../tools/audio-vhs/OpticalProcessor.h"));
 
         private static Dictionary<string, double> Expected()
         {
@@ -265,11 +414,47 @@ namespace BarPromenade.Tests.EditMode
                 { "FlywheelShare", BegottenAudioRules.FlywheelShare },
                 { "IntermittentShare", BegottenAudioRules.IntermittentShare },
                 { "ShutterShare", BegottenAudioRules.ShutterShare },
-                { "SaturationDrive", BegottenAudioRules.SaturationDrive },
-                { "CompressorThreshold", BegottenAudioRules.CompressorThreshold },
-                { "CompressorRatio", BegottenAudioRules.CompressorRatio },
-                { "CompressorAttackSeconds", BegottenAudioRules.CompressorAttackSeconds },
-                { "CompressorReleaseSeconds", BegottenAudioRules.CompressorReleaseSeconds },
+                { "IntermittentHz", BegottenAudioRules.IntermittentHz },
+                { "ShutterHz", BegottenAudioRules.ShutterHz },
+                { "PreEmphasisZeroHz", BegottenAudioRules.PreEmphasisZeroHz },
+                { "PreEmphasisPoleHz", BegottenAudioRules.PreEmphasisPoleHz },
+                { "PreEmphasisShelf", BegottenAudioRules.PreEmphasisShelf },
+                { "ExposureMeterAttackSeconds", BegottenAudioRules.ExposureMeterAttackSeconds },
+                { "ExposureMeterDecaySeconds", BegottenAudioRules.ExposureMeterDecaySeconds },
+                { "TargetOvermodulationDb", BegottenAudioRules.TargetOvermodulationDb },
+                { "ExposureMaxGainDb", BegottenAudioRules.ExposureMaxGainDb },
+                { "ExposureMinGainDb", BegottenAudioRules.ExposureMinGainDb },
+                { "ExposureHoldPeak", BegottenAudioRules.ExposureHoldPeak },
+                { "GainRiseDbPerPicture", BegottenAudioRules.GainRiseDbPerPicture },
+                { "GainFallDbPerPicture", BegottenAudioRules.GainFallDbPerPicture },
+                { "GainArrivalSeconds", BegottenAudioRules.GainArrivalSeconds },
+                { "ModulationRest", BegottenAudioRules.ModulationRest },
+                { "ModulationArrivalExponent", BegottenAudioRules.ModulationArrivalExponent },
+                { "ImageSpread", BegottenAudioRules.ImageSpread },
+                { "PrintToe", BegottenAudioRules.PrintToe },
+                { "AdaaEpsilon", BegottenAudioRules.AdaaEpsilon },
+                { "OversampleFactor", BegottenAudioRules.OversampleFactor },
+                { "HalfBandTaps", BegottenAudioRules.HalfBandTaps },
+                { "HalfBandKaiserBeta", BegottenAudioRules.HalfBandKaiserBeta },
+                { "OversamplerLatencySamples", BegottenAudioRules.OversamplerLatencySamples },
+                { "LatchFadeSamples", BegottenAudioRules.LatchFadeSamples },
+                { "CrossModSplitHz", BegottenAudioRules.CrossModSplitHz },
+                { "CrossModTopHz", BegottenAudioRules.CrossModTopHz },
+                { "CrossModEnvelopeHz", BegottenAudioRules.CrossModEnvelopeHz },
+                { "CrossModBlockHz", BegottenAudioRules.CrossModBlockHz },
+                { "CrossModDepth", BegottenAudioRules.CrossModDepth },
+                { "MainsHz", BegottenAudioRules.MainsHz },
+                { "LampRippleDepth", BegottenAudioRules.LampRippleDepth },
+                { "AmplifierArrivalExponent", BegottenAudioRules.AmplifierArrivalExponent },
+                { "ArrivalHeadroomDb", BegottenAudioRules.ArrivalHeadroomDb },
+                { "DriveArrivalExponent", BegottenAudioRules.DriveArrivalExponent },
+                { "BandArrivalExponent", BegottenAudioRules.BandArrivalExponent },
+                { "PresenceHz", BegottenAudioRules.PresenceHz },
+                { "PresenceQ", BegottenAudioRules.PresenceQ },
+                { "PresenceGainDb", BegottenAudioRules.PresenceGainDb },
+                { "ProjectorGainDb", BegottenAudioRules.ProjectorGainDb },
+                { "OutputCeiling", BegottenAudioRules.OutputCeiling },
+                { "BypassCeiling", BegottenAudioRules.BypassCeiling },
                 { "SettledWeight", BegottenAudioRules.SettledWeight }
             };
         }

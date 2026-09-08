@@ -1089,7 +1089,7 @@ Assets/
       PauseMenuModelTests.cs               wrapping navigation and destructive confirmation
       BegottenFilmModelTests.cs            24 fps cadence with stutters, roll bounds, seed determinism, forced picture
       BegottenRampModelTests.cs            15 s in, 3 s out, armed while paused, a change outside the menu snaps
-      BegottenAudioRulesTests.cs           exact ends, the gate closes in log frequency, stage order, 24 Hz lock, header mirror
+      BegottenAudioRulesTests.cs           exact ends, the gate closes in log frequency, the mask closes early, stage order, 24 Hz lock, header mirror + literal guard
       Inventory{State,MenuModel}Tests.cs   stacks, starters and grid navigation
       PlayerNeedsRulesTests.cs        relief floors, clamping and drink fractions
       PlayerNeedsProgressionStateTests.cs  rates, chunking, cap and fractional reset

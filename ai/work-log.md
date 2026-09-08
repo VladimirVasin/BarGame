@@ -6,6 +6,123 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-09 — The print now arrives THROUGHOUT the ramp instead of at its end
+
+- The user judged the retune above by ear: «в конечном итоге неплохо, но я ощущаю
+  изменения только при 100 % применении фильтра — а оно должно изменяться в звуке
+  прям плавно, прям так же как визуал». The measurement agreed and had been
+  sitting in the previous session's own report: distortion across the ramp went
+  `0 → 0.79 → 1.4 → 16.5 → 37 %`, so five sixths of the tearing happened in the
+  last fifth of the fifteen seconds.
+- **Three causes, all the same mistake in different clothes: a quantity heard on
+  a logarithmic scale interpolated linearly against the weight, so its audible
+  part is spent at the end.** The DRIVE is a ratio against the mask, and scaling
+  it by the weight left the dub twelve decibels under the reference at half
+  weight, where nothing can tear however wide the mask stands. The BANDS sweep
+  four and a half octaves at the bottom and under two at the top, so at half
+  weight the slit stood at `11.8 kHz` and the highpass at `55 Hz`, neither of
+  which can be heard leaving. And the AMPLIFIER's voice was on `w²` — my own
+  change from the session before, made to hold down a mid-ramp swell.
+- Fixes, in the same order. A published `ArrivalHeadroomDb = 20` closing on the
+  track's own reference as `w^0.20`: **fixed decibels and not a fraction of the
+  mixer's ride**, because the ride depends on how loud the room happens to be
+  and the shape of an arrival must not — scaled by the ride, a quiet scene
+  reached the tearing far later in the ramp than a loud one, for no reason a
+  player could see. The projector's fader takes back exactly what the early
+  drive adds, so **the published gain across the ramp is arithmetically
+  unchanged** and only the ratio the emulsion sees moves forward. A
+  `BandArrivalExponent = 0.50` for both ends of the band. And
+  `AmplifierArrivalExponent` back to `1.0`, having measured what it was bought
+  for: at `2.0` the mid-ramp loudness moved `0.1 LU` while the print's whole
+  bite moved into the last fifth.
+- The mixer also acquires his level on the first picture rather than slewing up
+  to it: without that, six seconds of every threaded reel went by with the hand
+  still climbing and nothing able to tear. He still RIDES slowly afterwards,
+  which is what keeps a loud passage tearing harder than a quiet one.
+- **Verification: the native validator, green, DLL published** (`84A5C843…`).
+  Distortion across the ramp is now `0 → 3.08 → 11.41 → 18.10 → 23.15 → 27.36 →
+  31.32 → 37.32 %` at weights `0, .1, .2, .35, .5, .65, .8, 1`, and the shape is
+  now a CONTRACT rather than a taste: the validator fails under `4 %` a fifth of
+  the way in, `8 %` a third of the way and `15 %` at half. Everything else held
+  unchanged — the same response shape at full weight, the same rail, the same
+  24 Hz grid, the same exact bypass.
+- C# mirror rechecked outside Unity (68 constants, none missing or disagreeing,
+  every published constant a literal) and the EditMode assembly compiled headless
+  with `0` errors. The EditMode test itself still could not be run: the project
+  is open in another Unity instance.
+- Listening render of `city_theme` through the mode's own ramp sent to the user.
+
+## 2026-09-08 — The Begotten print tears: the optical track is a geometry now
+
+- The user heard the print's soundtrack shipped earlier the same day and said
+  it was still badly done — it should be distorted and sharp. Measuring the
+  shipping DLL through Unity's ABI proved him right and named the bug rather
+  than the taste: the saturator was `tanh(value·drive)/drive` with a full-weight
+  drive of `2.8`, and at bus peaks of `−8` to `−26 dBFS` that curve is a
+  straight line. **Measured 1.4–4 % distortion, 5 LU under the music it
+  replaced, about one per cent of its energy in 1–6 kHz.** The `4.13 %` at
+  `−26 dBFS` was not distortion at all but the print's own hiss inside the
+  harmonic bands, which is why only an ear had ever caught this.
+- Rebuilt `OpticalProcessor.h` around the medium instead of around dBFS. A PPM
+  meter reads the post-highpass programme, a dubbing mixer's hand rides the dub
+  to `9 dB` over 100 % modulation on a slew of `0.16 dB` per picture, and the
+  emulsion clips that modulation against a mask spread `20 %` wider on the clear
+  side than the dark. Peak-referenced and not RMS-referenced, which is what
+  makes it crest-invariant. Around it: record-side pre-emphasis never undone
+  (`4×`, zero at `1200 Hz`), cross-modulation from the printing smear, `2×`
+  oversampling with first-order antiderivative antialiasing, the slit reopened
+  to the real `29 µm` aperture null (`6300 Hz` over four TPT poles), a `+10 dB`
+  bell at `4200 Hz` for the cone in the projector's lid, a fixed projector
+  fader, and an absolute amplifier rail in place of the `2.5:1` compressor.
+  Every filter became TPT: the exponential one-pole has a stopband floor of
+  `c/(2−c)`, which at `22050 Hz` is `−2.9 dB` per pole, so the old cascade could
+  never close the slit at that rate at all.
+- **Verification (primary, per the minimal policy): the native validator, which
+  calls the shipping DLL through Unity's published ABI.** `build.ps1 -Validate`
+  green; the DLL is published at
+  `Assets/Plugins/AudioVhs/x86_64/AudioPluginIntoxicationVhs.dll`.
+  Distortion `37.32 %` at `−34`, `−20` and `−8 dBFS` — identical to two decimal
+  places, which is the crest- and level-invariance the redesign exists for —
+  arriving monotonically `0 → 0.79 → 6.05 → 37.32 %` across the ramp and exactly
+  zero at rest. Linear response at full weight relative to `1 kHz`: `−18.2 dB`
+  at `120`, `+3.5` at `2 k`, `+7.5` at `3.15 k`, `+11.2` at `4.2 k`, `−0.2` at
+  `6.3 k`, `−15.1` at `10 k`, and within `0.6 dB` of that at all four sample
+  rates. A full-scale square, full-scale noise and a quiet room print at peaks
+  of `0.153 / 0.209 / 0.181`, and a 440 Hz tone prints at `0.1789` whether it
+  arrives at `−34` or at `−8 dBFS`; DC and anything under the meter's hold peak print
+  exactly as silence does; nothing reaches the `0.501` rail. Settled floor
+  `0.0097`, inside its `0.004–0.020` window. Presence share on the bed
+  `0.027 → 0.156`.
+- **Verification (second, shared change): the C# mirror.** The EditMode test
+  itself could NOT be run — another Unity instance holds the project open — so
+  the assembly was compiled headless with Unity's bundled SDK (`0 errors`,
+  832 pre-existing `CS0649` warnings elsewhere) and the mirror's own logic was
+  reproduced outside Unity: 66 published constants, none missing on either side,
+  none disagreeing, the compressor gone from both, and every published constant
+  a plain literal. `BegottenAudioRulesTests` should be run once the editor is
+  free.
+- On the real material: rendered `city_theme` through the mode's own eased
+  fifteen seconds before and after. `−5.01 LU → −3.40 LU` against the dry
+  music, and the `1–6 kHz` share `0.013 → 0.111`. The listening pair went to
+  the user.
+- **Two lessons worth keeping.** The projector's fader must be referenced to
+  the level the GAME carries: set on the validator's synthetic bed, six decibels
+  under the themes, it put the print `7.3 LU` below the music — which reads as
+  the game turning itself down rather than as a projector standing in the room.
+  And a constant published as an expression is a number nothing checks: the
+  mirror reads plain literals only, so `IntermittentHz` and `ShutterHz`, written
+  as products of `PicturesPerSecond`, were invisible to it and the twenty-four
+  per second lock was checked against nothing for a whole release. Both are
+  literals now, and a new guard fails the build on any that are not.
+- Three measurement mistakes of my own, recorded because each would mislead the
+  next retune. The swim is a VARIABLE delay, so every partial is frequency
+  modulated — at `4.2 kHz` a `1.25 %` speed error spreads the line over `±52 Hz`
+  — and a three-bin reading of it measures the wow rather than the response; the
+  band must be `±(3 % + 60 Hz)`. The de-zipper's own sixty milliseconds are not
+  a slam and measuring them only measures `DezipperSeconds`. And `48 Hz` in the
+  apparatus is the picture's own second harmonic, not a rival to it: the claw
+  pulls once a picture and the shutter's second blade falls halfway through.
+
 ## 2026-09-08 — Connected frost diffusion follows the frozen percentage
 
 - The earlier blur operated mainly on individual crystal needles. In the
