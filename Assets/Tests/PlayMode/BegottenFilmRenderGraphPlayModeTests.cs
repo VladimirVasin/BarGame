@@ -24,6 +24,8 @@ namespace BarPromenade.Tests.PlayMode
         private const int Height = 720;
         private const int TileWidth = 640;
         private const int TileHeight = 480;
+        private const int RampTileWidth = 640;
+        private const int RampTileHeight = 360;
         private const int SourceLayer = 30;
         private static readonly Vector3 StageOrigin =
             new Vector3(3000f, 0f, 3000f);
@@ -217,6 +219,78 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
+        /// <summary>
+        /// Half arrived: the gate is genuinely part way shut and the
+        /// picture still has colour in it.
+        ///
+        /// This is the regression against the mode snapping on, and
+        /// against the cheap way of faking a narrowing frame - bars grown
+        /// over a picture that is already 1.33:1. At half weight the
+        /// window has to be strictly wider than the finished gate, which
+        /// black bars over a finished gate could never be.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Begotten_HalfArrivedNarrowsPartWayAndKeepsColour()
+        {
+            RequireGraphicsDevice();
+            Assert.That(GraphicsEffectsSettings.AspectRatio43Enabled, Is.False);
+            CreateSourceRig(Width, Height, false);
+            yield return WarmUp();
+
+            BegottenModeRamp.DebugWeightOverride = 0.5f;
+            try
+            {
+                Render();
+
+                // 1280 wide: the finished gate keeps 960 px, so its bars
+                // are 160 px. Half way the fraction is 0.875 - 1120 px
+                // with 80 px bars.
+                Assert.That(
+                    (int)readback.GetPixel(20, 360).r +
+                    readback.GetPixel(20, 360).g +
+                    readback.GetPixel(20, 360).b,
+                    Is.Zero,
+                    "The gate has started to close.");
+                Color32 insideHalfGate = readback.GetPixel(120, 360);
+                Assert.That(
+                    (int)insideHalfGate.r +
+                    insideHalfGate.g +
+                    insideHalfGate.b,
+                    Is.GreaterThan(0),
+                    "But it is not shut yet: column 120 lies outside the " +
+                    "finished 4:3 window and inside the half-closed one, " +
+                    "so a picture that had merely grown bars over an " +
+                    "already-narrow frame would be black here.");
+
+                bool colour = false;
+                for (int x = 300; x < 980 && !colour; x += 4)
+                {
+                    for (int y = 200; y < 520; y += 4)
+                    {
+                        Color32 pixel = readback.GetPixel(x, y);
+                        if (Mathf.Abs(pixel.r - pixel.g) > 1 ||
+                            Mathf.Abs(pixel.g - pixel.b) > 1)
+                        {
+                            colour = true;
+                            break;
+                        }
+                    }
+                }
+
+                Assert.That(
+                    colour,
+                    Is.True,
+                    "Half way in, the world still has its colour: the " +
+                    "print is arriving, not switched on.");
+            }
+            finally
+            {
+                BegottenModeRamp.DebugWeightOverride = null;
+            }
+
+            yield return null;
+        }
+
         [UnityTest]
         public IEnumerator Begotten_ForcesTheFourThreeFrame()
         {
@@ -336,6 +410,10 @@ namespace BarPromenade.Tests.PlayMode
 
                 GraphicsEffectsSettings.BegottenModeEnabled = true;
                 feature.DebugForceFilmFrame = true;
+                // From the first foot of stock, so the print's five
+                // second drift is at a known phase and the measures below
+                // do not depend on what rendered before this test.
+                feature.DebugResetProjector();
                 yield return WarmUp();
 
                 // Four day pictures: one beside the colour tile and three
@@ -393,6 +471,84 @@ namespace BarPromenade.Tests.PlayMode
             }
             finally
             {
+                Object.Destroy(sheet);
+            }
+        }
+
+        /// <summary>
+        /// Six pictures of the arrival, at a sixth of the way apart, to
+        /// <c>TestResults/begotten-ramp-sheet.png</c>: the mode has to
+        /// come up like a lamp warming, not like a switch.
+        ///
+        /// Every tile forces its own picture. The first version of this
+        /// sheet did not, and the film's 24 per second hold meant all six
+        /// tiles shared one struck print - the middle four differed only
+        /// in how much of it showed through, and the last tile, which
+        /// takes the held branch and strikes nothing, came out black. The
+        /// sheet said the ramp was broken when only the sheet was.
+        /// </summary>
+        [UnityTest]
+        [Explicit("Look at the arrival: six weights across one stage.")]
+        public IEnumerator Begotten_RampSheet()
+        {
+            RequireGraphicsDevice();
+            // Widescreen on purpose. The measured sheet's stage is 640x480,
+            // which is already the gate the mode ends in, so a squeeze
+            // photographed there is a squeeze of nothing. Half the request
+            // was that the frame narrow gradually, and it can only be seen
+            // on a frame that has something to give up.
+            Assert.That(GraphicsEffectsSettings.AspectRatio43Enabled, Is.False);
+            CreateStage(RampTileWidth, RampTileHeight);
+            yield return null;
+            yield return null;
+            yield return null;
+
+            Texture2D sheet = new Texture2D(
+                RampTileWidth * 3,
+                RampTileHeight * 2,
+                TextureFormat.RGBA32,
+                false,
+                true)
+            {
+                name = "Begotten Ramp Sheet"
+            };
+            try
+            {
+                LightDay();
+                GraphicsEffectsSettings.BegottenModeEnabled = true;
+                feature.DebugForceFilmFrame = true;
+                feature.DebugResetProjector();
+                yield return WarmUp();
+
+                // A fresh reel before every tile, so all six strike the
+                // same picture of the same projector and the only thing
+                // that differs across the sheet is the weight. Left to run
+                // on, each tile draws its own picture with its own
+                // threshold roll, and tiles then differ in brightness for
+                // reasons that have nothing to do with the arrival.
+                float[] weights = { 0f, 0.2f, 0.4f, 0.6f, 0.8f, 1f };
+                for (int index = 0; index < weights.Length; index++)
+                {
+                    BegottenModeRamp.DebugWeightOverride = weights[index];
+                    feature.DebugResetProjector();
+                    Render();
+                    CopyTile(sheet, index % 3, index < 3 ? 1 : 0);
+                }
+
+                BegottenModeRamp.DebugWeightOverride = null;
+                sheet.Apply(false, false);
+                string directory = Path.GetFullPath(
+                    Path.Combine(Application.dataPath, "..", "TestResults"));
+                Directory.CreateDirectory(directory);
+                string path =
+                    Path.Combine(directory, "begotten-ramp-sheet.png");
+                File.WriteAllBytes(path, sheet.EncodeToPNG());
+                Debug.Log($"Begotten ramp sheet -> {path}.");
+                Assert.That(File.Exists(path), Is.True);
+            }
+            finally
+            {
+                BegottenModeRamp.DebugWeightOverride = null;
                 Object.Destroy(sheet);
             }
         }
@@ -593,9 +749,9 @@ namespace BarPromenade.Tests.PlayMode
                 sourceMaterial;
         }
 
-        private void CreateStage()
+        private void CreateStage(int width = TileWidth, int height = TileHeight)
         {
-            Camera camera = CreateCamera(TileWidth, TileHeight, false);
+            Camera camera = CreateCamera(width, height, false);
             camera.cullingMask = ~0;
             camera.fieldOfView = 50f;
             camera.transform.position =
@@ -714,10 +870,10 @@ namespace BarPromenade.Tests.PlayMode
         private void CopyTile(Texture2D sheet, int column, int row)
         {
             sheet.SetPixels32(
-                column * TileWidth,
-                row * TileHeight,
-                TileWidth,
-                TileHeight,
+                column * readback.width,
+                row * readback.height,
+                readback.width,
+                readback.height,
                 readback.GetPixels32());
         }
 

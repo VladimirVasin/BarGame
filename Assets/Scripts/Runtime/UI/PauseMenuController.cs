@@ -1,4 +1,5 @@
 using System;
+using BarPromenade.Rendering;
 using UnityEngine;
 
 namespace BarPromenade
@@ -261,6 +262,13 @@ namespace BarPromenade
                 if (Time.frameCount > closeRequestedFrame)
                 {
                     RestoreOwnedState(pendingCloseReason);
+
+                    // Only resuming defers its close - restart, quit,
+                    // disable and destroy call RestoreOwnedState straight
+                    // out - so this branch is the return to play itself,
+                    // and a mode armed behind the menu starts arriving on
+                    // the first frame the player owns again.
+                    BegottenModeRamp.NotifyReturnedToPlay();
                 }
 
                 return;

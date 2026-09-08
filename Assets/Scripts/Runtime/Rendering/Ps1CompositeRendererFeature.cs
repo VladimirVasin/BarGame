@@ -21,6 +21,7 @@ namespace BarPromenade.Rendering
         private Ps1VertexSnapGlobalsPass snapPass;
         private HomeToiletUnderwaterPass toiletUnderwaterPass;
         private bool loggedMissingResources;
+        private int rampFrame = -1;
 
         public Ps1PresentationSettings PresentationSettings =>
             presentationSettings;
@@ -37,6 +38,20 @@ namespace BarPromenade.Rendering
         /// <summary>The picture last handed to the print pass.</summary>
         internal BegottenFilmFrame DebugFilmState =>
             pass != null ? pass.FilmState : default;
+
+        /// <summary>
+        /// Puts the projector back to its first foot of stock. The
+        /// print's threshold and exposure drift on a five second cycle of
+        /// the film's own clock, so a measured picture depends on how
+        /// much film has already run through the gate - which is to say
+        /// on whatever else rendered first. A test that measures the
+        /// print resets the projector so it is looking at a known frame
+        /// rather than at the phase it happened to inherit.
+        /// </summary>
+        internal void DebugResetProjector()
+        {
+            pass?.DebugResetProjector();
+        }
 
         public override void Create()
         {
@@ -67,6 +82,26 @@ namespace BarPromenade.Rendering
             if (toiletUnderwaterPass != null && cameraData.resolveFinalTarget &&
                 toiletUnderwaterPass.IsNeeded(cameraData.camera))
                 renderer.EnqueuePass(toiletUnderwaterPass);
+            // The ramp is driven here for the same reason the projector is:
+            // this runs on every camera, and a driver component would have
+            // to be installed into scenes the print's own tests never
+            // build.
+            //
+            // The setting is read on every call, not once a frame, because
+            // it used to be read on every call: a fixture that renders
+            // several times inside one frame and flips the toggle between
+            // them must see each flip, or the picture it photographs is
+            // one render stale. Only the CLOCK is advanced once a frame,
+            // which is what a frame's worth of time means.
+            bool rampFrameIsNew = rampFrame != Time.frameCount;
+            rampFrame = Time.frameCount;
+            // CalendarDeltaTime is real seconds of play: unscaled, so
+            // drunkenness cannot stretch the fifteen, and zero while
+            // paused, so a re-opened menu holds the arrival where it is.
+            BegottenModeRamp.Advance(
+                GraphicsEffectsSettings.BegottenModeEnabled,
+                PauseMenuController.IsAnyPaused,
+                rampFrameIsNew ? GameTimeScaleRuntime.CalendarDeltaTime : 0f);
             // The composite draws only on a game camera that owns the
             // final image. The vertex snap, though, has to be told its
             // parameters on EVERY camera this renderer serves - a camera
@@ -83,10 +118,15 @@ namespace BarPromenade.Rendering
             // The film print only on the camera that shows the game: the
             // marked cameras (inventory preview, reflection probe) render
             // something else and keep their colour.
-            bool begotten =
-                present &&
-                GraphicsEffectsSettings.BegottenModeEnabled &&
-                !excluded;
+            //
+            // It is a weight rather than a switch because the mode arrives
+            // over fifteen seconds. Zero and one are the two pictures the
+            // game has always had; everything between is the arrival.
+            float begottenWeight =
+                present && !excluded
+                    ? Mathf.Clamp01(BegottenModeRamp.Weight)
+                    : 0f;
+            bool begotten = begottenWeight > 0f;
 
             int outputWidth =
                 cameraData.cameraTargetDescriptor.width;
@@ -97,14 +137,33 @@ namespace BarPromenade.Rendering
             // vertical FOV) and pillarboxes the upscale. On displays
             // already at or narrower than 4:3 the fraction stays 1. The
             // film is 1.33:1, so the print always takes the 4:3 gate.
+            // The gate closes over the ramp rather than snapping shut: the
+            // window really narrows and the frame is resampled into it
+            // every step, so the picture is squeezed rather than covered.
+            // At full weight the exact rounding of AspectFraction43 is
+            // taken so the arrived gate is the one it has always been, to
+            // the last bit; when the player's own 4:3 switch is already on
+            // there is nothing left to narrow and this is a no-op.
             float aspectFraction = 1f;
             int effectiveWidth = outputWidth;
-            if (GraphicsEffectsSettings.AspectRatio43Enabled || begotten)
+            if (GraphicsEffectsSettings.AspectRatio43Enabled ||
+                begottenWeight >= 1f)
             {
                 aspectFraction = AspectFraction43(
                     outputWidth,
                     outputHeight,
                     out effectiveWidth);
+            }
+            else if (begotten)
+            {
+                float gate = AspectFraction43(
+                    outputWidth,
+                    outputHeight,
+                    out int _);
+                aspectFraction = Mathf.Lerp(1f, gate, begottenWeight);
+                effectiveWidth = Mathf.Max(
+                    1,
+                    Mathf.RoundToInt(outputWidth * aspectFraction));
             }
 
             Vector2Int resolution = presentationSettings != null
@@ -165,23 +224,27 @@ namespace BarPromenade.Rendering
             }
 
             // The print has no colour depth to quantize and no CRT to
-            // draw lines for: those three are muted under it.
+            // draw lines for: those three fade out as it arrives, and are
+            // gone exactly when it is. A player who keeps dither or
+            // scanlines switched off starts from zero and stays there -
+            // the ramp can take an effect away, never add one.
+            float retro = 1f - begottenWeight;
             pass.Setup(
                 compositeMaterial,
                 resolution,
                 aspectFraction,
-                begotten ? 0f : presentationSettings.QuantizationStrength,
-                !begotten && GraphicsEffectsSettings.DitherEnabled
+                presentationSettings.QuantizationStrength * retro,
+                (GraphicsEffectsSettings.DitherEnabled
                     ? presentationSettings.DitherStrength
-                    : 0f,
-                !begotten && GraphicsEffectsSettings.ScanlinesEnabled
+                    : 0f) * retro,
+                (GraphicsEffectsSettings.ScanlinesEnabled
                     ? presentationSettings.ScanlineIntensity
-                    : 0f,
+                    : 0f) * retro,
                 intoxication,
                 vertigo,
                 vertigoShape);
             pass.SetupFilm(
-                begotten,
+                begottenWeight,
                 cameraData.camera,
                 effectiveWidth,
                 outputHeight,
@@ -368,6 +431,12 @@ namespace BarPromenade.Rendering
                 Shader.PropertyToID("_BegottenScratch1");
             private static readonly int Scratch2Id =
                 Shader.PropertyToID("_BegottenScratch2");
+            private static readonly int FilmTextureId =
+                Shader.PropertyToID("_BegottenFilmTex");
+            private static readonly int FilmWeightId =
+                Shader.PropertyToID("_BegottenWeight");
+            private static readonly int FilmStruckAspectId =
+                Shader.PropertyToID("_BegottenStruckAspect");
 
             private static GraphicsFormat? softFormat;
             private static GraphicsFormat? glowFormat;
@@ -386,12 +455,35 @@ namespace BarPromenade.Rendering
             private int filmDecisionFrame = -1;
             private bool filmEnabled;
 
+            // How much of the print is in the picture, and the gate it was
+            // struck in. A held picture may be a tick or two old, from
+            // when the window was a hair wider, so the compose needs the
+            // fraction it was drawn at or the two sets of bars disagree.
+            private float filmWeight;
+            private float filmStruckAspect = 1f;
+            private float currentAspect = 1f;
+
+            /// <summary>Threads a fresh reel; the next render strikes the
+            /// first picture of it.</summary>
+            internal void DebugResetProjector()
+            {
+                film = null;
+                filmDecisionFrame = -1;
+            }
+
             private sealed class PrintPassData
             {
                 public Material Material;
                 public TextureHandle Soft;
                 public TextureHandle Glow;
                 public TextureHandle Levels;
+            }
+
+            private sealed class ComposePassData
+            {
+                public Material Material;
+                public TextureHandle Colour;
+                public TextureHandle Film;
             }
 
             public Ps1CompositePass()
@@ -414,6 +506,15 @@ namespace BarPromenade.Rendering
             {
                 material = composite;
                 resolution = internalResolution;
+                currentAspect = Mathf.Clamp(aspectFraction, 0.01f, 1f);
+                // Pushed every frame, like the intoxication parameters
+                // above: the material is shared, so a weight left behind
+                // by a ramp would keep bleeding a stale print into the
+                // ordinary picture long after the mode was switched off.
+                // The compose pass overwrites it a moment later when it
+                // runs; when it does not run, zero is the truth.
+                material.SetFloat(FilmWeightId, 0f);
+                material.SetFloat(FilmStruckAspectId, 1f);
                 material.SetVector(
                     LowResolutionTexelSizeId,
                     new Vector4(
@@ -468,15 +569,17 @@ namespace BarPromenade.Rendering
             /// the held frame, so it prints at once.
             /// </summary>
             public void SetupFilm(
-                bool enabled,
+                float weight,
                 Camera camera,
                 int windowWidth,
                 int windowHeight,
                 bool? debugForce)
             {
-                filmEnabled = enabled;
-                if (!enabled)
+                filmWeight = Mathf.Clamp01(weight);
+                filmEnabled = filmWeight > 0f;
+                if (!filmEnabled)
                 {
+                    filmStruckAspect = currentAspect;
                     return;
                 }
 
@@ -512,6 +615,10 @@ namespace BarPromenade.Rendering
                 }
 
                 filmCamera = camera;
+                if (filmState.IsNew)
+                {
+                    filmStruckAspect = currentAspect;
+                }
 
                 int width = Mathf.Max(1, windowWidth);
                 int height = Mathf.Max(1, windowHeight);
@@ -569,7 +676,9 @@ namespace BarPromenade.Rendering
                     return;
                 }
 
-                if (filmEnabled)
+                // Arrived: the print is the picture, exactly as it always
+                // was, hold and all.
+                if (filmEnabled && filmWeight >= 1f)
                 {
                     RecordFilm(renderGraph, resourceData, source);
                     return;
@@ -600,15 +709,84 @@ namespace BarPromenade.Rendering
                     downsample,
                     "PS1 Downsample + RGB555");
 
-                RenderGraphUtils.BlitMaterialParameters upscale =
-                    new RenderGraphUtils.BlitMaterialParameters(
-                        lowResolution,
-                        destination,
-                        material,
-                        1);
-                renderGraph.AddBlitPass(upscale, "PS1 Point Upscale");
+                if (!filmEnabled)
+                {
+                    RenderGraphUtils.BlitMaterialParameters upscale =
+                        new RenderGraphUtils.BlitMaterialParameters(
+                            lowResolution,
+                            destination,
+                            material,
+                            1);
+                    renderGraph.AddBlitPass(upscale, "PS1 Point Upscale");
+                    resourceData.cameraColor = destination;
+                    return;
+                }
 
+                // Arriving. The print is struck into its own held texture
+                // at twenty-four pictures a second, unchanged, and the
+                // live colour is composed with it every frame. This is the
+                // whole reason the blend is here rather than inside the
+                // print: a picture mixed into the gate would be frozen by
+                // the hold, and the game would drop to twenty-four the
+                // instant the ramp began - the snap this exists to remove.
+                // Instead the cadence itself arrives, because what judders
+                // is the layer whose weight is rising.
+                TextureHandle film = ImportFilmFrame(
+                    renderGraph,
+                    source,
+                    out bool reallocated);
+                if (filmState.IsNew || reallocated)
+                {
+                    RecordPrintChain(renderGraph, lowResolution, film);
+                }
+
+                RecordComposedUpscale(
+                    renderGraph,
+                    lowResolution,
+                    film,
+                    destination);
                 resourceData.cameraColor = destination;
+            }
+
+            /// <summary>
+            /// The ordinary point upscale with the print laid over it at
+            /// the ramp's weight. A raster pass rather than a blit because
+            /// a blit binds one texture and this needs two.
+            /// </summary>
+            private void RecordComposedUpscale(
+                RenderGraph renderGraph,
+                TextureHandle lowResolution,
+                TextureHandle film,
+                TextureHandle destination)
+            {
+                material.SetFloat(FilmWeightId, filmWeight);
+                material.SetFloat(FilmStruckAspectId, filmStruckAspect);
+                using IRasterRenderGraphBuilder builder =
+                    renderGraph.AddRasterRenderPass(
+                        "PS1 Point Upscale + Begotten",
+                        out ComposePassData data,
+                        profilingSampler);
+                data.Material = material;
+                data.Colour = lowResolution;
+                data.Film = film;
+                builder.UseTexture(lowResolution);
+                builder.UseTexture(film);
+                builder.SetRenderAttachment(destination, 0, AccessFlags.WriteAll);
+                builder.SetRenderFunc(
+                    static (ComposePassData passData, RasterGraphContext context) =>
+                    {
+                        // A graph texture resolves to a real texture only
+                        // inside the render function.
+                        passData.Material.SetTexture(
+                            FilmTextureId,
+                            passData.Film);
+                        Blitter.BlitTexture(
+                            context.cmd,
+                            (RTHandle)passData.Colour,
+                            new Vector4(1f, 1f, 0f, 0f),
+                            passData.Material,
+                            1);
+                    });
             }
 
             /// <summary>
@@ -623,6 +801,40 @@ namespace BarPromenade.Rendering
                 RenderGraph renderGraph,
                 UniversalResourceData resourceData,
                 TextureHandle source)
+            {
+                TextureHandle film = ImportFilmFrame(
+                    renderGraph,
+                    source,
+                    out bool reallocated);
+
+                if (!filmState.IsNew && !reallocated)
+                {
+                    resourceData.cameraColor = film;
+                    return;
+                }
+
+                TextureHandle lowResolution = CreateLowResolution(
+                    renderGraph,
+                    source);
+                renderGraph.AddBlitPass(
+                    new RenderGraphUtils.BlitMaterialParameters(
+                        source,
+                        lowResolution,
+                        material,
+                        0),
+                    "PS1 Downsample");
+                RecordPrintChain(renderGraph, lowResolution, film);
+                resourceData.cameraColor = film;
+            }
+
+            /// <summary>
+            /// The picture's own texture: persistent, imported, and never
+            /// discarded, because it has to outlive the frame that drew it.
+            /// </summary>
+            private TextureHandle ImportFilmFrame(
+                RenderGraph renderGraph,
+                TextureHandle source,
+                out bool reallocated)
             {
                 TextureDesc filmDescriptor = renderGraph.GetTextureDesc(source);
                 // Every field the reallocation check compares is pinned:
@@ -649,7 +861,7 @@ namespace BarPromenade.Rendering
                 filmDescriptor.isShadowMap = false;
                 filmDescriptor.clearBuffer = false;
                 filmDescriptor.discardBuffer = false;
-                bool reallocated = RenderingUtils.ReAllocateHandleIfNeeded(
+                reallocated = RenderingUtils.ReAllocateHandleIfNeeded(
                     ref filmFrame,
                     filmDescriptor,
                     FilmFrameName);
@@ -662,27 +874,19 @@ namespace BarPromenade.Rendering
                         // The whole point: the picture outlives the frame.
                         discardOnLastUse = false
                     };
-                TextureHandle film = renderGraph.ImportTexture(
-                    filmFrame,
-                    importParameters);
+                return renderGraph.ImportTexture(filmFrame, importParameters);
+            }
 
-                if (!filmState.IsNew && !reallocated)
-                {
-                    resourceData.cameraColor = film;
-                    return;
-                }
-
-                TextureHandle lowResolution = CreateLowResolution(
-                    renderGraph,
-                    source);
-                renderGraph.AddBlitPass(
-                    new RenderGraphUtils.BlitMaterialParameters(
-                        source,
-                        lowResolution,
-                        material,
-                        0),
-                    "PS1 Downsample");
-
+            /// <summary>
+            /// Reduces the frame to a soft luminance, blurs it for the
+            /// halation and the scene mean, reads its levels and prints it
+            /// into the gate. Called only when a new picture is due.
+            /// </summary>
+            private void RecordPrintChain(
+                RenderGraph renderGraph,
+                TextureHandle lowResolution,
+                TextureHandle film)
+            {
                 TextureDesc softDescriptor = new TextureDesc(
                     Mathf.Max(1, resolution.x / 2),
                     Mathf.Max(1, resolution.y / 2))
@@ -770,8 +974,6 @@ namespace BarPromenade.Rendering
                                 PrintPassIndex);
                         });
                 }
-
-                resourceData.cameraColor = film;
             }
 
             private TextureHandle CreateLowResolution(

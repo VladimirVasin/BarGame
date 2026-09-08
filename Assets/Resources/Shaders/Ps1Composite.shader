@@ -262,6 +262,13 @@ Shader "Hidden/BarPromenade/PS1Composite"
             float _Ps1ScanlineIntensity;
             float _Ps1AspectFraction;
 
+            // The print, and how much of it is in the picture. Zero on
+            // every ordinary frame; between zero and one only while the
+            // mode is arriving or leaving.
+            TEXTURE2D_X(_BegottenFilmTex);
+            float _BegottenWeight;
+            float _BegottenStruckAspect;
+
             float4 FragUpscale(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
@@ -295,6 +302,26 @@ Shader "Hidden/BarPromenade/PS1Composite"
                     1.0 -
                     _Ps1ScanlineIntensity *
                     step(rowPhase, 0.34);
+
+                if (_BegottenWeight > 0.0)
+                {
+                    // The print in the gate may have been struck a tick or
+                    // two ago, when the window was a hair wider. Re-fit it
+                    // to the window the colour is shown in, so the two
+                    // sets of bars cannot disagree at the edge.
+                    float struckHalfBar =
+                        (1.0 - _BegottenStruckAspect) * 0.5;
+                    float2 printUv = float2(
+                        struckHalfBar + sampleUv.x * _BegottenStruckAspect,
+                        input.texcoord.y);
+                    float4 print = SAMPLE_TEXTURE2D_X_LOD(
+                        _BegottenFilmTex,
+                        sampler_PointClamp,
+                        printUv,
+                        0.0);
+                    color = lerp(color, print, saturate(_BegottenWeight));
+                }
+
                 return color;
             }
             ENDHLSL
