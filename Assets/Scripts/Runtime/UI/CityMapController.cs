@@ -91,7 +91,8 @@ namespace BarPromenade
             ToggleMapPointInspection,
             SelectMapPoint,
             ConfirmMapPointTeleport,
-            ConfirmMapPointTravel
+            ConfirmMapPointTravel,
+            ConfirmMapPointDoorEntry
         }
 
         private readonly struct PendingCommand
@@ -1076,6 +1077,12 @@ namespace BarPromenade
                 new PendingCommand(CommandType.ConfirmMapPointTravel));
         }
 
+        public void QueueConfirmMapPointDoorEntry()
+        {
+            pendingCommands.Enqueue(
+                new PendingCommand(CommandType.ConfirmMapPointDoorEntry));
+        }
+
         private void Update()
         {
             ProcessAreaMapCommands();
@@ -1269,6 +1276,9 @@ namespace BarPromenade
                         break;
                     case CommandType.ConfirmMapPointTravel:
                         ConfirmMapPointTravel();
+                        break;
+                    case CommandType.ConfirmMapPointDoorEntry:
+                        ConfirmMapPointDoorEntry();
                         break;
                 }
             }

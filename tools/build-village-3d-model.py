@@ -51,9 +51,9 @@ except ImportError as error:  # pragma: no cover - Blender entry point.
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATOR_VERSION = "3.4.1"
+GENERATOR_VERSION = "3.5.0"
 DESIGN_ID = "village_house_archetypes_v3"
-DISPLAY_NAME = "Village House Archetypes 3.4.1"
+DISPLAY_NAME = "Village House Archetypes 3.5.0"
 
 DEFAULT_BLEND = (
     ROOT / "ArtSource" / "Village" / "Blender" / "Village3D.blend"
@@ -78,6 +78,15 @@ BOUNDS_EPSILON = 1e-6
 UV_EPSILON = 1e-6
 SIGNED_VOLUME_EPSILON = 1e-9
 MAX_TRIANGLES = 16000
+TOP_HOUSE_ORIGINAL_DEPTH = 9.0
+TOP_HOUSE_WING_EXTENSION = 0.9
+TOP_HOUSE_DEPTH = TOP_HOUSE_ORIGINAL_DEPTH + TOP_HOUSE_WING_EXTENSION
+TOP_HOUSE_CENTER_SHIFT = TOP_HOUSE_WING_EXTENSION * 0.5
+
+
+def top_house_depth_coordinate(original_depth: float) -> float:
+    """Normalize into the longer plot without moving the old front threshold."""
+    return (original_depth + TOP_HOUSE_CENTER_SHIFT) / TOP_HOUSE_DEPTH
 
 Vec2 = tuple[float, float]
 Vec3 = tuple[float, float, float]
@@ -130,7 +139,7 @@ PREVIEW_DESCRIPTOR_SIZES = {
     "AditFrame": (3.10, 0.90, 2.60),
     "GraveMarker": (0.42, 0.18, 0.80),
     "Firewood": (1.60, 0.95, 0.90),
-    "TopHouse": (11.0, 9.0, 7.0),
+    "TopHouse": (11.0, TOP_HOUSE_DEPTH, 7.0),
     "FacadeDetail": (1.85, 0.18, 1.25),
     "GarlandPost": (0.38, 0.38, 3.10),
     "CableGate": (3.20, 0.42, 1.25),
@@ -534,7 +543,7 @@ HOUSE_WALL_TINTS = ("HouseWallA", "HouseWallB")
 HOUSE_FACADE_PLANES = {
     ("House", 0): 0.405,
     ("House", 1): 0.430,
-    ("TopHouse", 0): 0.415,
+    ("TopHouse", 0): top_house_depth_coordinate(0.415 * TOP_HOUSE_ORIGINAL_DEPTH),
 }
 HOUSE_FACADE_SUPPORT_Z = (-0.420, -0.160, 0.050)
 
@@ -1269,7 +1278,9 @@ def build_top_house() -> AssemblySpec:
     The ground and upper rooms are those of MothersHouseInterior. Their
     shared opening table fits the existing upper ceiling at 5.9 metres.
     The seam sits at the corridor's room-side edge, between real openings.
-    The front plane is unchanged, preserving the metre-sized door assembly.
+    The stone wing extends 0.9 m behind the timber rooms, carrying the upper
+    bathroom and its shallow ground-floor niche. Re-normalizing the complete
+    assembly preserves every existing metre dimension and the front door.
     """
     seam = 1.47 / 11.0
     left_eave = 0.352
@@ -1277,6 +1288,7 @@ def build_top_house() -> AssemblySpec:
     apex_x = -0.142
     apex_z = 0.430
     wall_depth = 0.415
+    wing_extension = TOP_HOUSE_WING_EXTENSION / TOP_HOUSE_ORIGINAL_DEPTH
 
     walls = prism_y(
         ((-0.460, -0.270), (seam, -0.270),
@@ -1290,17 +1302,17 @@ def build_top_house() -> AssemblySpec:
     side_wing = prism_y(
         ((seam, -0.5), (0.470, -0.5),
          (0.470, 0.350), (seam, right_eave)),
-        -wall_depth, wall_depth)
+        -wall_depth - wing_extension, wall_depth)
     wing_roof = prism_y(
         ((seam, 0.360), (0.5, 0.349), (0.5, 0.384), (seam, 0.395)),
-        -0.470, 0.470)
+        -0.470 - wing_extension, 0.470)
 
     def wing_roof_height(x: float) -> float:
         amount = (x - seam) / (0.5 - seam)
         return 0.395 + (0.384 - 0.395) * amount
 
     wing_snow = settled_roof_drift(
-        seam + 0.025, 0.470, -0.390, 0.395,
+        seam + 0.025, 0.470, -0.390 - wing_extension, 0.395,
         wing_roof_height, 7, 0.022)
     roof = merge(main_roof, wing_roof)
     snow = merge(main_snow, wing_snow)
@@ -1331,21 +1343,27 @@ def build_top_house() -> AssemblySpec:
     timbers = blockhouse_timbers(
         -0.455, seam, wall_depth, -0.272, left_eave, apex_x, apex_z,
         joined_right=True, course_pitch=0.047)
+
+    def normalized_depth(geometry: Geometry) -> Geometry:
+        vertices, faces = geometry
+        return ([(x, top_house_depth_coordinate(y * TOP_HOUSE_ORIGINAL_DEPTH), z)
+                 for x, y, z in vertices], faces)
+
     return AssemblySpec(
         "TopHouse", 0, "normalized_to_descriptor",
         (
             PartSpec("GEO_VIL_TopHouse_Walls", "TopHouse", 0, "Walls",
-                     "Timber", "TopHouseTimber", walls),
+                     "Timber", "TopHouseTimber", normalized_depth(walls)),
             PartSpec("GEO_VIL_TopHouse_Roof", "TopHouse", 0, "Roof",
-                     "Timber", "HouseRoof", roof),
+                     "Timber", "HouseRoof", normalized_depth(roof)),
             PartSpec("GEO_VIL_TopHouse_Plinth", "TopHouse", 0, "Plinth",
-                     "LayeredStone", "HousePlinth", plinth),
+                     "LayeredStone", "HousePlinth", normalized_depth(plinth)),
             PartSpec("GEO_VIL_TopHouse_Chimney", "TopHouse", 0,
-                     "Chimney", "Masonry", "TopHouseWall", chimney),
+                     "Chimney", "Masonry", "TopHouseWall", normalized_depth(chimney)),
             PartSpec("GEO_VIL_TopHouse_Snow", "TopHouse", 0, "Snow",
-                     "WindSnow", "RoofSnow", snow),
+                     "WindSnow", "RoofSnow", normalized_depth(snow)),
             PartSpec("GEO_VIL_TopHouse_Timber", "TopHouse", 0, "Timber",
-                     "Timber", "LogTimber", timbers),
+                     "Timber", "LogTimber", normalized_depth(timbers)),
         ),
     )
 
@@ -2117,7 +2135,11 @@ def top_house_interior_alignment() -> dict:
     source = ROOT / "Assets/MothersHouse/Models/MothersHouseInterior3D.json"
     interior = json.loads(source.read_text(encoding="utf-8"))
     upper = interior["upper_storey_m"]
-    facade_planes = {"front": 0.415 * 9.0, "rear": -0.415 * 9.0,
+    facade_depth = 0.415 * TOP_HOUSE_ORIGINAL_DEPTH
+    facade_planes = {"front": facade_depth + TOP_HOUSE_CENTER_SHIFT,
+                     "rear": -facade_depth + TOP_HOUSE_CENTER_SHIFT,
+                     "wing_rear": -facade_depth - TOP_HOUSE_WING_EXTENSION +
+                     TOP_HOUSE_CENTER_SHIFT,
                      "left": -0.460 * 11.0, "right": 0.470 * 11.0}
     facade_by_wall = {"north": "rear", "south": "front",
                       "east": "left", "west": "right"}
@@ -2126,15 +2148,21 @@ def top_house_interior_alignment() -> dict:
         facade = facade_by_wall[opening["wall"]]
         x, height, depth = opening["center_unity"]
         side = facade in {"left", "right"}
+        wall_plane = opening["wall_plane"]
+        surface_depth = (facade_planes[facade] - (wall_plane - 4.0)
+                         if facade == "rear" else facade_planes[facade])
         windows.append({
             "stable_id": opening["stable_id"],
             "facade": facade,
             "center_x_m": facade_planes[facade] if side else -0.36 - x,
             "center_y_m": height,
-            "center_z_m": -depth if side else facade_planes[facade],
+            "center_z_m": (-depth + TOP_HOUSE_CENTER_SHIFT
+                           if side else surface_depth),
             "width_m": opening["width"],
             "height_m": opening["head"] - opening["sill"],
             "floor_elevation_m": opening["floor_elevation"],
+            "interior_wall_plane_m": wall_plane,
+            "frosted": opening.get("frosted", False),
         })
     return {
         "source": source.relative_to(ROOT).as_posix(),
@@ -2143,7 +2171,11 @@ def top_house_interior_alignment() -> dict:
         "upper_floor_elevation_m": upper["floor_elevation"],
         "upper_ceiling_m": upper["ceiling_height"],
         "door_across_m": -0.36,
-        "facade_depth_m": 0.415 * 9.0,
+        "facade_depth_m": facade_planes["front"],
+        "descriptor_size_m": [11.0, TOP_HOUSE_DEPTH, 7.0],
+        "original_descriptor_depth_m": TOP_HOUSE_ORIGINAL_DEPTH,
+        "local_depth_shift_m": TOP_HOUSE_CENTER_SHIFT,
+        "wing_extension_m": interior["wing_extension_m"],
         "facade_planes_m": facade_planes,
         "windows": windows,
     }
@@ -2167,13 +2199,24 @@ def validate_top_house_interior_alignment(
         problems.append("TopHouse wall and plinth share coplanar facade area")
 
     windows = contract["windows"]
-    if len(windows) != 16 or len({item["stable_id"] for item in windows}) != 16:
-        problems.append("TopHouse must share sixteen distinct real interior openings")
+    if len(windows) != 17 or len({item["stable_id"] for item in windows}) != 17:
+        problems.append("TopHouse must share seventeen distinct real interior openings")
     for facade in ("front", "rear", "left", "right"):
         for floor in (0.0, contract["upper_floor_elevation_m"]):
+            expected = 3 if facade == "rear" and floor > 0.0 else 2
             if sum(item["facade"] == facade and
-                   item["floor_elevation_m"] == floor for item in windows) != 2:
-                problems.append(f"TopHouse {facade} needs two openings on floor {floor}")
+                   item["floor_elevation_m"] == floor for item in windows) != expected:
+                problems.append(f"TopHouse {facade} needs {expected} openings on floor {floor}")
+    extension = contract["wing_extension_m"]
+    if abs(extension["depth"] - TOP_HOUSE_WING_EXTENSION) > BOUNDS_EPSILON:
+        problems.append("TopHouse and interior disagree on the rear wing extension")
+    timber_bounds = geometry_bounds(parts["Walls"].geometry)
+    wing_bounds = geometry_bounds(parts["Chimney"].geometry)
+    if (abs((timber_bounds[1][1] - timber_bounds[0][1]) * TOP_HOUSE_DEPTH -
+            0.830 * TOP_HOUSE_ORIGINAL_DEPTH) > BOUNDS_EPSILON or
+            abs((timber_bounds[0][1] - wing_bounds[0][1]) * TOP_HOUSE_DEPTH -
+                TOP_HOUSE_WING_EXTENSION) > BOUNDS_EPSILON):
+        problems.append("TopHouse stretched its timber rooms or lost the supported rear wing")
     for opening in windows:
         # Match the runtime's normalized frame: its reveal is 0.8 wide and
         # 0.804 high. Test the entire casing, not only a centre in empty space.
@@ -2199,13 +2242,13 @@ def validate_top_house_interior_alignment(
                     continue
                 geometry = ([(y, x, z) for x, y, z in geometry[0]], geometry[1])
             else:
-                plane = contract["facade_planes_m"][facade] / 9.0
+                plane = opening["center_z_m"] / TOP_HOUSE_DEPTH
             candidates.append((geometry, plane))
         for across in (left, right):
             for height in (opening["center_y_m"] - half_height,
                            opening["center_y_m"] + half_height):
                 if not any(face_covers_front_point(
-                        geometry, plane, across / (9.0 if side else 11.0),
+                        geometry, plane, across / (TOP_HOUSE_DEPTH if side else 11.0),
                         height / 7.0 - 0.5) for geometry, plane in candidates):
                     problems.append(f"TopHouse {opening['stable_id']} casing has no opaque wall support")
 

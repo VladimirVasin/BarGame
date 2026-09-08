@@ -679,6 +679,90 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Whether the selected point is a door the chart can open rather
+        /// than a place it can only put the hero next to.
+        ///
+        /// Only the mother's house has one. Every other point on every tab
+        /// is somewhere out of doors, and the whole village is charted by
+        /// its door docks, so "go there" and "go in" are the same gesture
+        /// everywhere else. Hers is the one the village points at, and the
+        /// chart stopping on her doorstep was the one place the answer
+        /// "you are there" was not the answer.
+        ///
+        /// Unlike the teleport this does not care which tab the hero stands
+        /// in. It is a scene load rather than a `Motor.Teleport`, and the
+        /// way back does not depend on the way in: the exit asks the village
+        /// for its own dock rather than remembering where the hero came
+        /// from, so whoever opens this door walks out into her lane.
+        ///
+        /// Opening it from below is therefore a one-way trip up, and that is
+        /// deliberate rather than overlooked. The chart is already a way up
+        /// - area travel carries the hero City to village today - so this
+        /// adds no route the map did not have; `§18` forbids a second way up
+        /// ON FOOT, and the cableway is still the only one. What it does
+        /// change is the picture: a cross-area move normally shows the
+        /// mountain-to-village loading art, and this shows the door instead,
+        /// which for "go inside her house" is arguably the truer of the two.
+        /// </summary>
+        public bool CanEnterSelectedMapPointDoor =>
+            MapPointInspectionEnabled &&
+            IsOpen &&
+            !GameSessionState.IsRidingAVehicle &&
+            !SceneTransitionService.IsTransitioning &&
+            TryGetSelectedMapPoint(
+                out CityMapPointDescriptor point,
+                out _) &&
+            point.Kind == CityMapPointKind.MothersHouse;
+
+        /// <summary>
+        /// Opens the selected door and loads what is behind it.
+        ///
+        /// This is the same door load the entrance itself performs, so the
+        /// interior cannot tell the two apart and neither can the exit.
+        /// </summary>
+        public bool ConfirmMapPointDoorEntry()
+        {
+            if (!CanEnterSelectedMapPointDoor ||
+                !TryGetSelectedMapPoint(
+                    out CityMapPointDescriptor point,
+                    out _))
+            {
+                return false;
+            }
+
+            // Every other door load in the game silences the motor first
+            // and hands input back only if the request is refused. The
+            // load is Single, so on success this player is destroyed and
+            // the destination builds its own.
+            player.Motor?.SetInputEnabled(false);
+            if (!SceneTransitionService.RequestDoorLoad(
+                    SceneIds.MothersHouseInterior,
+                    DoorTransitionDirection.EnterApartment,
+                    out string operationId))
+            {
+                player.Motor?.SetInputEnabled(true);
+                RetroAudio.Play(RetroSfxId.UiCancel);
+                GameLog.Warning(
+                    "map",
+                    "map_point_door_rejected",
+                    GameLog.Field("point_id", point.StableId),
+                    GameLog.Field("operation_id", operationId));
+                return false;
+            }
+
+            GameSessionState.EnterMothersHouse();
+            Close(false, "map_point_door_entry");
+            RetroAudio.Play(RetroSfxId.UiConfirm);
+            GameLog.Info(
+                "map",
+                "map_point_door_entered",
+                GameLog.Field("from_area", currentArea.ToString()),
+                GameLog.Field("point_id", point.StableId),
+                GameLog.Field("operation_id", operationId));
+            return true;
+        }
+
+        /// <summary>
         /// Whether the selected point is on the OTHER tab and the trip there
         /// can be started.
         ///

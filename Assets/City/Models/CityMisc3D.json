@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.9.0",
+  "generator_version": "4.10.0",
   "blender_version": "5.0.1",
   "design_id": "city_misc_citywide_v4",
   "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Unoccupied Fringe Mason Cart",
@@ -72,7 +72,7 @@
     }
   },
   "wave1_compatibility_signature": "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6",
-  "v2_compatibility_signature": "267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7",
+  "v2_compatibility_signature": "4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c",
   "colliders": false,
   "lights": false,
   "cameras": false,
@@ -15938,5 +15938,5 @@
       ]
     }
   ],
-  "build_signature": "3da71d7b938810af85fb4d8f2e26a0d1cc141765e621f90e69e8405b1f83a52f"
+  "build_signature": "8ec083eb3d9653652f114f7dec4c22aaab5589f99702d3b1ff2ca883281e32f2"
 }

@@ -270,11 +270,40 @@ namespace BarPromenade.Tests.EditMode
                         shell,
                         Is.Not.Null,
                         $"'{plot.StableId}' has no plan-derived collider.");
-                    var box = shell.GetComponent<BoxCollider>();
-                    Assert.That(box, Is.Not.Null);
-                    Assert.That(
-                        box.size.y,
-                        Is.EqualTo(plot.Height).Within(0.001f));
+                    if (plot.Kind == AlpineVillagePlotKind.MothersHouse)
+                    {
+                        Assert.That(shell.GetComponent<Collider>(), Is.Null);
+                        Assert.That(shell.GetComponentsInChildren<BoxCollider>(true),
+                            Has.Length.EqualTo(2));
+
+                        void AssertMass(string name, Bounds expectedBounds)
+                        {
+                            Transform mass = shell.Find(name);
+                            Assert.That(mass, Is.Not.Null, name);
+                            var box = mass.GetComponent<BoxCollider>();
+                            Assert.That(box, Is.Not.Null, name);
+                            Assert.That(Vector3.Distance(
+                                    mass.localPosition + box.center, expectedBounds.center),
+                                Is.LessThan(0.001f), name);
+                            Assert.That(Vector3.Distance(box.size, expectedBounds.size),
+                                Is.LessThan(0.001f), name);
+                        }
+
+                        AssertMass("Timber Body",
+                            AlpineVillagePlanner.MothersHouseTimberCollisionBounds);
+                        AssertMass("Stone Wing",
+                            AlpineVillagePlanner.MothersHouseWingCollisionBounds);
+                    }
+                    else
+                    {
+                        Assert.That(shell.GetComponentsInChildren<BoxCollider>(true),
+                            Has.Length.EqualTo(1));
+                        var box = shell.GetComponent<BoxCollider>();
+                        Assert.That(box, Is.Not.Null);
+                        Assert.That(
+                            box.size.y,
+                            Is.EqualTo(plot.Height).Within(0.001f));
+                    }
                 }
 
                 // No renderer that carries an imported mesh may also carry a

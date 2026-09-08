@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: VillageAssetProvider
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.VillageAssetProvider
   designId: village_house_archetypes_v3
-  buildSignature: f1440fbb87301427584fa0b5fb58442a2fa1502b8cec5498bf48822ca231a152
+  buildSignature: 5ea61394dc864192cc9a2cb26fd6baabf09a27292e74f1cb604cdaa2909c86c3
   entries:
   - kind: 0
     variant: 0

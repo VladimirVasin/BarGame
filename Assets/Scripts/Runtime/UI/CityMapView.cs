@@ -3020,6 +3020,7 @@ namespace BarPromenade
                     pointOfInterestItemStyle);
 
                 DrawMapPointTeleportButton(panel, point);
+                DrawMapPointDoorButton(panel, point);
             }
 
             GUI.Label(
@@ -3099,6 +3100,58 @@ namespace BarPromenade
                     hintStyle))
             {
                 controller.QueueConfirmMapPointTeleport();
+            }
+        }
+
+        /// <summary>
+        /// The second thing a door can be asked, under the first.
+        ///
+        /// Every other point on the chart is out of doors, so "go there" is
+        /// the whole of what it offers. The mother's house is the one place
+        /// where standing on the mark is not arriving, and the button that
+        /// says so belongs beside the one that only walks you up to it -
+        /// not instead of it, because the doorstep is still somewhere a
+        /// player may want to be put.
+        /// </summary>
+        private void DrawMapPointDoorButton(
+            Rect panel,
+            CityMapPointDescriptor point)
+        {
+            if (point.Kind != CityMapPointKind.MothersHouse)
+            {
+                return;
+            }
+
+            var button = new Rect(
+                panel.x + 18f,
+                panel.y + 204f,
+                panel.width - 36f,
+                24f);
+            bool enterable = controller.CanEnterSelectedMapPointDoor;
+            RetroUiTheme.DrawPanel(
+                button,
+                RetroUiTheme.PanelRaised,
+                enterable
+                    ? RetroUiTheme.AccentPale
+                    : RetroUiTheme.BorderMuted,
+                false,
+                0f,
+                1f);
+            if (!enterable)
+            {
+                GUI.Label(
+                    button,
+                    LocalizationService.Get("map.point.enter_unavailable"),
+                    hintStyle);
+                return;
+            }
+
+            if (GUI.Button(
+                    button,
+                    LocalizationService.Get("map.point.enter"),
+                    hintStyle))
+            {
+                controller.QueueConfirmMapPointDoorEntry();
             }
         }
 

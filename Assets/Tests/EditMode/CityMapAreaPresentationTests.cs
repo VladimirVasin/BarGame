@@ -1240,6 +1240,149 @@ namespace BarPromenade.Tests.EditMode
                 stableId);
         }
 
+        /// <summary>
+        /// The chart can open the one door it draws.
+        ///
+        /// Every other point is out of doors, so arriving on the mark is
+        /// arriving. The mother's house is charted by its door dock, and
+        /// standing on that dock is standing outside her house - which is
+        /// the one place where the chart putting you "there" was not the
+        /// answer. The button is offered for her point and for no other, on
+        /// every tab - it is a scene load, so where the hero stands does not
+        /// withhold it - and the doorstep teleport is still offered beside
+        /// it.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void MothersHousePoint_OffersTheDoorAndNoOtherPointDoes()
+        {
+            var host = new GameObject("Village Door Point Test");
+            var playerObject = new GameObject("Village Door Point Player");
+            CityMapController controller = null;
+            try
+            {
+                CityLayout layout = CityLayoutGenerator.Generate(
+                    CityGenerationSettings.Default,
+                    58021);
+                PlayerInteractor interactor =
+                    playerObject.AddComponent<PlayerInteractor>();
+                var player = new PlayerRuntime(
+                    playerObject,
+                    null,
+                    interactor,
+                    null);
+                controller = host.AddComponent<CityMapController>();
+                controller.Initialize(layout, player, null, null);
+
+                MountainRoadPlan road = MountainRoadPlanner.Create(58021);
+                AlpineVillagePlan village = AlpineVillagePlanner.Create(58021);
+                // Standing in the City, which is where the chart was
+                // useless before: its village tab drew nothing at all, so
+                // her point did not exist and nothing could be pressed.
+                controller.ConfigureAreas(
+                    GameAreaId.City,
+                    CityMapMountainRoadOverlayBuilder.Create(road),
+                    _ => true,
+                    null,
+                    CityMapAlpineVillageOverlayBuilder.Create(village),
+                    village.Plots);
+
+                Assert.That(controller.Open(), Is.True);
+                Assert.That(
+                    controller.SetMapPointInspectionEnabled(true),
+                    Is.True);
+                Assert.That(
+                    controller.SelectArea(GameAreaId.AlpineVillage),
+                    Is.True);
+
+                IReadOnlyList<CityMapPointDescriptor> points =
+                    controller.GetMapPoints(GameAreaId.AlpineVillage);
+                int doorIndex = -1;
+                for (int index = 0; index < points.Count; index++)
+                {
+                    if (points[index].Kind ==
+                        CityMapPointKind.MothersHouse)
+                    {
+                        doorIndex = index;
+                        break;
+                    }
+                }
+
+                Assert.That(
+                    doorIndex,
+                    Is.GreaterThanOrEqualTo(0),
+                    "The village chart names her house.");
+                Assert.That(controller.SelectMapPoint(doorIndex), Is.True);
+                Assert.That(
+                    controller.CanEnterSelectedMapPointDoor,
+                    Is.True,
+                    "Her door is a scene load, so standing in the City does " +
+                    "not withhold it.");
+                Assert.That(
+                    controller.CanTravelToSelectedMapPoint,
+                    Is.True,
+                    "And her doorstep is still a place the chart can take " +
+                    "you the ordinary way.");
+
+                // Exactly one door on the whole chart, on every tab.
+                foreach (GameAreaId area in controller.AreaTabs)
+                {
+                    controller.SelectArea(area);
+                    Assert.That(controller.SelectedArea, Is.EqualTo(area));
+                    IReadOnlyList<CityMapPointDescriptor> tab =
+                        controller.GetMapPoints(area);
+                    for (int index = 0; index < tab.Count; index++)
+                    {
+                        if (tab[index].Kind ==
+                            CityMapPointKind.MothersHouse)
+                        {
+                            continue;
+                        }
+
+                        Assert.That(
+                            controller.SelectMapPoint(index),
+                            Is.True);
+                        Assert.That(
+                            controller.CanEnterSelectedMapPointDoor,
+                            Is.False,
+                            $"{tab[index].Kind} is not a door.");
+                    }
+                }
+
+                // The inspector is what offers points at all.
+                controller.SelectArea(GameAreaId.AlpineVillage);
+                Assert.That(
+                    controller.SelectedArea,
+                    Is.EqualTo(GameAreaId.AlpineVillage));
+                Assert.That(controller.SelectMapPoint(doorIndex), Is.True);
+                Assert.That(
+                    controller.CanEnterSelectedMapPointDoor,
+                    Is.True);
+                Assert.That(
+                    controller.SetMapPointInspectionEnabled(false),
+                    Is.True);
+                Assert.That(
+                    controller.CanEnterSelectedMapPointDoor,
+                    Is.False);
+
+                Assert.That(controller.Close(), Is.True);
+                Assert.That(
+                    controller.CanEnterSelectedMapPointDoor,
+                    Is.False,
+                    "A closed chart offers nothing.");
+            }
+            finally
+            {
+                if (controller != null && controller.IsOpen)
+                {
+                    controller.Close();
+                }
+
+                UnityEngine.Object.DestroyImmediate(host);
+                UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
+
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);

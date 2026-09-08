@@ -845,6 +845,14 @@
       "value": "Point is in another area"
     },
     {
+      "key": "map.point.enter",
+      "value": "Go inside"
+    },
+    {
+      "key": "map.point.enter_unavailable",
+      "value": "Cannot go inside"
+    },
+    {
       "key": "map.point.select_hint",
       "value": "LMB / ← → / D-PAD — select"
     },

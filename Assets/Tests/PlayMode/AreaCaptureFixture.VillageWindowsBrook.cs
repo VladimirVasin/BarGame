@@ -73,11 +73,13 @@ namespace BarPromenade.Tests.PlayMode
                 bool endWall = window.Wall == MothersHouseWindowWall.North ||
                     window.Wall == MothersHouseWindowWall.South;
                 float across = Vector3.Dot(delta, endWall ? right : house.Facing);
-                float expected = endWall ? -.36f - window.CenterPosition.x : -window.CenterPosition.z;
+                float expected = endWall
+                    ? house.DoorAcrossOffset - window.CenterPosition.x
+                    : AlpineVillagePlanner.MothersHouseLocalDepthShift - window.CenterPosition.z;
                 Assert.That(across, Is.EqualTo(expected).Within(.06f), window.StableId);
                 Assert.That(outsideIds.Add(window.StableId), Is.True);
             }
-            Assert.That(outsideIds.Count, Is.EqualTo(16));
+            Assert.That(outsideIds.Count, Is.EqualTo(17));
             shots.Add(Shot.At("50-mother-south-all-windows", Local(0, 2.7f, 13), Local(0, 3.2f, 3.735f), 61));
             shots.Add(Shot.At("51-mother-north-all-windows", Local(0, 2.7f, -13), Local(0, 3.2f, -3.735f), 61));
             shots.Add(Shot.At("52-mother-timber-side-windows", Local(-12.5f, 2.7f, 0), Local(-5.06f, 3.2f, 0), 68));

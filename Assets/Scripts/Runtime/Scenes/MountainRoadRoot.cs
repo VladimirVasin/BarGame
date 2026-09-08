@@ -679,11 +679,18 @@ namespace BarPromenade
             // teleport would measure a mountain coordinate against the city
             // layout above, which shares the same origin and answers with
             // streets that are not in this scene.
+            // The village tab charts pure data here too: one planner run,
+            // no GameObject. Without it the road's third tab drew an empty
+            // rectangle and named nothing above the cableway.
+            AlpineVillagePlan villageMapPlan =
+                AlpineVillagePlanner.Create(GameSessionState.CitySeed);
             Map.ConfigureAreas(
                 GameAreaId.MountainRoad,
                 CityMapMountainRoadOverlayBuilder.Create(Plan),
                 request => AreaTravelService.Request(request),
-                new CityMapMountainRoadTeleportGround(World.WalkableArea));
+                new CityMapMountainRoadTeleportGround(World.WalkableArea),
+                CityMapAlpineVillageOverlayBuilder.Create(villageMapPlan),
+                villageMapPlan.Plots);
 
             // Without this the mountain road had no way to switch the test
             // teleport ON at all - the F9 window only ever existed in the

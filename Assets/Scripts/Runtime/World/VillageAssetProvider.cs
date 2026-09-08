@@ -131,7 +131,7 @@ namespace BarPromenade
     public sealed class VillageAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "Village/VillageAssetProvider";
-        public const string GeneratorVersion = "3.4.1";
+        public const string GeneratorVersion = "3.5.0";
         public const string DesignId = "village_house_archetypes_v3";
         public const int ExpectedAssemblyCount = 25;
         public const int ExpectedMeshCount = 58;

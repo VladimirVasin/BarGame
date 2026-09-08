@@ -127,7 +127,17 @@ namespace BarPromenade
                     context.Add(target, 0f, 0.48f, 0f, 6.40f, 0.96f, 6.40f);
                     break;
                 case CityDecorationKind.ParkBandstand:
-                    context.Add(target, 0f, 0.50f, 0f, 6.80f, 1.00f, 5.60f);
+                    // The plinth is a twelve-sided ring `3.72` across the
+                    // tangent and `3.12` along forward, not the `6.80 x 5.60`
+                    // rectangle it was before the 2026-08-26 migration. That
+                    // single box stopped the hero at four corners where there
+                    // is nothing, and let him into the stone where it is
+                    // widest. Three boxes inscribed in the twelve-gon carry
+                    // its shape instead; each corner sits on an edge, so none
+                    // of them reaches past the stone.
+                    context.Add(target, 0f, 0.50f, 0f, 6.44f, 1.00f, 3.12f);
+                    context.Add(target, 0f, 0.50f, 0f, 3.72f, 1.00f, 5.40f);
+                    context.Add(target, 0f, 0.50f, 0f, 1.06f, 1.00f, 6.00f);
                     break;
                 case CityDecorationKind.ParkChessTables:
                     // Table, board and both benches per side. The box

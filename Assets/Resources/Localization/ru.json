@@ -845,6 +845,14 @@
       "value": "Точка в другой области"
     },
     {
+      "key": "map.point.enter",
+      "value": "Войти в дом"
+    },
+    {
+      "key": "map.point.enter_unavailable",
+      "value": "Войти нельзя"
+    },
+    {
       "key": "map.point.select_hint",
       "value": "ЛКМ / ← → / D-PAD — выбрать"
     },

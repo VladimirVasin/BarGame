@@ -33,7 +33,7 @@ namespace BarPromenade.Editor
         // the park bandstand repair: its columns and balustrade had stood
         // beside the deck since the platform became elliptical.
         private const string V2CompatibilitySignature =
-            "267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7";
+            "4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c";
 
         private static readonly ExpectedPart[] ExpectedParts =
             CreateExpectedParts();

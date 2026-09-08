@@ -48,7 +48,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402
 
 
-GENERATOR_VERSION = "4.9.0"
+GENERATOR_VERSION = "4.10.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
@@ -61,7 +61,7 @@ V2_DESIGN_ID = "city_misc_all_decor_v2"
 # the 2026-08-26 migration made the platform elliptical and left them at the
 # old rectangle's corners. Geometry inside this slice is otherwise pinned.
 V2_COMPATIBILITY_SIGNATURE = (
-    "267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7"
+    "4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c"
 )
 WAVE1_COMPATIBILITY_SIGNATURE = (
     "dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6"
@@ -2260,11 +2260,20 @@ def build_park_bandstand() -> AssemblySpec:
     # ring and meets them instead of running past the deck edge.
     stand_inset = 0.40
     column_degrees = (45.0, 135.0, 225.0, 315.0)
-    # Across the front, between the two front columns; the back stays open.
+    # The assembly's own forward faces the middle of the park, which is the
+    # side people walk up from, so the balustrade closes the quarter behind
+    # the bandstand and the whole park-facing half stays open.
     balustrade_degrees = (225.0, 240.0, 270.0, 300.0, 315.0)
 
     def on_deck(degrees: float, inset: float) -> tuple[float, float]:
-        """A point on the deck plan, `inset` metres in from its edge."""
+        """A point on the deck plan, on an ellipse `inset` smaller than it.
+
+        Not `inset` from the edge: the deck's boundary is the twelve-gon
+        inscribed in that ellipse, so the true clearance runs 0.29 to 0.39 m
+        at `inset` 0.40 and is smallest on the facet midpoints. Say what the
+        number does, because a helper whose contract did not match the shape
+        is how the columns came to stand beside the deck in the first place.
+        """
         angle = math.radians(degrees)
         return ((deck_rx - inset) * math.cos(angle),
                 (deck_ry - inset) * math.sin(angle))
@@ -2295,9 +2304,11 @@ def build_park_bandstand() -> AssemblySpec:
     for (x0, forward0), (x1, forward1) in zip(balustrade, balustrade[1:]):
         painted.append(recipe_tube(
             (-x0, 1.14, forward0), (-x1, 1.14, forward1), 0.06, sides=8))
+    # Thicker than the 0.06 rail it carries, so the outside of every bend
+    # is closed: a thinner upright leaves an open notch at eye height.
     for x, forward in balustrade[1:-1]:
         painted.append(recipe_tube(
-            (-x, 0.46, forward), (-x, 1.20, forward), 0.045, sides=7))
+            (-x, 0.46, forward), (-x, 1.20, forward), 0.07, sides=7))
     return AssemblySpec(
         kind, variant,
         (

@@ -103,9 +103,26 @@ namespace BarPromenade
         private const int HouseDepthSolveRings = 12;
 
         public const float MothersHouseSetback = 2f;
+        public const float MothersHouseOriginalDepth = 9f;
+        public const float MothersHouseWingExtension = 0.9f;
+        public const float MothersHouseLocalDepthShift = MothersHouseWingExtension * 0.5f;
+        public const float MothersHouseMasonrySeamX = 1.47f;
+        public const float MothersHouseOriginalFacadeDepth = 0.415f * MothersHouseOriginalDepth;
         public static readonly Vector2 MothersHouseFootprint =
-            new Vector2(11f, 9f);
+            new Vector2(11f, MothersHouseOriginalDepth + MothersHouseWingExtension);
         public const float MothersHouseHeight = 7f;
+        // Plan-owned collision follows the two masses. The rear timber-side
+        // corner remains walkable instead of inheriting the plot envelope.
+        public static readonly Bounds MothersHouseTimberCollisionBounds = new Bounds(
+            new Vector3((-MothersHouseFootprint.x * 0.5f + MothersHouseMasonrySeamX) * 0.5f,
+                MothersHouseHeight * 0.5f, MothersHouseLocalDepthShift),
+            new Vector3(MothersHouseFootprint.x * 0.5f + MothersHouseMasonrySeamX,
+                MothersHouseHeight, MothersHouseOriginalDepth));
+        public static readonly Bounds MothersHouseWingCollisionBounds = new Bounds(
+            new Vector3((MothersHouseMasonrySeamX + MothersHouseFootprint.x * 0.5f) * 0.5f,
+                MothersHouseHeight * 0.5f, 0f),
+            new Vector3(MothersHouseFootprint.x * 0.5f - MothersHouseMasonrySeamX,
+                MothersHouseHeight, MothersHouseFootprint.y));
         public const float MothersHouseDoorAcross = -0.36f;
         public const float MothersHouseEntranceTriggerRadius = 1.05f;
         public const float MothersHouseReturnStandoff = 1.55f;
@@ -294,6 +311,8 @@ namespace BarPromenade
             Vector3 facing = -head.Forward;
             Vector3 frontCenter = head.Position +
                                   head.Forward * MothersHouseSetback;
+            // Only the enclosing plot centre moves as the stone wing grows
+            // backwards. The lane threshold, dock and return stay fixed.
             Vector3 center = frontCenter +
                               head.Forward *
                               (MothersHouseFootprint.y * 0.5f);

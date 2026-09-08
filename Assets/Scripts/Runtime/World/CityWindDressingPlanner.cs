@@ -823,15 +823,19 @@ namespace BarPromenade
             // sided ring, 3.68 along the tangent and 3.08 along forward.
             // The pin used to be read off the rectangle that ring replaced,
             // which hung the pennant a quarter of its span past the eave,
-            // in the air. These reach 0.886 of the ellipse, just inside its
-            // edge where a pennant belongs.
+            // in the air. Measure against the ring rather than the ellipse
+            // it is inscribed in - and against the cloth, not the pin: the
+            // panel is 0.28 wide and centred here, so its outer edge is what
+            // has to stay under the roof. This pin sits at 0.925 of the ring
+            // and its outer corner at 0.953, just inside the edge where a
+            // pennant belongs.
             cloths.Add(new CityWindDressingClothDescriptor(
                 "wind-park-bandstand-pennant-00",
                 CityWindDressingKind.BandstandPennant,
                 CityWindDressingZone.Park,
                 origin +
                 (tangent *
-                    (2.45f * ((hash & 1u) == 0u ? 1f : -1f))) +
+                    (2.20f * ((hash & 1u) == 0u ? 1f : -1f))) +
                 (forward * 2.05f) +
                 (Vector3.up * (4.00f + PinSink)),
                 YawFromForward(forward),

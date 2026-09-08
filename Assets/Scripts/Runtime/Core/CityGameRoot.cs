@@ -1238,10 +1238,19 @@ namespace BarPromenade
                 World.SeacoastPlan);
             MountainRoadPlan mountainMapPlan =
                 MountainRoadPlanner.Create(GameSessionState.CitySeed);
+            // The village tab charts pure data, exactly as the mountain tab
+            // does. Without it the third tab drew an empty rectangle and
+            // named nothing up there - the chart offered a place it could
+            // not describe.
+            AlpineVillagePlan villageMapPlan =
+                AlpineVillagePlanner.Create(GameSessionState.CitySeed);
             Map.ConfigureAreas(
                 GameAreaId.City,
                 CityMapMountainRoadOverlayBuilder.Create(mountainMapPlan),
-                request => AreaTravelService.Request(request));
+                request => AreaTravelService.Request(request),
+                null,
+                CityMapAlpineVillageOverlayBuilder.Create(villageMapPlan),
+                villageMapPlan.Plots);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,

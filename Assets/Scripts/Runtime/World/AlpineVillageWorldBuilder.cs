@@ -1320,8 +1320,8 @@ namespace BarPromenade
 
         /// <summary>
         /// A house, a chapel or the house at the top of the lane: authored
-        /// shell, plan-drawn door, plan-drawn lit windows, one plan-derived
-        /// collider.
+        /// shell, plan-drawn door and windows, and plan-derived collision.
+        /// The mother's stepped footprint has one collider per built mass.
         ///
         /// The windows are the whole zone. They are emissive geometry and not
         /// a hundred point lights, because URP has an additional-light budget
@@ -1442,13 +1442,28 @@ namespace BarPromenade
             // how a floor once became a two-kilometre slab on its side.
             var collider = new GameObject("Physical Shell");
             collider.transform.SetParent(parent, false);
-            collider.transform.localPosition =
-                Vector3.up * (plot.Height * 0.5f);
-            BoxCollider box = collider.AddComponent<BoxCollider>();
-            box.size = new Vector3(
-                plot.FootprintSize.x,
-                plot.Height,
-                plot.FootprintSize.y);
+            if (tallest)
+            {
+                void AddMass(string name, Bounds bounds)
+                {
+                    var mass = new GameObject(name);
+                    mass.transform.SetParent(collider.transform, false);
+                    mass.transform.localPosition = bounds.center;
+                    mass.AddComponent<BoxCollider>().size = bounds.size;
+                }
+                AddMass("Timber Body", AlpineVillagePlanner.MothersHouseTimberCollisionBounds);
+                AddMass("Stone Wing", AlpineVillagePlanner.MothersHouseWingCollisionBounds);
+            }
+            else
+            {
+                collider.transform.localPosition =
+                    Vector3.up * (plot.Height * 0.5f);
+                BoxCollider box = collider.AddComponent<BoxCollider>();
+                box.size = new Vector3(
+                    plot.FootprintSize.x,
+                    plot.Height,
+                    plot.FootprintSize.y);
+            }
 
             BuildDoor(parent, plot, chapel, face.y, kit);
             if (chapel)
@@ -1532,7 +1547,10 @@ namespace BarPromenade
             anchor.transform.localPosition = new Vector3(
                 across,
                 baseHeight,
-                facadeDirection * (wallFace.y + 0.09f));
+                mothersHouse
+                    ? AlpineVillagePlanner.MothersHouseLocalDepthShift -
+                      AlpineVillagePlanner.MothersHouseOriginalFacadeDepth - 0.09f
+                    : facadeDirection * (wallFace.y + 0.09f));
             anchor.transform.localRotation = Quaternion.LookRotation(
                 Vector3.forward * facadeDirection, Vector3.up);
             PlaceKitAssembly(
@@ -1801,9 +1819,10 @@ namespace BarPromenade
             {
                 // Interior +Z is north/inward, while plot +Z faces the
                 // lane/south. Rotate the plan 180 degrees and align its
-                // x=0 entry with the existing exterior door. Only the wall's
-                // normal coordinate is projected to the authored exterior;
-                // opening widths, floors and positions along it stay exact.
+                // x=0 entry with the existing exterior door. The enlarged
+                // envelope shifts the local depth origin by 0.45 m; each
+                // opening projects onto its own timber/wing wall plane.
+                // Widths, floors and positions along that wall stay exact.
                 float leftFace = -halfWidth;
                 float leftPlinthFace = leftFace;
                 float plinthHead = 0f;
@@ -1837,12 +1856,17 @@ namespace BarPromenade
                     float casingBottom = interior.y - opening.Height / 0.804f * 0.5f;
                     float leftOpeningFace = casingBottom < plinthHead
                         ? leftPlinthFace : leftFace;
+                    float depthShift = AlpineVillagePlanner.MothersHouseLocalDepthShift;
+                    float wallExtension = Mathf.Abs(opening.WallPlane) -
+                        MothersHouseInteriorLayoutPlanner.RoomDepth * 0.5f;
                     Vector3 position = sideWall
                         ? new Vector3(opening.Outward.x > 0f
                                 ? leftOpeningFace - 0.03f : rightFace + 0.03f,
-                            interior.y, -interior.z)
+                            interior.y, depthShift - interior.z)
                         : new Vector3(plot.DoorAcrossOffset - interior.x,
-                            interior.y, -opening.Outward.z * (half + 0.03f));
+                            interior.y, depthShift - opening.Outward.z *
+                            (AlpineVillagePlanner.MothersHouseOriginalFacadeDepth +
+                             wallExtension + 0.03f));
                     Vector3 dimensions = sideWall
                         ? new Vector3(0.05f, opening.Height, opening.Width)
                         : new Vector3(opening.Width, opening.Height, 0.05f);
@@ -1851,7 +1875,7 @@ namespace BarPromenade
                     window.transform.SetParent(parent, false);
                     AlpineVillageWorldBuilder.CreateWindow(
                         window.transform, position, dimensions, kit,
-                        exactOpening: true);
+                        exactOpening: true, frosted: opening.Frosted);
                 }
                 return;
             }
@@ -2544,7 +2568,8 @@ namespace BarPromenade
             Vector3 localPosition,
             Vector3 size,
             VillageAssetProvider kit,
-            bool exactOpening = false)
+            bool exactOpening = false,
+            bool frosted = false)
         {
             if (kit == null)
             {
@@ -2593,7 +2618,9 @@ namespace BarPromenade
                 }
                 else
                 {
-                    Color tint = WindowGlowColor * (shaded ? 0.58f : 1f);
+                    Color tint = WindowGlowColor * (frosted
+                        ? (shaded ? 0.72f : 0.78f)
+                        : (shaded ? 0.58f : 1f));
                     tint.a = 1f;
                     var properties = new MaterialPropertyBlock();
                     properties.SetColor("_BaseColor", tint);

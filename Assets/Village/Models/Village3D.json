@@ -1,9 +1,9 @@
 {
   "generator": "tools/build-village-3d-model.py",
-  "generator_version": "3.4.1",
+  "generator_version": "3.5.0",
   "blender_version": "5.0.1",
   "design_id": "village_house_archetypes_v3",
-  "display_name": "Village House Archetypes 3.4.1",
+  "display_name": "Village House Archetypes 3.5.0",
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -43,15 +43,30 @@
   "triangle_count": 14650,
   "top_house_interior_alignment": {
     "source": "Assets/MothersHouse/Models/MothersHouseInterior3D.json",
-    "interior_generator_version": "1.6.0",
+    "interior_generator_version": "1.9.0",
     "timber_masonry_seam_x_m": 1.47,
     "upper_floor_elevation_m": 3.54,
     "upper_ceiling_m": 5.9,
     "door_across_m": -0.36,
-    "facade_depth_m": 3.735,
+    "facade_depth_m": 4.185,
+    "descriptor_size_m": [
+      11.0,
+      9.9,
+      7.0
+    ],
+    "original_descriptor_depth_m": 9.0,
+    "local_depth_shift_m": 0.45,
+    "wing_extension_m": {
+      "x_min": -5.0,
+      "x_max": -1.75,
+      "original_rear": 4.0,
+      "rear_wall_plane": 4.9,
+      "depth": 0.9
+    },
     "facade_planes_m": {
-      "front": 3.735,
-      "rear": -3.735,
+      "front": 4.185,
+      "rear": -3.2849999999999997,
+      "wing_rear": -4.185,
       "left": -5.0600000000000005,
       "right": 5.17
     },
@@ -61,160 +76,204 @@
         "facade": "rear",
         "center_x_m": 2.3600000000000003,
         "center_y_m": 1.55,
-        "center_z_m": -3.735,
+        "center_z_m": -4.1850000000000005,
         "width_m": 1.35,
         "height_m": 1.4,
-        "floor_elevation_m": 0.0
+        "floor_elevation_m": 0.0,
+        "interior_wall_plane_m": 4.9,
+        "frosted": false
       },
       {
         "stable_id": "ground-north-east",
         "facade": "rear",
         "center_x_m": -3.08,
         "center_y_m": 1.55,
-        "center_z_m": -3.735,
+        "center_z_m": -3.2849999999999997,
         "width_m": 1.35,
         "height_m": 1.4,
-        "floor_elevation_m": 0.0
+        "floor_elevation_m": 0.0,
+        "interior_wall_plane_m": 4.0,
+        "frosted": false
       },
       {
         "stable_id": "ground-south-west",
         "facade": "front",
         "center_x_m": 2.19,
         "center_y_m": 1.55,
-        "center_z_m": 3.735,
+        "center_z_m": 4.185,
         "width_m": 1.05,
         "height_m": 1.4,
-        "floor_elevation_m": 0.0
+        "floor_elevation_m": 0.0,
+        "interior_wall_plane_m": -4.0,
+        "frosted": false
       },
       {
         "stable_id": "ground-south-east",
         "facade": "front",
         "center_x_m": -4.5,
         "center_y_m": 1.55,
-        "center_z_m": 3.735,
+        "center_z_m": 4.185,
         "width_m": 0.7,
         "height_m": 1.4,
-        "floor_elevation_m": 0.0
+        "floor_elevation_m": 0.0,
+        "interior_wall_plane_m": -4.0,
+        "frosted": false
       },
       {
         "stable_id": "ground-east-south",
         "facade": "left",
         "center_x_m": -5.0600000000000005,
         "center_y_m": 1.55,
-        "center_z_m": 2.3,
+        "center_z_m": 2.75,
         "width_m": 1.05,
         "height_m": 1.4,
-        "floor_elevation_m": 0.0
+        "floor_elevation_m": 0.0,
+        "interior_wall_plane_m": 5.0,
+        "frosted": false
       },
       {
         "stable_id": "ground-east-north",
         "facade": "left",
         "center_x_m": -5.0600000000000005,
         "center_y_m": 1.55,
-        "center_z_m": -2.3,
+        "center_z_m": -1.8499999999999999,
         "width_m": 1.05,
         "height_m": 1.4,
-        "floor_elevation_m": 0.0
+        "floor_elevation_m": 0.0,
+        "interior_wall_plane_m": 5.0,
+        "frosted": false
       },
       {
         "stable_id": "ground-west-north",
         "facade": "right",
         "center_x_m": 5.17,
         "center_y_m": 1.55,
-        "center_z_m": -2.8,
+        "center_z_m": -2.3499999999999996,
         "width_m": 1.05,
         "height_m": 1.4,
-        "floor_elevation_m": 0.0
+        "floor_elevation_m": 0.0,
+        "interior_wall_plane_m": -5.0,
+        "frosted": false
       },
       {
         "stable_id": "ground-west-stair",
         "facade": "right",
         "center_x_m": 5.17,
         "center_y_m": 2.7,
-        "center_z_m": 0.1,
+        "center_z_m": 0.55,
         "width_m": 1.0,
         "height_m": 1.1,
-        "floor_elevation_m": 0.0
+        "floor_elevation_m": 0.0,
+        "interior_wall_plane_m": -5.0,
+        "frosted": false
       },
       {
         "stable_id": "upper-north-west",
         "facade": "rear",
         "center_x_m": 0.7400000000000001,
         "center_y_m": 5.01,
-        "center_z_m": -3.735,
+        "center_z_m": -3.2849999999999997,
         "width_m": 1.0,
         "height_m": 1.1,
-        "floor_elevation_m": 3.54
+        "floor_elevation_m": 3.54,
+        "interior_wall_plane_m": 4.0,
+        "frosted": false
       },
       {
         "stable_id": "upper-north-east",
         "facade": "rear",
         "center_x_m": -1.6600000000000001,
         "center_y_m": 5.01,
-        "center_z_m": -3.735,
+        "center_z_m": -3.2849999999999997,
         "width_m": 1.0,
         "height_m": 1.1,
-        "floor_elevation_m": 3.54
+        "floor_elevation_m": 3.54,
+        "interior_wall_plane_m": 4.0,
+        "frosted": false
       },
       {
         "stable_id": "upper-south-west",
         "facade": "front",
         "center_x_m": 0.54,
         "center_y_m": 5.01,
-        "center_z_m": 3.735,
+        "center_z_m": 4.185,
         "width_m": 1.0,
         "height_m": 1.1,
-        "floor_elevation_m": 3.54
+        "floor_elevation_m": 3.54,
+        "interior_wall_plane_m": -4.0,
+        "frosted": false
       },
       {
         "stable_id": "upper-south-east",
         "facade": "front",
         "center_x_m": -1.6600000000000001,
         "center_y_m": 5.01,
-        "center_z_m": 3.735,
+        "center_z_m": 4.185,
         "width_m": 1.0,
         "height_m": 1.1,
-        "floor_elevation_m": 3.54
+        "floor_elevation_m": 3.54,
+        "interior_wall_plane_m": -4.0,
+        "frosted": false
       },
       {
         "stable_id": "upper-east-south",
         "facade": "left",
         "center_x_m": -5.0600000000000005,
         "center_y_m": 5.01,
-        "center_z_m": 2.3,
+        "center_z_m": 2.75,
         "width_m": 1.0,
         "height_m": 1.1,
-        "floor_elevation_m": 3.54
+        "floor_elevation_m": 3.54,
+        "interior_wall_plane_m": 5.0,
+        "frosted": false
       },
       {
         "stable_id": "upper-east-north",
         "facade": "left",
         "center_x_m": -5.0600000000000005,
         "center_y_m": 5.01,
-        "center_z_m": -2.3,
+        "center_z_m": -1.8499999999999999,
         "width_m": 1.0,
         "height_m": 1.1,
-        "floor_elevation_m": 3.54
+        "floor_elevation_m": 3.54,
+        "interior_wall_plane_m": 5.0,
+        "frosted": false
       },
       {
         "stable_id": "upper-west-south",
         "facade": "right",
         "center_x_m": 5.17,
         "center_y_m": 5.01,
-        "center_z_m": 2.3,
+        "center_z_m": 2.75,
         "width_m": 1.0,
         "height_m": 1.1,
-        "floor_elevation_m": 3.54
+        "floor_elevation_m": 3.54,
+        "interior_wall_plane_m": -5.0,
+        "frosted": false
       },
       {
         "stable_id": "upper-west-north",
         "facade": "right",
         "center_x_m": 5.17,
         "center_y_m": 5.01,
-        "center_z_m": -2.3,
+        "center_z_m": -2.1999999999999997,
         "width_m": 1.0,
         "height_m": 1.1,
-        "floor_elevation_m": 3.54
+        "floor_elevation_m": 3.54,
+        "interior_wall_plane_m": -5.0,
+        "frosted": true
+      },
+      {
+        "stable_id": "upper-north-bathroom",
+        "facade": "rear",
+        "center_x_m": 3.19,
+        "center_y_m": 5.18,
+        "center_z_m": -4.1850000000000005,
+        "width_m": 0.78,
+        "height_m": 0.76,
+        "floor_elevation_m": 3.54,
+        "interior_wall_plane_m": 4.9,
+        "frosted": true
       }
     ]
   },
@@ -500,23 +559,23 @@
       ],
       "bounds_min_source": [
         -0.5,
-        -0.47,
+        -0.472727,
         -0.5
       ],
       "bounds_max_source": [
         0.5,
-        0.47,
+        0.472727,
         0.5
       ],
       "bounds_min_unity": [
         -0.5,
         -0.5,
-        -0.47
+        -0.472727
       ],
       "bounds_max_unity": [
         0.5,
         0.5,
-        0.47
+        0.472727
       ]
     },
     {
@@ -1877,30 +1936,30 @@
       "triangles": 16,
       "bounds_min_source": [
         -0.46,
-        -0.415,
+        -0.331818,
         -0.27
       ],
       "bounds_max_source": [
         0.133636,
-        0.415,
+        0.422727,
         0.43
       ],
       "bounds_min_unity": [
         -0.46,
         -0.27,
-        -0.415
+        -0.331818
       ],
       "bounds_max_unity": [
         0.133636,
         0.43,
-        0.415
+        0.422727
       ],
       "uv_min": [
         0.04,
-        0.085
+        0.168182
       ],
       "uv_max": [
-        0.915,
+        0.922727,
         0.93
       ]
     },
@@ -1915,31 +1974,31 @@
       "triangles": 304,
       "bounds_min_source": [
         -0.5,
-        -0.47,
+        -0.472727,
         0.327266
       ],
       "bounds_max_source": [
         0.5,
-        0.47,
+        0.472727,
         0.465
       ],
       "bounds_min_unity": [
         -0.5,
         0.327266,
-        -0.47
+        -0.472727
       ],
       "bounds_max_unity": [
         0.5,
         0.465,
-        0.47
+        0.472727
       ],
       "uv_min": [
         0.0,
-        0.03
+        0.027273
       ],
       "uv_max": [
         1.0,
-        0.97
+        0.972727
       ]
     },
     {
@@ -1953,31 +2012,31 @@
       "triangles": 980,
       "bounds_min_source": [
         -0.475,
-        -0.418,
+        -0.334545,
         -0.5
       ],
       "bounds_max_source": [
         0.133636,
-        0.418,
+        0.425455,
         -0.27
       ],
       "bounds_min_unity": [
         -0.475,
         -0.5,
-        -0.418
+        -0.334545
       ],
       "bounds_max_unity": [
         0.133636,
         -0.27,
-        0.418
+        0.425455
       ],
       "uv_min": [
         0.025,
         0.0
       ],
       "uv_max": [
-        0.918,
-        0.9165
+        0.925455,
+        0.924091
       ]
     },
     {
@@ -1991,31 +2050,31 @@
       "triangles": 96,
       "bounds_min_source": [
         0.133636,
-        -0.415,
+        -0.422727,
         -0.5
       ],
       "bounds_max_source": [
         0.47,
-        0.415,
+        0.422727,
         0.5
       ],
       "bounds_min_unity": [
         0.133636,
         -0.5,
-        -0.415
+        -0.422727
       ],
       "bounds_max_unity": [
         0.47,
         0.5,
-        0.415
+        0.422727
       ],
       "uv_min": [
-        0.085,
+        0.077273,
         0.0
       ],
       "uv_max": [
         0.97,
-        0.99325
+        1.0
       ]
     },
     {
@@ -2029,27 +2088,27 @@
       "triangles": 528,
       "bounds_min_source": [
         -0.468302,
-        -0.45043,
+        -0.408011,
         0.386792
       ],
       "bounds_max_source": [
         0.465582,
-        0.450787,
+        0.455261,
         0.469682
       ],
       "bounds_min_unity": [
         -0.468302,
         0.386792,
-        -0.45043
+        -0.408011
       ],
       "bounds_max_unity": [
         0.465582,
         0.469682,
-        0.450787
+        0.455261
       ],
       "uv_min": [
         0.031698,
-        0.04957
+        0.091989
       ],
       "uv_max": [
         0.965582,
@@ -2067,31 +2126,31 @@
       "triangles": 1172,
       "bounds_min_source": [
         -0.468,
-        -0.42,
+        -0.336364,
         -0.285
       ],
       "bounds_max_source": [
         0.133636,
-        0.42,
+        0.427273,
         0.4216
       ],
       "bounds_min_unity": [
         -0.468,
         -0.285,
-        -0.42
+        -0.336364
       ],
       "bounds_max_unity": [
         0.133636,
         0.4216,
-        0.42
+        0.427273
       ],
       "uv_min": [
         0.032,
-        0.08
+        0.163636
       ],
       "uv_max": [
-        0.92,
-        0.9216
+        0.927273,
+        0.927273
       ]
     },
     {
@@ -3159,5 +3218,5 @@
       ]
     }
   ],
-  "build_signature": "f1440fbb87301427584fa0b5fb58442a2fa1502b8cec5498bf48822ca231a152"
+  "build_signature": "5ea61394dc864192cc9a2cb26fd6baabf09a27292e74f1cb604cdaa2909c86c3"
 }

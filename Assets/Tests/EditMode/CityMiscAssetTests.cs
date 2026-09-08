@@ -368,7 +368,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.9.0"));
+                Is.EqualTo("4.10.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
                 Is.EqualTo(82));
@@ -459,7 +459,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "3da71d7b938810af85fb4d8f2e26a0d1cc141765e621f90e69e8405b1f83a52f"));
+                    "8ec083eb3d9653652f114f7dec4c22aaab5589f99702d3b1ff2ca883281e32f2"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -467,7 +467,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.v2_compatibility_signature,
                 Is.EqualTo(
-                    "267d649beba5d3e708f7ea766b4e4e0201e6a29ef45da1dcd91ab1ba6533e0e7"));
+                    "4889c8aff27234712e7680f0735ecda369e7db3e2fbce9b5c788296c88d1672c"));
             Assert.That(manifest.root_contract, Is.Not.Null);
             Assert.That(
                 manifest.root_contract.origin,
