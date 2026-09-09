@@ -13,8 +13,8 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   terrain. `Ride_OnlyLeavesTheAreaOnceTheScreenIsBlack` and its standing frames
   verify support after alighting and walking off both platforms.
 - The Ferryman's ten ordinary road lines use a session shuffle bag, travel
-  intervals and reading holds. Standard overhead bubbles turn his head towards
-  the passenger without taking input. Pause/skip cleanup and scene continuity
+  intervals and reading holds. Overhead bubbles turn his head without taking
+  input. Pause/skip cleanup and scene continuity
   are covered by `RoadSpeech_PreservesSilenceAndBagAcrossLegsWithoutTakingThePrompt`.
 - The spatial radio has three station folders, starts at station 1 and loops
   each station's own track through the old-speaker chain. All slots now hold
@@ -29,21 +29,23 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 - The existing coin is now one authored octagonal mesh shared by the toss and
   the passive glovebox pile. `build-last-route-coin-3d-model.py --validate-only`
   checks deterministic geometry and compartment/bulb clearance. Runtime places
-  the bare mesh in prefab axes, not the imported body's rotated basis; the
-  actual compartment checks its placed vertices and the lid cannot move them.
+  it in prefab axes; the compartment checks placed vertices independently of the lid.
 - Each trip randomly chooses one station for a single radio reaction after
-  `10 s` of actual playback. The exact criticism starts a reach; only the hand's
-  reached side grip and turn endpoint commit the cyclic switch, then it returns to
-  the wheel. Player E/Q cancels the gesture without replacing their choice.
-  Choice/used state span both scenes; pause/loading freeze the clock and off/Q
-  reset only that clock. Story §6 bounds this rhetorical exception.
+  actual playback. Only hand contact at the turn endpoint commits the switch.
+  Player E/Q cancels the gesture without replacing their choice. Choice/used
+  state span both scenes; Story §6 bounds the rhetorical exception.
 - Opening the glovebox triggers an ownership remark and delayed physical
-  closure from the lid's underside. Both gestures keep low, outboard elbows
-  and fingers following the forearm for a natural whole-arm pose.
+  closure from below. Both gestures keep low elbows and fingers along the forearm.
   `CabinReactions_FollowTheRadioAndCloseTheLidByHand` passed;
   final contact/turn and closing frames confirm natural hands and contact.
   The practical remains `0.15 m`: `Capture_TheCabinFromThePassengerSeat`
   verifies a readable drawer without the windshield hotspot.
+- Passenger exit uses the manual radio-off path, retaining station/playhead.
+  Mountain arrival now waits for that exit before arming departure; the earlier
+  leg change suppressed the driver's exit. Reboarding clears the old alighting
+  timeline. Focused regressions passed:
+  `Alighting_ClimbsOutBesideTheCarWhereItActuallyStopped` and
+  `Alighting_WalksHimBackRoundAndOntoHisOwnBonnet`.
 - Documentation checked with `python tools/check-docs.py` and `git diff --check`.
 
 ## 2026-09-09 — Cableway boarding, continuous arrival and waiting Ferryman

@@ -204,7 +204,10 @@ The vertical slice contains:
   absolute world heights. At the normal `2.6 m/s`
   walk speed the route takes about `238.5 s`, or `3 min 58 s`; continuous
   `4.2 m/s` run input takes about `148 s`, or `2 min 28 s`. The Ferryman's
-  Last Route car reads and drives the same route. Layered forest keeps its
+  Last Route car reads and drives the same route. At the cafe he waits for the
+  passenger to get out, then alights and returns to the bonnet. The return leg
+  is armed after the passenger's exit; a fresh boarding can then take him back
+  to the wheel. Layered forest keeps its
   physical/mid/far budgets but now uses three deterministic crown silhouettes.
   It yields locally at three measured hairpins, the bridge and the terminal
   approach; surrounding far trees and both ridge rings keep those openings on
@@ -1060,8 +1063,10 @@ The vertical slice contains:
   fallback track. Radio power
   suppresses `city_theme` before its first start after a
   City load and while the location director selects it. Power-off immediately
-  stops radio music/hiss and any detached tail, preserving the playhead; the
-  city resumes through its usual `1 s` fade-in. Power-on and scene exit retain
+  stops radio music/hiss and any detached tail, preserving the station and
+  playhead. Starting the passenger's exit invokes this same power switch only
+  if it is on; the city resumes through its usual `1 s` fade-in.
+  Power-on and scene exit retain
   the shared music rule. Gaze-based radio callouts outline each knob
   separately: power uses `E`, and only while powered, `Q` cycles stations
   `1 → 2 → 3 → 1` and moves the needle with a short tuning hiss/crackle from

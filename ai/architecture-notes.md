@@ -31,7 +31,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Power-on lets the city leave over `4 s` before the radio enters over `1 s`.
   Power-off captures the playhead and immediately cuts radio music and hiss,
   including any detached old-car tail; the city resumes through its usual
-  `1 s` fade-in without waiting for a radio fade. Scene exit while radio power
+  `1 s` fade-in without waiting for a radio fade. The passenger's `Exiting`
+  phase invokes the same `Operate(RadioPower)` only when power is on, retaining
+  station and playhead; an already silent radio stays off. Scene exit while radio power
   remains on still keeps the normal `4 s` tail. The new car reads the saved playhead only
   when playback begins, after any departing tail has finished.
   The ten approved localized road lines use `LastRouteRideSpeechSession` for
@@ -4351,7 +4353,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   refuses everything that is not the next thing that can happen; exactly one
   step is not an increment (`Returning -> NotTaken`, the car reaching the
   island again), so a car parked on the mountain can never reappear in the city
-  without being driven there. `CityMapController.Open` refuses while either
+  without being driven there. On arrival the driver waits for the passenger's
+  `Alighted` event before getting out; only then does the mountain controller
+  become the next departure. A new boarding clears the completed alighting
+  timeline so it can carry him from the bonnet back to the wheel.
+  `CityMapController.Open` refuses while either
   moving value is set, for the reason it refuses while the area service is
   travelling — the hero is between two places rather than standing in either,
   and a chart with a teleport on it would let him step out of a moving car.

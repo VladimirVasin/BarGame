@@ -375,6 +375,9 @@ namespace BarPromenade
                 return false;
             }
 
+            // A completed exit must release both the root pose and clip timing
+            // before the same driver can board for the return trip.
+            alighting = null;
             boarding = new LastRouteFerrymanBoardingTimeline(
                 dismountLengthSeconds,
                 walkSeconds,

@@ -807,10 +807,6 @@ namespace BarPromenade
             seat.RebuildPlanFromCar();
             seat.EndRideAttachment();
             GameSessionState.TryAdvanceFerrymanRide(reachedStage);
-            if (buildNextPath != null)
-            {
-                TurnIntoDeparture();
-            }
         }
 
         /// <summary>
@@ -827,6 +823,13 @@ namespace BarPromenade
             }
 
             ferryman?.TryBeginAlighting();
+
+            // Keep the arrival owner until its passenger has left. Arming
+            // the return leg at the stop made the guard above skip the driver.
+            if (buildNextPath != null)
+            {
+                TurnIntoDeparture();
+            }
         }
 
         private void UpdateRoadSpeech()

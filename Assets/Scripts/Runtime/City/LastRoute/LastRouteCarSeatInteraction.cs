@@ -759,7 +759,12 @@ namespace BarPromenade
             {
                 case PlayerAnimatedInteractionPhase.Positioning:
                 case PlayerAnimatedInteractionPhase.Entering:
+                    break;
                 case PlayerAnimatedInteractionPhase.Exiting:
+                    if (dashboard != null && dashboard.RadioOn)
+                    {
+                        dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
+                    }
                     break;
                 case PlayerAnimatedInteractionPhase.Looping:
                     // He is in and the door is shut over him: the car takes

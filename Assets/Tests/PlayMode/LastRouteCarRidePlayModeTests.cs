@@ -228,7 +228,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Alighting_ClimbsOutBesideTheCarWhereItActuallyStopped()
         {
-            Harness harness = BuildHarness(out GameObject scene);
+            Harness harness = BuildHarness(out GameObject scene, false, true);
             try
             {
                 Transform heroRoot = harness.Player.GameObject.transform;
@@ -244,11 +244,41 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
                 Assert.That(harness.Driver.HasArrived, Is.True);
 
+                var dashboard = harness.CarRoot.GetComponent<LastRouteCarDashboard>();
+                var radio = harness.Car.RadioDialRenderer
+                    .GetComponentInChildren<LastRouteRadioMusicPlayer>();
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioTuning);
+                Assert.That(radio.ActiveClip, Is.Not.Null);
+                for (int frame = 0; frame < 120 &&
+                     radio.ActiveClip.loadState != AudioDataLoadState.Loaded; frame++)
+                    yield return null;
+                radio.ResumeWithFadeIn(0f);
+                Assert.That(radio.Source.isPlaying, Is.True);
+                radio.Source.timeSamples = Mathf.RoundToInt(radio.ActiveClip.frequency * 0.5f);
+                int station = dashboard.TuningDetent;
+                int powerCues = harness.Audio.RadioSwitchCueCount;
+                float playhead = radio.Source.timeSamples / (float)radio.ActiveClip.frequency;
+
                 Vector3 dock = harness.Seat.Plan.EntryRootPosition;
                 Assert.That(
                     harness.Seat.CanInteract(harness.Player.Interactor),
                     Is.True);
                 harness.Seat.Interact(harness.Player.Interactor);
+
+                Assert.That(dashboard.RadioOn, Is.False);
+                Assert.That(GameSessionState.CarDashboard.RadioOn, Is.False);
+                Assert.That(dashboard.ReadDialEmission(), Is.EqualTo(Color.black));
+                Assert.That(harness.Audio.RadioSwitchCueCount, Is.EqualTo(powerCues + 1),
+                    "Passenger exit operates the same power switch as E.");
+                Assert.That(radio.Source.isPlaying, Is.False);
+                Assert.That(harness.Audio.RadioTuningSource.isPlaying, Is.False);
+                float[] silence = new float[128];
+                radio.GetComponent<LastRouteRadioSpeakerTexture>().Process(silence, 2);
+                Assert.That(silence, Is.All.Zero, "Power-off also cuts speaker hiss.");
+                Assert.That(dashboard.TuningDetent, Is.EqualTo(station));
+                Assert.That(LastRouteRadioMusicPlayer.SavedPlaybackSecondsForStation(station),
+                    Is.EqualTo(playhead).Within(0.1f));
 
                 var visual = (Player3DCharacterPresentation)
                     harness.Player.Visual;
@@ -303,6 +333,9 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3.Distance(heroRoot.position, dock),
                     Is.LessThan(0.5f),
                     "And he ends up standing on the dock beside the car.");
+                Assert.That(harness.Ferryman.IsAlighting, Is.True,
+                    "The return route must not suppress the driver's exit.");
+                Assert.That(harness.Audio.RadioSwitchCueCount, Is.EqualTo(powerCues + 1));
             }
             finally
             {
@@ -1067,7 +1100,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Alighting_WalksHimBackRoundAndOntoHisOwnBonnet()
         {
-            Harness harness = BuildHarness(out GameObject scene);
+            Harness harness = BuildHarness(out GameObject scene, false, true);
             try
             {
                 yield return null;
@@ -1079,10 +1112,21 @@ namespace BarPromenade.Tests.PlayMode
                 }
 
                 Assert.That(harness.Driver.HasArrived, Is.True);
-                Assert.That(
-                    harness.Ferryman.TryBeginAlighting(),
-                    Is.True,
-                    "Once stopped, he can get out.");
+                Assert.That(harness.Ferryman.IsDriving, Is.True,
+                    "The driver waits until his passenger is out.");
+                int powerCues = harness.Audio.RadioSwitchCueCount;
+                harness.Seat.Interact(harness.Player.Interactor);
+                steps = 0;
+                while (steps < MaximumSteps && !harness.Ferryman.IsAlighting)
+                {
+                    yield return null;
+                    steps++;
+                }
+                Assert.That(harness.Ferryman.IsAlighting, Is.True,
+                    "Passenger alighting must start the driver's exit with a return route armed.");
+                Assert.That(GameSessionState.CarDashboard.RadioOn, Is.False);
+                Assert.That(harness.Audio.RadioSwitchCueCount, Is.EqualTo(powerCues),
+                    "An already silent radio must stay off without a switch click.");
                 Assert.That(
                     harness.Ferryman.TryBeginAlighting(),
                     Is.False,
@@ -1138,6 +1182,25 @@ namespace BarPromenade.Tests.PlayMode
                     Is.LessThan(0.75f),
                     "And he is on his own bumper rather than somewhere near " +
                     "where it used to be.");
+
+                steps = 0;
+                while (steps < MaximumSteps && !harness.Ferryman.IsDriving)
+                {
+                    yield return null;
+                    steps++;
+                }
+                Assert.That(harness.Ferryman.IsDriving, Is.True,
+                    "The completed alighting timeline must release the return boarding.");
+                harness.Seat.Interact(harness.Player.Interactor);
+                steps = 0;
+                while (steps < MaximumSteps && !harness.Driver.IsDriving)
+                {
+                    yield return null;
+                    steps++;
+                }
+                Assert.That(harness.Driver.IsDriving, Is.True,
+                    "After both men board again, the armed return route must start.");
+                Assert.That(harness.Ride.IsRiding, Is.True);
             }
             finally
             {
@@ -1950,7 +2013,8 @@ namespace BarPromenade.Tests.PlayMode
         /// </summary>
         private static Harness BuildHarness(
             out GameObject scene,
-            bool departing)
+            bool departing,
+            bool armReturn = false)
         {
             scene = new GameObject("Last Route Ride Test");
             Transform parent = scene.transform;
@@ -2024,7 +2088,12 @@ namespace BarPromenade.Tests.PlayMode
                     seat,
                     driver,
                     ferryman,
-                    () => new LastRouteCarDrivePath(road));
+                    () => new LastRouteCarDrivePath(road),
+                    armReturn ? () => new LastRouteCarDrivePath(new[]
+                    {
+                        road[road.Count - 1],
+                        road[road.Count - 1] + Vector3.forward * DepartureRoadLength
+                    }) : null);
 
             // Exactly as the mountain terrace binds it: snow under the
             // tyres, no tunnel on this test road.
