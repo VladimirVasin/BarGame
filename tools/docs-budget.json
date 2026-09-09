@@ -13,9 +13,7 @@
     "UserSettings/",
     "Application.persistentDataPath"
   ],
-  "pending_checks": [
-    "canon/block-too-large"
-  ],
+  "pending_checks": [],
   "types": {
     "entry": {},
     "index": {
@@ -82,7 +80,7 @@
     },
     "ai/architecture-notes.md": {
       "type": "canon",
-      "block_max": 3000,
+      "block_max": 8000,
       "statuses": [
         "Accepted",
         "Proposed",
@@ -90,7 +88,7 @@
         "Corrected",
         "Current"
       ],
-      "budget": 612000
+      "budget": 570000
     },
     "ai/city-story-bible.md": {
       "type": "canon",

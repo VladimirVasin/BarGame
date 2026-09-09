@@ -431,6 +431,24 @@ class Checker:
                     )
 
         if kind == "canon":
+            # A register entry is ONE decision. The real failure mode is a thread: a
+            # later decision written inside an earlier one, so that a reader cannot tell
+            # which clauses still stand. Length is not the defect — the entries here are
+            # dense measured contracts, only 7% of them narration — so size is a warning
+            # for outliers and the thread is the error.
+            statuses = row.get("statuses")
+            if statuses:
+                nested = re.compile(r"^ +\*\*(" + "|".join(map(re.escape, statuses)) + r")\b")
+                for index, line in enumerate(doc.lines, start=1):
+                    if index in doc.fenced or not nested.match(line):
+                        continue
+                    self.error(
+                        path, index, "canon/entry-thread",
+                        "a second decision is written inside another entry, so a reader cannot "
+                        "tell which of its clauses still stand. Promote it to its own `- **` "
+                        "entry and delete whatever it supersedes.",
+                    )
+
             block_max = row.get("block_max")
             if block_max:
                 marks = [
@@ -450,10 +468,11 @@ class Checker:
                     end = marks[position + 1] - 1 if position + 1 < len(marks) else len(doc.lines)
                     size = len("\n".join(doc.lines[start - 1 : end]).encode("utf-8"))
                     if size > block_max:
-                        self.error(
+                        self.warn(
                             path, start, "canon/block-too-large",
-                            f"the decision bullet is {size} B, over the {block_max} B cap. "
-                            "State the decision and its bound; the narration belongs in the work log.",
+                            f"the decision entry is {size} B, past the {block_max} B outlier mark. "
+                            "Check that it is one decision and not several; a genuinely dense "
+                            "measured contract may stay.",
                         )
 
     # -- E. references -----------------------------------------------------

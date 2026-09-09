@@ -325,7 +325,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   focus/lens response (`0.08/0.12 s`), so the camera begins following before
   the hero reaches the near edge of the landing.
 
-  **Accepted architecture exception — 2026-09-08, direct user correction:**
+- **Accepted architecture exception — 2026-09-08, direct user correction:**
   the former art-bible §10g rule that the upper corridor has no light of its
   own is superseded by one warm opal ceiling fitting. Its measured source
   at `(-2.5, 5.62, -0.6)` lights the corridor and stair exit; it adds one
@@ -2442,7 +2442,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `CityBusDriverPresentation` already uses for the driver. Sole pinning is
   switched off while seated — on a seat it would drag the model down until the
   boots touched the cabin floor — and the mixer gains a third Sit input.
-  **Accepted — Declared seated rides over a blanket allowance:** a design may
+- **Accepted — Declared seated rides over a blanket allowance:** a design may
   ride only by declaring `CityPedestrianArchetype.SeatedRide`, which owns its
   pelvis lift, back offset and headroom, and by owning an authored `Sit` loop
   in the shared locomotion library. The Helmet Lamp Hopper declares none: it
@@ -3184,7 +3184,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   keeps each of them common where they belong and rare elsewhere, not a
   reversal of the promotion.
 
-  **Corrected by the bar's explicit composition decision:**
+- **Corrected by the bar's explicit composition decision:**
   `BarPatronWorldBuilder` still resolves ordinary city pedestrian prefabs, but
   it now owns a narrow deterministic bar list rather than inheriting the
   roaming order. This does not narrow the street catalog; it only prevents an
@@ -3273,7 +3273,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   clip is baked and verified against its own archetype's footwear rather than
   a shared model, and a design may declare an animated hand-to-pavement
   clearance band that footwear grounding alone cannot express.
-  **Accepted — Declared pedestrian exceptions over blanket bans:** a walker
+- **Accepted — Declared pedestrian exceptions over blanket bans:** a walker
   may leave the pavement or wear one working light, but only by declaring it.
   An airborne archetype declares an apex band; its clips receive a single
   constant pelvis lift instead of a per-frame correction, must never penetrate
@@ -3620,7 +3620,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   keeps the pale attendant from owning the whole shot. The proxy reaches only
   the threshold and near apron, never the terrace or brink.
 
-  **Accepted architecture exception — 2026-09-03, explicit user request — one
+- **Accepted architecture exception — 2026-09-03, explicit user request — one
   silent physical menu handoff with a selection-only placeholder:** this
   supersedes only the cafe clauses above that forbid every menu and every form
   of hero service. After the hero completes the existing stool sit, the silent
@@ -3636,7 +3636,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   other object text, a complete order flow or ownership of the hero
   presentation outside the existing seated view.
 
-  **Accepted architecture exception — 2026-09-03, later explicit user
+- **Accepted architecture exception — 2026-09-03, later explicit user
   request — locked page focus and one physical menu return:** this supersedes
   only the free-look and handoff-only lifecycle clauses of the menu exception
   immediately above. Once the shared service frame exposes
@@ -3668,7 +3668,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and localization contracts remain generator `1.2.1`, `61` meshes / `5,794`
   triangles / `52` anchors / seven dynamic props.
 
-  **Accepted architecture exception — 2026-09-04, explicit user request — a
+- **Accepted architecture exception — 2026-09-04, explicit user request — a
   closed menu remains with the seated hero in both venues:** this supersedes
   the locked-first-choice, immediate-confirm/stand retrieval and one-shot
   clauses of the two cafe menu exceptions above. `CounterMenuState.Resting`
@@ -3699,7 +3699,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   adds no collider, Rigidbody or second menu authority, so the existing
   bounded gaze target and lifecycle remain unchanged.
 
-  **Accepted exception — role-staggered cafe drinking:** on `2026-09-01` the
+- **Accepted exception — role-staggered cafe drinking:** on `2026-09-01` the
   user explicitly replaced the earlier synchronized-pair beat. The pair stays
   grouped in the composition, but its two members own distinct visible fill
   levels, sip amounts and non-overlapping deterministic drink windows. Only
@@ -3710,7 +3710,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bible §10f; silence, the closed household loop and the hero's exclusion from
   service remain unchanged.
 
-  **Accepted exception — sleeping lone patron, opposite cup grips and real
+- **Accepted exception — sleeping lone patron, opposite cup grips and real
   stool contact:** on `2026-09-01` the user explicitly replaced the lone
   patron's coffee loop with a seated sleep: head on strongly crossed forearms,
   one visibly stacked above the other without mesh intersection, on the
@@ -3724,7 +3724,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   user-approved change to the cafe tableau, not permission to add dialogue,
   sound, an order or hero service.
 
-  **Accepted implementation — exact cafe contacts and phase-owned silent
+- **Accepted implementation — exact cafe contacts and phase-owned silent
   idles:** each member of the pair keeps the cup in the live hand until that
   hand reaches the authored dock grip; release restores the cup at the exact
   centre of its own saucer rather than hiding a bad last frame with an
@@ -3740,7 +3740,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The man's contacts likewise own no impact sound. This is an implementation
   of the existing silent-cafe contract, not a new story exception.
 
-  **Accepted correction — 2026-09-02, explicit user request — the cafe smoke
+- **Accepted correction — 2026-09-02, explicit user request — the cafe smoke
   is a mouth exhale, not ember smoke:** the existing phase-owned plume now
   follows the live `SOCKET_Mouth` and emits only after the drag, across the
   authored exhale window. The cigarette ember remains a separate
@@ -3748,7 +3748,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and add no autonomous timer, Light or AudioSource. This supersedes only the
   plume origin in the prior cafe-smoking contract.
 
-  **Accepted architecture exception — 2026-09-02, explicit user request —
+- **Accepted architecture exception — 2026-09-02, explicit user request —
   private adult banter for the mountain-cafe pair:** this supersedes only the
   cafe's absolute silent/no-dialogue clauses. The unambiguously adult PairMan
   and PairWoman own two initial ten-line localized pools arranged as a fixed
@@ -3769,7 +3769,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   limited profanity are a one-location voice exception, not a global text
   register change; these two pools become the §21 baseline for later additions.
 
-  **Accepted architecture exception — 2026-09-02, explicit user request —
+- **Accepted architecture exception — 2026-09-02, explicit user request —
   the sleeping patron is the ignored husband and interrupts after every third
   completed pair exchange:** this supersedes the immediately preceding
   exception only where it leaves the sleeper silent. The lone patron is
@@ -3794,7 +3794,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   silent. This is the separate §6/§21 decision required to give a formerly
   silent NPC his first text pool; it does not authorize any other silent NPC.
 
-  **Accepted correction — the cigarette is gripped by its filter, never its
+- **Accepted correction — the cigarette is gripped by its filter, never its
   ember:** the user's 2026-09-02 visual correction makes the non-burning start
   of the cigarette the right-hand grip and points the burning tip away from the
   fingers and face in rest, drag and exhale. The filter still reaches the live
@@ -3992,7 +3992,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   scene keeps its existing physical deck/guards/camera/smoking contract and
   rebuilds the same materials, exact visible window positions and recessed
   entry around it, so City and Home no longer draw competing balcony shells.
-  **Accepted camera-specific omission, 2026-09-02:** the bounded Home view does
+- **Accepted camera-specific omission, 2026-09-02:** the bounded Home view does
   not rebuild the authored model's narrow `Front Eave Fascia`. At Home-local
   `y = 2.19 m` it crossed both the fixed balcony and smoking shots as a long
   foreground beam. The City asset retains its street-scale fascia, while Home
@@ -5790,7 +5790,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   needs transactions are not expanded by the ordinary flush. Story §16,
   text register §21 and all nine art acceptance checks remain binding.
 
-  **Accepted refinement (`2026-09-08`), implementation `Current`:** The
+- **Accepted refinement (`2026-09-08`), implementation `Current`:** The
   user's next explicit request extends the same action after `Rise`. The
   hero bends and looks into the bowl while the camera stays below the
   water. This permits only that practical downward look and a brief view
@@ -5828,7 +5828,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `958`-triangle bare pelvis with more defined buttocks; existing garment
   endpoints and the outlet remain authoritative.
 
-  **Accepted fluid refinement (`2026-09-08`), implementation `Current`:**
+- **Accepted fluid refinement (`2026-09-08`), implementation `Current`:**
   After the existing near-lens contact, the solid floats, wobbles and turns
   under ordinary buoyancy and water-current forces. Flush flow subsequently
   captures and drains it. This replaces the fixed floor pose and prescribed
@@ -7108,7 +7108,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   fifteen seconds read as the world receding and only then as the world being
   projected. A single one-pole gate was tried first and rejected by
   measurement: it still passed `58 %` of the energy above 5 kHz.
-  **Accepted exception, by explicit user decision on `2026-09-08`:** the
+- **Accepted exception, by explicit user decision on `2026-09-08`:** the
   tape's rule that its effect «transforms existing audio only: no generated
   hiss, voice, new sound source» does NOT bind this one. The user asked for
   the filter, the print's own noise and the projector, having been told what

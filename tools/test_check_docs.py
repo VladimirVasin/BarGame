@@ -215,6 +215,41 @@ class CanonTests(CheckerHarness):
         findings = self.run_checks(self.manifest({"hardline_hashes": hashes}), ["bible.md"])
         self.assertEqual([], self.checks(findings, "error"))
 
+    REGISTER = (
+        "# Notes\n\n## Current facts\n\n"
+        "- **Accepted — the first decision:** it stands.\n"
+        "{nested}"
+        "- **Accepted — the second decision:** it also stands.\n"
+    )
+
+    def register_manifest(self) -> dict:
+        return {
+            "types": {"canon": {}},
+            "documents": {"notes.md": {
+                "type": "canon", "budget": 100000, "block_max": 8000,
+                "statuses": ["Accepted", "Proposed", "Superseded", "Corrected", "Current"],
+            }},
+        }
+
+    def test_a_decision_written_inside_another_entry_is_refused(self):
+        self.write("notes.md", self.REGISTER.format(
+            nested="\n  **Accepted — a later decision:** this supersedes part of the above.\n\n"))
+        findings = self.run_checks(self.register_manifest(), ["notes.md"])
+        self.assertIn("canon/entry-thread", self.checks(findings, "error"))
+
+    def test_separate_entries_are_accepted(self):
+        self.write("notes.md", self.REGISTER.format(nested=""))
+        findings = self.run_checks(self.register_manifest(), ["notes.md"])
+        self.assertEqual([], self.checks(findings, "error"))
+
+    def test_a_long_entry_is_only_an_outlier_warning(self):
+        # Length is not the defect: these entries are dense measured contracts.
+        self.write("notes.md", "# Notes\n\n## Current facts\n\n- **Accepted — big:** "
+                   + "x" * 9000 + "\n")
+        findings = self.run_checks(self.register_manifest(), ["notes.md"])
+        self.assertEqual([], self.checks(findings, "error"))
+        self.assertIn("canon/block-too-large", self.checks(findings, "warning"))
+
     def test_a_removed_section_is_refused(self):
         self.write("bible.md", "# Bible\n\n## 1. First\n\n- text\n")
         findings = self.run_checks(self.manifest(), ["bible.md"])

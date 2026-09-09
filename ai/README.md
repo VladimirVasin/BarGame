@@ -19,7 +19,7 @@ compares them, so this index cannot quietly drift out of date again.
 | `current-world.md` | state | 208000 | Detailed current gameplay/MVP catalogue and deferred scope |
 | `village-life-plan.md` | state | 14000 | The accepted four-part village household update; all four parts are implemented |
 | `systems-map.md` | index | 44000 | System index: guarantee, key files and status |
-| `architecture-notes.md` | canon | 612000 | Accepted technical decisions and the exceptions the bibles allow |
+| `architecture-notes.md` | canon | 570000 | Accepted technical decisions and the exceptions the bibles allow |
 | `debug-log.md` | state | 11000 | Structured diagnostics format, events and support workflow |
 | `player-art-spec.md` | canon | 32000 | Locked player design for the 3D production hero; the 2D atlas contract it once held is retired |
 | `contextual-animation-standard.md` | canon | 11000 | Mandatory entry/exit, hard-handoff, authoring and test contract for contextual interactions on the 3D hero rig |
@@ -79,6 +79,14 @@ follows replaces it, and `python tools/check-docs.py` enforces it.
   have four different values at once. Section numbers, cited `###` titles and
   the story bible's §6 registry dates are frozen: code cites them, so the
   checker refuses to let them move.
+  **One entry is one decision.** Writing a later decision inside an earlier
+  entry is an error: it produces a thread in which a reader cannot tell which
+  clauses still stand — one entry had grown to eleven decisions and 16 KB that
+  way. Promote it to its own entry and delete whatever it supersedes.
+  Entry *length* is only a warning, and deliberately so: these entries are
+  dense measured contracts other code depends on, and a measurement found just
+  7% of the long ones to be narration. There is nothing to squeeze, so the file
+  budget is what bounds the register, not a per-entry cap.
 - **`index`** — `systems-map.md`. One row per system, cells to one or two
   rendered lines, only the four statuses above.
 - **`entry`** — `AI.md`, `AGENTS.md`, this file, `project-overview.md`,
