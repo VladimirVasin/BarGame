@@ -373,7 +373,7 @@ class Checker:
                     doc.lines[i - 1].startswith("### ") for i in range(start, end + 1)
                 ):
                     title = HEADING.match(doc.lines[start - 1]).group(2)
-                    self.warn(
+                    self.error(
                         path, start, "shape/no-subheadings",
                         f'section "{title}" runs {end - start} lines with no ### subheading; '
                         '"read the relevant section" is not actionable. Split it.',

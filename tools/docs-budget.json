@@ -30,7 +30,7 @@
   "documents": {
     "AI.md": {
       "type": "entry",
-      "budget": 13000
+      "budget": 11000
     },
     "AGENTS.md": {
       "type": "entry",
@@ -38,7 +38,7 @@
     },
     "README.md": {
       "type": "state",
-      "budget": 26000
+      "budget": 25000
     },
     "ai/README.md": {
       "type": "entry",
@@ -46,11 +46,11 @@
     },
     "ai/project-overview.md": {
       "type": "entry",
-      "budget": 12000
+      "budget": 9000
     },
     "ai/prompt-templates.md": {
       "type": "entry",
-      "budget": 10000
+      "budget": 6000
     },
     "ai/systems-map.md": {
       "type": "index",
@@ -68,15 +68,15 @@
     },
     "ai/debug-log.md": {
       "type": "state",
-      "budget": 11000
+      "budget": 8000
     },
     "ai/tutorial-scenario.md": {
       "type": "state",
-      "budget": 8000
+      "budget": 5000
     },
     "ai/village-life-plan.md": {
       "type": "state",
-      "budget": 14000
+      "budget": 12000
     },
     "ai/architecture-notes.md": {
       "type": "canon",
@@ -104,11 +104,11 @@
     },
     "ai/bartender-spec.md": {
       "type": "canon",
-      "budget": 16000
+      "budget": 13000
     },
     "ai/contextual-animation-standard.md": {
       "type": "canon",
-      "budget": 11000
+      "budget": 8000
     },
     "ai/work-log.md": {
       "type": "ledger",
@@ -128,11 +128,11 @@
     },
     "tools/README.md": {
       "type": "state",
-      "budget": 15000
+      "budget": 13000
     },
     "tools/alpine-cold-frost-mask.md": {
       "type": "note",
-      "budget": 9000
+      "budget": 6000
     },
     "tools/audio-vhs/README.md": {
       "type": "note",
@@ -140,58 +140,58 @@
     },
     "ArtSource/City/Facades/README.md": {
       "type": "note",
-      "budget": 9000
+      "budget": 6000
     },
     "ArtSource/Home/README.md": {
       "type": "note",
-      "budget": 8000
+      "budget": 4000
     },
     "ArtSource/HomeBrushingAction/README.md": {
       "type": "note",
-      "budget": 8000
+      "budget": 4000
     },
     "ArtSource/HomeToiletAction/README.md": {
       "type": "note",
-      "budget": 9000
+      "budget": 6000
     },
     "ArtSource/MothersHouse/Textures/MothersHousePositiveAtlas.prompt.md": {
       "type": "note",
-      "budget": 9000
+      "budget": 6000
     },
     "ArtSource/MountainRoad/README.md": {
       "type": "note",
-      "budget": 10000
+      "budget": 6000
     },
     "ArtSource/Pedestrians/README.md": {
       "type": "note",
-      "budget": 25000
+      "budget": 24000
     },
     "ArtSource/Player/BalconySmoking/README.md": {
       "type": "note",
-      "budget": 18000,
+      "budget": 17000,
       "retired": true
     },
     "ArtSource/Player/BedSleep/README.md": {
       "type": "note",
-      "budget": 9000,
+      "budget": 6000,
       "retired": true
     },
     "ArtSource/Player/CatFeeding/README.md": {
       "type": "note",
-      "budget": 10000,
+      "budget": 7000,
       "retired": true
     },
     "ArtSource/Player/README.md": {
       "type": "note",
-      "budget": 8000
+      "budget": 4000
     },
     "ArtSource/Stairwell/Cat/README.md": {
       "type": "note",
-      "budget": 8000
+      "budget": 4000
     },
     "ArtSource/Vehicles/Blender/README.md": {
       "type": "note",
-      "budget": 8000
+      "budget": 4000
     }
   },
   "sections": {

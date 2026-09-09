@@ -14,20 +14,20 @@ compares them, so this index cannot quietly drift out of date again.
 
 | File | Type | Budget | Purpose |
 | --- | --- | --- | --- |
-| `prompt-templates.md` | entry | 10000 | Canonical FAST-default, FEATURE, RELEASE, PLAN, BUGFIX, and REFACTOR workflows |
-| `project-overview.md` | entry | 12000 | Concise current baseline, technical owners, capability and scope links |
+| `prompt-templates.md` | entry | 6000 | Canonical FAST-default, FEATURE, RELEASE, PLAN, BUGFIX, and REFACTOR workflows |
+| `project-overview.md` | entry | 9000 | Concise current baseline, technical owners, capability and scope links |
 | `current-world.md` | state | 208000 | Detailed current gameplay/MVP catalogue and deferred scope |
-| `village-life-plan.md` | state | 14000 | The accepted four-part village household update; all four parts are implemented |
+| `village-life-plan.md` | state | 12000 | The accepted four-part village household update; all four parts are implemented |
 | `systems-map.md` | index | 44000 | System index: guarantee, key files and status |
 | `architecture-notes.md` | canon | 570000 | Accepted technical decisions and the exceptions the bibles allow |
-| `debug-log.md` | state | 11000 | Structured diagnostics format, events and support workflow |
+| `debug-log.md` | state | 8000 | Structured diagnostics format, events and support workflow |
 | `player-art-spec.md` | canon | 32000 | Locked player design for the 3D production hero; the 2D atlas contract it once held is retired |
-| `contextual-animation-standard.md` | canon | 11000 | Mandatory entry/exit, hard-handoff, authoring and test contract for contextual interactions on the 3D hero rig |
-| `bartender-spec.md` | canon | 16000 | The active two-armed bar worker; the six-armed design is quarantined in its appendix |
+| `contextual-animation-standard.md` | canon | 8000 | Mandatory entry/exit, hard-handoff, authoring and test contract for contextual interactions on the 3D hero rig |
+| `bartender-spec.md` | canon | 13000 | The active two-armed bar worker; the six-armed design is quarantined in its appendix |
 | `city-zones-art-bible.md` | canon | 473000 | Locked target visual, spatial, emotional, light and sound identity. Binding: §16 holds nine acceptance checks |
 | `city-story-bible.md` | canon | 305000 | Binding story canon: the crime, the hero, the poisoning scale, the Cat, what every built place means, and the register every written line must keep. §16 is hard, §6 is the dated registry, §21 governs text |
 | `work-log.md` | ledger | 563000 | Reverse-chronological implementation record, one entry per date |
-| `tutorial-scenario.md` | state | 8000 | Vertical-slice walkthrough; covers three of the nine gameplay roots |
+| `tutorial-scenario.md` | state | 5000 | Vertical-slice walkthrough; covers three of the nine gameplay roots |
 | `release-notes.md` | ledger | 211000 | Player-visible milestone notes, one entry per date |
 | `archive/` | — | — | Retired logs and explicitly superseded document snapshots, retained verbatim. Not budgeted and not checked |
 
