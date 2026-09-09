@@ -904,14 +904,15 @@ Assets/
         PlayerFallAnimationTimeline.cs  14/36/50 authored phase mapping, 100 total (Fall/Down no longer played by the 3D hero)
       Player3D/
         PlayerScarfController.cs        equipment events, exterior/shelter gates and owned hand-operated mouth access
-        PlayerScarfPresentation.cs      authored deformation after body contacts (410), visibility and mirror copy
-        PlayerScarfContactSurface.cs    hidden source skin -> world contacts -> visible instance mesh for wrap/knot
-        PlayerScarfClothSimulation.cs   bounded cloth on authored vertices; reusable native integration buffers
-        PlayerScarfIntegrationJob.cs    Burst 120 Hz integration, constraints, pins and final velocities
-        PlayerScarfCollisionWorld.cs    real model triangle BVH, cached static mesh BVHs and compensated skin bakes
-        PlayerScarfCollisionSnapshot.cs managed/native triangle and BVH snapshot with four bulk transfers
-        PlayerScarfContactSolver.cs     native contact-job adapter, warmup and reusable buffers
-        PlayerScarfContactJob.cs        strict sequential Burst PBD over real model surface features
+        PlayerScarfPresentation.cs      simple hero-body path (410), visibility/mirror; detailed diagnostics opt-in
+        PlayerScarfBodyContacts.cs      once-measured bone-bound body ellipsoids; no per-frame body bake
+        PlayerScarfContactSurface.cs    authored skin -> cheap hero-body correction -> visible wrap/knot mesh
+        PlayerScarfClothSimulation.cs   default bounded wind/motion and body contacts; detailed mode for diagnostics
+        PlayerScarfIntegrationJob.cs    diagnostic-only Burst 120 Hz cloth integration and constraints
+        PlayerScarfCollisionWorld.cs    diagnostic-only real model triangle BVH and compensated skin bakes
+        PlayerScarfCollisionSnapshot.cs diagnostic-only managed/native triangle and BVH snapshot
+        PlayerScarfContactSolver.cs     diagnostic-only native contact-job adapter and reusable buffers
+        PlayerScarfContactJob.cs        diagnostic-only strict sequential Burst PBD over model surfaces
         PlayerScarfResources.cs         authored folded/worn models and one cached BookCloth material
         Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
         Player3DResources.cs            single packaged V2 prefab instantiation

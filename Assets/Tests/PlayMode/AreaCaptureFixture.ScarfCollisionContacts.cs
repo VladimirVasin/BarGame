@@ -390,7 +390,7 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Timeout(180000)]
-        [Explicit("Rendered scarf/body/wall/corner/moving NPC/GPU-only model contact regression. Run alone.")]
+        [Explicit("Legacy detailed-contact diagnostic, not the production body-only scarf. Run alone.")]
         [PrebuildSetup(typeof(ScarfAssetsSetup))]
         public IEnumerator ScarfCollisionContacts()
         {
@@ -443,6 +443,7 @@ namespace BarPromenade.Tests.PlayMode
                 var controller = village.Player.GameObject.GetComponent<PlayerScarfController>();
                 Assert.That(controller, Is.Not.Null);
                 PlayerScarfPresentation scarf = controller.Presentation;
+                scarf.EnableDetailedContactsForDiagnostics();
                 probe.Origin = village.Player.GameObject.transform.position;
                 camera = Camera.main;
                 Assert.That(camera, Is.Not.Null);

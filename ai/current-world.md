@@ -2156,30 +2156,33 @@ The vertical slice contains:
   game resets both collection and equipment. `PlayerFactory` installs the
   optional `PlayerScarfController` on the shared hero. Its separate imported
   yellow wrap covers the neck, nape and lower face; a `45 cm` pinned cloth
-  tail responds to the actual exterior wind and ordinary body motion.
-  `PlayerScarfClothSimulation` advances the authored tail vertices through
-  native Burst integration/contact jobs; loading prepares nearby immutable
-  collision caches even while the item is unequipped.
-  `PlayerScarfCollisionWorld` gathers nearby real static and skinned triangles,
-  and `PlayerScarfContactSolver` resolves contacts with the hero, NPCs,
-  buildings and other model surfaces. Hidden authored wrap/knot skins feed
-  corrected visible meshes through `PlayerScarfContactSurface`; each active
-  frame solves from the current authored skin pose. Shared rest
-  geometry stays immutable; each actor owns its dynamic surfaces. Paused
-  frames retain their deformation; teleports reset and resolve once. Closed
+  tail responds to the actual exterior wind and ordinary body motion through
+  bounded procedural bending. Running lifts the tail into a curved ribbon
+  trailing behind the hero, with travelling flutter and a smooth rise/settle
+  after starting/stopping. The authored topology stays unchanged.
+  Wrap, knot and tail keep simple contact with
+  the hero's body parts through bone-following proxy volumes derived from
+  the authored body meshes. External objects, buildings and NPCs are ignored.
+  `PlayerScarfBodyContacts` measures the body once on installation, then follows
+  its bones. Ordinary gameplay does not gather world triangles, bake the hero's
+  body meshes each frame or run the detailed cloth/contact jobs; their former implementation
+  remains available only through explicit diagnostic capture mode.
+  `PlayerScarfContactSurface` prepares the authored wrap/knot pose and applies
+  the cheap body corrections. Shared rest geometry stays immutable; each
+  actor owns its dynamic surfaces. Paused frames retain their deformation;
+  teleports reset motion. Closed
   cabins, the village workroom and interiors remove exterior wind; the home
   balcony uses it. One shared matte material samples the mother's-house
   `BookCloth` tile. Visible mouth actions lease access and wait for a short
   left-hand reach/pull/release (`0.24/0.55/0.24 s`), which lowers the authored
   wrap shape before drinking, smoking or brushing; vomiting also owns access.
   Cached hand/thumb surfaces place the actual hand exterior `4 mm` in front
-  of the garment. The focused `360`-frame contact capture passed without
-  detected penetrations; its dense-corner performance costs are recorded
-  in [work-log.md](work-log.md).
+  of the garment. Historical full-contact captures and their performance
+  costs in [work-log.md](work-log.md) describe the previous implementation.
   Returning the scarf preserves its equipment and cold protection. Shower
   clothing ownership temporarily removes its visible form. Head/body hiding
   applies to the accessory, and the bathroom mirror copies its live appearance
-  and all corrected surfaces instead of running another cloth simulation. Instant inventory
+  and all corrected surfaces without another deformation/contact update. Instant inventory
   consumption retains its existing non-animated behavior. Current
   food has explicit relief but cannot reduce hunger below `20`; food with no
   effect remains in its stack. Alcohol has separate stress-relief values, and

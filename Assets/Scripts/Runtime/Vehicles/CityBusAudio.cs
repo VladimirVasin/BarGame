@@ -435,7 +435,12 @@ namespace BarPromenade
 
             source.Stop();
             source.volume = 0f;
-            source.time = 0f;
+            // Door sources have no clip before their first cue and after
+            // release. Unity's playback cursor is only valid for a live clip.
+            if (source.clip != null)
+            {
+                source.time = 0f;
+            }
             if (clearClip)
             {
                 source.clip = null;

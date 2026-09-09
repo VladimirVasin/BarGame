@@ -1,5 +1,35 @@
 # Architecture notes
 
+- **Accepted — 2026-09-09, lightweight scarf with hero-body contacts only:**
+  The user reported continuing outdoor frame drops, especially while running,
+  explicitly permitted simpler mechanics, then required the scarf to ignore
+  every external object while retaining interaction with the hero's body parts.
+  This decision supersedes the earlier requirement below for precise contacts
+  with the hero, NPCs, buildings and other models. The matching scarf exception
+  in story-bible §6 and art-bible §10g now permits approximate hero-body contact
+  and no external-object contact in ordinary gameplay.
+  `PlayerScarfBodyContacts` measures authored body geometry once at installation
+  and then follows the bones with simple ellipsoids; it does not bake body
+  meshes each frame. `PlayerScarfClothSimulation` uses bounded procedural
+  wind/movement bending and these body contacts by default. The user's further
+  same-day clarification makes the tail visibly rise and trail behind during
+  running, with a curved ribbon shape, travelling flutter and a smooth rise
+  and return after stopping. This refines the already approved procedural
+  cloth form; it adds no new exception or external contacts. The authored tail
+  topology stays unchanged. Wrap and knot keep
+  their authored pose and mouth blendshape through `PlayerScarfContactSurface`,
+  with the same cheap body corrections. The production path never constructs
+  `PlayerScarfCollisionWorld`, scans world triangles or runs the detailed
+  integration/contact jobs. The previous precise solver remains available only
+  through explicit diagnostic capture mode, and its historical captures are
+  evidence for that earlier implementation, not current gameplay performance.
+  Pause skips deformation work; teleports reset motion. Order `410` follows
+  the hero's final pose, and the mirror copies final surfaces at `420` without
+  another solver. Yellow colour, approximately `45 cm` length, collection,
+  equipment, cold protection, mouth access, shower ownership and visibility
+  retain the contracts below. No new fiction, meaning, world sound or
+  contextual-animation exception is introduced.
+
 - **Accepted — 2026-09-09, wearable scarf and bounded cold protection:**
   The user approved the scarf plan and explicitly chose less shaking and slower
   frost. This is a bounded exception to the story bible's §6/§25 prohibition on
@@ -14,57 +44,19 @@
   The accepted form wraps the neck and back of the head, covers the lower half
   of the face with open eyes, and leaves a hanging cloth tail behind. The user's
   same-day clarification lengthens it to approximately `45 cm`, reaching the
-  middle of the back, without adding a new meaning or family history. The tail
+  middle of the back at rest, without adding a new meaning or family history. The tail
   responds to the existing exterior wind; enclosed shelter removes that wind.
-  Further direct requests the same day make the scarf yellow and require
-  contact with the hero, NPCs, buildings and other model surfaces. The runtime
-  therefore uses `PlayerScarfClothSimulation` on the authored tail topology;
-  `PlayerScarfCollisionWorld` gathers nearby real mesh triangles, including
-  currently skinned bodies, and `PlayerScarfContactSolver` resolves swept
-  contacts through the sequential Burst `PlayerScarfContactJob`, preserving
-  strict PBD arithmetic in reusable native buffers. `PlayerScarfIntegrationJob`
-  retains the 120 Hz integration and constraints. Scene installation warms
-  both jobs and prepares nearby immutable collision topology/static BVHs even
-  when the shared hero is unequipped. Motion history is then reset while the
-  geometry cache survives, keeping terrain preparation inside world loading.
-  Whole-surface thickness checks point-to-face proximity in both
-  directions, all nine edge pairs and both directions of intersection.
-  Barycentric weights distribute a minimal local positional correction across
-  the contacted scarf feature; swept contacts follow the closest feature's
-  barycentric motion. The authored wrap and knot retain hidden source skins
-  and draw corrected dynamic surfaces through `PlayerScarfContactSurface`.
-  Each active frame begins with the current authored skin pose and resolves
-  its local contacts. Every
-  visible part keeps its own instance mesh; no body capsule replaces model
-  geometry. The mirror copies all final surfaces without another solver.
-  World contacts use a triangle BVH and cached local BVHs for static meshes;
-  connected-surface topology mixes packed edge keys before hashing, avoiding
-  quadratic startup work on regular terrain grids. Compact cached BVH bounds,
-  all-surface/closed-component median partitions and deferred distant mesh
-  lookups reduce repeated work. Within one solver call, exact unchanged point
-  results can be reused;
-  first-pass stability also requires zero contacts because it includes a sweep.
-  Swept point work runs on the first pass. Exact two-plane rejection precedes
-  finite-feature checks. Each world update exports a managed snapshot through
-  four bulk native copies. Tail contact limits are `4/4/32`
-  across its intermediate/final solves, with cached frame matrices and damping.
-  Skinned snapshots use
-  `BakeMesh(..., true)` before the full renderer matrix, so imported FBX scale
-  is applied once. Scarf geometry updates at order `410`, after NPC attention
-  (`350`) and outdoor-help contacts (`400`); the mirror copies it at `420`.
-  The inventory icon shares the garment's yellow colour.
-  The focused rendered regression passed across `360` frames with zero
-  detected penetrations. The independent interior oracle uses every triangle's
-  double-precision solid angle and a `1 mm` boundary tolerance. Native dense-
-  contact peaks were `39.10 ms` for whole geometry, `5.10 ms` for the tail and
-  `18.02 ms` for wrap/knot; world collection including reset peaked at `36.54 ms`.
-  The separate 540-frame production probe passed whole-scarf p95 at
-  `10.28/14.62 ms` indoors/outdoors and synchronous equip at `25.90/36.87 ms`.
-  These Editor measurements separate steady work from dense-contact/reset peaks.
-  Pause freezes deformation and skips mesh writes; activation and teleports
-  initialize contacts once. Whole-geometry/surface scopes complement tail/world
-  timings, and the performance probe compares actual frame intervals and
-  inventory controls without a collision oracle inside its sampling loop.
+  Further direct requests the same day made the scarf yellow and initially
+  required precise contact with the hero, NPCs, buildings and other model
+  surfaces. That contact requirement is superseded by the accepted lightweight
+  decision above. The inventory icon still shares the garment's yellow colour.
+  The previous implementation remains an explicit diagnostic path:
+  `PlayerScarfCollisionWorld` gathers real static/skinned mesh triangles,
+  `PlayerScarfContactSolver` dispatches sequential Burst PBD contacts, and
+  `PlayerScarfIntegrationJob` integrates the authored tail at 120 Hz.
+  Diagnostic wrap/knot surfaces use the same detailed solver. Its historical
+  `360`-frame contact proof and `540`-frame performance probe, including dense
+  contact/reset costs, are recorded in [work-log.md](work-log.md).
   Mouth actions temporarily lower the garment. Their hand contact uses cached
   hand/thumb surface offsets and places the closest rotated surface `4 mm`
   in front of the garment. Shower clothing ownership

@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
-    /// <summary>Authored scarf geometry with world contacts and one physical tail simulation.</summary>
+    /// <summary>Authored scarf with bounded motion and cheap contacts against only its hero.</summary>
     // NPC attention (350) and carried/help contact poses (400) finish first.
     [DefaultExecutionOrder(410)]
     [DisallowMultipleComponent]
@@ -33,6 +33,7 @@ namespace BarPromenade
         private Vector3[] mirrorTailVertices;
         private PlayerScarfClothSimulation simulation;
         private PlayerScarfCollisionWorld collisionWorld;
+        private PlayerScarfBodyContacts bodyContacts;
         private int loweredShape = -1;
         private bool equipped;
         private bool temporaryRemoved;
@@ -51,6 +52,7 @@ namespace BarPromenade
         public Player3DAssetRegistry Registry => registry;
         public PlayerScarfClothSimulation TailSimulation => simulation;
         public PlayerScarfCollisionWorld CollisionWorld => collisionWorld;
+        public PlayerScarfBodyContacts BodyContacts => bodyContacts;
         public Vector3[] TailRestVertices => tailRestVertices != null ? (Vector3[])tailRestVertices.Clone() : Array.Empty<Vector3>();
         public SkinnedMeshRenderer TailRenderer => tail;
         public bool IsEquipped => equipped;
@@ -131,23 +133,40 @@ namespace BarPromenade
             renderers.Add(tail);
             if (!mirror)
             {
-                PlayerScarfContactSolver.Warmup();
                 simulation = new PlayerScarfClothSimulation(tailRestVertices, tailMesh.triangles);
-                collisionWorld = new PlayerScarfCollisionWorld();
+                bodyContacts = new PlayerScarfBodyContacts(registry);
             }
             instances.Add(this);
             lastPosition = head.position;
             lastRotation = head.rotation;
-            if (!mirror) PrepareCollisionGeometry();
             ApplyVisibility();
+        }
+
+        // The former exact world-contact implementation remains available to
+        // its explicit historical capture only. Gameplay never allocates or
+        // updates a collision world, including on equip and scene loading.
+        public void EnableDetailedContactsForDiagnostics()
+        {
+            if (mirror || collisionWorld != null) return;
+            Vector3 external = simulation.ExternalAcceleration;
+            Vector3 random = simulation.RandomAcceleration;
+            simulation.Dispose();
+            simulation = new PlayerScarfClothSimulation(tailRestVertices, tailMesh.triangles, true)
+            {
+                ExternalAcceleration = external, RandomAcceleration = random,
+                IsActive = physicalActive
+            };
+            PlayerScarfContactSolver.Warmup();
+            collisionWorld = new PlayerScarfCollisionWorld();
+            PrepareCollisionGeometry();
+            hasPreviousBounds = false;
+            AdvanceGeometry(0f, true);
         }
 
         private void PrepareCollisionGeometry()
         {
-            // PlayerFactory runs inside world construction, before control is
-            // handed over. Prepare the nearby source topology and static trees
-            // here even when unequipped: a large terrain mesh must never be
-            // decoded and indexed for the first time by the inventory button.
+            // Only the explicit detailed diagnostic prepares world topology.
+            // Ordinary installation and inventory actions never enter here.
             UpdateTailFrame();
             simulation.Reset(clothFrame);
             Bounds bounds = new Bounds(simulation.WorldVertices[0], Vector3.zero);
@@ -295,6 +314,23 @@ namespace BarPromenade
             // Initial activation/teleport gets exactly one contact correction.
             if (delta <= 0f && !reset)
             {
+                return;
+            }
+
+            if (collisionWorld == null)
+            {
+                bodyContacts.UpdatePose();
+                simulation.StepBodyOnly(delta, clothFrame, bodyContacts);
+                simulation.WriteToMesh(tailMesh, clothFrame);
+                tail.localBounds = tailMesh.bounds;
+                long bodyStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                foreach (PlayerScarfContactSurface surface in surfaces)
+                {
+                    surface.PreparePose();
+                    surface.ResolveBody(bodyContacts);
+                }
+                LastSurfaceMilliseconds = ElapsedMilliseconds(bodyStarted);
+                LastGeometryMilliseconds = ElapsedMilliseconds(started);
                 return;
             }
 

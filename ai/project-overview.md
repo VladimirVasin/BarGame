@@ -89,10 +89,11 @@ contracts are documented in [../tools/README.md](../tools/README.md).
   session clock, needs, inventory, purchases, dated quests and grave work.
 - A collectible scarf in the mother's upstairs bedroom has reversible inventory
   equipment and reduces alpine shivering and the rate of new frost exposure.
-  Its yellow wrap and 45 cm wind-driven tail use native Burst jobs to contact
-  actual hero, NPC and world surfaces. Loading prepares collision geometry;
-  focused inventory/performance and dense-contact evidence is recorded in
-  [work-log.md](work-log.md), including remaining stress-case costs.
+  Its yellow wrap and 45 cm tail follow the hero, wind and movement through
+  bounded deformation and simple body contacts; the tail rises and trails
+  behind when running, then settles after stopping. The scarf ignores external
+  objects and NPCs; ordinary gameplay does not scan world triangles or bake
+  body meshes each frame. The earlier detailed solver is an explicit diagnostic mode.
 - Home toilet choices share actual hand-operated lid actions; the seated
   branch coordinates the original rig, lowered clothing, inspection/flush
   and an underwater camera that returns while the hero dresses.

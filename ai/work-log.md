@@ -6,6 +6,84 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-09 — Scarf tail rises and trails during running
+
+- Following the user's report that the simplified tail stayed too vertical,
+  bounded deformation now bends it into a visibly raised ribbon trailing
+  behind during running. Smoothed motion drives its rise and return after
+  stopping; a small travelling wave keeps the cloth moving along its length.
+  The authored topology and simple hero-body contacts remain; no external
+  object queries or detailed cloth solver are added to gameplay.
+- Updated the current descriptions and the existing same-day canon decision.
+  This is a refinement of the accepted procedural garment form, with no new
+  story fact or exception. The first rendered check caught an inward bend:
+  normalization includes the hero's `180°` facing rotation. The deformation
+  and the backward-displacement assertion now derive the back direction from
+  the normalized authored mesh; no extra collision passes were needed.
+- The same focused `ScarfPerformance` check then passed (`1/1`, `51.19 s`;
+  `TestResults/scarf-running-lift-final.xml` and `.log`). Across `840` measured
+  frames it retains the `2 ms` p95 budget and adds rendered tip lift, backward
+  displacement, continued motion, calm settling and paused-mesh checks.
+  Straight/turning run mean tip lift was `22.45/22.08 cm`, backward offset
+  `31.51/31.75 cm`, and sampled tip motion spanned `5.48/6.37 cm`. Following
+  `1.1 s` of clamped cloth settling time, residual tip lift was `0.3 mm`;
+  paused vertex drift was zero. Hero-body exclusion and teleport reset passed.
+- Whole-scarf p95 was `0.60 ms` indoors, `0.62 ms` outdoors standing and
+  `0.66/0.68 ms` running/turning; maximum recorded scarf time was `1.08 ms`.
+  All five idle/run/turn/settled/reset images were opened and reviewed, then
+  published with the report to `Captures/ScarfPerformance`. The scarf visibly
+  trails out behind the body while running and hangs down again after stopping.
+  `git diff --check` passed. No full suites or player build were run.
+
+## 2026-09-09 — Quiet bus audio teardown with empty door sources
+
+- `CityBusAudio.StopSource` now resets playback time only when the source has
+  an `AudioClip`. Door sources start empty and are cleared on release; stopping
+  them before the first cue or again after pooling no longer writes an invalid
+  playback cursor. Stop/mute, retained engine clips and idle pitch, and door
+  clip clearing keep their existing contracts.
+- Extended the existing `CityBusRuntimeTests.StopDwell_HoldsForTenSecondsBeforeResuming`
+  to capture warnings, stop twice before the first door cue and after clearing
+  it, release repeatedly, and retain the engine/door lifecycle assertions.
+  The focused EditMode check passed (`1/1`, `0.47 s`;
+  `TestResults/bus-audio-stop-final.xml` and `.log`) with no captured warnings.
+  An initial attempt exposed a test-only assumption that EditMode dispatches
+  `OnDisable`; the test now calls `Shutdown`, which uses the same actor release
+  path, and only that selection was rerun. `git diff --check` passed. No full
+  suites, PlayMode run or player build was performed for this fix.
+
+## 2026-09-09 — Lightweight scarf with hero-body contacts
+
+- Following continued outdoor frame drops, especially while running, the user
+  permitted simpler mechanics and then explicitly retained only contact with
+  the hero's body. External objects, buildings and NPCs no longer affect the
+  scarf. This superseding exception is recorded in architecture notes and both
+  world bibles; collection, yellow `45 cm` form, equipment, cold protection,
+  mouth/shower ownership and mirror presentation keep their existing scope.
+- Ordinary gameplay uses bounded procedural wind/movement bending and
+  `PlayerScarfBodyContacts`: once-measured, bone-following ellipsoids resolve
+  wrap, knot and tail contacts against the simplified body. There is no per-frame body
+  mesh bake, world-triangle discovery or detailed cloth/contact job. The old
+  precise solver remains explicitly opt-in for diagnostic captures only.
+- Focused `AreaCaptureFixture.ScarfPerformance` passed (`1/1`, `47.85 s`;
+  `TestResults/scarf-body-only.xml` and `.log`). Its `780` measured rendered
+  frames include inventory, stationary indoor/outdoor poses, running and
+  weaving turns both equipped and unequipped. It checks production collision
+  worlds remain absent, body proxies remain present, free tail vertices stay
+  outside those proxies after running/turns/teleport, and paused work is zero.
+- Whole-scarf p95 is `0.59 ms` indoors, `0.63 ms` outdoors, `0.62 ms` running
+  and `0.64 ms` running with turns (budget `2 ms`). Synchronous equip measured
+  `7.73/0.62 ms` indoors/outdoors. A single turning sample reached `9.23 ms`;
+  the p95 is not a worst-frame guarantee. Whole-frame means in the village
+  remain `54–63 ms` in this Editor capture, including scene/render costs.
+  All three running/turn/reset images in `Captures/ScarfPerformance` were
+  opened and reviewed; the yellow wrap, knot and hanging tail remain readable.
+- The earlier `360`/`540`-frame captures and timings below are historical
+  evidence for the previous full-contact implementation; its old performance
+  report is preserved as `Captures/ScarfPerformance/detailed-contact-performance-report.json`.
+  `git diff --check` passed. No full suites, player build or additional Unity
+  invocation were run.
+
 ## 2026-09-09 — Car audio initialization and workroom shadow warnings
 
 - `LastRouteCarAudio` now configures its five sources, loop clips and filters

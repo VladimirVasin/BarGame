@@ -702,13 +702,30 @@ namespace BarPromenade.Tests.EditMode
         public void StopDwell_HoldsForTenSecondsBeforeResuming()
         {
             RuntimeFixture fixture = null;
+            var warnings = new List<string>();
+            void CaptureWarning(string message, string stackTrace, LogType type)
+            {
+                if (type == LogType.Warning) warnings.Add(message);
+            }
+            // Unity's ordinary test log handling does not fail on warnings.
+            // Keep the empty AudioSource rewind regression observable, including
+            // the director/actor teardown path at the end of this lifecycle.
+            Application.logMessageReceived += CaptureWarning;
             try
             {
                 fixture = RuntimeFixture.Create(
                     "Ten Second Dwell",
                     CreateCyclicPlan());
-                fixture.SpawnDirectly();
                 CityBusAudio audio = fixture.Actor.AudioPresentation;
+                AudioClip exteriorEngineClip = audio.ExteriorEngineSource.clip;
+                AudioClip interiorEngineClip = audio.InteriorEngineSource.clip;
+                Assert.That(audio.FrontDoorSource.clip, Is.Null);
+                Assert.That(audio.RearDoorSource.clip, Is.Null);
+                audio.Stop();
+                audio.Stop();
+                Assert.That(audio.ExteriorEngineSource.clip, Is.SameAs(exteriorEngineClip));
+                Assert.That(audio.InteriorEngineSource.clip, Is.SameAs(interiorEngineClip));
+                fixture.SpawnDirectly();
 
                 for (int guard = 0;
                      guard < 1200 &&
@@ -845,11 +862,34 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(audio.DoorOpeningCueCount, Is.EqualTo(1));
                 Assert.That(audio.DoorClosingCueCount, Is.EqualTo(1));
                 Assert.That(fixture.Actor.DwellCount, Is.EqualTo(1));
+                Assert.That(fixture.Actor.ReleasePassenger(heroPassenger), Is.True);
+                audio.Stop();
+                Assert.That(audio.FrontDoorSource.clip, Is.Null);
+                Assert.That(audio.RearDoorSource.clip, Is.Null);
+                audio.Stop();
+                // EditMode does not dispatch this plain MonoBehaviour's
+                // OnDisable; Shutdown exercises the same ReleaseActor path.
+                fixture.Director.Shutdown();
+                Assert.That(fixture.Actor.MotionState, Is.EqualTo(CityBusMotionState.Dormant));
+                Assert.That(fixture.Actor.ReleasePresentation(null), Is.Null);
+                Assert.That(audio.FrontDoorSource.clip, Is.Null);
+                Assert.That(audio.RearDoorSource.clip, Is.Null);
+                Assert.That(audio.FrontDoorSource.isPlaying, Is.False);
+                Assert.That(audio.RearDoorSource.isPlaying, Is.False);
+                Assert.That(audio.FrontDoorSource.volume, Is.Zero);
+                Assert.That(audio.RearDoorSource.volume, Is.Zero);
+                Assert.That(audio.ExteriorEngineSource.clip, Is.SameAs(exteriorEngineClip));
+                Assert.That(audio.InteriorEngineSource.clip, Is.SameAs(interiorEngineClip));
+                Assert.That(audio.ExteriorEngineSource.pitch, Is.EqualTo(CityBusActor.EngineIdlePitch));
+                Assert.That(audio.InteriorEngineSource.pitch, Is.EqualTo(CityBusActor.EngineIdlePitch));
             }
             finally
             {
-                fixture?.Destroy();
+                try { fixture?.Destroy(); }
+                finally { Application.logMessageReceived -= CaptureWarning; }
             }
+            Assert.That(warnings, Is.Empty,
+                "Stopping before a door cue, stopping again after clearing it, and repeated release must be warning-free.");
         }
 
         [Test]

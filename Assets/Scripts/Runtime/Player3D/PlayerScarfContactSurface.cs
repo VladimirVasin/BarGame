@@ -81,6 +81,12 @@ namespace BarPromenade
             hasPrevious = true;
         }
 
+        public void ResolveBody(PlayerScarfBodyContacts body)
+        {
+            body.Resolve(current);
+            WriteMesh();
+        }
+
         public void ResetHistory() => hasPrevious = false;
 
         private void WriteMesh()
