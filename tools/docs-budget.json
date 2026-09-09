@@ -1,0 +1,340 @@
+{
+  "version": 1,
+  "enforce_ledgers_from": "2026-09-10",
+  "absent_by_design": [
+    "Build/",
+    "Builds/",
+    "Library/",
+    "Temp/",
+    "Logs/",
+    "UserSettings/",
+    "Application.persistentDataPath"
+  ],
+  "pending_checks": [
+    "canon/block-too-large",
+    "canon/preamble-order",
+    "index/cell-too-wide",
+    "shape/status-vocabulary"
+  ],
+  "types": {
+    "entry": {},
+    "index": {
+      "max_cell_chars": 120,
+      "max_row_chars": 240
+    },
+    "state": {
+      "max_section_lines": 400
+    },
+    "canon": {},
+    "ledger": {},
+    "note": {}
+  },
+  "documents": {
+    "AI.md": {
+      "type": "entry",
+      "budget": 13000
+    },
+    "AGENTS.md": {
+      "type": "entry",
+      "budget": 13000
+    },
+    "README.md": {
+      "type": "state",
+      "budget": 291000
+    },
+    "ai/README.md": {
+      "type": "entry",
+      "budget": 8000
+    },
+    "ai/project-overview.md": {
+      "type": "entry",
+      "budget": 12000
+    },
+    "ai/prompt-templates.md": {
+      "type": "entry",
+      "budget": 10000
+    },
+    "ai/systems-map.md": {
+      "type": "index",
+      "statuses": [
+        "Current",
+        "Partial",
+        "Planned",
+        "Deferred"
+      ],
+      "budget": 44000
+    },
+    "ai/current-world.md": {
+      "type": "state",
+      "budget": 208000
+    },
+    "ai/system-tree.md": {
+      "type": "state",
+      "budget": 190000
+    },
+    "ai/debug-log.md": {
+      "type": "state",
+      "budget": 11000
+    },
+    "ai/tutorial-scenario.md": {
+      "type": "state",
+      "budget": 8000
+    },
+    "ai/village-life-plan.md": {
+      "type": "state",
+      "budget": 14000
+    },
+    "ai/architecture-notes.md": {
+      "type": "canon",
+      "block_max": 1200,
+      "statuses": [
+        "Accepted",
+        "Proposed",
+        "Superseded",
+        "Corrected",
+        "Current"
+      ],
+      "budget": 612000
+    },
+    "ai/city-story-bible.md": {
+      "type": "canon",
+      "budget": 305000
+    },
+    "ai/city-zones-art-bible.md": {
+      "type": "canon",
+      "budget": 473000
+    },
+    "ai/player-art-spec.md": {
+      "type": "canon",
+      "budget": 32000
+    },
+    "ai/bartender-spec.md": {
+      "type": "canon",
+      "budget": 16000
+    },
+    "ai/contextual-animation-standard.md": {
+      "type": "canon",
+      "budget": 11000
+    },
+    "ai/work-log.md": {
+      "type": "ledger",
+      "entry_heading": "## ",
+      "entry_max": 3000,
+      "archive_floor": 110000,
+      "archive_pointer": "ai/archive/work-log-2026-08.md",
+      "budget": 563000
+    },
+    "ai/release-notes.md": {
+      "type": "ledger",
+      "entry_heading": "### ",
+      "entry_max": 2000,
+      "archive_floor": 70000,
+      "archive_pointer": "ai/archive/release-notes-2026-08.md",
+      "budget": 211000
+    },
+    "tools/README.md": {
+      "type": "state",
+      "budget": 15000
+    },
+    "tools/alpine-cold-frost-mask.md": {
+      "type": "note",
+      "budget": 9000
+    },
+    "tools/audio-vhs/README.md": {
+      "type": "note",
+      "budget": 25000
+    },
+    "ArtSource/City/Facades/README.md": {
+      "type": "note",
+      "budget": 9000
+    },
+    "ArtSource/Home/README.md": {
+      "type": "note",
+      "budget": 8000
+    },
+    "ArtSource/HomeBrushingAction/README.md": {
+      "type": "note",
+      "budget": 8000
+    },
+    "ArtSource/HomeToiletAction/README.md": {
+      "type": "note",
+      "budget": 9000
+    },
+    "ArtSource/MothersHouse/Textures/MothersHousePositiveAtlas.prompt.md": {
+      "type": "note",
+      "budget": 9000
+    },
+    "ArtSource/MountainRoad/README.md": {
+      "type": "note",
+      "budget": 10000
+    },
+    "ArtSource/Pedestrians/README.md": {
+      "type": "note",
+      "budget": 25000
+    },
+    "ArtSource/Player/BalconySmoking/README.md": {
+      "type": "note",
+      "budget": 18000,
+      "retired": true
+    },
+    "ArtSource/Player/BedSleep/README.md": {
+      "type": "note",
+      "budget": 9000,
+      "retired": true
+    },
+    "ArtSource/Player/CatFeeding/README.md": {
+      "type": "note",
+      "budget": 10000,
+      "retired": true
+    },
+    "ArtSource/Player/README.md": {
+      "type": "note",
+      "budget": 8000
+    },
+    "ArtSource/Stairwell/Cat/README.md": {
+      "type": "note",
+      "budget": 8000
+    },
+    "ArtSource/Vehicles/Blender/README.md": {
+      "type": "note",
+      "budget": 8000
+    }
+  },
+  "sections": {
+    "ai/city-story-bible.md": {
+      "cited_titles": {},
+      "registry_dates": [
+        "2026-09-03",
+        "2026-09-04",
+        "2026-09-05",
+        "2026-09-06",
+        "2026-09-07",
+        "2026-09-08",
+        "2026-09-09"
+      ],
+      "top": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25"
+      ],
+      "hardline_hashes": {
+        "3/Нельзя": "sha256:43533ec448fa001c357c1aefa68f53ee",
+        "3/Проверка": "sha256:3a2aa6b20bd31c9f828046e6b665eeb5",
+        "4/Нельзя": "sha256:c2610dc4c936576db4d7e25dd5645cdf",
+        "4/Проверка": "sha256:f9287cf04e5e9028f99d7204dd6ae443",
+        "5/Нельзя": "sha256:7d5e71faf42a5276e61003046dd2ad4c",
+        "5/Проверка": "sha256:b5f50238a888543b18bfd6c79a950788",
+        "6/Проверка": "sha256:ee56c92ec3ac6231edf452676f88f49f",
+        "7/Нельзя": "sha256:73c7e8cda00d739533a431bdacf66462",
+        "7/Проверка": "sha256:45515b896f02f9b33f4fb12bd808bf68",
+        "8/Нельзя": "sha256:5bf2a714f79cb106882702e16c4c89aa",
+        "8/Проверка": "sha256:dd3c5b1269f0e339486de7734999a5c3",
+        "9/Нельзя": "sha256:cfc77ea452ca0946805ca601f5624d76",
+        "9/Проверка": "sha256:1c3f4ce00942c5bf3bc19cc1f315166b",
+        "10/Нельзя": "sha256:8ceeb19f7626199cd3039226a4633252",
+        "10/Проверка": "sha256:f3313c35160f2a37d8bf9b21272095cb",
+        "11/Нельзя": "sha256:7d499c5f688161f821a85b682b9aa6ad",
+        "11/Проверка": "sha256:259a6b9695d6150ce3bba33080be1ad5",
+        "12/Нельзя": "sha256:4cfd6fd08701e88ae8b9e91800556f31",
+        "12/Проверка": "sha256:00fa2d7b3f90d1b36d42224ac4b95121",
+        "13/Нельзя": "sha256:90774fc57d4b92cdb163daaba6f0be0a",
+        "13/Проверка": "sha256:b212b5d1af8d864c2ebec22a034640ad",
+        "14/Нельзя": "sha256:81c3b6d736c31e58746f3c8facfa0547",
+        "14/Проверка": "sha256:e0a37f5774fc00430c823b1071abd8d6",
+        "15/Нельзя": "sha256:5a6b59b99a9a734bf358152c288af049",
+        "15/Проверка": "sha256:9e414e0e0cdeb420fd37a6845b09e4b6",
+        "17/Проверка": "sha256:ebc5a763579517f5109052faf43a85f6",
+        "19/Нельзя": "sha256:ddeb687a39d0a2c5280df5fae840a9a4",
+        "19/Проверка": "sha256:d54d46b9986d80b0c21b1b16746b3f70",
+        "20/Проверка": "sha256:3f8061e2407e46e49acbec64da581c22",
+        "21/Нельзя": "sha256:b0edb982da007d3f5a9f63c2850f5713",
+        "21/Проверка": "sha256:af1529a68817d558c2c6f5caf413c8c7"
+      }
+    },
+    "ai/city-zones-art-bible.md": {
+      "cited_titles": {},
+      "registry_dates": [],
+      "top": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "10a",
+        "10b",
+        "10c",
+        "10c.1",
+        "10d",
+        "10e",
+        "10f",
+        "10g",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "15a",
+        "16",
+        "17",
+        "18",
+        "19"
+      ],
+      "hardline_hashes": {
+        "6/Нельзя": "sha256:2ef0285fd9e057913749fd318fe993c1",
+        "6/Проверка": "sha256:49ddd1c7a43073780b59644e8527db31",
+        "7/Нельзя": "sha256:03236425eb0762c37cf0c8581115ffc1",
+        "7/Проверка": "sha256:32202505fc4da24a0ad3661a1b33b2c2",
+        "8/Нельзя": "sha256:a850b1c4bfcad4471d55a8cad799d233",
+        "8/Проверка": "sha256:2c0fa87638ba92f2cb8e5b1f6382c8c6",
+        "9/Нельзя": "sha256:4ac66cdf0724eb59c4acc9df4bf3b070",
+        "9/Проверка": "sha256:f1b39763f098045c6cbcefc876794a07",
+        "10/Нельзя": "sha256:fc95e606fce4ccabfb0fa3ffe2d6a6bd",
+        "10/Проверка": "sha256:ad37548cefdbfb5002c9a108e4f65051",
+        "10a/Нельзя": "sha256:a54c6ea14e8980b1faf22bef8b3c47cc",
+        "10a/Проверка": "sha256:aa00647fc55355a8e6d172b14d13a90f",
+        "10b/Нельзя": "sha256:5736bab3aa376925605ba683786d7222",
+        "10b/Проверка": "sha256:8ab45fa2a9956d8ee658d1fc57e1a922",
+        "10c/Нельзя": "sha256:10fc0c2706efe4b35a52e5a39a5b9fca",
+        "10c/Проверка": "sha256:f203b7bcaf3b6e46df1a7722d922c510",
+        "10c.1/Нельзя": "sha256:9326d0a9590fe46b359769830cca03c8",
+        "10c.1/Проверка": "sha256:563da2db85ceb716b19fa1eb813d4bb1",
+        "10d/Нельзя": "sha256:44f073230efe08b02d942bb0819928b5",
+        "10d/Проверка": "sha256:9d7d39dad153fc54d46a46088fcdf64a",
+        "10e/Нельзя": "sha256:e58add3e489add33a22b2fe6191f461d",
+        "10e/Проверка": "sha256:7f80757b1c30e7f32b59569efbf2f591",
+        "10f/Нельзя": "sha256:8db6946d4cea21077359be8a3e36528c",
+        "10f/Проверка": "sha256:79c7400e1bad608d6ad7b22bea2137a5",
+        "10g/Нельзя": "sha256:3f3ea0af820851ddde5a5ca0869ef10f",
+        "10g/Проверка": "sha256:b43d8e4d4bd47cd3b7c553e7775208e7",
+        "15a/Нельзя": "sha256:eabe61a7a1158fffd069202b1c304942"
+      }
+    }
+  }
+}

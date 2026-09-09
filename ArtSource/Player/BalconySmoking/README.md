@@ -1,5 +1,10 @@
 # Player balcony-smoking source frames
 
+**Retired pipeline.** The production hero is a 3D rig, and the atlases named
+below are no longer built or shipped; see the retired 2D player contract in
+[`ai/player-art-spec.md`](../../../ai/player-art-spec.md). This record is kept
+for the authored source frames and the cell rules, not as a live output path.
+
 This directory owns the authored source sequence for the player's balcony
 smoking interaction. The deterministic extractor registers the approved
 contact-sheet poses, matches their proportions to the ordinary side-profile

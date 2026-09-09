@@ -136,4 +136,10 @@ repository evidence. This does not require running every test layer.
   appearance changed and open the frames. Numbers cannot see an object in the
   wrong place or a mesh at a hundredth of its size.
 - Update the maps and work log when implementation changes project reality.
+- **Every document has a type and a byte budget** in `tools/docs-budget.json`.
+  Run `python tools/check-docs.py` after any documentation change; it is the
+  primary check for one. The type decides how you write: a `state` document is
+  rewritten in place, `canon` deletes what it supersedes, and a `ledger` takes
+  **one entry per date** with the name of the check rather than its numbers.
+  `ai/README.md` holds the rule. Concision is a budget now, not a wish.
 - Keep documentation concise and mark uncertainty directly.

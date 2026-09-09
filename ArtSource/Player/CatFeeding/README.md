@@ -1,5 +1,10 @@
 # Player cat-feeding source
 
+**Retired pipeline.** The production hero is a 3D rig, and the atlases named
+below are no longer built or shipped; see the retired 2D player contract in
+[`ai/player-art-spec.md`](../../../ai/player-art-spec.md). This record is kept
+for the approved contact sheet and the cell rules, not as a live output path.
+
 This directory owns the approved player contact sheet for feeding the
 stairwell cat. The deterministic builder validates and packs authored art; it
 does not create poses, in-betweens, blends or placeholder assets. Logical

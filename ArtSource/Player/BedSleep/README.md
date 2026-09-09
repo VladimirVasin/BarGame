@@ -1,5 +1,10 @@
 # Player bed-sleep source frames
 
+**Retired pipeline.** The production hero is a 3D rig, and the atlas named
+below is no longer built or shipped; see the retired 2D player contract in
+[`ai/player-art-spec.md`](../../../ai/player-art-spec.md). This record is kept
+for the authored source frames and the cell rules, not as a live output path.
+
 This directory owns the authored source sequence for the player's bed
 interaction. The deterministic builder does not invent or modify source art;
 it only validates, nearest-resamples and packs the completed sequence.

@@ -36,7 +36,7 @@ namespace BarPromenade
     ///
     /// THE LINE IS THE ART BIBLE'S OWN, not a new invention. It names the
     /// axis exactly once, in the Long-Arm Walker's description
-    /// (`ai/city-zones-art-bible.md:2712`):
+    /// (`ai/city-zones-art-bible.md` §15 «Жители»):
     ///
     ///   «Он единственный, чья странность — само тело, а не надетый или
     ///   несомый предмет.»
@@ -113,9 +113,11 @@ namespace BarPromenade
                 ["helmet_lamp_hopper_v1"] = NpcDesignAppearance.Bizarre,
 
                 // --- Staged residents ------------------------------------
-                // Decided in `ai/architecture-notes.md:1532`: the strangeness
-                // is the chair's organ pipes and bellows, never the rider's
-                // disability. The rider is an ordinary seated man.
+                // Decided in `ai/architecture-notes.md`, the accepted entry that
+                // makes `pipeback_roller_v1` "a complete passive presentation
+                // asset": the strangeness is the chair's organ pipes and
+                // bellows, never the rider's disability. The rider is an
+                // ordinary seated man.
                 ["pipeback_roller_v1"] = NpcDesignAppearance.Normal,
 
                 ["yard_babushka_v1"] = NpcDesignAppearance.Normal,
@@ -179,8 +181,8 @@ namespace BarPromenade
                 // head is deliberately an "ordinary low-poly human" one,
                 // the generator's own validator REFUSES any part that would
                 // "replace or conceal the human head", and
-                // `ai/architecture-notes.md:1109` files the long horizontal
-                // eyes as "the slightly bizarre identity ... rather than
+                // `ai/architecture-notes.md` files them as "the slightly
+                // bizarre identity in long horizontal eyes rather than
                 // distorted anatomy". A stylised eye on an ordinary head is
                 // nearer to a worn thing than to a wrong body.
                 ["long_eyes_driver_v1"] = NpcDesignAppearance.Normal,

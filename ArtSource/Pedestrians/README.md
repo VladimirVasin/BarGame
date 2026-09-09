@@ -200,8 +200,9 @@ importing them does not add a sixth entry to `CityPedestrianResources`.
 The staged Lake Fisherman takes the same separate branch:
 
 - `Assets/Pedestrians/Staged/Models/LakeFisherman3D.fbx` and `.json`;
-- `Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab`, bound into
-  `Assets/Resources/City/LakeFishermanProvider.asset`.
+- `Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab`. The separate
+  provider asset it once carried no longer exists; the prefab is bound through
+  the staged-resident path like its neighbours.
 
 So do the staged Park Chess Player and Park Checkers Player, into
 `Assets/Resources/City/ParkChessPlayerProvider.asset` and

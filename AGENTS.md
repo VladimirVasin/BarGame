@@ -80,10 +80,12 @@ Rules:
 - Keep runtime, editor, and test code separated with assembly definitions as the project grows.
 - Prefer deterministic, data-first world generation and test its pure logic outside scene construction.
 - Reuse shared materials and assets; avoid per-instance material creation.
-- Every future contextual interaction that replaces the ordinary player rig
-  with a sprite/atlas animation must follow
-  `ai/contextual-animation-standard.md`. A deviation requires an explicit user
-  decision recorded as an accepted architecture exception.
+- Every future contextual interaction must follow
+  `ai/contextual-animation-standard.md`. The production hero is one continuous
+  modular 3D character: an interaction either drives that world rig or derives a
+  camera-local first-person subset from the same prefab. The sprite/atlas
+  approach the standard once described is retired. A deviation requires an
+  explicit user decision recorded as an accepted architecture exception.
 
 ## Quality and documentation
 
@@ -105,9 +107,28 @@ Rules:
 - `ai/systems-map.md` is an index. Keep each cell to one or two rendered lines
   and use only the four statuses defined in `ai/README.md`; a `Partial` row
   must name its gap. Put the detail in `ai/architecture-notes.md`.
-- Follow the retention rule in `ai/README.md`: `ai/work-log.md` and
-  `ai/release-notes.md` keep the current and previous month, and older entries
-  move verbatim into `ai/archive/`.
+- **Every document has a type and a byte budget in `tools/docs-budget.json`, and
+  the type says how you write to it.** `python tools/check-docs.py` enforces both
+  and is the primary check for a documentation change.
+  - `ledger` (`ai/work-log.md`, `ai/release-notes.md`): **one entry per date, not
+    per slice.** A second session on the same day extends that day's entry; it
+    does not add another. Cap `3000 B` / `2000 B`. Say what changed, why it was
+    not obvious, and **name the check that proved it** — never a duration, a
+    pass count, a sample size, a path under `TestResults/` or `Captures/` (both
+    gitignored, so they are dead in any other clone), or a note about which
+    suites were skipped. Archiving is triggered by size, not by the calendar:
+    past the budget, move whole dates into `ai/archive/` until under the floor.
+  - `state` (`ai/current-world.md`, `README.md`, `tools/README.md`): describes
+    the world **as it is now**. A change to reality is a rewrite of the affected
+    paragraph, never a paragraph beside it.
+  - `canon` (both bibles, `ai/architecture-notes.md`): grows only by decision,
+    and superseded text is **deleted** rather than kept with a marker — git holds
+    the history. Section numbers, cited `###` titles and the story bible's §6
+    registry dates are frozen; the checker refuses to let them move because code
+    cites them.
+  - `index` (`ai/systems-map.md`) and `entry` (`AI.md`, `AGENTS.md`,
+    `ai/README.md`, `ai/project-overview.md`, `ai/prompt-templates.md`): small by
+    definition, because they are read every session.
 
 ## Interactive fast iteration
 
@@ -125,7 +146,10 @@ valuable; it does not automatically authorize a broad regression run.
   startup behavior. It does not imply EditMode or PlayMode suites.
 - Make the requested change first, then run only the smallest relevant check.
   Do not run full suites, player builds, smoke checks or broad cross-review by
-  default. Report what was intentionally not run in one short sentence.
+  default. Say what was intentionally not run in one short sentence **in the
+  reply to the user**. It does not belong in `ai/work-log.md`: a note that the
+  full suites were skipped is true of nearly every entry, and repeating it once
+  per session is what grew a fifth of the log into paraphrased boilerplate.
 - In either mode, treat 30 seconds without useful progress as a soft timeout:
   inspect the process immediately instead of repeating long polling cycles.
 - Do not start a check already known to take several minutes unless it is the
@@ -142,8 +166,10 @@ one additional focused check. Stop once they provide sufficient evidence; the
 default cap is one Unity invocation, or two narrowly filtered invocations for a
 shared framework.
 
-- Documentation/comments: review the diff and run `git diff --check`; no Unity
-  test or build.
+- Documentation/comments: run `python tools/check-docs.py` and review the diff;
+  also run `git diff --check`. No Unity test or build. The checker is the
+  primary check here — it holds the budgets, the ledger shape and the frozen
+  canon references, and it exits non-zero with the remedy in the message.
 - Deterministic tooling, data or atlas art: run the directly affected validator.
   Do not also run general Unity suites when the validator covers the contract.
 - C# runtime/editor/test code: if a suitable focused EditMode or PlayMode test
