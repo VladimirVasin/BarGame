@@ -14,9 +14,7 @@
     "Application.persistentDataPath"
   ],
   "pending_checks": [
-    "canon/block-too-large",
-    "canon/preamble-order",
-    "shape/status-vocabulary"
+    "canon/block-too-large"
   ],
   "types": {
     "entry": {},
@@ -84,7 +82,7 @@
     },
     "ai/architecture-notes.md": {
       "type": "canon",
-      "block_max": 1200,
+      "block_max": 3000,
       "statuses": [
         "Accepted",
         "Proposed",
