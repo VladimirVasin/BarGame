@@ -2,7 +2,8 @@
   "version": 1,
   "enforce_ledgers_from": "2026-09-10",
   "scan_exclude": [
-    "tools/test_check_docs.py"
+    "tools/test_check_docs.py",
+    "tools/test_check_workspace.py"
   ],
   "absent_by_design": [
     "Build/",
@@ -35,6 +36,10 @@
     "AGENTS.md": {
       "type": "entry",
       "budget": 13000
+    },
+    "CLAUDE.md": {
+      "type": "entry",
+      "budget": 8000
     },
     "README.md": {
       "type": "state",

@@ -20,5 +20,19 @@
       "Edit(**/*.md)",
       "Write(**/*.md)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && command -v python >/dev/null 2>&1 && python tools/check-workspace.py --quiet 2>/dev/null; true",
+            "timeout": 20,
+            "statusMessage": "Checking workspace retention"
+          }
+        ]
+      }
+    ]
   }
 }

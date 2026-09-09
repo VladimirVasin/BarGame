@@ -87,6 +87,22 @@ Rules:
   approach the standard once described is retired. A deviation requires an
   explicit user decision recorded as an accepted architecture exception.
 
+## Workspace retention
+
+Every gitignored path declares a keep-policy in `tools/workspace-budget.json`,
+enforced by `python tools/check-workspace.py`, which exits non-zero: `never`, a
+`retain` window in days, an `idle` window for a regenerable cache, `declared`
+for output a person curates, or `allowed`. **An ignored path with no row is an
+error**, so a new kind of leftover cannot appear unnoticed. The checker reads
+every sibling worktree from `git worktree list` — three idle `Library/` caches
+out there held 5.7 GB while every in-repo measure stayed green.
+
+`--sweep` lists what the manifest already declared removable and
+`--sweep --apply` removes it, refusing while Unity or Blender holds the
+checkout, refusing any tracked file, and refusing anything a live document
+cites. An ephemeral path that only grows has no owner: fix whatever writes it,
+or shorten the window — do not raise the number.
+
 ## Quality and documentation
 
 - Make the smallest coherent change and preserve unrelated user work.

@@ -95,17 +95,20 @@ follows replaces it, and `python tools/check-docs.py` enforces it.
 A document that only grows has the wrong type or the wrong budget. Fix that,
 rather than raising the number.
 
-## Capture retention
+## Workspace retention
 
-- Keep the latest complete verified capture set per subject (area, feature or
-  motion sequence), with its final report, finished video and referenced audio.
-  A newer partial run does not replace a complete set.
-- Discard superseded attempts, duplicate copies and build/cache output. Raw
-  motion frames may be removed once the finished video has been verified;
-  retain any distinct final stills needed to inspect the subject.
-- Reusable capture and analysis tools belong in `tools/`. Keep isolated Unity
-  projects outside `Captures/` and remove those temporary copies after their
-  validated assets and final captures have been published.
-- Never clean an active capture series or staging directory. Check its owner
-  and running processes first; update current document links when final
-  captures are consolidated, leaving archived records unchanged.
+Everything gitignored is declared in
+[`tools/workspace-budget.json`](../tools/workspace-budget.json) and enforced by
+`python tools/check-workspace.py`. A path is `never`, a `retain` window in days,
+an `idle` window for a regenerable cache, `declared`, or `allowed`, and an
+ignored path with no row is an error. What used to be advice here — do not clean
+an active series, check the running processes first — is now the sweep's own
+precondition, and it refuses on it.
+
+`Captures/`, `TestResults/` and `Art/` are `declared`: documents cite files
+inside them, so the sweep never reaches them and the judgement stays yours. Keep
+the latest complete verified set per subject with its report, finished video and
+referenced audio; a newer partial run does not replace a complete set. Discard
+superseded attempts and duplicate copies whole. Raw motion frames may go once
+the finished video is verified; keep the stills needed to inspect the subject.
+Reusable capture and analysis tools belong in `tools/`.

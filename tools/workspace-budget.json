@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "pending_checks": [],
+  "policies": {
+    "never": "must not exist at all; every appearance is leftover",
+    "retain": "files older than `days` are leftover",
+    "idle": "a regenerable cache untouched for `days` is leftover",
+    "declared": "curated by a person, measured and reported, never swept",
+    "allowed": "local state that belongs here; measured only"
+  },
+  "paths": {
+    "Library/": {
+      "policy": "idle",
+      "days": 14,
+      "sweep": true,
+      "sentinels": ["ArtifactDB", "EditorInstance.json", "Timeline"],
+      "regenerated_by": "Unity reimports the project on the next open",
+      "note": "Never byte-walked: 33k files cost 8 s. Idleness is read from the sentinels, because a directory mtime only tracks its immediate children."
+    },
+    "Logs/": {
+      "policy": "retain",
+      "days": 45,
+      "sweep": true,
+      "regenerated_by": "nothing; these are run forensics",
+      "note": "Grows 12-65 files/day. Six weeks is the agreed window."
+    },
+    "Temp/": {
+      "policy": "idle",
+      "days": 2,
+      "sweep": true,
+      "regenerated_by": "Unity"
+    },
+    "Captures/": {
+      "policy": "declared",
+      "sweep": false,
+      "note": "Curated by hand under ai/README.md Workspace retention. Documents cite files here, so the sweep must never reach it."
+    },
+    "TestResults/": {
+      "policy": "declared",
+      "sweep": false,
+      "note": "Documents cite files here. Never swept."
+    },
+    "Art/": {
+      "policy": "declared",
+      "sweep": false,
+      "note": "Gitignored yet cited by canon, and the images are not reproducible. Never swept."
+    },
+    "UserSettings/": {
+      "policy": "allowed",
+      "sweep": false
+    },
+    ".vscode/": {
+      "policy": "allowed",
+      "sweep": false
+    },
+    ".claude/settings.local.json": {
+      "policy": "allowed",
+      "sweep": false
+    },
+    "*.csproj": {
+      "policy": "allowed",
+      "sweep": false,
+      "note": "Unity regenerates these. An empty one (zero <Compile> entries) is leftover, but only Unity knows when."
+    },
+    "*.slnx": {
+      "policy": "allowed",
+      "max_count": 1,
+      "sweep": false,
+      "note": "One solution file. Four had accumulated, three of them naming projects that no longer exist."
+    },
+    "debug*.log": {
+      "policy": "allowed",
+      "max_count": 4,
+      "sweep": false,
+      "note": "A ring bounded to four files by GameLogSettings.cs. Deleting them costs the current session's traces."
+    },
+    "**/*.asd": {
+      "policy": "declared",
+      "sweep": false,
+      "note": "Ableton sidecars for the composer's own tracks. They hold warp markers and per-track gain, not just a waveform cache, so they are authored state and are never swept."
+    },
+    "**/*.asd.meta": {
+      "policy": "declared",
+      "sweep": false
+    },
+    "**/__pycache__/": {
+      "policy": "never",
+      "sweep": true,
+      "regenerated_by": "CPython, on the next import"
+    },
+    "Assets/InitTestScene*.unity": {
+      "policy": "never",
+      "sweep": true,
+      "regenerated_by": "the Unity Test Framework, on the next PlayMode run that does not exit cleanly",
+      "note": "Half-life measured in hours; 25 pairs had accumulated inside the asset database."
+    },
+    "Assets/InitTestScene*.unity.meta": {
+      "policy": "never",
+      "sweep": true
+    },
+    "TestResults-*.xml": {
+      "policy": "never",
+      "sweep": true,
+      "note": "Appears when a batch run is given -testResults with a path at the repository root. Point it inside TestResults/ instead."
+    },
+    "*.stackdump": {
+      "policy": "never",
+      "sweep": true
+    },
+    "**/*.blend1": {
+      "policy": "never",
+      "sweep": true,
+      "regenerated_by": "Blender, on the next save",
+      "guard": "sibling-blend-clean",
+      "note": "The autosave is worthless once its .blend is committed, and load-bearing while it is not. The sweep refuses one whose .blend has uncommitted changes."
+    }
+  },
+  "worktrees": {
+    "apply": ["Library/", "Logs/", "Temp/"],
+    "note": "Patterned, never one row per worktree, so adding or removing a worktree needs no edit here and cannot leave a rotting row. Three idle Library/ caches in sibling worktrees held 5.7 GB."
+  }
+}
