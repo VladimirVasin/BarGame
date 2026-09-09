@@ -78,12 +78,12 @@ def tracked_markdown() -> list[str]:
     return sorted(p for p in out.stdout.splitlines() if p and not p.startswith(ARCHIVE_PREFIX))
 
 
-def tracked_code() -> list[str]:
+def tracked_code(exclude: tuple[str, ...] = ()) -> list[str]:
     out = subprocess.run(
         ["git", "ls-files", "*.cs", "*.json", "*.py"],
         cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
     )
-    return sorted(p for p in out.stdout.splitlines() if p)
+    return sorted(p for p in out.stdout.splitlines() if p and p not in exclude)
 
 
 def load_document(path: str) -> Document:
@@ -172,6 +172,9 @@ class Checker:
         self.sections: dict[str, dict] = manifest.get("sections", {})
         self.pending: set[str] = set(manifest.get("pending_checks", []))
         self.skip_prefixes: tuple[str, ...] = tuple(manifest.get("absent_by_design", []))
+        self.scan_exclude: tuple[str, ...] = tuple(
+            manifest.get("scan_exclude", ["tools/test_check_docs.py"])
+        )
         self.strict = strict
         self.findings: list[Finding] = []
         self.cache: dict[str, Document] = {}
@@ -411,8 +414,9 @@ class Checker:
                         )
 
         if kind == "index":
+            # The rule in AGENTS.md is per CELL: a table row renders as tall as its widest
+            # cell, so a row of three short cells is fine however long the line is.
             cell_max = limits.get("max_cell_chars", 120)
-            row_max = limits.get("max_row_chars", 240)
             for index, line in enumerate(doc.lines, start=1):
                 row_match = TABLE_ROW.match(line)
                 if not row_match or index in doc.fenced or set(line) <= set("|- :\t"):
@@ -424,11 +428,6 @@ class Checker:
                         path, index, "index/cell-too-wide",
                         f"a cell is {widest} chars; AGENTS.md requires one or two rendered lines "
                         f"(<={cell_max}). Move the detail to ai/architecture-notes.md.",
-                    )
-                elif len(line) > row_max:
-                    self.error(
-                        path, index, "index/cell-too-wide",
-                        f"the row is {len(line)} chars, over {row_max}. Shorten its cells.",
                     )
 
         if kind == "canon":
@@ -649,7 +648,8 @@ class Checker:
             if row["type"] == "ledger":
                 self.check_ledger(path, row)
         self.check_frozen_canon()
-        scan = present + tracked_code()
+        # The checker's own tests carry deliberately bad examples of everything below.
+        scan = present + tracked_code(exclude=self.scan_exclude)
         self.check_line_citations(scan)
         self.check_section_citations(scan)
         return self.report()

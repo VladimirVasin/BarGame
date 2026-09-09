@@ -18,7 +18,6 @@ compares them, so this index cannot quietly drift out of date again.
 | `project-overview.md` | entry | 12000 | Concise current baseline, technical owners, capability and scope links |
 | `current-world.md` | state | 208000 | Detailed current gameplay/MVP catalogue and deferred scope |
 | `village-life-plan.md` | state | 14000 | The accepted four-part village household update; all four parts are implemented |
-| `system-tree.md` | state | 190000 | Hand-maintained repository path reference. Being retired: `git ls-files` and `systems-map.md` do the job |
 | `systems-map.md` | index | 44000 | System index: guarantee, key files and status |
 | `architecture-notes.md` | canon | 612000 | Accepted technical decisions and the exceptions the bibles allow |
 | `debug-log.md` | state | 11000 | Structured diagnostics format, events and support workflow |

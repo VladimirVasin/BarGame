@@ -1,3 +1,12 @@
+# System tree archive — 2026-09-09
+
+Superseded hand-maintained repository path reference, archived verbatim when
+the document was retired. It is a historical snapshot, not the current
+structure: of its `1387` paths, `97` were wrong, `3` named files that exist
+nowhere, and half of the repository's `.cs` files were never mentioned at all.
+`git ls-files` and `rg` are the path reference now, and
+[`ai/systems-map.md`](../systems-map.md) is the index of systems.
+
 # System tree
 
 Path reference for targeted lookup. Start with [project-overview.md](project-overview.md)

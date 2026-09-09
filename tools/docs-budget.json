@@ -1,6 +1,9 @@
 {
   "version": 1,
   "enforce_ledgers_from": "2026-09-10",
+  "scan_exclude": [
+    "tools/test_check_docs.py"
+  ],
   "absent_by_design": [
     "Build/",
     "Builds/",
@@ -13,7 +16,6 @@
   "pending_checks": [
     "canon/block-too-large",
     "canon/preamble-order",
-    "index/cell-too-wide",
     "shape/status-vocabulary"
   ],
   "types": {
@@ -40,7 +42,7 @@
     },
     "README.md": {
       "type": "state",
-      "budget": 291000
+      "budget": 26000
     },
     "ai/README.md": {
       "type": "entry",
@@ -67,10 +69,6 @@
     "ai/current-world.md": {
       "type": "state",
       "budget": 208000
-    },
-    "ai/system-tree.md": {
-      "type": "state",
-      "budget": 190000
     },
     "ai/debug-log.md": {
       "type": "state",

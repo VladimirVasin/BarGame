@@ -96,7 +96,9 @@ Rules:
 - Follow the minimal verification policy below. Prefer one focused test that
   also compiles its dependencies; do not require compilation plus both Unity
   test layers for every change.
-- Update `ai/project-overview.md`, `ai/system-tree.md`, or `ai/systems-map.md` when their facts change.
+- Update `ai/project-overview.md` or `ai/systems-map.md` when their facts change.
+  There is no checked-in file tree: `git ls-files` and `rg` are the path
+  reference, and unlike a copy they are never stale.
 - Update `ai/city-zones-art-bible.md` or `ai/city-story-bible.md` when their
   facts change; see World canon above for how they bind a change.
 - Record meaningful implementation sessions in `ai/work-log.md`.

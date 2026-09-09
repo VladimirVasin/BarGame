@@ -42,7 +42,7 @@ class CheckerHarness(unittest.TestCase):
     def run_checks(self, manifest: dict, markdown: list[str], code: list[str] | None = None):
         checker = check_docs.Checker(manifest)
         with mock.patch.object(check_docs, "tracked_markdown", lambda: markdown), \
-             mock.patch.object(check_docs, "tracked_code", lambda: code or []), \
+             mock.patch.object(check_docs, "tracked_code", lambda exclude=(): code or []), \
              contextlib.redirect_stdout(io.StringIO()):
             checker.run()
         return checker.findings

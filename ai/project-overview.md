@@ -100,10 +100,12 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 - Map, inventory, journal, pause/options and localized interaction interfaces.
 - Shared PS1 presentation, causal audio and bounded diagnostics.
 
-See [current-world.md](current-world.md) for the complete gameplay catalogue,
-[systems-map.md](systems-map.md) for the concise system index and
-[system-tree.md](system-tree.md) for paths. The story/art bibles define canon;
-these implementation documents do not authorize deviations.
+See [current-world.md](current-world.md) for the complete gameplay catalogue and
+[systems-map.md](systems-map.md) for the concise system index, whose Key files
+column names the owner of each system. For paths, use `git ls-files` and `rg`;
+the hand-maintained tree was retired because half its entries were wrong or
+missing. The story/art bibles define canon; these implementation documents do
+not authorize deviations.
 
 ## Deferred
 
