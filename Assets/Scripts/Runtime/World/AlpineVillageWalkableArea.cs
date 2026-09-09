@@ -236,6 +236,23 @@ namespace BarPromenade
                     continue;
                 }
 
+                // Their carved shells and moving leaves now own collision.
+                // A footprint mask here would leave an invisible wall across
+                // the real open doorway and its small private vestibule.
+                if (plot.StableId == VillageWorkroomPlan.HouseId)
+                {
+                    // The accessible lower storey is a union of real rooms and an entry,
+                    // not permission to walk through the house's remaining solid mass.
+                    var room = new VillageWorkroomPlan(plot);
+                    Vector2 roomForward = ToXZ(plot.Facing).normalized;
+                    Vector2 roomAcross = new Vector2(roomForward.y, -roomForward.x);
+                    foreach (Bounds wall in room.SolidWallFootprints())
+                        obstacles.Add(new OrientedRect(ToXZ(room.World(wall.center)), roomAcross, roomForward,
+                            new Vector2(wall.size.x, wall.size.z) * .5f));
+                    continue;
+                }
+                if (VillageResidentDoorPlan.IsResidentHouse(plot.StableId)) continue;
+
                 Vector2 facing = ToXZ(plot.Facing).normalized;
                 Vector2 across = new Vector2(facing.y, -facing.x);
                 obstacles.Add(new OrientedRect(

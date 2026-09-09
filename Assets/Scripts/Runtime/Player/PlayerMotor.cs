@@ -399,6 +399,19 @@ namespace BarPromenade
                 return;
             }
 
+            Vector3 travelFacing = walkBackward ? -toTarget : toTarget;
+            Quaternion travelRotation = Quaternion.LookRotation(travelFacing.normalized, Vector3.up);
+            float turn = Vector3.SignedAngle(transform.forward, travelFacing, Vector3.up);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, travelRotation,
+                TurnSpeedDegreesPerSecond * deltaTime);
+            if (Quaternion.Angle(transform.rotation, travelRotation) > 15f)
+            {
+                StopPlanarMotion();
+                presentation?.SetMotion(new PlayerMotionSample(Vector3.zero, 0f, Mathf.Sign(turn)));
+                RecordInteractionPoseProgress(deltaTime);
+                return;
+            }
+
             float step = Mathf.Min(
                 distance,
                 (walkBackward ? BackwardMoveSpeed : MoveSpeed) * deltaTime);
@@ -429,7 +442,6 @@ namespace BarPromenade
                 ? displacement / deltaTime
                 : Vector3.zero;
             momentumVelocity = PlanarVelocity;
-            FaceMovementDirection(walkBackward ? -PlanarVelocity : PlanarVelocity);
             // A guided backstep uses the same signed motion and WalkBack
             // gait as manual reverse movement, while keeping its constrained path.
             presentation?.SetMotion(new PlayerMotionSample(
@@ -901,19 +913,6 @@ namespace BarPromenade
         {
             return !float.IsNaN(value) &&
                    !float.IsInfinity(value);
-        }
-
-        private void FaceMovementDirection(Vector3 planarVelocity)
-        {
-            planarVelocity.y = 0f;
-            if (planarVelocity.sqrMagnitude <= FacingThresholdSquared)
-            {
-                return;
-            }
-
-            transform.rotation = Quaternion.LookRotation(
-                planarVelocity.normalized,
-                Vector3.up);
         }
 
         /// <summary>

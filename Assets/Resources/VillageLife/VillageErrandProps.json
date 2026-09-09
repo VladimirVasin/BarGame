@@ -1,0 +1,101 @@
+{
+  "version": "1.0.0",
+  "scale_mode": "fixed_metres",
+  "build_signature": "1f89c59eacb894d17926160883cd4fc533b0867a765a98bdb8b05c47ca50866c",
+  "parts": [
+    {
+      "mesh": "BucketBody",
+      "surface": "RustedIron",
+      "tint": [
+        0.34,
+        0.335,
+        0.29,
+        1
+      ],
+      "bounds_min": [
+        -0.245,
+        0,
+        -0.245
+      ],
+      "bounds_max": [
+        0.245,
+        0.33,
+        0.245
+      ]
+    },
+    {
+      "mesh": "BucketHandles",
+      "surface": "RustedIron",
+      "tint": [
+        0.235,
+        0.225,
+        0.2,
+        1
+      ],
+      "bounds_min": [
+        -0.3011115789413452,
+        0.24644345045089722,
+        -0.0754999965429306
+      ],
+      "bounds_max": [
+        0.3011115789413452,
+        0.4352196156978607,
+        0.0754999965429306
+      ]
+    },
+    {
+      "mesh": "Water",
+      "surface": "Water",
+      "tint": [
+        0.3,
+        0.4,
+        0.38,
+        1
+      ],
+      "bounds_min": [
+        -0.179,
+        0.065,
+        -0.179
+      ],
+      "bounds_max": [
+        0.179,
+        0.07100000000000001,
+        0.179
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "name": "LeftGrip",
+      "position": [
+        -0.29,
+        0.43,
+        0
+      ]
+    },
+    {
+      "name": "RightGrip",
+      "position": [
+        0.29,
+        0.43,
+        0
+      ]
+    },
+    {
+      "name": "Rest",
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Mouth",
+      "position": [
+        0,
+        0.33,
+        0
+      ]
+    }
+  ]
+}

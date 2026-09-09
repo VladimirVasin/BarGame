@@ -25,6 +25,45 @@ enters separate interiors, and returns to the matching exterior entrance.
 
 The vertical slice contains:
 
+- six ordinary winter village residents, with the production hero's detail
+  as the authoring floor, recognize him through short local lines. The station
+  worker checks his cargo lid; the woman at house `04` loads six actual logs and carries two filled
+  baskets to separate supports, then tends the stack and rests. Houses `08`
+  and `11` add a shovel with its support, a closed basket with matching rests,
+  and a hinged gate with short fence returns. The shovel worker takes up the
+  tool, makes three working strokes and puts it back; the basket visitor
+  carries her closed basket to `08` and back through the gate. The repair
+  neighbour and sewing woman work in the accessible lower room of house `08`
+  and visit other yards. The same people and furniture are visible through
+  two physical window openings. Chair repair is finite; sewing includes an
+  actual sit, unpack, work, fold, closed box stow and stand sequence.
+  `VillageNeighbourhoodPlan` owns these destinations; the controller reserves
+  at most four outdoor places, starting outings from `05:00` until `18:30`.
+  Existing outings finish before the residents return home for the evening.
+  Each of `04`/`08`/`11` has a real moving door and solid L-shaped vestibule:
+  the six actors remain active and walk behind the interior wall. The shared
+  weather's rising strong gust pauses eligible outdoor movement or waiting
+  for `2.2 s`, with hands retaining the carried basket or shovel. Residents
+  wait for the hero and one another; a street encounter can use a side step.
+  World pause freezes the schedule, bodies, loads and door motion.
+  The focused `VillageLife` journey verifies all six bodies, held contacts,
+  door passages, evening returns and morning resumption in the real scene.
+  The hero can open and close `08`, walk inside, sit on its bench and hold
+  the chair rail while the neighbour finishes the joint. The enclosed room
+  stops exterior cold, removes indoor snow/fog particles and muffles the same
+  outdoor sound field; its windows retain the outside storm. Room-owned fixed
+  views use the existing interior-camera API, including the private hallway,
+  so the narrow room cannot push the chase camera into the hero's shoulder.
+  Outdoor help uses the same lid, gate, baskets and shovel: the hero can hold
+  a partner's moving thing, carry a full basket freely between real supports,
+  or take the shovel, clear one of three small patches and return it. Separate
+  authored actions drive the production rig; a torso layer leaves ordinary
+  walking available while carrying. Residents also bring a bucket to the
+  spring and take the same shovel to the chapel and station edge. Finite logs,
+  deliveries, chair repair, lowered snow and completed water work survive
+  scene visits through `GameSessionState.VillageHousehold`; new game resets
+  them. There is no disk save.
+
 - one separate `MothersHouseInterior` gameplay root entered through the
   existing summit-house exterior door and exited back to a one-shot safe
   arrival outside that same threshold. Its deterministic imported room keeps

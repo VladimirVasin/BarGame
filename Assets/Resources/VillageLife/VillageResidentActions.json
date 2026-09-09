@@ -1,0 +1,69 @@
+{
+  "generator": "build-village-residents-3d-model.py",
+  "version": "1.0.0",
+  "bone_count": 31,
+  "fps": 24,
+  "clips": [
+    {
+      "name": "Idle",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "Walk",
+      "duration_seconds": 1.25,
+      "loop": true
+    },
+    {
+      "name": "Reach",
+      "duration_seconds": 3.0,
+      "loop": false
+    },
+    {
+      "name": "Carry",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "CarryWalk",
+      "duration_seconds": 1.5,
+      "loop": true
+    },
+    {
+      "name": "Place",
+      "duration_seconds": 3.0,
+      "loop": false
+    },
+    {
+      "name": "StationWork",
+      "duration_seconds": 6.0,
+      "loop": true
+    },
+    {
+      "name": "WoodWork",
+      "duration_seconds": 6.0,
+      "loop": true
+    }
+  ],
+  "pickup_contact_seconds": 1.5,
+  "place_contact_seconds": 1.5,
+  "basket_grip_half_width": 0.29,
+  "basket_grip_height": 0.43,
+  "basket_rest_local": [
+    0,
+    0.38,
+    0.44
+  ],
+  "basket_carry_local": [
+    0,
+    0.5,
+    0.44
+  ],
+  "validation": {
+    "sampled_frames": 698,
+    "max_grip_error_m": 5e-07,
+    "max_ground_error_m": 2e-07,
+    "max_endpoint_error": 2e-07,
+    "curve_signature": "7dae67777c134b569f6c1d2b452439b9a73ca0dd915f2aa83151f0ed36d3a15c"
+  }
+}

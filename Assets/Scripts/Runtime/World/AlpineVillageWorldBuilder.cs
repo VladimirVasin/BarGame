@@ -40,6 +40,11 @@ namespace BarPromenade
                 new Dictionary<string, Transform>(
                     semanticObjects,
                     StringComparer.Ordinal));
+            var residentDoors = new Dictionary<string, VillageResidentDoor>(StringComparer.Ordinal);
+            foreach (VillageResidentDoor door in root.GetComponentsInChildren<VillageResidentDoor>())
+                residentDoors.Add(door.PlotId, door);
+            ResidentDoors = new ReadOnlyDictionary<string, VillageResidentDoor>(residentDoors);
+            Workroom = root.GetComponentInChildren<VillageWorkroomInstance>();
         }
 
         public GameObject Root { get; }
@@ -56,6 +61,8 @@ namespace BarPromenade
         public GameObject StationRoot => Cableway.StationRoot;
         public AlpineVillageWalkableArea WalkableArea { get; }
         public IReadOnlyDictionary<string, Transform> SemanticObjects { get; }
+        public IReadOnlyDictionary<string, VillageResidentDoor> ResidentDoors { get; }
+        public VillageWorkroomInstance Workroom { get; }
         public MothersHouseEntrance MothersHouseEntrance { get; }
 
         /// <summary>
@@ -1140,7 +1147,8 @@ namespace BarPromenade
                 // The mother's door is the one that opens, and it is built
                 // with its destination further down. The chapel is a spur
                 // errand rather than a home and keeps its plain threshold.
-                if (plot.Kind == AlpineVillagePlotKind.House)
+                if (plot.Kind == AlpineVillagePlotKind.House &&
+                    !VillageResidentDoorPlan.IsResidentHouse(plot.StableId))
                 {
                     houseDoors.Add(BuildHouseDoor(root.transform, plot));
                 }
@@ -1162,7 +1170,8 @@ namespace BarPromenade
             int variant,
             Vector2 footprint,
             float height,
-            Func<VillageMeshRole, Color> tintFor)
+            Func<VillageMeshRole, Color> tintFor,
+            string residentHouseId = null)
         {
             VillageMeshRole[] roles = VillageAssetProvider.GetRoles(kind);
             for (int index = 0; index < roles.Length; index++)
@@ -1182,7 +1191,15 @@ namespace BarPromenade
                     footprint.x,
                     height,
                     footprint.y);
-                host.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
+                Mesh mesh = part.Mesh;
+                if (VillageResidentDoorAssets.TryGetShellPart(residentHouseId, role, out MeshFilter doorwayPart))
+                {
+                    host.transform.localPosition = doorwayPart.transform.position;
+                    host.transform.localRotation = doorwayPart.transform.rotation;
+                    host.transform.localScale = doorwayPart.transform.lossyScale;
+                    mesh = doorwayPart.sharedMesh;
+                }
+                host.AddComponent<MeshFilter>().sharedMesh = mesh;
                 MeshRenderer renderer = host.AddComponent<MeshRenderer>();
                 renderer.sharedMaterial =
                     RuntimePrimitiveFactory.DefaultMaterial;
@@ -1362,7 +1379,8 @@ namespace BarPromenade
                     plot.FootprintSize,
                     plot.Height,
                     chapel ? (Func<VillageMeshRole, Color>)ChapelTint
-                        : role => HouseTint(plot, variant, role));
+                        : role => HouseTint(plot, variant, role),
+                    VillageResidentDoorPlan.IsResidentHouse(plot.StableId) ? plot.StableId : null);
                 if (!chapel && !tallest)
                 {
                     // Roof pitch is unchanged along its ridge. Reversing or
@@ -1442,7 +1460,16 @@ namespace BarPromenade
             // how a floor once became a two-kilometre slab on its side.
             var collider = new GameObject("Physical Shell");
             collider.transform.SetParent(parent, false);
-            if (tallest)
+            if (VillageResidentDoorPlan.IsResidentHouse(plot.StableId))
+            {
+                foreach (VillageMeshRole role in new[] { VillageMeshRole.Walls,
+                             VillageMeshRole.Plinth, VillageMeshRole.Timber })
+                {
+                    MeshFilter mesh = parent.Find("House " + role).GetComponent<MeshFilter>();
+                    mesh.gameObject.AddComponent<MeshCollider>().sharedMesh = mesh.sharedMesh;
+                }
+            }
+            else if (tallest)
             {
                 void AddMass(string name, Bounds bounds)
                 {
@@ -1465,7 +1492,9 @@ namespace BarPromenade
                     plot.FootprintSize.y);
             }
 
-            BuildDoor(parent, plot, chapel, face.y, kit);
+            if (VillageResidentDoorPlan.IsResidentHouse(plot.StableId)) VillageResidentDoor.Create(parent, plot);
+            else BuildDoor(parent, plot, chapel, face.y, kit);
+            if (plot.StableId == VillageWorkroomPlan.HouseId) VillageWorkroomAssets.Create(parent, plot);
             if (chapel)
             {
                 // No lit windows: the chapel has none, and nothing about it

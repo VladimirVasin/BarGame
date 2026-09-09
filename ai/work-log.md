@@ -6,6 +6,121 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-09 — Village outdoor help and session household progress
+
+- Completed part 4's outdoor help controller: the hero can take a loaded firewood
+  basket, walk freely while carrying it, put it on a free support, borrow and
+  return the shovel, clear a small snow patch, hold the station crate lid while
+  its worker secures the strap, or hold an open gate for a passing neighbour.
+  Entry and exit use the shared positioned interaction path and the same visible
+  production hero. Help remains voluntary, with brief thanks and no reward task.
+- Added a separate Hero V2 bank of 13 bone-only clips and matching sampled
+  metre-space prop tracks. The owned carry layer preserves ordinary pelvis/leg
+  locomotion, takes precedence over cold arms, and yields to full-body actions.
+  It releases on cleanup without changing the hero prefab or prior action banks.
+  Graph insertion disconnects its old consumer before adding the carry/cold layer;
+  final support contacts apply after graph changes at release.
+- Firewood work now moves six existing loose logs into the two existing baskets
+  before delivery. The same residents also have finite errands: fetch water in
+  one physical pail from the spring and return it to its support, or take the
+  shovel to the chapel threshold and station edge. Separate eight-second
+  bucket-fill and six-second station-strap actions preserve the six bodies and
+  earlier resident banks. The station pose has measured hand anchors, planted
+  feet and at least `19.44 cm` of arm reach margin in the source validator.
+- `VillageHouseholdProgress` records log ownership, occupied delivery supports,
+  the repaired chair, three stages for each snow patch and completed water
+  visits. Scene recreation restores these completed changes within the current
+  game session; transient carrying retains the original support as its fallback.
+  New-game reset clears this progress. Snow work deforms the existing snow field;
+  its jobs sit beyond the station's bare apron and the chapel's wet source path.
+  Bucket pickup and return blend the actual support offset into the authored
+  reach. Wood, shovel, cloth and hinge sounds follow physical local actions.
+  Restored six damaged Russian localization strings and added the help prompts.
+- Source verification: the outdoor hero validator passed all 949 samples, with
+  maximum grip error below `0.001 mm`, unchanged lower-body matrices and matched
+  shared endpoints. The gate pose also retains at least `5.95 cm` of anatomical
+  reach margin across handle heights `0.60–0.85 m`, including its actual sloping
+  yard placement. Inspected source previews with the actual basket, shovel,
+  lid and gate meshes. The focused `AreaCaptureFixture.VillageOutdoorLife`
+  passed end to end in `394.37 s`: nine completed hero actions, six real logs,
+  two delivered baskets, nine clearing stages, completed water return, real
+  scene unload/recreation and new-game reset. All three jobs began on measured
+  snow and remained visibly cleared after reload. The actual gate route clears
+  its fence returns and house 09; resident yielding retains obstacle guards.
+- Runtime measurements: `4,581` hero grip samples (maximum `0.138 mm`), `179`
+  station partner samples (`0.064 mm`), `479` bucket-fill samples (`5.10 mm`),
+  `4,428` carried-log contacts and `715` visible-mesh hand checks. `9,631` hero
+  body checks found no penetration. Root/prop steps remained below `0.131 m`.
+  Results and reviewed gameplay frames: `TestResults/village-outdoor-life.xml`
+  and `Captures/VillageOutdoorLife/verification.json` with PNGs alongside.
+  The seeded `VillageOutdoorPartners` remains a diagnostic selection; final
+  acceptance uses the complete journey above. Restored 18 importer-only material
+  rewrites against the pre-check snapshot; the production hero bytes are unchanged.
+  Full suites and a player build were not run.
+
+## 2026-09-09 — Workroom wall flicker
+
+- Reproduced the competing surfaces in house `08`: the shell cavity ended at
+  the room-facing finish planes, leaving the lining and shell cut faces
+  coplanar. Moved the cavity behind the full wall, partition, ceiling and floor
+  thickness, with a minimum `20 mm` backing clearance. Short aperture returns
+  close the resulting gaps around the existing windows and door. Regenerated
+  the workroom model; playable dimensions, furniture and materials are unchanged.
+- Verification: the deterministic Blender validator passed `218` depth and
+  aperture samples. The focused `AreaCaptureFixture.VillageWorkroomWalls`
+  PlayMode check passed in `15.76 s`: all `24` lining probes hit, with `22`
+  shell-backed probes and a minimum finish-to-shell setback of `60 mm`.
+  Two pre-existing gaps in the shell require no depth separation; their lining
+  remains solid. The initial check incorrectly required backing at those gaps;
+  its assertion was corrected against the actual source mesh before rerunning.
+- Inspected the room captures with small camera offsets and the exterior
+  window view: the large competing wall triangles are gone and the openings
+  remain closed around their edges. Results are in
+  `TestResults/village-workroom-walls.xml` and
+  `Captures/VillageWorkroomWalls/`. The user's current production hero prefab
+  remains byte-for-byte unchanged. Full suites and a player build were not run.
+
+## 2026-09-09 — Village household workroom
+
+- Implemented part 3 of the accepted village plan inside the existing house
+  `08`: a physical lower room, two cut windows, solid ceiling and floor, real
+  furniture, lamps and a screened route into the private living space. Soil
+  is lowered under the boards, with a buried foundation and a grid-cell inset
+  that preserves the exterior ground beside the facade.
+- The same repair neighbour and sewing woman walk to their work, manipulate
+  the original tools and materials, finish finite sequences and return home.
+  Nine separate Generic clips include tool pickup/return, seating, unpacking,
+  sewing, folding and stowing. Cloth and box have real moving hinges; thread
+  and contact anchors follow the sampled metre-space tracks. Existing bodies,
+  the corrected neck and the earlier resident clips are preserved.
+- The production hero uses the shared positioned interaction controller to
+  work the household door, hold the chair rail during repair, and sit/stand
+  at the bench. A separate action bank leaves the user-edited hero prefab
+  intact. Cancellation before actual repair does not commit the result;
+  the third assisted hammer contact fixes the same rail. Residents leave the
+  door open for an indoor guest while still completing their evening routes.
+- The enclosed room suppresses the shared cold layer, removes weather particles
+  within its actual volume, muffles outside sound and supplies wood footfalls.
+  Outdoor help and persistence between village visits remain part 4.
+- The ordinary chase camera reproduced a shoulder intersection against the
+  room wall. Local interior shots now use the existing fixed-pose, bounded
+  focus and lens API; the room owner yields to other camera owners and releases
+  the view on leaving. It preserves all bodies and the physical facade.
+- Verification: the Blender geometry and both animation-bank validators passed.
+  The focused `AreaCaptureFixture.VillageWorkroom` journey passed: all nine new
+  actions, 9,476 NPC grip samples, 355 hero hold samples, 30 door grip samples
+  (each maximum below `0.1 mm`), 4,207 indoor walking samples without a furniture
+  intersection, cancellation, finished repair, bench entry/exit, real stow,
+  weather exclusion and both workers' indoor evening return. The guest stayed
+  in the room while both walked home in about `37 s`. This run did not exercise
+  the outside-worker evening branch. The final selected run passed in `76.64 s`;
+  its normal room-camera frame was inspected after resolving the wall/shoulder
+  and foreground-cabinet obstruction. Results: `TestResults/village-workroom.xml`
+  and `Captures/VillageWorkroom/verification.json`, with gameplay PNGs alongside.
+  The user-edited production hero prefab remains byte-for-byte unchanged;
+  unrelated automatic material colour/blend rewrites were restored to their
+  captured pre-run contents. Full suites and a player build were not run.
+
 ## 2026-09-09 — The print now arrives THROUGHOUT the ramp instead of at its end
 
 - The user judged the retune above by ear: «в конечном итоге неплохо, но я ощущаю
@@ -122,6 +237,84 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   a slam and measuring them only measures `DezipperSeconds`. And `48 Hz` in the
   apparatus is the picture's own second harmonic, not a rival to it: the claw
   pulls once a picture and the shutter's second blade falls halfway through.
+
+## 2026-09-08 — Six village neighbours, two more yards and real household doors
+
+- Implemented part 2 of the accepted village life plan. Four distinct winter
+  residents complete the six-person roster; yards `08` and `11` receive basket
+  supports, a shovel rack, a working gate and narrow household paths. The snow
+  neighbour takes the real shovel, works with both hands and returns it; the
+  basket visitor takes the same closed basket between the two yards.
+- All six actors remain present. Three fitted Blender house shells have real
+  openings, moving doors and opaque interior turns with two separate home
+  docks each. Daytime outings reserve at most four outside places; evening
+  finishes current work and sends residents home. Shared gusts interrupt safe
+  actions, carrying retains hand contact, and player blocking and pause apply
+  to the whole roster. A player inside a house keeps its exit open.
+- The four new models have 41–42 mesh parts, 2,572–2,716 triangles and 256px
+  atlases, against the hero's 2,384 triangles. Added nineteen authored action
+  clips while preserving the original residents and their eight-clip bank.
+  Corrected SewingWoman's visibly elongated neck: lowered the head and scarf
+  by 4.5 cm and refitted the neck and shawl without changing the shared rig.
+  Inspected front, three-quarter, turned-head and equal-scale game views.
+- Deterministic source validators cover resident geometry, planted feet, hand
+  contacts and action endpoints; the expanded passive kit has seventeen types
+  and 14,220 triangles. Three fitted doorway shells also reproduce identical
+  signatures. Runtime animation retains the shovel work posture during walking
+  and reverses the foot phase when stepping backwards with a door handle.
+- The accessible workroom and player help remain parts 3 and 4. Updated the
+  plan, README, canon, architecture and system/tooling maps to distinguish the
+  implemented roster and routes from those remaining activities.
+- Focused `AreaCaptureFixture.VillageLife` passed in 48.85 seconds, including
+  the first courtyard and both finite deliveries. The six-neighbour extension
+  covers 555.44 simulated seconds: all six return home, remain physically
+  concealed, and start daytime outings again. The outdoor maximum is four;
+  16,668 body samples and 21,106 wall/prop pairs show zero penetration.
+  Across 1,038 shovel and 7,569 closed-basket contact samples, maximum grip
+  errors are 0.088 mm and 0.092 mm. Hero blocking, pause and the occupied-house
+  exit guard pass. Results: `TestResults/village-neighbours.xml` and
+  `Captures/VillageLife/neighbours-verification.json`; inspected game frames.
+- The targeted journey exposed and resolved early centre-line returns while
+  yielding, head-on encounters on household approaches, a turning neighbour
+  approaching a sidestep, shared door waiting positions and the station's
+  raised platform edge. Carrying gusts now preserve the working torso instead
+  of straightening it beyond the low grip's reach. The observer parks clear
+  of the worker's actual return path; finite caps account for the four-place
+  queue and completing a full basket visit before night rest. One intermediate
+  compile met concurrent audio/test edits; they were resolved independently.
+  Full suites and player build were not run.
+
+## 2026-09-08 — First inhabited village courtyard and two winter residents
+
+- Implemented part 1 of the accepted four-part village life plan: house `04`
+  has a sheltered wood stack, chopping block, embedded axe, household sled,
+  four basket supports and narrow worn work paths. The station worker checks
+  a hinged cargo lid; the woman carries two filled baskets, leaves them on
+  free supports, then tends the stack and rests. Both recognize the hero
+  between actions; `E` gives a short local greeting. Wood sounds follow contact.
+- Two deterministic Blender residents have distinct faces, winter silhouettes,
+  clothing details, mittens and boots. Each has 40 mesh parts and a 256px
+  atlas; the worker has 2,408 triangles and the woman 2,516 against the hero's
+  2,384. Inspected both beside the real hero in equal-scale game captures.
+  The shared human rig owns eight sampled action clips; source validation
+  covers hand contacts, planted feet and clip endpoints. Deterministic resident
+  output and the eleven-type, 10,392-triangle passive prop kit were validated.
+- `AlpineVillageLifePlan` derives physical supports and routes from the real
+  plot and terrain. The local controller waits for a blocking player, freezes
+  under pause and retains the same two baskets and six logs throughout the
+  visit. Other residents, workroom, player help, schedules and cross-visit
+  state remain explicitly planned in `village-life-plan.md`.
+- Focused `AreaCaptureFixture.VillageLife` passed in 19.26 seconds. It checks ten plan seeds,
+  walks the real player out of the station, measures imported detail and
+  visible mittens, completes both deliveries and continues through work/rest.
+  Across 1,815 carried-contact samples, maximum grip error is 2.43 mm; player
+  blocking, pause and finite stock preservation pass. Results and inspected
+  game frames: `TestResults/village-life.xml`, `Captures/VillageLife/`.
+- Corrected FBX file-unit import and atlas dimensionality during focused
+  verification; import now measures actual transformed vertices. The hand
+  test uses the project's existing scaled `BakeMesh` measurement convention.
+  Updated README, canon, maps and tooling documentation. Full suites and
+  player build were not run.
 
 ## 2026-09-08 — Connected frost diffusion follows the frozen percentage
 

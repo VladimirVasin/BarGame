@@ -1,0 +1,1656 @@
+{
+  "generator": "tools/build-village-life-props-3d-model.py",
+  "generator_version": "1.1.0",
+  "design_id": "village_life_work_props_v1",
+  "build_signature": "954ba12857cb25532b083d8b84fe8cb8368e8a95c714a7ba7e1134737abb761a",
+  "stage1_signature": "5ebf8898e36129174945a3f8e01f7a09c23bfca220e137c3efc3bcc32940eabf",
+  "scale_mode": "fixed_metres",
+  "uv_mode": "projected_metres",
+  "forward": "Unity +Z",
+  "root_scale": 1,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "prop_count": 17,
+  "mesh_count": 43,
+  "triangle_count": 14220,
+  "props": [
+    {
+      "kind": "WoodShelter",
+      "origin": "ground",
+      "bounds_min": [
+        -1.4575,
+        0.0,
+        -0.6492516124581788
+      ],
+      "bounds_max": [
+        1.4675,
+        2.180858685354868,
+        0.6492516124581788
+      ],
+      "anchors": [
+        {
+          "name": "Stack",
+          "position": [
+            0,
+            0,
+            -0.12
+          ]
+        },
+        {
+          "name": "Work",
+          "position": [
+            0,
+            0,
+            1.02
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_WoodShelter_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -1.4575,
+            0.0,
+            -0.6492516124581788
+          ],
+          "bounds_max": [
+            1.4675,
+            2.0992967554668716,
+            0.6492516124581788
+          ],
+          "triangles": 756
+        },
+        {
+          "mesh": "GEO_WoodShelter_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            -0.5,
+            0.34,
+            -0.6154999999999999
+          ],
+          "bounds_max": [
+            1.005,
+            1.76,
+            -0.573
+          ],
+          "triangles": 56
+        },
+        {
+          "mesh": "GEO_WoodShelter_Snow",
+          "role": "Snow",
+          "surface": "WindSnow",
+          "tint": [
+            0.82,
+            0.845,
+            0.83,
+            1
+          ],
+          "bounds_min": [
+            -1.272815,
+            2.0029511477215403,
+            -0.5815864330172758
+          ],
+          "bounds_max": [
+            1.3102099999999999,
+            2.180858685354868,
+            0.4615864330172757
+          ],
+          "triangles": 52
+        }
+      ]
+    },
+    {
+      "kind": "LogStack",
+      "origin": "ground",
+      "bounds_min": [
+        -0.875,
+        0.0,
+        -0.32
+      ],
+      "bounds_max": [
+        0.875,
+        0.7550000000000001,
+        0.32
+      ],
+      "anchors": [
+        {
+          "name": "Log0",
+          "position": [
+            -0.55,
+            0.815,
+            0.17
+          ]
+        },
+        {
+          "name": "Log1",
+          "position": [
+            0.0,
+            0.815,
+            0.17
+          ]
+        },
+        {
+          "name": "Log2",
+          "position": [
+            0.55,
+            0.815,
+            0.17
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_LogStack_Bark",
+          "role": "Bark",
+          "surface": "BarkAndDeadwood",
+          "tint": [
+            0.22,
+            0.19,
+            0.16,
+            1
+          ],
+          "bounds_min": [
+            -0.805,
+            0.08328182392420048,
+            -0.23992135046386678
+          ],
+          "bounds_max": [
+            0.8230000000000001,
+            0.7550000000000001,
+            0.23992135046386676
+          ],
+          "triangles": 2016
+        },
+        {
+          "mesh": "GEO_LogStack_Endgrain",
+          "role": "Endgrain",
+          "surface": "Timber",
+          "tint": [
+            0.47,
+            0.36,
+            0.25,
+            1
+          ],
+          "bounds_min": [
+            -0.809,
+            0.0952910956178444,
+            -0.22733550738037075
+          ],
+          "bounds_max": [
+            0.8270000000000001,
+            0.7422200000000001,
+            0.22733550738037075
+          ],
+          "triangles": 4032
+        },
+        {
+          "mesh": "GEO_LogStack_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.875,
+            0.0,
+            -0.32
+          ],
+          "bounds_max": [
+            0.875,
+            0.09,
+            0.32
+          ],
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "kind": "Log",
+      "origin": "centre",
+      "bounds_min": [
+        -0.234,
+        -0.05638155724715452,
+        -0.059088465180732484
+      ],
+      "bounds_max": [
+        0.234,
+        0.06000000000000001,
+        0.05908846518073248
+      ],
+      "anchors": [
+        {
+          "name": "Grip",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_Log_Bark",
+          "role": "Bark",
+          "surface": "BarkAndDeadwood",
+          "tint": [
+            0.22,
+            0.19,
+            0.16,
+            1
+          ],
+          "bounds_min": [
+            -0.23,
+            -0.05638155724715452,
+            -0.059088465180732484
+          ],
+          "bounds_max": [
+            0.23,
+            0.06000000000000001,
+            0.05908846518073248
+          ],
+          "triangles": 32
+        },
+        {
+          "mesh": "GEO_Log_Endgrain",
+          "role": "Endgrain",
+          "surface": "Timber",
+          "tint": [
+            0.47,
+            0.36,
+            0.25,
+            1
+          ],
+          "bounds_min": [
+            -0.234,
+            -0.04623287694266669,
+            -0.04845254144820063
+          ],
+          "bounds_max": [
+            0.234,
+            0.049199999999999994,
+            0.04845254144820063
+          ],
+          "triangles": 64
+        }
+      ]
+    },
+    {
+      "kind": "Basket",
+      "origin": "ground",
+      "bounds_min": [
+        -0.3035029470920563,
+        0.0,
+        -0.187
+      ],
+      "bounds_max": [
+        0.3035029470920563,
+        0.44350001215934753,
+        0.187
+      ],
+      "anchors": [
+        {
+          "name": "LeftGrip",
+          "position": [
+            -0.29,
+            0.43,
+            0
+          ]
+        },
+        {
+          "name": "RightGrip",
+          "position": [
+            0.29,
+            0.43,
+            0
+          ]
+        },
+        {
+          "name": "Rest",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Content0",
+          "position": [
+            0,
+            0.19,
+            -0.11
+          ]
+        },
+        {
+          "name": "Content1",
+          "position": [
+            0,
+            0.19,
+            0.02
+          ]
+        },
+        {
+          "name": "Content2",
+          "position": [
+            0,
+            0.3,
+            -0.045
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_Basket_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.29200000000000004,
+            0.0,
+            -0.187
+          ],
+          "bounds_max": [
+            0.29200000000000004,
+            0.315,
+            0.187
+          ],
+          "triangles": 1316
+        },
+        {
+          "mesh": "GEO_Basket_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            -0.3035029470920563,
+            0.066,
+            -0.10742822289466858
+          ],
+          "bounds_max": [
+            0.3035029470920563,
+            0.44350001215934753,
+            0.18450000000000003
+          ],
+          "triangles": 196
+        }
+      ]
+    },
+    {
+      "kind": "BasketStand",
+      "origin": "ground",
+      "bounds_min": [
+        -0.3315,
+        -0.004510819911956787,
+        -0.255
+      ],
+      "bounds_max": [
+        0.3315,
+        0.38,
+        0.255
+      ],
+      "anchors": [
+        {
+          "name": "BasketRest",
+          "position": [
+            0,
+            0.38,
+            0
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_BasketStand_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.3315,
+            -0.004510819911956787,
+            -0.255
+          ],
+          "bounds_max": [
+            0.3315,
+            0.38,
+            0.255
+          ],
+          "triangles": 224
+        },
+        {
+          "mesh": "GEO_BasketStand_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            0.22,
+            0.135,
+            0.18
+          ],
+          "bounds_max": [
+            0.26,
+            0.285,
+            0.2
+          ],
+          "triangles": 28
+        }
+      ]
+    },
+    {
+      "kind": "ChoppingBlock",
+      "origin": "ground",
+      "bounds_min": [
+        -0.19669605959097197,
+        0.0,
+        -0.21281161000440052
+      ],
+      "bounds_max": [
+        0.205,
+        0.424,
+        0.21281161000440055
+      ],
+      "anchors": [
+        {
+          "name": "AxeRest",
+          "position": [
+            0,
+            0.422,
+            0
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_ChoppingBlock_Bark",
+          "role": "Bark",
+          "surface": "BarkAndDeadwood",
+          "tint": [
+            0.22,
+            0.19,
+            0.16,
+            1
+          ],
+          "bounds_min": [
+            -0.19669605959097197,
+            0.0,
+            -0.21281161000440052
+          ],
+          "bounds_max": [
+            0.205,
+            0.42,
+            0.21281161000440055
+          ],
+          "triangles": 40
+        },
+        {
+          "mesh": "GEO_ChoppingBlock_Endgrain",
+          "role": "Endgrain",
+          "surface": "Timber",
+          "tint": [
+            0.47,
+            0.36,
+            0.25,
+            1
+          ],
+          "bounds_min": [
+            -0.17558721417145304,
+            0.418,
+            -0.18113732386421066
+          ],
+          "bounds_max": [
+            0.183,
+            0.424,
+            0.1811373238642107
+          ],
+          "triangles": 40
+        }
+      ]
+    },
+    {
+      "kind": "Axe",
+      "origin": "ground",
+      "bounds_min": [
+        -0.16131022572517395,
+        -0.0009451508522033691,
+        -0.04999999701976776
+      ],
+      "bounds_max": [
+        0.08499999999999999,
+        0.6109451651573181,
+        0.04999999701976776
+      ],
+      "anchors": [
+        {
+          "name": "Grip",
+          "position": [
+            0.015,
+            0.25,
+            0
+          ]
+        },
+        {
+          "name": "Blade",
+          "position": [
+            -0.14,
+            0.55,
+            0
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_Axe_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.01647290401160717,
+            -0.0009451508522033691,
+            -0.014999998733401299
+          ],
+          "bounds_max": [
+            0.05147290229797363,
+            0.6109451651573181,
+            0.014999998733401299
+          ],
+          "triangles": 28
+        },
+        {
+          "mesh": "GEO_Axe_Iron",
+          "role": "Iron",
+          "surface": "RustedIron",
+          "tint": [
+            0.25,
+            0.235,
+            0.21,
+            1
+          ],
+          "bounds_min": [
+            -0.16131022572517395,
+            0.4996775686740875,
+            -0.04999999701976776
+          ],
+          "bounds_max": [
+            0.08499999999999999,
+            0.5953224897384644,
+            0.04999999701976776
+          ],
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "kind": "UtilitySled",
+      "origin": "ground",
+      "bounds_min": [
+        -0.35000000000000003,
+        -0.005000051110982895,
+        -0.6300000548362732
+      ],
+      "bounds_max": [
+        0.35000000000000003,
+        0.3,
+        0.7351058125495911
+      ],
+      "anchors": [
+        {
+          "name": "Load",
+          "position": [
+            0,
+            0.2865,
+            -0.05
+          ]
+        },
+        {
+          "name": "Pull",
+          "position": [
+            0,
+            0.17,
+            0.72
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_UtilitySled_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.35000000000000003,
+            0.07499999552965164,
+            -0.5700000000000001
+          ],
+          "bounds_max": [
+            0.35000000000000003,
+            0.28650000000000003,
+            0.47000000000000003
+          ],
+          "triangles": 280
+        },
+        {
+          "mesh": "GEO_UtilitySled_Iron",
+          "role": "Iron",
+          "surface": "RustedIron",
+          "tint": [
+            0.25,
+            0.235,
+            0.21,
+            1
+          ],
+          "bounds_min": [
+            -0.3125,
+            -0.005000051110982895,
+            -0.6300000548362732
+          ],
+          "bounds_max": [
+            0.3125,
+            0.19453391432762146,
+            0.7351058125495911
+          ],
+          "triangles": 112
+        },
+        {
+          "mesh": "GEO_UtilitySled_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            -0.175,
+            0.284,
+            0.15000000000000002
+          ],
+          "bounds_max": [
+            -0.0049999999999999906,
+            0.3,
+            0.31
+          ],
+          "triangles": 28
+        }
+      ]
+    },
+    {
+      "kind": "StationCrate",
+      "origin": "ground",
+      "bounds_min": [
+        -0.44,
+        0.0,
+        -0.335
+      ],
+      "bounds_max": [
+        0.44,
+        0.81,
+        0.335
+      ],
+      "anchors": [
+        {
+          "name": "LidHinge",
+          "position": [
+            0,
+            0.8,
+            -0.3
+          ]
+        },
+        {
+          "name": "StrapRoot",
+          "position": [
+            0,
+            0.8,
+            0.315
+          ]
+        },
+        {
+          "name": "WorkLeft",
+          "position": [
+            -0.22,
+            0.8,
+            0.29
+          ]
+        },
+        {
+          "name": "WorkRight",
+          "position": [
+            0.22,
+            0.8,
+            0.29
+          ]
+        },
+        {
+          "name": "Interior",
+          "position": [
+            0,
+            0.47,
+            0
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_StationCrate_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.44,
+            0.0,
+            -0.335
+          ],
+          "bounds_max": [
+            0.44,
+            0.788,
+            0.335
+          ],
+          "triangles": 476
+        },
+        {
+          "mesh": "GEO_StationCrate_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            -0.375,
+            0.45999999999999996,
+            -0.33
+          ],
+          "bounds_max": [
+            0.375,
+            0.8,
+            0.33
+          ],
+          "triangles": 112
+        },
+        {
+          "mesh": "GEO_StationCrate_Iron",
+          "role": "Iron",
+          "surface": "RustedIron",
+          "tint": [
+            0.25,
+            0.235,
+            0.21,
+            1
+          ],
+          "bounds_min": [
+            -0.2875,
+            0.77,
+            -0.335
+          ],
+          "bounds_max": [
+            0.2875,
+            0.81,
+            -0.295
+          ],
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "kind": "StationLid",
+      "origin": "hinge; open by negative Unity X rotation",
+      "bounds_min": [
+        -0.427,
+        -0.007,
+        -0.0325
+      ],
+      "bounds_max": [
+        0.427,
+        0.0595,
+        0.6375
+      ],
+      "anchors": [
+        {
+          "name": "Hinge",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "LeftGrip",
+          "position": [
+            -0.22,
+            0.035,
+            0.61
+          ]
+        },
+        {
+          "name": "RightGrip",
+          "position": [
+            0.22,
+            0.035,
+            0.61
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_StationLid_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.427,
+            0.0,
+            -0.007500000000000007
+          ],
+          "bounds_max": [
+            0.427,
+            0.034,
+            0.6375
+          ],
+          "triangles": 140
+        },
+        {
+          "mesh": "GEO_StationLid_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            -0.31999999999999995,
+            0.0345,
+            0.015000000000000013
+          ],
+          "bounds_max": [
+            0.31999999999999995,
+            0.0595,
+            0.615
+          ],
+          "triangles": 56
+        },
+        {
+          "mesh": "GEO_StationLid_Iron",
+          "role": "Iron",
+          "surface": "RustedIron",
+          "tint": [
+            0.25,
+            0.235,
+            0.21,
+            1
+          ],
+          "bounds_min": [
+            -0.2875,
+            -0.007,
+            -0.0325
+          ],
+          "bounds_max": [
+            0.2875,
+            0.017,
+            0.0325
+          ],
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "kind": "StationStrap",
+      "origin": "upper fastening",
+      "bounds_min": [
+        -0.05000000447034836,
+        -0.2503313720226288,
+        -0.11054409295320511
+      ],
+      "bounds_max": [
+        0.05000000447034836,
+        0.02246362715959549,
+        0.0455
+      ],
+      "anchors": [
+        {
+          "name": "Grip",
+          "position": [
+            0,
+            -0.19,
+            0.034
+          ]
+        },
+        {
+          "name": "Fastener",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_StationStrap_Cloth",
+          "role": "Cloth",
+          "surface": "Cloth",
+          "tint": [
+            0.36,
+            0.345,
+            0.28,
+            1
+          ],
+          "bounds_min": [
+            -0.05000000447034836,
+            -0.2503313720226288,
+            -0.11054409295320511
+          ],
+          "bounds_max": [
+            0.05000000447034836,
+            0.02246362715959549,
+            0.02869076281785965
+          ],
+          "triangles": 56
+        },
+        {
+          "mesh": "GEO_StationStrap_Iron",
+          "role": "Iron",
+          "surface": "RustedIron",
+          "tint": [
+            0.25,
+            0.235,
+            0.21,
+            1
+          ],
+          "bounds_min": [
+            -0.0375,
+            -0.1875,
+            0.022500000000000003
+          ],
+          "bounds_max": [
+            0.0375,
+            -0.15250000000000002,
+            0.0455
+          ],
+          "triangles": 28
+        }
+      ]
+    },
+    {
+      "kind": "Shovel",
+      "origin": "blade bottom",
+      "bounds_min": [
+        -0.23,
+        0.0,
+        -0.022349828132936112
+      ],
+      "bounds_max": [
+        0.23,
+        1.066499948501587,
+        0.10799999999999998
+      ],
+      "anchors": [
+        {
+          "name": "RightGrip",
+          "position": [
+            0,
+            1.05,
+            0
+          ]
+        },
+        {
+          "name": "MainGrip",
+          "position": [
+            0,
+            1.05,
+            0
+          ]
+        },
+        {
+          "name": "LeftGrip",
+          "position": [
+            0,
+            0.65,
+            0
+          ]
+        },
+        {
+          "name": "MidGrip",
+          "position": [
+            0,
+            0.65,
+            0
+          ]
+        },
+        {
+          "name": "BladeRest",
+          "position": [
+            0,
+            0,
+            0.025
+          ]
+        },
+        {
+          "name": "Hook",
+          "position": [
+            0,
+            0.9,
+            0
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_Shovel_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.10199999809265137,
+            0.22999999999999998,
+            -0.01664348903516519
+          ],
+          "bounds_max": [
+            0.10199999809265137,
+            1.066499948501587,
+            0.01664348903516519
+          ],
+          "triangles": 120
+        },
+        {
+          "mesh": "GEO_Shovel_Iron",
+          "role": "Iron",
+          "surface": "RustedIron",
+          "tint": [
+            0.25,
+            0.235,
+            0.21,
+            1
+          ],
+          "bounds_min": [
+            -0.23,
+            0.0,
+            -0.022349828132936112
+          ],
+          "bounds_max": [
+            0.23,
+            0.9580000042915344,
+            0.10799999999999998
+          ],
+          "triangles": 172
+        },
+        {
+          "mesh": "GEO_Shovel_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            -0.0205,
+            0.647,
+            -0.01949665858405065
+          ],
+          "bounds_max": [
+            0.0205,
+            0.681,
+            0.01949665858405065
+          ],
+          "triangles": 36
+        }
+      ]
+    },
+    {
+      "kind": "ClosedBasket",
+      "origin": "ground",
+      "bounds_min": [
+        -0.3035029470920563,
+        0.0,
+        -0.187
+      ],
+      "bounds_max": [
+        0.3035029470920563,
+        0.44350001215934753,
+        0.187
+      ],
+      "anchors": [
+        {
+          "name": "LeftGrip",
+          "position": [
+            -0.29,
+            0.43,
+            0
+          ]
+        },
+        {
+          "name": "RightGrip",
+          "position": [
+            0.29,
+            0.43,
+            0
+          ]
+        },
+        {
+          "name": "Rest",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_ClosedBasket_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.29200000000000004,
+            0.0,
+            -0.187
+          ],
+          "bounds_max": [
+            0.29200000000000004,
+            0.34700000000000003,
+            0.187
+          ],
+          "triangles": 1456
+        },
+        {
+          "mesh": "GEO_ClosedBasket_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            -0.3035029470920563,
+            0.066,
+            -0.10742822289466858
+          ],
+          "bounds_max": [
+            0.3035029470920563,
+            0.44350001215934753,
+            0.18450000000000003
+          ],
+          "triangles": 224
+        },
+        {
+          "mesh": "GEO_ClosedBasket_Cloth",
+          "role": "Cloth",
+          "surface": "Cloth",
+          "tint": [
+            0.36,
+            0.345,
+            0.28,
+            1
+          ],
+          "bounds_min": [
+            -0.1095,
+            0.202,
+            -0.165
+          ],
+          "bounds_max": [
+            -0.014499999999999999,
+            0.362,
+            0.187
+          ],
+          "triangles": 56
+        }
+      ]
+    },
+    {
+      "kind": "GatePosts",
+      "origin": "ground",
+      "bounds_min": [
+        -0.655,
+        0.0,
+        -0.08817133194443756
+      ],
+      "bounds_max": [
+        1.725,
+        1.2142757065225305,
+        0.098
+      ],
+      "anchors": [
+        {
+          "name": "Hinge",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Latch",
+          "position": [
+            1.065,
+            0.82,
+            0.065
+          ]
+        },
+        {
+          "name": "Passage",
+          "position": [
+            0.54,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Work",
+          "position": [
+            0.54,
+            0,
+            0.65
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_GatePosts_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.655,
+            0.0,
+            -0.08817133194443756
+          ],
+          "bounds_max": [
+            1.725,
+            1.2142757065225305,
+            0.08817133194443756
+          ],
+          "triangles": 448
+        },
+        {
+          "mesh": "GEO_GatePosts_Iron",
+          "role": "Iron",
+          "surface": "RustedIron",
+          "tint": [
+            0.25,
+            0.235,
+            0.21,
+            1
+          ],
+          "bounds_min": [
+            -0.14100000000000001,
+            0.03,
+            -0.034
+          ],
+          "bounds_max": [
+            1.2109999999999999,
+            0.894,
+            0.093
+          ],
+          "triangles": 112
+        },
+        {
+          "mesh": "GEO_GatePosts_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            1.0895,
+            0.32999999999999996,
+            0.07200000000000001
+          ],
+          "bounds_max": [
+            1.2105,
+            0.65,
+            0.098
+          ],
+          "triangles": 28
+        }
+      ]
+    },
+    {
+      "kind": "GateLeaf",
+      "origin": "left hinge at ground; closed leaf extends along Unity +X",
+      "bounds_min": [
+        -0.0050000000000000044,
+        0.09999999999999998,
+        -0.08449999988079071
+      ],
+      "bounds_max": [
+        1.0425,
+        1.0499999999999998,
+        0.07599999755620956
+      ],
+      "anchors": [
+        {
+          "name": "Hinge",
+          "position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Handle",
+          "position": [
+            0.97,
+            0.82,
+            0.065
+          ]
+        },
+        {
+          "name": "RightGrip",
+          "position": [
+            0.97,
+            0.82,
+            0.065
+          ]
+        },
+        {
+          "name": "LeftGrip",
+          "position": [
+            0.53,
+            0.87,
+            0.02
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_GateLeaf_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            0.01750000000000007,
+            0.09999999999999998,
+            -0.08449999988079071
+          ],
+          "bounds_max": [
+            1.0425,
+            1.0499999999999998,
+            0.0215
+          ],
+          "triangles": 280
+        },
+        {
+          "mesh": "GEO_GateLeaf_Iron",
+          "role": "Iron",
+          "surface": "RustedIron",
+          "tint": [
+            0.25,
+            0.235,
+            0.21,
+            1
+          ],
+          "bounds_min": [
+            -0.0050000000000000044,
+            0.27999999999999997,
+            0.020999999999999998
+          ],
+          "bounds_max": [
+            0.9914999999999999,
+            0.896,
+            0.07599999755620956
+          ],
+          "triangles": 140
+        },
+        {
+          "mesh": "GEO_GateLeaf_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            0.47250000000000003,
+            0.3350000000000001,
+            0.012000000000000002
+          ],
+          "bounds_max": [
+            0.5875,
+            0.755,
+            0.038
+          ],
+          "triangles": 28
+        }
+      ]
+    },
+    {
+      "kind": "ShovelRack",
+      "origin": "ground",
+      "bounds_min": [
+        -0.2625,
+        0.0,
+        -0.13499999999999998
+      ],
+      "bounds_max": [
+        0.2625,
+        1.05,
+        0.33499999999999996
+      ],
+      "anchors": [
+        {
+          "name": "ShovelRest",
+          "position": [
+            0,
+            0,
+            0.15
+          ]
+        },
+        {
+          "name": "Hook",
+          "position": [
+            0,
+            0.9,
+            0.15
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_ShovelRack_Wood",
+          "role": "Wood",
+          "surface": "Timber",
+          "tint": [
+            0.24,
+            0.185,
+            0.14,
+            1
+          ],
+          "bounds_min": [
+            -0.2625,
+            0.0,
+            -0.13499999999999998
+          ],
+          "bounds_max": [
+            0.2625,
+            1.05,
+            0.33499999999999996
+          ],
+          "triangles": 196
+        },
+        {
+          "mesh": "GEO_ShovelRack_Iron",
+          "role": "Iron",
+          "surface": "RustedIron",
+          "tint": [
+            0.25,
+            0.235,
+            0.21,
+            1
+          ],
+          "bounds_min": [
+            -0.06000000238418579,
+            0.872378408908844,
+            0.024596773087978363
+          ],
+          "bounds_max": [
+            0.06000000238418579,
+            0.9250000715255737,
+            0.19300000369548798
+          ],
+          "triangles": 112
+        },
+        {
+          "mesh": "GEO_ShovelRack_Repair",
+          "role": "Repair",
+          "surface": "Timber",
+          "tint": [
+            0.36,
+            0.29,
+            0.215,
+            1
+          ],
+          "bounds_min": [
+            0.1975,
+            0.615,
+            -0.005999999999999999
+          ],
+          "bounds_max": [
+            0.2425,
+            0.7849999999999999,
+            0.012
+          ],
+          "triangles": 28
+        }
+      ]
+    },
+    {
+      "kind": "PorchMat",
+      "origin": "ground",
+      "bounds_min": [
+        -0.45,
+        0.0,
+        -0.275
+      ],
+      "bounds_max": [
+        0.45,
+        0.034999999999999996,
+        0.275
+      ],
+      "anchors": [
+        {
+          "name": "Step",
+          "position": [
+            0,
+            0.035,
+            0
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "mesh": "GEO_PorchMat_Cloth",
+          "role": "Cloth",
+          "surface": "Cloth",
+          "tint": [
+            0.36,
+            0.345,
+            0.28,
+            1
+          ],
+          "bounds_min": [
+            -0.45,
+            0.0,
+            -0.275
+          ],
+          "bounds_max": [
+            0.45,
+            0.034999999999999996,
+            0.275
+          ],
+          "triangles": 392
+        }
+      ]
+    }
+  ]
+}

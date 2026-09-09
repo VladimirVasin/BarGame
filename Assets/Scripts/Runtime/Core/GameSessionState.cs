@@ -110,6 +110,8 @@ namespace BarPromenade
             new CemeteryGraveWorkLedger();
         private static readonly VehicleActivityState vehicleActivity =
             new VehicleActivityState();
+        private static readonly VillageHouseholdProgress villageHousehold =
+            new VillageHouseholdProgress();
         private static readonly GameTimeState gameTime =
             new GameTimeState();
         private static readonly PlayerNeedsProgressionState needsProgression =
@@ -119,6 +121,7 @@ namespace BarPromenade
         private static long nextDrinkOrderSequence;
 
         public static int CitySeed { get; private set; } = DefaultCitySeed;
+        public static VillageHouseholdProgress VillageHousehold => villageHousehold;
         public static string CityBlueprintId { get; private set; } =
             DefaultCityBlueprintId;
         public static string ActiveBarId { get; private set; } = string.Empty;
@@ -456,6 +459,7 @@ namespace BarPromenade
                 : sessionGeneration + 1;
             nextDrinkOrderSequence = 0L;
             vehicleActivity.Reset();
+            villageHousehold.Reset();
             CityWetSurfaceRegistry.ResetForNewSession();
             ChurchGardenPotSessionState.ResetForNewSession();
             HomeUrineEffect.ResetSession();

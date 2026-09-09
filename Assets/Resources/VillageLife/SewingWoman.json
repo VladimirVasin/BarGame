@@ -1,0 +1,392 @@
+{
+  "generator": "build-village-residents-3d-model.py",
+  "version": "2.0.0",
+  "role": "SewingWoman",
+  "anatomy_standard": "NpcHumanV2",
+  "height_scale": 0.8914285714285715,
+  "mesh_count": 41,
+  "triangle_count": 2600,
+  "bounds_min": [
+    -0.784455,
+    -0.252703,
+    0.0
+  ],
+  "bounds_max": [
+    0.786455,
+    0.193619,
+    1.7041
+  ],
+  "atlas_sha256": "888af3cbe8b322d15ef83e2c9a7721908781b3683a554119ce3b675a8591a7e0",
+  "geometry_signature": "4a1cc5d3e1db0e33e3584037067b9bfd1c7c4c69e1f370f25ef1b6afd10801fb",
+  "parts": [
+    {
+      "name": "GEO_Head",
+      "color": [
+        0.6,
+        0.46,
+        0.38,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Ear.L",
+      "color": [
+        0.6,
+        0.46,
+        0.38,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Ear.R",
+      "color": [
+        0.6,
+        0.46,
+        0.38,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Neck",
+      "color": [
+        0.6,
+        0.46,
+        0.38,
+        1
+      ]
+    },
+    {
+      "name": "CLO_SleeveUpper.L",
+      "color": [
+        0.19,
+        0.22,
+        0.29,
+        1
+      ]
+    },
+    {
+      "name": "CLO_SleeveLower.L",
+      "color": [
+        0.19,
+        0.22,
+        0.29,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Hand.L",
+      "color": [
+        0.27,
+        0.23,
+        0.17,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Thumb.L",
+      "color": [
+        0.27,
+        0.23,
+        0.17,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Thigh.L",
+      "color": [
+        0.23,
+        0.21,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Shin.L",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Shoe.L",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ShoeSole.L",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "CLO_SleeveUpper.R",
+      "color": [
+        0.19,
+        0.22,
+        0.29,
+        1
+      ]
+    },
+    {
+      "name": "CLO_SleeveLower.R",
+      "color": [
+        0.19,
+        0.22,
+        0.29,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Hand.R",
+      "color": [
+        0.27,
+        0.23,
+        0.17,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Thumb.R",
+      "color": [
+        0.27,
+        0.23,
+        0.17,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Thigh.R",
+      "color": [
+        0.23,
+        0.21,
+        0.18,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Shin.R",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Shoe.R",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ShoeSole.R",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "CLO_WinterCoat",
+      "color": [
+        0.19,
+        0.22,
+        0.29,
+        1
+      ]
+    },
+    {
+      "name": "GEO_FaceSurface",
+      "color": [
+        0.6,
+        0.46,
+        0.38,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Collar.L",
+      "color": [
+        0.39,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Cuff.L",
+      "color": [
+        0.39,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "HAIR_Temple.L",
+      "color": [
+        0.52,
+        0.5,
+        0.43,
+        1
+      ]
+    },
+    {
+      "name": "GEO_BootHeel.L",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "GEO_BootToeCap.L",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "CLO_PocketFlap.L",
+      "color": [
+        0.13,
+        0.16,
+        0.21,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Collar.R",
+      "color": [
+        0.39,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Cuff.R",
+      "color": [
+        0.39,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "HAIR_Temple.R",
+      "color": [
+        0.52,
+        0.5,
+        0.43,
+        1
+      ]
+    },
+    {
+      "name": "GEO_BootHeel.R",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "GEO_BootToeCap.R",
+      "color": [
+        0.14,
+        0.125,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "CLO_PocketFlap.R",
+      "color": [
+        0.13,
+        0.16,
+        0.21,
+        1
+      ]
+    },
+    {
+      "name": "CLO_ScarfNeck",
+      "color": [
+        0.39,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "CLO_HeadscarfCrown",
+      "color": [
+        0.39,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "CLO_HeadscarfSide.L",
+      "color": [
+        0.39,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "CLO_HeadscarfSide.R",
+      "color": [
+        0.39,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "CLO_WoolShawl",
+      "color": [
+        0.39,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "CLO_ShawlTie",
+      "color": [
+        0.13,
+        0.16,
+        0.21,
+        1
+      ]
+    },
+    {
+      "name": "HAIR_SilverFringe",
+      "color": [
+        0.52,
+        0.5,
+        0.43,
+        1
+      ]
+    }
+  ]
+}

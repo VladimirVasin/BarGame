@@ -83,6 +83,8 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
 - Separate mountain/village areas, cableway travel and accessible interiors.
+- Six village residents perform finite household work; optional hero help and
+  the resulting deliveries, repairs and snow clearing survive scene visits.
 - One shared animated hero, contextual interactions, intoxication/balance,
   session clock, needs, inventory, purchases, dated quests and grave work.
 - Home toilet choices share actual hand-operated lid actions; the seated

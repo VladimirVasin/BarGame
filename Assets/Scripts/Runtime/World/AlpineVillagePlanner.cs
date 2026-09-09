@@ -394,6 +394,16 @@ namespace BarPromenade
                     -HouseDoorAcross,
                     HouseDoorAcross,
                     Unit(seed, index, HouseDoorAcrossSalt));
+                // Three inhabited houses now contain fixed-metre authored
+                // openings. Keep their original default-seed envelopes while
+                // position, yaw and the rest of the village retain seed variation.
+                if (VillageResidentDoorPlan.TryGetHouseDimensions(index,
+                        out Vector2 inhabitedSize, out float inhabitedHeight, out float inhabitedAcross))
+                {
+                    footprint = inhabitedSize;
+                    height = inhabitedHeight;
+                    doorAcross = inhabitedAcross;
+                }
                 float outwardRadius =
                     Mathf.Abs(Vector3.Dot(outward, buildingRight)) *
                     footprint.x * 0.5f +

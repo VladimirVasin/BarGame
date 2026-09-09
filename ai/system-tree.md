@@ -120,6 +120,17 @@ Assets/
       Player3DV2Portrait.png            live inventory portrait from production V2
       HomeShowerCurtainActions.{fbx,json}  two bone-only in-place actions on the production skeleton; reversed for the matching exits
       HomeToiletSeatedActions.{fbx,json} nine independent Hero V2 lid/prepare/sit/seated/rise/dress/inspect/flush clips
+      VillageOutdoorPlayerActions.{fbx,json} thirteen optional hero actions with metre-space prop tracks
+    VillageLife/
+      {StationWorker,WoodWoman,RepairNeighbor,SewingWoman,SnowNeighbor,BasketVisitor}.{fbx,json} six detailed winter bodies
+      *Atlas.png                        per-resident face, clothing and footwear surfaces
+      VillageResident{Actions,LifeActions}.{fbx,json} original household bank + doors, shovel, gust and four new role banks
+      VillageLifeProps3D.{fbx,json}       seventeen metre-scale prop kinds, supports and hand contacts
+      VillageResidentDoors3D.{fbx,json}  three carved house shells, moving door parts and concealed vestibule docks
+      VillageWorkroom3D.{fbx,json}       fitted house 08 room, windows, furniture and finite repair/sewing parts
+      VillageErrandProps.{fbx,json}      real bucket and its separate water surface
+      VillageResidentErrandActions.{fbx,json} NPC bucket dip and station strap work with measured contacts
+      VillageResidentWorkroomActions.{fbx,json} nine authored indoor actions with prop/contact tracks
     Pedestrians/
       CityPedestrian3D.prefab           pooled Lampshade Walker presentation
       ChairCarrierPedestrian3D.prefab   pooled Chair Carrier presentation
@@ -356,6 +367,7 @@ Assets/
         GameInput.cs              common action bindings and device reads under explicit input contexts
         SceneTransitionService.cs owned direct/door operations, activation release and terminal cleanup
         GameSessionState.cs       persistent clock/needs + debug day 1..7 + one-shot debug-map handoff
+        ../../Rules/VillageHouseholdProgress.cs finite logs, deliveries, chair, snow patches and water visits
                                   -> SyncDayEvents/ApplyDayEvent: the one place a dated event changes the world
         HomeApartmentDayRules.cs  exact calendar appearance clamp 1..7, separate from story/alcohol
         GameTimeRuntime.cs        pause-aware real-time calendar/needs + day announcement
@@ -490,12 +502,26 @@ Assets/
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
         AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + looming 74° / 60 m ridge, 12 m margin, brink mesh
         AlpineVillagePathPlan.cs visible path/traversal segments + shared dressing anchors
+        AlpineVillageLife{Plan,Controller}.cs finite courtyard 04 basket deliveries, station work and six-role recognition
+        AlpineVillageLifeController.Neighbours.cs four-place daytime roster, real door journeys, loads, yielding and shared gust pauses
+        AlpineVillageLifeController.Workroom.cs shared indoor routes, autonomous work visits and room speech
+        VillageWorkroom{Plan,Assets,Controller,Environment}.cs physical room, finite chair repair, sewing, shelter and local contacts
+        VillageWorkroomCameraController.cs room and private-hall views using shared fixed-camera ownership
+        AlpineVillageLifeController.{Firewood,OutdoorHelp,Errands}.cs physical loading, partner reservations and occasional errands
+        Village{ErrandPlan,SnowClearing}.cs existing-path errands and finite cuts into the snow mesh
+        ../Interaction/VillageOutdoorHelpController.cs positioned actions, ordinary carried travel and resource handoffs
+        ../Player3D/Player3DCharacterPresentation.Carry.cs optional owner-scoped torso layer beneath full-body actions
+        ../Interaction/VillageWorkroom{PlayerActions,PlayerInteractions,DoorInteraction}.cs separate hero bank, held rail, bench and physical door
+        VillageNeighbourhoodPlan.cs yards 08/11, shovel/basket/gate destinations and shared street routes
+        VillageResident{Library,Presentation,Greeting}.cs six detailed winter people, shared human rig and authored hand contacts
+        VillageResidentDoors.cs carved passive house meshes, reserved hinged doors and concealed L-shaped vestibule routes
+        VillageLifePropLibrary.cs seventeen fixed-metre work prop kinds; Audio/VillageLifeAudio.cs causal contact voices
         AlpineVillagePathSurfaceBuilder.cs joined ground-fitted path skins, round bends/endings and metre UVs
         AlpineVillageRock{Planner,Builder}.cs passive rock ledges beyond the physical bowl toe
         VillageRockAssetProvider.cs measured Blender rock/snow library with shared ridge haze
         UpperCablewayCanopyAssetProvider.cs fixed-metre Return canopy; Drive unchanged
         AlpineVillageBrook{Plan,Planner,Builder}.cs 97 m spring brook: seeps, catch, swale cut into the sampler, ribbon water to the cableway cut
-        AlpineVillageTerrainGrid.cs   shared ground mesh axes; quarter-metre refinement around the brook keeps coarse vertices and collision fitting aligned
+        AlpineVillageTerrainGrid.cs   shared mesh/sample axes; 0.25 m brook and 0.125 m house 08 refinement retains original coarse vertices
         AlpineSpringWaterResources.cs   still catch + running brook + road reach on the shared city water shader
         AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs free bowl mask, two-submesh ground with one shared snapped edge, 2+1 house kit, warmth targets + permanent blizzard
         AlpineVillageRidgeAppearance.cs  village-only stable opaque 96-108 m haze handoff, 0.40 floor + floor-matched PS1 snap/world UV
@@ -1041,6 +1067,12 @@ Assets/
       Village/VillageAssetSetup.cs  village FBX import/binding; expectation derived from the runtime catalog
       Village/{VillageRock,UpperCablewayCanopy}AssetSetup.cs measured rock and upper-canopy imports
       Village/VillageFacadeTextureSetup.cs deterministic facade-sheet hashes and import validation
+      Village/{VillageLifeProp,VillageResidentDoor}AssetSetup.cs measured prop, shell, aperture and anchor imports
+      Village/VillageWorkroomAssetSetup.cs measured room, real openings and finite furniture/prop hierarchy
+      Player3D/VillageWorkroomPlayerActionAssetSetup.cs separate hero help bank; production body/prefab unchanged
+      Player3D/VillageOutdoorPlayerActionAssetSetup.cs measured outdoor hero action import
+      Village/VillageErrandAssetSetup.cs bucket geometry and one independent resident action bank
+      VillageResidentAssetSetup.cs six resident prefabs, shared Avatar and per-role action bindings
       City/CityBuilding{AssetSetup,ModelImporter}.cs passive v2 FBX import + four wrappers/provider
       City/CityBuildingSurfaceTextureImporter.cs path-specific Clamp/Repeat, max-size, mip and readability contract
       City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
@@ -1178,6 +1210,11 @@ Assets/
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
       Audio/CitySound*.cs                   causal plan/schedule/rewind/synthesis/occlusion contracts
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
+      AreaCaptureFixture.VillageLife.cs one explicit household journey, finite stock, imported detail and contact frames
+      AreaCaptureFixture.VillageWorkroom.cs focused room journey plus separate wall-lining depth regression and camera captures
+      AreaCaptureFixture.VillageOutdoorLife.cs finite help, carried movement, NPC errands and restored outcomes
+      AreaCaptureFixture.VillageOutdoorPartners.cs seeded follow-up for gate, station hands, both NPC clearings and reload
+      AreaCaptureFixture.VillageNeighbours.cs same journey's six-role day/night, door occlusion, body clearance, load and gust checks
       PlayerColdArmSeparationProbe.cs    final-pose mesh clearance for all 36 opposing arm pairs during cold cycles/transitions
       CityPedestrianPersonalSpacePlayModeTests.cs  stage/contact/rearm/ownership regressions
       CityPedestrianPersonalSpaceCapture.cs  isolated production-rig reaction frames
@@ -1262,6 +1299,7 @@ ArtSource/
     Blender/                     generated six-item product-pack `.blend`
     Preview/                     deterministic unbranded product review PNG
   Village/Blender/               village kit `.blend` source and contact sheet (no sheet of its own)
+  VillageLife/                    six resident sources/previews, action banks, prop catalogue and carved doorway review
   Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
   ChurchGarden/Blender/          passive garden-kit `.blend` and contact sheet
   MothersHouse/
@@ -1300,6 +1338,12 @@ tools/
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
   build-mountain-road-cafe-3d-model.py  v1.2.1 / 61-mesh cafe, passive kitchen/menu + hinge/anchor/prop/collider/overlap validator
   build-village-3d-model.py      v3.3.0 / village_house_archetypes_v3, 24 assemblies / 57 meshes; detailed joinery, roof edges, doors and windows
+  build-village-life-props-3d-model.py seventeen prop types with measured supports/grips; original eleven recipes pinned
+  build-village-residents-3d-model.py six winter people; --phase-two adds four bodies/actions while preserving part 1 assets
+  build-village-resident-doors-3d-model.py three existing house envelopes with real apertures, hinged parts and occluded L-shaped vestibules
+  build-village-workroom-3d-model.py fitted 08 room using interior_kit, buried foundation, true floor/threshold, two apertures and real work props
+  build-village-workroom-actions-3d-model.py nine resident actions with shared rig and metre prop/contact samples
+  build-village-workroom-player-actions.py independent Generic hero enter/hold/exit bank
   build-village-rocks-3d-model.py four fixed-metre rock/snow strata, closed-solid and deterministic validation
   build-village-facade-textures.py five neutral timber/joinery/stone/roof/plaster detail sheets
   build-upper-cableway-canopy-3d-model.py fixed-metre Return canopy: steel, timber, fasteners and snow

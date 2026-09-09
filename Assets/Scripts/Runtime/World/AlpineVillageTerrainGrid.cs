@@ -6,8 +6,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// Shared rectilinear ground axes. Original two-metre vertices stay exact;
-    /// only intervals near the brook receive extra coordinates. Full rows and
-    /// columns meet at every edge, so refinement introduces no T-junctions.
+    /// only intervals near the brook and occupied floor receive extra coordinates.
+    /// Full rows and columns meet at every edge, so refinement introduces no T-junctions.
     /// </summary>
     internal sealed class AlpineVillageTerrainGrid
     {
@@ -42,8 +42,22 @@ namespace BarPromenade
                 }
             }
 
-            XCoordinates = BuildAxis(bounds.xMin, bounds.width, minX, maxX);
-            ZCoordinates = BuildAxis(bounds.yMin, bounds.height, minZ, maxZ);
+            float roomMinX = float.PositiveInfinity, roomMaxX = float.NegativeInfinity;
+            float roomMinZ = float.PositiveInfinity, roomMaxZ = float.NegativeInfinity;
+            foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
+            {
+                if (plot.StableId != VillageWorkroomPlan.HouseId) continue;
+                Vector3 right = Vector3.Cross(Vector3.up, plot.Facing);
+                Vector3 half = right * (plot.FootprintSize.x * .5f);
+                Vector3 along = plot.Facing * (plot.FootprintSize.y * .5f);
+                float extentX = Mathf.Abs(half.x) + Mathf.Abs(along.x);
+                float extentZ = Mathf.Abs(half.z) + Mathf.Abs(along.z);
+                roomMinX = plot.GroundCenter.x - extentX; roomMaxX = plot.GroundCenter.x + extentX;
+                roomMinZ = plot.GroundCenter.z - extentZ; roomMaxZ = plot.GroundCenter.z + extentZ;
+                break;
+            }
+            XCoordinates = BuildAxis(bounds.xMin, bounds.width, minX, maxX, roomMinX, roomMaxX);
+            ZCoordinates = BuildAxis(bounds.yMin, bounds.height, minZ, maxZ, roomMinZ, roomMaxZ);
         }
 
         internal float[] XCoordinates { get; }
@@ -74,7 +88,8 @@ namespace BarPromenade
         internal int FindRow(float z) => FindInterval(ZCoordinates, z);
 
         private static float[] BuildAxis(
-            float minimum, float length, float fineMinimum, float fineMaximum)
+            float minimum, float length, float fineMinimum, float fineMaximum,
+            float roomMinimum, float roomMaximum)
         {
             int cells = Mathf.Max(1, Mathf.CeilToInt(
                 length / AlpineVillageTerrainSampler.TerrainCell));
@@ -84,10 +99,11 @@ namespace BarPromenade
                 // This is exactly the original BuildTerrain vertex arithmetic.
                 float start = minimum + length * (cell / (float)cells);
                 float end = minimum + length * ((cell + 1) / (float)cells);
-                int subdivisions = end > fineMinimum && start < fineMaximum
-                    ? Mathf.Max(1, Mathf.CeilToInt(
-                        (end - start) / AlpineVillageTerrainSampler.BrookTerrainCell))
-                    : 1;
+                int subdivisions = end > roomMinimum && start < roomMaximum
+                    ? Mathf.Max(1, Mathf.CeilToInt((end - start) / VillageWorkroomPlan.TerrainCell))
+                    : end > fineMinimum && start < fineMaximum
+                        ? Mathf.Max(1, Mathf.CeilToInt((end - start) / AlpineVillageTerrainSampler.BrookTerrainCell))
+                        : 1;
                 for (int step = 1; step <= subdivisions; step++)
                 {
                     axis.Add(step == subdivisions ? end :

@@ -21,6 +21,9 @@ namespace BarPromenade
         public PlayerCameraFollow CameraFollow { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public AlpineVillageSoundscape Soundscape { get; private set; }
+        public AlpineVillageLifeController Life { get; private set; }
+        public VillageWorkroomController Workroom { get; private set; }
+        public VillageOutdoorHelpController OutdoorHelp { get; private set; }
 
         /// <summary>The dense, wind-stretched snowfall through the full
         /// camera volume.</summary>
@@ -306,24 +309,29 @@ namespace BarPromenade
             BuildAtmosphere();
             if (Player.Visual is Player3DCharacterPresentation coldHero)
             {
-                // A roof stops snow, not cold: only the closed cabin and
-                // scene/presentation ownership suppress this exterior profile.
+                // Enclosed rooms and the closed cabin stop this exterior profile.
                 coldHero.ConfigureCold(
                     () => !GameSessionState.IsRidingAVehicle &&
                           (CabinSeat == null || !CabinSeat.IsSeated) &&
+                          (Workroom == null || !Workroom.Environment.IsInside) &&
                           !SceneTransitionService.IsTransitioning &&
                           !Player.PresentationVisibility.RenderersHidden,
                     () => Weather.CurrentWind);
             }
             yield return new CompositionStep("player_and_atmosphere", 0.85f);
             BuildCableway();
+            Life = AlpineVillageLifeController.Create(transform, Plan, World.WalkableArea,
+                Player.GameObject.transform, areaCamera, World.ResidentDoors, World.SnowTreading);
+            Workroom = VillageWorkroomController.Create(this);
+            OutdoorHelp = VillageOutdoorHelpController.Create(this);
             BuildCommonUi(ui);
             ApplyCurrentAtmosphere(true);
             ApplyVisibility();
             IsInitialized = true;
             AlpineColdExposure.Bind(this, areaCamera, () => IsInitialized,
                 () => GameSessionState.IsRidingAVehicle ||
-                      (CabinSeat != null && CabinSeat.IsSeated));
+                      (CabinSeat != null && CabinSeat.IsSeated) ||
+                      (Workroom != null && Workroom.Environment.IsInside));
             yield return new CompositionStep("ready", 1f);
 
             timer.Stop();

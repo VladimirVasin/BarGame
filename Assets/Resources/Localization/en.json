@@ -2201,6 +2201,58 @@
       "value": "hold E to swing, release to strike down   Esc — walk off"
     },
     {
+      "key": "interaction.village.greet",
+      "value": "Say hello"
+    },
+    {
+      "key": "village.life.station.recognition",
+      "value": "Haven't seen you in a while."
+    },
+    {
+      "key": "village.life.station.work",
+      "value": "The strap's loose again."
+    },
+    {
+      "key": "village.life.wood.recognition",
+      "value": "There you are. Come through."
+    },
+    {
+      "key": "village.life.wood.work",
+      "value": "These are dry already."
+    },
+    {
+      "key": "village.life.repair.recognition",
+      "value": "Well, hello."
+    },
+    {
+      "key": "village.life.repair.work",
+      "value": "I'll stop by the neighbours."
+    },
+    {
+      "key": "village.life.sewing.recognition",
+      "value": "I recognized you."
+    },
+    {
+      "key": "village.life.sewing.work",
+      "value": "Just stepped out for a minute."
+    },
+    {
+      "key": "village.life.snow.recognition",
+      "value": "You're back. Hello."
+    },
+    {
+      "key": "village.life.snow.work",
+      "value": "It's piled up again."
+    },
+    {
+      "key": "village.life.visitor.recognition",
+      "value": "You're here too."
+    },
+    {
+      "key": "village.life.visitor.work",
+      "value": "I'll take the basket over."
+    },
+    {
       "key": "quest.dig_grave.title",
       "value": "Gravedigger’s work"
     },
@@ -2211,6 +2263,74 @@
     {
       "key": "quest.dig_grave.description.completed",
       "value": "The grave is closed and the stone is up. The watchman settles up at his window."
+    },
+    {
+      "key": "interaction.hold_chair_part",
+      "value": "Hold the chair rail"
+    },
+    {
+      "key": "interaction.close_village_door",
+      "value": "Close the door"
+    },
+    {
+      "key": "village.life.repair.indoor",
+      "value": "Still wobbles."
+    },
+    {
+      "key": "village.life.repair.finished",
+      "value": "That holds now."
+    },
+    {
+      "key": "village.life.repair.thanks",
+      "value": "Thanks. That holds now."
+    },
+    {
+      "key": "village.life.sewing.indoor",
+      "value": "The edge has come apart."
+    },
+    {
+      "key": "interaction.take_firewood_basket",
+      "value": "Take the firewood basket"
+    },
+    {
+      "key": "interaction.put_firewood_basket",
+      "value": "Set down the basket"
+    },
+    {
+      "key": "interaction.hold_village_gate",
+      "value": "Hold the gate"
+    },
+    {
+      "key": "interaction.hold_station_lid",
+      "value": "Hold the lid"
+    },
+    {
+      "key": "interaction.take_village_shovel",
+      "value": "Take the shovel"
+    },
+    {
+      "key": "interaction.clear_village_snow",
+      "value": "Clear the snow"
+    },
+    {
+      "key": "interaction.return_village_shovel",
+      "value": "Put back the shovel"
+    },
+    {
+      "key": "village.life.station.thanks",
+      "value": "Thanks. The strap holds."
+    },
+    {
+      "key": "village.life.wood.thanks",
+      "value": "Thanks. It's dry here."
+    },
+    {
+      "key": "village.life.snow.thanks",
+      "value": "Thanks. We can get through now."
+    },
+    {
+      "key": "village.life.visitor.thanks",
+      "value": "Thanks. It's heavy today."
     }
   ]
 }

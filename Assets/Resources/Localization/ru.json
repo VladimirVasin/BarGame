@@ -2201,6 +2201,58 @@
       "value": "E держать — замах, отпустить — удар сверху   Esc — бросить"
     },
     {
+      "key": "interaction.village.greet",
+      "value": "Поздороваться"
+    },
+    {
+      "key": "village.life.station.recognition",
+      "value": "Давно тебя не было."
+    },
+    {
+      "key": "village.life.station.work",
+      "value": "Ремень опять ослаб."
+    },
+    {
+      "key": "village.life.wood.recognition",
+      "value": "Вот и ты. Проходи."
+    },
+    {
+      "key": "village.life.wood.work",
+      "value": "Эти уже сухие."
+    },
+    {
+      "key": "village.life.repair.recognition",
+      "value": "Ну здравствуй."
+    },
+    {
+      "key": "village.life.repair.work",
+      "value": "Зайду к соседям."
+    },
+    {
+      "key": "village.life.sewing.recognition",
+      "value": "Узнала тебя."
+    },
+    {
+      "key": "village.life.sewing.work",
+      "value": "На минуту вышла."
+    },
+    {
+      "key": "village.life.snow.recognition",
+      "value": "Вернулся. Здравствуй."
+    },
+    {
+      "key": "village.life.snow.work",
+      "value": "Опять намело."
+    },
+    {
+      "key": "village.life.visitor.recognition",
+      "value": "И ты здесь."
+    },
+    {
+      "key": "village.life.visitor.work",
+      "value": "Корзину занесу."
+    },
+    {
       "key": "quest.dig_grave.title",
       "value": "Работа могильщика"
     },
@@ -2211,6 +2263,74 @@
     {
       "key": "quest.dig_grave.description.completed",
       "value": "Могила закрыта, камень стоит. Расчёт — у сторожа."
+    },
+    {
+      "key": "interaction.hold_chair_part",
+      "value": "Придержать перекладину стула"
+    },
+    {
+      "key": "interaction.close_village_door",
+      "value": "Закрыть дверь"
+    },
+    {
+      "key": "village.life.repair.indoor",
+      "value": "Ещё шатается."
+    },
+    {
+      "key": "village.life.repair.finished",
+      "value": "Теперь держится."
+    },
+    {
+      "key": "village.life.repair.thanks",
+      "value": "Спасибо. Теперь держится."
+    },
+    {
+      "key": "village.life.sewing.indoor",
+      "value": "Край опять разошёлся."
+    },
+    {
+      "key": "interaction.take_firewood_basket",
+      "value": "Взять корзину дров"
+    },
+    {
+      "key": "interaction.put_firewood_basket",
+      "value": "Поставить корзину"
+    },
+    {
+      "key": "interaction.hold_village_gate",
+      "value": "Придержать калитку"
+    },
+    {
+      "key": "interaction.hold_station_lid",
+      "value": "Придержать крышку"
+    },
+    {
+      "key": "interaction.take_village_shovel",
+      "value": "Взять лопату"
+    },
+    {
+      "key": "interaction.clear_village_snow",
+      "value": "Убрать снег"
+    },
+    {
+      "key": "interaction.return_village_shovel",
+      "value": "Вернуть лопату"
+    },
+    {
+      "key": "village.life.station.thanks",
+      "value": "Спасибо. Ремень держит."
+    },
+    {
+      "key": "village.life.wood.thanks",
+      "value": "Спасибо. Тут сухо."
+    },
+    {
+      "key": "village.life.snow.thanks",
+      "value": "Спасибо. Теперь пройти можно."
+    },
+    {
+      "key": "village.life.visitor.thanks",
+      "value": "Спасибо. Тяжёлая сегодня."
     }
   ]
 }

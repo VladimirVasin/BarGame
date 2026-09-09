@@ -1,8 +1,140 @@
 # Architecture notes
 
+- **Accepted — 2026-09-09, complete village household help:**
+  `VillageHouseholdProgress` owns six unique loose logs, the contents and
+  destination of two baskets, repaired chair, three finite snow patches and
+  completed water visits. `GameSessionState.ResetToDefaults` resets it;
+  scene loads preserve it. In-flight possession is scene-owned; a later visit
+  restores an undelivered basket to its original support with the same contents.
+  No disk save is introduced. The woman loads the actual logs before carrying.
+  Hero and resident reservations protect the same basket, shovel, destination
+  stand and gate. A taken basket or shovel uses an owner-scoped torso layer
+  over ordinary locomotion; positioned pickups, placements, work and help use
+  the shared interaction controller with independent grounded endpoints.
+  The optional layer preserves legs and yields to full-body actions; compatible
+  interaction filtering leaves movement free while the hands carry something.
+  Actual support height corrects the transfer trajectory on sloping ground.
+  Hero docks use the physical triangulated terrain height (or the station
+  platform) and clear the full capsule and skin beyond each support. The gate
+  helper stands on the outside of the leaf, leaving the visitor's path open;
+  the station partner uses an authored bent working pose at the actual strap.
+  `VillageSnowClearing` lowers the existing snow mesh in three small patches;
+  the permanent session mask composes with temporary footsteps and snowfall.
+  Work areas use measured snow beyond the station's bare apron and the chapel's
+  wet source path. Bucket pickup/release blends the actual support offset into
+  the authored reach, so walking arrival tolerance cannot displace its resting place.
+  The same six residents perform occasional bucket and snow errands along
+  existing paths. Separate Blender banks preserve production hero/resident
+  models. This implements the accepted plan without a canon exception.
+
 Decisions marked `Proposed` become accepted only after implementation confirms them.
 
 ## Current facts
+
+- **Accepted — 2026-09-08, third part of village household life:** House `08`
+  contains one physical `4.5 × 4.8 × 2.3 m` workroom in the existing lower
+  storey. A separate Blender pack uses `interior_kit` and replaces only this
+  house's shell/lining, preserving the above-ground envelope and carving two real windows.
+  The shell cavity sits behind the full thickness of the wall lining,
+  partition, ceiling and floor, with `20 mm` minimum backing clearance.
+  Short returns close that clearance around the existing window and door
+  apertures. Room-facing finish planes retain the plan dimensions; they never
+  coincide with the shell's cut faces. Source face-depth checks and the focused
+  `VillageWorkroomWalls` capture guard the former coplanar-surface flicker.
+  Board tops and the threshold remain at the original floor datum. Real
+  underboarding closes the seams; the soil bed is `0.16 m` below the floor.
+  The bed is inset `0.178 m`
+  from the actual plinth contour, rather than the larger planned plot bounds.
+  `AlpineVillageTerrainGrid` refines nearby axis intervals to at most `0.125 m`;
+  the inset exceeds a cell diagonal, so the interpolated return to the old
+  ground stays beneath the foundation and cannot excavate an exterior ditch.
+  The imported `ShellPlinth` extends to `-0.20 m`, preserving its original XZ
+  extent and upper mass. Ground construction and `SampleMeshHeight` share
+  these axes and their triangle diagonal. Full rows and columns retain the
+  original two-metre vertices and avoid T-junctions; terrain triangulation
+  is therefore refined beyond the room too. The height exception is confined
+  to house `08`; the authored shells and plot/dock anchors of `04` and `11`
+  are unchanged.
+  Exterior and interior share the same furniture and six persistent residents.
+  Two night positions remain behind a solid private-hall turn. Serialized
+  indoor walks connect them to work docks; day/night scheduling finishes
+  tool and sewing sequences before a resident leaves.
+  A third bone-only resident bank owns nine actions and sampled metre-space
+  prop/contact tracks: tool pickup/work/return and sit/unpack/work/fold/stow/
+  stand. Box, hinged lid, cloth flap, mitten and thread remain separate physical
+  parts. The chair rail closes its existing joint on actual hammer contacts;
+  autonomous work is finite, and voluntary holding accelerates the same repair.
+  A separate hero bank follows the shared positioned-interaction lifecycle;
+  ordinary approach, neutral boundaries, held contact and release stay visible.
+  Bench seating reuses the production Generic bus seat transfers. Door use
+  presses the actual handle and leaves ordinary movement available after the
+  gesture; the solid leaf waits for the hero to clear its swing. A player-owned
+  close may shut the room with the player inside; residents keep it open for
+  a guest and finish their routes. NPC swings start at the actual leaf angle,
+  including a door that the visitor left open.
+  Room volumes remove interior weather particles while preserving the exterior
+  field through the windows, suppress exterior cold, muffle wind/ambient sources
+  and route footfalls to wood. Lamps use shared authored fixtures. A room-only
+  camera owner uses the existing fixed-pose/focus API, with opposite views of
+  the main room and private hallway. Threshold and shot-boundary hysteresis
+  avoid shot oscillation; ownership checks preserve other fixed-camera users.
+  The ordinary exterior orbit resumes on leaving the room. This follows the
+  existing interior camera cuts, without flying a blend through the facade
+  or hiding the hero to accommodate the short chase distance. No new scene,
+  renderer swap, teleport, currency or quest is involved. Cross-visit outcomes
+  and the remaining outdoor help belong to part 4; no canon exception is needed.
+
+- **Accepted — 2026-09-08, second part of village household life:** The six
+  ordinary residents are persistent active objects. A household owns two
+  separate parking places behind a solid vestibule turn; residents reserve
+  one door, reach its actual handle, walk with its inward swing and release
+  it after crossing. No renderer or actor is toggled to simulate entry.
+  Houses `04`, `08` and `11` retain their measured original default-seed
+  dimensions and door offsets; seed still controls placement and yaw. Their
+  fitted Blender shells replace only the solid masses at real entrances.
+  Whole-footprint walkability exclusions are replaced by those physical
+  shell colliders. Closing waits while the hero occupies the house or swing.
+  This prepares actual entrances within the accepted form; it is not a
+  canon exception or the accessible workroom of part 3.
+  `VillageNeighbourhoodPlan` uses existing plot approaches and the street.
+  A shared six-person controller reserves at most four outside slots during
+  `05:00–18:30`; evening finishes outings before returning home. Short gust
+  reactions read the same weather rhythm, keep carried grips and defer until
+  a safe action boundary. Walking waits for the hero and uses ordered passing
+  on the street and household approaches. A sidestep checks the actual body
+  against nearby residents, walls and props along its whole route; the person
+  stays aside until the oncoming neighbour passes. Return approaches end at
+  a side waiting point and reserve the door after its exit corridor clears.
+  With both hands occupied, the gust layer moves only the neck/head and
+  attached cloth, preserving the authored torso lean and reachable grips.
+  The shovel uses the existing snow-treading surface; the
+  closed basket visits the other yard and returns to its original support.
+  Repair and sewing residents make visits until their indoor work is added
+  in part 3. Player assistance and cross-visit outcomes remain part 4.
+
+- **Accepted — 2026-09-08, first part of village household life:** The user
+  accepted the four-part plan in `village-life-plan.md` and required new
+  residents to match or exceed the hero's detail. Separate deterministic
+  Blender packs own two ordinary winter residents and eleven household prop
+  types. `AlpineVillageLifePlan` derives the courtyard from house `04` and
+  appends narrow working paths to the existing snow/path plan. A local
+  controller uses the shared human rig and speech service without the City's
+  population/bus director. Two filled baskets move between physical supports,
+  stay filled and delivered, and do not reset during the visit; the woman
+  then alternates tending the stack with rest. The station resident checks
+  a hinged cargo lid. Work yields to pause and walking waits for the hero.
+  Recognition happens between actions and never explains the village or
+  story. These new ordinary roles and their initial lines are authorized by
+  the user's plan and satisfy art §10g / story §12, §16 and §21; no canon
+  exception is required. The second-part decision above extends this roster
+  and schedule; the indoor room, player help and session persistence remain
+  subsequent parts.
+  Model import explicitly enables FBX file units and a 2D atlas shape;
+  publication measures transformed mesh vertices against the source bounds.
+  Both residents have separate 256px atlases, 40 mesh parts and at least the
+  hero's 2,384 triangles; equal-scale in-scene captures also verify the face,
+  clothing, hand and boot detail. The focused `VillageLife` journey checks
+  physical delivery, deformed visible hand contacts and the real station exit.
 
 - **Accepted — 2026-09-08, mother's chair follows its measured runner
   contacts:** `MothersHouseRockingChairMotion` uses the imported FBX's lower
@@ -448,8 +580,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the mountain-road water keeps its own material settings. Bed and bank UVs
   use world metres and receive their material pitch once through
   `ApplyCombined`. `AlpineVillageTerrainGrid` inserts quarter-metre coordinates
-  around the brook into the existing two-metre grid; every old grid vertex
-  is retained and full rows/columns avoid T-junctions. Ground construction
+  around the brook into the existing two-metre grid; its original coarse vertices
+  are retained and full rows/columns avoid T-junctions. The later house `08`
+  floor refinement uses the same axes with `0.125 m` intervals. Ground construction
   and `SampleMeshHeight` use the same axes and triangle diagonal. The carve
   follows the nearest finite reach and makes a shallow hollow. Bed and narrow
   bank surfaces follow the actual ground, and the same mesh supplies their

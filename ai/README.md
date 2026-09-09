@@ -11,6 +11,7 @@ copying world descriptions back into the entry documents.
 | `prompt-templates.md` | Canonical FAST-default, FEATURE, RELEASE, PLAN, BUGFIX, and REFACTOR workflows |
 | `project-overview.md` | Concise current baseline, technical owners, capability and scope links |
 | `current-world.md` | Detailed current gameplay/MVP catalogue and deferred scope |
+| `village-life-plan.md` | Accepted four-part village household update; current slice and remaining work |
 | `system-tree.md` | Current and target repository/system structure |
 | `systems-map.md` | System index: guarantee, key files and status |
 | `architecture-notes.md` | Accepted and proposed technical decisions |

@@ -20,7 +20,10 @@ namespace BarPromenade
         ChapelSource = 6,
 
         /// <summary>The worn line out to the spring's head.</summary>
-        SpringSpur = 7
+        SpringSpur = 7,
+
+        /// <summary>Habitual foot traffic between household work supports.</summary>
+        HouseholdWork = 8
     }
 
     /// <summary>
@@ -221,6 +224,8 @@ namespace BarPromenade
                 AppendPlotPath(plan, plan.Plots[index], result);
             }
 
+            AlpineVillageLifePlan.Create(plan).AppendWorkPaths(result);
+            new VillageNeighbourhoodPlan(plan).AppendPaths(result);
             AlpineVillagePathValidator.ValidateOrThrow(plan, result);
             return result;
         }

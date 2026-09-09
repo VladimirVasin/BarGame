@@ -16,6 +16,23 @@ namespace BarPromenade
         private InteractionPromptView promptView;
         private IInteractable activeInteractable;
         private Func<bool> promptAction;
+        private readonly Dictionary<object, Func<IInteractable, bool>> interactionFilters =
+            new Dictionary<object, Func<IInteractable, bool>>();
+
+        /// <summary>A held world item can keep movement free while reserving compatible hand actions.</summary>
+        public void SetInteractionFilter(object owner, Func<IInteractable, bool> filter)
+        {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+            if (filter == null) interactionFilters.Remove(owner);
+            else interactionFilters[owner] = filter;
+            if (activeInteractable != null && !PassesInteractionFilters(activeInteractable)) SetActive(null);
+        }
+
+        private bool PassesInteractionFilters(IInteractable candidate)
+        {
+            foreach (var filter in interactionFilters.Values) if (!filter(candidate)) return false;
+            return true;
+        }
 
         public bool InputEnabled { get; private set; } = true;
 
@@ -159,6 +176,7 @@ namespace BarPromenade
                 activeInteractable == null ||
                 (activeInteractable is UnityEngine.Object unityObject &&
                  unityObject == null) ||
+                !PassesInteractionFilters(activeInteractable) ||
                 !activeInteractable.CanInteract(this))
             {
                 return false;
@@ -195,7 +213,7 @@ namespace BarPromenade
                 for (int j = 0; j < behaviours.Count; j++)
                 {
                     if (!(behaviours[j] is IInteractable candidate) ||
-                        !candidate.CanInteract(this))
+                        !PassesInteractionFilters(candidate) || !candidate.CanInteract(this))
                     {
                         continue;
                     }

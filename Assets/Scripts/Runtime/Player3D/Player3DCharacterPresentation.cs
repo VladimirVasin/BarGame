@@ -1125,6 +1125,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ClearCarryPose();
             ResetColdPose();
             ClearRecoveryPresentation();
             ClearContextualFacialExpression();
@@ -3043,12 +3044,14 @@ namespace BarPromenade
             if (graph.IsValid())
             {
                 SampleColdPose();
+                SampleCarryPose();
                 graph.Evaluate(Mathf.Max(0f, deltaTime));
             }
         }
 
         private void DestroyGraph()
         {
+            DisposeCarryGraph();
             DisposeColdGraph();
             layer.Restore();
             RestoreAttentionPoseBase();

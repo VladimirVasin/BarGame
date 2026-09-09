@@ -1,0 +1,63 @@
+{
+  "generator": "village_workroom_player_v1",
+  "rig": "HeroV2",
+  "bone_count": 31,
+  "root_motion": false,
+  "animation_events": 0,
+  "fps": 24,
+  "entry_ground_offset": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "exit_ground_offset": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "entry_facing": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "exit_facing": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "left_grip_from_ground": [
+    -0.22,
+    1.0,
+    0.42
+  ],
+  "right_grip_from_ground": [
+    0.22,
+    1.0,
+    0.42
+  ],
+  "maximum_grip_error": 4.5099097342555393e-07,
+  "clips": [
+    {
+      "name": "VillageChairHelpEnter",
+      "duration": 1.5,
+      "loop": false,
+      "source_frames": 36,
+      "source_fps": 24
+    },
+    {
+      "name": "VillageChairHelpExit",
+      "duration": 1.5,
+      "loop": false,
+      "source_frames": 36,
+      "source_fps": 24
+    },
+    {
+      "name": "VillageChairHelpLoop",
+      "duration": 6.0,
+      "loop": true,
+      "source_frames": 144,
+      "source_fps": 24
+    }
+  ],
+  "signature": "3c0992f75aa33c76b2cb8c23426a36624ca0f9387e092497ee01b44db981deca"
+}

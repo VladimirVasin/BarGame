@@ -67,11 +67,9 @@ namespace BarPromenade
                 graph.Connect(coldArmsHold, 0, coldArms, 0);
                 graph.Connect(coldRub, 0, coldArms, 1);
                 graph.Connect(coldArmsShiver, 0, coldArms, 2);
-                graph.Disconnect(layerMixer, 0);
-                graph.Connect(locomotionMixer, 0, coldLayers, 0);
                 graph.Connect(coldTorso, 0, coldLayers, 1);
                 graph.Connect(coldArms, 0, coldLayers, 2);
-                graph.Connect(coldLayers, 0, layerMixer, 0);
+                InsertOrdinaryPresentation(coldLayers);
                 coldTorsoMask = CreateColdMask(false);
                 coldArmsMask = CreateColdMask(true);
                 coldLayers.SetLayerMaskFromAvatarMask(1, coldTorsoMask);

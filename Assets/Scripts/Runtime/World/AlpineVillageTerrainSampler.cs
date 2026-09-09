@@ -286,7 +286,10 @@ namespace BarPromenade
             height = SampleBrookSwale(plan, point, height);
 
             float enclosedHeight = height + SampleRidgeRise(plan, point);
-            return SampleCablewayBrink(plan, point, enclosedHeight);
+            height = SampleCablewayBrink(plan, point, enclosedHeight);
+            foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
+                height = VillageWorkroomPlan.LowerTerrainBed(plot, point, height);
+            return height;
         }
 
         /// <summary>

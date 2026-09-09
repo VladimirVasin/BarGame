@@ -1,0 +1,135 @@
+{
+  "generator": "build-village-residents-3d-model.py",
+  "version": "2.0.0",
+  "bone_count": 31,
+  "fps": 24,
+  "clips": [
+    {
+      "name": "DoorOpen",
+      "duration_seconds": 3.5,
+      "loop": false
+    },
+    {
+      "name": "DoorClose",
+      "duration_seconds": 3.5,
+      "loop": false
+    },
+    {
+      "name": "ShovelPickUp",
+      "duration_seconds": 3.0,
+      "loop": false
+    },
+    {
+      "name": "ShovelWork",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "ShovelPutBack",
+      "duration_seconds": 3.0,
+      "loop": false
+    },
+    {
+      "name": "Gust",
+      "duration_seconds": 2.25,
+      "loop": false
+    },
+    {
+      "name": "ShovelHold",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "RepairNeighborIdle",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "RepairNeighborWalk",
+      "duration_seconds": 1.25,
+      "loop": true
+    },
+    {
+      "name": "SewingWomanIdle",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "SewingWomanWalk",
+      "duration_seconds": 1.5,
+      "loop": true
+    },
+    {
+      "name": "SnowNeighborIdle",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "SnowNeighborWalk",
+      "duration_seconds": 1.375,
+      "loop": true
+    },
+    {
+      "name": "BasketVisitorIdle",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "BasketVisitorWalk",
+      "duration_seconds": 1.25,
+      "loop": true
+    },
+    {
+      "name": "BasketVisitorReach",
+      "duration_seconds": 3.0,
+      "loop": false
+    },
+    {
+      "name": "BasketVisitorCarry",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "BasketVisitorCarryWalk",
+      "duration_seconds": 1.5,
+      "loop": true
+    },
+    {
+      "name": "BasketVisitorPlace",
+      "duration_seconds": 3.0,
+      "loop": false
+    }
+  ],
+  "door_contact_seconds": [
+    1.0,
+    2.5
+  ],
+  "shovel_contact_seconds": 1.5,
+  "shovel_right_grip": [
+    0,
+    1.05,
+    0
+  ],
+  "shovel_left_grip": [
+    0,
+    0.65,
+    0
+  ],
+  "preserved_phase_one": {
+    "StationWorker.fbx": "738e8ee937cd250e57198145f7511f645709a52d1ab02a59049b263006e9c30c",
+    "StationWorker.json": "20a8a20c6198e6a4d4e26feb923a1d65303e58ae378bfcdf59ccb6395d65a491",
+    "StationWorkerAtlas.png": "45d7ed9d83d98c78bb9459afee9823df6193d55eece8681df05b8805d37e4335",
+    "WoodWoman.fbx": "8cf3b3804978a04ec0ec78d5cde52feb1e1893c709e9580d62c2af9bbaa60507",
+    "WoodWoman.json": "d623b1ee7954ba474325e263f8263f0fefc9a21d6274dc087ed52c0a2c174bcd",
+    "WoodWomanAtlas.png": "1bc0ccd0935311b8b548a78394f7a9738efbad5d03dba6004ba2823a741f0bd6",
+    "VillageResidentActions.fbx": "0555acf64ecb5d66f9b5c26070c3017a4be906458971e56fae07b4f2bc90b9ad",
+    "VillageResidentActions.json": "ad89707ae84cc3dd99a2ddd088d5da1d4d266734c003b3ce3aeda4ffbd87fefd"
+  },
+  "validation": {
+    "sampled_frames": 1366,
+    "max_grip_error_m": 5e-07,
+    "max_ground_error_m": 2e-07,
+    "max_endpoint_error": 3e-07,
+    "curve_signature": "5e8aeefb5845b817db144abe8130a4ecc2d9c309e119f0be7522c8bb56484ec3"
+  }
+}

@@ -63,6 +63,7 @@ namespace BarPromenade
         private float[] grounds;
         private float[] depths;
         private float[] pressed;
+        private float[] cleared;
         private Transform walker;
         private Func<float> snowfall;
         private float rebuildCountdown;
@@ -111,6 +112,7 @@ namespace BarPromenade
             }
 
             pressed = new float[vertices.Length];
+            cleared = new float[vertices.Length];
             walker = walkerToFollow;
             snowfall = snowfallIntensity;
         }
@@ -155,6 +157,29 @@ namespace BarPromenade
                 pressed[index] = target;
                 dirty = true;
             }
+        }
+
+        /// <summary>A finite household clearing lowers this same snow surface.
+        /// Its session-owned result is independent of footprints refilling.</summary>
+        public int ClearPatch(Vector3 center, Vector3 right, Vector2 halfSize, float strength)
+        {
+            if (vertices == null) return 0;
+            if (halfSize.x <= 0f || halfSize.y <= 0f) throw new ArgumentOutOfRangeException(nameof(halfSize));
+            right.y = 0f; right.Normalize();
+            Vector3 forward = Vector3.Cross(right, Vector3.up);
+            int changed = 0;
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                if (depths[index] <= 0f) continue;
+                Vector3 delta = vertices[index] - center;
+                float edge = Mathf.Max(Mathf.Abs(Vector3.Dot(delta, right)) / halfSize.x,
+                    Mathf.Abs(Vector3.Dot(delta, forward)) / halfSize.y);
+                float target = Mathf.Clamp01(strength) * Mathf.SmoothStep(0f, 1f, (1f - edge) / .22f);
+                if (target <= cleared[index]) continue;
+                cleared[index] = target; changed++;
+            }
+            if (changed > 0) Rebuild();
+            return changed;
         }
 
         public bool TryPlayFootstep(Vector3 position, float runBlend)
@@ -238,7 +263,7 @@ namespace BarPromenade
             {
                 vertices[index].y = grounds[index] +
                                     depths[index] *
-                                    (1f - pressed[index]);
+                                    (1f - Mathf.Max(pressed[index], cleared[index]));
             }
 
             mesh.SetVertices(vertices);
@@ -271,7 +296,7 @@ namespace BarPromenade
                 }
 
                 bestSquared = distanceSquared;
-                depth = depths[index] * (1f - pressed[index]);
+                depth = depths[index] * (1f - Mathf.Max(pressed[index], cleared[index]));
             }
 
             // Accepted out to the COARSEST spacing the snow is sampled at,

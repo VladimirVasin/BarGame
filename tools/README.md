@@ -1,5 +1,72 @@
 # Art and native tool entry points
 
+The final village household slice adds two isolated generators:
+`build-village-outdoor-player-actions-3d-model.py` publishes thirteen optional
+hero clips and matching metre-space prop tracks;
+`build-village-errands-3d-model.py` publishes the household bucket and its
+resident filling and station strap actions. Both use `run-blender.py`, validate real contacts and
+preserve the production character models. The focused
+`AreaCaptureFixture.VillageOutdoorLife` imports these banks and checks their
+placed contacts, ordinary carried travel and outcomes after a scene reload.
+`AreaCaptureFixture.VillageOutdoorPartners` starts with explicitly seeded basket,
+porch and chair results to isolate the gate, station partner and remaining NPC
+errands. Its `partners-verification.json` does not claim to verify player carrying.
+
+Village household life uses separate deterministic prop, resident and doorway
+packs. Keep Unity closed during generation; the focused
+`AreaCaptureFixture.VillageLife` prebuild runs `VillageLifePropAssetSetup`,
+`VillageResidentAssetSetup` and `VillageResidentDoorAssetSetup` to import metre
+geometry, clips and resident prefabs. The original resident command builds the
+first two people and their household bank; `--phase-two` adds the other four
+people and the separate `VillageResidentLifeActions` bank:
+
+```powershell
+python tools/run-blender.py tools/build-village-life-props-3d-model.py --expect Assets/Resources/VillageLife/VillageLifeProps3D.fbx --expect Assets/Resources/VillageLife/VillageLifeProps3D.json -- --no-preview
+python tools/run-blender.py tools/build-village-residents-3d-model.py --expect Assets/Resources/VillageLife/StationWorker.fbx --expect Assets/Resources/VillageLife/WoodWoman.fbx --expect Assets/Resources/VillageLife/VillageResidentActions.fbx --expect Assets/Resources/VillageLife/VillageResidentActions.json -- --no-preview
+python tools/run-blender.py tools/build-village-residents-3d-model.py `
+  --expect Assets/Resources/VillageLife/RepairNeighbor.fbx `
+  --expect Assets/Resources/VillageLife/SewingWoman.fbx `
+  --expect Assets/Resources/VillageLife/SnowNeighbor.fbx `
+  --expect Assets/Resources/VillageLife/BasketVisitor.fbx `
+  --expect Assets/Resources/VillageLife/VillageResidentLifeActions.fbx `
+  --expect Assets/Resources/VillageLife/VillageResidentLifeActions.json -- --phase-two --no-preview
+python tools/run-blender.py tools/build-village-resident-doors-3d-model.py --expect Assets/Resources/VillageLife/VillageResidentDoors3D.fbx --expect Assets/Resources/VillageLife/VillageResidentDoors3D.json -- --no-preview
+```
+
+Each generator accepts `--validate-only` (also pass the launcher's
+`--validate-only`) to reconstruct and compare its recorded manifests without
+publishing; retain `--phase-two` when validating the second resident bank.
+That bank checks the original two people and their actions remain byte-for-byte
+unchanged. The seventeen-kind prop pack pins the first eleven geometry/anchor
+recipes and adds a shovel/rack, closed basket, gate posts/leaf and porch mat.
+The doorway generator retains the three existing exterior envelopes, carves
+real openings and validates six concealed docks behind solid vestibule turns.
+
+Source and review images live in `ArtSource/VillageLife`. The one household
+journey writes frames plus `verification.json` and
+`neighbours-verification.json` to `Captures/VillageLife`; the latter extension
+covers all six actual bodies, two-hand props, reserved doors, wall/prop
+clearance, yielding, gusts, pause and day/night returns. Resident detail must
+meet the production hero's floor; triangle counts support, but do not replace,
+equal-scale rendered comparisons. The focused journey passed for both parts;
+generator validation alone does not establish gameplay acceptance.
+
+Part 3 uses three separate generators with Unity closed:
+
+```powershell
+python tools/run-blender.py tools/build-village-workroom-3d-model.py --expect Assets/Resources/VillageLife/VillageWorkroom3D.fbx --expect Assets/Resources/VillageLife/VillageWorkroom3D.json -- --no-preview
+python tools/run-blender.py tools/build-village-residents-3d-model.py --expect Assets/Resources/VillageLife/VillageResidentWorkroomActions.fbx --expect Assets/Resources/VillageLife/VillageResidentWorkroomActions.json -- --workroom --no-preview
+python tools/run-blender.py tools/build-village-workroom-player-actions.py --expect Assets/Resources/Player/VillageWorkroomPlayerActions.fbx --expect Assets/Resources/Player/VillageWorkroomPlayerActions.json -- --preview
+```
+
+The room uses `interior_kit`, the measured house `08` envelope, two actual
+windows and finite furniture/prop hierarchies. Resident authoring preserves
+the six bodies and earlier banks and records metre poses, hand contacts and
+cloth/lid hinges beside nine new clips. Hero help has its own bone-only bank
+and preserves the production prefab. `AreaCaptureFixture.VillageWorkroom`
+imports these packs through the dedicated setups and records the focused
+room journey in `Captures/VillageWorkroom`.
+
 The image-generated Alpine frost texture is a fixed source asset; its final
 prompt, hash and linear-mask import settings are recorded in
 [alpine-cold-frost-mask.md](alpine-cold-frost-mask.md). Runtime only reveals and

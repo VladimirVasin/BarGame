@@ -718,6 +718,7 @@ namespace BarPromenade
                     StringComparer.Ordinal);
 
         private double elapsedSeconds;
+        private float listenerEnclosure;
 
         public bool IsInitialized { get; private set; }
         public AlpineVillageSoundscapePlan Plan { get; private set; }
@@ -830,18 +831,31 @@ namespace BarPromenade
         public void SetWarmthGrade(float grade)
         {
             WarmthGrade = Mathf.Clamp01(grade);
+            ApplyLevels();
+        }
+
+        public void SetListenerEnclosure(float enclosure)
+        {
+            float value = Mathf.Clamp01(enclosure);
+            if (Mathf.Abs(value - listenerEnclosure) < .001f) return;
+            listenerEnclosure = value;
+            ApplyLevels();
+        }
+
+        private void ApplyLevels()
+        {
             for (int index = 0; index < voices.Count; index++)
             {
                 Voice voice = voices[index];
                 float gain = AlpineVillageSoundscapeRules.EvaluateGain(
                     voice.Anchor.Kind,
                     WarmthGrade);
-                voice.Source.volume = voice.Definition.Volume * gain;
+                voice.Source.volume = voice.Definition.Volume * gain * Mathf.Lerp(1f, .28f, listenerEnclosure);
                 voice.Filter.cutoffFrequency =
                     AlpineVillageSoundscapeRules.EvaluateCutoff(
                         voice.Anchor.Kind,
                         voice.Definition.LowPassFrequency,
-                        WarmthGrade);
+                        WarmthGrade) * Mathf.Lerp(1f, .38f, listenerEnclosure);
             }
         }
 
