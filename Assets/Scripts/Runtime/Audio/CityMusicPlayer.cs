@@ -9,6 +9,8 @@ namespace BarPromenade
             MusicMix.CityOutputVolume;
 
         protected override string TrackResourcePath => ResourcePath;
+        protected override bool InitiallySuppressed =>
+            GameSessionState.CarDashboard.RadioOn;
         protected override float OutputVolume => ThemeOutputVolume;
     }
 }

@@ -38,6 +38,8 @@ namespace BarPromenade
         private bool resumeWhenClipLoads;
         private bool detachedForSceneExit;
         private bool fadeInDeferred;
+        private bool playbackRequested;
+        private bool playbackSuppressed;
         private float deferredFadeInDurationSeconds =
             MusicMix.FadeInSeconds;
         private float pendingFadeInDurationSeconds =
@@ -54,6 +56,7 @@ namespace BarPromenade
         public bool IsPaused =>
             PlaybackState == SceneMusicPlaybackState.Paused;
         public bool IsFadeActive => fadeActive;
+        public bool IsPlaybackSuppressed => playbackSuppressed;
 
         /// <summary>
         /// True while this theme is held silent because an earlier one is
@@ -74,8 +77,15 @@ namespace BarPromenade
               NormalizedGain <= SilentGainThreshold));
 
         protected abstract string TrackResourcePath { get; }
+        protected virtual AudioClip LoadThemeClip() => Resources.Load<AudioClip>(TrackResourcePath);
+        protected virtual bool InitiallySuppressed => false;
+        protected virtual float SuppressionFadeOutSeconds => MusicMix.FadeOutSeconds;
         protected virtual float OutputVolume =>
             MusicMix.DefaultOutputVolume;
+
+        protected virtual void PrepareForPlayback()
+        {
+        }
 
         /// <summary>
         /// Lets a scene-specific carrier prepare its sound before the
@@ -93,6 +103,7 @@ namespace BarPromenade
             toneFilter = GetComponent<AudioLowPassFilter>();
             ConfigureSource();
             ConfigureTone();
+            playbackSuppressed = InitiallySuppressed;
             LoadTheme();
         }
 
@@ -161,6 +172,7 @@ namespace BarPromenade
         public void FadeOutAndPause(float durationSeconds)
         {
             ValidateDuration(durationSeconds);
+            playbackRequested = false;
             IsSceneExitFadeRequested = false;
             fadeInDeferred = false;
             if (ActiveClip == null)
@@ -193,6 +205,11 @@ namespace BarPromenade
         public void ResumeWithFadeIn(float durationSeconds)
         {
             ValidateDuration(durationSeconds);
+            playbackRequested = true;
+            if (playbackSuppressed)
+            {
+                return;
+            }
             IsSceneExitFadeRequested = false;
             if (ActiveClip == null)
             {
@@ -216,6 +233,32 @@ namespace BarPromenade
             }
 
             BeginFadeInThroughRule(durationSeconds);
+        }
+
+        /// <summary>
+        /// Holds a theme without losing the location director's desired state.
+        /// Suppression is established before loading can call Play, and later
+        /// Resume requests cannot bypass it. Outgoing sources must be suppressed
+        /// before incoming ones are released, to preserve the shared mix rule.
+        /// </summary>
+        public void SetPlaybackSuppressed(bool suppressed)
+        {
+            if (playbackSuppressed == suppressed || IsSceneExitFadeRequested)
+            {
+                return;
+            }
+
+            playbackSuppressed = suppressed;
+            bool requested = playbackRequested;
+            if (suppressed)
+            {
+                FadeOutAndPause(SuppressionFadeOutSeconds);
+                playbackRequested = requested;
+            }
+            else if (requested)
+            {
+                ResumeWithFadeIn();
+            }
         }
 
         public void CompleteSceneExitFadeImmediately()
@@ -299,9 +342,24 @@ namespace BarPromenade
             toneFilter.lowpassResonanceQ = 1f;
         }
 
+        /// <summary>Replace this source's track while retaining its suppression gate.</summary>
+        protected void ReloadTheme()
+        {
+            if (IsSceneExitFadeRequested) return;
+            CancelFade();
+            MusicMix.ReleaseFadeOut(audioSource);
+            audioSource.Stop();
+            waitingForClipLoad = false;
+            resumeWhenClipLoads = false;
+            sourcePaused = false;
+            fadeInDeferred = false;
+            LoadTheme();
+        }
+
         private void LoadTheme()
         {
-            AudioClip clip = Resources.Load<AudioClip>(TrackResourcePath);
+            playbackRequested = true;
+            AudioClip clip = LoadThemeClip();
             audioSource.clip = clip;
             ApplyNormalizedGain(0f);
             if (clip == null)
@@ -389,6 +447,13 @@ namespace BarPromenade
         /// </summary>
         private void BeginFadeInThroughRule(float durationSeconds)
         {
+            if (playbackSuppressed)
+            {
+                bool requested = playbackRequested;
+                FadeOutAndPause(0f);
+                playbackRequested = requested;
+                return;
+            }
             MusicMix.ReleaseFadeOut(audioSource);
             if (MusicMix.IsFadeOutActive)
             {
@@ -520,6 +585,7 @@ namespace BarPromenade
 
             if (!audioSource.isPlaying)
             {
+                PrepareForPlayback();
                 audioSource.Play();
             }
         }

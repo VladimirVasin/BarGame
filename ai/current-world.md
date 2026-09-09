@@ -1017,7 +1017,7 @@ The vertical slice contains:
   `ChurchInterior`; Home adds an optional
   `Resources/Audio/HomeMusic/home_theme` loop. One mixing rule (`MusicMix`)
   governs every music change, whether the hero loads into it or walks into
-  it: a theme always leaves through an unscaled `4 s` fade-out, and no other
+  it: scene/place themes leave through an unscaled `4 s` fade-out, and no other
   theme may sound a note until that tail reaches zero, after which it starts
   from silence with an unscaled `1 s` fade-in.
   Every scene theme waits for its imported clip data before that entry. The
@@ -1049,8 +1049,35 @@ The vertical slice contains:
   `CityCemeteryPlan.Grounds`; the place keeps the mix until the hero is `4 m`
   clear of those grounds, and both tracks resume from their own sample.
   Missing optional tracks are silent-safe — an empty place slot simply leaves
-  the city theme playing. All
-  themes route through the shared `Music` mixer group and remain owned by
+  the city theme playing unless the Ferryman's radio is switched on.
+  The radio has exactly three station folders under
+  `Resources/Audio/LastRouteRadio/Station1`, `Station2` and `Station3`.
+  All three contain user-supplied MP3s; each accepts one WAV, OGG or MP3 with
+  any name. A new session selects station 1. Tracks loop from the dashboard:
+  mono, a `180–3500 Hz` old-speaker band, mild saturation, quiet hiss and subtle speed
+  drift. Power, station selection and a separate playhead for each station
+  survive area changes. An empty station stays selected without music or a
+  fallback track. Radio power
+  suppresses `city_theme` before its first start after a
+  City load and while the location director selects it. Power-off immediately
+  stops radio music/hiss and any detached tail, preserving the playhead; the
+  city resumes through its usual `1 s` fade-in. Power-on and scene exit retain
+  the shared music rule. Gaze-based radio callouts outline each knob
+  separately: power uses `E`, and only while powered, `Q` cycles stations
+  `1 → 2 → 3 → 1` and moves the needle with a short tuning hiss/crackle from
+  the existing car audio. Each trip randomly chooses one station for the
+  driver's single permitted radio reaction. After `10 s` of its actual
+  playback, he starts `lastroute.ride.radio` and reaches for the tuning knob
+  with the distal palm gripping its side. A low, outboard elbow lets the fingers
+  follow the forearm. The station changes only at the reached turn endpoint,
+  with the ordinary tuning cue; his hand returns
+  to the steering wheel. Player power/tuning input cancels the gesture and
+  returns the hand from its current pose without overwriting the player's selection.
+  The chosen station and used flag survive both scenes; only a new trip
+  chooses again and clears the flag. Missing music does not advance the clock;
+  pause/loading freeze it. Power-off and station changes reset only that clock,
+  preserving the choice and once-per-trip limit. All themes use the shared `Music`
+  mixer group and remain owned by
   their scene or interaction;
 - one shared `BarPromenadeAudio` mixer with `Music`, `Ambience/Beds`,
   `Ambience/Details`, `SFX/World`, `SFX/Gameplay` and dry `UI` groups;
@@ -1908,7 +1935,27 @@ The vertical slice contains:
   height and lit after dark with no Light at all. One mercury practical burns
   over the freight dock and the brink stays dark. The Ferryman answers on the
   summit from a second repertoire that offers nothing, the road having
-  ended. At either end of that road he refuses to drive a hero on the last
+  ended. While driving, a separate ten-line ordinary road pool uses the
+  standard overhead bubble and writing clicks without modal input ownership;
+  the driver turns his head towards the passenger during every line.
+  Its shuffle bag does not repeat until exhausted, including across area
+  loads; a refill cannot immediately repeat the last line. The first line
+  waits `12–18 s` of travel, later lines wait `30–45 s` after the previous
+  line finishes printing and its `2 s` reading hold, with at most five per
+  complete trip. Stopping and pause freeze delivery; fades and skip discard
+  the active line instead of carrying it onto the next leg or flushing a queue.
+  The passenger can still look around and operate the dashboard. A passive
+  glovebox pile contains `107` copies of the same authored octagonal brass
+  coin as the idle toss, combined in one mesh with the shared material and
+  no physics or pickup. The resource preserves the coin's `54 x 9 mm`
+  silhouette; its generator checks the closed compartment and bulb clearance.
+  Opening the lid gives a short ownership remark; after `2 s` the driver
+  leans and reaches with the nearer hand. Its palm meets the lid's underside;
+  a low elbow and fingers following the forearm preserve the whole arm through
+  the closing push. Contact starts closure,
+  then the hand returns to the wheel. The bulb stays in the niche and goes out with
+  the lid.
+  At either end of that road he refuses to drive a hero on the last
   two drunkenness stages: the menu opens, the small talk is untouched, and
   the second option answers «Не в таком виде. Я подожду.» and closes. With the
   test teleport enabled through the City F9 toggle or the Home debug-map arrival,

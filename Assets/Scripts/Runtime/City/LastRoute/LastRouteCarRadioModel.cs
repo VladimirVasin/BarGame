@@ -7,19 +7,16 @@ namespace BarPromenade
     /// moving needle, kept pure so they can be asserted without a scene.
     ///
     /// The tuning knob is a DETENT knob: each press turns it one click and
-    /// the needle slides one eighth of the dial, wrapping back to the start
-    /// off the far end. What the radio actually plays at any of those clicks
-    /// is deliberately not decided here - the radio is silent for now, and
-    /// whatever voice it is later given will read <c>Tuning01</c> and add its
-    /// own curve rather than have this file guess one.
+    /// the needle selects one of three stations, wrapping back to the start
+    /// off the far end. The optional looping tape and its speaker treatment
+    /// belong to LastRouteRadioMusicPlayer; the detents remain mechanical.
     /// </summary>
     public static class LastRouteCarRadioModel
     {
-        public const int DetentCount = 8;
+        public const int DetentCount = 3;
 
-        /// <summary>Where the last owner left the needle. Off the ends, so a
-        /// first press moves it visibly either way.</summary>
-        public const int DefaultDetent = 2;
+        /// <summary>A new game starts on the first station.</summary>
+        public const int DefaultDetent = 0;
 
         /// <summary>A full turn of the tuning knob is the whole dial.</summary>
         public const float KnobDegreesPerDetent = 360f / DetentCount;

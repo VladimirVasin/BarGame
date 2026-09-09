@@ -1,4 +1,15 @@
-# CityBus3D source
+# Vehicle sources
+
+`LastRouteCoin3D.blend` contains the Ferryman's unchanged octagonal coin and
+the glovebox pile made from it. Rebuild through the pinned toolchain:
+
+```powershell
+python tools/run-blender.py tools/build-last-route-coin-3d-model.py --expect Assets/Resources/Vehicles/LastRouteCoin3D.fbx --expect Assets/Resources/Vehicles/LastRouteCoin3D.json
+```
+
+The two bare mesh assets bake their scale and axes to Unity metres. The pile
+is hinge-relative, stays behind the closed lid and clear of the bulb; it has
+no animation or physics. Runtime shares the existing coin material and tint.
 
 `CityBus3D.blend` is the editable production source for the Road v2 midibus.
 Rebuild the Blender file, Unity FBX, manifest and review render from the project

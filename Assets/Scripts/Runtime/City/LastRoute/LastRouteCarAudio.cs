@@ -26,12 +26,12 @@ namespace BarPromenade
         Shutdown = 1,
         DeckJoint = 2,
         DoorLatch = 3,
-        // The dash. Mechanical clicks only: the radio itself is silent for
-        // now, by decision, and whatever it is later given to play is a
-        // voice of its own rather than a cue here.
+        // The dash's mechanical clicks. The looping tape belongs to the
+        // separate LastRouteRadioMusicPlayer source.
         RadioSwitch = 4,
         KnobDetent = 5,
-        GloveboxLatch = 6
+        GloveboxLatch = 6,
+        RadioTuning = 7
     }
 
     /// <summary>
@@ -105,6 +105,7 @@ namespace BarPromenade
         public const float EnclosureBlendSeconds = 0.45f;
 
         public const float CueVolume = 0.62f;
+        public const float RadioTuningVolume = 0.55f;
 
         public const int EnginePriority = 80;
         public const int CabinPriority = 64;
@@ -224,6 +225,7 @@ namespace BarPromenade
         public const float RadioSwitchClipSeconds = 0.12f;
         public const float KnobDetentClipSeconds = 0.06f;
         public const float GloveboxLatchClipSeconds = 0.18f;
+        public const float RadioTuningClipSeconds = 0.32f;
 
         private const float QuantizationSteps = 127f;
         private const float ClipLimit = 0.78f;
@@ -311,6 +313,9 @@ namespace BarPromenade
                 case LastRouteCarCueKind.GloveboxLatch:
                     seconds = GloveboxLatchClipSeconds;
                     break;
+                case LastRouteCarCueKind.RadioTuning:
+                    seconds = RadioTuningClipSeconds;
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(kind),
@@ -352,6 +357,9 @@ namespace BarPromenade
                         break;
                     case LastRouteCarCueKind.GloveboxLatch:
                         sample = GloveboxLatchCue(time, white);
+                        break;
+                    case LastRouteCarCueKind.RadioTuning:
+                        sample = RadioTuningCue(time, white, lowNoise, ref whinePhase);
                         break;
                     default:
                         sample = DoorLatchCue(time, white);
@@ -554,6 +562,22 @@ namespace BarPromenade
                    0.22f;
         }
 
+        /// <summary>A brief sweep between stations: the detent, broken hiss
+        /// and a soft falling carrier whistle through the old speaker.</summary>
+        private static float RadioTuningCue(float time, float white, float lowNoise, ref float phase)
+        {
+            float progress = Mathf.Clamp01(time / RadioTuningClipSeconds);
+            float attack = Mathf.SmoothStep(0f, 1f, time / 0.012f);
+            float release = Mathf.SmoothStep(0f, 1f, (RadioTuningClipSeconds - time) / 0.08f);
+            float chatter = 0.58f + 0.42f * Mathf.Abs(Mathf.Sin(time * Mathf.PI * 2f * 23f));
+            float hiss = (white - lowNoise) * 0.30f * chatter;
+            float crackle = Mathf.Abs(white) > 0.88f ? white * 0.16f : 0f;
+            float frequency = Mathf.Lerp(2100f, 650f, progress);
+            phase += Mathf.PI * 2f * frequency / SampleRate;
+            float whistle = Mathf.Sin(phase) * Mathf.Sin(progress * Mathf.PI) * 0.085f;
+            return KnobDetentCue(time) + (hiss + crackle + whistle) * attack * release;
+        }
+
         /// <summary>The glovebox catch: the door latch's recipe at a fraction
         /// of the weight, with the hollow of an empty box under it.</summary>
         private static float GloveboxLatchCue(float time, float white)
@@ -628,15 +652,16 @@ namespace BarPromenade
     public sealed class LastRouteCarAudio : MonoBehaviour
     {
         /// <summary>
-        /// Engine, cabin, tyres, deck and the one-shot voice. Scene audio
+        /// Engine, cabin, tyres, deck, latches and the radio tuning voice. Scene audio
         /// budgets are asserted against owner constants rather than a
         /// hand-counted total, so this is the number they read.
         /// </summary>
-        public const int OwnedSourceCount = 5;
+        public const int OwnedSourceCount = 6;
 
         public const string EngineAnchorName = "Car Engine Bay Audio";
         public const string CabinAnchorName = "Car Cabin Audio";
         public const string AxleAnchorName = "Car Rear Axle Audio";
+        public const string RadioTuningAnchorName = "Car Radio Tuning Audio";
 
         /// <summary>A hitch longer than this is stepped rather than
         /// swallowed, the driver's own convention.</summary>
@@ -659,7 +684,7 @@ namespace BarPromenade
         public const float DeckSkipTolerance = 20f;
 
         private static readonly AudioClip[] LoopClips = new AudioClip[4];
-        private static readonly AudioClip[] CueClips = new AudioClip[7];
+        private static readonly AudioClip[] CueClips = new AudioClip[8];
 
         private readonly List<AudioSource> ownedSources =
             new List<AudioSource>();
@@ -681,6 +706,7 @@ namespace BarPromenade
         private AudioSource tyreSource;
         private AudioSource deckSource;
         private AudioSource cueSource;
+        private AudioSource radioTuningSource;
         private AudioLowPassFilter engineTone;
         private AudioLowPassFilter tyreTone;
         private AudioReverbFilter engineRoom;
@@ -707,6 +733,7 @@ namespace BarPromenade
         public AudioSource TyreSource => tyreSource;
         public AudioSource DeckSource => deckSource;
         public AudioSource CueSource => cueSource;
+        public AudioSource RadioTuningSource => radioTuningSource;
         public AudioLowPassFilter EngineTone => engineTone;
         public AudioReverbFilter EngineRoom => engineRoom;
         public LastRouteCarRoadSurface Surface => surface;
@@ -724,10 +751,11 @@ namespace BarPromenade
         public int DoorLatchCueCount { get; private set; }
         public int RadioSwitchCueCount { get; private set; }
         public int KnobDetentCueCount { get; private set; }
+        public int RadioTuningCueCount { get; private set; }
         public int GloveboxLatchCueCount { get; private set; }
 
         /// <summary>
-        /// Hangs the five voices off the car. Anchors are placed along the
+        /// Hangs the car's voices off their physical sources. Anchors are placed along the
         /// RUNTIME root's own axes from the registry's dimensions, never
         /// from an imported node - the imported body's forward is nearly
         /// vertical, which is the trap the headlights record. The engine
@@ -747,8 +775,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(carRegistry));
             driver = GetComponent<LastRouteCarDriver>();
             doors = GetComponent<LastRouteCarDoors>();
-            // The dash clicks through the same cue source the latches use;
-            // it is raised before this voice, so it is there to listen to.
+            // The dashboard is raised before its sound owner.
             dashboard = GetComponent<LastRouteCarDashboard>();
             if (dashboard != null)
             {
@@ -805,6 +832,30 @@ namespace BarPromenade
             cueSource.loop = false;
             cueSource.volume = 1f;
 
+            Transform radioAnchor = CreateAnchor(RadioTuningAnchorName, ResolveCabinLocalPosition(dimensions));
+            Renderer radioDial = registry.RadioDialRenderer;
+            if (radioDial != null)
+            {
+                radioAnchor.position = radioDial.bounds.center;
+                // Preserve world metres under the imported, sprung body.
+                radioAnchor.SetParent(radioDial.transform, true);
+            }
+            radioTuningSource = radioAnchor.gameObject.AddComponent<AudioSource>();
+            ConfigureSpatialSource(radioTuningSource,
+                LastRouteRadioMusicPlayer.MinimumDistance, LastRouteRadioMusicPlayer.MaximumDistance,
+                LastRouteCarAudioMix.CuePriority);
+            radioTuningSource.volume = LastRouteCarAudioMix.RadioTuningVolume;
+            radioTuningSource.loop = false;
+            radioTuningSource.clip = GetCueClip(LastRouteCarCueKind.RadioTuning);
+            var radioLowPass = radioAnchor.gameObject.AddComponent<AudioLowPassFilter>();
+            radioLowPass.cutoffFrequency = LastRouteRadioMusicPlayer.SpeakerLowPassHz;
+            radioLowPass.lowpassResonanceQ = 1f;
+            var radioHighPass = radioAnchor.gameObject.AddComponent<AudioHighPassFilter>();
+            radioHighPass.cutoffFrequency = LastRouteRadioMusicPlayer.SpeakerHighPassHz;
+            radioHighPass.highpassResonanceQ = 1f;
+            var radioDistortion = radioAnchor.gameObject.AddComponent<AudioDistortionFilter>();
+            radioDistortion.distortionLevel = LastRouteRadioMusicPlayer.SpeakerDistortion;
+
             tyreSource = axleAnchor.gameObject.AddComponent<AudioSource>();
             ConfigureSpatialSource(
                 tyreSource,
@@ -833,11 +884,13 @@ namespace BarPromenade
             ownedSources.Add(cueSource);
             ownedSources.Add(tyreSource);
             ownedSources.Add(deckSource);
+            ownedSources.Add(radioTuningSource);
             ApplyRoom(0f);
             IsInitialized = true;
             engineAnchor.gameObject.SetActive(true);
             cabinAnchor.gameObject.SetActive(true);
             axleAnchor.gameObject.SetActive(true);
+            radioAnchor.gameObject.SetActive(true);
         }
 
         /// <summary>
@@ -1127,12 +1180,21 @@ namespace BarPromenade
             switch (target)
             {
                 case LastRouteCarDashboardTarget.RadioPower:
+                    if (!dashboard.RadioOn && radioTuningSource != null) radioTuningSource.Stop();
                     PlayCue(LastRouteCarCueKind.RadioSwitch);
                     RadioSwitchCueCount++;
                     break;
                 case LastRouteCarDashboardTarget.RadioTuning:
-                    PlayCue(LastRouteCarCueKind.KnobDetent);
+                    if (dashboard == null || !dashboard.RadioOn) return;
+                    // Restart one short voice so rapid Q presses cannot stack
+                    // a growing burst of static. The detent is in this clip.
+                    if (Application.isPlaying && radioTuningSource != null)
+                    {
+                        radioTuningSource.Stop();
+                        radioTuningSource.Play();
+                    }
                     KnobDetentCueCount++;
+                    RadioTuningCueCount++;
                     break;
                 case LastRouteCarDashboardTarget.Glovebox:
                     PlayCue(LastRouteCarCueKind.GloveboxLatch);

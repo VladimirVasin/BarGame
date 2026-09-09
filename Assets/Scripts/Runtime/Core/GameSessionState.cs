@@ -264,7 +264,19 @@ namespace BarPromenade
 
         public static void SetCarDashboard(LastRouteCarDashboardState state)
         {
+            bool powerChanged = CarDashboard.RadioOn != state.RadioOn;
+            bool tuningChanged = CarDashboard.TuningDetent != state.TuningDetent;
             CarDashboard = state;
+            // Close the gate before loading a station while switching off;
+            // open it only after choosing the station while switching on.
+            if (powerChanged && !state.RadioOn)
+                LastRouteRadioMusicPlayer.ApplyPowerState(false);
+            if (tuningChanged)
+                LastRouteRadioMusicPlayer.ApplyTuningState(state.TuningDetent);
+            if (powerChanged && state.RadioOn)
+            {
+                LastRouteRadioMusicPlayer.ApplyPowerState(true);
+            }
         }
 
         /// <summary>Either vehicle, for the gates that do not care which.
@@ -493,6 +505,8 @@ namespace BarPromenade
             graveWork.Reset();
             FerrymanRide = LastRouteFerrymanRideStage.NotTaken;
             CarDashboard = LastRouteCarDashboardState.Default;
+            LastRouteRadioMusicPlayer.ResetSession();
+            LastRouteRideSpeechSession.ResetSession();
             gameTime.Reset();
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -106,6 +107,7 @@ namespace BarPromenade
         private LastRouteCarDriver driver;
         private LastRouteFerrymanPresentation ferryman;
         private LastRouteCarDashboard dashboard;
+        public LastRouteRadioAffordance RadioAffordance { get; private set; }
         private int dashboardGazeFrame = -1;
         private LastRouteCarDashboardTarget dashboardGazeTarget;
         private Camera seatCamera;
@@ -141,6 +143,10 @@ namespace BarPromenade
                 if (TryResolveDashboardTarget(
                         out LastRouteCarDashboardTarget target))
                 {
+                    // Radio labels are attached to their knobs by the same
+                    // outline/leader UI as the shower controls.
+                    if (IsRadioTarget(target) || dashboard.IsGloveboxInputLocked)
+                        return null;
                     return LastRouteCarDashboard.ResolvePromptKey(
                         target,
                         dashboard.RadioOn,
@@ -153,6 +159,7 @@ namespace BarPromenade
 
         public Vector3 InteractionPosition => plan.InteractionPosition;
         public LastRouteCarSeatPlan Plan => plan;
+        public Camera SeatCamera => seatCamera;
         public bool IsSeated =>
             ownsActiveInteraction &&
             controller != null &&
@@ -175,6 +182,24 @@ namespace BarPromenade
         /// rather than standing on the ground under its own controller.
         /// </summary>
         public bool IsAttachedToCar => rootAttached;
+
+        public bool RadioControlsVisible => isActiveAndEnabled &&
+            GameInput.CanRead(GameInputContext.Contextual) &&
+            player.Interactor != null && player.Interactor.InputEnabled &&
+            !player.Interactor.InteractKeyClaimed &&
+            TryResolveDashboardTarget(out LastRouteCarDashboardTarget target) &&
+            IsRadioTarget(target);
+
+        public bool TryTuneRadio()
+        {
+            if (!RadioControlsVisible || !dashboard.RadioOn) return false;
+            dashboard.Operate(LastRouteCarDashboardTarget.RadioTuning);
+            return true;
+        }
+
+        private static bool IsRadioTarget(LastRouteCarDashboardTarget target) =>
+            target == LastRouteCarDashboardTarget.RadioPower ||
+            target == LastRouteCarDashboardTarget.RadioTuning;
 
         /// <summary>
         /// Raised the frame he is in, the leaf is shut over him and the car
@@ -325,6 +350,9 @@ namespace BarPromenade
         {
             dashboard = carDashboard;
             dashboardGazeFrame = -1;
+            if (RadioAffordance == null)
+                RadioAffordance = gameObject.AddComponent<LastRouteRadioAffordance>();
+            RadioAffordance.Initialize(this, dashboard, seatCamera);
         }
 
         /// <summary>
@@ -627,9 +655,10 @@ namespace BarPromenade
             // of having one.
             if (ownsActiveInteraction &&
                 phase == PlayerAnimatedInteractionPhase.Looping &&
-                TryResolveDashboardTarget(out _))
+                TryResolveDashboardTarget(out LastRouteCarDashboardTarget target))
             {
-                return true;
+                return target != LastRouteCarDashboardTarget.Glovebox ||
+                       !dashboard.IsGloveboxInputLocked;
             }
 
             if (Mathf.Abs(
@@ -664,7 +693,10 @@ namespace BarPromenade
                 TryResolveDashboardTarget(
                     out LastRouteCarDashboardTarget dashboardTarget))
             {
-                dashboard.Operate(dashboardTarget);
+                // E always controls power while looking at the radio; Q is
+                // available only after power is on, on either half of its face.
+                dashboard.Operate(IsRadioTarget(dashboardTarget)
+                    ? LastRouteCarDashboardTarget.RadioPower : dashboardTarget);
                 return;
             }
 
@@ -756,6 +788,8 @@ namespace BarPromenade
                 ApplyDoorOpenness(ResolveDoorOpenness(phase));
                 UpdateViewOwnership(phase);
                 ReadLookInput(Time.unscaledDeltaTime);
+                if (Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
+                    TryTuneRadio();
             }
             else if (doorOpenness > 0f)
             {
@@ -863,6 +897,7 @@ namespace BarPromenade
             }
 
             Vector2 look = follow.SampleOrbitInputDegrees(deltaTime);
+            if (look.sqrMagnitude > 0f) dashboardGazeFrame = -1;
             viewYawOffset = Mathf.Clamp(
                 viewYawOffset + look.x,
                 -LastRouteCarSeatViewPlan.MaximumYawOffsetDegrees,

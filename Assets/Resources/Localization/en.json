@@ -222,7 +222,7 @@
     },
     {
       "key": "interaction.radio_tune",
-      "value": "E — Turn the tuning knob"
+      "value": "Q — Change station"
     },
     {
       "key": "interaction.open_glovebox",
@@ -2363,6 +2363,54 @@
     {
       "key": "village.life.visitor.thanks",
       "value": "Thanks. It's heavy today."
+    },
+    {
+      "key": "lastroute.ride.quip.01",
+      "value": "Don't mind the old car. The engine's still good."
+    },
+    {
+      "key": "lastroute.ride.quip.02",
+      "value": "I know every pothole here. Still hit one now and then."
+    },
+    {
+      "key": "lastroute.ride.quip.03",
+      "value": "They patch this road every year. It never lasts long."
+    },
+    {
+      "key": "lastroute.ride.quip.04",
+      "value": "Just had the suspension done. Something's knocking again already."
+    },
+    {
+      "key": "lastroute.ride.quip.05",
+      "value": "Petrol's gone up again. Feels like I'm always filling up."
+    },
+    {
+      "key": "lastroute.ride.quip.06",
+      "value": "I used to drive nights as well. These days I try to finish early."
+    },
+    {
+      "key": "lastroute.ride.quip.07",
+      "value": "Don't worry, we'll get there fine. I've been driving here for twenty years."
+    },
+    {
+      "key": "lastroute.ride.quip.08",
+      "value": "You sit down all day, and your back still aches by evening."
+    },
+    {
+      "key": "lastroute.ride.quip.09",
+      "value": "Even the car's quieter on a good road."
+    },
+    {
+      "key": "lastroute.ride.quip.10",
+      "value": "It's not far. Just nowhere to pick up speed."
+    },
+    {
+      "key": "lastroute.ride.glovebox",
+      "value": "Don't rummage in there. That's my loose change."
+    },
+    {
+      "key": "lastroute.ride.radio",
+      "value": "What is this shit we're listening to? The composer is utterly talentless"
     }
   ]
 }

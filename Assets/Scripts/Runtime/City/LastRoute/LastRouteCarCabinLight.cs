@@ -126,21 +126,19 @@ namespace BarPromenade
         /// The glovebox bulb, set by a `9 cm` throw, which is why it is a
         /// hundredth of the plafond. The only thing a seated passenger can
         /// SEE inside the box is the floor strip his sightline reaches past
-        /// the aperture's top edge; its centre is `0.093 m` from the bulb,
-        /// where `0.055` arrives as about `3.65` and reads as a warm lit
-        /// drawer rather than a torch.
+        /// the aperture's top edge; its centre is `0.093 m` from the bulb.
+        /// The low output keeps that nearby strip a warm lit drawer.
         /// </summary>
         public const float GloveboxLampIntensity = 0.055f;
 
         /// <summary>
-        /// And its containment, which it needs: with no shadows the
-        /// compartment walls block nothing. The fade is exactly zero at
-        /// `0.45 m`; the hero's nearest knee is `0.48 m` away, the driver's
-        /// hands `0.90`, the road `0.96`. Every dash face around the
-        /// aperture has `N·L < 0` to a bulb recessed behind the face plane,
-        /// so nothing bleeds onto the panel either.
+        /// The compartment walls cast no shadows, so the range must stop
+        /// inside the cabin, before the nearby windscreen and bodywork.
+        /// Fifteen centimetres still lights the visible floor strip nine
+        /// centimetres away. The former 45 cm sphere reached the passenger
+        /// flank and the lower windscreen despite never reaching the road.
         /// </summary>
-        public const float GloveboxLampRange = 0.45f;
+        public const float GloveboxLampRange = 0.15f;
 
         public const float GloveboxLampStandoff = 0.029f;
 

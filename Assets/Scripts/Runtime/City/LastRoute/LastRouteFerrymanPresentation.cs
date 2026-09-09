@@ -911,6 +911,13 @@ namespace BarPromenade
         /// clip-authored to `1` riding the grips.</summary>
         public float SteeringHandsWeight => steeringHandsWeight;
 
+        // A cabin reach can lean the torso after the driving graph. Re-seat
+        // both hands on the live wheel before that reach takes one of them.
+        public void ReapplySteeringHands()
+        {
+            AdvanceSteeringHands(0f);
+        }
+
         private void CaptureSteeringArms(
             LastRouteFerrymanRigAnchors anchors,
             LastRouteCarAssetRegistry car)

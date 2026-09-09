@@ -1,5 +1,20 @@
 # Art and native tool entry points
 
+The Ferryman's coin and glovebox contents share one small passive resource.
+`build-last-route-coin-3d-model.py` preserves the earlier octagonal brass coin's
+`54 x 9 mm` silhouette and combines its repeated geometry into one contained
+pile mesh. Both export in bare-mesh Unity metres; runtime supplies the same
+shared material and tint. The generator checks deterministic reconstruction,
+outward faces and each coin's compartment/bulb clearance:
+
+```powershell
+python tools/run-blender.py tools/build-last-route-coin-3d-model.py --expect Assets/Resources/Vehicles/LastRouteCoin3D.fbx --expect Assets/Resources/Vehicles/LastRouteCoin3D.json
+python tools/run-blender.py tools/build-last-route-coin-3d-model.py --validate-only -- --validate-only
+```
+
+`LastRouteCoinAssetValidation` adds the imported mesh bounds to the read-only
+player-build gate. The editable source is `ArtSource/Vehicles/Blender/LastRouteCoin3D.blend`.
+
 The final village household slice adds two isolated generators:
 `build-village-outdoor-player-actions-3d-model.py` publishes thirteen optional
 hero clips and matching metre-space prop tracks;

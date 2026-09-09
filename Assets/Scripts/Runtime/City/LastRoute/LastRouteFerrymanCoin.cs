@@ -139,16 +139,7 @@ namespace BarPromenade
 
             // A child of this root at scale one, and it stays that way for
             // its whole life. See the class docstring.
-            GameObject coin = RuntimePrimitiveFactory.CreateCylinder(
-                "Ferryman Coin",
-                transform,
-                Vector3.zero,
-                new Vector3(
-                    DiameterMeters,
-                    ThicknessMeters * 0.5f,
-                    DiameterMeters),
-                CoinColor,
-                collider: false);
+            GameObject coin = LastRouteCoinAsset.CreateSingle(transform);
             coinTransform = coin.transform;
             IsInitialized = true;
             WritePose();

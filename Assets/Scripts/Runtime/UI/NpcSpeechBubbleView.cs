@@ -139,6 +139,12 @@ namespace BarPromenade
             string.Empty;
         public float LastRenderedOpacity { get; private set; }
 
+        // Dedicated interaction views can use a pause-aware clock; ambient views
+        // retain their existing frame clock and four-second lifetime.
+        public bool UseManualClock { get; set; }
+        public bool RenderEnabled { get; set; } = true;
+        public float LineDurationSeconds { get; set; } = VisibleSeconds;
+
         /// <summary>Without a listener nothing fades and nothing is
         /// culled — the EditMode path, where there is no hero to stand
         /// anywhere.</summary>
@@ -481,7 +487,7 @@ namespace BarPromenade
                 return;
             }
 
-            if (unscaledTime - bubble.Line.StartedAt > VisibleSeconds)
+            if (unscaledTime - bubble.Line.StartedAt > LineDurationSeconds)
             {
                 CloseSlot(ref bubble);
                 return;
@@ -589,14 +595,15 @@ namespace BarPromenade
 
         private void Update()
         {
-            AdvanceTo(Time.unscaledTime);
+            if (!UseManualClock)
+                AdvanceTo(Time.unscaledTime);
         }
 
         private void OnGUI()
         {
             HasRenderedLayout = false;
             LastRenderedBubbleCount = 0;
-            if (worldCamera == null)
+            if (!RenderEnabled || worldCamera == null)
             {
                 return;
             }

@@ -1,15 +1,32 @@
 # Release notes
 
-Notes from months before the previous full month live in `ai/archive/`;
+Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier notes: [`release-notes-2026-08.md`](archive/release-notes-2026-08.md).
 
 ## Unreleased
 
-### 2026-09-09 — Опора ног после канатной дороги
+### 2026-09-09 — Опора ног и поездка с Перевозчиком
 
-- Исправлено зависание с поджатыми ногами после выхода из канатки на обеих
-  станциях: начальная калибровка ног учитывает поднятый настил.
+- Исправлены поджатые ноги после канатки: калибровка учитывает настил обеих
+  станций. Проверка: `Ride_OnlyLeavesTheAreaOnceTheScreenIsBlack`.
+- Дорожные фразы печатаются над головой; водитель смотрит на пассажира.
+  Пул и паузы сохраняются через сцены.
+  Проверка: `RoadSpeech_PreservesSilenceAndBagAcrossLegsWithoutTakingThePrompt`.
+- Три станции `Station1`–`Station3` принимают треки с любым именем и помнят
+  позиции. `E` гасит музыку сразу; `Q` меняет станцию с шорохом. Включённая
+  магнитола подавляет городскую тему.
+  Проверки: `Radio_ThreeStationsKeepTheirOwnTracksAndPlayheads` и
+  `Radio_HoldsCityAcrossReplacementAndLocationChanges`.
+- Раз за поездку водитель ругает случайную станцию после десяти секунд
+  звучания, берёт ручку сбоку и переключает в конце проворота, затем возвращает руку
+  на руль. `E` или `Q` игрока отменяет его действие.
+- Бардачок набит той же мелочью, которую он подбрасывает. На открытие
+  он отвечает и закрывает крышку ладонью снизу. Локоть опущен, кисть следует
+  за предплечьем в обоих движениях. Свет
+  не оставляет пятна на стекле.
+- Проверено с просмотром итоговых кадров:
+  `CabinReactions_FollowTheRadioAndCloseTheLidByHand`.
 
 ### 2026-09-09 — Посадка и прибытие канатной дороги
 

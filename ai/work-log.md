@@ -2,31 +2,49 @@
 
 Entries are reverse chronological. Record outcomes and verification, not a transcript.
 
-Entries from months before the previous full month live in `ai/archive/`;
+Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-09 — Feet remain grounded after the cableway arrival
+## 2026-09-09 — Cableway grounding and the Ferryman's cabin
 
-- Follow-up to the arrival fix: the earlier round-trip check measured the
-  player root and restored controls, but did not inspect the visible boots.
-- `MountainRoadRoot` and `AlpineVillageRoot` synchronize constructed colliders
-  before player creation. With automatic physics transform sync disabled and construction
-  paused, initial foot calibration could otherwise miss the raised platform
-  and retain its height above the lower pad as permanent sole clearance.
-- Extended the same arrival regression to measure the final visible boot
-  support after exiting and leaving each platform, including the late foot
-  solve. The first run reproduced the defect in the village as well:
-  `0.890 m` cached clearance and the same visible sole-to-floor gap.
-  Applied the synchronization to both destination roots.
-- The same focused round trip then passed `1/1` in `74.87 s`, with `0.040 m`
-  calibrated clearance at both stations and all eight visible boot samples
-  `0.039-0.050 m` above their physical surfaces (the normal controller skin).
-  Reviewed all four standing platform/apron frames: legs extend to the floor
-  after alighting and walking down the steps. Evidence:
-  `Captures/CablewayRegression/grounding-results.xml` and
-  `{AlpineVillage,MountainRoad}-{platform,apron}.png`. `git diff --check`
-  passed; no broad suites or player build.
+- Both cableway destination roots synchronize constructed colliders before
+  player creation: paused construction had calibrated boots against lower
+  terrain. `Ride_OnlyLeavesTheAreaOnceTheScreenIsBlack` and its standing frames
+  verify support after alighting and walking off both platforms.
+- The Ferryman's ten ordinary road lines use a session shuffle bag, travel
+  intervals and reading holds. Standard overhead bubbles turn his head towards
+  the passenger without taking input. Pause/skip cleanup and scene continuity
+  are covered by `RoadSpeech_PreservesSilenceAndBagAcrossLegsWithoutTakingThePrompt`.
+- The spatial radio has three station folders, starts at station 1 and loops
+  each station's own track through the old-speaker chain. All slots now hold
+  user MP3s; any filename works, with `radio_theme` preferred. Separate playheads
+  use the carrier's station index, so equal clip names remain independent.
+  Power still gates the city theme even on an empty station. Power-off captures
+  the playhead and immediately cuts music/hiss, including any departing tail.
+  Outlined `E`/`Q` callouts control power and cyclic station selection; a short
+  tuning hiss/crackle answers `Q`. Station/playhead and power checks:
+  `Radio_ThreeStationsKeepTheirOwnTracksAndPlayheads` and
+  `Radio_HoldsCityAcrossReplacementAndLocationChanges`.
+- The existing coin is now one authored octagonal mesh shared by the toss and
+  the passive glovebox pile. `build-last-route-coin-3d-model.py --validate-only`
+  checks deterministic geometry and compartment/bulb clearance. Runtime places
+  the bare mesh in prefab axes, not the imported body's rotated basis; the
+  actual compartment checks its placed vertices and the lid cannot move them.
+- Each trip randomly chooses one station for a single radio reaction after
+  `10 s` of actual playback. The exact criticism starts a reach; only the hand's
+  reached side grip and turn endpoint commit the cyclic switch, then it returns to
+  the wheel. Player E/Q cancels the gesture without replacing their choice.
+  Choice/used state span both scenes; pause/loading freeze the clock and off/Q
+  reset only that clock. Story §6 bounds this rhetorical exception.
+- Opening the glovebox triggers an ownership remark and delayed physical
+  closure from the lid's underside. Both gestures keep low, outboard elbows
+  and fingers following the forearm for a natural whole-arm pose.
+  `CabinReactions_FollowTheRadioAndCloseTheLidByHand` passed;
+  final contact/turn and closing frames confirm natural hands and contact.
+  The practical remains `0.15 m`: `Capture_TheCabinFromThePassengerSeat`
+  verifies a readable drawer without the windshield hotspot.
+- Documentation checked with `python tools/check-docs.py` and `git diff --check`.
 
 ## 2026-09-09 — Cableway boarding, continuous arrival and waiting Ferryman
 

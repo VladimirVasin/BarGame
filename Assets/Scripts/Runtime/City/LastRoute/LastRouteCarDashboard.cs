@@ -18,11 +18,9 @@ namespace BarPromenade
     /// anchors, and which way the lid opens is derived from where the lid
     /// is drawn relative to its hinge.
     ///
-    /// The radio is SILENT for now. Its state - on, and which click the
-    /// tuning knob stands at - is kept and shown (the knob, the needle, the
-    /// lit dial) so that whatever voice it is later given has something to
-    /// read; <see cref="Operated"/> is where that voice, and today the
-    /// car's own click cues, hang off.
+    /// The music player reads the same session power state as the lit dial.
+    /// Tuning keeps its mechanical detents; <see cref="Operated"/> supplies
+    /// the car's click cues.
     ///
     /// State is written through to <see cref="GameSessionState"/> on every
     /// change and read back at <see cref="Initialize"/>, because the ride
@@ -90,6 +88,7 @@ namespace BarPromenade
         private float gloveboxProgress = 1f;
         private bool gloveboxSwinging;
         private float speed01;
+        private float driverTuningDegrees;
         private int gazeFrame = -1;
         private Ray gazeRay;
         private LastRouteCarDashboardTarget gazeTarget;
@@ -103,6 +102,11 @@ namespace BarPromenade
         public bool GloveboxOpen => state.GloveboxOpen;
         public float GloveboxOpenness => gloveboxOpenness;
         public bool IsGloveboxSwinging => gloveboxSwinging;
+        public bool IsGloveboxInputLocked { get; private set; }
+        public MeshFilter RadioPowerKnobMesh { get; private set; }
+        public MeshFilter RadioTuningKnobMesh { get; private set; }
+        public Vector3 RadioKnobAxis => -ResolveForward();
+        public float DriverTuningDegrees => driverTuningDegrees;
         public float Speed01 => speed01;
 
         /// <summary>Raised the frame he does something to the dash, with
@@ -141,6 +145,8 @@ namespace BarPromenade
             lid = Capture(registry.GloveboxLidPivot);
             powerKnob = Capture(registry.RadioPowerKnobPivot);
             tuningKnob = Capture(registry.RadioTuningKnobPivot);
+            RadioPowerKnobMesh = registry.RadioPowerKnobPivot.GetComponentInChildren<MeshFilter>(true);
+            RadioTuningKnobMesh = registry.RadioTuningKnobPivot.GetComponentInChildren<MeshFilter>(true);
             needle = Capture(registry.RadioNeedlePivot);
             speedo = Capture(registry.SpeedoNeedlePivot);
             lidRenderers = registry.GloveboxLidPivot
@@ -179,15 +185,18 @@ namespace BarPromenade
             switch (target)
             {
                 case LastRouteCarDashboardTarget.RadioPower:
+                    driverTuningDegrees = 0f;
                     state = state.WithRadioOn(!state.RadioOn);
                     ApplyRadio();
                     break;
                 case LastRouteCarDashboardTarget.RadioTuning:
+                    driverTuningDegrees = 0f;
                     state = state.WithTuningDetent(
                         LastRouteCarRadioModel.StepDetent(state.TuningDetent));
                     ApplyRadio();
                     break;
                 case LastRouteCarDashboardTarget.Glovebox:
+                    if (IsGloveboxInputLocked) return;
                     state = state.WithGloveboxOpen(!state.GloveboxOpen);
                     gloveboxProgress =
                         LastRouteCarGloveboxTimeline.ProgressForOpenness(
@@ -208,6 +217,27 @@ namespace BarPromenade
                 GameLog.Field("tuning_detent", state.TuningDetent),
                 GameLog.Field("glovebox_open", state.GloveboxOpen));
             Operated?.Invoke(target);
+        }
+
+        public void SetGloveboxInputLocked(bool locked) => IsGloveboxInputLocked = locked;
+
+        // Physical travel between detents does not select a station or emit a
+        // click. The hand commits the ordinary transaction at the next detent.
+        public void SetDriverTuningProgress(float progress)
+        {
+            driverTuningDegrees = Sanitize(progress) * LastRouteCarRadioModel.KnobDegreesPerDetent;
+            ApplyRadioPose();
+        }
+
+        /// <summary>The driver's contact owns the leaf until the latch closes.</summary>
+        public void CompleteGloveboxDriverClose()
+        {
+            if (!IsInitialized) return;
+            bool wasOpen = state.GloveboxOpen;
+            state = state.WithGloveboxOpen(false);
+            SetGloveboxOpenness(0f);
+            GameSessionState.SetCarDashboard(state);
+            if (wasOpen) Operated?.Invoke(LastRouteCarDashboardTarget.Glovebox);
         }
 
         /// <summary>
@@ -385,7 +415,7 @@ namespace BarPromenade
                 axis);
             Rotate(
                 tuningKnob,
-                LastRouteCarRadioModel.TuningKnobDegrees(state.TuningDetent),
+                LastRouteCarRadioModel.TuningKnobDegrees(state.TuningDetent) + driverTuningDegrees,
                 axis);
             if (needle != null)
             {

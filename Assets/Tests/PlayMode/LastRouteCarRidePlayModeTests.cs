@@ -674,19 +674,18 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         /// <summary>
-        /// Where the capture lands. The scratchpad rather than `Captures/`:
-        /// this is evidence for one decision, not an asset.
+        /// Local visual evidence, relative to this checkout.
         /// </summary>
-        private const string CabinCaptureRoot =
-            @"C:\Users\tushk\AppData\Local\Temp\claude\c--Users-tushk----------------\046796ae-d87b-4b66-8b05-5b9537f1113a\scratchpad\cabin";
+        private static string CabinCaptureRoot => Path.GetFullPath(
+            Path.Combine(Application.dataPath, "..", "Captures", "LastRouteRadio"));
 
         private const int CabinCaptureWidth = 960;
         private const int CabinCaptureHeight = 540;
 
         /// <summary>
-        /// The four frames that actually answer the request this feature was
-        /// built for: a dim light in the cabin, enough to make out the driver
-        /// and the dashboard.
+        /// The driver and the open/shut glovebox, from the seat and outside.
+        /// Each open view also records the old range in the same frame, so
+        /// its spill can be compared without another run or moving the car.
         ///
         /// Art is accepted by LOOKING. Every assertion in the cabin-light
         /// suite can pass over a cabin at RGB 2,2,2 - `AreaCaptureFixture`'s
@@ -709,7 +708,7 @@ namespace BarPromenade.Tests.PlayMode
         ///  - and it declines rather than fails with no graphics device.
         /// </summary>
         [UnityTest]
-        [Explicit("Capture, not a test. Writes cabin frames to the scratchpad.")]
+        [Explicit("Focused glovebox containment and cabin captures to Captures/LastRouteRadio.")]
         public IEnumerator Capture_TheCabinFromThePassengerSeat()
         {
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
@@ -765,52 +764,83 @@ namespace BarPromenade.Tests.PlayMode
                     steps++;
                 }
 
+                Assert.That(harness.Driver.Distance, Is.GreaterThanOrEqualTo(6f));
+                Assert.That(dashboard, Is.Not.Null);
+                Assert.That(cabin.GloveboxLamp, Is.Not.Null);
+                Renderer bulb = FindCabinRenderer(harness.Car, "glovebox_bulb");
+                Renderer compartment = FindCabinRenderer(
+                    harness.Car, "glovebox_compartment");
+                Assert.That(bulb.bounds.size.magnitude, Is.LessThan(0.10f),
+                    "The drawn bulb must remain a centimetre-scale fixture.");
+                Assert.That(bulb.transform.IsChildOf(harness.Car.GloveboxLidPivot),
+                    Is.False, "The bulb must not swing out with the lid.");
+                Vector3 emitterInBulb = bulb.transform.InverseTransformPoint(
+                    cabin.GloveboxLamp.transform.position);
+
                 var shots =
-                    new (string Name, float Yaw, float Pitch, bool Box)[]
+                    new (string Name, float Yaw, float Pitch, bool Box, bool Outside)[]
                     {
-                        ("01-ahead", 0f, 6f, false),
-                        ("02-driver", -98f, 2f, false),
-                        ("03-glovebox", -18f, 41f, true),
-                        ("04-panel", -30f, 26f, false)
+                        ("01-ahead-closed", 0f, 6f, false, false),
+                        ("02-ahead-open", 0f, 6f, true, false),
+                        ("03-driver", -98f, 2f, false, false),
+                        ("04-glovebox-closed", -18f, 41f, false, false),
+                        ("05-glovebox-open", -18f, 41f, true, false),
+                        ("06-exterior-closed", 0f, 0f, false, true),
+                        ("07-exterior-open", 0f, 0f, true, true)
                     };
 
                 for (int index = 0; index < shots.Length; index++)
                 {
-                    if (dashboard != null)
-                    {
-                        dashboard.SetGloveboxOpenness(
-                            shots[index].Box ? 1f : 0f);
-                    }
+                    dashboard.SetGloveboxOpenness(shots[index].Box ? 1f : 0f);
 
                     // Let the lamp answer the lid before the shutter opens.
                     yield return null;
                     yield return null;
 
-                    PoseSeatCamera(
-                        harness,
-                        camera,
-                        shots[index].Yaw,
-                        shots[index].Pitch);
-                    camera.Render();
-                    RenderTexture previousActive = RenderTexture.active;
-                    RenderTexture.active = target;
-                    buffer.ReadPixels(
-                        new Rect(
-                            0f,
-                            0f,
-                            CabinCaptureWidth,
-                            CabinCaptureHeight),
-                        0,
-                        0);
-                    buffer.Apply();
-                    RenderTexture.active = previousActive;
-                    File.WriteAllBytes(
-                        Path.Combine(
-                            CabinCaptureRoot,
-                            shots[index].Name + ".png"),
-                        buffer.EncodeToPNG());
-                    Debug.Log(
-                        "cabin capture: " + shots[index].Name + ".png written");
+                    Light lamp = cabin.GloveboxLamp;
+                    Assert.That(lamp.enabled, Is.EqualTo(shots[index].Box));
+                    Assert.That(Vector3.Distance(
+                        lamp.transform.position,
+                        bulb.transform.TransformPoint(emitterInBulb)),
+                        Is.LessThan(0.002f),
+                        "The emitter must stay with the bulb as the body moves.");
+                    Assert.That(compartment.bounds.Contains(lamp.transform.position),
+                        Is.True, "The emitter has escaped the glovebox bounds.");
+                    Vector3 localEmitter = harness.CarRoot.InverseTransformPoint(
+                        lamp.transform.position);
+                    Assert.That(Mathf.Abs(localEmitter.x) + lamp.range,
+                        Is.LessThan(harness.Car.Dimensions.Width * 0.5f),
+                        "The glovebox light reaches beyond the passenger flank.");
+                    Assert.That(cabin.ReadGloveboxEmission().maxColorComponent > 0.01f,
+                        Is.EqualTo(shots[index].Box));
+
+                    if (shots[index].Outside)
+                    {
+                        PoseCabinExteriorCamera(harness, camera);
+                    }
+                    else
+                    {
+                        camera.fieldOfView = LastRouteCarSeatViewPlan.FieldOfView;
+                        PoseSeatCamera(harness, camera,
+                            shots[index].Yaw, shots[index].Pitch);
+                    }
+
+                    if (shots[index].Box)
+                    {
+                        float configuredRange = lamp.range;
+                        try
+                        {
+                            lamp.range = 0.45f;
+                            WriteCabinCapture(camera, target, buffer,
+                                shots[index].Name + "-previous-range");
+                        }
+                        finally
+                        {
+                            lamp.range = configuredRange;
+                        }
+                    }
+
+                    WriteCabinCapture(camera, target, buffer, shots[index].Name);
                 }
             }
             finally
@@ -820,6 +850,56 @@ namespace BarPromenade.Tests.PlayMode
                 target.Release();
                 Object.DestroyImmediate(target);
             }
+        }
+
+        private static Renderer FindCabinRenderer(
+            LastRouteCarAssetRegistry car, string role)
+        {
+            foreach (LastRouteCarRendererBinding binding in car.Bindings)
+            {
+                if (binding.Role == role && binding.Renderer != null)
+                {
+                    return binding.Renderer;
+                }
+            }
+
+            Assert.Fail($"The car has no renderer bound to '{role}'.");
+            return null;
+        }
+
+        private static void PoseCabinExteriorCamera(Harness harness, Camera camera)
+        {
+            Vector3 passengerSide = Vector3.ProjectOnPlane(
+                harness.Car.PassengerSeatAnchor.position -
+                harness.Car.DriverSeatAnchor.position, Vector3.up).normalized;
+            Vector3 aim = harness.CarRoot.position + Vector3.up * 1.0f;
+            Vector3 position = aim + passengerSide * 3.0f +
+                               harness.CarRoot.forward * 2.5f + Vector3.up * 0.5f;
+            camera.fieldOfView = 55f;
+            camera.transform.SetPositionAndRotation(
+                position, Quaternion.LookRotation(aim - position, Vector3.up));
+        }
+
+        private static void WriteCabinCapture(
+            Camera camera, RenderTexture target, Texture2D buffer, string name)
+        {
+            camera.Render();
+            RenderTexture previousActive = RenderTexture.active;
+            try
+            {
+                RenderTexture.active = target;
+                buffer.ReadPixels(
+                    new Rect(0f, 0f, CabinCaptureWidth, CabinCaptureHeight), 0, 0);
+                buffer.Apply();
+            }
+            finally
+            {
+                RenderTexture.active = previousActive;
+            }
+
+            File.WriteAllBytes(Path.Combine(CabinCaptureRoot, name + ".png"),
+                buffer.EncodeToPNG());
+            Debug.Log("Cabin capture: " + name + ".png written");
         }
 
         /// <summary>
@@ -1201,9 +1281,15 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Ride_AnswersTheRadioFromTheSeatWhileTheCarIsMoving()
         {
-            Harness harness = BuildHarness(out GameObject scene);
+            var input = new UnityEngine.InputSystem.InputTestFixture();
+            UnityEngine.InputSystem.Keyboard keyboard = null;
+            GameObject scene = null;
             try
             {
+                input.Setup();
+                keyboard = UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+                FocusRadioGameView();
+                Harness harness = BuildHarness(out scene);
                 var dashboard =
                     harness.CarRoot.GetComponent<LastRouteCarDashboard>();
                 Assert.That(dashboard, Is.Not.Null, "The car has no dash.");
@@ -1213,6 +1299,11 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(harness.Seat.IsSeated, Is.True);
                 Assert.That(harness.Driver.IsDriving, Is.True);
                 yield return null;
+
+                int fadeFrames = 0;
+                while (!harness.Ride.Fade.IsClear && fadeFrames++ < MaximumSteps) yield return null;
+                Assert.That(harness.Ride.Fade.IsClear, Is.True, "Inspect the controls after the actual arrival fade.");
+                Assert.That(harness.Driver.IsDriving, Is.True);
 
                 PlayerInteractor interactor = harness.Player.Interactor;
                 Assert.That(
@@ -1231,6 +1322,10 @@ namespace BarPromenade.Tests.PlayMode
                 }
 
                 Assert.That(bezel, Is.Not.Null);
+                LastRouteRadioAffordance affordance = harness.Seat.RadioAffordance;
+                Assert.That(affordance, Is.Not.Null);
+                Assert.That(affordance.Power.Mesh.transform.IsChildOf(harness.Car.RadioPowerKnobPivot), Is.True);
+                Assert.That(affordance.Tuning.Mesh.transform.IsChildOf(harness.Car.RadioTuningKnobPivot), Is.True);
                 Vector3 powerKnob =
                     bezel.bounds.center + (dashboard.TowardsDriver * 0.06f);
                 harness.Seat.LookAtForTests(powerKnob);
@@ -1239,10 +1334,26 @@ namespace BarPromenade.Tests.PlayMode
                     Is.True,
                     "Looking at the radio's power knob is answered mid-ride.");
                 Assert.That(
-                    harness.Seat.PromptKey,
+                    affordance.PowerPromptKey,
                     Is.EqualTo(LastRouteCarDashboard.RadioOnPromptKey));
+                Assert.That(harness.Seat.PromptKey, Is.Null,
+                    "The connected knob labels replace the duplicate bottom prompt.");
+                Assert.That(affordance.PowerVisible, Is.True);
+                Assert.That(affordance.TuningVisible, Is.False);
+                int originalDetent = dashboard.TuningDetent;
+                input.Press(keyboard.qKey, queueEventOnly: true);
+                yield return null;
+                input.Release(keyboard.qKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(dashboard.TuningDetent, Is.EqualTo(originalDetent), "Q does nothing while power is off.");
+                Assert.That(harness.Seat.IsSeated, Is.True);
+                yield return CaptureRadioControlsUi(affordance, "08-radio-off-controls", false);
 
-                harness.Seat.Interact(interactor);
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                yield return null;
                 Assert.That(dashboard.RadioOn, Is.True, "The key did what the prompt said.");
                 Assert.That(
                     harness.Seat.IsSeated,
@@ -1256,14 +1367,61 @@ namespace BarPromenade.Tests.PlayMode
 
                 yield return null;
                 Assert.That(
-                    harness.Seat.PromptKey,
+                    affordance.PowerPromptKey,
                     Is.EqualTo(LastRouteCarDashboard.RadioOffPromptKey),
                     "The same knob now offers to switch it off.");
                 Assert.That(harness.Audio.RadioSwitchCueCount, Is.EqualTo(1));
+                Assert.That(affordance.TuningVisible, Is.True);
+                Assert.That(affordance.TuningPromptKey, Is.EqualTo(LastRouteCarDashboard.RadioTunePromptKey));
+                yield return CaptureRadioControlsUi(affordance, "09-radio-on-controls", true);
+
+                var pedestrian = harness.Ferryman.GetComponentInChildren<CityPedestrianAssetRegistry>(true);
+                harness.Seat.LookAtForTests(pedestrian.HeadAnchor.position);
+                harness.Ride.SaySpecial(LastRouteRideController.RadioReactionKey);
+                float speakingUntil = Time.realtimeSinceStartup + 0.9f;
+                while (Time.realtimeSinceStartup < speakingUntil) yield return null;
+                Assert.That(harness.Ride.RoadSpeech.IsVisible, Is.True);
+                Assert.That(harness.Ride.RoadSpeech.RevealedCharacters, Is.GreaterThan(0));
+                Assert.That(harness.Ride.RoadSpeech.HasRenderedLayout, Is.True,
+                    "The driver's actual overhead bubble must render from the passenger's view under the roof.");
+                yield return CaptureRadioGameView("10-radio-driver-bubble");
+                harness.Seat.LookAtForTests(bezel.bounds.center + dashboard.TowardsDriver * 0.06f);
+                input.Press(keyboard.qKey, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                input.Release(keyboard.qKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(dashboard.TuningDetent, Is.EqualTo(LastRouteCarRadioModel.StepDetent(originalDetent)));
+                Assert.That(dashboard.RadioOn && harness.Seat.IsSeated && harness.Driver.IsDriving, Is.True,
+                    "Q turns only the station knob, preserving power, seating and the journey.");
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    Assert.That(affordance.PowerVisible, Is.False);
+                    Assert.That(affordance.TuningVisible, Is.False);
+                    Assert.That(harness.Seat.TryTuneRadio(), Is.False);
+                }
+                interactor.SetInteractKeyClaimed(true);
+                Assert.That(affordance.PowerVisible, Is.False);
+                Assert.That(harness.Seat.TryTuneRadio(), Is.False);
+                interactor.SetInteractKeyClaimed(false);
+
+                // E remains power on the tuning half too; the action does not
+                // silently change when the gaze crosses the radio's centre.
+                harness.Seat.LookAtForTests(bezel.bounds.center - dashboard.TowardsDriver * 0.06f);
+                input.Press(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                yield return null;
+                input.Release(keyboard.eKey, queueEventOnly: true);
+                yield return null;
+                Assert.That(dashboard.RadioOn, Is.False);
+                Assert.That(affordance.TuningVisible, Is.False);
+                Assert.That(harness.Seat.TryTuneRadio(), Is.False);
+                Assert.That(dashboard.TuningDetent, Is.EqualTo(LastRouteCarRadioModel.StepDetent(originalDetent)));
 
                 Vector3 lidCentre = harness.Car.GloveboxLidPivot
                     .GetComponentInChildren<Renderer>(true).bounds.center;
                 harness.Seat.LookAtForTests(lidCentre);
+                Assert.That(affordance.PowerVisible || affordance.TuningVisible, Is.False);
                 Assert.That(
                     harness.Seat.PromptKey,
                     Is.EqualTo(LastRouteCarDashboard.OpenGloveboxPromptKey));
@@ -1299,11 +1457,467 @@ namespace BarPromenade.Tests.PlayMode
                     harness.Seat.CanInteract(interactor),
                     Is.False,
                     "Looking away from the dash, the ride is a ride again.");
+                Assert.That(affordance.PowerVisible || affordance.TuningVisible, Is.False);
+                Assert.That(harness.Seat.TryTuneRadio(), Is.False);
             }
             finally
             {
                 Object.DestroyImmediate(scene);
+                if (keyboard != null && keyboard.added)
+                    UnityEngine.InputSystem.InputSystem.RemoveDevice(keyboard);
+                input.TearDown();
             }
+        }
+
+        private static IEnumerator CaptureRadioControlsUi(LastRouteRadioAffordance affordance,
+            string shot, bool tuningVisible)
+        {
+            int earliestFrame = Time.frameCount + 1;
+            float deadline = Time.realtimeSinceStartup + 2f;
+            while ((affordance.Power.RenderedFrame < earliestFrame ||
+                    (tuningVisible && affordance.Tuning.RenderedFrame < earliestFrame)) &&
+                   Time.realtimeSinceStartup < deadline) yield return null;
+            LastRouteCarSeatInteraction seat = affordance.GetComponent<LastRouteCarSeatInteraction>();
+            Camera camera = seat.SeatCamera;
+            MeshFilter mesh = affordance.Power.Mesh;
+            Assert.That(affordance.Power.RenderedFrame, Is.GreaterThanOrEqualTo(earliestFrame),
+                $"Radio GUI: repaint={affordance.RepaintFrame}, visible={affordance.PowerVisible}, " +
+                $"seated={seat.IsSeated}, eye={seat.IsFirstPerson}, screen={Screen.width}x{Screen.height}, " +
+                $"viewport={camera.pixelRect}, knob={camera.WorldToScreenPoint(mesh.transform.TransformPoint(mesh.sharedMesh.bounds.center))}");
+            AssertRadioKnobCallout(affordance.Power, earliestFrame);
+            if (tuningVisible)
+            {
+                AssertRadioKnobCallout(affordance.Tuning, earliestFrame);
+                Assert.That(affordance.Power.PromptScreenRect.Overlaps(affordance.Tuning.PromptScreenRect), Is.False);
+            }
+            else Assert.That(affordance.Tuning.RenderedFrame, Is.EqualTo(-1), "The off radio offers only E.");
+
+            yield return CaptureRadioGameView(shot);
+        }
+
+        private static IEnumerator CaptureRadioGameView(string shot)
+        {
+            string path = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Captures",
+                "LastRouteRadio", shot + ".png"));
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            System.DateTime previousWrite = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : System.DateTime.MinValue;
+            ScreenCapture.CaptureScreenshot(path);
+            yield return null;
+            yield return null;
+            float deadline = Time.realtimeSinceStartup + 2f;
+            while ((!File.Exists(path) || File.GetLastWriteTimeUtc(path) <= previousWrite) &&
+                   Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(File.Exists(path) && File.GetLastWriteTimeUtc(path) > previousWrite, Is.True,
+                "Capture the real Game view, including the yellow contours and their connected labels: " + path);
+        }
+
+        private static void FocusRadioGameView()
+        {
+#if UNITY_EDITOR
+            if (Application.isBatchMode) return;
+            System.Type gameViewType = null;
+            foreach (Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                gameViewType = assembly.GetType("UnityEditor.GameView");
+                if (gameViewType != null) break;
+            }
+            Assert.That(gameViewType, Is.Not.Null, "The GUI capture needs Unity's real Game view.");
+            UnityEditor.EditorWindow view = UnityEditor.EditorWindow.GetWindow(gameViewType);
+            view.Show();
+            view.Focus();
+#endif
+        }
+
+        private static void AssertRadioKnobCallout(LastRouteRadioAffordance.KnobCallout callout, int earliestFrame)
+        {
+            Assert.That(callout.RenderedFrame, Is.GreaterThanOrEqualTo(earliestFrame));
+            Assert.That(callout.OutlineCount, Is.GreaterThanOrEqualTo(3));
+            Rect label = callout.PromptScreenRect, outline = callout.OutlineScreenRect;
+            Assert.That(label.width, Is.GreaterThan(20f));
+            Assert.That(label.xMin >= 0f && label.yMin >= 0f && label.xMax <= Screen.width && label.yMax <= Screen.height, Is.True);
+            Assert.That(label.Overlaps(outline), Is.False, "The label leaves the actual knob visible.");
+            outline.xMin -= 2f; outline.xMax += 2f; outline.yMin -= 2f; outline.yMax += 2f;
+            Assert.That(outline.Contains(callout.LeaderEnd), Is.True, "The thread reaches the outlined knob.");
+            Assert.That(Vector2.Distance(callout.LeaderStart, callout.LeaderEnd), Is.GreaterThan(5f));
+        }
+
+        [UnityTest]
+        public IEnumerator CabinReactions_FollowTheRadioAndCloseTheLidByHand()
+        {
+            Harness harness = BuildHarness(out GameObject scene);
+            if (Object.FindAnyObjectByType<AudioListener>() == null)
+                harness.Seat.SeatCamera.gameObject.AddComponent<AudioListener>();
+            var target = new RenderTexture(CabinCaptureWidth, CabinCaptureHeight, 24);
+            var buffer = new Texture2D(CabinCaptureWidth, CabinCaptureHeight,
+                TextureFormat.RGB24, false);
+            try
+            {
+                Directory.CreateDirectory(CabinCaptureRoot);
+                foreach (Animator animator in harness.Ferryman.GetComponentsInChildren<Animator>(true))
+                    animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                yield return null;
+                var radio = harness.Car.GetComponentInChildren<LastRouteRadioMusicPlayer>(true);
+                var dashboard = harness.CarRoot.GetComponent<LastRouteCarDashboard>();
+                var actions = harness.Ride.CabinActions;
+                var coins = harness.Car.GetComponentInChildren<LastRouteGloveboxCoins>(true);
+                Assert.That(radio, Is.Not.Null);
+                Assert.That(actions, Is.Not.Null);
+                Assert.That(coins, Is.Not.Null);
+                Assert.That(coins.PileRenderer.transform.parent, Is.SameAs(harness.Car.Body));
+                Assert.That(radio.Source.spatialBlend, Is.EqualTo(1f));
+                Vector3 sourceStart = radio.Source.transform.position;
+                int frames = 0;
+                while ((!harness.Driver.HasArrived || !harness.Ride.Fade.IsClear) && frames++ < MaximumSteps)
+                {
+                    yield return null;
+                    Assert.That(Vector3.Distance(radio.Source.transform.position,
+                        harness.Car.RadioDialRenderer.bounds.center), Is.LessThan(0.002f),
+                        "The spatial emitter must follow the drawn radio on the sprung body.");
+                }
+                Assert.That(harness.Driver.HasArrived, Is.True);
+                Assert.That(Vector3.Distance(sourceStart, radio.Source.transform.position), Is.GreaterThan(5f));
+                Assert.That(harness.Seat.IsSeated, Is.True);
+                Camera camera = harness.Seat.SeatCamera;
+                Assert.That(harness.Ride.RoadSpeech.BoundCamera, Is.SameAs(camera));
+                var pedestrian = harness.Ferryman.GetComponentInChildren<CityPedestrianAssetRegistry>(true);
+                Renderer coinCompartment = null;
+                foreach (LastRouteCarRendererBinding binding in harness.Car.Bindings)
+                    if (binding.Role == "glovebox_compartment") coinCompartment = binding.Renderer;
+                Assert.That(coinCompartment, Is.Not.Null);
+                MeshFilter compartmentFilter = coinCompartment.GetComponent<MeshFilter>();
+                Bounds compartmentBounds = compartmentFilter.sharedMesh.bounds;
+                compartmentBounds.Expand(0.000002f);
+                Vector3[] coinVertices = coins.PileRenderer.GetComponent<MeshFilter>().sharedMesh.vertices;
+                Vector3 restingCoinPosition = coins.transform.localPosition;
+                Quaternion restingCoinRotation = coins.transform.localRotation;
+                void AssertCoinsStayInside()
+                {
+                    foreach (Vector3 vertex in coinVertices)
+                    {
+                        Vector3 world = coins.transform.TransformPoint(vertex);
+                        Vector3 measured = compartmentFilter.transform.InverseTransformPoint(world);
+                        Assert.That(compartmentBounds.Contains(measured), Is.True,
+                            $"A placed coin leaves the actual glovebox mesh bounds at world {world}.");
+                    }
+                    Assert.That(Vector3.Distance(coins.transform.localPosition, restingCoinPosition),
+                        Is.LessThan(0.00001f), "The lid must not translate its contents.");
+                    Assert.That(Quaternion.Angle(coins.transform.localRotation, restingCoinRotation),
+                        Is.LessThan(0.001f), "The lid must not turn its contents.");
+                }
+                AssertCoinsStayInside();
+
+                int dislikedStation = LastRouteRideSpeechSession.State.DislikedRadioStationIndex;
+                int nextStation = LastRouteCarRadioModel.StepDetent(dislikedStation);
+                Assert.That(dislikedStation, Is.InRange(0, 2));
+                void TuneTo(int station)
+                {
+                    for (int click = 0; dashboard.TuningDetent != station && click < 3; click++)
+                        dashboard.Operate(LastRouteCarDashboardTarget.RadioTuning);
+                    Assert.That(dashboard.TuningDetent, Is.EqualTo(station));
+                }
+                TuneTo(nextStation);
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
+                float radioOnAt = Time.realtimeSinceStartup;
+                while (Time.realtimeSinceStartup - radioOnAt < 2.2f)
+                {
+                    yield return null;
+                    Assert.That(harness.Ride.RoadSpeech.LineKey,
+                        Is.Not.EqualTo(LastRouteRideController.RadioReactionKey));
+                }
+                Assert.That(LastRouteRideSpeechSession.State.HasPendingRadioReaction, Is.False,
+                    "A station other than this trip's random choice must not arm a complaint.");
+                TuneTo(dislikedStation);
+                AudioClip dislikedClip = LastRouteRadioMusicPlayer.LoadStationClip(dislikedStation);
+                Assert.That(dislikedClip, Is.Not.Null, "The chosen station must load by its actual filename.");
+                yield return null;
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
+                Assert.That(LastRouteRideSpeechSession.State.HasPendingRadioReaction, Is.False,
+                    "Power off cancels the listening interval.");
+                radio.Source.Stop();
+                radio.Source.clip = null;
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
+                float emptyAt = Time.realtimeSinceStartup;
+                while (Time.realtimeSinceStartup - emptyAt < 0.3f) yield return null;
+                Assert.That(LastRouteRideSpeechSession.State.HasPendingRadioReaction, Is.False,
+                    "Selecting an empty or still loading station is not listening.");
+                radio.Source.clip = dislikedClip;
+                radio.ResumeWithFadeIn(0f);
+                float interruptedAt = Time.realtimeSinceStartup;
+                while (Time.realtimeSinceStartup - interruptedAt < 0.5f) yield return null;
+                Assert.That(LastRouteRideSpeechSession.State.RadioReactionRemaining, Is.InRange(9f, 10f));
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioTuning);
+                Assert.That(LastRouteRideSpeechSession.State.HasPendingRadioReaction, Is.False,
+                    "Leaving the disliked station cancels its partial interval.");
+                Assert.That(LastRouteRideSpeechSession.State.DislikedRadioStationIndex, Is.EqualTo(dislikedStation),
+                    "Tuning may not reroll the driver's preference.");
+                TuneTo(dislikedStation);
+                radio.ResumeWithFadeIn(0f);
+                int cuesBeforeComplaint = harness.Audio.RadioTuningCueCount;
+                float listeningAt = Time.realtimeSinceStartup;
+                while (Time.realtimeSinceStartup - listeningAt < 0.5f) yield return null;
+                float pauseAt = Time.realtimeSinceStartup;
+                float remainingAtPause = LastRouteRideSpeechSession.State.RadioReactionRemaining;
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    while (Time.realtimeSinceStartup - pauseAt < 0.25f) yield return null;
+                    Assert.That(LastRouteRideSpeechSession.State.RadioReactionRemaining,
+                        Is.EqualTo(remainingAtPause), "Pause must not consume listening time.");
+                }
+                float pauseLength = Time.realtimeSinceStartup - pauseAt;
+                while (Time.realtimeSinceStartup - listeningAt - pauseLength < 9.8f)
+                {
+                    yield return null;
+                    // A slow rendered frame can itself cross the ten-second
+                    // boundary after the condition above was evaluated.
+                    if (Time.realtimeSinceStartup - listeningAt - pauseLength < 9.8f)
+                    {
+                        Assert.That(dashboard.TuningDetent, Is.EqualTo(dislikedStation),
+                            $"Switched after {Time.realtimeSinceStartup - listeningAt - pauseLength:F3} listening seconds.");
+                        Assert.That(harness.Ride.RoadSpeech.LineKey,
+                            Is.Not.EqualTo(LastRouteRideController.RadioReactionKey));
+                    }
+                }
+                while (harness.Ride.RoadSpeech.LineKey != LastRouteRideController.RadioReactionKey &&
+                       Time.realtimeSinceStartup - listeningAt - pauseLength < 11f)
+                    yield return null;
+                Assert.That(harness.Ride.RoadSpeech.LineKey, Is.EqualTo(LastRouteRideController.RadioReactionKey));
+                Assert.That(harness.Ride.RoadSpeech.FullText,
+                    Is.EqualTo("Что за дерьмо у нас играет? Композитор - полная бездарность"));
+                Assert.That(Time.realtimeSinceStartup - listeningAt - pauseLength, Is.GreaterThanOrEqualTo(9.8f));
+                Assert.That(harness.Ride.RoadSpeech.Speaker.Anchor, Is.SameAs(pedestrian.HeadAnchor));
+                Assert.That(dashboard.RadioOn, Is.True);
+                Assert.That(LastRouteRideSpeechSession.State.HasReactedToRadioThisTrip, Is.True);
+                Assert.That(dashboard.TuningDetent, Is.EqualTo(dislikedStation),
+                    "Speaking requests a hand movement, not an immediate station change.");
+                Assert.That(harness.Audio.RadioTuningCueCount, Is.EqualTo(cuesBeforeComplaint));
+                camera.targetTexture = target;
+                camera.fieldOfView = 75f;
+                float worstWristStep = 0f;
+                float worstWristSpeed = 0f;
+                float worstContactBend = 0f;
+                void MeasureCompletedWrist(bool inContact)
+                {
+                    // These metrics are saved after the hand solver's LateUpdate,
+                    // unlike bone rotations restored before this coroutine resumes.
+                    worstWristStep = Mathf.Max(worstWristStep, actions.WristFrameStepDegrees);
+                    worstWristSpeed = Mathf.Max(worstWristSpeed, actions.WristAngularSpeed);
+                    if (inContact)
+                    {
+                        worstContactBend = Mathf.Max(worstContactBend, actions.WristBendDegrees);
+                        Assert.That(actions.PalmFacingSurface, Is.GreaterThan(0.97f),
+                            $"Palm faces away from its surface: {actions.PalmFacingSurface:F4}.");
+                        Assert.That(actions.ElbowHeightFromShoulder, Is.LessThan(0.02f),
+                            $"The reaching elbow rises above its shoulder by {actions.ElbowHeightFromShoulder:F3} m.");
+                    }
+                }
+                bool sawRadioContact = false;
+                bool sawRadioTurn = false;
+                float maximumTuningDegrees = 0f;
+                float worstRadioContact = 0f;
+                float maximumSpeakingGlance = 0f;
+                float radioReachAt = Time.realtimeSinceStartup;
+                while (Time.realtimeSinceStartup - radioReachAt < 7f &&
+                       (actions.IsTuningRadio || dashboard.TuningDetent == dislikedStation))
+                {
+                    yield return null;
+                    MeasureCompletedWrist(actions.HasRadioContact);
+                    maximumSpeakingGlance = Mathf.Max(maximumSpeakingGlance, actions.HeadTurnWeight);
+                    maximumTuningDegrees = Mathf.Max(maximumTuningDegrees, dashboard.DriverTuningDegrees);
+                    Assert.That(dashboard.DriverTuningDegrees, Is.InRange(0f, 120f));
+                    if (actions.HasRadioContact)
+                    {
+                        worstRadioContact = Mathf.Max(worstRadioContact, actions.HandContactDistance);
+                        Assert.That(actions.OtherHandWheelDistance, Is.LessThan(0.035f));
+                        if (!sawRadioContact)
+                        {
+                            sawRadioContact = true;
+                            yield return CaptureCompletedCabinFrame(harness, camera, target, buffer,
+                                -35f, 30f, "reaction-radio-contact");
+                        }
+                        if (!sawRadioTurn && dashboard.DriverTuningDegrees > 20f)
+                        {
+                            sawRadioTurn = true;
+                            yield return CaptureCompletedCabinFrame(harness, camera, target, buffer,
+                                -35f, 30f, "reaction-radio-turn");
+                        }
+                    }
+                    if (dashboard.TuningDetent == dislikedStation)
+                        Assert.That(harness.Audio.RadioTuningCueCount, Is.EqualTo(cuesBeforeComplaint),
+                            "A partial physical turn must not emit the committed station cue.");
+                    else
+                    {
+                        Assert.That(sawRadioContact && sawRadioTurn, Is.True,
+                            "The driver selected a station before his hand reached and turned the knob.");
+                        Assert.That(dashboard.TuningDetent, Is.EqualTo(nextStation));
+                        Assert.That(harness.Audio.RadioTuningCueCount, Is.EqualTo(cuesBeforeComplaint + 1));
+                    }
+                }
+                Assert.That(sawRadioContact, Is.True,
+                    $"Hand never reached radio: {actions.HandContactDistance:F4} m, target {actions.RadioContactPoint}.");
+                Assert.That(sawRadioTurn, Is.True);
+                Assert.That(maximumSpeakingGlance, Is.GreaterThan(0.5f));
+                Assert.That(maximumTuningDegrees, Is.GreaterThan(60f),
+                    "Both short strokes must advance the knob toward its 120-degree detent.");
+                Assert.That(worstRadioContact, Is.LessThanOrEqualTo(LastRouteFerrymanCabinActions.ContactTolerance));
+                Assert.That(actions.IsTuningRadio, Is.False, "The hand must return to the wheel.");
+                Assert.That(dashboard.TuningDetent, Is.EqualTo(nextStation));
+                Assert.That(GameSessionState.CarDashboard.TuningDetent, Is.EqualTo(nextStation));
+                Assert.That(radio.ActiveClip, Is.SameAs(LastRouteRadioMusicPlayer.LoadStationClip(nextStation)));
+                Assert.That(harness.Audio.RadioTuningCueCount, Is.EqualTo(cuesBeforeComplaint + 1));
+                Assert.That(dashboard.DriverTuningDegrees, Is.Zero);
+                if (radio.ActiveClip != null)
+                    Assert.That(radio.Source.isPlaying, Is.True);
+                yield return CaptureCompletedCabinFrame(harness, camera, target, buffer,
+                    -55f, 20f, "reaction-01-speaking");
+
+                // E interrupts the visible reach and cuts audio in the same call.
+                int stationBeforeCancel = dashboard.TuningDetent;
+                int cuesBeforeCancel = harness.Audio.RadioTuningCueCount;
+                actions.RequestRadioRetune();
+                float cancelReachAt = Time.realtimeSinceStartup;
+                while (actions.LeanWeight < 0.08f && Time.realtimeSinceStartup - cancelReachAt < 2f)
+                    yield return null;
+                Assert.That(actions.IsTuningRadio, Is.True);
+                Assert.That(actions.HasRadioContact, Is.False);
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
+                Assert.That(dashboard.RadioOn, Is.False);
+                Assert.That(radio.Source.isPlaying, Is.False, "E must stop playback immediately during his reach.");
+                float cancelledAt = Time.realtimeSinceStartup;
+                while (Time.realtimeSinceStartup - cancelledAt < 1.4f)
+                {
+                    yield return null;
+                    MeasureCompletedWrist(false);
+                    Assert.That(dashboard.RadioOn, Is.False);
+                    Assert.That(dashboard.TuningDetent, Is.EqualTo(stationBeforeCancel));
+                    Assert.That(harness.Audio.RadioTuningCueCount, Is.EqualTo(cuesBeforeCancel));
+                }
+                Assert.That(actions.IsTuningRadio, Is.False);
+
+                // Q remains the player's immediate choice and cancels his queued turn.
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
+                actions.RequestRadioRetune();
+                cancelReachAt = Time.realtimeSinceStartup;
+                while (actions.LeanWeight < 0.08f && Time.realtimeSinceStartup - cancelReachAt < 2f)
+                    yield return null;
+                Assert.That(actions.IsTuningRadio, Is.True);
+                Assert.That(actions.HasRadioContact, Is.False);
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioTuning);
+                int playerStation = LastRouteCarRadioModel.StepDetent(stationBeforeCancel);
+                Assert.That(dashboard.TuningDetent, Is.EqualTo(playerStation));
+                cancelledAt = Time.realtimeSinceStartup;
+                while (Time.realtimeSinceStartup - cancelledAt < 1.4f)
+                {
+                    yield return null;
+                    MeasureCompletedWrist(false);
+                    Assert.That(dashboard.TuningDetent, Is.EqualTo(playerStation),
+                        "A cancelled driver gesture must not override the passenger's Q later.");
+                    Assert.That(harness.Audio.RadioTuningCueCount, Is.EqualTo(cuesBeforeCancel + 1));
+                }
+                Assert.That(actions.IsTuningRadio, Is.False);
+                Assert.That(dashboard.DriverTuningDegrees, Is.Zero);
+                TuneTo(dislikedStation);
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
+                dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
+                yield return null;
+                yield return null;
+                Assert.That(LastRouteRideSpeechSession.State.HasReactedToRadioThisTrip, Is.True);
+                Assert.That(LastRouteRideSpeechSession.State.HasPendingRadioReaction, Is.False,
+                    "Returning to the same song and toggling power cannot arm a second complaint this trip.");
+                dashboard.Operate(LastRouteCarDashboardTarget.Glovebox);
+                float openedAt = Time.realtimeSinceStartup;
+                Assert.That(harness.Ride.RoadSpeech.LineKey, Is.EqualTo(LastRouteRideController.GloveboxReactionKey));
+                while (Time.realtimeSinceStartup - openedAt < 1.8f)
+                {
+                    yield return null;
+                    Assert.That(actions.IsClosingGlovebox, Is.False);
+                }
+                yield return CaptureCompletedCabinFrame(harness, camera, target, buffer,
+                    -18f, 41f, "reaction-02-coins");
+                AssertCoinsStayInside();
+                bool sawReach = false;
+                bool sawContact = false;
+                bool sawLidMove = false;
+                float worstContact = 0f;
+                float worstOtherHand = 0f;
+                float previousOpenness = dashboard.GloveboxOpenness;
+                while (Time.realtimeSinceStartup - openedAt < 7f &&
+                       (dashboard.GloveboxOpen || actions.IsClosingGlovebox))
+                {
+                    yield return null;
+                    MeasureCompletedWrist(actions.HasLidContact);
+                    if (actions.IsClosingGlovebox && !sawReach)
+                    {
+                        sawReach = true;
+                        Assert.That(dashboard.IsGloveboxInputLocked, Is.True);
+                        dashboard.Operate(LastRouteCarDashboardTarget.Glovebox);
+                        Assert.That(dashboard.GloveboxOpen, Is.True, "Manual input must not move a lid held by his hand.");
+                    }
+                    if (actions.HasLidContact)
+                    {
+                        if (!sawContact)
+                        {
+                            yield return CaptureCompletedCabinFrame(harness, camera, target, buffer,
+                                -18f, 41f, "reaction-03-contact");
+                        }
+                        sawContact = true;
+                        worstContact = Mathf.Max(worstContact, actions.HandContactDistance);
+                        worstOtherHand = Mathf.Max(worstOtherHand, actions.OtherHandWheelDistance);
+                    }
+                    if (dashboard.GloveboxOpenness < previousOpenness - 0.00001f)
+                    {
+                        Assert.That(sawContact, Is.True, "The lid moved before his palm reached its catch.");
+                        if (!sawLidMove && dashboard.GloveboxOpenness < 0.6f)
+                        {
+                            yield return CaptureCompletedCabinFrame(harness, camera, target, buffer,
+                                -18f, 41f, "reaction-04-closing");
+                            sawLidMove = true;
+                        }
+                    }
+                    previousOpenness = dashboard.GloveboxOpenness;
+                }
+                Assert.That(sawReach, Is.True);
+                Assert.That(sawContact, Is.True, $"Hand never reached catch: {actions.HandContactDistance:F4} m; hand {actions.ClosingHand?.position}, catch {actions.LidContactPoint}.");
+                AssertCoinsStayInside();
+                Assert.That(sawLidMove, Is.True);
+                Assert.That(worstContact, Is.LessThanOrEqualTo(LastRouteFerrymanCabinActions.ContactTolerance));
+                Assert.That(worstOtherHand, Is.LessThan(0.035f), "The other hand must remain on the steering wheel.");
+                Assert.That(dashboard.GloveboxOpen, Is.False);
+                Assert.That(GameSessionState.CarDashboard.GloveboxOpen, Is.False);
+                Assert.That(dashboard.GloveboxOpenness, Is.EqualTo(0f));
+                Assert.That(dashboard.IsGloveboxInputLocked, Is.False);
+                Assert.That(worstContactBend, Is.LessThan(70f),
+                    $"Contact wrist bend reached {worstContactBend:F2} degrees.");
+                // PNG capture can take several ordinary frames of wall time.
+                // Bound angular speed using the actual pose step, not a fixed
+                // angular displacement that assumes an uninterrupted 60 Hz.
+                Assert.That(worstWristSpeed, Is.LessThan(480f),
+                    $"Wrist speed reached {worstWristSpeed:F2} deg/s; largest frame step {worstWristStep:F2} degrees.");
+                TestContext.WriteLine($"Cabin hand motion: bend {worstContactBend:F2} degrees, speed {worstWristSpeed:F2} deg/s, contact {Mathf.Max(worstRadioContact, worstContact):F4} m.");
+                yield return CaptureCompletedCabinFrame(harness, camera, target, buffer,
+                    -55f, 20f, "reaction-05-returned");
+            }
+            finally
+            {
+                Object.DestroyImmediate(scene);
+                Object.DestroyImmediate(buffer);
+                target.Release();
+                Object.DestroyImmediate(target);
+            }
+        }
+
+        private static IEnumerator CaptureCompletedCabinFrame(Harness harness, Camera camera,
+            RenderTexture target, Texture2D buffer, float yaw, float pitch, string name)
+        {
+            // Coroutine continuations run between Update's pose restore and the
+            // driver's LateUpdate. Photograph the completed rig, as rendering does.
+            var capture = camera.gameObject.AddComponent<LastRouteCabinLateCapture>();
+            capture.Capture = () =>
+            {
+                PoseSeatCamera(harness, camera, yaw, pitch);
+                WriteCabinCapture(camera, target, buffer, name);
+            };
+            while (capture.Capture != null) yield return null;
+            Object.DestroyImmediate(capture);
         }
 
         private sealed class Harness
@@ -1464,6 +2078,18 @@ namespace BarPromenade.Tests.PlayMode
             {
                 return position;
             }
+        }
+    }
+
+    [DefaultExecutionOrder(20000)]
+    public sealed class LastRouteCabinLateCapture : MonoBehaviour
+    {
+        public System.Action Capture;
+        private void LateUpdate()
+        {
+            System.Action action = Capture;
+            Capture = null;
+            action?.Invoke();
         }
     }
 }

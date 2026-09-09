@@ -98,6 +98,8 @@ namespace BarPromenade
         private Leg leg;
         private LastRouteCarSeatInteraction seat;
         private LastRouteCarDriver driver;
+        private LastRouteCarDashboard dashboard;
+        private LastRouteRadioMusicPlayer radioMusic;
         private LastRouteFerrymanPresentation ferryman;
         private LastRouteRideFadeView fade;
         private Func<LastRouteCarDrivePath> buildPath;
@@ -137,6 +139,16 @@ namespace BarPromenade
         /// <summary>The corner line telling the player he can skip the rest
         /// of the ride.</summary>
         public LastRouteRideSkipHintView SkipHint { get; private set; }
+
+        public LastRouteRideSpeechView RoadSpeech { get; private set; }
+        public LastRouteFerrymanCabinActions CabinActions { get; private set; }
+        public const string GloveboxReactionKey = "lastroute.ride.glovebox";
+        public const string RadioReactionKey = "lastroute.ride.radio";
+        public const float RadioReactionDelaySeconds = 10f;
+        public bool IsSpeaking => RoadSpeech != null && RoadSpeech.IsSpeaking;
+        private LastRouteRideSpeechState roadSpeechState;
+        private NpcSpeaker roadSpeaker;
+        private bool specialRemark;
 
         /// <summary>The black the journey passes through, exposed so a test
         /// can watch the skip go under rather than infer it.</summary>
@@ -188,6 +200,7 @@ namespace BarPromenade
             }
 
             skipRequested = true;
+            CloseRoadSpeech();
             SkipHint?.Hide();
             fade?.FadeOut(SkipFadeOutSeconds);
             GameLog.Info(
@@ -524,10 +537,23 @@ namespace BarPromenade
             var controller = host.AddComponent<LastRouteRideController>();
             controller.seat = carSeat;
             controller.driver = carDriver;
+            controller.dashboard = carDriver.GetComponent<LastRouteCarDashboard>();
+            controller.radioMusic = carDriver.GetComponentInChildren<LastRouteRadioMusicPlayer>(true);
             controller.ferryman = ferrymanPresentation;
             controller.fade = LastRouteRideFadeView.Create(host.transform);
             controller.SkipHint =
                 LastRouteRideSkipHintView.Create(host.transform);
+            controller.RoadSpeech = LastRouteRideSpeechView.Create(host.transform);
+            controller.RoadSpeech.BindCamera(carSeat.SeatCamera);
+            controller.roadSpeechState = LastRouteRideSpeechSession.State;
+            controller.roadSpeaker = NpcSpeaker.FromRegistry(
+                ferrymanPresentation,
+                ferrymanPresentation != null
+                    ? ferrymanPresentation.GetComponentInChildren<CityPedestrianAssetRegistry>()
+                    : null,
+                NpcEarshotProfile.Conversation);
+            controller.CabinActions = LastRouteFerrymanCabinActions.Create(
+                host.transform, ferrymanPresentation, carDriver, controller);
             carSeat.AttachDriver(carDriver);
             carSeat.Alighted += controller.HandleAlighted;
             carDriver.Arrived += controller.HandleArrived;
@@ -549,6 +575,7 @@ namespace BarPromenade
 
             driveBegun = true;
             IsRiding = true;
+            roadSpeechState.BeginTrip();
             GameSessionState.TryAdvanceFerrymanRide(reachedStage);
             seat.BeginRideAttachment();
             driver.Begin(path, profile);
@@ -617,6 +644,7 @@ namespace BarPromenade
 
             seat.BeginRideAttachment();
             driver.Begin(path, profile, entrySpeed);
+            roadSpeechState.EnsureTrip();
 
             // The city's homecoming crosses live traffic at the same junction
             // the departure crossed - out of the forecourt this time instead
@@ -703,6 +731,7 @@ namespace BarPromenade
 
             UpdateSkip();
             UpdateSkipOffer();
+            UpdateRoadSpeech();
             if (leg != Leg.Departing || !IsRiding || travelRequested)
             {
                 return;
@@ -716,6 +745,7 @@ namespace BarPromenade
                 driver.Model != null &&
                 driver.Model.Remaining <= FadeLeadMeters)
             {
+                CloseRoadSpeech();
                 fade.FadeOut();
             }
 
@@ -762,6 +792,8 @@ namespace BarPromenade
             }
 
             IsRiding = false;
+            CloseRoadSpeech();
+            roadSpeechState.EndTrip();
 
             // Re-solve the seat BEFORE giving the hero his controller back,
             // and the order is load-bearing. `LastRouteCarSeatPlan` finds the
@@ -788,6 +820,7 @@ namespace BarPromenade
         /// </summary>
         private void HandleAlighted()
         {
+            roadSpeechState?.CancelRadioReaction();
             if (leg != Leg.Arriving || driver.IsDriving)
             {
                 return;
@@ -796,8 +829,109 @@ namespace BarPromenade
             ferryman?.TryBeginAlighting();
         }
 
+        private void UpdateRoadSpeech()
+        {
+            if (RoadSpeech == null || roadSpeechState == null)
+                return;
+            bool enteringTunnelFade = IsRiding && leg == Leg.Departing && driver != null &&
+                driver.Model != null && driver.Model.Remaining <= FadeLeadMeters;
+            bool passengerInCabin = IsRiding || (seat != null && seat.IsSeated);
+            if (!passengerInCabin || IsSkipping || travelRequested ||
+                enteringTunnelFade || SceneTransitionService.IsTransitioning ||
+                (fade != null && !fade.IsClear))
+            {
+                CloseRoadSpeech();
+                return;
+            }
+            if (PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused)
+                return;
+
+            // Time scaling changes vehicle speed, not how fast somebody speaks.
+            float seconds = Time.unscaledDeltaTime;
+            UpdateRadioReaction(seconds);
+            if (RoadSpeech.IsVisible)
+            {
+                RoadSpeech.Advance(seconds);
+                if (!RoadSpeech.IsVisible)
+                    FinishRoadSpeechLine();
+                return;
+            }
+            if (!IsRiding || driver == null || !driver.IsDriving || driver.Speed <= 0.15f)
+                return;
+            int line = roadSpeechState.AdvanceSilence(seconds);
+            if (line >= 0)
+                RoadSpeech.Show(LastRouteRideSpeechState.LineKey(line), roadSpeaker);
+        }
+
+        private void CloseRoadSpeech()
+        {
+            RoadSpeech?.Close();
+            FinishRoadSpeechLine();
+        }
+
+        private void FinishRoadSpeechLine()
+        {
+            if (specialRemark)
+                roadSpeechState?.FinishCabinRemark();
+            else
+                roadSpeechState?.FinishLine();
+            specialRemark = false;
+        }
+
+        /// <summary>A direct cabin reaction takes priority without spending a road quip.</summary>
+        public void SaySpecial(string key)
+        {
+            if (RoadSpeech == null || string.IsNullOrEmpty(key) ||
+                SceneTransitionService.IsTransitioning || IsSkipping || travelRequested ||
+                (fade != null && !fade.IsClear))
+                return;
+            CloseRoadSpeech();
+            specialRemark = true;
+            RoadSpeech.Show(key, roadSpeaker);
+        }
+
+        public void OnGloveboxOpened() => SaySpecial(GloveboxReactionKey);
+
+        private void UpdateRadioReaction(float seconds)
+        {
+            int dislikedStation = roadSpeechState.DislikedRadioStationIndex;
+            if (roadSpeechState.HasReactedToRadioThisTrip || dislikedStation < 0 ||
+                dashboard == null || !dashboard.RadioOn ||
+                dashboard.TuningDetent != dislikedStation)
+            {
+                roadSpeechState.CancelRadioReaction();
+                return;
+            }
+            // A selected empty station or a replacement still waiting for its
+            // music tail is not ten seconds spent listening to this song.
+            if (radioMusic == null || radioMusic.StationIndex != dislikedStation ||
+                radioMusic.ActiveClip == null || !radioMusic.Source.isPlaying ||
+                radioMusic.NormalizedGain <= 0.0001f)
+                return;
+            if (!roadSpeechState.HasPendingRadioReaction)
+            {
+                roadSpeechState.ArmRadioReaction(RadioReactionDelaySeconds);
+                // This frame's delta can include loading before Play. Start
+                // measuring only after the first confirmed audible frame.
+                return;
+            }
+            if (!roadSpeechState.AdvanceRadioReaction(seconds)) return;
+            SaySpecial(RadioReactionKey);
+            // The station changes only when his hand completes the real knob
+            // turn. A later passenger input can still cancel that attempt.
+            CabinActions?.RequestRadioRetune();
+        }
+
+        public void OnRadioSettingChanged() => roadSpeechState?.CancelRadioReaction();
+
+        private void OnDisable()
+        {
+            CloseRoadSpeech();
+        }
+
         private void OnDestroy()
         {
+            CloseRoadSpeech();
             if (seat != null)
             {
                 seat.Seated -= HandleSeated;

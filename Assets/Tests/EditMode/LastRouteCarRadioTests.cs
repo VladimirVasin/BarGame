@@ -40,10 +40,11 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 LastRouteCarRadioModel.DefaultDetent,
-                Is.GreaterThan(0).And.LessThan(LastRouteCarRadioModel.DetentCount - 1),
-                "A new game's needle stands off both ends so the first click moves it.");
+                Is.Zero,
+                "A new game's radio starts at Station 1.");
+            Assert.That(LastRouteCarRadioModel.DetentCount, Is.EqualTo(3));
             var state = new LastRouteCarDashboardState(false, 11, false);
-            Assert.That(state.TuningDetent, Is.EqualTo(3), "The state wraps too.");
+            Assert.That(state.TuningDetent, Is.EqualTo(2), "The state wraps too.");
         }
 
         [Test]
@@ -99,7 +100,9 @@ namespace BarPromenade.Tests.EditMode
                          (LastRouteCarCueKind.KnobDetent,
                              LastRouteCarSoundSynthesis.KnobDetentClipSeconds),
                          (LastRouteCarCueKind.GloveboxLatch,
-                             LastRouteCarSoundSynthesis.GloveboxLatchClipSeconds)
+                             LastRouteCarSoundSynthesis.GloveboxLatchClipSeconds),
+                         (LastRouteCarCueKind.RadioTuning,
+                             LastRouteCarSoundSynthesis.RadioTuningClipSeconds)
                      })
             {
                 float[] first = LastRouteCarSoundSynthesis.GenerateCue(kind);
@@ -143,7 +146,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     audio.OwnedSources.Count,
                     Is.EqualTo(LastRouteCarAudio.OwnedSourceCount),
-                    "The dash brings no source of its own.");
+                    "The radio's tuning voice is counted with the car's sources.");
 
                 dashboard.Operate(LastRouteCarDashboardTarget.RadioPower);
                 dashboard.Operate(LastRouteCarDashboardTarget.RadioTuning);
@@ -151,6 +154,7 @@ namespace BarPromenade.Tests.EditMode
                 dashboard.Operate(LastRouteCarDashboardTarget.Glovebox);
                 Assert.That(audio.RadioSwitchCueCount, Is.EqualTo(1));
                 Assert.That(audio.KnobDetentCueCount, Is.EqualTo(2));
+                Assert.That(audio.RadioTuningCueCount, Is.EqualTo(2));
                 Assert.That(audio.GloveboxLatchCueCount, Is.EqualTo(1));
                 Assert.That(
                     audio.IsEngineWanted,

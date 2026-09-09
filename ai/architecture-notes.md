@@ -4,6 +4,94 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-09, the Ferryman's radio and ordinary road speech:**
+  The user approved the complete radio, glovebox-light and ten-line road-pool
+  plan. This is the bounded story-bible §6 exception to §17's parked-pool
+  counts and mandatory second person, and to a blanket reading of art §10f's
+  music silence. The existing twelve island and twelve mountain answers stay
+  separate. Road lines concern only ordinary driving and car maintenance;
+  they add no invitation, question, mysticism or lore. The single rhetorical
+  radio reaction below is separately authorized; the ten-line pool is unchanged.
+  Story §16/§21 and all nine art checks remain binding outside that exception.
+  The user's station refinement fixes the radio to exactly three slots:
+  `Resources/Audio/LastRouteRadio/Station1`, `Station2` and `Station3` each
+  hold one user track, with any WAV/OGG/MP3 filename. All three now contain
+  music. `LoadStationClip` prefers the optional `radio_theme` basename; otherwise
+  it chooses the folder's clip, ordered by ordinal name if several are present.
+  `LastRouteRadioMusicPlayer`
+  loops the selected track at the existing radio. Mono `180–3500 Hz`
+  band limiting, mild saturation, quiet hiss and subtle speed drift colour
+  only this source. Session state
+  retains power, the selected station and separate playback seconds per
+  station across car instances. A new session selects station 1. Empty
+  stations remain selected without a fallback; power still suppresses the city
+  theme. `CityMusicPlayer` checks radio power before its first
+  playback, and the place director cannot restart the city theme while power
+  is on. `SceneMusicPlayer.SetPlaybackSuppressed` applies before playback.
+  Power-on lets the city leave over `4 s` before the radio enters over `1 s`.
+  Power-off captures the playhead and immediately cuts radio music and hiss,
+  including any detached old-car tail; the city resumes through its usual
+  `1 s` fade-in without waiting for a radio fade. Scene exit while radio power
+  remains on still keeps the normal `4 s` tail. The new car reads the saved playhead only
+  when playback begins, after any departing tail has finished.
+  The ten approved localized road lines use `LastRouteRideSpeechSession` for
+  the shuffle bag and `LastRouteRideSpeechView` for the shared overhead bubble,
+  typewriter and writing clicks without modal ownership. The driver's head
+  turns towards the passenger during both ordinary and reactive lines.
+  First delivery waits `12–18 s` of
+  visible driving; later lines wait `30–45 s` after printing and a `2 s`
+  reading hold. At most five lines span both scenes of one trip. Stopping and
+  pause freeze delivery; fades and skip discard the active line. Boarding,
+  alighting and loading never release accumulated lines.
+  Look and dashboard input remain available. Radio knobs receive separate
+  outlined callouts: `E` controls power, and while power is on `Q` cycles
+  `1 → 2 → 3 → 1`, moving the needle and selecting that station's own track.
+  A short tuning hiss/crackle answers the switch through one car-audio voice
+  at the radio. Repeated presses restart it; switching power off stops it.
+  The user's cabin correction adds only two reactive lines: an ownership
+  remark on opening the glovebox and the exact user-supplied negative comment
+  at `lastroute.ride.radio`. `BeginTrip` randomly chooses one of the three
+  stations for that reaction and clears its used flag. After `10 s` of actual
+  playback of that station, the line starts and the driver reaches for the
+  tuning knob with the distal palm gripping its side. The elbow stays below
+  and outboard of the shoulder; the fingers follow the forearm projected onto
+  the contact plane. This controls the whole arm, while measured palm geometry
+  and shared forearm pronation preserve the wrist. The next station, including
+  `3 → 1`, commits only at the turn endpoint with grip contact; the usual tuning cue
+  accompanies the commit. His hand then returns to the steering wheel. Player
+  power or tuning input during the gesture cancels it and returns the hand from
+  its last completed pose without overwriting the player's choice. The reaction
+  can happen only once per whole trip.
+  Session ownership preserves the chosen station, used flag and listening
+  clock across both scenes. Empty media cannot advance the clock; pause/loading
+  freeze it. Power-off and station changes reset only the clock, never the
+  chosen station or used flag. Only the next trip renews the reaction.
+  By the user's explicit wording and story-bible §6, only this line may depart
+  from §21's unanswered-question ban and trigger the station change. It neither
+  asks about the hero nor invites an answer; the remaining §17/§21 constraints
+  and the parked and road pools remain intact. After the glovebox has
+  been open for `2 s`, the driver leans and reaches with the near hand. Its
+  palm meets the lid's underside and follows the closing push with the same
+  low elbow and forearm-led finger direction. Contact starts closure, then
+  the hand returns to the steering wheel.
+  The same correction fills the glovebox with ordinary loose change, without
+  pickup, inventory value or an explanation of the Ferryman's payment.
+  `tools/build-last-route-coin-3d-model.py` migrates only his existing plain
+  eight-sided `54 x 9 mm` coin and repeats it into a contained `107`-coin
+  pile. Both meshes share the former brass tint and runtime material. The
+  generator validates deterministic geometry, solid winding and per-coin
+  compartment/bulb clearance; the bare-mesh export bakes metre scale and axis
+  conversion. `LastRouteGloveboxCoins` follows the sprung body at the hinge,
+  never the moving lid. Placement uses the prefab's axes and the authored
+  nose's half-turn, not the FBX body's almost-vertical forward. Its world
+  geometry is checked against the actual compartment, separately from the
+  read-only build gate that measures both imported mesh assets.
+  This is a bounded ordinary-possession detail, not a mystical coin symbol.
+  The existing glovebox point
+  light retains its bulb anchor, intensity and lid ownership; its `0.15 m`
+  range confines the practical to the open niche instead of reaching through
+  the car body.
+
 - **Accepted — 2026-09-09, lightweight scarf with hero-body contacts only:**
   The user reported continuing outdoor frame drops, especially while running,
   explicitly permitted simpler mechanics, then required the scarf to ignore
@@ -4267,9 +4355,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   moving value is set, for the reason it refuses while the area service is
   travelling — the hero is between two places rather than standing in either,
   and a chart with a teleport on it would let him step out of a moving car.
-  `LastRouteCarAudio` builds its engine, cabin and rear-axle anchors inactive,
-  configures all five sources with `playOnAwake = false`, their loop clips
-  and filters, then activates the anchors at the end of initialization.
+  `LastRouteCarAudio` builds its source anchors inactive, configures every
+  source with `playOnAwake = false`, its clips and filters, then activates
+  the anchors at the end of initialization.
   This prevents adding the deck source to the filtered axle from attempting
   clipless autoplay; the ride still starts playback and owns the same mix.
 - **Accepted — the shared target menu can be refused, and the refusal is the
@@ -5452,12 +5540,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   emissive material properties: it creates no material instances, realtime
   `Light` components or strobing whole-room illumination.
 - **Accepted — One mixing rule for every music change:** `MusicMix` holds the
-  whole rule: `FadeOutSeconds = 4`, `FadeInSeconds = 1`, and a registry of the
+  default rule: `FadeOutSeconds = 4`, `FadeInSeconds = 1`, and a registry of the
   sources that are still leaving. A theme starts only through
   `BeginFadeInThroughRule`, which refuses to sound while
   `MusicMix.IsFadeOutActive` and retries each frame, so themes hand over
-  instead of crossfading. Because a scene unload would cut a four-second tail
-  dead, `MusicMix.BeginDetachedFadeOut` reparents the departing music object
+  instead of crossfading. The Ferryman radio decision permits only its physical
+  power switch to stop that source immediately. Because a scene unload would
+  cut a four-second tail dead, `MusicMix.BeginDetachedFadeOut` reparents the departing music object
   out of its scene into `DontDestroyOnLoad` — the same `AudioSource` keeps
   playing, so a streaming clip is never re-seeked — and the player destroys
   its own carrier when the fade reaches zero. That removes the old activation
@@ -5485,7 +5574,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   a walk along a fence would flap the mix, and every flap costs a full
   fade-out and fade-in. The handover is the shared rule at its one length —
   `MusicMix.FadeOutSeconds`, the same `4 s` as a scene change — so there is a
-  single number for every music change in the game. Place themes are parked
+  single number for scene/place handoffs. Place themes are parked
   with
   `FadeOutAndPause(0f)` at initialization and resume from their own sample, so
   leaving and returning continues both tracks where they stopped. A slot whose

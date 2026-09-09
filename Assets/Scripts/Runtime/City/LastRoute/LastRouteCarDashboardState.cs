@@ -25,8 +25,7 @@ namespace BarPromenade
         public int TuningDetent { get; }
         public bool GloveboxOpen { get; }
 
-        /// <summary>A new game: radio off, needle where the last owner left
-        /// it, lid shut.</summary>
+        /// <summary>A new game: radio off, first station selected, lid shut.</summary>
         public static LastRouteCarDashboardState Default =>
             new LastRouteCarDashboardState(
                 false,
