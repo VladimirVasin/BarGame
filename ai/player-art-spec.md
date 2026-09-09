@@ -192,7 +192,7 @@ This opt-in applies only during the interaction handoff without an active clip.
   the hero, changes his gait or drives health. Canon boundaries live in the
   story-bible §6 registry and art-bible §10g; this is ordinary rig animation
   without an atlas replacement.
-- All `41` existing actions are regenerated with the independent
+- All `48` existing actions are regenerated with the independent
   `pelvis -> spine -> chest` tracks on the preserved 31-bone hierarchy. Their
   timings, sockets, hand/foot contacts and contextual seams remain the same;
   the newly weighted shirt and jacket now visibly follow each spinal region.

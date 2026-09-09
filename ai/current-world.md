@@ -25,6 +25,9 @@ enters separate interiors, and returns to the matching exterior entrance.
 
 The vertical slice contains:
 
+
+### Areas and scenes
+
 - six ordinary winter village residents, with the production hero's detail
   as the authoring floor, recognize him through short local lines. The station
   worker checks his cargo lid; the woman at house `04` loads six actual logs and carries two filled
@@ -421,6 +424,9 @@ The vertical slice contains:
   Garlands are emissive geometry; two cords and three windows own the five real
   village lights. Six bounded spatial voices belong to the visible station,
   one wire, the cable gate, water catch basin, firewood and a house wall;
+
+### City generation and layout
+
 - a finite, seed-reproducible coastal city driven by one immutable blueprint:
   the default preserves all 144 former road-and-lot cells inside a `13 x 12`
   urban envelope, using the added central column for a north-south river and
@@ -599,6 +605,9 @@ The vertical slice contains:
   fog-matched terminal camera backdrop, City-only `48 m` visibility cap,
   `CityFogField` and `CityNoirVolumeProfile` stay fixed across the cycle. The
   Windows player explicitly retains the runtime-only Exp2 shader variant;
+
+### Weather, sky and presentation
+
 - deterministic exterior weather also drives one transient surface-film state
   shared by City and the Home balcony view. Ground, roads, sidewalks and road
   markings darken and gain smoothness quickly under rain, then dry at a much
@@ -732,6 +741,9 @@ The vertical slice contains:
   and refills it under a roof instead of a second controller; only the Exp2
   haze behind it stays per-area, and only the village's breathes with the
   gale;
+
+### Streets, transport and sound
+
 - one deterministic radius-safe sidewalk/crosswalk navigation graph with
   spawn anchors on long pavement segments. At most two low-poly walkers are
   active near the player: one randomized runtime event activates one slot at a
@@ -1081,6 +1093,9 @@ The vertical slice contains:
   distant water and movement. Both use deterministic schedules, `22050 Hz`
   mono clips, deliberately quantized retro waveforms and layout-derived
   anchors;
+
+### City structure, districts and dressing
+
 - an immutable `CityBlueprint`/builder/catalog boundary with stable blueprint
   and area IDs. Area definitions separate `UrbanBuilt` districts from
   `NonUrbanOpen` areas, retain a reusable visual archetype, declare movable,
@@ -1543,6 +1558,9 @@ The vertical slice contains:
   entrance's own sidewalk arrival point rather than the road centerline;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
+
+### The hero
+
 - the sole production `Resources/Player/Player3DV2` prefab selected by all nine
   gameplay roots, a visible prefab-derived refrigerator arm, nested full-body
   seated bar-drinking actions with a right-hand mug-handle grip and a
@@ -1695,6 +1713,9 @@ The vertical slice contains:
   cleanup restore the graph, kinematic bodies, disabled ragdoll colliders and
   ordinary contact shadow. Dense source validation and the focused ten-sequence
   runtime capture verify the `2026-09-06` recovery change; see the work log;
+
+### Map, transitions and shared interaction
+
 - a full-screen city map projected from a display envelope seeded by the
   blueprint's centered map bounds,
   with area colors and labels anchored on real active cells, distinct park,
@@ -1982,6 +2003,9 @@ The vertical slice contains:
   track starts with the player's loop, pauses ordinary cat idle/look and
   restores the hero, cat, contact shadow, input, HUD, camera and modal
   ownership after normal completion or abnormal cleanup;
+
+### Interiors
+
 - one deterministic `22 x 16 x 4.8 m` bar interior with seven authored zones
   and four validated circulation paths. Its visible permanent environment is
   the passive fixed-metre `bar_interior_v3` Blender asset at generator `3.3.3`
@@ -2549,6 +2573,9 @@ The vertical slice contains:
   practical inspection, brief lower face view, flush and local-light boundaries
   are recorded in architecture notes and story-bible §6; current Unity
   verification is recorded in the work log;
+
+### People, diagnostics and money
+
 - a deterministic `11`-person bar crowd drawn from ordinary city pedestrian
   prefabs: six compatible designs sit at the booth anchors on concrete
   `0.48 m` seats, two sit at the counter on the exact cafe `0.8175 m` stools,
@@ -2725,9 +2752,11 @@ The vertical slice contains:
   weather-driven ambient lighting or grading changes, wind-driven debris and
   volumetric light shafts.
 - Player-drivable vehicles, a broader traffic simulation, or skating physics;
-  the implemented City-only Route 01 passenger MVP remains route-driven and
-  limited to one fixed seat. Fares/payment, destination selection, NPC
-  passengers, passenger persistence and live map tracking are deferred.
+  the implemented City-only Route 01 passenger MVP remains route-driven. Fares
+  and payment, destination selection, passenger persistence and live map
+  tracking are deferred. Ambient NPC passengers are **not** deferred: two
+  places are occupied by `CityBusNpcPassengerController`, and the systems map
+  states the remaining gap.
 - Multiple bespoke bar interiors.
 - Mobile quality/render-profile parity; the current Windows/PC-targeted project
   retains only its PC quality level, render-pipeline asset and renderer.
@@ -2735,10 +2764,13 @@ The vertical slice contains:
   locomotion, face, hybrid fall, bed, smoking, cat-feeding and bus-passenger
   action set.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
-- Sobering mechanics, long-term save data, income/jobs, a broader
-  economy, dialogue, quests, combat, save slots, and online features.
-- Final bespoke art and audio masters, accessibility, localization coverage,
-  and platform release work.
+- Sobering mechanics, long-term save data, income/jobs, a broader economy,
+  branching dialogue with choices, combat, save slots, and online features.
+  Dated quests and the journal are implemented, as are the scripted local
+  exchanges; what is deferred is dialogue the player steers.
+- Final bespoke art and audio masters, accessibility and platform release work.
+  RU/EN localization itself is implemented and carries every in-fiction line;
+  what remains is coverage of strings added after a feature lands.
 - Bar minigames: the original four sprite minigames are cut entirely; any
   future bar activities start from a new design. The cemetery gravedigging
   acts are the first minigames built on that footing — city-side, and on the
