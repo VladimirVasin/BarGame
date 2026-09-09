@@ -7,9 +7,9 @@ namespace BarPromenade
     /// <summary>
     /// Builds the shared low-poly models used by physical world items and the
     /// inventory preview. The five stocked supermarket products and the open
-    /// refrigerator stew can come from passive Blender-authored Resources
-    /// prefabs; personal items retain their compact procedural models. Neither
-    /// path creates colliders; owning systems add interaction geometry.
+    /// refrigerator stew can and folded scarf come from passive Blender-authored
+    /// Resources assets; keys and the lighter retain their compact procedural
+    /// models. Neither path creates colliders; owning systems add interaction geometry.
     /// </summary>
     public static class InventoryItemModelFactory
     {
@@ -107,6 +107,8 @@ namespace BarPromenade
                 case InventoryItemId.DayOldLoaf:
                     return SupermarketProductModelResources.Instantiate(
                         itemId, parent, availableSize, rootPrefix);
+                case InventoryItemId.Scarf:
+                    return PlayerScarfResources.CreateFolded(parent).transform;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(itemId),

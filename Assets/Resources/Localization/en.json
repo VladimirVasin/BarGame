@@ -1301,6 +1301,38 @@
       "value": "USE"
     },
     {
+      "key": "inventory.action.equip",
+      "value": "PUT ON"
+    },
+    {
+      "key": "inventory.action.unequip",
+      "value": "TAKE OFF"
+    },
+    {
+      "key": "inventory.equipment.used",
+      "value": "In use"
+    },
+    {
+      "key": "inventory.equipment.unused",
+      "value": "Not in use"
+    },
+    {
+      "key": "inventory.item.scarf.name",
+      "value": "Scarf"
+    },
+    {
+      "key": "inventory.item.scarf.description",
+      "value": "A soft woven scarf. Covers the neck and lower half of the face."
+    },
+    {
+      "key": "interaction.take_scarf",
+      "value": "Take scarf"
+    },
+    {
+      "key": "inventory.pickup.scarf",
+      "value": "Scarf taken."
+    },
+    {
       "key": "inventory.action.eat",
       "value": "EAT -{0}"
     },

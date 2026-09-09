@@ -215,7 +215,8 @@ namespace BarPromenade
                 exitFrameCount: ExitFrameCount,
                 exitFramesPerSecond: ExitFramesPerSecond,
                 loopFrameExtraHoldSeconds:
-                    CreateLoopFrameHolds());
+                    CreateLoopFrameHolds(),
+                requiresMouthAccess: true);
         }
 
         private static float[] CreateLoopFrameHolds()

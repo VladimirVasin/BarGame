@@ -87,6 +87,12 @@ contracts are documented in [../tools/README.md](../tools/README.md).
   the resulting deliveries, repairs and snow clearing survive scene visits.
 - One shared animated hero, contextual interactions, intoxication/balance,
   session clock, needs, inventory, purchases, dated quests and grave work.
+- A collectible scarf in the mother's upstairs bedroom has reversible inventory
+  equipment and reduces alpine shivering and the rate of new frost exposure.
+  Its yellow wrap and 45 cm wind-driven tail use native Burst jobs to contact
+  actual hero, NPC and world surfaces. Loading prepares collision geometry;
+  focused inventory/performance and dense-contact evidence is recorded in
+  [work-log.md](work-log.md), including remaining stress-case costs.
 - Home toilet choices share actual hand-operated lid actions; the seated
   branch coordinates the original rig, lowered clothing, inspection/flush
   and an underwater camera that returns while the hero dresses.

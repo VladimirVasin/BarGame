@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -42,92 +44,139 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
-        [Explicit("The wall-lining depth regression and real room views only; no household-action journey.")]
+        [Explicit("The wall-lining and local shadow-budget regressions with real room views; no household-action journey.")]
         [PrebuildSetup(typeof(VillageWorkroomGeometrySetup))]
         public IEnumerator VillageWorkroomWalls()
         {
-            GameSessionState.BeginNewGame();
-            GameSessionState.TryStartGameTimeFromWake();
-            AsyncOperation load = SceneManager.LoadSceneAsync(SceneIds.AlpineVillage, LoadSceneMode.Single);
-            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
-            AlpineVillageRoot village = null;
-            while (Time.realtimeSinceStartup < deadline)
+            var shadowMessages = new List<string>();
+            void RecordShadowMessage(string message, string stack, LogType type)
             {
-                village = Object.FindAnyObjectByType<AlpineVillageRoot>();
-                if (load.isDone && village != null && village.IsInitialized) break;
-                yield return null;
+                if (message.IndexOf("Reduced additional punctual light shadows", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    message.IndexOf("Too many additional punctual lights shadows", StringComparison.OrdinalIgnoreCase) >= 0)
+                    shadowMessages.Add(message);
             }
-            Assert.That(village != null && village.IsInitialized, Is.True);
-            VillageWorkroomInstance room = village.Workroom.Room;
-            Camera camera = Camera.main;
-            bool followEnabled = village.CameraFollow.enabled;
-            Vector3 previousPosition = camera.transform.position;
-            Quaternion previousRotation = camera.transform.rotation;
-            float previousFov = camera.fieldOfView;
+            Application.logMessageReceived += RecordShadowMessage;
             try
             {
-                village.CameraFollow.enabled = false;
-                foreach (float shift in new[] { -.035f, 0f, .035f })
+                GameSessionState.BeginNewGame();
+                GameSessionState.TryStartGameTimeFromWake();
+                AsyncOperation load = SceneManager.LoadSceneAsync(SceneIds.AlpineVillage, LoadSceneMode.Single);
+                float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+                AlpineVillageRoot village = null;
+                while (Time.realtimeSinceStartup < deadline)
                 {
-                    Vector3 position = room.Plan.World(new Vector3(.1f + shift, 1.75f, 1.60f));
-                    Vector3 target = room.Plan.World(new Vector3(-1.50f, 1.15f, -.8f));
-                    camera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(target - position));
-                    camera.fieldOfView = 78f;
+                    village = Object.FindAnyObjectByType<AlpineVillageRoot>();
+                    if (load.isDone && village != null && village.IsInitialized) break;
                     yield return null;
-                    CaptureCurrentCamera(camera, "VillageWorkroomWalls", $"room-{shift + .035f:F3}");
                 }
-                camera.transform.SetPositionAndRotation(room.Plan.World(new Vector3(-2.1f, 1.8f, 5.2f)),
-                    Quaternion.LookRotation(room.Plan.World(new Vector3(-2.1f, 1.1f, 1f)) - room.Plan.World(new Vector3(-2.1f, 1.8f, 5.2f))));
-                camera.fieldOfView = 52f;
-                CaptureCurrentCamera(camera, "VillageWorkroomWalls", "exterior-window");
-
-                Physics.SyncTransforms();
-                MeshCollider[] shells = room.HouseRoot.GetComponentsInChildren<MeshCollider>().Where(c =>
-                    c.sharedMesh != null && c.sharedMesh.name.StartsWith("GEO_Workroom_Shell", StringComparison.Ordinal)).ToArray();
-                Assert.That(shells.Length, Is.EqualTo(3));
-                int samples = 0, backedSamples = 0;
-                float minimumDepth = float.PositiveInfinity;
-                foreach (float height in new[] { .50f, 1.35f, 2.05f })
+                Assert.That(village != null && village.IsInitialized, Is.True);
+                AssertWorkroomShadowBudget(village.Workroom.Environment);
+                VillageWorkroomInstance room = village.Workroom.Room;
+                Camera camera = Camera.main;
+                bool followEnabled = village.CameraFollow.enabled;
+                Vector3 previousPosition = camera.transform.position;
+                Quaternion previousRotation = camera.transform.rotation;
+                float previousFov = camera.fieldOfView;
+                try
                 {
-                    foreach (float x in new[] { -2.95f, -1.05f })
-                        Probe("FrontLining", new Vector3(x, height, 2.53f), Vector3.forward);
-                    foreach (float z in new[] { -.20f, .80f, 1.80f })
-                        Probe("LeftLining", new Vector3(-3.30f, height, z), Vector3.left);
-                    foreach (float x in new[] { -2.80f, -1.30f, -.30f })
-                        Probe("RearLining", new Vector3(x, height, -2.27f), Vector3.back);
-                }
-                Assert.That(samples, Is.GreaterThan(20));
-                Assert.That(backedSamples, Is.GreaterThan(16), "Sample the retained shell behind each real wall.");
-                TestContext.Out.WriteLine($"Workroom lining: {samples} placed-mesh samples, {backedSamples} backed by shell, minimum shell setback {minimumDepth:F5} m.");
-
-                void Probe(string name, Vector3 localPoint, Vector3 localOutward)
-                {
-                    Vector3 direction = room.Plan.Rotation * localOutward;
-                    var ray = new Ray(room.Plan.World(localPoint) - direction * .12f, direction);
-                    var lining = room.Part(name).GetComponentInChildren<MeshCollider>();
-                    Assert.That(lining.Raycast(ray, out RaycastHit liningHit, .5f), Is.True, name);
-                    bool foundShell = false;
-                    foreach (MeshCollider shell in shells)
+                    village.CameraFollow.enabled = false;
+                    foreach (float shift in new[] { -.035f, 0f, .035f })
                     {
-                        if (!shell.Raycast(ray, out RaycastHit shellHit, 1.2f)) continue;
-                        float depth = shellHit.distance - liningHit.distance;
-                        Assert.That(depth, Is.GreaterThan(.045f),
-                            $"{name} is coplanar with or behind {shell.sharedMesh.name} at {localPoint}: {depth:F6} m.");
-                        minimumDepth = Mathf.Min(minimumDepth, depth);
-                        foundShell = true;
+                        Vector3 position = room.Plan.World(new Vector3(.1f + shift, 1.75f, 1.60f));
+                        Vector3 target = room.Plan.World(new Vector3(-1.50f, 1.15f, -.8f));
+                        camera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(target - position));
+                        camera.fieldOfView = 78f;
+                        yield return null;
+                        CaptureCurrentCamera(camera, "VillageWorkroomWalls", $"room-{shift + .035f:F3}");
                     }
-                    // The pre-existing shell has gaps in two low left-wall
-                    // spans. Its absence cannot cause competing depth; the
-                    // solid lining itself must still exist at every probe.
-                    if (foundShell) backedSamples++;
-                    samples++;
+                    camera.transform.SetPositionAndRotation(room.Plan.World(new Vector3(-2.1f, 1.8f, 5.2f)),
+                        Quaternion.LookRotation(room.Plan.World(new Vector3(-2.1f, 1.1f, 1f)) - room.Plan.World(new Vector3(-2.1f, 1.8f, 5.2f))));
+                    camera.fieldOfView = 52f;
+                    CaptureCurrentCamera(camera, "VillageWorkroomWalls", "exterior-window");
+
+                    Physics.SyncTransforms();
+                    MeshCollider[] shells = room.HouseRoot.GetComponentsInChildren<MeshCollider>().Where(c =>
+                        c.sharedMesh != null && c.sharedMesh.name.StartsWith("GEO_Workroom_Shell", StringComparison.Ordinal)).ToArray();
+                    Assert.That(shells.Length, Is.EqualTo(3));
+                    int samples = 0, backedSamples = 0;
+                    float minimumDepth = float.PositiveInfinity;
+                    foreach (float height in new[] { .50f, 1.35f, 2.05f })
+                    {
+                        foreach (float x in new[] { -2.95f, -1.05f })
+                            Probe("FrontLining", new Vector3(x, height, 2.53f), Vector3.forward);
+                        foreach (float z in new[] { -.20f, .80f, 1.80f })
+                            Probe("LeftLining", new Vector3(-3.30f, height, z), Vector3.left);
+                        foreach (float x in new[] { -2.80f, -1.30f, -.30f })
+                            Probe("RearLining", new Vector3(x, height, -2.27f), Vector3.back);
+                    }
+                    Assert.That(samples, Is.GreaterThan(20));
+                    Assert.That(backedSamples, Is.GreaterThan(16), "Sample the retained shell behind each real wall.");
+                    TestContext.Out.WriteLine($"Workroom lining: {samples} placed-mesh samples, {backedSamples} backed by shell, minimum shell setback {minimumDepth:F5} m.");
+
+                    void Probe(string name, Vector3 localPoint, Vector3 localOutward)
+                    {
+                        Vector3 direction = room.Plan.Rotation * localOutward;
+                        var ray = new Ray(room.Plan.World(localPoint) - direction * .12f, direction);
+                        var lining = room.Part(name).GetComponentInChildren<MeshCollider>();
+                        Assert.That(lining.Raycast(ray, out RaycastHit liningHit, .5f), Is.True, name);
+                        bool foundShell = false;
+                        foreach (MeshCollider shell in shells)
+                        {
+                            if (!shell.Raycast(ray, out RaycastHit shellHit, 1.2f)) continue;
+                            float depth = shellHit.distance - liningHit.distance;
+                            Assert.That(depth, Is.GreaterThan(.045f),
+                                $"{name} is coplanar with or behind {shell.sharedMesh.name} at {localPoint}: {depth:F6} m.");
+                            minimumDepth = Mathf.Min(minimumDepth, depth);
+                            foundShell = true;
+                        }
+                        // The pre-existing shell has gaps in two low left-wall
+                        // spans. Its absence cannot cause competing depth; the
+                        // solid lining itself must still exist at every probe.
+                        if (foundShell) backedSamples++;
+                        samples++;
+                    }
                 }
+                finally
+                {
+                    camera.transform.SetPositionAndRotation(previousPosition, previousRotation);
+                    camera.fieldOfView = previousFov;
+                    village.CameraFollow.enabled = followEnabled;
+                }
+                Assert.That(shadowMessages, Is.Empty, string.Join("\n", shadowMessages));
             }
             finally
             {
-                camera.transform.SetPositionAndRotation(previousPosition, previousRotation);
-                camera.fieldOfView = previousFov;
-                village.CameraFollow.enabled = followEnabled;
+                Application.logMessageReceived -= RecordShadowMessage;
+            }
+        }
+
+        private static void AssertWorkroomShadowBudget(VillageWorkroomEnvironment environment)
+        {
+            Light[] lights = environment.GetComponentsInChildren<Light>(true);
+            Assert.That(lights.Length, Is.EqualTo(3));
+            Light ambient = lights.SingleOrDefault(light => light.name == "Workroom AmbientLight");
+            Assert.That(ambient, Is.Not.Null);
+            Assert.That(ambient.gameObject.activeInHierarchy && ambient.enabled && ambient.intensity > 0f,
+                Is.True, "The production room light must remain active.");
+            Assert.That(ambient.type, Is.EqualTo(LightType.Point));
+            Assert.That(ambient.shadows, Is.EqualTo(LightShadows.Soft));
+            UniversalAdditionalLightData data = ambient.GetComponent<UniversalAdditionalLightData>();
+            Assert.That(data, Is.Not.Null, "An unconfigured point light requests the High tier by default.");
+            Assert.That(data.additionalLightsShadowResolutionTier,
+                Is.EqualTo(UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierMedium));
+            var pipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            Assert.That(pipeline, Is.Not.Null);
+            Assert.That(pipeline.additionalLightsShadowmapResolution, Is.EqualTo(2048));
+            Assert.That(pipeline.additionalLightsShadowResolutionTierMedium, Is.EqualTo(512));
+            int tilesPerSide = pipeline.additionalLightsShadowmapResolution /
+                pipeline.additionalLightsShadowResolutionTierMedium;
+            Assert.That(tilesPerSide * tilesPerSide, Is.GreaterThanOrEqualTo(6),
+                "All six faces of the point shadow must fit without atlas rescaling.");
+            foreach (string name in new[] { "Workroom RepairLamp", "Workroom SewingLamp" })
+            {
+                Light helper = lights.SingleOrDefault(light => light.name == name);
+                Assert.That(helper, Is.Not.Null, name);
+                Assert.That(helper.shadows, Is.EqualTo(LightShadows.None), name);
             }
         }
 

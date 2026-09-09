@@ -1075,19 +1075,40 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Ride_IsHeardFromTheEngineBayAndFallsSilentOnTheApron()
         {
-            Harness harness = BuildHarness(out GameObject scene);
+            var initializationWarnings = new List<string>();
+            void CaptureFilteredSourceWarning(string message, string stackTrace, LogType type)
+            {
+                if (type == LogType.Warning && message.Contains("Only custom filters can be played"))
+                    initializationWarnings.Add(message);
+            }
+            GameObject scene = null;
+            Application.logMessageReceived += CaptureFilteredSourceWarning;
             try
             {
+                Harness harness = BuildHarness(out scene);
                 LastRouteCarAudio audio = harness.Audio;
+                Assert.That(initializationWarnings, Is.Empty,
+                    "Adding the second source to the filtered axle must not try to play a clipless voice.");
                 Assert.That(
                     audio.OwnedSources.Count,
                     Is.EqualTo(LastRouteCarAudio.OwnedSourceCount));
                 Assert.That(
                     audio.EngineSource.outputAudioMixerGroup,
                     Is.SameAs(GameAudioMixer.SfxWorldGroup));
+                foreach (AudioSource source in audio.OwnedSources)
+                {
+                    Assert.That(source.gameObject.activeInHierarchy, Is.True);
+                    Assert.That(source.playOnAwake, Is.False);
+                    Assert.That(source.isPlaying, Is.False, "The ride starts the voices on its first frame.");
+                    if (source.loop) Assert.That(source.clip, Is.Not.Null);
+                }
+                Assert.That(audio.DeckSource.transform, Is.SameAs(audio.TyreSource.transform));
+                Assert.That(audio.TyreSource.GetComponent<AudioLowPassFilter>(), Is.Not.Null);
+                Assert.That(audio.TyreSource.GetComponent<AudioReverbFilter>(), Is.Not.Null);
 
                 yield return null;
                 yield return null;
+                Assert.That(initializationWarnings, Is.Empty);
                 Assert.That(harness.Driver.IsDriving, Is.True);
                 Assert.That(
                     audio.Engine.IsRunning,
@@ -1159,9 +1180,11 @@ namespace BarPromenade.Tests.PlayMode
                     "A parked car is silent.");
                 Assert.That(audio.TyreSource.isPlaying, Is.False);
                 Assert.That(audio.CabinSource.isPlaying, Is.False);
+                Assert.That(initializationWarnings, Is.Empty);
             }
             finally
             {
+                Application.logMessageReceived -= CaptureFilteredSourceWarning;
                 Object.DestroyImmediate(scene);
             }
         }

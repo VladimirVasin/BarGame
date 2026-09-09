@@ -277,6 +277,7 @@ namespace BarPromenade
             plannedBarRouteView;
         public static IReadOnlyList<InventoryItemStack> InventoryItems =>
             inventory.Items;
+        public static event Action InventoryEquipmentChanged;
         public static IReadOnlyList<QuestLogEntry> Quests =>
             questLog.Entries;
         public static int CollectedWorldItemCount =>
@@ -299,6 +300,7 @@ namespace BarPromenade
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
         {
+            InventoryEquipmentChanged = null;
             ResetToDefaults();
         }
 
@@ -498,6 +500,7 @@ namespace BarPromenade
             LastTeethBrushingDayIndex = -1;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            InventoryEquipmentChanged?.Invoke();
             questLog.ResetWithStarterQuests();
             firedDayEvents.Clear();
             // Day one of a new game is still a day, so anything the
@@ -753,9 +756,15 @@ namespace BarPromenade
             InventoryItemId itemId,
             int count = 1)
         {
+            bool wasEquipped = inventory.IsEquipped(itemId);
             bool removed = inventory.TryRemove(itemId, count);
             if (removed)
             {
+                if (wasEquipped && !inventory.IsEquipped(itemId))
+                {
+                    InventoryEquipmentChanged?.Invoke();
+                }
+
                 GameLog.Info(
                     "inventory",
                     "item_removed",
@@ -767,6 +776,34 @@ namespace BarPromenade
             }
 
             return removed;
+        }
+
+        public static bool IsInventoryItemEquipped(InventoryItemId itemId)
+        {
+            return inventory.IsEquipped(itemId);
+        }
+
+        public static bool TrySetInventoryItemEquipped(
+            InventoryItemId itemId,
+            bool equipped)
+        {
+            bool previous = inventory.IsEquipped(itemId);
+            if (!inventory.TrySetEquipped(itemId, equipped))
+            {
+                return false;
+            }
+
+            if (previous != equipped)
+            {
+                InventoryEquipmentChanged?.Invoke();
+                GameLog.Info(
+                    "inventory",
+                    "equipment_changed",
+                    GameLog.Field("item_id", itemId.ToString()),
+                    GameLog.Field("equipped", equipped));
+            }
+
+            return true;
         }
 
         public static void UpdateNeeds(int hunger, int stress)
@@ -1137,6 +1174,7 @@ namespace BarPromenade
             int previousCollectedCount = collectedWorldItems.Count;
             collectedWorldItems.Clear();
             inventory.ResetWithStarterItems();
+            InventoryEquipmentChanged?.Invoke();
             GameLog.Info(
                 "inventory",
                 "inventory_reset",

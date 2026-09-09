@@ -6,6 +6,175 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-09 — Car audio initialization and workroom shadow warnings
+
+- `LastRouteCarAudio` now configures its five sources, loop clips and filters
+  on three inactive anchors before activating them. This avoids Unity's
+  clipless filtered-source autoplay warning while preserving ride playback
+  and the existing mix.
+- `VillageWorkroomEnvironment` explicitly requests Medium (`512 px`) shadow
+  faces for `AmbientLight`. Its six point-light faces fit the unchanged PC
+  `2048 px` atlas at the resolution URP previously reduced High to; lamp
+  intensity, soft shadows and effective quality are unchanged.
+- The existing focused PlayMode checks passed together (`2/2`, `47.75 s`):
+  `LastRouteCarRidePlayModeTests.Ride_IsHeardFromTheEngineBayAndFallsSilentOnTheApron`
+  checks clean source initialization and ride audio; `AreaCaptureFixture.VillageWorkroomWalls`
+  also checks the shadow budget. Results: `TestResults/audio-shadow-warnings.xml`
+  and `.log`; neither warning appears in the full log. The four refreshed
+  `Captures/VillageWorkroomWalls` images retain consistent warm light and
+  contact shadows. No broader suite or player build was run.
+
+## 2026-09-09 — Scarf equip slowdown and native simulation
+
+- Reproduced the reported slowdown in the production mother's-house bedroom.
+  The initial `ScarfPerformance` probe passed in `4.09 s`
+  (`TestResults/scarf-performance-probe.xml`): average frame interval rose
+  from `18.63` to `34.22 ms` after equipping. Whole-scarf work averaged
+  `17.35 ms`, including `8.19 ms` for wrap/knot contacts. Inventory intervals
+  were `20.07 ms` with keys, `19.17 ms` with the folded scarf and `19.61 ms`
+  with it equipped; paused geometry work was zero and the preview stayed
+  passive and stable. Equipping had a separate one-time `116 ms` cost.
+- `PlayerScarfContactJob` executes the existing sequential PBD contacts through
+  Burst with strict arithmetic and reusable native buffers. Each world update
+  exports its managed geometry/BVHs through four bulk snapshot copies;
+  all-surface and closed-component BVHs use median partitions. Exact two-plane
+  rejection skips separated pairs before expensive finite-feature checks.
+  `PlayerScarfIntegrationJob` retains 120 Hz integration and the same stretch,
+  pin and contact schedule. Jobs warm up during scene installation. The shared
+  hero also prepares nearby immutable topology/static BVHs during world loading,
+  even when unequipped, then resets motion history while retaining those caches.
+  Paused frames skip geometry writes and report zero work.
+- The focused performance probe now covers the bedroom/inventory and outdoor
+  village, records whole-scarf and wrap/knot cost plus discovery, collection
+  and spatial-index scopes. Nine phases now measure `60` real frame intervals
+  each: a representative p95 must stay below `16 ms`, while both synchronous
+  equip actions must stay below `100 ms`.
+  Both performance and dense-contact checks assert native execution.
+- Final `ScarfPerformance` passed (`1/1`, `33.97 s`;
+  `TestResults/scarf-performance-final.xml`), covering `540` measured frames.
+  Whole-scarf mean/p95 was `7.45/10.28 ms` indoors and `11.75/14.62 ms`
+  outdoors. The initial indoor mean of `17.35 ms` used 12 frames; the final
+  phase uses 60. Synchronous equip fell from `116.06` to `25.90 ms` indoors
+  and from `1,834.99` to `36.87 ms` outdoors after load-time cache preparation.
+  All active samples used the native solver; paused geometry work stayed zero.
+- Final inventory frame means were `17.81 ms` for keys, `19.22 ms` for the
+  unequipped scarf, `19.78 ms` for equipped scarf and `19.85 ms` after reopening.
+  Preview model/camera/texture identity, passive composition and unscaled
+  rotation passed. Whole-frame means without/with scarf were `17.50/25.65 ms`
+  indoors and `62.38/72.84 ms` in the village; these are Editor measurements
+  at the capture settings, separate from the scarf-only budget.
+- The native contact/performance selection passed (`2/2`, `105.56 s`;
+  `TestResults/scarf-performance-contacts.xml`). Its independent contact proof
+  covered `360` rendered frames with zero penetrations, `8,786` body pairs,
+  `787` obstacle pairs and `170` NPC pairs. All unprotected witnesses, three
+  GPU-only meshes, pause, mirror and native execution checks passed. Seam
+  error was `0.31 mm`, minimum NPC distance `3.83 mm`; peak tail/whole/surface
+  work was `5.10/39.10/18.02 ms`, with world collection including reset peaking
+  at `36.54 ms`. Dense-contact/reset peaks remain above ordinary steady work.
+  The later loading-cache change preserved contact math and was covered by
+  the final performance rerun. Inspected final captures and reports are in
+  `Captures/ScarfCollision` and `Captures/ScarfPerformance`. No full suites or
+  player build ran.
+
+## 2026-09-09 — Managed scarf contact performance and independent surface verification
+
+- Cached compact BVH bounds and static median partitions, deferred distant
+  mesh lookups, and compacted topology components. The solver reuses exact
+  unchanged point results only within one `Resolve`; first-pass stability
+  additionally requires zero contacts because that pass includes swept motion.
+  It limits swept point work to its first pass and passes triangles by reference.
+  Tail contacts retain
+  two intermediate four-pass solves and a final 32-pass limit; frame matrices
+  and damping are cached. Physical model surfaces and contact thickness remain.
+- The rendered interior oracle now sums every triangle's solid angle in double
+  precision, with compensated summation and a `1 mm` boundary tolerance.
+  Independent edge-crossing checks remain. The obsolete ray-hit limitation
+  and its superseded witness no longer describe the current test.
+- `ScarfCollisionContacts` passed (`1/1`, `118.05 s`;
+  `TestResults/scarf-collision-optimized-verified.xml`). That managed-solver
+  capture recorded `360`
+  rendered frames, zero detected penetrations, `8,786` body pairs, `794`
+  obstacle pairs and `178` NPC pairs. Wall/GPU/NPC unprotected witnesses,
+  three GPU-only meshes, pause and mirror checks passed. Seam error peaked
+  at `0.31 mm`; minimum NPC distance was `3.88 mm`.
+- In the Editor capture, maximum tail-step time fell from `210.72` to
+  `84.03 ms`, and maximum world collection time including reset from `114.81`
+  to `41.24 ms`. New per-frame means (tail/world) were `59.88/10.16 ms` at
+  the wall, `62.15/17.07 ms` in the corner and `9.43/32.71 ms` by the NPC.
+  The earlier log has only sparse checkpoints, so it supplies no comparable
+  phase means. Tail timing excludes wrap/knot correction and the rest of the
+  frame; dense contacts remain expensive in the Editor. No full suites or
+  player build ran.
+
+## 2026-09-09 — Collectible scarf, equipment status and cold protection
+
+- Added one folded scarf on the existing linen chest in the parents' bedroom
+  upstairs in the mother's house. Its support is derived from the actual room
+  plan. Atomic collection preserves its empty source on later scene visits;
+  new-game reset restores it. The inventory keeps equipment separate from
+  quantity and exposes localized Equip/Remove and In use/Not in use states.
+- Added a separate deterministic Blender scarf pack: folded prop, skinned
+  neck/nape wrap with a lowered-mouth shape, back knot and `45 cm` cloth tail.
+  The user's same-day clarification lengthens the hanging tail to mid-back;
+  it changes the garment's form without adding lore.
+  Subsequent same-day requests make it yellow and extend physical contacts
+  to the hero, NPCs, buildings and other model surfaces. The native cloth
+  prototype is replaced by a CPU simulation on the original tail topology,
+  shared real-triangle contact queries, and corrected dynamic wrap/knot meshes.
+  Hidden source skins preserve the authored mouth shape. Actor and mirror
+  meshes are independent, while the mirror copies final corrected geometry.
+  Shared `PlayerFactory` equipment uses existing scene wind, shelter, visibility
+  and bathing ownership. Visible mouth actions acquire an owner-scoped access
+  lease and wait for the original rig's short left-hand pull; cleanup returns
+  the wrap without unequipping it. Cached hand/thumb surface offsets place
+  the gesture's closest rotated hand surface `4 mm` in front of the garment.
+  The mirror copies the same garment and tail,
+  with no second cloth simulation. Existing instant inventory consumption
+  gains no bodily animation. Core Hero V2 meshes/action counts are unchanged.
+- Indexed nearby contacts with a triangle BVH and cached local static-mesh
+  BVHs. A mixed hash for packed edge keys removes the terrain-grid topology
+  startup bottleneck. Compensated `BakeMesh(..., true)` snapshots apply imported
+  renderer scale once. Scarf surfaces update at `410`, after NPC attention
+  and outdoor-help contacts; the mirror copies the final surfaces at `420`.
+  Finite point/face and edge/edge contacts distribute local positional
+  corrections by barycentric weights; swept contacts follow the closest
+  feature's motion. Wrap/knot contacts start from the current authored skin
+  pose each active frame. Temporary runtime trace instrumentation has been
+  removed. The inventory icon now matches the yellow garment.
+- Equipped scarf protection halves only the upper-body shiver blend and new
+  outdoor frost exposure. Fresh exposure now takes `12/86 s` to first/full
+  frost with the scarf, versus `6/43 s` without. Existing ice, full/half warm
+  thaw (`8/4 s`), hug/rubs, breath, locomotion and protective-action priority
+  remain intact. Changing clothing does not reset either presentation clock.
+- Recorded the user-approved bounded exception to the previous upstairs
+  interaction ban in story §6 and architecture notes. The scarf remains
+  ordinary clothing without a previous owner or family clue; it reuses the
+  house atlas cloth tile. Updated both bibles, current-world, technical maps,
+  player specification and README. Active logs retain September/August only.
+- Initial native-cloth implementation verification: the single
+  `AreaCaptureFixture.ScarfJourney` PlayMode selection
+  passed (`1/1`, `41.88 s`), including pickup/UI, mouth access, scene persistence,
+  wind, pause, cold protection, mirror/visibility, unequip and new-game reset.
+  The deterministic Blender validator and `git diff --check` passed. Inspected
+  the production-scene captures in `Captures/Scarf` (close garment shots use a
+  capture-only fill light). Live cloth pin drift was `0.19 mm`, its seam stayed
+  `17.72 mm` from the authored knot centre, free travel was `240.11 mm`, and
+  pause drift was zero; the JSON report accompanies the frames.
+  Fixed FBX unit import and Cloth's duplicate skin transform during this focused
+  reproduction. Frame measurements now wait for completed camera rendering,
+  after the hero's two animation passes. No full suites or player build ran.
+- Pre-optimization real-model-contact verification: `AreaCaptureFixture.ScarfCollisionContacts`
+  passed (`1/1`, `132.48 s`; `TestResults/scarf-collision-grip.xml`). The report
+  from that run recorded `360` rendered frames, zero detected
+  penetrations, `8,786` body pairs, `792` obstacle pairs and `175` NPC pairs.
+  Unprotected poses demonstrably intersected the wall, GPU-only model and NPC;
+  the protected run covered three GPU-only meshes, pause and mirror copying.
+  Maximum seam error was `0.166 mm`, tail motion `31.663 mm`, and minimum NPC
+  surface distance `3.899 mm`. Measured peaks were `114.8 ms` for world contact
+  collection including reset and `210.7 ms` for a tail step in a dense corner.
+  These measurements form the baseline for the optimization recorded above.
+  No full suites or player build ran.
+
 ## 2026-09-09 — Village outdoor help and session household progress
 
 - Completed part 4's outdoor help controller: the hero can take a loaded firewood

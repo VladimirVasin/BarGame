@@ -269,10 +269,22 @@ namespace BarPromenade
         private PlayerFacialExpression visibleFacialExpression;
 
         public Player3DAssetRegistry Registry => registry;
+        private readonly List<Renderer> accessoryRenderers = new List<Renderer>();
+        private readonly List<Renderer> allRenderers = new List<Renderer>();
         public IReadOnlyList<Renderer> Renderers =>
-            registry != null
+            accessoryRenderers.Count > 0 ? allRenderers : registry != null
                 ? registry.Renderers
                 : Array.Empty<Renderer>();
+
+        public void RegisterAccessoryRenderers(IReadOnlyList<Renderer> additions)
+        {
+            for (int index = 0; index < additions.Count; index++)
+                if (additions[index] != null && !accessoryRenderers.Contains(additions[index]))
+                    accessoryRenderers.Add(additions[index]);
+            allRenderers.Clear();
+            if (registry != null) allRenderers.AddRange(registry.Renderers);
+            allRenderers.AddRange(accessoryRenderers);
+        }
         public Transform VisualRoot =>
             registry != null && registry.ModelRoot != null
                 ? registry.ModelRoot

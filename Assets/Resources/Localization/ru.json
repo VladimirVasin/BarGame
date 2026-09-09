@@ -1301,6 +1301,38 @@
       "value": "ИСПОЛЬЗОВАТЬ"
     },
     {
+      "key": "inventory.action.equip",
+      "value": "НАДЕТЬ"
+    },
+    {
+      "key": "inventory.action.unequip",
+      "value": "СНЯТЬ"
+    },
+    {
+      "key": "inventory.equipment.used",
+      "value": "Используется"
+    },
+    {
+      "key": "inventory.equipment.unused",
+      "value": "Не используется"
+    },
+    {
+      "key": "inventory.item.scarf.name",
+      "value": "Шарф"
+    },
+    {
+      "key": "inventory.item.scarf.description",
+      "value": "Мягкий тканый шарф. Закрывает шею и нижнюю половину лица."
+    },
+    {
+      "key": "interaction.take_scarf",
+      "value": "Взять шарф"
+    },
+    {
+      "key": "inventory.pickup.scarf",
+      "value": "Шарф взят."
+    },
+    {
       "key": "inventory.action.eat",
       "value": "СЪЕСТЬ -{0}"
     },

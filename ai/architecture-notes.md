@@ -1,5 +1,85 @@
 # Architecture notes
 
+- **Accepted — 2026-09-09, wearable scarf and bounded cold protection:**
+  The user approved the scarf plan and explicitly chose less shaking and slower
+  frost. This is a bounded exception to the story bible's §6/§25 prohibition on
+  upstairs interactions: one ordinary folded scarf can be collected from the
+  linen chest in the parents' bedroom in the mother's house. It is clothing,
+  without an owner, inscription, family relic, dialogue or story event. Its
+  shared garment material reuses the mother's-house atlas cloth tile.
+  A session-owned equipment flag is independent of stack quantity. The inventory
+  shows `Используется` / `Не используется` and `Надеть` / `Снять`; using either
+  action keeps the item. Collection and equipment survive scene loads and reset
+  with a new game. There is still no disk save.
+  The accepted form wraps the neck and back of the head, covers the lower half
+  of the face with open eyes, and leaves a hanging cloth tail behind. The user's
+  same-day clarification lengthens it to approximately `45 cm`, reaching the
+  middle of the back, without adding a new meaning or family history. The tail
+  responds to the existing exterior wind; enclosed shelter removes that wind.
+  Further direct requests the same day make the scarf yellow and require
+  contact with the hero, NPCs, buildings and other model surfaces. The runtime
+  therefore uses `PlayerScarfClothSimulation` on the authored tail topology;
+  `PlayerScarfCollisionWorld` gathers nearby real mesh triangles, including
+  currently skinned bodies, and `PlayerScarfContactSolver` resolves swept
+  contacts through the sequential Burst `PlayerScarfContactJob`, preserving
+  strict PBD arithmetic in reusable native buffers. `PlayerScarfIntegrationJob`
+  retains the 120 Hz integration and constraints. Scene installation warms
+  both jobs and prepares nearby immutable collision topology/static BVHs even
+  when the shared hero is unequipped. Motion history is then reset while the
+  geometry cache survives, keeping terrain preparation inside world loading.
+  Whole-surface thickness checks point-to-face proximity in both
+  directions, all nine edge pairs and both directions of intersection.
+  Barycentric weights distribute a minimal local positional correction across
+  the contacted scarf feature; swept contacts follow the closest feature's
+  barycentric motion. The authored wrap and knot retain hidden source skins
+  and draw corrected dynamic surfaces through `PlayerScarfContactSurface`.
+  Each active frame begins with the current authored skin pose and resolves
+  its local contacts. Every
+  visible part keeps its own instance mesh; no body capsule replaces model
+  geometry. The mirror copies all final surfaces without another solver.
+  World contacts use a triangle BVH and cached local BVHs for static meshes;
+  connected-surface topology mixes packed edge keys before hashing, avoiding
+  quadratic startup work on regular terrain grids. Compact cached BVH bounds,
+  all-surface/closed-component median partitions and deferred distant mesh
+  lookups reduce repeated work. Within one solver call, exact unchanged point
+  results can be reused;
+  first-pass stability also requires zero contacts because it includes a sweep.
+  Swept point work runs on the first pass. Exact two-plane rejection precedes
+  finite-feature checks. Each world update exports a managed snapshot through
+  four bulk native copies. Tail contact limits are `4/4/32`
+  across its intermediate/final solves, with cached frame matrices and damping.
+  Skinned snapshots use
+  `BakeMesh(..., true)` before the full renderer matrix, so imported FBX scale
+  is applied once. Scarf geometry updates at order `410`, after NPC attention
+  (`350`) and outdoor-help contacts (`400`); the mirror copies it at `420`.
+  The inventory icon shares the garment's yellow colour.
+  The focused rendered regression passed across `360` frames with zero
+  detected penetrations. The independent interior oracle uses every triangle's
+  double-precision solid angle and a `1 mm` boundary tolerance. Native dense-
+  contact peaks were `39.10 ms` for whole geometry, `5.10 ms` for the tail and
+  `18.02 ms` for wrap/knot; world collection including reset peaked at `36.54 ms`.
+  The separate 540-frame production probe passed whole-scarf p95 at
+  `10.28/14.62 ms` indoors/outdoors and synchronous equip at `25.90/36.87 ms`.
+  These Editor measurements separate steady work from dense-contact/reset peaks.
+  Pause freezes deformation and skips mesh writes; activation and teleports
+  initialize contacts once. Whole-geometry/surface scopes complement tail/world
+  timings, and the performance probe compares actual frame intervals and
+  inventory controls without a collision oracle inside its sampling loop.
+  Mouth actions temporarily lower the garment. Their hand contact uses cached
+  hand/thumb surface offsets and places the closest rotated surface `4 mm`
+  in front of the garment. Shower clothing ownership
+  removes its visible form, and both restore it without losing equipment.
+  This extends ordinary hero-rig presentation, with no replacement contextual
+  sprite or exception to `contextual-animation-standard.md`.
+  `PlayerColdPresentationModel.GetShiverWeight` halves only the shiver blend
+  while the scarf is equipped; self-hug, rubs, breath, gait and gesture clocks
+  retain their ordinary contracts. `AlpineColdExposureModel.Step` halves only
+  new outdoor exposure: a fresh scarf-equipped visit stays clear for `12 s`
+  and reaches full frost at `86 s`, versus `6/43 s` without it. Changing the
+  equipment flag preserves accumulated ice; warmth still thaws it in `8/4 s`
+  from full/half coverage. Brief mouth access retains protection. This refines
+  the existing level-`0` cold exception, with no health, speed, need or plot change.
+
 - **Accepted — 2026-09-09, complete village household help:**
   `VillageHouseholdProgress` owns six unique loose logs, the contents and
   destination of two baskets, repaired chair, three finite snow patches and
@@ -41,6 +121,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   apertures. Room-facing finish planes retain the plan dimensions; they never
   coincide with the shell's cut faces. Source face-depth checks and the focused
   `VillageWorkroomWalls` capture guard the former coplanar-surface flicker.
+  The workroom's shadowed point light explicitly requests Medium (`512 px`
+  per face): its six faces fit the unchanged PC `2048 px` additional-light
+  atlas at the same resolution URP previously obtained by reducing High
+  (`1024 px`). The focused capture also checks this shadow budget.
   Board tops and the threshold remain at the original floor datum. Real
   underboarding closes the seams; the soil bed is `0.16 m` below the floor.
   The bed is inset `0.178 m`
@@ -4174,6 +4258,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   moving value is set, for the reason it refuses while the area service is
   travelling — the hero is between two places rather than standing in either,
   and a chart with a teleport on it would let him step out of a moving car.
+  `LastRouteCarAudio` builds its engine, cabin and rear-axle anchors inactive,
+  configures all five sources with `playOnAwake = false`, their loop clips
+  and filters, then activates the anchors at the end of initialization.
+  This prevents adding the deck source to the filtered axle from attempting
+  clipless autoplay; the ride still starts playback and owns the same mix.
 - **Accepted — the shared target menu can be refused, and the refusal is the
   target talking:** by the story bible's §6 registry row of `2026-09-06` the
   Ferryman does not drive a hero on the last two drunkenness stages
@@ -6421,9 +6510,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `SurfaceAppearanceCore` phases every box by a hash of its own name and pieces
   of one wall would otherwise meet at a jump; the cube face's UV directions are
   read from the mesh rather than assumed. Behind the hole,
-  `HomeBathroomMirrorWorld` (`DefaultExecutionOrder 320`, after the bathroom
+  `HomeBathroomMirrorWorld` (`DefaultExecutionOrder 420`, after the bathroom
   scenes at `260`, the vomit effects at `280/281` and the occlusion controller
-  at `300`) parents everything to a `Mirror Space` transform at
+  at `300`, and the optional scarf surface correction at `410`) parents
+  everything to a `Mirror Space` transform at
   `(0, 0, 2 × 3.866)` scaled `(1, 1, −1)`: a copy that carries its source's
   local pose lands on its own reflection, which is why no reflection maths
   appears at a single call site. The copies are renderer-only and hand-walked

@@ -278,6 +278,44 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator UKey_EquipsAndUnequipsClothingWithoutConsumingIt()
+        {
+            Assert.That(GameSessionState.TryAddInventoryItem(
+                InventoryItemId.Scarf), Is.True);
+            Assert.That(inventory.Open(), Is.True);
+            Assert.That(inventory.SelectItem(2), Is.True);
+            Assert.That(inventory.SelectedEquipmentStatusLabel,
+                Is.EqualTo(LocalizationService.Get("inventory.equipment.unused")));
+            Assert.That(inventory.SelectedUseActionLabel,
+                Is.EqualTo(LocalizationService.Get("inventory.action.equip")));
+            Assert.That(inventory.CanUseSelected, Is.True);
+
+            yield return null;
+            inputFixture.Press(keyboard.uKey, queueEventOnly: true);
+            yield return null;
+            Assert.That(inventory.IsOpen, Is.True);
+            Assert.That(inventory.SelectedIsEquipped, Is.True);
+            Assert.That(inventory.SelectedEquipmentStatusLabel,
+                Is.EqualTo(LocalizationService.Get("inventory.equipment.used")));
+            Assert.That(inventory.SelectedUseActionLabel,
+                Is.EqualTo(LocalizationService.Get("inventory.action.unequip")));
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.Scarf), Is.EqualTo(1));
+
+            inputFixture.Release(keyboard.uKey, queueEventOnly: true);
+            yield return null;
+            inputFixture.Press(keyboard.uKey, queueEventOnly: true);
+            yield return null;
+            Assert.That(inventory.SelectedIsEquipped, Is.False);
+            Assert.That(GameSessionState.GetInventoryItemCount(
+                InventoryItemId.Scarf), Is.EqualTo(1));
+            Assert.That(inventory.IsOpen, Is.True);
+            Assert.That(Time.timeScale, Is.Zero);
+            inputFixture.Release(keyboard.uKey, queueEventOnly: true);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator Preview_RendersVisiblePixelsAndRotatesWhilePaused()
         {
             Assert.That(inventory.Open(), Is.True);

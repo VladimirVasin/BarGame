@@ -127,8 +127,10 @@ namespace BarPromenade
             int exitFrameCount = 24,
             float exitFramesPerSecond = 12f,
             IReadOnlyList<float>
-                loopFrameExtraHoldSeconds = null)
+                loopFrameExtraHoldSeconds = null,
+            bool requiresMouthAccess = false)
         {
+            RequiresMouthAccess = requiresMouthAccess;
             EnterClipName = ValidateClipName(
                 enterClipName,
                 nameof(enterClipName));
@@ -175,6 +177,7 @@ namespace BarPromenade
         }
 
         public int EnterFrameCount { get; }
+        public bool RequiresMouthAccess { get; }
         public float EnterFramesPerSecond { get; }
         public int LoopFrameCount { get; }
         public float LoopFramesPerSecond { get; }

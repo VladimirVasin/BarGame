@@ -254,6 +254,8 @@ namespace BarPromenade
                     return Quaternion.Euler(24f, -18f, -8f);
                 case InventoryItemId.DayOldLoaf:
                     return Quaternion.Euler(12f, -28f, -5f);
+                case InventoryItemId.Scarf:
+                    return Quaternion.Euler(28f, -24f, -8f);
                 default:
                     return Quaternion.identity;
             }

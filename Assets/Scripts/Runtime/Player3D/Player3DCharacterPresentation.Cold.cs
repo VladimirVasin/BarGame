@@ -183,7 +183,8 @@ namespace BarPromenade
             coldArmsShiver.SetTime(shiverTime);
             // A late protective reach suppresses the whole shiver immediately.
             // Its original cold hold can still yield through the existing masks.
-            float shiverWeight = ColdProtectiveArmsOwned ? 0f : coldModel.ShiverWeight01;
+            float shiverWeight = ColdProtectiveArmsOwned ? 0f : coldModel.GetShiverWeight(
+                GameSessionState.IsInventoryItemEquipped(InventoryItemId.Scarf));
             shiverWeight = Mathf.Min(shiverWeight, 1f - coldRubWeight);
             coldTorso.SetInputWeight(0, 1f - shiverWeight);
             coldTorso.SetInputWeight(1, shiverWeight);

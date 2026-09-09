@@ -155,6 +155,7 @@ namespace BarPromenade
             PlayerDoorActionController doorAction =
                 player.AddComponent<PlayerDoorActionController>();
             doorAction.Initialize(animatedInteraction);
+            PlayerScarfController.Install(runtime);
             return runtime;
         }
     }

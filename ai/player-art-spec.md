@@ -5,6 +5,22 @@
 - Silhouette: lean, weary adult man; messy near-black hair; heavy work boots.
 - Clothing: faded, unfastened dark olive-drab field jacket with long sleeves
   over a charcoal shirt, desaturated navy trousers and dark military boots.
+- The accepted `2026-09-09` optional scarf is a separate yellow garment,
+  following the user's same-day colour correction:
+  neck/nape wrap, covered lower face with open eyes, back knot and a hanging cloth
+  tail. The folded pickup has no inscription or implied previous owner; it is
+  ordinary clothing from the parents' bedroom, never the father's relic.
+  `tools/build-player-scarf-3d-model.py` authors both forms against this rig;
+  `PlayerScarfResources` shares the mother's-house `BookCloth` atlas tile.
+  The user's same-day clarification lengthens the pinned cloth back tail
+  to approximately `45 cm`, reaching mid-back. Its CPU simulation and the
+  wrap/knot surface corrections contact actual nearby model triangles,
+  including the moving hero and NPCs, walls and furnishings. The shared source
+  mesh remains immutable; every drawn part owns its deformation buffer.
+  An authored `MouthLowered`
+  shape and the original rig's left hand provide temporary mouth access;
+  head/body hiding, bathing and the bathroom mirror include the accessory.
+  Core body mesh, bone and source-action counts below exclude this optional pack.
 - Persistent physical asymmetry:
   - muted ochre patch on the **right** shoulder, and nothing answering it on
     the left: the left forearm wore a pale bandage until 2026-09-08, when it
@@ -159,6 +175,8 @@ This opt-in applies only during the interaction handoff without an active clip.
   `Player3DCharacterPresentation.Cold` masks torso and arms separately above
   locomotion: legs and pelvis retain the ordinary gait, running preserves
   the cold arms and rub clock, and owned actions/falling override the profile.
+  Equipped scarf protection scales only the shiver blend to `0.5`; the authored
+  hold, rub, breath and shared leg motion retain their ordinary weights and timing.
   Protective arm poses
   release conflicting cold weights before their IK in that same frame;
   returning to the cold pose retains its smooth blend. The shared pure cold

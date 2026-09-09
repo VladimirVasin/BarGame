@@ -241,6 +241,8 @@ namespace BarPromenade
         private IPlayerClipPresentation clipPresentation;
         private PlayerAnimatedInteractionTimeline timeline;
         private PlayerAnimatedInteractionTimeline nestedLoopAction;
+        private PlayerScarfController.MouthAccess mouthAccess;
+        private PlayerScarfController.MouthAccess nestedMouthAccess;
         private string selectedExitClipName;
         private int nestedLoopActionSettleFrame = -1;
         private Vector3 standHip;
@@ -272,6 +274,9 @@ namespace BarPromenade
         public event Action InteractionCompleted;
 
         public bool IsInitialized { get; private set; }
+        public bool IsWaitingForMouthAccess =>
+            mouthAccess != null && !mouthAccess.IsReady ||
+            nestedMouthAccess != null && !nestedMouthAccess.IsReady;
         public PlayerAnimatedInteractionPhase Phase => isPositioning
             ? PlayerAnimatedInteractionPhase.Positioning
             : timeline != null
@@ -477,6 +482,8 @@ namespace BarPromenade
             entryPoseSettledFrame = -1;
             approachWaypoints.Clear();
             approachWaypointIndex = 0;
+            if (definition.RequiresMouthAccess)
+                mouthAccess = PlayerScarfController.RequireMouthAccess(player, this);
             CapturePlayerState();
             player.Visual.SetInteractionHandoffLocked(true);
             ApplyInputForPhase(timeline.Phase);
@@ -657,6 +664,8 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(definition));
             }
             return isActiveAndEnabled &&
+                   (player.GameObject.GetComponent<PlayerScarfController>() == null ||
+                    !player.GameObject.GetComponent<PlayerScarfController>().IsGestureActive) &&
                    !isPositioning &&
                    stateCaptured &&
                    timeline != null &&
@@ -685,6 +694,8 @@ namespace BarPromenade
                 return false;
             }
             nestedLoopActionSettleFrame = Time.frameCount;
+            if (definition.RequiresMouthAccess)
+                nestedMouthAccess = PlayerScarfController.RequireMouthAccess(player, this);
             player.Motor?.SetInputEnabled(false);
             player.Interactor?.SetInputEnabled(false);
             NestedLoopActionPhaseChanged?.Invoke(
@@ -861,7 +872,9 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            if (!isActiveAndEnabled || IsActive)
+            if (!isActiveAndEnabled || IsActive ||
+                (player.GameObject != null && player.GameObject.GetComponent<PlayerScarfController>() != null &&
+                 player.GameObject.GetComponent<PlayerScarfController>().IsGestureActive))
             {
                 return false;
             }
@@ -906,6 +919,8 @@ namespace BarPromenade
             timeline = nextTimeline;
             isPositioning = false;
             placeAtExitOnCompletion = false;
+            if (definition.RequiresMouthAccess)
+                mouthAccess = PlayerScarfController.RequireMouthAccess(player, this);
             CapturePlayerState();
             player.Visual.SetInteractionHandoffLocked(true);
             ApplyInputForPhase(timeline.Phase);
@@ -941,6 +956,7 @@ namespace BarPromenade
 
             PlayerAnimatedInteractionPhase previousPhase =
                 timeline.Phase;
+            if (mouthAccess != null && !mouthAccess.IsReady) return;
             timeline.Advance(Time.deltaTime);
             if (!timeline.IsActive)
             {
@@ -979,6 +995,7 @@ namespace BarPromenade
 
         private void UpdateNestedLoopAction()
         {
+            if (nestedMouthAccess != null && !nestedMouthAccess.IsReady) return;
             if (Time.frameCount <= nestedLoopActionSettleFrame)
             {
                 return;
@@ -1072,6 +1089,8 @@ namespace BarPromenade
                 return;
             }
 
+            if (timeline.Definition.RequiresMouthAccess)
+                mouthAccess = PlayerScarfController.RequireMouthAccess(player, this);
             ApplyInputForPhase(timeline.Phase);
             ApplyCurrentPresentation();
             PhaseChanged?.Invoke(timeline.Phase);
@@ -1183,6 +1202,8 @@ namespace BarPromenade
                 return false;
             }
             nestedLoopAction.Reset();
+            nestedMouthAccess?.Dispose();
+            nestedMouthAccess = null;
             nestedLoopAction = null;
             nestedLoopActionSettleFrame = -1;
             if (timeline != null &&
@@ -1215,6 +1236,9 @@ namespace BarPromenade
                 stateCaptured;
 
             player.Motor?.CancelInteractionPoseMove();
+            mouthAccess?.Dispose();
+            nestedMouthAccess?.Dispose();
+            mouthAccess = nestedMouthAccess = null;
             isPositioning = false;
             entryPoseSettled = false;
             entryPoseSettledFrame = -1;

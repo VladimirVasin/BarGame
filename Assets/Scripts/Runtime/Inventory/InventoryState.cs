@@ -9,6 +9,8 @@ namespace BarPromenade
         private readonly List<InventoryItemStack> items =
             new List<InventoryItemStack>();
         private readonly ReadOnlyCollection<InventoryItemStack> itemsView;
+        private readonly HashSet<InventoryItemId> equippedItems =
+            new HashSet<InventoryItemId>();
 
         public InventoryState()
         {
@@ -19,7 +21,7 @@ namespace BarPromenade
 
         public void ResetWithStarterItems()
         {
-            items.Clear();
+            Clear();
             TryAdd(InventoryItemId.ApartmentKeys, 1);
             TryAdd(InventoryItemId.Lighter, 1);
         }
@@ -27,6 +29,32 @@ namespace BarPromenade
         public void Clear()
         {
             items.Clear();
+            equippedItems.Clear();
+        }
+
+        public bool IsEquipped(InventoryItemId itemId)
+        {
+            return equippedItems.Contains(itemId);
+        }
+
+        public bool TrySetEquipped(InventoryItemId itemId, bool equipped)
+        {
+            if (!InventoryItemCatalog.TryGet(itemId, out var definition) ||
+                !definition.IsEquippable || GetCount(itemId) <= 0)
+            {
+                return false;
+            }
+
+            if (equipped)
+            {
+                equippedItems.Add(itemId);
+            }
+            else
+            {
+                equippedItems.Remove(itemId);
+            }
+
+            return true;
         }
 
         public bool CanAdd(InventoryItemId itemId, int count = 1)
@@ -84,6 +112,7 @@ namespace BarPromenade
             if (remaining == 0)
             {
                 items.RemoveAt(index);
+                equippedItems.Remove(itemId);
             }
             else
             {

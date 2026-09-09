@@ -51,7 +51,8 @@ namespace BarPromenade
             float delta = frozen || !wasAdvancing ? 0f : GameTimeScaleRuntime.CalendarDeltaTime;
             wasAdvancing = !frozen;
             bool warm = visible && IsSheltered;
-            Model.Step(delta, warm);
+            Model.Step(delta, warm,
+                GameSessionState.IsInventoryItemEquipped(InventoryItemId.Scarf));
             frostAudio.Step(delta, Model.FrostAmount, warm, frozen);
         }
 

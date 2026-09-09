@@ -18,7 +18,8 @@ namespace BarPromenade
     /// and no other shot can see the plate. Elsewhere the copy is off and
     /// the original plate plugs the hole.
     /// </summary>
-    [DefaultExecutionOrder(320)]
+    // Copy the completed body pose and scarf contact geometry (410).
+    [DefaultExecutionOrder(420)]
     [DisallowMultipleComponent]
     public sealed class HomeBathroomMirrorWorld : MonoBehaviour
     {
@@ -460,6 +461,8 @@ namespace BarPromenade
         private readonly Transform heroRoot;
         private readonly Transform homeFrame;
         private readonly MaterialPropertyBlock scratch = new MaterialPropertyBlock();
+        private readonly PlayerScarfPresentation sourceScarf;
+        private readonly PlayerScarfPresentation mirrorScarf;
 
         private HomeMirrorHeroTwin(Player3DAssetRegistry hero, Player3DAssetRegistry twin, Transform homeFrame)
         {
@@ -467,6 +470,9 @@ namespace BarPromenade
             heroRoot = hero.transform;
             this.homeFrame = homeFrame;
             Pair(hero, twin);
+            sourceScarf = hero.GetComponentInChildren<PlayerScarfPresentation>(true);
+            if (sourceScarf != null)
+                mirrorScarf = PlayerScarfPresentation.Install(twin, isMirror: true);
         }
 
         public Player3DAssetRegistry Registry { get; }
@@ -700,6 +706,12 @@ namespace BarPromenade
                     anyBody = true;
                     break;
                 }
+            }
+
+            if (sourceScarf != null && mirrorScarf != null)
+            {
+                sourceScarf.CopyAppearanceTo(mirrorScarf);
+                mirrorScarf.SyncVisibility(anyBody, anyBody);
             }
 
             for (int index = 0; index < sourceRenderers.Count; index++)

@@ -13,14 +13,16 @@ namespace BarPromenade
         OpenStewCan = 5,
         ClosedStewCan = 6,
         InstantNoodles = 7,
-        DayOldLoaf = 8
+        DayOldLoaf = 8,
+        Scarf = 9
     }
 
     public enum InventoryItemCategory
     {
         KeyItem = 0,
         Tool = 1,
-        Consumable = 2
+        Consumable = 2,
+        Clothing = 3
     }
 
     public readonly struct InventoryItemDefinition
@@ -44,6 +46,7 @@ namespace BarPromenade
         public string NameLocalizationKey { get; }
         public string DescriptionLocalizationKey { get; }
         public int MaximumStack { get; }
+        public bool IsEquippable => Category == InventoryItemCategory.Clothing;
     }
 
     public readonly struct InventoryItemStack
@@ -109,7 +112,13 @@ namespace BarPromenade
                 InventoryItemCategory.Consumable,
                 "inventory.item.day_old_loaf.name",
                 "inventory.item.day_old_loaf.description",
-                9)
+                9),
+            new InventoryItemDefinition(
+                InventoryItemId.Scarf,
+                InventoryItemCategory.Clothing,
+                "inventory.item.scarf.name",
+                "inventory.item.scarf.description",
+                1)
         };
 
         private static readonly IReadOnlyList<InventoryItemDefinition>

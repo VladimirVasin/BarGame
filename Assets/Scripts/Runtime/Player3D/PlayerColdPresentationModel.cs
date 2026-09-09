@@ -13,6 +13,7 @@ namespace BarPromenade
         public const float FirstShoulderRubSeconds = 1.8f;
         public const float ShiverDurationSeconds = 1f;
         public const float FirstShiverSeconds = 5.75f;
+        public const float EquippedScarfShiverScale = 0.5f;
 
         private const float RubBlendSeconds = 0.2f;
         private const float ShiverBlendSeconds = 0.12f;
@@ -45,6 +46,9 @@ namespace BarPromenade
             : 0f;
         public float ShiverWeight01 => GestureWeight(
             shiverElapsedSeconds, ShiverDurationSeconds, ShiverBlendSeconds);
+
+        public float GetShiverWeight(bool scarfEquipped) => ShiverWeight01 *
+            (scarfEquipped ? EquippedScarfShiverScale : 1f);
 
         public float ExhaleEnvelope01
         {

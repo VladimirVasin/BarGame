@@ -835,6 +835,9 @@ namespace BarPromenade
             ownedSources.Add(deckSource);
             ApplyRoom(0f);
             IsInitialized = true;
+            engineAnchor.gameObject.SetActive(true);
+            cabinAnchor.gameObject.SetActive(true);
+            axleAnchor.gameObject.SetActive(true);
         }
 
         /// <summary>
@@ -1236,6 +1239,11 @@ namespace BarPromenade
         private Transform CreateAnchor(string anchorName, Vector3 localPosition)
         {
             Transform anchor = new GameObject(anchorName).transform;
+            // AddComponent enables a new AudioSource with playOnAwake=true
+            // before ConfigureSource can change it. On the shared filtered
+            // axle this tries to play the still clipless deck voice. Keep the
+            // anchor inactive until every source and filter is configured.
+            anchor.gameObject.SetActive(false);
             anchor.SetParent(transform, false);
             anchor.localPosition = localPosition;
             anchor.localRotation = Quaternion.identity;

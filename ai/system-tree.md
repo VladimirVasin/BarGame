@@ -121,6 +121,7 @@ Assets/
       HomeShowerCurtainActions.{fbx,json}  two bone-only in-place actions on the production skeleton; reversed for the matching exits
       HomeToiletSeatedActions.{fbx,json} nine independent Hero V2 lid/prepare/sit/seated/rise/dress/inspect/flush clips
       VillageOutdoorPlayerActions.{fbx,json} thirteen optional hero actions with metre-space prop tracks
+      Scarf/                          folded/worn FBXs and PlayerScarf3D.json; shared house cloth atlas
     VillageLife/
       {StationWorker,WoodWoman,RepairNeighbor,SewingWoman,SnowNeighbor,BasketVisitor}.{fbx,json} six detailed winter bodies
       *Atlas.png                        per-resident face, clothing and footwear surfaces
@@ -426,7 +427,7 @@ Assets/
         CinematicDepthOfField.cs priority-10 modal Bokeh; immediate release for camera handoffs
         HomeToiletUnderwaterPass.cs camera-scoped RenderGraph pass before URP post-processing, registered by Ps1CompositeRendererFeature
         AlpineColdExposure.cs       camera-scoped frost facade over the persistent session driver
-        AlpineColdExposureDriver.cs pause/loading freeze and first-ready-frame guard; village/house/cabin warmth and sound
+        AlpineColdExposureDriver.cs pause/loading freeze, warmth/sound and equipped-scarf exposure rate
         AlpineColdFrostPass.cs      quarter-resolution horizontal/vertical diffusion + full-resolution ice, before PS1/Begotten
       Games/         pure rules and engines for the two park boards, no Unity
         BoardGameContracts.cs  side/status/placement/action/turn contract both games answer
@@ -902,14 +903,24 @@ Assets/
         IntoxicationHeadModel.cs    seeded drunk head: chin droop by level, slow wander, nods when far gone, lagging the lean on a loose spring
         PlayerFallAnimationTimeline.cs  14/36/50 authored phase mapping, 100 total (Fall/Down no longer played by the 3D hero)
       Player3D/
+        PlayerScarfController.cs        equipment events, exterior/shelter gates and owned hand-operated mouth access
+        PlayerScarfPresentation.cs      authored deformation after body contacts (410), visibility and mirror copy
+        PlayerScarfContactSurface.cs    hidden source skin -> world contacts -> visible instance mesh for wrap/knot
+        PlayerScarfClothSimulation.cs   bounded cloth on authored vertices; reusable native integration buffers
+        PlayerScarfIntegrationJob.cs    Burst 120 Hz integration, constraints, pins and final velocities
+        PlayerScarfCollisionWorld.cs    real model triangle BVH, cached static mesh BVHs and compensated skin bakes
+        PlayerScarfCollisionSnapshot.cs managed/native triangle and BVH snapshot with four bulk transfers
+        PlayerScarfContactSolver.cs     native contact-job adapter, warmup and reusable buffers
+        PlayerScarfContactJob.cs        strict sequential Burst PBD over real model surface features
+        PlayerScarfResources.cs         authored folded/worn models and one cached BookCloth material
         Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
         Player3DResources.cs            single packaged V2 prefab instantiation
         Player3DCharacterPresentation.cs gait, physics handoff, Rise sampling and opt-in interaction Idle0 support
         Player3DCharacterPresentation.Recovery.cs final pose/velocity transitions, frozen-body composition and supported hand contacts
         Player3DCharacterPresentation.Cold.cs exterior-only torso/arm masks; locomotion legs and owned actions retain priority
-        PlayerColdPresentationModel.cs   scaled breath, rub series and separate shiver bouts, preserved during running
+        PlayerColdPresentationModel.cs   breath/rub/shiver clock; equipped scarf halves only shiver weight
         PlayerColdBreathEffect.cs        bounded wind-carried condensation at the authored mouth socket
-        AlpineColdExposureModel.cs       pure 6/43-second frost growth; full/half thaw in 8/4 seconds
+        AlpineColdExposureModel.cs       pure 6/43-second frost growth (12/86 with scarf); ordinary 8/4-second thaw
         Player3DFaceAtlasPresenter.cs    merge-safe MPB face-cell texture selection
         Player3DRagdollController.cs     bounded 14-body physics; calibrated lying orientation and support costs choose the recovery route
         PlayerRagdollHandoff.cs          the fall's rigid rotation about the boot under the pressure, as a velocity field
@@ -918,7 +929,8 @@ Assets/
         Player3DBathingAppearance.cs     the clothes off by role rule and the body repainted skin, restored exactly (the shower)
       Inventory/     pure item catalog, ordered session stacks and menu state
         InventoryTypes.cs           stable IDs, definitions and stack values
-        InventoryState.cs           atomic bounded stack mutations + starters
+        InventoryState.cs           atomic bounded stacks, starters and separate clothing equipment flags
+        MothersHouseScarfPickupPlan.cs parents' bedroom chest support and stable collection source
         InventoryConsumableCatalog.cs food floors, relief and bottled servings
         InventoryMenuModel.cs       wrapping selection and examine state
         InventoryItemModelFactory.cs six authored product prefabs + low-poly models for other items
@@ -933,6 +945,7 @@ Assets/
         BarJukeboxInteraction.cs     prompt + single-writer three-channel emissive pulse/flash
         CityTunnelTravel{Plan,Planner,Controller}.cs automatic unavailable crossing + visible return
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
+        MothersHouseScarfPickup.cs       once-per-session folded scarf collection from the bedroom chest
         PlayerAnimatedInteraction*.cs  positioning, keyed/static/moving pelvis targets + independent exit
         PlayerDoorAction{Plan,Controller,Target}.cs  guided door gesture, destination-owned outward arrival + terminal cleanup
         HomeBedInteraction.cs          first-E sleep, persistent loop, completed-wake fatigue reset
@@ -960,7 +973,7 @@ Assets/
         HomeTeethBrushingArmPose.cs      actual arm IK, mesh clearance, grounded inspection lean/head turns and connected spit bend
         HomeBrushingFirstPersonView.cs  eye camera, inspection framing, tap/basin gaze and scoped real-head visibility
         HomeBathroomSceneInteraction.cs  shared bathroom scene: modal, guided approach, camera, opt-in backward exit and stop prompt
-        HomeBathroomMirrorWorld.cs     bathroom/hero twin, mesh props and scoped brushing head/neck tint; order 320
+        HomeBathroomMirrorWorld.cs     bathroom/hero twin, final scarf surfaces and brushing head/neck tint; order 420
         HomeShowerInteraction.cs       hero exits, offscreen redress, reversed camera return and outside curtain close; wash/tap/water
         HomeShowerCameraPath.cs        eased entry to the predicted eye and the same path reversed after the hero exits
         HomeShowerWashingInteraction.cs  E soap pickup, held-button repeated strokes at selected skin, mouse/gamepad routing and completion-only relief
@@ -1211,7 +1224,7 @@ Assets/
       Audio/CitySound*.cs                   causal plan/schedule/rewind/synthesis/occlusion contracts
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
       AreaCaptureFixture.VillageLife.cs one explicit household journey, finite stock, imported detail and contact frames
-      AreaCaptureFixture.VillageWorkroom.cs focused room journey plus separate wall-lining depth regression and camera captures
+      AreaCaptureFixture.VillageWorkroom.cs room journey; VillageWorkroomWalls checks lining depth, Medium 512 px shadow budget and camera captures
       AreaCaptureFixture.VillageOutdoorLife.cs finite help, carried movement, NPC errands and restored outcomes
       AreaCaptureFixture.VillageOutdoorPartners.cs seeded follow-up for gate, station hands, both NPC clearings and reload
       AreaCaptureFixture.VillageNeighbours.cs same journey's six-role day/night, door occlusion, body clearance, load and gust checks
@@ -1270,6 +1283,7 @@ ArtSource/
   PlayerV2/
     Blender/                    generated production V2 .blend source
     Preview/                    production full/front/three-quarter/lower-body/expression PNGs
+  PlayerScarf/                  separate generated PlayerScarf3D.blend and preview; core hero source unchanged
   Stairwell/
     Cat/Blender/                 generated 3D cat .blend + back-quarter and face previews
   City/
@@ -1320,6 +1334,7 @@ tools/
   build-city-chess-set-3d-model.py   turned chessmen/draught meshes + height-ladder validator
   player_3d_model_common.py         shared production rig/action/export/bed validators
   build-player-3d-model-v2.py       sole production V2 generator; anatomy/atlas/rig/export and mouth/skull clearance rays
+  build-player-scarf-3d-model.py    deterministic folded prop, neck/nape wrap, lowered-mouth shape, knot and cloth tail
   player_cold_actions.py          Hero-only self-hug, shoulder rub and one-second shiver authoring with sleeve contacts
   alpine-cold-frost-mask.md        built-in image generation prompt, source hash and frost-mask import contract
   player_cold_clearance.py        all 36 opposing pairs of actual convex arm meshes, sampled each half source frame

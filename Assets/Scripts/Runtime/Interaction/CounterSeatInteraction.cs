@@ -123,7 +123,8 @@ namespace BarPromenade
                 loopFramesPerSecond: BarDrinkLoopFramesPerSecond,
                 exitFrameCount: BarDrinkPhaseFrameCount,
                 exitFramesPerSecond:
-                    BarDrinkTransferFramesPerSecond);
+                    BarDrinkTransferFramesPerSecond,
+                requiresMouthAccess: true);
         }
 
         public bool CanBegin()

@@ -339,15 +339,24 @@ namespace BarPromenade
                 new Rect(128f, 231f, 334f, 25f),
                 LocalizationService.Get(definition.NameLocalizationKey),
                 selectedItemStyle);
+            bool showsEquipment = controller.SelectedIsEquippable;
+            if (showsEquipment)
+            {
+                GUI.Label(
+                    new Rect(128f, 256f, 334f, 20f),
+                    controller.SelectedEquipmentStatusLabel,
+                    descriptionStyle);
+            }
+
             GUI.Label(
                 new Rect(
                     128f,
-                    258f,
+                    showsEquipment ? 280f : 258f,
                     334f,
                     string.IsNullOrEmpty(
                         controller.UseFeedbackMessage)
-                        ? 67f
-                        : 45f),
+                        ? (showsEquipment ? 45f : 67f)
+                        : (showsEquipment ? 23f : 45f)),
                 LocalizationService.Get(
                     definition.DescriptionLocalizationKey),
                 descriptionStyle);
@@ -418,6 +427,14 @@ namespace BarPromenade
                 LocalizationService.Get(
                     definition.DescriptionLocalizationKey),
                 descriptionStyle);
+            if (controller.SelectedIsEquippable)
+            {
+                GUI.Label(
+                    new Rect(270f, 229f, 250f, 20f),
+                    controller.SelectedEquipmentStatusLabel,
+                    descriptionStyle);
+            }
+
             DrawCommandButton(
                 new Rect(252f, 266f, 136f, 32f),
                 "inventory.action.back",

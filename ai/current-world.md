@@ -93,8 +93,10 @@ The vertical slice contains:
   ground window on that niche's rear wall. The main body, stair, bedroom
   sizes, front threshold and `3.54/5.90 m` upper floor/ceiling remain fixed.
   The parents' doorway moves slightly south; the northern corridor chest
-  moves into that bedroom and the linen shelf is shortened. Nothing up
-  there is interactive. One
+  moves into that bedroom and the linen shelf is shortened. One folded scarf
+  can be collected from that chest through `MothersHouseScarfPickup`; the
+  remaining upstairs furnishings are passive. Collection is atomic and its
+  source stays empty on later scene visits in the same session. One
   hidden plan-owned ramp makes the
   visible collider-free steps continuously walkable; structural slabs,
   partitions, door openings and well guards are runtime collision. Five
@@ -332,6 +334,11 @@ The vertical slice contains:
   and nausea/vomiting retain their protective gestures. Pause freezes the
   scaled-time body clock and particles; scene/presentation cleanup clears this
   body profile.
+  An equipped inventory scarf halves only the shiver amplitude; the hug,
+  rubbing, breath cycle and locomotion remain intact. It also halves new
+  outdoor exposure, giving a fresh visit `12/86 s` to first/full frost instead
+  of the ordinary `6/43 s`. Equipping or removing it preserves accumulated ice,
+  and indoor thaw retains its ordinary rate.
   A separate session presentation gradually freezes the game image's edges:
   the first `6 s` outdoors stay clear, then the layer grows to its capped maximum
   at `43 s`, slightly longer than the walk from the cableway platform to the
@@ -2124,7 +2131,7 @@ The vertical slice contains:
   opening pause on the same frame. The logical `640x360` screen combines a
   dedicated transparent portrait rendered from the production 3D hero, four
   compact intoxication/hunger/stress/fatigue bars, dollar cash, a five-column point-filtered
-  icon grid, selected item description and contextual Eat/Drink, Examine and
+  icon grid, selected item description and contextual Eat/Drink/Equip/Remove, Examine and
   Close commands. Hunger, stress and fatigue are session-owned `0-100` values
   that start at zero and survive ordinary scene loads. Once the startup Wake
   starts the shared session clock, hunger rises from `0` to `100` over
@@ -2142,6 +2149,38 @@ The vertical slice contains:
   closed can, noodles and loaf, alongside inventory key and lighter models. A
   pure catalog and ordered stack state begin every new run with apartment keys
   and a lighter, persist across scene loads and reset with the session. Current
+  clothing has a separate equipped flag, with `Используется` / `Не используется`
+  and `Надеть` / `Снять` for the selected scarf; its icon is yellow like the
+  garment. Equipment does not consume the
+  item, requires ownership and clears when its last unit is removed; a new
+  game resets both collection and equipment. `PlayerFactory` installs the
+  optional `PlayerScarfController` on the shared hero. Its separate imported
+  yellow wrap covers the neck, nape and lower face; a `45 cm` pinned cloth
+  tail responds to the actual exterior wind and ordinary body motion.
+  `PlayerScarfClothSimulation` advances the authored tail vertices through
+  native Burst integration/contact jobs; loading prepares nearby immutable
+  collision caches even while the item is unequipped.
+  `PlayerScarfCollisionWorld` gathers nearby real static and skinned triangles,
+  and `PlayerScarfContactSolver` resolves contacts with the hero, NPCs,
+  buildings and other model surfaces. Hidden authored wrap/knot skins feed
+  corrected visible meshes through `PlayerScarfContactSurface`; each active
+  frame solves from the current authored skin pose. Shared rest
+  geometry stays immutable; each actor owns its dynamic surfaces. Paused
+  frames retain their deformation; teleports reset and resolve once. Closed
+  cabins, the village workroom and interiors remove exterior wind; the home
+  balcony uses it. One shared matte material samples the mother's-house
+  `BookCloth` tile. Visible mouth actions lease access and wait for a short
+  left-hand reach/pull/release (`0.24/0.55/0.24 s`), which lowers the authored
+  wrap shape before drinking, smoking or brushing; vomiting also owns access.
+  Cached hand/thumb surfaces place the actual hand exterior `4 mm` in front
+  of the garment. The focused `360`-frame contact capture passed without
+  detected penetrations; its dense-corner performance costs are recorded
+  in [work-log.md](work-log.md).
+  Returning the scarf preserves its equipment and cold protection. Shower
+  clothing ownership temporarily removes its visible form. Head/body hiding
+  applies to the accessory, and the bathroom mirror copies its live appearance
+  and all corrected surfaces instead of running another cloth simulation. Instant inventory
+  consumption retains its existing non-animated behavior. Current
   food has explicit relief but cannot reduce hunger below `20`; food with no
   effect remains in its stack. Alcohol has separate stress-relief values, and
   the inventory vodka bottle commits four servings atomically while maximum

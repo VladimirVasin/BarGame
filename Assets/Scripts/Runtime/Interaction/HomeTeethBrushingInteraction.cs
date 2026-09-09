@@ -11,6 +11,7 @@ namespace BarPromenade
         public const string BrushPromptKey = "interaction.brush_teeth";
         public const string StopPromptKeyName = "interaction.stop_brushing";
         public const int StressRelief = 5;
+        private PlayerScarfController.MouthAccess scarfMouthAccess;
         public const float BrushVisibleWeight = 0.15f;
         private static readonly Vector3 EntryEye = new Vector3(2.075f, 1.75f, 3.02f);
         public static readonly Vector3 BasinTarget = new Vector3(1.995f, 0.724f, 3.425f);
@@ -102,6 +103,7 @@ namespace BarPromenade
 
         protected override void OnSceneBegin()
         {
+            scarfMouthAccess = PlayerScarfController.RequireMouthAccess(Home.Player, this);
             previousExpression = visual.CurrentFacialExpression;
             if (!visual.TrySetContextualFacialExpression(this, previousExpression)) { CancelScene(); return; }
             previousHandoff = visual.InteractionHandoffLocked;
@@ -125,6 +127,7 @@ namespace BarPromenade
 
         protected override void OnSceneAdvance(float deltaTime)
         {
+            if (scarfMouthAccess != null && !scarfMouthAccess.IsReady) return;
             float before = timeline.EmissionSeconds;
             timeline.Advance(deltaTime);
             pendingSpitSeconds += timeline.EmissionSeconds - before;
@@ -224,6 +227,8 @@ namespace BarPromenade
         }
         protected override void OnSceneRestore()
         {
+            scarfMouthAccess?.Dispose();
+            scarfMouthAccess = null;
             faucet?.SetOpen(0f);
             Home?.Soundscape?.StopBathroomActionSounds();
             firstPerson?.End();

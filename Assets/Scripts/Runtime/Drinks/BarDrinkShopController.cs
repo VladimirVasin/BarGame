@@ -1408,6 +1408,8 @@ namespace BarPromenade
             }
 
             bool wasCommitted = timeline.IsCommitted;
+            if (playerInteraction != null && playerInteraction.IsWaitingForMouthAccess)
+                deltaTime = 0f;
             timeline.Advance(deltaTime);
             PlayCrossedCues();
             if (wasCommitted &&

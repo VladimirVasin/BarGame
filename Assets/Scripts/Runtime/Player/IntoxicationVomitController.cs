@@ -69,6 +69,7 @@ namespace BarPromenade
         private float clock;
         private float lastSplatTime = float.NegativeInfinity;
         private bool headDriveApplied;
+        private PlayerScarfController.MouthAccess scarfMouthAccess;
 
         public IntoxicationVomitController(PlayerRuntime player, int newSeed)
         {
@@ -131,6 +132,9 @@ namespace BarPromenade
         /// </summary>
         public void Begin()
         {
+            scarfMouthAccess?.Dispose();
+            scarfMouthAccess = PlayerScarfController.RequireMouthAccess(
+                heroRoot != null ? heroRoot.gameObject : null, heroRoot);
             model.Begin();
             clock = 0f;
             lastSplatTime = float.NegativeInfinity;
@@ -176,12 +180,18 @@ namespace BarPromenade
             float step = paused || float.IsNaN(scaledDeltaTime)
                 ? 0f
                 : Mathf.Max(0f, scaledDeltaTime);
+            if (scarfMouthAccess != null && !scarfMouthAccess.IsReady) step = 0f;
             if (model.IsActive)
             {
                 clock += step;
             }
 
             model.Advance(step);
+            if (!model.IsActive)
+            {
+                scarfMouthAccess?.Dispose();
+                scarfMouthAccess = null;
+            }
             DrainCues();
             // The gauge releases the key when its own bout resolves or is
             // cancelled. Under a bout of vomiting that can only happen off
@@ -210,6 +220,8 @@ namespace BarPromenade
         /// </summary>
         public void Cancel()
         {
+            scarfMouthAccess?.Dispose();
+            scarfMouthAccess = null;
             bool wasActive = model.IsActive;
             float elapsed = model.Time;
             model.Cancel();

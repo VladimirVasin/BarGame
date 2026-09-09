@@ -275,7 +275,7 @@ namespace BarPromenade
 
             TryBeginSafeExit();
             RefreshCigaretteVisibility();
-            timeline.Advance(Time.deltaTime);
+            timeline.Advance(controller != null && controller.IsWaitingForMouthAccess ? 0f : Time.deltaTime);
             ApplyPresentation();
         }
 

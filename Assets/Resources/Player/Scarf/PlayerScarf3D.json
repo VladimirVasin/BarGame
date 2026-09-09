@@ -1,0 +1,103 @@
+{
+  "generator": "tools/build-player-scarf-3d-model.py",
+  "version": 1,
+  "generator_sha256": "2df0cbda72bcc6edbf6917631a332bea84288087aade6ea1e85e6ed1014fae80",
+  "source_hero_sha256": "b138c9221e995e362a285f3f3bdfaa8eb63ec8f74a5c90a4946b18de812d9160",
+  "source_hero": "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend",
+  "coordinate_space": "Blender hero metres, forward -Y; Unity swaps Y/Z then hero yaw 180",
+  "atlas_resource": "MothersHouse/Textures/MothersHousePositiveAtlas",
+  "atlas_cell": "BookCloth",
+  "cloth_tint_linear": [
+    2.0,
+    1.0,
+    0.045,
+    1.0
+  ],
+  "minimum_lower_face_clearance_m": 0.008528,
+  "skin_bones": [
+    "head",
+    "neck"
+  ],
+  "mouth_blend_shape": "MouthLowered",
+  "front_grip_raised": [
+    0.0,
+    -0.148,
+    1.604
+  ],
+  "front_grip_lowered": [
+    0.0,
+    -0.094,
+    1.474
+  ],
+  "tail_columns": 6,
+  "tail_rows": 20,
+  "tail_length_m": 0.45,
+  "pinned_source_z_min": 1.56,
+  "parts": [
+    {
+      "name": "ScarfWrap",
+      "vertices": 462,
+      "triangles": 832,
+      "bounds_min": [
+        -0.1176162,
+        -0.148,
+        1.429
+      ],
+      "bounds_max": [
+        0.1176613,
+        0.1234745,
+        1.604
+      ],
+      "geometry_sha256": "4b1b36bbb99caa0bbe0721b9b758c45cd505ea25107a2947b2de99a331e9ce99"
+    },
+    {
+      "name": "ScarfKnot",
+      "vertices": 93,
+      "triangles": 168,
+      "bounds_min": [
+        -0.029,
+        0.12,
+        1.55012
+      ],
+      "bounds_max": [
+        0.029,
+        0.164,
+        1.59188
+      ],
+      "geometry_sha256": "b9f652e479939961bbcf32a8e2c193a2d853c9e7a34e4539c47f303124dca42f"
+    },
+    {
+      "name": "ScarfTail",
+      "vertices": 147,
+      "triangles": 240,
+      "bounds_min": [
+        -0.041,
+        0.125,
+        1.117
+      ],
+      "bounds_max": [
+        0.0815,
+        0.201,
+        1.567
+      ],
+      "geometry_sha256": "3b2f0e9660ac755d6472223b97be843b108c182adba5954291fb90c6b6fee10d"
+    },
+    {
+      "name": "ScarfFolded",
+      "vertices": 126,
+      "triangles": 208,
+      "bounds_min": [
+        -0.135,
+        -0.0885,
+        0.0055
+      ],
+      "bounds_max": [
+        0.138,
+        0.0885,
+        0.0734821
+      ],
+      "geometry_sha256": "b2b01e03378182c685bd7744001fa8cf7c53c96a3236a5db9a4bce4461692b78"
+    }
+  ],
+  "mouth_shape_sha256": "1c817258aa75aeb25ee52ddd5cb3bc60f5b20b880b991cbf7d89aec4ad30b814"
+}

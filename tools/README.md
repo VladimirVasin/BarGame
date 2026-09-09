@@ -149,3 +149,20 @@ evaluated body meshes throughout each action at 60 Hz. The second command
 rebuilds and compares the manifest without publishing. Unity's
 `Bar Promenade/Player 3D/Validate Shower Curtain Actions` additionally checks
 the imported clips against the production Idle pose and world grip targets.
+
+The mother's ordinary scarf has its own folded and worn Blender pack. Its
+45 cm rear tail uses a 6 by 20 cloth grid; the wrap and knot retain their
+authored silhouette, and the `MouthLowered` shape opens the actual face.
+Both forms sample the existing mother's-house `BookCloth` atlas tile.
+
+```powershell
+python tools/run-blender.py tools/build-player-scarf-3d-model.py --expect Assets/Resources/Player/Scarf/ScarfWorn.fbx --expect Assets/Resources/Player/Scarf/ScarfFolded.fbx --expect Assets/Resources/Player/Scarf/PlayerScarf3D.json
+python tools/run-blender.py tools/build-player-scarf-3d-model.py --validate-only -- --validate-only --no-preview
+```
+
+Keep Unity closed during publication. The first command also renders front,
+lowered and rear views under `ArtSource/PlayerScarf`; append `-- --no-preview`
+to skip those images. The validator checks weights, exact geometry/shape
+determinism and clearance against the real production face. In Unity,
+`PlayerScarfAssetSetup.BuildOrThrow` imports and measures the two FBXs without
+generating geometry; player builds call its read-only `ValidateOrThrow` gate.

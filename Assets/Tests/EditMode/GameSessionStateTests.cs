@@ -336,16 +336,16 @@ namespace BarPromenade.Tests.EditMode
                 Is.False);
         }
 
-        [Test]
-        public void CollectWorldItem_IsAtomicAndRejectsDuplicateSource()
+        [TestCase(InventoryItemId.ChickenEgg, "home.refrigerator.shelf-middle-left")]
+        [TestCase(InventoryItemId.Scarf, MothersHouseScarfPickupPlan.SourceId)]
+        public void CollectWorldItem_IsAtomicAndRejectsDuplicateSource(
+            InventoryItemId itemId,
+            string sourceId)
         {
-            const string sourceId =
-                "home.refrigerator.shelf-middle-left";
-
             Assert.That(
                 GameSessionState.TryCollectWorldItem(
                     sourceId,
-                    InventoryItemId.ChickenEgg),
+                    itemId),
                 Is.True);
             Assert.That(
                 GameSessionState.TryCollectWorldItem(
@@ -361,8 +361,61 @@ namespace BarPromenade.Tests.EditMode
                 Has.Count.EqualTo(3));
             Assert.That(
                 GameSessionState.InventoryItems[2].ItemId,
-                Is.EqualTo(InventoryItemId.ChickenEgg));
+                Is.EqualTo(itemId));
             Assert.That(GameSessionState.CollectedWorldItemCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Equipment_ReportsChangesAndClearsWithInventoryAndSession()
+        {
+            int changes = 0;
+            System.Action changed = () => changes++;
+            GameSessionState.InventoryEquipmentChanged += changed;
+            try
+            {
+                Assert.That(GameSessionState.TrySetInventoryItemEquipped(
+                    InventoryItemId.Scarf, true), Is.False);
+                GameSessionState.TryCollectWorldItem(
+                    MothersHouseScarfPickupPlan.SourceId, InventoryItemId.Scarf);
+                Assert.That(GameSessionState.TrySetInventoryItemEquipped(
+                    InventoryItemId.Scarf, true), Is.True);
+                Assert.That(GameSessionState.TrySetInventoryItemEquipped(
+                    InventoryItemId.Scarf, true), Is.True);
+                Assert.That(changes, Is.EqualTo(1));
+                Assert.That(GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.Scarf), Is.EqualTo(1));
+
+                GameSessionState.TryRemoveInventoryItem(InventoryItemId.Scarf);
+                Assert.That(GameSessionState.IsInventoryItemEquipped(
+                    InventoryItemId.Scarf), Is.False);
+                Assert.That(changes, Is.EqualTo(2));
+                Assert.That(GameSessionState.IsWorldItemCollected(
+                    MothersHouseScarfPickupPlan.SourceId), Is.True);
+
+                GameSessionState.TryAddInventoryItem(InventoryItemId.Scarf);
+                GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.Scarf, true);
+                GameSessionState.ResetInventoryState();
+                Assert.That(GameSessionState.IsInventoryItemEquipped(
+                    InventoryItemId.Scarf), Is.False);
+                Assert.That(GameSessionState.IsWorldItemCollected(
+                    MothersHouseScarfPickupPlan.SourceId), Is.False);
+
+                GameSessionState.TryCollectWorldItem(
+                    MothersHouseScarfPickupPlan.SourceId, InventoryItemId.Scarf);
+                GameSessionState.TrySetInventoryItemEquipped(InventoryItemId.Scarf, true);
+                GameSessionState.BeginNewGame();
+                Assert.That(GameSessionState.IsInventoryItemEquipped(
+                    InventoryItemId.Scarf), Is.False);
+                Assert.That(GameSessionState.GetInventoryItemCount(
+                    InventoryItemId.Scarf), Is.Zero);
+                Assert.That(GameSessionState.IsWorldItemCollected(
+                    MothersHouseScarfPickupPlan.SourceId), Is.False);
+                Assert.That(changes, Is.EqualTo(6));
+            }
+            finally
+            {
+                GameSessionState.InventoryEquipmentChanged -= changed;
+            }
         }
 
         [Test]

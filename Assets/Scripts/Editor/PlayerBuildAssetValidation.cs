@@ -40,6 +40,8 @@ namespace BarPromenade.Editor
                 "Restore the four loading PNGs, then run BarPromenade.Editor.AreaLoadingArtImporter.ReimportAll.");
             Register("Hero V2", ValidateHero,
                 "BarPromenade.Editor.Player3DV2AssetSetup.RunBatch");
+            Register("Player scarf", PlayerScarfAssetSetup.ValidateOrThrow,
+                "Run tools/build-player-scarf-3d-model.py through tools/run-blender.py, then BarPromenade.Editor.PlayerScarfAssetSetup.BuildOrThrow.");
             RegisterGenerated("Bar", BarAssetSetup.ValidateOrThrow, "BarAssetSetup");
             RegisterGenerated("Bartender", BarBartenderV2AssetSetup.ValidateOrThrow, "BarBartenderV2AssetSetup");
             RegisterGenerated("City buildings", CityBuildingAssetSetup.ValidateOrThrow, "CityBuildingAssetSetup");

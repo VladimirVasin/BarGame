@@ -67,6 +67,7 @@ namespace BarPromenade
         }
         public MothersHouseKettleProp Kettle { get; private set; }
         public MothersHouseExit Exit { get; private set; }
+        public MothersHouseScarfPickup ScarfPickup { get; private set; }
 
         /// <summary>The two drawn chair meshes, by their authored names.
         /// </summary>
@@ -174,6 +175,9 @@ namespace BarPromenade
             BuildExit();
             BuildSeats(camera);
             BuildMother();
+            ScarfPickup = MothersHouseScarfPickup.Create(
+                transform,
+                MothersHouseScarfPickupPlan.Create(Layout));
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
                 Player,

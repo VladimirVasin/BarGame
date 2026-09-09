@@ -53,6 +53,32 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Equipment_RequiresOwnedClothingAndNeverConsumesIt()
+        {
+            var state = new InventoryState();
+            state.ResetWithStarterItems();
+            Assert.That(state.TrySetEquipped(InventoryItemId.Scarf, true), Is.False);
+            Assert.That(state.TrySetEquipped(InventoryItemId.Lighter, true), Is.False);
+            Assert.That(state.TryAdd(InventoryItemId.Scarf), Is.True);
+            Assert.That(state.TryAdd(InventoryItemId.Scarf), Is.False);
+            Assert.That(state.TrySetEquipped(InventoryItemId.Scarf, true), Is.True);
+            Assert.That(state.IsEquipped(InventoryItemId.Scarf), Is.True);
+            Assert.That(state.GetCount(InventoryItemId.Scarf), Is.EqualTo(1));
+            Assert.That(state.TrySetEquipped(InventoryItemId.Scarf, false), Is.True);
+            Assert.That(state.IsEquipped(InventoryItemId.Scarf), Is.False);
+            Assert.That(state.GetCount(InventoryItemId.Scarf), Is.EqualTo(1));
+
+            state.TrySetEquipped(InventoryItemId.Scarf, true);
+            Assert.That(state.TryRemove(InventoryItemId.Scarf), Is.True);
+            Assert.That(state.IsEquipped(InventoryItemId.Scarf), Is.False);
+            state.TryAdd(InventoryItemId.Scarf);
+            state.TrySetEquipped(InventoryItemId.Scarf, true);
+            state.ResetWithStarterItems();
+            Assert.That(state.IsEquipped(InventoryItemId.Scarf), Is.False);
+            Assert.That(state.GetCount(InventoryItemId.Scarf), Is.Zero);
+        }
+
+        [Test]
         public void InvalidOrOverflowingMutation_IsAtomic()
         {
             var state = new InventoryState();

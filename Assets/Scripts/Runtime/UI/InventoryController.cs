@@ -55,13 +55,35 @@ namespace BarPromenade
                     SelectedStack.ItemId)
                 : default;
 
+        public bool SelectedIsEquippable =>
+            HasSelection && SelectedDefinition.IsEquippable;
+
+        public bool SelectedIsEquipped =>
+            HasSelection && GameSessionState.IsInventoryItemEquipped(
+                SelectedStack.ItemId);
+
+        public string SelectedEquipmentStatusLabel =>
+            SelectedIsEquippable
+                ? LocalizationService.Get(SelectedIsEquipped
+                    ? "inventory.equipment.used"
+                    : "inventory.equipment.unused")
+                : string.Empty;
+
         public bool CanUseSelected =>
-            HasSelection && SelectedUseEvaluation.Succeeded;
+            HasSelection &&
+            (SelectedIsEquippable || SelectedUseEvaluation.Succeeded);
 
         public string SelectedUseActionLabel
         {
             get
             {
+                if (SelectedIsEquippable)
+                {
+                    return LocalizationService.Get(SelectedIsEquipped
+                        ? "inventory.action.unequip"
+                        : "inventory.action.equip");
+                }
+
                 if (!HasSelection ||
                     !InventoryConsumableCatalog.TryGet(
                         SelectedStack.ItemId,
@@ -224,6 +246,20 @@ namespace BarPromenade
             }
 
             InventoryItemId itemId = SelectedStack.ItemId;
+            if (SelectedIsEquippable)
+            {
+                bool equipped = !SelectedIsEquipped;
+                bool succeeded = GameSessionState.TrySetInventoryItemEquipped(
+                    itemId, equipped);
+                ClearUseFeedback();
+                UseFeedbackSucceeded = succeeded;
+                View.RefreshPreview();
+                RetroAudio.Play(succeeded
+                    ? RetroSfxId.UiConfirm
+                    : RetroSfxId.UiCancel);
+                return succeeded;
+            }
+
             InventoryItemUseResult result =
                 GameSessionState.TryConsumeInventoryItem(itemId);
             SetUseFeedback(result);

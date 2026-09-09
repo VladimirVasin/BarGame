@@ -54,6 +54,17 @@ namespace BarPromenade
             Color32 amber = new Color32(190, 121, 48, 255);
             switch (itemId)
             {
+                case InventoryItemId.Scarf:
+                    Color32 cloth = new Color32(224, 191, 52, 255);
+                    Color32 weave = new Color32(249, 223, 113, 255);
+                    painter.FillRect(7, 15, 18, 9, cloth);
+                    painter.OutlineRect(6, 14, 20, 11, ink);
+                    painter.FillRect(10, 7, 6, 10, cloth);
+                    painter.FillRect(19, 6, 5, 10, cloth);
+                    painter.FillRect(8, 20, 16, 1, weave);
+                    painter.FillRect(11, 7, 1, 6, weave);
+                    painter.FillRect(20, 6, 1, 7, weave);
+                    break;
                 case InventoryItemId.ApartmentKeys:
                     painter.Ring(9, 18, 6, 3, metal);
                     painter.FillRect(13, 16, 13, 4, metal);

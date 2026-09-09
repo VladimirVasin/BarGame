@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
@@ -43,6 +44,15 @@ namespace BarPromenade
             light.intensity = intensity; light.range = range;
             light.shadows = shadows ? LightShadows.Soft : LightShadows.None;
             light.shadowStrength = .8f; light.shadowBias = .035f; light.shadowNormalBias = .1f;
+            if (shadows && Application.isPlaying)
+            {
+                // A point light needs six faces. URP's default High (1024)
+                // overfills the PC 2048 atlas and rescales every face to 512.
+                // Request that effective resolution directly, leaving room
+                // in the atlas without changing the lamp or its soft shadows.
+                light.GetUniversalAdditionalLightData().additionalLightsShadowResolutionTier =
+                    UniversalAdditionalLightData.AdditionalLightsShadowResolutionTierMedium;
+            }
             return light;
         }
 
