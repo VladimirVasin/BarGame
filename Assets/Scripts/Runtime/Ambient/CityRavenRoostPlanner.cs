@@ -299,6 +299,13 @@ namespace BarPromenade
             }
 
             float waterlineZ = coast.Frame.WaterlineZ;
+            if (coast.Port != null)
+            {
+                var portA = new CemeteryRavenPerch(true, id, coast.Port.RavenPerch, 90f);
+                var portB = new CemeteryRavenPerch(true, id, coast.Port.RavenCompanion, 0f);
+                TryAccept(id, portA, portB, exclusion, roosts, acceptedAnchors);
+                return;
+            }
             if (!TrySelectPartFarthestFromWaterline(
                     coast,
                     CitySeacoastPartKind.MolParapet,

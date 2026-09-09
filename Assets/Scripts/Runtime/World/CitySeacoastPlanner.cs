@@ -7,9 +7,8 @@ namespace BarPromenade
     /// <summary>
     /// Plans the north seacoast — the place where the city runs out.
     /// One strip of sand, one strip of water, fog instead of a horizon,
-    /// and three moods along it: the dead port west of the river mouth
-    /// (a concrete mol walking into the sea, a derrick crane nobody
-    /// swings), the quiet granite
+    /// and three moods along it: the small working port west of the river mouth,
+    /// the quiet granite
     /// esplanade east of the mouth with the municipal boat station
     /// that moved here from the drained lake — hut, hire sign, pier,
     /// slipway, hauled hulls and all — and the wild shore beyond it:
@@ -192,6 +191,14 @@ namespace BarPromenade
             var lamps = new List<CitySeacoastLampDescriptor>(8);
             var reserved = new List<Rect>();
             var wallCuts = new List<Vector2>();
+            CityPortPlan port = CityPortPlan.Create(frame);
+            if (port != null)
+            {
+                CityPortAccessPlan.GetOrCreate(layout, port);
+                port.ValidateOrThrow();
+                reserved.Add(port.LandBounds);
+                if (port.Access != null) reserved.Add(port.Access.ReservedBounds);
+            }
 
             // Fixtures and buildings claim their spots first, so the
             // hulls and the scatter are planned around them and never
@@ -210,18 +217,19 @@ namespace BarPromenade
             AddEsplanadeLamps(lamps, layout, frame, reserved);
             AddBoats(parts, layout, frame, pierLateral, layout.Seed,
                 hasHut, reserved, access);
-            Rect molRect = AddMol(
-                parts, layout, frame, reserved);
+            if (port == null)
+            {
+                Rect molRect = AddMol(parts, layout, frame, reserved);
+                AddDerrick(parts, layout, frame, molRect, reserved);
+                AddPortRuins(parts, layout, frame, layout.Seed, reserved, access);
+            }
             AddMouthBanks(parts, layout, frame);
-            AddDerrick(parts, layout, frame, molRect, reserved);
-            AddPortRuins(parts, layout, frame, layout.Seed, reserved,
-                access);
             AddFootbridge(parts, layout, frame);
             AddPromenadeStairs(parts, layout, frame);
             AddWildShore(parts, layout, frame, layout.Seed, reserved);
             AddWrackLine(parts, layout, frame, layout.Seed, reserved);
 
-            var plan = new CitySeacoastPlan(parts, lamps, grounds, frame);
+            var plan = new CitySeacoastPlan(parts, lamps, grounds, frame, port);
             ValidateOrThrow(layout, plan);
             return plan;
         }
@@ -270,12 +278,18 @@ namespace BarPromenade
                 pierLateral + PierWidth * 0.5f,
                 waterline + PierReach));
 
-            float molX = ResolveMolLateral(frame);
-            destination.Add(Rect.MinMaxRect(
-                molX - MolWidth * 0.5f,
-                waterline - MolRootOffset,
-                molX + MolWidth * 0.5f,
-                waterline + MolReach));
+            CityPortPlan port = CityPortPlan.Create(frame);
+            if (port != null)
+            {
+                CityPortAccessPlan.GetOrCreate(layout, port);
+                port.AppendWalkableFootprints(destination);
+            }
+            else
+            {
+                float molX = ResolveMolLateral(frame);
+                destination.Add(Rect.MinMaxRect(molX - MolWidth * .5f,
+                    waterline - MolRootOffset, molX + MolWidth * .5f, waterline + MolReach));
+            }
 
             destination.Add(Rect.MinMaxRect(
                 frame.ChannelXMin - FootbridgeOverhang - SeamReach,
@@ -331,6 +345,12 @@ namespace BarPromenade
                 out CityOpenAreaAccessDescriptor _);
         }
 
+        internal static CityPortPlan CreatePortPlan(CityLayout layout)
+        {
+            return TryCreateSetup(layout, out CitySeacoastFrame frame, out _, out _)
+                ? CityPortPlan.Create(frame) : null;
+        }
+
         /// <summary>
         /// The height a person walks at on the shore: the sand's own
         /// top, lifted by the slab where the esplanade band covers it.
@@ -343,6 +363,9 @@ namespace BarPromenade
             float x,
             float z)
         {
+            CityPortAccessPlan access = CityPortAccessPlan.ForLayout(layout);
+            if (access != null && access.TrySampleTop(new Vector2(x, z), out float pavedTop))
+                return pavedTop;
             float top = SampleSandTop(layout, x, z);
             float bandNorth = frame.WaterlineZ - EsplanadeSetback;
             if (x >= frame.CenterZone.xMin + 0.4f &&

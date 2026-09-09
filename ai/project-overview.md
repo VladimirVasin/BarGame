@@ -13,7 +13,7 @@
 
 | Index | Scene | Role |
 | --- | --- | --- |
-| 0 | `MainMenu` | Black launch boundary into Home opening |
+| 0 | `MainMenu` | New Game / Quit card into the village lane |
 | 1 | `City` | Gameplay |
 | 2 | `DoorTransition` | Door presentation |
 | 3 | `BarInterior` | Gameplay |
@@ -35,7 +35,7 @@ follows the Blender and world-canon rules in [../AI.md](../AI.md).
 
 | Owner | Responsibility |
 | --- | --- |
-| `BarPromenade.Rules` | Engine-independent calendar/day schedule, temporary vehicle ownership and input-priority policy |
+| `BarPromenade.Rules` | Engine-independent calendar/day schedule, finite port cargo cycle, vehicle ownership and input-priority policy |
 | `BarPromenade.Runtime` | World composition, gameplay, rendering, audio and shared input bindings |
 | `BarPromenade.Editor` | Authoring/import, scene setup, read-only player-build asset gate and diagnostic commands |
 | `BarPromenade.TestSupport` | Shared test lifecycle support, including listener muting |
@@ -82,6 +82,10 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
+  Its working fishing port receives one trawler: two cranes and five workers
+  transfer six cages to cold storage during a clocked visit. Textured surfaces,
+  work lights and a truck-capable service road surround the separate public
+  route behind the store and along the breakwater; the hero observes.
 - Separate mountain/village areas, cableway travel and accessible interiors.
 - Six village residents perform finite household work; optional hero help and
   the resulting deliveries, repairs and snow clearing survive scene visits.

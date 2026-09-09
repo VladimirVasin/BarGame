@@ -126,6 +126,8 @@ Shader "Bar Promenade/City River Water"
         _LanternBeamDir("Lantern Beam (Sin, Cos, CosHalfWidth)", Vector) = (0, 1, 1, 0)
         _OffshoreHull0("Passing hull 0", Vector) = (0, 0, 0, 0)
         _OffshoreHull1("Passing hull 1", Vector) = (0, 0, 0, 0)
+        _PortHull("Harbour hull", Vector) = (0, 0, 0, 0)
+        _PortCourse("Harbour course", Vector) = (0, 1, 10, 3)
         _OffshoreCourse0("Passing course 0", Vector) = (0, 1, 0, 0)
         _OffshoreCourse1("Passing course 1", Vector) = (0, 1, 0, 0)
         _OffshoreLamp0("Working lamp 0", Vector) = (0, 0, 0, 0)
@@ -224,6 +226,8 @@ Shader "Bar Promenade/City River Water"
                 float4 _LanternBeamDir;
                 float4 _OffshoreHull0;
                 float4 _OffshoreHull1;
+                float4 _PortHull;
+                float4 _PortCourse;
                 float4 _OffshoreCourse0;
                 float4 _OffshoreCourse1;
                 float4 _OffshoreLamp0;
@@ -868,6 +872,8 @@ Shader "Bar Promenade/City River Water"
                     _OffshoreHull0, _OffshoreCourse0, _OffshoreLamp0, _OffshoreBeam0);
                 color += OffshoreBoatWater(input.positionWS, normalWS, viewDirWS,
                     _OffshoreHull1, _OffshoreCourse1, _OffshoreLamp1, _OffshoreBeam1);
+                color += OffshoreBoatWater(input.positionWS, normalWS, viewDirWS,
+                    _PortHull, _PortCourse, float4(0, 0, 0, 0), float4(0, -1, 0, 1));
 
                 // The puddle film. Both sides of the lerp are final
                 // pixels — the water is fogged above and the sampled

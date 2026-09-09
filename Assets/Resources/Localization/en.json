@@ -17,6 +17,10 @@
       "value": "BAR PROMENADE"
     },
     {
+      "key": "opening.new_game",
+      "value": "NEW GAME"
+    },
+    {
       "key": "opening.wake_up",
       "value": "WAKE UP"
     },
@@ -1567,6 +1571,90 @@
     {
       "key": "journal.hint",
       "value": "J / Esc — close"
+    },
+    {
+      "key": "journal.notice",
+      "value": "J — journal"
+    },
+    {
+      "key": "quest.mothers_house.title",
+      "value": "Mother's house"
+    },
+    {
+      "key": "quest.mothers_house.description.active",
+      "value": "There is one street and it goes up. The house stands at the top of it."
+    },
+    {
+      "key": "quest.mothers_house.description.completed",
+      "value": "The house is open. Mother sits in her chair."
+    },
+    {
+      "key": "quest.find_scarf.title",
+      "value": "The scarf"
+    },
+    {
+      "key": "quest.find_scarf.description.active",
+      "value": "Mother is asking for a scarf. It is in the chest upstairs, in the parents' bedroom."
+    },
+    {
+      "key": "quest.find_scarf.description.completed",
+      "value": "The scarf is on."
+    },
+    {
+      "key": "interaction.talk_mother",
+      "value": "E — talk to mother"
+    },
+    {
+      "key": "mothers_house.mother.greeting",
+      "value": "You came. Come in."
+    },
+    {
+      "key": "mothers_house.mother.request",
+      "value": "There is a scarf upstairs, in the chest. Put it on."
+    },
+    {
+      "key": "mothers_house.mother.line.01",
+      "value": "Have you eaten? There should be something in the stove."
+    },
+    {
+      "key": "mothers_house.mother.line.02",
+      "value": "Your father will come for supper."
+    },
+    {
+      "key": "mothers_house.mother.line.03",
+      "value": "Are you staying long? The bed upstairs is made."
+    },
+    {
+      "key": "mothers_house.mother.line.04",
+      "value": "Is the city still the same?"
+    },
+    {
+      "key": "mothers_house.mother.line.05",
+      "value": "You have got thin."
+    },
+    {
+      "key": "mothers_house.mother.line.06",
+      "value": "There is bread on the table. I cut it this morning."
+    },
+    {
+      "key": "mothers_house.mother.line.07",
+      "value": "The north window will not shut. It draughts."
+    },
+    {
+      "key": "mothers_house.mother.line.08",
+      "value": "The snow has not let up since morning."
+    },
+    {
+      "key": "mothers_house.mother.line.09",
+      "value": "The neighbours were asking about you."
+    },
+    {
+      "key": "mothers_house.mother.line.10",
+      "value": "You are cold all through."
+    },
+    {
+      "key": "mothers_house.mother.line.11",
+      "value": "The scarf is in the chest upstairs. Put it on."
     },
     {
       "key": "interaction.talk_fisherman",

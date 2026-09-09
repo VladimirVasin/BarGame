@@ -203,6 +203,18 @@ namespace BarPromenade
                 {
                     float west = Mathf.Max(surface.WorldBounds.xMin, zone.xMin);
                     float east = Mathf.Min(surface.WorldBounds.xMax, zone.xMax);
+                    CityPortPlan port = CityPortPlan.Create(frame);
+                    if (port != null && west < port.LandBounds.xMax && east > port.LandBounds.xMin)
+                    {
+                        AddSpan(west, Mathf.Min(east, port.LandBounds.xMin));
+                        AddSpan(Mathf.Max(west, port.LandBounds.xMax), east);
+                        return;
+                    }
+                    AddSpan(west, east);
+                }
+
+                void AddSpan(float west, float east)
+                {
                     if (east - west < 0.01f)
                     {
                         return;
@@ -1125,6 +1137,7 @@ namespace BarPromenade
             ICollection<Rect> destination)
         {
             Rect row = frame.SeaRowBounds;
+            CityPortPlan port = CityPortPlan.Create(frame);
             int count = Mathf.Max(
                 1,
                 Mathf.CeilToInt(row.width / MaximumSheetWidth));
@@ -1136,12 +1149,14 @@ namespace BarPromenade
                     from,
                     frame.WaterlineZ,
                     from + width,
-                    row.yMax + ApronReach));
+                    port != null && from < port.SeaBounds.xMax && from + width > port.SeaBounds.xMin
+                        ? Mathf.Max(row.yMax + ApronReach, port.SeaBounds.yMax)
+                        : row.yMax + ApronReach));
             }
         }
 
         internal static float SampleSeabedTop(
-            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)
+            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point, CityPortPlan port = null)
         {
             float distance = point.y - surface.WorldBounds.yMax;
             if (distance <= 0f)
@@ -1157,18 +1172,22 @@ namespace BarPromenade
             // can be exposed inside the water's depth-fade distance.
             float easedDistance = ShoreSlopeBlendReach *
                 (1f - Mathf.Exp(-distance / ShoreSlopeBlendReach));
-            return edgeTop - DeepSandSlope * distance -
+            float natural = edgeTop - DeepSandSlope * distance -
                 (shoreSlope - DeepSandSlope) * easedDistance;
+            CityPortAccessPlan access = CityPortAccessPlan.ForLayout(layout);
+            if (access != null)
+                natural = access.ApplyGroundTop(point, natural);
+            return port != null ? port.DredgedBottom(point, natural) : natural;
         }
 
         internal static Vector3 SampleSeabedNormal(
-            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point)
+            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point, CityPortPlan port = null)
         {
             const float offset = 0.10f;
-            float west = SampleSeabedTop(layout, surface, point - Vector2.right * offset);
-            float east = SampleSeabedTop(layout, surface, point + Vector2.right * offset);
-            float south = SampleSeabedTop(layout, surface, point - Vector2.up * offset);
-            float north = SampleSeabedTop(layout, surface, point + Vector2.up * offset);
+            float west = SampleSeabedTop(layout, surface, point - Vector2.right * offset, port);
+            float east = SampleSeabedTop(layout, surface, point + Vector2.right * offset, port);
+            float south = SampleSeabedTop(layout, surface, point - Vector2.up * offset, port);
+            float north = SampleSeabedTop(layout, surface, point + Vector2.up * offset, port);
             return new Vector3(west - east, offset * 2f, south - north).normalized;
         }
     }

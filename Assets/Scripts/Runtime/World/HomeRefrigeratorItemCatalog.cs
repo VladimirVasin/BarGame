@@ -44,25 +44,51 @@ namespace BarPromenade
     {
         private static readonly HomeRefrigeratorItemDefinition[] definitions =
         {
-            new HomeRefrigeratorItemDefinition(
+            Define(
                 HomeRefrigeratorItemKind.VodkaBottle,
                 "home.refrigerator.item.vodka.name",
-                "home.refrigerator.item.vodka.description",
-                Quaternion.Euler(0f, -18f, 0f),
-                1.35f),
-            new HomeRefrigeratorItemDefinition(
+                "home.refrigerator.item.vodka.description"),
+            Define(
                 HomeRefrigeratorItemKind.ChickenEgg,
                 "home.refrigerator.item.egg.name",
-                "home.refrigerator.item.egg.description",
-                Quaternion.Euler(10f, -24f, -6f),
-                1.85f),
-            new HomeRefrigeratorItemDefinition(
+                "home.refrigerator.item.egg.description"),
+            Define(
                 HomeRefrigeratorItemKind.OpenStewCan,
                 "home.refrigerator.item.stew_can.name",
-                "home.refrigerator.item.stew_can.description",
-                Quaternion.Euler(8f, 22f, -4f),
-                1.55f)
+                "home.refrigerator.item.stew_can.description")
         };
+
+        /// <summary>
+        /// The shelf keeps its own names and descriptions, because a jar in
+        /// this refrigerator is written about differently than the same jar
+        /// in a pocket. How the object is TURNED when it is held up is not
+        /// its own fact, though - that comes from
+        /// <see cref="InventoryItemPreviewPoses"/>, the one table every
+        /// examination screen reads.
+        /// </summary>
+        private static HomeRefrigeratorItemDefinition Define(
+            HomeRefrigeratorItemKind kind,
+            string nameLocalizationKey,
+            string descriptionLocalizationKey)
+        {
+            if (!HomeRefrigeratorInventoryAdapter.TryGetInventoryItem(
+                    kind,
+                    out InventoryItemId itemId))
+            {
+                throw new InvalidOperationException(
+                    "A stocked refrigerator item must map to an " +
+                    "inventory item, which is where its held pose lives.");
+            }
+
+            InventoryItemPreviewPose pose =
+                InventoryItemPreviewPoses.Get(itemId);
+            return new HomeRefrigeratorItemDefinition(
+                kind,
+                nameLocalizationKey,
+                descriptionLocalizationKey,
+                pose.BaseRotation,
+                pose.InspectionScale);
+        }
 
         private static readonly IReadOnlyList<
             HomeRefrigeratorItemDefinition> definitionsView =

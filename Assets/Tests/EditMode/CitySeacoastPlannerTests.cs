@@ -33,14 +33,16 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThanOrEqualTo(CitySeacoastPlan.MaximumPartCount));
 
             // The silhouette anchors the concept is built on: the
-            // mol, the transplanted boat station, the footbridge
+            // working harbour, the transplanted boat station, the footbridge
             // over the mouth, and the wild shore's piles and barge.
             // Without them this is a sand strip, not a coast. (The
             // navigation light moved offshore: the lighthouse island
             // pins its own silhouette in its own tests.)
-            Assert.That(
-                first.GetCount(CitySeacoastPartKind.MolDeck),
-                Is.GreaterThan(10));
+            Assert.That(first.Port, Is.Not.Null);
+            Assert.That(second.Port.Origin, Is.EqualTo(first.Port.Origin));
+            Assert.That(first.GetCount(CitySeacoastPartKind.MolDeck), Is.Zero);
+            Assert.That(first.GetCount(CitySeacoastPartKind.DerrickCrane), Is.Zero);
+            first.Port.ValidateOrThrow();
             Assert.That(
                 first.GetCount(CitySeacoastPartKind.PierDeck),
                 Is.GreaterThan(8));
@@ -112,17 +114,13 @@ namespace BarPromenade.Tests.EditMode
                 frame.EastZone.xMin,
                 Is.EqualTo(frame.CenterZone.xMax).Within(0.001f));
 
-            Assert.That(
-                plan.TryGetPart(
-                    CitySeacoastPlanner.MolDeckRootId,
-                    out CitySeacoastPartDescriptor molRoot),
-                Is.True);
+            Assert.That(plan.Port, Is.Not.Null);
             Assert.That(
                 frame.WestZone.Contains(new Vector2(
-                    molRoot.Center.x,
-                    molRoot.Center.z)),
+                    plan.Port.Origin.x,
+                    plan.Port.Origin.z - 1f)),
                 Is.True,
-                "The mol belongs to the dead port west of the mouth.");
+                "The working harbour belongs west of the mouth.");
 
             Assert.That(
                 plan.TryGetPart(
@@ -262,17 +260,13 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThanOrEqualTo(span - 0.05f),
                 "The esplanade waterline has an unbridged gap.");
 
-            // The mol parapets both sides plus the head, with only the
-            // stair-bridged root open.
-            float parapeted = plan.Parts
-                .Where(part =>
-                    part.Kind == CitySeacoastPartKind.MolParapet)
-                .Sum(part => Mathf.Max(part.Size.x, part.Size.z));
-            Assert.That(parapeted, Is.GreaterThan(40f));
-            Assert.That(
-                plan.GetCount(CitySeacoastPartKind.MolStair),
-                Is.GreaterThan(0),
-                "The mol's open root end needs its visible stair.");
+            // The imported harbour owns its breakwater and access ramps;
+            // the replaced primitive mol must not remain underneath it.
+            Assert.That(plan.Port, Is.Not.Null);
+            Assert.That(plan.Port.BreakwaterBounds.width, Is.GreaterThan(3f));
+            Assert.That(plan.Port.BreakwaterHeadBounds.width, Is.GreaterThan(12f));
+            Assert.That(plan.GetCount(CitySeacoastPartKind.MolParapet), Is.Zero);
+            Assert.That(plan.GetCount(CitySeacoastPartKind.MolStair), Is.Zero);
 
             // The footbridge carries a full rail on each side of its
             // open water.
@@ -405,13 +399,11 @@ namespace BarPromenade.Tests.EditMode
                     $"The sand is not walkable at {spot}.");
             }
 
-            // Out along the mol to the beacon, along the pier to the
-            // head, and over the footbridge from bank to bank.
-            WalkBetween(
-                plan, area, radius,
-                CitySeacoastPlanner.MolDeckRootId,
-                CitySeacoastPlanner.MolDeckHeadId,
-                "mol");
+            // The new breakwater is a real route over the sea cells.
+            Assert.That(plan.Port, Is.Not.Null);
+            for (int step = 0; step <= 32; step++)
+                Assert.That(area.Contains(plan.Port.World(new Vector3(-23f,
+                    CityPortPlan.DeckHeight, Mathf.Lerp(-1f, 30f, step / 32f))), radius), Is.True);
             WalkBetween(
                 plan, area, radius,
                 CitySeacoastPlanner.PierDeckRootId,
@@ -428,19 +420,9 @@ namespace BarPromenade.Tests.EditMode
             // mask.
             Assert.That(
                 plan.TryGetPart(
-                    CitySeacoastPlanner.MolDeckHeadId,
-                    out CitySeacoastPartDescriptor molHead),
-                Is.True);
-            Assert.That(
-                plan.TryGetPart(
                     CitySeacoastPlanner.PierDeckHeadId,
                     out CitySeacoastPartDescriptor pierHead),
                 Is.True);
-            Rect molClear = new Rect(
-                molHead.Center.x - 4f,
-                frame.WaterlineZ - 8f,
-                8f,
-                frame.SeaRowBounds.height + 8f);
             Rect pierClear = new Rect(
                 pierHead.Center.x - 4f,
                 frame.WaterlineZ - 8f,
@@ -460,7 +442,9 @@ namespace BarPromenade.Tests.EditMode
                             frame.WaterlineZ + 0.8f,
                             frame.SeaRowBounds.yMax - 0.8f,
                             iz / 10f));
-                    if (molClear.Contains(spot) ||
+                    if (plan.Port.RectAt(-30f, -22f, 23f, .1f).Contains(spot) ||
+                        plan.Port.BreakwaterBounds.Contains(spot) ||
+                        plan.Port.BreakwaterHeadBounds.Contains(spot) ||
                         pierClear.Contains(spot))
                     {
                         continue;
@@ -850,12 +834,12 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     sheet.yMin,
                     Is.EqualTo(frame.WaterlineZ).Within(0.001f));
+                float north = frame.SeaRowBounds.yMax + CitySeacoastSeaLayout.ApronReach;
+                if (plan.Port != null && sheet.xMin < plan.Port.SeaBounds.xMax && sheet.xMax > plan.Port.SeaBounds.xMin)
+                    north = Mathf.Max(north, plan.Port.SeaBounds.yMax);
                 Assert.That(
                     sheet.yMax,
-                    Is.EqualTo(
-                        frame.SeaRowBounds.yMax +
-                        CitySeacoastSeaLayout.ApronReach)
-                        .Within(0.001f));
+                    Is.EqualTo(north).Within(0.001f));
                 covered += sheet.width;
             }
 

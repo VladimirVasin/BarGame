@@ -233,6 +233,7 @@ namespace BarPromenade
             }
 
             float tileSize = ResolveTileSize(worldUvTileSize);
+            CityPortPlan port = seabedOnly ? CitySeacoastPlanner.CreatePortPlan(layout) : null;
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();
             var uvs = new List<Vector2>();
@@ -268,7 +269,8 @@ namespace BarPromenade
                         if (Mathf.Abs(patch.yMax - surface.WorldBounds.yMax) > 0.001f)
                             continue;
                         patch = Rect.MinMaxRect(patch.xMin, patch.yMax,
-                            patch.xMax, patch.yMax + CitySeacoastSeaLayout.SeabedReach);
+                            patch.xMax, port != null && patch.xMin < port.SeaBounds.xMax && patch.xMax > port.SeaBounds.xMin
+                                ? port.SeaBounds.yMax : patch.yMax + CitySeacoastSeaLayout.SeabedReach);
                     }
                     AppendPatch(
                         layout,
@@ -279,7 +281,7 @@ namespace BarPromenade
                         normals,
                         uvs,
                         triangles,
-                        seabedOnly);
+                        seabedOnly, port);
                 }
             }
 
@@ -707,7 +709,8 @@ namespace BarPromenade
             ICollection<Vector3> normals,
             ICollection<Vector2> uvs,
             ICollection<int> triangles,
-            bool seabedOnly = false)
+            bool seabedOnly = false,
+            CityPortPlan port = null)
         {
             float cellMinimumX = layout.ElevationPlan.WorldOrigin.x +
                                  surface.Cell.x *
@@ -781,11 +784,11 @@ namespace BarPromenade
                     vertices.Add(new Vector3(
                         worldXZ.x,
                         seabedOnly
-                            ? CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, worldXZ)
+                            ? CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, worldXZ, port)
                             : CityTerrainSurfacePlan.SampleTop(layout, surface, worldXZ),
                         worldXZ.y));
                     normals.Add(seabedOnly
-                        ? CitySeacoastSeaLayout.SampleSeabedNormal(layout, surface, worldXZ)
+                        ? CitySeacoastSeaLayout.SampleSeabedNormal(layout, surface, worldXZ, port)
                         : CityTerrainSurfacePlan.SampleNormal(layout, surface, worldXZ));
                     uvs.Add(worldXZ * tilesPerMeter);
                 }

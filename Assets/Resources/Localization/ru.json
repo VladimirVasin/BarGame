@@ -17,6 +17,10 @@
       "value": "БАРНЫЙ ПРОМЕНАД"
     },
     {
+      "key": "opening.new_game",
+      "value": "НОВАЯ ИГРА"
+    },
+    {
       "key": "opening.wake_up",
       "value": "ПРОСНУТЬСЯ"
     },
@@ -1567,6 +1571,90 @@
     {
       "key": "journal.hint",
       "value": "J / Esc — закрыть"
+    },
+    {
+      "key": "journal.notice",
+      "value": "J — журнал"
+    },
+    {
+      "key": "quest.mothers_house.title",
+      "value": "Дом матери"
+    },
+    {
+      "key": "quest.mothers_house.description.active",
+      "value": "Улица одна и ведёт вверх. Дом стоит в её верхней точке."
+    },
+    {
+      "key": "quest.mothers_house.description.completed",
+      "value": "Дом открыт. Мать сидит в кресле."
+    },
+    {
+      "key": "quest.find_scarf.title",
+      "value": "Шарф"
+    },
+    {
+      "key": "quest.find_scarf.description.active",
+      "value": "Мать просит шарф. Он в ларе наверху, в спальне родителей."
+    },
+    {
+      "key": "quest.find_scarf.description.completed",
+      "value": "Шарф надет."
+    },
+    {
+      "key": "interaction.talk_mother",
+      "value": "E — заговорить с матерью"
+    },
+    {
+      "key": "mothers_house.mother.greeting",
+      "value": "Приехал. Проходи."
+    },
+    {
+      "key": "mothers_house.mother.request",
+      "value": "Наверху, в ларе, лежит шарф. Надень."
+    },
+    {
+      "key": "mothers_house.mother.line.01",
+      "value": "Ты ел? В печи должно быть."
+    },
+    {
+      "key": "mothers_house.mother.line.02",
+      "value": "Отец придёт к ужину."
+    },
+    {
+      "key": "mothers_house.mother.line.03",
+      "value": "Ты надолго? Постель наверху застелена."
+    },
+    {
+      "key": "mothers_house.mother.line.04",
+      "value": "В городе всё так же?"
+    },
+    {
+      "key": "mothers_house.mother.line.05",
+      "value": "Ты похудел."
+    },
+    {
+      "key": "mothers_house.mother.line.06",
+      "value": "Хлеб на столе. Я резала утром."
+    },
+    {
+      "key": "mothers_house.mother.line.07",
+      "value": "Окно на север не закрывается. Дует."
+    },
+    {
+      "key": "mothers_house.mother.line.08",
+      "value": "Снег с утра не переставал."
+    },
+    {
+      "key": "mothers_house.mother.line.09",
+      "value": "Соседи про тебя спрашивали."
+    },
+    {
+      "key": "mothers_house.mother.line.10",
+      "value": "Ты весь холодный."
+    },
+    {
+      "key": "mothers_house.mother.line.11",
+      "value": "Шарф в ларе наверху. Надень его."
     },
     {
       "key": "interaction.talk_fisherman",

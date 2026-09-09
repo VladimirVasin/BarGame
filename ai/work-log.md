@@ -6,6 +6,106 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
+## 2026-09-10 — Found-item screen and port detail/access
+
+- A thing picked up off the floor now opens the refrigerator's own
+  examination screen. The pure timeline moved to Rules as
+  `WorldItemInspectionTimeline` and the pivot, the veil and the fit-to-frame
+  maths became `WorldItemInspectionPresenter`; the refrigerator drives both
+  unchanged and `WorldItemFoundScreen` on the hero reuses them. `PlayerFactory`
+  installs that screen, so none of the nine roots needed wiring, and the
+  generic `WorldItemPickup` replaced the scarf's own component.
+- Two things that are not obvious. The session records a take only on the
+  player's confirm: crediting it on `E` would hand him an item that a screen
+  which never finishes — a scene unload, a lost modal lock — leaves lying in
+  the room. And the `E` that opened the screen is still down when the screen
+  reads its own confirm, so its first frame is deaf; without that the find
+  would be taken before it was ever seen.
+- An item's held pose became one table, `InventoryItemPreviewPoses`, read by
+  the portrait, the shelf and the find alike. No turn hint stands beside the
+  button: art §15a bans standing key guides and the catalog test keeps the
+  retired ones gone.
+- Backing out had to exist even though the panel offers one button: a hero
+  whose pockets are full meets a take that keeps failing, and the modal lock
+  it holds would shut every door in the game. `Cancel` now closes the find
+  the way a take closes it.
+- Checks: one filtered EditMode selection over `WorldItemInspectionTimelineTests`
+  — whose six existing cases pin the move as behaviour-identical —
+  `WorldItemPickupModelTests`, `HomeRefrigeratorItemCatalogTests` and
+  `InventoryPresentationTests`; documentation through
+  `python tools/check-docs.py`. The earlier `HomeRefrigeratorInteractionPlayModeTests`
+  attempt was blocked while `HomeInteriorRoot` built the seacoast graph during
+  port integration; it is not a refrigerator result.
+- Port refinement adds ImageGen surface maps, semantic metre UVs, authored
+  fittings, slewing crane heads and planted worker contacts. Asphalt and
+  crossing paint share city assets. A regraded street branch and service
+  yard fit a rigid truck; the public bypass stays outside its manoeuvre.
+  Import/terrain checks caught buried coast guardrails; graph construction
+  rejected diagonal NPC links, now replaced by an orthogonal beach connector.
+  `build-city-port-3d-model.py --validate-only` and `AreaCaptureFixture.CityPort`
+  passed. The focused runtime proof covers access/grounding, truck clearance,
+  the full clocked cargo cycle, contacts, pause and reconstruction; day/night,
+  junction, yard, crossing and worker frames were reviewed. Documentation
+  passed `python tools/check-docs.py` and `git diff --check`.
+- PlayMode warnings: unordered root lookup, runtime-only wind, direct GameView
+  assembly lookup. Verified by `dotnet build BarPromenade.PlayModeTests.csproj`.
+
+## 2026-09-09 — Village opening, journal and working port
+
+- `StartMenuRoot` resets the session on entry and offers New Game/Quit.
+  New Game uses `GameTimeState.TryStartAt` for day one's `07:40`, then
+  `AreaLoading` and the village's `lane_foot` spawn. Setting the clock avoids
+  aging needs through simulated waking. No journey means no loading
+  illustration. The complete Home wake remains behind
+  `MainMenuRoot.RequestLegacyOpening()`; its startup status and canon were corrected.
+- `ReachMothersHouse` comes from `GameDaySchedule` during `BeginNewGame`,
+  including the retained opening. Completion in `EnterMothersHouse()`
+  covers both door and map entry. The temporary house mark belongs only to
+  the map schematic; story §6 records the startup and guidance exceptions.
+- `JournalMenuModel` owns selection and `JournalView` draws a scrolling
+  full-page list with the selected description and geometric ticks; dynamic
+  font rebuilding no longer loses a tick or hides overflow. The corner
+  notice lives under the shared journal controller. Reset clears notice
+  flags before `SyncDayEvents()`, preserving day one's unseen quest.
+- Startup/journal checks: `QuestLogTests`, `JournalMenuModelTests`,
+  `JournalViewLayoutTests`, `GameDayScheduleTests`, `LocalizationCatalogTests`,
+  `NewGame_FromStartMenuLandsAtTheVillageLaneFootWithARunningClock`.
+  The earlier `MainMenu_WakeStartsAlarmThenRestoresGameplay` failure remains
+  unrelated: its renderer assertion includes intentionally hidden scarf accessories.
+- The mother speaks, looks back and asks for the scarf. The talk stub is the
+  fisherman's shape on its own trigger beside her, because the factory still
+  refuses her a collider; the head-look is `NpcHeroAttentionLook` at order
+  `350`, behind the chair (`300`) and her graph (`310`). Asking outright
+  strains §13's «разговор не удержался», so she asks outright AND does not
+  hold it: the same request sits in her ordinary pool, drawn again as if new,
+  and leaves the pool once the scarf is worn. `FindTheScarf` closes on
+  WEARING it in `TrySetInventoryItemEquipped`, not on the pickup — she asked
+  for a scarf, not for an errand. A scarf worn before she asks opens nothing.
+- She then got the Ferryman's road speech in a room: an overhead bubble on a
+  manual clock behind a shuffled bag, held across visits by
+  `MothersHouseMotherSpeechSession` because the house reloads through the door
+  and a per-visit bag spends the same two lines forever. Both channels draw
+  that one bag, so `E` cannot echo what she just said alone. Two departures
+  from the ride: no per-visit quota, because a room does not end and a mother
+  who fell silent would read as having nothing left; and silence is spent only
+  within `6 m` on her floor, so the bag is not emptied at an empty room while
+  he is upstairs. Ten ordinary lines plus the re-ask, which is the only entry
+  that retires. The greeting is outside the bag, once per entry, and is the
+  same line every time on purpose.
+  Checks: `MothersHouseMotherQuipsTests` beside the startup/journal set above.
+- The western port now receives a trawler at one berth. Two cranes, five
+  ordinary workers and a trolley transfer six cages to cold storage before
+  departure; the hero observes. The Blender kit has real holds and measured
+  contacts. Absolute clock sampling preserves cargo custody across scene
+  recreation and seeks; physical sound crossings do not replay. The quay
+  extends seaward on solid caissons because its original shore placement
+  buried the store in rising sand. Side ramps connect the public rear path
+  and breakwater; the existing beach walker graph stays clear and unchanged.
+  Story §6 and both bibles record the bounded working-port exception.
+  `AreaCaptureFixture.CityPort` passed; its settled day/night frames were
+  reviewed. Captures now wait for frame-based GPU transform uploads after
+  timeline seeks. Documentation passed `python tools/check-docs.py`.
+
 ## 2026-09-09 — Cableway grounding and the Ferryman's cabin
 
 - Both cableway destination roots synchronize constructed colliders before

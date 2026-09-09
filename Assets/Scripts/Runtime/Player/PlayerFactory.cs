@@ -155,6 +155,20 @@ namespace BarPromenade
             PlayerDoorActionController doorAction =
                 player.AddComponent<PlayerDoorActionController>();
             doorAction.Initialize(animatedInteraction);
+
+            // The screen a found thing opens belongs to the hero, not to any
+            // one room, so every scene that builds him can put an object on
+            // the floor and needs no wiring of its own. It takes the camera
+            // here because that is the only moment one is guaranteed; the
+            // camera follow and the HUD it also needs are added after this
+            // call in all nine roots, so it resolves those lazily.
+            if (camera != null)
+            {
+                WorldItemFoundScreen foundScreen =
+                    player.AddComponent<WorldItemFoundScreen>();
+                foundScreen.Initialize(camera);
+            }
+
             PlayerScarfController.Install(runtime);
             return runtime;
         }

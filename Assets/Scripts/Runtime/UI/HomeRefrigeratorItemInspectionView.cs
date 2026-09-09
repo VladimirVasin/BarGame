@@ -10,18 +10,6 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class HomeRefrigeratorItemInspectionView : MonoBehaviour
     {
-        private static readonly Rect TitleRect =
-            new Rect(170f, 14f, 300f, 34f);
-        private static readonly Rect DescriptionRect =
-            new Rect(92f, 244f, 456f, 48f);
-        private static readonly Rect FeedbackRect =
-            new Rect(108f, 292f, 424f, 17f);
-        private static readonly Rect[] ActionRects =
-        {
-            new Rect(142f, 310f, 112f, 25f),
-            new Rect(264f, 310f, 112f, 25f),
-            new Rect(386f, 310f, 112f, 25f)
-        };
         private static readonly string[] ActionKeys =
         {
             HomeRefrigeratorItemInspectionController.TakeActionKey,
@@ -118,44 +106,24 @@ namespace BarPromenade
         {
             HomeRefrigeratorItemDefinition definition =
                 controller.ActiveDefinition;
-            RetroUiTheme.DrawPanel(
-                TitleRect,
-                RetroUiTheme.PanelInset,
-                RetroUiTheme.FrameOuter,
-                false,
-                0f,
+            RetroItemPanel.DrawFramedText(
+                RetroItemPanel.TitleRect,
+                LocalizationService.Get(definition.NameLocalizationKey),
+                titleStyle,
+                8f,
                 1f);
-            GUI.Label(
-                new Rect(
-                    TitleRect.x + 8f,
-                    TitleRect.y + 1f,
-                    TitleRect.width - 16f,
-                    TitleRect.height - 2f),
-                LocalizationService.Get(
-                    definition.NameLocalizationKey),
-                titleStyle);
-
-            RetroUiTheme.DrawPanel(
-                DescriptionRect,
-                RetroUiTheme.PanelInset,
-                RetroUiTheme.FrameOuter,
-                false,
-                0f,
-                1f);
-            GUI.Label(
-                new Rect(
-                    DescriptionRect.x + 10f,
-                    DescriptionRect.y + 4f,
-                    DescriptionRect.width - 20f,
-                    DescriptionRect.height - 8f),
+            RetroItemPanel.DrawFramedText(
+                RetroItemPanel.DescriptionRect,
                 LocalizationService.Get(
                     definition.DescriptionLocalizationKey),
-                descriptionStyle);
+                descriptionStyle,
+                10f,
+                4f);
 
             if (!string.IsNullOrEmpty(controller.FeedbackKey))
             {
                 GUI.Label(
-                    FeedbackRect,
+                    RetroItemPanel.FeedbackRect,
                     LocalizationService.Get(controller.FeedbackKey),
                     feedbackStyle);
             }
@@ -163,7 +131,7 @@ namespace BarPromenade
             Vector2 logicalMouse =
                 RetroUiTheme.LogicalMousePosition(canvas);
             EventType eventType = Event.current.type;
-            for (int index = 0; index < ActionRects.Length; index++)
+            for (int index = 0; index < ActionKeys.Length; index++)
             {
                 DrawAction(index, logicalMouse, eventType);
             }
@@ -174,7 +142,7 @@ namespace BarPromenade
             Vector2 logicalMouse,
             EventType eventType)
         {
-            Rect rect = ActionRects[index];
+            Rect rect = RetroItemPanel.ActionRect(index);
             bool selected = index == controller.SelectedActionIndex;
             bool hovered = rect.Contains(logicalMouse);
             if (hovered &&
@@ -220,37 +188,16 @@ namespace BarPromenade
                 return;
             }
 
-            titleStyle = RetroUiTheme.CreateLabelStyle(
-                18,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.Text,
-                false);
-            descriptionStyle = RetroUiTheme.CreateLabelStyle(
-                12,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.Text,
-                false,
-                true);
+            titleStyle = RetroItemPanel.CreateTitleStyle();
+            descriptionStyle = RetroItemPanel.CreateDescriptionStyle();
             tooltipStyle = RetroUiTheme.CreateLabelStyle(
                 11,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
                 false);
-            feedbackStyle = RetroUiTheme.CreateLabelStyle(
-                10,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.Muted,
-                false);
-            actionStyle = RetroUiTheme.CreateButtonStyle(
-                11,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.Muted,
-                false);
-            selectedActionStyle = RetroUiTheme.CreateButtonStyle(
-                11,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.SelectionText,
-                false);
+            feedbackStyle = RetroItemPanel.CreateFeedbackStyle();
+            actionStyle = RetroItemPanel.CreateActionStyle(false);
+            selectedActionStyle = RetroItemPanel.CreateActionStyle(true);
         }
     }
 }

@@ -3,19 +3,20 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public readonly struct MothersHouseScarfPickupPlan
+    /// <summary>
+    /// Where the mother's scarf lies. The finding of it is
+    /// <see cref="WorldItemPickup"/>'s business; this only says which chest,
+    /// in which room, and how big the folded thing is.
+    /// </summary>
+    public static class MothersHouseScarfPickupPlan
     {
         public const string SourceId = "mothers_house.parents_bedroom.scarf";
-        public static readonly Vector3 ModelSize = new Vector3(0.26f, 0.08f, 0.19f);
+        public const string PromptKey = "interaction.take_scarf";
+        public const string TakenFeedbackKey = "inventory.pickup.scarf";
+        public static readonly Vector3 ModelSize =
+            new Vector3(0.26f, 0.08f, 0.19f);
 
-        private MothersHouseScarfPickupPlan(Vector3 position)
-        {
-            Position = position;
-        }
-
-        public Vector3 Position { get; }
-
-        public static MothersHouseScarfPickupPlan Create(
+        public static WorldItemPickupPlan Create(
             MothersHouseInteriorLayoutPlan layout)
         {
             if (layout == null)
@@ -42,10 +43,16 @@ namespace BarPromenade
                         "The scarf requires its bedroom chest support.");
                 }
 
-                return new MothersHouseScarfPickupPlan(new Vector3(
-                    fixture.Bounds.center.x,
-                    fixture.BaseHeight + fixture.Height,
-                    fixture.Bounds.center.y));
+                return new WorldItemPickupPlan(
+                    SourceId,
+                    InventoryItemId.Scarf,
+                    PromptKey,
+                    new Vector3(
+                        fixture.Bounds.center.x,
+                        fixture.BaseHeight + fixture.Height,
+                        fixture.Bounds.center.y),
+                    ModelSize,
+                    TakenFeedbackKey);
             }
 
             throw new InvalidOperationException(

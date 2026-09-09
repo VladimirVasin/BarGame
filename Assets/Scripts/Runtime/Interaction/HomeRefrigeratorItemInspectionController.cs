@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
@@ -25,19 +23,13 @@ namespace BarPromenade
         MonoBehaviour
     {
         public const string TakeActionKey =
-            "home.refrigerator.action.take";
+            WorldItemFoundScreen.TakeActionKey;
         public const string UseActionKey =
             "home.refrigerator.action.use";
         public const string BackActionKey =
             "home.refrigerator.action.back";
         public const string UnavailableFeedbackKey =
             "home.refrigerator.action.unavailable";
-        private const float PreviewDistance = 0.68f;
-        private const float BackdropDistance = 0.82f;
-        private const float PreviewHeightFraction = 0.46f;
-        private const float PreviewWidthFraction = 0.42f;
-        private const float MinimumPreviewScale = 0.55f;
-        private const float MaximumPreviewScale = 5.5f;
         private const float MaximumRayDistance = 12f;
         private const float PointerMoveThresholdSquared = 0.25f;
 
@@ -57,25 +49,13 @@ namespace BarPromenade
 
         private Camera targetCamera;
         private HomeRefrigeratorView refrigerator;
-        private HomeRefrigeratorItemInspectionTimeline timeline;
+        private WorldItemInspectionTimeline timeline;
         private HomeRefrigeratorItemInspectionView inspectionView;
         private HomeRefrigeratorItemView hoveredItem;
         private HomeRefrigeratorItemView activeItem;
         private HomeRefrigeratorItemDefinition activeDefinition;
-        private Transform presentationPivot;
-        private GameObject backdropObject;
-        private Renderer backdropRenderer;
-        private Transform savedParent;
-        private int savedSiblingIndex;
-        private Vector3 savedLocalPosition;
-        private Quaternion savedLocalRotation;
-        private Vector3 savedLocalScale;
+        private WorldItemInspectionPresenter presenter;
         private bool savedSelectionColliderEnabled;
-        private Vector3 pivotStartLocalPosition;
-        private Quaternion pivotStartLocalRotation;
-        private Vector3 pivotTargetLocalPosition;
-        private Quaternion pivotTargetLocalRotation;
-        private float pivotTargetScale;
         private Vector2 lastPointerPosition;
         private Vector2 hoverScreenPosition;
         private int keyboardItemIndex = -1;
@@ -92,9 +72,9 @@ namespace BarPromenade
             timeline != null && timeline.IsInspecting;
         public HomeRefrigeratorItemView HoveredItem => hoveredItem;
         public HomeRefrigeratorItemView ActiveItem => activeItem;
-        public HomeRefrigeratorItemInspectionTimeline Timeline => timeline;
-        public Transform PresentationPivot => presentationPivot;
-        public Renderer BackdropRenderer => backdropRenderer;
+        public WorldItemInspectionTimeline Timeline => timeline;
+        public Transform PresentationPivot => presenter?.Pivot;
+        public Renderer BackdropRenderer => presenter?.BackdropRenderer;
         public Vector2 HoverScreenPosition => hoverScreenPosition;
         public int SelectedActionIndex => selectedActionIndex;
         public string FeedbackKey => feedbackKey;
@@ -119,10 +99,13 @@ namespace BarPromenade
             CancelAndRestore();
             targetCamera = inspectionCamera;
             refrigerator = refrigeratorView;
-            timeline = new HomeRefrigeratorItemInspectionTimeline();
+            timeline = new WorldItemInspectionTimeline();
             properties = new MaterialPropertyBlock();
             CaptureRendererColors();
-            EnsurePresentationObjects();
+            presenter?.Dispose();
+            presenter = new WorldItemInspectionPresenter(
+                targetCamera,
+                "Home Refrigerator Item Inspection");
             inspectionView =
                 GetComponent<HomeRefrigeratorItemInspectionView>();
             if (inspectionView == null)
@@ -225,19 +208,9 @@ namespace BarPromenade
 
             bool wasReturning =
                 timeline.Phase ==
-                HomeRefrigeratorItemInspectionPhase.FlyingOut;
+                WorldItemInspectionPhase.FlyingOut;
             timeline.Advance(unscaledDeltaTime);
             ApplyInspectionFrame(timeline.CurrentFrame);
-            if (presentationPivot != null && targetCamera != null)
-            {
-                // While an item flies to the eye, it is the focus
-                // subject instead of the shelf behind it.
-                CinematicDepthOfField.SetFocusDistance(
-                    Vector3.Distance(
-                        targetCamera.transform.position,
-                        presentationPivot.position));
-            }
-
             if (wasReturning && timeline.IsBrowsing)
             {
                 RestoreActiveItem();
@@ -263,8 +236,6 @@ namespace BarPromenade
 
             activeItem = item;
             activeDefinition = definition;
-            SaveActiveItemTransform();
-            PreparePresentationPivot(bounds, definition);
             savedSelectionColliderEnabled =
                 item.SelectionCollider != null &&
                 item.SelectionCollider.enabled;
@@ -273,7 +244,11 @@ namespace BarPromenade
                 item.SelectionCollider.enabled = false;
             }
 
-            item.OriginalRoot.SetParent(presentationPivot, true);
+            presenter.Begin(
+                item.OriginalRoot,
+                bounds,
+                definition.PreviewLocalRotation,
+                definition.PreviewScale);
             feedbackKey = string.Empty;
             selectedActionIndex = 0;
             if (!timeline.BeginInspection())
@@ -294,7 +269,7 @@ namespace BarPromenade
             }
 
             if (timeline.Phase ==
-                HomeRefrigeratorItemInspectionPhase.FlyingOut)
+                WorldItemInspectionPhase.FlyingOut)
             {
                 return true;
             }
@@ -381,15 +356,14 @@ namespace BarPromenade
             }
 
             timeline.Cancel();
+            presenter?.Detach();
             activeItem = null;
             activeDefinition = default;
-            savedParent = null;
             feedbackKey = string.Empty;
             selectedActionIndex = 0;
             keyboardItemIndex = -1;
             keyboardSelectionActive = false;
             hasPointerPosition = false;
-            HideBackdrop();
             takenItem.gameObject.SetActive(false);
             DestroyOwnedObject(takenItem.gameObject);
             CaptureRendererColors();
@@ -406,7 +380,6 @@ namespace BarPromenade
             ClearHoveredItem();
             timeline?.Cancel();
             RestoreActiveItem();
-            HideBackdrop();
             feedbackKey = string.Empty;
             selectedActionIndex = 0;
             return hadState;
@@ -654,144 +627,10 @@ namespace BarPromenade
                 : Color.white;
         }
 
-        private void SaveActiveItemTransform()
-        {
-            Transform itemRoot = activeItem.OriginalRoot;
-            savedParent = itemRoot.parent;
-            savedSiblingIndex = itemRoot.GetSiblingIndex();
-            savedLocalPosition = itemRoot.localPosition;
-            savedLocalRotation = itemRoot.localRotation;
-            savedLocalScale = itemRoot.localScale;
-        }
-
-        private void PreparePresentationPivot(
-            Bounds itemBounds,
-            HomeRefrigeratorItemDefinition definition)
-        {
-            presentationPivot.SetParent(targetCamera.transform, true);
-            presentationPivot.position = itemBounds.center;
-            presentationPivot.rotation = Quaternion.identity;
-            presentationPivot.localScale = Vector3.one;
-            pivotStartLocalPosition = presentationPivot.localPosition;
-            pivotStartLocalRotation = presentationPivot.localRotation;
-            pivotTargetLocalPosition =
-                new Vector3(0f, 0.035f, PreviewDistance);
-            pivotTargetLocalRotation = definition.PreviewLocalRotation;
-            pivotTargetScale = CalculatePreviewScale(
-                itemBounds,
-                definition.PreviewScale);
-        }
-
-        private float CalculatePreviewScale(
-            Bounds bounds,
-            float authoredScale)
-        {
-            float viewHeight;
-            if (targetCamera.orthographic)
-            {
-                viewHeight = targetCamera.orthographicSize * 2f;
-            }
-            else
-            {
-                viewHeight =
-                    2f *
-                    PreviewDistance *
-                    Mathf.Tan(
-                        targetCamera.fieldOfView *
-                        Mathf.Deg2Rad *
-                        0.5f);
-            }
-
-            float viewWidth = viewHeight * targetCamera.aspect;
-            float heightScale =
-                viewHeight * PreviewHeightFraction /
-                Mathf.Max(0.01f, bounds.size.y);
-            float widthScale =
-                viewWidth * PreviewWidthFraction /
-                Mathf.Max(0.01f, bounds.size.x);
-            return Mathf.Clamp(
-                Mathf.Min(heightScale, widthScale) * authoredScale,
-                MinimumPreviewScale,
-                MaximumPreviewScale);
-        }
-
         private void ApplyInspectionFrame(
-            HomeRefrigeratorItemInspectionFrame frame)
+            WorldItemInspectionFrame frame)
         {
-            if (activeItem == null || presentationPivot == null)
-            {
-                HideBackdrop();
-                return;
-            }
-
-            float blend = Mathf.Clamp01(frame.ItemBlend);
-            presentationPivot.localPosition = Vector3.Lerp(
-                pivotStartLocalPosition,
-                pivotTargetLocalPosition,
-                blend);
-            Quaternion rotatingTarget =
-                pivotTargetLocalRotation *
-                Quaternion.Euler(0f, frame.RotationDegrees, 0f);
-            presentationPivot.localRotation = Quaternion.Slerp(
-                pivotStartLocalRotation,
-                rotatingTarget,
-                blend);
-            float scale = Mathf.Lerp(1f, pivotTargetScale, blend);
-            presentationPivot.localScale = Vector3.one * scale;
-            ApplyBackdrop(frame.BackdropAlpha);
-        }
-
-        private void ApplyBackdrop(float itemBlend)
-        {
-            if (backdropRenderer == null || targetCamera == null)
-            {
-                return;
-            }
-
-            float reveal = Mathf.SmoothStep(
-                0f,
-                1f,
-                Mathf.InverseLerp(0.62f, 1f, itemBlend));
-            if (reveal <= 0.001f)
-            {
-                HideBackdrop();
-                return;
-            }
-
-            UpdateBackdropGeometry();
-            backdropObject.SetActive(true);
-            properties.Clear();
-            backdropRenderer.GetPropertyBlock(properties);
-            properties.SetColor(
-                BaseColorId,
-                new Color(0.005f, 0.004f, 0.008f, 0.86f * reveal));
-            backdropRenderer.SetPropertyBlock(properties);
-        }
-
-        private void UpdateBackdropGeometry()
-        {
-            float height;
-            if (targetCamera.orthographic)
-            {
-                height = targetCamera.orthographicSize * 2f;
-            }
-            else
-            {
-                height =
-                    2f *
-                    BackdropDistance *
-                    Mathf.Tan(
-                        targetCamera.fieldOfView *
-                        Mathf.Deg2Rad *
-                        0.5f);
-            }
-
-            float width = height * targetCamera.aspect;
-            backdropObject.transform.localPosition =
-                new Vector3(0f, 0f, BackdropDistance);
-            backdropObject.transform.localRotation = Quaternion.identity;
-            backdropObject.transform.localScale =
-                new Vector3(width * 1.08f, height * 1.08f, 1f);
+            presenter?.Apply(frame);
         }
 
         private void RestoreActiveItem()
@@ -801,20 +640,7 @@ namespace BarPromenade
                 return;
             }
 
-            Transform itemRoot = activeItem.OriginalRoot;
-            if (itemRoot != null && savedParent != null)
-            {
-                itemRoot.SetParent(savedParent, false);
-                itemRoot.SetSiblingIndex(
-                    Mathf.Clamp(
-                        savedSiblingIndex,
-                        0,
-                        Mathf.Max(0, savedParent.childCount - 1)));
-                itemRoot.localPosition = savedLocalPosition;
-                itemRoot.localRotation = savedLocalRotation;
-                itemRoot.localScale = savedLocalScale;
-            }
-
+            presenter?.Restore();
             if (activeItem.SelectionCollider != null)
             {
                 activeItem.SelectionCollider.enabled =
@@ -823,64 +649,8 @@ namespace BarPromenade
 
             activeItem = null;
             activeDefinition = default;
-            savedParent = null;
             feedbackKey = string.Empty;
             selectedActionIndex = 0;
-            HideBackdrop();
-        }
-
-        private void EnsurePresentationObjects()
-        {
-            if (presentationPivot == null)
-            {
-                var pivotObject = new GameObject(
-                    "Home Refrigerator Item Inspection Pivot");
-                pivotObject.hideFlags = HideFlags.DontSave;
-                presentationPivot = pivotObject.transform;
-                presentationPivot.SetParent(targetCamera.transform, false);
-            }
-
-            if (backdropObject != null)
-            {
-                backdropObject.transform.SetParent(
-                    targetCamera.transform,
-                    false);
-                HideBackdrop();
-                return;
-            }
-
-            backdropObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            backdropObject.name =
-                "Home Refrigerator Item Inspection Backdrop";
-            backdropObject.hideFlags = HideFlags.DontSave;
-            backdropObject.transform.SetParent(
-                targetCamera.transform,
-                false);
-            Collider backdropCollider =
-                backdropObject.GetComponent<Collider>();
-            if (backdropCollider != null)
-            {
-                backdropCollider.enabled = false;
-                DestroyOwnedObject(backdropCollider);
-            }
-
-            backdropRenderer = backdropObject.GetComponent<Renderer>();
-            backdropRenderer.sharedMaterial =
-                HomeBalconyResources.GlassMaterial;
-            backdropRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            backdropRenderer.receiveShadows = false;
-            backdropRenderer.lightProbeUsage = LightProbeUsage.Off;
-            backdropRenderer.reflectionProbeUsage =
-                ReflectionProbeUsage.Off;
-            HideBackdrop();
-        }
-
-        private void HideBackdrop()
-        {
-            if (backdropObject != null)
-            {
-                backdropObject.SetActive(false);
-            }
         }
 
         private bool IsRegistered(HomeRefrigeratorItemView item)
@@ -995,15 +765,8 @@ namespace BarPromenade
         private void OnDestroy()
         {
             CancelAndRestore();
-            DestroyOwnedObject(backdropObject);
-            if (presentationPivot != null)
-            {
-                DestroyOwnedObject(presentationPivot.gameObject);
-            }
-
-            backdropObject = null;
-            backdropRenderer = null;
-            presentationPivot = null;
+            presenter?.Dispose();
+            presenter = null;
             IsInitialized = false;
         }
 

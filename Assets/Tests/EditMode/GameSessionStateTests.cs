@@ -531,6 +531,28 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(GameSessionState.FatigueLevel, Is.Zero);
         }
 
+        [Test]
+        public void NewGameAtTheVillageMorning_OpensAt0740WithoutAgeingNeeds()
+        {
+            GameSessionState.BeginNewGame();
+
+            Assert.That(
+                GameSessionState.TryStartGameTimeAt(
+                    StartMenuRoot.VillageMorningMinuteOfDay),
+                Is.True);
+
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+            Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
+            Assert.That(GameSessionState.GameHour, Is.EqualTo(7));
+            Assert.That(GameSessionState.GameMinute, Is.EqualTo(40));
+            // Reaching the hour by waking and then advancing a hundred
+            // minutes would have aged hunger and fatigue with it, and a new
+            // game has not been awake for those minutes.
+            Assert.That(GameSessionState.HungerLevel, Is.Zero);
+            Assert.That(GameSessionState.StressLevel, Is.Zero);
+            Assert.That(GameSessionState.FatigueLevel, Is.Zero);
+        }
+
         [TestCase(-5, 0, 130, 100)]
         [TestCase(44, 44, 67, 67)]
         public void UpdateNeeds_ClampsPublicValues(

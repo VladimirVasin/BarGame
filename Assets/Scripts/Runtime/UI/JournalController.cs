@@ -5,8 +5,14 @@ namespace BarPromenade
 {
     /// <summary>
     /// The quest journal. Opens over gameplay with the J key (gamepad
-    /// select), pauses time like the inventory and lists every quest
-    /// the player has picked up with its current status.
+    /// right shoulder), pauses time like the inventory and lists every
+    /// quest the player has picked up with its current status.
+    ///
+    /// Lifecycle and input only: the page itself is
+    /// <see cref="JournalView"/> and the cursor is
+    /// <see cref="JournalMenuModel"/>. It also owns the corner notice,
+    /// which hangs off a child object of its own rather than off the
+    /// nine scene roots.
     /// </summary>
     [DefaultExecutionOrder(-840)]
     [DisallowMultipleComponent]
@@ -16,18 +22,13 @@ namespace BarPromenade
 
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
+        private readonly JournalMenuModel model = new JournalMenuModel();
 
         private PlayerRuntime player;
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView intoxicationHud;
         private Func<bool> additionalCanOpen;
-        private GUIStyle titleStyle;
-        private GUIStyle questTitleStyle;
-        private GUIStyle statusActiveStyle;
-        private GUIStyle statusCompletedStyle;
-        private GUIStyle descriptionStyle;
-        private GUIStyle emptyStyle;
-        private GUIStyle hintStyle;
+        private JournalStyles styles;
         private IDisposable timePause;
         private int inputUnlockFrame;
         private bool ownsTimeState;
@@ -36,6 +37,9 @@ namespace BarPromenade
             activeController != null && activeController.IsOpen;
         public bool IsInitialized { get; private set; }
         public bool IsOpen { get; private set; }
+        public JournalNoticeView Notice { get; private set; }
+        public int SelectedIndex => model.SelectedIndex;
+        public int EntryCount => model.Count;
 
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -68,7 +72,31 @@ namespace BarPromenade
             cameraFollow = follow;
             intoxicationHud = hud;
             additionalCanOpen = canOpen;
+            EnsureNotice();
             IsInitialized = true;
+        }
+
+        /// <summary>
+        /// The corner notice lives on a child of this object rather
+        /// than on the nine scene roots. The journal is already on
+        /// every one of them, so hanging the notice here puts it in
+        /// all nine scenes without any of them learning a new line -
+        /// the same way the nausea gauge hangs off the intoxication
+        /// controller. A child, because HUD views forbid doubling up
+        /// on one object.
+        /// </summary>
+        private void EnsureNotice()
+        {
+            if (Notice != null)
+            {
+                return;
+            }
+
+            var host = new GameObject(
+                JournalNoticeView.RuntimeObjectName);
+            host.transform.SetParent(transform, false);
+            Notice = host.AddComponent<JournalNoticeView>();
+            Notice.Bind(this, intoxicationHud);
         }
 
         public bool Open()
@@ -87,6 +115,8 @@ namespace BarPromenade
             activeController = this;
             inputUnlockFrame = Time.frameCount + 1;
             IsOpen = true;
+            model.Open(GameSessionState.Quests);
+            GameSessionState.MarkQuestsRead();
             RetroAudio.Play(RetroSfxId.MapOpen);
             GameLog.Info(
                 "journal",
@@ -144,6 +174,37 @@ namespace BarPromenade
             if (WasJournalTogglePressed() || WasCancelPressed())
             {
                 Close();
+                return;
+            }
+
+            if (model.MoveSelection(
+                    GameInput.ReadMenuSelectionDelta(
+                        GameInputContext.Menu)))
+            {
+                RetroAudio.Play(RetroSfxId.UiMove);
+            }
+        }
+
+        /// <summary>
+        /// Puts the cursor on a row the pointer picked. Called from
+        /// OnGUI, where the logical mouse position is available, and
+        /// silent: a pointer sliding down the list would otherwise
+        /// chatter one move sound per row.
+        /// </summary>
+        private void SelectRowUnderPointer(RetroUiCanvas canvas)
+        {
+            if (model.Count == 0)
+            {
+                return;
+            }
+
+            int index = JournalView.ResolveRowIndexAt(
+                RetroUiTheme.LogicalMousePosition(canvas),
+                model.SelectedIndex,
+                model.Count);
+            if (index >= 0)
+            {
+                model.SelectIndex(index);
             }
         }
 
@@ -197,7 +258,11 @@ namespace BarPromenade
                 return;
             }
 
-            EnsureStyles();
+            if (styles == null)
+            {
+                styles = JournalStyles.Create();
+            }
+
             GUI.depth = -300;
             RetroUiTheme.FillRect(
                 new Rect(0f, 0f, Screen.width, Screen.height),
@@ -211,146 +276,18 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                DrawJournal();
+                if (Event.current.type == EventType.MouseDown ||
+                    Event.current.type == EventType.MouseDrag)
+                {
+                    SelectRowUnderPointer(canvas);
+                }
+
+                JournalView.Draw(model, styles);
             }
             finally
             {
                 RetroUiTheme.EndCanvas(previousMatrix);
             }
-        }
-
-        private void DrawJournal()
-        {
-            Rect panel = new Rect(140f, 48f, 360f, 264f);
-            RetroUiTheme.DrawPanel(
-                panel,
-                RetroUiTheme.Panel,
-                RetroUiTheme.BorderMuted,
-                false,
-                0f,
-                1f);
-            GUI.Label(
-                new Rect(panel.x + 16f, panel.y + 14f, panel.width - 32f, 30f),
-                LocalizationService.Get("journal.title"),
-                titleStyle);
-
-            float contentX = panel.x + 22f;
-            float contentWidth = panel.width - 44f;
-            float cursorY = panel.y + 56f;
-            float contentBottom = panel.yMax - 34f;
-            var quests = GameSessionState.Quests;
-            if (quests.Count == 0)
-            {
-                GUI.Label(
-                    new Rect(contentX, cursorY, contentWidth, 40f),
-                    LocalizationService.Get("journal.empty"),
-                    emptyStyle);
-            }
-
-            for (int index = 0;
-                 index < quests.Count && cursorY < contentBottom;
-                 index++)
-            {
-                QuestLogEntry entry = quests[index];
-                if (!QuestCatalog.TryGet(
-                        entry.Id,
-                        out QuestDefinition definition))
-                {
-                    continue;
-                }
-
-                bool completed =
-                    entry.Status == QuestStatus.Completed;
-                GUI.Label(
-                    new Rect(contentX, cursorY, contentWidth - 96f, 18f),
-                    LocalizationService.Get(
-                        definition.TitleLocalizationKey),
-                    questTitleStyle);
-                GUI.Label(
-                    new Rect(
-                        contentX + contentWidth - 92f,
-                        cursorY,
-                        92f,
-                        18f),
-                    LocalizationService.Get(
-                        completed
-                            ? "journal.status.completed"
-                            : "journal.status.active"),
-                    completed ? statusCompletedStyle : statusActiveStyle);
-                cursorY += 20f;
-
-                string description = LocalizationService.Get(
-                    completed
-                        ? definition.CompletedDescriptionLocalizationKey
-                        : definition.ActiveDescriptionLocalizationKey);
-                float descriptionHeight = descriptionStyle.CalcHeight(
-                    new GUIContent(description),
-                    contentWidth);
-                GUI.Label(
-                    new Rect(
-                        contentX,
-                        cursorY,
-                        contentWidth,
-                        descriptionHeight),
-                    description,
-                    descriptionStyle);
-                cursorY += descriptionHeight + 14f;
-            }
-
-            GUI.Label(
-                new Rect(
-                    panel.x + 16f,
-                    panel.yMax - 28f,
-                    panel.width - 32f,
-                    18f),
-                LocalizationService.Get("journal.hint"),
-                hintStyle);
-        }
-
-        private void EnsureStyles()
-        {
-            if (titleStyle != null)
-            {
-                return;
-            }
-
-            titleStyle = RetroUiTheme.CreateLabelStyle(
-                22,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.Text,
-                true);
-            questTitleStyle = RetroUiTheme.CreateLabelStyle(
-                13,
-                TextAnchor.MiddleLeft,
-                RetroUiTheme.Text,
-                true);
-            statusActiveStyle = RetroUiTheme.CreateLabelStyle(
-                10,
-                TextAnchor.MiddleRight,
-                RetroUiTheme.Accent,
-                true);
-            statusCompletedStyle = RetroUiTheme.CreateLabelStyle(
-                10,
-                TextAnchor.MiddleRight,
-                RetroUiTheme.Muted,
-                true);
-            descriptionStyle = RetroUiTheme.CreateLabelStyle(
-                11,
-                TextAnchor.UpperLeft,
-                RetroUiTheme.Muted,
-                false,
-                true);
-            emptyStyle = RetroUiTheme.CreateLabelStyle(
-                12,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.Muted,
-                false,
-                true);
-            hintStyle = RetroUiTheme.CreateLabelStyle(
-                10,
-                TextAnchor.MiddleCenter,
-                RetroUiTheme.Muted,
-                true);
         }
 
         private static bool WasJournalTogglePressed()

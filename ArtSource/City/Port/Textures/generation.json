@@ -1,0 +1,164 @@
+{
+  "generator": "OpenAI built-in ImageGen",
+  "backendModel": "not exposed by the tool",
+  "date": "2026-09-09",
+  "purpose": "Working port surface refinement; shared role tints, physical-metre UVs. Unity imports at 512px with sRGB/mipmaps/repeat; original generated pixels are preserved.",
+  "assets": [
+    {
+      "name": "PortConcreteAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 2 metres of worn horizontal working-quay concrete: muted pale warm grey, fine exposed aggregate, shallow irregular hairline cracks, subtly rubbed patches and mineral mottling. Broad calm readable shapes, low contrast; no strong dark cracks or stains. Neutral light grey tint suitable for multiplying by a muted material colour. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortConcreteAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortConcreteAlbedo.png",
+      "sha256": "6d66a67869f69120ce322bd3e1229341b2aaf7dc502f5fa5f178827d7c007ce0",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortPaintedSteelAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 1.5 metres of aged utilitarian painted steel for a compact working fishing port: neutral very light warm grey matte paint, scattered tiny edge-independent chips, subtle salt abrasion, sparse rubbed traces exposing dull metal, tiny desaturated brown rust flecks. Broad calm readable patches, very low contrast. Do not draw panel seams, rivets, edge borders or a specific object; this material will be tinted muted green and applied to hulls, cranes and trolleys. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortPaintedSteelAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortPaintedSteelAlbedo.png",
+      "sha256": "c6aea6aa61e439e6697411b8e33ade1220f834f5ce596698396d6aa46b1dab1b",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortConcreteWallAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 2 metres of vertical marine concrete with quiet formwork texture, fine pores, desaturated mineral salt streaks and subtle old damp marks. Light neutral warm-grey base, restrained sparse wear. No horizontal waterline baked into the image, no moss, no large cracks; the engine will position waterline wear by height. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortConcreteWallAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortConcreteWallAlbedo.png",
+      "sha256": "e444d5fa1a80a9bdb8200c51a1828709f7dd070620b4425bec8fa982294710b7",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortWarehousePlasterAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 2 metres of aged old harbour warehouse plaster, light warm off-white to pale neutral grey, fine lime render, sparse tiny chipped areas showing dull grey undercoat, restrained vertical weathering. Quiet broad patches; no bricks, no openings, no trim, no writing. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortWarehousePlasterAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortWarehousePlasterAlbedo.png",
+      "sha256": "86e851d67b1602014d8b434667454d87fd12155bfb42914023a675b738636bfc",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortTimberAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 1 metre of old working harbour timber, subdued light neutral brown-grey, parallel long soft wood grain running vertically, small grain knots and salt rubbing. Seamless single wood surface with no individual plank borders, no nails, no perspective, very low contrast. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortTimberAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortTimberAlbedo.png",
+      "sha256": "43741a31e718030cd9eafa74d2830dc52a3870c62bd446dad35f0e6b095abab5",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortRoofMetalAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 2 metres of dull old painted sheet metal for a small cold-store roof, awning and loading door. Light neutral grey, very subtle vertically running rolling grain and rubbed oxidised patches, rare thin chips and faint desaturated rust flecks. No corrugation shadows or strong ribs, no rivets or border seams; actual panel geometry supplies shape. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortRoofMetalAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortRoofMetalAlbedo.png",
+      "sha256": "4239a9af2464e5c672dcfda861fa0d277efd96cdee69511041fe32a5f18e04df",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortDeckAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 1 metre of worn ship-deck nonslip industrial coating, light neutral grey with dense fine stippled aggregate, slightly rubbed walking patches, tiny subtle salt grains, very restrained speckles. Low contrast, matte, flat diffuse, no chequer plate, no standing water or specular highlight. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortDeckAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortDeckAlbedo.png",
+      "sha256": "bccda169a58d4da03794198973e16f4bd31d115224276ecb541ae2ea2ba9ca6a",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortTareAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 0.75 metres of utilitarian reusable fishing-crate plastic material, pale neutral grey, slightly rough moulded matte surface with sparse fine scrapes, shallow dull scuffs and a few rubbed light marks. Uniform subtle material only; no crate shape, no ribs, slots, labels, branding, logos or colours. It will be tinted grey-green in the game. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortTareAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortTareAlbedo.png",
+      "sha256": "ee9d58641530185fb077a934d6c77930cebcc530a95b491e61d7050eb01fe4f2",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortFishAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: a flat close-up surface of silvery fish skin for small low-poly landed fish, muted pale cool silver-grey with extremely delicate overlapping scale pattern and a slight dull grey mottling, low contrast. This is only skin material: do not draw a whole fish, eyes, fins, flesh or blood; no wet shine or baked lighting. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortFishAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortFishAlbedo.png",
+      "sha256": "adf2a5ce9ea0c900de7cd06ff48e2580adc42a80cf8f41795a932f139d38a347",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortIceAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: a flat pale grey-white ice material for small low-poly crushed ice in fishing crates, cloudy milky translucent-looking mineral texture, quiet tiny frosted fractures and occasional slightly darker faint internal veining. Very low contrast, no distinct large cubes, no transparency, no blue saturated colour, no specular highlights. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortIceAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortIceAlbedo.png",
+      "sha256": "e4416c8e499ea0237a3612bc28f7a5fcf5fe5fbd87de859d9dbbe64ca5db58d9",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortRubberAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 0.5 metres of weathered hard working-port rubber for boat fenders, trolley wheels and fittings, neutral mid light grey so engine material can tint dark, very fine matte granular rubber surface, sparse soft scrub marks and shallow abrasion. No tyre tread, no rings, no logos, no strong cracks. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortRubberAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortRubberAlbedo.png",
+      "sha256": "a8b78df7c7bb21019e6c34357c13fddb90f617f7ea8df23fa389ce7b4315bbf1",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "PortFabricAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: a single square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 1 metre of tough matte work-clothing fabric for five port workers, neutral very light warm-grey woven cotton canvas, subtle small weave and sparse broad soft rubbed areas from daily use, low contrast. Surface material only: no seams, pockets, folds, buttons, clothing shape, stains or lighting, because rigged garment geometry and role colours supply these. Composition: fill the entire image edge to edge with this one material seen perpendicular to a perfectly flat surface, repeat seamlessly in both axes. Style: carefully authored restrained realistic material simplified for a videogame, broad muted texture reading and fine surface character, not photogrammetric noise. Lighting: fully flat and diffuse with no directional lighting, gradients, ambient occlusion, cast shadows, perspective, bevels or highlights baked in. No text, lettering, watermark, frame, texture sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "PortFabricAlbedo.png",
+      "runtime": "Assets/Resources/City/Port/Textures/PortFabricAlbedo.png",
+      "sha256": "28b8ac254396b1ba3e8fa1582b90d4d0e03a839d8485088f209a9deda9cd5772",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    }
+  ],
+  "reused": [
+    {
+      "role": "Asphalt",
+      "source": "Assets/Resources/Textures/CityRoadAsphaltAlbedo.png",
+      "reason": "Same material, 12m repeat, world UV phase and wet-surface owner as the connected city street; no duplicate texture."
+    },
+    {
+      "role": "RoadMarking",
+      "source": "Assets/Resources/Textures/CityRoadMarkingAlbedo.png",
+      "reason": "Restrained worn stripes on the sole pedestrian crossing, same marking source as the city; 2m UV repeat."
+    }
+  ]
+}

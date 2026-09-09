@@ -92,6 +92,41 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void TryStartAt_OpensDayOneOnTheGivenMinuteWithoutElapsing()
+        {
+            GameTimeState state = new GameTimeState();
+
+            Assert.That(
+                state.TryStartAt(
+                    StartMenuRoot.VillageMorningMinuteOfDay),
+                Is.True);
+            Assert.That(state.IsRunning, Is.True);
+            Assert.That(state.DayIndex, Is.Zero);
+            Assert.That(state.DayNumber, Is.EqualTo(1));
+            Assert.That(state.Hour, Is.EqualTo(7));
+            Assert.That(state.Minute, Is.EqualTo(40));
+            Assert.That(state.MinuteOfDay, Is.EqualTo(460));
+
+            Assert.That(
+                state.TryStartAt(0),
+                Is.False,
+                "A running day is never restarted at another hour.");
+            Assert.That(state.MinuteOfDay, Is.EqualTo(460));
+        }
+
+        [TestCase(-1)]
+        [TestCase(1440)]
+        [TestCase(int.MaxValue)]
+        public void TryStartAt_RefusesAMinuteOutsideTheDay(int minuteOfDay)
+        {
+            GameTimeState state = new GameTimeState();
+
+            Assert.That(state.TryStartAt(minuteOfDay), Is.False);
+            Assert.That(state.IsRunning, Is.False);
+            Assert.That(state.MinuteOfDay, Is.EqualTo(359));
+        }
+
+        [Test]
         public void Exactly1440RealSeconds_AdvancesOneCompleteGameDay()
         {
             GameTimeState state = new GameTimeState();

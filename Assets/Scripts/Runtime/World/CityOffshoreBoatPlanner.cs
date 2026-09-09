@@ -86,6 +86,13 @@ namespace BarPromenade
             }
 
             var obstacles = new List<Rect>(coast.Parts.Count + (island?.Count ?? 0));
+            if (coast.Port != null)
+            {
+                obstacles.Add(coast.Port.VesselExclusion);
+                obstacles.Add(coast.Port.LandBounds);
+                obstacles.Add(coast.Port.BreakwaterBounds);
+                obstacles.Add(coast.Port.BreakwaterHeadBounds);
+            }
             for (int index = 0; index < coast.Parts.Count; index++)
             {
                 CitySeacoastPartDescriptor part = coast.Parts[index];
@@ -173,6 +180,11 @@ namespace BarPromenade
             Rect shoreline = Rect.MinMaxRect(frame.BeachRowBounds.xMin, frame.WaterlineZ,
                 frame.BeachRowBounds.xMax, frame.WaterlineZ);
             float distanceSquared = DistanceSquared(shoreline, heroPosition);
+            if (coast.Port != null)
+            {
+                distanceSquared = Mathf.Min(distanceSquared, DistanceSquared(coast.Port.BreakwaterBounds, heroPosition));
+                distanceSquared = Mathf.Min(distanceSquared, DistanceSquared(coast.Port.BreakwaterHeadBounds, heroPosition));
+            }
             for (int index = 0; index < coast.Parts.Count; index++)
             {
                 CitySeacoastPartDescriptor part = coast.Parts[index];

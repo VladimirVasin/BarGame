@@ -67,7 +67,7 @@ namespace BarPromenade
         }
         public MothersHouseKettleProp Kettle { get; private set; }
         public MothersHouseExit Exit { get; private set; }
-        public MothersHouseScarfPickup ScarfPickup { get; private set; }
+        public WorldItemPickup ScarfPickup { get; private set; }
 
         /// <summary>The two drawn chair meshes, by their authored names.
         /// </summary>
@@ -83,6 +83,30 @@ namespace BarPromenade
         public MothersHouseMotherPresentation Mother { get; private set; }
 
         public MothersHouseRockingChairMotion ChairMotion
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>Her head turning to the hero. Null when her staged
+        /// prefab carries no head bone.</summary>
+        public NpcHeroAttentionLook MotherAttention
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>Talking to her. It stands on its own trigger in
+        /// front of the chair, not on her.</summary>
+        public MothersHouseMotherInteraction MotherTalk
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>Her overhead voice: the greeting on coming in and
+        /// the periodic lines while he is in the room.</summary>
+        public MothersHouseMotherSpeechController MotherSpeech
         {
             get;
             private set;
@@ -175,7 +199,7 @@ namespace BarPromenade
             BuildExit();
             BuildSeats(camera);
             BuildMother();
-            ScarfPickup = MothersHouseScarfPickup.Create(
+            ScarfPickup = WorldItemPickup.Create(
                 transform,
                 MothersHouseScarfPickupPlan.Create(Layout));
             Inventory = ui.AddComponent<InventoryController>();
@@ -269,6 +293,28 @@ namespace BarPromenade
                 transform,
                 plan,
                 ChairMotion);
+            MotherAttention =
+                MothersHouseMotherFactory.AttachHeroAttention(
+                    Mother,
+                    Player.GameObject != null
+                        ? Player.GameObject.transform
+                        : null);
+            MotherTalk = MothersHouseMotherFactory.CreateTalkTrigger(
+                transform,
+                plan,
+                Mother);
+            MotherSpeech = MothersHouseMotherFactory.CreateSpeech(
+                transform,
+                plan,
+                Mother,
+                CameraFollow != null ? CameraFollow.Camera : null,
+                Player.GameObject != null
+                    ? Player.GameObject.transform
+                    : null);
+            if (MotherTalk != null)
+            {
+                MotherTalk.AttachSpeech(MotherSpeech);
+            }
         }
 
         private Transform FindChairPart(string sourceName)

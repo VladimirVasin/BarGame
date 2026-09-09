@@ -9,7 +9,7 @@ half3 OffshoreBoatWater(float3 positionWS, half3 normalWS, float3 viewDir,
     float2 delta = positionWS.xz - hull.xz;
     float aft = -dot(delta, course.xy) - course.z;
     float across = abs(dot(delta, float2(-course.y, course.x)));
-    float width = 0.20 + saturate(aft / 5.5) * 0.55;
+    float width = (0.20 + saturate(aft / 5.5) * 0.55) * max(1.0, course.w);
     float wash = smoothstep(0.0, 0.7, aft) * (1 - smoothstep(2.0, 5.5, aft)) *
         (1 - smoothstep(width * 0.25, width, across));
     float breakup = saturate(0.46 + sin(positionWS.x * 7.2 + positionWS.z * 4.7 - _Time.y * 1.8) * 0.3 +

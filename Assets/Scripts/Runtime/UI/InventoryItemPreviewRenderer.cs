@@ -236,29 +236,7 @@ namespace BarPromenade
 
         private static Quaternion GetBaseRotation(InventoryItemId itemId)
         {
-            switch (itemId)
-            {
-                case InventoryItemId.ApartmentKeys:
-                    return Quaternion.Euler(18f, -25f, -10f);
-                case InventoryItemId.Lighter:
-                    return Quaternion.Euler(6f, -18f, 0f);
-                case InventoryItemId.VodkaBottle:
-                    return Quaternion.Euler(0f, -18f, 0f);
-                case InventoryItemId.ChickenEgg:
-                    return Quaternion.Euler(10f, -24f, -6f);
-                case InventoryItemId.OpenStewCan:
-                    return Quaternion.Euler(8f, 22f, -4f);
-                case InventoryItemId.ClosedStewCan:
-                    return Quaternion.Euler(8f, -20f, -3f);
-                case InventoryItemId.InstantNoodles:
-                    return Quaternion.Euler(24f, -18f, -8f);
-                case InventoryItemId.DayOldLoaf:
-                    return Quaternion.Euler(12f, -28f, -5f);
-                case InventoryItemId.Scarf:
-                    return Quaternion.Euler(28f, -24f, -8f);
-                default:
-                    return Quaternion.identity;
-            }
+            return InventoryItemPreviewPoses.GetBaseRotation(itemId);
         }
 
         private void SetStageVisible(bool visible)

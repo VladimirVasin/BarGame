@@ -39,14 +39,26 @@ namespace BarPromenade
 
         public bool TryStartFromWake()
         {
-            if (IsRunning)
+            return TryStartAt(WakeMinuteOfDay);
+        }
+
+        /// <summary>
+        /// Starts day one at a chosen minute. Callers that want a later hour
+        /// use this rather than starting and then advancing: advancing is
+        /// elapsed time and ages the hero's needs with it.
+        /// </summary>
+        public bool TryStartAt(int minuteOfDay)
+        {
+            if (IsRunning ||
+                minuteOfDay < 0 ||
+                minuteOfDay >= MinutesPerDay)
             {
                 return false;
             }
 
             IsRunning = true;
             DayIndex = 0;
-            timeOfDayMinutes = WakeMinuteOfDay;
+            timeOfDayMinutes = minuteOfDay;
             return true;
         }
 

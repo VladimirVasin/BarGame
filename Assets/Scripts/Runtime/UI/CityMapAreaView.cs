@@ -144,7 +144,47 @@ namespace BarPromenade
                     AlpineVillageLane);
             }
 
+            DrawMothersHouseMark(projection);
             DrawPlayer(projection);
+        }
+
+        /// <summary>
+        /// The house at the top of the lane, marked while the log is
+        /// still asking for it and gone the moment he has been inside.
+        ///
+        /// Only on the chart. The village itself has no signpost and
+        /// does not get one: the composition is one street going up
+        /// with the house at the top of it, and that is the whole of
+        /// what points the way out of doors.
+        /// </summary>
+        private void DrawMothersHouseMark(MapProjection projection)
+        {
+            if (!GameSessionState.IsQuestActive(
+                    QuestId.ReachMothersHouse) ||
+                !controller.TryGetActiveMapPoint(
+                    CityMapPointKind.MothersHouse,
+                    out CityMapPointDescriptor point))
+            {
+                return;
+            }
+
+            Vector2 center = projection.WorldToScreen(
+                controller.ResolveMapPointWorldPosition(point));
+            Rect mark = CreateCenteredRect(center, 13f, 13f);
+            RetroUiTheme.StrokeRect(mark, 1f, RetroUiTheme.Ink);
+            RetroUiTheme.StrokeRect(
+                new Rect(
+                    mark.x + 1f,
+                    mark.y + 1f,
+                    mark.width - 2f,
+                    mark.height - 2f),
+                1f,
+                RetroUiTheme.Accent);
+            RegisterHoverTarget(
+                CreateCenteredRect(center, 17f, 17f),
+                center,
+                point.Label,
+                LandmarkHoverPriority);
         }
 
         private void DrawMountainRoadMap(MapProjection projection)

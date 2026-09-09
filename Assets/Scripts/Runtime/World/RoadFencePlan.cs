@@ -19,7 +19,8 @@ namespace BarPromenade
         PlayerHomeEntrance = 2,
         DistrictPointOfInterest = 3,
         SupermarketEntrance = 4,
-        OpenAreaAccess = 5
+        OpenAreaAccess = 5,
+        PortServiceAccess = 6
     }
 
     public readonly struct RoadFenceSegmentDescriptor :

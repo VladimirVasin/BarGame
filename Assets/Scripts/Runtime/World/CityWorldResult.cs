@@ -143,6 +143,7 @@ namespace BarPromenade
         }
 
         public CitySeacoastPlan SeacoastPlan { get; }
+        public CityPortPlan PortPlan => SeacoastPlan?.Port;
         public CityDecorationPlan DecorationPlan { get; }
         public GameObject DecorationRoot { get; }
         public GameObject RiverRoot { get; }

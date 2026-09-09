@@ -427,9 +427,9 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 itemInspection.Timeline.Phase,
                 Is.EqualTo(
-                        HomeRefrigeratorItemInspectionPhase.FlyingIn)
+                        WorldItemInspectionPhase.FlyingIn)
                     .Or.EqualTo(
-                        HomeRefrigeratorItemInspectionPhase.Inspecting));
+                        WorldItemInspectionPhase.Inspecting));
             Assert.That(item.SelectionCollider.enabled, Is.False);
             hoverRenderer.GetPropertyBlock(hoverProperties);
             Assert.That(
@@ -450,7 +450,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.Empty);
 
             interaction.AdvanceInteraction(
-                HomeRefrigeratorItemInspectionTimeline
+                WorldItemInspectionTimeline
                     .FlyingInDurationSeconds);
             Assert.That(itemInspection.IsInspecting, Is.True);
             Assert.That(
@@ -544,7 +544,7 @@ namespace BarPromenade.Tests.PlayMode
                 interaction.ItemInspection.TryBeginInspection(item),
                 Is.True);
             interaction.AdvanceInteraction(
-                HomeRefrigeratorItemInspectionTimeline
+                WorldItemInspectionTimeline
                     .FlyingInDurationSeconds);
             Assert.That(interaction.ItemInspection.IsInspecting, Is.True);
 

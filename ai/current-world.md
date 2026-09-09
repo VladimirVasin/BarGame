@@ -97,9 +97,10 @@ The vertical slice contains:
   sizes, front threshold and `3.54/5.90 m` upper floor/ceiling remain fixed.
   The parents' doorway moves slightly south; the northern corridor chest
   moves into that bedroom and the linen shelf is shortened. One folded scarf
-  can be collected from that chest through `MothersHouseScarfPickup`; the
-  remaining upstairs furnishings are passive. Collection is atomic and its
-  source stays empty on later scene visits in the same session. One
+  is found on that chest through `WorldItemPickup`, which holds it up on the
+  shared found-item screen before it is taken; the remaining upstairs
+  furnishings are passive. Collection is atomic, happens only on the
+  player's confirm, and its source stays empty on later visits that session. One
   hidden plan-owned ramp makes the
   visible collider-free steps continuously walkable; structural slabs,
   partitions, door openings and well guards are runtime collision. Five
@@ -136,16 +137,38 @@ The vertical slice contains:
   instantiates the literal Kettle Hat pedestrian
   prefab and leaves only its ten authored kettle renderers visible, preserving
   the source meshes, material and detail atlas as the explicit atlas exception;
-  the mother sits silently in the rocking chair. Its measured runner edges
+  the mother sits in the rocking chair. Its measured runner edges
   stay on the rug at `Y=0.032 m` throughout the unchanged `±2.5° / 3.2 s`
   cycle; chair and sitter share one motion, with hip contact corrected along
-  the tilted chair's local up. Cat, dinner and dialogue remain outside this MVP;
-- a black `MainMenu` launch boundary at build index `0` that resets every
-  session-owned value, writes the one-shot `OpeningSleep` Home arrival and
-  Single-loads the existing `HomeInterior` instead of duplicating the room;
-  ordinary Editor Play also enters through `MainMenu` regardless of which
-  scene is currently open;
-- a cinematic waking opening inside that Home: the hero begins directly in
+  the tilted chair's local up. She turns her head to the hero on the shared
+  NPC attention and speaks in an overhead bubble. Coming through the door
+  always draws the same greeting; while he is within `6 m` and on her floor
+  she says a short line every `35-55 s`, and `E` at a trigger in front of the
+  chair answers out of the same shuffled bag, so nothing repeats before the
+  pool is spent. The bag is ten ordinary domestic lines plus an eleventh —
+  her direct request to put the scarf on — which retires once it is worn; a
+  separate first request raises that quest. The bag survives the door, so
+  re-entering does not restart it. She holds nothing, the hero does not
+  answer, and there is no branch or choice. Cat, dinner and the news remain
+  outside this MVP;
+- a `MainMenu` launch boundary at build index `0` that resets every
+  session-owned value, keeps its black field and shows one compact card with
+  two localized rows, `НОВАЯ ИГРА / NEW GAME` and `ВЫЙТИ / QUIT`. New Game
+  starts the session clock at `07:40` on day `1` and Single-loads
+  `AlpineVillage` through the existing `AreaLoading` screen; ordinary Editor
+  Play also enters through `MainMenu` regardless of which scene is currently
+  open;
+- a first playable frame on the village lane: the hero stands at the village
+  plan's own lane-foot spawn, two metres up from the station threshold and
+  facing uphill at the mother's house. There is no cabin, no ride and no
+  arrival sequence — the loading screen ends and he is simply there, and that
+  screen carries no directed illustration because no leg was travelled. Day
+  one carries one quest, raised by the calendar like every other dated event:
+  the mother's house is up in the journal, marked on the village chart while
+  it is open, and closed by stepping inside from either the door or the map.
+  The village itself gets no signpost;
+- a cinematic waking opening inside Home, retained whole but reached by no
+  shipped run and only by an explicit legacy request: the hero begins directly in
   the persistent bed-sleep loop while the first rendered Home frame fixes on
   the silent alarm clock at `05:59`; its whole display flickers briefly at
   long intervals while no menu input exists for five seconds. A localized
@@ -161,10 +184,11 @@ The vertical slice contains:
   open. Opening, contextual actions, door actions and other modal owners block
   the window. The city-map button retains the existing one-shot arrival
   request consumed after the transition;
-- one session-owned in-game clock that starts every fresh run frozen at
-  `05:59`, advances only after the successful startup Wake or accepted Home
-  debug city-map skip sets it to `06:00`, and persists through Single-mode scene
-  loads. It advances on unpaused real time at
+- one session-owned in-game clock that starts running at `07:40` on day `1`
+  the moment New Game is chosen, and persists through Single-mode scene loads.
+  The retained Home opening still holds it frozen at `05:59` until its Wake or
+  the accepted Home debug city-map skip sets it to `06:00`. It advances on
+  unpaused real time at
   `1.0` game minute per real second, so a full `24 h` cycle takes exactly
   `1440` real seconds (`24` minutes), crosses midnight with a zero-based day
   index exposed to the player as one-based `DAY N`. True pause stops it;
@@ -642,6 +666,12 @@ The vertical slice contains:
 - a crisp interface-only soot/charcoal/dirty-bone IMGUI layer after the world
   composite: prompts, pause/start, inventory, shops, inspectors, journal,
   HUD and all map modes share a logical `640x360` canvas, flat
+  rectangular panels, thin nested frames, stable panel grain and
+  grayscale-readable focus. `J` opens the journal over the whole canvas as a
+  scrolling list of ticked and empty boxes above one description panel for the
+  selected quest, and an unread entry blinks a notebook in the top right
+  corner — spelling out the key until the journal has been opened once, and
+  for six seconds after that. The layer keeps flat
   rectangular panels, thin nested frames, stable panel grain and
   grayscale-readable focus. Packaged `Roboto-Regular` is the deterministic
   RU/EN primary face; runtime UI has no installed-OS-font dependency, and
@@ -1181,7 +1211,7 @@ The vertical slice contains:
   night-fixture placement. Open west/east sand receives uneven swash tongues
   reaching up to `2.8 m`, with a faster advance, slower retreat, broken foam
   and a brief wet-sand tail. The shared transparent swash strips conform to
-  the existing beach, add no collision and exclude the central sea wall.
+  the existing beach, add no collision and exclude the central sea wall and port quay.
   Beach sand now carries bounded `0.15 m` deterministic relief on a `0.4 m`
   grid and a shallow loose visual skin. `CitySandTreading` presses that skin
   into soft trails while retaining separate fixed ground collision; confirmed
@@ -1192,7 +1222,7 @@ The vertical slice contains:
   seabed, easing toward a `1:5` slope instead of two stepped silt boxes.
   River-mouth cuts remain open.
   The shore is zoned around the river mouth — a
-  dead port with a concrete mol and a frozen derrick
+  working fishing port with a quay, two cranes and a breakwater
   to the west; a granite esplanade with sparse glow lamps, benches and the
   abandoned municipal boat station (hut, «ПРОКАТ ЛОДОК» board, sea pier
   with the fisherman, chained slipway, hauled hulls) at the centre; rotten
@@ -1209,10 +1239,55 @@ The vertical slice contains:
   night-gated), rendered on its own no-fog shaders with a
   camera-distance self-fade inside the 48 m far plane — visible from
   the esplanade, sand and pier head, gone from every street;
+- one working fishing-port slice (`CityPortPlan`, `CityPortCycle`,
+  `CityPortController`) receives a roughly `20 m` trawler at one berth west
+  of the river mouth. Two shore cranes, a trolley and a cold store unload a
+  finite six-cage catch. The complete `624 s` visit is sampled from the
+  absolute session clock: approach, mooring, hatch preparation, six `64 s`
+  lifts/deliveries, securing, unmooring, departure and an empty interval.
+  This fixed-world cycle survives leaving/rebuilding City without spawning
+  a fresh visit around the hero. Seeking reconstructs the exact custody and
+  count of the same six cages without replaying landing sounds. The hatches
+  are real apertures; loaded cages follow their hook until contact with the
+  trolley and reach a concealed delivery point behind the store's baffle.
+  Hook and cargo share at most `9 cm` of clocked sway during slewing,
+  settling before lowering so every handoff retains its contact.
+  Both cranes return to their next hatch, while the trolley returns empty.
+  `CityPortCrew` reuses the ordinary StationWorker prefab and its authored
+  rig/actions for five muted workers: captain, deckhand, two crane operators
+  and one shore worker. Coat/cap/glove colours separate their roles; fabric
+  uses port-only metre UV transforms, preserving faces and the original rig.
+  Small planted torso adjustments and load gaze precede helm, lever, mooring
+  and trolley contacts at model anchors; movement shares the port clock. No greeting,
+  boarding, earnings, quest or new player action is added. The compact quay
+  reaches `20 m` seaward of the waterline on solid caissons down to `-3.4 m`
+  relative to sea level. A `6 m` service road joins the existing city street
+  to an L-shaped yard and the store's east loading door. `CityPortAccessPlan`
+  shares `PortAccessLayout.json` with the Blender road: local regrading,
+  street openings and an `8 x 2.5 m` truck clearance template have no live
+  truck or delivery cycle. A `2 m` public bypass stays outside manoeuvres,
+  crosses the road once and joins street, rear-store path and breakwater.
+  NPCs take the straight street spur then orthogonal links over beach to the
+  coastal lane; the diagonal paved branch belongs to the player's approach.
+  Global graph rules are unchanged. Fences/gates separate cargo work, and
+  former coast guardrails are suppressed beneath the paved yard. The local basin and approach are dredged
+  to `3.4 m`, and passing offshore vessels exclude this water.
+  The imported kit comes from `tools/build-city-port-3d-model.py` and
+  `CityPortAssetProvider`: nine fixed-metre FBXs include the access road,
+  trawler fittings and crane heads that slew with their counterweights/winches.
+  Twelve generated albedo sheets use semantic metre UVs and shared muted
+  materials; thin hardware retains the palette. Road asphalt shares the city
+  texture, `12 m` world phase and wet response; the crossing's seven worn
+  stripes reuse `CityRoadMarkingAlbedo`. Two warm lights target quay
+  and store patches with the daylight floor. `CityPortWater` owns a
+  separate sea-shader wake slot; `CityPortSound` owns bounded engine, crane,
+  wheel and contact voices on existing audio routes. Pause stops the clock
+  and audio; disabling/destroying the port clears its people, voices and wake.
+  Small alternative blueprints without room retain their nonoperational mol;
 - up to two decorative old fishing vessels spawn only near the actual hero
   at the coast (`CityOffshoreBoat{Planner,Controller}`): full presence within
   `8 m` of the finite shore or pier/mol decks, zero at `28 m`. Their cleared
-  courses are chosen around the hero's easting and remain fixed during each
+  courses avoid the working port, are chosen around the hero's easting and remain fixed during each
   pass. Moving over `32 m` alongshore or leaving the coastal band fades and
   releases vessels, audio and water slots before another local pass; camera
   movement does not control spawning. Two
@@ -2391,7 +2466,7 @@ The vertical slice contains:
   and all normal/abnormal cleanup remain;
 - one bed-relative low-poly nightstand and a `27.6 cm`-wide 3D alarm clock that remain visible
   as ordinary Home dressing. Its reusable 28-segment display begins the
-  one-shot opening at `05:59` and flickers all digits and punctuation briefly
+  retained waking opening at `05:59` and flickers all digits and punctuation briefly
   at long intervals. After a silent five-second input lock it reveals the menu
   without changing the time or starting the alarm. Choosing Wake Up changes
   the display to solid `06:00`, starts the shared session time, generates a

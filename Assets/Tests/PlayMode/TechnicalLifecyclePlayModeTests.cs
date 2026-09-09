@@ -27,10 +27,67 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Scene scene = SceneManager.GetSceneAt(i);
                 if (scene != blank && (AreaSceneCatalog.TryGetArea(scene.name, out _) ||
-                    scene.name == SceneIds.AreaLoading))
+                    scene.name == SceneIds.AreaLoading || scene.name == SceneIds.MainMenu))
                     yield return SceneManager.UnloadSceneAsync(scene);
             }
             GameSessionState.BeginNewGame();
+        }
+
+        [UnityTest]
+        public IEnumerator NewGame_FromStartMenuLandsAtTheVillageLaneFootWithARunningClock()
+        {
+            yield return SceneManager.LoadSceneAsync(SceneIds.MainMenu, LoadSceneMode.Single);
+            StartMenuRoot menu = Object.FindAnyObjectByType<StartMenuRoot>();
+            Assert.That(menu, Is.Not.Null, "The launch scene must install the start card.");
+            Assert.That(Object.FindAnyObjectByType<MainMenuRoot>(), Is.Null,
+                "The retained Home opening must not be reached without a request.");
+            Assert.That(menu.BackdropCamera, Is.Not.Null);
+            Assert.That(menu.SelectedOption, Is.EqualTo(StartMenuOption.NewGame));
+            // A missing key renders as itself and nothing else notices.
+            Assert.That(LocalizationService.Get("opening.new_game"),
+                Is.Not.EqualTo("opening.new_game"));
+            Assert.That(LocalizationService.Get("opening.quit"), Is.Not.EqualTo("opening.quit"));
+
+            Assert.That(menu.ConfirmSelection(), Is.True);
+            Assert.That(menu.ConfirmSelection(), Is.False, "A second click must not travel twice.");
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+            Assert.That(GameSessionState.GameHour, Is.EqualTo(7));
+            Assert.That(GameSessionState.GameMinute, Is.EqualTo(40));
+            Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(1));
+
+            bool sawLoadingScreen = false;
+            float deadline = Time.realtimeSinceStartup + DeadlineSeconds;
+            while (AreaTravelService.IsTraveling && Time.realtimeSinceStartup < deadline)
+            {
+                sawLoadingScreen |= Object.FindAnyObjectByType<AreaLoadingRoot>() != null;
+                yield return null;
+            }
+
+            Assert.That(AreaTravelService.IsTraveling, Is.False, "The village never finished loading.");
+            Assert.That(sawLoadingScreen, Is.True, "New Game must travel through the loading screen.");
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(SceneIds.AlpineVillage));
+
+            AlpineVillageRoot village = Object.FindAnyObjectByType<AlpineVillageRoot>();
+            Assert.That(village, Is.Not.Null);
+            Assert.That(village.IsInitialized, Is.True);
+            Assert.That(village.HadAreaArrival, Is.True);
+            Assert.That(village.ArrivalToken, Is.EqualTo(AreaArrivalToken.Default));
+
+            Transform hero = village.Player.GameObject.transform;
+            Vector3 offset = hero.position - village.Plan.SpawnPosition;
+            offset.y = 0f;
+            Assert.That(offset.magnitude, Is.LessThan(0.5f),
+                "He stands at the lane foot, not on the cableway platform.");
+            Assert.That(Vector3.Dot(hero.forward, village.Plan.SpawnForward),
+                Is.GreaterThan(0.99f), "He faces uphill at the mother's house.");
+            Assert.That(GameSessionState.IsRidingAVehicle, Is.False,
+                "There is no cabin and no ride: he is simply there.");
+
+            // The loading screen's own seconds are game minutes until the
+            // composition pause lands, so the hour is pinned and the minute is not.
+            Assert.That(GameSessionState.IsGameTimeRunning, Is.True);
+            Assert.That(GameSessionState.GameHour, Is.EqualTo(7));
+            Assert.That(GameSessionState.GameTimeOfDayMinutes, Is.InRange(460d, 480d));
         }
 
         [UnityTest]

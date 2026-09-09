@@ -16,7 +16,7 @@ namespace BarPromenade.Tests.PlayMode
     public sealed class ScarfCollisionWindInput : MonoBehaviour
     {
         public PlayerScarfPresentation Scarf;
-        public WindSample Wind;
+        [NonSerialized] public WindSample Wind;
         private void LateUpdate() { if (Scarf != null) Scarf.SetEnvironment(true, Wind); }
     }
 

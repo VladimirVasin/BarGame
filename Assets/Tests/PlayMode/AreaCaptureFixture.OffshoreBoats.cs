@@ -136,11 +136,8 @@ namespace BarPromenade.Tests.PlayMode
                     $"offshore-0{variant + 3}-pier-variant-{variant}");
             }
 
-            Assert.That(city.World.SeacoastPlan.TryGetPart(CitySeacoastPlanner.MolDeckHeadId,
-                out CitySeacoastPartDescriptor mol), Is.True);
-            CaptureOffshore(camera, city, fleet, 0, 0d,
-                mol.Center + Vector3.up * (mol.Size.y * 0.5f + EyeHeight),
-                "offshore-09-mol-day");
+            Assert.That(city.World.SeacoastPlan.Port, Is.Not.Null,
+                "The old mol is replaced by a harbour with its own reserved vessel approach.");
             var first = fleet.Plan.Routes[0];
             double passTime = first.DurationSeconds * 0.5 - first.PhaseSeconds;
             fleet.ApplyAt(passTime, 15f);
@@ -157,7 +154,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(fleet.Boats[0].position, Is.EqualTo(beforePause));
             }
 
-            // On the mol, sound stays attached to actual imported anchors.
+            // At the shore, sound stays attached to actual imported anchors.
             camera.transform.position = city.Player.GameObject.transform.position + Vector3.up * EyeHeight;
             fleet.ApplyAt(passTime, 15f);
             CityOffshoreBoatSound sound = fleet.Sound;
@@ -245,11 +242,13 @@ namespace BarPromenade.Tests.PlayMode
             foreach (float edgeX in new[] { coast.Frame.BeachRowBounds.xMin - 29f, coast.Frame.BeachRowBounds.xMax + 29f })
                 Assert.That(CityOffshoreBoatPlanner.ShorePresence(coast,
                     new Vector3(edgeX, 0f, shore.z)), Is.Zero, "The shoreline cannot extend infinitely sideways.");
-            foreach (string deckId in new[] { CitySeacoastPlanner.PierDeckHeadId, CitySeacoastPlanner.MolDeckHeadId })
+            foreach (string deckId in new[] { CitySeacoastPlanner.PierDeckHeadId })
             {
                 Assert.That(coast.TryGetPart(deckId, out CitySeacoastPartDescriptor deck), Is.True);
                 Assert.That(CityOffshoreBoatPlanner.ShorePresence(coast, deck.Center), Is.EqualTo(1f));
             }
+            if (coast.Port != null)
+                Assert.That(CityOffshoreBoatPlanner.ShorePresence(coast, coast.Port.RavenCompanion), Is.EqualTo(1f));
             var island = CityLighthouseIslandPlanner.Create(city.Layout.Seed, coast);
             var duplicate = CityOffshoreBoatPlanner.Create(city.Layout.Seed, coast, island, fleet.SpawnAnchor.x);
             var obstacles = new List<Rect>();
@@ -257,6 +256,7 @@ namespace BarPromenade.Tests.PlayMode
                 obstacles.Add(CityOffshoreBoatPlanner.ProjectedBounds(part.Center, part.Rotation, part.Size));
             foreach (var part in coast.Parts)
                 obstacles.Add(CityOffshoreBoatPlanner.ProjectedBounds(part.Center, part.Rotation, part.Size));
+            if (coast.Port != null) obstacles.Add(coast.Port.VesselExclusion);
             for (int i = 0; i < fleet.Plan.Routes.Count; i++)
             {
                 var route = fleet.Plan.Routes[i];

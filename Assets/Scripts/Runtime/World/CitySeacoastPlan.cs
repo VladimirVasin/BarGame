@@ -299,7 +299,7 @@ namespace BarPromenade
         /// </summary>
         public float MouthWaterY { get; }
 
-        /// <summary>Dead port and mol, west of the river mouth.</summary>
+        /// <summary>Working port and mol, west of the river mouth.</summary>
         public Rect WestZone { get; }
 
         /// <summary>Esplanade and boat station, east of the mouth.</summary>
@@ -332,7 +332,7 @@ namespace BarPromenade
             IList<CitySeacoastPartDescriptor> partSource,
             IList<CitySeacoastLampDescriptor> lampSource,
             Rect grounds,
-            CitySeacoastFrame frame)
+            CitySeacoastFrame frame, CityPortPlan port = null)
         {
             var partCopy = new List<CitySeacoastPartDescriptor>(
                 partSource);
@@ -354,6 +354,7 @@ namespace BarPromenade
 
             Grounds = grounds;
             Frame = frame;
+            Port = port ?? CityPortPlan.Create(frame);
 
             variantBoatCounts = new int[4];
             var seenOrdinals = new HashSet<int>();
@@ -380,6 +381,7 @@ namespace BarPromenade
         public Rect Grounds { get; }
 
         public CitySeacoastFrame Frame { get; }
+        public CityPortPlan Port { get; }
 
         /// <summary>Distinct hauled hulls in the plan.</summary>
         public int BoatCount { get; }

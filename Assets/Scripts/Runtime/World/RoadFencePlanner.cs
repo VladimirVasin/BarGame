@@ -812,6 +812,15 @@ namespace BarPromenade
                     access.Width));
             }
 
+            CityPortPlan port = CitySeacoastPlanner.CreatePortPlan(layout);
+            CityPortAccessPlan service = CityPortAccessPlan.GetOrCreate(layout, port);
+            if (service != null)
+            {
+                openings.Add(new RoadFenceOpeningDescriptor(RoadFenceOpeningKind.PortServiceAccess,
+                    "port-service-road", service.World(new Vector3(54f, 2.59f, -42f)), Vector3.forward, 10.4f));
+                openings.Add(new RoadFenceOpeningDescriptor(RoadFenceOpeningKind.PortServiceAccess,
+                    "port-public-spur", service.World(new Vector3(60f, 2.343333f, -42f)), Vector3.forward, 2.2f));
+            }
             openings.Sort(CompareOpenings);
             return openings;
         }

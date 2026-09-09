@@ -1,5 +1,22 @@
 # Art and native tool entry points
 
+`build-city-port-3d-model.py` builds nine fixed-metre harbour FBXs, including
+the dock/store/breakwater, trawler, cranes, cargo parts and access road.
+`PortAccessLayout.json` supplies the same road/yard/public-walk geometry to
+Blender and runtime. Models, palette and measured `CityPort3D.json` live in
+`Assets/Resources/City/Port`; source lives under `ArtSource/City/Port`.
+Validation covers deterministic geometry, semantic metre UVs and clear cargo
+holds. Twelve ImageGen albedos retain originals, prompts and hashes in
+`ArtSource/City/Port/Textures/generation.json`; runtime copies import at
+`512 px`, sRGB/mipmaps/repeat. Asphalt shares the city's existing sheet and
+`12 m` world phase. Generated pixels are outside mesh signatures. Runtime
+reuses StationWorker rigs, port-only fabric binding and shared role materials:
+
+```powershell
+python tools/run-blender.py tools/build-city-port-3d-model.py --expect Assets/Resources/City/Port/CityPort3D.json -- --no-preview
+python tools/run-blender.py tools/build-city-port-3d-model.py --validate-only -- --validate-only
+```
+
 The Ferryman's coin and glovebox contents share one small passive resource.
 `build-last-route-coin-3d-model.py` preserves the earlier octagonal brass coin's
 `54 x 9 mm` silhouette and combines its repeated geometry into one contained

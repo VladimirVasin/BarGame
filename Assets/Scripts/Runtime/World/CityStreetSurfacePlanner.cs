@@ -357,14 +357,9 @@ namespace BarPromenade
 
                 if (!hasStair || !stairOnLeft)
                 {
-                    AddSidewalk(
-                        CreateSurfaceBox(
-                            start + left * sideOffset +
-                            Vector3.up * SidewalkTop,
-                            end + left * sideOffset +
-                            Vector3.up * SidewalkTop,
-                            SidewalkWidth,
-                            SidewalkHeight),
+                    AddSidewalkWithPortOpening(layout,
+                            start + left * sideOffset + Vector3.up * SidewalkTop,
+                            end + left * sideOffset + Vector3.up * SidewalkTop,
                         sidewalks,
                         sidewalkGeometry,
                         walkableRectangles);
@@ -372,14 +367,9 @@ namespace BarPromenade
 
                 if (!hasStair || stairOnLeft)
                 {
-                    AddSidewalk(
-                        CreateSurfaceBox(
-                            start - left * sideOffset +
-                            Vector3.up * SidewalkTop,
-                            end - left * sideOffset +
-                            Vector3.up * SidewalkTop,
-                            SidewalkWidth,
-                            SidewalkHeight),
+                    AddSidewalkWithPortOpening(layout,
+                            start - left * sideOffset + Vector3.up * SidewalkTop,
+                            end - left * sideOffset + Vector3.up * SidewalkTop,
                         sidewalks,
                         sidewalkGeometry,
                         walkableRectangles);
@@ -396,6 +386,26 @@ namespace BarPromenade
                 }
                 edgesWithSidewalks.Add(edge);
             }
+        }
+
+        private static void AddSidewalkWithPortOpening(CityLayout layout, Vector3 start, Vector3 end,
+            ICollection<Bounds> sidewalks, ICollection<RuntimeOrientedBox> geometry, ICollection<Rect> walkable)
+        {
+            CityPortAccessPlan port=CityPortAccessPlan.ForLayout(layout);
+            if(port!=null && Mathf.Abs(end.z-start.z)<.01f && Mathf.Abs(end.x-start.x)>.01f)
+            {
+                Rect opening=port.StreetOpening;
+                if(start.z>=opening.yMin && start.z<=opening.yMax &&
+                    Mathf.Max(start.x,end.x)>opening.xMin && Mathf.Min(start.x,end.x)<opening.xMax)
+                {
+                    float a=(opening.xMin-start.x)/(end.x-start.x),b=(opening.xMax-start.x)/(end.x-start.x);
+                    float low=Mathf.Clamp01(Mathf.Min(a,b)),high=Mathf.Clamp01(Mathf.Max(a,b));
+                    if(low>.001f)AddSidewalk(CreateSurfaceBox(start,Vector3.Lerp(start,end,low),SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
+                    if(high<.999f)AddSidewalk(CreateSurfaceBox(Vector3.Lerp(start,end,high),end,SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
+                    return;
+                }
+            }
+            AddSidewalk(CreateSurfaceBox(start,end,SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
         }
 
         private static void AddSignatureStairApproaches(

@@ -45,11 +45,16 @@ namespace BarPromenade
                 layout.ElevationPlan,
                 surface,
                 worldXZ);
-            return ApplyDistrictPointPad(
+            float datum = ApplyDistrictPointPad(
                 layout,
                 surface,
                 worldXZ,
                 baseDatum);
+            CityPortAccessPlan access = CityPortAccessPlan.ForLayout(layout);
+            if (surface.Kind == CitySurfaceKind.Beach && access != null)
+                datum = access.ApplyGroundTop(worldXZ, datum + CityElevationPlan.GroundTopOffset) -
+                    CityElevationPlan.GroundTopOffset;
+            return datum;
         }
 
         internal static float SampleDatum(

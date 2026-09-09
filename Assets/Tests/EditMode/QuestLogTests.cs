@@ -31,22 +31,28 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// The first day carries no job at all. The cat used to be the
-        /// first thing a new game did, which meant the descent blocker
-        /// stood in the hero's own stairwell from the moment he woke —
-        /// and the manual tutorial path, which walks him down and out
-        /// of the street door on day one, could not actually be walked.
+        /// The first day carries exactly one entry: the house at the
+        /// top of the village lane, where a new game already stands.
+        /// The cat is NOT among them. The cat used to be the first
+        /// thing a new game did, which meant the descent blocker stood
+        /// in the hero's own stairwell from the moment he woke — and
+        /// the manual tutorial path, which walks him down and out of
+        /// the street door on day one, could not actually be walked.
         /// </summary>
         [Test]
-        public void NewGame_LeavesTheFirstDayEmpty()
+        public void NewGame_OpensOnlyTheMothersHouseQuest()
         {
             Assert.That(
                 GameSessionState.GameDayNumber,
                 Is.EqualTo(GameDaySchedule.FirstDayNumber));
+            Assert.That(GameSessionState.Quests.Count, Is.EqualTo(1));
+            Assert.That(
+                GameSessionState.GetQuestStatus(
+                    QuestId.ReachMothersHouse),
+                Is.EqualTo(QuestStatus.Active));
             Assert.That(
                 GameSessionState.GetQuestStatus(QuestId.FeedTheCat),
                 Is.EqualTo(QuestStatus.NotStarted));
-            Assert.That(GameSessionState.Quests, Is.Empty);
             Assert.That(
                 GameSessionState.HasDayEventFired(
                     GameDayEventId.FeedTheCatOpens),
@@ -58,6 +64,54 @@ namespace BarPromenade.Tests.EditMode
                 "Nothing is held back for a quest nobody has yet.");
         }
 
+        /// <summary>
+        /// The starter quest is unread until the journal is opened,
+        /// which is what the corner notice blinks about. Completing it
+        /// deliberately does not make it unread again: he is standing
+        /// in the thing he just finished.
+        /// </summary>
+        [Test]
+        public void StarterQuest_IsUnreadUntilTheJournalIsOpened()
+        {
+            Assert.That(GameSessionState.HasUnreadQuests, Is.True);
+            Assert.That(GameSessionState.HasOpenedJournal, Is.False);
+
+            GameSessionState.MarkQuestsRead();
+
+            Assert.That(GameSessionState.HasUnreadQuests, Is.False);
+            Assert.That(GameSessionState.HasOpenedJournal, Is.True);
+
+            GameSessionState.EnterMothersHouse();
+
+            Assert.That(
+                GameSessionState.HasUnreadQuests,
+                Is.False,
+                "Finishing a quest is not news the corner has to break.");
+        }
+
+        /// <summary>
+        /// Stepping inside closes it, from the door or from the map,
+        /// and a second visit does not reopen a one-shot entry.
+        /// </summary>
+        [Test]
+        public void EnteringTheHouse_ClosesTheStarterQuestForGood()
+        {
+            GameSessionState.EnterMothersHouse();
+
+            Assert.That(
+                GameSessionState.GetQuestStatus(
+                    QuestId.ReachMothersHouse),
+                Is.EqualTo(QuestStatus.Completed));
+
+            GameSessionState.EnterMothersHouse();
+
+            Assert.That(
+                GameSessionState.GetQuestStatus(
+                    QuestId.ReachMothersHouse),
+                Is.EqualTo(QuestStatus.Completed));
+            Assert.That(GameSessionState.Quests.Count, Is.EqualTo(1));
+        }
+
         [Test]
         public void SecondDay_OpensTheFeedTheCatQuest()
         {
@@ -66,10 +120,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.GetQuestStatus(QuestId.FeedTheCat),
                 Is.EqualTo(QuestStatus.Active));
-            Assert.That(GameSessionState.Quests.Count, Is.EqualTo(1));
             Assert.That(
-                GameSessionState.Quests[0].Id,
-                Is.EqualTo(QuestId.FeedTheCat));
+                GameSessionState.Quests.Count,
+                Is.EqualTo(2),
+                "Day one's own quest is still up: the cat is added to " +
+                "the log, not put in place of what was there.");
+            Assert.That(
+                GameSessionState.Quests[1].Id,
+                Is.EqualTo(QuestId.FeedTheCat),
+                "A later quest goes at the bottom of the log.");
             Assert.That(
                 GameSessionState.HasDayEventFired(
                     GameDayEventId.FeedTheCatOpens),

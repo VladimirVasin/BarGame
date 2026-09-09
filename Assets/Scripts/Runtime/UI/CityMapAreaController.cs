@@ -191,6 +191,32 @@ namespace BarPromenade
         public IReadOnlyList<CityMapPointDescriptor> ActiveMapPoints =>
             GetMapPoints(selectedArea);
 
+        /// <summary>
+        /// The one point of a given kind on the tab being looked at.
+        /// The chart draws its own marks from the plan and does not
+        /// otherwise read the point list, which is built for the
+        /// inspector and the teleport; this is how a chart mark finds
+        /// the coordinate those two already agree on.
+        /// </summary>
+        internal bool TryGetActiveMapPoint(
+            CityMapPointKind kind,
+            out CityMapPointDescriptor point)
+        {
+            IReadOnlyList<CityMapPointDescriptor> points =
+                ActiveMapPoints;
+            for (int index = 0; index < points.Count; index++)
+            {
+                if (points[index].Kind == kind)
+                {
+                    point = points[index];
+                    return true;
+                }
+            }
+
+            point = default;
+            return false;
+        }
+
         public Rect ActiveDisplayWorldXZBounds
         {
             get

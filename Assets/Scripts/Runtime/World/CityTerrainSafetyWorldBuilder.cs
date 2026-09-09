@@ -80,6 +80,37 @@ namespace BarPromenade
                     railSuppressionFootprint);
             }
 
+            CityPortAccessPlan portAccess = CityPortAccessPlan.ForLayout(layout);
+            if (portAccess != null)
+            {
+                // The imported yard and walks physically bridge the old
+                // beach/water descriptor boundary. Its raised fill is not an
+                // exposed drop: the port's authored perimeter owns protection.
+                var openings = new List<Rect> { portAccess.StreetOpening, portAccess.StreetPublicOpening };
+                portAccess.AppendWalkableFootprints(openings);
+                var cleared = new List<Bounds>();
+                var slices = new List<Bounds>();
+                var next = new List<Bounds>();
+                foreach (Bounds rail in rails)
+                {
+                    Rect footprint = Rect.MinMaxRect(rail.min.x, rail.min.z, rail.max.x, rail.max.z);
+                    slices.Clear();
+                    slices.Add(rail);
+                    foreach (Rect opening in openings)
+                    {
+                        if (!footprint.Overlaps(opening)) continue;
+                        next.Clear();
+                        foreach (Bounds slice in slices)
+                            AddWithSuppression(slice, rail.size.x >= rail.size.z, next, opening);
+                        List<Bounds> prior = slices;
+                        slices = next;
+                        next = prior;
+                        if (slices.Count == 0) break;
+                    }
+                    cleared.AddRange(slices);
+                }
+                rails = cleared;
+            }
             if (rails.Count == 0)
             {
                 return null;

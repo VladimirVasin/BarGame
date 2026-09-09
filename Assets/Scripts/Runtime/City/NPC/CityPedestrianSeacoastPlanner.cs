@@ -100,7 +100,8 @@ namespace BarPromenade
                 endpointsByNode,
                 graph,
                 access,
-                accessNode);
+                accessNode,
+                frame);
 
             // ----------------------------------------------------------
             // the west chain: access, west quay, footbridge
@@ -253,7 +254,8 @@ namespace BarPromenade
                 endpointsByNode,
             GraphBuilder graph,
             in CityOpenAreaAccessDescriptor access,
-            int accessNode)
+            int accessNode,
+            in CitySeacoastFrame frame)
         {
             RoadEdge frontage = access.FrontageEdge;
             LaneEndpoint first = default;
@@ -275,13 +277,16 @@ namespace BarPromenade
                     "sidewalk endpoint at both of its grid nodes.");
             }
 
-            float spurY = (first.Position.y + second.Position.y) * 0.5f;
+            CityPortAccessPlan portAccess = CityPortAccessPlan.ForLayout(layout);
+            Vector3 spurPosition = portAccess != null
+                ? portAccess.World(portAccess.PublicStreetSpur[0])
+                : new Vector3(access.Center.x,
+                    (first.Position.y + second.Position.y) * 0.5f,
+                    first.Position.z);
+            spurPosition.z = first.Position.z;
             int spurNode = graph.AddNode(
                 "coast:spur",
-                new Vector3(
-                    access.Center.x,
-                    spurY,
-                    first.Position.z),
+                spurPosition,
                 false);
             graph.AddLink(
                 "coast-spur:west",
@@ -295,12 +300,43 @@ namespace BarPromenade
                 second.NodeIndex,
                 CityPedestrianLinkKind.Sidewalk,
                 false);
-            graph.AddLink(
-                "coast-spur",
-                spurNode,
-                accessNode,
-                CityPedestrianLinkKind.Sidewalk,
-                false);
+            if (portAccess == null)
+            {
+                graph.AddLink("coast-spur", spurNode, accessNode,
+                    CityPedestrianLinkKind.Sidewalk, false);
+                return;
+            }
+
+            // The existing NPC graph uses orthogonal beach lanes. Continue
+            // from the straight public entrance onto the adjacent sand lane;
+            // the diagonal paved branch remains the player's port approach.
+            // Both NPC legs stay east of the truck road and manoeuvre yard.
+            Vector3 entrance = portAccess.World(portAccess.PublicStreetSpur[1]);
+            int entranceNode = graph.AddNode("coast:port-public:1", entrance, false);
+            Vector3 corner = new Vector3(entrance.x, 0, graph.Nodes[accessNode].Position.z);
+            corner.y = CitySeacoastPlanner.SampleShoreWalkTop(layout, frame, corner.x, corner.z);
+            int cornerNode = graph.AddNode("coast:port-shore:corner", corner, false);
+            AddPortShoreAxis(layout, frame, graph, spurNode, entranceNode, "coast-spur:public");
+            AddPortShoreAxis(layout, frame, graph, entranceNode, cornerNode, "coast-spur:sand");
+            AddPortShoreAxis(layout, frame, graph, cornerNode, accessNode, "coast-spur:shore");
+        }
+
+        private static void AddPortShoreAxis(CityLayout layout, in CitySeacoastFrame frame,
+            GraphBuilder graph, int fromNode, int toNode, string prefix)
+        {
+            Vector3 from = graph.Nodes[fromNode].Position;
+            Vector3 to = graph.Nodes[toNode].Position;
+            int count = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(from, to) / .5f));
+            int previous = fromNode;
+            for (int i = 1; i <= count; i++)
+            {
+                Vector3 position = Vector3.Lerp(from, to, i / (float)count);
+                position.y = CitySeacoastPlanner.SampleShoreWalkTop(layout, frame, position.x, position.z);
+                int node = i == count ? toNode : graph.AddNode($"{prefix}:node:{i}", position, false);
+                graph.AddLink($"{prefix}:{i}", previous, node,
+                    CityPedestrianLinkKind.Sidewalk, false);
+                previous = node;
+            }
         }
 
         /// <summary>

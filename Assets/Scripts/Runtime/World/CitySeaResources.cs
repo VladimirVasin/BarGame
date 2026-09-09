@@ -496,6 +496,15 @@ namespace BarPromenade
             }
         }
 
+        private static readonly int PortHullId = Shader.PropertyToID("_PortHull");
+        private static readonly int PortCourseId = Shader.PropertyToID("_PortCourse");
+        internal static void SetPortWake(Vector3 hull, Vector3 forward, float strength)
+        {
+            if (waterMaterial == null) return;
+            waterMaterial.SetVector(PortHullId, new Vector4(hull.x, hull.y, hull.z, strength));
+            waterMaterial.SetVector(PortCourseId, new Vector4(forward.x, forward.z, 10f, 3f));
+        }
+
         private static Vector4 ShoreFadeParams(float southZ)
         {
             return new Vector4(

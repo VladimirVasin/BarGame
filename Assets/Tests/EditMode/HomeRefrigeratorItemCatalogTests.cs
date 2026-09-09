@@ -99,6 +99,30 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Definition_TakesItsHeldPoseFromTheSharedTable()
+        {
+            foreach (HomeRefrigeratorItemDefinition definition in
+                HomeRefrigeratorItemCatalog.All)
+            {
+                Assert.That(
+                    HomeRefrigeratorInventoryAdapter.TryGetInventoryItem(
+                        definition.Kind,
+                        out InventoryItemId itemId),
+                    Is.True);
+                InventoryItemPreviewPose pose =
+                    InventoryItemPreviewPoses.Get(itemId);
+                Assert.That(
+                    definition.PreviewLocalRotation,
+                    Is.EqualTo(pose.BaseRotation),
+                    $"{definition.Kind} turns differently on the shelf than " +
+                    "it does everywhere else.");
+                Assert.That(
+                    definition.PreviewScale,
+                    Is.EqualTo(pose.InspectionScale));
+            }
+        }
+
+        [Test]
         public void Lookup_RejectsNoneAndUnknownKinds()
         {
             Assert.That(

@@ -292,6 +292,28 @@ namespace BarPromenade
         public static event Action InventoryEquipmentChanged;
         public static IReadOnlyList<QuestLogEntry> Quests =>
             questLog.Entries;
+
+        /// <summary>Raised whenever a quest goes up or comes down, so
+        /// the corner notice does not have to poll the log.</summary>
+        public static event Action QuestLogChanged;
+
+        /// <summary>A quest has gone up that the player has not opened
+        /// the journal since.</summary>
+        public static bool HasUnreadQuests { get; private set; }
+
+        /// <summary>Whether the journal has ever been opened this
+        /// session. The first notice waits for that; later ones do
+        /// not, because by then he knows the key.</summary>
+        public static bool HasOpenedJournal { get; private set; }
+
+        /// <summary>Unscaled time of the last activation, which is what
+        /// the later, timed notice counts from. Unscaled because the
+        /// journal and the pause menu stop the scaled clock.</summary>
+        public static float LastQuestActivatedUnscaledTime
+        {
+            get;
+            private set;
+        }
         public static int CollectedWorldItemCount =>
             collectedWorldItems.Count;
         public static bool IsGameTimeRunning => gameTime.IsRunning;
@@ -313,6 +335,7 @@ namespace BarPromenade
         private static void Reset()
         {
             InventoryEquipmentChanged = null;
+            QuestLogChanged = null;
             ResetToDefaults();
         }
 
@@ -341,6 +364,16 @@ namespace BarPromenade
         public static bool TryStartGameTimeFromWake()
         {
             return gameTime.TryStartFromWake();
+        }
+
+        /// <summary>
+        /// Starts a fresh run's clock at a chosen minute of day one. This is
+        /// not a wake plus an advance: advancing also ages hunger and fatigue,
+        /// and a new game has not been awake for those minutes.
+        /// </summary>
+        public static bool TryStartGameTimeAt(int minuteOfDay)
+        {
+            return gameTime.TryStartAt(minuteOfDay);
         }
 
         public static bool TrySetDebugGameDay(int dayNumber)
@@ -458,8 +491,11 @@ namespace BarPromenade
         {
             switch (id)
             {
+                case GameDayEventId.MothersHouseOpens:
+                    TryActivateQuest(QuestId.ReachMothersHouse);
+                    return;
                 case GameDayEventId.FeedTheCatOpens:
-                    questLog.TryActivate(QuestId.FeedTheCat);
+                    TryActivateQuest(QuestId.FeedTheCat);
                     return;
                 default:
                     return;
@@ -507,6 +543,7 @@ namespace BarPromenade
             CarDashboard = LastRouteCarDashboardState.Default;
             LastRouteRadioMusicPlayer.ResetSession();
             LastRouteRideSpeechSession.ResetSession();
+            MothersHouseMotherSpeechSession.ResetSession();
             gameTime.Reset();
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
@@ -517,6 +554,12 @@ namespace BarPromenade
             InventoryEquipmentChanged?.Invoke();
             questLog.ResetWithStarterQuests();
             firedDayEvents.Clear();
+            // Cleared BEFORE the calendar runs, because the calendar is
+            // what puts day one's quest up: clearing after it would
+            // mark the very first entry as already seen.
+            HasUnreadQuests = false;
+            HasOpenedJournal = false;
+            LastQuestActivatedUnscaledTime = 0f;
             // Day one of a new game is still a day, so anything the
             // calendar dates to it opens right here rather than
             // waiting for the first tick of the clock.
@@ -539,10 +582,13 @@ namespace BarPromenade
             bool activated = questLog.TryActivate(questId);
             if (activated)
             {
+                HasUnreadQuests = true;
+                LastQuestActivatedUnscaledTime = Time.unscaledTime;
                 GameLog.Info(
                     "quest",
                     "quest_activated",
                     GameLog.Field("quest_id", questId.ToString()));
+                QuestLogChanged?.Invoke();
             }
 
             return activated;
@@ -557,9 +603,25 @@ namespace BarPromenade
                     "quest",
                     "quest_completed",
                     GameLog.Field("quest_id", questId.ToString()));
+                QuestLogChanged?.Invoke();
             }
 
             return completed;
+        }
+
+        /// <summary>
+        /// The journal has been read: the corner stops asking for it.
+        ///
+        /// Completing a quest deliberately does NOT raise the unread
+        /// flag. The player is standing in the thing he just finished,
+        /// so a corner blinking at him about it is telling him what he
+        /// can already see; only work he has not been told about yet
+        /// is worth interrupting for.
+        /// </summary>
+        public static void MarkQuestsRead()
+        {
+            HasUnreadQuests = false;
+            HasOpenedJournal = true;
         }
 
         /// <summary>How far the work on one plot has got. Unclaimed
@@ -809,6 +871,14 @@ namespace BarPromenade
 
             if (previous != equipped)
             {
+                // Wearing it is what she asked for, so wearing it is
+                // what closes the entry. Taking it off again does not
+                // reopen a one-shot quest: he did the thing once.
+                if (equipped && itemId == InventoryItemId.Scarf)
+                {
+                    TryCompleteQuest(QuestId.FindTheScarf);
+                }
+
                 InventoryEquipmentChanged?.Invoke();
                 GameLog.Info(
                     "inventory",
@@ -1462,9 +1532,16 @@ namespace BarPromenade
                 "church_entered");
         }
 
+        /// <summary>
+        /// Stepping inside, however he got to the doorstep. Both the
+        /// door and the map's own entry come through here, so the one
+        /// quest the first day carries closes in one place rather than
+        /// twice with two chances to disagree.
+        /// </summary>
         public static void EnterMothersHouse()
         {
             AlpineVillageArrival = AlpineVillageArrivalKind.Default;
+            TryCompleteQuest(QuestId.ReachMothersHouse);
             GameLog.Info(
                 "session",
                 "mothers_house_entered");

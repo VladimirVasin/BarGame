@@ -1548,6 +1548,21 @@ namespace BarPromenade
                     GetPathWidth(pathKind, roadWidth),
                     GetPathColor(pathKind));
             }
+            CityPortAccessPlan port = CityPortAccessPlan.ForLayout(controller.Layout);
+            if (port != null)
+            {
+                for (int i=1;i<port.RoadSamples.Count;i++)
+                    DrawLine(projection.WorldToScreen(port.World(port.RoadSamples[i-1].center)),
+                        projection.WorldToScreen(port.World(port.RoadSamples[i].center)),
+                        Mathf.Max(2f,roadWidth*port.CarriagewayWidth/controller.Layout.RoadWidth),
+                        GetPathColor(CityPathKind.Street));
+                for (int i=1;i<port.PublicPath.Count;i++)
+                    DrawLine(projection.WorldToScreen(port.World(port.PublicPath[i-1])),
+                        projection.WorldToScreen(port.World(port.PublicPath[i])),1f,GetPathColor(CityPathKind.ParkPath));
+                for (int i=1;i<port.PublicStreetSpur.Count;i++)
+                    DrawLine(projection.WorldToScreen(port.World(port.PublicStreetSpur[i-1])),
+                        projection.WorldToScreen(port.World(port.PublicStreetSpur[i])),1f,GetPathColor(CityPathKind.ParkPath));
+            }
         }
 
         private void DrawRiverBridges(MapProjection projection)
@@ -1899,6 +1914,17 @@ namespace BarPromenade
             if (coast == null)
             {
                 return;
+            }
+
+            if (coast.Port != null)
+            {
+                foreach (Rect footprint in new[] { coast.Port.QuayBounds, coast.Port.BreakwaterBounds,
+                    coast.Port.BreakwaterHeadBounds, coast.Port.WarehouseBounds })
+                {
+                    Rect projected = ProjectWorldRect(projection, footprint);
+                    DrawSolidRect(Expand(projected, 1f), RetroUiTheme.Ink);
+                    DrawSolidRect(projected, MolConcrete);
+                }
             }
 
             if (TryProjectSeacoastParts(

@@ -4,6 +4,82 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-09, port surface detail and a service-road connection:**
+  Twelve opaque ImageGen albedos cover horizontal
+  concrete and walls, painted steel, warehouse plaster, timber, roofing,
+  deck, cargo plastic, fish, ice, rubber and work fabric. Original pixels,
+  prompts and hashes live in `ArtSource/City/Port/Textures/generation.json`;
+  the tool does not expose its backend version. Runtime imports use sRGB,
+  mipmaps and repeat, capped at `512 px`. Authored metre UVs and shared
+  role materials preserve the muted palette; thin bare hardware stays flat.
+  Access asphalt instead shares `CityRoadAsphaltAlbedo`, its `12 m` world
+  phase and the city's wet-surface response, keeping the street joint whole.
+  This is story §6's narrow level-`0` exception to art §10d's flat-iron and
+  unchanged-slope rules. Nine deterministic FBXs include `AccessRoad`; the
+  generator validates measured geometry, semantic UVs and real cargo holds.
+  `PortAccessLayout.json` supplies `CityPortAccessPlan` and the authored road:
+  a `6 m` carriageway, street flare, local regrade and an L-shaped service
+  yard beside the east loading door. An `8 x 2.5 m` rigid-truck template
+  checks approach, turn, reverse-to-store and exit without spawning a truck.
+  The public `2 m` bypass stays outside that manoeuvre, crosses the road
+  once and connects street, coast and port. NPCs use its straight street spur
+  then orthogonal beach links; the player retains the diagonal paved branch.
+  Global graph rules stay unchanged. A truck, driver and player task remain absent.
+  The existing trawler gains working fittings and deck detail; each crane's
+  bearing, counterweight and winch slew with its head, while its operator
+  remains grounded. The five StationWorker rigs retain their faces/actions;
+  port-only fabric UV transforms, muted coat/cap/glove colours and small
+  planted torso adjustments precede fixed hand contacts and load gaze.
+  Hook and cargo sway by at most `9 cm` during slewing, settling before lowering.
+  Two warm fixtures now aim at quay and store work patches. The daylight
+  two-thirds floor, global fog and `624 s` six-load cycle remain unchanged.
+  The hero still observes one berth, two cranes and one trawler. No text,
+  fresh destruction, lore, quest or extra worker is added. Generator validation
+  and `AreaCaptureFixture.CityPort` passed; day/night and access frames were reviewed. Story
+  §16/§21 and all nine art acceptance checks still hold.
+
+- **Accepted — 2026-09-09, a small working fishing port:**
+  The implemented MVP replaces the dead west-beach port with a fishing
+  vessel entering, berthing, being unloaded by cranes and leaving; the hero
+  observes the complete cycle, as the user requested. Story §6 records its
+  bounded level-`0` exception to art §10d's boat/docking, dark-shore and
+  continuous-sand constraints and to the closed-port meaning in story
+  §5/§7/§12/§18 and art §10g. Closed mine, closed boat station and fisherman
+  remain; no reopening history is invented.
+  One berth, two shore cranes, one roughly `20 m` trawler, five ordinary
+  workers and six cargo units make the slice finite. An expanded/replaced
+  mol has fenders, bollards, moorings and an unobstructed crane edge; a local
+  dredged basin and approach keep the vessel clear of the bed, river mouth,
+  island and station pier. The compact reclaimed quay's front stands `20 m`
+  beyond the waterline, on solid caissons extending to local `-3.4 m`.
+  Its rear edge meets the low shore, keeping the warehouse above the rising
+  sand; the later service-road decision permits local access regrading. The public
+  rear path sits `0.5 m` inland of the waterline. Physical side ramps and
+  precise walkable footprints connect it to the beach; the original coastal
+  line stays passable across the later service-road crossing. This visitor route
+  lies outside suspended loads. Cranes transfer real fish cargo to the quay;
+  a trolley takes it to
+  cold storage. Moorings precede lifting and clear before departure; each
+  cargo handoff has a common physical contact, and neither ship nor cargo
+  resets visibly. Entry/exit use the existing distant fog. Port motion has
+  its own fixed-world cycle rather than the offshore layer's hero-local
+  spawning contract; the offshore planner excludes the working corridor.
+  `CityPortCycle` reconstructs a `624 s` visit with six `64 s` cargo slots;
+  `CityPortController` applies its custody, hatch, mooring and motion state.
+  Crew, mechanical voices and the separate sea wake follow the same owner.
+  `AreaCaptureFixture.CityPort` passed the focused runtime acceptance.
+  All new geometry is deterministic Blender-authored model content with
+  measured anchors; pure plans own spatial/cargo contracts, runtime owns
+  presentation, pause and release. Reusable materials and existing sea/wave
+  data remain shared. Warm practical fixtures light only port work surfaces
+  and the store entrance, retaining the two-thirds daytime floor. Motors,
+  cranes, wheels and cargo contacts have quiet physical sound owners.
+  Muted nonyellow clothing and equipment preserve the fisherman's accent.
+  The hero keeps control and can leave at any stage. There is no boarding,
+  second city exit, earnings, quest, dialogue, crime knowledge, disease
+  implication or act/intoxication-dependent cycle. Ordinary workers remain
+  indifferent. Story §16/§21 and all nine art acceptance checks still hold.
+
 - **Accepted — 2026-09-09, the Ferryman's radio and ordinary road speech:**
   The user approved the complete radio, glovebox-light and ten-line road-pool
   plan. This is the bounded story-bible §6 exception to §17's parked-pool
@@ -834,9 +910,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   This explicitly lifts art-bible §10d's `лодка на воде` prohibition and
   `Ни одна лодка не на воде` check only for at most two offshore working
   fishing vessels; story-bible §6 records the exception at level `0`.
-  Station hulls stay ashore and the port stays dead. No docking, river entry,
-  crew, text, fresh damage, interaction, navigation, map marker or story state
-  is introduced. `build-city-offshore-boats-3d-model.py` authors two passive
+  Station hulls stay ashore. This offshore layer introduces no docking,
+  river entry, crew, text, fresh damage, interaction, navigation, map marker
+  or story state. The working-port decision of `2026-09-09` owns its separate
+  berthing vessel. `build-city-offshore-boats-3d-model.py` authors two passive
   fixed-metre variants and their anchors; the controller presents the imported
   models at deliberate `0.42` scale, with no runtime hull or beam geometry.
   `CityWorldBuilder` creates only the lightweight controller and coast data;
@@ -3486,29 +3563,106 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `StairwellInterior` install their matching roots. Directly opening
   `DoorTransition` installs an idle presentation root; only the transition
   service initializes and plays it.
-- **Accepted — Black startup boundary and one-shot Home opening:**
-  `MainMenu` is build index `0` and owns only a black launch camera. After one
-  frame it resets the complete run, prepares `HomeArrivalKind.OpeningSleep`
-  and Single-loads the existing `HomeInterior`. Home consumes that value once,
-  starts the existing bed interaction directly in its sleeping loop, captures
-  modal input and holds the first rendered Home frame on a silent `05:59`
-  clock. Its complete display flickers briefly at three-second intervals.
-  For five seconds no ordinary menu choice or gameplay input path exists; the
-  localized PS1-style Wake Up/Quit menu then appears without changing the
-  silent, flickering `05:59` display or leaving the clock shot. Wake Up alone
-  switches the clock to solid `06:00`, starts the session clock and mechanical
-  ring, and hides the menu.
-  The camera and persistent sleep loop hold for three more unscaled seconds;
-  only when the ring stops does the existing 24-frame exit begin with a `3x`
-  duration multiplier (`6 s` instead of the ordinary `2 s`). The camera then
-  glides to the sleeper along a `2.25 s` smootherstep quadratic path and eases
-  continuously into the active Home shot. It reaches that gameplay pose
-  before ordinary Home input, HUD and fixed-camera state return without a
-  reload; normal
-  Home arrivals never install the opening controller.
+- **Accepted architecture exception — 2026-09-09, explicit user request — the
+  game begins in the alpine village, and the Home waking opening leaves the
+  launch path:** One §6 registry row lifts four rules together: story bible
+  §15 «Пролог», §20 «Время», §2 «Дорога наверх собрана целиком» and art bible
+  §10g «Порог и ориентиры». `MainMenu` stays build index `0` and keeps its
+  black field, but `StartMenuRoot` draws one localized card of two rows — the
+  new `opening.new_game` and the existing `opening.quit` — instead of loading
+  Home after a frame. New Game resets the run, starts the session clock at
+  `07:40` on day `1` through `GameTimeState.TryStartAt`, and Single-loads
+  `AlpineVillage` through the existing `AreaLoading` screen. The clock is set
+  rather than woken and advanced: advancing is elapsed time and would age
+  hunger and fatigue for minutes a new run has not lived. No leg is travelled,
+  so the screen keeps its black field and bottom bar and shows none of art
+  bible §15a's four directed illustrations; no fifth image is authored.
+  `AreaArrivalToken.Default` leaves the village's own `lane_foot` spawn in
+  force, so the hero stands two metres up the lane facing the mother's house,
+  with no cabin, ride, seat or arrival sequence.
+  **What moves is the place and the hour, not the prologue:** the prologue
+  stays unwritten, the Cat, the dinner, the news and the mother's event still
+  do not exist, and the cableway stays the only way in and out during play.
+  `HomeArrivalKind.OpeningSleep`, `HomeOpeningController` and
+  `HomeOpeningTimeline` are retained unchanged and still play the whole
+  `05:59` opening described in `ai/current-world.md`. `MainMenuRoot` keeps
+  that launch and is its only entrance: `MainMenuRoot.RequestLegacyOpening()`
+  before the launch scene loads makes the bootstrap install the black boundary
+  instead of the card. No shipped path requests it, so the opening is retained
+  and unreached rather than deleted.
   Editor Play pins its start scene to `MainMenu`; the exact temporary
   `InitTestScene{GUID}` bootstrap used by Unity Test Framework suppresses that
   override for PlayMode tests and restores it after returning to Edit Mode.
+- **Accepted architecture exception — 2026-09-09, explicit user request — day
+  one carries one quest, and the journal becomes a page:** A §6 registry row
+  lifts story bible §12 «Форма» «ни указателя» for the map schematic only, and
+  §25's reading of the mother's house as a place the game never points at.
+  `QuestId.ReachMothersHouse` is dated to day `1` by a `GameDaySchedule` row,
+  so it is raised by the same calendar that raises everything else and appears
+  inside `BeginNewGame` — in the village start and in the retained Home
+  opening alike. It closes in `GameSessionState.EnterMothersHouse()`, the one
+  choke point both `MothersHouseEntrance` and the map's own door entry already
+  pass through, so the door and the chart cannot disagree. **The village gets
+  no signpost:** the mark is drawn by `CityMapAreaView` on the village chart
+  only, while the quest is active, and the world is untouched.
+  The journal splits into `JournalController` (lifecycle and input),
+  `JournalMenuModel` (the cursor) and `JournalView` (the page), because the
+  selection is the only part of a journal that can be wrong and IMGUI cannot
+  be asked about it. The page takes the whole logical canvas: a scrolling list
+  of ticked and empty boxes over one description panel. The old fixed
+  `360x264` panel put every description under its own title and silently
+  dropped whatever fell past its bottom edge. The tick is five rectangles
+  rather than a glyph — the interface font is dynamic and its atlas is rebuilt
+  by whatever else drew this frame.
+  `JournalNoticeView` hangs off a child of `JournalController` rather than off
+  the nine scene roots, the way the nausea gauge hangs off the intoxication
+  controller, so a notice in all nine scenes costs no root a line.
+  `GameSessionState.QuestLogChanged`, `HasUnreadQuests`, `HasOpenedJournal`
+  and `LastQuestActivatedUnscaledTime` are cleared BEFORE `SyncDayEvents()` in
+  `ResetToDefaults`: clearing after it would mark day one's own quest as
+  already seen. Completing a quest deliberately does not raise the unread
+  flag — he is standing in the thing he just finished.
+- **Accepted architecture exception — 2026-09-09, explicit user request — the
+  mother speaks, looks back, and asks for the scarf:** A §6 registry row lifts
+  story bible §25's «мать сидит в кресле и молчит, а диалога… нет» and the
+  reading of §13's «не удерживает ответы» as a bar on her asking for anything.
+  `MothersHouseMotherInteraction` is the fisherman/watchman talk stub: one
+  `IInteractable`, one spoken line per `E`, no branching and no player choice.
+  The first talk speaks `mothers_house.mother.request` and raises
+  `QuestId.FindTheScarf`.
+  Beside it, `MothersHouseMotherSpeechController` is the Ferryman's road
+  speech in a room: an overhead `NpcSpeechBubbleView` on a manual clock behind
+  a shuffled bag (`MothersHouseMotherSpeechState`), held across visits by
+  `MothersHouseMotherSpeechSession` because the house reloads through the door
+  and a per-visit bag would spend the same two lines forever.
+  **Both channels draw the same bag**, so `E` spends what she would otherwise
+  have said alone and she cannot say one line in two places.
+  Two deliberate departures from the ride. There is **no per-visit quota** — a
+  ride ends by itself and five lines fill it, a room does not, and a mother
+  who fell silent for good reads as having nothing left to say. And silence is
+  only spent while the hero is within `6 m` and on her floor, so a bag is not
+  emptied into an empty room while he is upstairs.
+  The greeting is outside the bag and fires once per entry, `1.2 s` after the
+  door fade clears. It is the same line every time on purpose.
+  **She still holds nothing** — the identical greeting and the re-ask are §13
+  rather than a second quest, and the re-ask is the one pool entry that
+  retires, once the scarf is worn
+  (`MothersHouseMotherQuips.ResolvePoolSize`).
+  The quest closes in `GameSessionState.TrySetInventoryItemEquipped` on the
+  scarf becoming worn, not in the pickup: she asked for a scarf, not for an
+  errand, and the pickup already had its own §6 row as ordinary clothing.
+  Taking it off again does not reopen it.
+  **Her body stays passive.** `MothersHouseMotherFactory.ValidatePassivePresentation`
+  still refuses a Collider, Rigidbody, AudioSource, Light or Camera on her, so
+  the talk stub stands on its own `Mother Talk Trigger` object parented to the
+  room and placed off `MothersHouseMotherPlan.SeatPosition` — the cemetery
+  watchman's convention. It does not rock with the chair: a trigger chasing a
+  2.5° lean is reach the hero cannot predict.
+  Her head-look is `NpcHeroAttentionLook` rather than the raw
+  `NpcAttentionHeadLayer`, because the chair re-poses her root at order `300`
+  and her graph evaluates at `310`, and the look runs at `350` — after both,
+  which is the case that class exists for. Bracketing her presentation's own
+  evaluate, the way the watchman does, would buy nothing.
 - **Accepted — Home F9 window and one-shot entry to the City debug map:**
   `HomeInteriorRoot` installs `MinigameDebugWindow.BindHome`; it is the sole
   F9 owner. Opening, contextual actions, door actions and other modal ownership
@@ -7738,3 +7892,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   brace frames); `Player3DToppleRiseCapturePlayModeTests` writes the six-tile
   `TestResults/topple-rise-sheet.png` (lunge, brace, stirring, slump,
   half-kneel, wobble).
+
+- **Current — one item-examination screen (2026-09-09):** Holding an object up to the
+  eye is one implementation in the game, not one per place. The
+  `WorldItemInspectionPresenter` (pivot, fit-to-frame scale, near backdrop
+  quad, focus push) was lifted out of the refrigerator's inspector unchanged;
+  the pure timeline moved to Rules as `WorldItemInspectionTimeline` and grew
+  one thing the shelf never needed — a manual turn that holds the idle drift
+  off. `WorldItemFoundScreen` on the hero — installed by `PlayerFactory`, so every gameplay root has it without
+  wiring — reuses both for a thing picked off the floor. The refrigerator
+  keeps its own shelf hover, its `Use` stub and its nested no-lock behaviour;
+  the world screen takes the fullscreen modal lock, because outdoors nothing
+  else holds one. An item's held pose is `InventoryItemPreviewPoses`, read by
+  the portrait, the shelf and the find alike. Two rules the screen must not
+  break: the session records a take only on the player's confirm, so an
+  abandoned screen leaves the object where it lay; and no control hint stands
+  beside the button, per art §15a and the retired-hint catalog test — the turn
+  by mouse or right stick is discoverable, not captioned. The find is a
+  screen, not a contextual action: the hero does not bend for it, so
+  `ai/contextual-animation-standard.md` is untouched and this is no
+  precedent for an unanimated one.

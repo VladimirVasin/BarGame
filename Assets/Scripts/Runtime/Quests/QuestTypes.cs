@@ -12,7 +12,23 @@ namespace BarPromenade
         /// The gravedigger's first job: the cemetery watchman marks
         /// out a vacant plot and the hero digs the hole.
         /// </summary>
-        DigTheGrave = 2
+        DigTheGrave = 2,
+
+        /// <summary>
+        /// The one thing day one has in it. A new game stands at the
+        /// foot of the village lane with the house at the top of it,
+        /// and this is the log saying so. It closes on stepping
+        /// inside; the house itself stays what it is.
+        /// </summary>
+        ReachMothersHouse = 3,
+
+        /// <summary>
+        /// The one thing his mother asks him for: the folded scarf in
+        /// the chest in the parents' bedroom upstairs. It closes when
+        /// the scarf is actually worn, not when it is picked up — she
+        /// asked for a scarf, not for an errand.
+        /// </summary>
+        FindTheScarf = 4
     }
 
     public enum QuestStatus
@@ -70,6 +86,16 @@ namespace BarPromenade
     {
         private static readonly QuestDefinition[] Definitions =
         {
+            new QuestDefinition(
+                QuestId.ReachMothersHouse,
+                "quest.mothers_house.title",
+                "quest.mothers_house.description.active",
+                "quest.mothers_house.description.completed"),
+            new QuestDefinition(
+                QuestId.FindTheScarf,
+                "quest.find_scarf.title",
+                "quest.find_scarf.description.active",
+                "quest.find_scarf.description.completed"),
             new QuestDefinition(
                 QuestId.FeedTheCat,
                 "quest.feed_cat.title",

@@ -111,7 +111,16 @@ namespace BarPromenade.Tests.PlayMode
                 yield return ScarfFrames(2);
                 Assert.That(pickup.CanInteract(house.Player.Interactor), Is.True);
                 pickup.Interact(house.Player.Interactor);
+                // The find is a screen now, and the take happens on it.
+                WorldItemFoundScreen found =
+                    WorldItemFoundScreen.For(house.Player.Interactor);
+                Assert.That(found, Is.Not.Null);
+                // Let the find actually reach the eye, or the wait after the
+                // take has nothing left to wait for and proves nothing.
+                yield return WaitForScarfFound(found, screen => screen.IsShowing);
+                Assert.That(found.Confirm(), Is.True);
                 Assert.That(GameSessionState.HasInventoryItem(InventoryItemId.Scarf), Is.True);
+                yield return WaitForScarfFound(found, screen => !screen.IsPresenting);
                 var scarf = house.Player.GameObject.GetComponent<PlayerScarfController>().Presentation;
                 InventoryController inventory = house.Inventory;
                 InventoryItemPreviewRenderer preview = inventory.View.PreviewRenderer;
@@ -220,6 +229,8 @@ namespace BarPromenade.Tests.PlayMode
                 WriteScarfPerfReport(report);
                 if (house != null)
                 {
+                    WorldItemFoundScreen.For(house.Player.Interactor)
+                        ?.Abandon();
                     house.Inventory.Close();
                     house.Player.Motor.enabled = true;
                     house.CameraFollow.enabled = true;

@@ -127,6 +127,36 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void PreviewPose_CoversEveryCatalogueItem()
+        {
+            // Three screens hold an item up now - the inventory portrait, the
+            // refrigerator shelf and a find on the floor. An item missing
+            // from the table would not fail: it would quietly stand at
+            // identity in one screen and correctly in another.
+            foreach (InventoryItemDefinition item in
+                InventoryItemCatalog.All)
+            {
+                Assert.That(
+                    InventoryItemPreviewPoses.TryGet(
+                        item.Id,
+                        out InventoryItemPreviewPose pose),
+                    Is.True,
+                    $"{item.Id} has no authored held pose.");
+                Assert.That(
+                    Quaternion.Dot(pose.BaseRotation, pose.BaseRotation),
+                    Is.EqualTo(1f).Within(0.0001f));
+                Assert.That(pose.InspectionScale, Is.InRange(0.5f, 3f));
+            }
+
+            Assert.That(
+                InventoryItemPreviewPoses.All,
+                Has.Count.EqualTo(InventoryItemCatalog.All.Count));
+            Assert.That(
+                () => InventoryItemPreviewPoses.Get(InventoryItemId.None),
+                Throws.TypeOf<System.ArgumentOutOfRangeException>());
+        }
+
+        [Test]
         public void PreviewModel_RejectsMissingItem()
         {
             GameObject owner = new GameObject(

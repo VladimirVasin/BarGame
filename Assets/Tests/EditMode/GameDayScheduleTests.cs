@@ -179,7 +179,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.GameDayNumber,
                 Is.EqualTo(GameDaySchedule.FirstDayNumber));
-            Assert.That(GameSessionState.Quests, Is.Empty);
+            Assert.That(
+                GameSessionState.Quests.Count,
+                Is.EqualTo(1),
+                "Back to day one is back to day one's own quest, and " +
+                "nothing the later days had opened.");
+            Assert.That(
+                GameSessionState.GetQuestStatus(
+                    QuestId.ReachMothersHouse),
+                Is.EqualTo(QuestStatus.Active));
         }
     }
 }

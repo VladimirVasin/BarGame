@@ -1,0 +1,682 @@
+{
+  "design_id": "city_working_fishing_port_v1",
+  "generator": "build-city-port-3d-model.py",
+  "coordinate_system": "Unity +Y up / +Z bow; fixed metres; waterline origin",
+  "parts": [
+    {
+      "name": "Dock",
+      "bounds_min": [
+        -30.0,
+        -3.4,
+        -35.045
+      ],
+      "bounds_max": [
+        28.045,
+        5.3,
+        32.0
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_BollardEast",
+          "position": [
+            11.0,
+            2.0,
+            -0.3
+          ]
+        },
+        {
+          "name": "ANCHOR_BollardWest",
+          "position": [
+            -11.0,
+            2.0,
+            -0.3
+          ]
+        },
+        {
+          "name": "ANCHOR_EastLoadingDoor",
+          "position": [
+            4.14,
+            1.5,
+            -14.0
+          ]
+        },
+        {
+          "name": "ANCHOR_MoorBow",
+          "position": [
+            -11.0,
+            2.0,
+            -0.3
+          ]
+        },
+        {
+          "name": "ANCHOR_MoorStern",
+          "position": [
+            11.0,
+            2.0,
+            -0.3
+          ]
+        },
+        {
+          "name": "ANCHOR_Visitor",
+          "position": [
+            0.0,
+            1.5,
+            -20.5
+          ]
+        },
+        {
+          "name": "ANCHOR_WarehouseDoor",
+          "position": [
+            0.0,
+            1.5,
+            -12.0
+          ]
+        },
+        {
+          "name": "ANCHOR_WarehouseHandoff",
+          "position": [
+            0.0,
+            1.5,
+            -17.5
+          ]
+        },
+        {
+          "name": "ANCHOR_WorkLightA",
+          "position": [
+            -4.0,
+            4.0,
+            -11.3
+          ]
+        },
+        {
+          "name": "ANCHOR_WorkLightB",
+          "position": [
+            2.0,
+            4.0,
+            -11.3
+          ]
+        },
+        {
+          "name": "DockVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 15448,
+      "geometry_signature": "658014c4d8af9cda3901a962ecda50618ceb32d8740d889b858bea8246e170cb"
+    },
+    {
+      "name": "Trawler",
+      "bounds_min": [
+        -2.785,
+        -1.5,
+        -10.76
+      ],
+      "bounds_max": [
+        2.785,
+        7.0045,
+        10.05212
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Captain",
+          "position": [
+            -0.7,
+            1.6,
+            -7.18
+          ]
+        },
+        {
+          "name": "ANCHOR_CargoA",
+          "position": [
+            0.0,
+            1.6,
+            -4.0
+          ]
+        },
+        {
+          "name": "ANCHOR_CargoB",
+          "position": [
+            0.0,
+            1.6,
+            4.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Deckhand",
+          "position": [
+            -2.43,
+            1.6,
+            -4.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Engine",
+          "position": [
+            0.0,
+            0.1,
+            -8.0
+          ]
+        },
+        {
+          "name": "ANCHOR_HelmLeft",
+          "position": [
+            -0.86,
+            2.94,
+            -6.88
+          ]
+        },
+        {
+          "name": "ANCHOR_HelmRight",
+          "position": [
+            -0.54,
+            2.94,
+            -6.88
+          ]
+        },
+        {
+          "name": "ANCHOR_Horn",
+          "position": [
+            0.0,
+            4.4,
+            -6.8
+          ]
+        },
+        {
+          "name": "ANCHOR_MoorBow",
+          "position": [
+            -1.4,
+            2.5,
+            8.0
+          ]
+        },
+        {
+          "name": "ANCHOR_MooringBowPort",
+          "position": [
+            -1.4,
+            2.5,
+            8.0
+          ]
+        },
+        {
+          "name": "ANCHOR_MooringBowStarboard",
+          "position": [
+            1.4,
+            2.5,
+            8.0
+          ]
+        },
+        {
+          "name": "ANCHOR_MooringSternPort",
+          "position": [
+            -1.5,
+            2.13,
+            -8.8
+          ]
+        },
+        {
+          "name": "ANCHOR_MooringSternStarboard",
+          "position": [
+            1.5,
+            2.13,
+            -8.8
+          ]
+        },
+        {
+          "name": "ANCHOR_MoorStern",
+          "position": [
+            -1.5,
+            2.13,
+            -8.8
+          ]
+        },
+        {
+          "name": "HatchA",
+          "position": [
+            2.33,
+            1.82,
+            -4.0
+          ]
+        },
+        {
+          "name": "HatchLeafA",
+          "position": [
+            2.33,
+            1.82,
+            -4.0
+          ]
+        },
+        {
+          "name": "HatchB",
+          "position": [
+            2.33,
+            1.82,
+            4.0
+          ]
+        },
+        {
+          "name": "HatchLeafB",
+          "position": [
+            2.33,
+            1.82,
+            4.0
+          ]
+        },
+        {
+          "name": "TrawlerVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 11888,
+      "geometry_signature": "d466b98147dd11f0e1a8fe47e6d7988aec24480507e8e07bcccfc4b0e43b803a"
+    },
+    {
+      "name": "CraneBase",
+      "bounds_min": [
+        -1.35,
+        0.0,
+        -2.4
+      ],
+      "bounds_max": [
+        2.25,
+        4.7864,
+        1.35
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_BoomPivot",
+          "position": [
+            0.0,
+            4.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_ControlLeft",
+          "position": [
+            1.7,
+            1.02,
+            -0.2
+          ]
+        },
+        {
+          "name": "ANCHOR_ControlRight",
+          "position": [
+            2.1,
+            1.02,
+            -0.2
+          ]
+        },
+        {
+          "name": "ANCHOR_Operator",
+          "position": [
+            1.9,
+            0.0,
+            -0.7
+          ]
+        },
+        {
+          "name": "CraneBaseVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "CraneHead",
+          "position": [
+            0.0,
+            4.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_HoistFeed",
+          "position": [
+            0.0,
+            4.48,
+            -0.9
+          ]
+        },
+        {
+          "name": "CraneHeadVisible",
+          "position": [
+            0.0,
+            4.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 3944,
+      "geometry_signature": "f27aebc4d5928412ec01cfd68a5624f49d54c5b715eb6c46bf7c5c6b82dab25e"
+    },
+    {
+      "name": "CraneBoom",
+      "bounds_min": [
+        -0.50496,
+        -0.295,
+        -0.19
+      ],
+      "bounds_max": [
+        0.50496,
+        0.51251,
+        8.13
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Heel",
+          "position": [
+            0.0,
+            0.49,
+            0.1
+          ]
+        },
+        {
+          "name": "ANCHOR_Tip",
+          "position": [
+            0.0,
+            0.0,
+            8.0
+          ]
+        },
+        {
+          "name": "CraneBoomVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 1040,
+      "geometry_signature": "a1a856d8e0b8bff5ba42478d6b5b31c51d693da9c6d2d37072c33502b823c12e"
+    },
+    {
+      "name": "Hook",
+      "bounds_min": [
+        -0.21158,
+        -0.70014,
+        -0.16
+      ],
+      "bounds_max": [
+        0.2,
+        0.04,
+        0.16
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Load",
+          "position": [
+            0.0,
+            -0.62,
+            0.0
+          ]
+        },
+        {
+          "name": "HookVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 268,
+      "geometry_signature": "6952007a1346717ed7fb3b59ad68ddbd759615c01b896677a8190103eff317f9"
+    },
+    {
+      "name": "Cargo",
+      "bounds_min": [
+        -0.65,
+        0.0,
+        -0.75
+      ],
+      "bounds_max": [
+        0.65,
+        1.79483,
+        0.75
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Lift",
+          "position": [
+            0.0,
+            1.7,
+            0.0
+          ]
+        },
+        {
+          "name": "CargoVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 2388,
+      "geometry_signature": "e4b92c4563333c08e6a88990becff5ec714de790be39088b5f0ecbb877b10637"
+    },
+    {
+      "name": "Trolley",
+      "bounds_min": [
+        -0.775,
+        0.00881,
+        -1.085
+      ],
+      "bounds_max": [
+        0.775,
+        1.13031,
+        0.9
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Handle",
+          "position": [
+            0.0,
+            1.1,
+            -1.05
+          ]
+        },
+        {
+          "name": "ANCHOR_Load",
+          "position": [
+            0.0,
+            0.45,
+            0.0
+          ]
+        },
+        {
+          "name": "TrolleyVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 232,
+      "geometry_signature": "d8adc93ad76f268b382ddc841bb538a950cceebceb4c3cbf8eeb969ceccfb875"
+    },
+    {
+      "name": "RopeSegment",
+      "bounds_min": [
+        -0.015,
+        -0.01299,
+        0.0
+      ],
+      "bounds_max": [
+        0.015,
+        0.01299,
+        1.0
+      ],
+      "anchors": [],
+      "triangles": 20,
+      "geometry_signature": "35bafb71c5afacc6b845bc889d637290e2f63248e6b71468d8aad48673e4b996"
+    },
+    {
+      "name": "AccessRoad",
+      "bounds_min": [
+        1.0,
+        1.252,
+        -46.0
+      ],
+      "bounds_max": [
+        61.0,
+        2.96944,
+        -7.0
+      ],
+      "anchors": [
+        {
+          "name": "AccessCarriageway",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "AccessShoulders",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_AccessGate",
+          "position": [
+            27.0,
+            1.5,
+            -26.0
+          ]
+        },
+        {
+          "name": "ANCHOR_AccessPedestrianCrossing",
+          "position": [
+            46.5,
+            2.28005,
+            -31.5
+          ]
+        },
+        {
+          "name": "ANCHOR_AccessStreet",
+          "position": [
+            54.0,
+            2.67,
+            -46.0
+          ]
+        },
+        {
+          "name": "ANCHOR_LoadingStop",
+          "position": [
+            7.0,
+            1.5,
+            -14.0
+          ]
+        },
+        {
+          "name": "ANCHOR_PublicCrossing",
+          "position": [
+            46.5,
+            2.28005,
+            -31.5
+          ]
+        },
+        {
+          "name": "ANCHOR_RoadGate",
+          "position": [
+            27.0,
+            1.5,
+            -26.0
+          ]
+        },
+        {
+          "name": "ANCHOR_RoadStart",
+          "position": [
+            54.0,
+            2.67,
+            -46.0
+          ]
+        },
+        {
+          "name": "PublicCoastWalk",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PublicCrossingMarks",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 7232,
+      "geometry_signature": "3642ff0d7bbf15a3017e1daf0bab9563cae1f2e12c2d350954e5d8deb2c2e5b2"
+    }
+  ],
+  "cargo_attachment_height": 1.7,
+  "crane_boom_length": 8,
+  "crane_pivot_height": 4,
+  "semantic_uv_tiles_metres": {
+    "Concrete": 2.0,
+    "ConcreteWall": 2.0,
+    "Steel": 1.5,
+    "SteelDark": 1.5,
+    "SteelLight": 1.5,
+    "SteelRust": 1.5,
+    "Plaster": 2.0,
+    "Timber": 1.0,
+    "Roof": 2.0,
+    "Deck": 1.0,
+    "Tare": 0.75,
+    "Fish": 0.5,
+    "Ice": 0.5,
+    "Rubber": 0.5,
+    "Fabric": 1.0,
+    "Asphalt": 12.0,
+    "RoadMarking": 2.0
+  },
+  "geometry_signature_includes": [
+    "vertices",
+    "faces",
+    "colors",
+    "uv0",
+    "transforms"
+  ],
+  "asphalt_uv_world_origin_xz": [
+    -67.0,
+    202.0
+  ],
+  "asphalt_texture": "Textures/CityRoadAsphaltAlbedo",
+  "access_layout_sha256": "4012164daf9c1ac1a2b53f0dfb42d26d8e20d6e51dc0c1857765ab2268ca40a9",
+  "hatch_centres": [
+    [
+      0,
+      1.6,
+      -4
+    ],
+    [
+      0,
+      1.6,
+      4
+    ]
+  ],
+  "hatch_clear_aperture": [
+    4.4,
+    1.8
+  ]
+}

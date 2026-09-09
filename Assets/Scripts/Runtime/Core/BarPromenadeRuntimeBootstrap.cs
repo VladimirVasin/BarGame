@@ -88,7 +88,7 @@ namespace BarPromenade
 
             if (scene.name == SceneIds.MainMenu)
             {
-                EnsureMainMenuInstalled();
+                EnsureLaunchRootInstalled();
             }
             else if (scene.name == SceneIds.City)
             {
@@ -167,6 +167,48 @@ namespace BarPromenade
                 GameObject root = new GameObject(
                     "[Bar Promenade] Game Time Runtime");
                 return root.AddComponent<GameTimeRuntime>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        private static void EnsureLaunchRootInstalled()
+        {
+            // InstallForScene runs twice for the boot scene - once from
+            // AfterSceneLoad and once from sceneLoaded. Guard across both
+            // roots, or one launch installs the other's camera behind it.
+            if (Object.FindAnyObjectByType<MainMenuRoot>() != null ||
+                Object.FindAnyObjectByType<StartMenuRoot>() != null)
+            {
+                return;
+            }
+
+            if (MainMenuRoot.LegacyOpeningRequested)
+            {
+                EnsureMainMenuInstalled();
+                return;
+            }
+
+            EnsureStartMenuInstalled();
+        }
+
+        public static StartMenuRoot EnsureStartMenuInstalled()
+        {
+            StartMenuRoot existing =
+                Object.FindAnyObjectByType<StartMenuRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Start Menu Runtime");
+                return root.AddComponent<StartMenuRoot>();
             }
             finally
             {

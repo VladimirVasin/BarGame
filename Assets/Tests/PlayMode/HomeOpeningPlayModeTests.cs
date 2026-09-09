@@ -32,6 +32,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator TearDown()
         {
             Time.timeScale = previousTimeScale;
+            MainMenuRoot.ClearLegacyOpeningRequest();
             GameSessionState.BeginNewGame();
             Scene active = SceneManager.GetActiveScene();
             if (active.IsValid() &&
@@ -76,6 +77,7 @@ namespace BarPromenade.Tests.PlayMode
                 DrinkId.RedWine,
                 3);
 
+            MainMenuRoot.RequestLegacyOpening();
             AsyncOperation load = SceneManager.LoadSceneAsync(
                 SceneIds.MainMenu,
                 LoadSceneMode.Single);
@@ -699,6 +701,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             HomeDebug_AfterWakePreviewsEverySelectedDayAndOffersCitySkip()
         {
+            MainMenuRoot.RequestLegacyOpening();
             AsyncOperation load = SceneManager.LoadSceneAsync(
                 SceneIds.MainMenu,
                 LoadSceneMode.Single);
@@ -903,6 +906,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             ExternalSleepCancellation_FromMenuRestoresInputAndClockDressing()
         {
+            MainMenuRoot.RequestLegacyOpening();
             AsyncOperation load = SceneManager.LoadSceneAsync(
                 SceneIds.MainMenu,
                 LoadSceneMode.Single);
@@ -1000,6 +1004,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator
             ExternalSleepCancellation_DuringWakeAlarmStopsRing()
         {
+            MainMenuRoot.RequestLegacyOpening();
             AsyncOperation load = SceneManager.LoadSceneAsync(
                 SceneIds.MainMenu,
                 LoadSceneMode.Single);

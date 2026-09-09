@@ -35,7 +35,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Performance capture | Opt-in CPU/GPU/frame/GC and hot-scope distributions; unavailable counters are not reported as zero. | `RuntimePerformanceCapture`, `PerformanceCaptureSamples` | Current |
 | Player build asset gate | Read-only validators block stale/missing runtime assets with explicit repair instructions. | `PlayerBuildAssetValidation` | Current |
 | Reproducible asset tooling | Pinned tools, failure propagation, output checks and staged publication preserve existing metas. | `tools/run-blender.py`, `tools/asset_pipeline.py` | Current |
-| Offshore fishing boats | Up to two hero-local coastal passes with warm beams and soft motors; leaving the shore releases them. | `CityOffshoreBoat*`, `build-city-offshore-boats-3d-model.py` | Current |
+| Offshore fishing boats | Two hero-local coastal passes avoid the working port; leaving shore releases models, sounds and wakes. | `CityOffshoreBoat*`, `build-city-offshore-boats-3d-model.py` | Current |
 | Mountain Road Blender misc wave 1 | Eight kinds / `102` placements from `19` passive Blender meshes; the plan retains placement, collision and sounds. | `MountainRoadMiscAssetProvider`, `MountainRoadWorldBuilder` | Current |
 | Mountain Road composition rhythm | Plan-validated forest openings, five debris chapters and cleared rails/kerbs preserve the climb rhythm. | `MountainRoadCompositionRules`, `MountainRoad{Planner,Validator,SceneryMeshFactory,SurfaceMeshFactory}` | Current |
 | Mountain terminal cafe environment | Passive Blender cafe and seven prop assemblies retain plan-owned collision, lighting and appliance audio. | `MountainRoadCafe{AssetRegistry,WorldBuilder,CollisionWorldBuilder}`, `MountainRoadCafeAssetSetup` | Current |
@@ -53,16 +53,18 @@ A row never carries a status outside this table. Product-level scope cuts
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Twelve scenes/nine gameplay roots; three area roots construct incrementally during area travel. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Startup waking opening | Frozen `05:59`, five-second input lock, Wake Up/Quit, then continuous wake. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Current |
+| Startup village arrival | New Game card, session clock at `07:40` on day `1`, lane-foot spawn through the loading screen. | `StartMenuRoot`, `StartMenuModel`, `AlpineVillageRoot` | Current |
+| Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent calendar at one game minute per unpaused real second; intoxication slowdown preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
 | World time and pause ownership | One world factor (`1`-`0.88`) with a matching physics step; pause leases freeze world and calendar, then restore it. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Home clock, inventory and queued day announcements follow one persistent calendar. | `HomeAlarmClock`, `InventoryView` | Current |
 | Gameplay pause menu | Escape/Start owns input/time/audio; confirmed restart/quit and persistent graphics options remain shared. | `PauseMenu{Model,Controller}`, `GraphicsEffectsSettings` | Current |
 | Hero inventory | Shared modal inventory owns item actions and clothing equipment status; both persist within the session. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState` | Current |
-| Mother's-house scarf pickup | One folded scarf on the parents' linen chest enters inventory once; later visits retain its collection. | `MothersHouseScarfPickup{Plan,}`, `GameSessionState` | Current |
+| World item pickup and its found screen | A thing on the floor is held up, turned by hand or by itself, and only then taken; the take is recorded once. | `WorldItem{PickupPlan,Pickup,PickupModel,FoundScreen,FoundView}` | Current |
 | Hunger, stress, fatigue and consumption | Needs follow the pause-aware calendar; consumption/rest commit relief once. Gap: needs apply no gameplay debuff. | `PlayerNeedsProgressionState`, `PlayerNeedsRules` | Partial |
 | Inventory-backed target interactions | Shared item-backed target menus commit consumption once and refund failed startup. | `InventoryItemRequirement`, `InventoryTargetInteraction{Definition,Model,Controller}` | Current |
-| Quest log and journal | The calendar fires each dated event once; quest state and journal follow session-owned activation/completion. | `Quest{Types,LogState}`, `GameDaySchedule` | Current |
+| Quest log and journal | Day one opens the mother's house; the full-screen journal lists ticked boxes over one description panel. | `Quest{Types,LogState}`, `GameDaySchedule`, `Journal{MenuModel,View}` | Current |
+| New-quest notice | Blinking corner notebook on a child of the journal, in all nine scenes; the key shows until first open. | `JournalNoticeView`, `GameSessionState.HasUnreadQuests` | Current |
 | Stairwell quest descent gate | The active day-two cat quest gates descent and guides the hero back to the landing before restoring input. | `StairwellQuestDescentBlocker`, `PlayerMotor.MoveTowardsInteractionPose` | Current |
 | City blueprint and layout model | One immutable stable-ID blueprint per session: connected cells, typed areas, one Residential bar across from home. | `CityBlueprint`, `CityBlueprintCatalog` | Current |
 | City elevation and exterior stairs | Validated elevation plans keep external stairs and walkable ground consistent with collision. | `CityElevation{Plan,Planner,Validator,Rebaser,StairPlacement}`, `CityTerrainSurfacePlan` | Current |
@@ -88,9 +90,9 @@ A row never carries a status outside this table. Product-level scope cuts
 | Cemetery ravens | A sparse raven pair appears around the first sealed grave, flushes near the hero and returns afterward. | `CemeteryRaven{Provider,RigAnchors,Factory,Plan,PoseRules,IdleModel,HeadModel,FlightModel,DirectorModel,Actor}` | Current |
 | The spring and its brook | Village brook and Mountain Road culvert water are implemented. Gap: the dark mountain reaches await acceptance. | `AlpineVillageBrook{Plan,Planner,Builder}`, `AlpineSpringWaterResources` | Partial |
 | Sitting on the mother's sofa | The sofa reuses shared bench seating with front-only approach, measured cushion contact and owned shadow cleanup. | `MothersHouseSofaSeatPlanner`, `CityBenchSit{Plan,Interaction,WorldBuilder}` | Current |
-| The mother in her chair | Silent sitter and chair share measured runner contact; her hips follow the cushion. Voice and interaction unwired. | `MothersHouseMother{Plan,Presentation,Factory,Provider,AssetSetup}`, `MothersHouseRockingChairMotion` | Current |
+| The mother in her chair | She rocks on measured runner contact, greets him at the door and speaks from one shuffled bag that `E` shares. | `MothersHouseMother{Presentation,Factory,Interaction,Quips,SpeechSession,SpeechController}`, `NpcHeroAttentionLook` | Current |
 | Outdoor raven roosts | Seeded pairs occupy bounded open-world perches, flush locally and obey area exclusion/vehicle gates. | `RavenRoost{Plan,Controller}`, `{City,MountainRoad,AlpineVillage}RavenRoostPlanner` | Current |
-| Seacoast precinct | A plan-owned mol, beacon, boat station and east shore share real approaches, footprints and causal dressing. | `CitySeacoast{Plan,Planner,WorldBuilder,SurfaceAppearance}`, `CitySeaResources` | Current |
+| Seacoast precinct | Textured working port, truck-capable access and public bypass; closed station and east shore retain their approaches. | `CitySeacoast*`, `CityPort*`, `CitySeaResources` | Current |
 | Sea water | Shared water drive owns sea swell, foam and uneven shore swash. | `CitySeaResources`, `CityWaterResources` | Current |
 | Beach sand | Deterministic shallow relief and compressible foot trails over fixed collision. | `CityBeachSandPlan`, `CitySandTreading` | Current |
 | Lighthouse island | One distant fog-framed island landmark owns its silhouette, beacon/beam and authored sightline. | `CityLighthouseIsland{Plan,Planner,MeshFactory,WorldBuilder,Resources}` | Current |
@@ -147,7 +149,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | The last route | Journey stages coordinate Ferryman dialogue, car legs, blackouts and arrivals; the ride is refused when very drunk. | `LastRouteRideController`, `LastRouteFerrymanRideRules`, `LastRouteCar{DrivePath,DriveModel,Driver,GiveWay*}` | Current |
 | Home bed sleep | One trigger on the door-side bed edge; guided walk, neutral settle, then enter/loop/exit through a real bedside sit. | `HomeBedInteraction{Plan,}`, `PlayerAnimatedInteractionController` | Current |
 | Home balcony smoking | One modal balcony smoking sequence owns its prop, sound, camera and completion-only stress relief. | `HomeBalconySmoking{Plan,Interaction,Timeline,CameraDrift,ExhaleEffect}`, `HomeBalconyWorldBuilder` | Current |
-| Home refrigerator | Physical shelf browsing, first-person inspection and atomic collection work. Gap: `Use` is registered but unavailable. | `HomeRefrigerator{Plan,WorldBuilder,View,Interaction,InteractionTimeline,FirstPersonHand}` | Partial |
+| Home refrigerator | Shelf browsing and atomic collection over the shared inspection screen. Gap: `Use` is unavailable. | `HomeRefrigerator{Plan,WorldBuilder,View,Interaction}`, `WorldItemInspection{Timeline,Presenter}` | Partial |
 | Player shadows | Real mesh shadows and an analytic contact patch follow hero/contextual visibility ownership. | `Player3DCharacterPresentation`, `Player3DRagdollController` | Current |
 | Interaction/UI | Common action bindings and explicit input priorities serve shared prompts and menus; look/debug input stays local. | `PlayerInteractor`, `InteractionPromptView` | Current |
 | F9 debug controls | City/Bar/Road/Home share intoxication and day `1–7` controls. | `MinigameDebugWindow`, `HomeDebugCityMapShortcut` | Current |
@@ -200,8 +202,12 @@ implementation decisions live in `ai/architecture-notes.md`. Earlier verbose
 rows are preserved in `ai/archive/systems-map-2026-09-06.md` as a superseded snapshot.
 
 ```text
-build index 0 -> MainMenu -> BeginNewGame + HomeArrival.OpeningSleep
-  -> HomeInterior sleeping opening
+build index 0 -> MainMenu -> New Game / Quit card
+  -> BeginNewGame + session clock 07:40 on day 1
+  -> AreaLoading with no directed still -> AlpineVillage Single
+     -> lane-foot spawn 2 m up the lane, facing the mother's house
+     -> ordinary village control -> cableway or map -> MountainRoad -> City
+  retained, unreached: MainMenuRoot -> HomeInterior sleeping opening
      -> 05:59 clock shot -> 5 s input lock -> Wake Up / Quit
      -> Wake -> 06:00 + session clock starts -> alarm hold -> 6 s wake
      -> ordinary Home control -> StairwellInterior -> City

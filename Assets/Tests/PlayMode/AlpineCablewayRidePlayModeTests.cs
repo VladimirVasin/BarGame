@@ -239,7 +239,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return ArriveAndStepOntoThePlatform(
                     GameAreaId.AlpineVillage);
 
-                AlpineVillageRoot village = Object.FindFirstObjectByType<
+                AlpineVillageRoot village = Object.FindAnyObjectByType<
                     AlpineVillageRoot>();
                 Assert.That(village, Is.Not.Null);
                 harness = FromVillage(village);
@@ -247,7 +247,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return ArriveAndStepOntoThePlatform(
                     GameAreaId.MountainRoad);
 
-                MountainRoadRoot mountain = Object.FindFirstObjectByType<
+                MountainRoadRoot mountain = Object.FindAnyObjectByType<
                     MountainRoadRoot>();
                 Assert.That(mountain, Is.Not.Null);
                 Assert.That(mountain.LastRouteCar, Is.Not.Null,
@@ -347,7 +347,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 if (area == GameAreaId.AlpineVillage)
                 {
-                    var village = Object.FindFirstObjectByType<AlpineVillageRoot>();
+                    var village = Object.FindAnyObjectByType<AlpineVillageRoot>();
                     if (village != null && village.IsInitialized)
                     {
                         Assert.That(village.ArrivalToken,
@@ -357,7 +357,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
                 else
                 {
-                    var mountain = Object.FindFirstObjectByType<MountainRoadRoot>();
+                    var mountain = Object.FindAnyObjectByType<MountainRoadRoot>();
                     if (mountain != null && mountain.IsInitialized)
                     {
                         Assert.That(mountain.ArrivalToken,
@@ -456,8 +456,8 @@ namespace BarPromenade.Tests.PlayMode
             yield return SettleAndCheckStandingFeet(harness, area + "-platform");
 
             MountainRoadCablewayPlan station = area == GameAreaId.AlpineVillage
-                ? Object.FindFirstObjectByType<AlpineVillageRoot>().Plan.Station.Cableway
-                : Object.FindFirstObjectByType<MountainRoadRoot>().Plan.Terminal.Cableway;
+                ? Object.FindAnyObjectByType<AlpineVillageRoot>().Plan.Station.Cableway
+                : Object.FindAnyObjectByType<MountainRoadRoot>().Plan.Terminal.Cableway;
             Vector3 apron = station.StationArea.Center +
                 station.LineRight * station.BoardingDockRightOffset +
                 station.LineForward * (station.BoardingFenceForward - 1.1f);

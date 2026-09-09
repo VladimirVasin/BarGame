@@ -170,6 +170,17 @@ namespace BarPromenade
             return camera;
         }
 
+        /// <summary>
+        /// The launch card stands on the loading screen's camera: the same
+        /// black, culled, unlit field, and — unlike a bare Camera — a tagged
+        /// main camera carrying the scene's one audio listener, which the
+        /// menu's own clicks need.
+        /// </summary>
+        public static Camera EnsureStartMenu()
+        {
+            return EnsureAreaLoading();
+        }
+
         public static Camera EnsureMountainRoad()
         {
             Camera camera = EnsureCamera(MountainRoadFogColor);

@@ -185,6 +185,20 @@ namespace BarPromenade
             if (seacoastPlan != null)
             {
                 CitySeacoastWorldBuilder.Build(world, seacoastPlan, layout);
+                if (seacoastPlan.Port != null)
+                {
+                    CityPortController port = CityPortController.Build(world, seacoastPlan.Port);
+                    if (port.Plan.Access != null)
+                    {
+                        port.Plan.Access.ValidateOrThrow(layout);
+                        GameObject serviceAccess = CityPortAssetProvider.Create("AccessRoad", port.transform);
+                        serviceAccess.transform.position = port.Plan.Origin;
+                    }
+                    CityPortLighting.Build(port);
+                    CityPortWater.Build(port);
+                    CityPortCrew.Build(port.transform, port);
+                    CityPortSound.Build(port.transform, port, layout.Seed);
+                }
                 // The lighthouse island stands off the dressed shore
                 // only: presentation scenery at the edge of the fog,
                 // fixed in world space, contributing nothing to

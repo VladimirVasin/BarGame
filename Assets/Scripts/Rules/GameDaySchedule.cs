@@ -13,10 +13,17 @@ namespace BarPromenade
 
         /// <summary>
         /// The cat starts asking to be fed, which is also what puts the
-        /// descent blocker in the stairwell and reserves the tin. The
-        /// first day is deliberately empty of it.
+        /// descent blocker in the stairwell and reserves the tin. It
+        /// belongs to the second day, not the first.
         /// </summary>
-        FeedTheCatOpens = 1
+        FeedTheCatOpens = 1,
+
+        /// <summary>
+        /// The house at the top of the village lane goes up in the
+        /// log. Dated to day one because a new game already stands at
+        /// the foot of that lane looking at it.
+        /// </summary>
+        MothersHouseOpens = 2
     }
 
     public readonly struct GameDayScheduleEntry
@@ -62,6 +69,9 @@ namespace BarPromenade
 
         private static readonly GameDayScheduleEntry[] Entries =
         {
+            new GameDayScheduleEntry(
+                GameDayEventId.MothersHouseOpens,
+                FirstDayNumber),
             new GameDayScheduleEntry(
                 GameDayEventId.FeedTheCatOpens,
                 2)

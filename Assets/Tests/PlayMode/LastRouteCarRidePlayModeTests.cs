@@ -1578,12 +1578,7 @@ namespace BarPromenade.Tests.PlayMode
         {
 #if UNITY_EDITOR
             if (Application.isBatchMode) return;
-            System.Type gameViewType = null;
-            foreach (Assembly assembly in System.AppDomain.CurrentDomain.GetAssemblies())
-            {
-                gameViewType = assembly.GetType("UnityEditor.GameView");
-                if (gameViewType != null) break;
-            }
+            System.Type gameViewType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.GameView");
             Assert.That(gameViewType, Is.Not.Null, "The GUI capture needs Unity's real Game view.");
             UnityEditor.EditorWindow view = UnityEditor.EditorWindow.GetWindow(gameViewType);
             view.Show();

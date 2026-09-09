@@ -94,9 +94,22 @@ namespace BarPromenade.Tests.PlayMode
                 yield return CaptureScarfFrame(camera, "00-bedroom-pickup");
                 Assert.That(pickup.CanInteract(house.Player.Interactor), Is.True);
                 pickup.Interact(house.Player.Interactor);
+                WorldItemFoundScreen found =
+                    WorldItemFoundScreen.For(house.Player.Interactor);
+                Assert.That(found, Is.Not.Null);
+                Assert.That(found.IsPresenting, Is.True);
+                // Pressing again while the find is on screen must not open a
+                // second one, and nothing is in his pocket until he agrees.
                 pickup.Interact(house.Player.Interactor);
+                Assert.That(GameSessionState.HasInventoryItem(InventoryItemId.Scarf), Is.False);
+                yield return WaitForScarfFound(found, screen => screen.IsShowing);
+                yield return CaptureScarfFrame(camera, "00b-bedroom-found");
+                Assert.That(found.Confirm(), Is.True);
+                Assert.That(found.Confirm(), Is.False);
                 Assert.That(GameSessionState.GetInventoryItemCount(InventoryItemId.Scarf), Is.EqualTo(1));
-                Assert.That(pickup.gameObject.activeSelf, Is.False);
+                yield return WaitForScarfFound(found, screen => !screen.IsPresenting);
+                Assert.That(pickup == null, Is.True);
+                Assert.That(house.ScarfPickup == null, Is.True);
                 Assert.That(GameSessionState.IsWorldItemCollected(MothersHouseScarfPickupPlan.SourceId), Is.True);
 
                 InventoryController inventory = house.Inventory;
@@ -254,6 +267,10 @@ namespace BarPromenade.Tests.PlayMode
                 pause?.Dispose();
                 if (house != null)
                 {
+                    // A red assertion inside the find would otherwise leave
+                    // the screen's modal lock held for every later test.
+                    WorldItemFoundScreen.For(house.Player.Interactor)
+                        ?.Abandon();
                     house.Inventory.Close();
                     house.Player.Motor.enabled = true;
                     house.CameraFollow.enabled = true;
@@ -357,6 +374,31 @@ namespace BarPromenade.Tests.PlayMode
                 source.enabled = true;
                 camera.targetTexture = null;
             }
+        }
+
+        /// <summary>
+        /// Waits for one state of the found-item screen instead of counting
+        /// frames. The screen advances on UNSCALED time, which
+        /// `Time.captureDeltaTime` does not pin, so a fixed frame count means
+        /// a different amount of animation on every machine.
+        /// </summary>
+        private static IEnumerator WaitForScarfFound(
+            WorldItemFoundScreen screen,
+            Func<WorldItemFoundScreen, bool> reached)
+        {
+            const int frameCeiling = 600;
+            for (int frame = 0; frame < frameCeiling; frame++)
+            {
+                if (reached(screen))
+                {
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            Assert.Fail(
+                "The found-item screen never reached the expected state.");
         }
 
         private static IEnumerator ScarfFrames(int count)
