@@ -236,6 +236,9 @@ namespace BarPromenade
                 GameLog.Field("x", spawnPosition.x),
                 GameLog.Field("y", spawnPosition.y),
                 GameLog.Field("z", spawnPosition.z));
+            // The raised station must be present in physics before the hero
+            // measures neutral foot clearance, even during paused construction.
+            Physics.SyncTransforms();
             Player = PlayerFactory.Create(
                 transform,
                 spawnPosition,

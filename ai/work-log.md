@@ -6,6 +6,53 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-09 — Feet remain grounded after the cableway arrival
+
+- Follow-up to the arrival fix: the earlier round-trip check measured the
+  player root and restored controls, but did not inspect the visible boots.
+- `MountainRoadRoot` and `AlpineVillageRoot` synchronize constructed colliders
+  before player creation. With automatic physics transform sync disabled and construction
+  paused, initial foot calibration could otherwise miss the raised platform
+  and retain its height above the lower pad as permanent sole clearance.
+- Extended the same arrival regression to measure the final visible boot
+  support after exiting and leaving each platform, including the late foot
+  solve. The first run reproduced the defect in the village as well:
+  `0.890 m` cached clearance and the same visible sole-to-floor gap.
+  Applied the synchronization to both destination roots.
+- The same focused round trip then passed `1/1` in `74.87 s`, with `0.040 m`
+  calibrated clearance at both stations and all eight visible boot samples
+  `0.039-0.050 m` above their physical surfaces (the normal controller skin).
+  Reviewed all four standing platform/apron frames: legs extend to the floor
+  after alighting and walking down the steps. Evidence:
+  `Captures/CablewayRegression/grounding-results.xml` and
+  `{AlpineVillage,MountainRoad}-{platform,apron}.png`. `git diff --check`
+  passed; no broad suites or player build.
+
+## 2026-09-09 — Cableway boarding, continuous arrival and waiting Ferryman
+
+- Fixed the existing cabin safety bar to swing inward `90 degrees` along the
+  front window before the hero crosses the side doorway and close after
+  entry/exit. Boarding turns the hero onto the bench facing cabin-forward.
+- Both destination arrivals begin aboard, cover `18 m` of inbound cable and
+  the station half-turn, stop at the normal dock and automatically play the
+  visible exit. World-space attachment preserves the player's scene parent
+  through travel and alighting. The arrival owner first waits for the area
+  transition to clear, then restores the cabin, passenger and camera under
+  its own black ride fade before revealing the approach.
+- `MountainRoadRoot.BuildLastRoute` now also brings an untaken car to the apron
+  on cableway return. The Ferryman waits there after direct map visits to the
+  village as well as after the ordinary car/cableway round trip.
+- Updated current behavior and the physical passages of both bibles; no new
+  fiction, canon exception or transport route.
+- Focused PlayMode round trip passed: `AlpineCablewayRidePlayModeTests.
+  Ride_OnlyLeavesTheAreaOnceTheScreenIsBlack`, `1/1`, `76.19 s`. It checks
+  both real area loads, bar timing, cabin-facing pose, attachment, docking,
+  automatic exits, reboarding and the waiting Ferryman from `NotTaken`.
+  Results and six frames: `Captures/CablewayRegression/`. Reviewed the
+  first-person approaches and mountain boarding/alighting frames; the village
+  side camera is obscured by a canopy post, so its exit evidence is the
+  runtime assertions. `git diff --check` passed. No broad suites or player build.
+
 ## 2026-09-09 — Scarf tail rises and trails during running
 
 - Following the user's report that the simplified tail stayed too vertical,

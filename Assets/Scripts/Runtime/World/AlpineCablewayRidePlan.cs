@@ -73,10 +73,8 @@ namespace BarPromenade
                 EntryHipPosition);
 
         /// <summary>
-        /// The doorway is an open aperture, so the pelvis needs no hold while
-        /// a leaf swings: the stock `0`/`1` markers are correct here, and
-        /// giving it a pause it does not need is how the car ended up walking
-        /// its hero through a shut door.
+        /// Hold the body until the safety bar clears the opening, and settle
+        /// beyond it before the bar closes.
         /// </summary>
         public PlayerAnimatedInteractionPelvisTransition PelvisTransition =>
             new PlayerAnimatedInteractionPelvisTransition(
@@ -84,7 +82,11 @@ namespace BarPromenade
                 enterArrivalProgress: 0.46f,
                 enterDepartureProgress: 0.62f,
                 exitArrivalProgress: 0.34f,
-                exitDepartureProgress: 0.54f);
+                exitDepartureProgress: 0.54f,
+                enterHoldProgress: 0.24f,
+                enterSettleProgress: 0.80f,
+                exitHoldProgress: 0.24f,
+                exitSettleProgress: 0.80f);
 
         public static AlpineCablewayCabinSeatPlan Create(
             MountainRoadCablewayPlan cableway)

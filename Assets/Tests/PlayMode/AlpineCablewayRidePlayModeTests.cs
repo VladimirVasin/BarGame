@@ -1,4 +1,5 @@
 using System.Collections;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -114,6 +115,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             return scene.isLoaded &&
                    (scene.name == SceneIds.AlpineVillage ||
+                    scene.name == SceneIds.MountainRoad ||
                     scene.name == SceneIds.AreaLoading);
         }
 
@@ -221,9 +223,9 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         /// <summary>
-        /// The ride ends by asking the area service to travel, and it only
-        /// does so once the screen is genuinely black. A cabin that vanishes
-        /// in open air is a worse cut than no cut at all.
+        /// Both real scene loads preserve the passenger until the destination
+        /// cabin has approached, docked and visibly let him out. The returning
+        /// hero must also find the Ferryman waiting without a prior car ride.
         /// </summary>
         [UnityTest]
         public IEnumerator Ride_OnlyLeavesTheAreaOnceTheScreenIsBlack()
@@ -231,43 +233,381 @@ namespace BarPromenade.Tests.PlayMode
             Harness harness = BuildHarness(out GameObject scene, true);
             try
             {
-                harness.Seat.Interact(harness.Player.Interactor);
+                Assert.That(GameSessionState.FerrymanRide,
+                    Is.EqualTo(LastRouteFerrymanRideStage.NotTaken));
+                yield return BoardAndTravelWhenBlack(harness, "mountain");
+                yield return ArriveAndStepOntoThePlatform(
+                    GameAreaId.AlpineVillage);
 
-                int steps = 0;
-                while (!harness.Seat.IsSeated && steps++ < MaximumSteps)
-                {
-                    yield return null;
-                }
+                AlpineVillageRoot village = Object.FindFirstObjectByType<
+                    AlpineVillageRoot>();
+                Assert.That(village, Is.Not.Null);
+                harness = FromVillage(village);
+                yield return BoardAndTravelWhenBlack(harness, "village");
+                yield return ArriveAndStepOntoThePlatform(
+                    GameAreaId.MountainRoad);
 
-                Assert.That(harness.Seat.IsSeated, Is.True);
-                Assert.That(harness.Ride.IsRiding, Is.True);
-                Assert.That(harness.Ride.CanSkipRide, Is.True);
-
-                // Nothing may be black while he is still climbing in the open.
-                Assert.That(harness.Ride.Fade.IsFullyBlack, Is.False);
-
-                steps = 0;
-                while (harness.Ride.IsRiding && steps++ < MaximumSteps)
-                {
-                    yield return null;
-                }
-
-                Assert.That(
-                    harness.Ride.IsRiding,
-                    Is.False,
-                    "The leg never finished.");
-                Assert.That(
-                    harness.Ride.Fade.IsFullyBlack,
-                    Is.True,
-                    "The area was left before the screen went out.");
-                Assert.That(
-                    GameSessionState.IsRidingTheCableway,
-                    Is.False,
-                    "The ride flag outlived the ride.");
+                MountainRoadRoot mountain = Object.FindFirstObjectByType<
+                    MountainRoadRoot>();
+                Assert.That(mountain, Is.Not.Null);
+                Assert.That(mountain.LastRouteCar, Is.Not.Null,
+                    "The returning passenger has no car on the apron.");
+                Assert.That(mountain.LastRouteFerryman, Is.Not.Null);
+                Assert.That(mountain.LastRouteFerryman.IsWaiting, Is.True,
+                    "The Ferryman must wait for the cableway passenger.");
+                Assert.That(GameSessionState.FerrymanRide,
+                    Is.EqualTo(LastRouteFerrymanRideStage.Arrived));
+                LastRouteMountainDrivePlanner.ResolveParkedPose(
+                    mountain.Plan,
+                    out Vector3 parkedPosition,
+                    out Vector3 parkedFacing);
+                Transform car = mountain.LastRouteCar.transform.parent;
+                Assert.That(car, Is.Not.Null);
+                Assert.That(Vector3.Distance(car.position, parkedPosition),
+                    Is.LessThan(0.05f),
+                    "The waiting car must be on the terminal apron.");
+                Assert.That(Vector3.Dot(car.forward, parkedFacing),
+                    Is.GreaterThan(0.99f));
             }
             finally
             {
-                Object.DestroyImmediate(scene);
+                if (scene != null)
+                {
+                    Object.DestroyImmediate(scene);
+                }
+            }
+        }
+
+        private static IEnumerator BoardAndTravelWhenBlack(
+            Harness harness,
+            string station)
+        {
+            AlpineCablewayCabinSeat seat = harness.Seat;
+            var interaction = harness.Player.GameObject.GetComponent<
+                PlayerAnimatedInteractionController>();
+            Assert.That(seat.CanInteract(harness.Player.Interactor), Is.True);
+            seat.Interact(harness.Player.Interactor);
+
+            bool openedForBoarding = false;
+            int steps = 0;
+            while (!seat.IsSeated && steps++ < MaximumSteps)
+            {
+                yield return null;
+                if (!openedForBoarding &&
+                    interaction.Phase == PlayerAnimatedInteractionPhase.Entering &&
+                    seat.SafetyBarOpenAmount > 0.9f)
+                {
+                    openedForBoarding = true;
+                    if (!seat.IsFirstPerson)
+                    {
+                        Capture(harness, station + "-boarding", true);
+                    }
+                }
+            }
+
+            Assert.That(openedForBoarding, Is.True,
+                "The safety bar never opened while the hero boarded.");
+            Assert.That(seat.IsSeated, Is.True);
+            Assert.That(seat.IsAttached, Is.True);
+            Assert.That(seat.SafetyBarOpenAmount, Is.LessThan(0.01f));
+            AssertFacingTheCabin(harness);
+            Vector3 cabinStart = seat.Cabin.position;
+            Vector3 localHero = seat.Cabin.InverseTransformPoint(
+                harness.Player.GameObject.transform.position);
+            for (int frame = 0; frame < 180; frame++)
+            {
+                yield return null;
+            }
+
+            Assert.That(Vector3.Distance(cabinStart, seat.Cabin.position),
+                Is.GreaterThan(1f));
+            Assert.That(Vector3.Distance(localHero,
+                seat.Cabin.InverseTransformPoint(
+                    harness.Player.GameObject.transform.position)),
+                Is.LessThan(0.05f));
+            Assert.That(harness.Ride.Fade.IsFullyBlack, Is.False);
+            Assert.That(harness.Ride.TrySkipRide(), Is.True);
+            steps = 0;
+            while (harness.Ride.IsRiding && steps++ < MaximumSteps)
+            {
+                yield return null;
+            }
+
+            Assert.That(harness.Ride.IsRiding, Is.False);
+            Assert.That(harness.Ride.Fade.IsFullyBlack, Is.True,
+                "The area was left before the screen went out.");
+            Assert.That(GameSessionState.IsRidingTheCableway, Is.False);
+        }
+
+        private static IEnumerator ArriveAndStepOntoThePlatform(GameAreaId area)
+        {
+            Harness harness = default;
+            float deadline = Time.realtimeSinceStartup + AreaLandingSeconds;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                if (area == GameAreaId.AlpineVillage)
+                {
+                    var village = Object.FindFirstObjectByType<AlpineVillageRoot>();
+                    if (village != null && village.IsInitialized)
+                    {
+                        Assert.That(village.ArrivalToken,
+                            Is.EqualTo(AreaArrivalToken.Cableway));
+                        harness = FromVillage(village);
+                    }
+                }
+                else
+                {
+                    var mountain = Object.FindFirstObjectByType<MountainRoadRoot>();
+                    if (mountain != null && mountain.IsInitialized)
+                    {
+                        Assert.That(mountain.ArrivalToken,
+                            Is.EqualTo(AreaArrivalToken.Cableway));
+                        harness = new Harness
+                        {
+                            Player = mountain.Player,
+                            Line = mountain.World.Cableway.Controller,
+                            Seat = mountain.CabinSeat,
+                            Ride = mountain.CablewayRide,
+                            Camera = mountain.CameraFollow.GetComponent<Camera>()
+                        };
+                    }
+                }
+
+                if (harness.Seat != null && harness.Seat.IsSeated)
+                {
+                    break;
+                }
+
+                yield return null;
+            }
+
+            Assert.That(harness.Seat, Is.Not.Null,
+                $"The {area} destination did not finish construction.");
+            AlpineCablewayCabinSeat seat = harness.Seat;
+            Assert.That(seat.IsSeated, Is.True,
+                "The loaded hero never resumed his seat.");
+            Assert.That(seat.IsAttached, Is.True);
+            Assert.That(harness.Line.IsDocking, Is.True,
+                "The arrival must begin on the approach, before docking.");
+            Assert.That(harness.Line.IsDocked, Is.False);
+            Assert.That(harness.Ride.IsRiding, Is.True);
+            Assert.That(GameSessionState.IsRidingTheCableway, Is.True);
+            Assert.That(seat.SafetyBarOpenAmount, Is.LessThan(0.01f));
+            Assert.That(seat.CanInteract(harness.Player.Interactor), Is.False);
+            Assert.That(seat.RequestArrivalExit(), Is.False,
+                "An arrival cannot step out before its cabin docks.");
+            AssertFacingTheCabin(harness);
+            Assert.That(Vector3.Distance(
+                harness.Player.GameObject.transform.position,
+                seat.Plan.EntryRootPosition), Is.GreaterThan(5f),
+                "The passenger was placed at the platform instead of in the approaching cabin.");
+
+            var interaction = harness.Player.GameObject.GetComponent<
+                PlayerAnimatedInteractionController>();
+            bool visibleApproach = false;
+            bool openedForExit = false;
+            int steps = 0;
+            while (seat.IsSeated && steps++ < MaximumSteps)
+            {
+                yield return null;
+                if (harness.Line.IsDocking)
+                {
+                    Assert.That(seat.IsAttached, Is.True);
+                    Assert.That(seat.SafetyBarOpenAmount, Is.LessThan(0.01f));
+                    if (!visibleApproach && harness.Ride.Fade.Opacity < 0.01f)
+                    {
+                        visibleApproach = true;
+                        Capture(harness, area + "-approach", false);
+                    }
+                }
+
+                if (!openedForExit &&
+                    interaction.Phase == PlayerAnimatedInteractionPhase.Exiting &&
+                    seat.SafetyBarOpenAmount > 0.9f)
+                {
+                    Assert.That(harness.Line.IsDocked, Is.True);
+                    Assert.That(seat.IsFirstPerson, Is.False);
+                    openedForExit = true;
+                    Capture(harness, area + "-alighting", true);
+                }
+            }
+
+            Assert.That(visibleApproach, Is.True,
+                "The screen stayed black until the cabin was already docked.");
+            Assert.That(openedForExit, Is.True,
+                "Docking must automatically play an exit with the safety bar open.");
+            Assert.That(seat.IsSeated, Is.False);
+            Assert.That(seat.IsAttached, Is.False);
+            yield return null;
+            Assert.That(interaction.Phase,
+                Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+            Assert.That(harness.Player.Motor.enabled, Is.True);
+            Assert.That(harness.Player.GameObject.GetComponent<
+                CharacterController>().enabled, Is.True);
+            Assert.That(Vector3.Distance(
+                harness.Player.GameObject.transform.position,
+                seat.Plan.EntryRootPosition), Is.LessThan(0.08f),
+                "The hero must finish at this station's authored platform exit.");
+            Assert.That(harness.Ride.IsRiding, Is.False);
+            Assert.That(GameSessionState.IsRidingTheCableway, Is.False);
+            Assert.That(seat.CanInteract(harness.Player.Interactor), Is.True,
+                "After alighting, the same terminal must offer the return ride.");
+
+            yield return SettleAndCheckStandingFeet(harness, area + "-platform");
+
+            MountainRoadCablewayPlan station = area == GameAreaId.AlpineVillage
+                ? Object.FindFirstObjectByType<AlpineVillageRoot>().Plan.Station.Cableway
+                : Object.FindFirstObjectByType<MountainRoadRoot>().Plan.Terminal.Cableway;
+            Vector3 apron = station.StationArea.Center +
+                station.LineRight * station.BoardingDockRightOffset +
+                station.LineForward * (station.BoardingFenceForward - 1.1f);
+            yield return WalkFromThePlatform(harness, apron);
+            yield return SettleAndCheckStandingFeet(harness, area + "-apron");
+
+            if (area == GameAreaId.AlpineVillage)
+            {
+                // The round trip boards again from this same real platform.
+                yield return WalkFromThePlatform(harness, seat.Plan.EntryRootPosition);
+            }
+        }
+
+        private static IEnumerator WalkFromThePlatform(Harness harness, Vector3 target)
+        {
+            bool arrived = false;
+            for (int step = 0; step < MaximumSteps && !arrived; step++)
+            {
+                arrived = harness.Player.Motor.MoveTowardsApproachWaypoint(
+                    target, 0.08f, Time.deltaTime);
+                yield return null;
+            }
+
+            harness.Player.Motor.CancelInteractionPoseMove();
+            Assert.That(arrived, Is.True,
+                $"The alighted hero could not walk to {target}; " +
+                $"he stopped at {harness.Player.GameObject.transform.position}.");
+        }
+
+        private static IEnumerator SettleAndCheckStandingFeet(Harness harness, string stage)
+        {
+            for (int frame = 0; frame < 30; frame++)
+            {
+                yield return null;
+            }
+
+            var visual = (Player3DCharacterPresentation)harness.Player.Visual;
+            // yield null resumes before LateUpdate in batch mode. Measure
+            // the foot solve the player sees, not the raw clip underneath it.
+            visual.ReapplyLatePresentationPose();
+            Capture(harness, stage, false, standingView: true);
+            var registry = harness.Player.GameObject.GetComponentInChildren<Player3DAssetRegistry>();
+            Assert.That(visual.IsClipActive, Is.False,
+                $"{stage}: the cabin's contextual clip still owns the pose.");
+            Assert.That(visual.InteractionHandoffLocked, Is.False);
+            var prefabRegistry = Player3DResources.LoadPrefab().GetComponent<Player3DAssetRegistry>();
+            Assert.That(Vector3.Distance(registry.ModelRoot.localPosition,
+                prefabRegistry.ModelRoot.localPosition), Is.LessThan(0.001f),
+                $"{stage}: the model kept the cabin's spatial offset.");
+            Assert.That(Quaternion.Angle(registry.ModelRoot.localRotation,
+                prefabRegistry.ModelRoot.localRotation), Is.LessThan(0.01f));
+
+            Transform actor = harness.Player.GameObject.transform;
+            using (Player3DFootGroundProbe probe = Player3DFootGroundProbe.CreateForHero(registry, actor))
+            {
+                Assert.That(probe.TryProbeActorGround(actor.position,
+                    out float groundY, out _), Is.True, $"{stage}: no physical ground under the actor.");
+                foreach (FootSide side in new[] { FootSide.Left, FootSide.Right })
+                {
+                    Transform ankle = side == FootSide.Left
+                        ? registry.Anchors.LeftFoot : registry.Anchors.RightFoot;
+                    FootGroundSample ground = probe.Probe(ankle.position, actor.forward, groundY);
+                    Assert.That(ground.HasSurface, Is.True, $"{stage}: no surface under the {side} boot.");
+                    Assert.That(probe.TryGetSoleHeight(side, out float soleY), Is.True);
+                    TestContext.Out.WriteLine(
+                        $"{stage} {side}: sole={soleY:F3}, ground={ground.HeelY:F3}, " +
+                        $"clearance={visual.Layer.SoleClearance:F3}");
+                    Assert.That(soleY - ground.HeelY, Is.InRange(-0.08f, 0.08f),
+                        $"{stage}: the visible {side} sole must stand on the actual floor.");
+                }
+            }
+
+            Assert.That(visual.Layer.SoleClearance, Is.InRange(-0.08f, 0.08f),
+                $"{stage}: initialization calibrated the soles against a stale surface.");
+        }
+
+        private static Harness FromVillage(AlpineVillageRoot village)
+        {
+            return new Harness
+            {
+                Player = village.Player,
+                Line = village.World.Cableway.Controller,
+                Seat = village.CabinSeat,
+                Ride = village.CablewayRide,
+                Camera = village.CameraFollow.GetComponent<Camera>()
+            };
+        }
+
+        private static void AssertFacingTheCabin(Harness harness)
+        {
+            Assert.That(Vector3.Dot(
+                harness.Player.GameObject.transform.forward,
+                harness.Seat.Cabin.forward), Is.GreaterThan(0.99f),
+                "The seated hero faces the cabin's front, not its side door.");
+        }
+
+        private static void Capture(Harness harness, string name, bool sideView,
+            bool standingView = false)
+        {
+            Camera camera = harness.Camera;
+            Vector3 position = camera.transform.position;
+            Quaternion rotation = camera.transform.rotation;
+            float fieldOfView = camera.fieldOfView;
+            RenderTexture previousTarget = camera.targetTexture;
+            RenderTexture previousActive = RenderTexture.active;
+            var target = new RenderTexture(960, 540, 24);
+            var frame = new Texture2D(960, 540, TextureFormat.RGB24, false);
+            try
+            {
+                if (standingView)
+                {
+                    Vector3 lookAt = harness.Player.GameObject.transform.position + Vector3.up * 0.85f;
+                    camera.transform.position = lookAt -
+                        harness.Seat.Plan.EntryRotation * Vector3.forward * 2.8f + Vector3.up * 0.15f;
+                    camera.transform.LookAt(lookAt);
+                    camera.fieldOfView = 50f;
+                }
+                else if (sideView)
+                {
+                    Transform cabin = harness.Seat.Cabin;
+                    Vector3 lookAt = cabin.Find(
+                        MountainCablewayWorldBuilder.CabinSeatAnchorName).position +
+                        Vector3.up * 0.35f;
+                    camera.transform.position = lookAt -
+                        harness.Seat.Plan.EntryRotation * Vector3.forward * 3.6f +
+                        cabin.forward * 1.8f + Vector3.up * 0.8f;
+                    camera.transform.LookAt(lookAt);
+                    camera.fieldOfView = 55f;
+                }
+
+                camera.targetTexture = target;
+                camera.Render();
+                RenderTexture.active = target;
+                frame.ReadPixels(new Rect(0f, 0f, 960, 540), 0, 0);
+                frame.Apply();
+                string folder = Path.Combine(
+                    Directory.GetCurrentDirectory(), "Captures", "CablewayRegression");
+                Directory.CreateDirectory(folder);
+                File.WriteAllBytes(Path.Combine(folder, name + ".png"),
+                    frame.EncodeToPNG());
+            }
+            finally
+            {
+                camera.transform.SetPositionAndRotation(position, rotation);
+                camera.fieldOfView = fieldOfView;
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+                Object.DestroyImmediate(frame);
+                target.Release();
+                Object.DestroyImmediate(target);
             }
         }
 
@@ -419,7 +759,8 @@ namespace BarPromenade.Tests.PlayMode
                 Player = player,
                 Line = world.Cableway.Controller,
                 Seat = installation.Seat,
-                Ride = installation.Ride
+                Ride = installation.Ride,
+                Camera = camera
             };
         }
 
@@ -429,6 +770,7 @@ namespace BarPromenade.Tests.PlayMode
             public MountainCablewayController Line;
             public AlpineCablewayCabinSeat Seat;
             public AlpineCablewayRideController Ride;
+            public Camera Camera;
         }
     }
 }

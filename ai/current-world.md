@@ -373,11 +373,22 @@ The vertical slice contains:
   both directions. Pressing `E` on the platform brakes the line to
   a stop with a cabin on the boarding point - a distance-driven profile, so
   it comes to rest ON the point rather than near it - seats the hero on the
-  cabin bench in first person, lets the line go, and fades behind the snow
-  ridge into `AreaArrivalToken.Cableway` at the far terminal, which holds the
-  arrival under a black screen until the transition flag clears. The two
-  terminals differ by `MountainCablewayStationKind`: drive below with motor,
-  reducer and shaft, tension carriage and weight stack above with no motor at
+  cabin bench facing cabin-forward in first person, lets the line go, and
+  fades behind the snow ridge into `AreaArrivalToken.Cableway` at the far
+  terminal, which holds the arrival under a black screen until the transition
+  flag clears. Both destinations then restore the cabin and passenger under
+  the ride's own black fade before revealing the approach: the cabin
+  covers the last `18 m` of inbound cable and the station half-turn, docks,
+  then automatically plays the visible exit onto the boarding platform.
+  The existing safety bar swings inward `90 degrees` from its front post to
+  lie along the front window before the doorway is crossed, then closes
+  after entry/exit; boarding turns the hero from the side entrance toward
+  the cabin's forward axis. World-space attachment retains the player's
+  scene parent throughout the ride. A cableway return also parks the
+  Ferryman and his car on the mountain apron if the session has not yet
+  taken the car, so a direct map visit to the village keeps the ride down.
+  The two terminals differ by `MountainCablewayStationKind`: drive below with
+  motor, reducer and shaft, tension carriage and weight stack above with no motor at
   all. Boarding is outboard of the outbound track, because the gap between the
   two tracks is filled by the bullwheel pedestal. The village wears a fourth
   deterministic Blender kit - generator contract `v3.3.0` /

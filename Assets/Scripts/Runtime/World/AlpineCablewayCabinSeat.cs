@@ -6,9 +6,7 @@ namespace BarPromenade
     /// <summary>
     /// The offer to ride, and everything that owns the hero while he does.
     ///
-    /// Written on <c>LastRouteCarSeatInteraction</c>'s shape, minus the doors:
-    /// this cabin's opening is an aperture, so there is no leaf timing to keep
-    /// in step and no swing clearance to dock around.
+    /// The safety bar follows the same transfer timeline as the passenger.
     ///
     /// The passenger is never reparented. His offset from the cabin is
     /// captured once and rewritten from <see cref="RefreshAttachedPose"/>,
@@ -19,6 +17,7 @@ namespace BarPromenade
     /// frame's travel behind it.
     /// </summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(320)]
     public sealed class AlpineCablewayCabinSeat : MonoBehaviour, IInteractable
     {
         public const string BoardPromptKey = "interaction.board_cableway";
@@ -49,6 +48,10 @@ namespace BarPromenade
 
         private Transform cabin;
         private Transform seatAnchor;
+        private Transform safetyBar;
+        private Vector3 safetyBarClosedPosition;
+        private Vector3 safetyBarPivot;
+        private Quaternion safetyBarClosedRotation;
         private bool seated;
         private bool ownsActiveInteraction;
         private bool attached;
@@ -79,6 +82,7 @@ namespace BarPromenade
 
         public bool IsAttached => attached;
         public bool IsFirstPerson => viewOwned;
+        public float SafetyBarOpenAmount { get; private set; }
         public AlpineCablewayCabinSeatPlan Plan => plan;
         public Vector3 InteractionPosition => plan.InteractionPosition;
 
@@ -212,6 +216,11 @@ namespace BarPromenade
 
         private void Update()
         {
+            if (ownsActiveInteraction)
+            {
+                ApplyTransferPresentation();
+            }
+
             if (viewOwned)
             {
                 UpdateOwnedCamera();
@@ -233,6 +242,8 @@ namespace BarPromenade
                 GameLog.Warning("cableway", "cabin_seat_anchor_missing");
                 return;
             }
+
+            BindSafetyBar();
 
             if (!controller.BeginPositioned(
                     definition,
@@ -280,6 +291,8 @@ namespace BarPromenade
                 return false;
             }
 
+            BindSafetyBar();
+
             if (!controller.BeginPositionedLoop(
                     definition,
                     seatAnchor.position,
@@ -293,6 +306,15 @@ namespace BarPromenade
             controller.PhaseChanged += HandlePhaseChanged;
             controller.InteractionCompleted += HandleInteractionCompleted;
             controller.BindActionPelvisTarget(seatAnchor);
+            // The loading scene may have spawned the ordinary root at the
+            // road tunnel. Restore it inside the live cabin before attachment
+            // captures an offset, while the loading cover is still held.
+            player.GameObject.transform.SetPositionAndRotation(
+                seatAnchor.position - Vector3.up * PlayerCharacterDimensions.PelvisHeight,
+                cabin.rotation);
+            controller.RefreshActiveClipAlignment();
+            BeginView();
+            UpdateOwnedCamera();
             seated = true;
             SeatedChanged?.Invoke(true);
             return true;
@@ -315,8 +337,22 @@ namespace BarPromenade
             }
         }
 
+        public bool RequestArrivalExit()
+        {
+            if (!seated || !ownsActiveInteraction || !line.IsDocked ||
+                line.DockedCabin != cabin ||
+                controller.Phase != PlayerAnimatedInteractionPhase.Looping)
+            {
+                return false;
+            }
+
+            RequestStand();
+            return controller.Phase == PlayerAnimatedInteractionPhase.Exiting;
+        }
+
         private void HandlePhaseChanged(PlayerAnimatedInteractionPhase phase)
         {
+            ApplyTransferPresentation();
             switch (phase)
             {
                 case PlayerAnimatedInteractionPhase.Entering:
@@ -338,11 +374,15 @@ namespace BarPromenade
                 case PlayerAnimatedInteractionPhase.Exiting:
                     EndView();
                     break;
+                case PlayerAnimatedInteractionPhase.Idle:
+                    HandleInteractionCompleted();
+                    break;
             }
         }
 
         private void HandleInteractionCompleted()
         {
+            ApplySafetyBar(0f);
             EndAttachment();
             EndView();
             if (controller != null)
@@ -354,11 +394,75 @@ namespace BarPromenade
             ownsActiveInteraction = false;
             cabin = null;
             seatAnchor = null;
+            safetyBar = null;
             if (seated)
             {
                 seated = false;
                 SeatedChanged?.Invoke(false);
             }
+        }
+
+        private void BindSafetyBar()
+        {
+            safetyBar = cabin.Find("Cabin Safety Bar");
+            if (safetyBar == null) return;
+            safetyBarClosedPosition = safetyBar.localPosition;
+            safetyBarClosedRotation = safetyBar.localRotation;
+            // Hinge at the front post; swing inward alongside the front pane.
+            // Lifting this full-length bar would carry its tip through the roof.
+            safetyBarPivot = safetyBarClosedPosition +
+                Vector3.forward * (safetyBar.localScale.z * 0.5f);
+            ApplySafetyBar(0f);
+        }
+
+        private void ApplySafetyBar(float amount)
+        {
+            SafetyBarOpenAmount = Mathf.Clamp01(amount);
+            if (safetyBar == null) return;
+            Quaternion swing = Quaternion.AngleAxis(
+                90f * SafetyBarOpenAmount, Vector3.up);
+            safetyBar.localPosition = safetyBarPivot +
+                swing * (safetyBarClosedPosition - safetyBarPivot);
+            safetyBar.localRotation = swing * safetyBarClosedRotation;
+        }
+
+        private void ApplyTransferPresentation()
+        {
+            if (cabin == null || controller == null || !ownsActiveInteraction) return;
+            PlayerAnimatedInteractionPhase phase = controller.Phase;
+            float progress = controller.PhaseProgress;
+            bool transferring = phase == PlayerAnimatedInteractionPhase.Entering ||
+                                phase == PlayerAnimatedInteractionPhase.Exiting;
+            float opening = Mathf.SmoothStep(0f, 1f,
+                Mathf.InverseLerp(0.04f, 0.24f, progress));
+            float closing = 1f - Mathf.SmoothStep(0f, 1f,
+                Mathf.InverseLerp(0.80f, 0.98f, progress));
+            ApplySafetyBar(transferring ? Mathf.Min(opening, closing) : 0f);
+
+            // Entry faces the side aperture. Only after crossing it does the
+            // body turn onto the forward-facing bench; exit reverses that turn.
+            float seatedWeight;
+            switch (phase)
+            {
+                case PlayerAnimatedInteractionPhase.Entering:
+                    seatedWeight = Mathf.SmoothStep(0f, 1f,
+                        Mathf.InverseLerp(0.62f, 0.80f, progress));
+                    if (progress >= ViewEnterProgress) BeginView();
+                    break;
+                case PlayerAnimatedInteractionPhase.Looping:
+                    seatedWeight = 1f;
+                    break;
+                case PlayerAnimatedInteractionPhase.Exiting:
+                    seatedWeight = 1f - Mathf.SmoothStep(0f, 1f,
+                        Mathf.InverseLerp(0.24f, 0.34f, progress));
+                    break;
+                default:
+                    return;
+            }
+
+            player.GameObject.transform.rotation = Quaternion.Slerp(
+                plan.EntryRotation, cabin.rotation, seatedWeight);
+            controller.RefreshActiveClipAlignment();
         }
 
         /// <summary>
@@ -562,6 +666,11 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            if (ownsActiveInteraction)
+            {
+                controller?.CancelActiveInteraction();
+                HandleInteractionCompleted();
+            }
             EndAttachment();
             EndView();
         }

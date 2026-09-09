@@ -1612,10 +1612,8 @@ namespace BarPromenade
 
             // Local `+X` is a DOORWAY, and it is a doorway by omission - the
             // window that used to be here is simply not built. That is the
-            // bus's and the car's pattern, and it buys more than geometry:
-            // with no leaf there is no door-phase contract, so the boarding
-            // clips run with their stock timing instead of needing a hold
-            // while a leaf swings.
+            // bus's and the car's pattern. The safety bar below is the moving
+            // leaf; the seat adapter opens it before the body crosses here.
             //
             // It is always this side. The cabin yaws to face its own travel,
             // so local `+X` is the OUTBOARD side at both terminals - which is

@@ -26,6 +26,7 @@ namespace BarPromenade
         public const float FadeInSeconds = 0.9f;
         public const float SkipFadeOutSeconds = 0.6f;
         public const float SkipFadeInSeconds = 0.8f;
+        public const float ArrivalApproachMeters = 18f;
         public const string SkipPromptKey = "lastroute.ride.skip";
 
         private AlpineCablewayCabinSeat seat;
@@ -34,6 +35,7 @@ namespace BarPromenade
         private Func<MountainRoadCablewayPlan> arrivalCablewayFactory;
         private float departureLineLength;
         private float departureFadeLeadMeters;
+        private float departureStartDistance;
 
         private LastRouteRideFadeView fade;
         private LastRouteRideSkipHintView skipHint;
@@ -43,11 +45,12 @@ namespace BarPromenade
         private bool fading;
         private bool skipping;
         private bool resumingArrival;
+        private bool arriving;
         private IDisposable rideOwnership;
 
         public bool IsRiding => riding;
         public bool IsAwaitingStart => awaitingArrivalStart;
-        public bool CanSkipRide => riding && !fading && !skipping &&
+        public bool CanSkipRide => riding && !arriving && !fading && !skipping &&
             GameInput.CanRead(GameInputContext.Gameplay);
         public bool IsSkipping => skipping;
         public LastRouteRideFadeView Fade => fade;
@@ -165,8 +168,7 @@ namespace BarPromenade
 
             if (!isActiveAndEnabled || riding || resumingArrival)
             {
-                // The arrival seats him itself, with the line already at rest
-                // and the journey already over. That is not a departure.
+                // Restoring a passenger on the incoming track is not a departure.
                 return;
             }
 
@@ -175,6 +177,7 @@ namespace BarPromenade
 
         private void BeginLeg()
         {
+            departureStartDistance = line.TravelledDistance;
             seat.BeginAttachment();
             line.Resume();
             riding = true;
@@ -220,38 +223,35 @@ namespace BarPromenade
             departureLineLength = cableway.LineLength;
             departureFadeLeadMeters = EvaluateFadeLeadMeters(cableway);
 
-            // Seat him before anything is shown. The line at this end is built
-            // standing with a cabin on the point, so there is normally nothing
-            // to call and nothing to wait for; the request stays as the way
-            // back for a line that is somehow already running.
-            if (!line.IsDocked)
-            {
-                line.RequestDockAt(cableway.BoardingLoopDistance);
-                while (!line.IsDocked)
-                {
-                    yield return null;
-                }
-            }
-
-            // Re-solve the seat against THIS station before anything reads
-            // it: every point in the plan is world-space and was solved at
-            // the terminal on the other mountain.
+            // Restore the cabin on this station's incoming rope while covered.
+            // The real loop then carries it round to the boarding platform.
             seat.RebuildPlan(cableway);
+            Transform arrivalCabin = line.BeginArrival(ArrivalApproachMeters);
+            bool restored = false;
             resumingArrival = true;
             try
             {
-                if (!seat.ResumeSeated(line.DockedCabin))
-                {
-                    GameLog.Warning("cableway", "arrival_seat_failed");
-                }
+                restored = seat.ResumeSeated(arrivalCabin);
             }
             finally
             {
                 resumingArrival = false;
             }
 
+            if (!restored)
+            {
+                GameLog.Warning("cableway", "arrival_seat_failed");
+                fade.FadeIn(FadeInSeconds);
+                yield break;
+            }
+
+            seat.BeginAttachment();
+            arriving = true;
+            riding = true;
+            rideOwnership = GameSessionState.AcquireCablewayRide();
+
             fade.FadeIn(FadeInSeconds);
-            GameLog.Info("cableway", "ride_arrived");
+            GameLog.Info("cableway", "arrival_approach_started");
         }
 
         /// <summary>
@@ -266,12 +266,23 @@ namespace BarPromenade
             }
 
             seat.RefreshAttachedPose();
+            if (arriving)
+            {
+                if (line.IsDocked && seat.RequestArrivalExit())
+                {
+                    arriving = false;
+                    ReleaseRideOwnership();
+                    GameLog.Info("cableway", "ride_arrived");
+                }
+
+                return;
+            }
             if (fading || skipping)
             {
                 return;
             }
 
-            float travelled = line.TravelledDistance;
+            float travelled = line.TravelledDistance - departureStartDistance;
             if (travelled < FadeTriggerDistance())
             {
                 return;
@@ -416,7 +427,10 @@ namespace BarPromenade
         private void OnDisable()
         {
             StopAllCoroutines();
+            awaitingArrivalStart = false;
+            arriving = false;
             ReleaseRideOwnership();
+            seat?.EndAttachment();
         }
 
         private void OnDestroy()

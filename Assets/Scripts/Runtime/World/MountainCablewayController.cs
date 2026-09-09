@@ -439,6 +439,35 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// Restores the passenger cabin on the incoming track, under the area
+        /// loading cover. It follows the real station turn to its boarding bay.
+        /// </summary>
+        public Transform BeginArrival(float approachMeters)
+        {
+            if (!initialized || !docked || dockedCabinIndex < 0)
+            {
+                return null;
+            }
+
+            if (float.IsNaN(approachMeters) || float.IsInfinity(approachMeters) ||
+                approachMeters <= 0f || approachMeters >= plan.LineLength)
+            {
+                throw new ArgumentOutOfRangeException(nameof(approachMeters));
+            }
+
+            dockRemaining = approachMeters + Mathf.PI * plan.TurnRadius;
+            travelledDistance -= dockRemaining;
+            travelledSinceResume = float.PositiveInfinity;
+            docked = false;
+            docking = true;
+            currentSpeed = MountainCablewayDriveRules.EvaluateApproachSpeed(
+                dockRemaining, plan.CabinSpeed);
+            ApplyPresentation(travelledDistance, travelledDistance, false);
+            ApplyMotorVoice();
+            return cabins[dockedCabinIndex];
+        }
+
         public void Advance(float deltaTime)
         {
             if (!initialized)

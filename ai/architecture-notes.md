@@ -4134,6 +4134,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   stays grounded over uneven terrain. Plan and validator both keep every ridge
   footprint clear of the road corridor, plateau and tree crowns; the dedicated
   cableway return occluder remains separately positioned by the terminal plan.
+- **Current — Cableway arrival continues aboard through the station
+  (`2026-09-09`):** `AlpineCablewayRideController.ArrivalApproachMeters`
+  places arrival on the inbound track `18 m` before its station end, followed
+  by the station half-turn to the normal boarding dock. Both area roots
+  consume the cableway arrival before choosing the preparatory player spawn
+  at the boarding dock. The arrival owner waits for the area transition to
+  clear, restores the cabin, passenger and first-person view under its own
+  black ride fade, then reveals the approach and brakes at the dock.
+  Both destination roots synchronize built colliders before player creation, so
+  neutral foot calibration sees the raised platform instead of caching its
+  height above the pad as a permanent sole-to-floor clearance.
+  Only the stopped cabin starts the automatic visible exit. The seat follows
+  the moving cabin in world space while retaining the player's scene parent,
+  so the walkable-area owner remains discoverable after alighting. Boarding
+  turns from the side doorway toward cabin-forward; the existing safety bar
+  swings inward `90 degrees` about the front post to lie along the front
+  window before passage, then closes after the hero clears it in either direction.
 - **Accepted — The cableway's blackout is derived from its own rock:** The
   far snow ridge that swallows the upper turn is not scenery near the top, it
   is planted ON the line: `UpperOccluderSetback 1.8 m` short of the cable end,
@@ -4272,15 +4289,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the rule again anyway before the drive is committed. Withdrawing the option
   instead was rejected: it would have taken his twelve lines away with it, and
   a man who says nothing about it is not a refusal.
-- **Accepted — the chart bringing the hero to the mountain brings the car with
-  him:** every way into `MountainRoad` that is not the ride and not the
-  cableway is the map, and a map that can put the hero on a mountain six
-  hundred metres above a car he never took would strand him — there is no road
-  down on foot and the cableway only goes up. So `MountainRoadRoot.BuildLastRoute`
-  advances the stage to `Arrived` itself on such an arrival and parks the car on
-  the apron waiting. It costs the island its car, which is the invariant being
-  honoured rather than broken: he is in exactly one place, and the way back is
-  the ride he can now ask for.
+- **Accepted — arriving on the mountain leaves the Ferryman waiting there:**
+  the chart can bring the hero directly to `MountainRoad` or to the village
+  before the car has been taken. `MountainRoadRoot.BuildLastRoute` therefore
+  advances `NotTaken -> InTransit -> Arrived` on any non-car visit, including
+  the cableway return corrected on `2026-09-09`, and parks the car on the apron.
+  An already `Arrived` car stays there. The same session stage removes the
+  island's copy, keeping the man and car in exactly one area and preserving
+  the drive down after either route to the mountain.
 - **Accepted — a car parked nose-in leaves by backing round, not by turning:**
   the terminal apron is a `7.5 m` pocket whose cafe corner stands `8.24 m` from
   its centre, so no U-turn of a usable radius fits (this is why the arrival

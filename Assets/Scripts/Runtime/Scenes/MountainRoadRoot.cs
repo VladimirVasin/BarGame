@@ -52,8 +52,8 @@ namespace BarPromenade
         public AreaArrivalToken ArrivalToken { get; private set; }
         public bool HadAreaArrival { get; private set; }
 
-        /// <summary>The Ferryman's car, once it has been driven up here. Null
-        /// on every visit before that.</summary>
+        /// <summary>The Ferryman's car, arriving on the road or waiting on
+        /// the terminal apron for a visit by map or cableway.</summary>
         public LastRouteCarAssetRegistry LastRouteCar { get; private set; }
         public LastRouteFerrymanPresentation LastRouteFerryman
         {
@@ -178,7 +178,15 @@ namespace BarPromenade
                                     Vector3.up *
                                     PlayerFactory.GroundedRootOffset;
             string spawnSource = "tunnel";
-            if (HadAreaArrival &&
+            if (HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway)
+            {
+                // A grounded preparation point while the arrival owns black.
+                // It restores the live passenger before revealing the approach.
+                spawnPosition = Plan.Terminal.Cableway.BoardingDockPosition +
+                                Vector3.up * PlayerFactory.GroundedRootOffset;
+                spawnSource = "cableway";
+            }
+            else if (HadAreaArrival &&
                 hasArrivalPoint &&
                 new CityMapMountainRoadTeleportGround(World.WalkableArea)
                     .TryClampArrival(
@@ -200,6 +208,11 @@ namespace BarPromenade
                 GameLog.Field("x", spawnPosition.x),
                 GameLog.Field("y", spawnPosition.y),
                 GameLog.Field("z", spawnPosition.z));
+            // Construction can finish while physics is paused, with automatic
+            // transform sync disabled. Foot calibration must see the raised
+            // boarding platform, not cache its height above the lower pad as
+            // permanent boot clearance for the rest of the scene visit.
+            Physics.SyncTransforms();
             Player = PlayerFactory.Create(
                 transform,
                 spawnPosition,
@@ -286,30 +299,21 @@ namespace BarPromenade
         /// Either way he can be asked to drive back down, which is the whole
         /// of what changed when the road stopped being one-way.
         ///
-        /// **Getting here any other way puts him here too.** Every route into
-        /// this area that is not the car itself is the chart - the area tab,
-        /// or a point picked on it - and a chart that can drop the hero on a
-        /// mountain six hundred metres above a car he has not taken would
-        /// strand him: there is no road down and the cableway only goes up.
-        /// So an arrival that is not the ride and not the cabin advances the
-        /// stage itself and parks the car at the end of the road, which is the
-        /// one place on this mountain a car can be. It costs the island its
-        /// car, and that is not a side effect to be sorry about - it is the
-        /// same invariant as ever, that he is in exactly one place, honoured
-        /// by a way in that did not exist when the ladder only went up.
+        /// Arriving by map or cableway must also leave a way down. The map
+        /// can take the hero directly to the village before he has used the
+        /// car, so a cabin arrival cannot assume it is already parked here.
+        /// Both arrivals move an untaken car to the apron through the same
+        /// session stage, keeping the man and car in exactly one area.
         /// </summary>
         private void BuildLastRoute(Camera camera)
         {
             bool arrivingByCar =
                 HadAreaArrival && ArrivalToken == AreaArrivalToken.Ferryman;
-            bool arrivingByCabin =
-                HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway;
             if (!arrivingByCar &&
-                !arrivingByCabin &&
                 GameSessionState.FerrymanRide ==
                 LastRouteFerrymanRideStage.NotTaken)
             {
-                // The chart put him up here. Bring the car up with him.
+                // A visit without the car still needs the waiting ride down.
                 GameSessionState.TryAdvanceFerrymanRide(
                     LastRouteFerrymanRideStage.InTransit);
                 GameSessionState.TryAdvanceFerrymanRide(
