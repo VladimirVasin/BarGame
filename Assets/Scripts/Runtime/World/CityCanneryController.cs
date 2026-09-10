@@ -12,9 +12,9 @@ namespace BarPromenade
         private Transform hero;
         private Transform factory, equipment, lift, leftDoor, rightDoor, seamer, retortDoor;
         private readonly Transform[] wheels = new Transform[4];
-        private readonly Transform[] fish = new Transform[6];
-        private readonly Transform[] cases = new Transform[6];
-        private readonly Vector3[] cargoSlots = new Vector3[6];
+        private readonly Transform[] fish = new Transform[CityFishSupplyCycle.HandlingUnits];
+        private readonly Transform[] cases = new Transform[CityFishSupplyCycle.HandlingUnits];
+        private readonly Vector3[] cargoSlots = new Vector3[CityFishSupplyCycle.HandlingUnits];
         private readonly Quaternion[] wheelRest = new Quaternion[4];
         private readonly Dictionary<string, Transform> anchors = new Dictionary<string, Transform>();
         private Quaternion liftRest, leftDoorRest, rightDoorRest;
@@ -35,6 +35,7 @@ namespace BarPromenade
         public CityFishSupplyCycle Cycle { get; private set; }
         public CityCanneryTraffic Traffic { get; private set; }
         public CityFishSupplySnapshot Snapshot { get; private set; }
+        public CityCanneryProductionSnapshot Production => Snapshot.Production;
         public Transform Truck { get; private set; }
         public Transform Factory => factory;
         public Transform Equipment => equipment;
@@ -78,7 +79,7 @@ namespace BarPromenade
             forksDock=trolley.InverseTransformPoint(forks.position);
             tray = CityCanneryAssetProvider.Create("CanTray", factory).transform;
             basket = CityCanneryAssetProvider.Create("RetortBasket", factory).transform;
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < fish.Length; i++)
             {
                 fish[i] = CityCanneryAssetProvider.Create("Pallet", transform).transform;
                 fish[i].name = "Fish handling unit " + i;

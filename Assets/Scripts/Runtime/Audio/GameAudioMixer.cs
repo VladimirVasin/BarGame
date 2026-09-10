@@ -33,7 +33,7 @@ namespace BarPromenade
         // every snapshot, so a scene change can alter room character without
         // changing the player's hierarchy of what matters.
         public const float MasterHeadroomDb = -6f;
-        public const float MusicGainDb = -5.5f;
+        public const float MusicGainDb = -11.5f;
         public const float AmbienceBedsGainDb = -4f;
         public const float AmbienceDetailsGainDb = 0.5f;
         public const float SfxWorldGainDb = 2f;

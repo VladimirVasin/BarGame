@@ -43,10 +43,10 @@ namespace BarPromenade
 
         // Calibrated against the current imported masters. Their raw
         // integrated loudness spans roughly eight LUFS; these source trims
-        // place all six present themes near -30.5 LUFS after Music and Master
+        // place all six present themes near -36.5 LUFS after Music and Master
         // bus gains, before scene acoustics. Music remains a location colour,
         // while actions and short details keep the foreground.
-        public const float CalibratedIntegratedTargetLufs = -30.5f;
+        public const float CalibratedIntegratedTargetLufs = -36.5f;
         public const float ToneCutoffFrequency = 12000f;
         public const float DefaultOutputVolume = 0.40f;
         public const float CityOutputVolume = 0.92f;

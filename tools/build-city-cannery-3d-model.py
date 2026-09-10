@@ -598,7 +598,14 @@ def truck(mat):
     chamfer(g,(0,1.09,4.27),(2.28,.12,2.10),PAINT,.035)
     chamfer(g,(0,2.87,4.15),(2.28,.18,2.02),PAINT,.075)
     chamfer(g,(0,1.9,3.24),(2.27,1.35,.16),PAINT,.045)
-    chamfer(g,(0,1.64,5.18),(2.25,.38,.30),PAINT,.08)
+    # The cab nose closes from the bumper to the windscreen sill. The old
+    # upper strip left daylight around the grille and headlamps; the short
+    # side returns meet the door hinge line without filling the footwell.
+    front=Geometry()
+    chamfer(front,(0,1.44,5.19),(2.25,.78,.30),PAINT,.045)
+    for x in (-1.065,1.065):
+        chamfer(front,(x,1.44,5.075),(.12,.78,.27),PAINT,.025)
+    obj(front,"TruckFrontPanel",root,mat)
     for x in (-1.06,1.06):
         g.rod((x,1.76,5.12),(x,2.80,4.96),.065,PAINT,8)
         g.rod((x,1.65,3.35),(x,2.78,3.35),.065,PAINT,8)
@@ -619,10 +626,22 @@ def truck(mat):
     g.rod((0,1.80,5.10),(0,2.79,4.95),.028,PAINT,6)
     for x in (-.49,.49):g.rod((x,1.87,5.103),(x+.2,2.22,5.05),.013,DARK,6)
     chamfer(g,(0,.94,5.23),(2.4,.22,.30),METAL,.045)
-    chamfer(g,(0,1.31,5.31),(.85,.25,.04),DARK,.02)
-    for i in range(7):g.box((-.37+i*.123,1.31,5.337),(.05,.2,.025),METAL)
+    chamfer(g,(0,1.31,5.35),(.85,.25,.018),DARK,.008)
+    for i in range(7):g.box((-.37+i*.123,1.31,5.371),(.05,.2,.02),METAL)
+    for side,x in (("Left",-.88),("Right",.88)):
+        # A recessed lens and solid gasket/bezel share one authored host.
+        # Its front anchor stays outside the nose and inside the 5.4 m body
+        # bound; runtime can drive this glass without relighting the grille.
+        lamp=empty("Headlamp"+side,root,(x,1.4,5.37))
+        housing=Geometry();housing.role="Rubber"
+        housing.rod((0,0,-.028),(0,0,-.014),.149,DARK,16)
+        housing.role=None
+        ring(housing,(0,0,-.003),.129,.014,METAL,(0,0,1),16)
+        obj(housing,"HeadlampHousing"+side,lamp,mat)
+        lens=Geometry();lens.rod((0,0,-.025),(0,0,0),.115,LAMP,16)
+        obj(lens,"TruckHeadlampGlass",lamp,mat)
+        anchor("Headlamp"+side,root,(x,1.4,5.37))
     for x in (-.88,.88):
-        g.rod((x,1.4,5.25),(x,1.4,5.32),.115,LAMP,12)
         chamfer(g,(x,.75,-2.51),(.29,.16,.12),RUST,.018)
     # Four formed wheel arches and flexible flaps fit the existing collision
     # envelope. The underbody remains open enough to see axles and suspension.
@@ -854,6 +873,27 @@ def validate(roots):
         x,y,z=truck_points['ANCHOR_TruckCargo'+str(i)]
         if abs(x)+.4>1.15 or z-.6< -2.52 or z+.6>3.02 or abs(y-1.22)>.001:
             raise RuntimeError("Cannery pallet does not fit the real closed truck box")
+    truck_root=next(r for r in roots if r.name.split('.')[0]=='Truck')
+    front=next(part for part in truck_root.children_recursive
+               if part.type=='MESH' and part.name.split('.')[0]=='TruckFrontPanel__Steel')
+    vertices=[truck_root.matrix_world.inverted()@front.matrix_world@v.co for v in front.data.vertices]
+    faces=[list(p.vertices) for p in front.data.polygons]
+    front_tree=port.BVHTree.FromPolygons(vertices,faces)
+    for x in (-1.02,-.88,0,.88,1.02):
+        for y in (1.12,1.32,1.58):
+            hit,_,_,_=front_tree.ray_cast(Vector(source((x,y,5.42))),Vector(source((0,0,-1))),.5)
+            if hit is None or not 5.335<source(hit)[2]<5.345:
+                raise RuntimeError('Truck front panel leaves a daylight gap around the grille or headlamps')
+    for side,x in (("Left",-.88),("Right",.88)):
+        if math.dist(truck_points['ANCHOR_Headlamp'+side],(x,1.4,5.37))>.001:
+            raise RuntimeError('Truck headlamp anchor does not match the front lens')
+        lamp=next(part for part in truck_root.children_recursive if part.name.split('.')[0]=='Headlamp'+side)
+        lenses=[part for part in lamp.children_recursive
+                if part.type=='MESH' and part.name.split('.')[0]=='TruckHeadlampGlass']
+        if len(lenses)!=1:
+            raise RuntimeError('Truck headlamp lacks its independently driven glass')
+    if entries['Truck']['bounds_max'][2]>5.4 or entries['Truck']['bounds_max'][0]>1.25 or entries['Truck']['bounds_min'][0]<-1.25:
+        raise RuntimeError('Truck nose or headlamp details exceed the existing vehicle envelope')
     # The public corridor remains 1.84 metres wide between east wall and the
     # partition. Hall wall openings are measured from actual kit geometry.
     if entries['Hall']['bounds_max'][0]>.4:raise RuntimeError("Hall intrudes into the service strip")

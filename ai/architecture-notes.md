@@ -4,29 +4,44 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
-- **Accepted — 2026-09-10, a compact cannery and finite fish logistics:**
-  Story §6 replaces the weighbridge; public routes remain. `CityFishSupplyCycle`
-  serializes six units through chill, prepare/fill/seam, retort, cool/pack and
-  shop receipt. One `8 x 2.5 m` truck runs at `3 m/s`, reverses at `1.1 m/s`.
-  Level frontage, doors, baffle bypass and tail lift preserve contact;
-  `CityCanneryTraffic` reserves trips for the bus. Shop stock stays unchanged;
-  empty-tare return is Deferred.
-  `CityFishSupplySession` survives reloads; pause/obstacles stop time, distance
-  does not. `WorldDistancePresentation` gates factory/shore/vessel/truck at
-  80/96 m from mesh/light bounds, coupling berth/handoff contacts. Hidden rigs,
-  mechanisms, lights and sounds sleep; truck collision, custody and traffic
-  continue. Approach restores the phase even paused; night cannot reopen gates.
+- **Accepted — 2026-09-10, cannery and finite fish logistics:**
+  Story §6 replaces the weighbridge, keeping public routes. One `8 x 2.5 m`
+  truck carries finite units port→factory→shop: `3 m/s`, reverse `1.1 m/s`.
+  Level frontage, doors, baffle bypass and tail lift preserve contact; trips
+  reserve bus access. Shop stock is unchanged; empty tare is Deferred.
+  Session time survives reloads and stops for pause/obstacles, never distance.
+  Presentation gates factory/shore/vessel/truck at 80/96 m from mesh/light bounds,
+  coupling berth/handoff contacts. Hidden rigs, mechanisms, lights and sounds
+  sleep; collision, custody and traffic continue. Approach restores the phase
+  even paused; night cannot reopen gates.
 
 - **Accepted — 2026-09-10, cannery surface and process detail:**
-  Ten Blender models retain the same City footprint and public passages.
-  Five opaque ImageGen maps cover floor, wash wall, stainless steel, insulation
-  and cardboard; other surfaces share port assets and metre UVs. Hall, yard,
-  equipment and truck gain functional fittings. The same fifteen open cans
-  receive contents and lids, then enter the packing carton. Ordinary rigs wear
-  muted work cloth; two articulated aprons follow preparation and packing.
-  Finite task poses, phase lamps and bounded steam expose the existing cycle;
-  ordinary labels name reception/shipping. All follow the distance gates.
-  No new interaction, dialogue or story meaning; story §16/§21 and art §16 hold.
+  Ten Blender models keep footprint/passages; five opaque ImageGen maps cover
+  floor, wash wall, steel, insulation and cardboard. Other surfaces share port
+  assets/metre UVs. Workwear, two articulated aprons, finite poses, lamps and
+  steam follow distance gates. The same fifteen cans fill, seal and enter a carton.
+  The truck's continuous front and bezels hold separate emissive lenses;
+  anchored dipped beams retain day/distance gates. Ordinary labels name
+  reception/shipping; story §16/§21 and art §16 hold.
+
+- **Accepted — 2026-09-10, first-crate production:**
+  `CityFishSupplyCycle` separates delivery/production on one clock. The free line
+  takes FIFO units during unloading; arrivals wait in cold storage.
+  Authored prepare/fill/seam, retort, cool/pack run at `2x`. The packer walks
+  back between finite passes; the truck takes all output.
+
+- **Accepted — 2026-09-10, three crates per trawler:**
+  `CityPortCycle.CargoCount=3` owns port/supply quantities; extra loads never spawn.
+  Unloading is `3*64=192 s`, the visit `432 s`; truck handling is
+  `24+3*76=252 s`. Geometry, scale, crews and fifteen presentation cans stay.
+  Early FIFO/`2x` production remains; odd-count returns keep real endpoints.
+
+- **Accepted — 2026-09-10, readable working sound:**
+  `CityWorkAudio` routes eight mono 3D port/cannery voices to `SfxWorld`.
+  Direct sound precedes local `.28 s` outdoor/`.95 s` factory reverb; zone mix
+  is zero and City returns stay. Sound follows the crane's `ANCHOR_HoistFeed`
+  and stationary retort body. Other anchors and music source trims stay;
+  Music moves back `6 dB`. No added bed.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
   Twelve opaque ImageGen albedos cover horizontal
@@ -52,19 +67,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   winches slew with crane heads while operators stay grounded. Five unchanged
   StationWorker rigs use fabric UV transforms, muted clothes and planted torso
   motion before fixed hand contacts and load gaze.
-  Hook and cargo sway by at most `9 cm` during slewing, settling before lowering.
-  Two warm fixtures now aim at quay and store work patches. The daylight
-  two-thirds floor, global fog and `624 s` six-load cycle remain unchanged.
-  Generator validation and `AreaCaptureFixture.CityPort` passed; day/night
-  and access frames were reviewed. Story §16/§21 and all nine art checks hold.
+  Hook/cargo sway at most `9 cm` during slewing, settling before lowering.
+  Warm fixtures aim at quay/store patches; the two-thirds daylight floor and
+  global fog remain. Story §16/§21 and all nine art checks hold.
 
 - **Accepted — 2026-09-09, a small working fishing port:**
   The vessel enters, berths, unloads and leaves while the hero observes.
   Story §6's level-`0` exception covers art §10d's docking, dark-shore and
   sand constraints, story §5/§7/§12/§18 and art §10g's closed-port meaning.
   Closed mine, boat station and fisherman remain; no reopening history exists.
-  One berth, two cranes, one roughly `20 m` trawler, five workers and six loads
-  make a finite slice. Fenders, bollards, moorings and a free crane edge serve
+  One berth, two cranes, a roughly `20 m` trawler and five workers serve finite
+  catches. Fenders, bollards, moorings and a free crane edge serve
   a basin/approach clear of bed, river mouth, island and station pier. The quay stands `20 m`
   beyond the waterline, on solid caissons extending to local `-3.4 m`.
   Its rear edge meets the low shore, keeping the warehouse above the rising
@@ -72,15 +85,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and walkable footprints connect beach and road crossing outside hanging loads.
   Cranes deliver fish to the quay, a trolley to cold storage. Moorings precede
   lifting and clear before departure; each handoff shares a physical contact.
-  Nothing resets visibly; ship entry/exit use distant fog. The fixed-world
-  port clock is separate from hero-local offshore spawning, whose planner
-  excludes this corridor.
-  `CityPortCycle` reconstructs a `624 s` visit with six `64 s` cargo slots;
+  Nothing resets visibly; ship entry/exit use distant fog. The fixed port clock
+  stays separate from hero-local offshore spawning, which excludes this corridor.
+  `CityPortCycle` reconstructs visits with `64 s` cargo slots;
   `CityPortController` applies its custody, hatch, mooring and motion state.
-  Crew, mechanical voices and the separate sea wake follow the same owner.
-  `AreaCaptureFixture.CityPort` passed the focused runtime acceptance.
-  Deterministic Blender geometry has measured anchors; pure plans own space
-  and cargo, runtime owns presentation/pause/release. Materials and sea/wave
+  Crew, work sounds and sea wake share that owner.
+  Blender anchors measure pure space/cargo plans; runtime owns
+  presentation/pause/release. Materials and sea/wave
   data are shared. Warm work lights retain the two-thirds daytime floor;
   motors, cranes, wheels and contacts own quiet sound. Muted nonyellow clothes
   preserve the fisherman's accent. The hero can leave freely; no boarding,
@@ -5633,22 +5644,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — One canonical audio mixer:** `GameAudioMixer` loads one
   `Resources/Audio/Mixers/BarPromenadeAudio` asset and resolves exact
   `Music`, `Ambience/Beds`, `Ambience/Details`, `SFX/World`,
-  `SFX/Gameplay` and dry `UI` groups. Scene roots select City, Bar,
-  Stairwell, Home or DoorTransition snapshots; non-door profiles transition
-  over `0.25 s`, while DoorTransition cuts immediately at blackout.
-  The mixer keeps `-6 dB` master headroom under a compressor and owns
-  dedicated Receive/Reverb and Receive/Echo returns. Music, ambience details
-  and world SFX feed scene-specific send levels; Home stays short, damped and
-  echo-free, while Stairwell uses the longest/strongest reverb with a dark
-  high-frequency rolloff plus restrained stereo echo.
-- **Accepted — The mix hierarchy is invariant across scenes:** Snapshots may
-  change room response, not the order of information. Every snapshot authors
-  Music `-5.5 dB`, Ambience/Beds `-4 dB`, Ambience/Details `+0.5 dB`,
+  `SFX/Gameplay` and dry `UI`. City, Bar, Stairwell and Home snapshots blend
+  over `.25 s`; DoorTransition cuts at blackout. Master keeps `-6 dB` under
+  a compressor. Music/details/world feed scene-specific Receive/Reverb and
+  Receive/Echo returns: Home short, damped, echo-free; Stairwell longest and
+  strongest, with dark high-frequency rolloff and restrained stereo echo.
+- **Accepted — The mix hierarchy is invariant across scenes:** All snapshots keep
+  Music `-11.5 dB`, Ambience/Beds `-4 dB`, Ambience/Details `+0.5 dB`,
   SFX/World `+2 dB`, SFX/Gameplay `+2.5 dB` and dry UI `+1.5 dB` below the
-  shared `-6 dB` Master. Detail/world send trims compensate their dry-bus
-  lifts, preserving the previous wet-tail energy while attacks move forward.
-  Thunder is a readable world event and the wake alarm a gameplay signal;
-  neither shares the continuous ambience tier.
+  shared `-6 dB` Master. Detail/world send trims preserve wet-tail energy
+  despite raised dry buses. Thunder is a world event, the wake alarm a gameplay
+  signal; neither uses the continuous ambience tier. Room response may vary.
 - **Accepted — Bus audio belongs to visible mechanisms:** The pooled Route 01
   actor owns exactly four fully spatial voices. Two sit in the rear motor
   compartment: a mid-rich exterior diesel whose linear `24-48 m` tail is tied
@@ -5660,12 +5666,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   opening or closing clips once per real door-phase edge. NPC occupancy never
   enables the cabin mix, generic door SFX cooldowns cannot suppress either
   doorway, and pooling stops and resets every voice.
-- **Accepted — Reproducible mixer authoring:** The committed mixer is created
-  and updated through `AudioMixerAssetSetup`, which uses Unity's editor API,
-  preserves one exact topology across repeated runs and fails when a required
-  effect, send or echo parameter is unavailable. EditMode coverage validates
-  the DSP graph, send targets and critical snapshot values rather than only
-  checking group names.
+- **Accepted — Reproducible mixer authoring:** `AudioMixerAssetSetup` uses
+  Unity's editor API to preserve the exact graph; a missing effect, send or
+  echo parameter fails authoring. EditMode coverage checks DSP routing, send
+  targets and critical snapshot values.
 - **Accepted — Scene-local music with guarded fades:** `CityMusicPlayer` loads only `city_theme`
   from `Resources/Audio/CityMusic`, while `BarMusicPlayer` loads only
   `bar_theme` from `Resources/Audio/BarMusic` and
@@ -5679,10 +5683,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   behind a `12 kHz` low-pass. Bar is the deliberate diegetic exception: its
   source sits at the visible jukebox grille, uses linear three-dimensional
   attenuation and the cabinet's `120 Hz` high-pass, `5.6 kHz` low-pass and
-  light saturation. The six
-  present masters are EBU-R128 measured and independently source-trimmed so
-  their roughly `8 LUFS` raw spread converges near `-30.5 LUFS` after the
-  Music and Master buses; a replacement master must be remeasured.
+  light saturation. Six EBU-R128-measured masters span roughly `8 LUFS` raw;
+  separate source trims target `-36.5 LUFS` after Music/Master. Replacement
+  masters must be remeasured.
   `SceneMusicPlayer` owns a smooth unscaled gain envelope, waits for clip data
   before starting it and fails silent if loading fails. Home alone reads the
   fixed-camera Balcony shot: it fades `home_theme` to zero, pauses while

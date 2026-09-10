@@ -161,7 +161,7 @@ namespace BarPromenade
             ApplyPresentation();
         }
 
-        /// <summary>Six separate cages fit below the two open hatch apertures.</summary>
+        /// <summary>The finite set of cages fits below the two open hatch apertures.</summary>
         public static Vector3 CargoHoldLocal(int index)
         {
             if (index < 0 || index >= CityPortCycle.CargoCount)
@@ -231,7 +231,9 @@ namespace BarPromenade
                 double t = Snapshot.SecondsInCargo;
                 if (t >= CityPortCycle.StoredAtSeconds)
                 {
-                    crane = (crane + 1) % 2;
+                    // After the last load, park at the first crane for the
+                    // next visit, including visits with an odd load count.
+                    crane = Snapshot.CargoIndex + 1 < CityPortCycle.CargoCount ? (crane + 1) % 2 : 0;
                     motionDuration = CityPortCycle.CargoDurationSeconds - CityPortCycle.StoredAtSeconds;
                     progress = 1f - (float)((t - CityPortCycle.StoredAtSeconds) / motionDuration);
                 }

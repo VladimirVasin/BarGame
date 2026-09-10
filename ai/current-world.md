@@ -1039,26 +1039,19 @@ The vertical slice contains:
 - deterministic street lamps with geometry batched into `48 m` spatial
   chunks, focused lower-pole collision proxies, shadowless spot-light pools
   and slow out-of-phase amber traffic signals generated from the road graph;
-- scene-local looping music: `city_theme` loads only from
-  `Resources/Audio/CityMusic` in `City`, while `bar_theme` loads only from
-  `Resources/Audio/BarMusic` in `BarInterior`; the optional
-  `supermarket_theme` slot loads only from
-  `Resources/Audio/SupermarketMusic` in `SupermarketInterior`, and the
-  optional `stairwell_theme` slot loads only from
-  `Resources/Audio/StairwellMusic` in `StairwellInterior`, and the optional
-  `church_theme` slot only from `Resources/Audio/ChurchMusic` in
-  `ChurchInterior`; Home adds an optional
-  `Resources/Audio/HomeMusic/home_theme` loop. One mixing rule (`MusicMix`)
+- scene-local looping music under `Resources/Audio/`: City loads
+  `CityMusic/city_theme`, BarInterior `BarMusic/bar_theme`; optional matching
+  interior slots are `SupermarketMusic/supermarket_theme`,
+  `StairwellMusic/stairwell_theme`, `ChurchMusic/church_theme` and
+  `HomeMusic/home_theme`. One mixing rule (`MusicMix`)
   governs every music change, whether the hero loads into it or walks into
   it: scene/place themes leave through an unscaled `4 s` fade-out, and no other
   theme may sound a note until that tail reaches zero, after which it starts
   from silence with an unscaled `1 s` fade-in.
-  Every scene theme waits for its imported clip data before that entry. The
-  six present masters are measured independently because their raw integrated
-  loudness spans roughly `8 LUFS`; per-track source trims plus the shared
-  `-5.5 dB` Music bus place them all near `-30.5 LUFS` after the `-6 dB`
-  master headroom. Ordinary themes use a `12 kHz` low-pass that leaves the
-  upper transient band to actions without removing their melodic presence.
+  Themes wait for imported clip data. Six independently measured masters span
+  roughly `8 LUFS` raw; unchanged source trims and the `-11.5 dB` Music bus
+  target `-36.5 LUFS` after the `-6 dB` Master. Ordinary themes use a `12 kHz`
+  low-pass, leaving upper transients to actions without losing melodic presence.
   The bar is diegetic: `bar_theme` sits on the visible jukebox grille with
   full linear positioning across the room, a `120 Hz–5.6 kHz` cabinet band,
   light distortion and a short-range generated motor/record texture. The
@@ -1116,13 +1109,11 @@ The vertical slice contains:
   their scene or interaction;
 - one shared `BarPromenadeAudio` mixer with `Music`, `Ambience/Beds`,
   `Ambience/Details`, `SFX/World`, `SFX/Gameplay` and dry `UI` groups;
-  every snapshot authors the same causal gain hierarchy over `-6 dB` master
-  headroom: Music `-5.5 dB`, Beds `-4 dB`, Details `+0.5 dB`, World
-  `+2 dB`, Gameplay `+2.5 dB` and UI `+1.5 dB`. City, Bar, Stairwell, Home
-  and DoorTransition still feed dedicated reverb/echo returns and
-  switch with a short `0.25 s` wet-tail transition outside the immediate
-  DoorTransition blackout. Details/world sends are offset against their dry
-  boosts, so foreground transients rise without making rooms wetter;
+  all snapshots keep Music `-11.5 dB`, Beds `-4 dB`, Details `+0.5 dB`, World
+  `+2 dB`, Gameplay `+2.5 dB`, UI `+1.5 dB` under Master `-6 dB`. City, Bar,
+  Stairwell, Home and DoorTransition retain reverb/echo returns. Wet tails
+  blend over `.25 s`, except DoorTransition's immediate blackout. Detail/world
+  sends compensate dry boosts, preserving room energy;
 - deterministic generated mono retro SFX at `22050 Hz`, including a separate
   door latch and sustained hinge creak, with bounded
   category pools, per-effect cooldowns and voice limits, all routed through
@@ -1136,8 +1127,11 @@ The vertical slice contains:
   three scheduled and one action voice, creates only deterministic quantized
   mono `22050 Hz` clips, activates them inside their finite radii and applies
   coarse building-mass occlusion. Carpet impacts fire on the authored contact
-  frame. The cannery owns its working voices separately; the old scale has
-  no live sound anchor. The unbound park swing deliberately remains silent.
+  frame. `CityWorkAudio` separately routes eight mono port/cannery voices to
+  `SfxWorld`, with full 3D, no pan/spread/Doppler and `0 dB` direct level.
+  Source reverb is `.28 s` outside, `.95 s` inside; linear ranges `3–32/2–24 m`.
+  Zone mix is zero; City's mixer return stays. Crane audio follows the hoist
+  drive; retort audio stays in the body. The old scale and unbound swing are silent.
   Surf is one fully spatial voice following the nearest point of the finite
   waterline and reuses the same building-mass attenuation; thunder is placed
   at the deterministic lightning azimuth, and
@@ -1241,8 +1235,8 @@ The vertical slice contains:
 - one working fishing-port slice (`CityPortPlan`, `CityPortCycle`,
   `CityPortController`) receives a roughly `20 m` trawler at one berth west
   of the river mouth. Two shore cranes, a trolley and a cold store unload a
-  finite six-unit catch. Its `624 s` visit covers approach, mooring, hatches,
-  six `64 s` lifts/deliveries, securing, unmooring, departure and an empty
+  finite three-unit catch. Its `432 s` visit covers approach, mooring, hatches,
+  three `64 s` lifts/deliveries, securing, unmooring, departure and an empty
   interval. The shared fish-supply working clock survives City reconstruction;
   the next ship waits for the truck. Seeking restores custody without sound
   replay. Hatches hold cages; hooks/trolley deliver behind the store baffle.
@@ -1277,16 +1271,21 @@ The vertical slice contains:
 - the Industrial cannery replaces the weighbridge in City: a low `8 x 14 m`
   hall on `18 x 18 m`, straight bay, public passage/bypass. `CityCanneryPlan`
   supplies Home's shell. Ten Blender models use five cannery surface maps plus
-  port materials. Detailed machines carry the same fifteen cans from open to
-  filled/sealed and into a carton. Four ordinary workers and driver wear work
-  cloth, two with aprons; finite actions follow the phase, as do lamps/steam.
-  Reception/shipping labels use ordinary type. `CityFishSupplyCycle` serializes
-  six units through chill, prepare/fill/seam, retort, cool/pack and shop receipt.
-  The truck uses physical trolley/tail-lift transfers; `CityCanneryTraffic`
-  reserves level street trips for the bus. Shop stock is unchanged; empty-tare
-  return is Deferred. `CityFishSupplySession` keeps time across reloads;
-  pause/waits freeze it.
-  Factory/shore/vessel/truck presentation gates at 80/96 m from mesh/light bounds;
+  port materials. The fifteen cans fill, seal and enter a carton. Four
+  workers and driver wear work cloth; two have aprons. Actions, lamps and steam
+  follow each phase. Reception/shipping labels use ordinary type.
+  Truck Steel/Insulation retain mapped metre UVs; a continuous front and
+  bezels hold emissive lenses, `22 m` dipped beams `.04 m` beyond them and halos.
+  A `52 m` square presentation bound contains turning beams; daylight floor and
+  `80/96 m` gates stay.
+  `CityFishSupplyCycle` starts FIFO production during unloading, at twice
+  authored speed. Three one-unit lots start at `88/208/328 s` of unloading,
+  finish at `208/328/448 s`. Truck handling takes `252 s`; production
+  wait is `196 s`. Only three loads spawn; scale/crews stay. The packer walks
+  back between passes. Trolley/lift contacts and reservations serve the bus.
+  Shop stock stays; empty tare is Deferred. Session time survives reloads;
+  pause/obstacles freeze it.
+  Factory/shore/vessel/truck gate at 80/96 m from mesh/light bounds;
   far rigs, mechanisms, light and sound sleep while custody/collision/traffic
   continue. Approach restores the phase even paused; berth/handoff groups couple;
 - up to two decorative old fishing vessels spawn only near the actual hero

@@ -1103,7 +1103,7 @@
       "bounds_max": [
         1.25,
         3.55,
-        5.38
+        5.381
       ],
       "anchors": [
         {
@@ -1128,6 +1128,22 @@
             -0.36,
             2.01,
             4.5
+          ]
+        },
+        {
+          "name": "ANCHOR_HeadlampLeft",
+          "position": [
+            -0.88,
+            1.4,
+            5.37
+          ]
+        },
+        {
+          "name": "ANCHOR_HeadlampRight",
+          "position": [
+            0.88,
+            1.4,
+            5.37
           ]
         },
         {
@@ -1200,6 +1216,38 @@
             0.0,
             1.2,
             -2.6
+          ]
+        },
+        {
+          "name": "HeadlampLeft",
+          "position": [
+            -0.88,
+            1.4,
+            5.37
+          ]
+        },
+        {
+          "name": "HeadlampHousingLeft",
+          "position": [
+            -0.88,
+            1.4,
+            5.37
+          ]
+        },
+        {
+          "name": "HeadlampRight",
+          "position": [
+            0.88,
+            1.4,
+            5.37
+          ]
+        },
+        {
+          "name": "HeadlampHousingRight",
+          "position": [
+            0.88,
+            1.4,
+            5.37
           ]
         },
         {
@@ -1339,6 +1387,14 @@
           ]
         },
         {
+          "name": "TruckFrontPanel",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
           "name": "TruckVisible",
           "position": [
             0.0,
@@ -1347,8 +1403,8 @@
           ]
         }
       ],
-      "triangles": 8454,
-      "geometry_signature": "083e382f47620d78990ec2ccef80461bf647a876f9b8f57f3d81a759809883e3"
+      "triangles": 9302,
+      "geometry_signature": "7424bb7feae0cf1b4e5a5f3d90cf53f0d691b4a4f5e7ad85653a2d448038fef9"
     },
     {
       "name": "Pallet",

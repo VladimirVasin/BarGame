@@ -89,9 +89,9 @@ namespace BarPromenade
                 if(steam.particleCount>0) steam.Clear();
                 return;
             }
-            float seconds=(float)Snapshot.Seconds;
-            bool filling=Snapshot.Stage==CityFishSupplyStage.Fill, sealing=Snapshot.Stage==CityFishSupplyStage.Seal;
-            float feed=Mathf.Clamp01((seconds-2)/(float)(Snapshot.Duration-4))*15;
+            float seconds=(float)Production.Seconds;
+            bool filling=Production.Stage==CityCanneryProductionStage.Fill, sealing=Production.Stage==CityCanneryProductionStage.Seal;
+            float feed=Mathf.Clamp01((seconds-2)/(float)(Production.Duration-4))*15;
             int active=Mathf.Min(14,Mathf.FloorToInt(feed));
             float phase=feed-active;
             if(filling||sealing)
@@ -102,22 +102,22 @@ namespace BarPromenade
                 Vector3 offset=Vector3.Lerp(from,to,Ease(phase/.2f));
                 Vector3 at=station-Plan.Rotation*offset;
                 if(seconds<2) at=Vector3.Lerp(station,station-Plan.Rotation*to,Ease(seconds/2));
-                if(seconds>Snapshot.Duration-2)
-                    at=Vector3.Lerp(at,Plan.World(new Vector3(-4.36f,1.19f,-.35f)),Ease((seconds-(float)Snapshot.Duration+2)/2));
+                if(seconds>Production.Duration-2)
+                    at=Vector3.Lerp(at,Plan.World(new Vector3(-4.36f,1.19f,-.35f)),Ease((seconds-(float)Production.Duration+2)/2));
                 tray.position=at;
             }
             VisibleFilledCanCount=VisibleSealedCanCount=0;
-            float pack=Mathf.Clamp01((seconds-8)/(float)(Snapshot.Duration-10))*15;
+            float pack=Mathf.Clamp01((seconds-8)/(float)(Production.Duration-10))*15;
             int packing=Mathf.Min(14,Mathf.FloorToInt(pack));
             float packPhase=pack-packing;
-            bool isPacking=Snapshot.Stage==CityFishSupplyStage.Pack;
+            bool isPacking=Production.Stage==CityCanneryProductionStage.Pack;
             packingCarton.gameObject.SetActive(isPacking);
-            canSupply.gameObject.SetActive(Snapshot.Stage<=CityFishSupplyStage.Fill);
-            lidSupply.gameObject.SetActive(Snapshot.Stage<=CityFishSupplyStage.Seal);
+            canSupply.gameObject.SetActive(Production.Stage<=CityCanneryProductionStage.Fill);
+            lidSupply.gameObject.SetActive(Production.Stage<=CityCanneryProductionStage.Seal);
             for(int i=0;i<15;i++)
             {
-                bool filled=Snapshot.Stage>CityFishSupplyStage.Fill||filling&&(i<active||i==active&&phase>=.35f);
-                bool sealedCan=Snapshot.Stage>CityFishSupplyStage.Seal||sealing&&(i<active||i==active&&phase>=.58f);
+                bool filled=Production.Stage>CityCanneryProductionStage.Fill||filling&&(i<active||i==active&&phase>=.35f);
+                bool sealedCan=Production.Stage>CityCanneryProductionStage.Seal||sealing&&(i<active||i==active&&phase>=.58f);
                 canContents[i].gameObject.SetActive(filled);
                 canLids[i].gameObject.SetActive(sealedCan||sealing&&i==active&&phase>=.25f);
                 if(filled) VisibleFilledCanCount++;
@@ -156,26 +156,26 @@ namespace BarPromenade
             seamer.position=factory.TransformPoint(seamerDock)-Vector3.up*(.225f*press);
             for(int i=0;i<2;i++)
                 seamRollers[i].SetPositionAndRotation(seamer.TransformPoint(seamRollerDocks[i]),seamer.rotation*
-                    Quaternion.AngleAxis(sealing?(float)(Snapshot.Seconds*720%360):0,Vector3.up)*seamRollerRest[i]);
-            bool drawer=Snapshot.Stage==CityFishSupplyStage.LoadRetort||Snapshot.Stage==CityFishSupplyStage.Cool;
-            float doorOpen=drawer?Mathf.Min(Ease((seconds-2)/3),Ease(((float)Snapshot.Duration-seconds-1)/3)):0;
+                    Quaternion.AngleAxis(sealing?(float)(Production.Seconds*720%360):0,Vector3.up)*seamRollerRest[i]);
+            bool drawer=Production.Stage==CityCanneryProductionStage.LoadRetort||Production.Stage==CityCanneryProductionStage.Cool;
+            float doorOpen=drawer?Mathf.Min(Ease((seconds-2)/3),Ease(((float)Production.Duration-seconds-1)/3)):0;
             retortDoor.position=factory.TransformPoint(retortDoorDock)+Vector3.up*(1.7f*doorOpen);
-            float unlocked=drawer?Mathf.Min(Ease(seconds/1.5f),Ease((float)Snapshot.Duration-seconds)):0;
+            float unlocked=drawer?Mathf.Min(Ease(seconds/1.5f),Ease((float)Production.Duration-seconds)):0;
             for(int i=0;i<4;i++)
                 locks[i].SetPositionAndRotation(retortDoor.TransformPoint(lockDocks[i]),retortDoor.rotation*
                     Quaternion.AngleAxis(75*unlocked,Vector3.forward)*lockRest[i]);
-            RetortPressureFactor=Snapshot.Stage==CityFishSupplyStage.Heat?Ease(seconds/5):
-                Snapshot.Stage==CityFishSupplyStage.Cool?1-Ease(seconds/2):0;
+            RetortPressureFactor=Production.Stage==CityCanneryProductionStage.Heat?Ease(seconds/5):
+                Production.Stage==CityCanneryProductionStage.Cool?1-Ease(seconds/2):0;
             pressureNeedle.rotation=Plan.Rotation*Quaternion.AngleAxis(-115*RetortPressureFactor,Vector3.right)*pressureRest;
-            float conveyor=(Snapshot.Stage<CityFishSupplyStage.LoadRetort?0:Snapshot.Stage==CityFishSupplyStage.LoadRetort?Mathf.Min(seconds,10):10)*310;
-            conveyor+=(Snapshot.Stage<CityFishSupplyStage.Pack?0:isPacking?Mathf.Min(seconds,8):8)*310;
-            conveyor+=(float)(Snapshot.Batch*18d*310d%360d);
+            float conveyor=(Production.Stage<CityCanneryProductionStage.LoadRetort?0:Production.Stage==CityCanneryProductionStage.LoadRetort?Mathf.Min(seconds,10):10)*310;
+            conveyor+=(Production.Stage<CityCanneryProductionStage.Pack?0:isPacking?Mathf.Min(seconds,8):8)*310;
+            conveyor+=(float)((Snapshot.Batch*Cycle.ProductionLotCount+Production.LotIndex)*18d*310d%360d);
             for(int i=0;i<8;i++) feedRollers[i].rotation=Plan.Rotation*Quaternion.AngleAxis(conveyor%360*(i<2?-1:1),
                 i%4<2?Vector3.forward:Vector3.right)*rollerRest[i];
             packingFeedRoller.rotation=Plan.Rotation*Quaternion.AngleAxis(isPacking?(Mathf.Floor(pack)*.2f+Mathf.Min(packPhase,.2f))*720:0,
                 Vector3.forward)*packingRollerRest;
             SetIndicator(seamIndicators,filling||sealing,new Color(.83f,.53f,.18f));
-            SetIndicator(retortIndicators,Snapshot.Stage==CityFishSupplyStage.Heat,new Color(.79f,.39f,.14f));
+            SetIndicator(retortIndicators,Production.Stage==CityCanneryProductionStage.Heat,new Color(.79f,.39f,.14f));
             ApplySteam(seconds);
         }
 
@@ -189,7 +189,7 @@ namespace BarPromenade
         private void ApplySteam(float seconds)
         {
             int count=0;
-            if(Snapshot.Stage==CityFishSupplyStage.Cool&&seconds<4)
+            if(Production.Stage==CityCanneryProductionStage.Cool&&seconds<4)
                 for(int i=0;i<steamParticles.Length;i++)
                 {
                     float age=seconds-i*.13f;

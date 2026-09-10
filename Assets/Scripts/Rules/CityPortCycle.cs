@@ -76,13 +76,13 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Finite six-load visits sampled from absolute scaled session seconds.
+    /// Finite three-load visits sampled from absolute scaled session seconds.
     /// Intervals include their start and exclude their end, so seeking, pausing
     /// and rebuilding the scene cannot repeat a handoff or add another load.
     /// </summary>
     public static class CityPortCycle
     {
-        public const int CargoCount = 6;
+        public const int CargoCount = 3;
         public const double ApproachDurationSeconds = 70d;
         public const double MoorDurationSeconds = 26d;
         public const double PrepareDurationSeconds = 14d;

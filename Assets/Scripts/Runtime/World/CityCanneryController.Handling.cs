@@ -120,7 +120,8 @@ namespace BarPromenade
             return cargo;
         }
 
-        private int ActiveUnit => Loading ? Mathf.Min(5, Snapshot.Handled) : 5 - Mathf.Min(5, Snapshot.Handled);
+        private int ActiveUnit => Loading ? Mathf.Min(fish.Length - 1, Snapshot.Handled) :
+            fish.Length - 1 - Mathf.Min(fish.Length - 1, Snapshot.Handled);
 
         private void ApplyTruckParts()
         {
@@ -184,37 +185,38 @@ namespace BarPromenade
         {
             handlingActive = Snapshot.IsTransfer && Snapshot.Seconds >= 12 && Snapshot.Seconds < Snapshot.Duration-12;
             trolley.gameObject.SetActive(Snapshot.IsTransfer && TruckPresentationActive);
-            tray.gameObject.SetActive(FactoryPresentationActive && Snapshot.Stage >= CityFishSupplyStage.Fill && Snapshot.Stage <= CityFishSupplyStage.Pack);
-            basket.gameObject.SetActive(FactoryPresentationActive && Snapshot.Stage >= CityFishSupplyStage.LoadRetort && Snapshot.Stage <= CityFishSupplyStage.Pack);
-            preparationFish.gameObject.SetActive(FactoryPresentationActive && Snapshot.Stage == CityFishSupplyStage.Prepare);
+            tray.gameObject.SetActive(FactoryPresentationActive && Production.Stage >= CityCanneryProductionStage.Fill);
+            basket.gameObject.SetActive(FactoryPresentationActive && (Production.Stage >= CityCanneryProductionStage.LoadRetort || Production.ReturnSeconds < 12));
+            preparationFish.gameObject.SetActive(FactoryPresentationActive && Production.Stage == CityCanneryProductionStage.Prepare);
             if (!FactoryPresentationActive && !TruckPresentationActive && !port.ShorePresentationActive)
             {
-                for (int i = 0; i < 6; i++)
+                for (int i = 0; i < fish.Length; i++)
                 { fish[i].gameObject.SetActive(false); cases[i].gameObject.SetActive(false); }
                 return;
             }
-            for (int i=0;i<6;i++)
+            for (int i=0;i<fish.Length;i++)
             {
+                int unloadOrdinal = fish.Length - 1 - i;
                 bool fishOnTruck = Snapshot.Stage == CityFishSupplyStage.PortToFactory || Snapshot.Stage == CityFishSupplyStage.FactoryReverse ||
                     Snapshot.Stage == CityFishSupplyStage.LoadFish && i < Snapshot.Handled ||
-                    Snapshot.Stage == CityFishSupplyStage.UnloadFish && 5-i >= Snapshot.Handled;
+                    Snapshot.Stage == CityFishSupplyStage.UnloadFish && unloadOrdinal >= Snapshot.Handled;
                 bool caseOnTruck = Snapshot.Stage > CityFishSupplyStage.LoadFinished ||
                     Snapshot.Stage == CityFishSupplyStage.LoadFinished && i < Snapshot.Handled;
                 bool activeTransfer = handlingActive && i == ActiveUnit;
                 bool fishGroup = activeTransfer ? TruckPresentationActive : fishOnTruck ? TruckPresentationActive :
                     Snapshot.Stage <= CityFishSupplyStage.LoadFish ? port.ShorePresentationActive : FactoryPresentationActive;
                 bool caseGroup = activeTransfer ? TruckPresentationActive : caseOnTruck ? TruckPresentationActive : FactoryPresentationActive;
-                bool hasFish = Snapshot.Stage <= CityFishSupplyStage.Prepare;
-                bool fishVisible = fishGroup && hasFish && (Snapshot.Stage != CityFishSupplyStage.PortVisit || i < Snapshot.PortFish) &&
-                    (Snapshot.Stage != CityFishSupplyStage.Prepare || i >= Snapshot.Handled);
+                // Unload from the rear toward the nose. Production consumes
+                // those received units in FIFO order while unloading continues.
+                bool hasFish = Snapshot.Stage <= CityFishSupplyStage.WaitForProduction && unloadOrdinal >= Production.PreparedUnits;
+                bool fishVisible = fishGroup && hasFish && (Snapshot.Stage != CityFishSupplyStage.PortVisit || i < Snapshot.PortFish);
                 Vector3 fishPosition = Snapshot.Stage <= CityFishSupplyStage.LoadFish
                     ? PortStore(i)
                     : Snapshot.Stage <= CityFishSupplyStage.FactoryReverse ? Truck.TransformPoint(cargoSlots[i]) : RawStore(i);
                 if (Snapshot.Stage == CityFishSupplyStage.LoadFish && i < Snapshot.Handled) fishPosition=Truck.TransformPoint(cargoSlots[i]);
-                if (Snapshot.Stage == CityFishSupplyStage.UnloadFish && 5-i >= Snapshot.Handled) fishPosition=Truck.TransformPoint(cargoSlots[i]);
-                bool caseVisible = caseGroup && Snapshot.Stage >= CityFishSupplyStage.Pack && Snapshot.Stage <= CityFishSupplyStage.UnloadShop &&
-                    (Snapshot.Stage != CityFishSupplyStage.Pack || i < Snapshot.Handled) &&
-                    (Snapshot.Stage != CityFishSupplyStage.UnloadShop || 5-i >= Snapshot.Handled);
+                if (Snapshot.Stage == CityFishSupplyStage.UnloadFish && unloadOrdinal >= Snapshot.Handled) fishPosition=Truck.TransformPoint(cargoSlots[i]);
+                bool caseVisible = caseGroup && i < Production.CompletedUnits && Snapshot.Stage <= CityFishSupplyStage.UnloadShop &&
+                    (Snapshot.Stage != CityFishSupplyStage.UnloadShop || unloadOrdinal >= Snapshot.Handled);
                 Vector3 casePosition = Snapshot.Stage <= CityFishSupplyStage.LoadFinished ? ReadyStore(i) : Truck.TransformPoint(cargoSlots[i]);
                 if (Snapshot.Stage == CityFishSupplyStage.LoadFinished && i < Snapshot.Handled) casePosition=Truck.TransformPoint(cargoSlots[i]);
                 if (activeTransfer && TruckPresentationActive)
@@ -228,7 +230,7 @@ namespace BarPromenade
                 Quaternion fishRotation = Snapshot.Stage <= CityFishSupplyStage.LoadFish ? Quaternion.Euler(0,90,0) : Plan.Rotation;
                 if (Snapshot.Stage == CityFishSupplyStage.PortToFactory || Snapshot.Stage == CityFishSupplyStage.FactoryReverse ||
                     Snapshot.Stage == CityFishSupplyStage.LoadFish && i < Snapshot.Handled ||
-                    Snapshot.Stage == CityFishSupplyStage.UnloadFish && 5-i >= Snapshot.Handled) fishRotation = Truck.rotation;
+                    Snapshot.Stage == CityFishSupplyStage.UnloadFish && unloadOrdinal >= Snapshot.Handled) fishRotation = Truck.rotation;
                 if (fishVisible) fish[i].SetPositionAndRotation(fishPosition,fishRotation);
                 if (caseVisible) cases[i].SetPositionAndRotation(casePosition,Snapshot.Stage < CityFishSupplyStage.LoadFinished ? Plan.Rotation : Truck.rotation);
             }
@@ -258,7 +260,7 @@ namespace BarPromenade
                     SampleTransfer(ActiveUnit,Mathf.Clamp01(t-.001f),out Vector3 before,out _);
                     SampleTransfer(ActiveUnit,Mathf.Clamp01(t+.001f),out Vector3 after,out _);
                     Vector3 travel=after-before; travel.y=0;
-                    trolleyMotion=travel.magnitude/(float)((Snapshot.Duration-24)/6*.002d);
+                    trolleyMotion=travel.magnitude/(float)((Snapshot.Duration-24)/CityFishSupplyCycle.HandlingUnits*.002d);
                 }
                 if(handlingActive)
                 {
@@ -271,40 +273,41 @@ namespace BarPromenade
             }
             if (!FactoryPresentationActive) return;
             seamer.position=factory.TransformPoint(seamerDock)-Plan.Rotation*Vector3.up*
-                (Snapshot.Stage == CityFishSupplyStage.Seal ? .1f*(.5f+.5f*Mathf.Sin((float)Snapshot.Seconds*5)) : 0);
-            preparationFish.gameObject.SetActive(Snapshot.Stage==CityFishSupplyStage.Prepare);
+                (Production.Stage == CityCanneryProductionStage.Seal ? .1f*(.5f+.5f*Mathf.Sin((float)Production.Seconds*5)) : 0);
+            preparationFish.gameObject.SetActive(Production.Stage==CityCanneryProductionStage.Prepare);
             float retortOpen=0;
-            if(Snapshot.Stage==CityFishSupplyStage.LoadRetort||Snapshot.Stage==CityFishSupplyStage.Cool)
-                retortOpen=Mathf.Min(Ease((float)Snapshot.Seconds/3),Ease((float)(Snapshot.Duration-Snapshot.Seconds)/3));
+            if(Production.Stage==CityCanneryProductionStage.LoadRetort||Production.Stage==CityCanneryProductionStage.Cool)
+                retortOpen=Mathf.Min(Ease((float)Production.Seconds/3),Ease((float)(Production.Duration-Production.Seconds)/3));
             retortDoor.position=factory.TransformPoint(retortDoorDock)+Vector3.up*(1.7f*retortOpen);
             retortDoor.rotation=Plan.Rotation*retortDoorRest;
-            tray.gameObject.SetActive(Snapshot.Stage >= CityFishSupplyStage.Fill && Snapshot.Stage <= CityFishSupplyStage.Pack);
-            basket.gameObject.SetActive(Snapshot.Stage >= CityFishSupplyStage.LoadRetort && Snapshot.Stage <= CityFishSupplyStage.Pack);
+            tray.gameObject.SetActive(Production.Stage >= CityCanneryProductionStage.Fill && Production.Stage <= CityCanneryProductionStage.Pack);
+            basket.gameObject.SetActive(Production.Stage >= CityCanneryProductionStage.LoadRetort || Production.ReturnSeconds < 12);
             Vector3 retort=Plan.World(new Vector3(-5,1.02f,1.66f));
-            basket.position=retort+Plan.Forward*(Snapshot.Stage == CityFishSupplyStage.LoadRetort
-                ? 1.68f*(1-Ease(((float)Snapshot.Seconds-10)/15)) : Snapshot.Stage == CityFishSupplyStage.Cool
-                ? 1.68f*Ease(((float)Snapshot.Seconds-3)/15) : Snapshot.Stage==CityFishSupplyStage.Pack ? 1.68f : 0);
+            basket.position=retort+Plan.Forward*(Production.Stage == CityCanneryProductionStage.LoadRetort
+                ? 1.68f*(1-Ease(((float)Production.Seconds-10)/15)) : Production.Stage == CityCanneryProductionStage.Cool
+                ? 1.68f*Ease(((float)Production.Seconds-3)/15) : Production.Stage==CityCanneryProductionStage.Pack ? 1.68f :
+                1.68f*(1-Ease((float)Production.ReturnSeconds/12)));
             retortRam.position=factory.TransformPoint(ramDock)+(basket.position-retort);
-            if(Snapshot.Stage==CityFishSupplyStage.Fill)
-                tray.position=Plan.World(new Vector3(Mathf.Lerp(-5.72f,-4.36f,Ease(Snapshot.Progress)),1.19f,-.35f));
-            else if(Snapshot.Stage==CityFishSupplyStage.Seal)
+            if(Production.Stage==CityCanneryProductionStage.Fill)
+                tray.position=Plan.World(new Vector3(Mathf.Lerp(-5.72f,-4.36f,Ease(Production.Progress)),1.19f,-.35f));
+            else if(Production.Stage==CityCanneryProductionStage.Seal)
                 tray.position=Plan.World(new Vector3(-4.36f,1.19f,-.35f));
-            else if(Snapshot.Stage==CityFishSupplyStage.LoadRetort && Snapshot.Seconds<10)
+            else if(Production.Stage==CityCanneryProductionStage.LoadRetort && Production.Seconds<10)
             {
                 trayRoute[0]=Plan.World(new Vector3(-4.36f,1.19f,-.35f));
                 trayRoute[1]=Plan.World(new Vector3(-3.1f,1.19f,-.35f));
                 trayRoute[2]=Plan.World(new Vector3(-3.1f,1.19f,3.95f));
                 trayRoute[3]=Plan.World(new Vector3(-5,1.19f,3.95f));
                 trayRoute[4]=Plan.World(new Vector3(-5,1.19f,3.34f));
-                tray.position=Along(trayRoute,Ease((float)Snapshot.Seconds/10));
+                tray.position=Along(trayRoute,Ease((float)Production.Seconds/10));
             }
-            else if(Snapshot.Stage==CityFishSupplyStage.Pack)
+            else if(Production.Stage==CityCanneryProductionStage.Pack)
             {
                 trayRoute[0]=Plan.World(new Vector3(-5,1.19f,3.34f));
                 trayRoute[1]=Plan.World(new Vector3(-5,1.19f,3.95f));
                 trayRoute[2]=Plan.World(new Vector3(-5.75f,1.19f,3.95f));
                 trayRoute[3]=trayRoute[4]=Anchor("CoolingLoad");
-                tray.position=Along(trayRoute,Ease((float)Snapshot.Seconds/8));
+                tray.position=Along(trayRoute,Ease((float)Production.Seconds/8));
             }
             else tray.position=basket.position+Plan.Rotation*new Vector3(0,.17f,0);
         }

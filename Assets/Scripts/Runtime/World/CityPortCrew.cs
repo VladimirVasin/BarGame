@@ -196,7 +196,7 @@ namespace BarPromenade
                     }
                     break;
                 case CityPortCycleStage.Secure:
-                    WalkDeck(HatchDock(0), stern, t / (float)CityPortCycle.SecureDurationSeconds,
+                    WalkDeck(HatchDock(CityPortCycle.CargoCount % 2), stern, t / (float)CityPortCycle.SecureDurationSeconds,
                         (float)CityPortCycle.SecureDurationSeconds);
                     break;
                 case CityPortCycleStage.Unmoor:

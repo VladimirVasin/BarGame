@@ -38,7 +38,7 @@ namespace BarPromenade
                     collider.sharedMesh = renderer.GetComponent<MeshFilter>().sharedMesh;
                     continue;
                 }
-                bool lamp = renderer.name == "CanneryLampGlass";
+                bool lamp = renderer.name == "CanneryLampGlass" || renderer.name == "TruckHeadlampGlass";
                 bool glass = !lamp && renderer.name.EndsWith("Glass", StringComparison.Ordinal);
                 int separator = renderer.name.LastIndexOf("__", StringComparison.Ordinal);
                 string role = separator < 0 ? "Plain" : renderer.name.Substring(separator + 2);

@@ -12,7 +12,7 @@ namespace BarPromenade
         public bool TruckPresentationActive => truckPresentation == null || truckPresentation.IsVisible;
         // Include light reach and the complete handling apron, not just a pivot.
         public Bounds FactoryPresentationBounds => new Bounds(Plan.World(new Vector3(0, 3, 0)), new Vector3(32, 20, 32));
-        public Bounds TruckPresentationBounds => new Bounds(Truck.TransformPoint(new Vector3(0, 2, 2)), new Vector3(44, 36, 44));
+        public Bounds TruckPresentationBounds => new Bounds(Truck.TransformPoint(new Vector3(0, 2, 2)), new Vector3(52, 36, 52));
 
         private void CreatePresentation()
         {

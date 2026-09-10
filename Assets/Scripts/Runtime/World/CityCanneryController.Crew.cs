@@ -72,10 +72,10 @@ namespace BarPromenade
                 if (factoryHandling) ApplyReceiverTransfer(seconds);
                 else StandWorker(workers[0], Anchor("Receiver"), Plan.Forward, Anchor("ReceivingLoad"));
 
-                ApplyStationWorker(1, "Preparation", Snapshot.Stage == CityFishSupplyStage.Prepare);
-                ApplyStationWorker(2, "Seamer", Snapshot.Stage == CityFishSupplyStage.Fill ||
-                    Snapshot.Stage == CityFishSupplyStage.Seal);
-                ApplyRetortWorker(seconds);
+                ApplyStationWorker(1, "Preparation", Production.Stage == CityCanneryProductionStage.Prepare);
+                ApplyStationWorker(2, "Seamer", Production.Stage == CityCanneryProductionStage.Fill ||
+                    Production.Stage == CityCanneryProductionStage.Seal);
+                ApplyRetortWorker((float)Production.Seconds);
             }
 
             if (TruckPresentationActive)
@@ -104,14 +104,15 @@ namespace BarPromenade
             Vector3 load = index == 1 ? Anchor("PreparationLoad") : tray.position;
             StandWorker(actor, Anchor(station + "Worker"), Plan.Right, load);
             if (!working) return;
-            // Six finite handling units, each with a reach, an operation and
-            // a release. A sampled stage never leaves an idle worker dancing.
-            float unitDuration = (float)Snapshot.Duration / 6f;
-            float unit = Mathf.Repeat((float)Snapshot.Seconds, unitDuration) / unitDuration;
+            // Preparation follows the available lot; the powered line doses
+            // its fifteen visible cans. Only the active station works.
+            int operations = Production.Stage == CityCanneryProductionStage.Prepare ? Production.UnitCount : 15;
+            float unitDuration = (float)Production.Duration / operations;
+            float unit = Mathf.Repeat((float)Production.Seconds, unitDuration) / unitDuration;
             float posture = CrewWorkWindow(unit, 0f, .96f, .13f);
             float rightWeight = posture, leftWeight = posture;
             Vector3 look = load;
-            if (Snapshot.Stage == CityFishSupplyStage.Prepare)
+            if (Production.Stage == CityCanneryProductionStage.Prepare)
             {
                 // The left hand braces the near crate rim; the right sorts a
                 // short section of its contents, then both release the unit.
@@ -121,7 +122,7 @@ namespace BarPromenade
                 leftWeight = CrewWorkWindow(unit, .01f, .90f, .13f);
                 look = Vector3.Lerp(load, right, sort * .5f);
             }
-            else if (Snapshot.Stage == CityFishSupplyStage.Fill)
+            else if (Production.Stage == CityCanneryProductionStage.Fill)
             {
                 // One short dose command per unit; the other hand rests on
                 // the guard while the worker watches the visible can tray.
@@ -130,7 +131,7 @@ namespace BarPromenade
                 rightWeight = CrewWorkWindow(unit, .02f, .85f, .14f);
                 look = Vector3.Lerp(load, left, leftWeight * .55f);
             }
-            else if (Snapshot.Stage == CityFishSupplyStage.Seal)
+            else if (Production.Stage == CityCanneryProductionStage.Seal)
             {
                 right = Anchor("SealControl");
                 rightWeight = CrewWorkWindow(unit, .04f, .39f, .11f);
@@ -159,8 +160,8 @@ namespace BarPromenade
         {
             VillageResidentPresentation actor = workers[3];
             Vector3 retort = Anchor("RetortOperator"), packing = Anchor("PackingWorker");
-            bool toPacking = Snapshot.Stage == CityFishSupplyStage.Cool && seconds >= Snapshot.Duration - 12;
-            bool toRetort = Snapshot.Stage == CityFishSupplyStage.LoadFinished && seconds < 12;
+            bool toPacking = Production.Stage == CityCanneryProductionStage.Cool && seconds >= Production.Duration - 12;
+            bool toRetort = Production.ReturnSeconds < 12;
             if (toPacking || toRetort)
             {
                 Vector3 from = toPacking ? retort : packing, to = toPacking ? packing : retort;
@@ -168,19 +169,19 @@ namespace BarPromenade
                 workerRoute[1] = Plan.World(new Vector3(-7.18f, CityCanneryPlan.FloorTop, Plan.Local(from).z));
                 workerRoute[2] = Plan.World(new Vector3(-7.18f, CityCanneryPlan.FloorTop, Plan.Local(to).z));
                 workerRoute[3] = workerRoute[4] = workerRoute[5] = to;
-                float t = toPacking ? seconds - (float)Snapshot.Duration + 12 : seconds;
-                WalkWorker(actor, t / 12f, 12f, Plan.Right, Plan.Right);
+                float t = toPacking ? seconds - (float)Production.Duration + 12 : (float)Production.ReturnSeconds;
+                WalkWorker(actor, t / 12f, 12f / (float)CityFishSupplyCycle.ProductionSpeed, Plan.Right, Plan.Right);
                 return;
             }
-            if (Snapshot.Stage == CityFishSupplyStage.Pack)
+            if (Production.Stage == CityCanneryProductionStage.Pack)
             {
                 ApplyPackingWorker(seconds);
                 return;
             }
             Vector3 hand = Anchor("RetortHand");
             StandWorker(actor, retort, Plan.Right, hand);
-            if (Snapshot.Stage != CityFishSupplyStage.LoadRetort && Snapshot.Stage != CityFishSupplyStage.Cool) return;
-            float duration = Snapshot.Stage == CityFishSupplyStage.Cool ? (float)Snapshot.Duration - 12 : (float)Snapshot.Duration;
+            if (Production.Stage != CityCanneryProductionStage.LoadRetort && Production.Stage != CityCanneryProductionStage.Cool) return;
+            float duration = Production.Stage == CityCanneryProductionStage.Cool ? (float)Production.Duration - 12 : (float)Production.Duration;
             // A command to open/extend and one to close/retract. The long
             // middle is observation of the drawer, with the hand off the button.
             float weight = Mathf.Max(CrewWorkWindow(seconds, 0f, 3.4f, .7f),
@@ -202,7 +203,7 @@ namespace BarPromenade
             // fifteen actual cans then share the owner's feed/lift/drop path;
             // these hands never invent another can or another packing clock.
             if (seconds <= 8f) return;
-            float posture = CrewWorkWindow(seconds, 8f, (float)Snapshot.Duration, .7f);
+            float posture = CrewWorkWindow(seconds, 8f, (float)Production.Duration, .7f);
             float reach = packingCanInHand ? Mathf.Clamp01(packingCanHandWeight) : 0f;
             // Keep the shoulders over the work throughout the lift. Standing
             // upright as the can rises pulls them away from the farther carton
@@ -213,7 +214,7 @@ namespace BarPromenade
             // both shoulders to face it instead of reaching one arm across it.
             float turn = Mathf.Clamp(Vector3.SignedAngle(actor.transform.forward, toCan, Vector3.up), -42f, 42f);
             workerSpines[3].rotation = Quaternion.AngleAxis(turn * reach, actor.transform.up) * workerSpines[3].rotation;
-            ApplyCrewLook(actor, Vector3.Lerp(seconds < Snapshot.Duration - 2 ? tray.position : rim,
+            ApplyCrewLook(actor, Vector3.Lerp(seconds < Production.Duration - 2 ? tray.position : rim,
                 packingCanContact, reach));
             // First approach the stationary fed can, hold it throughout the
             // visible arc, then open/retract above the rim before it is lowered.
@@ -246,7 +247,9 @@ namespace BarPromenade
             actor.transform.SetPositionAndRotation(trolleyOperatorPosition, trolleyOperatorRotation);
             actor.ApplyLocomotion(trolleyMotion, false, (float)(WorkingSeconds % 120d));
             Transform spine = workerSpines[actor == workers[0] ? 0 : 4];
-            spine.rotation = Quaternion.AngleAxis(8f * handWeight, actor.transform.right) * spine.rotation;
+            // Keep the shoulders within reach of the handle throughout the
+            // walking clip, including the phases exposed by shorter deliveries.
+            spine.rotation = Quaternion.AngleAxis(14f * handWeight, actor.transform.right) * spine.rotation;
             ApplyCrewLook(actor, trolley.position + trolley.forward + Vector3.up * .8f, .75f);
             ApplyCrewContacts(actor, trolleyRightHand.position, trolleyLeftHand.position, handWeight);
         }

@@ -82,12 +82,15 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
-  Port, cannery and the shop's service door share one finite six-unit delivery
-  cycle with two cranes, one truck and working crews. The cannery has worn
-  surface maps, fitted equipment and the same cans passing into cartons;
-  task poses, phase lamps and steam make that cycle visible. Distant presentation
+  Port, cannery and the shop's service door share one finite three-unit delivery
+  cycle with two cranes, one lit truck and crews. Production starts with the first
+  received crate during unloading, taking available FIFO lots at twice authored
+  speed. Worn machines, cans entering cartons, task poses, lamps and steam make
+  that cycle visible. Distant presentation
   sleeps while production, truck collision and traffic continue; approach
   restores the current phase. The hero observes; shop stock stays unchanged.
+  Eight port/factory voices use physical anchors and local reverb through
+  `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
 - Separate mountain/village areas, cableway travel and accessible interiors.
 - Six village residents perform finite household work; optional hero help and
   the resulting deliveries, repairs and snow clearing survive scene visits.

@@ -57,21 +57,38 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.World.SeacoastPlan.Port, Is.Not.Null);
             plan.ValidateOrThrow();
             Assert.That(crew.WorkerCount, Is.EqualTo(5));
-            ValidatePortMeshesAndGround(port, city);
-            ValidatePortAccess(port, city);
+            // Static paving must be measured below the delivery truck that
+            // shares this yard. Restore its collision before physical cargo work.
+            var deliveryColliders = new List<Collider>();
+            if(city.Cannery != null)
+                foreach(Collider collider in city.Cannery.Truck.GetComponentsInChildren<Collider>(true))
+                    if(collider.enabled) { deliveryColliders.Add(collider); collider.enabled=false; }
+            try
+            {
+                Physics.SyncTransforms();
+                ValidatePortMeshesAndGround(port, city);
+                ValidatePortAccess(port, city);
+            }
+            finally
+            {
+                foreach(Collider collider in deliveryColliders)
+                    if(collider != null) collider.enabled=true;
+                Physics.SyncTransforms();
+            }
             ValidatePortCargoCycle(port);
 
             // A cold reconstruction from the same timestamp must not depend on
             // the previous frame's parenting, cargo counters or missed events.
-            double seek = CityPortCycle.UnloadStartSeconds + 4 * CityPortCycle.CargoDurationSeconds + 31d;
+            int lastCargo = CityPortCycle.CargoCount - 1;
+            double seek = CityPortCycle.UnloadStartSeconds + lastCargo * CityPortCycle.CargoDurationSeconds + 31d;
             port.ApplyAt(seek, 15f);
-            Vector3 savedCargo = port.Cargo[4].position;
+            Vector3 savedCargo = port.Cargo[lastCargo].position;
             Vector3 savedCart = port.Trolley.position;
             Quaternion savedCartRotation = port.Trolley.rotation;
             int savedStored = port.Snapshot.StoredCargo;
             port.ApplyAt(30 * CityPortCycle.CycleDurationSeconds + 5d, 500f);
             port.ApplyAt(seek, 15f);
-            Assert.That(port.Cargo[4].position, Is.EqualTo(savedCargo));
+            Assert.That(port.Cargo[lastCargo].position, Is.EqualTo(savedCargo));
             Assert.That(port.Trolley.position, Is.EqualTo(savedCart));
             Assert.That(port.Snapshot.StoredCargo, Is.EqualTo(savedStored));
             var reconstructedHost = new GameObject("Port Reconstruction Probe");
@@ -82,7 +99,7 @@ namespace BarPromenade.Tests.PlayMode
                 reconstructed.AutoAdvance = false;
                 reconstructed.ForcePresentation = true;
                 reconstructed.ApplyAt(seek, 15f);
-                Assert.That(reconstructed.Cargo[4].position, Is.EqualTo(savedCargo));
+                Assert.That(reconstructed.Cargo[lastCargo].position, Is.EqualTo(savedCargo));
                 Assert.That(reconstructed.Trolley.position, Is.EqualTo(savedCart));
                 Assert.That(Quaternion.Angle(reconstructed.Trolley.rotation, savedCartRotation), Is.LessThan(.001f));
                 Assert.That(reconstructed.Snapshot.StoredCargo, Is.EqualTo(savedStored));
@@ -192,6 +209,8 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void ValidatePortTimeline()
         {
+            Assert.That(CityPortCycle.CargoCount, Is.EqualTo(3));
+            Assert.That(CityPortCycle.CycleDurationSeconds, Is.EqualTo(432d));
             double[] durations = { CityPortCycle.ApproachDurationSeconds, CityPortCycle.MoorDurationSeconds,
                 CityPortCycle.PrepareDurationSeconds, CityPortCycle.UnloadDurationSeconds,
                 CityPortCycle.SecureDurationSeconds, CityPortCycle.UnmoorDurationSeconds,
@@ -394,6 +413,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void ValidatePortCargoCycle(CityPortController port)
         {
+            ValidatePortVisitCompletion(port);
             var ids = new HashSet<Transform>();
             var cageBounds = new Bounds[CityPortCycle.CargoCount];
             for (int index = 0; index < CityPortCycle.CargoCount; index++)
@@ -463,6 +483,43 @@ namespace BarPromenade.Tests.PlayMode
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
             Assert.That(wall.collider.name.StartsWith("COL_Warehouse", StringComparison.Ordinal), Is.True,
                 "The stored cargo must leave presentation behind physical opaque cold-store walls.");
+        }
+
+        private static void ValidatePortVisitCompletion(CityPortController port)
+        {
+            Assert.That(CityPortCycle.CargoCount, Is.EqualTo(3));
+            Assert.That(CityPortCycle.CycleDurationSeconds, Is.EqualTo(432d));
+            Assert.That(port.Cargo.Length, Is.EqualTo(3));
+            int cargoObjects=0;
+            foreach(Transform part in port.GetComponentsInChildren<Transform>(true))
+                if(part.name.StartsWith("Port Cargo ",StringComparison.Ordinal))cargoObjects++;
+            Assert.That(cargoObjects,Is.EqualTo(3),"One ship visit owns exactly three cargo models, including hidden ones.");
+            CityPortCrew crew=port.GetComponentInChildren<CityPortCrew>();
+            Assert.That(crew,Is.Not.Null);
+            double saved=port.ElapsedSeconds;
+            double secure=CityPortCycle.UnloadStartSeconds+CityPortCycle.UnloadDurationSeconds;
+            try
+            {
+                port.ApplyAt(secure-.001d,15f);
+                crew.ApplyAt(port.ElapsedSeconds);
+                Vector3 deckhand=crew.Deckhand.transform.position,trolley=port.Trolley.position;
+                port.ApplyAt(secure+.001d,15f);
+                crew.ApplyAt(port.ElapsedSeconds);
+                Assert.That(port.Snapshot.Stage,Is.EqualTo(CityPortCycleStage.Secure));
+                Assert.That(port.Snapshot.StoredCargo,Is.EqualTo(3));
+                Assert.That(Vector3.Distance(crew.Deckhand.transform.position,deckhand),Is.LessThan(.01f),
+                    "After the odd last cargo the deckhand must start securing from the hatch he actually reached.");
+                Assert.That(Vector3.Distance(port.Trolley.position,trolley),Is.LessThan(.01f),
+                    "The last empty trolley return must meet its secured parking position.");
+                Assert.That(crew.CaptainHandsMatch,Is.True);
+                Assert.That(crew.CraneHandsMatch,Is.True);
+                Assert.That(crew.TrolleyHandsMatch,Is.True);
+            }
+            finally
+            {
+                port.ApplyAt(saved,15f);
+                crew.ApplyAt(port.ElapsedSeconds);
+            }
         }
 
         private static Bounds PortLocalMeshBounds(Transform root)

@@ -96,6 +96,9 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(-6f));
             Assert.That(
                 GameAudioMixer.GetGroupGainDb(GameAudioGroup.Music),
+                Is.EqualTo(-11.5f));
+            Assert.That(
+                GameAudioMixer.GetGroupGainDb(GameAudioGroup.Music),
                 Is.LessThan(
                     GameAudioMixer.GetGroupGainDb(
                         GameAudioGroup.AmbienceBeds)));
@@ -109,7 +112,7 @@ namespace BarPromenade.Tests.EditMode
                 GameAudioMixer.GetGroupGainDb(
                     GameAudioGroup.SfxWorld) -
                 GameAudioMixer.GetGroupGainDb(GameAudioGroup.Music),
-                Is.GreaterThanOrEqualTo(7.5f));
+                Is.GreaterThanOrEqualTo(13.5f));
             Assert.That(
                 GameAudioMixer.GetGroupGainDb(
                     GameAudioGroup.SfxGameplay),
@@ -355,6 +358,10 @@ namespace BarPromenade.Tests.EditMode
                 new[] { reverbReceive, echoReceive });
 
             AssertSendLayout(music, reverbReceive);
+            CollectionAssert.AreEqual(
+                new[] { "Attenuation", "Send" },
+                GetOrderedEffectNames(music),
+                "Music gain must lower both the dry theme and its reverb send.");
             AssertSendLayout(
                 details,
                 reverbReceive,

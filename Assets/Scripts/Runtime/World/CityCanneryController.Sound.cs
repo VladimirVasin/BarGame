@@ -6,6 +6,9 @@ namespace BarPromenade
     {
         private readonly AudioSource[] voices = new AudioSource[3];
         private readonly AudioClip[] soundClips = new AudioClip[3];
+        public AudioSource TruckEngineSource => voices[0];
+        public AudioSource SeamerSource => voices[1];
+        public AudioSource RetortSource => voices[2];
 
         private void CreateSounds(int seed)
         {
@@ -22,15 +25,9 @@ namespace BarPromenade
                 source.loop = true;
                 source.clip = soundClips[i];
                 source.volume = 0;
-                source.spatialBlend = 1;
-                source.dopplerLevel = 0;
-                source.minDistance = 1.5f;
-                source.maxDistance = 22;
-                source.rolloffMode = AudioRolloffMode.Linear;
                 source.pitch = i == 0 ? .74f : i == 1 ? 1.08f : .45f;
-                source.priority = 184;
-                GameAudioMixer.Route(source, GameAudioGroup.AmbienceBeds);
-                host.AddComponent<AudioLowPassFilter>().cutoffFrequency = i == 2 ? 650 : 1500;
+                CityWorkAudio.Configure(source, i != 0, i == 2 ? 2800f : i == 1 ? 6500f : 4000f,
+                    i == 0 ? 32f : 24f);
                 voices[i] = source;
             }
         }
@@ -39,19 +36,24 @@ namespace BarPromenade
 
         private void ApplySounds()
         {
-            bool running = AutoAdvance && isActiveAndEnabled && GameSessionState.IsGameTimeRunning && !GameTimeScaleRuntime.IsPaused;
+            AdvanceSounds(AutoAdvance && isActiveAndEnabled && GameSessionState.IsGameTimeRunning && !GameTimeScaleRuntime.IsPaused);
+        }
+
+        /// <summary>Samples the current production/transport state without advancing the session clock.</summary>
+        public void AdvanceSounds(bool timeRunning)
+        {
             for (int i = 0; i < voices.Length; i++)
             {
                 AudioSource source = voices[i];
                 if (source == null) continue;
                 source.transform.position = i == 0 ? Truck.TransformPoint(new Vector3(0, 1.3f, 4.6f)) :
-                    i == 1 ? seamer.position : retortDoor.position;
+                    i == 1 ? seamer.position : Plan.World(new Vector3(-5, 1.35f, 1.7f));
                 bool near = ForcePresentation || hero == null || (hero.position - source.transform.position).sqrMagnitude <
-                    (source.isPlaying ? 30f * 30f : 26f * 26f);
+                    Mathf.Pow(source.maxDistance + (source.isPlaying ? 8f : 4f), 2);
                 bool visible = i == 0 ? TruckPresentationActive : FactoryPresentationActive;
-                bool active = running && visible && near && (i == 0 ? Snapshot.IsDriving && !IsBlocked :
-                    i == 1 ? Snapshot.Stage == CityFishSupplyStage.Seal : Snapshot.Stage == CityFishSupplyStage.Heat);
-                source.volume = active ? (i == 0 ? .09f : .055f) : 0;
+                bool active = timeRunning && visible && near && (i == 0 ? Snapshot.IsDriving && !IsBlocked :
+                    i == 1 ? Production.Stage == CityCanneryProductionStage.Seal : Production.Stage == CityCanneryProductionStage.Heat);
+                source.volume = active ? (i == 0 ? .24f : i == 1 ? .32f : .26f) : 0;
                 if (active && !source.isPlaying) source.Play();
                 else if (!active && source.isPlaying) source.Stop();
             }

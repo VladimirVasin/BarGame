@@ -19,31 +19,32 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   `WorldItemPickupModelTests`, `HomeRefrigeratorItemCatalogTests`,
   `InventoryPresentationTests`. `HomeRefrigeratorInteractionPlayModeTests` was
   blocked by Home's seacoast graph during port integration, not by the refrigerator.
-- Port refinement adds ImageGen surface maps, semantic metre UVs, authored
-  fittings, slewing crane heads and planted worker contacts. Asphalt and
-  crossing paint share city assets. A regraded street branch and service
-  yard fit a rigid truck; the public bypass stays outside its manoeuvre.
-  Import/terrain checks caught buried coast guardrails; graph construction
-  rejected diagonal NPC links, now replaced by an orthogonal beach connector.
+- Port adds ImageGen maps, metre UVs, fittings, grounded crew and truck access
+  with a public bypass. Asphalt/markings share city assets. Import/terrain
+  checks caught buried rails; NPC links needed an orthogonal beach connector.
   `build-city-port-3d-model.py --validate-only` and `AreaCaptureFixture.CityPort`
-  passed for access/grounding, truck clearance, cargo/contact ownership, pause
-  and reconstruction; day/night, road and worker frames were reviewed.
+  passed grounding, access, custody and lifecycle checks; frames reviewed.
   Documentation passed `python tools/check-docs.py` and `git diff --check`.
 - PlayMode warnings: unordered root lookup, runtime-only wind, direct GameView
   assembly lookup. Verified by `dotnet build BarPromenade.PlayModeTests.csproj`.
-- The cannery replaces the weighbridge: finite port/truck/process/shop custody,
-  unchanged shop stock, deferred empty-tare return and open public passages.
-  Level frontage had to outrank bus avoidance for wheel contact; trip
-  reservations, doors and the cold-store bypass keep transfers physical.
-  Distance gates suspend factory/port/truck presentation while custody,
-  collision and traffic continue; approach restores the phase.
-- Detail adds ImageGen surfaces, port materials, fitted machines/truck,
-  workwear and aprons. The same cans fill, seal and enter the carton;
-  task poses, indicators and steam follow finite phases. Imported can/apron
-  bases and packing reach needed correction against the rendered objects.
-  `AreaCaptureFixture.CityCannery` passed surface/product/apron/hand contacts,
-  custody, routes, traffic, distance, night and pause on the shared project.
-  Gameplay frames and the updated source preview were reviewed.
+- Cannery replaces the weighbridge: finite custody, unchanged shop stock,
+  deferred empty tare and free passages. Frontage, reservations, doors/bypass
+  keep transfers physical; distance gates preserve custody/collision/traffic.
+  Maps, fittings, aprons, poses and steam reveal the same cans filling, sealing
+  and packing. Rendered frames caught imported bases/reach.
+  Three crates retain geometry/crews. First receipt starts FIFO production
+  during unloading at twice speed; phases preserve order and the packer's walk.
+  Odd-count returns and receiver lean needed contact fixes.
+  `AreaCaptureFixture.CityCannery`/`CityPort` passed overlap, custody, contacts,
+  routes, traffic, distance, pause and reconstruction; frames/source reviewed.
+  Truck maps existed; missing front geometry and nonemissive lenses needed repair.
+  `build-city-cannery-3d-model.py --only-part Truck` and
+  `AreaCaptureFixture.CityCanneryTruckAppearance` passed; frames reviewed.
+- Working sound: eight mono `SfxWorld` voices add local reverb; Music drops
+  `6 dB`. Crane drive/retort-body anchors keep direction.
+  `GameAudioMixerAssetTests.MixerAsset_HasCanonicalDspRoutingAndSceneValues`
+  and `AreaCaptureFixture.CityProductionAudio` passed mixer and offline Unity
+  DSP direction/range/tail/balance checks.
 - Village conifers by §6 row: five on the wall, nine behind the yard.
   Copse trunks block via the mask, not a collider: a graze zeroes planar speed.
   `Conifers_AreTheRoadsOwnTreesOnTheirOwnBand` passed.

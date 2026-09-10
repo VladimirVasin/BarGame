@@ -9,6 +9,7 @@ namespace BarPromenade
     {
         private CityPortController port;
         private Transform engineAnchor;
+        private readonly Transform[] driveAnchors = new Transform[2];
         private readonly AudioSource[] loops = new AudioSource[4];
         private readonly AudioClip[] clips = new AudioClip[4];
         private readonly bool[] started = new bool[4];
@@ -33,6 +34,8 @@ namespace BarPromenade
             var sound = host.AddComponent<CityPortSound>();
             sound.port = controller;
             sound.engineAnchor = CityPortAssetProvider.FindPart(controller.Vessel.gameObject, "ANCHOR_Engine");
+            for (int i = 0; i < sound.driveAnchors.Length; i++)
+                sound.driveAnchors[i] = CityPortAssetProvider.FindPart(controller.CraneBases[i].gameObject, "ANCHOR_HoistFeed");
             sound.clips[0] = CityOffshoreBoatSynthesis.CreateEngineClip(seed ^ 0x504F5254, 0);
             sound.clips[1] = CitySourceSoundSynthesis.CreateRuntimeClip(CitySourceSoundId.IndustrialWeighbridgeMechanismLoop, 0);
             sound.clips[2] = CitySourceSoundSynthesis.CreateRuntimeClip(CitySourceSoundId.IndustrialWeighbridgeMechanismLoop, 2);
@@ -40,16 +43,16 @@ namespace BarPromenade
             string[] names = { "Trawler Diesel", "West Crane Drive", "East Crane Drive", "Cargo Trolley Wheels" };
             for (int i = 0; i < sound.loops.Length; i++)
             {
-                sound.loops[i] = sound.CreateVoice(names[i], true, GameAudioGroup.AmbienceBeds,
-                    i == 0 ? 1700f : i == 3 ? 1300f : 2100f);
+                sound.loops[i] = sound.CreateVoice(names[i], true,
+                    i == 0 ? 4000f : i == 3 ? 4200f : 6500f);
                 int clipIndex = i == 0 ? 0 : i == 3 ? 2 : 1;
                 sound.loops[i].clip = sound.clips[clipIndex];
                 sound.loops[i].pitch = i == 3 ? .62f : i == 2 ? .92f : 1f;
             }
-            sound.contact = sound.CreateVoice("Cargo Landing", false, GameAudioGroup.AmbienceDetails, 1900f);
+            sound.contact = sound.CreateVoice("Cargo Landing", false, 6500f);
             sound.contact.clip = sound.clips[3];
             sound.contact.pitch = .72f;
-            sound.contact.volume = .12f;
+            sound.contact.volume = .36f;
             sound.previousSeconds = controller.ElapsedSeconds;
             sound.hasPrevious = true;
             sound.IsInitialized = true;
@@ -98,7 +101,7 @@ namespace BarPromenade
             if (!timeRunning) return;
 
             float engine = now.VesselPresent ?
-                now.Stage == CityPortCycleStage.Approach || now.Stage == CityPortCycleStage.Depart ? .16f : .045f : 0f;
+                now.Stage == CityPortCycleStage.Approach || now.Stage == CityPortCycleStage.Depart ? .30f : .12f : 0f;
             SetLoop(0, engine, delta);
             bool craneMoves = now.CargoStage == CityPortCargoStage.LowerHook ||
                 now.CargoStage == CityPortCargoStage.Hoist || now.CargoStage == CityPortCargoStage.Slew ||
@@ -106,15 +109,15 @@ namespace BarPromenade
                 (now.CargoStage == CityPortCargoStage.Unhook && now.SecondsInCargo >= 26d);
             float movement = Mathf.Sin(Mathf.Clamp01(now.CargoStageProgress) * Mathf.PI);
             for (int i = 0; i < 2; i++)
-                SetLoop(i + 1, now.ActiveCraneIndex == i && craneMoves ? .085f * movement : 0f, delta);
+                SetLoop(i + 1, now.ActiveCraneIndex == i && craneMoves ? .24f * movement : 0f, delta);
             bool cartMoves = now.CargoStage == CityPortCargoStage.Trolley || now.CargoStage == CityPortCargoStage.Return;
-            SetLoop(3, cartMoves ? .075f * movement : 0f, delta);
+            SetLoop(3, cartMoves ? .16f * movement : 0f, delta);
         }
 
         private void SyncAnchors()
         {
             loops[0].transform.position = engineAnchor.position;
-            for (int i = 0; i < 2; i++) loops[i + 1].transform.position = port.CraneBases[i].position + Vector3.up * 2f;
+            for (int i = 0; i < 2; i++) loops[i + 1].transform.position = driveAnchors[i].position;
             loops[3].transform.position = port.Trolley.position + Vector3.up * .2f;
         }
 
@@ -127,7 +130,7 @@ namespace BarPromenade
                 gain[index] = 0f; started[index] = false;
                 return;
             }
-            gain[index] = Mathf.MoveTowards(gain[index], target, delta * .22f);
+            gain[index] = Mathf.MoveTowards(gain[index], target, delta * .6f);
             loops[index].volume = gain[index];
             if (gain[index] > .0001f && !started[index])
             {
@@ -144,7 +147,7 @@ namespace BarPromenade
         private bool Audible(AudioSource source, Vector3 position)
         {
             if (port.ForcePresentation || port.PresentationObserver == null) return true;
-            float radius = source.isPlaying ? 36f : 32f;
+            float radius = source.maxDistance + (source.isPlaying ? 8f : 4f);
             return (port.PresentationObserver.position - position).sqrMagnitude < radius * radius;
         }
 
@@ -160,7 +163,7 @@ namespace BarPromenade
             if (value) contact.Pause(); else contact.UnPause();
         }
 
-        private AudioSource CreateVoice(string name, bool loop, GameAudioGroup group, float cutoff)
+        private AudioSource CreateVoice(string name, bool loop, float cutoff)
         {
             var host = new GameObject(name);
             host.transform.SetParent(transform, false);
@@ -168,17 +171,7 @@ namespace BarPromenade
             source.playOnAwake = false;
             source.loop = loop;
             source.volume = 0f;
-            source.spatialBlend = 1f;
-            source.dopplerLevel = 0f;
-            source.minDistance = 1.5f;
-            source.maxDistance = 28f;
-            source.rolloffMode = AudioRolloffMode.Linear;
-            source.priority = 183;
-            source.reverbZoneMix = .2f;
-            GameAudioMixer.Route(source, group);
-            var filter = host.AddComponent<AudioLowPassFilter>();
-            filter.cutoffFrequency = cutoff;
-            filter.lowpassResonanceQ = 1f;
+            CityWorkAudio.Configure(source, false, cutoff, 32f);
             return source;
         }
 
