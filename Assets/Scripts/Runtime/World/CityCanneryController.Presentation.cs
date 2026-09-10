@@ -8,6 +8,7 @@ namespace BarPromenade
         private Transform previousPortObserver;
         private bool previousPortForcePresentation;
         public bool ForcePresentation { get; set; }
+        public bool HasSpawnedTruck => CityFishSupplySession.HasStarted || !AutoAdvance;
         public bool FactoryPresentationActive => factoryPresentation == null || factoryPresentation.IsVisible;
         public bool TruckPresentationActive => truckPresentation == null || truckPresentation.IsVisible;
         // Include light reach and the complete handling apron, not just a pivot.
@@ -33,12 +34,16 @@ namespace BarPromenade
         {
             bool factoryVisible = WorldDistancePresentation.ShouldShow(hero, FactoryPresentationBounds,
                 FactoryPresentationActive, ForcePresentation);
-            bool truckVisible = WorldDistancePresentation.ShouldShow(hero, TruckPresentationBounds,
+            bool truckVisible = HasSpawnedTruck && WorldDistancePresentation.ShouldShow(hero, TruckPresentationBounds,
                 TruckPresentationActive, ForcePresentation);
             // A receiver and the moving load share the factory handoff path.
             if (Snapshot.Stage == CityFishSupplyStage.UnloadFish || Snapshot.Stage == CityFishSupplyStage.LoadFinished)
                 factoryVisible = truckVisible = factoryVisible || truckVisible;
             bool changed = factoryVisible != FactoryPresentationActive || truckVisible != TruckPresentationActive;
+            // Before the first dock visit the vehicle has not entered the
+            // world: its physical body must not leave an invisible obstacle.
+            // Manual ApplyAt inspection can still reconstruct any sampled pose.
+            if (Truck.gameObject.activeSelf != HasSpawnedTruck) Truck.gameObject.SetActive(HasSpawnedTruck);
             factoryPresentation?.SetVisible(factoryVisible);
             truckPresentation?.SetVisible(truckVisible);
             return changed;
@@ -56,6 +61,7 @@ namespace BarPromenade
 
         private void ApplyPresentation()
         {
+            ApplyLocalTrolleys();
             if (TruckPresentationActive) ApplyTruckParts();
             ApplyCargoAndLine();
             ApplyVisualDetails();

@@ -33,15 +33,11 @@ namespace BarPromenade
         // Keep these logical rects together so drawing and pointer hitboxes
         // cannot drift apart when the shared 640x360 canvas is scaled.
         internal static Rect MenuPanelRect =>
-            new Rect(390f, 240f, 228f, 98f);
-        internal static Rect MenuTitleRect =>
-            new Rect(402f, 249f, 204f, 22f);
-        internal static Rect MenuRuleRect =>
-            new Rect(402f, 275f, 204f, 1f);
+            new Rect(390f, 240f, 228f, 67f);
         internal static Rect MenuWakeRect =>
-            new Rect(402f, 280f, 204f, 22f);
+            new Rect(402f, 249f, 204f, 22f);
         internal static Rect MenuQuitRect =>
-            new Rect(402f, 306f, 204f, 22f);
+            new Rect(402f, 275f, 204f, 22f);
 
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
@@ -49,7 +45,6 @@ namespace BarPromenade
         private HomeInteriorRoot home;
         private HomeOpeningTimeline timeline;
         private OpeningCameraPose appliedCameraPose;
-        private GUIStyle titleStyle;
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
         private bool initialClockFramePending;
@@ -694,15 +689,6 @@ namespace BarPromenade
 
         private void DrawMenu(RetroUiCanvas canvas)
         {
-            string title = LocalizationService.Get("opening.title");
-            GUI.Label(
-                MenuTitleRect,
-                title,
-                titleStyle);
-            RetroUiTheme.FillRect(
-                MenuRuleRect,
-                RetroUiTheme.FrameInner);
-
             DrawOption(
                 canvas,
                 MenuWakeRect,
@@ -751,16 +737,11 @@ namespace BarPromenade
 
         private void EnsureStyles()
         {
-            if (titleStyle != null)
+            if (selectedStyle != null)
             {
                 return;
             }
 
-            titleStyle = RetroUiTheme.CreateLabelStyle(
-                14,
-                TextAnchor.MiddleLeft,
-                RetroUiTheme.Text,
-                false);
             selectedStyle = RetroUiTheme.CreateButtonStyle(
                 13,
                 TextAnchor.MiddleLeft,

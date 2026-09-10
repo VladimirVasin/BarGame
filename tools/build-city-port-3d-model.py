@@ -260,8 +260,11 @@ def dock(mat):
     for z in (-15.58,-12.42):
         chamfer(g,(4.17,3,-14+(z+14)),(.14,3.05,.12),METAL,.015)
     g.rod((4.12,4.73,-15.65),(4.12,4.73,-12.35),.20,METAL,12)
-    for z in (-15.15,-12.85):
-        g.role="Rubber";chamfer(g,(4.22,1.98,z),(.16,.63,.28),DARK,.035);g.role=None
+    # Fixed dock buffers belong to the masonry, outside the clear opening.
+    # Inside the aperture they floated unsupported as soon as the leaf rose.
+    for z in (-15.72,-12.28):
+        chamfer(g,(4.16,1.98,z),(.06,.72,.36),METAL,.012)
+        g.role="Rubber";chamfer(g,(4.24,1.98,z),(.16,.63,.28),DARK,.035);g.role=None
     empty("ANCHOR_EastLoadingDoor",root,(4.14,1.5,-14))
     # Utility routes have endpoints: gutter into downpipes, protected water
     # supply to the wash point, ventilation and a continuous warehouse plinth.

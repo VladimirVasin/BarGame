@@ -55,6 +55,7 @@ namespace BarPromenade
         private readonly float[][] truckDistances;
         private readonly Definition data;
         private readonly CityLayout layout;
+        private readonly PublicWalkOutline[] publicWalks;
         public Vector3 Origin { get; }
         public RoadEdge StreetEdge { get; }
         public Vector3 StreetConnection => World(data.roadSamples[0].center);
@@ -83,6 +84,8 @@ namespace BarPromenade
             this.layout = layout;
             Origin = port.Origin;
             data = source;
+            publicWalks = new[] { new PublicWalkOutline(data.publicPath, data.publicPathWidth),
+                new PublicWalkOutline(data.publicStreetSpur, data.publicPathWidth) };
             bool found = false;
             foreach (CityOpenAreaAccessDescriptor access in layout.OpenAreaAccesses)
             {
@@ -316,8 +319,14 @@ namespace BarPromenade
         public void AppendWalkableFootprints(ICollection<Rect> rectangles)
         {
             rectangles.Add(LowerYard);rectangles.Add(UpperYard);
+            float seam = UpperYard.yMin, reach = CityGroundTraversalPlanner.ConnectorReach;
+            rectangles.Add(Rect.MinMaxRect(Mathf.Max(LowerYard.xMin, UpperYard.xMin), seam - reach,
+                Mathf.Min(LowerYard.xMax, UpperYard.xMax), seam + reach));
             for(int i=1;i<data.roadSamples.Length;i++)
                 AddWalkStrip(rectangles,data.roadSamples[i-1].center,data.roadSamples[i].center,2f);
+            // These conservative rectangles still bridge endpoints and serve
+            // terrain-rail trimming/recovery. Ordinary walking also queries the
+            // complete authored outline, with the capsule radius applied once.
             for(int i=1;i<data.publicPath.Length;i++)
                 AddWalkStrip(rectangles,data.publicPath[i-1],data.publicPath[i],.68f);
             for(int i=1;i<data.publicStreetSpur.Length;i++)
@@ -330,6 +339,66 @@ namespace BarPromenade
             {
                 Vector3 p=World(Vector3.Lerp(a,b,i/(float)count));
                 rectangles.Add(Rect.MinMaxRect(p.x-half,p.z-half,p.x+half,p.z+half));
+            }
+        }
+
+        internal bool ContainsPublicWalk(Vector3 world, float radius)
+        {
+            var local = new Vector2(world.x - Origin.x, world.z - Origin.z);
+            foreach (PublicWalkOutline walk in publicWalks)
+                if (walk.Contains(local, radius)) return true;
+            return false;
+        }
+
+        private sealed class PublicWalkOutline
+        {
+            private readonly Vector2[] vertices;
+            private readonly Rect bounds;
+
+            internal PublicWalkOutline(Vector3[] path, float width)
+            {
+                vertices = new Vector2[path.Length * 2];
+                Vector2 minimum = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+                Vector2 maximum = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+                for (int i = 0; i < path.Length; i++)
+                {
+                    Vector3 incoming = path[i] - path[Mathf.Max(0, i - 1)]; incoming.y = 0;
+                    Vector3 outgoing = path[Mathf.Min(path.Length - 1, i + 1)] - path[i]; outgoing.y = 0;
+                    incoming.Normalize(); outgoing.Normalize();
+                    Vector3 tangent = i == 0 ? outgoing : i == path.Length - 1 ? incoming : (incoming + outgoing).normalized;
+                    Vector2 normal = new Vector2(tangent.z, -tangent.x);
+                    Vector3 segment = i == path.Length - 1 ? incoming : outgoing;
+                    // Match pedestrian_strip in build-city-port-3d-model.py,
+                    // including its capped miter at the sharp crossing turn.
+                    float miter = Mathf.Min(1.45f, 1f / Mathf.Max(.3f,
+                        Vector2.Dot(normal, new Vector2(segment.z, -segment.x))));
+                    Vector2 point = new Vector2(path[i].x, path[i].z);
+                    Vector2 left = point - normal * (width * .5f * miter);
+                    Vector2 right = point + normal * (width * .5f * miter);
+                    vertices[i] = left; vertices[vertices.Length - 1 - i] = right;
+                    minimum = Vector2.Min(minimum, Vector2.Min(left, right));
+                    maximum = Vector2.Max(maximum, Vector2.Max(left, right));
+                }
+                bounds = Rect.MinMaxRect(minimum.x, minimum.y, maximum.x, maximum.y);
+            }
+
+            internal bool Contains(Vector2 point, float radius)
+            {
+                if (point.x < bounds.xMin || point.x > bounds.xMax ||
+                    point.y < bounds.yMin || point.y > bounds.yMax) return false;
+                bool inside = false, onBoundary = false;
+                float radiusSquared = radius * radius;
+                for (int i = 0, previous = vertices.Length - 1; i < vertices.Length; previous = i++)
+                {
+                    Vector2 a = vertices[previous], b = vertices[i], edge = b - a;
+                    float t = Mathf.Clamp01(Vector2.Dot(point - a, edge) / Mathf.Max(.000001f, edge.sqrMagnitude));
+                    float distanceSquared = (point - a - edge * t).sqrMagnitude;
+                    if (distanceSquared + .000001f < radiusSquared) return false;
+                    onBoundary |= distanceSquared < .00000001f;
+                    if ((a.y > point.y) != (b.y > point.y) &&
+                        point.x < a.x + (point.y - a.y) * edge.x / edge.y) inside = !inside;
+                }
+                return inside || onBoundary;
             }
         }
 

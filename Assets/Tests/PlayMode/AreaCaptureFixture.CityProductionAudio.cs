@@ -71,7 +71,8 @@ namespace BarPromenade.Tests.PlayMode
                 sound.enabled=false;
                 AssertProductionVoiceOwners(city,cannery,port,sound);
                 var all=new[]{sound.EngineSource,sound.FirstCraneSource,sound.SecondCraneSource,
-                    sound.TrolleySource,sound.ContactSource,cannery.TruckEngineSource,cannery.SeamerSource,cannery.RetortSource};
+                    sound.TrolleySource,sound.ContactSource,cannery.TruckEngineSource,cannery.SeamerSource,
+                    cannery.RetortSource,cannery.ReverseAlarmSource};
                 foreach(AudioSource source in all)AssertProductionVoice(source);
 
                 // Exercise the actual pause gate once with the ordinary frame
@@ -213,7 +214,7 @@ namespace BarPromenade.Tests.PlayMode
             cannery.ApplyAt(CanneryTime(cannery,CityFishSupplyStage.PortToFactory,.6f)); cannery.AdvanceSounds(true);
             Assert.That(Vector3.Distance(prior,cannery.TruckEngineSource.transform.position),Is.GreaterThan(1f));
             Assert.That(Vector3.Distance(cannery.TruckEngineSource.transform.position,
-                cannery.Truck.TransformPoint(new Vector3(0,1.3f,4.6f))),Is.LessThan(.001f));
+                CityCanneryAssetProvider.FindPart(cannery.Truck.gameObject,"ANCHOR_TruckEngine").position),Is.LessThan(.001f));
             Assert.That(cannery.TruckEngineSource.isPlaying,Is.True);
             cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Seal,.5f)); cannery.AdvanceSounds(true);
             Assert.That(cannery.SeamerSource.isPlaying,Is.True);
@@ -234,7 +235,7 @@ namespace BarPromenade.Tests.PlayMode
             city.Player.Motor.Teleport(cannery.Plan.Origin+new Vector3(2000,200,2000));
             cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Seal,.5f)); cannery.AdvanceSounds(true);
             sound.Advance(port.ElapsedSeconds,.5f,true);
-            foreach(AudioSource source in new[]{cannery.TruckEngineSource,cannery.SeamerSource,cannery.RetortSource,
+            foreach(AudioSource source in new[]{cannery.TruckEngineSource,cannery.SeamerSource,cannery.RetortSource,cannery.ReverseAlarmSource,
                 sound.EngineSource,sound.FirstCraneSource,sound.SecondCraneSource,sound.TrolleySource,sound.ContactSource})
                 Assert.That(source.isPlaying,Is.False,source.name+" must release distant playback.");
             cannery.ForcePresentation=port.ForcePresentation=true;

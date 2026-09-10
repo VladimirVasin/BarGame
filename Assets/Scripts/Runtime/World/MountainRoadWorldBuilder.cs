@@ -304,67 +304,75 @@ namespace BarPromenade
         {
             var root = new GameObject("Tunnel Exit");
             root.transform.SetParent(parent, false);
-            Vector3 right = Vector3.Cross(
-                Vector3.up,
-                tunnel.OutwardAxis).normalized;
-            Quaternion rotation = Quaternion.LookRotation(
-                tunnel.OutwardAxis,
-                Vector3.up);
-            float depth = tunnel.VisualDepth;
-            float wallThickness = 0.72f;
-            Vector3 middle = tunnel.PortalGroundCenter -
-                             tunnel.OutwardAxis * (depth * 0.5f);
-            var shell = new List<RuntimeOrientedBox>(3)
+            const float wallThickness = 0.72f;
+            var physicalShell = new List<RuntimeOrientedBox>();
+            var visualShell = new List<RuntimeOrientedBox>();
+            var visualFloor = new List<RuntimeOrientedBox>();
+            for (int index = 0; index < tunnel.Segments.Count; index++)
             {
-                new RuntimeOrientedBox(
+                CityMountainTunnelSegmentDescriptor segment = tunnel.Segments[index];
+                Vector3 right = Vector3.Cross(Vector3.up, segment.Forward).normalized;
+                Quaternion rotation = Quaternion.LookRotation(segment.Forward, Vector3.up);
+                // As at the city mouth, only turning joints overlap. Straight
+                // lining remains continuous without coplanar strips in headlights.
+                bool turns = index > 0 && Vector3.Dot(segment.Forward,
+                    tunnel.Segments[index - 1].Forward) < 0.9999f ||
+                    index + 1 < tunnel.Segments.Count && Vector3.Dot(segment.Forward,
+                    tunnel.Segments[index + 1].Forward) < 0.9999f;
+                float depth = segment.Length + (turns ? 0.36f : 0f);
+                Vector3 middle = segment.Center;
+                List<RuntimeOrientedBox> shell = segment.HasCollision
+                    ? physicalShell : visualShell;
+                shell.Add(new RuntimeOrientedBox(
                     middle - right *
                     (tunnel.OpeningWidth * 0.5f + wallThickness * 0.5f) +
                     Vector3.up * (tunnel.OpeningHeight * 0.5f),
                     rotation,
-                    new Vector3(wallThickness, tunnel.OpeningHeight, depth)),
-                new RuntimeOrientedBox(
+                    new Vector3(wallThickness, tunnel.OpeningHeight, depth)));
+                shell.Add(new RuntimeOrientedBox(
                     middle + right *
                     (tunnel.OpeningWidth * 0.5f + wallThickness * 0.5f) +
                     Vector3.up * (tunnel.OpeningHeight * 0.5f),
                     rotation,
-                    new Vector3(wallThickness, tunnel.OpeningHeight, depth)),
-                new RuntimeOrientedBox(
+                    new Vector3(wallThickness, tunnel.OpeningHeight, depth)));
+                shell.Add(new RuntimeOrientedBox(
                     middle + Vector3.up *
                     (tunnel.OpeningHeight + wallThickness * 0.5f),
                     rotation,
                     new Vector3(
                         tunnel.OpeningWidth + wallThickness * 2f,
                         wallThickness,
-                        depth))
-            };
+                        depth)));
+                if (!segment.HasCollision)
+                    visualFloor.Add(new RuntimeOrientedBox(
+                        middle - Vector3.up *
+                        (MountainRoadSurfaceMeshFactory.SurfaceThickness * 0.5f),
+                        rotation,
+                        new Vector3(tunnel.OpeningWidth + wallThickness * 2f,
+                            MountainRoadSurfaceMeshFactory.SurfaceThickness, depth)));
+            }
+            BuildTunnelBatch(root.transform, "Tunnel Rock Shell", physicalShell,
+                TunnelRockColor, true, MountainRoadSurfaceKind.LayeredStone);
+            BuildTunnelBatch(root.transform, "Tunnel Lining Continuation", visualShell,
+                TunnelRockColor, false, MountainRoadSurfaceKind.LayeredStone);
+            BuildTunnelBatch(root.transform, "Tunnel Floor Continuation", visualFloor,
+                RoadColor, false, MountainRoadSurfaceKind.Asphalt);
+            // The far end is deliberately uncapped. The bend, opaque side
+            // walls and ordinary fog conceal it; a dark plate is still a wall
+            // when the descending car shines its headlights onto it.
+        }
+
+        private static void BuildTunnelBatch(Transform parent, string name,
+            List<RuntimeOrientedBox> boxes, Color color, bool collision,
+            MountainRoadSurfaceKind surface)
+        {
             GameObject shellBatch =
                 RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                    "Tunnel Rock Shell",
-                    root.transform,
-                    shell,
-                    TunnelRockColor,
-                    true,
-                    StoneMetersPerTile,
+                    name, parent, boxes, color, collision,
+                    MountainRoadSurfaceAppearance.GetRecipe(surface).MetersPerTile,
                     RuntimeWorldUvMode.BoxProjected);
             MountainRoadSurfaceAppearance.ApplyCombined(
-                shellBatch.GetComponent<Renderer>(),
-                MountainRoadSurfaceKind.LayeredStone,
-                TunnelRockColor);
-
-            // The darkness behind the mouth is the absence of a surface, so
-            // it keeps its flat black plate and takes no sheet at all.
-            RuntimePrimitiveFactory.CreateBox(
-                "Tunnel Darkness",
-                root.transform,
-                tunnel.PortalGroundCenter - tunnel.OutwardAxis *
-                (depth + 0.13f) + Vector3.up *
-                (tunnel.OpeningHeight * 0.5f),
-                new Vector3(
-                    tunnel.OpeningWidth,
-                    tunnel.OpeningHeight,
-                    0.26f),
-                TunnelDarkColor,
-                true);
+                shellBatch.GetComponent<Renderer>(), surface, color);
         }
 
         private static void BuildForest(

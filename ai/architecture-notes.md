@@ -4,100 +4,110 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
-- **Accepted architecture exception — 2026-09-10, port social life:**
-  Approved: overhead bubbles/blips and §21 pools (§6). Refinements admit sea,
-  home, disliked work, drink, relationships and shore/vessel farewells.
-  Complete seeded exchanges
-  keep replies coherent, spaced and unrepeated. Salutations turn free bodies
-  towards partners and stagger waves; task contacts take priority.
-  Break walks avoid crates; visible worker bodies stop the
-  hero passing through. This adds no attention, speech or reaction to the hero.
-  Long gaps allow conversation/smoking and timely returns, clear of trolley,
-  truck, public routes and suspended cargo. Independent pause-aware life time
-  continues while supply holds; restoration never replays missed events.
-  Existing rigs own breath/weight/look/gestures; cigarette ember/exhale follows
-  the puff. Blender levers carry grips through continuous approach/release.
-  A worn broad-lens Blender lamp casts a soft warm fog shaft at deck/near water;
-  fixture, shaft, daylight floor and distance gate follow the trawler.
-  Closed station, five roles, finite catch and free observation remain at
-  level `0` throughout `0-5`, without act/intoxication response, route, boarding,
-  earnings, quest, crime/poisoning implications or story knowledge. Story §16/§21,
-  all nine art §16 checks and contextual-animation rules hold.
+- **Accepted — 2026-09-10, hydraulic tail-lift rig:**
+  Blender rear niches hold twin guides/carriage/hinge and lift/fold cylinders.
+  Sliding rods, `Truck.up` slope clearance, worn steel/rubber; no dummy rods/text.
 
-- **Accepted — 2026-09-10, cannery and finite fish logistics:**
-  Story §6 replaces the weighbridge, keeping public routes. One `8 x 2.5 m`
-  truck carries finite units port→factory→shop: `3 m/s`, reverse `1.1 m/s`.
-  Level frontage, doors, baffle bypass and tail lift preserve contact; trips
-  reserve bus access. Shop stock is unchanged; empty tare is Deferred.
-  Session time survives reloads and stops for pause/obstacles, never distance.
-  Presentation gates factory/shore/vessel/truck at 80/96 m from mesh/light bounds,
-  coupling berth/handoff contacts. Hidden rigs, mechanisms, lights and sounds
-  sleep; collision, custody and traffic continue. Approach restores the phase
-  even paused; night cannot reopen gates.
+- **Accepted — 2026-09-10, compact truck and local traffic:**
+  Closed truck `6.481 x 2.4 x 3.2 m`, full cab/three units; streets/asphalt
+  `8 m`/`6 m`. Turns skirt furniture; factory exit central, then right/park right.
+  `CityCanneryTraffic`: six-second access, entering/unbrakeable bus first;
+  release protects bodies, opposing lanes open.
+
+- **Accepted — 2026-09-10, ship-arrival dispatch and local handling:**
+  Dock latch spawns truck/driver/body on unseen road suffix: `3 m/s`, parked
+  at first crate `156 s`; later full factory trips. Double cab horn `.30/64 m`,
+  pause-owned/no replay. Reverse: ajar door/look-back/steer/beeper; exit `78°`.
+  Crates stored `156/220/284` uninterrupted. Driver waits until docker exits
+  (`167.181+64n s`); next loaded entry limits access. Grip `12.8 s` after parking,
+  queue `4 s` later, first fetch `172.8 s`. East pallets clear aisle/wall.
+  Port cart parks by tare at the canopy's west edge; north apron/west-side
+  approach reaches rear handles clear of cart and resting crew, returns likewise.
+  Port push/pull gait and apron turns clear lift; other routes stay.
+  Cart→cargo→stand. Doors `0–4`→unfold `4–7`→lower `7–11 s`;
+  return cart before reverse closure.
+
+- **Accepted architecture exception — 2026-09-10, driver's first speech pool:**
+  Driver↔docker only: city/weather/salutations, wait "Жду тебя, дружище".
+  Port channel/route/grips retained; no player interaction. Canon/rig rules hold.
+
+- **Accepted architecture exception — 2026-09-10, port social life:**
+  Story §6/§21: paired city/weather speech; `36` rest/`36` work/`8` greeting/
+  `8` farewell. Per-kind shuffle marks first actual line, preserves unused
+  absent pairs and history on Reset/seek; replies stay paired. Greeting/arming
+  Approach `.86` (`60.2 s`), stagger/grips retained. Shore rest uses actual
+  `COL_Awning` footprint; southern routes clear tare/posts, return before duty.
+  Rest exchanges start only if the full paired reply fits before greetings.
+  A reused warm Spot/halo under the roof lights rest/tare locally (`7 m`),
+  daytime floor `2/3`; global light stays.
+  Free docker/deckhand Walk→hero Run `1.8–2.6 m/s`; routes/work grips stay.
+  Pause-aware breath/weight/gaze/smoking/levers. Finite catch, observation `0-5`;
+  no hero/crime/quest/boarding/reward layer.
+
+- **Accepted — 2026-09-10, fish logistics/session start:**
+  Story §6: weighbridge→factory; routes/stock retained, tare Deferred.
+  Travel `3 m/s`, reverse `1.1`. Shared `CityFishSupplySession.HasStarted`:
+  unpaused running-clock entry into `CityPortPlan.LandBounds`,
+  `abs(Y-QuayTopY)<=3 m`, latches time. Before: Approach `0`, no catch-up;
+  after: autonomous across scenes/reentry, reset only by `BeginNewGame`.
+  Pause/obstacles stop work; `80/96 m` gates preserve
+  custody/collision/traffic and paused restore.
 
 - **Accepted — 2026-09-10, cannery surface and process detail:**
-  Ten Blender models keep footprint/passages; five opaque ImageGen maps cover
-  floor, wash wall, steel, insulation and cardboard. Other surfaces share port
-  assets/metre UVs. Workwear, two articulated aprons, finite poses, lamps and
-  steam follow distance gates. The same fifteen cans fill, seal and enter a carton.
-  The truck's continuous front and bezels hold separate emissive lenses;
-  anchored dipped beams retain day/distance gates. Ordinary labels name
-  reception/shipping; story §16/§21 and art §16 hold.
+  Ten Blender models; floor/wall/steel/insulation/cardboard maps, shared port
+  surfaces/metre UVs. Workwear/aprons/poses/lamps/steam distance-gated;
+  same cans fill/seal/pack. Front/lenses/beams day/distance-gated; §21 labels.
+  Outer-jamb bumpers; leaf/rails move together.
 
 - **Accepted — 2026-09-10, first-crate production:**
-  `CityFishSupplyCycle` separates delivery/production on one clock. The free line
-  takes FIFO units during unloading; arrivals wait in cold storage.
-  Authored prepare/fill/seam, retort, cool/pack run at `2x`. The packer walks
-  back between finite passes; the truck takes all output.
+  `CityFishSupplyCycle`: FIFO during unload at `2x`; packer returns between
+  passes, truck takes all output. `Duration` first batch, `RepeatingDuration`
+  repeats; `BatchStart`/optional batch on stage/transfer/production queries
+  reconstruct the shorter first arrival.
 
 - **Accepted — 2026-09-10, three crates per trawler:**
-  `CityPortCycle.CargoCount=3` owns port/supply quantities; extra loads never spawn.
-  Unloading is `3*64=192 s`, the visit `432 s`; truck handling is
-  `24+3*76=252 s`. Geometry, scale, crews and fifteen presentation cans stay.
-  Early FIFO/`2x` production remains; odd-count returns keep real endpoints.
+  `CityPortCycle.CargoCount=3`, no extra loads. Unload `3*64=192 s`, visit `432 s`,
+  Factory/shop `48+3*76=276 s`; fifteen cans, odd returns retain endpoints.
 
 - **Accepted — 2026-09-10, readable working sound:**
-  `CityWorkAudio` routes eight mono 3D port/cannery voices to `SfxWorld`.
-  Direct sound precedes local `.28 s` outdoor/`.95 s` factory reverb; zone mix
-  is zero and City returns stay. Sound follows the crane's `ANCHOR_HoistFeed`
-  and stationary retort body. Other anchors and music source trims stay;
-  Music moves back `6 dB`. No added bed.
+  `CityWorkAudio`: mono `SfxWorld`, `.28/.95 s` outdoor/factory reverb;
+  crane `ANCHOR_HoistFeed`/retort body sources. City trims stay, Music −`6 dB`.
+  Vessel `ANCHOR_Horn`: `112 Hz/3.4 s`, `.32/64 m`, once at arrival `66 s` and
+  departure `336 s`; continuous crossings only, no seek/reentry replay.
+  Local echo `620 ms/.42/.30`, dark reverb `3.8 s`, silent clip tail `4.6 s`;
+  pause/distance/stop own DSP. Existing Spot/Soft shadows; global mix/light unchanged.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
-  Twelve opaque ImageGen albedos cover concrete, walls, painted steel,
-  plaster, timber, roof, deck, plastic, fish, ice, rubber and fabric.
-  `ArtSource/City/Port/Textures/generation.json` retains originals/prompts/hashes;
-  backend version is unavailable. Shared muted materials use metre UVs,
-  `512 px` sRGB/mipmaps/repeat; thin bare metal stays flat. Asphalt shares
-  `CityRoadAsphaltAlbedo`, `12 m` phase and city wetness. Story §6 admits
-  local regrading and nine measured FBXs including `AccessRoad`.
-  `PortAccessLayout.json`/`CityPortAccessPlan` own the `6 m` road, flare and
-  L-yard at the east loading door, validated with an `8 x 2.5 m` truck.
-  The `2 m` public bypass crosses once. NPCs use the straight spur/orthogonal
-  beach links; the player retains the diagonal branch; graph rules stay.
-  Heads slew with bearings, counterweights and winches; grounded StationWorker
-  rigs keep muted fabric, task gaze and contacts. Hook/cargo sway stays below
-  `9 cm`, settling before lowering. Quay/store lights retain the two-thirds
-  daytime floor and global fog; story §16/§21 and all nine art checks hold.
+  Twelve opaque ImageGen albedos: concrete/walls/painted steel/plaster/timber/
+  roof/deck/plastic/fish/ice/rubber/fabric. Originals/prompts/hashes:
+  `ArtSource/City/Port/Textures/generation.json`; backend version unknown.
+  Shared muted materials: metre UVs, `512 px` sRGB/mipmaps/repeat; thin bare metal
+  stays flat. Asphalt shares `CityRoadAsphaltAlbedo`, `12 m` phase/city wetness.
+  Story §6 admits local regrading/nine measured FBXs, including `AccessRoad`.
+  `PortAccessLayout.json`/`CityPortAccessPlan`: `6 m` road/flare/L-yard at east
+  loading door; current compact-truck dimensions. `2 m` public bypass
+  crosses once. NPCs: straight spur/orthogonal beach links; player: diagonal
+  branch; graph rules stay. Heads slew with bearings/counterweights/winches;
+  grounded StationWorker rigs retain muted fabric/task gaze/contacts.
+  Hook/cargo sway <`9 cm`, settled before lowering. Quay/store lights retain
+  two-thirds daytime floor/global fog; story §16/§21 and all nine art checks hold.
 
 - **Accepted — 2026-09-09, a small working fishing port:**
-  Story §6's level-`0` exception covers art §10d docking/dark shore/sand,
-  story §5/§7/§12/§18 and art §10g's closed-port meaning. Closed mine,
-  station and fisherman remain; no reopening history exists. One berth,
-  two cranes, a roughly `20 m` trawler and five workers serve finite catches.
-  Fenders, bollards, moorings and a free crane edge face an approach clear of
-  bed, mouth, island and pier. Solid caissons reach local `-3.4 m`, `20 m`
-  seaward; the rear path lies `0.5 m` inland with physical side ramps above
-  sand. Public routes stay outside hanging loads. Moorings precede lifting
-  and clear before departure; crane→trolley→store handoffs require contact.
-  Fog hides entry/exit; offshore passes exclude this corridor.
-  `CityPortCycle` reconstructs `64 s` slots; `CityPortController` owns custody,
-  hatches, moorings, motion, crew, wake and sound. Blender anchors measure pure
-  plans; runtime owns pause/release. Shared water/materials, nonyellow workwear,
-  causal sound and warm lights preserve the fisherman's accent and daytime floor.
-  The hero observes freely. Boarding, exit, earnings, quest, hero dialogue,
-  crime/disease implications and act/intoxication changes stay prohibited;
-  story §16/§21 and all nine art checks hold.
+  Story §6 level-`0` exception covers art §10d docking/dark shore/sand, story
+  §5/§7/§12/§18 and art §10g closed-port meaning. Closed mine, station and
+  fisherman remain; no reopening history. One berth/two cranes/~`20 m` trawler/
+  five workers serve finite catches. Fenders/bollards/moorings/free crane edge
+  face an approach clear of bed/mouth/island/pier. Solid caissons reach local
+  `-3.4 m`, `20 m` seaward; rear path `0.5 m` inland, physical side ramps above
+  sand. Public routes avoid hung loads. Moorings precede lifts, clear before
+  departure; crane→trolley→store handoffs require contact. Fog hides entry/exit;
+  offshore passes exclude this corridor.
+  `CityPortCycle` reconstructs `64 s` slots; `CityPortController` owns custody/
+  hatches/moorings/motion/crew/wake/sound. Blender anchors measure pure plans;
+  runtime owns pause/release. Shared water/materials, nonyellow workwear, causal
+  sound/warm lights preserve fisherman's accent/daytime floor. Hero observes
+  freely; no boarding/exit/earnings/quest/hero dialogue/crime-disease implications/
+  act-intoxication changes. Story §16/§21 and all nine art checks hold.
 
 - **Accepted — 2026-09-09, the Ferryman's radio and ordinary road speech:**
   The user approved the complete radio, glovebox-light and ten-line road-pool
@@ -3757,23 +3767,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   in the first visible destination frame. Interior-to-interior arrivals and
   fixed interior cameras remain owned by their scene-specific composition.
 - **Accepted — Mountain Road is a separate runtime-composed area:** Build index
-  `7` starts the hero `6 m` inside a `9 m` exit tunnel and builds one continuous
-  `620 m` uphill road ribbon sized against the `4.83 x 1.80 m` LastRouteCar.
-  Ordinary width is `4.8 m`; ten `7.5 m`-radius hairpins widen to `6.4 m`.
-  The physical climb is `26.1 m`, exactly three times its former rise, and the
-  pure route validator caps every sampled grade at `8%`. The climb itself ends
-  at `595 m`; the final `25 m` are level, a `20 m` terrace run that carries the
-  road clear of the switchback field plus the `5 m` plateau entry lead. They
-  enter the unchanged irregular roughly `42 x 27 m` terminal plateau after
-  about `238.5 s` (`3 min 58 s`) at `PlayerMotor`'s `2.6 m/s` walk or `148 s`
-  (`2 min 28 s`) under continuous `4.2 m/s` run input.
-  The terrace run exists because the pad is a raised terrace and the terrain
-  sampler snaps everything inside it to the pad height: parked where the climb
-  stopped, its rim reached back across the outer arc of hairpin `8` and buried
-  that road under `1.5 m` of collidered snow. `MountainRoadValidator` now holds
-  the pad off every stretch of climbing road by `4 m` beyond the ribbon's own
-  half-width; only its own `UpperApproach` may touch the road. `MountainRoadRoutePlan` owns the ordered samples, all ten typed
-  hairpin descriptors and one mandatory bridge descriptor instead of exposing
+  `7` keeps spawn and return ride handoff `6 m` inside a `9 m` physical/walkable
+  tunnel. Its uncapped `72 m` visual lining/floor stays straight for `12 m`, then
+  bends `4°` per `6 m` chord like City. The tail has no collision/navigation.
+  Terrain/forest clear the tail locally; stone/asphalt, lamps/headlights/fog stay.
+  The continuous `620 m` uphill ribbon fits the `4.83 x 1.80 m` LastRouteCar:
+  `4.8 m` wide, ten R`7.5 m` hairpins widened to `6.4 m`. Rise `26.1 m` (3x),
+  sampled grade ≤`8%`. Climb ends at `595 m`; final level `25 m` = `20 m` terrace
+  + `5 m` entry into the irregular `42 x 27 m` plateau. Walk `2.6 m/s` takes
+  ~`238.5 s`, run `4.2 m/s` ~`148 s`. The raised pad once buried hairpin `8`
+  under `1.5 m` of snow; `MountainRoadValidator` keeps it `4 m` outside each
+  climbing ribbon edge. Only `UpperApproach` may touch the road.
+  `MountainRoadRoutePlan` owns the ordered samples, all ten typed hairpin
+  descriptors and one mandatory bridge descriptor instead of exposing
   two fixed turns. The first five hairpins form the lower forest chapter, the
   last five form the upper climb, and route-relative placement spreads forest,
   roadside misc, snow poles and ridge dressing across the full distance.
@@ -4208,21 +4214,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   horizontal sides. The FBX contains no collider, Light, Camera, Rigidbody,
   Animator or interaction.
 
-  `CitySupermarketFacadeWorldBuilder` measures the imported anchor in world
-  space and aligns it to the unchanged `BuildingLot.DoorPosition`, preserving
-  the FBX `100/0.01` hierarchy. Unity retains the full renderer-free logical
-  collider, `4.8 m` entrance apron, `5.6 m` fence opening, trigger, stationary
-  door action, scene transition and the separate fixed yard spotlight on the
-  clear side-wall mount zone. The spotlight planner subtracts the authored
-  `0.08 m` wall inset and accepts only a facade normal perpendicular to the
-  shop frontage, matching the two declared side-wall zones. The layout owns
-  the same fixed `15.5 x 15.5 x 6.4 m` lot contract as the model and omits the
-  supermarket when configured buildable blocks cannot contain that footprint;
-  it never scales or height-clamps the asset. Full Home placement reuses the
-  same unit-scale
-  collider-free prefab; Hidden omits it and Crossing alone keeps the existing
-  bounds-clipped fallback, so imported topology is never sheared. The old
-  CityMisc supermarket shell stays addressable only for compatibility.
+  `CitySupermarketFacadeWorldBuilder` aligns the measured world anchor to
+  unchanged `BuildingLot.DoorPosition`, retaining FBX `100/0.01`. City's private
+  supermarket collision helper keeps the lot envelope around a rear receiving
+  cavity with solid jambs/header/floor/ceiling. The local trolley parks inside;
+  the driver walks through the open service door to fetch/return it. Shared
+  collision builders and `SupermarketInterior` stay unchanged. Unity retains
+  the `4.8 m` apron, `5.6 m` fence opening, trigger, stationary door action,
+  transition and fixed side-wall yard spotlight. Its planner subtracts the
+  `0.08 m` wall inset and matches the two mount zones perpendicular to frontage.
+  The fixed `15.5 x 15.5 x 6.4 m` lot omits shops where the footprint cannot fit;
+  assets are never scaled/height-clamped. Full Home reuses the unit-scale
+  collider-free prefab; Hidden omits it; Crossing uses the bounds-clipped
+  fallback without shearing imported topology. Old CityMisc shell: compatibility.
 - **Accepted — The canonical player home is one complete 209-1-inspired
   exterior:** design `player_home_exterior_v1` replaces the City misc
   `PlayerHomeBuildingShell`, generic window bands, runtime roof/chimney and

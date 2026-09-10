@@ -819,6 +819,161 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        public void DebugTeleport_NorthRowArrivesOutsideBuildingsOnActualSurface()
+        {
+            var host = new GameObject("North Row Teleport Test");
+            var playerObject = new GameObject("North Row Teleport Player");
+            var previousRoute = new List<string>(GameSessionState.PlannedBarRoute);
+            CityMapController controller = null;
+            try
+            {
+                CityLayout layout = CityLayoutGenerator.Generate(
+                    CityBlueprintCatalog.Default,
+                    CityGenerationSettings.Default,
+                    GameSessionState.DefaultCitySeed);
+                RoadWalkableArea walkable = RoadWalkableArea.FromLayout(layout);
+                var ground = new CityMapCityTeleportGround(layout);
+                PlayerInteractor interactor = playerObject.AddComponent<PlayerInteractor>();
+                PlayerMotor motor = playerObject.AddComponent<PlayerMotor>();
+                var player = new PlayerRuntime(playerObject, motor, interactor, null);
+                controller = host.AddComponent<CityMapController>();
+                controller.Initialize(layout, player, null, null);
+                Assert.That(controller.SetDebugTeleportEnabled(true), Is.True);
+                int obstructedMarkers = 0;
+
+                // Exercise the actual two confirmation paths. A valid lattice
+                // square does not prove that a lot marker is a safe arrival.
+                for (int x = 0; x <= 5; x++)
+                {
+                    var cell = new Vector2Int(x, 11);
+                    int lotIndex = -1;
+                    for (int index = 0; index < controller.MapObjects.Count; index++)
+                    {
+                        if (controller.MapObjects[index].Cell == cell)
+                        {
+                            lotIndex = index;
+                            break;
+                        }
+                    }
+
+                    Assert.That(lotIndex, Is.GreaterThanOrEqualTo(0), $"Missing lot {cell}.");
+                    BuildingLot lot = controller.MapObjects[lotIndex];
+                    Assert.That(lot.HasBuilding, Is.True, $"Regression lot {cell} needs a building.");
+                    controller.SetMapPointInspectionEnabled(false);
+                    Assert.That(controller.Open(), Is.True);
+                    Assert.That(controller.SelectMapObject(lotIndex), Is.True);
+                    Assert.That(controller.ConfirmDebugTeleport(), Is.True, $"Lot {cell}.");
+                    Assert.That(controller.IsOpen, Is.False);
+                    AssertCityTeleportLanding(layout, walkable,
+                        playerObject.transform.position, $"Lot {cell}");
+
+                    Assert.That(controller.Open(), Is.True);
+                    Assert.That(controller.SetMapPointInspectionEnabled(true), Is.True);
+                    int pointIndex = FindLotMapPointIndex(controller, lot);
+                    Assert.That(pointIndex, Is.GreaterThanOrEqualTo(0), $"Missing marker {cell}.");
+                    Assert.That(controller.SelectMapPoint(pointIndex), Is.True);
+                    Assert.That(controller.TryGetSelectedMapPoint(out _, out Vector3 marker), Is.True);
+                    if (Mathf.Abs(marker.x - lot.Center.x) < lot.Size.x * 0.5f &&
+                        Mathf.Abs(marker.z - lot.Center.z) < lot.Size.y * 0.5f)
+                    {
+                        obstructedMarkers++;
+                    }
+
+                    Assert.That(controller.ConfirmMapPointTeleport(), Is.True, $"XYZ marker {cell}.");
+                    Assert.That(controller.IsOpen, Is.False);
+                    Vector3 landed = playerObject.transform.position;
+                    AssertCityTeleportLanding(layout, walkable, landed, $"XYZ marker {cell}");
+
+                    // A previously accepted XZ must not preserve a stale marker
+                    // height, whether it is buried below or hanging above ground.
+                    foreach (float wrongHeight in new[] { landed.y - 100f, landed.y + 100f })
+                    {
+                        var stale = new Vector3(landed.x, wrongHeight, landed.z);
+                        Assert.That(ground.TryClampArrival(stale, out Vector3 corrected),
+                            Is.True, $"Re-clamp {cell}.");
+                        Assert.That(Vector3.Distance(corrected, landed),
+                            Is.LessThanOrEqualTo(0.001f),
+                            $"Re-clamp {cell} must retain safe XZ and re-sample Y.");
+                        AssertCityTeleportLanding(layout, walkable, corrected, $"Re-clamp {cell}");
+                    }
+                }
+
+                Assert.That(obstructedMarkers, Is.GreaterThan(0),
+                    "At least one raw marker must occupy a solid building, reproducing the original arrival bug.");
+            }
+            finally
+            {
+                if (controller != null && controller.IsOpen)
+                {
+                    controller.Close();
+                }
+
+                GameSessionState.ClearRoute();
+                foreach (string stop in previousRoute)
+                {
+                    GameSessionState.TryAddRouteStop(stop);
+                }
+
+                UnityEngine.Object.DestroyImmediate(host);
+                UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
+
+        private static int FindLotMapPointIndex(CityMapController controller, BuildingLot lot)
+        {
+            string stableId = $"city:lot:{lot.Cell.x}:{lot.Cell.y}";
+            if (lot.IsBar) stableId = "city:bar:" + lot.BarId;
+            else if (lot.IsPlayerHome) stableId = "city:home";
+            else if (lot.IsSupermarket) stableId = "city:supermarket";
+            else
+            {
+                CityMapPointOfInterest point = controller.PointsOfInterest.FirstOrDefault(
+                    candidate => candidate.LotCell == lot.Cell);
+                if (!string.IsNullOrEmpty(point.StableId)) stableId = "city:poi:" + point.StableId;
+            }
+
+            IReadOnlyList<CityMapPointDescriptor> points = controller.ActiveMapPoints;
+            for (int index = 0; index < points.Count; index++)
+            {
+                if (points[index].StableId == stableId) return index;
+            }
+
+            return -1;
+        }
+
+        private static void AssertCityTeleportLanding(CityLayout layout,
+            RoadWalkableArea walkable, Vector3 position, string context)
+        {
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            Assert.That(walkable.Contains(position, radius), Is.True,
+                $"{context} arrives outside the capsule's walkable mask.");
+            var xz = new Vector2(position.x, position.z);
+            foreach (BuildingLot lot in layout.BuildingLots)
+            {
+                if (!lot.HasBuilding) continue;
+                Rect footprint = Rect.MinMaxRect(
+                    lot.Center.x - lot.Size.x * 0.5f - radius,
+                    lot.Center.z - lot.Size.y * 0.5f - radius,
+                    lot.Center.x + lot.Size.x * 0.5f + radius,
+                    lot.Center.z + lot.Size.y * 0.5f + radius);
+                Assert.That(footprint.Contains(xz), Is.False,
+                    $"{context} overlaps the building on {lot.Cell}.");
+            }
+
+            if (!layout.ElevationPlan.TrySampleSurface(xz, CitySurfaceRole.RoadTop,
+                    out float top, out _))
+            {
+                Assert.That(CityTerrainSurfacePlan.TrySampleGroundTop(layout, xz,
+                        out top, out CitySurfaceDescriptor surface), Is.True,
+                    $"{context} has no physical surface.");
+                Assert.That(surface.IsWater, Is.False, context);
+            }
+
+            Assert.That(position.y, Is.EqualTo(top + PlayerFactory.GroundedRootOffset)
+                .Within(0.001f), $"{context} must stand on the actual surface.");
+        }
+
         /// <summary>
         /// Picking a place on the other tab starts the trip there and
         /// carries the coordinate.

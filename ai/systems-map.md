@@ -70,7 +70,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City elevation and exterior stairs | Validated elevation plans keep external stairs and walkable ground consistent with collision. | `CityElevation{Plan,Planner,Validator,Rebaser,StairPlacement}`, `CityTerrainSurfacePlan` | Current |
 | City mountain boundary and open tunnel | `default-coastal` closes west/south around the non-traversable river cave and one gate-free `8 x 5.5 m` portal. | `CityMountainBoundary*`, `CityMountainBackdrop*` | Current |
 | South tunnel travel stub | Walking triggers the authored refusal/return. Gap: no pedestrian transition to Mountain Road. | `CityTunnelTravel{Plan,Planner,Controller,CrossingModel}`, `InteractionPromptView` | Partial |
-| Mountain Road area | Separate ascent with ten hairpins, gorge bridge, forest, summit cafe and cableway; plans own route surfaces. | `MountainRoad*`, `MountainRoadBridge*` | Current |
+| Mountain Road area | Open curved tunnel tail, ten hairpins, gorge bridge, forest, summit cafe and cableway; plans own surfaces. | `MountainRoad*`, `MountainRoadBridge*` | Current |
 | Village above the cableway | Walkable snow bowl and accessible mother's house. Gap: dinner/news/Cat content and chapel interior remain unwritten. | `AlpineVillage{SnowPlan,SnowTreading,SnowKickup,PeripheralStorm*,RidgeAppearance,WorldBuilder}` | Partial |
 | Mother's house interior | Two bedrooms and a passive bathroom in a supported rear wing; shared windows, walkable stairs, five cameras. | `MothersHouseInterior*`, `MothersHouseWindowLayout`, `HomeFixedCameraController` | Current |
 | The cableway carries | Both arrivals approach aboard, dock and exit with a working safety bar; ride leases release on completion/teardown. | `AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}` | Current |
@@ -83,7 +83,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City yards | Only west stone terraces add a mason's cart; other fringe yards retain their existing service-belt infrastructure. | `CityFringeYard*`, `CityFringeYardLifePlanner` | Current |
 | District public places | Four public lots retain validated street approaches, causal props and bounded local practicals. | `CityDistrictPointOfInterest{Plan,Planner,WorldBuilder}`, `CityPointOfInterestSurfaceAppearance` | Current |
 | Drying yard babushkas | Staged drying-yard residents share authored domestic actions and local speech/prop ownership. | `DryingYardBabushka{Provider,Plan,Presentation,Factory}`, `CityPedestrianHandProps` | Current |
-| Cannery and fish deliveries | Three crates per ship; first-crate production during unloading. Empty-tare return deferred. | `CityCannery*`, `CityFishSupply{Cycle,Session}`, `WorldDistancePresentation` | Partial |
+| Cannery and fish deliveries | First entry: truck with first crate; cranes continue, driver yields; local carts/lift. Empty-tare return deferred. | `CityCannery*`, `CityFishSupply{Cycle,Session}`, `WorldDistancePresentation` | Partial |
 | Cemetery mourner | The grave-side mourner uses her own authored presence, gestures and localized response. | `CemeteryMourner{Provider,Plan,Timeline,Presentation,Factory}`, `CityCemeteryMournerController` | Current |
 | Cemetery watchman and gate lodge | The watchman and lodge provide the authored grave-work offer and payment interaction. | `CemeteryWatchman{Provider,Plan,Quips,Interaction,Presentation,Factory}`, `CityCemeteryPlanner.AddLodge` | Current |
 | Cemetery gravedigging | Up to three open jobs; grave acts/epitaphs persist per plot, with payment committed through the watchman. | `CemeteryGravedigging{Plan,Controller,Register}`, `CemeteryGraveWork{Stage,Ledger}` | Current |
@@ -92,8 +92,8 @@ A row never carries a status outside this table. Product-level scope cuts
 | Sitting on the mother's sofa | The sofa reuses shared bench seating with front-only approach, measured cushion contact and owned shadow cleanup. | `MothersHouseSofaSeatPlanner`, `CityBenchSit{Plan,Interaction,WorldBuilder}` | Current |
 | The mother in her chair | She rocks on measured runner contact, greets him at the door and speaks from one shuffled bag that `E` shares. | `MothersHouseMother{Presentation,Factory,Interaction,Quips,SpeechSession,SpeechController}`, `NpcHeroAttentionLook` | Current |
 | Outdoor raven roosts | Seeded pairs occupy bounded open-world perches, flush locally and obey area exclusion/vehicle gates. | `RavenRoost{Plan,Controller}`, `{City,MountainRoad,AlpineVillage}RavenRoostPlanner` | Current |
-| Seacoast precinct | Textured working port, truck-capable access and public bypass; closed station and east shore retain their approaches. | `CitySeacoast*`, `CityPort*`, `CitySeaResources` | Current |
-| Port social life | Paired talk, reciprocal salutations/body turns and breaks; solid worker bodies and crate-safe routes. | `CityPortCrew*`, `CityPortConversation*`, `CityPortLighting` | Current |
+| Seacoast precinct | Working port: joined ramp/yard walk masks, 2 m bypass and truck access; station/east-shore approaches retained. | `CitySeacoast*`, `CityPort*`, `CitySeaResources` | Current |
+| Port social life | Canopy breaks, paired city/weather talk in nonrepeating rounds; driver speaks only to docker. | `CityPortCrew*`, `CityPortConversation*`, `CityPortLighting` | Current |
 | Sea water | Shared water drive owns sea swell, foam and uneven shore swash. | `CitySeaResources`, `CityWaterResources` | Current |
 | Beach sand | Deterministic shallow relief and compressible foot trails over fixed collision. | `CityBeachSandPlan`, `CitySandTreading` | Current |
 | Lighthouse island | One distant fog-framed island landmark owns its silhouette, beacon/beam and authored sightline. | `CityLighthouseIsland{Plan,Planner,MeshFactory,WorldBuilder,Resources}` | Current |
@@ -125,7 +125,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City wind dressing | Shared wind drives authored trees/props/cloth while preserving causal movement limits. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
 | Scene and place music | Guarded handoffs; radio power suppresses the city theme. Gap: cemetery and church slots are empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
 | Common audio mix | One shared mixer routes scene themes, causal ambience, effects and reversible intoxication processing. | `GameAudioMixer`, `BarPromenadeAudio.mixer` | Current |
-| Port and cannery audio | Eight mono world voices use physical anchors and local reverb behind a clear direct signal. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.Sound` | Current |
+| Port and cannery audio | Machinery voices/reverse beeper; vessel arrival/departure horn has local echo/reverb. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.Sound` | Current |
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
 | Begotten sound perception | The print's optical track tears against its own mask throughout the ramp and adds surface and apparatus at 24/s. | `BegottenAudioRules`, `BegottenAudioDriver`, `OpticalProcessor.h` | Current |
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |
@@ -159,7 +159,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
 | Area map UI | City/MountainRoad/Village tabs consume pure plans; area travel and teleport share destination validation. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
 | Map XYZ inspection | Map points expose precise world coordinates and validated teleport destinations in the existing debug flow. | `CityMapTeleport{Lattice,Grounds}`, `CityMapPointDescriptor` | Current |
-| Map arrival ground | The clamp belongs to the area the player stands in: both scenes share one coordinate system. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
+| Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
 | Scene transition | Guarded direct/door loads own pending activation and terminal cleanup; failure handling is centralized. | `PlayerDoorAction{Plan,Controller,Target}`, `CityGameRoot` | Current |
 | Area loading transition | One directed illustration and bottom bar; 20% load / 80% construction, owned until the destination is ready. | `AreaTravelService`, `AreaLoading{Root,ArtCatalog}` | Current |
 | Door transition presentation | A deterministic `3.15 s` unscaled fixed-camera door sequence in a black void, warm on entry and cold on exit. | `DoorTransition{Root,Timeline,Direction}`, `RuntimeSceneSetup` | Current |

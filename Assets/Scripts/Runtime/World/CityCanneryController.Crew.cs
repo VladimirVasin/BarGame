@@ -7,10 +7,16 @@ namespace BarPromenade
     {
         private VillageResidentPresentation[] workers;
         private Transform driverPelvis, driverSeat, driverLeftHand, driverRightHand, driverFoot;
-        private Transform driverDoor, trolleyLeftHand, trolleyRightHand;
+        private Transform driverDoor, driverExit, driverRearWalk, trolleyLeftHand, trolleyRightHand;
+        private Transform driverSteeringShoulder, driverMouth;
         private readonly Transform[] driverThighs = new Transform[2];
         private readonly Transform[] driverShins = new Transform[2];
         private readonly Transform[] driverFeet = new Transform[2];
+        private readonly Transform[] driverTrolleyShoulders = new Transform[2];
+        private readonly Transform[] driverTrolleyForearms = new Transform[2];
+        private readonly Transform[] driverTrolleyHands = new Transform[2];
+        private readonly Vector3[] driverPlantedFeet = new Vector3[2];
+        private readonly Quaternion[] driverPlantedFootRotations = new Quaternion[2];
         private readonly Transform[] workerSpines = new Transform[5];
         private readonly Vector3[] workerRoute = new Vector3[6];
         private Vector3 driverDoorDock;
@@ -30,26 +36,36 @@ namespace BarPromenade
             {
                 workers[i] = library.Create(VillageResidentRole.StationWorker, transform);
                 workers[i].name = names[i];
+                if (i == 4) CityPortCrew.AlignWorkerModelWithPlacement(workers[i]);
                 workerSpines[i] = Require(workers[i].ModelRoot, "spine");
             }
             driverPelvis = Require(workers[4].ModelRoot, "pelvis");
+            driverSteeringShoulder = Require(workers[4].ModelRoot, "upper_arm.R");
+            driverMouth = Require(workers[4].ModelRoot, CityPedestrianHandProps.MouthSocketName);
             for (int i = 0; i < 2; i++)
             {
                 string side = i == 0 ? ".L" : ".R";
                 driverThighs[i] = Require(workers[4].ModelRoot, "thigh" + side);
                 driverShins[i] = Require(workers[4].ModelRoot, "shin" + side);
                 driverFeet[i] = Require(workers[4].ModelRoot, "foot" + side);
+                driverTrolleyShoulders[i] = Require(workers[4].ModelRoot, "upper_arm" + side);
+                driverTrolleyForearms[i] = Require(workers[4].ModelRoot, "forearm" + side);
+                driverTrolleyHands[i] = Require(workers[4].ModelRoot, "hand" + side);
             }
             driverSeat = Require(Truck, "ANCHOR_TruckDriver");
             driverLeftHand = Require(Truck, "ANCHOR_DriverLeftHand");
             driverRightHand = Require(Truck, "ANCHOR_DriverRightHand");
             driverFoot = Require(Truck, "ANCHOR_DriverFoot");
             driverDoor = Require(Truck, "MOVE_DriverDoor");
+            driverExit = Require(Truck, "ANCHOR_DriverExit");
+            driverRearWalk = Require(Truck, "ANCHOR_DriverRearWalk");
             driverDoorDock = Truck.InverseTransformPoint(driverDoor.position);
             driverDoorRest = Quaternion.Inverse(Truck.rotation) * driverDoor.rotation;
             trolleyLeftHand = Require(trolley, "ANCHOR_TrolleyHandleLeft");
             trolleyRightHand = Require(trolley, "ANCHOR_TrolleyHandleRight");
             CreateCrewAppearance();
+            portConversation = port.GetComponentInChildren<CityPortConversationController>();
+            if (portConversation != null) portConversation.RegisterDriver(workers[4]);
         }
 
         private void ApplyWorkers()
@@ -67,10 +83,7 @@ namespace BarPromenade
             float seconds = (float)Snapshot.Seconds;
             if (FactoryPresentationActive)
             {
-                bool factoryHandling = Snapshot.Stage == CityFishSupplyStage.UnloadFish ||
-                    Snapshot.Stage == CityFishSupplyStage.LoadFinished;
-                if (factoryHandling) ApplyReceiverTransfer(seconds);
-                else StandWorker(workers[0], Anchor("Receiver"), Plan.Forward, Anchor("ReceivingLoad"));
+                StandWorker(workers[0], Anchor("Receiver"), Plan.Forward, Anchor("ReceivingLoad"));
 
                 ApplyStationWorker(1, "Preparation", Production.Stage == CityCanneryProductionStage.Prepare);
                 ApplyStationWorker(2, "Seamer", Production.Stage == CityCanneryProductionStage.Fill ||
@@ -80,21 +93,23 @@ namespace BarPromenade
 
             if (TruckPresentationActive)
             {
-                bool driverHandling = Snapshot.Stage == CityFishSupplyStage.LoadFish ||
-                    Snapshot.Stage == CityFishSupplyStage.UnloadShop;
-                float open = driverHandling ? Mathf.Min(Ease(seconds), Ease((float)Snapshot.Duration - seconds)) : 0;
+                bool driverHandling = Snapshot.IsTransfer;
+                float open = driverHandling ? Mathf.Min(Ease(seconds), Ease((float)Snapshot.Duration - seconds)) :
+                    IsReversing ? ReverseDoorWeight : 0;
                 driverDoor.SetPositionAndRotation(Truck.TransformPoint(driverDoorDock),
-                    Truck.rotation * Quaternion.AngleAxis(78f * open, Vector3.up) * driverDoorRest);
-                if (!driverHandling) ApplySeatedDriver();
+                    Truck.rotation * Quaternion.AngleAxis((IsReversing ? ReverseDoorMaximumAngle : 78f) * open, Vector3.up) * driverDoorRest);
+                if (IsReversing) ApplyReversingDriver();
+                else if (!driverHandling) ApplySeatedDriver();
                 else if (handlingActive) ApplyTrolleyWorker(workers[4], 1f);
-                else ApplyDriverApproach(seconds >= Snapshot.Duration - 12
+                else ApplyDriverApproach(seconds >= Snapshot.Duration - TransferEdge
                     ? (float)(Snapshot.Duration - Snapshot.Seconds) : seconds,
-                    seconds >= Snapshot.Duration - 12);
+                    seconds >= Snapshot.Duration - TransferEdge);
             }
             // Enabling the shared resident rig restores its village atlas.
             // Reapply this crew's clothes after that first pose, once per wake.
             for (int i = 0; i < workers.Length; i++)
                 if (workers[i].gameObject.activeSelf && workerAppearanceDirty[i]) ApplyCrewAppearance(i);
+            ApplyDriverConversation();
         }
 
         private void ApplyStationWorker(int index, string station, bool working)
@@ -224,58 +239,125 @@ namespace BarPromenade
                 Vector3.Lerp(left, packingCanContact - across, reach), posture);
         }
 
-        private void ApplyReceiverTransfer(float seconds)
-        {
-            if (handlingActive) { ApplyTrolleyWorker(workers[0], 1f); return; }
-            bool returning = seconds >= Snapshot.Duration - 12;
-            float t = returning ? (float)(Snapshot.Duration - Snapshot.Seconds) : seconds;
-            Vector3 home = Anchor("Receiver"), door = Anchor(Loading ? "FinishedDoor" : "RawDoor");
-            workerRoute[0] = home;
-            workerRoute[1] = Plan.World(new Vector3(-2.75f, CityCanneryPlan.FloorTop, Plan.Local(home).z));
-            workerRoute[2] = Plan.World(new Vector3(-2.75f, CityCanneryPlan.FloorTop, Plan.Local(door).z));
-            workerRoute[3] = door;
-            workerRoute[4] = door + Plan.Right * 1.5f;
-            workerRoute[4].y = Plan.Origin.y + CityCanneryPlan.YardTop;
-            workerRoute[5] = trolleyOperatorPosition;
-            if (t >= 11.2f) ApplyTrolleyWorker(workers[0], Ease((t - 11.2f) / .8f));
-            else WalkWorker(workers[0], t / 11.2f, 11.2f, Plan.Forward,
-                trolleyOperatorRotation * Vector3.forward, returning);
-        }
-
         private void ApplyTrolleyWorker(VillageResidentPresentation actor, float handWeight)
         {
             actor.transform.SetPositionAndRotation(trolleyOperatorPosition, trolleyOperatorRotation);
-            actor.ApplyLocomotion(trolleyMotion, false, (float)(WorkingSeconds % 120d));
+            float gaitTime=(float)(WorkingSeconds%120d);
+            // The resident sampler clamps negative time. Count down through
+            // a positive interval to sample a genuine backward step.
+            if(trolleyGaitDirection<0f) gaitTime=120f-gaitTime;
+            actor.ApplyLocomotion(trolleyMotion, false, gaitTime);
             Transform spine = workerSpines[actor == workers[0] ? 0 : 4];
             // Keep the shoulders within reach of the handle throughout the
             // walking clip, including the phases exposed by shorter deliveries.
             spine.rotation = Quaternion.AngleAxis(14f * handWeight, actor.transform.right) * spine.rotation;
+            FitTrolleyContactStance(actor, handWeight);
             ApplyCrewLook(actor, trolley.position + trolley.forward + Vector3.up * .8f, .75f);
             ApplyCrewContacts(actor, trolleyRightHand.position, trolleyLeftHand.position, handWeight);
         }
 
+        private void FitTrolleyContactStance(VillageResidentPresentation actor, float weight)
+        {
+            if (actor != workers[4] || weight <= 0f) return;
+            Vector3 pelvisStart = driverPelvis.position, up = actor.transform.up;
+            for (int i = 0; i < 2; i++)
+            {
+                driverPlantedFeet[i] = driverFeet[i].position;
+                driverPlantedFootRotations[i] = driverFeet[i].rotation;
+            }
+            // At a kerb the driver's feet and jack wheels stand on different
+            // levels. Bring the pelvis toward both grips instead of stretching
+            // the arms or lowering the actor through the pavement.
+            for (int iteration = 0; iteration < 4; iteration++)
+            {
+                Vector3 correction = Vector3.zero;
+                for (int i = 0; i < 2; i++)
+                {
+                    Transform grip = i == 0 ? actor.LeftGrip : actor.RightGrip;
+                    Vector3 handle = i == 0 ? trolleyLeftHand.position : trolleyRightHand.position;
+                    Vector3 wrist = handle - (grip.position - driverTrolleyHands[i].position);
+                    Vector3 delta = wrist - driverTrolleyShoulders[i].position;
+                    float reach = LimbTwoBoneIk.ChainLength(driverTrolleyShoulders[i],
+                        driverTrolleyForearms[i], driverTrolleyHands[i]) - .008f;
+                    correction += delta.normalized * Mathf.Max(0f, delta.magnitude - reach);
+                }
+                correction *= .5f * weight;
+                // This is a planted stoop: an upward reach never pulls the
+                // pelvis beyond the legs' length or lifts a sole off its step.
+                correction -= up * Mathf.Max(0f, Vector3.Dot(correction, up));
+                driverPelvis.position += correction;
+                float lower = 0f;
+                for (int i = 0; i < 2; i++)
+                {
+                    Vector3 hip = driverThighs[i].position - driverPlantedFeet[i];
+                    float height = Vector3.Dot(hip, up);
+                    float reach = LimbTwoBoneIk.ChainLength(driverThighs[i], driverShins[i], driverFeet[i]) * .998f;
+                    float availableHeight = Mathf.Sqrt(Mathf.Max(0f, reach * reach - Vector3.ProjectOnPlane(hip, up).sqrMagnitude));
+                    lower = Mathf.Max(lower, height - availableHeight);
+                }
+                driverPelvis.position -= up * lower;
+                if (correction.sqrMagnitude < .0000001f && lower < .0001f) break;
+            }
+            if ((driverPelvis.position - pelvisStart).sqrMagnitude < .0000001f) return;
+            for (int i = 0; i < 2; i++)
+                LimbTwoBoneIk.Solve(driverThighs[i], driverShins[i], driverFeet[i], driverPlantedFeet[i],
+                    driverPlantedFootRotations[i], driverThighs[i].position + actor.transform.forward * .65f,
+                    1f, 1f, true);
+        }
+
         private void ApplyDriverApproach(float seconds, bool returning)
         {
-            Vector3 exit = Truck.TransformPoint(new Vector3(-1.78f, 0, 4.05f));
-            exit.y = GroundY;
+            Vector3 exit = driverExit.position;
+            exit.y = HandlingGroundHeight(exit);
             if (seconds < 3.5f)
             {
                 ApplyDriverSeatTransition(exit, Ease((seconds - 1f) / 2.5f), returning,
                     1f - Ease(seconds / .8f));
                 return;
             }
-            if (seconds >= 11.2f)
+            if (seconds >= TrolleyHandleArrival)
             {
-                ApplyTrolleyWorker(workers[4], Ease((seconds - 11.2f) / .8f));
+                ApplyTrolleyWorker(workers[4], trolleyHandWeight);
                 return;
             }
-            workerRoute[0] = exit;
-            workerRoute[1] = Truck.TransformPoint(new Vector3(-1.78f, 0, -4.95f));
-            workerRoute[1].y = GroundY;
-            workerRoute[2] = trolleyOperatorPosition - Truck.forward * .45f;
-            workerRoute[3] = workerRoute[4] = workerRoute[5] = trolleyOperatorPosition;
-            WalkWorker(workers[4], (seconds - 3.5f) / 7.7f, 7.7f,
-                Truck.right * (returning ? 1f : -1f), trolleyOperatorRotation * Vector3.forward, returning);
+            driverTrolleyApproach[0] = exit;
+            driverTrolleyApproach[1] = driverRearWalk.position;
+            driverTrolleyApproach[1].y = HandlingGroundHeight(driverTrolleyApproach[1]);
+            if (TrolleySite == 2)
+            {
+                Vector3 inner = Route.ShopDoorPoint + ShopInward * 2.2f;
+                // The service entrance is already on the cab's clear side.
+                // Reach it directly instead of walking around the lowered lift.
+                driverTrolleyApproach[1] = exit;
+                driverTrolleyApproach[2] = Route.ShopDoorPoint - ShopInward * 1.8f;
+                driverTrolleyApproach[3] = Route.ShopDoorPoint;
+                driverTrolleyApproach[4] = inner;
+                driverTrolleyApproach[5] = inner + ShopInward * 1.3f;
+                driverTrolleyApproach[6] = trolleyOperatorPosition + ShopInward * 1.3f;
+            }
+            else if (TrolleySite == 0)
+            {
+                // Pass the complete western side before coming around behind
+                // the handle. A diagonal from the truck to the handle's side
+                // crosses the parked forks even when both endpoints are clear.
+                driverTrolleyApproach[1] = port.Plan.World(new Vector3(8.4f, CityPortPlan.DeckHeight, -10.3f));
+                driverTrolleyApproach[2] = port.Plan.World(new Vector3(4.2f, CityPortPlan.DeckHeight, -9.4f));
+                driverTrolleyApproach[3] = port.Plan.World(new Vector3(4.2f, CityPortPlan.DeckHeight, -6.97f));
+                driverTrolleyApproach[4] = trolleyOperatorPosition;
+                driverTrolleyApproach[5] = trolleyOperatorPosition;
+                driverTrolleyApproach[6] = trolleyOperatorPosition;
+            }
+            else
+            {
+                // Reach the handle around the side of the parked jack;
+                // cutting behind its axis would cross the factory wall.
+                driverTrolleyApproach[2] = trolleyOperatorPosition - trolley.right * .85f;
+                driverTrolleyApproach[2].y = HandlingGroundHeight(driverTrolleyApproach[2]);
+                for (int i = 3; i <= 6; i++) driverTrolleyApproach[i] = trolleyOperatorPosition;
+            }
+            driverTrolleyApproach[7] = trolleyOperatorPosition;
+            WalkWorker(workers[4], (seconds - 3.5f) / (TrolleyHandleArrival - 3.5f), TrolleyHandleArrival - 3.5f,
+                Truck.right * (returning ? 1f : -1f), trolleyOperatorRotation * Vector3.forward, returning, driverTrolleyApproach);
         }
 
         private void ApplySeatedDriver() => ApplyDriverSeatTransition(Vector3.zero, 0f, false, 1f);
@@ -347,21 +429,34 @@ namespace BarPromenade
         }
 
         private void WalkWorker(VillageResidentPresentation actor, float progress, float duration,
-            Vector3 startFacing, Vector3 endFacing, bool backwards = false)
+            Vector3 startFacing, Vector3 endFacing, bool backwards = false, Vector3[] path = null)
         {
+            if (path == null) path = workerRoute;
             float p = Mathf.Clamp01(progress), distance = 0;
-            for (int i = 1; i < workerRoute.Length; i++) distance += Vector3.Distance(workerRoute[i - 1], workerRoute[i]);
+            for (int i = 1; i < path.Length; i++) distance += Vector3.Distance(path[i - 1], path[i]);
             float eased = Ease(p);
-            Vector3 point = Along(workerRoute, eased);
-            Vector3 forward = Along(workerRoute, Mathf.Min(1f, eased + .015f)) -
-                Along(workerRoute, Mathf.Max(0f, eased - .015f));
+            float speed = 6f * p * (1f - p) * distance / duration;
+            if (path == driverTrolleyApproach && TrolleySite == 0)
+            {
+                // A normal, steady walk between short starts and stops fits
+                // the longer canopy approach without speeding up its middle.
+                // Integrate a .6-second acceleration/deceleration exactly.
+                float ramp = .6f / duration;
+                if (p < ramp) eased = p * p / (2f * ramp * (1f - ramp));
+                else if (p > 1f - ramp) eased = 1f - (1f - p) * (1f - p) / (2f * ramp * (1f - ramp));
+                else eased = (p - ramp * .5f) / (1f - ramp);
+                speed = distance / (duration - .6f) * Mathf.Clamp01(Mathf.Min(p, 1f - p) / ramp);
+            }
+            Vector3 point = Along(path, eased);
+            if (path == driverTrolleyApproach) point.y = HandlingGroundHeight(point);
+            Vector3 forward = Along(path, Mathf.Min(1f, eased + .015f)) -
+                Along(path, Mathf.Max(0f, eased - .015f));
             if (backwards) forward = -forward;
             if (forward.sqrMagnitude < .0001f) forward = endFacing;
             Quaternion rotation = Quaternion.LookRotation(forward, Vector3.up);
             if (p < .08f) rotation = Quaternion.Slerp(Quaternion.LookRotation(startFacing, Vector3.up), rotation, Ease(p / .08f));
             if (p > .92f) rotation = Quaternion.Slerp(rotation, Quaternion.LookRotation(endFacing, Vector3.up), Ease((p - .92f) / .08f));
             actor.transform.SetPositionAndRotation(point, rotation);
-            float speed = 6f * p * (1f - p) * distance / duration;
             actor.ApplyLocomotion(speed, false, (backwards ? 1 - eased : eased) * distance / .95f);
         }
     }

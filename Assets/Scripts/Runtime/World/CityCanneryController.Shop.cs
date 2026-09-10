@@ -7,6 +7,7 @@ namespace BarPromenade
         private Transform shopLeaf;
         private Vector3 shopLeafClosed, shopHinge;
         private Quaternion shopLeafRotation;
+        private BoxCollider ownedShopLeafCollider;
         private Transform portLeaf;
         private Vector3 portLeafClosed;
         private Vector3 portLeafScale;
@@ -26,6 +27,13 @@ namespace BarPromenade
                         shopLeafClosed = shopLeaf.position;
                         shopLeafRotation = shopLeaf.rotation;
                         shopHinge = Route.ShopDoorPoint - (Route.ShopPose.Rotation * Vector3.forward) * .735f;
+                        MeshFilter mesh = shopLeaf.GetComponent<MeshFilter>();
+                        if (mesh == null || mesh.sharedMesh == null)
+                            throw new System.InvalidOperationException("The shop receiving door needs its authored mesh for physical collision.");
+                        Bounds bounds = mesh.sharedMesh.bounds;
+                        ownedShopLeafCollider = shopLeaf.gameObject.AddComponent<BoxCollider>();
+                        ownedShopLeafCollider.center = bounds.center;
+                        ownedShopLeafCollider.size = bounds.size;
                         return;
                     }
         }
@@ -49,6 +57,11 @@ namespace BarPromenade
         private void RestoreShopReceivingDoor()
         {
             if (shopLeaf != null) shopLeaf.SetPositionAndRotation(shopLeafClosed,shopLeafRotation);
+            if (ownedShopLeafCollider != null)
+            {
+                if (Application.isPlaying) Destroy(ownedShopLeafCollider); else DestroyImmediate(ownedShopLeafCollider);
+                ownedShopLeafCollider = null;
+            }
             if (portLeaf != null) { portLeaf.position=portLeafClosed; portLeaf.localScale=portLeafScale; }
         }
     }

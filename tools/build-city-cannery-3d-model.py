@@ -10,6 +10,7 @@ import importlib.util
 import json
 import math
 from pathlib import Path
+import re
 import sys
 
 import bpy
@@ -31,6 +32,8 @@ port.SURFACE_TILES.update({"CanneryFloor":2.0,"WetFloor":2.0,"WashWall":1.5,"Sta
                           "Insulation":1.5,"Cardboard":1.0})
 CONVEYOR_ROLLER_AXES=("Z","Z","X","X","Z","Z","X","X")
 CONVEYOR_ROLLER_SIGNS=(-1,-1,1,1,1,1,1,1)
+TRUCK_REAR, TRUCK_FRONT, TRUCK_HALF_WIDTH, TRUCK_WHEELBASE = -2.0, 4.5, 1.2, 3.3
+TRUCK_CAB_OFFSET = -.9
 
 
 def anchor(name, parent, position):
@@ -561,29 +564,134 @@ def equipment(mat):
     return root
 
 
+def aim_lift_cylinder(part, start, end):
+    """Unity-space +Y bore; no mesh scaling, including the exported rest pose."""
+    part.location = source(start)
+    part.rotation_euler = Vector(source(Vector(end)-Vector(start))).to_track_quat('Z', 'Y').to_euler()
+
+
+def pose_lift_fold_cylinders(root):
+    parts={part.name.split('.')[0]:part for part in root.children_recursive}
+    inverse=root.matrix_world.inverted()
+    for side in ('Left','Right'):
+        start=source(inverse@parts['ANCHOR_LiftFoldBase'+side].matrix_world.translation)
+        end=source(inverse@parts['ANCHOR_LiftFoldTip'+side].matrix_world.translation)
+        aim_lift_cylinder(parts['MOVE_LiftFoldBarrel'+side], start, end)
+        aim_lift_cylinder(parts['MOVE_LiftFoldRod'+side], end, Vector(end)+(Vector(end)-Vector(start)))
+    bpy.context.view_layer.update()
+
+
+def truck_tail_lift_mechanism(root,lift,mat):
+    # Column lift: the guides are bolted to the rear body/chassis frame. The
+    # common sliding carriage carries the platform hinge, never a loose deck.
+    fixed=Geometry()
+    carriage=empty('MOVE_LiftCarriage',root,(0,1.2,-1.88));moving=Geometry()
+    for side,sign in (('Left',-1),('Right',1)):
+        x=sign*1.165
+        anchor('LiftRailBottom'+side,root,(x,.14,-1.78))
+        anchor('LiftRailTop'+side,root,(x,2.82,-1.78))
+        # Open channel, visible polished running faces and end stops.
+        chamfer(fixed,(x,1.48,-1.705),(.060,2.68,.028),METAL,.006)
+        for dx in (-.021,.021):
+            fixed.box((x+dx,1.48,-1.775),(.018,2.68,.145),METAL)
+        for y in (.14,2.82):chamfer(fixed,(x,y,-1.775),(.067,.035,.15),METAL,.005)
+        for y in (.70,1.15,2.05,2.76):
+            # Flange and paired bolts show the load reaching the existing frame.
+            chamfer(fixed,(sign*1.11,y,-1.725),(.13,.085,.045),METAL,.007)
+            for xx in (sign*1.065,sign*1.155):
+                fixed.rod((xx,y,-1.752),(xx,y,-1.770),.013,EDGE,6)
+        # A fixed barrel long enough to contain the same solid rod throughout
+        # its stroke. Hydraulic lines feed this fixed upper end.
+        anchor('LiftCylinderBottom'+side,root,(x,1.43,-1.935))
+        anchor('LiftCylinderTop'+side,root,(x,2.70,-1.935))
+        fixed.rod((x,1.43,-1.935),(x,2.70,-1.935),.027,PAINT,10)
+        for y in (1.445,2.675):
+            fixed.rod((x,y-.019,-1.935),(x,y+.019,-1.935),.031,METAL,10)
+        fixed.rod((x-.027,2.715,-1.935),(x+.027,2.715,-1.935),.029,METAL,8)
+        fixed.rod((x,2.735,-1.935),(x,2.735,-1.75),.025,METAL,8)
+        fixed.role='Rubber'
+        for a,b in (((x,2.66,-1.925),(sign*1.11,2.64,-1.72)),
+                    ((sign*1.11,2.64,-1.72),(sign*1.11,.68,-1.72)),
+                    ((sign*1.11,.68,-1.72),(sign*.20,.68,-1.45))):
+            fixed.rod(a,b,.012,DARK,6)
+        fixed.role=None
+        # The guide shoes and rollers are one rigid carriage with the hinge.
+        chamfer(moving,(x,.16,.10),(.065,.34,.145),METAL,.008)
+        for label,y in (('Lower',.06),('Upper',.26)):
+            anchor('LiftGuide'+label+side,carriage,(x,y,.1))
+            moving.rod((x-.029,y,.1),(x+.029,y,.1),.025,EDGE,8)
+        chamfer(moving,(x,.16,.025),(.060,.080,.19),METAL,.006)
+        moving.rod((x-.030,.16,-.055),(x+.030,.16,-.055),.028,METAL,10)
+        anchor('LiftRamBase'+side,carriage,(x,.16,-.055))
+        moving.rod((x,0,0),(sign*1.02,0,0),.040,METAL,10)
+        anchor('LiftHinge'+side,carriage,(sign*1.02,0,0))
+        # The small folding actuator is pinned to a forward carriage bracket.
+        # It lives outside the walking deck, leaving the jack's full lane clear.
+        moving.rod((x,.13,.1),(x,.15,.45),.028,METAL,8)
+        moving.rod((x-.03,.15,.45),(x+.03,.15,.45),.031,METAL,8)
+        anchor('LiftFoldBase'+side,carriage,(x,.15,.45))
+        rod=empty('MOVE_LiftRam'+side,root,(x,1.36,-1.935));r=Geometry()
+        r.rod((0,0,0),(0,1.24,0),.014,EDGE,10)
+        obj(r,'LiftRamVisible'+side,rod,mat)
+        anchor('LiftRamTop'+side,rod,(0,1.24,0))
+        barrel=empty('MOVE_LiftFoldBarrel'+side,root);b=Geometry()
+        b.rod((-.03,0,0),(.03,0,0),.030,METAL,8)
+        b.rod((0,.04,0),(0,.48,0),.026,PAINT,10)
+        b.rod((0,.465,0),(0,.5,0),.030,METAL,10)
+        obj(b,'LiftFoldBarrelVisible'+side,barrel,mat)
+        anchor('LiftFoldBarrelMouth'+side,barrel,(0,.5,0))
+        rod=empty('MOVE_LiftFoldRod'+side,root);r=Geometry()
+        r.rod((0,-.5,0),(0,-.035,0),.013,EDGE,10)
+        r.rod((-.028,0,0),(.028,0,0),.030,METAL,8)
+        r.rod((0,-.065,0),(0,0,0),.021,METAL,8)
+        obj(r,'LiftFoldRodVisible'+side,rod,mat)
+        anchor('LiftFoldRodEnd'+side,rod,(0,-.5,0))
+        start=(x,1.35,-1.43);end=(x,1.12,-2.23)
+        aim_lift_cylinder(barrel,start,end)
+        aim_lift_cylinder(rod,end,Vector(end)+(Vector(end)-Vector(start)))
+    moving.rod((-1.12,0,0),(1.12,0,0),.028,METAL,12)
+    chamfer(fixed,(0,.63,-1.45),(.52,.25,.31),METAL,.025)
+    for x in (-.16,.16):fixed.rod((x,.65,-1.62),(x,.65,-1.635),.024,METAL,8)
+    obj(fixed,'LiftFrameVisible',root,mat)
+    obj(moving,'LiftCarriageVisible',carriage,mat)
+    bpy.context.view_layer.update()
+    pose_lift_fold_cylinders(root)
+
+
 def truck(mat):
     root=empty("Truck");g=Geometry();glass=Geometry();driverdoor=Geometry();doorglass=Geometry()
-    driverhinge=empty("MOVE_DriverDoor",root,(-1.08,1.12,4.94))
-    # Rear axle origin, four-wheel rigid chassis, 4.2 m wheelbase.
-    for x in (-.73,.73):chamfer(g,(x,.69,1.4),(.18,.25,7.45),METAL,.03)
-    for z in (-1.7,0,1.8,3.3,4.2):chamfer(g,(0,.7,z),(1.8,.16,.15),METAL,.02)
-    for z in (0,4.2):g.rod((-1.12,.45,z),(1.12,.45,z),.09,METAL,10)
+    driverhinge=empty("MOVE_DriverDoor",root,(-1.08,1.12,4.94+TRUCK_CAB_OFFSET))
+    # Rear axle origin. The shorter chassis moves the full-sized cab as a unit;
+    # the original seat, footwell and steering proportions are not scaled.
+    for x in (-.73,.73):chamfer(g,(x,.69,1.25),(.18,.25,5.95),METAL,.03)
+    for z in (-1.4,0,1.35,2.4,TRUCK_WHEELBASE):chamfer(g,(0,.7,z),(1.8,.16,.15),METAL,.02)
+    for z in (0,TRUCK_WHEELBASE):g.rod((-1.12,.45,z),(1.12,.45,z),.09,METAL,10)
     for x in (-.63,.63):
         for z in (-.35,.1,.5):chamfer(g,(x,.45,z),(.12,.04,1.1),METAL,.008)
     # Closed insulated goods body; separate leaves expose the actual interior.
     g.role="Insulation"
-    for center,size in (((0,1.15,.25),(2.5,.1,5.7)),((0,3.50,.25),(2.5,.1,5.7)),
-                        ((-1.21,2.35,.25),(.08,2.3,5.7)),((1.21,2.35,.25),(.08,2.3,5.7)),
-                        ((0,2.35,3.08),(2.5,2.3,.08))):
+    for center,size in (((0,1.15,.1),(2.4,.1,4.2)),((0,3.15,.1),(2.4,.1,4.2)),
+                        ((-1.16,2.175,.45),(.08,1.95,3.5)),((1.16,2.175,.45),(.08,1.95,3.5)),
+                        ((-1.16,2.335,-1.49),(.08,1.63,.38)),((1.16,2.335,-1.49),(.08,1.63,.38)),
+                        ((0,2.175,2.18),(2.4,1.95,.08))):
         chamfer(g,center,size,CABIN,.024)
     g.role=None
-    g.role="Deck";g.box((0,1.204,.22),(2.31,.018,5.55),METAL);g.role=None
-    for x in (-1.21,1.21):
-        for y in (1.21,3.48):g.rod((x,y,-2.58),(x,y,3.10),.034,METAL,8)
-        for z in (-2.58,3.1):g.rod((x,1.21,z),(x,3.48,z),.034,METAL,8)
-        for z in (-1.7,-.3,1.1,2.5):g.box((x,2.32,z),(.018,2.2,.025),METAL)
+    # Recess the rear posts instead of burying the lift inside insulation.
+    # An inner steel liner keeps the cargo box closed; the service side exposes
+    # both fixed lift barrels, guides and the lower folding-cylinder brackets.
+    for sign in (-1,1):
+        g.box((sign*1.105,2.175,-1.85),(.020,1.95,.30),METAL)
+        g.box((sign*1.105,1.35,-1.50),(.020,.30,.40),METAL)
+    g.role="Deck";g.box((0,1.204,.1),(2.21,.018,4.05),METAL);g.role=None
+    for x in (-1.16,1.16):
+        for y in (1.21,3.13):g.rod((x,y,-1.96),(x,y,2.20),.034,METAL,8)
+        g.rod((x,1.21,2.2),(x,3.13,2.2),.034,METAL,8)
+        inner=math.copysign(1.105,x)
+        g.rod((inner,1.21,-1.965),(inner,3.13,-1.965),.022,METAL,8)
+        for z in (-1.35,-.25,.85,1.95):g.box((x,2.16,z),(.018,1.88,.025),METAL)
     # The refrigeration head actually meets the insulated front wall. Fins,
     # guarded fan and short service lines stay inside the existing truck size.
+    refrigerator_start=len(g.vertices)
     chamfer(g,(0,3.19,3.23),(1.18,.52,.29),CABIN,.045)
     for x in (-.25,.25):
         g.rod((x,3.20,3.38),(x,3.20,3.407),.175,DARK,12)
@@ -593,8 +701,10 @@ def truck(mat):
     for x in (-.51,.51):
         g.rod((x,3.08,3.30),(x,2.98,3.30),.025,METAL,8)
         g.rod((x,2.98,3.30),(x,2.98,3.12),.025,METAL,8)
+    shift_geometry(g,refrigerator_start,(0,-.33,TRUCK_CAB_OFFSET))
     # Chamfered cab and a sloped windscreen opening, not a solid painted block.
     # A real cab floor leaves the driver's footwell and open doorway empty.
+    cab_start=len(g.vertices)
     chamfer(g,(0,1.09,4.27),(2.28,.12,2.10),PAINT,.035)
     chamfer(g,(0,2.87,4.15),(2.28,.18,2.02),PAINT,.075)
     chamfer(g,(0,1.9,3.24),(2.27,1.35,.16),PAINT,.045)
@@ -605,14 +715,15 @@ def truck(mat):
     chamfer(front,(0,1.44,5.19),(2.25,.78,.30),PAINT,.045)
     for x in (-1.065,1.065):
         chamfer(front,(x,1.44,5.075),(.12,.78,.27),PAINT,.025)
+    shift_geometry(front,0,(0,0,TRUCK_CAB_OFFSET))
     obj(front,"TruckFrontPanel",root,mat)
     for x in (-1.06,1.06):
         g.rod((x,1.76,5.12),(x,2.80,4.96),.065,PAINT,8)
         g.rod((x,1.65,3.35),(x,2.78,3.35),.065,PAINT,8)
         if x>0:chamfer(g,(x,1.48,4.10),(.12,.65,1.72),PAINT,.03)
-        chamfer(g,(x*1.09,.98,4.05),(.18,.13,1.2),METAL,.025)
-        g.rod((x*1.03,2.2,4.93),(x*1.12,2.2,4.77),.025,METAL,6)
-        chamfer(g,(x*1.13,2.22,4.77),(.1,.32,.19),DARK,.018)
+        chamfer(g,(x*1.04,.98,4.05),(.18,.13,1.2),METAL,.025)
+        g.rod((x*1.03,2.2,4.93),(x*1.10,2.2,4.77),.025,METAL,6)
+        chamfer(g,(x*1.08,2.22,4.77),(.1,.32,.19),DARK,.018)
         if x>0:
             glass.box((x,2.25,4.12),(.018,.89,1.43),GLASS)
             chamfer(g,(x*1.074,1.72,3.63),(.035,.06,.20),METAL,.01)
@@ -632,7 +743,7 @@ def truck(mat):
         # A recessed lens and solid gasket/bezel share one authored host.
         # Its front anchor stays outside the nose and inside the 5.4 m body
         # bound; runtime can drive this glass without relighting the grille.
-        lamp=empty("Headlamp"+side,root,(x,1.4,5.37))
+        lamp=empty("Headlamp"+side,root,(x,1.4,5.37+TRUCK_CAB_OFFSET))
         housing=Geometry();housing.role="Rubber"
         housing.rod((0,0,-.028),(0,0,-.014),.149,DARK,16)
         housing.role=None
@@ -640,30 +751,34 @@ def truck(mat):
         obj(housing,"HeadlampHousing"+side,lamp,mat)
         lens=Geometry();lens.rod((0,0,-.025),(0,0,0),.115,LAMP,16)
         obj(lens,"TruckHeadlampGlass",lamp,mat)
-        anchor("Headlamp"+side,root,(x,1.4,5.37))
+        anchor("Headlamp"+side,root,(x,1.4,5.37+TRUCK_CAB_OFFSET))
+    shift_geometry(g,cab_start,(0,0,TRUCK_CAB_OFFSET))
+    shift_geometry(glass,0,(0,0,TRUCK_CAB_OFFSET))
     for x in (-.88,.88):
-        chamfer(g,(x,.75,-2.51),(.29,.16,.12),RUST,.018)
+        chamfer(g,(x,.75,-1.91),(.29,.16,.12),RUST,.018)
     # Four formed wheel arches and flexible flaps fit the existing collision
     # envelope. The underbody remains open enough to see axles and suspension.
     for side in (-1,1):
-        for z in (0,4.2):
+        for z in (0,TRUCK_WHEELBASE):
             for index in range(8):
                 a,b=index*math.pi/8,(index+1)*math.pi/8
                 vertices=[(side*x,.45+r*math.sin(t),z+r*math.cos(t))
-                          for x in (.86,1.235) for r in (.505,.56) for t in (a,b)]
+                          for x in (.86,1.195) for r in (.505,.56) for t in (a,b)]
                 g.add(vertices,[(0,1,3,2),(4,6,7,5),(0,4,5,1),(2,3,7,6),(0,2,6,4),(1,5,7,3)],PAINT)
-            g.role="Rubber";chamfer(g,(side*1.045,.27,z-.55),(.34,.39,.035),DARK,.01);g.role=None
-        for z in (.84,2.35):g.rod((side*.76,.65,z),(side*1.10,.65,z),.035,METAL,8)
-        chamfer(g,(side*1.10,.51,1.59),(.07,.17,1.84),METAL,.02)
+            g.role="Rubber";chamfer(g,(side*1.025,.27,z-.55),(.34,.39,.035),DARK,.01);g.role=None
+        for z in (.70,1.85):g.rod((side*.76,.65,z),(side*1.10,.65,z),.035,METAL,8)
+        chamfer(g,(side*1.10,.51,1.275),(.07,.17,1.4),METAL,.02)
     # Seat, pedals and steering ring are anchors for the shared driver rig.
+    interior_start=len(g.vertices)
     for x in (-.56,.56):
         chamfer(g,(x,1.45,4.0),(.59,.22,.69),DARK,.065)
         chamfer(g,(x,1.83,3.77),(.59,.68,.16),DARK,.065)
     chamfer(g,(0,1.94,4.73),(1.95,.20,.22),METAL,.045)
     g.rod((-.56,1.28,4.45),(-.56,1.94,4.50),.035,METAL,8)
     ring(g,(-.56,2.01,4.50),.23,.022,DARK,(0,.8,.6),16)
-    for side,x in (("L",-1.03),("R",1.03)):
-        for axle,z in (("F",4.2),("R",0)):
+    shift_geometry(g,interior_start,(0,0,TRUCK_CAB_OFFSET))
+    for side,x in (("L",-1.0),("R",1.0)):
+        for axle,z in (("F",TRUCK_WHEELBASE),("R",0)):
             pivot=empty("MOVE_Wheel"+axle+side,root,(x,.45,z));w=Geometry();w.role="Rubber"
             w.rod((-.16,0,0),(.16,0,0),.45,DARK,20);w.role=None
             for xx in (-.171,.171):
@@ -673,8 +788,12 @@ def truck(mat):
                     y,zlocal=.145*math.cos(angle),.145*math.sin(angle)
                     w.rod((xx-.012,y,zlocal),(xx+.012,y,zlocal),.023,METAL,6)
             obj(w,"WheelVisible"+axle+side,pivot,mat)
-    for side,x in (("Left",-1.16),("Right",1.16)):
-        pivot=empty("MOVE_TruckRearDoor"+side,root,(x,1.23,-2.57));d=Geometry()
+    for side,x in (("Left",-1.02),("Right",1.02)):
+        # Hinge inboard of the exposed columns: the opened leaf and its
+        # hinge straps must clear the hydraulic barrel behind the rear post.
+        for y in (1.42,2.785):
+            g.rod((math.copysign(1.105,x),y,-1.80),(x,y,-1.86),.023,METAL,8)
+        pivot=empty("MOVE_TruckRearDoor"+side,root,(x,1.23,-1.86));d=Geometry()
         direction=1 if x<0 else -1
         d.role="Insulation";chamfer(d,(direction*.575,1.1,0),(1.15,2.2,.09),CABIN,.02);d.role=None
         d.rod((direction*.86,.2,-.075),(direction*.86,2.02,-.075),.025,METAL,8)
@@ -688,23 +807,36 @@ def truck(mat):
             chamfer(d,(direction*.86,y,-.082),(.11,.15,.035),METAL,.008)
         d.rod((direction*.86,.85,-.095),(direction*.56,.77,-.095),.026,METAL,8)
         chamfer(d,(direction*.56,.77,-.105),(.11,.06,.048),DARK,.01)
+        # Resize only the goods leaf; its mechanisms retain proper thickness.
+        d.vertices=[(v[0]*1.01/1.15,v[1],v[2]*1.9/2.2) for v in d.vertices]
         obj(d,"RearDoorVisible"+side,pivot,mat)
-    lift=empty("MOVE_TailLift",root,(0,1.2,-2.6));l=Geometry()
-    l.role="Deck";chamfer(l,(0,-.055,-1.25),(2.24,.11,2.5),METAL,.02);l.role=None
+    lift=empty("MOVE_TailLift",root,(0,1.2,-1.88));l=Geometry()
+    l.role="Deck";chamfer(l,(0,-.055,-1),(2.24,.11,2),METAL,.02);l.role=None
     for x in (-.82,.82):
-        l.rod((x,-.14,-.15),(x,-.14,-2.4),.055,METAL,8)
-        g.rod((x,.45,-2.2),(x,1.04,-2.56),.055,METAL,8)
-        g.rod((x-.045,.49,-2.21),(x+.045,.49,-2.21),.082,METAL,10)
-        l.rod((x-.055,-.13,-.16),(x+.055,-.13,-.16),.082,METAL,10)
-    for z in (-.1,-2.41):l.box((0,.006,z),(2.14,.012,.045),EDGE)
+        l.rod((x,-.055,-.15),(x,-.055,-1.9),.035,METAL,8)
+        l.rod((x-.055,-.03,-.16),(x+.055,-.03,-.16),.06,METAL,10)
+    for side,sign in (('Left',-1),('Right',1)):
+        x=sign*1.165
+        l.rod((sign*.965,0,0),(sign*1.075,0,0),.046,METAL,10)
+        anchor('LiftPlatformHinge'+side,lift,(sign*1.02,0,0))
+        l.rod((sign*1.07,-.055,-.35),(x,-.08,-.35),.025,METAL,8)
+        l.rod((x-.028,-.08,-.35),(x+.028,-.08,-.35),.030,METAL,10)
+        anchor('LiftFoldTip'+side,lift,(x,-.08,-.35))
+    for z in (-.1,-1.91):l.box((0,.006,z),(2.14,.012,.045),EDGE)
     obj(l,"TailLiftVisible",lift,mat);anchor("TailLiftLoad",lift,(0,.01,-.8))
-    anchor("TruckDriver",root,(-.56,1.56,4.0));anchor("DriverLeftHand",root,(-.76,2.01,4.5))
-    anchor("DriverRightHand",root,(-.36,2.01,4.5));anchor("DriverFoot",root,(-.55,1.17,4.55))
-    anchor("TruckRear",root,(0,1.2,-2.6));anchor("TruckGroundBehind",root,(0,0,-4.65))
-    for i in range(6):anchor("TruckCargo"+str(i),root,(-.55 if i%2==0 else .55,1.22,-1.75+(i//2)*1.7))
+    truck_tail_lift_mechanism(root,lift,mat)
+    anchor("TruckDriver",root,(-.56,1.56,4.0+TRUCK_CAB_OFFSET));anchor("DriverLeftHand",root,(-.76,2.01,4.5+TRUCK_CAB_OFFSET))
+    anchor("DriverRightHand",root,(-.36,2.01,4.5+TRUCK_CAB_OFFSET));anchor("DriverFoot",root,(-.55,1.17,4.55+TRUCK_CAB_OFFSET))
+    anchor("TruckRear",root,(0,1.2,TRUCK_REAR));anchor("TruckGroundBehind",root,(0,0,-4.05))
+    for i in range(6):anchor("TruckCargo"+str(i),root,(-.53 if i%2==0 else .53,1.22,-1.25+(i//2)*1.3))
+    anchor("TruckEngine",root,(0,1.3,4.6+TRUCK_CAB_OFFSET))
+    anchor("ReverseAlarm",root,(0,.9,-1.95))
+    anchor("DriverExit",root,(-1.73,0,4.05+TRUCK_CAB_OFFSET))
+    anchor("DriverRearWalk",root,(-1.73,0,-4.35))
+    anchor("DriverReverseLeftHand",root,(-1.06,2.05,3.35+TRUCK_CAB_OFFSET))
     obj(g,"TruckVisible",root,mat);obj(glass,"CabinGlass",root,mat)
     # Vehicle movement controller may disable these when computing its sweeps.
-    collision_box("TruckBody",root,mat,(0,1.82,1.4),(2.5,3.36,8))
+    collision_box("TruckBody",root,mat,(0,1.67,1.25),(2.4,3.06,6.5))
     return root
 
 
@@ -869,10 +1001,20 @@ def validate(roots):
     entries={r.name.split('.')[0]:port.describe(r) for r in roots}
     if set(entries)!=set(NAMES):raise RuntimeError("Cannery pack is missing a required model")
     truck_points={a['name']:a['position'] for a in entries['Truck']['anchors']}
+    dimensions=(ROOT/'Assets/Scripts/Runtime/World/CityCanneryTruckDimensions.cs').read_text(encoding='utf-8')
+    for name,expected in (('Rear',TRUCK_REAR),('Front',TRUCK_FRONT),('HalfWidth',TRUCK_HALF_WIDTH),
+                          ('Wheelbase',TRUCK_WHEELBASE),('CabOffset',TRUCK_CAB_OFFSET)):
+        actual=re.search(r'const float '+name+r'\s*=\s*([-\d.]+)f',dimensions)
+        if actual is None or abs(float(actual.group(1))-expected)>.0001:
+            raise RuntimeError('Truck authored dimensions disagree with the shared runtime '+name)
     for i in range(6):
         x,y,z=truck_points['ANCHOR_TruckCargo'+str(i)]
-        if abs(x)+.4>1.15 or z-.6< -2.52 or z+.6>3.02 or abs(y-1.22)>.001:
+        if abs(x)+.4>1.1 or z-.6< -1.95 or z+.6>2.1 or abs(y-1.22)>.001:
             raise RuntimeError("Cannery pallet does not fit the real closed truck box")
+    for name,position in (('TruckDriver',(-.56,1.56,3.1)),('DriverLeftHand',(-.76,2.01,3.6)),
+                          ('DriverRightHand',(-.36,2.01,3.6)),('DriverFoot',(-.55,1.17,3.65))):
+        if math.dist(truck_points['ANCHOR_'+name],position)>.001:
+            raise RuntimeError('The compact truck must preserve the full-sized driver contact arrangement')
     truck_root=next(r for r in roots if r.name.split('.')[0]=='Truck')
     front=next(part for part in truck_root.children_recursive
                if part.type=='MESH' and part.name.split('.')[0]=='TruckFrontPanel__Steel')
@@ -881,19 +1023,34 @@ def validate(roots):
     front_tree=port.BVHTree.FromPolygons(vertices,faces)
     for x in (-1.02,-.88,0,.88,1.02):
         for y in (1.12,1.32,1.58):
-            hit,_,_,_=front_tree.ray_cast(Vector(source((x,y,5.42))),Vector(source((0,0,-1))),.5)
-            if hit is None or not 5.335<source(hit)[2]<5.345:
+            hit,_,_,_=front_tree.ray_cast(Vector(source((x,y,5.42+TRUCK_CAB_OFFSET))),Vector(source((0,0,-1))),.5)
+            if hit is None or not 5.335+TRUCK_CAB_OFFSET<source(hit)[2]<5.345+TRUCK_CAB_OFFSET:
                 raise RuntimeError('Truck front panel leaves a daylight gap around the grille or headlamps')
     for side,x in (("Left",-.88),("Right",.88)):
-        if math.dist(truck_points['ANCHOR_Headlamp'+side],(x,1.4,5.37))>.001:
+        if math.dist(truck_points['ANCHOR_Headlamp'+side],(x,1.4,5.37+TRUCK_CAB_OFFSET))>.001:
             raise RuntimeError('Truck headlamp anchor does not match the front lens')
         lamp=next(part for part in truck_root.children_recursive if part.name.split('.')[0]=='Headlamp'+side)
         lenses=[part for part in lamp.children_recursive
                 if part.type=='MESH' and part.name.split('.')[0]=='TruckHeadlampGlass']
         if len(lenses)!=1:
             raise RuntimeError('Truck headlamp lacks its independently driven glass')
-    if entries['Truck']['bounds_max'][2]>5.4 or entries['Truck']['bounds_max'][0]>1.25 or entries['Truck']['bounds_min'][0]<-1.25:
+    if entries['Truck']['bounds_max'][2]>TRUCK_FRONT+.0001 or entries['Truck']['bounds_max'][0]>TRUCK_HALF_WIDTH+.0001 or entries['Truck']['bounds_min'][0]<-TRUCK_HALF_WIDTH-.0001:
         raise RuntimeError('Truck nose or headlamp details exceed the existing vehicle envelope')
+    # Verify the driving silhouette, including the folded working platform.
+    # The ordinary export keeps it extended so its finite contact is measurable.
+    lift=next(part for part in truck_root.children_recursive if part.name.split('.')[0]=='MOVE_TailLift')
+    rest=lift.rotation_euler.copy()
+    lift.rotation_euler.x=-math.pi*.5
+    bpy.context.view_layer.update()
+    pose_lift_fold_cylinders(truck_root)
+    folded=port.describe(truck_root)
+    lift.rotation_euler=rest
+    bpy.context.view_layer.update()
+    pose_lift_fold_cylinders(truck_root)
+    entries['Truck']['folded_bounds_min']=folded['bounds_min']
+    entries['Truck']['folded_bounds_max']=folded['bounds_max']
+    if folded['bounds_min'][2]<TRUCK_REAR-.001 or folded['bounds_max'][1]>3.201:
+        raise RuntimeError('Folded lift or rear fittings exceed the compact driving envelope')
     # The public corridor remains 1.84 metres wide between east wall and the
     # partition. Hall wall openings are measured from actual kit geometry.
     if entries['Hall']['bounds_max'][0]>.4:raise RuntimeError("Hall intrudes into the service strip")
@@ -1017,15 +1174,19 @@ def main():
     roots=build(mat);entries=validate(roots)
     manifest={'design_id':'city_compact_fish_cannery_v1','generator':Path(__file__).name,
               'coordinate_system':'Unity +Y up / +Z truck forward; metres; truck rear axle ground origin',
-              'parts':entries,'hall_floor_height':.18,'yard_height':.08,'truck_wheelbase':4.2,'truck_wheel_radius':.45,
-              'truck_body_xz':[-1.25,1.25,-2.6,5.4],'pallet_size_xz':[.8,1.2],
+              'parts':entries,'hall_floor_height':.18,'yard_height':.08,'truck_wheelbase':TRUCK_WHEELBASE,'truck_wheel_radius':.45,
+              'truck_body_xz':[-TRUCK_HALF_WIDTH,TRUCK_HALF_WIDTH,TRUCK_REAR,TRUCK_FRONT],'pallet_size_xz':[.8,1.2],
+              'truck_body_top':3.2,'truck_cab_translation_z':TRUCK_CAB_OFFSET,'truck_cargo_row_spacing':1.3,
               'cold_store_aisle_width':1.35,'pallet_jack_fork_top':.128,'pallet_jack_carry_lift':.03,
               'conveyor_top_height':1.19,'retort_basket_tray_height':.17,'retort_basket_contains_cans':False,
-              'tail_lift_length':2.5,'tail_lift_operator_rear_clearance':.27,
+              'tail_lift_length':2.0,'tail_lift_operator_rear_clearance':.20,
+              'tail_lift_operator_offset':1.0,'ground_trolley_operator_offset':1.43,
               'goods_threshold_ramp_length':1.5,'goods_threshold_ramp_rise':.1,
               'driveway_grid_xz':[6,4],'driveway_runtime_profile':'CityCanneryPlan.ApronTop',
               'driver_door_open_axis':'Unity local +Y, +70 degrees about front hinge',
-              'tail_lift_fold_axis':'Unity local +X, +90 degrees folded; authored extended; lower pivot Y for lift',
+              'tail_lift_fold_axis':'Unity local +X, +90 degrees folded; authored extended; carriage translates along vehicle +Y guides',
+              'tail_lift_mechanism':'two fixed column barrels, rigid sliding carriage/hinge, translating rods; two pinned telescoping fold cylinders',
+              'tail_lift_main_rod_length':1.24,'tail_lift_fold_barrel_length':.5,'tail_lift_fold_rod_length':.5,
               'retort_door_open_axis':'Unity +Y vertical slide, 1.7 metres; identity rotation',
               'can_count':15,'can_unit_order':'x*3+z; body, contents and lid relative to each CanUnit base',
               'can_body_inner_bottom':.008,'can_rim_height':.0965,'can_lid_top':.102,

@@ -776,7 +776,7 @@ namespace BarPromenade
                                    tunnel.OutwardAxis * along;
             planarOffset.y = 0f;
             return along <= 0.45f &&
-                   along >= -tunnel.VisualDepth - 0.35f &&
+                   along >= -tunnel.PhysicalDepth - 0.35f &&
                    planarOffset.magnitude <=
                    tunnel.OpeningWidth * 0.5f + 0.25f;
         }

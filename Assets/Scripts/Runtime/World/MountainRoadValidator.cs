@@ -651,6 +651,10 @@ namespace BarPromenade
                         $"{tree.StableId} fills an authored road reveal.");
                 }
 
+                if (MountainRoadPlanner.ForestIntersectsTunnel(tree, plan.Tunnel))
+                    throw new InvalidOperationException(
+                        $"{tree.StableId} enters the tunnel's visible lining or wind clearance.");
+
                 switch (tree.Layer)
                 {
                     case MountainRoadForestLayer.Physical:

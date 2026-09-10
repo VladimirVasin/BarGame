@@ -177,10 +177,10 @@ namespace BarPromenade
             {
                 new Row(
                     tunnel.PortalGroundCenter -
-                    tunnel.OutwardAxis * tunnel.VisualDepth,
+                    tunnel.OutwardAxis * tunnel.PhysicalDepth,
                     right,
                     tunnel.OpeningWidth,
-                    -tunnel.VisualDepth),
+                    -tunnel.PhysicalDepth),
                 new Row(
                     tunnel.SpawnPosition,
                     right,

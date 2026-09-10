@@ -31,9 +31,9 @@ namespace BarPromenade
             out Vector3 standingPosition);
 
         /// <summary>
-        /// Holds an authored arrival to ground the player can stand on. The
-        /// caller already carries a height it believes in, so this only has
-        /// to correct the ones the mask refuses.
+        /// Validates an arrival against this area's standing surfaces and
+        /// obstacles, correcting its position and height when needed. A map
+        /// marker's coordinates alone do not establish a safe spawn.
         /// </summary>
         bool TryClampArrival(Vector3 arrival, out Vector3 destination);
     }

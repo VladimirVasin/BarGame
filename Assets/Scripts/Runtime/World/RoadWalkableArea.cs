@@ -333,6 +333,7 @@ namespace BarPromenade
         private SpatialNode[] spatialNodes = Array.Empty<SpatialNode>();
         private int spatialRoot = -1;
         private bool spatialIndexDirty = true;
+        private CityPortAccessPlan portAccess;
 
         public RoadWalkableArea()
         {
@@ -585,6 +586,7 @@ namespace BarPromenade
                 area.Add(placement.GroundCutFootprint);
             }
 
+            area.portAccess = CityPortAccessPlan.ForLayout(layout);
             return area;
         }
 
@@ -661,6 +663,7 @@ namespace BarPromenade
         public bool Contains(Vector3 position, float radius = 0f)
         {
             ValidateRadius(radius);
+            if (portAccess != null && portAccess.ContainsPublicWalk(position, radius)) return true;
             EnsureSpatialIndex();
             return spatialRoot >= 0 &&
                    Contains(
@@ -757,6 +760,9 @@ namespace BarPromenade
             float radius,
             Vector3 fallback)
         {
+            // Valid points on the full-width port walks must not snap back to
+            // the conservative rectangle cores used for out-of-area recovery.
+            if (portAccess != null && portAccess.ContainsPublicWalk(position, radius)) return position;
             if (!IsFinite(position.x) ||
                 !IsFinite(position.y) ||
                 !IsFinite(position.z))

@@ -76,7 +76,7 @@ namespace BarPromenade
             ground = BuildGround(plan);
             BuildBuildings();
             BuildCablewayBrink();
-            BuildCopseTrunks();
+            BuildForestTrunks();
         }
 
         public AlpineVillagePlan Plan => plan;
@@ -306,7 +306,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The copse behind the firewood house, and only it.
+        /// The forest on the bowl floor, and only it.
         ///
         /// These trunks are obstacles HERE and nowhere else - they carry no
         /// collider at all. That is the whole design: the mask turns the hero
@@ -316,20 +316,29 @@ namespace BarPromenade
         /// §10g check says leaving the path must not change his speed, so the
         /// mask keeps that sentence true and physics would break it.
         ///
-        /// The wall trees and the stumps are absent on purpose: they stand
+        /// The fringe trees and the stumps are absent on purpose: they stand
         /// beyond the toe, on ground the mask never covers.
         /// </summary>
-        private void BuildCopseTrunks()
+        private void BuildForestTrunks()
         {
             if (plan.Trees == null)
             {
                 return;
             }
 
-            IReadOnlyList<MountainRoadForestDescriptor> copse = plan.Trees.CopseTrees;
-            for (int index = 0; index < copse.Count; index++)
+            AddTrunks(plan.Trees.ForestTrees);
+
+            // The stubs stand on the floor now, at the inner edge of the
+            // forest, and a knee-high stump the hero walks through reads worse
+            // than one he steps around.
+            AddTrunks(plan.Trees.Stumps);
+        }
+
+        private void AddTrunks(IReadOnlyList<MountainRoadForestDescriptor> trees)
+        {
+            for (int index = 0; index < trees.Count; index++)
             {
-                MountainRoadForestDescriptor tree = copse[index];
+                MountainRoadForestDescriptor tree = trees[index];
                 if (!tree.BlocksMovement)
                 {
                     continue;

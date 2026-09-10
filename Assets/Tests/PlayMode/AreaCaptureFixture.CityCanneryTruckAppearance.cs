@@ -148,7 +148,8 @@ namespace BarPromenade.Tests.PlayMode
             {
                 string side=i==0?"Left":"Right";
                 Transform anchor=CityCanneryAssetProvider.FindPart(cannery.Truck.gameObject,"ANCHOR_Headlamp"+side);
-                Vector3 expected=cannery.Truck.TransformPoint(new Vector3(i==0?-.88f:.88f,1.4f,5.37f));
+                Vector3 expected=cannery.Truck.TransformPoint(new Vector3(i==0?-.88f:.88f,1.4f,
+                    5.37f+CityCanneryTruckDimensions.CabOffset));
                 Assert.That(Vector3.Distance(anchor.position,expected),Is.LessThan(.002f),side+" lamp imported metres");
                 Transform lens=CityCanneryAssetProvider.FindPart(
                     CityCanneryAssetProvider.FindPart(cannery.Truck.gameObject,"Headlamp"+side).gameObject,"TruckHeadlampGlass");
@@ -192,8 +193,8 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3 point=cannery.Truck.InverseTransformPoint(front.TransformPoint(vertex));
                 low=Vector3.Min(low,point);high=Vector3.Max(high,point);
             }
-            Assert.That(Vector3.Distance(low,new Vector3(-1.125f,1.05f,4.94f)),Is.LessThan(.003f));
-            Assert.That(Vector3.Distance(high,new Vector3(1.125f,1.83f,5.34f)),Is.LessThan(.003f));
+            Assert.That(Vector3.Distance(low,new Vector3(-1.125f,1.05f,4.94f+CityCanneryTruckDimensions.CabOffset)),Is.LessThan(.003f));
+            Assert.That(Vector3.Distance(high,new Vector3(1.125f,1.83f,5.34f+CityCanneryTruckDimensions.CabOffset)),Is.LessThan(.003f));
             // Raycast this rendered mesh directly; the truck's broad collision
             // body cannot prove that the visible nose is actually closed.
             MeshCollider probe=front.gameObject.AddComponent<MeshCollider>();
@@ -203,9 +204,10 @@ namespace BarPromenade.Tests.PlayMode
                 foreach(float x in new[]{-1.02f,-.88f,0f,.88f,1.02f})
                 foreach(float y in new[]{1.12f,1.32f,1.58f})
                 {
-                    var ray=new Ray(cannery.Truck.TransformPoint(new Vector3(x,y,5.42f)),-cannery.Truck.forward);
+                    var ray=new Ray(cannery.Truck.TransformPoint(new Vector3(x,y,5.42f+CityCanneryTruckDimensions.CabOffset)),-cannery.Truck.forward);
                     Assert.That(probe.Raycast(ray,out RaycastHit hit,.5f),Is.True,$"The rendered front must close ({x},{y}).");
-                    Assert.That(cannery.Truck.InverseTransformPoint(hit.point).z,Is.EqualTo(5.34f).Within(.005f));
+                    Assert.That(cannery.Truck.InverseTransformPoint(hit.point).z,
+                        Is.EqualTo(5.34f+CityCanneryTruckDimensions.CabOffset).Within(.005f));
                 }
             }
             finally{Object.DestroyImmediate(probe);Physics.SyncTransforms();}
@@ -237,6 +239,10 @@ namespace BarPromenade.Tests.PlayMode
         private static void SetTruckAppearanceCamera(Camera camera,CityCanneryController cannery,
             Vector3 from,Vector3 target,float fieldOfView)
         {
+            // These front/detail views retain their original distance to the
+            // full-sized cab after its move on the shorter chassis.
+            from.z+=CityCanneryTruckDimensions.CabOffset;
+            target.z+=CityCanneryTruckDimensions.CabOffset;
             Vector3 position=cannery.Truck.TransformPoint(from),look=cannery.Truck.TransformPoint(target);
             camera.transform.SetPositionAndRotation(position,Quaternion.LookRotation(look-position));
             camera.fieldOfView=fieldOfView;
@@ -249,7 +255,8 @@ namespace BarPromenade.Tests.PlayMode
             for(int z=0;z<6;z++)
             for(int x=0;x<5;x++)
             {
-                Vector3 point=cannery.Truck.TransformPoint(new Vector3((x-2)*.6f,0,9f+z));
+                Vector3 point=cannery.Truck.TransformPoint(new Vector3((x-2)*.6f,0,
+                    9f+z+CityCanneryTruckDimensions.CabOffset));
                 float nearest=float.PositiveInfinity;Vector3 ground=Vector3.zero;
                 foreach(RaycastHit hit in Physics.RaycastAll(point+Vector3.up*8f,Vector3.down,12f,~0,QueryTriggerInteraction.Ignore))
                 {

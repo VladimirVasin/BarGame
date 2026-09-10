@@ -59,6 +59,9 @@ namespace BarPromenade
             var library = VillageResidentLibrary.Load();
             if (library == null || library.GetPrefab(VillageResidentRole.StationWorker) == null)
                 throw new InvalidOperationException("The port requires the authored ordinary worker rig.");
+            var hero = Player3DResources.LoadPrefab()?.GetComponent<Player3DAssetRegistry>();
+            if (hero == null || !hero.TryGetAnimation("Run", out var run) || run.Clip == null)
+                throw new InvalidOperationException("The port requires the shared authored Hero V2 run.");
             var host = new GameObject("Port Crew");
             host.transform.SetParent(parent, false);
             var crew = host.AddComponent<CityPortCrew>();
@@ -95,6 +98,7 @@ namespace BarPromenade
                 actor.name = names[i];
                 actor.transform.localScale *= scales[i];
                 AlignWorkerModelWithPlacement(actor);
+                if (i == 1 || i == 4) actor.ConfigureFreeRun(run.Clip, hero.Animator);
                 // As for the village's ordinary residents, the Default-layer
                 // body blocks the hero without adding physics-driven motion.
                 // The actor host already owns position and distance visibility.
@@ -128,7 +132,7 @@ namespace BarPromenade
             return crew;
         }
 
-        private static void AlignWorkerModelWithPlacement(VillageResidentPresentation actor)
+        internal static void AlignWorkerModelWithPlacement(VillageResidentPresentation actor)
         {
             // The imported NpcHumanV2 body faces away from the placement
             // wrapper's +Z. Measure the live shoulder/socket frame after its
@@ -426,7 +430,27 @@ namespace BarPromenade
                     Smooth((seconds - duration + turnSeconds) / turnSeconds));
             actor.transform.SetPositionAndRotation(point, rotation);
             float speed = 6f * t * (1f - t) * length / walkDuration;
-            actor.ApplyLocomotion(speed, false, distance / .95f);
+            actor.ApplyFreeLocomotion(speed, TravelGaitCycles(actor, length, walkDuration, t));
+        }
+
+        private static float TravelGaitCycles(VillageResidentPresentation actor, float length,
+            float duration, float progress)
+        {
+            // Integrate cadence over the same absolute smooth travel curve.
+            // Dividing distance by the CURRENT stride would jump/reverse phase
+            // while Walk blends into Run. Fixed midpoint quadrature is seekable
+            // and keeps both clips in phase without a frame-history accumulator.
+            const int samples = 48;
+            const float step = 1f / samples;
+            float limit = Mathf.Clamp01(progress), cycles = 0f;
+            for (int i = 0; i < samples; ++i)
+            {
+                float width = Mathf.Min(step, limit - i * step);
+                if (width <= 0f) break;
+                float t = i * step + width * .5f;
+                cycles += width * actor.FreeLocomotionCyclesPerSecond(6f * t * (1f - t) * length / duration);
+            }
+            return cycles * duration;
         }
 
         private static Vector3 Along(Vector3[] route, float distance)

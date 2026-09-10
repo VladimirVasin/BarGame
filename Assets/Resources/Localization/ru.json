@@ -13,10 +13,6 @@
       "value": "Поставить справа · A/D — выбрать место"
     },
     {
-      "key": "opening.title",
-      "value": "БАРНЫЙ ПРОМЕНАД"
-    },
-    {
       "key": "opening.new_game",
       "value": "НОВАЯ ИГРА"
     },
@@ -2923,6 +2919,298 @@
     {
       "key": "city.port.farewell.06.b",
       "value": "Давай. Здесь найдёшь."
+    },
+    {
+      "key": "city.port.work.21.a",
+      "value": "В кабине опять пахнет рыбой."
+    },
+    {
+      "key": "city.port.work.21.b",
+      "value": "У меня куртка так всю зиму пахнет."
+    },
+    {
+      "key": "city.port.work.22.a",
+      "value": "После смены домой?"
+    },
+    {
+      "key": "city.port.work.22.b",
+      "value": "За хлебом ещё заеду."
+    },
+    {
+      "key": "city.port.work.23.a",
+      "value": "Жена велела сиденья отмыть."
+    },
+    {
+      "key": "city.port.work.23.b",
+      "value": "Моя эти перчатки в дом не пускает."
+    },
+    {
+      "key": "city.port.work.24.a",
+      "value": "В выходной хоть выспался?"
+    },
+    {
+      "key": "city.port.work.24.b",
+      "value": "Сосед с утра сверлил."
+    },
+    {
+      "key": "city.port.work.17.a",
+      "value": "Сегодня дорога пустая."
+    },
+    {
+      "key": "city.port.work.17.b",
+      "value": "Здесь тоже пока тихо."
+    },
+    {
+      "key": "city.port.work.18.a",
+      "value": "Печка в кабине работает?"
+    },
+    {
+      "key": "city.port.work.18.b",
+      "value": "Греет только правую ногу."
+    },
+    {
+      "key": "city.port.work.19.a",
+      "value": "Опять обед в машине остыл."
+    },
+    {
+      "key": "city.port.work.19.b",
+      "value": "У меня чай с утра холодный."
+    },
+    {
+      "key": "city.port.work.20.a",
+      "value": "К вечеру дождь обещали."
+    },
+    {
+      "key": "city.port.work.20.b",
+      "value": "Щётки опять скрипят."
+    },
+    {
+      "key": "city.port.greeting.07.a",
+      "value": "Здорово. Не замёрз ещё?"
+    },
+    {
+      "key": "city.port.greeting.07.b",
+      "value": "Привет. Пока двигаюсь."
+    },
+    {
+      "key": "city.port.greeting.08.a",
+      "value": "Здорово. Как дорога?"
+    },
+    {
+      "key": "city.port.greeting.08.b",
+      "value": "Привет. Без пробки сегодня."
+    },
+    {
+      "key": "city.port.farewell.07.a",
+      "value": "Ну, я поехал. Бывай."
+    },
+    {
+      "key": "city.port.farewell.07.b",
+      "value": "Счастливо. До следующего раза."
+    },
+    {
+      "key": "city.port.farewell.08.a",
+      "value": "Давай, до встречи."
+    },
+    {
+      "key": "city.port.farewell.08.b",
+      "value": "Бывай. Куртку застегни."
+    },
+    {
+      "key": "city.port.rest.25.a",
+      "value": "У остановки опять лужа по щиколотку."
+    },
+    {
+      "key": "city.port.rest.25.b",
+      "value": "Я там второй раз носки промочил."
+    },
+    {
+      "key": "city.port.rest.26.a",
+      "value": "За хлебом сходил. Опять дороже."
+    },
+    {
+      "key": "city.port.rest.26.b",
+      "value": "А буханка всё меньше."
+    },
+    {
+      "key": "city.port.rest.27.a",
+      "value": "Дома батарея еле тёплая."
+    },
+    {
+      "key": "city.port.rest.27.b",
+      "value": "У меня у окна весь вечер дует."
+    },
+    {
+      "key": "city.port.rest.28.a",
+      "value": "С утра куртка так и не высохла."
+    },
+    {
+      "key": "city.port.rest.28.b",
+      "value": "Повесь подальше от двери."
+    },
+    {
+      "key": "city.port.rest.29.a",
+      "value": "По этой мостовой сапоги каждый месяц чиню."
+    },
+    {
+      "key": "city.port.rest.29.b",
+      "value": "На каблуке опять гвоздь вылез."
+    },
+    {
+      "key": "city.port.rest.30.a",
+      "value": "Хотел в выходной погулять. Опять продрог."
+    },
+    {
+      "key": "city.port.rest.30.b",
+      "value": "Я до магазина дошёл и обратно."
+    },
+    {
+      "key": "city.port.rest.31.a",
+      "value": "У соседа ночью труба гудела."
+    },
+    {
+      "key": "city.port.rest.31.b",
+      "value": "Мне и днём этого гула хватает."
+    },
+    {
+      "key": "city.port.rest.32.a",
+      "value": "Ветер воротник насквозь продувает."
+    },
+    {
+      "key": "city.port.rest.32.b",
+      "value": "У меня рукава второй день сырые."
+    },
+    {
+      "key": "city.port.rest.33.a",
+      "value": "За комнату опять больше просят."
+    },
+    {
+      "key": "city.port.rest.33.b",
+      "value": "Хоть бы окно за эти деньги починили."
+    },
+    {
+      "key": "city.port.rest.34.a",
+      "value": "С этими лестницами к вечеру колени гудят."
+    },
+    {
+      "key": "city.port.rest.34.b",
+      "value": "Я с сумкой на каждом пролёте стою."
+    },
+    {
+      "key": "city.port.rest.35.a",
+      "value": "Пока до порта дошёл, оба рукава намочил."
+    },
+    {
+      "key": "city.port.rest.35.b",
+      "value": "Зонт здесь только выворачивает."
+    },
+    {
+      "key": "city.port.rest.36.a",
+      "value": "В баре от двери тянет."
+    },
+    {
+      "key": "city.port.rest.36.b",
+      "value": "Садись подальше. Я там спину застудил."
+    },
+    {
+      "key": "city.port.work.25.a",
+      "value": "Сухой день обещали. Рукава опять мокрые."
+    },
+    {
+      "key": "city.port.work.25.b",
+      "value": "У меня с утра перчатки сырые."
+    },
+    {
+      "key": "city.port.work.26.a",
+      "value": "В городе за комнату теперь ползарплаты."
+    },
+    {
+      "key": "city.port.work.26.b",
+      "value": "И ещё за свет отдельно."
+    },
+    {
+      "key": "city.port.work.27.a",
+      "value": "На берегу тоже от ветра не спрятаться."
+    },
+    {
+      "key": "city.port.work.27.b",
+      "value": "У нас за рубкой потише."
+    },
+    {
+      "key": "city.port.work.28.a",
+      "value": "Куртку с прошлого рейса не просушил."
+    },
+    {
+      "key": "city.port.work.28.b",
+      "value": "Дома у двери вешать бесполезно."
+    },
+    {
+      "key": "city.port.work.29.a",
+      "value": "Весь город обошёл. Сапог моего размера нет."
+    },
+    {
+      "key": "city.port.work.29.b",
+      "value": "Я свои опять в починку отдал."
+    },
+    {
+      "key": "city.port.work.30.a",
+      "value": "Автобус ждал — все пальцы отморозил."
+    },
+    {
+      "key": "city.port.work.30.b",
+      "value": "Я теперь пешком. Хоть двигаешься."
+    },
+    {
+      "key": "city.port.work.31.a",
+      "value": "На дороге яма на яме. Весь обед расплескал."
+    },
+    {
+      "key": "city.port.work.31.b",
+      "value": "Я там ногами всю грязь собрал."
+    },
+    {
+      "key": "city.port.work.32.a",
+      "value": "К вечеру бы хоть ветер стих."
+    },
+    {
+      "key": "city.port.work.32.b",
+      "value": "Мне бы щётки перестали скрипеть."
+    },
+    {
+      "key": "city.port.work.33.a",
+      "value": "В магазине опять всё подорожало."
+    },
+    {
+      "key": "city.port.work.33.b",
+      "value": "Я вчера половину обратно на полку поставил."
+    },
+    {
+      "key": "city.port.work.34.a",
+      "value": "Как ветер с моря, пальцев не чувствую."
+    },
+    {
+      "key": "city.port.work.34.b",
+      "value": "У меня в трюме тоже не жарко."
+    },
+    {
+      "key": "city.port.work.35.a",
+      "value": "Дома с потолка капало всю ночь."
+    },
+    {
+      "key": "city.port.work.35.b",
+      "value": "У нас ведро у окна так и стоит."
+    },
+    {
+      "key": "city.port.work.36.a",
+      "value": "Смену кончил — опять в сырой куртке домой."
+    },
+    {
+      "key": "city.port.work.36.b",
+      "value": "Я на сиденье тряпку подстелил."
+    },
+    {
+      "key": "city.port.access_wait",
+      "value": "Жду тебя, дружище"
     }
   ]
 }

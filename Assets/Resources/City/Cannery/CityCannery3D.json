@@ -1096,22 +1096,30 @@
     {
       "name": "Truck",
       "bounds_min": [
-        -1.25,
+        -1.2,
         0.0,
-        -5.1
+        -3.88
       ],
       "bounds_max": [
-        1.25,
-        3.55,
-        5.381
+        1.2,
+        3.2,
+        4.481
       ],
       "anchors": [
+        {
+          "name": "ANCHOR_DriverExit",
+          "position": [
+            -1.73,
+            0.0,
+            3.15
+          ]
+        },
         {
           "name": "ANCHOR_DriverFoot",
           "position": [
             -0.55,
             1.17,
-            4.55
+            3.65
           ]
         },
         {
@@ -1119,7 +1127,23 @@
           "position": [
             -0.76,
             2.01,
-            4.5
+            3.6
+          ]
+        },
+        {
+          "name": "ANCHOR_DriverRearWalk",
+          "position": [
+            -1.73,
+            0.0,
+            -4.35
+          ]
+        },
+        {
+          "name": "ANCHOR_DriverReverseLeftHand",
+          "position": [
+            -1.06,
+            2.05,
+            2.45
           ]
         },
         {
@@ -1127,7 +1151,7 @@
           "position": [
             -0.36,
             2.01,
-            4.5
+            3.6
           ]
         },
         {
@@ -1135,7 +1159,7 @@
           "position": [
             -0.88,
             1.4,
-            5.37
+            4.47
           ]
         },
         {
@@ -1143,55 +1167,127 @@
           "position": [
             0.88,
             1.4,
-            5.37
+            4.47
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftCylinderBottomLeft",
+          "position": [
+            -1.165,
+            1.43,
+            -1.935
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftCylinderBottomRight",
+          "position": [
+            1.165,
+            1.43,
+            -1.935
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftCylinderTopLeft",
+          "position": [
+            -1.165,
+            2.7,
+            -1.935
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftCylinderTopRight",
+          "position": [
+            1.165,
+            2.7,
+            -1.935
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftRailBottomLeft",
+          "position": [
+            -1.165,
+            0.14,
+            -1.78
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftRailBottomRight",
+          "position": [
+            1.165,
+            0.14,
+            -1.78
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftRailTopLeft",
+          "position": [
+            -1.165,
+            2.82,
+            -1.78
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftRailTopRight",
+          "position": [
+            1.165,
+            2.82,
+            -1.78
+          ]
+        },
+        {
+          "name": "ANCHOR_ReverseAlarm",
+          "position": [
+            0.0,
+            0.9,
+            -1.95
           ]
         },
         {
           "name": "ANCHOR_TruckCargo0",
           "position": [
-            -0.55,
+            -0.53,
             1.22,
-            -1.75
+            -1.25
           ]
         },
         {
           "name": "ANCHOR_TruckCargo1",
           "position": [
-            0.55,
+            0.53,
             1.22,
-            -1.75
+            -1.25
           ]
         },
         {
           "name": "ANCHOR_TruckCargo2",
           "position": [
-            -0.55,
+            -0.53,
             1.22,
-            -0.05
+            0.05
           ]
         },
         {
           "name": "ANCHOR_TruckCargo3",
           "position": [
-            0.55,
+            0.53,
             1.22,
-            -0.05
+            0.05
           ]
         },
         {
           "name": "ANCHOR_TruckCargo4",
           "position": [
-            -0.55,
+            -0.53,
             1.22,
-            1.65
+            1.35
           ]
         },
         {
           "name": "ANCHOR_TruckCargo5",
           "position": [
-            0.55,
+            0.53,
             1.22,
-            1.65
+            1.35
           ]
         },
         {
@@ -1199,7 +1295,15 @@
           "position": [
             -0.56,
             1.56,
-            4.0
+            3.1
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckEngine",
+          "position": [
+            0.0,
+            1.3,
+            3.7
           ]
         },
         {
@@ -1207,7 +1311,7 @@
           "position": [
             0.0,
             0.0,
-            -4.65
+            -4.05
           ]
         },
         {
@@ -1215,7 +1319,7 @@
           "position": [
             0.0,
             1.2,
-            -2.6
+            -2.0
           ]
         },
         {
@@ -1223,7 +1327,7 @@
           "position": [
             -0.88,
             1.4,
-            5.37
+            4.47
           ]
         },
         {
@@ -1231,7 +1335,7 @@
           "position": [
             -0.88,
             1.4,
-            5.37
+            4.47
           ]
         },
         {
@@ -1239,7 +1343,7 @@
           "position": [
             0.88,
             1.4,
-            5.37
+            4.47
           ]
         },
         {
@@ -1247,7 +1351,15 @@
           "position": [
             0.88,
             1.4,
-            5.37
+            4.47
+          ]
+        },
+        {
+          "name": "LiftFrameVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
           ]
         },
         {
@@ -1255,7 +1367,7 @@
           "position": [
             -1.08,
             1.12,
-            4.94
+            4.04
           ]
         },
         {
@@ -1263,7 +1375,247 @@
           "position": [
             -1.08,
             1.12,
-            4.94
+            4.04
+          ]
+        },
+        {
+          "name": "MOVE_LiftCarriage",
+          "position": [
+            0.0,
+            1.2,
+            -1.88
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftFoldBaseLeft",
+          "position": [
+            -1.165,
+            1.35,
+            -1.43
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftFoldBaseRight",
+          "position": [
+            1.165,
+            1.35,
+            -1.43
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftGuideLowerLeft",
+          "position": [
+            -1.165,
+            1.26,
+            -1.78
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftGuideLowerRight",
+          "position": [
+            1.165,
+            1.26,
+            -1.78
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftGuideUpperLeft",
+          "position": [
+            -1.165,
+            1.46,
+            -1.78
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftGuideUpperRight",
+          "position": [
+            1.165,
+            1.46,
+            -1.78
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftHingeLeft",
+          "position": [
+            -1.02,
+            1.2,
+            -1.88
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftHingeRight",
+          "position": [
+            1.02,
+            1.2,
+            -1.88
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftRamBaseLeft",
+          "position": [
+            -1.165,
+            1.36,
+            -1.935
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftRamBaseRight",
+          "position": [
+            1.165,
+            1.36,
+            -1.935
+          ]
+        },
+        {
+          "name": "LiftCarriageVisible",
+          "position": [
+            0.0,
+            1.2,
+            -1.88
+          ]
+        },
+        {
+          "name": "MOVE_LiftFoldBarrelLeft",
+          "position": [
+            -1.165,
+            1.35,
+            -1.43
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftFoldBarrelMouthLeft",
+          "position": [
+            -1.165,
+            1.21185,
+            -1.91053
+          ]
+        },
+        {
+          "name": "LiftFoldBarrelVisibleLeft",
+          "position": [
+            -1.165,
+            1.35,
+            -1.43
+          ]
+        },
+        {
+          "name": "MOVE_LiftFoldBarrelRight",
+          "position": [
+            1.165,
+            1.35,
+            -1.43
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftFoldBarrelMouthRight",
+          "position": [
+            1.165,
+            1.21185,
+            -1.91053
+          ]
+        },
+        {
+          "name": "LiftFoldBarrelVisibleRight",
+          "position": [
+            1.165,
+            1.35,
+            -1.43
+          ]
+        },
+        {
+          "name": "MOVE_LiftFoldRodLeft",
+          "position": [
+            -1.165,
+            1.12,
+            -2.23
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftFoldRodEndLeft",
+          "position": [
+            -1.165,
+            1.25815,
+            -1.74947
+          ]
+        },
+        {
+          "name": "LiftFoldRodVisibleLeft",
+          "position": [
+            -1.165,
+            1.12,
+            -2.23
+          ]
+        },
+        {
+          "name": "MOVE_LiftFoldRodRight",
+          "position": [
+            1.165,
+            1.12,
+            -2.23
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftFoldRodEndRight",
+          "position": [
+            1.165,
+            1.25815,
+            -1.74947
+          ]
+        },
+        {
+          "name": "LiftFoldRodVisibleRight",
+          "position": [
+            1.165,
+            1.12,
+            -2.23
+          ]
+        },
+        {
+          "name": "MOVE_LiftRamLeft",
+          "position": [
+            -1.165,
+            1.36,
+            -1.935
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftRamTopLeft",
+          "position": [
+            -1.165,
+            2.6,
+            -1.935
+          ]
+        },
+        {
+          "name": "LiftRamVisibleLeft",
+          "position": [
+            -1.165,
+            1.36,
+            -1.935
+          ]
+        },
+        {
+          "name": "MOVE_LiftRamRight",
+          "position": [
+            1.165,
+            1.36,
+            -1.935
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftRamTopRight",
+          "position": [
+            1.165,
+            2.6,
+            -1.935
+          ]
+        },
+        {
+          "name": "LiftRamVisibleRight",
+          "position": [
+            1.165,
+            1.36,
+            -1.935
           ]
         },
         {
@@ -1271,7 +1623,39 @@
           "position": [
             0.0,
             1.2,
-            -2.6
+            -1.88
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftFoldTipLeft",
+          "position": [
+            -1.165,
+            1.12,
+            -2.23
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftFoldTipRight",
+          "position": [
+            1.165,
+            1.12,
+            -2.23
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftPlatformHingeLeft",
+          "position": [
+            -1.02,
+            1.2,
+            -1.88
+          ]
+        },
+        {
+          "name": "ANCHOR_LiftPlatformHingeRight",
+          "position": [
+            1.02,
+            1.2,
+            -1.88
           ]
         },
         {
@@ -1279,7 +1663,7 @@
           "position": [
             0.0,
             1.21,
-            -3.4
+            -2.68
           ]
         },
         {
@@ -1287,77 +1671,77 @@
           "position": [
             0.0,
             1.2,
-            -2.6
+            -1.88
           ]
         },
         {
           "name": "MOVE_TruckRearDoorLeft",
           "position": [
-            -1.16,
+            -1.02,
             1.23,
-            -2.57
+            -1.86
           ]
         },
         {
           "name": "RearDoorVisibleLeft",
           "position": [
-            -1.16,
+            -1.02,
             1.23,
-            -2.57
+            -1.86
           ]
         },
         {
           "name": "MOVE_TruckRearDoorRight",
           "position": [
-            1.16,
+            1.02,
             1.23,
-            -2.57
+            -1.86
           ]
         },
         {
           "name": "RearDoorVisibleRight",
           "position": [
-            1.16,
+            1.02,
             1.23,
-            -2.57
+            -1.86
           ]
         },
         {
           "name": "MOVE_WheelFL",
           "position": [
-            -1.03,
+            -1.0,
             0.45,
-            4.2
+            3.3
           ]
         },
         {
           "name": "WheelVisibleFL",
           "position": [
-            -1.03,
+            -1.0,
             0.45,
-            4.2
+            3.3
           ]
         },
         {
           "name": "MOVE_WheelFR",
           "position": [
-            1.03,
+            1.0,
             0.45,
-            4.2
+            3.3
           ]
         },
         {
           "name": "WheelVisibleFR",
           "position": [
-            1.03,
+            1.0,
             0.45,
-            4.2
+            3.3
           ]
         },
         {
           "name": "MOVE_WheelRL",
           "position": [
-            -1.03,
+            -1.0,
             0.45,
             0.0
           ]
@@ -1365,7 +1749,7 @@
         {
           "name": "WheelVisibleRL",
           "position": [
-            -1.03,
+            -1.0,
             0.45,
             0.0
           ]
@@ -1373,7 +1757,7 @@
         {
           "name": "MOVE_WheelRR",
           "position": [
-            1.03,
+            1.0,
             0.45,
             0.0
           ]
@@ -1381,7 +1765,7 @@
         {
           "name": "WheelVisibleRR",
           "position": [
-            1.03,
+            1.0,
             0.45,
             0.0
           ]
@@ -1403,8 +1787,18 @@
           ]
         }
       ],
-      "triangles": 9302,
-      "geometry_signature": "7424bb7feae0cf1b4e5a5f3d90cf53f0d691b4a4f5e7ad85653a2d448038fef9"
+      "triangles": 11862,
+      "geometry_signature": "2e3a49da5c13b27d57a32c8017170e96a78730b770841f16fd4423b66cb04f5f",
+      "folded_bounds_min": [
+        -1.2,
+        0.0,
+        -2.0
+      ],
+      "folded_bounds_max": [
+        1.2,
+        3.2,
+        4.481
+      ]
     },
     {
       "name": "Pallet",
@@ -2168,26 +2562,31 @@
   ],
   "hall_floor_height": 0.18,
   "yard_height": 0.08,
-  "truck_wheelbase": 4.2,
+  "truck_wheelbase": 3.3,
   "truck_wheel_radius": 0.45,
   "truck_body_xz": [
-    -1.25,
-    1.25,
-    -2.6,
-    5.4
+    -1.2,
+    1.2,
+    -2.0,
+    4.5
   ],
   "pallet_size_xz": [
     0.8,
     1.2
   ],
+  "truck_body_top": 3.2,
+  "truck_cab_translation_z": -0.9,
+  "truck_cargo_row_spacing": 1.3,
   "cold_store_aisle_width": 1.35,
   "pallet_jack_fork_top": 0.128,
   "pallet_jack_carry_lift": 0.03,
   "conveyor_top_height": 1.19,
   "retort_basket_tray_height": 0.17,
   "retort_basket_contains_cans": false,
-  "tail_lift_length": 2.5,
-  "tail_lift_operator_rear_clearance": 0.27,
+  "tail_lift_length": 2.0,
+  "tail_lift_operator_rear_clearance": 0.2,
+  "tail_lift_operator_offset": 1.0,
+  "ground_trolley_operator_offset": 1.43,
   "goods_threshold_ramp_length": 1.5,
   "goods_threshold_ramp_rise": 0.1,
   "driveway_grid_xz": [
@@ -2196,7 +2595,11 @@
   ],
   "driveway_runtime_profile": "CityCanneryPlan.ApronTop",
   "driver_door_open_axis": "Unity local +Y, +70 degrees about front hinge",
-  "tail_lift_fold_axis": "Unity local +X, +90 degrees folded; authored extended; lower pivot Y for lift",
+  "tail_lift_fold_axis": "Unity local +X, +90 degrees folded; authored extended; carriage translates along vehicle +Y guides",
+  "tail_lift_mechanism": "two fixed column barrels, rigid sliding carriage/hinge, translating rods; two pinned telescoping fold cylinders",
+  "tail_lift_main_rod_length": 1.24,
+  "tail_lift_fold_barrel_length": 0.5,
+  "tail_lift_fold_rod_length": 0.5,
   "retort_door_open_axis": "Unity +Y vertical slide, 1.7 metres; identity rotation",
   "can_count": 15,
   "can_unit_order": "x*3+z; body, contents and lid relative to each CanUnit base",

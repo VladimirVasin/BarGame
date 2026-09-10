@@ -58,12 +58,13 @@ namespace BarPromenade
 
         private void Initialize(CityLayout layout, CityCanneryPlan plan, CityPortController source, Transform player)
         {
-            Plan = plan; port = source; hero = player;
+            Plan = plan; port = source; hero = player; deliveryLayout = layout;
             Route = CityCanneryTruckRoute.Create(layout, plan, port.Plan.Access);
             Cycle = new CityFishSupplyCycle(Travel(CityCanneryTruckLeg.PortToFactory),
                 Travel(CityCanneryTruckLeg.FactoryReverse), Travel(CityCanneryTruckLeg.FactoryToShop),
-                Travel(CityCanneryTruckLeg.ShopToPort), Travel(CityCanneryTruckLeg.PortArrive),
-                Travel(CityCanneryTruckLeg.PortReverse));
+                Travel(CityCanneryTruckLeg.ShopToFactory), Travel(CityCanneryTruckLeg.PortArrive),
+                Travel(CityCanneryTruckLeg.PortReverse), Travel(CityCanneryTruckLeg.FactoryToPort),
+                Route.InitialFactoryToPortDuration,port.DockWorkerStoreExitAtSeconds,port.TrolleyStoreEntryAtSeconds);
             // The site builder owns the passive shell, including the Home vista.
             // This owner adds only the working parts and the shared delivery vehicle.
             factory = new GameObject("Cannery Process").transform;
@@ -74,9 +75,8 @@ namespace BarPromenade
                 if (part.name.StartsWith("ANCHOR_", StringComparison.Ordinal)) anchors[part.name.Substring(7)] = part;
             Truck = CityCanneryAssetProvider.Create("Truck", transform).transform;
             Traffic=new CityCanneryTraffic(this,GetComponentInParent<CityGameRoot>()?.Bus);
-            trolley = CityCanneryAssetProvider.Create("Trolley", transform).transform;
-            forks=Require(trolley,"MOVE_Forks");
-            forksDock=trolley.InverseTransformPoint(forks.position);
+            CacheDeliverySidewalks(layout);
+            CreateLocalTrolleys();
             tray = CityCanneryAssetProvider.Create("CanTray", factory).transform;
             basket = CityCanneryAssetProvider.Create("RetortBasket", factory).transform;
             for (int i = 0; i < fish.Length; i++)
@@ -97,6 +97,7 @@ namespace BarPromenade
             leftDoorDock = Truck.InverseTransformPoint(leftDoor.position);
             rightDoorDock = Truck.InverseTransformPoint(rightDoor.position);
             liftRest = Quaternion.Inverse(Truck.rotation) * lift.rotation;
+            CreateLiftMechanism();
             leftDoorRest = Quaternion.Inverse(Truck.rotation) * leftDoor.rotation;
             rightDoorRest = Quaternion.Inverse(Truck.rotation) * rightDoor.rotation;
             string[] wheelNames = { "FL", "FR", "RL", "RR" };
@@ -138,6 +139,8 @@ namespace BarPromenade
             if (!IsInitialized) return;
             RefreshPresentation();
             if (!AutoAdvance || !GameSessionState.IsGameTimeRunning || GameTimeScaleRuntime.IsPaused) return;
+            if (!CityFishSupplySession.HasStarted &&
+                !CityFishSupplySession.TryStart(hero != null && port.Plan.IsAtDocks(hero.position))) return;
             bool trafficClear=Traffic.TryAcquire(Snapshot);
             IsBlocked = !trafficClear || (Snapshot.IsDriving || Snapshot.IsTransfer) && DetectObstacle();
             movementRate = Mathf.MoveTowards(movementRate, IsBlocked ? 0f : 1f, Time.deltaTime * 1.5f);
@@ -163,16 +166,19 @@ namespace BarPromenade
         {
             switch (state.Stage)
             {
+                case CityFishSupplyStage.FactoryToPort: return state.Batch == 0
+                    ? Route.SampleInitialFactoryToPort(state.Progress)
+                    : Route.Sample(CityCanneryTruckLeg.FactoryToPort, state.Progress);
                 case CityFishSupplyStage.PortToFactory: return Route.Sample(CityCanneryTruckLeg.PortToFactory, state.Progress);
+                case CityFishSupplyStage.FactoryReturnReverse:
                 case CityFishSupplyStage.FactoryReverse: return Route.Sample(CityCanneryTruckLeg.FactoryReverse, state.Progress);
                 case CityFishSupplyStage.FactoryToShop: return Route.Sample(CityCanneryTruckLeg.FactoryToShop, state.Progress);
-                case CityFishSupplyStage.ShopToPort: return Route.Sample(CityCanneryTruckLeg.ShopToPort, state.Progress);
+                case CityFishSupplyStage.ShopToFactory: return Route.Sample(CityCanneryTruckLeg.ShopToFactory, state.Progress);
                 case CityFishSupplyStage.PortArrive: return Route.Sample(CityCanneryTruckLeg.PortArrive, state.Progress);
                 case CityFishSupplyStage.PortReverse: return Route.Sample(CityCanneryTruckLeg.PortReverse, state.Progress);
                 case CityFishSupplyStage.UnloadShop: return Route.Sample(CityCanneryTruckLeg.FactoryToShop, 1);
-                default: return state.Stage >= CityFishSupplyStage.UnloadFish
-                    ? Route.Sample(CityCanneryTruckLeg.FactoryReverse, 1)
-                    : Route.Sample(CityCanneryTruckLeg.PortReverse, 1);
+                case CityFishSupplyStage.LoadFish: return Route.PortLoadingPose;
+                default: return Route.Sample(CityCanneryTruckLeg.FactoryReverse, 1);
             }
         }
 
@@ -184,8 +190,7 @@ namespace BarPromenade
                 // The hidden worker/cart pose is intentionally not animated.
                 // A hero outside the whole handling volume cannot occupy it.
                 if(hero==null||workers==null||!TruckPresentationActive) return false;
-                bool driver=Snapshot.Stage==CityFishSupplyStage.LoadFish||Snapshot.Stage==CityFishSupplyStage.UnloadShop;
-                Vector3 worker=workers[driver?4:0].transform.position;
+                Vector3 worker=workers[4].transform.position;
                 Vector3 relative=hero.position-worker;
                 bool nearWorker=Mathf.Abs(relative.y)<1.6f&&new Vector2(relative.x,relative.z).sqrMagnitude<.95f*.95f;
                 relative=hero.position-trolley.position;
@@ -197,8 +202,10 @@ namespace BarPromenade
             // box beyond the nose would see buildings outside a legal turn.
             double lookAhead = Math.Min(.7d, Math.Max(0,Snapshot.Duration-Snapshot.Seconds-.001d));
             CityPortTruckPose next = TruckPose(Cycle.Sample(WorkingSeconds+lookAhead));
-            Vector3 center = next.RearAxle + next.Rotation * new Vector3(0,1.2f,1.4f);
-            int count = Physics.OverlapBoxNonAlloc(center, new Vector3(1.28f,.8f,4.08f),
+            Vector3 center = next.RearAxle + next.Rotation * CityCanneryTruckDimensions.BodyCenter;
+            int count = Physics.OverlapBoxNonAlloc(center, new Vector3(
+                CityCanneryTruckDimensions.HalfWidth + .03f,CityCanneryTruckDimensions.BodyHalfExtents.y,
+                (CityCanneryTruckDimensions.Front - CityCanneryTruckDimensions.Rear) * .5f + .03f),
                 obstacles,next.Rotation,~0,QueryTriggerInteraction.Ignore);
             LastObstacleName = null;
             for (int i = 0; i < count; i++)

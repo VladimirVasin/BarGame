@@ -33,6 +33,7 @@ namespace BarPromenade
         private bool lifeSeek;
         private double previousPortSeconds;
         private float lifeDelta;
+        private VillageResidentPresentation conversationDriver;
 
         public bool UseManualClock { get; set; }
         public double LifeElapsedSeconds { get; private set; }
@@ -41,8 +42,11 @@ namespace BarPromenade
             (GameSessionState.GameDayIndex * 1440d + GameSessionState.GameTimeOfDayMinutes) /
             GameTimeState.GameMinutesPerRealSecond;
 
-        public VillageResidentPresentation GetWorker(int role) => workers[role];
+        public VillageResidentPresentation GetWorker(int role) =>
+            role == CityPortConversationCatalog.DriverRole ? conversationDriver : workers[role];
+        public void RegisterConversationDriver(VillageResidentPresentation driver) => conversationDriver = driver;
         public CityPortWorkerGesture GetGesture(int role) => gestures[role];
+        public Bounds RestCanopyBounds { get; private set; }
         public Vector3 RestPosition(int role) => restDocks[role - 2].position;
         public bool IsRoleReturning(int role) => role >= 2 && breaks[role - 2].Phase == BreakPhase.Returning;
 
@@ -70,6 +74,16 @@ namespace BarPromenade
                    (speechPartners[role] >= 0 || !gestures[role].MouthBusy);
         }
 
+        // A short exchange at the store can continue while the docker pushes
+        // his trolley. The pose overlay already preserves his heading/grip.
+        public bool IsDockerAvailableForDriverSpeech()
+        {
+            const int role = CityPortConversationCatalog.DockerRole;
+            return initialized && isActiveAndEnabled && workers[role].gameObject.activeInHierarchy &&
+                !returnRequested[role] && workers[role].CurrentAction != VillageResidentAction.StationStrap &&
+                (speechPartners[role] == CityPortConversationCatalog.DriverRole || !gestures[role].MouthBusy);
+        }
+
         public void SetSpeech(int role, int partner, bool isSpeaking, bool isGreeting)
         {
             speechPartners[role] = partner;
@@ -80,10 +94,29 @@ namespace BarPromenade
 
         private void InitializeSocialLife()
         {
+            // Use the existing canopy roof, not the old western meeting points.
+            // Its roof is wider than the posts. Transform the imported mesh
+            // bounds directly: the newly positioned dock has not necessarily
+            // reached the physics broadphase during runtime composition.
+            Transform canopy = Require(port.Dock, "COL_Awning");
+            Bounds meshBounds = canopy.GetComponent<MeshFilter>().sharedMesh.bounds;
+            var cover = new Bounds(canopy.TransformPoint(meshBounds.center), Vector3.zero);
+            for (int corner = 0; corner < 8; corner++)
+            {
+                var signs = new Vector3((corner & 1) == 0 ? -1f : 1f,
+                    (corner & 2) == 0 ? -1f : 1f, (corner & 4) == 0 ? -1f : 1f);
+                cover.Encapsulate(canopy.TransformPoint(meshBounds.center + Vector3.Scale(meshBounds.extents, signs)));
+            }
+            RestCanopyBounds = cover;
+            Vector2[] places = { new Vector2(.45f, .70f), new Vector2(.75f, .70f), new Vector2(.60f, .28f) };
             string[] anchors = { "ANCHOR_RestWest", "ANCHOR_RestEast", "ANCHOR_RestQuay" };
             for (int i = 0; i < 3; i++)
             {
                 restDocks[i] = Require(port.Dock, anchors[i]);
+                restDocks[i].position = new Vector3(
+                    Mathf.Lerp(RestCanopyBounds.min.x, RestCanopyBounds.max.x, places[i].x),
+                    port.Plan.QuayTopY,
+                    Mathf.Lerp(RestCanopyBounds.min.z, RestCanopyBounds.max.z, places[i].y));
                 breaks[i] = new BreakWalk();
             }
             string[] arms = { "upper_arm.R", "forearm.R", "hand.R", "upper_arm.L", "forearm.L", "hand.L" };
@@ -146,8 +179,9 @@ namespace BarPromenade
                     gestures[role].IsWaving || gestures[role].HasPendingWave ? salutationPartners[role] : -1;
                 if ((role == 2 || role == 3) && LastSnapshot.Stage == CityPortCycleStage.Prepare &&
                     LastSnapshot.SecondsInStage >= CityPortCycle.PrepareDurationSeconds - 3d) facingPartner = -1;
-                if (facingPartner >= 0 && workers[facingPartner].gameObject.activeInHierarchy)
-                    target = workers[facingPartner].Head.position;
+                var partnerActor = facingPartner >= 0 ? GetWorker(facingPartner) : null;
+                if (partnerActor != null && partnerActor.gameObject.activeInHierarchy)
+                    target = partnerActor.Head.position;
                 // Resters can look across their small group even between lines.
                 else if (IsRoleResting(role) && role >= 2 &&
                     (long)((LifeElapsedSeconds + role * 2.7d) / (6d + role * .3d)) % 3 != 0)
@@ -191,20 +225,31 @@ namespace BarPromenade
             Quaternion rightHand = contactArms[role, 2].rotation, leftHand = contactArms[role, 5].rotation;
             for (int joint = 0; joint < 6; joint++) contactPose[joint] = contactArms[role, joint].localRotation;
             float angle = Mathf.Clamp(conversationYaw[role], -38f, 38f);
-            bool matched = false;
-            // Imported arm lengths, the worker's scale and the current lever
-            // stroke decide how far a planted torso can turn. Each attempt
-            // starts from the same sampled pose, never a cumulative IK bend.
-            for (int attempt = 0; attempt < 7; attempt++)
+            bool TryTurn(float yaw)
             {
-                if (attempt == 6) angle = 0f;
-                spines[role].rotation = Quaternion.AngleAxis(angle, actor.transform.up) * spineRotation;
+                spines[role].rotation = Quaternion.AngleAxis(yaw, actor.transform.up) * spineRotation;
                 for (int joint = 0; joint < 6; joint++) contactArms[role, joint].localRotation = contactPose[joint];
                 contactArms[role, 2].rotation = rightHand;
                 contactArms[role, 5].rotation = leftHand;
-                matched = RestoreWorkingContacts(role);
-                if (matched) break;
-                angle *= .5f;
+                return RestoreWorkingContacts(role);
+            }
+            bool matched = TryTurn(angle);
+            if (!matched)
+            {
+                // Find the reachable limit continuously. Halving the last
+                // visible yaw made the torso repeatedly advance and snap back
+                // whenever a moving lever reached the arm's reach limit.
+                float blocked = angle, reachable = 0f;
+                matched = TryTurn(reachable);
+                if (matched)
+                    for (int attempt = 0; attempt < 10; attempt++)
+                    {
+                        float candidate = (reachable + blocked) * .5f;
+                        if (TryTurn(candidate)) reachable = candidate;
+                        else blocked = candidate;
+                    }
+                angle = reachable;
+                matched = TryTurn(angle);
             }
             conversationYaw[role] = angle;
             if (role == 0) CaptainHandsMatch = matched;
@@ -253,15 +298,15 @@ namespace BarPromenade
         {
             Vector3 dock = role == 4 ? ShoreCleatDock(0) : operatorDocks[role - 2].position;
             Vector3 rest = restDocks[role - 2].position;
-            float lane = port.Plan.Origin.z - 10.3f - (role - 2) * .38f;
-            float west = port.Plan.Origin.x - 13f - (role - 2) * .55f;
+            float lane = port.Plan.Origin.z - 9.9f - (role - 2) * .65f;
             walk.Route[0] = dock;
             // The east worker passes east of the finite tare stack; the other
-            // two descend beside their own work position, outside the plinth.
+            // two pass behind the lifting area. Separate lanes stay north of
+            // the warehouse and enter the canopy between its southern posts.
             walk.Route[1] = role == 3 ? new Vector3(port.Plan.Origin.x + 8.7f, dock.y, dock.z) : dock;
             walk.Route[2] = new Vector3(walk.Route[1].x, dock.y, lane);
-            walk.Route[3] = new Vector3(west, dock.y, lane);
-            walk.Route[4] = new Vector3(west, dock.y, rest.z);
+            walk.Route[3] = new Vector3(rest.x, dock.y, lane);
+            walk.Route[4] = new Vector3(rest.x, dock.y, RestCanopyBounds.min.z + .65f);
             walk.Route[5] = rest;
             walk.Length = 0f;
             for (int i = 1; i < walk.Route.Length; i++)

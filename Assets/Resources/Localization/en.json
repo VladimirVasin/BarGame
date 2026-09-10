@@ -13,10 +13,6 @@
       "value": "Place on right · A/D — choose spot"
     },
     {
-      "key": "opening.title",
-      "value": "BAR PROMENADE"
-    },
-    {
       "key": "opening.new_game",
       "value": "NEW GAME"
     },
@@ -2923,6 +2919,298 @@
     {
       "key": "city.port.farewell.06.b",
       "value": "All right. You know where to find me."
+    },
+    {
+      "key": "city.port.work.21.a",
+      "value": "The cab smells of fish again."
+    },
+    {
+      "key": "city.port.work.21.b",
+      "value": "My coat smells like that all winter."
+    },
+    {
+      "key": "city.port.work.22.a",
+      "value": "Going home after your shift?"
+    },
+    {
+      "key": "city.port.work.22.b",
+      "value": "Still need to stop for bread."
+    },
+    {
+      "key": "city.port.work.23.a",
+      "value": "My wife told me to scrub the seats."
+    },
+    {
+      "key": "city.port.work.23.b",
+      "value": "Mine won't let these gloves in the house."
+    },
+    {
+      "key": "city.port.work.24.a",
+      "value": "Get any sleep on your day off?"
+    },
+    {
+      "key": "city.port.work.24.b",
+      "value": "The neighbour was drilling all morning."
+    },
+    {
+      "key": "city.port.work.17.a",
+      "value": "The road's empty today."
+    },
+    {
+      "key": "city.port.work.17.b",
+      "value": "Quiet here too, so far."
+    },
+    {
+      "key": "city.port.work.18.a",
+      "value": "Does the cab heater work?"
+    },
+    {
+      "key": "city.port.work.18.b",
+      "value": "Only warms my right foot."
+    },
+    {
+      "key": "city.port.work.19.a",
+      "value": "My lunch went cold in the cab again."
+    },
+    {
+      "key": "city.port.work.19.b",
+      "value": "My tea's been cold since morning."
+    },
+    {
+      "key": "city.port.work.20.a",
+      "value": "They said rain by evening."
+    },
+    {
+      "key": "city.port.work.20.b",
+      "value": "The wipers are squeaking again."
+    },
+    {
+      "key": "city.port.greeting.07.a",
+      "value": "Hello. Cold yet?"
+    },
+    {
+      "key": "city.port.greeting.07.b",
+      "value": "Hello. Still moving."
+    },
+    {
+      "key": "city.port.greeting.08.a",
+      "value": "Hello. How was the road?"
+    },
+    {
+      "key": "city.port.greeting.08.b",
+      "value": "Hello. No traffic today."
+    },
+    {
+      "key": "city.port.farewell.07.a",
+      "value": "Well, I'm off. See you."
+    },
+    {
+      "key": "city.port.farewell.07.b",
+      "value": "Take care. Until next time."
+    },
+    {
+      "key": "city.port.farewell.08.a",
+      "value": "All right, see you."
+    },
+    {
+      "key": "city.port.farewell.08.b",
+      "value": "See you. Do your coat up."
+    },
+    {
+      "key": "city.port.rest.25.a",
+      "value": "The puddle by the stop is ankle-deep again."
+    },
+    {
+      "key": "city.port.rest.25.b",
+      "value": "That's twice I've soaked my socks there."
+    },
+    {
+      "key": "city.port.rest.26.a",
+      "value": "Went to get bread. The price is up again."
+    },
+    {
+      "key": "city.port.rest.26.b",
+      "value": "And the loaf keeps getting smaller."
+    },
+    {
+      "key": "city.port.rest.27.a",
+      "value": "The radiator at home is barely warm."
+    },
+    {
+      "key": "city.port.rest.27.b",
+      "value": "I get a draught by the window all evening."
+    },
+    {
+      "key": "city.port.rest.28.a",
+      "value": "My jacket still hasn't dried since this morning."
+    },
+    {
+      "key": "city.port.rest.28.b",
+      "value": "Hang it away from the door."
+    },
+    {
+      "key": "city.port.rest.29.a",
+      "value": "These cobbles wear my boots out every month."
+    },
+    {
+      "key": "city.port.rest.29.b",
+      "value": "I've got another nail poking out of my heel."
+    },
+    {
+      "key": "city.port.rest.30.a",
+      "value": "Tried going for a walk on my day off. Got chilled again."
+    },
+    {
+      "key": "city.port.rest.30.b",
+      "value": "I only went to the shop and back."
+    },
+    {
+      "key": "city.port.rest.31.a",
+      "value": "The neighbour's pipe hummed all night."
+    },
+    {
+      "key": "city.port.rest.31.b",
+      "value": "I get enough of that noise during the day."
+    },
+    {
+      "key": "city.port.rest.32.a",
+      "value": "The wind goes straight through my collar."
+    },
+    {
+      "key": "city.port.rest.32.b",
+      "value": "My sleeves have been damp for two days."
+    },
+    {
+      "key": "city.port.rest.33.a",
+      "value": "They want more for the room again."
+    },
+    {
+      "key": "city.port.rest.33.b",
+      "value": "They could at least fix the window for that money."
+    },
+    {
+      "key": "city.port.rest.34.a",
+      "value": "These stairs leave my knees aching by evening."
+    },
+    {
+      "key": "city.port.rest.34.b",
+      "value": "I stop on every landing with my shopping bag."
+    },
+    {
+      "key": "city.port.rest.35.a",
+      "value": "Got both sleeves wet on the walk to the port."
+    },
+    {
+      "key": "city.port.rest.35.b",
+      "value": "An umbrella just turns inside out here."
+    },
+    {
+      "key": "city.port.rest.36.a",
+      "value": "There's a draught by the door at the bar."
+    },
+    {
+      "key": "city.port.rest.36.b",
+      "value": "Sit further in. I got a chill in my back there."
+    },
+    {
+      "key": "city.port.work.25.a",
+      "value": "They promised a dry day. My sleeves are wet again."
+    },
+    {
+      "key": "city.port.work.25.b",
+      "value": "My gloves have been damp since morning."
+    },
+    {
+      "key": "city.port.work.26.a",
+      "value": "A room in town costs half your wages now."
+    },
+    {
+      "key": "city.port.work.26.b",
+      "value": "And the electricity is extra."
+    },
+    {
+      "key": "city.port.work.27.a",
+      "value": "Can't get out of the wind on shore either."
+    },
+    {
+      "key": "city.port.work.27.b",
+      "value": "It's quieter behind our wheelhouse."
+    },
+    {
+      "key": "city.port.work.28.a",
+      "value": "Haven't dried my jacket since the last trip."
+    },
+    {
+      "key": "city.port.work.28.b",
+      "value": "No use hanging it by the door at home."
+    },
+    {
+      "key": "city.port.work.29.a",
+      "value": "Walked all over town. No boots in my size."
+    },
+    {
+      "key": "city.port.work.29.b",
+      "value": "I sent mine in for repairs again."
+    },
+    {
+      "key": "city.port.work.30.a",
+      "value": "My fingers froze waiting for the bus."
+    },
+    {
+      "key": "city.port.work.30.b",
+      "value": "I walk now. At least you keep moving."
+    },
+    {
+      "key": "city.port.work.31.a",
+      "value": "The road is full of holes. Spilled my whole lunch."
+    },
+    {
+      "key": "city.port.work.31.b",
+      "value": "I picked up all the mud on my boots there."
+    },
+    {
+      "key": "city.port.work.32.a",
+      "value": "Hope the wind drops by evening."
+    },
+    {
+      "key": "city.port.work.32.b",
+      "value": "I just want my wipers to stop squeaking."
+    },
+    {
+      "key": "city.port.work.33.a",
+      "value": "Everything in the shop costs more again."
+    },
+    {
+      "key": "city.port.work.33.b",
+      "value": "I put half of it back on the shelf yesterday."
+    },
+    {
+      "key": "city.port.work.34.a",
+      "value": "Can't feel my fingers when the wind comes off the sea."
+    },
+    {
+      "key": "city.port.work.34.b",
+      "value": "It's not warm down in my hold either."
+    },
+    {
+      "key": "city.port.work.35.a",
+      "value": "The ceiling at home dripped all night."
+    },
+    {
+      "key": "city.port.work.35.b",
+      "value": "We still have a bucket by the window."
+    },
+    {
+      "key": "city.port.work.36.a",
+      "value": "Shift over, and another walk home in a damp jacket."
+    },
+    {
+      "key": "city.port.work.36.b",
+      "value": "I put a rag over my seat."
+    },
+    {
+      "key": "city.port.access_wait",
+      "value": "Waiting for you, buddy"
     }
   ]
 }

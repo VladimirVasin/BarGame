@@ -49,7 +49,7 @@ namespace BarPromenade
                 tunnelDelta,
                 tunnelRight));
             if (tunnelProgress <= 0f &&
-                tunnelProgress >= -MountainRoadPlanner.TunnelVisualDepth &&
+                tunnelProgress >= -MountainRoadPlanner.TunnelPhysicalDepth &&
                 tunnelLateral <=
                 CityMountainBoundaryDefinition.TunnelOpeningWidth * 0.5f)
             {

@@ -101,9 +101,9 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Keeps the inset terrain skirt and plan-owned full-lot collision for
-        /// the authored supermarket without instantiating its old CityMisc
-        /// shell or generic apartment window bands.
+        /// Keeps the inset terrain skirt and plan-owned collision around the
+        /// supermarket's rear receiving passage without instantiating its old
+        /// CityMisc shell or generic apartment window bands.
         /// </summary>
         public static Transform BuildSupermarketCityInfrastructure(
             Transform parent,
@@ -119,11 +119,54 @@ namespace BarPromenade
                 ResolveCityPose(lot),
                 false,
                 CityMiscKind.SupermarketBuildingShell);
-            CityBuildingPrototypeWorldBuilder.BuildLogicalCollision(
-                parent,
-                lot,
-                foundationDepth);
+            BuildSupermarketReceivingCollision(parent, lot, foundationDepth);
             return result;
+        }
+
+        private static void BuildSupermarketReceivingCollision(
+            Transform parent, BuildingLot lot, float foundationDepth)
+        {
+            var root = new GameObject(CityBuildingPrototypeWorldBuilder.LogicalCollisionObjectName);
+            root.transform.SetParent(parent, false);
+            root.transform.localPosition = lot.Center;
+            root.transform.localRotation = Quaternion.LookRotation(ResolveDirection(lot), Vector3.up);
+
+            // These are the existing fixed-metre facade/service-door axes.
+            // Retain the old lot envelope and its foundation; only the rear
+            // receiving pocket and the opening through the wall become empty.
+            const float left = -.65f, right = 6.9f, inner = -3.3f;
+            const float wallInside = -7.33f, doorLeft = 2.05f, doorRight = 3.55f;
+            const float ceiling = 3.1f, header = 2.55f;
+            float halfWidth = lot.Size.x * .5f, halfDepth = lot.Size.y * .5f;
+            float floor = CityFacadeGrid.MassBaseElevation;
+            float bottom = floor - foundationDepth, top = floor + lot.Height;
+            AddReceivingMassBox(root.transform, "Foundation and floor",
+                new Vector3(-halfWidth, bottom, -halfDepth), new Vector3(halfWidth, floor, halfDepth));
+            AddReceivingMassBox(root.transform, "Upper mass",
+                new Vector3(-halfWidth, ceiling, -halfDepth), new Vector3(halfWidth, top, halfDepth));
+            AddReceivingMassBox(root.transform, "Left mass",
+                new Vector3(-halfWidth, floor, -halfDepth), new Vector3(left, ceiling, halfDepth));
+            AddReceivingMassBox(root.transform, "Right mass",
+                new Vector3(right, floor, -halfDepth), new Vector3(halfWidth, ceiling, halfDepth));
+            // The depth includes the standing operator behind the jack while
+            // reversing a delivered case, and the walk around the parked jack.
+            AddReceivingMassBox(root.transform, "Front mass",
+                new Vector3(left, floor, inner), new Vector3(right, ceiling, halfDepth));
+            AddReceivingMassBox(root.transform, "Rear wall left",
+                new Vector3(left, floor, -halfDepth), new Vector3(doorLeft, ceiling, wallInside));
+            AddReceivingMassBox(root.transform, "Rear wall right",
+                new Vector3(doorRight, floor, -halfDepth), new Vector3(right, ceiling, wallInside));
+            AddReceivingMassBox(root.transform, "Rear door header",
+                new Vector3(doorLeft, header, -halfDepth), new Vector3(doorRight, ceiling, wallInside));
+        }
+
+        private static void AddReceivingMassBox(Transform parent, string name, Vector3 minimum, Vector3 maximum)
+        {
+            var part = new GameObject("Supermarket " + name);
+            part.transform.SetParent(parent, false);
+            BoxCollider collider = part.AddComponent<BoxCollider>();
+            collider.center = (minimum + maximum) * .5f;
+            collider.size = maximum - minimum;
         }
 
         /// <summary>

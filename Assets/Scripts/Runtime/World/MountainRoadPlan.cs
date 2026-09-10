@@ -271,6 +271,8 @@ namespace BarPromenade
             OpeningHeight = openingHeight;
             VisualDepth = visualDepth;
             SpawnPosition = spawnPosition;
+            Segments = new ReadOnlyCollection<CityMountainTunnelSegmentDescriptor>(
+                MountainRoadPlanner.CreateTunnelSegments(portalGroundCenter, outwardAxis));
         }
 
         public Vector3 PortalGroundCenter { get; }
@@ -278,6 +280,8 @@ namespace BarPromenade
         public float OpeningWidth { get; }
         public float OpeningHeight { get; }
         public float VisualDepth { get; }
+        public float PhysicalDepth => MountainRoadPlanner.TunnelPhysicalDepth;
+        public IReadOnlyList<CityMountainTunnelSegmentDescriptor> Segments { get; }
         public Vector3 SpawnPosition { get; }
         public Vector3 SpawnForward => OutwardAxis;
     }

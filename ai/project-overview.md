@@ -82,17 +82,29 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
-  Port, cannery and the shop's service door share one finite three-unit delivery
-  cycle with two cranes, one lit truck and crews. Five port workers exchange
-  paired everyday speech, turn to partners, greet/farewell the ship and take breaks;
-  idle has its own pause-aware clock. Moving crane grips and a warm vessel
-  searchlight share the working scene. Production starts with the first
-  received crate during unloading, taking available FIFO lots at twice authored
+  First unpaused dock entry starts finite port→factory→shop supply once;
+  later departure/reentry never stops or resets it. Catch-up survives scenes,
+  excluding pre-entry time. Three units, two cranes, crews and a
+  `6.481 x 2.4 x 3.2 m` closed truck/full cab share the cycle.
+  After its existing central factory-exit turn, it keeps/parks right and yields
+  locally to the bus. Six-second traffic access protects actual bodies; graph
+  turns avoid street furniture. Streets stay `8 m`/`6 m` asphalt; stops stay put.
+  At event start, the truck appears beyond dock visibility on the
+  road and parks with the first crate; later trips leave the factory.
+  Two soft arrival horns, reverse beeper/ajar door/look-back steering. Cranes
+  continue while the driver yields at the store entrance. Local trolleys
+  go directly to cargo and return to their stands. Doors open before the
+  guided hydraulic lift unfolds/lowers; closing reverses this order above ground.
+  Store clearance releases the waiting driver; jamb bumpers stay outside.
+  Paired city/weather complaints shuffle without repeats; shore breaks use the
+  existing canopy. Driver talks only to docker; idle is pause-aware.
+  Moving grips, vessel horn/echo and warm shadowed searchlight share the scene.
+  Production starts with the first received crate during unloading, taking FIFO lots at twice authored
   speed. Worn machines, cans entering cartons, task poses, lamps and steam make
   that cycle visible. Distant presentation
   sleeps while production, truck collision and traffic continue; approach
   restores the current phase. The hero observes; shop stock stays unchanged.
-  Eight port/factory voices use physical anchors and local reverb through
+  Port/factory voices use physical anchors and local reverb through
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
 - Separate mountain/village areas, cableway travel and accessible interiors.
 - Six village residents perform finite household work; optional hero help and

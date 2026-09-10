@@ -422,6 +422,78 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [Test]
+        public void CityPortDriverConversation_OnlyDockerAndObservedDeliveryWindows()
+        {
+            ValidatePortSocialLocalization();
+            var pairBits = new HashSet<uint>();
+            for (int first = 0; first < CityPortConversationCatalog.RoleCount; first++)
+            for (int second = first + 1; second < CityPortConversationCatalog.RoleCount; second++)
+                Assert.That(pairBits.Add(CityPortConversationCatalog.PairBit(first, second)), Is.True,
+                    "The sixth role must not alias an existing speech pair.");
+            foreach (CityPortConversationKind kind in Enum.GetValues(typeof(CityPortConversationKind)))
+            for (int variant = 0; variant < CityPortConversationCatalog.Count(kind); variant++)
+            {
+                var entry = CityPortConversationCatalog.Get(kind, variant);
+                if (!CityPortConversationCatalog.IncludesDriver(entry)) continue;
+                Assert.That(kind, Is.Not.EqualTo(CityPortConversationKind.Rest),
+                    "The visiting driver has no separate port break; ambient pairs must be selectable during loading.");
+                CollectionAssert.AreEquivalent(new[] { CityPortConversationCatalog.DockerRole, CityPortConversationCatalog.DriverRole },
+                    new[] { entry.FirstRole, entry.SecondRole });
+            }
+
+            const int driverBit = 1 << CityPortConversationCatalog.DriverRole;
+            uint pair = CityPortConversationCatalog.PairBit(CityPortConversationCatalog.DriverRole, CityPortConversationCatalog.DockerRole);
+            double portSeconds = CityPortCycle.CycleDurationSeconds - .001d;
+            var snapshot = CityPortCycle.Sample(portSeconds);
+            var schedule = new CityPortConversationSchedule(3197);
+            int greetingRoles = 0, farewellRoles = 0, workRoles = 0;
+            for (int sample = 0; sample <= 525; sample++)
+            {
+                double life = sample * .2d;
+                // The docker is walking: available only to the driver's
+                // short exchange, not to the old shore/ship conversations.
+                var turn = schedule.Advance(life, portSeconds, snapshot, driverBit, driverBit, 0,
+                    pair, pair, true, life >= 3.5d && life < 12d, life >= 90d && life < 98.5d, true);
+                if (!turn.IsSpeaking) continue;
+                Assert.That(CityPortConversationCatalog.IncludesDriver(turn.Exchange), Is.True);
+                int bit = 1 << turn.SpeakerRole;
+                if (turn.Exchange.Kind == CityPortConversationKind.Greeting) greetingRoles |= bit;
+                if (turn.Exchange.Kind == CityPortConversationKind.Farewell) farewellRoles |= bit;
+                if (turn.Exchange.Kind == CityPortConversationKind.Work) workRoles |= bit;
+            }
+            int both = driverBit | (1 << CityPortConversationCatalog.DockerRole);
+            Assert.That(greetingRoles, Is.EqualTo(both));
+            Assert.That(farewellRoles, Is.EqualTo(both));
+            Assert.That(workRoles, Is.EqualTo(both));
+
+            var ambientVariants = new HashSet<int>();
+            var ambient = new CityPortConversationSchedule(3197);
+            for (int sample = 0; sample < 7500; sample++)
+            {
+                var turn = ambient.Advance(sample * .2d, portSeconds, snapshot, driverBit, driverBit, 0,
+                    pair, pair, true, false, false, true);
+                if (turn.IsSpeaking) ambientVariants.Add(turn.Exchange.Variant);
+            }
+            int expectedDriverPairs = 0;
+            for (int variant = 0; variant < CityPortConversationCatalog.WorkCount; variant++)
+                if (CityPortConversationCatalog.IncludesDriver(CityPortConversationCatalog.Get(CityPortConversationKind.Work, variant)))
+                    expectedDriverPairs++;
+            Assert.That(ambientVariants.Count, Is.EqualTo(expectedDriverPairs), "Every driver work/conversation pair is reachable.");
+
+            // Reconstruct inside a greeting window, then miss the next one
+            // outside earshot. Neither may replay on returning to the port.
+            for (int sample = 0; sample < 100; sample++)
+            {
+                double life = 500d + sample * .2d;
+                bool greeting = sample < 40 || sample >= 50;
+                int heardDriver = sample >= 50 && sample < 60 ? 0 : driverBit;
+                var turn = schedule.Advance(life, portSeconds, snapshot, heardDriver, driverBit, 0,
+                    pair, pair, true, greeting, false, true);
+                Assert.That(turn.HasExchange && turn.Exchange.Kind == CityPortConversationKind.Greeting, Is.False);
+            }
+        }
+
         private static void SamplePortSocial(CityPortController port, CityPortCrew crew,
             CityPortConversationController speech, double portSeconds, double lifeSeconds)
         {
@@ -432,11 +504,19 @@ namespace BarPromenade.Tests.PlayMode
 
         private static IEnumerator CapturePortSocialPose(Camera camera, string name, Vector3 from, Vector3 target, float field)
         {
-            camera.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from));
-            camera.fieldOfView = field;
-            Physics.SyncTransforms();
-            for (int frame = 0; frame < 3; frame++) yield return null;
-            CaptureCurrentCamera(camera, SceneIds.City, name);
+            PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
+            bool wasEnabled = follow != null && follow.enabled;
+            if (follow != null) follow.enabled = false;
+            try
+            {
+                camera.transform.SetPositionAndRotation(from, Quaternion.LookRotation(target - from));
+                camera.fieldOfView = field;
+                Physics.SyncTransforms();
+                for (int frame = 0; frame < 3; frame++) yield return null;
+                Assert.That(Vector3.Distance(camera.transform.position, from), Is.LessThan(.001f));
+                CaptureCurrentCamera(camera, SceneIds.City, name);
+            }
+            finally { if (follow != null) follow.enabled = wasEnabled; }
         }
 
         private static void ValidatePortVisibleFace(VillageResidentPresentation actor, Vector3 panel)
@@ -577,6 +657,72 @@ namespace BarPromenade.Tests.PlayMode
             public string value = string.Empty;
         }
 
+        private static void ValidatePortConversationRounds()
+        {
+            const int allRoles = (1 << CityPortConversationCatalog.RoleCount) - 1;
+            foreach (var kind in new[] { CityPortConversationKind.Rest, CityPortConversationKind.Work })
+            {
+                var schedule = new CityPortConversationSchedule(812);
+                double life = 0;
+                int count = CityPortConversationCatalog.Count(kind);
+                var first = ReadPortConversationRound(schedule, kind, allRoles, count, ref life);
+                var second = ReadPortConversationRound(schedule, kind, allRoles, count, ref life);
+                Assert.That(new HashSet<int>(first).Count, Is.EqualTo(count), kind + " repeats before exhausting its pool.");
+                Assert.That(new HashSet<int>(second).Count, Is.EqualTo(count));
+                Assert.That(second[0], Is.Not.EqualTo(first[count - 1]), "No immediate repeat across rounds.");
+                CollectionAssert.AreNotEqual(first, second, "A fresh round is randomized again.");
+            }
+
+            // A missing partner must defer unheard entries, not silently refill
+            // just the available driver's lines over and over.
+            var restricted = new CityPortConversationSchedule(1701);
+            int driverPair = (1 << CityPortConversationCatalog.DriverRole) | (1 << CityPortConversationCatalog.DockerRole);
+            int driverCount = 0;
+            for (int variant = 0; variant < CityPortConversationCatalog.WorkCount; variant++)
+                if (CityPortConversationCatalog.IncludesDriver(CityPortConversationCatalog.Get(CityPortConversationKind.Work, variant)))
+                    driverCount++;
+            double seconds = 0;
+            var heard = ReadPortConversationRound(restricted, CityPortConversationKind.Work, driverPair, driverCount, ref seconds);
+            restricted.Reset(); // Scene-clock reset preserves the spoken history.
+            double held = CityPortCycle.UnloadStartSeconds + 46;
+            for (int sample = 0; sample < 1200; sample++)
+            {
+                seconds += .25;
+                var turn = restricted.Advance(seconds, held, CityPortCycle.Sample(held), driverPair, driverPair, 0,
+                    uint.MaxValue, uint.MaxValue, true);
+                Assert.That(turn.HasExchange, Is.False, "Unavailable workers do not reset the work round.");
+            }
+            heard.AddRange(ReadPortConversationRound(restricted, CityPortConversationKind.Work, allRoles,
+                CityPortConversationCatalog.WorkCount - driverCount, ref seconds));
+            Assert.That(new HashSet<int>(heard).Count, Is.EqualTo(CityPortConversationCatalog.WorkCount),
+                "When partners return, the remaining unheard exchanges finish the same round.");
+        }
+
+        private static List<int> ReadPortConversationRound(CityPortConversationSchedule schedule,
+            CityPortConversationKind kind, int available, int count, ref double life)
+        {
+            var heard = new List<int>();
+            int previousSerial = schedule.StartedLineCount;
+            double held = kind == CityPortConversationKind.Rest ? CityPortCycle.CycleDurationSeconds - .001 :
+                CityPortCycle.UnloadStartSeconds + 46;
+            int working = kind == CityPortConversationKind.Work ? available : 0;
+            int resting = kind == CityPortConversationKind.Rest ? available : 0;
+            for (int sample = 0; sample < count * 240 && heard.Count < count; sample++)
+            {
+                life += .25;
+                var turn = schedule.Advance(life, held, CityPortCycle.Sample(held), available, working, resting,
+                    uint.MaxValue, uint.MaxValue, true);
+                if (!turn.IsSpeaking || turn.LineSerial == previousSerial) continue;
+                previousSerial = turn.LineSerial;
+                Assert.That(turn.Exchange.Kind, Is.EqualTo(kind));
+                Assert.That(turn.LineKey, Is.EqualTo(turn.SpeakerRole == turn.Exchange.FirstRole ?
+                    turn.Exchange.FirstKey : turn.Exchange.SecondKey), "Replies remain paired with their first line.");
+                if (turn.SpeakerRole == turn.Exchange.FirstRole) heard.Add(turn.Exchange.Variant);
+            }
+            Assert.That(heard.Count, Is.EqualTo(count), "Eligible unheard exchanges must keep playing.");
+            return heard;
+        }
+
         private static void ValidatePortSocialLocalization()
         {
             foreach (string language in new[] { "ru", "en" })
@@ -588,8 +734,11 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (var entry in catalog.entries)
                     if (entry.key.StartsWith("city.port.", StringComparison.Ordinal))
                         Assert.That(lines.TryAdd(entry.key, entry.value), Is.True, "Duplicate localized port key.");
-                Assert.That(lines.Count, Is.EqualTo(2 * (CityPortConversationCatalog.RestCount + CityPortConversationCatalog.WorkCount +
+                Assert.That(lines.Count, Is.EqualTo(1 + 2 * (CityPortConversationCatalog.RestCount + CityPortConversationCatalog.WorkCount +
                     CityPortConversationCatalog.GreetingCount + CityPortConversationCatalog.FarewellCount)));
+                Assert.That(lines[CityPortConversationController.AccessWaitLineKey],
+                    Is.EqualTo(language == "ru" ? "Жду тебя, дружище" : "Waiting for you, buddy"));
+                var ambientText = new HashSet<string>(StringComparer.Ordinal);
                 foreach (CityPortConversationKind kind in Enum.GetValues(typeof(CityPortConversationKind)))
                 for (int variant = 0; variant < CityPortConversationCatalog.Count(kind); variant++)
                 {
@@ -598,6 +747,8 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         Assert.That(lines.ContainsKey(key), Is.True, language + ": " + key);
                         string value = lines[key];
+                        if (kind == CityPortConversationKind.Rest || kind == CityPortConversationKind.Work)
+                            Assert.That(ambientText.Add(value), Is.True, "Repeated authored phrase: " + key);
                         Assert.That(value.Length, Is.InRange(3, 120));
                         Assert.That(value.Contains("!") || value.Contains("(") || value.Contains(")"), Is.False, key);
                         Assert.That(Regex.Matches(value, "[.?!]").Count, Is.InRange(1, 2), key);

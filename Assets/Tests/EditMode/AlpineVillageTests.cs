@@ -2730,17 +2730,24 @@ namespace BarPromenade.Tests.EditMode
             AlpineVillageTreePlan trees = plan.Trees;
             Assert.That(trees, Is.Not.Null, "The village carries no trees.");
             TestContext.WriteLine(
-                $"wall {trees.WallTrees.Count}, copse {trees.CopseTrees.Count}, " +
+                $"forest {trees.ForestTrees.Count}, wall {trees.WallTrees.Count}, " +
                 $"stumps {trees.Stumps.Count}, wind {trees.WindFootY:F2}-" +
                 $"{trees.WindSummitY:F2}");
+            TestContext.WriteLine(
+                "heights " +
+                $"{trees.ForestTrees.Min(tree => tree.Height):F2}-" +
+                $"{trees.ForestTrees.Max(tree => tree.Height):F2}, crowns " +
+                $"{trees.ForestTrees.Min(tree => tree.CrownRadius):F2}-" +
+                $"{trees.ForestTrees.Max(tree => tree.CrownRadius):F2}, branches " +
+                $"{trees.Branches.Count}");
             Assert.That(
                 trees.WallTrees.Count,
-                Is.InRange(1, AlpineVillageTreePlanner.WallTreeCount),
+                Is.GreaterThan(0),
                 "The wall lost its lee pockets.");
             Assert.That(
-                trees.CopseTrees.Count,
-                Is.InRange(1, AlpineVillageTreePlanner.CopseTreeCount),
-                "No copse behind the firewood house.");
+                trees.ForestTrees.Count,
+                Is.GreaterThan(AlpineVillageTreePlanner.ForestTreeCount / 4),
+                "The clearing rules swallowed the forest.");
             Assert.That(
                 trees.Stumps.Count,
                 Is.LessThanOrEqualTo(AlpineVillageTreePlanner.StumpCount));
@@ -2782,15 +2789,16 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     AlpineVillagePathPlanner.MeasureDistanceOutsideTrodden(
                         plan, paths, point, out _),
-                    Is.GreaterThanOrEqualTo(AlpineVillageTreePlanner.LaneKeepClear),
+                    Is.GreaterThanOrEqualTo(
+                        AlpineVillageTreePlanner.WallTroddenClearance),
                     $"{tree.StableId} crowds the trodden network.");
                 AssertGrounded(plan, tree, AlpineVillageTreePlanner.BuriedFoot);
             }
 
-            // The copse is the one group on walkable ground, so it is the one
-            // group the mask has to know about - and it must still leave the
-            // firewood house walkable on all four sides.
-            foreach (MountainRoadForestDescriptor tree in trees.CopseTrees)
+            // The forest is the one group on walkable ground, so it is the one
+            // group the mask has to know about - and it must still leave every
+            // house walkable on all four sides and the lane open.
+            foreach (MountainRoadForestDescriptor tree in trees.ForestTrees)
             {
                 Assert.That(
                     tree.BlocksMovement,
@@ -2801,19 +2809,109 @@ namespace BarPromenade.Tests.EditMode
                     Is.False,
                     $"{tree.StableId} was never carved out of the mask.");
                 Assert.That(
-                    plan.Lane.FindNearest(
+                    AlpineVillagePathPlanner.MeasureDistanceOutsideTrodden(
+                        plan,
+                        paths,
                         new Vector2(tree.Position.x, tree.Position.z),
-                        out float lateral),
-                    Is.GreaterThanOrEqualTo(0f));
-                Assert.That(
-                    lateral,
-                    Is.GreaterThanOrEqualTo(AlpineVillageTreePlanner.LaneKeepClear),
-                    $"{tree.StableId} crowds the one street.");
+                        out _),
+                    Is.GreaterThanOrEqualTo(AlpineVillageTreePlanner.ForestClearing),
+                    $"{tree.StableId} stands in the clearing the village walks.");
             }
 
-            AlpineVillagePlotDescriptor firewood = plan.Plots.First(
-                plot => plot.StableId == AlpineVillageLifePlan.WoodHouseId);
-            AssertWalkableOnEverySide(walkable, firewood);
+            // Every house keeps its walk-around, not just the firewood one.
+            foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
+            {
+                if (plot.Kind == AlpineVillagePlotKind.Spring)
+                {
+                    continue;
+                }
+
+                AssertWalkableOnEverySide(walkable, plot);
+            }
+
+            // The size scatter is what makes this worth asserting: with a
+            // uniform `1-2x` scale a crown reaches four metres, so any spacing
+            // rule written as a constant would let two big neighbours grow
+            // straight through each other. Every pair, both groups together.
+            var crowned = new List<MountainRoadForestDescriptor>(trees.CrownedTrees);
+            float smallest = float.PositiveInfinity;
+            float largest = 0f;
+            for (int a = 0; a < crowned.Count; a++)
+            {
+                smallest = Mathf.Min(smallest, crowned[a].Height);
+                largest = Mathf.Max(largest, crowned[a].Height);
+                for (int b = a + 1; b < crowned.Count; b++)
+                {
+                    Vector3 near = crowned[a].Position;
+                    Vector3 far = crowned[b].Position;
+                    float planar = new Vector2(
+                        near.x - far.x, near.z - far.z).magnitude;
+                    Assert.That(
+                        planar,
+                        Is.GreaterThanOrEqualTo(
+                            crowned[a].CrownRadius + crowned[b].CrownRadius - 0.001f),
+                        $"{crowned[a].StableId} and {crowned[b].StableId} " +
+                        "grow through one another.");
+                }
+            }
+
+            // And the scatter actually happened: the tallest is at least twice
+            // the shortest, or the scale was silently dropped somewhere.
+            Assert.That(
+                largest / smallest,
+                Is.GreaterThanOrEqualTo(2f),
+                "The 1-2x size scatter is not reaching the descriptors.");
+
+            // The bug this exists for: a stub grounded like a tall tree, on a
+            // slope, disappears inside the hill - and a stub shorter than the
+            // untouched drift disappears under the snow. Both are invisible in
+            // exactly the same way, so measure what SHOWS, not what was built.
+            foreach (MountainRoadForestDescriptor stump in trees.Stumps)
+            {
+                var at = new Vector2(stump.Position.x, stump.Position.z);
+                float ground = Mathf.Max(
+                    AlpineVillageTerrainSampler.SampleHeight(plan, at),
+                    AlpineVillageTerrainSampler.SampleMeshHeight(plan, at));
+                float snowTop = ground + AlpineVillageSnowDrift.SampleDepth(
+                    plan, paths, at);
+                Assert.That(
+                    stump.Position.y + stump.Height - snowTop,
+                    Is.GreaterThanOrEqualTo(
+                        AlpineVillageTreePlanner.StumpExposure - 0.01f),
+                    $"{stump.StableId} does not clear the snow around it.");
+                Assert.That(
+                    walkable.Contains(stump.Position),
+                    Is.False,
+                    $"{stump.StableId} was never carved out of the mask.");
+            }
+
+            // Deadfall: on the snow, near the wood that dropped it, and NOT an
+            // obstacle - art §13 keeps small detail non-physical, so the hero
+            // walks over a limb instead of stopping against one.
+            Assert.That(trees.Branches.Count, Is.GreaterThan(0), "No deadfall.");
+            foreach (AlpineVillageBranchDescriptor branch in trees.Branches)
+            {
+                var at = new Vector2(branch.Position.x, branch.Position.z);
+                float ground = Mathf.Max(
+                    AlpineVillageTerrainSampler.SampleHeight(plan, at),
+                    AlpineVillageTerrainSampler.SampleMeshHeight(plan, at));
+                float snowTop = ground + AlpineVillageSnowDrift.SampleDepth(
+                    plan, paths, at);
+                Assert.That(
+                    branch.Position.y,
+                    Is.GreaterThan(snowTop - AlpineVillageTreePlanner.BranchSettle - 0.01f),
+                    $"{branch.StableId} lies under the snow.");
+                Assert.That(
+                    walkable.Contains(branch.Position),
+                    Is.True,
+                    $"{branch.StableId} became an obstacle; a limb is not one.");
+                Assert.That(
+                    trees.ForestTrees.Min(tree => new Vector2(
+                        tree.Position.x - at.x, tree.Position.z - at.y).magnitude),
+                    Is.LessThanOrEqualTo(
+                        AlpineVillageTreePlanner.BranchReachFromTrunk + 0.01f),
+                    $"{branch.StableId} fell out of reach of any tree.");
+            }
 
             Assert.That(
                 trees.WindFootY,
@@ -2824,8 +2922,8 @@ namespace BarPromenade.Tests.EditMode
             // must not wander with the seed.
             AlpineVillagePlan second = CreatePlan();
             Assert.That(
-                second.Trees.WallTrees.Select(tree => tree.StableId),
-                Is.EqualTo(trees.WallTrees.Select(tree => tree.StableId)));
+                second.Trees.ForestTrees.Select(tree => tree.Position),
+                Is.EqualTo(trees.ForestTrees.Select(tree => tree.Position)));
             Assert.That(
                 second.Trees.WallTrees.Select(tree => tree.Position),
                 Is.EqualTo(trees.WallTrees.Select(tree => tree.Position)));

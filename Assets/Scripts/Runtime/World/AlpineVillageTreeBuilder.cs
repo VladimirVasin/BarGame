@@ -10,9 +10,9 @@ namespace BarPromenade
     /// the same two-cone crown generator, the same trunk boxes, the same
     /// foliage material and wind shader. Three renderers for the whole village.
     ///
-    /// Nothing here carries a collider. The copse's trunks stop the hero, but
+    /// Nothing here carries a collider. The forest's trunks stop the hero, but
     /// they stop him through the walkable mask - see
-    /// <c>AlpineVillageWalkableArea.BuildCopseTrunks</c> for why physics would
+    /// <c>AlpineVillageWalkableArea.BuildForestTrunks</c> for why physics would
     /// be the wrong instrument.
     /// </summary>
     internal static class AlpineVillageTreeBuilder
@@ -21,6 +21,7 @@ namespace BarPromenade
         public const string CrownsName = "Village Conifer Crowns";
         public const string TrunksName = "Village Conifer Trunks";
         public const string StumpsName = "Village Cut Stumps";
+        public const string BranchesName = "Village Fallen Branches";
 
         /// <summary>The mountain road's own bark, copied so the two areas cannot drift.</summary>
         private static readonly Color TrunkColor =
@@ -32,6 +33,10 @@ namespace BarPromenade
         /// </summary>
         private static readonly Color CrownColor =
             new Color(0.095f, 0.14f, 0.115f, 1f);
+
+        /// <summary>The road's dead wood, for the limbs that came down.</summary>
+        private static readonly Color DeadWoodColor =
+            new Color(0.27f, 0.25f, 0.21f, 1f);
 
         public static void Build(Transform parent, AlpineVillagePlan plan)
         {
@@ -63,6 +68,81 @@ namespace BarPromenade
             BuildCrowns(root.transform, crowned);
             BuildTrunks(root.transform, TrunksName, crowned, 0.32f);
             BuildTrunks(root.transform, StumpsName, trees.Stumps, 1f);
+            BuildBranches(root.transform, trees.Branches);
+        }
+
+        /// <summary>
+        /// Deadfall: a shaft with one or two forks still on it, lying on the
+        /// snow. All of it in one batch, no collider - art §13 keeps small
+        /// detail non-physical, and a limb the hero stops dead against would
+        /// read worse than one he walks over.
+        ///
+        /// The fork angles are derived from the descriptor's own numbers
+        /// rather than rolled here: the plan owns every transform in this
+        /// area, and a builder that invents its own randomness is a second
+        /// source of truth for where things are.
+        /// </summary>
+        private static void BuildBranches(
+            Transform parent,
+            IReadOnlyList<AlpineVillageBranchDescriptor> branches)
+        {
+            if (branches.Count == 0)
+            {
+                return;
+            }
+
+            var boxes = new List<RuntimeOrientedBox>(branches.Count * 3);
+            for (int index = 0; index < branches.Count; index++)
+            {
+                AlpineVillageBranchDescriptor branch = branches[index];
+                Quaternion rotation = Quaternion.Euler(
+                    branch.TiltDegrees, branch.YawDegrees, 0f);
+                Vector3 centre = branch.Position +
+                    rotation * Vector3.up * (branch.Thickness * 0.5f);
+                boxes.Add(new RuntimeOrientedBox(
+                    centre,
+                    rotation,
+                    new Vector3(
+                        branch.Thickness, branch.Thickness, branch.Length)));
+
+                for (int fork = 0; fork < branch.ForkCount; fork++)
+                {
+                    float side = fork == 0 ? 1f : -1f;
+                    float angle = side *
+                        (32f + Mathf.Repeat(branch.YawDegrees, 26f));
+                    float at = Mathf.Repeat(branch.Length, 0.34f) - 0.17f +
+                        (fork == 0 ? 0.12f : -0.2f);
+                    float forkLength = branch.Length *
+                        (0.32f + Mathf.Repeat(branch.Thickness * 7f, 0.2f));
+                    Quaternion forkRotation =
+                        rotation * Quaternion.Euler(0f, angle, 0f);
+                    Vector3 root = centre +
+                        rotation * Vector3.forward * (branch.Length * at);
+                    boxes.Add(new RuntimeOrientedBox(
+                        root + forkRotation * Vector3.forward * (forkLength * 0.5f),
+                        forkRotation,
+                        new Vector3(
+                            branch.Thickness * 0.7f,
+                            branch.Thickness * 0.7f,
+                            forkLength)));
+                }
+            }
+
+            float metersPerTile = MountainRoadSurfaceAppearance.GetRecipe(
+                MountainRoadSurfaceKind.BarkAndDeadwood).MetersPerTile;
+            GameObject batch = RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                BranchesName,
+                parent,
+                boxes,
+                DeadWoodColor,
+                false,
+                metersPerTile,
+                RuntimeWorldUvMode.BoxProjected);
+            var renderer = batch.GetComponent<Renderer>();
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                renderer, MountainRoadSurfaceKind.BarkAndDeadwood, DeadWoodColor);
         }
 
         private static void BuildCrowns(

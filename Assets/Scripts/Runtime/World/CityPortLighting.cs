@@ -44,7 +44,51 @@ namespace BarPromenade
                     .30f, .95f, new Color(1f, .72f, .47f, .10f), new Color(.8f, .51f, .3f, .035f));
                 CityNightSiteLightRegistry.Register(light, index == 0 ? 3.8f : 3.3f, halo);
             }
+            BuildCanopyLight(port, warm);
             BuildVesselSearchlight(port, warm);
+        }
+
+        private static void BuildCanopyLight(CityPortController port, Color warm)
+        {
+            // Reuse the authored industrial lamp parts. The plate meets the
+            // underside of the existing roof; the head and emitter sit below.
+            CityMiscAssetProvider models = CityMiscAssetProvider.LoadOrThrow();
+            Transform mount = new GameObject("Port Canopy Work Lamp").transform;
+            mount.SetParent(port.transform, false);
+            mount.position = port.Plan.World(new Vector3(8.2f, 4.155f, -6.8f));
+            mount.rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+            AddCanopyLampMesh(mount, models, CityMiscKind.YardSpotlightWallMount);
+            Transform head = new GameObject("Canopy Lamp Head").transform;
+            head.SetParent(mount, false);
+            head.position = port.Plan.World(new Vector3(8.2f, 3.92f, -6.8f));
+            head.rotation = Quaternion.LookRotation(port.Plan.World(new Vector3(8.8f, 1.8f, -6.8f)) - head.position);
+            AddCanopyLampMesh(head, models, CityMiscKind.YardSpotlightHeadShell);
+            Transform emitter = new GameObject("Port Canopy Work Light").transform;
+            emitter.SetParent(head, false);
+            emitter.localPosition = Vector3.forward * .065f;
+            Light light = emitter.gameObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = warm;
+            light.range = 7f;
+            light.spotAngle = 160f;
+            light.innerSpotAngle = 135f;
+            light.shadows = LightShadows.Soft;
+            light.shadowStrength = .72f;
+            light.shadowBias = .025f;
+            light.shadowNormalBias = .12f;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+            CityLightHalo halo = CityLightHalo.CreateNightRegistered(emitter, Vector3.zero,
+                .23f, .65f, new Color(1f, .72f, .47f, .14f), new Color(.8f, .51f, .3f, .04f));
+            CityNightSiteLightRegistry.Register(light, 16f, halo);
+        }
+
+        private static void AddCanopyLampMesh(Transform host, CityMiscAssetProvider models, CityMiscKind kind)
+        {
+            var part = new GameObject("Imported " + kind);
+            part.transform.SetParent(host, false);
+            part.AddComponent<MeshFilter>().sharedMesh = models.GetPartOrThrow(kind, 0, 0).Mesh;
+            part.AddComponent<MeshRenderer>().sharedMaterial = CityPortAssetProvider.GetSurfaceMaterial("SteelDark");
         }
 
         private static void BuildVesselSearchlight(CityPortController port, Color warm)

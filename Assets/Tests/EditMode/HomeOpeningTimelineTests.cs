@@ -10,8 +10,6 @@ namespace BarPromenade.Tests.EditMode
         public void MenuLayout_IsCompactVerticalCardInsideLogicalCanvas()
         {
             Rect panel = HomeOpeningController.MenuPanelRect;
-            Rect title = HomeOpeningController.MenuTitleRect;
-            Rect rule = HomeOpeningController.MenuRuleRect;
             Rect wake = HomeOpeningController.MenuWakeRect;
             Rect quit = HomeOpeningController.MenuQuitRect;
 
@@ -25,14 +23,21 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(panel.yMax, Is.LessThanOrEqualTo(
                 RetroUiTheme.LogicalHeight));
 
-            Assert.That(panel.Contains(title.center), Is.True);
-            Assert.That(panel.Contains(rule.center), Is.True);
             Assert.That(panel.Contains(wake.center), Is.True);
             Assert.That(panel.Contains(quit.center), Is.True);
-            Assert.That(rule.yMin, Is.GreaterThan(title.yMax));
-            Assert.That(wake.yMin, Is.GreaterThan(rule.yMax));
             Assert.That(quit.yMin, Is.GreaterThan(wake.yMax));
             Assert.That(wake.width, Is.EqualTo(quit.width));
+
+            // The card carries the two options and nothing else: the game's
+            // name was taken out of every menu, so the title band and the rule
+            // that separated it from the options are gone with it. Equal
+            // padding above the first option and below the last is what says
+            // the card was re-closed around them rather than left with a hole
+            // where the title used to be.
+            Assert.That(
+                wake.yMin - panel.yMin,
+                Is.EqualTo(panel.yMax - quit.yMax).Within(1f),
+                "The card kept a gap where the title used to sit.");
         }
 
         [Test]

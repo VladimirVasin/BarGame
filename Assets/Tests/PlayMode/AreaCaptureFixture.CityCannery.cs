@@ -69,6 +69,7 @@ namespace BarPromenade.Tests.PlayMode
             var contractFailures=new List<Exception>();
             DeferCanneryContract(contractFailures,"custody",()=>ValidateCanneryCustody(cannery.Cycle));
             DeferCanneryContract(contractFailures,"three-load port completion",()=>ValidatePortVisitCompletion(port));
+            DeferCanneryContract(contractFailures,"shared port loading aisle",()=>ValidateCanneryConcurrentPortLoading(cannery,port));
             DeferCanneryContract(contractFailures,"production during receiving",()=>ValidateCanneryEarlyProduction(cannery));
             DeferCanneryContract(contractFailures,"geometry",()=>ValidateCanneryGeometry(city,cannery));
             DeferCanneryContract(contractFailures,"routes",()=>ValidateCanneryRoutes(city,cannery));
@@ -181,7 +182,7 @@ namespace BarPromenade.Tests.PlayMode
             });
             DeferCanneryContract(contractFailures,"hero blocks handoff",()=>
             {
-                Transform cart=cannery.transform.Find("Trolley");
+                Transform cart=cannery.ActiveTrolley;
                 Assert.That(cart,Is.Not.Null);
                 try
                 {
@@ -254,10 +255,16 @@ namespace BarPromenade.Tests.PlayMode
             }
             Assert.That(rawModels,Is.EqualTo(3),"Only the three shipped raw units may exist, including hidden ones.");
             Assert.That(finishedModels,Is.EqualTo(3),"Only three finished handling units may exist, including hidden ones.");
-            Assert.That(cycle.StageDuration(CityFishSupplyStage.UnloadFish),Is.EqualTo(252d));
+            double transferDuration=2d*CityFishSupplyCycle.TransferEdgeDuration+
+                CityFishSupplyCycle.HandlingUnits*CityFishSupplyCycle.TransferUnitDuration;
+            double productionDuration=0;
+            foreach(CityCanneryProductionStage stage in Enum.GetValues(typeof(CityCanneryProductionStage)))
+                if(stage!=CityCanneryProductionStage.Idle)productionDuration+=cycle.ProductionStageDuration(stage);
+            Assert.That(cycle.StageDuration(CityFishSupplyStage.UnloadFish),Is.EqualTo(transferDuration));
             double unload=cycle.StageStart(CityFishSupplyStage.UnloadFish);
             double first=cycle.ProductionStageStart(CityCanneryProductionStage.Prepare);
-            Assert.That(first-unload,Is.EqualTo(88d).Within(.000001d),
+            double firstReceived=CityFishSupplyCycle.TransferEdgeDuration+CityFishSupplyCycle.TransferUnitDuration;
+            Assert.That(first-unload,Is.EqualTo(firstReceived).Within(.000001d),
                 "Receiving the first of three crates immediately starts production.");
             Assert.That(cycle.Sample(first-.001d).Production.IsActive,Is.False);
             cannery.ApplyAt(first);
@@ -275,7 +282,7 @@ namespace BarPromenade.Tests.PlayMode
 
             double firstFinished=cycle.ProductionStageStart(CityCanneryProductionStage.Pack)+
                 cycle.ProductionStageDuration(CityCanneryProductionStage.Pack);
-            Assert.That(firstFinished-unload,Is.EqualTo(208d).Within(.000001d));
+            Assert.That(firstFinished-unload,Is.EqualTo(firstReceived+productionDuration).Within(.000001d));
             cannery.ApplyAt(firstFinished);
             Assert.That(cannery.Snapshot.Stage,Is.EqualTo(CityFishSupplyStage.UnloadFish));
             Assert.That(cannery.Snapshot.FactoryCases,Is.EqualTo(1),
@@ -283,14 +290,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cannery.Snapshot.TruckFish,Is.EqualTo(1));
 
             int[] counts={1,1,1};
-            double[] starts={88d,208d,328d};
             Assert.That(cycle.ProductionLotCount,Is.EqualTo(counts.Length));
             int prepared=0;
             for(int lot=0;lot<counts.Length;lot++)
             {
                 Assert.That(cycle.ProductionLotUnitCount(lot),Is.EqualTo(counts[lot]));
                 Assert.That(cycle.ProductionStageStart(CityCanneryProductionStage.Prepare,lot)-unload,
-                    Is.EqualTo(starts[lot]).Within(.000001d));
+                    Is.EqualTo(firstReceived+lot*productionDuration).Within(.000001d));
                 foreach(CityCanneryProductionStage stage in Enum.GetValues(typeof(CityCanneryProductionStage)))
                 {
                     if(stage==CityCanneryProductionStage.Idle)continue;
@@ -331,11 +337,12 @@ namespace BarPromenade.Tests.PlayMode
                 ValidateCanneryProductionReturn(cannery,lot);
             }
             double complete=cycle.StageStart(CityFishSupplyStage.LoadFinished);
-            Assert.That(complete-unload,Is.EqualTo(448d).Within(.000001d),
+            Assert.That(complete-unload,Is.EqualTo(firstReceived+counts.Length*productionDuration).Within(.000001d),
                 "All three FIFO lots finish before the truck starts loading the three cases.");
             for(int unit=0;unit<CityFishSupplyCycle.HandlingUnits;unit++)
             foreach(double offset in new[]{-.001d,0d,.001d})
-                Assert.That(cycle.Sample(unload+88d+unit*76d+offset).AccountedUnits,Is.EqualTo(3),
+                Assert.That(cycle.Sample(cycle.TransferUnitStart(CityFishSupplyStage.UnloadFish,unit)+
+                    CityFishSupplyCycle.TransferUnitDuration+offset).AccountedUnits,Is.EqualTo(3),
                     $"Receiving boundary {unit} preserves all three handling units.");
             cannery.ApplyAt(complete);
             Assert.That(cannery.Snapshot.FactoryCases,Is.EqualTo(3));
@@ -598,20 +605,22 @@ namespace BarPromenade.Tests.PlayMode
             foreach(CityFishSupplyStage stage in Enum.GetValues(typeof(CityFishSupplyStage)))
             for(int batch=0;batch<2;batch++)
             {
-                double start=batch*cycle.Duration+cycle.StageStart(stage);
+                if(cycle.StageDuration(stage,batch)<=0d)continue;
+                double start=cycle.StageStart(stage,batch);
                 foreach(float fraction in new[]{0f,.07f,.26f,.5f,.74f,.93f,.99999f})
                 {
-                    CityFishSupplySnapshot state=cycle.Sample(start+cycle.StageDuration(stage)*fraction);
+                    CityFishSupplySnapshot state=cycle.Sample(start+cycle.StageDuration(stage,batch)*fraction);
                     Assert.That(state.Stage,Is.EqualTo(stage));
                     Assert.That(state.Batch,Is.EqualTo(batch));
-                    if(stage==CityFishSupplyStage.PortVisit)
+                    if(stage<=CityFishSupplyStage.LoadFish)
                     {
-                        Assert.That(state.AccountedUnits,Is.InRange(0,3));
-                        Assert.That(state.PortFish,Is.EqualTo(CityPortCycle.Sample(state.PortSeconds).StoredCargo));
+                        Assert.That(state.AccountedUnits,Is.EqualTo(state.PortStored));
+                        Assert.That(state.PortFish+state.TruckFish,
+                            Is.EqualTo(CityPortCycle.Sample(state.PortSeconds).StoredCargo));
                     }
                     else Assert.That(state.AccountedUnits,Is.EqualTo(3),$"Custody at {stage}/{fraction}");
-                    if(start+cycle.StageDuration(stage)*fraction<batch*cycle.Duration+
-                        cycle.ProductionStageStart(CityCanneryProductionStage.Pack))
+                    if(start+cycle.StageDuration(stage,batch)*fraction<
+                        cycle.ProductionStageStart(CityCanneryProductionStage.Pack,0,batch))
                         Assert.That(state.FactoryCases+state.TruckCases+state.DeliveredCases,Is.Zero);
                 }
             }
@@ -619,6 +628,97 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cycle.Sample(cycle.Duration).Stage,Is.EqualTo(CityFishSupplyStage.PortVisit));
             Assert.Throws<ArgumentOutOfRangeException>(()=>cycle.Sample(double.NaN));
             Assert.Throws<ArgumentOutOfRangeException>(()=>cycle.Sample(-1));
+        }
+
+        private static void ValidateCanneryConcurrentPortLoading(CityCanneryController cannery, CityPortController port)
+        {
+            CityPortCrew crew=port.GetComponentInChildren<CityPortCrew>(true);
+            Assert.That(crew,Is.Not.Null);
+            Transform driver=cannery.transform.Find("Fish Delivery Driver");
+            Transform cart=cannery.PortTrolley;
+            Assert.That(driver,Is.Not.Null);
+            Assert.That(cart,Is.Not.Null);
+            bool manual=crew.UseManualClock;
+            double saved=cannery.WorkingSeconds;
+            crew.UseManualClock=true;
+            try
+            {
+                for(int batch=0;batch<2;batch++)
+                {
+                double batchStart=cannery.Cycle.BatchStart(batch);
+                double start=cannery.Cycle.StageStart(CityFishSupplyStage.LoadFish,batch);
+                double end=start+cannery.Cycle.StageDuration(CityFishSupplyStage.LoadFish,batch);
+                double pickup=cannery.Cycle.TransferUnitStart(CityFishSupplyStage.LoadFish,0,batch)+
+                    CityFishSupplyCycle.TransferUnitDuration*.18d;
+                double lastStored=batchStart+cannery.Cycle.LastPortCrateStoredAtSeconds;
+                if(batch==0) Assert.That(pickup,Is.LessThan(lastStored),
+                    "The actual city route must allow the first loading pickup before the dock worker stores the last crate.");
+                // Check the three independent ship-to-store custody boundaries,
+                // including the new simultaneous ship/truck presentation.
+                for(int unit=0;unit<CityPortCycle.CargoCount;unit++)
+                foreach(double edge in new[]{-.001d,0d,.001d})
+                {
+                    cannery.ApplyAt((unit == CityPortCycle.CargoCount - 1 ? lastStored :
+                        batchStart + CityFishSupplyCycle.FirstPortCrateStoredAtSeconds + unit * CityPortCycle.CargoDurationSeconds) + edge);
+                    ValidateCanneryPortCargoVisibility(cannery,port);
+                }
+                for(double seconds=start;seconds<end;seconds+=.5d)
+                {
+                    cannery.ApplyAt(seconds);
+                    crew.ApplyAt(port.ElapsedSeconds,seconds);
+                    ValidateCanneryPortCargoVisibility(cannery,port);
+                    Physics.SyncTransforms();
+                    Vector3 body=driver.position;
+                    foreach(Collider obstacle in Physics.OverlapCapsule(body+Vector3.up*.35f,
+                        body+Vector3.up*1.53f,.2f,~0,QueryTriggerInteraction.Ignore))
+                        Assert.That(obstacle.transform.IsChildOf(cannery.transform),Is.True,
+                            $"The driver enters {obstacle.name} while handling at {seconds:F2}, body {body:F3}.");
+                    Vector3 separation=driver.position-crew.ShoreWorker.transform.position;
+                    if(Mathf.Abs(separation.y)<1.6f)
+                        Assert.That(new Vector2(separation.x,separation.z).magnitude,Is.GreaterThan(.5f),
+                            $"The driver and dock worker need distinct body space at {seconds:F2}.");
+                    if(!cannery.Snapshot.WaitingForPortAccess&&cannery.Snapshot.Seconds>=CityFishSupplyCycle.TrolleyReadyDuration&&
+                        cannery.Snapshot.Seconds<cannery.Snapshot.Duration-CityFishSupplyCycle.TransferEdgeDuration&&
+                        cannery.Snapshot.TransferProgress<.35f)
+                    {
+                        separation=cart.position-port.Trolley.position;
+                        Assert.That(new Vector2(separation.x,separation.z).magnitude,Is.GreaterThan(1.55f),
+                            $"Both carts must retain their physical work space during a fetch at {seconds:F2}.");
+                        separation=driver.position-port.Trolley.position;
+                        Assert.That(new Vector2(separation.x,separation.z).magnitude,Is.GreaterThan(1.15f),
+                            $"The driver must clear the dock cart at {seconds:F2}.");
+                    }
+                    if(cannery.DriverWaitingForDockWorker)
+                    {
+                        Assert.That(Vector3.Distance(cart.position,cannery.PortTrolleyQueuePosition),Is.LessThan(.002f),
+                            "Every blocked pickup waits at the warehouse entrance.");
+                        Assert.That(cannery.Snapshot.TransferProgress,Is.Zero);
+                    }
+                }
+                }
+            }
+            finally
+            {
+                crew.UseManualClock=manual;
+                cannery.ApplyAt(saved);
+                crew.ApplyAt(port.ElapsedSeconds);
+            }
+        }
+
+        private static void ValidateCanneryPortCargoVisibility(CityCanneryController cannery,CityPortController port)
+        {
+            int visible=0;
+            for(int unit=0;unit<CityPortCycle.CargoCount;unit++)
+            {
+                bool atSupply=cannery.transform.Find("Fish handling unit "+unit).gameObject.activeSelf;
+                bool atShip=port.Cargo[unit].gameObject.activeSelf;
+                Assert.That(atSupply,Is.EqualTo(unit<cannery.Snapshot.PortStored),
+                    $"Supply crate {unit} only exists after its actual ship-to-store handoff.");
+                Assert.That(atSupply&&atShip,Is.False,"One finite unit cannot have both port and supply bodies.");
+                if(atSupply)visible++;
+                if(atShip)visible++;
+            }
+            Assert.That(visible,Is.EqualTo(CityPortCycle.CargoCount),"Seeking retains exactly the shipped batch.");
         }
 
         private static void ValidateCanneryGeometry(CityGameRoot city,CityCanneryController cannery)
@@ -633,9 +733,9 @@ namespace BarPromenade.Tests.PlayMode
             AssertCanneryAnchor(cannery.Equipment,plan,"FinishedDoor",new Vector3(.3f,.18f,5));
             cannery.ApplyAt(CanneryTime(cannery,CityFishSupplyStage.WaitForProduction,.5f));
             Bounds truck=PortLocalMeshBounds(cannery.Truck);
-            Assert.That(truck.size.x,Is.InRange(2.4f,2.7f));
-            Assert.That(truck.max.z,Is.InRange(5.3f,5.6f));
-            Assert.That(truck.min.z,Is.InRange(-2.85f,-2.5f)); // Rear fittings extend past the cargo body.
+            Assert.That(truck.size.x,Is.InRange(2.38f,2.42f));
+            Assert.That(truck.max.z,Is.InRange(4.35f,4.52f));
+            Assert.That(truck.min.z,Is.InRange(-2.02f,-1.98f));
             cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Prepare,.5f));
             Physics.SyncTransforms();
             for(float z=-7.5f;z<=7.5f;z+=.5f)
@@ -663,9 +763,9 @@ namespace BarPromenade.Tests.PlayMode
         {
             ValidateCanneryApron(cannery.Plan);
             cannery.Route.ValidateOrThrow();
-            CityCanneryTruckLeg[] ordered={CityCanneryTruckLeg.PortArrive,CityCanneryTruckLeg.PortReverse,
+            CityCanneryTruckLeg[] ordered={CityCanneryTruckLeg.FactoryToPort,CityCanneryTruckLeg.PortArrive,CityCanneryTruckLeg.PortReverse,
                 CityCanneryTruckLeg.PortToFactory,CityCanneryTruckLeg.FactoryReverse,
-                CityCanneryTruckLeg.FactoryToShop,CityCanneryTruckLeg.ShopToPort};
+                CityCanneryTruckLeg.FactoryToShop,CityCanneryTruckLeg.ShopToFactory,CityCanneryTruckLeg.FactoryReverse};
             for(int i=0;i<ordered.Length;i++)
             {
                 CityPortTruckPose a=cannery.Route.Sample(ordered[i],1);
@@ -679,26 +779,30 @@ namespace BarPromenade.Tests.PlayMode
             try
             {
                 Physics.SyncTransforms();
+                var routeObstacles = new List<string>();
                 foreach(CityCanneryTruckLeg leg in ordered)
                 {
                     CityFishSupplyStage stage=CanneryStage(leg);
                     int steps=Mathf.Max(2,Mathf.CeilToInt(cannery.Route.Length(leg)/3f));
+                    int reported = 0;
                     for(int i=0;i<=steps;i++)
                     {
                         double time=CanneryTime(cannery,stage,Mathf.Min(i/(float)steps,.99999f));
                         cannery.ApplyAt(time);
                         Physics.SyncTransforms();
-                        Assert.That(cannery.DetectObstacle(),Is.False,$"Static obstacle sensor at {leg} {i}/{steps}: {cannery.Truck.position}; {cannery.LastObstacleName}");
+                        if(cannery.DetectObstacle() && reported++ < 3)
+                            routeObstacles.Add($"{leg} {i}/{steps}: {cannery.Truck.position}; {cannery.LastObstacleName}");
                     }
                     Debug.Log($"CANNERY ROUTE {leg}: {cannery.Route.Length(leg):F2} m");
                 }
+                Assert.That(routeObstacles, Is.Empty, "Static obstacles on the actual vehicle routes: " + string.Join("; ", routeObstacles));
                 cannery.ApplyAt(CanneryTime(cannery,CityFishSupplyStage.PortToFactory,.5f));
                 var blocker=new GameObject("Cannery stopped-traffic probe");
                 try
                 {
                     CityPortTruckPose future=cannery.TruckPose(cannery.Cycle.Sample(cannery.WorkingSeconds+.7d));
                     blocker.transform.SetPositionAndRotation(future.RearAxle+
-                        future.Rotation*new Vector3(0,1,4.8f),future.Rotation);
+                        future.Rotation*new Vector3(0,1,CityCanneryTruckDimensions.Front-.4f),future.Rotation);
                     blocker.AddComponent<BoxCollider>().size=new Vector3(.5f,1,.5f);
                     Physics.SyncTransforms();
                     Assert.That(cannery.DetectObstacle(),Is.True,"An actual object in the sensor corridor must stop the truck.");
@@ -772,7 +876,7 @@ namespace BarPromenade.Tests.PlayMode
             }
             if(hasSeparateAccess)Assert.That(served.Contains(cannery.Plan.FrontageEdge),Is.False,
                 "Factory frontage uses an equally level street outside the bus service loop when available.");
-            Debug.Log($"CANNERY TRAFFIC: {shared} shared service edges; complete trips require exclusive clearance.");
+            Debug.Log($"CANNERY TRAFFIC: {shared} shared service edges; opposing lanes remain open; only the upcoming manoeuvre is reserved.");
 
             cannery.ApplyAt(CanneryTime(cannery,CityCanneryProductionStage.Prepare,.5f));
             cannery.Traffic.Release();
@@ -783,11 +887,12 @@ namespace BarPromenade.Tests.PlayMode
             Bounds busBounds=city.Bus.Actor.LocalVisualBounds;
             var traffic=new CityCanneryTraffic(cannery,null);
             CityFishSupplyStage[] starts={CityFishSupplyStage.PortToFactory,
-                CityFishSupplyStage.FactoryToShop,CityFishSupplyStage.ShopToPort};
+                CityFishSupplyStage.FactoryToShop,CityFishSupplyStage.FactoryToPort,CityFishSupplyStage.ShopToFactory};
             CityCanneryTruckLeg[] legs={CityCanneryTruckLeg.PortToFactory,
-                CityCanneryTruckLeg.FactoryToShop,CityCanneryTruckLeg.ShopToPort};
-            for(int trip=0;trip<3;trip++)
+                CityCanneryTruckLeg.FactoryToShop,CityCanneryTruckLeg.FactoryToPort,CityCanneryTruckLeg.ShopToFactory};
+            for(int trip=0;trip<4;trip++)
             {
+                CityFishSupplySnapshot departure=cannery.Cycle.Sample(CanneryTime(cannery,starts[trip],0));
                 bool holdingPose=false;
                 foreach(int index in city.BusPlan.OrderedLinkIndices)
                 {
@@ -795,23 +900,23 @@ namespace BarPromenade.Tests.PlayMode
                     for(int sample=0;sample<samples.Count;sample+=40)
                     {
                         CityBusPathSample pose=samples[sample];
-                        if(!traffic.CanReserveTripAt(trip,pose.Position,
+                        if(!traffic.CanReserveAt(departure,pose.Position,
                             Quaternion.LookRotation(pose.Forward),busBounds))continue;
                         holdingPose=true;break;
                     }
                     if(holdingPose)break;
                 }
                 Assert.That(holdingPose,Is.True,$"Trip {trip} must leave a real bus holding pose outside its sweep.");
-                CityPortTruckPose crossing=cannery.Route.Sample(legs[trip],.5f);
-                Assert.That(traffic.CanReserveTripAt(trip,crossing.RearAxle,crossing.Rotation,busBounds),Is.False,
+                CityPortTruckPose crossing=cannery.TruckPose(cannery.Cycle.Sample(CanneryTime(cannery,starts[trip],0)+3d));
+                Assert.That(traffic.CanReserveAt(departure,crossing.RearAxle,crossing.Rotation,busBounds),Is.False,
                     "Reservation cannot be granted over a bus already occupying the truck corridor.");
-                CityFishSupplySnapshot departure=cannery.Cycle.Sample(CanneryTime(cannery,starts[trip],0));
                 Assert.That(traffic.TryAcquire(departure),Is.True,"An absent bus leaves a clear delivery trip.");
                 Assert.That(traffic.ReservedTrip,Is.EqualTo(trip));
                 Assert.That(traffic.BlocksSpawn(crossing.RearAxle,crossing.Rotation,busBounds),Is.True,
                     "The bus cannot spawn into an upcoming reserved crossing.");
                 CityFishSupplyStage last=trip==0?CityFishSupplyStage.FactoryReverse:
-                    trip==2?CityFishSupplyStage.PortReverse:CityFishSupplyStage.FactoryToShop;
+                    trip==2?CityFishSupplyStage.PortReverse:trip==3?CityFishSupplyStage.FactoryReturnReverse:
+                    CityFishSupplyStage.FactoryToShop;
                 Assert.That(traffic.TryAcquire(cannery.Cycle.Sample(CanneryTime(cannery,last,.99f))),Is.True);
                 Assert.That(traffic.ReservedTrip,Is.EqualTo(trip),"The reservation survives reverse/arrival sub-legs.");
                 Assert.That(traffic.TryAcquire(cannery.Cycle.Sample(CanneryTime(cannery,
@@ -876,7 +981,8 @@ namespace BarPromenade.Tests.PlayMode
                 case CityCanneryTruckLeg.PortToFactory:return CityFishSupplyStage.PortToFactory;
                 case CityCanneryTruckLeg.FactoryReverse:return CityFishSupplyStage.FactoryReverse;
                 case CityCanneryTruckLeg.FactoryToShop:return CityFishSupplyStage.FactoryToShop;
-                default:return CityFishSupplyStage.ShopToPort;
+                case CityCanneryTruckLeg.FactoryToPort:return CityFishSupplyStage.FactoryToPort;
+                default:return CityFishSupplyStage.ShopToFactory;
             }
         }
         private static double CanneryTime(CityCanneryController cannery,CityFishSupplyStage stage,float progress) =>
@@ -884,7 +990,7 @@ namespace BarPromenade.Tests.PlayMode
         private static double CanneryTime(CityCanneryController cannery,CityCanneryProductionStage stage,float progress,int lot=0) =>
             cannery.Cycle.ProductionStageStart(stage,lot)+cannery.Cycle.ProductionStageDuration(stage)*progress;
         private static double TransferTime(CityCanneryController cannery,CityFishSupplyStage stage,int unit,float progress) =>
-            cannery.Cycle.StageStart(stage)+12+(cannery.Cycle.StageDuration(stage)-24)*(unit+progress)/CityFishSupplyCycle.HandlingUnits;
+            cannery.Cycle.TransferUnitStart(stage,unit)+CityFishSupplyCycle.TransferUnitDuration*progress;
 
         private static IEnumerator CaptureCannery(Camera camera,CityGameRoot city,CityCanneryController cannery,
             double seconds,string name,Vector3 from,Vector3 target)

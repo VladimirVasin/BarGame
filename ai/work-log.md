@@ -8,46 +8,49 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
 ## 2026-09-10 — Found-item screen, port and cannery
 
-- Found items share the refrigerator inspection timeline/presenter and inventory
-  poses. `WorldItemPickup` replaces the scarf component; confirmation credits
-  the item, ignores the opening key and cancel releases even with full pockets.
-  Standing hints stay absent under art §15a. `WorldItemInspectionTimelineTests`,
+- Finds: refrigerator inspection/inventory poses. `WorldItemPickup`
+  replaces scarf pickup; opening guard/full-pocket cancel/no hints (art §15a).
+  `WorldItemInspectionTimelineTests`,
   `WorldItemPickupModelTests`, `HomeRefrigeratorItemCatalogTests` and
   `InventoryPresentationTests` passed; `HomeRefrigeratorInteractionPlayModeTests`
-  was blocked by Home's seacoast graph during port integration.
-- Port maps, metre UVs, fittings, grounded crew and truck access retain a public
-  bypass and city asphalt/markings. Checks caught buried rails and NPC links
-  needing an orthogonal beach connector.
-  `build-city-port-3d-model.py --validate-only` and `AreaCaptureFixture.CityPort`
-  passed grounding, access, custody and lifecycle checks; frames reviewed.
-- PlayMode warnings: unordered root lookup, runtime-only wind, direct GameView
-  assembly lookup. Verified by `dotnet build BarPromenade.PlayModeTests.csproj`.
-- Cannery replaces the weighbridge: finite custody, unchanged shop stock,
-  deferred tare, free routes, physical handoffs and distance-gated presentation.
-  Maps, fittings, aprons, poses and steam show cans filling/sealing/packing.
-  Three crates feed FIFO production during unloading at twice speed.
-  Frames caught imported bases/reach; odd-count returns and receiver lean
-  needed contact fixes. Phases preserve order and the packer's walk.
-  `AreaCaptureFixture.CityCannery`/`CityPort` passed overlap, custody, contacts,
-  routes, traffic, distance, pause and reconstruction; frames/source reviewed.
-  Existing truck maps needed front geometry and emissive lenses.
-  `build-city-cannery-3d-model.py --only-part Truck` and
-  `AreaCaptureFixture.CityCanneryTruckAppearance` passed; frames reviewed.
-- Working sound: eight mono `SfxWorld` voices add local reverb; Music drops
-  `6 dB`. Crane drive/retort-body anchors keep direction.
+  blocked by Home seacoast graph in port integration.
+- Port maps/metre UVs/access; fixed rails/beach links.
+  `build-city-port-3d-model.py --validate-only` / `AreaCaptureFixture.CityPort` passed.
+- PlayMode warnings fixed: unordered root/runtime-only wind/direct GameView
+  assembly lookup. `dotnet build BarPromenade.PlayModeTests.csproj` passed.
+- Weighbridge→cannery: finite custody/fixed stock/deferred tare, three-crate
+  FIFO/2x during unload. Maps/workwear/poses/steam; import/reach/returns/receiver/
+  packer fixed. `AreaCaptureFixture.CityCannery`/`CityPort`
+  passed custody/contacts/traffic/pause/restore.
+  Truck front/lenses: `AreaCaptureFixture.CityCanneryTruckAppearance` passed.
+- Eight mono `SfxWorld` voices/local reverb, Music −6 dB; causal anchors.
   `GameAudioMixerAssetTests.MixerAsset_HasCanonicalDspRoutingAndSceneValues`
-  and `AreaCaptureFixture.CityProductionAudio` passed mixer and offline Unity
-  DSP direction/range/tail/balance checks.
-- Village conifers by §6 row: five on the wall, nine behind the yard.
-  Copse trunks block via the mask, not a collider: a graze zeroes planar speed.
+  / `AreaCaptureFixture.CityProductionAudio` passed mixer/Unity DSP.
+- Village conifers by §6 row: forest around a cleared village, sizes 1-2x, so
+  spacing is crown-to-crown, and trunks block via the mask, not physics.
   `Conifers_AreTheRoadsOwnTreesOnTheirOwnBand` passed.
-- Port life uses a pause-aware clock independent of held supply. Paired everyday
-  talk, breaks, body turns and reciprocal salutations retain task grips after
-  measured FBX-facing/reach fixes. Authored routes skirt tare; worker/cargo/cart
-  bodies block real hero motion, following custody without stale collision.
-  Levers and the warm lamp/shaft remain live. `AreaCaptureFixture.CityPortSocialLife`
-  passed; gesture, route and day/night frames reviewed.
-- Documentation: `python tools/check-docs.py` passed.
+- Port life/contacts: `AreaCaptureFixture.CityPortSocialLife` passed.
+  Reach limits stop jitter; earlier greetings/Run/pushing/signed pullbacks retain
+  grips. Shore rest under a warm canopy lamp; clear routes return to duty.
+  City/weather pairs preserve rounds across absent roles/seek.
+  Cart by tare/canopy: clear handle approach; rest replies finish before greetings.
+  `CityPortHandlingArrival` passed; frames reviewed.
+- Port masks join west ramp/yards; bypass radius once. Stops had no collider.
+  `AreaCaptureFixture.CityPortTraversalAudit` passed seams, edge lanes and turns.
+- `python tools/check-docs.py` passed.
+- Dock latch persists until new game: `CityFishSupplySessionTests` passed.
+  Cab/bus yields/reverse beep/docker-only talk; lift:
+  `build-city-cannery-3d-model.py --only-part Truck` passed.
+  Truck starts afar, parks with first crate; repeats from factory, horn pair.
+  Doors before lift/reverse closure; crates continue, local carts return.
+  Driver wait ends on actual doorway exit, not return to crane. Vessel horn has
+  local echo/reverb; actual shadow/DSP/canopy proof:
+  `CityCanneryDriverDelivery` passed; `CityPortShelter` /
+  `CityPortSearchlightAppearance` frames reviewed.
+- Mountain return tunnel: flat cap→curved open tail; physical limits stay.
+  `MountainRoadCityTunnel` passed; frames reviewed.
+- Map lot/XYZ: fresh land Y, solids avoided via streets.
+  `DebugTeleport_NorthRowArrivesOutsideBuildingsOnActualSurface` passed.
 
 ## 2026-09-09 — Village opening, journal and working port
 

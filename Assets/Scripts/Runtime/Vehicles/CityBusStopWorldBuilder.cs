@@ -176,6 +176,22 @@ namespace BarPromenade
                 ShelterApproachClearance);
         }
 
+        /// <summary>Horizontal clearance owner for the authored shelter and
+        /// its route pole. Covers the roof, posts, bench and sign together.</summary>
+        public static Rect DescribeFurnitureFootprint(CityBusStopDescriptor stop)
+        {
+            if (stop == null) throw new ArgumentNullException(nameof(stop));
+            Quaternion rotation = ResolveRotation(stop.Forward, stop.RoadsideForward);
+            const float minX = ShelterOffsetAlongLane - 4.65f * .5f;
+            const float maxX = .38f;
+            Vector3 center = stop.ShelterPosition + rotation * new Vector3((minX+maxX)*.5f,0,0);
+            Vector3 side = rotation * Vector3.right * ((maxX-minX)*.5f);
+            Vector3 depth = rotation * Vector3.forward * (1.18f*.5f);
+            float x = Mathf.Abs(side.x)+Mathf.Abs(depth.x);
+            float z = Mathf.Abs(side.z)+Mathf.Abs(depth.z);
+            return Rect.MinMaxRect(center.x-x,center.z-z,center.x+x,center.z+z);
+        }
+
         private static void BuildStopVisual(
             Transform root,
             bool collider,

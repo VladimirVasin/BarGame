@@ -4,29 +4,49 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    public enum CityCanneryTruckLeg { PortArrive, PortReverse, PortToFactory, FactoryReverse, FactoryToShop, ShopToPort }
+    public enum CityCanneryTruckLeg
+    { PortArrive, PortReverse, PortToFactory, FactoryReverse, FactoryToShop, ShopToFactory, FactoryToPort }
 
-    /// <summary>Rear-axle paths over the existing street graph. Every street corner
-    /// is a tangent six metre arc; the factory reverse is its own low-speed leg.</summary>
+    /// <summary>Right-lane rear-axle paths over the existing street graph.
+    /// Turns use the shared paved intersection aprons; factory/port maneuvers
+    /// join their original parking poses continuously.</summary>
     public sealed class CityCanneryTruckRoute
     {
-        // The minimum axle radius is six metres. Street fillets include the
-        // long front overhang and keep the outer cab corner inside asphalt.
         private const float Radius = CityCanneryPlan.TurningRadius + .25f;
+        private const float RightTurnRadius = CityBusPlanner.RightTurnRadius;
         private const float Step = .25f;
         private readonly CityLayout layout;
         private readonly CityCanneryPlan site;
         private readonly CityPortAccessPlan port;
-        private readonly List<CityPortTruckPose>[] poses = new List<CityPortTruckPose>[6];
-        private readonly float[][] distances = new float[6][];
+        private readonly List<CityPortTruckPose>[] poses = new List<CityPortTruckPose>[7];
+        private readonly float[][] distances = new float[7][];
         private readonly HashSet<RoadEdge> busRoads;
+        private readonly HashSet<Vector2Int> turnNodes;
+        private readonly List<Rect> paving = new List<Rect>();
+        private readonly List<Rect> streetFurniture = new List<Rect>();
+        private readonly Dictionary<(Vector2Int node,Vector2Int incoming,Vector2Int outgoing,bool centered),bool>
+            turnClearance = new Dictionary<(Vector2Int,Vector2Int,Vector2Int,bool),bool>();
         private readonly HashSet<RoadEdge> streetEdges = new HashSet<RoadEdge>();
         public IReadOnlyCollection<RoadEdge> StreetEdges => streetEdges;
         public int SharedBusStreetCount { get; private set; }
+        public float LaneCenterOffset { get; }
         public CityPortTruckPose ShopPose { get; private set; }
         public Vector3 ShopDoorPoint { get; private set; }
         public Vector3 ShopDropPoint { get; private set; }
         public CityPortTruckPose PortLoadingPose => Sample(CityCanneryTruckLeg.PortReverse, 1f);
+        public CityPortTruckPose FactoryWaitingPose => Sample(CityCanneryTruckLeg.FactoryReverse, 1f);
+        /// <summary>The first truck is already on its way when the dock event
+        /// starts. Only that first arrival uses a suffix of the ordinary road
+        /// route; every following trip starts from the factory parking pose.</summary>
+        public double InitialFactoryToPortDuration => CityFishSupplyCycle.FirstPortCrateStoredAtSeconds -
+            Math.Max(2d, Length(CityCanneryTruckLeg.PortArrive) / 3d) -
+            Math.Max(2d, Length(CityCanneryTruckLeg.PortReverse) / 1.1d);
+        public float InitialFactoryToPortStartProgress => Mathf.Clamp01(1f -
+            (float)(InitialFactoryToPortDuration * 3d) / Length(CityCanneryTruckLeg.FactoryToPort));
+        public CityPortTruckPose InitialArrivalPose => SampleInitialFactoryToPort(0f);
+        public CityPortTruckPose SampleInitialFactoryToPort(float progress) =>
+            Sample(CityCanneryTruckLeg.FactoryToPort,
+                Mathf.Lerp(InitialFactoryToPortStartProgress, 1f, Mathf.Clamp01(progress)));
         public float MaximumGrade { get; private set; }
         private CityCanneryTruckLeg maximumGradeLeg;
         private int maximumGradePose;
@@ -34,9 +54,22 @@ namespace BarPromenade
         private CityCanneryTruckRoute(CityLayout layout, CityCanneryPlan site, CityPortAccessPlan port)
         {
             this.layout = layout; this.site = site; this.port = port;
-            busRoads = layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId
-                ? CityBusPlanner.ServiceRoadEdges(CityBusPlanner.CreateRoadRouting(layout))
-                : new HashSet<RoadEdge>();
+            CityBusPlan busPlan = layout.BlueprintId == CityBlueprintCatalog.DefaultBlueprintId
+                ? CityBusPlanner.CreateRoadRouting(layout) : null;
+            busRoads = CityBusPlanner.ServiceRoadEdges(busPlan);
+            if (busPlan != null)
+                foreach (CityBusStopDescriptor stop in busPlan.Stops)
+                    streetFurniture.Add(CityBusStopWorldBuilder.DescribeFurnitureFootprint(stop));
+            foreach (CityElevationStairDescriptor stair in layout.ElevationPlan.SignatureStairs)
+            {
+                CityElevationStairPlacement placement = CityElevationStairPlacementPlanner.Create(layout,stair);
+                foreach (CityExteriorStairRailDescriptor rail in placement.ExteriorPlan.Rails) AddRailFootprint(rail);
+                AddRailFootprint(placement.LowerInnerRail);
+                AddRailFootprint(placement.UpperInnerRail);
+            }
+            LaneCenterOffset = Mathf.Max(0f, (layout.RoadWidth - 2f * CityStreetSurfacePlanner.SidewalkWidth) * .25f);
+            turnNodes = new HashSet<Vector2Int>(CityBusIntersectionSelector.Select(layout));
+            CreatePaving();
             for (int i=0; i<poses.Length; i++) poses[i] = new List<CityPortTruckPose>();
             // The old reserved pose left only .4 m behind the truck. Keep 3.2 m
             // at the cold store for the 2.5 m lift, jack and standing operator.
@@ -66,16 +99,15 @@ namespace BarPromenade
             ShopDropPoint=modelOrigin+shopRotation*new Vector3(2.8f,.08f,-8.45f);
             Vector3 shopForward=shopRotation*Vector3.right;
             Vector3 shopPoint=modelOrigin+shopRotation*new Vector3(5.4f,0,-13f);
+            shopPoint += Right(shopForward)*LaneCenterOffset;
             shopPoint.y = StreetHeight(shopPoint);
             ShopPose = new CityPortTruckPose(shopPoint,Quaternion.LookRotation(shopForward),false);
-            for (int i=poses[3].Count-1;i>=0;i--)
-            {
-                CityPortTruckPose p = poses[3][i];
-                Add(poses[4],new CityPortTruckPose(p.RearAxle,p.Rotation,false));
-            }
+            AddFactoryExit(poses[4]);
             AddStreet(poses[4], poses[4][poses[4].Count-1], site.FrontageEdge, ShopPose, shopEdge);
+            AddStreet(poses[5], ShopPose, shopEdge, reverseStart, site.FrontageEdge);
             CityPortTruckPose portIn = port.SampleTruck(CityPortTruckLeg.Arrive,0f);
-            AddStreet(poses[5],ShopPose,shopEdge,portIn,port.StreetEdge);
+            AddFactoryExit(poses[6]);
+            AddStreet(poses[6], poses[6][poses[6].Count-1], site.FrontageEdge, portIn, port.StreetEdge);
             foreach (RoadEdge edge in streetEdges)
                 if (busRoads.Contains(edge)) SharedBusStreetCount++;
             for(int leg=0;leg<poses.Length;leg++)
@@ -140,6 +172,18 @@ namespace BarPromenade
                 site.TruckParkedRearAxle,site.Forward,true,false);
         }
 
+        private void AddFactoryExit(List<CityPortTruckPose> target)
+        {
+            // Retrace the same yard curve forwards. Both departures and the
+            // end-of-delivery reverse therefore meet the waiting pose exactly.
+            List<CityPortTruckPose> reverse = poses[(int)CityCanneryTruckLeg.FactoryReverse];
+            for (int i = reverse.Count - 1; i >= 0; i--)
+            {
+                CityPortTruckPose p = reverse[i];
+                Add(target, new CityPortTruckPose(p.RearAxle, p.Rotation, false));
+            }
+        }
+
         private void AddStreet(List<CityPortTruckPose> target,CityPortTruckPose from,RoadEdge fromEdge,
             CityPortTruckPose to,RoadEdge toEdge)
         {
@@ -147,16 +191,30 @@ namespace BarPromenade
             Vector2Int start=ForwardNode(fromEdge,from.RearAxle,startForward);
             Vector2Int goal=ForwardNode(toEdge,to.RearAxle,-endForward);
             Vector2Int incoming=Direction(startForward), outgoing=Direction(endForward);
-            List<Vector2Int> nodes=FindNodes(start,incoming,goal,outgoing,true) ??
-                FindNodes(start,incoming,goal,outgoing,false);
+            float startRoom = Vector3.Dot(layout.GetNodeWorldPosition(start)-from.RearAxle,startForward);
+            float endRoom = Vector3.Dot(to.RearAxle-layout.GetNodeWorldPosition(goal),endForward);
+            float startOffset = Vector3.Dot(from.RearAxle-layout.GetNodeWorldPosition(start),Right(startForward));
+            float endOffset = Vector3.Dot(to.RearAxle-layout.GetNodeWorldPosition(goal),Right(endForward));
+            bool factoryDeparture = fromEdge.Equals(site.FrontageEdge) &&
+                Horizontal(from.RearAxle-site.ReverseStart).sqrMagnitude < .001f;
+            List<Vector2Int> nodes=FindNodes(start,incoming,goal,outgoing,startRoom,endRoom,
+                startOffset,endOffset,factoryDeparture);
             if (nodes == null)
-                throw new InvalidOperationException("No connected truck street route reaches the cannery delivery point.");
+                throw new InvalidOperationException($"No connected truck street route: from={from.RearAxle} on {fromEdge}, " +
+                    $"to={to.RearAxle} on {toEdge}; start={start}/{incoming}, room={startRoom:F3}, lane={startOffset:F3}, " +
+                    $"goal={goal}/{outgoing}, room={endRoom:F3}, lane={endOffset:F3}; " +
+                    $"startApron={turnNodes.Contains(start)}, goalApron={turnNodes.Contains(goal)}, " +
+                    $"factoryDeparture={factoryDeparture}, permittedAprons={turnNodes.Count}, " +
+                    $"streetFixtures={streetFurniture.Count}, checkedTurns={turnClearance.Count}.");
             streetEdges.Add(fromEdge);
             streetEdges.Add(toEdge);
             for (int i=1;i<nodes.Count;i++) streetEdges.Add(new RoadEdge(nodes[i-1],nodes[i]));
-            var polyline=new List<Vector3>{from.RearAxle};
+            // The graph describes street centerlines. Project offset parking
+            // anchors back onto that graph before choosing corner tangents;
+            // physical lane anchors remain the endpoints of the smooth joins.
+            var polyline=new List<Vector3>{from.RearAxle-Right(startForward)*startOffset};
             foreach(Vector2Int node in nodes)polyline.Add(layout.GetNodeWorldPosition(node));
-            polyline.Add(to.RearAxle);
+            polyline.Add(to.RearAxle-Right(endForward)*endOffset);
             // Remove duplicate and collinear graph nodes before filleting.
             for(int i=polyline.Count-2;i>0;i--)
             {
@@ -165,37 +223,49 @@ namespace BarPromenade
                 if(before.sqrMagnitude<.001f || after.sqrMagnitude<.001f || Vector3.Dot(before.normalized,after.normalized)>.9999f)
                     polyline.RemoveAt(i);
             }
-            Vector3 cursor=polyline[0];
+            Vector3 cursor=from.RearAxle;
             for(int i=1;i<polyline.Count-1;i++)
             {
                 Vector3 corner=polyline[i];
                 Vector3 incomingDirection=Horizontal(corner-polyline[i-1]).normalized;
                 Vector3 outgoingDirection=Horizontal(polyline[i+1]-corner).normalized;
                 if(Vector3.Dot(incomingDirection,outgoingDirection)<-.01f)
-                    throw new InvalidOperationException("Cannery route contains a U-turn outside a turning area.");
-                Vector3 enter=corner-incomingDirection*Radius;
-                Vector3 leave=corner+outgoingDirection*Radius;
+                    throw new InvalidOperationException($"Cannery route U-turn outside a turning area at corner {i}: " +
+                        $"{polyline[i-1]} -> {corner} -> {polyline[i+1]}; " +
+                        $"from={from.RearAxle} on {fromEdge}, to={to.RearAxle} on {toEdge}.");
+                bool rightTurn = Vector3.Dot(Right(incomingDirection), outgoingDirection) > .5f;
+                // The factory's boundary corner has no exterior fourth pad.
+                // Keep its existing clear centerline arc as the final part of
+                // the yard departure, then merge into the right street lane.
+                bool departureCorner = factoryDeparture && !turnNodes.Contains(start) &&
+                    Horizontal(corner-layout.GetNodeWorldPosition(start)).sqrMagnitude < .001f;
+                float lane = departureCorner ? 0f : LaneCenterOffset;
+                float radius = rightTurn && !departureCorner ? RightTurnRadius : Radius;
+                float tangent = radius + (rightTurn ? lane : -lane);
+                Vector3 enter=corner-incomingDirection*tangent+Right(incomingDirection)*lane;
+                Vector3 leave=corner+outgoingDirection*tangent+Right(outgoingDirection)*lane;
                 if(Vector3.Dot(Horizontal(enter-cursor),incomingDirection)<-.02f ||
-                   Horizontal(polyline[i+1]-corner).magnitude<Radius-.02f)
-                    throw new InvalidOperationException("Cannery street corner lacks six metres of tangent room.");
-                AddStraight(target,cursor,enter,incomingDirection,false,true);
-                Vector3 center=enter+outgoingDirection*Radius;
-                Vector3 radial=(enter-center)/Radius;
+                   Horizontal(polyline[i+1]-corner).magnitude<tangent-.02f)
+                    throw new InvalidOperationException($"Cannery street corner {i} lacks tangent room: " +
+                        $"{polyline[i-1]} -> {corner} -> {polyline[i+1]}, cursor={cursor}, tangent={tangent:F3}.");
+                AddStreetStraight(target,cursor,enter,incomingDirection);
+                Vector3 center=enter+outgoingDirection*radius;
+                Vector3 radial=(enter-center)/radius;
                 for(int s=1;s<=48;s++)
                 {
                     float angle=Mathf.PI*.5f*s/48f;
-                    Vector3 p=center+Radius*(radial*Mathf.Cos(angle)+incomingDirection*Mathf.Sin(angle));
+                    Vector3 p=center+radius*(radial*Mathf.Cos(angle)+incomingDirection*Mathf.Sin(angle));
                     p.y=StreetHeight(p);
                     Vector3 forward=-radial*Mathf.Sin(angle)+incomingDirection*Mathf.Cos(angle);
                     Add(target,new CityPortTruckPose(p,Quaternion.LookRotation(forward),false));
                 }
                 cursor=leave;
             }
-            AddStraight(target,cursor,to.RearAxle,endForward,false,true);
+            AddStreetStraight(target,cursor,to.RearAxle,endForward);
         }
 
         private List<Vector2Int> FindNodes(Vector2Int start,Vector2Int incoming,Vector2Int goal,Vector2Int outgoing,
-            bool avoidBusRoads)
+            float startRoom,float endRoom,float startOffset,float endOffset,bool factoryDeparture)
         {
             var initial=(node:start,direction:incoming);
             var costs=new Dictionary<(Vector2Int node,Vector2Int direction),float>{{initial,0}};
@@ -208,7 +278,10 @@ namespace BarPromenade
                 for(int i=1;i<pending.Count;i++)if(costs[pending[i]]<costs[pending[best]])best=i;
                 var state=pending[best]; pending.RemoveAt(best);
                 if(!visited.Add(state))continue;
-                if(state.node==goal && state.direction!=-outgoing)
+                if(state.node==goal && state.direction!=-outgoing &&
+                    (state.direction==outgoing || turnNodes.Contains(state.node) &&
+                        endRoom >= TurnTangent(state.direction,outgoing)+MinimumLaneJoinRun(LaneCenterOffset-endOffset) &&
+                        TurnClearsFurniture(state.node,state.direction,outgoing,false)))
                 {
                     var result=new List<Vector2Int>{state.node};
                     while(previous.TryGetValue(state,out var p)){state=p;result.Add(state.node);}
@@ -217,24 +290,104 @@ namespace BarPromenade
                 foreach(RoadEdge edge in layout.RoadEdges)
                 {
                     if(layout.GetPathKind(edge)!=CityPathKind.Street)continue;
-                    if(avoidBusRoads && busRoads.Contains(edge))continue;
                     Vector2Int next;
                     if(edge.A==state.node)next=edge.B;
                     else if(edge.B==state.node)next=edge.A;
                     else continue;
                     Vector2Int direction=next-state.node;
                     if(direction==-state.direction)continue;
+                    bool departureCorner = state==initial && factoryDeparture && !turnNodes.Contains(state.node);
+                    if(direction!=state.direction && !turnNodes.Contains(state.node) && !departureCorner)continue;
+                    if(state==initial && direction!=state.direction && startRoom <
+                        (departureCorner ? Radius+MinimumLaneJoinRun(-startOffset) :
+                            TurnTangent(state.direction,direction)+MinimumLaneJoinRun(LaneCenterOffset-startOffset)))continue;
+                    if(direction!=state.direction && !TurnClearsFurniture(state.node,state.direction,direction,departureCorner))continue;
                     var candidate=(node:next,direction:direction);
                     float rise=Mathf.Abs(layout.ElevationPlan.GetNodeElevation(edge.A)-layout.ElevationPlan.GetNodeElevation(edge.B));
                     float span=(edge.IsHorizontal?layout.NodeSpacing.x:layout.NodeSpacing.y)-layout.RoadWidth;
                     if(rise/Mathf.Max(span,1f)>.16f)continue;
                     float cost=costs[state]+(edge.IsHorizontal?layout.NodeSpacing.x:layout.NodeSpacing.y)+
-                        (direction==state.direction?0f:12f)+rise*2f+(busRoads.Contains(edge)?10000f:0f);
+                        (direction==state.direction?0f:12f)+rise*2f;
                     if(costs.TryGetValue(candidate,out float existing)&&existing<=cost)continue;
                     costs[candidate]=cost;previous[candidate]=state;pending.Add(candidate);
                 }
             }
             return null;
+        }
+
+        private static float MinimumLaneJoinRun(float shift) => Mathf.Sqrt(6f*Mathf.Abs(shift)*RightTurnRadius);
+
+        private bool TurnClearsFurniture(Vector2Int node, Vector2Int incoming, Vector2Int outgoing, bool centered)
+        {
+            var key = (node,incoming,outgoing,centered);
+            if (turnClearance.TryGetValue(key,out bool clear)) return clear;
+            Vector3 corner = layout.GetNodeWorldPosition(node);
+            Vector3 forward = new Vector3(incoming.x,0,incoming.y);
+            Vector3 after = new Vector3(outgoing.x,0,outgoing.y);
+            bool right = Vector3.Dot(Right(forward),after)>.5f;
+            float lane = centered ? 0f : LaneCenterOffset;
+            float radius = right && !centered ? RightTurnRadius : Radius;
+            float tangent = radius+(right?lane:-lane);
+            Vector3 enter = corner-forward*tangent+Right(forward)*lane;
+            Vector3 center = enter+after*radius;
+            Vector3 radial = (enter-center)/radius;
+            clear = true;
+            foreach (Rect furniture in streetFurniture)
+            {
+                // Only fixtures in this corner's finite swept neighbourhood can
+                // affect it. The cached result is shared by all route searches.
+                Vector2 nearest = new Vector2(Mathf.Clamp(corner.x,furniture.xMin,furniture.xMax),
+                    Mathf.Clamp(corner.z,furniture.yMin,furniture.yMax));
+                if ((nearest-new Vector2(corner.x,corner.z)).sqrMagnitude>225f) continue;
+                for (int i = 0; i <= 64; i++)
+                {
+                    float angle = Mathf.PI*.5f*i/64f;
+                    Vector3 point = center+radius*(radial*Mathf.Cos(angle)+forward*Mathf.Sin(angle));
+                    Vector3 heading = -radial*Mathf.Sin(angle)+forward*Mathf.Cos(angle);
+                    if (!BodyOverlapsFurniture(point,heading,furniture)) continue;
+                    clear = false;
+                    break;
+                }
+                if (!clear) break;
+            }
+            turnClearance[key] = clear;
+            return clear;
+        }
+
+        private void AddRailFootprint(CityExteriorStairRailDescriptor rail)
+        {
+            if (Vector3.Distance(rail.SurfaceStart,rail.SurfaceEnd)<=.001f) return;
+            // Stair treads and both approach rails share the same placement
+            // plan as their physical end posts. A paved turning apron does
+            // not imply that a roadside rail standing on it can be crossed.
+            float half = rail.Thickness*.5f;
+            streetFurniture.Add(Rect.MinMaxRect(Mathf.Min(rail.SurfaceStart.x,rail.SurfaceEnd.x)-half,
+                Mathf.Min(rail.SurfaceStart.z,rail.SurfaceEnd.z)-half,
+                Mathf.Max(rail.SurfaceStart.x,rail.SurfaceEnd.x)+half,
+                Mathf.Max(rail.SurfaceStart.z,rail.SurfaceEnd.z)+half));
+        }
+
+        private static bool BodyOverlapsFurniture(Vector3 rear, Vector3 forward, Rect furniture)
+        {
+            // Includes the runtime sensor margin and the horizontal reach
+            // of its raised center when the grounded body pitches on a grade.
+            const float padding = .18f;
+            float halfWidth = CityCanneryTruckDimensions.HalfWidth+padding;
+            float halfLength = CityCanneryTruckDimensions.Length*.5f+padding;
+            Vector3 right = Right(forward);
+            Vector3 center = rear+forward*((CityCanneryTruckDimensions.Rear+CityCanneryTruckDimensions.Front)*.5f);
+            Vector3 delta = new Vector3(furniture.center.x-center.x,0,furniture.center.y-center.z);
+            float x = furniture.width*.5f, z = furniture.height*.5f;
+            return Mathf.Abs(delta.x)<=x+halfWidth*Mathf.Abs(right.x)+halfLength*Mathf.Abs(forward.x) &&
+                Mathf.Abs(delta.z)<=z+halfWidth*Mathf.Abs(right.z)+halfLength*Mathf.Abs(forward.z) &&
+                Mathf.Abs(Vector3.Dot(delta,right))<=halfWidth+x*Mathf.Abs(right.x)+z*Mathf.Abs(right.z) &&
+                Mathf.Abs(Vector3.Dot(delta,forward))<=halfLength+x*Mathf.Abs(forward.x)+z*Mathf.Abs(forward.z);
+        }
+
+        private float TurnTangent(Vector2Int incoming,Vector2Int outgoing)
+        {
+            bool right = incoming.y*outgoing.x-incoming.x*outgoing.y > 0;
+            return right ? RightTurnRadius+LaneCenterOffset : Radius-LaneCenterOffset;
         }
 
         private Vector2Int ForwardNode(RoadEdge edge,Vector3 position,Vector3 direction)
@@ -246,6 +399,7 @@ namespace BarPromenade
         private static Vector2Int Direction(Vector3 v) => Mathf.Abs(v.x)>Mathf.Abs(v.z)
             ?new Vector2Int(v.x>0?1:-1,0):new Vector2Int(0,v.z>0?1:-1);
         private static Vector3 Horizontal(Vector3 v) => new Vector3(v.x,0,v.z);
+        private static Vector3 Right(Vector3 forward) => new Vector3(forward.z,0,-forward.x);
         private float StreetHeight(Vector3 p)
         {
             if(!layout.ElevationPlan.TrySampleSurface(new Vector2(p.x,p.z),CitySurfaceRole.RoadTop,out float y,out _))
@@ -257,7 +411,7 @@ namespace BarPromenade
             Vector3 rear=pose.RearAxle;
             Vector3 direction=Horizontal(pose.Rotation*Vector3.forward).normalized;
             rear.y=TruckGround(rear);
-            Vector3 front=rear+direction*4.2f;
+            Vector3 front=rear+direction*CityCanneryTruckDimensions.Wheelbase;
             front.y=TruckGround(front);
             Quaternion rotation=Quaternion.LookRotation(front-rear);
             return new CityPortTruckPose(rear,rotation,pose.Reversing);
@@ -278,6 +432,60 @@ namespace BarPromenade
                 Add(target,new CityPortTruckPose(p,Quaternion.LookRotation(forward),reverse));
             }
         }
+
+        private void AddStreetStraight(List<CityPortTruckPose> target, Vector3 from, Vector3 to, Vector3 forward)
+        {
+            // Parking and civil-access anchors are on the old centerline.
+            // A tangent S join reaches/leaves the right lane over the available
+            // straight; ordinary street segments retain the full lane offset.
+            forward = Horizontal(forward).normalized;
+            Vector3 right = Right(forward), delta = Horizontal(to - from);
+            float run = Vector3.Dot(delta, forward), shift = Vector3.Dot(delta, right);
+            if (run < -.02f || Mathf.Abs(shift) > .01f && run*run < 6f*Mathf.Abs(shift)*RightTurnRadius-.01f)
+                throw new InvalidOperationException("The truck lane join lacks a forward tangent.");
+            int count = Mathf.Max(1, Mathf.CeilToInt(delta.magnitude / Step));
+            for (int i = 0; i <= count; i++)
+            {
+                float t = i / (float)count;
+                float blend = t * t * (3f - 2f * t);
+                Vector3 p = from + forward * (run * t) + right * (shift * blend);
+                p.y = StreetHeight(p);
+                Vector3 heading = forward * Mathf.Max(run, .001f) + right * (shift * 6f * t * (1f - t));
+                Add(target, new CityPortTruckPose(p, Quaternion.LookRotation(heading), false));
+            }
+        }
+
+        private void CreatePaving()
+        {
+            float halfRoad = layout.RoadWidth * .5f;
+            float halfLanePair = halfRoad - CityStreetSurfacePlanner.SidewalkWidth;
+            foreach (RoadEdge edge in layout.RoadEdges)
+            {
+                if (layout.GetPathKind(edge) != CityPathKind.Street) continue;
+                Vector3 a = layout.GetNodeWorldPosition(edge.A), b = layout.GetNodeWorldPosition(edge.B);
+                paving.Add(Rect.MinMaxRect(Mathf.Min(a.x,b.x)-halfLanePair, Mathf.Min(a.z,b.z)-halfLanePair,
+                    Mathf.Max(a.x,b.x)+halfLanePair, Mathf.Max(a.z,b.z)+halfLanePair));
+                AddApproachApron(edge, edge.A, halfRoad);
+                AddApproachApron(edge, edge.B, halfRoad);
+            }
+            foreach (Vector2Int node in turnNodes)
+            {
+                Vector3 p = layout.GetNodeWorldPosition(node);
+                paving.Add(Rect.MinMaxRect(p.x-halfRoad,p.z-halfRoad,p.x+halfRoad,p.z+halfRoad));
+            }
+        }
+
+        private void AddApproachApron(RoadEdge edge, Vector2Int node, float halfRoad)
+        {
+            if (!turnNodes.Contains(node)) return;
+            Vector3 p = layout.GetNodeWorldPosition(node);
+            Vector3 outward = Horizontal(layout.GetNodeWorldPosition(edge.Other(node)) - p).normalized;
+            float length = CityStreetSurfacePlanner.BusApproachApronLength;
+            Vector3 center = p + outward * (halfRoad + length * .5f);
+            paving.Add(edge.IsHorizontal
+                ? Rect.MinMaxRect(center.x-length*.5f,center.z-halfRoad,center.x+length*.5f,center.z+halfRoad)
+                : Rect.MinMaxRect(center.x-halfRoad,center.z-length*.5f,center.x+halfRoad,center.z+length*.5f));
+        }
         private static void Add(List<CityPortTruckPose> target,CityPortTruckPose pose)
         {
             if(target.Count>0&&Vector3.Distance(target[target.Count-1].RearAxle,pose.RearAxle)<.0001f)return;
@@ -292,8 +500,9 @@ namespace BarPromenade
             for(int i=0;i<poses[l].Count;i++)
             {
                 CityPortTruckPose pose=poses[l][i];
-                for(float x=-1.25f;x<=1.251f;x+=1.25f)
-                for(float z=-2.6f;z<=5.401f;z+=.5f)
+                for(float x=-CityCanneryTruckDimensions.HalfWidth;x<=CityCanneryTruckDimensions.HalfWidth+.001f;
+                    x+=CityCanneryTruckDimensions.HalfWidth)
+                for(float z=CityCanneryTruckDimensions.Rear;z<=CityCanneryTruckDimensions.Front+.001f;z+=.5f)
                 {
                     Vector3 p=pose.RearAxle+pose.Rotation*new Vector3(x,0,z);
                     Vector3 local=site.Local(p);
@@ -302,13 +511,10 @@ namespace BarPromenade
                     if(local.x>=-.1f&&site.TrySampleYardTop(p,out _))continue;
                     if(port.TrySampleTop(new Vector2(p.x,p.z),out _))continue;
                     bool paved=false;
-                    foreach(RoadEdge edge in layout.RoadEdges)
+                    foreach(Rect road in paving)
                     {
-                        if(layout.GetPathKind(edge)!=CityPathKind.Street)continue;
-                        Vector3 a=layout.GetNodeWorldPosition(edge.A), b=layout.GetNodeWorldPosition(edge.B);
-                        float half=layout.RoadWidth*.5f-CityStreetSurfacePlanner.SidewalkWidth;
-                        if(p.x>=Mathf.Min(a.x,b.x)-half-.02f&&p.x<=Mathf.Max(a.x,b.x)+half+.02f&&
-                           p.z>=Mathf.Min(a.z,b.z)-half-.02f&&p.z<=Mathf.Max(a.z,b.z)+half+.02f){paved=true;break;}
+                        if(p.x>=road.xMin-.02f&&p.x<=road.xMax+.02f&&
+                           p.z>=road.yMin-.02f&&p.z<=road.yMax+.02f){paved=true;break;}
                     }
                     if(!paved)throw new InvalidOperationException($"Truck body leaves paving on {(CityCanneryTruckLeg)l} " +
                         $"pose {i}/{poses[l].Count} at world={p}, local={local}, axle={site.Local(pose.RearAxle)}, " +

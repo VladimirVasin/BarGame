@@ -68,33 +68,49 @@ namespace BarPromenade
 
         public bool TryClampArrival(Vector3 arrival, out Vector3 destination)
         {
-            RoadWalkableArea mask = EnsureWalkableArea();
-            destination = arrival;
-            if (mask.Contains(
-                    arrival,
-                    CityGroundTraversalPlanner.MaximumAgentRadius))
+            var requested = new Vector2(arrival.x, arrival.z);
+            // A map marker may name a building centre and carry the lot's
+            // old datum. Even an XZ inside the mask needs obstacle and height
+            // validation; the mask also contains the ground beneath buildings.
+            if (TryResolveStandingPosition(requested, out destination))
             {
                 return true;
             }
 
-            Vector3 nearest = mask.ClosestPoint(
-                arrival,
-                CityGroundTraversalPlanner.MaximumAgentRadius);
-            if (!CityTerrainSurfacePlan.TrySampleGroundTop(
-                    layout,
-                    new Vector2(nearest.x, nearest.z),
-                    out float groundTop,
-                    out CitySurfaceDescriptor surface) ||
-                surface.IsWater)
+            // Authored deck arrivals over water have no terrain sample.
+            // Retain that existing fallback only for unobstructed walkable
+            // XZ; ordinary land and building markers never trust their old Y.
+            if (EnsureWalkableArea().Contains(arrival, CityGroundTraversalPlanner.MaximumAgentRadius) &&
+                !IsInsideObstacle(requested) && !TryResolveSurfaceTop(requested, out _))
             {
-                return false;
+                destination = arrival;
+                return true;
             }
 
-            destination = new Vector3(
-                nearest.x,
-                groundTop + PlayerFactory.GroundedRootOffset,
-                nearest.z);
-            return true;
+            // Keep an occupied marker reachable from outside. Search actual
+            // streets, not an arbitrary offset that can enter a neighbouring
+            // building or retain the height of a different part of the slope.
+            float bestDistance = float.PositiveInfinity;
+            bool found = false;
+            foreach (RoadEdge edge in layout.RoadEdges)
+            {
+                Vector3 startWorld = layout.GetNodeWorldPosition(edge.A);
+                Vector3 endWorld = layout.GetNodeWorldPosition(edge.B);
+                var start = new Vector2(startWorld.x, startWorld.z);
+                var segment = new Vector2(endWorld.x, endWorld.z) - start;
+                float amount = segment.sqrMagnitude > .000001f
+                    ? Mathf.Clamp01(Vector2.Dot(requested - start, segment) / segment.sqrMagnitude)
+                    : 0f;
+                if (!TryResolveStandingPosition(start + segment * amount, out Vector3 candidate))
+                    continue;
+                float distance = (new Vector2(candidate.x, candidate.z) - requested).sqrMagnitude;
+                if (distance >= bestDistance) continue;
+                bestDistance = distance;
+                destination = candidate;
+                found = true;
+            }
+
+            return found;
         }
 
         /// <summary>
@@ -327,7 +343,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Unlike the city, the height is always re-derived. A mountain
+        /// Route and plateau height is always re-derived. A mountain
         /// landmark is authored at whatever height suited the prop - a cafe
         /// sign, a cableway cable - and its own Y is no promise about the
         /// apron underneath it.
@@ -357,7 +373,7 @@ namespace BarPromenade
             Vector2 delta = worldXZ - portal;
             float along = Vector2.Dot(delta, axis);
             if (along <= Epsilon &&
-                along >= -tunnel.VisualDepth - Epsilon &&
+                along >= -tunnel.PhysicalDepth - Epsilon &&
                 Mathf.Abs(Vector2.Dot(delta, right)) <=
                 tunnel.OpeningWidth * 0.5f + Epsilon)
             {

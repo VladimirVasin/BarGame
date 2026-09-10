@@ -196,8 +196,10 @@ The vertical slice contains:
   the inventory Status panel shows `DAY N · HH:MM`, while one persistent view
   briefly announces day 1 after Wake and every later midnight;
 - a separately runtime-composed `MountainRoad` area. The hero arrives `6 m`
-  inside a `9 m` exit tunnel, then follows one continuous `620 m` uphill road
-  ribbon dimensioned for the `4.83 x 1.80 m` LastRouteCar: `4.8 m` wide on
+  inside a `9 m` physical/walkable tunnel. Its open `72 m` visual tail bends
+  after `12 m`, hiding the end without a wall or added navigation; materials,
+  light/fog and return arrival stay. The continuous `620 m` uphill road
+  ribbon is dimensioned for the `4.83 x 1.80 m` LastRouteCar: `4.8 m` wide on
   ordinary stretches and `6.4 m` through ten `7.5 m`-radius hairpins. It rises
   `26.1 m` at no more than an `8%` grade. After five lower hairpins the
   mandatory route crosses a `50 m`-long high mountain bridge whose `5.8 m`
@@ -1127,7 +1129,7 @@ The vertical slice contains:
   three scheduled and one action voice, creates only deterministic quantized
   mono `22050 Hz` clips, activates them inside their finite radii and applies
   coarse building-mass occlusion. Carpet impacts fire on the authored contact
-  frame. `CityWorkAudio` separately routes eight mono port/cannery voices to
+  frame. `CityWorkAudio` separately routes nine mono port/cannery voices to
   `SfxWorld`, with full 3D, no pan/spread/Doppler and `0 dB` direct level.
   Source reverb is `.28 s` outside, `.95 s` inside; linear ranges `3–32/2–24 m`.
   Zone mix is zero; City's mixer return stays. Crane audio follows the hoist
@@ -1232,63 +1234,61 @@ The vertical slice contains:
   night-gated), rendered on its own no-fog shaders with a
   camera-distance self-fade inside the 48 m far plane — visible from
   the esplanade, sand and pier head, gone from every street;
-- one working fishing-port slice (`CityPortPlan`, `CityPortCycle`,
-  `CityPortController`) receives a roughly `20 m` trawler at one berth west
-  of the river mouth. Two cranes, a trolley and cold store unload three units.
-  Its `432 s` visit spans arrival, mooring/hatches, three `64 s` deliveries,
-  securing, departure and idle. Supply time survives reconstruction; the next
-  ship waits for the truck. Seeking restores custody without sound replay.
-  Cargo passes behind the store baffle; its roller door serves the truck.
-  Sway stays below `9 cm`, settling before lowering; cranes return to hatches,
-  the trolley empty. Five muted StationWorker rigs serve captain, deckhand,
-  two crane operators and shore worker. Independent pause-aware life time
-  keeps breathing, weight shifts and looks alive during supply waits.
-  Operators/loader walk out for conversation/smoking and return before duty.
-  Twenty-four rest, sixteen work, six greeting and six farewell exchanges use
-  paired seeded bubbles/blips about sea, home, disliked work, drink and relationships.
-  Free speakers/listeners turn towards each other; working torsos retain grips.
-  Shore↔ship waves/replies are staggered; departure farewell pairs must fit
-  earshot/the departure window. Restoration never replays missed salutations.
-  Crane levers pivot with their grips. Authored shore routes skirt the tare
-  stack and trolley; worker capsules stop the hero passing through. Tare uses
+- Port (`CityPort{Plan,Cycle,Controller}`): `20 m` trawler, one berth west of
+  river mouth; 2 cranes/trolley/cold store, 3 units. First dock entry
+  starts ship/supply once while unpaused/running; earlier time excluded.
+  Autonomous across scenes/reentry; only new game resets. Before: Approach `0`.
+  `432 s`+waits: mooring, `3*64 s` deliveries, securing/departure/idle;
+  next ship awaits truck. Seek restores custody silently.
+  Cargo passes behind the store baffle; roller leaf/rails move together.
+  Bumpers attach to outer jambs, clear of the opening.
+  Sway <`9 cm` settles before lowering; empty trolley/cranes return.
+  Five StationWorker rigs: captain/deckhand/two operators/docker. Pause-aware
+  breath/weight/gaze continue. Three shore workers rest below the existing tare
+  canopy, return along clear southern lanes before duty. City/weather complaints:
+  paired bubbles/blips, no-repeat rounds retaining absent pairs. Rest replies
+  finish before greetings. Free turns retain grips; near-berth greetings/staggered replies,
+  farewells fit earshot/departure. No restore replay. Free Walk→hero Run preserves
+  routes/work grips. Driver speaks only to docker, including salutations.
+  Crane levers pivot with their grips. Shore routes skirt tare/cart; worker capsules stop the hero passing through. Tare uses
   its mesh collider; cage, trolley and finite fish-unit bodies follow their
-  visible/custody owners. NPC movement remains timeline-driven.
+  visible/custody owners. NPCs follow timelines.
   Solid caissons reach `20 m` seaward and `-3.4 m` below sea level.
-  `CityPortAccessPlan`/`PortAccessLayout.json` share the `6 m` road/regrade/L-yard
-  for an `8 x 2.5 m` truck. A `2 m` bypass crosses once; NPCs use the
-  straight spur/orthogonal beach links, the player the diagonal branch.
-  Fences separate cargo work; coast rails yield to the paved yard. The basin
-  is dredged to `3.4 m`; passing offshore vessels exclude it.
+  `CityPortAccessPlan`/`PortAccessLayout.json`: `6 m` road/regrade/L-yard for the
+  `6.481 x 2.4 m` closed truck; joined west ramp/yard masks and a `2 m` bypass with exact
+  mitered boundaries and one body-radius clearance. One crossing: hero diagonal
+  branch; NPC straight spur/orthogonal beach links. Fences separate cargo;
+  coast rails yield to paving. Offshore boats avoid the `3.4 m` basin.
   `tools/build-city-port-3d-model.py`/`CityPortAssetProvider` own nine metre FBXs.
   Twelve albedos share muted materials/metre UVs; thin hardware stays flat.
   Asphalt shares city texture, `12 m` phase and wetness; the seven worn crossing
-  stripes reuse `CityRoadMarkingAlbedo`. Two warm lights target quay/store;
-  a broad-lens trawler searchlight and soft fog shaft light deck/near water
-  with the same daylight floor and vessel distance gate. `CityPortWater` owns a
-  separate sea-shader wake slot; `CityPortSound` owns bounded engine, crane,
-  wheel and contact voices on existing audio routes. Pause stops the clock
-  and audio; disabling/destroying the port clears its people, voices and wake.
+  stripes reuse `CityRoadMarkingAlbedo`. Warm lights serve quay/store/canopy;
+  vessel searchlight/fog shaft light deck/near water with physical shadows,
+  day floor/distance gate. `CityPortWater` owns the wake; `CityPortSound` owns
+  engine/crane/wheel/contact and arrival/departure horn with a fading echo.
+  Pause stops time/audio; disable/destroy clears people/voices/wake.
   Small alternative blueprints without room retain their nonoperational mol;
-- the Industrial cannery replaces the weighbridge in City: a low `8 x 14 m`
-  hall on `18 x 18 m`, straight bay, public passage/bypass. `CityCanneryPlan`
-  supplies Home's shell. Ten Blender models use five cannery surface maps plus
-  port materials. The fifteen cans fill, seal and enter a carton. Four
-  workers and driver wear work cloth; two have aprons. Actions, lamps and steam
-  follow each phase. Reception/shipping labels use ordinary type.
-  Truck Steel/Insulation retain mapped metre UVs; a continuous front and
-  bezels hold emissive lenses, `22 m` dipped beams `.04 m` beyond them and halos.
-  A `52 m` square presentation bound contains turning beams; daylight floor and
-  `80/96 m` gates stay.
-  `CityFishSupplyCycle` starts FIFO production during unloading, at twice
-  authored speed. Three one-unit lots start at `88/208/328 s` of unloading,
-  finish at `208/328/448 s`. Truck handling takes `252 s`; production
-  wait is `196 s`. Only three loads spawn; scale/crews stay. The packer walks
-  back between passes. Trolley/lift contacts and reservations serve the bus.
-  Shop stock stays; empty tare is Deferred. Session time survives reloads;
-  pause/obstacles freeze it.
-  Factory/shore/vessel/truck gate at 80/96 m from mesh/light bounds;
-  far rigs, mechanisms, light and sound sleep while custody/collision/traffic
-  continue. Approach restores the phase even paused; berth/handoff groups couple;
+- Weighbridge→cannery: `8 x 14 m` hall on `18 x 18 m`, bay/
+  public bypass. `CityCanneryPlan` supplies Home's shell. Ten Blender models/
+  five maps share port materials; fifteen cans fill/seal/pack. Four workers/
+  driver, workwear/two aprons; phase poses/lamps/steam, plain labels.
+  `CityFishSupplyCycle`: FIFO `2x`, lots `100/220/340→220/340/460 s`.
+  Transfer `276 s`, line wait `184 s`; stock fixed/tare Deferred. Pause/obstacles
+  stop time.
+  Closed truck `6.481 x 2.4 x 3.2 m`, full cab; lift guides/carriage/cylinders
+  visible above ground. Factory exit central, then right lane/shop parking;
+  turns skirt furniture. Streets/asphalt `8 m`/`6 m`. Six-second access yields
+  to entering/unbrakeable bus, protects bodies when released.
+  Dock latch activates truck/driver/body beyond sight on
+  a road suffix; `3 m/s` parks with first crate (`156 s`), later full factory trips.
+  Two soft horns; reverse beeper/ajar door/look-back steering. Cranes never wait.
+  Port cart pushes forward, short pullbacks use backward gait/clear apron turns.
+  Waits beside entrance: "Жду тебя, дружище" until docker clears the doorway.
+  Port cart parks by canopy tare; north approach skirts it to rear handles.
+  Carts return; east aisle clear. Signed gait elsewhere.
+  Doors→unfold→lower; after cart return, reverse order.
+  Factory/shore/vessel/truck mesh/light gates use `80/96 m`; handoffs couple.
+  Custody/collision/traffic run; approach restores while paused;
 - up to two decorative old fishing vessels spawn only near the actual hero
   at the coast (`CityOffshoreBoat{Planner,Controller}`): full presence within
   `8 m` of the finite shore or pier/mol decks, zero at `28 m`. Their cleared
@@ -1604,22 +1604,20 @@ The vertical slice contains:
   transition and existing bar light. A fully visible Home reconstruction reuses
   the same complete collider-free model; only a pub crossing the apartment
   half-space keeps the clipped legacy silhouette;
-- the supermarket now uses complete fixed-metre
-  `supermarket_exterior_v1` rather than its City misc shell, generic apartment
+- the fixed-metre `supermarket_exterior_v1` replaces City misc shell, apartment
   window bands and runtime-box storefront. The passive `15.5 x 15.5 x 6.4 m`
   neighbourhood-store body owns dark brick piers, a recessed double entrance,
   four framed glazing bays, a `9.2 m` canopy, integrated original
   cream/ochre/green/burgundy fascia, the authored `ПРОДУКТЫ` sign, service
   elevations, parapet and low roof plant. Four dedicated sheets split unique
   wall/fascia atlases from physically repeated brick/metal; roof and warm
-  supermarket glazing reuse their shared families. Unity aligns the
-  `exterior_door` anchor to the unchanged lot door and retains the full logical
-  collider, `4.8 m` apron, trigger, transition and side-wall-seated yard
-  spotlight. Its
-  terrain skirt sits `0.14 m` inside every horizontal face. Full Home reuses
-  the collider-free model and a half-space crossing alone keeps the clipped
-  fallback. The old City misc supermarket shell remains catalogued only for
-  compatibility;
+  supermarket glazing reuse shared families. Unity aligns `exterior_door` to
+  the lot door. City mass surrounds a rear receiving cavity with solid
+  jambs/header/floor/ceiling; the local trolley parks inside the service door.
+  Apron `4.8 m`, trigger, transition, side-wall yard spotlight and `0.14 m` inset
+  skirt remain. Full Home uses the collider-free model; half-space crossings
+  alone use the clipped fallback. Old City misc shell: compatibility;
+  shared collision builders/`SupermarketInterior` unchanged;
 - the player home uses complete passive `player_home_exterior_v1`, a
   fixed-metre interpretation of the restrained Georgian Series 209-1 type.
   Its `13 x 12 x 8.8 m` body owns repaired cold stucco, a brick plinth, pitched
@@ -2044,11 +2042,10 @@ The vertical slice contains:
   two drunkenness stages: the menu opens, the small talk is untouched, and
   the second option answers «Не в таком виде. Я подожду.» and closes. With the
   test teleport enabled through the City F9 toggle or the Home debug-map arrival,
-  every map lot becomes selectable,
-  the side panel asks for an explicit confirmation and a
-  confirmed target moves the hero to that lot's street-front return point or
-  its nearest generated route when no frontage edge exists. City arrival
-  rejects both building footprints and the church-yard fixtures.
+  lots require side-panel confirmation. Lot and XYZ arrivals
+  share obstacle/ground checks: land Y is re-sampled, occupied markers use the
+  nearest clear street. Building/church-yard footprints include capsule radius;
+  authored decks retain their height where the terrain sampler has no surface.
   Keep at least `22` logical pixels per map cell; clip overflowing content and
   pan it independently on X/Y with WASD, the right stick, mouse-wheel gestures
   or middle/right-button dragging while drawing scroll indicators only for

@@ -90,7 +90,7 @@ namespace BarPromenade
             Vector2 delta = point - portal;
             float along = Vector2.Dot(delta, axis);
             float lateral = Mathf.Abs(Vector2.Dot(delta, right));
-            return along >= -tunnel.VisualDepth + radius - Epsilon &&
+            return along >= -tunnel.PhysicalDepth + radius - Epsilon &&
                    along <= radius + Epsilon &&
                    lateral <= tunnel.OpeningWidth * 0.5f - radius + Epsilon;
         }
@@ -148,7 +148,7 @@ namespace BarPromenade
         {
             MountainRoadTunnelDescriptor tunnel = plan.Tunnel;
             float halfWidth = tunnel.OpeningWidth * 0.5f - radius;
-            float depth = tunnel.VisualDepth - radius;
+            float depth = tunnel.PhysicalDepth - radius;
             if (halfWidth < 0f || depth < 0f)
             {
                 return;

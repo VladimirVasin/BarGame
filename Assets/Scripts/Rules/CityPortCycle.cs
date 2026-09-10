@@ -104,6 +104,11 @@ namespace BarPromenade
         public const double LandedAtSeconds = 25d;
         public const double UnhookedAtSeconds = 28d;
         public const double StoredAtSeconds = 46d;
+        /// <summary>Door crossings for the canonical warehouse route and
+        /// trolley. Runtime measures its placed route; focused coverage keeps
+        /// standalone rule sampling aligned with that authored geometry.</summary>
+        public const double DefaultDockWorkerStoreExitAtSeconds = 57.18104507576412d;
+        public const double DefaultTrolleyStoreEntryAtSeconds = 33.58818479962432d;
 
         private static readonly double[] StageDurations =
         {

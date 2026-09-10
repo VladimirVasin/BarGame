@@ -21,19 +21,14 @@ namespace BarPromenade
         // Keep these logical rects together so drawing and pointer hitboxes
         // cannot drift apart when the canvas is scaled.
         internal static Rect MenuPanelRect =>
-            new Rect(206f, 131f, 228f, 98f);
-        internal static Rect MenuTitleRect =>
-            new Rect(218f, 140f, 204f, 22f);
-        internal static Rect MenuRuleRect =>
-            new Rect(218f, 166f, 204f, 1f);
+            new Rect(206f, 147f, 228f, 66f);
         internal static Rect MenuNewGameRect =>
-            new Rect(218f, 171f, 204f, 22f);
+            new Rect(218f, 156f, 204f, 22f);
         internal static Rect MenuQuitRect =>
-            new Rect(218f, 197f, 204f, 22f);
+            new Rect(218f, 182f, 204f, 22f);
 
         private readonly StartMenuModel model = new StartMenuModel();
 
-        private GUIStyle titleStyle;
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
 
@@ -178,13 +173,6 @@ namespace BarPromenade
                     false,
                     0f,
                     1f);
-                GUI.Label(
-                    MenuTitleRect,
-                    LocalizationService.Get("opening.title"),
-                    titleStyle);
-                RetroUiTheme.FillRect(
-                    MenuRuleRect,
-                    RetroUiTheme.FrameInner);
                 DrawOption(
                     canvas,
                     MenuNewGameRect,
@@ -238,16 +226,11 @@ namespace BarPromenade
 
         private void EnsureStyles()
         {
-            if (titleStyle != null)
+            if (selectedStyle != null)
             {
                 return;
             }
 
-            titleStyle = RetroUiTheme.CreateLabelStyle(
-                14,
-                TextAnchor.MiddleLeft,
-                RetroUiTheme.Text,
-                false);
             selectedStyle = RetroUiTheme.CreateButtonStyle(
                 13,
                 TextAnchor.MiddleLeft,

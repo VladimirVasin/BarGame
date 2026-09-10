@@ -1301,18 +1301,27 @@ namespace BarPromenade.Tests.EditMode
                 CityBuildingPrototypeWorldBuilder
                     .LogicalCollisionObjectName);
             Assert.That(collision, Is.Not.Null);
-            BoxCollider logical = collision.GetComponent<BoxCollider>();
-            Assert.That(logical, Is.Not.Null);
-            Assert.That(
-                logical.size,
-                Is.EqualTo(new Vector3(
-                    lot.Size.x,
-                    lot.Height + foundationDepth,
-                    lot.Size.y)));
-            Collider[] colliders =
-                building.GetComponentsInChildren<Collider>(true);
-            Assert.That(colliders, Has.Length.EqualTo(1));
-            Assert.That(colliders[0], Is.SameAs(logical));
+            BoxCollider[] volumes = collision.GetComponentsInChildren<BoxCollider>(true);
+            Assert.That(volumes.Length, Is.GreaterThan(1));
+            // The City rear service door and receiving alcove are physically
+            // open; the rest of the original lot remains solid.
+            foreach (Vector3 point in new[] { new Vector3(2.8f, 1f, -7.4f),
+                new Vector3(1.4f, 1f, -5.515f), new Vector3(-.03f, 1f, -4.215f),
+                new Vector3(6.33f, 1f, -5.515f) })
+            {
+                Vector3 world = collision.TransformPoint(point);
+                Assert.That(volumes.Any(box => new Bounds(box.center, box.size).Contains(box.transform.InverseTransformPoint(world))),
+                    Is.False, $"The receiving door, jack and operator need free space at {point}.");
+            }
+            float floor = CityFacadeGrid.MassBaseElevation;
+            foreach (Vector3 point in new[] { new Vector3(0, floor - foundationDepth * .5f, 0),
+                new Vector3(0, 1f, 0), new Vector3(-3, 1f, -5.5f),
+                new Vector3(7.1f, 1f, -5.5f), new Vector3(2.8f, 2.8f, -7.4f) })
+            {
+                Vector3 world = collision.TransformPoint(point);
+                Assert.That(volumes.Any(box => new Bounds(box.center, box.size).Contains(box.transform.InverseTransformPoint(world))),
+                    Is.True, $"The remaining mass and door header stay solid at {point}.");
+            }
         }
 
         private static void AssertAuthoredSupermarketHomeExterior(

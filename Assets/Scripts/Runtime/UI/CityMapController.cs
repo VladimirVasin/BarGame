@@ -838,25 +838,14 @@ namespace BarPromenade
             {
                 cell = target.Cell;
                 destination = ResolveDebugTeleportDestination(target);
-                facing = target.DoorPosition - destination;
+                facing = Vector3.zero;
             }
             else if (TryGetAreaTarget(
                          SelectedMapObjectIndex,
                          out CityMapAreaTarget area))
             {
                 cell = area.Cell;
-                if (!TryClampToWalkableGround(
-                        area.ArrivalPosition,
-                        out destination))
-                {
-                    GameLog.Warning(
-                        "map",
-                        "debug_teleport_unreachable",
-                        GameLog.Field("cell_x", cell.x),
-                        GameLog.Field("cell_y", cell.y));
-                    return false;
-                }
-
+                destination = area.ArrivalPosition;
                 facing = area.ArrivalFacing;
             }
             else
@@ -864,6 +853,17 @@ namespace BarPromenade
                 return false;
             }
 
+            if (!TryClampToWalkableGround(destination, out destination))
+            {
+                GameLog.Warning(
+                    "map",
+                    "debug_teleport_unreachable",
+                    GameLog.Field("cell_x", cell.x),
+                    GameLog.Field("cell_y", cell.y));
+                return false;
+            }
+
+            if (target != null) facing = target.DoorPosition - destination;
             facing.y = 0f;
             SelectedMapObjectIndex = -1;
 
@@ -937,21 +937,6 @@ namespace BarPromenade
                         destination = candidate;
                     }
                 }
-            }
-
-            if (Layout.ElevationPlan.TrySampleSurface(
-                    new Vector2(destination.x, destination.z),
-                    CitySurfaceRole.RoadTop,
-                    out float roadTop,
-                    out _))
-            {
-                destination.y = roadTop +
-                                PlayerFactory.GroundedRootOffset;
-            }
-            else
-            {
-                destination.y += CityStreetSurfacePlanner.RoadTop +
-                                 PlayerFactory.GroundedRootOffset;
             }
 
             return destination;

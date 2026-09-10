@@ -72,6 +72,7 @@ namespace BarPromenade
                         plan.Route,
                         plan.Plateau,
                         new Vector2(worldX, worldZ));
+                    y = LowerBelowTunnel(plan.Tunnel, new Vector2(worldX, worldZ), y);
                     vertices.Add(new Vector3(worldX, y, worldZ));
                     uvs.Add(new Vector2(worldX / tile, worldZ / tile));
                 }
@@ -125,6 +126,26 @@ namespace BarPromenade
                     uvs,
                     normals,
                     snowTriangles));
+        }
+
+        private static float LowerBelowTunnel(MountainRoadTunnelDescriptor tunnel,
+            Vector2 point, float terrainY)
+        {
+            // The visual continuation is not new walkable space. Lower only
+            // terrain that would otherwise pierce its floor. A full grid-cell
+            // diagonal of padding also protects triangles between sampled vertices.
+            float halfWidth = tunnel.OpeningWidth * 0.5f + GridSpacing * 1.5f;
+            foreach (CityMountainTunnelSegmentDescriptor segment in tunnel.Segments)
+            {
+                Vector2 start = new Vector2(segment.Start.x, segment.Start.z);
+                Vector2 end = new Vector2(segment.End.x, segment.End.z);
+                Vector2 delta = end - start;
+                float t = Mathf.Clamp01(Vector2.Dot(point - start, delta) / delta.sqrMagnitude);
+                if ((point - Vector2.Lerp(start, end, t)).sqrMagnitude <= halfWidth * halfWidth)
+                    return Mathf.Min(terrainY, tunnel.PortalGroundCenter.y -
+                        MountainRoadTerrainSampler.RoadBedClearance);
+            }
+            return terrainY;
         }
 
         private static List<Vector3> CreateSharedNormals(

@@ -30,11 +30,15 @@ namespace BarPromenade
 
     public static class CityPortConversationCatalog
     {
-        public const int RoleCount = 5;
-        public const int RestCount = 24;
-        public const int WorkCount = 16;
-        public const int GreetingCount = 6;
-        public const int FarewellCount = 6;
+        public const int DockerRole = 4;
+        public const int DriverRole = 5;
+        public const int RoleCount = 6;
+        public const int RestCount = 36;
+        public const int WorkCount = 36;
+        public const int GreetingCount = 8;
+        public const int FarewellCount = 8;
+        public static bool IncludesDriver(in CityPortConversationExchange exchange) =>
+            exchange.FirstRole == DriverRole || exchange.SecondRole == DriverRole;
         private static readonly CityPortConversationExchange[] rest =
         {
             new CityPortConversationExchange(CityPortConversationKind.Rest, 0, 2, 3),
@@ -60,7 +64,19 @@ namespace BarPromenade
             new CityPortConversationExchange(CityPortConversationKind.Rest, 20, 2, 3),
             new CityPortConversationExchange(CityPortConversationKind.Rest, 21, 3, 2),
             new CityPortConversationExchange(CityPortConversationKind.Rest, 22, 4, 2),
-            new CityPortConversationExchange(CityPortConversationKind.Rest, 23, 2, 4)
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 23, 2, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 24, 2, 3),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 25, 3, 2),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 26, 4, 2),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 27, 2, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 28, 3, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 29, 4, 3),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 30, 2, 3),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 31, 3, 2),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 32, 4, 2),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 33, 2, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 34, 3, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Rest, 35, 4, 3)
         };
         private static readonly CityPortConversationExchange[] work =
         {
@@ -79,7 +95,27 @@ namespace BarPromenade
             new CityPortConversationExchange(CityPortConversationKind.Work, 12, 4, 1),
             new CityPortConversationExchange(CityPortConversationKind.Work, 13, 1, 4),
             new CityPortConversationExchange(CityPortConversationKind.Work, 14, 0, 2),
-            new CityPortConversationExchange(CityPortConversationKind.Work, 15, 3, 0)
+            new CityPortConversationExchange(CityPortConversationKind.Work, 15, 3, 0),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 16, 5, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 17, 4, 5),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 18, 5, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 19, 4, 5),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 20, 5, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 21, 4, 5),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 22, 5, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 23, 4, 5),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 24, 0, 2),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 25, 3, 0),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 26, 2, 1),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 27, 1, 3),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 28, 4, 1),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 29, 1, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 30, 5, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 31, 4, 5),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 32, 1, 2),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 33, 3, 1),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 34, 0, 2),
+            new CityPortConversationExchange(CityPortConversationKind.Work, 35, 4, 5)
         };
         private static readonly CityPortConversationExchange[] greetings =
         {
@@ -88,7 +124,9 @@ namespace BarPromenade
             new CityPortConversationExchange(CityPortConversationKind.Greeting, 2, 3, 1),
             new CityPortConversationExchange(CityPortConversationKind.Greeting, 3, 3, 1),
             new CityPortConversationExchange(CityPortConversationKind.Greeting, 4, 4, 1),
-            new CityPortConversationExchange(CityPortConversationKind.Greeting, 5, 4, 1)
+            new CityPortConversationExchange(CityPortConversationKind.Greeting, 5, 4, 1),
+            new CityPortConversationExchange(CityPortConversationKind.Greeting, 6, 5, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Greeting, 7, 4, 5)
         };
         private static readonly CityPortConversationExchange[] farewells =
         {
@@ -97,7 +135,9 @@ namespace BarPromenade
             new CityPortConversationExchange(CityPortConversationKind.Farewell, 2, 3, 1),
             new CityPortConversationExchange(CityPortConversationKind.Farewell, 3, 1, 3),
             new CityPortConversationExchange(CityPortConversationKind.Farewell, 4, 4, 1),
-            new CityPortConversationExchange(CityPortConversationKind.Farewell, 5, 1, 4)
+            new CityPortConversationExchange(CityPortConversationKind.Farewell, 5, 1, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Farewell, 6, 5, 4),
+            new CityPortConversationExchange(CityPortConversationKind.Farewell, 7, 4, 5)
         };
 
         public static int Count(CityPortConversationKind kind) => Entries(kind).Length;
@@ -151,7 +191,7 @@ namespace BarPromenade
 
     /// <summary>
     /// One pair owns the local speech channel. Arrival and departure each have
-    /// three bounded pending pairs; their windows never overlap. Unavailable
+    /// three ship pairs and the driver's docker-only pair. Unavailable
     /// ambient conversations are discarded, never accumulated.
     /// Life time is independent of the supply cycle's paused harbour clock.
     /// </summary>
@@ -162,41 +202,53 @@ namespace BarPromenade
         public const double DepartureWindowSeconds = 22d;
         public const double MaximumContinuousStepSeconds = 2d;
         public const double GreetingUnloadWindowSeconds = 54d;
+        // The shore group now waits under the eastern canopy, beside the
+        // approaching ship. Greet about three seconds earlier, within nine
+        // metres of the berth, while keeping distant approaches silent.
+        public const float GreetingApproachProgress = .86f;
+        public const double DriverLineSeconds = 3d;
         private uint random;
         private bool initialized, active, arrivalArmed, departureArmed;
         private long cycle;
         private double previousLife, previousPort, nextAttempt, phaseEnd;
         private int phase, serial, pendingGreetings, pendingFarewells;
-        private readonly int[] last = { -1, -1 };
-        private readonly int[] previous = { -1, -1 };
-        private readonly int[] lastGreeting = { -1, -1, -1 };
-        private readonly int[] lastFarewell = { -1, -1, -1 };
+        private readonly bool[][] spoken = new bool[4][];
+        private readonly int[] spokenCount = new int[4];
+        private readonly int[] lastSpoken = { -1, -1, -1, -1 };
+        private bool driverGreeting, driverFarewell, driverDockerAvailable;
         private CityPortConversationExchange exchange;
 
         public CityPortConversationSchedule(int seed)
         {
             random = unchecked((uint)seed) ^ 0x504F5254u;
             if (random == 0) random = 1;
+            for (int kind = 0; kind < spoken.Length; kind++)
+                spoken[kind] = new bool[CityPortConversationCatalog.Count((CityPortConversationKind)kind)];
         }
 
         public CityPortConversationTurn Current => active ? new CityPortConversationTurn(exchange, phase, serial) : default;
         public int StartedLineCount => serial;
         public int PendingGreetingCount => (pendingGreetings & 1) + ((pendingGreetings >> 1) & 1) +
-            ((pendingGreetings >> 2) & 1);
+            ((pendingGreetings >> 2) & 1) + ((pendingGreetings >> 3) & 1);
         public int PendingFarewellCount => (pendingFarewells & 1) + ((pendingFarewells >> 1) & 1) +
-            ((pendingFarewells >> 2) & 1);
+            ((pendingFarewells >> 2) & 1) + ((pendingFarewells >> 3) & 1);
         public static double LineDuration(CityPortConversationKind kind) =>
             kind == CityPortConversationKind.Farewell ? FarewellLineSeconds : LineSeconds;
+        public static double LineDuration(in CityPortConversationExchange candidate) =>
+            CityPortConversationCatalog.IncludesDriver(candidate) ? DriverLineSeconds : LineDuration(candidate.Kind);
 
         public void Reset()
         {
             initialized = active = arrivalArmed = departureArmed = false;
+            driverGreeting = driverFarewell = false;
             pendingGreetings = pendingFarewells = 0;
         }
 
         public CityPortConversationTurn Advance(double lifeSeconds, double portSeconds,
             in CityPortCycleSnapshot snapshot, int availableRoles, int workingRoles, int restingRoles,
-            uint nearbyPairs, uint closePairs, bool audible)
+            uint nearbyPairs, uint closePairs, bool audible,
+            bool driverGreetingWindow = false, bool driverFarewellWindow = false,
+            bool dockerAvailableForDriver = false)
         {
             if (!Finite(lifeSeconds) || !Finite(portSeconds) || lifeSeconds < 0d || portSeconds < 0d)
                 throw new ArgumentOutOfRangeException(nameof(lifeSeconds));
@@ -204,6 +256,7 @@ namespace BarPromenade
             double portStep = portSeconds - previousPort;
             bool discontinuity = initialized && (step < 0d || step > MaximumContinuousStepSeconds ||
                 portStep < 0d || portStep > step + MaximumContinuousStepSeconds);
+            bool continuous = initialized && !discontinuity;
             if (!initialized || discontinuity)
             {
                 initialized = true;
@@ -211,7 +264,7 @@ namespace BarPromenade
                 pendingGreetings = pendingFarewells = 0;
                 cycle = snapshot.CycleIndex;
                 // Rebuilding at the berth must not greet a ship which arrived earlier.
-                arrivalArmed = snapshot.Stage == CityPortCycleStage.Approach && snapshot.StageProgress < .72f;
+                arrivalArmed = snapshot.Stage == CityPortCycleStage.Approach && snapshot.StageProgress < GreetingApproachProgress;
                 // A future departure can be observed after rebuilding at the
                 // berth; rebuilding once underway cannot replay its farewell.
                 departureArmed = snapshot.Stage < CityPortCycleStage.Depart;
@@ -222,31 +275,45 @@ namespace BarPromenade
                 cycle = snapshot.CycleIndex;
                 active = false;
                 pendingGreetings = pendingFarewells = 0;
-                arrivalArmed = snapshot.Stage == CityPortCycleStage.Approach && snapshot.StageProgress < .72f;
+                arrivalArmed = snapshot.Stage == CityPortCycleStage.Approach && snapshot.StageProgress < GreetingApproachProgress;
                 departureArmed = snapshot.Stage < CityPortCycleStage.Depart;
             }
             previousLife = lifeSeconds;
             previousPort = portSeconds;
 
+            // Observe an actual edge, never replay a delivery greeting on a
+            // seek, rebuild or when the listener returns after missing it.
+            bool driverAudible = (availableRoles & (1 << CityPortConversationCatalog.DriverRole)) != 0 &&
+                ((availableRoles & (1 << CityPortConversationCatalog.DockerRole)) != 0 || dockerAvailableForDriver);
+            if (continuous && audible && driverAudible && driverGreetingWindow && !driverGreeting)
+            { pendingGreetings |= 8; active = false; nextAttempt = lifeSeconds + .2d; }
+            if (continuous && audible && driverAudible && driverFarewellWindow && !driverFarewell)
+            { pendingFarewells |= 8; active = false; nextAttempt = lifeSeconds + .2d; }
+            driverGreeting = driverGreetingWindow;
+            driverFarewell = driverFarewellWindow;
+            driverDockerAvailable = dockerAvailableForDriver;
+            if (!driverGreeting) pendingGreetings &= 7;
+            if (!driverFarewell) pendingFarewells &= 7;
+
             bool arrivalWindow = IsArrivalWindow(snapshot);
             if (arrivalArmed && arrivalWindow)
             {
                 arrivalArmed = false;
-                pendingGreetings = audible ? 7 : 0;
+                pendingGreetings |= audible ? 7 : 0;
                 if (audible) nextAttempt = lifeSeconds + .5d + Unit() * 1.6d;
             }
-            if (!arrivalWindow) pendingGreetings = 0;
+            if (!arrivalWindow) pendingGreetings &= 8;
             bool departureWindow = IsDepartureWindow(snapshot);
             if (departureArmed && snapshot.Stage == CityPortCycleStage.Depart)
             {
                 departureArmed = false;
-                pendingFarewells = audible && departureWindow ? 7 : 0;
+                pendingFarewells |= audible && departureWindow ? 7 : 0;
                 // A passing farewell takes the local channel before a new
                 // break conversation; it cannot wait until the hull is gone.
-                active = false;
+                if (!active || !CityPortConversationCatalog.IncludesDriver(exchange)) active = false;
                 nextAttempt = lifeSeconds + .2d + Unit() * .3d;
             }
-            if (!departureWindow) pendingFarewells = 0;
+            if (!departureWindow) pendingFarewells &= 8;
             if (!audible)
             {
                 active = false;
@@ -275,8 +342,18 @@ namespace BarPromenade
                     else
                     {
                         phaseEnd = lifeSeconds + (phase == 2 ?
-                            exchange.Kind == CityPortConversationKind.Farewell ? .35d + Unit() * .3d : .6d + Unit() * 1.1d :
-                            LineDuration(exchange.Kind));
+                            exchange.Kind == CityPortConversationKind.Farewell || CityPortConversationCatalog.IncludesDriver(exchange)
+                                ? .35d + Unit() * .3d : .6d + Unit() * 1.1d :
+                            LineDuration(exchange));
+                        if (phase == 1)
+                        {
+                            // Anticipation can be interrupted before anyone speaks.
+                            // Only an audible first line consumes the paired exchange.
+                            int kind = (int)exchange.Kind;
+                            spoken[kind][exchange.Variant] = true;
+                            spokenCount[kind]++;
+                            lastSpoken[kind] = exchange.Variant;
+                        }
                         if (phase == 1 || phase == 3) serial++;
                     }
                 }
@@ -286,23 +363,20 @@ namespace BarPromenade
             nextAttempt = lifeSeconds + .8d + Unit() * .8d;
             if (pendingGreetings != 0 || pendingFarewells != 0)
             {
-                bool departing = pendingFarewells != 0;
+                bool departing = (pendingFarewells & 8) != 0 || (pendingGreetings & 8) == 0 && pendingFarewells != 0;
                 int pending = departing ? pendingFarewells : pendingGreetings;
-                int[] history = departing ? lastFarewell : lastGreeting;
                 var kind = departing ? CityPortConversationKind.Farewell : CityPortConversationKind.Greeting;
-                int firstGroup = Next(3);
-                for (int offset = 0; offset < 3; offset++)
+                int firstGroup = (pending & 8) != 0 ? 3 : Next(3);
+                for (int offset = 0; offset < 4; offset++)
                 {
-                    int group = (firstGroup + offset) % 3;
+                    int group = (firstGroup + offset) % 4;
                     if ((pending & (1 << group)) == 0) continue;
-                    int variant = group * 2 + Next(2);
-                    if (variant == history[group]) variant = group * 2 + (1 - variant % 2);
+                    int variant = SelectUnspoken(kind, group * 2, 2, snapshot,
+                        availableRoles, workingRoles, restingRoles, nearbyPairs, closePairs);
+                    if (variant < 0) continue;
                     var candidate = CityPortConversationCatalog.Get(kind, variant);
-                    if (!CanStart(candidate, snapshot) ||
-                        !Eligible(candidate, snapshot, availableRoles, workingRoles, restingRoles, nearbyPairs, closePairs)) continue;
                     if (departing) pendingFarewells &= ~(1 << group);
                     else pendingGreetings &= ~(1 << group);
-                    history[group] = variant;
                     Start(candidate, lifeSeconds);
                     return Current;
                 }
@@ -314,20 +388,11 @@ namespace BarPromenade
             {
                 CityPortConversationKind kind = (category == 0) == preferWork ?
                     CityPortConversationKind.Work : CityPortConversationKind.Rest;
-                int count = CityPortConversationCatalog.Count(kind), first = Next(count), history = (int)kind;
-                for (int relaxation = 0; relaxation < 2; relaxation++)
-                for (int offset = 0; offset < count; offset++)
-                {
-                    int variant = (first + offset) % count;
-                    if (variant == last[history] || (relaxation == 0 && variant == previous[history])) continue;
-                    var candidate = CityPortConversationCatalog.Get(kind, variant);
-                    if (!CanStart(candidate, snapshot) ||
-                        !Eligible(candidate, snapshot, availableRoles, workingRoles, restingRoles, nearbyPairs, closePairs)) continue;
-                    previous[history] = last[history];
-                    last[history] = variant;
-                    Start(candidate, lifeSeconds);
-                    return Current;
-                }
+                int variant = SelectUnspoken(kind, 0, CityPortConversationCatalog.Count(kind), snapshot,
+                    availableRoles, workingRoles, restingRoles, nearbyPairs, closePairs);
+                if (variant < 0) continue;
+                Start(CityPortConversationCatalog.Get(kind, variant), lifeSeconds);
+                return Current;
             }
             return default;
         }
@@ -337,15 +402,52 @@ namespace BarPromenade
             exchange = candidate;
             active = true;
             phase = 0;
-            phaseEnd = seconds + .35d + Unit() * .45d;
+            phaseEnd = seconds + (CityPortConversationCatalog.IncludesDriver(candidate)
+                ? .25d + Unit() * .2d : .35d + Unit() * .45d);
         }
 
-        private static bool Eligible(in CityPortConversationExchange candidate, in CityPortCycleSnapshot snapshot,
+        private int SelectUnspoken(CityPortConversationKind kind, int start, int count,
+            in CityPortCycleSnapshot snapshot, int available, int working, int resting, uint nearby, uint close)
+        {
+            int pool = (int)kind;
+            bool[] used = spoken[pool];
+            if (spokenCount[pool] == used.Length)
+            {
+                Array.Clear(used, 0, used.Length);
+                spokenCount[pool] = 0;
+            }
+            // Draw uniformly from the currently possible, unheard exchanges.
+            // Absent partners defer their entries; they never refill the pool.
+            int chosen = -1, eligibleCount = 0;
+            for (int variant = start; variant < start + count; variant++)
+            {
+                if (used[variant] || variant == lastSpoken[pool]) continue;
+                var candidate = CityPortConversationCatalog.Get(kind, variant);
+                if (!CanStart(candidate, snapshot) || !Eligible(candidate, snapshot,
+                    available, working, resting, nearby, close)) continue;
+                if (Next(++eligibleCount) == 0) chosen = variant;
+            }
+            return chosen;
+        }
+
+        private bool Eligible(in CityPortConversationExchange candidate, in CityPortCycleSnapshot snapshot,
             int available, int working, int resting, uint nearby, uint close)
         {
             int pair = (1 << candidate.FirstRole) | (1 << candidate.SecondRole);
+            if (CityPortConversationCatalog.IncludesDriver(candidate) && driverDockerAvailable)
+                available |= 1 << CityPortConversationCatalog.DockerRole;
             if ((available & pair) != pair) return false;
             uint distance = CityPortConversationCatalog.PairBit(candidate.FirstRole, candidate.SecondRole);
+            if (CityPortConversationCatalog.IncludesDriver(candidate))
+            {
+                if ((nearby & distance) == 0) return false;
+                if (candidate.Kind == CityPortConversationKind.Greeting) return driverGreeting;
+                if (candidate.Kind == CityPortConversationKind.Farewell) return driverFarewell;
+                if (driverGreeting || driverFarewell) return false;
+                if (candidate.Kind == CityPortConversationKind.Rest)
+                    return (resting & pair) == pair && (close & distance) != 0;
+                return (working & pair) != 0;
+            }
             if (candidate.Kind == CityPortConversationKind.Rest)
                 return (resting & pair) == pair && (close & distance) != 0;
             if ((nearby & distance) == 0) return false;
@@ -355,15 +457,22 @@ namespace BarPromenade
         }
 
         private static bool IsArrivalWindow(in CityPortCycleSnapshot snapshot) =>
-            snapshot.Stage == CityPortCycleStage.Approach && snapshot.StageProgress >= .72f ||
+            snapshot.Stage == CityPortCycleStage.Approach && snapshot.StageProgress >= GreetingApproachProgress ||
             snapshot.Stage == CityPortCycleStage.Moor || snapshot.Stage == CityPortCycleStage.Prepare ||
             snapshot.Stage == CityPortCycleStage.Unload && snapshot.SecondsInStage < GreetingUnloadWindowSeconds;
 
         private static bool IsDepartureWindow(in CityPortCycleSnapshot snapshot) =>
             snapshot.Stage == CityPortCycleStage.Depart && snapshot.SecondsInStage < DepartureWindowSeconds;
 
-        private static bool CanStart(in CityPortConversationExchange candidate, in CityPortCycleSnapshot snapshot)
+        private bool CanStart(in CityPortConversationExchange candidate, in CityPortCycleSnapshot snapshot)
         {
+            if (CityPortConversationCatalog.IncludesDriver(candidate)) return true;
+            const double completeExchange = LineSeconds * 2d + .8d + 1.7d + .4d;
+            // Finish an ordinary canopy exchange before the arriving crew is
+            // close enough to greet; never cut its reply off mid-conversation.
+            if (candidate.Kind == CityPortConversationKind.Rest && snapshot.Stage == CityPortCycleStage.Approach)
+                return snapshot.SecondsInStage + completeExchange + 1d <=
+                    CityPortCycle.ApproachDurationSeconds * GreetingApproachProgress;
             if (candidate.Kind == CityPortConversationKind.Farewell)
                 return IsDepartureWindow(snapshot) && snapshot.SecondsInStage +
                     FarewellLineSeconds * 2d + .8d + .65d + .6d <= DepartureWindowSeconds;
@@ -372,7 +481,6 @@ namespace BarPromenade
             // the longest reply gap instead of consuming a half-spoken greeting.
             if (candidate.FirstRole != 1 && candidate.SecondRole != 1 || snapshot.Stage != CityPortCycleStage.Unload)
                 return true;
-            const double completeExchange = LineSeconds * 2d + .8d + 1.7d + .4d;
             double t = snapshot.SecondsInCargo;
             return t + completeExchange <= 12d || t >= 24d &&
                 t + completeExchange <= CityPortCycle.CargoDurationSeconds;

@@ -43,6 +43,8 @@ namespace BarPromenade
         }
 
         public Vector3 World(Vector3 local) => Origin + local;
+        public bool IsAtDocks(Vector3 position) =>
+            Mathf.Abs(position.y - QuayTopY) <= 3f && LandBounds.Contains(new Vector2(position.x, position.z));
         public Vector3 CraneBaseLocal(int crane) => new Vector3(crane == 0 ? -4f : 4f, DeckHeight, -2f);
         public Vector3 LandingLocal(int crane) => new Vector3(crane == 0 ? -4f : 4f, DeckHeight, -6f);
         public Rect RectAt(float x0, float z0, float x1, float z1) =>
@@ -74,7 +76,9 @@ namespace BarPromenade
         public void AppendWalkableFootprints(ICollection<Rect> destination)
         {
             destination.Add(LandBounds);
-            destination.Add(RectAt(-30f, -22f, -25.9f, -19f));
+            // Overlap the existing quay by more than a full agent diameter;
+            // independently inset rectangles must not leave a seam on the ramp.
+            destination.Add(RectAt(-30f, -22f, -25f, -19f));
             destination.Add(BreakwaterBounds);
             destination.Add(BreakwaterHeadBounds);
             Access?.AppendWalkableFootprints(destination);

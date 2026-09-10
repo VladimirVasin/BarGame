@@ -15,7 +15,9 @@ namespace BarPromenade
         public const float HairpinWidth = 6.4f;
         public const float MaximumGrade = 0.08f;
         public const float SpawnDepth = 6f;
-        public const float TunnelVisualDepth = 9f;
+        public const float TunnelPhysicalDepth = 9f;
+        public const float TunnelVisualDepth =
+            CityMountainBoundaryDefinition.TunnelVisualDepth;
         public const float TerrainMargin = 76f;
         public const float RidgeTerrainBurial = 1.5f;
         public const float RidgeRoadClearance = 1.5f;
@@ -123,6 +125,7 @@ namespace BarPromenade
                     terminal,
                     terrainBounds,
                     ridges);
+            ClearTunnelForest(forest, tunnel, route, plateau, terminal, terrainBounds, ridges);
             List<MountainRoadMiscDescriptor> misc =
                 CreateMisc(seed, tunnel, route, plateau);
             List<MountainRoadSoundAnchor> sounds =
@@ -208,6 +211,36 @@ namespace BarPromenade
                 CityMountainBoundaryDefinition.TunnelOpeningHeight,
                 TunnelVisualDepth,
                 portal - axis * SpawnDepth);
+        }
+
+        internal static List<CityMountainTunnelSegmentDescriptor> CreateTunnelSegments(
+            Vector3 portal, Vector3 outwardAxis)
+        {
+            var segments = new List<CityMountainTunnelSegmentDescriptor>(13);
+            Vector3 cursor = portal;
+            float distance = 0f;
+            while (distance < TunnelVisualDepth - 0.001f)
+            {
+                float chord = CityMountainBoundaryDefinition.TunnelSegmentLength;
+                float endDistance = Mathf.Min(TunnelVisualDepth,
+                    (Mathf.Floor(distance / chord) + 1f) * chord);
+                // Keep the old nine-metre physical entrance exactly intact.
+                if (distance < TunnelPhysicalDepth)
+                    endDistance = Mathf.Min(endDistance, TunnelPhysicalDepth);
+                float bend = distance < CityMountainBoundaryDefinition.TunnelStraightDepth
+                    ? 0f
+                    : (Mathf.Floor((distance -
+                        CityMountainBoundaryDefinition.TunnelStraightDepth) / chord) + 1f) *
+                      CityMountainBoundaryDefinition.TunnelBendDegreesPerSegment;
+                Vector3 forward = Quaternion.AngleAxis(bend, Vector3.up) * -outwardAxis;
+                Vector3 end = cursor + forward * (endDistance - distance);
+                segments.Add(new CityMountainTunnelSegmentDescriptor(
+                    $"mountain-road-tunnel-{segments.Count:00}", distance, endDistance,
+                    cursor, end, endDistance <= TunnelPhysicalDepth));
+                cursor = end;
+                distance = endDistance;
+            }
+            return segments;
         }
 
         private static MountainRoadRoutePlan CreateRoute()
@@ -793,6 +826,84 @@ namespace BarPromenade
                     $"Could place only {accepted.Count}/{count} {layer} " +
                     "forest anchors without entering the road corridor.");
             }
+        }
+
+        private static void ClearTunnelForest(List<MountainRoadForestDescriptor> forest,
+            MountainRoadTunnelDescriptor tunnel, MountainRoadRoutePlan route,
+            MountainRoadPlateauDescriptor plateau, MountainRoadTerminalPlan terminal,
+            Rect terrainBounds, IReadOnlyList<MountainRoadRidgeDescriptor> ridges)
+        {
+            // The forest predates the visible tail. Keep every unaffected tree,
+            // its ID and every layer's count; only displace envelopes that now
+            // intersect the tunnel. Re-seeding a layer would move neighbours too.
+            for (int index = 0; index < forest.Count; index++)
+            {
+                MountainRoadForestDescriptor tree = forest[index];
+                if (!ForestIntersectsTunnel(tree, tunnel)) continue;
+                float minimumOffset = tree.Layer == MountainRoadForestLayer.Physical ? 6.2f :
+                    tree.Layer == MountainRoadForestLayer.Mid ? 11f : 17f;
+                float maximumOffset = tree.Layer == MountainRoadForestLayer.Physical ? 14f :
+                    tree.Layer == MountainRoadForestLayer.Mid ? 21f : 28f;
+                float spacing = tree.Layer == MountainRoadForestLayer.Physical ? 3.4f :
+                    tree.Layer == MountainRoadForestLayer.Mid ? 2.5f : 1.9f;
+                bool placed = false;
+                for (int ring = 1; ring <= 24 && !placed; ring++)
+                    for (int direction = 0; direction < 24 && !placed; direction++)
+                    {
+                        float angle = (direction * 15f + index * 137.5f) * Mathf.Deg2Rad;
+                        Vector2 point = new Vector2(tree.Position.x, tree.Position.z) +
+                            new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * (ring * 2f);
+                        if (!terrainBounds.Contains(point) || plateau.BoundsXZ.Contains(point) ||
+                            terminal.Cableway.ContainsClearanceXZ(point, tree.CrownRadius + 0.8f) ||
+                            IntersectsRidgeFootprint(point, tree.CrownRadius, ridges) ||
+                            MountainRoadCompositionRules.IsReservedForestOpening(
+                                route, plateau, tree.Layer, point, tree.CrownRadius)) continue;
+                        MountainRoadTerrainSampler.FindClosest(route, point, out float distance,
+                            out _, out _, out float halfWidth);
+                        if (distance < Mathf.Max(minimumOffset,
+                                halfWidth + tree.CrownRadius + ForestRoadClearance) ||
+                            distance > maximumOffset) continue;
+                        var position = new Vector3(point.x,
+                            MountainRoadTerrainSampler.SampleHeight(route, plateau, point), point.y);
+                        var candidate = new MountainRoadForestDescriptor(tree.StableId, tree.Layer,
+                            position, tree.Height, tree.CrownRadius, tree.YawDegrees,
+                            tree.PaletteIndex, tree.BlocksMovement);
+                        if (ForestIntersectsTunnel(candidate, tunnel)) continue;
+                        bool crowded = false;
+                        for (int other = 0; other < forest.Count && !crowded; other++)
+                        {
+                            if (other == index || forest[other].Layer != tree.Layer) continue;
+                            Vector3 offset = forest[other].Position - position;
+                            crowded = offset.x * offset.x + offset.z * offset.z < spacing * spacing;
+                        }
+                        if (crowded) continue;
+                        forest[index] = candidate;
+                        placed = true;
+                    }
+                if (!placed)
+                    throw new InvalidOperationException(
+                        $"Could not move {tree.StableId} out of the tunnel without changing the surrounding forest.");
+            }
+        }
+
+        internal static bool ForestIntersectsTunnel(MountainRoadForestDescriptor tree,
+            MountainRoadTunnelDescriptor tunnel)
+        {
+            float wind = MountainRoadSceneryMeshFactory.WindCullingHeadroom;
+            if (tree.Position.y - wind > tunnel.PortalGroundCenter.y + tunnel.OpeningHeight + 0.72f ||
+                tree.Position.y + tree.Height + wind < tunnel.PortalGroundCenter.y) return false;
+            float clearance = tunnel.OpeningWidth * 0.5f + 0.72f + tree.CrownRadius + wind;
+            Vector2 point = new Vector2(tree.Position.x, tree.Position.z);
+            foreach (CityMountainTunnelSegmentDescriptor segment in tunnel.Segments)
+            {
+                Vector2 start = new Vector2(segment.Start.x, segment.Start.z);
+                Vector2 end = new Vector2(segment.End.x, segment.End.z);
+                Vector2 delta = end - start;
+                float t = Mathf.Clamp01(Vector2.Dot(point - start, delta) / delta.sqrMagnitude);
+                if ((point - Vector2.Lerp(start, end, t)).sqrMagnitude < clearance * clearance)
+                    return true;
+            }
+            return false;
         }
 
         private static void DescribeForestEnvelope(

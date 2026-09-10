@@ -47,6 +47,12 @@ namespace BarPromenade
         public float TrolleySpeed { get; private set; }
         public float TrolleyOperatorSpeed { get; private set; }
         public bool IsTrolleyReversing => Snapshot.CargoStage == CityPortCargoStage.Return;
+        /// <summary>Seconds within a cargo slot at which the actual operator
+        /// crosses the warehouse exit on his return to the quay.</summary>
+        public double DockWorkerStoreExitAtSeconds { get; private set; }
+        /// <summary>The next loaded trolley's leading edge enters the same
+        /// warehouse; calculated from the imported trolley and its route.</summary>
+        public double TrolleyStoreEntryAtSeconds { get; private set; }
         public double ElapsedSeconds { get; private set; }
         public bool AutoAdvance { get; set; } = true;
 
@@ -96,6 +102,7 @@ namespace BarPromenade
                     trolleyRouteLengths[crane] += cost;
                 }
             }
+            MeasureStoreDoorCrossings();
             CraneBases = new Transform[2];
             Booms = new Transform[2];
             Hooks = new Transform[2];
@@ -132,7 +139,7 @@ namespace BarPromenade
                 cargoLiftOffsets[index] = AnchorOffset(Cargo[index], "ANCHOR_Lift");
             }
             waves = CitySeaResources.CreateWaveProfile();
-            ApplyAt(SessionSeconds, Time.timeSinceLevelLoad);
+            ApplyAt(CityFishSupplySession.Advance(false), Time.timeSinceLevelLoad);
         }
 
         private Transform Create(string name) =>
@@ -144,18 +151,17 @@ namespace BarPromenade
         private static Vector3 AnchorOffset(Transform root, string name) =>
             root.InverseTransformPoint(Part(root, name).position);
 
-        private static double SessionSeconds =>
-            (GameSessionState.GameDayIndex * 1440d +
-             GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond;
-
         public bool IsSupplyDriven { get; set; }
 
         private void Update()
         {
             if (!AutoAdvance) { RefreshPresentation(); return; }
             if (GameSessionState.IsGameTimeRunning && !GameTimeScaleRuntime.IsPaused)
+            {
                 lastWaveTime = Time.timeSinceLevelLoad;
-            ApplyAt(SessionSeconds, lastWaveTime);
+                CityFishSupplySession.TryStart(PresentationObserver != null && Plan.IsAtDocks(PresentationObserver.position));
+            }
+            ApplyAt(CityFishSupplySession.Advance(false), lastWaveTime);
         }
 
         public void ApplyAt(double seconds, float waveTime)
@@ -263,6 +269,42 @@ namespace BarPromenade
                     TrolleyRotation(crane, progress + offset) * trolleyOperatorOffset;
                 TrolleyOperatorSpeed = Vector3.Distance(before, after) / .02f;
             }
+        }
+
+        private void MeasureStoreDoorCrossings()
+        {
+            float frontReach=float.NegativeInfinity;
+            foreach(MeshFilter mesh in Trolley.GetComponentsInChildren<MeshFilter>(true))
+                foreach(Vector3 vertex in mesh.sharedMesh.vertices)
+                    frontReach=Mathf.Max(frontReach,Trolley.InverseTransformPoint(mesh.transform.TransformPoint(vertex)).z);
+            if(float.IsNegativeInfinity(frontReach))
+                throw new InvalidOperationException("The port trolley needs its imported geometry to measure store access.");
+            DockWorkerStoreExitAtSeconds=CityPortCycle.StoredAtSeconds;
+            TrolleyStoreEntryAtSeconds=CityPortCycle.StoredAtSeconds;
+            for(int crane=0;crane<2;crane++)
+            {
+                DockWorkerStoreExitAtSeconds=Math.Max(DockWorkerStoreExitAtSeconds,
+                    FindStoreDoorCrossing(crane,true,trolleyOperatorOffset));
+                TrolleyStoreEntryAtSeconds=Math.Min(TrolleyStoreEntryAtSeconds,
+                    FindStoreDoorCrossing(crane,false,Vector3.forward*frontReach));
+            }
+        }
+
+        private double FindStoreDoorCrossing(int crane,bool exiting,Vector3 contactOffset)
+        {
+            double start=exiting ? CityPortCycle.StoredAtSeconds : CityPortCycle.UnhookedAtSeconds;
+            double end=exiting ? CityPortCycle.CargoDurationSeconds : CityPortCycle.StoredAtSeconds;
+            double low=start,high=end;
+            for(int iteration=0;iteration<32;iteration++)
+            {
+                double middle=(low+high)*.5d;
+                float progress=(float)((middle-start)/(end-start));
+                SampleTrolleyRoute(crane,exiting ? 1f-progress : progress,out Vector3 position,out Quaternion rotation);
+                float contactZ=(position+rotation*contactOffset).z;
+                bool crossed=exiting ? contactZ>=Plan.WarehouseBounds.yMax : contactZ<=Plan.WarehouseBounds.yMax;
+                if(crossed) high=middle; else low=middle;
+            }
+            return high;
         }
 
         private Vector3 TrolleyPosition(int crane, float progress)
