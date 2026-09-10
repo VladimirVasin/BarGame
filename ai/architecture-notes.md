@@ -5,27 +5,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 ## Current facts
 
 - **Accepted — 2026-09-10, a compact cannery and finite fish logistics:**
-  Story §6 permits replacing art §8's weighbridge with the City cannery.
-  Public routes remain; its apron meets the street. `CityFishSupplyCycle`
-  serializes six units: chill, prepare/fill/seam, retort, cool/pack, shop receipt.
-  Input/output waits. One `8 x 2.5 m` truck runs at `3 m/s`,
-  reverses at `1.1 m/s`, returns before the next ship. Level frontage outranks
-  bus avoidance; `CityCanneryTraffic` reserves each trip until the next bay.
-  Bus movement/spawning respect both reservation and physical truck.
-  Four factory workers, driver and five port workers reuse ordinary rigs;
-  legacy weighing stays dormant. Nine Blender models share port materials.
-  Doors, baffle bypass and tail lift keep transfers physical. Shop stock is
-  unchanged; empty-tare return is Deferred. No ride, earnings, quest or dialogue;
-  story §16/§21 and all nine art checks remain binding.
-  `CityFishSupplySession` keeps scalar time across reloads; pause/obstacles
-  stop it, distance does not. `WorldDistancePresentation` gates factory,
-  shore, vessel and truck at 80/96 m from conservative mesh/light bounds.
-  Berthed contacts and factory handoffs couple adjacent groups. Hidden rigs,
-  mechanisms, lights/halos and voices stop presentation; truck pose, collision,
-  custody and traffic remain live. Dedicated light hosts resist night-registry
-  reactivation. Approach restores the current phase even while paused, with no
-  replayed impacts. Null observers/forced captures show all groups.
-  `AreaCaptureFixture.CityCannery` passed; gameplay frames were reviewed.
+  Story §6 replaces the weighbridge; public routes remain. `CityFishSupplyCycle`
+  serializes six units through chill, prepare/fill/seam, retort, cool/pack and
+  shop receipt. One `8 x 2.5 m` truck runs at `3 m/s`, reverses at `1.1 m/s`.
+  Level frontage, doors, baffle bypass and tail lift preserve contact;
+  `CityCanneryTraffic` reserves trips for the bus. Shop stock stays unchanged;
+  empty-tare return is Deferred.
+  `CityFishSupplySession` survives reloads; pause/obstacles stop time, distance
+  does not. `WorldDistancePresentation` gates factory/shore/vessel/truck at
+  80/96 m from mesh/light bounds, coupling berth/handoff contacts. Hidden rigs,
+  mechanisms, lights and sounds sleep; truck collision, custody and traffic
+  continue. Approach restores the phase even paused; night cannot reopen gates.
+
+- **Accepted — 2026-09-10, cannery surface and process detail:**
+  Ten Blender models retain the same City footprint and public passages.
+  Five opaque ImageGen maps cover floor, wash wall, stainless steel, insulation
+  and cardboard; other surfaces share port assets and metre UVs. Hall, yard,
+  equipment and truck gain functional fittings. The same fifteen open cans
+  receive contents and lids, then enter the packing carton. Ordinary rigs wear
+  muted work cloth; two articulated aprons follow preparation and packing.
+  Finite task poses, phase lamps and bounded steam expose the existing cycle;
+  ordinary labels name reception/shipping. All follow the distance gates.
+  No new interaction, dialogue or story meaning; story §16/§21 and art §16 hold.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
   Twelve opaque ImageGen albedos cover horizontal

@@ -83,7 +83,9 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
   Port, cannery and the shop's service door share one finite six-unit delivery
-  cycle with two cranes, one truck and working crews. Distant presentation
+  cycle with two cranes, one truck and working crews. The cannery has worn
+  surface maps, fitted equipment and the same cans passing into cartons;
+  task poses, phase lamps and steam make that cycle visible. Distant presentation
   sleeps while production, truck collision and traffic continue; approach
   restores the current phase. The hero observes; shop stock stays unchanged.
 - Separate mountain/village areas, cableway travel and accessible interiors.

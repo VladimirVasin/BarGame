@@ -49,6 +49,7 @@ namespace BarPromenade
             driverDoorRest = Quaternion.Inverse(Truck.rotation) * driverDoor.rotation;
             trolleyLeftHand = Require(trolley, "ANCHOR_TrolleyHandleLeft");
             trolleyRightHand = Require(trolley, "ANCHOR_TrolleyHandleRight");
+            CreateCrewAppearance();
         }
 
         private void ApplyWorkers()
@@ -57,50 +58,102 @@ namespace BarPromenade
             LastCrewContactFailure = null;
             DriverSeatedContactsMatch = true;
             for (int i = 0; i < workers.Length; i++)
-                workers[i].gameObject.SetActive(i == 4 ? TruckPresentationActive : FactoryPresentationActive);
+            {
+                bool visible = i == 4 ? TruckPresentationActive : FactoryPresentationActive;
+                if (workers[i].gameObject.activeSelf == visible) continue;
+                workers[i].gameObject.SetActive(visible);
+                if (visible) workerAppearanceDirty[i] = true;
+            }
             float seconds = (float)Snapshot.Seconds;
             if (FactoryPresentationActive)
             {
-            bool factoryHandling = Snapshot.Stage == CityFishSupplyStage.UnloadFish ||
-                Snapshot.Stage == CityFishSupplyStage.LoadFinished;
-            if (factoryHandling) ApplyReceiverTransfer(seconds);
-            else StandWorker(workers[0], Anchor("Receiver"), Plan.Forward, Anchor("ReceivingLoad"));
+                bool factoryHandling = Snapshot.Stage == CityFishSupplyStage.UnloadFish ||
+                    Snapshot.Stage == CityFishSupplyStage.LoadFinished;
+                if (factoryHandling) ApplyReceiverTransfer(seconds);
+                else StandWorker(workers[0], Anchor("Receiver"), Plan.Forward, Anchor("ReceivingLoad"));
 
-            ApplyStationWorker(workers[1], "Preparation", Snapshot.Stage == CityFishSupplyStage.Prepare);
-            ApplyStationWorker(workers[2], "Seamer", Snapshot.Stage == CityFishSupplyStage.Fill ||
-                Snapshot.Stage == CityFishSupplyStage.Seal);
-            ApplyRetortWorker(seconds);
+                ApplyStationWorker(1, "Preparation", Snapshot.Stage == CityFishSupplyStage.Prepare);
+                ApplyStationWorker(2, "Seamer", Snapshot.Stage == CityFishSupplyStage.Fill ||
+                    Snapshot.Stage == CityFishSupplyStage.Seal);
+                ApplyRetortWorker(seconds);
             }
 
-            if (!TruckPresentationActive) return;
-
-            bool driverHandling = Snapshot.Stage == CityFishSupplyStage.LoadFish ||
-                Snapshot.Stage == CityFishSupplyStage.UnloadShop;
-            float open = driverHandling ? Mathf.Min(Ease(seconds), Ease((float)Snapshot.Duration - seconds)) : 0;
-            driverDoor.SetPositionAndRotation(Truck.TransformPoint(driverDoorDock),
-                Truck.rotation * Quaternion.AngleAxis(78f * open, Vector3.up) * driverDoorRest);
-            if (!driverHandling) ApplySeatedDriver();
-            else if (handlingActive) ApplyTrolleyWorker(workers[4], 1f);
-            else ApplyDriverApproach(seconds >= Snapshot.Duration - 12
-                ? (float)(Snapshot.Duration - Snapshot.Seconds) : seconds,
-                seconds >= Snapshot.Duration - 12);
+            if (TruckPresentationActive)
+            {
+                bool driverHandling = Snapshot.Stage == CityFishSupplyStage.LoadFish ||
+                    Snapshot.Stage == CityFishSupplyStage.UnloadShop;
+                float open = driverHandling ? Mathf.Min(Ease(seconds), Ease((float)Snapshot.Duration - seconds)) : 0;
+                driverDoor.SetPositionAndRotation(Truck.TransformPoint(driverDoorDock),
+                    Truck.rotation * Quaternion.AngleAxis(78f * open, Vector3.up) * driverDoorRest);
+                if (!driverHandling) ApplySeatedDriver();
+                else if (handlingActive) ApplyTrolleyWorker(workers[4], 1f);
+                else ApplyDriverApproach(seconds >= Snapshot.Duration - 12
+                    ? (float)(Snapshot.Duration - Snapshot.Seconds) : seconds,
+                    seconds >= Snapshot.Duration - 12);
+            }
+            // Enabling the shared resident rig restores its village atlas.
+            // Reapply this crew's clothes after that first pose, once per wake.
+            for (int i = 0; i < workers.Length; i++)
+                if (workers[i].gameObject.activeSelf && workerAppearanceDirty[i]) ApplyCrewAppearance(i);
         }
 
-        private void ApplyStationWorker(VillageResidentPresentation actor, string station, bool working)
+        private void ApplyStationWorker(int index, string station, bool working)
         {
+            VillageResidentPresentation actor = workers[index];
             Vector3 right = Anchor(station + "RightHand"), left = Anchor(station + "LeftHand");
-            StandWorker(actor, Anchor(station + "Worker"), Plan.Right, (right + left) * .5f);
+            Vector3 load = index == 1 ? Anchor("PreparationLoad") : tray.position;
+            StandWorker(actor, Anchor(station + "Worker"), Plan.Right, load);
             if (!working) return;
-            // The authored work pose keeps feet planted; contact follows the
-            // actual bench edge rather than an animation-space guess.
-            actor.Apply(VillageResidentAction.StationWork,
-                1.1f + .10f * Mathf.Sin((float)Snapshot.Seconds * 1.7f), (right + left) * .5f);
-            float weight = Mathf.Min(Ease((float)Snapshot.Seconds / .8f),
-                Ease((float)(Snapshot.Duration - Snapshot.Seconds) / .8f));
-            Transform spine = workerSpines[actor == workers[1] ? 1 : actor == workers[2] ? 2 : 3];
-            spine.rotation = Quaternion.AngleAxis(24f * weight, actor.transform.right) * spine.rotation;
-            ApplyCrewContacts(actor, right, left, weight);
+            // Six finite handling units, each with a reach, an operation and
+            // a release. A sampled stage never leaves an idle worker dancing.
+            float unitDuration = (float)Snapshot.Duration / 6f;
+            float unit = Mathf.Repeat((float)Snapshot.Seconds, unitDuration) / unitDuration;
+            float posture = CrewWorkWindow(unit, 0f, .96f, .13f);
+            float rightWeight = posture, leftWeight = posture;
+            Vector3 look = load;
+            if (Snapshot.Stage == CityFishSupplyStage.Prepare)
+            {
+                // The left hand braces the near crate rim; the right sorts a
+                // short section of its contents, then both release the unit.
+                float sort = CrewWorkWindow(unit, .19f, .69f, .18f);
+                right += Plan.Right * (.035f * sort) - Plan.Forward * (.07f * sort);
+                rightWeight = CrewWorkWindow(unit, .07f, .83f, .14f);
+                leftWeight = CrewWorkWindow(unit, .01f, .90f, .13f);
+                look = Vector3.Lerp(load, right, sort * .5f);
+            }
+            else if (Snapshot.Stage == CityFishSupplyStage.Fill)
+            {
+                // One short dose command per unit; the other hand rests on
+                // the guard while the worker watches the visible can tray.
+                left = Anchor("FillControl");
+                leftWeight = CrewWorkWindow(unit, .08f, .40f, .10f);
+                rightWeight = CrewWorkWindow(unit, .02f, .85f, .14f);
+                look = Vector3.Lerp(load, left, leftWeight * .55f);
+            }
+            else if (Snapshot.Stage == CityFishSupplyStage.Seal)
+            {
+                right = Anchor("SealControl");
+                rightWeight = CrewWorkWindow(unit, .04f, .39f, .11f);
+                leftWeight = CrewWorkWindow(unit, .02f, .85f, .14f);
+                look = Vector3.Lerp(seamer.position, right, rightWeight * .5f);
+            }
+            ApplyStationPose(index, posture, 24f);
+            ApplyCrewLook(actor, look);
+            ApplyCrewContacts(actor, right, left, rightWeight, leftWeight);
         }
+
+        private void ApplyStationPose(int index, float weight, float lean)
+        {
+            VillageResidentPresentation actor = workers[index];
+            actor.Apply(VillageResidentAction.StationWork, 1.1f * weight);
+            // Only the spine changes after the authored planted pose: the
+            // pelvis, knees and feet keep their grounded station positions.
+            workerSpines[index].rotation = Quaternion.AngleAxis(lean * weight, actor.transform.right) *
+                workerSpines[index].rotation;
+        }
+
+        private static float CrewWorkWindow(float time, float start, float end, float ramp) =>
+            Mathf.Min(Ease((time - start) / ramp), Ease((end - time) / ramp));
 
         private void ApplyRetortWorker(float seconds)
         {
@@ -121,18 +174,53 @@ namespace BarPromenade
             }
             if (Snapshot.Stage == CityFishSupplyStage.Pack)
             {
-                ApplyStationWorker(actor, "Packing", true);
+                ApplyPackingWorker(seconds);
                 return;
             }
             Vector3 hand = Anchor("RetortHand");
             StandWorker(actor, retort, Plan.Right, hand);
             if (Snapshot.Stage != CityFishSupplyStage.LoadRetort && Snapshot.Stage != CityFishSupplyStage.Cool) return;
-            actor.Apply(VillageResidentAction.StationWork, 1.1f, hand);
             float duration = Snapshot.Stage == CityFishSupplyStage.Cool ? (float)Snapshot.Duration - 12 : (float)Snapshot.Duration;
-            float weight = Mathf.Min(Ease(seconds / .8f), Ease((duration - seconds) / .8f));
+            // A command to open/extend and one to close/retract. The long
+            // middle is observation of the drawer, with the hand off the button.
+            float weight = Mathf.Max(CrewWorkWindow(seconds, 0f, 3.4f, .7f),
+                CrewWorkWindow(seconds, duration - 4f, duration, .7f));
+            ApplyStationPose(3, weight, 0);
+            ApplyCrewLook(actor, Vector3.Lerp(basket.position + Vector3.up * .25f, hand, weight * .6f));
             // The control is on the operator's left; the nearer hand reaches
             // it without crossing the chest or stretching the shoulder.
             ApplyCrewContacts(actor, null, hand, weight);
+        }
+
+        private void ApplyPackingWorker(float seconds)
+        {
+            VillageResidentPresentation actor = workers[3];
+            Vector3 right = Anchor("PackingCartonRightHand"), left = Anchor("PackingCartonLeftHand");
+            Vector3 rim = (right + left) * .5f;
+            StandWorker(actor, Anchor("PackingWorker"), Plan.Right, tray.position);
+            // The tray takes the first eight seconds to reach cooling. Its
+            // fifteen actual cans then share the owner's feed/lift/drop path;
+            // these hands never invent another can or another packing clock.
+            if (seconds <= 8f) return;
+            float posture = CrewWorkWindow(seconds, 8f, (float)Snapshot.Duration, .7f);
+            float reach = packingCanInHand ? Mathf.Clamp01(packingCanHandWeight) : 0f;
+            // Keep the shoulders over the work throughout the lift. Standing
+            // upright as the can rises pulls them away from the farther carton
+            // row precisely when the hands need that remaining forward reach.
+            ApplyStationPose(3, posture, Mathf.Lerp(8f, 34f, reach));
+            Vector3 toCan = Vector3.ProjectOnPlane(packingCanContact - actor.transform.position, Vector3.up);
+            // The pickup is south of the carton; turn the chest far enough for
+            // both shoulders to face it instead of reaching one arm across it.
+            float turn = Mathf.Clamp(Vector3.SignedAngle(actor.transform.forward, toCan, Vector3.up), -42f, 42f);
+            workerSpines[3].rotation = Quaternion.AngleAxis(turn * reach, actor.transform.up) * workerSpines[3].rotation;
+            ApplyCrewLook(actor, Vector3.Lerp(seconds < Snapshot.Duration - 2 ? tray.position : rim,
+                packingCanContact, reach));
+            // First approach the stationary fed can, hold it throughout the
+            // visible arc, then open/retract above the rim before it is lowered.
+            Vector3 across = toCan.sqrMagnitude > .001f ?
+                Vector3.Cross(toCan.normalized, Vector3.up) * .055f : Plan.Forward * .055f;
+            ApplyCrewContacts(actor, Vector3.Lerp(right, packingCanContact + across, reach),
+                Vector3.Lerp(left, packingCanContact - across, reach), posture);
         }
 
         private void ApplyReceiverTransfer(float seconds)
@@ -156,10 +244,10 @@ namespace BarPromenade
         private void ApplyTrolleyWorker(VillageResidentPresentation actor, float handWeight)
         {
             actor.transform.SetPositionAndRotation(trolleyOperatorPosition, trolleyOperatorRotation);
-            actor.ApplyLocomotion(trolleyMotion, false, (float)(WorkingSeconds % 120d),
-                trolley.position + trolley.forward);
+            actor.ApplyLocomotion(trolleyMotion, false, (float)(WorkingSeconds % 120d));
             Transform spine = workerSpines[actor == workers[0] ? 0 : 4];
             spine.rotation = Quaternion.AngleAxis(8f * handWeight, actor.transform.right) * spine.rotation;
+            ApplyCrewLook(actor, trolley.position + trolley.forward + Vector3.up * .8f, .75f);
             ApplyCrewContacts(actor, trolleyRightHand.position, trolleyLeftHand.position, handWeight);
         }
 
@@ -210,23 +298,49 @@ namespace BarPromenade
             }
             if (standing <= .001f)
                 DriverSeatedContactsMatch &= Vector3.Distance(driverPelvis.position, driverSeat.position) <= .01f;
+            ApplyCrewLook(actor, driverSeat.position + Truck.forward * 12f + Vector3.up * .45f, 1f - standing);
             ApplyCrewContacts(actor, driverRightHand.position, driverLeftHand.position, hands);
         }
 
         private void ApplyCrewContacts(VillageResidentPresentation actor, Vector3? right, Vector3? left, float weight)
+            => ApplyCrewContacts(actor, right, left, weight, weight);
+
+        private void ApplyCrewContacts(VillageResidentPresentation actor, Vector3? right, Vector3? left,
+            float rightWeight, float leftWeight)
         {
-            bool matches = actor.ApplyHandContacts(right, left, weight);
+            // Measure the actual requested frame targets, including the entry
+            // and release interpolation. Full contact still targets the model
+            // anchor exactly; a partial reach never masquerades as contact.
+            Vector3? rightTarget = right.HasValue ? Vector3.Lerp(actor.RightGrip.position, right.Value,
+                Mathf.Clamp01(rightWeight)) : (Vector3?)null;
+            Vector3? leftTarget = left.HasValue ? Vector3.Lerp(actor.LeftGrip.position, left.Value,
+                Mathf.Clamp01(leftWeight)) : (Vector3?)null;
+            bool matches = actor.ApplyHandContacts(rightTarget, leftTarget);
+            if (rightTarget.HasValue) matches &= Vector3.Distance(actor.RightGrip.position, rightTarget.Value) <= .025f;
+            if (leftTarget.HasValue) matches &= Vector3.Distance(actor.LeftGrip.position, leftTarget.Value) <= .025f;
             WorkerHandsMatch &= matches;
             if (!matches)
-                LastCrewContactFailure = actor.name + ": right=" + (right.HasValue
-                    ? Vector3.Distance(actor.RightGrip.position, right.Value).ToString("F3") : "n/a") +
-                    ", left=" + (left.HasValue ? Vector3.Distance(actor.LeftGrip.position, left.Value).ToString("F3") : "n/a");
+                LastCrewContactFailure = actor.name + ": right=" + (rightTarget.HasValue
+                    ? Vector3.Distance(actor.RightGrip.position, rightTarget.Value).ToString("F3") : "n/a") +
+                    ", left=" + (leftTarget.HasValue ? Vector3.Distance(actor.LeftGrip.position, leftTarget.Value).ToString("F3") : "n/a");
         }
 
         private void StandWorker(VillageResidentPresentation actor, Vector3 point, Vector3 forward, Vector3 look)
         {
             actor.transform.SetPositionAndRotation(point, Quaternion.LookRotation(forward, Vector3.up));
-            actor.Apply(VillageResidentAction.Idle, (float)(WorkingSeconds % 120d), look);
+            actor.Apply(VillageResidentAction.Idle, (float)(WorkingSeconds % 120d));
+            ApplyCrewLook(actor, look, .7f);
+        }
+
+        private static void ApplyCrewLook(VillageResidentPresentation actor, Vector3 target, float weight = 1f)
+        {
+            Vector3 direction = actor.transform.InverseTransformDirection(target - actor.Head.position);
+            if (direction.sqrMagnitude < .001f) return;
+            float yaw = Mathf.Clamp(Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg, -30f, 30f);
+            float pitch = Mathf.Clamp(-Mathf.Atan2(direction.y,
+                new Vector2(direction.x, direction.z).magnitude) * Mathf.Rad2Deg, -15f, 22f);
+            actor.Head.rotation = Quaternion.AngleAxis(yaw * weight, actor.transform.up) *
+                Quaternion.AngleAxis(pitch * weight, actor.transform.right) * actor.Head.rotation;
         }
 
         private void WalkWorker(VillageResidentPresentation actor, float progress, float duration,

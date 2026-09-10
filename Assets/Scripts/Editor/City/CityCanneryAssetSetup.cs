@@ -13,6 +13,22 @@ namespace BarPromenade.Editor
         public const string ManifestPath = ModelFolder + "CityCannery3D.json";
         public override uint GetVersion() => 1;
 
+        private void OnPreprocessTexture()
+        {
+            if (!assetPath.StartsWith(ModelFolder+"Textures/",StringComparison.Ordinal)||
+                !(assetImporter is TextureImporter importer)) return;
+            importer.textureType=TextureImporterType.Default;
+            importer.textureShape=TextureImporterShape.Texture2D;
+            importer.sRGBTexture=true;
+            importer.mipmapEnabled=true;
+            importer.textureCompression=TextureImporterCompression.Uncompressed;
+            importer.filterMode=FilterMode.Bilinear;
+            importer.wrapMode=TextureWrapMode.Repeat;
+            importer.npotScale=TextureImporterNPOTScale.None;
+            importer.maxTextureSize=512;
+            importer.anisoLevel=4;
+        }
+
         private void OnPreprocessModel()
         {
             if (!assetPath.StartsWith(ModelFolder, StringComparison.Ordinal) ||

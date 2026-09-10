@@ -1217,6 +1217,14 @@
       "value": "Рыбоконсервная фабрика"
     },
     {
+      "key": "cannery.sign.receiving",
+      "value": "Приёмка"
+    },
+    {
+      "key": "cannery.sign.shipping",
+      "value": "Отгрузка"
+    },
+    {
       "key": "map.poi.nightlife_last_route_island",
       "value": "Остров последнего рейса"
     },

@@ -2711,5 +2711,197 @@ namespace BarPromenade.Tests.EditMode
                 Object.DestroyImmediate(host);
             }
         }
+
+        /// <summary>
+        /// The conifers, as one assertion: they are the mountain road's own
+        /// trees, they stand in their own band on ground the sampler actually
+        /// made, and they touch nothing they are forbidden to touch.
+        ///
+        /// The claim that needs a test rather than a comment is the rock one.
+        /// The planting band is only a metre inboard of the authored panels,
+        /// so a change to either kit silently walks the trees into stone -
+        /// where a trunk would vanish and leave a crown hanging on a cliff.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void Conifers_AreTheRoadsOwnTreesOnTheirOwnBand()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            AlpineVillageTreePlan trees = plan.Trees;
+            Assert.That(trees, Is.Not.Null, "The village carries no trees.");
+            TestContext.WriteLine(
+                $"wall {trees.WallTrees.Count}, copse {trees.CopseTrees.Count}, " +
+                $"stumps {trees.Stumps.Count}, wind {trees.WindFootY:F2}-" +
+                $"{trees.WindSummitY:F2}");
+            Assert.That(
+                trees.WallTrees.Count,
+                Is.InRange(1, AlpineVillageTreePlanner.WallTreeCount),
+                "The wall lost its lee pockets.");
+            Assert.That(
+                trees.CopseTrees.Count,
+                Is.InRange(1, AlpineVillageTreePlanner.CopseTreeCount),
+                "No copse behind the firewood house.");
+            Assert.That(
+                trees.Stumps.Count,
+                Is.LessThanOrEqualTo(AlpineVillageTreePlanner.StumpCount));
+
+            var walkable = new AlpineVillageWalkableArea(plan);
+            IReadOnlyList<AlpineVillageRockPlacement> rock =
+                AlpineVillageRockPlanner.Create(plan);
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+
+            foreach (MountainRoadForestDescriptor tree in trees.WallTrees)
+            {
+                var point = new Vector2(tree.Position.x, tree.Position.z);
+
+                // On the rise, in the band, and never on ground he can reach.
+                float rise = AlpineVillageTerrainSampler.SampleRidgeRise(plan, point);
+                Assert.That(
+                    rise,
+                    Is.InRange(
+                        (AlpineVillageTreePlanner.WallBandInner -
+                            AlpineVillageTerrainSampler.RidgeStandoff) *
+                            AlpineVillageTerrainSampler.RidgeRisePerMeter - 0.01f,
+                        (AlpineVillageTreePlanner.WallBandOuter -
+                            AlpineVillageTerrainSampler.RidgeStandoff) *
+                            AlpineVillageTerrainSampler.RidgeRisePerMeter + 0.01f),
+                    $"{tree.StableId} left the wall band.");
+                Assert.That(
+                    walkable.Contains(tree.Position),
+                    Is.False,
+                    $"{tree.StableId} stands where the hero walks.");
+                Assert.That(
+                    tree.BlocksMovement,
+                    Is.False,
+                    $"{tree.StableId} claims to block, but nothing can reach it.");
+                Assert.That(
+                    IsInsideAuthoredRock(rock, point, tree.TrunkRadius),
+                    Is.False,
+                    $"{tree.StableId} has its trunk inside the authored stone.");
+                Assert.That(
+                    AlpineVillagePathPlanner.MeasureDistanceOutsideTrodden(
+                        plan, paths, point, out _),
+                    Is.GreaterThanOrEqualTo(AlpineVillageTreePlanner.LaneKeepClear),
+                    $"{tree.StableId} crowds the trodden network.");
+                AssertGrounded(plan, tree, AlpineVillageTreePlanner.BuriedFoot);
+            }
+
+            // The copse is the one group on walkable ground, so it is the one
+            // group the mask has to know about - and it must still leave the
+            // firewood house walkable on all four sides.
+            foreach (MountainRoadForestDescriptor tree in trees.CopseTrees)
+            {
+                Assert.That(
+                    tree.BlocksMovement,
+                    Is.True,
+                    $"{tree.StableId} would be walked through.");
+                Assert.That(
+                    walkable.Contains(tree.Position),
+                    Is.False,
+                    $"{tree.StableId} was never carved out of the mask.");
+                Assert.That(
+                    plan.Lane.FindNearest(
+                        new Vector2(tree.Position.x, tree.Position.z),
+                        out float lateral),
+                    Is.GreaterThanOrEqualTo(0f));
+                Assert.That(
+                    lateral,
+                    Is.GreaterThanOrEqualTo(AlpineVillageTreePlanner.LaneKeepClear),
+                    $"{tree.StableId} crowds the one street.");
+            }
+
+            AlpineVillagePlotDescriptor firewood = plan.Plots.First(
+                plot => plot.StableId == AlpineVillageLifePlan.WoodHouseId);
+            AssertWalkableOnEverySide(walkable, firewood);
+
+            Assert.That(
+                trees.WindFootY,
+                Is.LessThan(trees.WindSummitY),
+                "A degenerate wind profile flattens the sway to a constant.");
+
+            // Same plan twice, same trees: the wall groups are authored and
+            // must not wander with the seed.
+            AlpineVillagePlan second = CreatePlan();
+            Assert.That(
+                second.Trees.WallTrees.Select(tree => tree.StableId),
+                Is.EqualTo(trees.WallTrees.Select(tree => tree.StableId)));
+            Assert.That(
+                second.Trees.WallTrees.Select(tree => tree.Position),
+                Is.EqualTo(trees.WallTrees.Select(tree => tree.Position)));
+        }
+
+        private static void AssertGrounded(
+            AlpineVillagePlan plan,
+            MountainRoadForestDescriptor tree,
+            float buried)
+        {
+            var point = new Vector2(tree.Position.x, tree.Position.z);
+            float ground = Mathf.Max(
+                AlpineVillageTerrainSampler.SampleHeight(plan, point),
+                AlpineVillageTerrainSampler.SampleMeshHeight(plan, point));
+
+            // Never above the ground, and never further under it than the
+            // burial plus the fall the trunk's own footprint takes on a 3.6:1
+            // face - which is exactly what the lowest-of-N grounding buys.
+            float slack = buried +
+                tree.TrunkRadius * AlpineVillageTerrainSampler.RidgeRisePerMeter +
+                0.6f;
+            Assert.That(
+                ground - tree.Position.y,
+                Is.InRange(-0.01f, slack),
+                $"{tree.StableId} floats or is swallowed by the face.");
+        }
+
+        private static void AssertWalkableOnEverySide(
+            AlpineVillageWalkableArea walkable,
+            AlpineVillagePlotDescriptor plot)
+        {
+            Vector3 facing = plot.Facing.normalized;
+            Vector3 across = Vector3.Cross(Vector3.up, facing).normalized;
+            float depth = plot.FootprintSize.y * 0.5f + 1.5f;
+            float width = plot.FootprintSize.x * 0.5f + 1.5f;
+            Vector3[] probes =
+            {
+                plot.GroundCenter + facing * depth,
+                plot.GroundCenter - facing * depth,
+                plot.GroundCenter + across * width,
+                plot.GroundCenter - across * width
+            };
+            for (int index = 0; index < probes.Length; index++)
+            {
+                Assert.That(
+                    walkable.Contains(probes[index], 0.35f),
+                    Is.True,
+                    $"{plot.StableId} lost the walk around side {index}.");
+            }
+        }
+
+        private static bool IsInsideAuthoredRock(
+            IReadOnlyList<AlpineVillageRockPlacement> rock,
+            Vector2 point,
+            float radius)
+        {
+            for (int index = 0; index < rock.Count; index++)
+            {
+                AlpineVillageRockPlacement placement = rock[index];
+                Vector3 forward3 = placement.Rotation * Vector3.forward;
+                var forward = new Vector2(forward3.x, forward3.z).normalized;
+                var right = new Vector2(forward.y, -forward.x);
+                var delta = new Vector2(
+                    point.x - placement.Position.x,
+                    point.y - placement.Position.z);
+                float depth = Vector2.Dot(delta, forward);
+                if (Mathf.Abs(Vector2.Dot(delta, right)) <=
+                        VillageRockAssetProvider.HalfWidth + radius &&
+                    depth >= -radius &&
+                    depth <= VillageRockAssetProvider.Depth + radius)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

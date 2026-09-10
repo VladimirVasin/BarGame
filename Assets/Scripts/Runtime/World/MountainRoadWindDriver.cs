@@ -8,6 +8,10 @@ namespace BarPromenade
     /// the mountain has: the swaying conifer crowns, and the wind bed under
     /// them.
     ///
+    /// Both mountain areas install one now - the road, and the village above
+    /// it since `2026-09-10`. The globals it writes are process-wide, so only
+    /// ever one at a time; each area gives its own foot and summit heights.
+    ///
     /// <see cref="CityWeatherController"/> already carries the wind to
     /// everything the city shares — cloth, the falling snow's drift — so
     /// this deliberately adds no second writer to any of those. It reads
@@ -32,7 +36,7 @@ namespace BarPromenade
             Shader.PropertyToID("_MountainWindProfile");
 
         private CityWeatherController weather;
-        private MountainRoadWeatherShaper shaper;
+        private IMountainWindSwaySource shaper;
         private MountainRoadWindSoundPlayer sound;
         private Vector4 profile;
         private float phaseSeconds;
@@ -40,9 +44,21 @@ namespace BarPromenade
         public float AppliedSway { get; private set; }
         public bool IsInitialized { get; private set; }
 
+        /// <param name="routeFootY">
+        /// Low end of the range the shader normalises a crown's own base
+        /// against. Give it the range the TREES actually occupy, not the
+        /// route's: the village's lane climbs `6.4 m` while its trees stand
+        /// `5-8 m` up a `74` degree wall, so on the lane's scale every crown
+        /// saturates the climb term and the amplitude collapses to a constant.
+        /// </param>
+        /// <param name="windSound">
+        /// Optional, and the village passes null on purpose: its storm field
+        /// already drives the wind bed, and two writers on one player have no
+        /// defined winner.
+        /// </param>
         public void Initialize(
             CityWeatherController weatherController,
-            MountainRoadWeatherShaper weatherShaper,
+            IMountainWindSwaySource weatherShaper,
             MountainRoadWindSoundPlayer windSound,
             float routeFootY,
             float routeSummitY,

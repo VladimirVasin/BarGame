@@ -1,0 +1,68 @@
+{
+  "generator": "OpenAI built-in ImageGen",
+  "backendModel": "not exposed by the tool",
+  "date": "2026-09-10",
+  "purpose": "Cannery visual refinement. Original generated pixels; runtime imports capped at 512px with sRGB, mipmaps, repeat. Port textures reused for other surface roles.",
+  "assets": [
+    {
+      "name": "CanneryFloorAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: one square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 2 metres of muted pale neutral grey worn non-slip resin flooring in a modest fish cannery. Fine aggregate, broad quiet rubbed patches, faint irregular scuffs, sparse old mineral marks. Washable and maintained. No puddles, no markings, no grout grid, no large damage; local wetness and wear will be placed in the game. Composition: perpendicular orthographic view of a flat surface filling the whole image edge to edge, tile seamlessly in both axes. Style: restrained realistic material simplified for a videogame, readable quiet broad forms, low contrast and fine surface character. Lighting: fully flat diffuse albedo, no directional lighting, gradient, baked shadows, ambient occlusion, perspective or specular reflection. Neutral light base suitable for multiplication by muted material tint. No text, watermark, frame, sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "CanneryFloorAlbedo.png",
+      "runtime": "Assets/Resources/City/Cannery/Textures/CanneryFloorAlbedo.png",
+      "sha256": "d4faad20a271af669d1bfefd6995d1e83bd8c861ddf2bb11e4e457748311107d",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "CanneryWashWallAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: one square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 1.5 metres of washable old off-white industrial wall tiling, a seamless repeat of five by five approximately 30cm square tiles with narrow muted light-grey grout. Subtle glaze variation and sparse tiny worn edges; clean maintained work surface, no grime crust or mould. Flat grout coloration, no bevel shadows. Composition: perpendicular orthographic view of a flat surface filling the whole image edge to edge, tile seamlessly in both axes. Style: restrained realistic material simplified for a videogame, readable quiet broad forms, low contrast and fine surface character. Lighting: fully flat diffuse albedo, no directional lighting, gradient, baked shadows, ambient occlusion, perspective or specular reflection. Neutral light base suitable for multiplication by muted material tint. No text, watermark, frame, sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "CanneryWashWallAlbedo.png",
+      "runtime": "Assets/Resources/City/Cannery/Textures/CanneryWashWallAlbedo.png",
+      "sha256": "b0105fe0ceef1706480e1998a23adeb551ead46b031e125a99f96c8fbb1eafbf",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "CanneryStainlessAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: one square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 1.5 metres of dull neutral light grey brushed stainless steel sheet for a fish cannery workbench and canning machines. Fine directional brushed grain, restrained hairline use scratches, very faint broad tonal variation. Clean food-contact metal. No rust, stains, panel seams, bolts, highlights or polished mirror reflections. Composition: perpendicular orthographic view of a flat surface filling the whole image edge to edge, tile seamlessly in both axes. Style: restrained realistic material simplified for a videogame, readable quiet broad forms, low contrast and fine surface character. Lighting: fully flat diffuse albedo, no directional lighting, gradient, baked shadows, ambient occlusion, perspective or specular reflection. Neutral light base suitable for multiplication by muted material tint. No text, watermark, frame, sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "CanneryStainlessAlbedo.png",
+      "runtime": "Assets/Resources/City/Cannery/Textures/CanneryStainlessAlbedo.png",
+      "sha256": "885f81056208b965c00c9138a86c96bb4721b49c5053ca3c6705aac8f4d82e26",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "CanneryInsulationAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: one square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 1.5 metres of off-white coated metal skin of an insulated fish-delivery truck and cold-room sandwich panels. Restrained fine orange-peel coating, light rubbed wear, occasional tiny shallow scratches. Maintained washable surface. No panel seams, rivets, rust streaks, branding, objects or edge borders. Composition: perpendicular orthographic view of a flat surface filling the whole image edge to edge, tile seamlessly in both axes. Style: restrained realistic material simplified for a videogame, readable quiet broad forms, low contrast and fine surface character. Lighting: fully flat diffuse albedo, no directional lighting, gradient, baked shadows, ambient occlusion, perspective or specular reflection. Neutral light base suitable for multiplication by muted material tint. No text, watermark, frame, sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "CanneryInsulationAlbedo.png",
+      "runtime": "Assets/Resources/City/Cannery/Textures/CanneryInsulationAlbedo.png",
+      "sha256": "f7507678554e9cef10d8ce39d0c2f91986465fbe39fb76fae8d0c6cc521c0f0c",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "name": "CanneryCardboardAlbedo",
+      "prompt": "Use case: stylized-concept. Asset type: one square seamless tileable base-color/albedo texture for a low-poly PS1-inspired Unity game, 1024x1024. Primary request: 1 metre of plain light warm kraft cardboard used for fish-can shipping cartons. Quiet fine paper fibres, slight restrained recycled-paper mottling, very subtle handling wear. No box edges, folds, seam, tape, labels, printed words, stripes or stamps; those belong to separate geometry. Composition: perpendicular orthographic view of a flat surface filling the whole image edge to edge, tile seamlessly in both axes. Style: restrained realistic material simplified for a videogame, readable quiet broad forms, low contrast and fine surface character. Lighting: fully flat diffuse albedo, no directional lighting, gradient, baked shadows, ambient occlusion, perspective or specular reflection. Neutral light base suitable for multiplication by muted material tint. No text, watermark, frame, sheet grid or other objects. Output only the texture image.",
+      "status": "generated",
+      "original": "CanneryCardboardAlbedo.png",
+      "runtime": "Assets/Resources/City/Cannery/Textures/CanneryCardboardAlbedo.png",
+      "sha256": "7c8023ccad261997dc857e009c26645b41ae917d0d8be6cdf3cf37e5cd3f4e5a",
+      "sourceDimensions": [
+        1254,
+        1254
+      ]
+    }
+  ]
+}

@@ -24,7 +24,13 @@ spec.loader.exec_module(port)
 Geometry, empty, source, obj = port.Geometry, port.empty, port.source, port.obj
 chamfer, ring, kit_add = port.chamfer, port.ring, port.kit_add
 CONCRETE, EDGE, DARK, METAL, PAINT, RUST, CABIN, WOOD, ROPE, GLASS, FISH, ICE, LAMP = port.PALETTE
-NAMES = ("Hall", "Equipment", "Truck", "Pallet", "RetortBasket", "CanTray", "CartonStack", "Trolley", "Yard")
+NAMES = ("Hall", "Equipment", "Truck", "Pallet", "RetortBasket", "CanTray", "CartonStack", "Trolley", "Yard", "Workwear")
+# This bounded extension belongs to the cannery; rebuilding it does not change
+# the existing port pack's material contract or geometry signatures.
+port.SURFACE_TILES.update({"CanneryFloor":2.0,"WetFloor":2.0,"WashWall":1.5,"Stainless":1.5,
+                          "Insulation":1.5,"Cardboard":1.0})
+CONVEYOR_ROLLER_AXES=("Z","Z","X","X","Z","Z","X","X")
+CONVEYOR_ROLLER_SIGNS=(-1,-1,1,1,1,1,1,1)
 
 
 def anchor(name, parent, position):
@@ -48,6 +54,17 @@ def panel_frame(g, x, z, width, low=.78, high=3.15):
         chamfer(g, (x, y, z), (.09, .065, width), METAL, .012)
 
 
+def dial_ticks(g, center, radius, normal=(0,0,1), count=9):
+    """Unnumbered mechanical divisions, real face geometry with no added text."""
+    normal=Vector(normal);vertical=Vector((0,1,0));horizontal=vertical.cross(normal)
+    center=Vector(center);previous=g.role;g.role=None
+    for i in range(count):
+        angle=math.radians(-125+250*i/(count-1))
+        direction=horizontal*math.sin(angle)+vertical*math.cos(angle)
+        g.rod(center+direction*(radius*.72),center+direction*radius,.006,DARK,6)
+    g.role=previous
+
+
 def hall(mat):
     root=empty("Hall"); g=Geometry(); c=Geometry(); glass=Geometry(); roof=Geometry(); lamps=Geometry()
     # The hall has two honest public openings and two goods openings. Its
@@ -62,7 +79,7 @@ def hall(mat):
     for wall in walls:
         kit_add(g, wall, CABIN); kit_add(c, wall, CABIN)
     g.role=None
-    chamfer(g,(-4,.13,0),(8,.1,14),CONCRETE,.008)
+    g.role="CanneryFloor";chamfer(g,(-4,.13,0),(8,.1,14),CONCRETE,.008);g.role=None
     collision_box("HallFloor",root,mat,(-4,.13,0),(8,.1,14))
     for x in (-7.88,-.12):
         for z in (-6.85,-3.5,0,3.5,6.85):
@@ -70,6 +87,10 @@ def hall(mat):
     roof.role="Roof"
     chamfer(roof,(-4,4.19,0),(8.65,.18,14.55),METAL,.03)
     for z in range(-7,8): roof.box((-4,4.297,z),(8.56,.035,.045),DARK)
+    # Real roof purlins keep the low hall structurally legible from its public
+    # aisle. Nothing hangs into the pallet-jack or retort-door envelopes.
+    for z in (-6.75,-3.5,0,3.5,6.75):
+        chamfer(g,(-4,3.98,z),(7.75,.16,.10),METAL,.012)
     for x in (-8.18,.18):
         g.rod((x,4.05,-7.25),(x,4.05,7.25),.075,METAL,10)
         g.rod((x,4.02,-6.85),(x,.3,-6.85),.065,METAL,10)
@@ -79,12 +100,18 @@ def hall(mat):
     cold=[kit.translated(kit.wall_run(2.6,2.72,.12),(-6.5,-6.85,.18)),
           kit.translated(kit.wall_run(2.6,2.72,.12),(-6.5,-2.9,.18)),
           kit.translated(kit.rotated_z(kit.wall_run(3.95,2.72,.12,[kit.Opening(0,1.5,2.25)]),90),(-5.2,-4.875,.18))]
+    g.role="Insulation"
     for wall in cold:
         kit_add(g,wall,CABIN);kit_add(c,wall,CABIN)
     chamfer(g,(-6.5,2.98,-4.875),(2.73,.14,4.08),CABIN,.025)
     for zz in (-5.65,-4.10):chamfer(g,(-5.09,1.37,zz),(.13,2.37,.09),METAL,.008)
     # Folded insulated leaf is parked next to the opening, not across it.
     chamfer(g,(-5.02,1.34,-3.75),(.14,2.3,.45),CABIN,.025)
+    g.role=None
+    # Joints, gasket and a folded handle explain the washable insulated leaf.
+    for z in (-6.32,-3.38):g.box((-5.132,1.52,z),(.013,2.55,.018),METAL)
+    g.rod((-4.927,1.24,-3.88),(-4.927,1.60,-3.88),.025,METAL,8)
+    g.box((-5.111,1.34,-3.95),(.018,2.23,.022),DARK)
     chamfer(g,(-7.72,3.46,-5.4),(.38,.7,1.1),METAL)
     for zz in (-5.72,-5.10):ring(g,(-7.51,3.46,zz),.24,.025,DARK,(1,0,0),12)
     # Viewing partition: two staff gates align with receiving/finished doors.
@@ -102,10 +129,28 @@ def hall(mat):
         # Steel roller shutter stored above a genuine opening.
         g.rod((.14,3.16,z-width*.55),(.14,3.16,z+width*.55),.17,METAL,12)
         for zz in (z-width*.52,z+width*.52):chamfer(g,(.16,1.62,zz),(.12,2.88,.09),METAL,.01)
+        # A blank, modest goods label belongs to its actual opening.
+        chamfer(g,(.13,3.48,z),(.045,.22,width*.72),METAL,.008)
+    anchor("ReceiveSign",root,(.156,3.48,-5.5));anchor("FinishedSign",root,(.156,3.48,5))
+    # The wet-process wall is washable only where work actually takes place.
+    g.role="WashWall"
+    chamfer(g,(-7.863,1.05,1.45),(.033,1.72,8.55),CABIN,.012)
+    g.role="Stainless"
+    for y in (.22,1.94):chamfer(g,(-7.83,y,1.45),(.035,.07,8.55),METAL,.008)
+    g.role=None
     # Drains lead under prep and retort; no loose decorative pipe ends.
     for z in (-2.30,2.45):
         g.box((-4.9,.187,z),(3.9,.014,.19),DARK)
         for i in range(25):g.box((-6.75+i*.155,.20,z),(.035,.018,.18),METAL)
+    g.role="WetFloor"
+    for x,z,width,depth in ((-4.72,-2.46,.68,.32),(-5.68,2.26,.51,.27)):
+        outline=[(-.50,-.22),(-.30,-.50),(.20,-.43),(.50,-.12),(.40,.37),(.08,.50),(-.38,.32)]
+        vertices=[(x+dx*width,y,z+dz*depth) for y in (.182,.184) for dx,dz in outline]
+        count=len(outline)
+        faces=[tuple(reversed(range(count))),tuple(range(count,count*2))]
+        faces.extend((i,(i+1)%count,(i+1)%count+count,i+count) for i in range(count))
+        g.add(vertices,faces,CONCRETE)
+    g.role=None
     for index,z in enumerate((-3.7,-.9,2.2,5.2)):
         chamfer(g,(-4.2,3.77,z),(1.65,.16,.24),METAL,.02)
         lamps.box((-4.2,3.675,z),(1.45,.03,.17),LAMP)
@@ -116,6 +161,17 @@ def hall(mat):
     g.rod((-7.65,.3,1.5),(-7.65,5.1,1.5),.14,METAL,12)
     g.rod((-7.65,5.1,1.5),(-7.65,5.1,2),.14,METAL,12)
     ring(g,(-7.65,4.48,1.5),.18,.025,RUST,(0,1,0),12)
+    anchor("SteamOutlet",root,(-7.65,5.1,2.15))
+    # One mounted hose and a hung squeegee explain wash-down, without loose
+    # clutter, invented stock or a prop in a public/work route.
+    chamfer(g,(-7.77,1.22,-.92),(.10,.22,.18),METAL,.02)
+    g.role="Rubber"
+    for offset in (0,.045,.09):ring(g,(-7.68+offset,1.07,-.92),.25,.018,DARK,(1,0,0),14)
+    g.role=None
+    g.rod((-7.56,1.06,-.69),(-7.56,1.41,-.60),.026,METAL,8)
+    g.rod((-7.73,.41,-1.59),(-7.73,1.89,-1.59),.022,METAL,8)
+    chamfer(g,(-7.73,.38,-1.59),(.08,.07,.58),METAL,.014)
+    g.role="Rubber";g.box((-7.73,.344,-1.59),(.055,.025,.57),DARK);g.role=None
     chamfer(g,(-5.75,2.9,7.16),(2.8,.6,.085),METAL,.025)
     anchor("Sign",root,(-5.75,2.9,7.212))
     anchor("PublicEntry",root,(-1.1,.18,7.3));anchor("PublicExit",root,(-1.1,.18,-7.3))
@@ -136,9 +192,34 @@ def legs(g,x,z,width,depth,top):
             chamfer(g,(xx,.205,zz),(.17,.05,.17),METAL,.014)
 
 
-def can(g,x,y,z):
-    g.role="SteelLight";g.rod((x,y,z),(x,y+.095,z),.052,CABIN,12)
-    g.rod((x,y+.092,z),(x,y+.102,z),.057,METAL,12)
+def can_body(g,x,y,z):
+    """A closed bottom and open double wall; an unfilled can is visibly empty."""
+    g.role="Stainless";g.rod((x,y,z),(x,y+.008,z),.052,CABIN,12)
+    for i in range(12):
+        a,b=i*math.tau/12,(i+1)*math.tau/12
+        vertices=[(x+r*math.cos(t),yy,z+r*math.sin(t))
+                  for yy in (y+.008,y+.095) for r in (.047,.052) for t in (a,b)]
+        g.add(vertices,[(0,1,3,2),(4,6,7,5),(0,4,5,1),(2,3,7,6),(0,2,6,4),(1,5,7,3)],CABIN)
+    for yy in (y+.009,y+.094):ring(g,(x,yy,z),.052,.0025,METAL,(0,1,0),12)
+    g.role=None
+
+
+def can_contents(g,x,y,z):
+    g.role="Fish"
+    g.rod((x,y+.01,z),(x,y+.08,z),.046,FISH,12)
+    # Two plain cut pieces sit below the rim; no whole fish protrudes from
+    # a sealed food can and no duplicated batch is baked into machinery.
+    for dx,dz in ((-.015,-.013),(.017,.011)):
+        g.rod((x+dx,y+.08,z+dz-.014),(x+dx,y+.08,z+dz+.014),.011,FISH,6)
+    g.role=None
+
+
+def can_lid(g,x,y,z):
+    g.role="Stainless"
+    g.rod((x,y+.095,z),(x,y+.102,z),.057,CABIN,12)
+    ring(g,(x,y+.099,z),.050,.002,METAL,(0,1,0),12)
+    # A pressed concentric bead reads as a manufactured lid, with no brand.
+    ring(g,(x,y+.100,z),.034,.0015,METAL,(0,1,0),12)
     g.role=None
 
 
@@ -157,14 +238,30 @@ def basket_geometry(g):
     g.role=None
 
 
-def roller_run(g, start, end, open_start=True, open_end=True):
+def roller_run(g, root, mat, run_index, start, end, open_start=True, open_end=True):
     a,b=Vector((start[0],1.155,start[1])),Vector((end[0],1.155,end[1]))
     direction=(b-a).normalized();side=Vector((-direction.z,0,direction.x));length=(b-a).length
     left=.45 if open_start else 0;right=length-(.45 if open_end else 0)
     if right<=left:return
-    for distance in [left+i*.16 for i in range(int((right-left)/.16)+1)]:
+    distances=[left+i*.16 for i in range(int((right-left)/.16)+1)]
+    driven=(0,len(distances)-1)
+    for index,distance in enumerate(distances):
         p=a+direction*distance
-        g.rod(p-side*.39,p+side*.39,.035,METAL,10)
+        if index in driven:
+            number=run_index*2+driven.index(index)
+            pivot=empty("MOVE_ConveyorRoller"+str(number).zfill(2),root,tuple(p));roller=Geometry()
+            roller.role="Stainless";roller.rod(-side*.39,side*.39,.035,METAL,10)
+            # One axial highlight makes the small driven subset's rotation
+            # observable, while the remaining support rollers stay passive.
+            roller.role=None
+            roller.rod(-side*.30+Vector((0,.034,0)),side*.30+Vector((0,.034,0)),.004,CABIN,6)
+            obj(roller,"ConveyorRollerVisible"+str(number).zfill(2),pivot,mat)
+        else:
+            g.role="Stainless";g.rod(p-side*.39,p+side*.39,.035,METAL,10);g.role=None
+        if index in driven:
+            for sign in (-1,1):
+                bearing=p+side*(sign*.412)
+                chamfer(g,tuple(bearing-Vector((0,.015,0))),(.085,.11,.085),PAINT,.012)
     for sign in (-1,1):
         p=a+direction*left+side*(sign*.41);q=a+direction*right+side*(sign*.41)
         g.rod(p-Vector((0,.11,0)),q-Vector((0,.11,0)),.035,PAINT,8)
@@ -184,20 +281,32 @@ def equipment(mat):
     g.rod((-4.1,.42,-5.95),(-4.1,1.62,-5.95),.045,METAL,8)
     g.rod((-4.11,1.67,-6.05),(-4.11,1.67,-5.93),.19,METAL,16)
     g.rod((-4.11,1.67,-5.929),(-4.11,1.67,-5.915),.155,CABIN,16)
+    dial_ticks(g,(-4.11,1.67,-5.907),.132)
+    ring(g,(-4.11,1.67,-5.914),.17,.015,METAL,(0,0,1),16)
     dial=empty("MOVE_ScaleNeedle",root,(-4.11,1.67,-5.90));d=Geometry()
     d.rod((0,0,0),(.095,.07,0),.009,DARK,6);obj(d,"ScaleNeedle",dial,mat)
     anchor("ReceivingLoad",root,(-3.5,.42,-5.45));anchor("Receiver",root,(-3.4,.18,-6.5))
     # Wash trough has an open dark bowl, a lip, tap, bottom drain and hose.
     wash_start=len(g.vertices)
+    g.role="Stainless"
     legs(g,-5,-3.4,2.25,1.2,1.1)
     chamfer(g,(-5,.87,-3.4),(2.25,.1,1.2),METAL,.035)
     for xx in (-6.08,-3.92):chamfer(g,(xx,1.06,-3.4),(.09,.34,1.2),CABIN,.012)
     for zz in (-3.96,-2.84):chamfer(g,(-5,1.06,zz),(2.1,.34,.09),CABIN,.012)
-    g.role="Deck";g.box((-5,.936,-3.4),(1.95,.02,.91),METAL);g.role=None
+    g.box((-5,.936,-3.4),(1.95,.02,.91),METAL)
     g.rod((-5.75,.88,-3.4),(-5.75,.22,-3.4),.045,METAL,8)
     g.rod((-5.75,1.2,-3.92),(-5.75,1.57,-3.92),.035,METAL,8)
     g.rod((-5.75,1.57,-3.92),(-5.75,1.57,-3.57),.035,METAL,8)
     g.rod((-5.75,1.57,-3.57),(-5.75,1.46,-3.57),.035,METAL,8)
+    ring(g,(-5.75,1.26,-3.92),.085,.016,METAL,(0,1,0),10)
+    for dx,dz in ((-.075,0),(.075,0),(0,-.075),(0,.075)):
+        g.rod((-5.75,1.26,-3.92),(-5.75+dx,1.26,-3.92+dz),.012,METAL,6)
+    g.role=None
+    # Sink drain and the visible water trap lead into the floor drain.
+    g.rod((-4.35,.938,-3.38),(-4.35,.946,-3.38),.07,DARK,12)
+    for dx in (-.035,0,.035):g.rod((-4.35+dx,.95,-3.425),(-4.35+dx,.95,-3.335),.007,METAL,6)
+    g.rod((-5.75,.24,-3.4),(-5.75,.24,-3.65),.045,METAL,8)
+    g.rod((-5.75,.24,-3.65),(-5.75,.185,-3.65),.045,METAL,8)
     shift_geometry(g,wash_start,(0,0,1.35))
     anchor("PreparationWorker",root,(-6.65,.18,-2.05));anchor("PreparationLeftHand",root,(-6.12,1.18,-2.25))
     anchor("PreparationRightHand",root,(-6.12,1.18,-1.85));anchor("PreparationLoad",root,(-5.7,.96,-2.05))
@@ -205,24 +314,66 @@ def equipment(mat):
     port.crate(p,0,0,0,True);obj(p,"PreparationFishVisible",prep,mat)
     # Fill/seam bench, guide rails and a hopper with a narrowed outlet.
     seam_start=len(g.vertices)
+    g.role="Stainless"
     legs(g,-5,-.85,2.5,1.45,1.08)
     chamfer(g,(-5,1.06,-.85),(2.5,.18,1.45),METAL,.028)
     g.role="Rubber";g.box((-5,1.16,-.85),(2.27,.045,.61),DARK);g.role=None
     for zz in (-1.18,-.52):g.rod((-6.15,1.28,zz),(-3.85,1.28,zz),.021,METAL,8)
     g.rod((-5.72,1.55,-.85),(-5.72,2.11,-.85),.31,CABIN,12,end_radius=.46)
     g.rod((-5.72,1.3,-.85),(-5.72,1.55,-.85),.085,METAL,10,end_radius=.2)
+    # A bolted feed flange and actual filler outlet join the hopper to line.
+    g.role="Stainless"
+    ring(g,(-5.72,1.57,-.85),.315,.025,METAL,(0,1,0),12)
+    g.rod((-5.72,1.265,-.85),(-5.72,1.38,-.85),.055,METAL,10)
+    g.role=None
     chamfer(g,(-4.36,1.67,-1.32),(.29,1.14,.24),PAINT)
     chamfer(g,(-4.36,2.18,-.95),(.6,.2,.94),PAINT)
     seamer=empty("MOVE_SeamerHead",root,(-4.36,1.62,-.35));s=Geometry()
     s.rod((0,0,0),(0,.48,0),.08,METAL,10);s.rod((0,-.07,0),(0,.03,0),.16,METAL,12)
+    ring(s,(0,.06,0),.12,.018,METAL,(0,1,0),12)
+    for side,label in ((-1,"Left"),(1,"Right")):
+        # The two roll shafts belong to the existing descending seamer head.
+        s.rod((side*.09,.12,0),(side*.19,.12,0),.035,PAINT,8)
+        pivot=empty("MOVE_SeamerRoller"+label,seamer,(side*.19,-.018,0));roller=Geometry()
+        roller.role="Stainless";roller.rod((0,-.05,0),(0,.05,0),.047,METAL,10)
+        roller.role=None;roller.rod((.045,-.036,0),(.045,.036,0),.006,DARK,6)
+        obj(roller,"SeamerRollerVisible"+label,pivot,mat)
     obj(s,"SeamerHeadVisible",seamer,mat)
     chamfer(g,(-3.89,1.55,-1.39),(.19,.3,.21),PAINT,.025)
-    for y,col in ((1.62,LAMP),(1.49,DARK)):g.rod((-3.779,y,-1.39),(-3.754,y,-1.39),.033,col,8)
+    for y in (1.62,1.49):g.rod((-3.779,y,-1.39),(-3.754,y,-1.39),.036,DARK,8)
     shift_geometry(g,seam_start,(0,0,.5))
+    # Indexed filling briefly carries the tray beyond the original west edge.
+    # A small cantilevered roller shelf supports that sweep without changing
+    # the station, worker route or its existing collision volume.
+    g.role="Stainless"
+    for z in (-.65,-.50,-.35,-.20,-.05):
+        g.rod((-6.42,1.155,z),(-6.20,1.155,z),.035,METAL,10)
+    for x in (-6.41,-6.21):g.rod((x,1.10,-.69),(x,1.10,-.01),.025,METAL,8)
+    for z in (-.64,-.06):g.rod((-6.17,.89,z),(-6.41,1.10,z),.027,METAL,8)
+    g.role=None
+    # The original controls were at the far side of the bench. These two
+    # physical buttons match the worker's existing reachable hand positions.
+    chamfer(g,(-6.13,1.33,-.35),(.15,.22,.55),PAINT,.018)
+    for name,z,color in (("FillControl",-.52,LAMP),("SealControl",-.18,DARK)):
+        g.rod((-6.205,1.35,z),(-6.22,1.35,z),.034,color,10)
+        anchor(name,root,(-6.22,1.35,z))
+    indicator=Geometry();indicator.rod((-.014,0,0),(.014,0,0),.034,LAMP,10)
+    indicator_root=empty("SeamerRunIndicator",root,(-3.741,1.62,-.89))
+    obj(indicator,"SeamerIndicatorLens",indicator_root,mat)
     anchor("SeamerWorker",root,(-6.78,.18,-.35));anchor("SeamerLeftHand",root,(-6.24,1.2,-.52))
     anchor("SeamerRightHand",root,(-6.24,1.2,-.18));anchor("CanTray",root,(-5,1.19,-.35))
+    # The finite empty-can and lid stock has named visibility groups. Runtime
+    # exchanges these with the same tray during existing Fill/Seal phases.
+    supply=Geometry()
+    for x in range(5):
+        for z in range(3):can_body(supply,-5.65-.28+x*.14,1.155,-.82-.14+z*.14)
+    obj(supply,"CanSupply",root,mat)
+    supply=Geometry()
+    for stack in range(3):
+        for level in range(5):can_lid(supply,-5.3+stack*.15,1.08+level*.011,.22)
+    obj(supply,"LidSupply",root,mat)
     # Horizontal retort is a hollow pressure shell, with a clear front throat.
-    center=(-5,1.35);zback=.65;zfront=2.8;steps=20
+    center=(-5,1.35);zback=.65;zfront=2.8;steps=20;g.role="Stainless"
     for i in range(steps):
         a,b=i*math.tau/steps,(i+1)*math.tau/steps
         vertices=[(center[0]+r*math.cos(t),center[1]+r*math.sin(t),z)
@@ -232,16 +383,40 @@ def equipment(mat):
     for z in (.88,2.53):
         ring(g,(-5,1.35,z),.815,.035,METAL,(0,0,1),20)
         for xx in (-5.62,-4.38):chamfer(g,(xx,.52,z),(.16,.65,.35),METAL,.025)
+    g.role=None
+    # Small backing pads, fasteners and drain valve are attached to the
+    # pressure vessel, keeping its large uninterrupted barrel readable.
+    for z in (.88,2.53):
+        for side in (-1,1):
+            g.rod((-5+side*.81,1.35,z-.045),(-5+side*.81,1.35,z+.045),.045,METAL,6)
+    g.rod((-5,.61,1.8),(-5,.35,1.8),.045,METAL,8)
+    ring(g,(-5,.40,1.8),.085,.014,METAL,(0,1,0),10)
     g.rod((-5,2.11,1.6),(-5,2.5,1.6),.062,METAL,8)
     g.rod((-5,2.5,1.6),(-7.65,2.5,1.6),.062,METAL,8)
-    g.rod((-4.35,1.9,1.28),(-4.2,1.9,1.28),.13,CABIN,12)
-    g.rod((-4.19,1.9,1.28),(-4.18,1.95,1.33),.01,DARK,6)
+    g.rod((-4.35,1.9,1.28),(-4.2,1.9,1.28),.155,METAL,16)
+    g.rod((-4.199,1.9,1.28),(-4.19,1.9,1.28),.133,CABIN,16)
+    ring(g,(-4.19,1.9,1.28),.143,.012,METAL,(1,0,0),16)
+    dial_ticks(g,(-4.18,1.9,1.28),.114,(1,0,0))
+    pressure=empty("MOVE_RetortPressureNeedle",root,(-4.17,1.9,1.28));needle=Geometry()
+    needle.rod((0,-.012,0),(0,.085,.040),.007,DARK,6)
+    needle.rod((-.009,0,0),(.009,0,0),.020,METAL,10)
+    obj(needle,"RetortPressureNeedleVisible",pressure,mat)
     door=empty("MOVE_RetortDoor",root,(-5.82,1.35,2.91));d=Geometry()
     d.rod((.82,0,-.07),(.82,0,.07),.80,METAL,20)
     ring(d,(.82,0,.10),.63,.028,METAL,(0,0,1),20)
     ring(d,(.82,0,.16),.23,.023,METAL,(0,0,1),12)
     for angle in (0,math.pi*.5,math.pi,math.pi*1.5):
         d.rod((.82,0,.16),(.82+.23*math.cos(angle),.23*math.sin(angle),.16),.022,METAL,8)
+    for index,angle in enumerate((0,math.pi*.5,math.pi,math.pi*1.5)):
+        radial=Vector((math.cos(angle),math.sin(angle),0))
+        location=Vector((.82,0,.16))+radial*.64
+        lock=empty("MOVE_RetortLock"+str(index),door,tuple(location));clamp=Geometry()
+        clamp.rod((0,0,-.03),(0,0,.035),.049,METAL,10)
+        clamp.rod(-radial*.05+Vector((0,0,.033)),radial*.155+Vector((0,0,.033)),.033,METAL,8)
+        clamp.rod(radial*.10+Vector((0,0,.01)),radial*.10+Vector((0,0,.095)),.020,DARK,8)
+        obj(clamp,"RetortLockVisible"+str(index),lock,mat)
+        lug=Vector((-5,1.35,2.795))+radial*.79
+        chamfer(g,tuple(lug),(.105,.105,.11),METAL,.012)
     # Captured shoes run up two fixed guides. A swinging pressure lid would
     # sweep through the front conveyor; a 1.7 m vertical lift stays inside
     # the 4.1 m ceiling and clears the basket without crossing its feed.
@@ -261,6 +436,9 @@ def equipment(mat):
     # The operator touches a fixed control, not the wheel on the rising lid.
     chamfer(g,(-5.76,1.42,2.72),(.16,.30,.14),PAINT,.018)
     g.rod((-5.80,1.35,2.75),(-5.86,1.35,2.78),.024,LAMP,10)
+    indicator=Geometry();indicator.rod((-.012,0,0),(.012,0,0),.027,LAMP,10)
+    indicator_root=empty("RetortRunIndicator",root,(-5.855,1.49,2.72))
+    obj(indicator,"RetortIndicatorLens",indicator_root,mat)
     obj(d,"RetortDoorVisible",door,mat)
     # The controller instantiates the one shared basket asset here.
     empty("MOVE_RetortBasket",root,(-5,1.02,1.66))
@@ -277,11 +455,65 @@ def equipment(mat):
     ram_g.rod((0,.10,.7),(0,.22,.7),.045,METAL,8)
     obj(ram_g,"RetortRamVisible",ram,mat)
     anchor("RetortOperator",root,(-6.37,.18,2.55));anchor("RetortHand",root,(-5.86,1.35,2.78))
+    # Runtime mechanisms resolve Equipment anchors, while the visible vent
+    # belongs to the Hall shell; both markers identify the same real outlet.
+    anchor("SteamOutlet",root,(-7.65,5.1,2.15))
     anchor("RetortBasketOut",root,(-5,1.02,3.34))
     # Cooling/packing bench and nearby finished stock rack are distinct.
+    g.role="Stainless"
     legs(g,-5,5.05,2.8,1.1,1.05);chamfer(g,(-5,1.07,5.05),(2.8,.12,1.1),METAL,.025)
     for xx in (-6.35,-3.65):g.rod((xx,1.14,4.55),(xx,1.14,5.55),.025,METAL,8)
     for i in range(17):g.rod((-6.25+i*.155,1.145,4.6),(-6.25+i*.155,1.145,5.5),.016,METAL,6)
+    g.role=None
+    # A fixed tape dispenser is purposeful packaging equipment; no spare
+    # cans, cartons or pallets pretend to be outside the finite stock cycle.
+    chamfer(g,(-3.84,1.19,5.42),(.24,.10,.20),PAINT,.018)
+    ring(g,(-3.84,1.31,5.42),.078,.028,ROPE,(1,0,0),12)
+    g.rod((-3.94,1.31,5.42),(-3.74,1.31,5.42),.018,METAL,8)
+    g.box((-3.84,1.26,5.30),(.19,.025,.045),METAL)
+    # One open work carton fits west of the tray's cooling dock, with a real
+    # gap between them. It is a Pack-only proxy for this batch, not stock.
+    carton=Geometry();carton.role="Cardboard"
+    cx,cy,cz=-6.2725,1.14,5.05
+    chamfer(carton,(cx,cy+.008,cz),(.255,.016,.70),WOOD,.004)
+    for x in (cx-.1235,cx+.1235):chamfer(carton,(x,cy+.15,cz),(.008,.29,.70),WOOD,.003)
+    for z in (cz-.346,cz+.346):chamfer(carton,(cx,cy+.15,z),(.239,.29,.008),WOOD,.003)
+    # Creases and folded-back narrow flaps stay inside the bench footprint.
+    for z in (cz-.32,cz+.32):
+        chamfer(carton,(cx,cy+.298,z),(.237,.012,.045),WOOD,.003)
+    obj(carton,"PackingCarton",root,mat)
+    for index in range(15):
+        layer=index//10;slot=index%10
+        x=cx+(-.058 if slot<5 else .058) if layer==0 else cx
+        z=cz-.28+(slot%5)*.14
+        # These are destinations for the actual CanUnit meshes. Baking a
+        # second set here would double the batch during packing.
+        anchor("PackingCan"+str(index).zfill(2),root,(x,cy+.018+layer*.104,z))
+    anchor("PackingCartonLeftHand",root,(-6.40,1.47,4.89))
+    anchor("PackingCartonRightHand",root,(-6.40,1.47,5.21))
+    # Flat carton blanks rest at the unused east end, with no rendered words.
+    g.role="Cardboard"
+    for y in (1.145,1.163,1.181):
+        chamfer(g,(-4.65,y,5.25),(.62,.016,.45),WOOD,.004)
+        g.box((-4.65,y+.009,5.25),(.014,.002,.44),ROPE)
+    g.role=None
+    # A small feed lane takes each real can around the south of the carton
+    # to a reachable pickup. Its support height equals the can's tray base.
+    g.role="Stainless"
+    for index in range(8):
+        x=-5.40-index*.13
+        if index==4:
+            pivot=empty("MOVE_PackingFeedRoller",root,(x,1.19,4.62));roller=Geometry()
+            roller.role="Stainless";roller.rod((0,0,-.064),(0,0,.064),.035,METAL,10)
+            roller.role=None;roller.rod((0,.034,-.05),(0,.034,.05),.004,CABIN,6)
+            obj(roller,"PackingFeedRollerVisible",pivot,mat)
+        else:g.rod((x,1.19,4.556),(x,1.19,4.684),.035,METAL,10)
+    for z in (4.548,4.692):
+        g.rod((-5.39,1.20,z),(-6.32,1.20,z),.009,METAL,8)
+        for x in (-5.4,-6.31):g.rod((x,1.135,z),(x,1.20,z),.018,METAL,8)
+    g.role=None
+    chamfer(g,(-5.50,1.177,4.62),(.16,.075,.15),PAINT,.012)
+    anchor("PackingPickup",root,(-6.31,1.225,4.62))
     # Finished boxes stand in six floor slots, so the same low trolley can
     # retrieve them. An upper shelf would falsely need a second hoist.
     for i in range(6):
@@ -297,12 +529,12 @@ def equipment(mat):
     # Powered feed skirts the closed retort shell on the east and approaches
     # the carrier from its open front. The north branch takes the same tray
     # to cooling/packing after the drawer comes back out.
-    for first,last,open_first,open_last in (
+    for run_index,(first,last,open_first,open_last) in enumerate((
             ((-3.76,-.35),(-3.1,-.35),False,True),
             ((-3.1,-.35),(-3.1,3.95),True,True),
             ((-3.1,3.95),(-5.75,3.95),True,True),
-            ((-5.75,3.95),(-5.75,5.05),True,False)):
-        roller_run(g,first,last,open_first,open_last)
+            ((-5.75,3.95),(-5.75,5.05),True,False))):
+        roller_run(g,root,mat,run_index,first,last,open_first,open_last)
     for x,z in ((-3.1,-.35),(-3.1,3.95),(-5,3.95),(-5.75,3.95)):
         g.rod((x,1.11,z),(x,1.19,z),.44,METAL,20)
         g.rod((x,.91,z),(x,1.11,z),.11,PAINT,10)
@@ -339,15 +571,28 @@ def truck(mat):
     for x in (-.63,.63):
         for z in (-.35,.1,.5):chamfer(g,(x,.45,z),(.12,.04,1.1),METAL,.008)
     # Closed insulated goods body; separate leaves expose the actual interior.
+    g.role="Insulation"
     for center,size in (((0,1.15,.25),(2.5,.1,5.7)),((0,3.50,.25),(2.5,.1,5.7)),
                         ((-1.21,2.35,.25),(.08,2.3,5.7)),((1.21,2.35,.25),(.08,2.3,5.7)),
                         ((0,2.35,3.08),(2.5,2.3,.08))):
         chamfer(g,center,size,CABIN,.024)
+    g.role=None
     g.role="Deck";g.box((0,1.204,.22),(2.31,.018,5.55),METAL);g.role=None
     for x in (-1.21,1.21):
         for y in (1.21,3.48):g.rod((x,y,-2.58),(x,y,3.10),.034,METAL,8)
         for z in (-2.58,3.1):g.rod((x,1.21,z),(x,3.48,z),.034,METAL,8)
         for z in (-1.7,-.3,1.1,2.5):g.box((x,2.32,z),(.018,2.2,.025),METAL)
+    # The refrigeration head actually meets the insulated front wall. Fins,
+    # guarded fan and short service lines stay inside the existing truck size.
+    chamfer(g,(0,3.19,3.23),(1.18,.52,.29),CABIN,.045)
+    for x in (-.25,.25):
+        g.rod((x,3.20,3.38),(x,3.20,3.407),.175,DARK,12)
+        ring(g,(x,3.20,3.414),.163,.012,METAL,(0,0,1),12)
+        for offset in (-.09,-.045,0,.045,.09):
+            g.rod((x+offset,3.07,3.42),(x+offset,3.33,3.42),.009,METAL,6)
+    for x in (-.51,.51):
+        g.rod((x,3.08,3.30),(x,2.98,3.30),.025,METAL,8)
+        g.rod((x,2.98,3.30),(x,2.98,3.12),.025,METAL,8)
     # Chamfered cab and a sloped windscreen opening, not a solid painted block.
     # A real cab floor leaves the driver's footwell and open doorway empty.
     chamfer(g,(0,1.09,4.27),(2.28,.12,2.10),PAINT,.035)
@@ -379,6 +624,18 @@ def truck(mat):
     for x in (-.88,.88):
         g.rod((x,1.4,5.25),(x,1.4,5.32),.115,LAMP,12)
         chamfer(g,(x,.75,-2.51),(.29,.16,.12),RUST,.018)
+    # Four formed wheel arches and flexible flaps fit the existing collision
+    # envelope. The underbody remains open enough to see axles and suspension.
+    for side in (-1,1):
+        for z in (0,4.2):
+            for index in range(8):
+                a,b=index*math.pi/8,(index+1)*math.pi/8
+                vertices=[(side*x,.45+r*math.sin(t),z+r*math.cos(t))
+                          for x in (.86,1.235) for r in (.505,.56) for t in (a,b)]
+                g.add(vertices,[(0,1,3,2),(4,6,7,5),(0,4,5,1),(2,3,7,6),(0,2,6,4),(1,5,7,3)],PAINT)
+            g.role="Rubber";chamfer(g,(side*1.045,.27,z-.55),(.34,.39,.035),DARK,.01);g.role=None
+        for z in (.84,2.35):g.rod((side*.76,.65,z),(side*1.10,.65,z),.035,METAL,8)
+        chamfer(g,(side*1.10,.51,1.59),(.07,.17,1.84),METAL,.02)
     # Seat, pedals and steering ring are anchors for the shared driver rig.
     for x in (-.56,.56):
         chamfer(g,(x,1.45,4.0),(.59,.22,.69),DARK,.065)
@@ -393,19 +650,33 @@ def truck(mat):
             for xx in (-.171,.171):
                 w.rod((xx-.008,0,0),(xx+.008,0,0),.255,METAL,12)
                 ring(w,(xx,0,0),.20,.025,METAL,(1,0,0),12)
+                for angle in (0,math.pi/3,2*math.pi/3,math.pi,4*math.pi/3,5*math.pi/3):
+                    y,zlocal=.145*math.cos(angle),.145*math.sin(angle)
+                    w.rod((xx-.012,y,zlocal),(xx+.012,y,zlocal),.023,METAL,6)
             obj(w,"WheelVisible"+axle+side,pivot,mat)
     for side,x in (("Left",-1.16),("Right",1.16)):
         pivot=empty("MOVE_TruckRearDoor"+side,root,(x,1.23,-2.57));d=Geometry()
         direction=1 if x<0 else -1
-        chamfer(d,(direction*.575,1.1,0),(1.15,2.2,.09),CABIN,.02)
+        d.role="Insulation";chamfer(d,(direction*.575,1.1,0),(1.15,2.2,.09),CABIN,.02);d.role=None
         d.rod((direction*.86,.2,-.075),(direction*.86,2.02,-.075),.025,METAL,8)
         for y in (.22,1.8):d.rod((0,y,0),(direction*.34,y,-.08),.038,METAL,8)
+        d.role="Rubber"
+        for xlocal in (direction*.025,direction*1.125):d.box((xlocal,1.10,-.049),(.018,2.15,.013),DARK)
+        for y in (.035,2.165):d.box((direction*.575,y,-.049),(1.1,.018,.013),DARK)
+        d.role=None
+        for y in (.22,1.8):
+            d.rod((0,y-.09,-.03),(0,y+.09,-.03),.045,METAL,10)
+            chamfer(d,(direction*.86,y,-.082),(.11,.15,.035),METAL,.008)
+        d.rod((direction*.86,.85,-.095),(direction*.56,.77,-.095),.026,METAL,8)
+        chamfer(d,(direction*.56,.77,-.105),(.11,.06,.048),DARK,.01)
         obj(d,"RearDoorVisible"+side,pivot,mat)
     lift=empty("MOVE_TailLift",root,(0,1.2,-2.6));l=Geometry()
     l.role="Deck";chamfer(l,(0,-.055,-1.25),(2.24,.11,2.5),METAL,.02);l.role=None
     for x in (-.82,.82):
         l.rod((x,-.14,-.15),(x,-.14,-2.4),.055,METAL,8)
         g.rod((x,.45,-2.2),(x,1.04,-2.56),.055,METAL,8)
+        g.rod((x-.045,.49,-2.21),(x+.045,.49,-2.21),.082,METAL,10)
+        l.rod((x-.055,-.13,-.16),(x+.055,-.13,-.16),.082,METAL,10)
     for z in (-.1,-2.41):l.box((0,.006,z),(2.14,.012,.045),EDGE)
     obj(l,"TailLiftVisible",lift,mat);anchor("TailLiftLoad",lift,(0,.01,-.8))
     anchor("TruckDriver",root,(-.56,1.56,4.0));anchor("DriverLeftHand",root,(-.76,2.01,4.5))
@@ -439,12 +710,20 @@ def small_part(name,mat):
         anchor("BinLid",root,(0,.835,0))
     elif name=="RetortBasket":basket_geometry(g);anchor("Load",root,(0,.17,0))
     elif name=="CanTray":
-        g.role="SteelLight";chamfer(g,(0,.016,0),(.76,.032,.46),METAL,.008)
+        g.role="Stainless";chamfer(g,(0,.016,0),(.76,.032,.46),METAL,.008)
         for x in range(5):
-            for z in range(3):can(g,-.28+x*.14,.035,-.14+z*.14)
+            for z in range(3):
+                index=x*3+z;xx,zz=-.28+x*.14,-.14+z*.14
+                unit=empty("CanUnit"+str(index).zfill(2),root,(xx,.035,zz))
+                body=Geometry();can_body(body,0,0,0)
+                obj(body,"CanBody"+str(index).zfill(2),unit,mat)
+                contents=Geometry();can_contents(contents,0,0,0)
+                obj(contents,"CanContents"+str(index).zfill(2),unit,mat)
+                lid=Geometry();can_lid(lid,0,0,0)
+                obj(lid,"CanLid"+str(index).zfill(2),unit,mat)
         anchor("Load",root,(0,.13,0))
     elif name=="CartonStack":
-        g.role="Timber"
+        g.role="Cardboard"
         for y in (.16,.47):
             for x in (-.19,.19):
                 for z in (-.28,.28):
@@ -466,6 +745,45 @@ def small_part(name,mat):
         anchor("Load",root,(0,0,0));anchor("TrolleyHandleLeft",root,(-.32,1.08,-.88))
         anchor("TrolleyHandleRight",root,(.32,1.08,-.88));anchor("Handle",root,(0,1.08,-.88))
     obj(g,name+"Visible",root,mat)
+    return root
+
+
+def workwear(mat):
+    """Two thin cloth panels; runtime attaches them to the existing body rig.
+
+    Each group is centered, Unity +Z faces away from the wearer. Its measured
+    local coordinates remain metres; no hidden template lives in the hall.
+    """
+    root=empty("Workwear")
+    for name,width,height in (("ApronBib",.38,.42),("ApronSkirt",.46,.52)):
+        g=Geometry();g.role="Fabric";columns,rows=6,5;vertices=[]
+        for layer in (0,1):
+            for row in range(rows+1):
+                t=row/rows;y=-height*.5+t*height
+                spread=(1-.26*t) if name=="ApronBib" else (1-.14*t)
+                for column in range(columns+1):
+                    u=-1+2*column/columns
+                    # Gentle body curvature and two broad folds produce cloth,
+                    # with a six-millimetre thickness rather than a board.
+                    z=.018*(1-u*u)+.006*math.cos(u*math.pi*2)*(1-t)-layer*.006
+                    vertices.append((u*width*.5*spread,y,z))
+        layer_size=(columns+1)*(rows+1);faces=[]
+        for row in range(rows):
+            for column in range(columns):
+                a=row*(columns+1)+column;b=a+1;c=b+columns+1;d=a+columns+1
+                faces.extend(((a,b,c,d),(d+layer_size,c+layer_size,b+layer_size,a+layer_size)))
+        perimeter=list(range(columns+1))+[row*(columns+1)+columns for row in range(1,rows+1)]+\
+            [rows*(columns+1)+column for column in range(columns-1,-1,-1)]+\
+            [row*(columns+1) for row in range(rows-1,0,-1)]
+        for index,a in enumerate(perimeter):
+            b=perimeter[(index+1)%len(perimeter)];faces.append((a,a+layer_size,b+layer_size,b))
+        g.add(vertices,faces,CABIN)
+        # The hems are fine cloth seams. A shallow bib pocket gives a useful
+        # silhouette at working distance and carries no arbitrary objects.
+        if name=="ApronBib":
+            for x in (-.087,.087):g.rod((x,-.11,.021),(x,-.01,.021),.004,CABIN,6)
+            g.rod((-.087,-.11,.021),(.087,-.11,.021),.004,CABIN,6)
+        obj(g,name,root,mat)
     return root
 
 
@@ -513,11 +831,18 @@ def yard(mat):
     for z in (-6.6,6.65):
         g.box((1.1,.086,z),(1.1,.012,.23),DARK)
         for i in range(9):g.box((.62+i*.12,.10,z),(.025,.025,.22),METAL)
+    # A few tyre scuffs belong to the existing straight parking envelope;
+    # there are no new kerbs, wheel stops or props in the turning apron.
+    g.role="Plain"
+    for x in (3.97,6.03):
+        for z,length in ((-3.2,.72),(-1.75,.51),(.7,.83),(2.6,.48)):
+            chamfer(g,(x,.087,z),(.10,.003,length),METAL,.001)
+    g.role=None
     obj(g,"YardVisible",root,mat);return root
 
 
 def build(mat):
-    return [hall(mat),equipment(mat),truck(mat)]+[small_part(n,mat) for n in NAMES[3:8]]+[yard(mat)]
+    return [hall(mat),equipment(mat),truck(mat)]+[small_part(n,mat) for n in NAMES[3:8]]+[yard(mat),workwear(mat)]
 
 
 def validate(roots):
@@ -543,6 +868,33 @@ def validate(roots):
             raise RuntimeError('Raw fish unit intersects the real cold-store wall')
     aisle=(points['ANCHOR_RawStore3'][2]-.6)-(points['ANCHOR_RawStore0'][2]+.6)
     if aisle<1.3:raise RuntimeError('Cold-store central pallet-jack aisle is too narrow')
+    for index in range(15):
+        x,y,z=points['ANCHOR_PackingCan'+str(index).zfill(2)]
+        if x-.057 < -6.392 or x+.057 > -6.153 or z-.057 < 4.708 or z+.057 > 5.392 or y+.102>1.435:
+            raise RuntimeError('Same-batch can does not fit inside the open work carton')
+    for index in range(8):
+        if 'MOVE_ConveyorRoller'+str(index).zfill(2) not in points:
+            raise RuntimeError('Cannery driven roller subset is incomplete')
+    tray_root=next(r for r in roots if r.name.split('.')[0]=='CanTray')
+    units=[part for part in tray_root.children if part.name.startswith('CanUnit')]
+    if len(units)!=15:raise RuntimeError('The finite tray must own exactly fifteen transferable cans')
+    # Inspect the actual body mesh, independently of the switchable filling
+    # and lid. A top-down ray must enter its open mouth and reach the bottom.
+    for index,unit in enumerate(sorted(units,key=lambda part:part.name)):
+        names={part.name.split('.')[0] for part in unit.children}
+        expected={name+str(index).zfill(2) for name in ('CanBody','CanContents','CanLid')}
+        if names!=expected:raise RuntimeError('A can lost one of its distinct finite states')
+        body=next(part for part in unit.children if part.name.startswith('CanBody'))
+        vertices=[];faces=[]
+        for part in body.children_recursive:
+            if part.type!='MESH':continue
+            start=len(vertices)
+            vertices.extend(unit.matrix_world.inverted()@part.matrix_world@v.co for v in part.data.vertices)
+            faces.extend([start+i for i in polygon.vertices] for polygon in part.data.polygons)
+        tree=port.BVHTree.FromPolygons(vertices,faces)
+        hit,_,_,_=tree.ray_cast(Vector(source((0,.20,0))),Vector(source((0,-1,0))),.25)
+        if hit is None or abs(source(hit)[1]-.008)>.0001:
+            raise RuntimeError('An empty can has no real open mouth and closed inner bottom')
     # The pallet's three support lines leave two fork passages. Their actual
     # deck underside is .128 m; fork tops touch it without entering the wood.
     if not (.075 < .155-.065 and .155+.065 < .235 and .044 < .072 < .128):
@@ -558,7 +910,7 @@ def validate(roots):
 def preview(roots,path):
     # Presentation only; files are exported before temporary staging positions.
     indexed={r.name:r for r in roots};indexed['Truck'].location=source((5,.08,-1.3))
-    for name in NAMES[3:8]:
+    for name in NAMES[3:8]+('Workwear',):
         for part in indexed[name].children_recursive:part.hide_render=True
     for part in indexed['Hall'].children_recursive:
         if part.name.startswith(('COL_','HallRoof')):part.hide_render=True
@@ -580,12 +932,47 @@ def preview(roots,path):
     scene.render.filepath=str(path);bpy.ops.render.render(write_still=True)
 
 
+def source_surface_materials(roots):
+    """New albedos are packed in the editable source after deterministic FBX export."""
+    specs={"CanneryFloor":("Floor",(.61,.68,.65),.24,0),
+           "WetFloor":("Floor",(.43,.52,.49),.58,0),
+           "WashWall":("WashWall",(.74,.81,.76),.26,0),
+           "Stainless":("Stainless",(.87,.93,.90),.40,.32),
+           "Insulation":("Insulation",(.80,.85,.79),.21,0),
+           "Cardboard":("Cardboard",(.78,.78,.73),.04,0)}
+    materials={}
+    def linear(c):return c/12.92 if c<=.04045 else ((c+.055)/1.055)**2.4
+    for role,(stem,tint,smoothness,metallic) in specs.items():
+        texture=ROOT/'ArtSource/City/Cannery/Textures'/('Cannery'+stem+'Albedo.png')
+        if not texture.is_file():raise RuntimeError('Missing cannery source surface: '+str(texture))
+        material=bpy.data.materials.new('CannerySurface_'+role);material.use_nodes=True
+        nodes=material.node_tree.nodes;links=material.node_tree.links;shader=nodes.get('Principled BSDF')
+        tex=nodes.new('ShaderNodeTexImage');tex.image=bpy.data.images.load(str(texture),check_existing=True);tex.image.pack()
+        tex.extension='REPEAT';tex.interpolation='Linear'
+        multiply=nodes.new('ShaderNodeMixRGB');multiply.blend_type='MULTIPLY';multiply.inputs[0].default_value=1
+        multiply.inputs[2].default_value=tuple(linear(c) for c in tint)+(1,)
+        links.new(tex.outputs['Color'],multiply.inputs[1]);links.new(multiply.outputs[0],shader.inputs['Base Color'])
+        shader.inputs['Roughness'].default_value=1-smoothness;shader.inputs['Metallic'].default_value=metallic
+        materials[role]=material
+    for root in roots:
+        for part in root.children_recursive:
+            if part.type!='MESH' or '__' not in part.name:continue
+            role=part.name.rsplit('__',1)[1].split('.')[0]
+            if role in materials:part.data.materials[0]=materials[role]
+
+
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--no-preview',action='store_true');p.add_argument('--validate-only',action='store_true')
+    p=argparse.ArgumentParser();p.add_argument('--no-preview',action='store_true')
+    modes=p.add_mutually_exclusive_group()
+    modes.add_argument('--validate-only',action='store_true')
+    modes.add_argument('--preview-only',action='store_true',
+                       help='Validate against the saved manifest and render only the source review PNG')
     p.add_argument('--model-dir',type=Path,default=ROOT/'Assets/Resources/City/Cannery')
     p.add_argument('--source-dir',type=Path,default=ROOT/'ArtSource/City/Cannery')
     p.add_argument('--only-part',choices=NAMES)
     args=p.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
+    if args.preview_only and (args.no_preview or args.only_part):
+        p.error('--preview-only cannot be combined with --no-preview or --only-part')
     port.base.reset();mat=port.base.material('CannerySharedPortSurfaces')
     roots=build(mat);entries=validate(roots)
     manifest={'design_id':'city_compact_fish_cannery_v1','generator':Path(__file__).name,
@@ -600,17 +987,37 @@ def main():
               'driver_door_open_axis':'Unity local +Y, +70 degrees about front hinge',
               'tail_lift_fold_axis':'Unity local +X, +90 degrees folded; authored extended; lower pivot Y for lift',
               'retort_door_open_axis':'Unity +Y vertical slide, 1.7 metres; identity rotation',
+              'can_count':15,'can_unit_order':'x*3+z; body, contents and lid relative to each CanUnit base',
+              'can_body_inner_bottom':.008,'can_rim_height':.0965,'can_lid_top':.102,
+              'packing_carton_has_duplicate_cans':False,'packing_can_targets':'ANCHOR_PackingCan00..14',
+              'conveyor_driven_roller_axes':list(CONVEYOR_ROLLER_AXES),'conveyor_driven_roller_signs':list(CONVEYOR_ROLLER_SIGNS),
+              'retort_lock_axes':'Unity local Z; four pivots follow MOVE_RetortDoor',
+              'retort_pressure_needle_axis':'Unity local X',
+              'seamer_roller_axes':'Unity local Y; two pivots follow MOVE_SeamerHead',
+              'packing_feed_roller_axis':'Unity local +Z; same-can feed to ANCHOR_PackingPickup',
+              'workwear_local_front':'Unity +Z; centered separate ApronBib and ApronSkirt groups',
               'semantic_uv_tiles_metres':port.SURFACE_TILES,
               'geometry_signature_includes':['vertices','faces','colors','uv0','transforms']}
-    if args.validate_only:
+    if args.validate_only or args.preview_only:
         if json.loads((args.model_dir/'CityCannery3D.json').read_text(encoding='utf-8'))!=manifest:
             raise RuntimeError('Cannery regenerated contract differs from saved manifest')
+        if args.preview_only:
+            # Review staging changes transforms and render visibility only.
+            # This branch never exports assets, rewrites the manifest, or
+            # saves a .blend containing those temporary staged transforms.
+            port.source_surface_materials(roots)
+            source_surface_materials(roots)
+            args.source_dir.mkdir(parents=True,exist_ok=True)
+            preview(roots,args.source_dir/'CityCannery3D.png')
+            print('CITY CANNERY REVIEW PNG UPDATED: saved geometry contract unchanged')
+            return
     else:
         args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
         for root in roots:
             if args.only_part is None or root.name==args.only_part:port.base.export(root,args.model_dir/(root.name+'.fbx'))
         (args.model_dir/'CityCannery3D.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
         port.source_surface_materials(roots)
+        source_surface_materials(roots)
         bpy.context.preferences.filepaths.save_version=0
         bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/'CityCannery3D.blend'),check_existing=False)
         if not args.no_preview:preview(roots,args.source_dir/'CityCannery3D.png')

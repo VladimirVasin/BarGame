@@ -1217,6 +1217,14 @@
       "value": "Fish Cannery"
     },
     {
+      "key": "cannery.sign.receiving",
+      "value": "Receiving"
+    },
+    {
+      "key": "cannery.sign.shipping",
+      "value": "Dispatch"
+    },
+    {
       "key": "map.poi.nightlife_last_route_island",
       "value": "Last Route Island"
     },

@@ -7,11 +7,11 @@ namespace BarPromenade
 {
     /// <summary>Authored metre-space cannery kit sharing the port's material
     /// instances. Imported FBX correction remains intact under a unit wrapper.</summary>
-    public static class CityCanneryAssetProvider
+    public static partial class CityCanneryAssetProvider
     {
         public const string ResourceFolder = "City/Cannery/";
         public static readonly string[] ModelNames =
-            { "Hall", "Equipment", "Truck", "Pallet", "RetortBasket", "CanTray", "CartonStack", "Trolley", "Yard" };
+            { "Hall", "Equipment", "Truck", "Pallet", "RetortBasket", "CanTray", "CartonStack", "Trolley", "Yard", "Workwear" };
         private static readonly Dictionary<string, GameObject> Templates = new Dictionary<string, GameObject>();
         private static Material glassMaterial;
 
@@ -43,7 +43,7 @@ namespace BarPromenade
                 int separator = renderer.name.LastIndexOf("__", StringComparison.Ordinal);
                 string role = separator < 0 ? "Plain" : renderer.name.Substring(separator + 2);
                 renderer.sharedMaterial = lamp ? CityNightResources.EmissiveMaterial :
-                    glass ? GlassMaterial : CityPortAssetProvider.GetSurfaceMaterial(role);
+                    glass ? GlassMaterial : GetSurfaceMaterial(role);
                 renderer.shadowCastingMode = glass || lamp ? ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = !glass && !lamp;
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
@@ -142,6 +142,13 @@ namespace BarPromenade
                 else UnityEngine.Object.DestroyImmediate(glassMaterial);
             }
             glassMaterial = null;
+            foreach (Material surface in SurfaceMaterials.Values)
+            {
+                if (surface == null) continue;
+                if (Application.isPlaying) UnityEngine.Object.Destroy(surface);
+                else UnityEngine.Object.DestroyImmediate(surface);
+            }
+            SurfaceMaterials.Clear();
         }
     }
 }

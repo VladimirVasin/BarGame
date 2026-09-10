@@ -266,6 +266,10 @@ namespace BarPromenade
 
             GameObject terrainRoot = BuildTerrain(root.transform, plan);
             AlpineVillageRockBuilder.Build(root.transform, plan);
+
+            // Beside the rock, because both dress the same wall from the same
+            // walk along its four sides, and the trees are keyed to the panels.
+            AlpineVillageTreeBuilder.Build(root.transform, plan);
             GameObject laneSurface = BuildLane(root.transform, plan);
             BuildPathSurfaces(root.transform, plan);
             yield return new CompositionStep("terrain_and_lane", 0.25f);

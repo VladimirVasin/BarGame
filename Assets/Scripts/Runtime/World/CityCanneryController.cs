@@ -113,6 +113,7 @@ namespace BarPromenade
             retortDoorDock = factory.InverseTransformPoint(retortDoor.position);
             retortDoorRest = Quaternion.Inverse(factory.rotation) * retortDoor.rotation;
             CreateWorkers();
+            CreateVisualDetails();
             CreateSounds(layout.Seed);
             CreateTruckLights();
             CreateShopReceivingDoor();

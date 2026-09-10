@@ -486,6 +486,38 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// The village's conifers, or null before they have been placed.
+        ///
+        /// They live on the plan rather than in the builder for one reason:
+        /// the walkable mask is built from a plan and nothing else, in twelve
+        /// places - the world builder, the tests, and the map's teleport
+        /// ground. A copse trunk known only to the builder would leave the map
+        /// with a mask that has no trees in it, and it would set the hero down
+        /// inside one.
+        /// </summary>
+        public AlpineVillageTreePlan Trees { get; private set; }
+
+        /// <summary>
+        /// Hands the plan its trees. Once, and only from the planner, after
+        /// the water and before validation.
+        /// </summary>
+        internal void AttachTrees(AlpineVillageTreePlan trees)
+        {
+            if (trees == null)
+            {
+                throw new ArgumentNullException(nameof(trees));
+            }
+
+            if (Trees != null)
+            {
+                throw new InvalidOperationException(
+                    "The village already carries its trees.");
+            }
+
+            Trees = trees;
+        }
+
+        /// <summary>
         /// The inhabited inner extent. Shelves, plots and the walkable mask
         /// live inside it; the enclosing mountain starts outside it.
         /// </summary>

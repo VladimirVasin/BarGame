@@ -19,7 +19,8 @@ namespace BarPromenade
     /// climbs with the car for free, and climbs with him again on foot
     /// afterwards, with no second code path for either.
     /// </summary>
-    public sealed class MountainRoadWeatherShaper : ICityWeatherShaper
+    public sealed class MountainRoadWeatherShaper
+        : ICityWeatherShaper, IMountainWindSwaySource
     {
         private readonly Transform followTarget;
         private readonly float footY;

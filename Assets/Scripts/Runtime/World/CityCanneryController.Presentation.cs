@@ -58,6 +58,7 @@ namespace BarPromenade
         {
             if (TruckPresentationActive) ApplyTruckParts();
             ApplyCargoAndLine();
+            ApplyVisualDetails();
             ApplyWorkers();
             ApplySounds();
             ApplyShopReceivingDoor();

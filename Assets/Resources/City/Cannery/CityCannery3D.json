@@ -33,6 +33,14 @@
           ]
         },
         {
+          "name": "ANCHOR_FinishedSign",
+          "position": [
+            0.156,
+            3.48,
+            5.0
+          ]
+        },
+        {
           "name": "ANCHOR_HallLight0",
           "position": [
             -4.2,
@@ -145,6 +153,14 @@
           ]
         },
         {
+          "name": "ANCHOR_ReceiveSign",
+          "position": [
+            0.156,
+            3.48,
+            -5.5
+          ]
+        },
+        {
           "name": "ANCHOR_ReceivingDoor",
           "position": [
             0.3,
@@ -158,6 +174,14 @@
             -5.75,
             2.9,
             7.212
+          ]
+        },
+        {
+          "name": "ANCHOR_SteamOutlet",
+          "position": [
+            -7.65,
+            5.1,
+            2.15
           ]
         },
         {
@@ -177,8 +201,8 @@
           ]
         }
       ],
-      "triangles": 4704,
-      "geometry_signature": "99399ce70aa976d0511e8ac0eb61cc76a6d0204b4d50484858f3f5c0efdfa1b8"
+      "triangles": 6060,
+      "geometry_signature": "7974da6243b46293704144af1ff5fbe9d3dd57da6cd8939b2736eeee3f375733"
     },
     {
       "name": "Equipment",
@@ -250,6 +274,14 @@
           ]
         },
         {
+          "name": "ANCHOR_FillControl",
+          "position": [
+            -6.22,
+            1.35,
+            -0.52
+          ]
+        },
+        {
           "name": "ANCHOR_FinishedDoor",
           "position": [
             0.3,
@@ -274,6 +306,142 @@
           ]
         },
         {
+          "name": "ANCHOR_PackingCan00",
+          "position": [
+            -6.3305,
+            1.158,
+            4.77
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan01",
+          "position": [
+            -6.3305,
+            1.158,
+            4.91
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan02",
+          "position": [
+            -6.3305,
+            1.158,
+            5.05
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan03",
+          "position": [
+            -6.3305,
+            1.158,
+            5.19
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan04",
+          "position": [
+            -6.3305,
+            1.158,
+            5.33
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan05",
+          "position": [
+            -6.2145,
+            1.158,
+            4.77
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan06",
+          "position": [
+            -6.2145,
+            1.158,
+            4.91
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan07",
+          "position": [
+            -6.2145,
+            1.158,
+            5.05
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan08",
+          "position": [
+            -6.2145,
+            1.158,
+            5.19
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan09",
+          "position": [
+            -6.2145,
+            1.158,
+            5.33
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan10",
+          "position": [
+            -6.2725,
+            1.262,
+            4.77
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan11",
+          "position": [
+            -6.2725,
+            1.262,
+            4.91
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan12",
+          "position": [
+            -6.2725,
+            1.262,
+            5.05
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan13",
+          "position": [
+            -6.2725,
+            1.262,
+            5.19
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCan14",
+          "position": [
+            -6.2725,
+            1.262,
+            5.33
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCartonLeftHand",
+          "position": [
+            -6.4,
+            1.47,
+            4.89
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingCartonRightHand",
+          "position": [
+            -6.4,
+            1.47,
+            5.21
+          ]
+        },
+        {
           "name": "ANCHOR_PackingLeftHand",
           "position": [
             -6.39,
@@ -287,6 +455,14 @@
             -4.25,
             1.14,
             5.05
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingPickup",
+          "position": [
+            -6.31,
+            1.225,
+            4.62
           ]
         },
         {
@@ -490,6 +666,14 @@
           ]
         },
         {
+          "name": "ANCHOR_SealControl",
+          "position": [
+            -6.22,
+            1.35,
+            -0.18
+          ]
+        },
+        {
           "name": "ANCHOR_SeamerLeftHand",
           "position": [
             -6.24,
@@ -514,11 +698,179 @@
           ]
         },
         {
+          "name": "ANCHOR_SteamOutlet",
+          "position": [
+            -7.65,
+            5.1,
+            2.15
+          ]
+        },
+        {
+          "name": "CanSupply",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
           "name": "EquipmentVisible",
           "position": [
             0.0,
             0.0,
             0.0
+          ]
+        },
+        {
+          "name": "LidSupply",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "MOVE_ConveyorRoller00",
+          "position": [
+            -3.76,
+            1.155,
+            -0.35
+          ]
+        },
+        {
+          "name": "ConveyorRollerVisible00",
+          "position": [
+            -3.76,
+            1.155,
+            -0.35
+          ]
+        },
+        {
+          "name": "MOVE_ConveyorRoller01",
+          "position": [
+            -3.6,
+            1.155,
+            -0.35
+          ]
+        },
+        {
+          "name": "ConveyorRollerVisible01",
+          "position": [
+            -3.6,
+            1.155,
+            -0.35
+          ]
+        },
+        {
+          "name": "MOVE_ConveyorRoller02",
+          "position": [
+            -3.1,
+            1.155,
+            0.1
+          ]
+        },
+        {
+          "name": "ConveyorRollerVisible02",
+          "position": [
+            -3.1,
+            1.155,
+            0.1
+          ]
+        },
+        {
+          "name": "MOVE_ConveyorRoller03",
+          "position": [
+            -3.1,
+            1.155,
+            3.46
+          ]
+        },
+        {
+          "name": "ConveyorRollerVisible03",
+          "position": [
+            -3.1,
+            1.155,
+            3.46
+          ]
+        },
+        {
+          "name": "MOVE_ConveyorRoller04",
+          "position": [
+            -3.55,
+            1.155,
+            3.95
+          ]
+        },
+        {
+          "name": "ConveyorRollerVisible04",
+          "position": [
+            -3.55,
+            1.155,
+            3.95
+          ]
+        },
+        {
+          "name": "MOVE_ConveyorRoller05",
+          "position": [
+            -5.15,
+            1.155,
+            3.95
+          ]
+        },
+        {
+          "name": "ConveyorRollerVisible05",
+          "position": [
+            -5.15,
+            1.155,
+            3.95
+          ]
+        },
+        {
+          "name": "MOVE_ConveyorRoller06",
+          "position": [
+            -5.75,
+            1.155,
+            4.4
+          ]
+        },
+        {
+          "name": "ConveyorRollerVisible06",
+          "position": [
+            -5.75,
+            1.155,
+            4.4
+          ]
+        },
+        {
+          "name": "MOVE_ConveyorRoller07",
+          "position": [
+            -5.75,
+            1.155,
+            5.04
+          ]
+        },
+        {
+          "name": "ConveyorRollerVisible07",
+          "position": [
+            -5.75,
+            1.155,
+            5.04
+          ]
+        },
+        {
+          "name": "MOVE_PackingFeedRoller",
+          "position": [
+            -5.92,
+            1.19,
+            4.62
+          ]
+        },
+        {
+          "name": "PackingFeedRollerVisible",
+          "position": [
+            -5.92,
+            1.19,
+            4.62
           ]
         },
         {
@@ -554,11 +906,91 @@
           ]
         },
         {
+          "name": "MOVE_RetortLock0",
+          "position": [
+            -4.36,
+            1.35,
+            3.07
+          ]
+        },
+        {
+          "name": "RetortLockVisible0",
+          "position": [
+            -4.36,
+            1.35,
+            3.07
+          ]
+        },
+        {
+          "name": "MOVE_RetortLock1",
+          "position": [
+            -5.0,
+            1.99,
+            3.07
+          ]
+        },
+        {
+          "name": "RetortLockVisible1",
+          "position": [
+            -5.0,
+            1.99,
+            3.07
+          ]
+        },
+        {
+          "name": "MOVE_RetortLock2",
+          "position": [
+            -5.64,
+            1.35,
+            3.07
+          ]
+        },
+        {
+          "name": "RetortLockVisible2",
+          "position": [
+            -5.64,
+            1.35,
+            3.07
+          ]
+        },
+        {
+          "name": "MOVE_RetortLock3",
+          "position": [
+            -5.0,
+            0.71,
+            3.07
+          ]
+        },
+        {
+          "name": "RetortLockVisible3",
+          "position": [
+            -5.0,
+            0.71,
+            3.07
+          ]
+        },
+        {
           "name": "RetortDoorVisible",
           "position": [
             -5.82,
             1.35,
             2.91
+          ]
+        },
+        {
+          "name": "MOVE_RetortPressureNeedle",
+          "position": [
+            -4.17,
+            1.9,
+            1.28
+          ]
+        },
+        {
+          "name": "RetortPressureNeedleVisible",
+          "position": [
+            -4.17,
+            1.9,
+            1.28
           ]
         },
         {
@@ -594,16 +1026,72 @@
           ]
         },
         {
+          "name": "MOVE_SeamerRollerLeft",
+          "position": [
+            -4.55,
+            1.602,
+            -0.35
+          ]
+        },
+        {
+          "name": "SeamerRollerVisibleLeft",
+          "position": [
+            -4.55,
+            1.602,
+            -0.35
+          ]
+        },
+        {
+          "name": "MOVE_SeamerRollerRight",
+          "position": [
+            -4.17,
+            1.602,
+            -0.35
+          ]
+        },
+        {
+          "name": "SeamerRollerVisibleRight",
+          "position": [
+            -4.17,
+            1.602,
+            -0.35
+          ]
+        },
+        {
           "name": "SeamerHeadVisible",
           "position": [
             -4.36,
             1.62,
             -0.35
           ]
+        },
+        {
+          "name": "PackingCarton",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "RetortRunIndicator",
+          "position": [
+            -5.855,
+            1.49,
+            2.72
+          ]
+        },
+        {
+          "name": "SeamerRunIndicator",
+          "position": [
+            -3.741,
+            1.62,
+            -0.89
+          ]
         }
       ],
-      "triangles": 8892,
-      "geometry_signature": "7c43008993b143b5e87ea76257959f171ab7bd739d698b1bf25bb90e5c964e69"
+      "triangles": 31996,
+      "geometry_signature": "81dea294a4ce77757f6ccd8e94606db361e69fffe6ce659a82f7bb28de93c702"
     },
     {
       "name": "Truck",
@@ -859,8 +1347,8 @@
           ]
         }
       ],
-      "triangles": 5314,
-      "geometry_signature": "7ad354db5be3317b9716911dee83575cf949af9ae5e496a83e539bc4eb147b83"
+      "triangles": 8454,
+      "geometry_signature": "083e382f47620d78990ec2ccef80461bf647a876f9b8f57f3d81a759809883e3"
     },
     {
       "name": "Pallet",
@@ -964,10 +1452,490 @@
             0.0,
             0.0
           ]
+        },
+        {
+          "name": "CanUnit00",
+          "position": [
+            -0.28,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanBody00",
+          "position": [
+            -0.28,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanContents00",
+          "position": [
+            -0.28,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanLid00",
+          "position": [
+            -0.28,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanUnit01",
+          "position": [
+            -0.28,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanBody01",
+          "position": [
+            -0.28,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanContents01",
+          "position": [
+            -0.28,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanLid01",
+          "position": [
+            -0.28,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanUnit02",
+          "position": [
+            -0.28,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanBody02",
+          "position": [
+            -0.28,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanContents02",
+          "position": [
+            -0.28,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanLid02",
+          "position": [
+            -0.28,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanUnit03",
+          "position": [
+            -0.14,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanBody03",
+          "position": [
+            -0.14,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanContents03",
+          "position": [
+            -0.14,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanLid03",
+          "position": [
+            -0.14,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanUnit04",
+          "position": [
+            -0.14,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanBody04",
+          "position": [
+            -0.14,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanContents04",
+          "position": [
+            -0.14,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanLid04",
+          "position": [
+            -0.14,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanUnit05",
+          "position": [
+            -0.14,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanBody05",
+          "position": [
+            -0.14,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanContents05",
+          "position": [
+            -0.14,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanLid05",
+          "position": [
+            -0.14,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanUnit06",
+          "position": [
+            0.0,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanBody06",
+          "position": [
+            0.0,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanContents06",
+          "position": [
+            0.0,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanLid06",
+          "position": [
+            0.0,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanUnit07",
+          "position": [
+            0.0,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanBody07",
+          "position": [
+            0.0,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanContents07",
+          "position": [
+            0.0,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanLid07",
+          "position": [
+            0.0,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanUnit08",
+          "position": [
+            0.0,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanBody08",
+          "position": [
+            0.0,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanContents08",
+          "position": [
+            0.0,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanLid08",
+          "position": [
+            0.0,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanUnit09",
+          "position": [
+            0.14,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanBody09",
+          "position": [
+            0.14,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanContents09",
+          "position": [
+            0.14,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanLid09",
+          "position": [
+            0.14,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanUnit10",
+          "position": [
+            0.14,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanBody10",
+          "position": [
+            0.14,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanContents10",
+          "position": [
+            0.14,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanLid10",
+          "position": [
+            0.14,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanUnit11",
+          "position": [
+            0.14,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanBody11",
+          "position": [
+            0.14,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanContents11",
+          "position": [
+            0.14,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanLid11",
+          "position": [
+            0.14,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanUnit12",
+          "position": [
+            0.28,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanBody12",
+          "position": [
+            0.28,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanContents12",
+          "position": [
+            0.28,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanLid12",
+          "position": [
+            0.28,
+            0.035,
+            -0.14
+          ]
+        },
+        {
+          "name": "CanUnit13",
+          "position": [
+            0.28,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanBody13",
+          "position": [
+            0.28,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanContents13",
+          "position": [
+            0.28,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanLid13",
+          "position": [
+            0.28,
+            0.035,
+            0.0
+          ]
+        },
+        {
+          "name": "CanUnit14",
+          "position": [
+            0.28,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanBody14",
+          "position": [
+            0.28,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanContents14",
+          "position": [
+            0.28,
+            0.035,
+            0.14
+          ]
+        },
+        {
+          "name": "CanLid14",
+          "position": [
+            0.28,
+            0.035,
+            0.14
+          ]
         }
       ],
-      "triangles": 1348,
-      "geometry_signature": "0b21ee4ebd9868182e93fc4b48d444eb3b85b8c8a4019ef3f3fd871c69a18161"
+      "triangles": 19168,
+      "geometry_signature": "ca81eee238a00000820723185d63ab57a1a1bf366603f4995303f1429e97901f"
     },
     {
       "name": "CartonStack",
@@ -1000,7 +1968,7 @@
         }
       ],
       "triangles": 416,
-      "geometry_signature": "ebd7586698e53c3ff8da1cde1964f2b94150179d03dd34c68738b01b8512d90b"
+      "geometry_signature": "8d668f0138759ad76eb32c0b9463897e83f36f318046cb868233c336497900bd"
     },
     {
       "name": "Trolley",
@@ -1105,8 +2073,41 @@
           ]
         }
       ],
-      "triangles": 768,
-      "geometry_signature": "cf1a7b837fc1a2adae213eafa576ac2e4fc15470095ecd86aabfc7c11db3ec19"
+      "triangles": 992,
+      "geometry_signature": "0d222d2e175550d1a66a9b37d8ec54ed60ac7873446030882dd2ceabbbebb4e2"
+    },
+    {
+      "name": "Workwear",
+      "bounds_min": [
+        -0.23,
+        -0.26,
+        -0.006
+      ],
+      "bounds_max": [
+        0.23,
+        0.26,
+        0.025
+      ],
+      "anchors": [
+        {
+          "name": "ApronBib",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ApronSkirt",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 388,
+      "geometry_signature": "12b20c28a61b2997525357815b9a554e0ea5272390a1d821a46457f13999ff5c"
     }
   ],
   "hall_floor_height": 0.18,
@@ -1141,6 +2142,38 @@
   "driver_door_open_axis": "Unity local +Y, +70 degrees about front hinge",
   "tail_lift_fold_axis": "Unity local +X, +90 degrees folded; authored extended; lower pivot Y for lift",
   "retort_door_open_axis": "Unity +Y vertical slide, 1.7 metres; identity rotation",
+  "can_count": 15,
+  "can_unit_order": "x*3+z; body, contents and lid relative to each CanUnit base",
+  "can_body_inner_bottom": 0.008,
+  "can_rim_height": 0.0965,
+  "can_lid_top": 0.102,
+  "packing_carton_has_duplicate_cans": false,
+  "packing_can_targets": "ANCHOR_PackingCan00..14",
+  "conveyor_driven_roller_axes": [
+    "Z",
+    "Z",
+    "X",
+    "X",
+    "Z",
+    "Z",
+    "X",
+    "X"
+  ],
+  "conveyor_driven_roller_signs": [
+    -1,
+    -1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "retort_lock_axes": "Unity local Z; four pivots follow MOVE_RetortDoor",
+  "retort_pressure_needle_axis": "Unity local X",
+  "seamer_roller_axes": "Unity local Y; two pivots follow MOVE_SeamerHead",
+  "packing_feed_roller_axis": "Unity local +Z; same-can feed to ANCHOR_PackingPickup",
+  "workwear_local_front": "Unity +Z; centered separate ApronBib and ApronSkirt groups",
   "semantic_uv_tiles_metres": {
     "Concrete": 2.0,
     "ConcreteWall": 2.0,
@@ -1158,7 +2191,13 @@
     "Rubber": 0.5,
     "Fabric": 1.0,
     "Asphalt": 12.0,
-    "RoadMarking": 2.0
+    "RoadMarking": 2.0,
+    "CanneryFloor": 2.0,
+    "WetFloor": 2.0,
+    "WashWall": 1.5,
+    "Stainless": 1.5,
+    "Insulation": 1.5,
+    "Cardboard": 1.0
   },
   "geometry_signature_includes": [
     "vertices",

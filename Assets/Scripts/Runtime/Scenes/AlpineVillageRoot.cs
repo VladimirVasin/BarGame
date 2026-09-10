@@ -56,6 +56,9 @@ namespace BarPromenade
 
         public AlpineVillageWeatherShaper WeatherShaper { get; private set; }
         public CityWeatherController Weather { get; private set; }
+
+        /// <summary>Carries the shaped wind to the conifer crowns.</summary>
+        public MountainRoadWindDriver Wind { get; private set; }
         public ExteriorCloudField Clouds { get; private set; }
         public InteractionPromptView InteractionPrompt { get; private set; }
         public IntoxicationHudView IntoxicationHud { get; private set; }
@@ -783,6 +786,27 @@ namespace BarPromenade
                 Plan.Seed,
                 IsSheltered,
                 WindSound);
+
+            // The conifers bend on the same shaped wind. The sound channel is
+            // deliberately null: the storm field above already drives the wind
+            // bed, and a second writer on that player has no defined winner.
+            // The profile is the STAND's own foot range, not the lane's - see
+            // MountainRoadWindDriver.Initialize for why the lane would flatten
+            // the amplitude the shader exists to carry.
+            if (Plan.Trees != null)
+            {
+                var windObject = new GameObject("Village Wind Driver");
+                windObject.transform.SetParent(transform, false);
+                Wind = windObject.AddComponent<MountainRoadWindDriver>();
+                Wind.Initialize(
+                    Weather,
+                    WeatherShaper,
+                    null,
+                    Plan.Trees.WindFootY,
+                    Plan.Trees.WindSummitY,
+                    MountainRoadSurfaceAppearance.GetRecipe(
+                        MountainRoadSurfaceKind.ConiferNeedles).MetersPerTile);
+            }
 
             // Large, soft sheets close the untouched snow at the sides and
             // the ridge behind the top house. Their pure spatial plan keeps

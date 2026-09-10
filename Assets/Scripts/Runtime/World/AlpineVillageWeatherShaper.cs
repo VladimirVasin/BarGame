@@ -154,7 +154,8 @@ namespace BarPromenade
     /// cabin for free and climbs with him again on foot afterwards, with no
     /// second code path for either.
     /// </summary>
-    public sealed class AlpineVillageWeatherShaper : ICityWeatherShaper
+    public sealed class AlpineVillageWeatherShaper
+        : ICityWeatherShaper, IMountainWindSwaySource
     {
         private readonly Transform followTarget;
         private readonly float footY;

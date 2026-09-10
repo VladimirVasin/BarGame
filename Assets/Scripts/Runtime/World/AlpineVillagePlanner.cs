@@ -235,6 +235,11 @@ namespace BarPromenade
             // and because the sampler dishes a swale under it, which must not
             // exist while it is deciding where to run.
             plan.AttachBrook(AlpineVillageBrookPlanner.Create(plan));
+
+            // The trees come after the water and before validation: they read
+            // the finished ground, the traced brook and the trodden network,
+            // and the walkable mask has to be able to see them.
+            plan.AttachTrees(AlpineVillageTreePlanner.Create(plan));
             plan.ValidateOrThrow();
             return plan;
         }

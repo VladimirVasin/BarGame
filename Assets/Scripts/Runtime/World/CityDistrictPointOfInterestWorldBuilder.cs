@@ -1195,6 +1195,23 @@ namespace BarPromenade
                     label.fontSize=2.8f;
                     label.rectTransform.sizeDelta=new Vector2(2.65f,.44f);
                     label.GetComponent<Renderer>().shadowCastingMode=ShadowCastingMode.Off;
+                    for(int sign=0;sign<2;sign++)
+                    {
+                        Transform signAnchor=CityCanneryAssetProvider.FindPart(model,sign==0?"ANCHOR_ReceiveSign":"ANCHOR_FinishedSign");
+                        var signHost=new GameObject(sign==0?"Cannery Receiving Sign":"Cannery Shipping Sign");
+                        signHost.transform.SetParent(recipe,false);
+                        signHost.transform.SetPositionAndRotation(signAnchor.position+recipe.right*.003f,
+                            Quaternion.LookRotation(-recipe.right));
+                        TextMeshPro serviceLabel=signHost.AddComponent<TextMeshPro>();
+                        serviceLabel.font=CemeteryPlaqueFont.Get();
+                        serviceLabel.text=LocalizationService.Get(sign==0?"cannery.sign.receiving":"cannery.sign.shipping").ToUpperInvariant();
+                        serviceLabel.color=new Color(.76f,.79f,.69f);
+                        serviceLabel.alignment=TextAlignmentOptions.Center;
+                        serviceLabel.textWrappingMode=TextWrappingModes.NoWrap;
+                        serviceLabel.enableAutoSizing=true; serviceLabel.fontSizeMin=.6f; serviceLabel.fontSizeMax=1.5f;
+                        serviceLabel.rectTransform.sizeDelta=new Vector2(1.5f,.22f);
+                        serviceLabel.GetComponent<Renderer>().shadowCastingMode=ShadowCastingMode.Off;
+                    }
                 }
                 if(part=="Hall"&&!homeExterior)
                 {
@@ -1203,14 +1220,17 @@ namespace BarPromenade
                         Transform anchor=CityCanneryAssetProvider.FindPart(model,"ANCHOR_HallLight"+i);
                         var host=new GameObject("Cannery Ceiling Light "+i);
                         host.transform.SetParent(recipe,false);
-                        host.transform.SetPositionAndRotation(anchor.position,Quaternion.Euler(90,0,0));
+                        Vector3[] workPoints={new Vector3(-5.5f,1.1f,-2.05f),new Vector3(-5,1.2f,-.35f),
+                            new Vector3(-5,1.3f,2.8f),new Vector3(-6,1.2f,5.0f)};
+                        host.transform.SetPositionAndRotation(anchor.position,
+                            Quaternion.LookRotation(recipe.TransformPoint(workPoints[i])-anchor.position));
                         Light light=host.AddComponent<Light>();
                         light.type=LightType.Spot;
                         light.color=new Color(.87f,1f,.90f);
                         light.range=6;
-                        light.spotAngle=110;
-                        light.innerSpotAngle=78;
-                        light.intensity=2.4f;
+                        light.spotAngle=96;
+                        light.innerSpotAngle=65;
+                        light.intensity=3.0f;
                         light.shadows=LightShadows.Soft;
                         light.shadowBias=.025f;
                         light.shadowNormalBias=.1f;

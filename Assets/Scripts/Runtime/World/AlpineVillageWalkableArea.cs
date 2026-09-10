@@ -76,6 +76,7 @@ namespace BarPromenade
             ground = BuildGround(plan);
             BuildBuildings();
             BuildCablewayBrink();
+            BuildCopseTrunks();
         }
 
         public AlpineVillagePlan Plan => plan;
@@ -302,6 +303,45 @@ namespace BarPromenade
                 new Vector2(
                     AlpineVillageTerrainSampler.CablewayCutOuterHalfWidth,
                     (far - entrance) * 0.5f)));
+        }
+
+        /// <summary>
+        /// The copse behind the firewood house, and only it.
+        ///
+        /// These trunks are obstacles HERE and nowhere else - they carry no
+        /// collider at all. That is the whole design: the mask turns the hero
+        /// before he moves, the way it turns him around a house wall, while a
+        /// real collider would let him graze the trunk, and a graze is read
+        /// back as achieved movement and zeroes his planar speed. The pinned
+        /// §10g check says leaving the path must not change his speed, so the
+        /// mask keeps that sentence true and physics would break it.
+        ///
+        /// The wall trees and the stumps are absent on purpose: they stand
+        /// beyond the toe, on ground the mask never covers.
+        /// </summary>
+        private void BuildCopseTrunks()
+        {
+            if (plan.Trees == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<MountainRoadForestDescriptor> copse = plan.Trees.CopseTrees;
+            for (int index = 0; index < copse.Count; index++)
+            {
+                MountainRoadForestDescriptor tree = copse[index];
+                if (!tree.BlocksMovement)
+                {
+                    continue;
+                }
+
+                float radius = tree.TrunkRadius;
+                obstacles.Add(new OrientedRect(
+                    ToXZ(tree.Position),
+                    Vector2.right,
+                    Vector2.up,
+                    new Vector2(radius, radius)));
+            }
         }
 
         private static Vector2 ToXZ(Vector3 value)

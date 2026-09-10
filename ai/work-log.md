@@ -31,22 +31,22 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   Documentation passed `python tools/check-docs.py` and `git diff --check`.
 - PlayMode warnings: unordered root lookup, runtime-only wind, direct GameView
   assembly lookup. Verified by `dotnet build BarPromenade.PlayModeTests.csproj`.
-- The cannery replaces the weighbridge in City. A finite batch links port,
-  physical truck loading, processing and passive shop receipt; purchasable
-  stock is unchanged and empty-tare return remains deferred. Authored models
-  reuse port materials, ordinary rigs operate the machines and the hero
-  watches from public passages. Canon records the replacement explicitly.
-- Road grade had to outrank bus avoidance: a steeper frontage broke the
-  truck's ground contact. Shared-trip reservation coordinates bus and truck;
-  apron mesh, collider and wheels now agree with the existing street. Real
-  loading doors and the cold-store baffle route keep transfers physical.
-  Planted preparation lean and the nearer retort hand keep contacts reachable.
-  `AreaCaptureFixture.CityCannery` passed import/custody, public access,
-  vehicle/obstacle/reservation, worker contacts and pause/reconstruction checks;
-  gameplay frames were reviewed. Distance gates now suspend factory/port/truck
-  presentation, preserving custody, physical truck and traffic. The same
-  focused fixture checks far progression, frozen rigs, night lights,
-  hysteresis and current-state restoration. `python tools/check-docs.py` passed.
+- The cannery replaces the weighbridge: finite port/truck/process/shop custody,
+  unchanged shop stock, deferred empty-tare return and open public passages.
+  Level frontage had to outrank bus avoidance for wheel contact; trip
+  reservations, doors and the cold-store bypass keep transfers physical.
+  Distance gates suspend factory/port/truck presentation while custody,
+  collision and traffic continue; approach restores the phase.
+- Detail adds ImageGen surfaces, port materials, fitted machines/truck,
+  workwear and aprons. The same cans fill, seal and enter the carton;
+  task poses, indicators and steam follow finite phases. Imported can/apron
+  bases and packing reach needed correction against the rendered objects.
+  `AreaCaptureFixture.CityCannery` passed surface/product/apron/hand contacts,
+  custody, routes, traffic, distance, night and pause on the shared project.
+  Gameplay frames and the updated source preview were reviewed.
+- Village conifers by §6 row: five on the wall, nine behind the yard.
+  Copse trunks block via the mask, not a collider: a graze zeroes planar speed.
+  `Conifers_AreTheRoadsOwnTreesOnTheirOwnBand` passed.
 
 ## 2026-09-09 — Village opening, journal and working port
 
