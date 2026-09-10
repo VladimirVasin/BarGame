@@ -34,6 +34,7 @@ namespace BarPromenade.Tests.PlayMode
                 crew = Object.FindAnyObjectByType<CityPortCrew>();
                 Assert.That(port, Is.Not.Null);
                 Assert.That(crew, Is.Not.Null);
+                if (city.Cannery != null) city.Cannery.AutoAdvance = false;
                 port.AutoAdvance = false;
                 port.ApplyAt(CityPortCycle.UnloadStartSeconds, 15f);
                 crew.ApplyAt(port.ElapsedSeconds);

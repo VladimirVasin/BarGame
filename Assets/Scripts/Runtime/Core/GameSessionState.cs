@@ -504,6 +504,7 @@ namespace BarPromenade
 
         private static void ResetToDefaults()
         {
+            CityFishSupplySession.ResetForNewGame();
             sessionGeneration = sessionGeneration == int.MaxValue
                 ? 1
                 : sessionGeneration + 1;

@@ -128,6 +128,18 @@ namespace BarPromenade
                 }
             }
 
+            CityCanneryPlan cannery = CityCanneryPlan.Create(layout);
+            if (cannery != null)
+            {
+                Rect[] solids = { cannery.ProductionBounds,
+                    cannery.World(Rect.MinMaxRect(-.25f,-7f,0f,7f)) };
+                foreach (Rect solid in solids)
+                {
+                    var next = new List<Rect>();
+                    foreach (Rect patch in patches) SubtractRectangle(patch,solid,next);
+                    patches = next;
+                }
+            }
             for (int index = 0; index < patches.Count; index++)
             {
                 destination.Add(patches[index]);
@@ -535,7 +547,17 @@ namespace BarPromenade
             {
                 CityDistrictPointOfInterestDescriptor point =
                     layout.DistrictPointsOfInterest[pointIndex];
-                area.Add(point.PublicBounds);
+                if (point.Kind == CityDistrictPointOfInterestKind.IndustrialCannery)
+                {
+                    CityCanneryPlan cannery = CityCanneryPlan.Create(layout);
+                    if (cannery != null)
+                    {
+                        foreach (Rect rect in cannery.PublicRectangles) area.Add(rect);
+                        area.Add(cannery.StreetOpening);
+                    }
+                    else area.Add(point.PublicBounds);
+                }
+                else area.Add(point.PublicBounds);
                 for (int accessIndex = 0;
                      accessIndex < point.Accesses.Count;
                      accessIndex++)

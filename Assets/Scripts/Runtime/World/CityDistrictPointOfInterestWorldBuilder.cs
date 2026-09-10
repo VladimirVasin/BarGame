@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -495,8 +496,8 @@ namespace BarPromenade
                     .ResidentialDryingYard:
                     return "Residential Drying Yard";
                 case CityDistrictPointOfInterestKind
-                    .IndustrialWeighbridge:
-                    return "Industrial Weighbridge";
+                    .IndustrialCannery:
+                    return "Industrial Cannery";
                 case CityDistrictPointOfInterestKind
                     .NightlifeLastRouteIsland:
                     return "Nightlife Last Route Island";
@@ -896,52 +897,11 @@ namespace BarPromenade
             out CityDryingYardNpcStance weighedWorker,
             out Vector3 weighedPathEnd)
         {
-            if (descriptor.Kind !=
-                CityDistrictPointOfInterestKind.IndustrialWeighbridge)
-            {
-                weigher = default;
-                weighedWorker = default;
-                weighedPathEnd = default;
-                return false;
-            }
-
-            Quaternion recipeRotation = Quaternion.LookRotation(
-                ResolveForward(descriptor),
-                Vector3.up);
-            float horizontalScale =
-                ResolveHorizontalScale(descriptor.PublicBounds);
-            float groundY = descriptor.Center.y +
-                PublicGroundHeight * 0.5f;
-            // The indicator face looks down local +Z, so its reader
-            // stands north of it looking local -Z.
-            weigher = CreateStance(
-                descriptor,
-                recipeRotation,
-                horizontalScale,
-                groundY,
-                WeigherStanceLocal,
-                Vector3.back);
-            // The worker walks the deck top, not the public ground.
-            float deckTopY = descriptor.Center.y +
-                WeighbridgeDeckTopLocalY;
-            weighedPathEnd = ToStanceWorld(
-                descriptor,
-                recipeRotation,
-                horizontalScale,
-                deckTopY,
-                WeighedPathEndLocal);
-            Vector3 workerStart = ToStanceWorld(
-                descriptor,
-                recipeRotation,
-                horizontalScale,
-                deckTopY,
-                WeighedPathStartLocal);
-            Vector3 towardEnd = weighedPathEnd - workerStart;
-            towardEnd.y = 0f;
-            weighedWorker = new CityDryingYardNpcStance(
-                workerStart,
-                towardEnd.normalized);
-            return true;
+            // The industrial site no longer stages human weighing.
+            weigher = default;
+            weighedWorker = default;
+            weighedPathEnd = default;
+            return false;
         }
 
         /// <summary>
@@ -953,27 +913,8 @@ namespace BarPromenade
             CityDistrictPointOfInterestDescriptor descriptor,
             out CityWeighbridgeDeckRect deck)
         {
-            if (descriptor.Kind !=
-                CityDistrictPointOfInterestKind.IndustrialWeighbridge)
-            {
-                deck = default;
-                return false;
-            }
-
-            Quaternion recipeRotation = Quaternion.LookRotation(
-                ResolveForward(descriptor),
-                Vector3.up);
-            float horizontalScale =
-                ResolveHorizontalScale(descriptor.PublicBounds);
-            deck = new CityWeighbridgeDeckRect(
-                new Vector3(
-                    descriptor.Center.x,
-                    descriptor.Center.y + WeighbridgeDeckTopLocalY,
-                    descriptor.Center.z),
-                recipeRotation,
-                WeighbridgeDeckHalfWidth * horizontalScale,
-                WeighbridgeDeckHalfLength * horizontalScale);
-            return true;
+            deck = default;
+            return false;
         }
 
         /// <summary>
@@ -1020,14 +961,10 @@ namespace BarPromenade
                             CarpetRackZNorth - CarpetRackZSouth + 0.20f));
                     break;
                 case CityDistrictPointOfInterestKind
-                    .IndustrialWeighbridge:
-                    loopLocal = new Bounds(
-                        new Vector3(3.25f, 0.34f, 0.20f),
-                        new Vector3(1.20f, 0.56f, 1.28f));
-                    detailLocal = new Bounds(
-                        new Vector3(0f, 0.16f, 0f),
-                        new Vector3(3.60f, 0.22f, 11.60f));
-                    break;
+                    .IndustrialCannery:
+                    // Working machine sounds belong to the cannery controller.
+                    geometry = default;
+                    return false;
                 case CityDistrictPointOfInterestKind
                     .NightlifeLastRouteIsland:
                     loopLocal = new Bounds(
@@ -1138,6 +1075,13 @@ namespace BarPromenade
             CityDistrictPointOfInterestDescriptor descriptor)
         {
             Transform site = CreateSiteRoot(parent, descriptor);
+            if (descriptor.Kind == CityDistrictPointOfInterestKind.IndustrialCannery)
+            {
+                CityCanneryPlan cannery = CityCanneryPlan.Create(layout);
+                if (cannery != null)
+                    BuildCanneryShell(site, cannery.Origin, cannery.Forward, false, cannery);
+                return;
+            }
             Rect publicBounds = descriptor.PublicBounds;
             CreatePublicGround(
                 site,
@@ -1181,6 +1125,15 @@ namespace BarPromenade
             }
 
             Transform site = CreateSiteRoot(parent, descriptor);
+            if (descriptor.Kind == CityDistrictPointOfInterestKind.IndustrialCannery)
+            {
+                CityCanneryPlan cannery = CityCanneryPlan.Create(context.Layout);
+                if (cannery != null)
+                    BuildCanneryShell(site,
+                        PlayerHomeBalconyGeometry.ToHomeLocal(context.PlayerHome,cannery.Origin),
+                        PlayerHomeBalconyGeometry.ToHomeLocalDirection(context.PlayerHome,cannery.Forward),true,cannery);
+                return;
+            }
             Vector3 localCenter =
                 PlayerHomeBalconyGeometry.ToHomeLocal(
                     context.PlayerHome,
@@ -1210,6 +1163,67 @@ namespace BarPromenade
                 localForward,
                 ResolveHorizontalScale(localBounds));
             BuildRecipe(recipe, descriptor, false, true);
+        }
+
+        private static void BuildCanneryShell(Transform site,Vector3 origin,Vector3 forward,bool homeExterior,
+            CityCanneryPlan plan)
+        {
+            Transform recipe=new GameObject("Industrial Cannery").transform;
+            recipe.SetParent(site,false);
+            recipe.localPosition=origin;
+            recipe.localRotation=Quaternion.LookRotation(forward);
+            foreach(string part in new[]{"Yard","Hall"})
+            {
+                GameObject model=CityCanneryAssetProvider.Create(part,recipe);
+                if(part=="Yard")CityCanneryAssetProvider.ConfigureYard(model,plan);
+                if(part=="Hall")
+                {
+                    Transform anchor=CityCanneryAssetProvider.FindPart(model,"ANCHOR_Sign");
+                    var host=new GameObject("Cannery Name");
+                    host.transform.SetParent(recipe,false);
+                    host.transform.SetPositionAndRotation(anchor.position+recipe.forward*.003f,
+                        Quaternion.LookRotation(-recipe.forward));
+                    TextMeshPro label=host.AddComponent<TextMeshPro>();
+                    label.font=CemeteryPlaqueFont.Get();
+                    label.text=LocalizationService.Get("map.poi.industrial_cannery").ToUpperInvariant();
+                    label.color=new Color(.83f,.86f,.76f);
+                    label.alignment=TextAlignmentOptions.Center;
+                    label.textWrappingMode=TextWrappingModes.NoWrap;
+                    label.enableAutoSizing=true;
+                    label.fontSizeMin=1.2f;
+                    label.fontSizeMax=2.8f;
+                    label.fontSize=2.8f;
+                    label.rectTransform.sizeDelta=new Vector2(2.65f,.44f);
+                    label.GetComponent<Renderer>().shadowCastingMode=ShadowCastingMode.Off;
+                }
+                if(part=="Hall"&&!homeExterior)
+                {
+                    for(int i=0;i<4;i++)
+                    {
+                        Transform anchor=CityCanneryAssetProvider.FindPart(model,"ANCHOR_HallLight"+i);
+                        var host=new GameObject("Cannery Ceiling Light "+i);
+                        host.transform.SetParent(recipe,false);
+                        host.transform.SetPositionAndRotation(anchor.position,Quaternion.Euler(90,0,0));
+                        Light light=host.AddComponent<Light>();
+                        light.type=LightType.Spot;
+                        light.color=new Color(.87f,1f,.90f);
+                        light.range=6;
+                        light.spotAngle=110;
+                        light.innerSpotAngle=78;
+                        light.intensity=2.4f;
+                        light.shadows=LightShadows.Soft;
+                        light.shadowBias=.025f;
+                        light.shadowNormalBias=.1f;
+                    }
+                }
+                if(!homeExterior)continue;
+                foreach(Collider collider in model.GetComponentsInChildren<Collider>())collider.enabled=false;
+                foreach(Renderer renderer in model.GetComponentsInChildren<Renderer>())
+                {
+                    renderer.shadowCastingMode=ShadowCastingMode.Off;
+                    renderer.receiveShadows=false;
+                }
+            }
         }
 
         private static Transform CreateSiteRoot(
@@ -1356,7 +1370,7 @@ namespace BarPromenade
                         homeExterior);
                     return;
                 case CityDistrictPointOfInterestKind
-                    .IndustrialWeighbridge:
+                    .IndustrialCannery:
                     BuildWeighbridge(
                         parent,
                         colliders,
@@ -1479,7 +1493,7 @@ namespace BarPromenade
                         homeExterior);
                     return;
                 case CityDistrictPointOfInterestKind
-                    .IndustrialWeighbridge:
+                    .IndustrialCannery:
                     BuildImportedWeighbridgeRuntime(
                         parent,
                         colliders,
@@ -1750,7 +1764,7 @@ namespace BarPromenade
                     .ResidentialDryingYard:
                     return CityMiscKind.PoiResidentialDryingYardShell;
                 case CityDistrictPointOfInterestKind
-                    .IndustrialWeighbridge:
+                    .IndustrialCannery:
                     return CityMiscKind.PoiIndustrialWeighbridgeShell;
                 case CityDistrictPointOfInterestKind
                     .NightlifeLastRouteIsland:
@@ -1794,7 +1808,7 @@ namespace BarPromenade
 
                     return;
                 case CityDistrictPointOfInterestKind
-                    .IndustrialWeighbridge:
+                    .IndustrialCannery:
                     color = part.Role == CityMiscMeshRole.Industrial
                         ? IndustrialSteel
                         : IndustrialDark;
@@ -3506,7 +3520,7 @@ namespace BarPromenade
                     .ResidentialDryingYard:
                     return ResidentialPaving;
                 case CityDistrictPointOfInterestKind
-                    .IndustrialWeighbridge:
+                    .IndustrialCannery:
                     return IndustrialPaving;
                 case CityDistrictPointOfInterestKind
                     .NightlifeLastRouteIsland:

@@ -990,8 +990,8 @@ namespace BarPromenade
                 case CityDistrictPointOfInterestKind.ResidentialDryingYard:
                     key = "map.poi.residential_drying_yard";
                     return true;
-                case CityDistrictPointOfInterestKind.IndustrialWeighbridge:
-                    key = "map.poi.industrial_weighbridge";
+                case CityDistrictPointOfInterestKind.IndustrialCannery:
+                    key = "map.poi.industrial_cannery";
                     return true;
                 case CityDistrictPointOfInterestKind.NightlifeLastRouteIsland:
                     key = "map.poi.nightlife_last_route_island";

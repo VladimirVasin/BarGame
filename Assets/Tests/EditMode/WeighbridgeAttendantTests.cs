@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -9,291 +9,18 @@ namespace BarPromenade.Tests.EditMode
         private const int Seed = GameSessionState.DefaultCitySeed;
 
         [Test]
-        public void Plan_PlacesTheAttendantPairInsideTheWeighbridge()
+        public void Cannery_ReplacesTheHumanWeighingTableauAndKeepsAFullSizePassage()
         {
-            CityLayout layout = CityLayoutGenerator.Generate(
-                CityGenerationSettings.Default,
-                Seed);
-            WeighbridgeAttendantPlan plan =
-                WeighbridgeAttendantPlan.Create(layout);
-
-            Assert.That(plan.IsPresent, Is.True);
-            Assert.That(plan.Stances, Has.Count.EqualTo(2));
-
-            CityDistrictPointOfInterestDescriptor descriptor =
-                FindWeighbridge(layout);
-            Rect bounds = descriptor.PublicBounds;
-            var palettes = new HashSet<int>();
-            foreach (WeighbridgeAttendantStance stance in plan.Stances)
-            {
-                Assert.That(
-                    bounds.Contains(new Vector2(
-                        stance.Position.x,
-                        stance.Position.z)),
-                    Is.True,
-                    $"{stance.Role} stands outside the weighbridge.");
-                Assert.That(
-                    stance.Facing.magnitude,
-                    Is.EqualTo(1f).Within(0.001f));
-                Assert.That(
-                    Mathf.Abs(stance.Facing.y),
-                    Is.LessThan(0.001f),
-                    "Stance facings stay horizontal.");
-                Assert.That(palettes.Add(stance.PaletteVariant), Is.True,
-                    "Each attendant wears their own palette variant.");
-            }
-
-            WeighbridgeAttendantStance weigher = plan.Stances[0];
-            WeighbridgeAttendantStance worker = plan.Stances[1];
-            Assert.That(
-                weigher.Role,
-                Is.EqualTo(WeighbridgeAttendantRole.Weigher));
-            Assert.That(
-                worker.Role,
-                Is.EqualTo(WeighbridgeAttendantRole.WeighedWorker));
-            Assert.That(weigher.Strolls, Is.False);
-            Assert.That(worker.Strolls, Is.True);
-
-            // The pair never falls into lockstep: desynchronized by
-            // both playback speed and phase.
-            Assert.That(
-                weigher.PlaybackSpeed,
-                Is.Not.EqualTo(worker.PlaybackSpeed).Within(0.001f));
-            Assert.That(
-                weigher.PhaseOffsetSeconds,
-                Is.Not.EqualTo(worker.PhaseOffsetSeconds).Within(0.001f));
-
-            // The worker paces the deck's long axis on the deck top,
-            // not on the public ground.
-            Assert.That(
-                bounds.Contains(new Vector2(
-                    worker.PathEnd.x,
-                    worker.PathEnd.z)),
-                Is.True,
-                "The pace corridor stays inside the weighbridge.");
-            float corridorLength = Vector3.Distance(
-                worker.Position,
-                worker.PathEnd);
-            Assert.That(corridorLength, Is.InRange(8f, 14f));
-            Assert.That(
-                worker.Position.y,
-                Is.EqualTo(descriptor.Center.y + 0.27f).Within(0.001f),
-                "The worker walks the deck top.");
-            Assert.That(
-                Vector3.Dot(
-                    worker.Facing,
-                    (worker.PathEnd - worker.Position).normalized),
-                Is.GreaterThan(0.99f),
-                "The worker starts facing along his corridor.");
-        }
-
-        [Test]
-        public void Plan_WeigherStandsBesideTheDeckAxisNeverAcrossIt()
-        {
-            CityLayout layout = CityLayoutGenerator.Generate(
-                CityGenerationSettings.Default,
-                Seed);
-            WeighbridgeAttendantPlan plan =
-                WeighbridgeAttendantPlan.Create(layout);
-            Assert.That(plan.IsPresent, Is.True);
-
-            WeighbridgeAttendantStance weigher = plan.Stances[0];
-            WeighbridgeAttendantStance worker = plan.Stances[1];
-
-            // The art bible forbids the weighbridge reading as a
-            // checkpoint: the weigher watches from beside the axis,
-            // clear of the whole deck corridor.
-            float distanceToAxis = DistancePointToSegment(
-                weigher.Position,
-                worker.Position,
-                worker.PathEnd);
-            Assert.That(
-                distanceToAxis,
-                Is.GreaterThan(2.4f),
-                "The weigher must never block the deck axis.");
-        }
-
-        [Test]
-        public void Build_WeighbridgeRegistersItsNeedle()
-        {
-            CityLayout layout = CityLayoutGenerator.Generate(
-                CityGenerationSettings.Default,
-                Seed);
-            var parent = new GameObject("Weighbridge Needle Test");
-            try
-            {
-                GameObject root =
-                    CityDistrictPointOfInterestWorldBuilder.Build(
-                        parent.transform,
-                        layout);
-
-                Transform needle =
-                    CityWeighbridgeIndicatorRegistry.Find(
-                        CityWeighbridgeIndicatorRegistry.NeedleId);
-                Assert.That(needle, Is.Not.Null);
-                Assert.That(needle.name, Is.EqualTo("Scale Needle"));
-                // Only the City build may claim the slot; a bounded
-                // Home-exterior rebuild has no needle controller and
-                // must never steal the registration.
-                Assert.That(
-                    needle.IsChildOf(root.transform),
-                    Is.True,
-                    "The registered needle belongs to the city build.");
-            }
-            finally
-            {
-                Object.DestroyImmediate(parent);
-            }
-        }
-
-        [Test]
-        public void Build_AttendantStancesClearTheWeighbridgeObstacles()
-        {
-            CityLayout layout = CityLayoutGenerator.Generate(
-                CityGenerationSettings.Default,
-                Seed);
-            WeighbridgeAttendantPlan plan =
-                WeighbridgeAttendantPlan.Create(layout);
-            Assert.That(plan.IsPresent, Is.True);
-            var parent = new GameObject("Attendant Stance Test");
-            try
-            {
-                GameObject root =
-                    CityDistrictPointOfInterestWorldBuilder.Build(
-                        parent.transform,
-                        layout);
-                Physics.SyncTransforms();
-                foreach (WeighbridgeAttendantStance stance in
-                         plan.Stances)
-                {
-                    // The pacer is checked along his whole corridor.
-                    var samples = new List<Vector3> { stance.Position };
-                    if (stance.Strolls)
-                    {
-                        for (int step = 1; step <= 4; step++)
-                        {
-                            samples.Add(Vector3.Lerp(
-                                stance.Position,
-                                stance.PathEnd,
-                                step / 4f));
-                        }
-                    }
-
-                    foreach (Collider collider in
-                             root.GetComponentsInChildren<Collider>(
-                                 true))
-                    {
-                        // The paving is the ground they stand on, and
-                        // the walkable deck is the worker's floor —
-                        // neither is an obstacle to him.
-                        if (collider.name ==
-                            CityDistrictPointOfInterestWorldBuilder
-                                .PublicGroundName)
-                        {
-                            continue;
-                        }
-
-                        if (stance.Strolls &&
-                            collider.name ==
-                            "Walkable Weighbridge Collider")
-                        {
-                            continue;
-                        }
-
-                        Bounds bounds = collider.bounds;
-                        var footprint = Rect.MinMaxRect(
-                            bounds.min.x,
-                            bounds.min.z,
-                            bounds.max.x,
-                            bounds.max.z);
-                        // A 0.30 m body radius around each stance and
-                        // corridor sample must stay clear of every
-                        // weighbridge obstacle.
-                        foreach (Vector3 sample in samples)
-                        {
-                            var body = Rect.MinMaxRect(
-                                sample.x - 0.30f,
-                                sample.z - 0.30f,
-                                sample.x + 0.30f,
-                                sample.z + 0.30f);
-                            Assert.That(
-                                footprint.Overlaps(body),
-                                Is.False,
-                                $"'{collider.name}' overlaps the " +
-                                $"{stance.Role} stance or corridor.");
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                Object.DestroyImmediate(parent);
-            }
-        }
-
-        [Test]
-        public void Needle_PointOnDeckDetectionHonoursTheDeckRect()
-        {
-            CityLayout layout = CityLayoutGenerator.Generate(
-                CityGenerationSettings.Default,
-                Seed);
-            CityDistrictPointOfInterestDescriptor descriptor =
-                FindWeighbridge(layout);
-            Assert.That(
-                CityDistrictPointOfInterestWorldBuilder
-                    .TryDescribeWeighbridgeDeck(
-                        descriptor,
-                        out CityWeighbridgeDeckRect deck),
-                Is.True);
-
-            Assert.That(
-                CityWeighbridgeNeedleController.IsPointOnDeck(
-                    deck,
-                    deck.Center),
-                Is.True,
-                "The deck centre carries weight.");
-            Vector3 alongAxis = deck.Yaw * Vector3.forward;
-            Assert.That(
-                CityWeighbridgeNeedleController.IsPointOnDeck(
-                    deck,
-                    deck.Center +
-                    alongAxis * (deck.HalfLength + 0.5f)),
-                Is.False,
-                "Past the deck end there is no weight.");
-            Vector3 acrossAxis = deck.Yaw * Vector3.right;
-            Assert.That(
-                CityWeighbridgeNeedleController.IsPointOnDeck(
-                    deck,
-                    deck.Center +
-                    acrossAxis * (deck.HalfWidth + 0.5f)),
-                Is.False,
-                "Beside the deck — the weigher's spot — is off scale.");
-            Assert.That(
-                CityWeighbridgeNeedleController.IsPointOnDeck(
-                    deck,
-                    deck.Center + Vector3.up * 2f),
-                Is.False,
-                "Far above the deck top nothing stands on it.");
-
-            // The other three points of interest carry no deck.
-            for (int index = 0;
-                 index < layout.DistrictPointsOfInterest.Count;
-                 index++)
-            {
-                CityDistrictPointOfInterestDescriptor other =
-                    layout.DistrictPointsOfInterest[index];
-                if (other.Kind ==
-                    CityDistrictPointOfInterestKind
-                        .IndustrialWeighbridge)
-                {
-                    continue;
-                }
-
-                Assert.That(
-                    CityDistrictPointOfInterestWorldBuilder
-                        .TryDescribeWeighbridgeDeck(other, out _),
-                    Is.False);
-            }
+            CityLayout layout = CityLayoutGenerator.Generate(CityGenerationSettings.Default, Seed);
+            CityCanneryPlan site = CityCanneryPlan.Create(layout);
+            Assert.That(site, Is.Not.Null);
+            Assert.That(site.Descriptor.Kind, Is.EqualTo(CityDistrictPointOfInterestKind.IndustrialCannery));
+            Assert.That(site.HallBounds.size.y, Is.EqualTo(4.2f).Within(.001f));
+            Assert.That(WeighbridgeAttendantPlan.Create(layout).IsPresent, Is.False);
+            Assert.That(CityDistrictPointOfInterestWorldBuilder.TryDescribeWeighbridgeDeck(site.Descriptor, out _), Is.False);
+            RoadWalkableArea ground = RoadWalkableArea.FromLayout(layout);
+            Assert.That(ground.Contains(site.World(new Vector3(-1.1f,.18f,0)),.35f), Is.True);
+            Assert.That(ground.Contains(site.World(new Vector3(-5f,.18f,0)),.35f), Is.False);
         }
 
         [Test]
@@ -401,12 +128,14 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Presentation_AttachesChalkToTheWeigherOnly()
         {
-            CityLayout layout = CityLayoutGenerator.Generate(
-                CityGenerationSettings.Default,
-                Seed);
-            WeighbridgeAttendantPlan plan =
-                WeighbridgeAttendantPlan.Create(layout);
-            Assert.That(plan.IsPresent, Is.True);
+            // The retired rig remains a reusable asset; this contract must
+            // not recreate its former active-world tableau.
+            var stances = new[] {
+                new WeighbridgeAttendantStance(new CityDryingYardNpcStance(Vector3.zero,Vector3.forward),
+                    WeighbridgeAttendantRole.Weigher,0,1f,0f),
+                new WeighbridgeAttendantStance(new CityDryingYardNpcStance(Vector3.right*3,Vector3.forward),
+                    WeighbridgeAttendantRole.WeighedWorker,2,1f,0f,Vector3.right*3+Vector3.forward*8)
+            };
             WeighbridgeAttendantProvider provider =
                 WeighbridgeAttendantProvider.Load();
             Assert.That(provider, Is.Not.Null);
@@ -415,7 +144,7 @@ namespace BarPromenade.Tests.EditMode
             var parent = new GameObject("Attendant Hand Prop Test");
             try
             {
-                foreach (WeighbridgeAttendantStance stance in plan.Stances)
+                foreach (WeighbridgeAttendantStance stance in stances)
                 {
                     GameObject instance = Object.Instantiate(
                         provider.StagedPrefab,
@@ -587,7 +316,7 @@ namespace BarPromenade.Tests.EditMode
             {
                 if (layout.DistrictPointsOfInterest[index].Kind ==
                     CityDistrictPointOfInterestKind
-                        .IndustrialWeighbridge)
+                        .IndustrialCannery)
                 {
                     return layout.DistrictPointsOfInterest[index];
                 }

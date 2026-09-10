@@ -1,0 +1,1170 @@
+{
+  "design_id": "city_compact_fish_cannery_v1",
+  "generator": "build-city-cannery-3d-model.py",
+  "coordinate_system": "Unity +Y up / +Z truck forward; metres; truck rear axle ground origin",
+  "parts": [
+    {
+      "name": "Hall",
+      "bounds_min": [
+        -8.325,
+        0.08,
+        -7.275
+      ],
+      "bounds_max": [
+        0.325,
+        5.24,
+        7.275
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_ColdStore",
+          "position": [
+            -6.5,
+            0.18,
+            -4.875
+          ]
+        },
+        {
+          "name": "ANCHOR_FinishedDoor",
+          "position": [
+            0.3,
+            0.18,
+            5.0
+          ]
+        },
+        {
+          "name": "ANCHOR_HallLight0",
+          "position": [
+            -4.2,
+            3.52,
+            -3.7
+          ]
+        },
+        {
+          "name": "ANCHOR_HallLight1",
+          "position": [
+            -4.2,
+            3.52,
+            -0.9
+          ]
+        },
+        {
+          "name": "ANCHOR_HallLight2",
+          "position": [
+            -4.2,
+            3.52,
+            2.2
+          ]
+        },
+        {
+          "name": "ANCHOR_HallLight3",
+          "position": [
+            -4.2,
+            3.52,
+            5.2
+          ]
+        },
+        {
+          "name": "ANCHOR_Observer",
+          "position": [
+            -1.1,
+            1.72,
+            0.5
+          ]
+        },
+        {
+          "name": "ANCHOR_PublicEntry",
+          "position": [
+            -1.1,
+            0.18,
+            7.3
+          ]
+        },
+        {
+          "name": "ANCHOR_PublicExit",
+          "position": [
+            -1.1,
+            0.18,
+            -7.3
+          ]
+        },
+        {
+          "name": "ANCHOR_RawDoor",
+          "position": [
+            0.3,
+            0.18,
+            -5.5
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore0",
+          "position": [
+            -7.36,
+            0.18,
+            -6.15
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore1",
+          "position": [
+            -6.53,
+            0.18,
+            -6.15
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore2",
+          "position": [
+            -5.7,
+            0.18,
+            -6.15
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore3",
+          "position": [
+            -7.36,
+            0.18,
+            -3.6
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore4",
+          "position": [
+            -6.53,
+            0.18,
+            -3.6
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore5",
+          "position": [
+            -5.7,
+            0.18,
+            -3.6
+          ]
+        },
+        {
+          "name": "ANCHOR_ReceivingDoor",
+          "position": [
+            0.3,
+            0.18,
+            -5.5
+          ]
+        },
+        {
+          "name": "ANCHOR_Sign",
+          "position": [
+            -5.75,
+            2.9,
+            7.212
+          ]
+        },
+        {
+          "name": "HallRoof",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "HallVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 4704,
+      "geometry_signature": "99399ce70aa976d0511e8ac0eb61cc76a6d0204b4d50484858f3f5c0efdfa1b8"
+    },
+    {
+      "name": "Equipment",
+      "bounds_min": [
+        -7.65,
+        0.18,
+        -6.175
+      ],
+      "bounds_max": [
+        -2.53,
+        4.035,
+        6.93
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_CanTray",
+          "position": [
+            -5.0,
+            1.19,
+            -0.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ConveyorBasketMouth",
+          "position": [
+            -5.0,
+            1.19,
+            3.95
+          ]
+        },
+        {
+          "name": "ANCHOR_ConveyorBendEast",
+          "position": [
+            -3.1,
+            1.19,
+            -0.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ConveyorBendNorth",
+          "position": [
+            -3.1,
+            1.19,
+            3.95
+          ]
+        },
+        {
+          "name": "ANCHOR_ConveyorEntry",
+          "position": [
+            -4.36,
+            1.19,
+            -0.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ConveyorPackBend",
+          "position": [
+            -5.75,
+            1.19,
+            3.95
+          ]
+        },
+        {
+          "name": "ANCHOR_CoolingLoad",
+          "position": [
+            -5.75,
+            1.19,
+            5.05
+          ]
+        },
+        {
+          "name": "ANCHOR_FinishedDoor",
+          "position": [
+            0.3,
+            0.18,
+            5.0
+          ]
+        },
+        {
+          "name": "ANCHOR_FinishedLoad",
+          "position": [
+            -3.15,
+            0.18,
+            6.1
+          ]
+        },
+        {
+          "name": "ANCHOR_Observer",
+          "position": [
+            -1.1,
+            1.72,
+            0.5
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingLeftHand",
+          "position": [
+            -6.39,
+            1.19,
+            4.8
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingLoad",
+          "position": [
+            -4.25,
+            1.14,
+            5.05
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingRightHand",
+          "position": [
+            -6.39,
+            1.19,
+            5.2
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingWorker",
+          "position": [
+            -6.94,
+            0.18,
+            5.0
+          ]
+        },
+        {
+          "name": "ANCHOR_PreparationLeftHand",
+          "position": [
+            -6.12,
+            1.18,
+            -2.25
+          ]
+        },
+        {
+          "name": "ANCHOR_PreparationLoad",
+          "position": [
+            -5.7,
+            0.96,
+            -2.05
+          ]
+        },
+        {
+          "name": "ANCHOR_PreparationRightHand",
+          "position": [
+            -6.12,
+            1.18,
+            -1.85
+          ]
+        },
+        {
+          "name": "ANCHOR_PreparationWorker",
+          "position": [
+            -6.65,
+            0.18,
+            -2.05
+          ]
+        },
+        {
+          "name": "ANCHOR_RawDoor",
+          "position": [
+            0.3,
+            0.18,
+            -5.5
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore0",
+          "position": [
+            -7.36,
+            0.18,
+            -6.15
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore1",
+          "position": [
+            -6.53,
+            0.18,
+            -6.15
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore2",
+          "position": [
+            -5.7,
+            0.18,
+            -6.15
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore3",
+          "position": [
+            -7.36,
+            0.18,
+            -3.6
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore4",
+          "position": [
+            -6.53,
+            0.18,
+            -3.6
+          ]
+        },
+        {
+          "name": "ANCHOR_RawStore5",
+          "position": [
+            -5.7,
+            0.18,
+            -3.6
+          ]
+        },
+        {
+          "name": "ANCHOR_ReadyCase0",
+          "position": [
+            -7.25,
+            0.18,
+            6.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ReadyCase1",
+          "position": [
+            -6.4,
+            0.18,
+            6.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ReadyCase2",
+          "position": [
+            -5.55,
+            0.18,
+            6.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ReadyCase3",
+          "position": [
+            -4.7,
+            0.18,
+            6.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ReadyCase4",
+          "position": [
+            -3.85,
+            0.18,
+            6.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ReadyCase5",
+          "position": [
+            -3.0,
+            0.18,
+            6.35
+          ]
+        },
+        {
+          "name": "ANCHOR_Receiver",
+          "position": [
+            -3.4,
+            0.18,
+            -6.5
+          ]
+        },
+        {
+          "name": "ANCHOR_ReceivingLoad",
+          "position": [
+            -3.5,
+            0.42,
+            -5.45
+          ]
+        },
+        {
+          "name": "ANCHOR_RetortBasketOut",
+          "position": [
+            -5.0,
+            1.02,
+            3.34
+          ]
+        },
+        {
+          "name": "ANCHOR_RetortHand",
+          "position": [
+            -5.86,
+            1.35,
+            2.78
+          ]
+        },
+        {
+          "name": "ANCHOR_RetortOperator",
+          "position": [
+            -6.37,
+            0.18,
+            2.55
+          ]
+        },
+        {
+          "name": "ANCHOR_RetortTrayDock",
+          "position": [
+            -5.0,
+            1.19,
+            3.34
+          ]
+        },
+        {
+          "name": "ANCHOR_SeamerLeftHand",
+          "position": [
+            -6.24,
+            1.2,
+            -0.52
+          ]
+        },
+        {
+          "name": "ANCHOR_SeamerRightHand",
+          "position": [
+            -6.24,
+            1.2,
+            -0.18
+          ]
+        },
+        {
+          "name": "ANCHOR_SeamerWorker",
+          "position": [
+            -6.78,
+            0.18,
+            -0.35
+          ]
+        },
+        {
+          "name": "EquipmentVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "MOVE_PreparationFish",
+          "position": [
+            -5.7,
+            0.94,
+            -2.05
+          ]
+        },
+        {
+          "name": "PreparationFishVisible",
+          "position": [
+            -5.7,
+            0.94,
+            -2.05
+          ]
+        },
+        {
+          "name": "MOVE_RetortBasket",
+          "position": [
+            -5.0,
+            1.02,
+            1.66
+          ]
+        },
+        {
+          "name": "MOVE_RetortDoor",
+          "position": [
+            -5.82,
+            1.35,
+            2.91
+          ]
+        },
+        {
+          "name": "RetortDoorVisible",
+          "position": [
+            -5.82,
+            1.35,
+            2.91
+          ]
+        },
+        {
+          "name": "MOVE_RetortRam",
+          "position": [
+            -5.0,
+            0.8,
+            0.96
+          ]
+        },
+        {
+          "name": "RetortRamVisible",
+          "position": [
+            -5.0,
+            0.8,
+            0.96
+          ]
+        },
+        {
+          "name": "MOVE_ScaleNeedle",
+          "position": [
+            -4.11,
+            1.67,
+            -5.9
+          ]
+        },
+        {
+          "name": "MOVE_SeamerHead",
+          "position": [
+            -4.36,
+            1.62,
+            -0.35
+          ]
+        },
+        {
+          "name": "SeamerHeadVisible",
+          "position": [
+            -4.36,
+            1.62,
+            -0.35
+          ]
+        }
+      ],
+      "triangles": 8892,
+      "geometry_signature": "7c43008993b143b5e87ea76257959f171ab7bd739d698b1bf25bb90e5c964e69"
+    },
+    {
+      "name": "Truck",
+      "bounds_min": [
+        -1.25,
+        0.0,
+        -5.1
+      ],
+      "bounds_max": [
+        1.25,
+        3.55,
+        5.38
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_DriverFoot",
+          "position": [
+            -0.55,
+            1.17,
+            4.55
+          ]
+        },
+        {
+          "name": "ANCHOR_DriverLeftHand",
+          "position": [
+            -0.76,
+            2.01,
+            4.5
+          ]
+        },
+        {
+          "name": "ANCHOR_DriverRightHand",
+          "position": [
+            -0.36,
+            2.01,
+            4.5
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckCargo0",
+          "position": [
+            -0.55,
+            1.22,
+            -1.75
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckCargo1",
+          "position": [
+            0.55,
+            1.22,
+            -1.75
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckCargo2",
+          "position": [
+            -0.55,
+            1.22,
+            -0.05
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckCargo3",
+          "position": [
+            0.55,
+            1.22,
+            -0.05
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckCargo4",
+          "position": [
+            -0.55,
+            1.22,
+            1.65
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckCargo5",
+          "position": [
+            0.55,
+            1.22,
+            1.65
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckDriver",
+          "position": [
+            -0.56,
+            1.56,
+            4.0
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckGroundBehind",
+          "position": [
+            0.0,
+            0.0,
+            -4.65
+          ]
+        },
+        {
+          "name": "ANCHOR_TruckRear",
+          "position": [
+            0.0,
+            1.2,
+            -2.6
+          ]
+        },
+        {
+          "name": "MOVE_DriverDoor",
+          "position": [
+            -1.08,
+            1.12,
+            4.94
+          ]
+        },
+        {
+          "name": "DriverDoorVisible",
+          "position": [
+            -1.08,
+            1.12,
+            4.94
+          ]
+        },
+        {
+          "name": "MOVE_TailLift",
+          "position": [
+            0.0,
+            1.2,
+            -2.6
+          ]
+        },
+        {
+          "name": "ANCHOR_TailLiftLoad",
+          "position": [
+            0.0,
+            1.21,
+            -3.4
+          ]
+        },
+        {
+          "name": "TailLiftVisible",
+          "position": [
+            0.0,
+            1.2,
+            -2.6
+          ]
+        },
+        {
+          "name": "MOVE_TruckRearDoorLeft",
+          "position": [
+            -1.16,
+            1.23,
+            -2.57
+          ]
+        },
+        {
+          "name": "RearDoorVisibleLeft",
+          "position": [
+            -1.16,
+            1.23,
+            -2.57
+          ]
+        },
+        {
+          "name": "MOVE_TruckRearDoorRight",
+          "position": [
+            1.16,
+            1.23,
+            -2.57
+          ]
+        },
+        {
+          "name": "RearDoorVisibleRight",
+          "position": [
+            1.16,
+            1.23,
+            -2.57
+          ]
+        },
+        {
+          "name": "MOVE_WheelFL",
+          "position": [
+            -1.03,
+            0.45,
+            4.2
+          ]
+        },
+        {
+          "name": "WheelVisibleFL",
+          "position": [
+            -1.03,
+            0.45,
+            4.2
+          ]
+        },
+        {
+          "name": "MOVE_WheelFR",
+          "position": [
+            1.03,
+            0.45,
+            4.2
+          ]
+        },
+        {
+          "name": "WheelVisibleFR",
+          "position": [
+            1.03,
+            0.45,
+            4.2
+          ]
+        },
+        {
+          "name": "MOVE_WheelRL",
+          "position": [
+            -1.03,
+            0.45,
+            0.0
+          ]
+        },
+        {
+          "name": "WheelVisibleRL",
+          "position": [
+            -1.03,
+            0.45,
+            0.0
+          ]
+        },
+        {
+          "name": "MOVE_WheelRR",
+          "position": [
+            1.03,
+            0.45,
+            0.0
+          ]
+        },
+        {
+          "name": "WheelVisibleRR",
+          "position": [
+            1.03,
+            0.45,
+            0.0
+          ]
+        },
+        {
+          "name": "TruckVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 5314,
+      "geometry_signature": "7ad354db5be3317b9716911dee83575cf949af9ae5e496a83e539bc4eb147b83"
+    },
+    {
+      "name": "Pallet",
+      "bounds_min": [
+        -0.4,
+        0.0,
+        -0.6
+      ],
+      "bounds_max": [
+        0.4,
+        0.8345,
+        0.6
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_BinLid",
+          "position": [
+            0.0,
+            0.835,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Load",
+          "position": [
+            0.0,
+            0.172,
+            0.0
+          ]
+        },
+        {
+          "name": "PalletVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 692,
+      "geometry_signature": "4a22c875239837f0b6ebf707b8c3e73bd241e267fd4041cc952dd2aba786df8b"
+    },
+    {
+      "name": "RetortBasket",
+      "bounds_min": [
+        -0.49,
+        0.0,
+        -0.52
+      ],
+      "bounds_max": [
+        0.49,
+        0.62,
+        0.52
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Load",
+          "position": [
+            0.0,
+            0.17,
+            0.0
+          ]
+        },
+        {
+          "name": "RetortBasketVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 468,
+      "geometry_signature": "967025e25fcb542eac7d7f543da5fdc7265a175faaa032296d3cc23ec12e82c1"
+    },
+    {
+      "name": "CanTray",
+      "bounds_min": [
+        -0.38,
+        0.0,
+        -0.23
+      ],
+      "bounds_max": [
+        0.38,
+        0.137,
+        0.23
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Load",
+          "position": [
+            0.0,
+            0.13,
+            0.0
+          ]
+        },
+        {
+          "name": "CanTrayVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 1348,
+      "geometry_signature": "0b21ee4ebd9868182e93fc4b48d444eb3b85b8c8a4019ef3f3fd871c69a18161"
+    },
+    {
+      "name": "CartonStack",
+      "bounds_min": [
+        -0.37,
+        0.005,
+        -0.56
+      ],
+      "bounds_max": [
+        0.37,
+        0.632,
+        0.545
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Load",
+          "position": [
+            0.0,
+            0.63,
+            0.0
+          ]
+        },
+        {
+          "name": "CartonStackVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 416,
+      "geometry_signature": "ebd7586698e53c3ff8da1cde1964f2b94150179d03dd34c68738b01b8512d90b"
+    },
+    {
+      "name": "Trolley",
+      "bounds_min": [
+        -0.38,
+        0.0,
+        -0.96
+      ],
+      "bounds_max": [
+        0.38,
+        1.11,
+        0.6
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Handle",
+          "position": [
+            0.0,
+            1.08,
+            -0.88
+          ]
+        },
+        {
+          "name": "ANCHOR_Load",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_TrolleyHandleLeft",
+          "position": [
+            -0.32,
+            1.08,
+            -0.88
+          ]
+        },
+        {
+          "name": "ANCHOR_TrolleyHandleRight",
+          "position": [
+            0.32,
+            1.08,
+            -0.88
+          ]
+        },
+        {
+          "name": "MOVE_Forks",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "PalletJackForks",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "TrolleyVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 312,
+      "geometry_signature": "434342991f92ded82ffec6d8cae32c038464ab19bd1eb897e4178c933d7a7a4c"
+    },
+    {
+      "name": "Yard",
+      "bounds_min": [
+        -9.0,
+        -0.12,
+        -9.0
+      ],
+      "bounds_max": [
+        9.0,
+        0.18,
+        10.0
+      ],
+      "anchors": [
+        {
+          "name": "YardDriveway",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "YardVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "triangles": 768,
+      "geometry_signature": "cf1a7b837fc1a2adae213eafa576ac2e4fc15470095ecd86aabfc7c11db3ec19"
+    }
+  ],
+  "hall_floor_height": 0.18,
+  "yard_height": 0.08,
+  "truck_wheelbase": 4.2,
+  "truck_wheel_radius": 0.45,
+  "truck_body_xz": [
+    -1.25,
+    1.25,
+    -2.6,
+    5.4
+  ],
+  "pallet_size_xz": [
+    0.8,
+    1.2
+  ],
+  "cold_store_aisle_width": 1.35,
+  "pallet_jack_fork_top": 0.128,
+  "pallet_jack_carry_lift": 0.03,
+  "conveyor_top_height": 1.19,
+  "retort_basket_tray_height": 0.17,
+  "retort_basket_contains_cans": false,
+  "tail_lift_length": 2.5,
+  "tail_lift_operator_rear_clearance": 0.27,
+  "goods_threshold_ramp_length": 1.5,
+  "goods_threshold_ramp_rise": 0.1,
+  "driveway_grid_xz": [
+    6,
+    4
+  ],
+  "driveway_runtime_profile": "CityCanneryPlan.ApronTop",
+  "driver_door_open_axis": "Unity local +Y, +70 degrees about front hinge",
+  "tail_lift_fold_axis": "Unity local +X, +90 degrees folded; authored extended; lower pivot Y for lift",
+  "retort_door_open_axis": "Unity +Y vertical slide, 1.7 metres; identity rotation",
+  "semantic_uv_tiles_metres": {
+    "Concrete": 2.0,
+    "ConcreteWall": 2.0,
+    "Steel": 1.5,
+    "SteelDark": 1.5,
+    "SteelLight": 1.5,
+    "SteelRust": 1.5,
+    "Plaster": 2.0,
+    "Timber": 1.0,
+    "Roof": 2.0,
+    "Deck": 1.0,
+    "Tare": 0.75,
+    "Fish": 0.5,
+    "Ice": 0.5,
+    "Rubber": 0.5,
+    "Fabric": 1.0,
+    "Asphalt": 12.0,
+    "RoadMarking": 2.0
+  },
+  "geometry_signature_includes": [
+    "vertices",
+    "faces",
+    "colors",
+    "uv0",
+    "transforms"
+  ]
+}

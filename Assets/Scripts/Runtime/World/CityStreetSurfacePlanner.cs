@@ -391,6 +391,30 @@ namespace BarPromenade
         private static void AddSidewalkWithPortOpening(CityLayout layout, Vector3 start, Vector3 end,
             ICollection<Bounds> sidewalks, ICollection<RuntimeOrientedBox> geometry, ICollection<Rect> walkable)
         {
+            CityCanneryPlan cannery=CityCanneryPlan.Create(layout);
+            if(cannery!=null)
+            {
+                Rect opening=cannery.StreetOpening;
+                bool horizontal=Mathf.Abs(end.z-start.z)<.01f;
+                bool vertical=Mathf.Abs(end.x-start.x)<.01f;
+                float fixedValue=horizontal?start.z:start.x;
+                float fixedMin=horizontal?opening.yMin:opening.xMin;
+                float fixedMax=horizontal?opening.yMax:opening.xMax;
+                float from=horizontal?start.x:start.z, to=horizontal?end.x:end.z;
+                float minimum=horizontal?opening.xMin:opening.yMin, maximum=horizontal?opening.xMax:opening.yMax;
+                if((horizontal||vertical)&&fixedValue>=fixedMin&&fixedValue<=fixedMax&&
+                    Mathf.Max(from,to)>minimum&&Mathf.Min(from,to)<maximum)
+                {
+                    float a=(minimum-from)/(to-from),b=(maximum-from)/(to-from);
+                    float low=Mathf.Clamp01(Mathf.Min(a,b)),high=Mathf.Clamp01(Mathf.Max(a,b));
+                    if(low>.001f)AddSidewalk(CreateSurfaceBox(start,Vector3.Lerp(start,end,low),SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
+                    if(high<.999f)AddSidewalk(CreateSurfaceBox(Vector3.Lerp(start,end,high),end,SidewalkWidth,SidewalkHeight),sidewalks,geometry,walkable);
+                    // The imported apron supplies the dropped physical surface;
+                    // pedestrian lanes continue over this one vehicle crossing.
+                    walkable.Add(opening);
+                    return;
+                }
+            }
             CityPortAccessPlan port=CityPortAccessPlan.ForLayout(layout);
             if(port!=null && Mathf.Abs(end.z-start.z)<.01f && Mathf.Abs(end.x-start.x)>.01f)
             {

@@ -656,7 +656,7 @@ namespace BarPromenade
             }
 
             TryPlayPhysicalAction(
-                CitySoundPhysicalOwnerKind.IndustrialWeighbridge,
+                CitySoundPhysicalOwnerKind.IndustrialCannery,
                 CitySourceSoundId.IndustrialMetalStress);
         }
 

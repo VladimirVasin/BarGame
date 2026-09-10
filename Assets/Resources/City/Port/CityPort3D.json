@@ -103,10 +103,26 @@
             0.0,
             0.0
           ]
+        },
+        {
+          "name": "MOVE_EastLoadingDoor",
+          "position": [
+            4.06,
+            1.5,
+            -14.0
+          ]
+        },
+        {
+          "name": "EastLoadingDoorVisible",
+          "position": [
+            4.06,
+            1.5,
+            -14.0
+          ]
         }
       ],
       "triangles": 15448,
-      "geometry_signature": "658014c4d8af9cda3901a962ecda50618ceb32d8740d889b858bea8246e170cb"
+      "geometry_signature": "ea107a56534a2cb765f4f8593dc5df0d04ce0ef8821efe4c95048e747d579d14"
     },
     {
       "name": "Trawler",

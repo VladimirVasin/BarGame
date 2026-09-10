@@ -267,7 +267,9 @@ namespace BarPromenade
                 }
 
                 strongestWeight = weight;
-                targetDatum = descriptor.Center.y;
+                targetDatum = descriptor.Kind == CityDistrictPointOfInterestKind.IndustrialCannery
+                    ? CityCanneryPlan.Create(layout)?.Origin.y ?? descriptor.Center.y
+                    : descriptor.Center.y;
             }
 
             return Mathf.Lerp(baseDatum, targetDatum, strongestWeight);

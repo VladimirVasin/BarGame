@@ -1110,7 +1110,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 "Old Town Waterworks Court",
                 "Residential Drying Yard",
-                "Industrial Weighbridge",
+                "Industrial Cannery",
                 "Nightlife Last Route Island"
             };
             int publicGroundCount = 0;
@@ -1154,7 +1154,7 @@ namespace BarPromenade.Tests.PlayMode
                 }
             }
 
-            Assert.That(publicGroundCount, Is.EqualTo(4));
+            Assert.That(publicGroundCount, Is.EqualTo(3));
             Assert.That(recipeCount, Is.EqualTo(4));
             for (int descriptorIndex = 0;
                  descriptorIndex <
@@ -1167,6 +1167,19 @@ namespace BarPromenade.Tests.PlayMode
                     CityDistrictPointOfInterestWorldBuilder
                         .GetSiteName(descriptor.Id));
                 Assert.That(site, Is.Not.Null);
+                if (descriptor.Kind == CityDistrictPointOfInterestKind.IndustrialCannery)
+                {
+                    CityCanneryPlan cannery = CityCanneryPlan.Create(layout);
+                    Transform recipe = site.Find("Industrial Cannery");
+                    Assert.That(recipe, Is.Not.Null);
+                    Assert.That(Vector3.Distance(recipe.position,cannery.Origin), Is.LessThan(.001f));
+                    Assert.That(Quaternion.Angle(recipe.rotation,cannery.Rotation), Is.LessThan(.01f));
+                    Assert.That(recipe.localScale, Is.EqualTo(Vector3.one));
+                    Assert.That(recipe.Find("Hall"), Is.Not.Null);
+                    Assert.That(recipe.Find("Yard"), Is.Not.Null);
+                    Assert.That(CityWeighbridgeIndicatorRegistry.Find(CityWeighbridgeIndicatorRegistry.NeedleId), Is.Null);
+                    continue;
+                }
                 Transform ground = site.Find(
                     CityDistrictPointOfInterestWorldBuilder
                         .PublicGroundName);
@@ -1332,14 +1345,9 @@ namespace BarPromenade.Tests.PlayMode
                         "Residential_Timber");
                     break;
                 case CityDistrictPointOfInterestKind
-                    .IndustrialWeighbridge:
-                    AssertImportedRecipeParts(
-                        recipe,
-                        "Industrial",
-                        "Street");
-                    AssertRequiredChild(recipe, "Scale Indicator Face");
-                    AssertRequiredChild(recipe, "Scale Needle");
-                    AssertRequiredChild(recipe, "Cold Service Lamp");
+                    .IndustrialCannery:
+                    AssertRequiredChild(recipe, "Hall");
+                    AssertRequiredChild(recipe, "Yard");
                     break;
                 case CityDistrictPointOfInterestKind
                     .NightlifeLastRouteIsland:

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace BarPromenade
@@ -25,6 +26,29 @@ namespace BarPromenade
         private const uint StableSeedSalt = 0x42555331u;
         private const float DirectionTolerance = 0.5f;
         private const float GeometryTolerance = 0.001f;
+        private static readonly ConditionalWeakTable<CityLayout, CityBusPlan> RoadRoutingPlans =
+            new ConditionalWeakTable<CityLayout, CityBusPlan>();
+
+        /// <summary>The exact service loop before shelter grounding. Layout consumers
+        /// can inspect road occupancy without recursively constructing terrain.</summary>
+        public static CityBusPlan CreateRoadRouting(CityLayout layout)
+        {
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            return RoadRoutingPlans.GetValue(layout, value => Create(value, value.Seed, false));
+        }
+
+        public static HashSet<RoadEdge> ServiceRoadEdges(CityBusPlan plan)
+        {
+            var result = new HashSet<RoadEdge>();
+            if (plan == null) return result;
+            foreach (int index in plan.OrderedLinkIndices)
+            {
+                CityBusRouteLink link = plan.Links[index];
+                result.Add(plan.Nodes[link.FromNodeIndex].RoadEdge);
+                result.Add(plan.Nodes[link.ToNodeIndex].RoadEdge);
+            }
+            return result;
+        }
 
         public static CityBusPlan Create(
             CityLayout layout,
@@ -52,7 +76,8 @@ namespace BarPromenade
 
         private static CityBusPlan Create(
             CityLayout layout,
-            int decorationSeed)
+            int decorationSeed,
+            bool groundShelters = true)
         {
             if (layout == null)
             {
@@ -191,7 +216,7 @@ namespace BarPromenade
                 finalLinks,
                 loopLength,
                 stops);
-            stops = GroundShelterPositions(layout, stops);
+            if (groundShelters) stops = GroundShelterPositions(layout, stops);
             List<CityBusSpawnAnchor> anchors = CreateSpawnAnchors(
                 layout,
                 vehicle,

@@ -44,6 +44,9 @@ namespace BarPromenade
             CityDistrictPointOfInterestDescriptor point,
             ICollection<CitySoundSourceDescriptor> target)
         {
+            // Working equipment is timed by CityCanneryController. The former
+            // unoccupied scale must not leave a second invisible sound owner.
+            if (point?.Kind == CityDistrictPointOfInterestKind.IndustrialCannery) return;
             if (point == null ||
                 !CityDistrictPointOfInterestWorldBuilder
                     .TryDescribeSoundGeometry(
@@ -76,9 +79,9 @@ namespace BarPromenade
                     detailSchedule = new CitySoundScheduleInterval(14f, 31f);
                     break;
                 case CityDistrictPointOfInterestKind
-                    .IndustrialWeighbridge:
+                    .IndustrialCannery:
                     owner = CitySoundPhysicalOwnerKind
-                        .IndustrialWeighbridge;
+                        .IndustrialCannery;
                     loopCue = CitySourceSoundId
                         .IndustrialWeighbridgeMechanismLoop;
                     detailCue = CitySourceSoundId.IndustrialMetalStress;

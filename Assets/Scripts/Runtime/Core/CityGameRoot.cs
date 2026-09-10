@@ -72,6 +72,7 @@ namespace BarPromenade
         }
         public IReadOnlyList<WeighbridgeAttendantPresentation>
             WeighbridgeAttendants { get; private set; }
+        public CityCanneryController Cannery { get; private set; }
         public CityWeighbridgeNeedleController WeighbridgeNeedle
         {
             get;
@@ -702,21 +703,13 @@ namespace BarPromenade
                     .AddComponent<CityArchShelterPresentation>();
                 ArchShelterPresentation.Initialize(Layout.Seed);
             }
-            // The cold weighbridge's authored pair: the weigher reads
-            // her instrument beside the mechanism while the worker
-            // paces the deck axis, standing still at its centre as if
-            // being weighed. Staged NPCs, like the babushkas.
-            WeighbridgeAttendants = WeighbridgeAttendantFactory.Create(
-                transform,
-                WeighbridgeAttendantPlan.Create(Layout));
-            // The scale answers weight: the indicator needle eases
-            // off its rest mark while the worker's pause or the hero
-            // stands on the deck, and settles back once it is empty.
-            WeighbridgeNeedle = CityWeighbridgeNeedleController.Create(
-                transform,
-                Layout,
-                Player.GameObject.transform,
-                WeighbridgeAttendants);
+            // The public industrial lot now carries a working cannery. Its
+            // production controller owns the crew; the retired human-weighing
+            // tableau and its player-sensitive scale are never instantiated.
+            WeighbridgeAttendants = System.Array.Empty<WeighbridgeAttendantPresentation>();
+            WeighbridgeNeedle = null;
+            Cannery = CityCanneryController.Build(transform, Layout,
+                World.Root.GetComponentInChildren<CityPortController>(), Player.GameObject.transform);
             // The cemetery's one scripted visitor: while the hero is
             // near the grounds a mourner spawns out of sight, walks
             // through the gate to a deterministic random grave, lays

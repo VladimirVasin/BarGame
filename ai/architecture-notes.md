@@ -4,6 +4,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-10, a compact cannery and finite fish logistics:**
+  Story §6 permits the user's City cannery in place of art §8's weighbridge,
+  with port delivery. Public routes remain; its apron meets the road on the
+  same lot. `CityFishSupplyCycle` serializes six units:
+  receive/chill, prepare/fill/seam, retort, cool/pack, shop handoff. Missing
+  input or occupied output waits; custody cannot duplicate. One `8 x 2.5 m`
+  truck runs at `3 m/s`, reverses at `1.1 m/s`, then returns before the next ship.
+  Level frontage outranks bus avoidance; routes prefer non-bus streets with fallback.
+  `CityCanneryTraffic` reserves the trip before departure; bus movement/spawning
+  respect both reservation and truck, released at the next loading bay.
+  Four factory workers and driver reuse StationWorker; five port workers remain,
+  legacy attendants/needle stay dormant. `CityCanneryController` owns crew,
+  processing and three causal voices. `CityFishSupplySession` keeps scalar
+  working time over City reloads; pause/obstacles stop it. Port's roller door,
+  baffle bypass, tail lift and shop service door admit physical cargo transfers.
+  Nine Blender models share port maps/materials; shop stock is unchanged.
+  Empty-tare return is Deferred: consumed units retire inside opaque storage.
+  The hero observes freely: no ride, earnings, quest, dialogue, city exit,
+  reopening history, crime/contamination implication or authority checkpoint.
+  Story §16/§21 and all nine art checks remain binding at every level.
+  `AreaCaptureFixture.CityCannery` passed; gameplay frames were reviewed.
+
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
   Twelve opaque ImageGen albedos cover horizontal
   concrete and walls, painted steel, warehouse plaster, timber, roofing,
@@ -14,71 +36,55 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   role materials preserve the muted palette; thin bare hardware stays flat.
   Access asphalt instead shares `CityRoadAsphaltAlbedo`, its `12 m` world
   phase and the city's wet-surface response, keeping the street joint whole.
-  This is story §6's narrow level-`0` exception to art §10d's flat-iron and
-  unchanged-slope rules. Nine deterministic FBXs include `AccessRoad`; the
-  generator validates measured geometry, semantic UVs and real cargo holds.
+  Story §6 permits these surfaces and local regrading. Nine deterministic
+  FBXs include `AccessRoad`, with measured geometry, UVs and real holds.
   `PortAccessLayout.json` supplies `CityPortAccessPlan` and the authored road:
   a `6 m` carriageway, street flare, local regrade and an L-shaped service
   yard beside the east loading door. An `8 x 2.5 m` rigid-truck template
-  checks approach, turn, reverse-to-store and exit without spawning a truck.
+  checks approach, turn, reverse-to-store and exit.
   The public `2 m` bypass stays outside that manoeuvre, crosses the road
   once and connects street, coast and port. NPCs use its straight street spur
   then orthogonal beach links; the player retains the diagonal paved branch.
-  Global graph rules stay unchanged. A truck, driver and player task remain absent.
-  The existing trawler gains working fittings and deck detail; each crane's
-  bearing, counterweight and winch slew with its head, while its operator
-  remains grounded. The five StationWorker rigs retain their faces/actions;
-  port-only fabric UV transforms, muted coat/cap/glove colours and small
-  planted torso adjustments precede fixed hand contacts and load gaze.
+  Global graph rules stay unchanged.
+  Trawler fittings and deck detail are authored; bearings, counterweights and
+  winches slew with crane heads while operators stay grounded. Five unchanged
+  StationWorker rigs use fabric UV transforms, muted clothes and planted torso
+  motion before fixed hand contacts and load gaze.
   Hook and cargo sway by at most `9 cm` during slewing, settling before lowering.
   Two warm fixtures now aim at quay and store work patches. The daylight
   two-thirds floor, global fog and `624 s` six-load cycle remain unchanged.
-  The hero still observes one berth, two cranes and one trawler. No text,
-  fresh destruction, lore, quest or extra worker is added. Generator validation
-  and `AreaCaptureFixture.CityPort` passed; day/night and access frames were reviewed. Story
-  §16/§21 and all nine art acceptance checks still hold.
+  Generator validation and `AreaCaptureFixture.CityPort` passed; day/night
+  and access frames were reviewed. Story §16/§21 and all nine art checks hold.
 
 - **Accepted — 2026-09-09, a small working fishing port:**
-  The implemented MVP replaces the dead west-beach port with a fishing
-  vessel entering, berthing, being unloaded by cranes and leaving; the hero
-  observes the complete cycle, as the user requested. Story §6 records its
-  bounded level-`0` exception to art §10d's boat/docking, dark-shore and
-  continuous-sand constraints and to the closed-port meaning in story
-  §5/§7/§12/§18 and art §10g. Closed mine, closed boat station and fisherman
-  remain; no reopening history is invented.
-  One berth, two shore cranes, one roughly `20 m` trawler, five ordinary
-  workers and six cargo units make the slice finite. An expanded/replaced
-  mol has fenders, bollards, moorings and an unobstructed crane edge; a local
-  dredged basin and approach keep the vessel clear of the bed, river mouth,
-  island and station pier. The compact reclaimed quay's front stands `20 m`
+  The vessel enters, berths, unloads and leaves while the hero observes.
+  Story §6's level-`0` exception covers art §10d's docking, dark-shore and
+  sand constraints, story §5/§7/§12/§18 and art §10g's closed-port meaning.
+  Closed mine, boat station and fisherman remain; no reopening history exists.
+  One berth, two cranes, one roughly `20 m` trawler, five workers and six loads
+  make a finite slice. Fenders, bollards, moorings and a free crane edge serve
+  a basin/approach clear of bed, river mouth, island and station pier. The quay stands `20 m`
   beyond the waterline, on solid caissons extending to local `-3.4 m`.
   Its rear edge meets the low shore, keeping the warehouse above the rising
-  sand; the later service-road decision permits local access regrading. The public
-  rear path sits `0.5 m` inland of the waterline. Physical side ramps and
-  precise walkable footprints connect it to the beach; the original coastal
-  line stays passable across the later service-road crossing. This visitor route
-  lies outside suspended loads. Cranes transfer real fish cargo to the quay;
-  a trolley takes it to
-  cold storage. Moorings precede lifting and clear before departure; each
-  cargo handoff has a common physical contact, and neither ship nor cargo
-  resets visibly. Entry/exit use the existing distant fog. Port motion has
-  its own fixed-world cycle rather than the offshore layer's hero-local
-  spawning contract; the offshore planner excludes the working corridor.
+  sand. The rear path sits `0.5 m` inland of the waterline; physical side ramps
+  and walkable footprints connect beach and road crossing outside hanging loads.
+  Cranes deliver fish to the quay, a trolley to cold storage. Moorings precede
+  lifting and clear before departure; each handoff shares a physical contact.
+  Nothing resets visibly; ship entry/exit use distant fog. The fixed-world
+  port clock is separate from hero-local offshore spawning, whose planner
+  excludes this corridor.
   `CityPortCycle` reconstructs a `624 s` visit with six `64 s` cargo slots;
   `CityPortController` applies its custody, hatch, mooring and motion state.
   Crew, mechanical voices and the separate sea wake follow the same owner.
   `AreaCaptureFixture.CityPort` passed the focused runtime acceptance.
-  All new geometry is deterministic Blender-authored model content with
-  measured anchors; pure plans own spatial/cargo contracts, runtime owns
-  presentation, pause and release. Reusable materials and existing sea/wave
-  data remain shared. Warm practical fixtures light only port work surfaces
-  and the store entrance, retaining the two-thirds daytime floor. Motors,
-  cranes, wheels and cargo contacts have quiet physical sound owners.
-  Muted nonyellow clothing and equipment preserve the fisherman's accent.
-  The hero keeps control and can leave at any stage. There is no boarding,
-  second city exit, earnings, quest, dialogue, crime knowledge, disease
-  implication or act/intoxication-dependent cycle. Ordinary workers remain
-  indifferent. Story §16/§21 and all nine art acceptance checks still hold.
+  Deterministic Blender geometry has measured anchors; pure plans own space
+  and cargo, runtime owns presentation/pause/release. Materials and sea/wave
+  data are shared. Warm work lights retain the two-thirds daytime floor;
+  motors, cranes, wheels and contacts own quiet sound. Muted nonyellow clothes
+  preserve the fisherman's accent. The hero can leave freely; no boarding,
+  city exit, earnings, quest, dialogue, crime/disease implication or
+  act/intoxication-dependent cycle exists. Indifferent workers, story §16/§21
+  and all nine art checks remain binding.
 
 - **Accepted — 2026-09-09, the Ferryman's radio and ordinary road speech:**
   The user approved the complete radio, glovebox-light and ten-line road-pool
@@ -3504,27 +3510,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   for decoration clearance. Runtime rails own combined `MeshCollider`s while
   narrow posts remain visual-only; both stay batched in `48 m` chunks.
 - **Accepted — First-class open district points of interest:** City land use,
-  not the late visual-decoration pass, owns public places. After bars, the
-  player home and one buildable primary-landmark cell per urban district are
-  reserved, `CityLayoutGenerator` deterministically chooses at most one other
-  street-connected lot in each district. It prefers more street sides, then
-  greater separation from the district's primary landmark, then a stable
-  seeded rank. The default layout yields four: Old Town's waterworks court,
-  Residential's drying yard, Industrial's weighbridge and Nightlife's
-  last-route island. The authored recipes require both `BlockWidth` and
-  `BlockDepth` to be at least
-  `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); a smaller
-  custom layout omits all four safely, and a compact eligible district may
-  still omit its place when no safe candidate exists. Each
-  `CityDistrictPointOfInterestDescriptor` is the
-  canonical stable ID/cell/kind/public-bounds/access contract. Its matching lot
-  has `CityLandUseKind.DistrictPointOfInterest`, has no building and cannot be a
-  bar, home, park cell or primary landmark. `RoadWalkableArea` includes its
+  not late decoration, owns public places. After reserving bars, home and one
+  buildable primary-landmark cell per district, `CityLayoutGenerator` chooses
+  at most one other street-connected lot per district: more street sides,
+  then distance from the landmark, then stable seeded rank. The default four
+  are Old Town's waterworks court, Residential's drying yard, Industrial's
+  cannery and Nightlife's last-route island. Both lot dimensions must meet
+  `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
+  blocks or districts without a safe candidate omit their POIs.
+  `CityDistrictPointOfInterestDescriptor` owns stable ID/cell/kind, public
+  bounds and access. `CityLandUseKind.DistrictPointOfInterest` excludes bars,
+  homes, park cells and primary landmarks. No ordinary building occupies it;
+  only the cannery's own hall encloses its planned production footprint,
+  retaining public crossing and bypass. `RoadWalkableArea` includes its
   active ground and approach rectangles, while `RoadFencePlanner` treats the
   complete non-water public surface as support and emits no street-side rail;
   `CityNightFixturePlanner` excludes lamps and signals from the reserved
   ground/approaches. A dedicated world builder creates the
-  physical paving, free-standing recipe and intentional solid colliders; the
+  physical paving, authored recipe and intentional solid colliders; the
   bounded Home exterior rebuilds nearby descriptors through the same
   world-to-local transform without gameplay colliders. The last-route island
   owns no emissive recipe parts: its previously unsupported departure board
@@ -5144,7 +5147,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and temporarily suspends motor, interaction, camera orbit, cinematic camera
   motion and the HUD. It consumes `CityLayout.DistrictPointsOfInterest`
   directly, draws those lots as open public ground and gives the waterworks,
-  drying yard, weighbridge and last-route island distinct non-route
+  drying yard, cannery and last-route island distinct non-route
   marker shapes plus a localized name legend. The same overlay reads the
   canonical `CityLayout.Supermarket`, draws it as a non-route grocery-shop
   landmark and resolves pointer hover across bars, home, shop and POIs by
@@ -5793,15 +5796,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   ID, district, semantic owner, exact visible bounds, cue, radius and one of
   three causal modes: loop, autonomous scheduled one-shot, or physical-action
   one-shot. Cue validation fixes that mode — a waterworks drip, wind-driven
-  rope creak or broken-speaker chime may schedule itself, while carpet impact,
-  weighbridge stress and the future swing creak may not exist without a real
-  owner event. The default city produces ten descriptors: five loops, three
-  autonomous details and the carpet/scale actions. `CitySoundscapeDirector`
+  rope creak or broken-speaker chime may schedule itself, while carpet impact
+  and the future swing creak require a real owner event. Eight live descriptors
+  bind four loops, three autonomous details and carpet impact; the retired
+  scale contributes none. `CitySoundscapeDirector`
   owns a hard nine-source pool (five loop, three scheduled, one action), lazy
   deterministic `22050 Hz` mono clips, a global detail-silence interval and
   coarse line-of-sight attenuation through authored building masses. The
-  carpet cue subscribes to the exact authored strike frame; the scale cue
-  follows the real needle's loaded crossing. The park swing remains
+  carpet cue subscribes to the exact authored strike frame. The park swing remains
   silent until its motion has a first-class registry rather than a hierarchy
   search. The old City bed now contains diffuse air only and is kept at
   `0.025`; rain remains non-spatial because it surrounds the listener. Surf is

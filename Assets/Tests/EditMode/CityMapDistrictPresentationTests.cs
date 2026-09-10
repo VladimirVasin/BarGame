@@ -74,7 +74,7 @@ namespace BarPromenade.Tests.EditMode
             CityDistrictPointOfInterestKind.ResidentialDryingYard,
             "map.poi.residential_drying_yard")]
         [TestCase(
-            CityDistrictPointOfInterestKind.IndustrialWeighbridge,
+            CityDistrictPointOfInterestKind.IndustrialCannery,
             "map.poi.industrial_weighbridge")]
         [TestCase(
             CityDistrictPointOfInterestKind.NightlifeLastRouteIsland,

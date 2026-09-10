@@ -3612,7 +3612,7 @@ namespace BarPromenade
                         width,
                         color);
                     break;
-                case CityDistrictPointOfInterestKind.IndustrialWeighbridge:
+                case CityDistrictPointOfInterestKind.IndustrialCannery:
                     RetroUiTheme.StrokeRect(
                         new Rect(
                             center.x - halfSize,

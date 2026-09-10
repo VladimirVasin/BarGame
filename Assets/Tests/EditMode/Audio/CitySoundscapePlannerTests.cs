@@ -69,7 +69,7 @@ namespace BarPromenade.Tests.EditMode
                 new CitySoundSourceDescriptor(
                     "city.bad.owner-cue",
                     CityDistrictKind.Industrial,
-                    CitySoundPhysicalOwnerKind.IndustrialWeighbridge,
+                    CitySoundPhysicalOwnerKind.IndustrialCannery,
                     CitySourceSoundId.WaterworksPipeLoop,
                     Vector3.zero,
                     new Bounds(Vector3.zero, Vector3.one),
@@ -116,7 +116,7 @@ namespace BarPromenade.Tests.EditMode
             var triggered = new CitySoundSourceDescriptor(
                 "city.valid.triggered",
                 CityDistrictKind.Industrial,
-                CitySoundPhysicalOwnerKind.IndustrialWeighbridge,
+                CitySoundPhysicalOwnerKind.IndustrialCannery,
                 CitySourceSoundId.IndustrialMetalStress,
                 Vector3.zero,
                 new Bounds(Vector3.zero, Vector3.one),
@@ -129,7 +129,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.Throws<ArgumentException>(() => Scheduled(
                 "city.bad.timed-scale",
                 CityDistrictKind.Industrial,
-                CitySoundPhysicalOwnerKind.IndustrialWeighbridge,
+                CitySoundPhysicalOwnerKind.IndustrialCannery,
                 CitySourceSoundId.IndustrialMetalStress));
             Assert.Throws<ArgumentException>(() => Triggered(
                 "city.bad.unscheduled-drip",
@@ -173,7 +173,7 @@ namespace BarPromenade.Tests.EditMode
             CitySoundSourceDescriptor mechanism = Loop(
                 "city.industrial.weighbridge.mechanism",
                 CityDistrictKind.Industrial,
-                CitySoundPhysicalOwnerKind.IndustrialWeighbridge,
+                CitySoundPhysicalOwnerKind.IndustrialCannery,
                 CitySourceSoundId.IndustrialWeighbridgeMechanismLoop);
 
             CitySoundscapePlan oldTown =
@@ -231,12 +231,12 @@ namespace BarPromenade.Tests.EditMode
             CitySourceSoundPlayback.OneShot)]
         [TestCase(
             CityDistrictKind.Industrial,
-            CitySoundPhysicalOwnerKind.IndustrialWeighbridge,
+            CitySoundPhysicalOwnerKind.IndustrialCannery,
             CitySourceSoundId.IndustrialWeighbridgeMechanismLoop,
             CitySourceSoundPlayback.Loop)]
         [TestCase(
             CityDistrictKind.Industrial,
-            CitySoundPhysicalOwnerKind.IndustrialWeighbridge,
+            CitySoundPhysicalOwnerKind.IndustrialCannery,
             CitySourceSoundId.IndustrialMetalStress,
             CitySourceSoundPlayback.OneShot)]
         [TestCase(

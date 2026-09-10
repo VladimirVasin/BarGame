@@ -11,7 +11,7 @@ namespace BarPromenade.Editor
     {
         public const string ModelFolder = "Assets/Resources/City/Port/";
         public const string ManifestPath = ModelFolder + "CityPort3D.json";
-        public override uint GetVersion() => 4;
+        public override uint GetVersion() => 5;
 
         private void OnPreprocessModel()
         {
@@ -70,7 +70,8 @@ namespace BarPromenade.Editor
             }
             foreach (Transform part in model.GetComponentsInChildren<Transform>(true))
             {
-                if (part.name != "HatchA" && part.name != "HatchB" && part.name != "CraneHead") continue;
+                if (part.name != "HatchA" && part.name != "HatchB" && part.name != "CraneHead" &&
+                    !part.name.StartsWith("MOVE_", StringComparison.Ordinal)) continue;
                 var children = new Transform[part.childCount];
                 for (int i = 0; i < children.Length; i++) children[i] = part.GetChild(i);
                 foreach (Transform child in children) child.SetParent(model.transform, true);

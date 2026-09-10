@@ -9,7 +9,7 @@ namespace BarPromenade
     {
         OldTownWaterworksCourt = 0,
         ResidentialDryingYard = 1,
-        IndustrialWeighbridge = 2,
+        IndustrialCannery = 2,
         NightlifeLastRouteIsland = 3
     }
 

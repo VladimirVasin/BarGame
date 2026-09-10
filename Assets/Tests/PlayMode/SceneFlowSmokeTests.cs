@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
@@ -2071,7 +2071,7 @@ namespace BarPromenade.Tests.PlayMode
                     CityDistrictKind.Residential
                 },
                 {
-                    CityDistrictPointOfInterestKind.IndustrialWeighbridge,
+                    CityDistrictPointOfInterestKind.IndustrialCannery,
                     CityDistrictKind.Industrial
                 },
                 {

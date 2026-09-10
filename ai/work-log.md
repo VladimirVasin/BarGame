@@ -6,36 +6,19 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-10 — Found-item screen and port detail/access
+## 2026-09-10 — Found-item screen, port and cannery
 
-- A thing picked up off the floor now opens the refrigerator's own
-  examination screen. The pure timeline moved to Rules as
-  `WorldItemInspectionTimeline` and the pivot, the veil and the fit-to-frame
-  maths became `WorldItemInspectionPresenter`; the refrigerator drives both
-  unchanged and `WorldItemFoundScreen` on the hero reuses them. `PlayerFactory`
-  installs that screen, so none of the nine roots needed wiring, and the
-  generic `WorldItemPickup` replaced the scarf's own component.
-- Two things that are not obvious. The session records a take only on the
-  player's confirm: crediting it on `E` would hand him an item that a screen
-  which never finishes — a scene unload, a lost modal lock — leaves lying in
-  the room. And the `E` that opened the screen is still down when the screen
-  reads its own confirm, so its first frame is deaf; without that the find
-  would be taken before it was ever seen.
-- An item's held pose became one table, `InventoryItemPreviewPoses`, read by
-  the portrait, the shelf and the find alike. No turn hint stands beside the
-  button: art §15a bans standing key guides and the catalog test keeps the
-  retired ones gone.
-- Backing out had to exist even though the panel offers one button: a hero
-  whose pockets are full meets a take that keeps failing, and the modal lock
-  it holds would shut every door in the game. `Cancel` now closes the find
-  the way a take closes it.
-- Checks: one filtered EditMode selection over `WorldItemInspectionTimelineTests`
-  — whose six existing cases pin the move as behaviour-identical —
-  `WorldItemPickupModelTests`, `HomeRefrigeratorItemCatalogTests` and
-  `InventoryPresentationTests`; documentation through
-  `python tools/check-docs.py`. The earlier `HomeRefrigeratorInteractionPlayModeTests`
-  attempt was blocked while `HomeInteriorRoot` built the seacoast graph during
-  port integration; it is not a refrigerator result.
+- Found items reuse the refrigerator's `WorldItemInspectionTimeline` (now in
+  Rules) and shared `WorldItemInspectionPresenter`. `PlayerFactory` installs
+  `WorldItemFoundScreen`; generic `WorldItemPickup` replaces the scarf component.
+  Only confirmation credits the item; the first frame ignores the opening key
+  to prevent an accidental take. `Cancel` releases the modal lock even with full
+  pockets. Portrait, shelf and find share `InventoryItemPreviewPoses`; standing
+  turn hints remain absent under art §15a.
+- Focused EditMode checks: `WorldItemInspectionTimelineTests`,
+  `WorldItemPickupModelTests`, `HomeRefrigeratorItemCatalogTests`,
+  `InventoryPresentationTests`. `HomeRefrigeratorInteractionPlayModeTests` was
+  blocked by Home's seacoast graph during port integration, not by the refrigerator.
 - Port refinement adds ImageGen surface maps, semantic metre UVs, authored
   fittings, slewing crane heads and planted worker contacts. Asphalt and
   crossing paint share city assets. A regraded street branch and service
@@ -43,12 +26,24 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   Import/terrain checks caught buried coast guardrails; graph construction
   rejected diagonal NPC links, now replaced by an orthogonal beach connector.
   `build-city-port-3d-model.py --validate-only` and `AreaCaptureFixture.CityPort`
-  passed. The focused runtime proof covers access/grounding, truck clearance,
-  the full clocked cargo cycle, contacts, pause and reconstruction; day/night,
-  junction, yard, crossing and worker frames were reviewed. Documentation
-  passed `python tools/check-docs.py` and `git diff --check`.
+  passed for access/grounding, truck clearance, cargo/contact ownership, pause
+  and reconstruction; day/night, road and worker frames were reviewed.
+  Documentation passed `python tools/check-docs.py` and `git diff --check`.
 - PlayMode warnings: unordered root lookup, runtime-only wind, direct GameView
   assembly lookup. Verified by `dotnet build BarPromenade.PlayModeTests.csproj`.
+- The cannery replaces the weighbridge in City. A finite batch links port,
+  physical truck loading, processing and passive shop receipt; purchasable
+  stock is unchanged and empty-tare return remains deferred. Authored models
+  reuse port materials, ordinary rigs operate the machines and the hero
+  watches from public passages. Canon records the replacement explicitly.
+- Road grade had to outrank bus avoidance: a steeper frontage broke the
+  truck's ground contact. Shared-trip reservation coordinates bus and truck;
+  apron mesh, collider and wheels now agree with the existing street. Real
+  loading doors and the cold-store baffle route keep transfers physical.
+  Planted preparation lean and the nearer retort hand keep contacts reachable.
+  `AreaCaptureFixture.CityCannery` passed import/custody, public access,
+  vehicle/obstacle/reservation, worker contacts and pause/reconstruction checks;
+  gameplay frames were reviewed. `python tools/check-docs.py` passed.
 
 ## 2026-09-09 — Village opening, journal and working port
 

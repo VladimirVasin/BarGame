@@ -8,7 +8,7 @@ namespace BarPromenade.Tests.EditMode
     public sealed class CitySoundscapeIntegrationTests
     {
         [Test]
-        public void DefaultCity_AnchorsElevenCausalSoundsToPhysicalOwners()
+        public void DefaultCity_AnchorsCausalSoundsAndLeavesCanneryTimingToItsController()
         {
             CityLayout layout = CreateDefaultLayout();
             CityDecorationPlan decorationPlan =
@@ -22,10 +22,10 @@ namespace BarPromenade.Tests.EditMode
                     layout,
                     decorationPlan);
 
-            Assert.That(plan.Sources, Has.Count.EqualTo(11));
-            Assert.That(plan.LoopingSources, Has.Count.EqualTo(5));
+            Assert.That(plan.Sources, Has.Count.EqualTo(9));
+            Assert.That(plan.LoopingSources, Has.Count.EqualTo(4));
             Assert.That(plan.ScheduledSources, Has.Count.EqualTo(3));
-            Assert.That(plan.TriggeredSources, Has.Count.EqualTo(3));
+            Assert.That(plan.TriggeredSources, Has.Count.EqualTo(2));
 
             var owners = new HashSet<CitySoundPhysicalOwnerKind>();
             for (int index = 0; index < plan.Sources.Count; index++)
@@ -72,7 +72,6 @@ namespace BarPromenade.Tests.EditMode
                 {
                     CitySoundPhysicalOwnerKind.OldTownWaterworksCourt,
                     CitySoundPhysicalOwnerKind.ResidentialDryingYard,
-                    CitySoundPhysicalOwnerKind.IndustrialWeighbridge,
                     CitySoundPhysicalOwnerKind.NightlifeLastRouteIsland,
                     CitySoundPhysicalOwnerKind.ParkFountainAndStatue,
                     CitySoundPhysicalOwnerKind.ParkPlayground

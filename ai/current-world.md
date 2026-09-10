@@ -1130,15 +1130,14 @@ The vertical slice contains:
 - separate scene-local procedural City, Bar, Home and Stairwell ambience beds,
   plus a nine-voice causal City runtime, an eight-source Home spatial soundscape
   and a three-source Stairwell soundscape. City's former non-spatial electrical
-  content is gone: its bed is only a quiet diffuse air floor. Ten immutable
-  descriptors bind five loops, three autonomous details and two physical-action
-  cues to the exact visible waterworks, drying rack, carpet, weighbridge,
+  content is gone: its bed is only a quiet diffuse air floor. Immutable
+  descriptors bind sound to visible waterworks, drying rack, carpet,
   last-route speaker and park-fountain bounds. The director owns five loop,
   three scheduled and one action voice, creates only deterministic quantized
   mono `22050 Hz` clips, activates them inside their finite radii and applies
   coarse building-mass occlusion. Carpet impacts fire on the authored contact
-  frame; weighbridge stress fires only when its real needle crosses the loaded
-  threshold. The unbound park swing deliberately remains silent.
+  frame. The cannery owns its working voices separately; the old scale has
+  no live sound anchor. The unbound park swing deliberately remains silent.
   Surf is one fully spatial voice following the nearest point of the finite
   waterline and reuses the same building-mass attenuation; thunder is placed
   at the deterministic lightning azimuth, and
@@ -1242,39 +1241,30 @@ The vertical slice contains:
 - one working fishing-port slice (`CityPortPlan`, `CityPortCycle`,
   `CityPortController`) receives a roughly `20 m` trawler at one berth west
   of the river mouth. Two shore cranes, a trolley and a cold store unload a
-  finite six-cage catch. The complete `624 s` visit is sampled from the
-  absolute session clock: approach, mooring, hatch preparation, six `64 s`
-  lifts/deliveries, securing, unmooring, departure and an empty interval.
-  This fixed-world cycle survives leaving/rebuilding City without spawning
-  a fresh visit around the hero. Seeking reconstructs the exact custody and
-  count of the same six cages without replaying landing sounds. The hatches
-  are real apertures; loaded cages follow their hook until contact with the
-  trolley and reach a concealed delivery point behind the store's baffle.
-  Hook and cargo share at most `9 cm` of clocked sway during slewing,
-  settling before lowering so every handoff retains its contact.
-  Both cranes return to their next hatch, while the trolley returns empty.
-  `CityPortCrew` reuses the ordinary StationWorker prefab and its authored
-  rig/actions for five muted workers: captain, deckhand, two crane operators
-  and one shore worker. Coat/cap/glove colours separate their roles; fabric
-  uses port-only metre UV transforms, preserving faces and the original rig.
-  Small planted torso adjustments and load gaze precede helm, lever, mooring
-  and trolley contacts at model anchors; movement shares the port clock. No greeting,
-  boarding, earnings, quest or new player action is added. The compact quay
+  finite six-unit catch. Its `624 s` visit covers approach, mooring, hatches,
+  six `64 s` lifts/deliveries, securing, unmooring, departure and an empty
+  interval. The shared fish-supply working clock survives City reconstruction;
+  the next ship waits for the truck. Seeking restores custody without sound
+  replay. Hatches hold cages; hooks/trolley deliver behind the store baffle.
+  Its roller door opens for truck loading. Sway is at most `9 cm`, settling before
+  lowering; cranes return to hatches and the trolley returns empty.
+  `CityPortCrew` reuses StationWorker for captain, deckhand, two crane operators
+  and shore worker. Muted clothing and metre fabric UVs preserve faces/rigs;
+  planted torso motion/gaze precede helm, lever, mooring and trolley contacts.
+  No greeting, boarding, earnings, quest or player action is added. The quay
   reaches `20 m` seaward of the waterline on solid caissons down to `-3.4 m`
   relative to sea level. A `6 m` service road joins the existing city street
   to an L-shaped yard and the store's east loading door. `CityPortAccessPlan`
   shares `PortAccessLayout.json` with the Blender road: local regrading,
-  street openings and an `8 x 2.5 m` truck clearance template have no live
-  truck or delivery cycle. A `2 m` public bypass stays outside manoeuvres,
+  street openings and the live `8 x 2.5 m` rigid truck. A `2 m` public bypass stays outside manoeuvres,
   crosses the road once and joins street, rear-store path and breakwater.
   NPCs take the straight street spur then orthogonal links over beach to the
   coastal lane; the diagonal paved branch belongs to the player's approach.
-  Global graph rules are unchanged. Fences/gates separate cargo work, and
-  former coast guardrails are suppressed beneath the paved yard. The local basin and approach are dredged
+  Fences/gates separate cargo work; former coast rails are suppressed under
+  the paved yard. The local basin and approach are dredged
   to `3.4 m`, and passing offshore vessels exclude this water.
-  The imported kit comes from `tools/build-city-port-3d-model.py` and
-  `CityPortAssetProvider`: nine fixed-metre FBXs include the access road,
-  trawler fittings and crane heads that slew with their counterweights/winches.
+  `tools/build-city-port-3d-model.py` and `CityPortAssetProvider` own nine
+  fixed-metre FBXs: road, trawler fittings and heads slewing with their winches/counterweights.
   Twelve generated albedo sheets use semantic metre UVs and shared muted
   materials; thin hardware retains the palette. Road asphalt shares the city
   texture, `12 m` world phase and wet response; the crossing's seven worn
@@ -1284,6 +1274,22 @@ The vertical slice contains:
   wheel and contact voices on existing audio routes. Pause stops the clock
   and audio; disabling/destroying the port clears its people, voices and wake.
   Small alternative blueprints without room retain their nonoperational mol;
+- the Industrial cannery replaces the weighbridge in City: a low `8 x 14 m`
+  hall on `18 x 18 m`, straight bay, public passage/bypass. `CityCanneryPlan`
+  also supplies Home's passive shell. Authored apron mesh/collision and wheels
+  share `Plan.ApronTop` at the existing road, without expanding the lot.
+  Nine Blender models share port materials.
+  `CityFishSupplyCycle` serializes six units: raw store, prepare/fill/seam,
+  closed retort, cool/pack, rear-door shop handoff. Four factory workers and driver
+  use StationWorker rigs with hand contacts, workstation walks and cab access.
+  Legacy weighing is dormant. The truck drives at `3 m/s`, reverses at `1.1 m/s`
+  and uses a trolley/tail lift. Level frontage outranks bus avoidance; routes
+  prefer non-bus streets;
+  `CityCanneryTraffic` reserves shared trips before departure, with bus
+  movement/spawning respecting reservation and truck until the next bay.
+  Shop stock is unchanged; empty-tare return is Deferred. `CityFishSupplySession`
+  keeps scalar time across City reloads, frozen by pause/traffic waits.
+  Truck, seamer and retort own three loops active only during their work;
 - up to two decorative old fishing vessels spawn only near the actual hero
   at the coast (`CityOffshoreBoat{Planner,Controller}`): full presence within
   `8 m` of the finite shore or pier/mol decks, zero at `28 m`. Their cleared
@@ -1448,11 +1454,11 @@ The vertical slice contains:
   Tilted cemetery monuments intentionally retain their legacy visual builder;
 - four first-class open district points of interest on their own full-block
   land-use lots: Old Town's waterworks court, Residential's drying yard,
-  Industrial's weighbridge and Nightlife's last-route island. Their canonical
-  layout descriptors reserve public ground and every adjacent street access;
-  the lots contain no building, bar, player home or primary landmark. A
-  dedicated physical builder gives each place a different free-standing
-  silhouette and movement grammar, while the Home exterior reconstructs the
+  Industrial's cannery and Nightlife's last-route island. Their canonical
+  descriptors reserve public ground and street access, excluding ordinary
+  buildings, bars, home and primary landmarks. The cannery's own hall excludes
+  production from its public passage/bypass. Each place has a distinct
+  silhouette and movement grammar; the Home exterior reconstructs the
   same nearby descriptors in local space. Nightlife's island keeps its broken
   canopy ring but uses no emissive strips: the old departure board is visibly
   grounded on two supports and weathered route plates, layered posters, a

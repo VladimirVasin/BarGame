@@ -1,16 +1,22 @@
 # Art and native tool entry points
 
-`build-city-port-3d-model.py` builds nine fixed-metre harbour FBXs, including
-the dock/store/breakwater, trawler, cranes, cargo parts and access road.
-`PortAccessLayout.json` supplies the same road/yard/public-walk geometry to
-Blender and runtime. Models, palette and measured `CityPort3D.json` live in
-`Assets/Resources/City/Port`; source lives under `ArtSource/City/Port`.
-Validation covers deterministic geometry, semantic metre UVs and clear cargo
-holds. Twelve ImageGen albedos retain originals, prompts and hashes in
-`ArtSource/City/Port/Textures/generation.json`; runtime copies import at
-`512 px`, sRGB/mipmaps/repeat. Asphalt shares the city's existing sheet and
-`12 m` world phase. Generated pixels are outside mesh signatures. Runtime
-reuses StationWorker rigs, port-only fabric binding and shared role materials:
+`build-city-cannery-3d-model.py` builds nine fixed-metre FBXs: hall, equipment,
+truck, pallet, retort basket, can tray, cartons, trolley and yard. The pack and
+measured `CityCannery3D.json` live in `Assets/Resources/City/Cannery`, source in
+`ArtSource/City/Cannery`. It reuses port maps/materials; validation rebuilds
+geometry, UVs and contacts without publishing:
+
+```powershell
+python tools/run-blender.py tools/build-city-cannery-3d-model.py --validate-only -- --validate-only
+```
+
+`build-city-port-3d-model.py` owns nine harbour FBXs and `CityPort3D.json` in
+`Assets/Resources/City/Port`, source under `ArtSource/City/Port`.
+`PortAccessLayout.json` shares road/yard/public-walk geometry with runtime.
+Validation covers geometry, metre UVs and holds. Twelve ImageGen maps retain
+originals/prompts/hashes in `ArtSource/City/Port/Textures/generation.json`;
+runtime imports use `512 px`, sRGB/mipmaps/repeat. Asphalt shares the city's
+sheet and `12 m` world phase; generated pixels are outside mesh signatures:
 
 ```powershell
 python tools/run-blender.py tools/build-city-port-3d-model.py --expect Assets/Resources/City/Port/CityPort3D.json -- --no-preview

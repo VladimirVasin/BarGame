@@ -142,6 +142,8 @@ namespace BarPromenade
             (GameSessionState.GameDayIndex * 1440d +
              GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond;
 
+        public bool IsSupplyDriven { get; set; }
+
         private void Update()
         {
             if (!AutoAdvance) return;

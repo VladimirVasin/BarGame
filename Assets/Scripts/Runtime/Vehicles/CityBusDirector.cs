@@ -517,7 +517,7 @@ namespace BarPromenade
 
             if (pedestrians == null)
             {
-                return true;
+                return !CanneryBlocksSpawn(position, rotation);
             }
 
             IReadOnlyList<CityPedestrianActor> actors = pedestrians.Actors;
@@ -535,8 +535,15 @@ namespace BarPromenade
                 }
             }
 
-            return true;
+            return !CanneryBlocksSpawn(position, rotation);
         }
+
+        private CityCanneryTraffic CanneryTraffic =>
+            GetComponentInParent<CityGameRoot>()?.Cannery?.Traffic;
+
+        public bool CanneryBlocksSpawn(Vector3 position, Quaternion rotation) =>
+            actor != null && CanneryTraffic != null &&
+            CanneryTraffic.BlocksSpawn(position, rotation, actor.LocalVisualBounds);
 
         private static void EvaluateLink(
             CityBusRouteLink link,
@@ -604,6 +611,7 @@ namespace BarPromenade
                 MinimumObstacleLookAhead,
                 actor.GetRequiredStoppingDistance() + actor.Speed + 2f);
             float clearance = float.PositiveInfinity;
+            CanneryTraffic?.AccumulateObstacle(actor, lookAhead, ref clearance);
             if (!actor.HasPlayerPassenger)
             {
                 float playerRadius = GetPlayerRadius();

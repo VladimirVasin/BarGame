@@ -386,7 +386,7 @@ namespace BarPromenade
                         .ResidentialDryingYard;
                 case CityDistrictKind.Industrial:
                     return CityDistrictPointOfInterestKind
-                        .IndustrialWeighbridge;
+                        .IndustrialCannery;
                 case CityDistrictKind.Nightlife:
                     return CityDistrictPointOfInterestKind
                         .NightlifeLastRouteIsland;

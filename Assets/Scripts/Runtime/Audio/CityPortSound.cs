@@ -60,7 +60,7 @@ namespace BarPromenade
         private void LateUpdate()
         {
             if (port == null) { OnDisable(); return; }
-            Advance(port.ElapsedSeconds, Time.deltaTime, port.AutoAdvance &&
+            Advance(port.ElapsedSeconds, Time.deltaTime, (port.AutoAdvance || port.IsSupplyDriven) &&
                 port.isActiveAndEnabled && GameSessionState.IsGameTimeRunning && !GameTimeScaleRuntime.IsPaused);
         }
 

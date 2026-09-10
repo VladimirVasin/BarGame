@@ -35,7 +35,7 @@ follows the Blender and world-canon rules in [../AI.md](../AI.md).
 
 | Owner | Responsibility |
 | --- | --- |
-| `BarPromenade.Rules` | Engine-independent calendar/day schedule, finite port cargo cycle, vehicle ownership and input-priority policy |
+| `BarPromenade.Rules` | Engine-independent calendar/day schedule, finite fish-supply cycle, vehicle ownership and input-priority policy |
 | `BarPromenade.Runtime` | World composition, gameplay, rendering, audio and shared input bindings |
 | `BarPromenade.Editor` | Authoring/import, scene setup, read-only player-build asset gate and diagnostic commands |
 | `BarPromenade.TestSupport` | Shared test lifecycle support, including listener muting |
@@ -82,10 +82,10 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
-  Its working fishing port receives one trawler: two cranes and five workers
-  transfer six cages to cold storage during a clocked visit. Textured surfaces,
-  work lights and a truck-capable service road surround the separate public
-  route behind the store and along the breakwater; the hero observes.
+  Port, cannery and the shop's service door share one finite six-unit delivery
+  cycle. Two cranes and five port workers unload; one truck/driver and four
+  factory workers carry fish through processing and boxed delivery. The hero
+  observes from public routes in City; shop stock is not changed by delivery.
 - Separate mountain/village areas, cableway travel and accessible interiors.
 - Six village residents perform finite household work; optional hero help and
   the resulting deliveries, repairs and snow clearing survive scene visits.

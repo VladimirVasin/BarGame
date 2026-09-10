@@ -12,7 +12,7 @@ namespace BarPromenade
         None = 0,
         OldTownWaterworksCourt = 1,
         ResidentialDryingYard = 2,
-        IndustrialWeighbridge = 3,
+        IndustrialCannery = 3,
         NightlifeLastRouteIsland = 4,
         ParkFountainAndStatue = 5,
         ParkPlayground = 6,
@@ -236,7 +236,7 @@ namespace BarPromenade
                     return CityDistrictKind.OldTown;
                 case CitySoundPhysicalOwnerKind.ResidentialDryingYard:
                     return CityDistrictKind.Residential;
-                case CitySoundPhysicalOwnerKind.IndustrialWeighbridge:
+                case CitySoundPhysicalOwnerKind.IndustrialCannery:
                     return CityDistrictKind.Industrial;
                 case CitySoundPhysicalOwnerKind
                     .NightlifeLastRouteIsland:
@@ -262,7 +262,7 @@ namespace BarPromenade
                     return cue == CitySourceSoundId.DryingYardClothLoop ||
                            cue == CitySourceSoundId.DryingYardRopeCreak ||
                            cue == CitySourceSoundId.DryingYardCarpetStrike;
-                case CitySoundPhysicalOwnerKind.IndustrialWeighbridge:
+                case CitySoundPhysicalOwnerKind.IndustrialCannery:
                     return cue ==
                                CitySourceSoundId
                                    .IndustrialWeighbridgeMechanismLoop ||

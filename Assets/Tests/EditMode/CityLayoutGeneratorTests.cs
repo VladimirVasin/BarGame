@@ -1331,7 +1331,7 @@ namespace BarPromenade.Tests.EditMode
                     CityDistrictPointOfInterestKind
                         .ResidentialDryingYard,
                     CityDistrictPointOfInterestKind
-                        .IndustrialWeighbridge,
+                        .IndustrialCannery,
                     CityDistrictPointOfInterestKind
                         .NightlifeLastRouteIsland
                 }));
