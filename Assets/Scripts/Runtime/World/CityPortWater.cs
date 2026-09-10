@@ -13,7 +13,7 @@ namespace BarPromenade
         }
         private void LateUpdate()
         {
-            if (port == null || !port.enabled) { Clear(); return; }
+            if (port == null || !port.enabled || !port.VesselPresentationActive) { Clear(); return; }
             CityPortCycleSnapshot phase = port.Snapshot;
             float strength = 0f;
             if (phase.Stage == CityPortCycleStage.Approach)

@@ -128,9 +128,11 @@ namespace BarPromenade
             if (port == null || !initialized) return;
             LastSnapshot = CityPortCycle.Sample(seconds);
             float t = (float)LastSnapshot.SecondsInStage;
-            SetVisible(Captain, LastSnapshot.VesselPresent);
-            SetVisible(Deckhand, LastSnapshot.VesselPresent);
-            if (LastSnapshot.VesselPresent)
+            bool shipVisible = LastSnapshot.VesselPresent && port.VesselPresentationActive;
+            SetVisible(Captain, shipVisible);
+            SetVisible(Deckhand, shipVisible);
+            for (int i = 2; i < workers.Length; i++) SetVisible(workers[i], port.ShorePresentationActive);
+            if (shipVisible)
             {
                 Captain.transform.SetPositionAndRotation(captainDock.position, port.Vessel.rotation);
                 Captain.Apply(VillageResidentAction.Idle, (float)(seconds % 60d));
@@ -141,6 +143,8 @@ namespace BarPromenade
             }
 
             CraneHandsMatch = true;
+            if (port.ShorePresentationActive)
+            {
             for (int i = 0; i < 2; i++)
             {
                 var actor = workers[i + 2];
@@ -159,7 +163,9 @@ namespace BarPromenade
                 CraneHandsMatch &= actor.ApplyHandContacts(controlsRight[i].position, controlsLeft[i].position);
             }
             ApplyShoreWorker(t);
-            for (int i = 0; i < workers.Length; i++) Tint(i);
+            }
+            for (int i = 0; i < workers.Length; i++)
+                if (workers[i].gameObject.activeSelf) Tint(i);
         }
 
         private void ApplyDeckhand(float t)

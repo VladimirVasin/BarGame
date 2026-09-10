@@ -55,9 +55,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(cannery,Is.Not.Null);
             Assert.That(cannery.IsInitialized,Is.True);
             cannery.AutoAdvance=false;
+            cannery.ForcePresentation=true;
             CityPortController port=city.World.Root.GetComponentInChildren<CityPortController>();
             Assert.That(port,Is.Not.Null);
             port.AutoAdvance=false;
+            port.ForcePresentation=true;
             city.Player.Motor.SetInputEnabled(false);
             Camera camera=Camera.main;
             Assert.That(camera,Is.Not.Null);
@@ -177,6 +179,7 @@ namespace BarPromenade.Tests.PlayMode
                 "11-night-street",plan.World(new Vector3(8,1.8f,12)),plan.World(new Vector3(-3,2,1)));
             yield return CaptureCannery(camera,city,cannery,CanneryTime(cannery,CityFishSupplyStage.Pack,.65f),
                 "12-night-production",plan.World(new Vector3(-1.1f,1.9f,5.7f)),plan.World(new Vector3(-5,1.25f,4.7f)));
+            yield return ValidateCanneryDistancePresentation(city,cannery,port,contractFailures);
             if(contractFailures.Count>0)
                 throw new AggregateException("Cannery contracts failed; production frames were retained for inspection.",contractFailures);
             Debug.Log($"CITY CANNERY ACCEPTANCE OK: origin={plan.Origin}, frontage={plan.FrontageEdge}, " +
@@ -192,6 +195,148 @@ namespace BarPromenade.Tests.PlayMode
                 failures.Add(new InvalidOperationException("Cannery "+name+" contract: "+error.Message,error));
                 Debug.Log("CANNERY DEFERRED CONTRACT "+name+": "+error);
             }
+        }
+
+        private static IEnumerator ValidateCanneryDistancePresentation(CityGameRoot city,
+            CityCanneryController cannery,CityPortController port,ICollection<Exception> failures)
+        {
+            Vector3 savedHero=city.Player.GameObject.transform.position;
+            double savedTime=cannery.WorkingSeconds;
+            CityPortCrew crew=port.GetComponentInChildren<CityPortCrew>();
+            Vector3 far=cannery.Plan.Origin+new Vector3(2000,200,2000);
+            try
+            {
+                cannery.ForcePresentation=false;
+                city.Player.Motor.Teleport(far);
+                cannery.ApplyAt(CanneryTime(cannery,CityFishSupplyStage.Prepare,.2f));
+                crew.ApplyAt(port.ElapsedSeconds);
+                Transform worker=cannery.transform.Find("Cannery Preparation Worker");
+                Transform spine=CityCanneryAssetProvider.FindPart(worker.gameObject,"spine");
+                Quaternion frozenSpine=spine.localRotation;
+                Vector3 frozenSeamer=CityCanneryAssetProvider.FindPart(cannery.Equipment.gameObject,"MOVE_SeamerHead").position;
+                cannery.ApplyAt(CanneryTime(cannery,CityFishSupplyStage.Seal,.5f));
+                DeferCanneryContract(failures,"distant simulation and presentation",()=>
+                {
+                    Assert.That(cannery.Snapshot.Stage,Is.EqualTo(CityFishSupplyStage.Seal));
+                    Assert.That(cannery.Snapshot.AccountedUnits,Is.EqualTo(6));
+                    Assert.That(cannery.FactoryPresentationActive||cannery.TruckPresentationActive||
+                        port.ShorePresentationActive||port.VesselPresentationActive,Is.False);
+                    Assert.That(worker.gameObject.activeSelf,Is.False);
+                    Assert.That(spine.localRotation,Is.EqualTo(frozenSpine),"Distant worker animation must not be sampled.");
+                    Assert.That(CityCanneryAssetProvider.FindPart(cannery.Equipment.gameObject,"MOVE_SeamerHead").position,
+                        Is.EqualTo(frozenSeamer),"Distant machinery must not be animated.");
+                    AssertCanneryHidden(cannery.Equipment);
+                    AssertCanneryHidden(cannery.Truck);
+                    AssertCanneryHidden(port.Dock);
+                    AssertCanneryHidden(port.Vessel);
+                    Transform shell=null;
+                    foreach(Transform part in city.World.DistrictPointOfInterestRoot.GetComponentsInChildren<Transform>(true))
+                        if(part.name=="Industrial Cannery"&&part.Find("Hall")!=null){shell=part;break;}
+                    Assert.That(shell,Is.Not.Null);
+                    AssertCanneryHidden(shell);
+                    Assert.That(cannery.Truck.GetComponentInChildren<Collider>().enabled,Is.True);
+                    Assert.That(cannery.Traffic.BlocksSpawn(cannery.Truck.position,cannery.Truck.rotation,
+                        new Bounds(new Vector3(0,1,1),new Vector3(2,2,7))),Is.True);
+                    city.DayNight.ApplyCurrentTime(true);
+                    foreach(Light light in shell.GetComponentsInChildren<Light>(true)) Assert.That(light.gameObject.activeInHierarchy,Is.False);
+                    foreach(Light light in cannery.Truck.GetComponentsInChildren<Light>(true)) Assert.That(light.gameObject.activeInHierarchy,Is.False);
+                    foreach(Light light in port.GetComponentsInChildren<Light>(true)) Assert.That(light.gameObject.activeInHierarchy,Is.False);
+                });
+
+                using(GameTimeScaleRuntime.AcquirePause())
+                {
+                    DeferCanneryContract(failures,"paused approach and hysteresis",()=>
+                    {
+                        Bounds bounds=cannery.FactoryPresentationBounds;
+                        float[] offsets={88f,79f,88f,97f};
+                        bool[] expected={false,true,true,false};
+                        for(int i=0;i<offsets.Length;i++)
+                        {
+                            float offset=offsets[i];
+                            city.Player.Motor.Teleport(bounds.center+Vector3.right*(bounds.extents.x+offset));
+                            cannery.RefreshPresentation();
+                            Assert.That(cannery.FactoryPresentationActive,Is.EqualTo(expected[i]));
+                            if(offset==79f) Assert.That(worker.gameObject.activeSelf,Is.True);
+                            if(offset==97f) Assert.That(worker.gameObject.activeSelf,Is.False);
+                        }
+                        city.Player.Motor.Teleport(cannery.Plan.World(new Vector3(-1,1,0)));
+                        cannery.RefreshPresentation();
+                        Assert.That(cannery.Snapshot.Stage,Is.EqualTo(CityFishSupplyStage.Seal));
+                        Assert.That(cannery.FactoryPresentationActive,Is.True);
+                        Assert.That(cannery.WorkerHandsMatch,Is.True,cannery.LastCrewContactFailure);
+                        Assert.That(cannery.WorkingSeconds,Is.EqualTo(CanneryTime(cannery,CityFishSupplyStage.Seal,.5f)));
+                    });
+                    yield return null;
+                }
+
+                DeferCanneryContract(failures,"independent moving truck",()=>
+                {
+                    city.Player.Motor.Teleport(far);
+                    bool found=false;
+                    foreach(float fraction in new[]{.25f,.5f,.75f})
+                    {
+                        cannery.ApplyAt(CanneryTime(cannery,CityFishSupplyStage.FactoryToShop,fraction));
+                        if(cannery.FactoryPresentationBounds.SqrDistance(cannery.Truck.position)<150f*150f)continue;
+                        found=true;break;
+                    }
+                    Assert.That(found,Is.True,"Route needs a remote truck observation point.");
+                    Assert.That(cannery.TruckPresentationActive,Is.False);
+                    Vector3 moving=cannery.Truck.position;
+                    cannery.ApplyAt(cannery.WorkingSeconds+2);
+                    Assert.That(Vector3.Distance(moving,cannery.Truck.position),Is.GreaterThan(1));
+                    double current=cannery.WorkingSeconds;
+                    city.Player.Motor.Teleport(cannery.Truck.position+cannery.Truck.right*4);
+                    cannery.RefreshPresentation();
+                    Assert.That(cannery.TruckPresentationActive,Is.True);
+                    Assert.That(cannery.FactoryPresentationActive,Is.False);
+                    Assert.That(cannery.DriverSeatedContactsMatch,Is.True);
+                    Assert.That(cannery.WorkingSeconds,Is.EqualTo(current));
+                });
+
+                DeferCanneryContract(failures,"independent approaching vessel",()=>
+                {
+                    city.Player.Motor.Teleport(far);
+                    cannery.ApplyAt(1);
+                    Vector3 logical=port.VesselLogicalPosition;
+                    city.Player.Motor.Teleport(logical+Vector3.forward*65);
+                    cannery.RefreshPresentation();
+                    crew.ApplyAt(port.ElapsedSeconds);
+                    Assert.That(port.VesselPresentationActive,Is.True);
+                    Assert.That(port.ShorePresentationActive,Is.False);
+                    Assert.That(crew.Captain.gameObject.activeSelf,Is.True);
+                    Assert.That(crew.ShoreWorker.gameObject.activeSelf,Is.False);
+                    Assert.That(Vector3.Distance(port.Vessel.position,logical),Is.LessThan(2));
+                    Assert.That(crew.CaptainHandsMatch,Is.True);
+                });
+
+                city.Player.Motor.Teleport(far);
+                cannery.RefreshPresentation();
+                cannery.AutoAdvance=true;
+                yield return null;
+                double before=cannery.WorkingSeconds;
+                for(int i=0;i<4;i++)yield return null;
+                DeferCanneryContract(failures,"live distant clock",()=>
+                {
+                    Assert.That(cannery.FactoryPresentationActive||cannery.TruckPresentationActive,Is.False);
+                    Assert.That(cannery.WorkingSeconds,Is.GreaterThan(before));
+                    Assert.That(port.ElapsedSeconds,Is.EqualTo(cannery.Snapshot.PortSeconds));
+                });
+            }
+            finally
+            {
+                cannery.AutoAdvance=false;
+                cannery.ForcePresentation=true;
+                city.Player.Motor.Teleport(savedHero);
+                cannery.ApplyAt(savedTime);
+                crew.ApplyAt(port.ElapsedSeconds);
+            }
+        }
+
+        private static void AssertCanneryHidden(Transform root)
+        {
+            foreach(Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
+                Assert.That(!renderer.gameObject.activeInHierarchy||!renderer.enabled||renderer.forceRenderingOff,
+                    Is.True,root.name+" still renders "+renderer.name);
         }
 
         private static void ValidateCanneryCustody(CityFishSupplyCycle cycle)
@@ -438,6 +583,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 CityCanneryController other=CityCanneryController.Build(host.transform,city.Layout,port,city.Player.GameObject.transform);
                 other.AutoAdvance=false;
+                other.ForcePresentation=true;
                 other.ApplyAt(seek);
                 Assert.That(Vector3.Distance(other.Truck.position,truck),Is.LessThan(.001f));
                 Assert.That(Vector3.Distance(other.TailLift.position,lift),Is.LessThan(.001f));

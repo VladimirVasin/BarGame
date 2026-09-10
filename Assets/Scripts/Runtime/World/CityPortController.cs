@@ -8,7 +8,7 @@ namespace BarPromenade
     /// pivots own the moving geometry; one finite set of cages changes custody
     /// from the hold to a hook, the trolley and the enclosed cold store.
     /// </summary>
-    public sealed class CityPortController : MonoBehaviour
+    public sealed partial class CityPortController : MonoBehaviour
     {
         private const float HookClearanceHeight = 8f;
         private const int MooringSegments = 6;
@@ -146,7 +146,7 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (!AutoAdvance) return;
+            if (!AutoAdvance) { RefreshPresentation(); return; }
             if (GameSessionState.IsGameTimeRunning && !GameTimeScaleRuntime.IsPaused)
                 lastWaveTime = Time.timeSinceLevelLoad;
             ApplyAt(SessionSeconds, lastWaveTime);
@@ -157,12 +157,8 @@ namespace BarPromenade
             Snapshot = CityPortCycle.Sample(seconds);
             ElapsedSeconds = seconds;
             lastWaveTime = waveTime;
-            ApplyVessel(waveTime);
-            ApplyHatches();
-            ApplyTrolley();
-            for (int crane = 0; crane < 2; crane++) ApplyCrane(crane);
-            ApplyCargo();
-            ApplyMoorings();
+            UpdatePresentationVisibility();
+            ApplyPresentation();
         }
 
         /// <summary>Six separate cages fit below the two open hatch apertures.</summary>
@@ -411,13 +407,17 @@ namespace BarPromenade
                 // leaves presentation only there; its count remains in Snapshot.
                 if (stored)
                 {
-                    Cargo[index].SetPositionAndRotation(
+                    if (ShorePresentationActive) Cargo[index].SetPositionAndRotation(
                         Plan.World(Plan.WarehouseDropLocal) + Vector3.up * trolleyLoadOffset.y,
                         TrolleyRotation(index % 2, 1f));
                     Cargo[index].gameObject.SetActive(false);
                     continue;
                 }
-                Cargo[index].gameObject.SetActive(Snapshot.VesselPresent);
+                bool onShore = unloading && index == Snapshot.CargoIndex &&
+                    Snapshot.SecondsInCargo >= CityPortCycle.HookedAtSeconds;
+                bool visible = Snapshot.VesselPresent && (onShore ? ShorePresentationActive : VesselPresentationActive);
+                Cargo[index].gameObject.SetActive(visible);
+                if (!visible) continue;
                 Vector3 position = Vessel.TransformPoint(CargoHoldLocal(index));
                 Quaternion rotation = Vessel.rotation;
                 if (unloading && index == Snapshot.CargoIndex &&

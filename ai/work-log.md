@@ -43,7 +43,10 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   Planted preparation lean and the nearer retort hand keep contacts reachable.
   `AreaCaptureFixture.CityCannery` passed import/custody, public access,
   vehicle/obstacle/reservation, worker contacts and pause/reconstruction checks;
-  gameplay frames were reviewed. `python tools/check-docs.py` passed.
+  gameplay frames were reviewed. Distance gates now suspend factory/port/truck
+  presentation, preserving custody, physical truck and traffic. The same
+  focused fixture checks far progression, frozen rigs, night lights,
+  hysteresis and current-state restoration. `python tools/check-docs.py` passed.
 
 ## 2026-09-09 — Village opening, journal and working port
 

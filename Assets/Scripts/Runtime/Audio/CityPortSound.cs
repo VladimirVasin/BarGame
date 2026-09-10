@@ -67,6 +67,8 @@ namespace BarPromenade
         public void Advance(double seconds, float deltaTime, bool timeRunning)
         {
             if (!IsInitialized || port == null) return;
+            if (!port.ShorePresentationActive && !port.VesselPresentationActive)
+            { OnDisable(); return; }
             timeRunning &= port.isActiveAndEnabled;
             CityPortCycleSnapshot now = CityPortCycle.Sample(seconds);
             SyncAnchors();
@@ -78,7 +80,7 @@ namespace BarPromenade
             bool continuous = hasPrevious && elapsed > 0d && elapsed <= .35d &&
                 elapsed <= Math.Max(.08d, delta * 2.5d + .02d);
             if (elapsed < 0d || elapsed > .35d) contact.Stop();
-            if (timeRunning && continuous)
+            if (timeRunning && continuous && port.ShorePresentationActive && Audible(contact, port.Trolley.position))
             {
                 CityPortCycleSnapshot before = CityPortCycle.Sample(previousSeconds);
                 if (before.CycleIndex == now.CycleIndex && before.CargoIndex == now.CargoIndex &&
@@ -118,6 +120,13 @@ namespace BarPromenade
 
         private void SetLoop(int index, float target, float delta)
         {
+            bool visible = index == 0 ? port.VesselPresentationActive : port.ShorePresentationActive;
+            if (!visible || !Audible(loops[index], loops[index].transform.position))
+            {
+                loops[index].Stop(); loops[index].volume = 0f;
+                gain[index] = 0f; started[index] = false;
+                return;
+            }
             gain[index] = Mathf.MoveTowards(gain[index], target, delta * .22f);
             loops[index].volume = gain[index];
             if (gain[index] > .0001f && !started[index])
@@ -130,6 +139,13 @@ namespace BarPromenade
                 loops[index].Stop();
                 started[index] = false;
             }
+        }
+
+        private bool Audible(AudioSource source, Vector3 position)
+        {
+            if (port.ForcePresentation || port.PresentationObserver == null) return true;
+            float radius = source.isPlaying ? 36f : 32f;
+            return (port.PresentationObserver.position - position).sqrMagnitude < radius * radius;
         }
 
         private void SetPaused(bool value)

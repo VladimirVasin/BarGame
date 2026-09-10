@@ -1276,20 +1276,21 @@ The vertical slice contains:
   Small alternative blueprints without room retain their nonoperational mol;
 - the Industrial cannery replaces the weighbridge in City: a low `8 x 14 m`
   hall on `18 x 18 m`, straight bay, public passage/bypass. `CityCanneryPlan`
-  also supplies Home's passive shell. Authored apron mesh/collision and wheels
-  share `Plan.ApronTop` at the existing road, without expanding the lot.
-  Nine Blender models share port materials.
+  supplies Home's shell. Apron/wheels share `Plan.ApronTop`; nine Blender
+  models share port materials.
   `CityFishSupplyCycle` serializes six units: raw store, prepare/fill/seam,
-  closed retort, cool/pack, rear-door shop handoff. Four factory workers and driver
-  use StationWorker rigs with hand contacts, workstation walks and cab access.
-  Legacy weighing is dormant. The truck drives at `3 m/s`, reverses at `1.1 m/s`
-  and uses a trolley/tail lift. Level frontage outranks bus avoidance; routes
-  prefer non-bus streets;
-  `CityCanneryTraffic` reserves shared trips before departure, with bus
-  movement/spawning respecting reservation and truck until the next bay.
+  retort, cool/pack, shop handoff. Four workers and driver have hand contacts,
+  station walks and cab access. Weighing is dormant. The truck drives at
+  `3 m/s`, reverses at `1.1 m/s`, uses a trolley
+  and tail lift. Level frontage outranks bus avoidance; `CityCanneryTraffic`
+  reserves trips; bus movement/spawning respect the truck.
   Shop stock is unchanged; empty-tare return is Deferred. `CityFishSupplySession`
-  keeps scalar time across City reloads, frozen by pause/traffic waits.
-  Truck, seamer and retort own three loops active only during their work;
+  keeps scalar time across reloads, frozen by pause/traffic waits. Factory,
+  shore, vessel and truck presentation enter/exit at 80/96 m from mesh/light
+  bounds. Far rigs, mechanisms, light hosts and voices sleep; custody, truck
+  pose/collision and traffic continue. Approach restores the phase,
+  even paused; night preserves gates. Berth/handoff groups couple for contact.
+  Work loops are audible nearby;
 - up to two decorative old fishing vessels spawn only near the actual hero
   at the coast (`CityOffshoreBoat{Planner,Controller}`): full presence within
   `8 m` of the finite shore or pier/mol decks, zero at `28 m`. Their cleared

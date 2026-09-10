@@ -183,23 +183,41 @@ namespace BarPromenade
         private void ApplyCargoAndLine()
         {
             handlingActive = Snapshot.IsTransfer && Snapshot.Seconds >= 12 && Snapshot.Seconds < Snapshot.Duration-12;
-            trolley.gameObject.SetActive(Snapshot.IsTransfer);
+            trolley.gameObject.SetActive(Snapshot.IsTransfer && TruckPresentationActive);
+            tray.gameObject.SetActive(FactoryPresentationActive && Snapshot.Stage >= CityFishSupplyStage.Fill && Snapshot.Stage <= CityFishSupplyStage.Pack);
+            basket.gameObject.SetActive(FactoryPresentationActive && Snapshot.Stage >= CityFishSupplyStage.LoadRetort && Snapshot.Stage <= CityFishSupplyStage.Pack);
+            preparationFish.gameObject.SetActive(FactoryPresentationActive && Snapshot.Stage == CityFishSupplyStage.Prepare);
+            if (!FactoryPresentationActive && !TruckPresentationActive && !port.ShorePresentationActive)
+            {
+                for (int i = 0; i < 6; i++)
+                { fish[i].gameObject.SetActive(false); cases[i].gameObject.SetActive(false); }
+                return;
+            }
             for (int i=0;i<6;i++)
             {
+                bool fishOnTruck = Snapshot.Stage == CityFishSupplyStage.PortToFactory || Snapshot.Stage == CityFishSupplyStage.FactoryReverse ||
+                    Snapshot.Stage == CityFishSupplyStage.LoadFish && i < Snapshot.Handled ||
+                    Snapshot.Stage == CityFishSupplyStage.UnloadFish && 5-i >= Snapshot.Handled;
+                bool caseOnTruck = Snapshot.Stage > CityFishSupplyStage.LoadFinished ||
+                    Snapshot.Stage == CityFishSupplyStage.LoadFinished && i < Snapshot.Handled;
+                bool activeTransfer = handlingActive && i == ActiveUnit;
+                bool fishGroup = activeTransfer ? TruckPresentationActive : fishOnTruck ? TruckPresentationActive :
+                    Snapshot.Stage <= CityFishSupplyStage.LoadFish ? port.ShorePresentationActive : FactoryPresentationActive;
+                bool caseGroup = activeTransfer ? TruckPresentationActive : caseOnTruck ? TruckPresentationActive : FactoryPresentationActive;
                 bool hasFish = Snapshot.Stage <= CityFishSupplyStage.Prepare;
-                bool fishVisible = hasFish && (Snapshot.Stage != CityFishSupplyStage.PortVisit || i < Snapshot.PortFish) &&
+                bool fishVisible = fishGroup && hasFish && (Snapshot.Stage != CityFishSupplyStage.PortVisit || i < Snapshot.PortFish) &&
                     (Snapshot.Stage != CityFishSupplyStage.Prepare || i >= Snapshot.Handled);
                 Vector3 fishPosition = Snapshot.Stage <= CityFishSupplyStage.LoadFish
                     ? PortStore(i)
                     : Snapshot.Stage <= CityFishSupplyStage.FactoryReverse ? Truck.TransformPoint(cargoSlots[i]) : RawStore(i);
                 if (Snapshot.Stage == CityFishSupplyStage.LoadFish && i < Snapshot.Handled) fishPosition=Truck.TransformPoint(cargoSlots[i]);
                 if (Snapshot.Stage == CityFishSupplyStage.UnloadFish && 5-i >= Snapshot.Handled) fishPosition=Truck.TransformPoint(cargoSlots[i]);
-                bool caseVisible = Snapshot.Stage >= CityFishSupplyStage.Pack && Snapshot.Stage <= CityFishSupplyStage.UnloadShop &&
+                bool caseVisible = caseGroup && Snapshot.Stage >= CityFishSupplyStage.Pack && Snapshot.Stage <= CityFishSupplyStage.UnloadShop &&
                     (Snapshot.Stage != CityFishSupplyStage.Pack || i < Snapshot.Handled) &&
                     (Snapshot.Stage != CityFishSupplyStage.UnloadShop || 5-i >= Snapshot.Handled);
                 Vector3 casePosition = Snapshot.Stage <= CityFishSupplyStage.LoadFinished ? ReadyStore(i) : Truck.TransformPoint(cargoSlots[i]);
                 if (Snapshot.Stage == CityFishSupplyStage.LoadFinished && i < Snapshot.Handled) casePosition=Truck.TransformPoint(cargoSlots[i]);
-                if (handlingActive && i == ActiveUnit)
+                if (activeTransfer && TruckPresentationActive)
                 {
                     Vector3 value=SampleTransfer(i,Snapshot.TransferProgress,out _,out _);
                     if (Snapshot.Stage == CityFishSupplyStage.LoadFish || Snapshot.Stage == CityFishSupplyStage.UnloadFish) fishPosition=value;
@@ -211,10 +229,10 @@ namespace BarPromenade
                 if (Snapshot.Stage == CityFishSupplyStage.PortToFactory || Snapshot.Stage == CityFishSupplyStage.FactoryReverse ||
                     Snapshot.Stage == CityFishSupplyStage.LoadFish && i < Snapshot.Handled ||
                     Snapshot.Stage == CityFishSupplyStage.UnloadFish && 5-i >= Snapshot.Handled) fishRotation = Truck.rotation;
-                fish[i].SetPositionAndRotation(fishPosition,fishRotation);
-                cases[i].SetPositionAndRotation(casePosition,Snapshot.Stage < CityFishSupplyStage.LoadFinished ? Plan.Rotation : Truck.rotation);
+                if (fishVisible) fish[i].SetPositionAndRotation(fishPosition,fishRotation);
+                if (caseVisible) cases[i].SetPositionAndRotation(casePosition,Snapshot.Stage < CityFishSupplyStage.LoadFinished ? Plan.Rotation : Truck.rotation);
             }
-            if (Snapshot.IsTransfer)
+            if (Snapshot.IsTransfer && TruckPresentationActive)
             {
                 float t = Snapshot.Seconds < 12 ? 0 : Snapshot.Seconds >= Snapshot.Duration-12 ? 1 : Snapshot.TransferProgress;
                 SampleTransfer(ActiveUnit,t,out Vector3 cart,out _);
@@ -251,6 +269,7 @@ namespace BarPromenade
                     if(carried) load.SetPositionAndRotation(cart+Vector3.up*.03f,rotation);
                 }
             }
+            if (!FactoryPresentationActive) return;
             seamer.position=factory.TransformPoint(seamerDock)-Plan.Rotation*Vector3.up*
                 (Snapshot.Stage == CityFishSupplyStage.Seal ? .1f*(.5f+.5f*Mathf.Sin((float)Snapshot.Seconds*5)) : 0);
             preparationFish.gameObject.SetActive(Snapshot.Stage==CityFishSupplyStage.Prepare);

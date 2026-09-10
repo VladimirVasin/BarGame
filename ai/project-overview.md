@@ -83,9 +83,9 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
   Port, cannery and the shop's service door share one finite six-unit delivery
-  cycle. Two cranes and five port workers unload; one truck/driver and four
-  factory workers carry fish through processing and boxed delivery. The hero
-  observes from public routes in City; shop stock is not changed by delivery.
+  cycle with two cranes, one truck and working crews. Distant presentation
+  sleeps while production, truck collision and traffic continue; approach
+  restores the current phase. The hero observes; shop stock stays unchanged.
 - Separate mountain/village areas, cableway travel and accessible interiors.
 - Six village residents perform finite household work; optional hero help and
   the resulting deliveries, repairs and snow clearing survive scene visits.

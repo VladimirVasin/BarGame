@@ -5,25 +5,26 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 ## Current facts
 
 - **Accepted — 2026-09-10, a compact cannery and finite fish logistics:**
-  Story §6 permits the user's City cannery in place of art §8's weighbridge,
-  with port delivery. Public routes remain; its apron meets the road on the
-  same lot. `CityFishSupplyCycle` serializes six units:
-  receive/chill, prepare/fill/seam, retort, cool/pack, shop handoff. Missing
-  input or occupied output waits; custody cannot duplicate. One `8 x 2.5 m`
-  truck runs at `3 m/s`, reverses at `1.1 m/s`, then returns before the next ship.
-  Level frontage outranks bus avoidance; routes prefer non-bus streets with fallback.
-  `CityCanneryTraffic` reserves the trip before departure; bus movement/spawning
-  respect both reservation and truck, released at the next loading bay.
-  Four factory workers and driver reuse StationWorker; five port workers remain,
-  legacy attendants/needle stay dormant. `CityCanneryController` owns crew,
-  processing and three causal voices. `CityFishSupplySession` keeps scalar
-  working time over City reloads; pause/obstacles stop it. Port's roller door,
-  baffle bypass, tail lift and shop service door admit physical cargo transfers.
-  Nine Blender models share port maps/materials; shop stock is unchanged.
-  Empty-tare return is Deferred: consumed units retire inside opaque storage.
-  The hero observes freely: no ride, earnings, quest, dialogue, city exit,
-  reopening history, crime/contamination implication or authority checkpoint.
-  Story §16/§21 and all nine art checks remain binding at every level.
+  Story §6 permits replacing art §8's weighbridge with the City cannery.
+  Public routes remain; its apron meets the street. `CityFishSupplyCycle`
+  serializes six units: chill, prepare/fill/seam, retort, cool/pack, shop receipt.
+  Input/output waits. One `8 x 2.5 m` truck runs at `3 m/s`,
+  reverses at `1.1 m/s`, returns before the next ship. Level frontage outranks
+  bus avoidance; `CityCanneryTraffic` reserves each trip until the next bay.
+  Bus movement/spawning respect both reservation and physical truck.
+  Four factory workers, driver and five port workers reuse ordinary rigs;
+  legacy weighing stays dormant. Nine Blender models share port materials.
+  Doors, baffle bypass and tail lift keep transfers physical. Shop stock is
+  unchanged; empty-tare return is Deferred. No ride, earnings, quest or dialogue;
+  story §16/§21 and all nine art checks remain binding.
+  `CityFishSupplySession` keeps scalar time across reloads; pause/obstacles
+  stop it, distance does not. `WorldDistancePresentation` gates factory,
+  shore, vessel and truck at 80/96 m from conservative mesh/light bounds.
+  Berthed contacts and factory handoffs couple adjacent groups. Hidden rigs,
+  mechanisms, lights/halos and voices stop presentation; truck pose, collision,
+  custody and traffic remain live. Dedicated light hosts resist night-registry
+  reactivation. Approach restores the current phase even while paused, with no
+  replayed impacts. Null observers/forced captures show all groups.
   `AreaCaptureFixture.CityCannery` passed; gameplay frames were reviewed.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**

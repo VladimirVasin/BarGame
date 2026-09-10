@@ -46,7 +46,10 @@ namespace BarPromenade
                 if (source == null) continue;
                 source.transform.position = i == 0 ? Truck.TransformPoint(new Vector3(0, 1.3f, 4.6f)) :
                     i == 1 ? seamer.position : retortDoor.position;
-                bool active = running && (i == 0 ? Snapshot.IsDriving && !IsBlocked :
+                bool near = ForcePresentation || hero == null || (hero.position - source.transform.position).sqrMagnitude <
+                    (source.isPlaying ? 30f * 30f : 26f * 26f);
+                bool visible = i == 0 ? TruckPresentationActive : FactoryPresentationActive;
+                bool active = running && visible && near && (i == 0 ? Snapshot.IsDriving && !IsBlocked :
                     i == 1 ? Snapshot.Stage == CityFishSupplyStage.Seal : Snapshot.Stage == CityFishSupplyStage.Heat);
                 source.volume = active ? (i == 0 ? .09f : .055f) : 0;
                 if (active && !source.isPlaying) source.Play();

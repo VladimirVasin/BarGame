@@ -56,7 +56,11 @@ namespace BarPromenade
             WorkerHandsMatch = true;
             LastCrewContactFailure = null;
             DriverSeatedContactsMatch = true;
+            for (int i = 0; i < workers.Length; i++)
+                workers[i].gameObject.SetActive(i == 4 ? TruckPresentationActive : FactoryPresentationActive);
             float seconds = (float)Snapshot.Seconds;
+            if (FactoryPresentationActive)
+            {
             bool factoryHandling = Snapshot.Stage == CityFishSupplyStage.UnloadFish ||
                 Snapshot.Stage == CityFishSupplyStage.LoadFinished;
             if (factoryHandling) ApplyReceiverTransfer(seconds);
@@ -66,6 +70,9 @@ namespace BarPromenade
             ApplyStationWorker(workers[2], "Seamer", Snapshot.Stage == CityFishSupplyStage.Fill ||
                 Snapshot.Stage == CityFishSupplyStage.Seal);
             ApplyRetortWorker(seconds);
+            }
+
+            if (!TruckPresentationActive) return;
 
             bool driverHandling = Snapshot.Stage == CityFishSupplyStage.LoadFish ||
                 Snapshot.Stage == CityFishSupplyStage.UnloadShop;

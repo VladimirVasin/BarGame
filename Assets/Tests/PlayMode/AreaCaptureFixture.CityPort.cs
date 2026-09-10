@@ -34,8 +34,13 @@ namespace BarPromenade.Tests.PlayMode
                 crew = Object.FindAnyObjectByType<CityPortCrew>();
                 Assert.That(port, Is.Not.Null);
                 Assert.That(crew, Is.Not.Null);
-                if (city.Cannery != null) city.Cannery.AutoAdvance = false;
+                if (city.Cannery != null)
+                {
+                    city.Cannery.AutoAdvance = false;
+                    city.Cannery.ForcePresentation = true;
+                }
                 port.AutoAdvance = false;
+                port.ForcePresentation = true;
                 port.ApplyAt(CityPortCycle.UnloadStartSeconds, 15f);
                 crew.ApplyAt(port.ElapsedSeconds);
                 city.Player.Motor.SetInputEnabled(false);
@@ -75,6 +80,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 CityPortController reconstructed = CityPortController.Build(reconstructedHost.transform, plan);
                 reconstructed.AutoAdvance = false;
+                reconstructed.ForcePresentation = true;
                 reconstructed.ApplyAt(seek, 15f);
                 Assert.That(reconstructed.Cargo[4].position, Is.EqualTo(savedCargo));
                 Assert.That(reconstructed.Trolley.position, Is.EqualTo(savedCart));
@@ -104,7 +110,7 @@ namespace BarPromenade.Tests.PlayMode
             camera.transform.position = plan.World(new Vector3(-100f, 20f, -100f));
             yield return null;
             Assert.That(port.Vessel.gameObject.activeInHierarchy, Is.True,
-                "A working harbour does not retire its vessel when the hero or camera leaves.");
+                "Forced capture presentation retains the vessel while the observer leaves.");
             Assert.That(port.Trolley.position, Is.EqualTo(savedCart));
             Assert.That(port.Snapshot.StoredCargo, Is.EqualTo(savedStored));
 

@@ -120,6 +120,7 @@ namespace BarPromenade
             previousPortSupplyDriven = port.IsSupplyDriven;
             port.AutoAdvance = false;
             port.IsSupplyDriven = true;
+            CreatePresentation();
             IsInitialized = true;
             ApplyAt(CityFishSupplySession.Advance(false));
         }
@@ -132,7 +133,9 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (!IsInitialized || !AutoAdvance || !GameSessionState.IsGameTimeRunning || GameTimeScaleRuntime.IsPaused) return;
+            if (!IsInitialized) return;
+            RefreshPresentation();
+            if (!AutoAdvance || !GameSessionState.IsGameTimeRunning || GameTimeScaleRuntime.IsPaused) return;
             bool trafficClear=Traffic.TryAcquire(Snapshot);
             IsBlocked = !trafficClear || (Snapshot.IsDriving || Snapshot.IsTransfer) && DetectObstacle();
             movementRate = Mathf.MoveTowards(movementRate, IsBlocked ? 0f : 1f, Time.deltaTime * 1.5f);
@@ -146,14 +149,12 @@ namespace BarPromenade
         {
             WorkingSeconds = seconds;
             Snapshot = Cycle.Sample(seconds);
+            port.ForcePresentation = ForcePresentation;
             port.ApplyAt(Snapshot.PortSeconds, waveTime);
             CityPortTruckPose pose = TruckPose(Snapshot);
             Truck.SetPositionAndRotation(pose.RearAxle, pose.Rotation);
-            ApplyTruckParts();
-            ApplyCargoAndLine();
-            ApplyWorkers();
-            ApplySounds();
-            ApplyShopReceivingDoor();
+            UpdatePresentationVisibility();
+            ApplyPresentation();
         }
 
         public CityPortTruckPose TruckPose(CityFishSupplySnapshot state)
@@ -178,7 +179,9 @@ namespace BarPromenade
             if(Snapshot.IsTransfer)
             {
                 LastObstacleName=null;
-                if(hero==null||workers==null) return false;
+                // The hidden worker/cart pose is intentionally not animated.
+                // A hero outside the whole handling volume cannot occupy it.
+                if(hero==null||workers==null||!TruckPresentationActive) return false;
                 bool driver=Snapshot.Stage==CityFishSupplyStage.LoadFish||Snapshot.Stage==CityFishSupplyStage.UnloadShop;
                 Vector3 worker=workers[driver?4:0].transform.position;
                 Vector3 relative=hero.position-worker;
@@ -217,6 +220,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            RestorePresentation();
             if (port != null) { port.IsSupplyDriven = previousPortSupplyDriven; port.AutoAdvance = previousPortAutoAdvance; }
             RestoreShopReceivingDoor();
             Traffic?.Release();
