@@ -1234,36 +1234,37 @@ The vertical slice contains:
   the esplanade, sand and pier head, gone from every street;
 - one working fishing-port slice (`CityPortPlan`, `CityPortCycle`,
   `CityPortController`) receives a roughly `20 m` trawler at one berth west
-  of the river mouth. Two shore cranes, a trolley and a cold store unload a
-  finite three-unit catch. Its `432 s` visit covers approach, mooring, hatches,
-  three `64 s` lifts/deliveries, securing, unmooring, departure and an empty
-  interval. The shared fish-supply working clock survives City reconstruction;
-  the next ship waits for the truck. Seeking restores custody without sound
-  replay. Hatches hold cages; hooks/trolley deliver behind the store baffle.
-  Its roller door opens for truck loading. Sway is at most `9 cm`, settling before
-  lowering; cranes return to hatches and the trolley returns empty.
-  `CityPortCrew` reuses StationWorker for captain, deckhand, two crane operators
-  and shore worker. Muted clothing and metre fabric UVs preserve faces/rigs;
-  planted torso motion/gaze precede helm, lever, mooring and trolley contacts.
-  No greeting, boarding, earnings, quest or player action is added. The quay
-  reaches `20 m` seaward of the waterline on solid caissons down to `-3.4 m`
-  relative to sea level. A `6 m` service road joins the existing city street
-  to an L-shaped yard and the store's east loading door. `CityPortAccessPlan`
-  shares `PortAccessLayout.json` with the Blender road: local regrading,
-  street openings and the live `8 x 2.5 m` rigid truck. A `2 m` public bypass stays outside manoeuvres,
-  crosses the road once and joins street, rear-store path and breakwater.
-  NPCs take the straight street spur then orthogonal links over beach to the
-  coastal lane; the diagonal paved branch belongs to the player's approach.
-  Fences/gates separate cargo work; former coast rails are suppressed under
-  the paved yard. The local basin and approach are dredged
-  to `3.4 m`, and passing offshore vessels exclude this water.
-  `tools/build-city-port-3d-model.py` and `CityPortAssetProvider` own nine
-  fixed-metre FBXs: road, trawler fittings and heads slewing with their winches/counterweights.
-  Twelve generated albedo sheets use semantic metre UVs and shared muted
-  materials; thin hardware retains the palette. Road asphalt shares the city
-  texture, `12 m` world phase and wet response; the crossing's seven worn
-  stripes reuse `CityRoadMarkingAlbedo`. Two warm lights target quay
-  and store patches with the daylight floor. `CityPortWater` owns a
+  of the river mouth. Two cranes, a trolley and cold store unload three units.
+  Its `432 s` visit spans arrival, mooring/hatches, three `64 s` deliveries,
+  securing, departure and idle. Supply time survives reconstruction; the next
+  ship waits for the truck. Seeking restores custody without sound replay.
+  Cargo passes behind the store baffle; its roller door serves the truck.
+  Sway stays below `9 cm`, settling before lowering; cranes return to hatches,
+  the trolley empty. Five muted StationWorker rigs serve captain, deckhand,
+  two crane operators and shore worker. Independent pause-aware life time
+  keeps breathing, weight shifts and looks alive during supply waits.
+  Operators/loader walk out for conversation/smoking and return before duty.
+  Twenty-four rest, sixteen work, six greeting and six farewell exchanges use
+  paired seeded bubbles/blips about sea, home, disliked work, drink and relationships.
+  Free speakers/listeners turn towards each other; working torsos retain grips.
+  Shore↔ship waves/replies are staggered; departure farewell pairs must fit
+  earshot/the departure window. Restoration never replays missed salutations.
+  Crane levers pivot with their grips. Authored shore routes skirt the tare
+  stack and trolley; worker capsules stop the hero passing through. Tare uses
+  its mesh collider; cage, trolley and finite fish-unit bodies follow their
+  visible/custody owners. NPC movement remains timeline-driven.
+  Solid caissons reach `20 m` seaward and `-3.4 m` below sea level.
+  `CityPortAccessPlan`/`PortAccessLayout.json` share the `6 m` road/regrade/L-yard
+  for an `8 x 2.5 m` truck. A `2 m` bypass crosses once; NPCs use the
+  straight spur/orthogonal beach links, the player the diagonal branch.
+  Fences separate cargo work; coast rails yield to the paved yard. The basin
+  is dredged to `3.4 m`; passing offshore vessels exclude it.
+  `tools/build-city-port-3d-model.py`/`CityPortAssetProvider` own nine metre FBXs.
+  Twelve albedos share muted materials/metre UVs; thin hardware stays flat.
+  Asphalt shares city texture, `12 m` phase and wetness; the seven worn crossing
+  stripes reuse `CityRoadMarkingAlbedo`. Two warm lights target quay/store;
+  a broad-lens trawler searchlight and soft fog shaft light deck/near water
+  with the same daylight floor and vessel distance gate. `CityPortWater` owns a
   separate sea-shader wake slot; `CityPortSound` owns bounded engine, crane,
   wheel and contact voices on existing audio routes. Pause stops the clock
   and audio; disabling/destroying the port clears its people, voices and wake.

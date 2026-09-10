@@ -50,6 +50,16 @@ namespace BarPromenade
                 renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
                 if (lamp) CityNightGlowRegistry.Register(renderer, new Color(1f, .72f, .47f) * 2.5f);
             }
+            if (name == "Pallet")
+            {
+                // These are the finite fish units visible inside the port
+                // store and then carried onto the truck. The same host owns
+                // pose and visibility at every custody transition, so a
+                // consumed/hidden unit leaves no separate invisible blocker.
+                var body = wrapper.AddComponent<BoxCollider>();
+                body.center = new Vector3(0f, .41725f, 0f);
+                body.size = new Vector3(.8f, .8345f, 1.2f);
+            }
             return wrapper;
         }
 

@@ -93,6 +93,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | The mother in her chair | She rocks on measured runner contact, greets him at the door and speaks from one shuffled bag that `E` shares. | `MothersHouseMother{Presentation,Factory,Interaction,Quips,SpeechSession,SpeechController}`, `NpcHeroAttentionLook` | Current |
 | Outdoor raven roosts | Seeded pairs occupy bounded open-world perches, flush locally and obey area exclusion/vehicle gates. | `RavenRoost{Plan,Controller}`, `{City,MountainRoad,AlpineVillage}RavenRoostPlanner` | Current |
 | Seacoast precinct | Textured working port, truck-capable access and public bypass; closed station and east shore retain their approaches. | `CitySeacoast*`, `CityPort*`, `CitySeaResources` | Current |
+| Port social life | Paired talk, reciprocal salutations/body turns and breaks; solid worker bodies and crate-safe routes. | `CityPortCrew*`, `CityPortConversation*`, `CityPortLighting` | Current |
 | Sea water | Shared water drive owns sea swell, foam and uneven shore swash. | `CitySeaResources`, `CityWaterResources` | Current |
 | Beach sand | Deterministic shallow relief and compressible foot trails over fixed collision. | `CityBeachSandPlan`, `CitySandTreading` | Current |
 | Lighthouse island | One distant fog-framed island landmark owns its silhouette, beacon/beam and authored sightline. | `CityLighthouseIsland{Plan,Planner,MeshFactory,WorldBuilder,Resources}` | Current |

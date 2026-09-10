@@ -4,6 +4,26 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-10, port social life:**
+  Approved: overhead bubbles/blips and §21 pools (§6). Refinements admit sea,
+  home, disliked work, drink, relationships and shore/vessel farewells.
+  Complete seeded exchanges
+  keep replies coherent, spaced and unrepeated. Salutations turn free bodies
+  towards partners and stagger waves; task contacts take priority.
+  Break walks avoid crates; visible worker bodies stop the
+  hero passing through. This adds no attention, speech or reaction to the hero.
+  Long gaps allow conversation/smoking and timely returns, clear of trolley,
+  truck, public routes and suspended cargo. Independent pause-aware life time
+  continues while supply holds; restoration never replays missed events.
+  Existing rigs own breath/weight/look/gestures; cigarette ember/exhale follows
+  the puff. Blender levers carry grips through continuous approach/release.
+  A worn broad-lens Blender lamp casts a soft warm fog shaft at deck/near water;
+  fixture, shaft, daylight floor and distance gate follow the trawler.
+  Closed station, five roles, finite catch and free observation remain at
+  level `0` throughout `0-5`, without act/intoxication response, route, boarding,
+  earnings, quest, crime/poisoning implications or story knowledge. Story §16/§21,
+  all nine art §16 checks and contextual-animation rules hold.
+
 - **Accepted — 2026-09-10, cannery and finite fish logistics:**
   Story §6 replaces the weighbridge, keeping public routes. One `8 x 2.5 m`
   truck carries finite units port→factory→shop: `3 m/s`, reverse `1.1 m/s`.
@@ -44,60 +64,40 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Music moves back `6 dB`. No added bed.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
-  Twelve opaque ImageGen albedos cover horizontal
-  concrete and walls, painted steel, warehouse plaster, timber, roofing,
-  deck, cargo plastic, fish, ice, rubber and work fabric. Original pixels,
-  prompts and hashes live in `ArtSource/City/Port/Textures/generation.json`;
-  the tool does not expose its backend version. Runtime imports use sRGB,
-  mipmaps and repeat, capped at `512 px`. Authored metre UVs and shared
-  role materials preserve the muted palette; thin bare hardware stays flat.
-  Access asphalt instead shares `CityRoadAsphaltAlbedo`, its `12 m` world
-  phase and the city's wet-surface response, keeping the street joint whole.
-  Story §6 permits these surfaces and local regrading. Nine deterministic
-  FBXs include `AccessRoad`, with measured geometry, UVs and real holds.
-  `PortAccessLayout.json` supplies `CityPortAccessPlan` and the authored road:
-  a `6 m` carriageway, street flare, local regrade and an L-shaped service
-  yard beside the east loading door. An `8 x 2.5 m` rigid-truck template
-  checks approach, turn, reverse-to-store and exit.
-  The public `2 m` bypass stays outside that manoeuvre, crosses the road
-  once and connects street, coast and port. NPCs use its straight street spur
-  then orthogonal beach links; the player retains the diagonal paved branch.
-  Global graph rules stay unchanged.
-  Trawler fittings and deck detail are authored; bearings, counterweights and
-  winches slew with crane heads while operators stay grounded. Five unchanged
-  StationWorker rigs use fabric UV transforms, muted clothes and planted torso
-  motion before fixed hand contacts and load gaze.
-  Hook/cargo sway at most `9 cm` during slewing, settling before lowering.
-  Warm fixtures aim at quay/store patches; the two-thirds daylight floor and
-  global fog remain. Story §16/§21 and all nine art checks hold.
+  Twelve opaque ImageGen albedos cover concrete, walls, painted steel,
+  plaster, timber, roof, deck, plastic, fish, ice, rubber and fabric.
+  `ArtSource/City/Port/Textures/generation.json` retains originals/prompts/hashes;
+  backend version is unavailable. Shared muted materials use metre UVs,
+  `512 px` sRGB/mipmaps/repeat; thin bare metal stays flat. Asphalt shares
+  `CityRoadAsphaltAlbedo`, `12 m` phase and city wetness. Story §6 admits
+  local regrading and nine measured FBXs including `AccessRoad`.
+  `PortAccessLayout.json`/`CityPortAccessPlan` own the `6 m` road, flare and
+  L-yard at the east loading door, validated with an `8 x 2.5 m` truck.
+  The `2 m` public bypass crosses once. NPCs use the straight spur/orthogonal
+  beach links; the player retains the diagonal branch; graph rules stay.
+  Heads slew with bearings, counterweights and winches; grounded StationWorker
+  rigs keep muted fabric, task gaze and contacts. Hook/cargo sway stays below
+  `9 cm`, settling before lowering. Quay/store lights retain the two-thirds
+  daytime floor and global fog; story §16/§21 and all nine art checks hold.
 
 - **Accepted — 2026-09-09, a small working fishing port:**
-  The vessel enters, berths, unloads and leaves while the hero observes.
-  Story §6's level-`0` exception covers art §10d's docking, dark-shore and
-  sand constraints, story §5/§7/§12/§18 and art §10g's closed-port meaning.
-  Closed mine, boat station and fisherman remain; no reopening history exists.
-  One berth, two cranes, a roughly `20 m` trawler and five workers serve finite
-  catches. Fenders, bollards, moorings and a free crane edge serve
-  a basin/approach clear of bed, river mouth, island and station pier. The quay stands `20 m`
-  beyond the waterline, on solid caissons extending to local `-3.4 m`.
-  Its rear edge meets the low shore, keeping the warehouse above the rising
-  sand. The rear path sits `0.5 m` inland of the waterline; physical side ramps
-  and walkable footprints connect beach and road crossing outside hanging loads.
-  Cranes deliver fish to the quay, a trolley to cold storage. Moorings precede
-  lifting and clear before departure; each handoff shares a physical contact.
-  Nothing resets visibly; ship entry/exit use distant fog. The fixed port clock
-  stays separate from hero-local offshore spawning, which excludes this corridor.
-  `CityPortCycle` reconstructs visits with `64 s` cargo slots;
-  `CityPortController` applies its custody, hatch, mooring and motion state.
-  Crew, work sounds and sea wake share that owner.
-  Blender anchors measure pure space/cargo plans; runtime owns
-  presentation/pause/release. Materials and sea/wave
-  data are shared. Warm work lights retain the two-thirds daytime floor;
-  motors, cranes, wheels and contacts own quiet sound. Muted nonyellow clothes
-  preserve the fisherman's accent. The hero can leave freely; no boarding,
-  city exit, earnings, quest, dialogue, crime/disease implication or
-  act/intoxication-dependent cycle exists. Indifferent workers, story §16/§21
-  and all nine art checks remain binding.
+  Story §6's level-`0` exception covers art §10d docking/dark shore/sand,
+  story §5/§7/§12/§18 and art §10g's closed-port meaning. Closed mine,
+  station and fisherman remain; no reopening history exists. One berth,
+  two cranes, a roughly `20 m` trawler and five workers serve finite catches.
+  Fenders, bollards, moorings and a free crane edge face an approach clear of
+  bed, mouth, island and pier. Solid caissons reach local `-3.4 m`, `20 m`
+  seaward; the rear path lies `0.5 m` inland with physical side ramps above
+  sand. Public routes stay outside hanging loads. Moorings precede lifting
+  and clear before departure; crane→trolley→store handoffs require contact.
+  Fog hides entry/exit; offshore passes exclude this corridor.
+  `CityPortCycle` reconstructs `64 s` slots; `CityPortController` owns custody,
+  hatches, moorings, motion, crew, wake and sound. Blender anchors measure pure
+  plans; runtime owns pause/release. Shared water/materials, nonyellow workwear,
+  causal sound and warm lights preserve the fisherman's accent and daytime floor.
+  The hero observes freely. Boarding, exit, earnings, quest, hero dialogue,
+  crime/disease implications and act/intoxication changes stay prohibited;
+  story §16/§21 and all nine art checks hold.
 
 - **Accepted — 2026-09-09, the Ferryman's radio and ordinary road speech:**
   The user approved the complete radio, glovebox-light and ten-line road-pool

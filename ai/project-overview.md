@@ -83,7 +83,10 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
   Port, cannery and the shop's service door share one finite three-unit delivery
-  cycle with two cranes, one lit truck and crews. Production starts with the first
+  cycle with two cranes, one lit truck and crews. Five port workers exchange
+  paired everyday speech, turn to partners, greet/farewell the ship and take breaks;
+  idle has its own pause-aware clock. Moving crane grips and a warm vessel
+  searchlight share the working scene. Production starts with the first
   received crate during unloading, taking available FIFO lots at twice authored
   speed. Worn machines, cans entering cartons, task poses, lamps and steam make
   that cycle visible. Distant presentation

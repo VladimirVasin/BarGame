@@ -11,7 +11,7 @@ namespace BarPromenade.Editor
     {
         public const string ModelFolder = "Assets/Resources/City/Port/";
         public const string ManifestPath = ModelFolder + "CityPort3D.json";
-        public override uint GetVersion() => 5;
+        public override uint GetVersion() => 6;
 
         private void OnPreprocessModel()
         {
@@ -71,6 +71,7 @@ namespace BarPromenade.Editor
             foreach (Transform part in model.GetComponentsInChildren<Transform>(true))
             {
                 if (part.name != "HatchA" && part.name != "HatchB" && part.name != "CraneHead" &&
+                    part.name != "LeverLeft" && part.name != "LeverRight" &&
                     !part.name.StartsWith("MOVE_", StringComparison.Ordinal)) continue;
                 var children = new Transform[part.childCount];
                 for (int i = 0; i < children.Length; i++) children[i] = part.GetChild(i);
@@ -136,6 +137,29 @@ namespace BarPromenade.Editor
                             Transform pivot = CityPortAssetProvider.FindPart(model, name);
                             if (Vector3.Dot(pivot.up, Vector3.up) < .999f || Vector3.Dot(pivot.forward, Vector3.forward) < .999f)
                                 throw new InvalidOperationException("Port hatch lacks normalized Unity rotation basis.");
+                        }
+                        Transform lamp = CityPortAssetProvider.FindPart(model, "ANCHOR_Searchlight");
+                        Transform target = CityPortAssetProvider.FindPart(model, "ANCHOR_SearchlightTarget");
+                        Vector3 direction = (target.position - lamp.position).normalized;
+                        if (direction.y >= -.1f || direction.z < .9f || lamp.position.y < 4.4f ||
+                            CityPortAssetProvider.FindPart(model, "SearchlightGlass").GetComponent<Renderer>() == null)
+                            throw new InvalidOperationException("Port searchlight must have one lens and aim down over the bow.");
+                    }
+                    if (part.name == "CraneBase")
+                    {
+                        foreach (string side in new[] { "Left", "Right" })
+                        {
+                            Transform pivot = CityPortAssetProvider.FindPart(model, "Lever" + side);
+                            Transform grip = CityPortAssetProvider.FindPart(model, "ANCHOR_Control" + side);
+                            if (!grip.IsChildOf(pivot) || Vector3.Dot(pivot.forward, Vector3.forward) < .999f ||
+                                Vector3.Dot(pivot.up, Vector3.up) < .999f)
+                                throw new InvalidOperationException("Port lever must own its hand anchor in normalized Unity axes.");
+                            Vector3 rest = grip.position;
+                            pivot.localRotation = Quaternion.Euler(18f, 0f, 0f);
+                            float displacement = Vector3.Distance(rest, grip.position);
+                            pivot.localRotation = Quaternion.identity;
+                            if (displacement < .035f || displacement > .045f)
+                                throw new InvalidOperationException("Port control grip failed the authored 18-degree lever arc.");
                         }
                     }
                 }

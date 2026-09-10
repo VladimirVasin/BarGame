@@ -14,6 +14,8 @@ namespace BarPromenade
         private const int MooringSegments = 6;
         private readonly Transform[] hatches = new Transform[2];
         private readonly Quaternion[] hatchClosed = new Quaternion[2];
+        private readonly Transform[] leftLevers = new Transform[2];
+        private readonly Transform[] rightLevers = new Transform[2];
         private readonly Vector3[] hookLoadOffsets = new Vector3[2];
         private readonly Vector3[] cargoLiftOffsets = new Vector3[CityPortCycle.CargoCount];
         private readonly Transform[] hoistRopes = new Transform[2];
@@ -26,6 +28,7 @@ namespace BarPromenade
         private readonly Transform[] dockMooring = new Transform[2];
         private Vector3 trolleyLoadOffset;
         private Vector3 trolleyOperatorOffset;
+        private Collider trolleyCollider;
         private readonly Vector3[][] trolleyRoutes = new Vector3[2][];
         private readonly float[][] trolleyTurnCosts = new float[2][];
         private readonly float[] trolleyRouteLengths = new float[2];
@@ -65,6 +68,7 @@ namespace BarPromenade
             Dock.position = plan.Origin;
             Vessel = Create("Trawler");
             Trolley = Create("Trolley");
+            trolleyCollider = Trolley.GetComponent<Collider>();
             trolleyLoadOffset = AnchorOffset(Trolley, "ANCHOR_Load");
             trolleyOperatorOffset = AnchorOffset(Trolley, "ANCHOR_Handle") - Vector3.forward * .48f;
             trolleyOperatorOffset.y = 0f;
@@ -99,6 +103,8 @@ namespace BarPromenade
             {
                 CraneBases[crane] = Create("CraneBase");
                 CraneBases[crane].position = plan.World(plan.CraneBaseLocal(crane));
+                leftLevers[crane] = Part(CraneBases[crane], "LeverLeft");
+                rightLevers[crane] = Part(CraneBases[crane], "LeverRight");
                 Booms[crane] = Create("CraneBoom");
                 craneHeads[crane] = Part(CraneBases[crane], "CraneHead");
                 headFeeds[crane] = Part(CraneBases[crane], "ANCHOR_HoistFeed");
@@ -379,6 +385,23 @@ namespace BarPromenade
             Booms[crane].SetPositionAndRotation(pivot, Quaternion.LookRotation(tip - pivot, Vector3.up));
             SetSegment(winchRopes[crane], headFeeds[crane].position, boomHeels[crane].position);
             SetSegment(hoistRopes[crane], tip, Hooks[crane].position);
+            // The imported grip anchors are children of these levers. Crew
+            // contacts sample them after actuation, including the return stroke.
+            float hoist = 0f, slew = 0f;
+            if (Snapshot.ActiveCraneIndex == crane)
+            {
+                float pulse = Mathf.Sin(Mathf.PI * Snapshot.CargoStageProgress);
+                switch (Snapshot.CargoStage)
+                {
+                    case CityPortCargoStage.LowerHook: hoist = 14f * pulse; break;
+                    case CityPortCargoStage.Hoist: hoist = -18f * pulse; break;
+                    case CityPortCargoStage.Slew: slew = (crane == 0 ? -18f : 18f) * pulse; break;
+                    case CityPortCargoStage.LowerLoad: hoist = 16f * pulse; break;
+                    case CityPortCargoStage.Return: hoist = -12f * pulse; slew = (crane == 0 ? 14f : -14f) * pulse; break;
+                }
+            }
+            leftLevers[crane].localRotation = Quaternion.Euler(hoist, 0f, 0f);
+            rightLevers[crane].localRotation = Quaternion.Euler(slew, 0f, 0f);
         }
 
         private Vector3 SuspendedContact(int crane)
@@ -399,6 +422,10 @@ namespace BarPromenade
 
         private void ApplyCargo()
         {
+            // The cart's motion sleeps with its distant presentation. Disable
+            // its body in that state; approach applies the current pose before
+            // restoring collision. Cargo uses its own finite active hosts.
+            trolleyCollider.enabled = ShorePresentationActive;
             bool unloading = Snapshot.Stage == CityPortCycleStage.Unload;
             bool completed = (int)Snapshot.Stage > (int)CityPortCycleStage.Unload;
             for (int index = 0; index < Cargo.Length; index++)

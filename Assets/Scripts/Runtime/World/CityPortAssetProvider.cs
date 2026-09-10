@@ -60,6 +60,13 @@ namespace BarPromenade
                     collider.sharedMesh = renderer.GetComponent<MeshFilter>().sharedMesh;
                     continue;
                 }
+                if (name == "Dock" && renderer.name == "DockVisible__Tare")
+                {
+                    // Reuse the actual authored stack walls. The player's
+                    // body must not pass through the nine empty fish crates.
+                    var collider = renderer.gameObject.AddComponent<MeshCollider>();
+                    collider.sharedMesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+                }
                 int regionSeparator = renderer.name.LastIndexOf("__", StringComparison.Ordinal);
                 string region = regionSeparator >= 0 ? renderer.name.Substring(regionSeparator + 2) : "Plain";
                 renderer.sharedMaterial = renderer.name == "CabinGlass" ? GlassMaterial : GetSurfaceMaterial(region);
@@ -68,6 +75,20 @@ namespace BarPromenade
                 renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
                 renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
                 if (region == "Asphalt") CityExteriorAppearance.ApplyRoadSurface(renderer);
+            }
+            if (name == "Cargo")
+            {
+                // The rigid cage ends below its lifting sling. Its upper
+                // ropes do not turn the empty triangular space into a wall.
+                var body = wrapper.AddComponent<BoxCollider>();
+                body.center = new Vector3(0f, .52f, 0f);
+                body.size = new Vector3(1.3f, 1.04f, 1.5f);
+            }
+            else if (name == "Trolley")
+            {
+                var body = wrapper.AddComponent<BoxCollider>();
+                body.center = new Vector3(0f, .57f, -.0925f);
+                body.size = new Vector3(1.55f, 1.14f, 1.985f);
             }
             return wrapper;
         }

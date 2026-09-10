@@ -59,7 +59,7 @@ ASPHALT_WORLD_ORIGIN=(-67.0,202.0)
 
 
 def surface_role(name,color,face=None,geom=None,index=0):
-    if name.startswith("COL_") or name in ("CabinGlass","WorkLampGlass"):
+    if name.startswith("COL_") or name in ("CabinGlass","WorkLampGlass","SearchlightGlass"):
         return "Plain"
     if geom is not None and index<len(geom.face_roles) and geom.face_roles[index]:
         return geom.face_roles[index]
@@ -309,7 +309,9 @@ def dock(mat):
     obj(glow,"WorkLampGlass",root,mat)
     for name,geom in (("COL_Quay",cq),("COL_Breakwater",cb),("COL_WarehouseWalls",cw),("COL_Ramps",cr),("COL_Rail",rail),("COL_Awning",awning)):
         obj(geom,name,root,mat).hide_render=True
-    for name,p in {"WarehouseDoor":(0,1.5,-12),"WarehouseHandoff":(0,1.5,-17.5),"Visitor":(0,1.5,-20.5)}.items(): empty("ANCHOR_"+name,root,p)
+    for name,p in {"WarehouseDoor":(0,1.5,-12),"WarehouseHandoff":(0,1.5,-17.5),"Visitor":(0,1.5,-20.5),
+                   "RestWest":(-12,1.5,-4.8),"RestEast":(-10.5,1.5,-5.7),"RestQuay":(-12.2,1.5,-6.3)}.items():
+        empty("ANCHOR_"+name,root,p)
     return root
 
 
@@ -503,6 +505,46 @@ def trawler(mat):
     for x in (-1.17,1.17):
         g.rod((x,4.35,-7.5),(x,4.73,-7.5),.045,METAL)
         chamfer(g,(x,4.74,-7.4),(.32,.21,.36),DARK,.025)
+    # A substantial old searchlight: raised yoke, deep drum and rolled rim.
+    # Its authored short cone makes a working shaft readable in coastal fog;
+    # it reaches only the foredeck and nearest water, never the closed beach.
+    lamp_center=Vector((.2,4.96,-5.90))
+    lamp_target=Vector((.2,0,13))
+    lamp_direction=(lamp_target-lamp_center).normalized()
+    chamfer(g,(.2,4.39,-6.08),(.65,.10,.50),METAL,.035)
+    g.rod((.2,4.42,-6.08),(.2,4.74,-6.08),.082,METAL,8)
+    for x in (-.19,.59):
+        g.rod((x,4.64,-6.08),(x,4.96,-5.90),.049,PAINT,8)
+        g.rod((x-.045,4.96,-5.90),(x+.045,4.96,-5.90),.078,METAL,10)
+    rear=lamp_center-lamp_direction*.32
+    lip=lamp_center+lamp_direction*.30
+    g.rod(rear,lip,.325,PAINT,16)
+    ring(g,lip,.326,.033,METAL,lamp_direction,16)
+    ring(g,lip-lamp_direction*.10,.326,.015,RUST,lamp_direction,16)
+    ring(g,rear,.328,.023,METAL,lamp_direction,16)
+    ring(g,rear+lamp_direction*.065,.328,.013,RUST,lamp_direction,16)
+    # The glass sits in front of the capped shell so the visible lens cannot
+    # be hidden by the housing; the source is just beyond its front face.
+    lens=Geometry()
+    lens.rod(lip+lamp_direction*.010,lip+lamp_direction*.039,.290,LAMP,16)
+    obj(lens,"SearchlightGlass",root,mat)
+    lamp_source=lip+lamp_direction*.065
+    empty("ANCHOR_Searchlight",root,tuple(lamp_source))
+    empty("ANCHOR_SearchlightTarget",root,tuple(lamp_target))
+    beam=Geometry();vertices=[];uv=[]
+    across=Vector((1,0,0));up=lamp_direction.cross(across).normalized()
+    rings=((0,.286),(3,.62),(9,1.40),(15,2.16),(22,3.05));segments=16
+    for distance,radius in rings:
+        center=lamp_source+lamp_direction*distance
+        for i in range(segments):
+            angle=i*math.tau/segments
+            vertices.append(tuple(center+radius*(math.cos(angle)*across+math.sin(angle)*up)))
+            uv.append((distance/22,i/segments))
+    faces=[(r*segments+i,r*segments+(i+1)%segments,(r+1)*segments+(i+1)%segments,(r+1)*segments+i)
+           for r in range(len(rings)-1) for i in range(segments)]
+    beam.add(vertices,faces,LAMP,uv,solid=False)
+    # Keep axial UVs: obj() intentionally replaces plain surfaces with palette UVs.
+    beam.object("SearchlightBeam",root,mat)
     # Folded fishing net in its low bin, away from both working holds and
     # the continuous side aisles. Each strand rests on the stack beneath it.
     chamfer(g,(.2,1.7,.1),(1.8,.20,2.1),WOOD)
@@ -551,7 +593,15 @@ def crane_base(mat):
     for y in (1,1.35,1.7,2.05,2.4,2.75,3.1,3.45):g.rod((-.3,y,-.4),(.3,y,-.4),.035,METAL)
     g.rod((1.9,0,-.15),(1.9,.65,-.15),.06,METAL)
     chamfer(g,(1.9,.78,-.15),(.7,.25,.35),PAINT)
-    for x in (1.7,2.1):g.rod((x,.9,-.15),(x,1.02,-.2),.025,DARK)
+    for side,x in (("Left",1.7),("Right",2.1)):
+        pivot=empty("Lever"+side,root,(x,.9,-.15))
+        lever=Geometry()
+        lever.rod((0,0,0),(0,.12,-.05),.025,DARK)
+        # Keep the previous hand-contact point exactly, with a readable grip.
+        lever.rod((0,.095,-.040),(0,.14,-.058),.033,DARK,8)
+        obj(lever,"ControlLever"+side,pivot,mat)
+        empty("ANCHOR_Control"+side,pivot,(0,.12,-.05))
+        ring(g,(x,.90,-.15),.045,.012,METAL,steps=10)
     for x in (-.78,.78):
         for z in (-.78,.78):g.rod((x,.65,z),(x,.8,z),.07,DARK,6)
     obj(g,"CraneBaseVisible",root,mat)
@@ -577,7 +627,6 @@ def crane_base(mat):
     obj(h,"CraneHeadVisible",head,mat)
     empty("ANCHOR_HoistFeed",head,(0,.48,-.9))
     empty("ANCHOR_BoomPivot",root,(0,4,0));empty("ANCHOR_Operator",root,(1.9,0,-.7))
-    empty("ANCHOR_ControlLeft",root,(1.7,1.02,-.2));empty("ANCHOR_ControlRight",root,(2.1,1.02,-.2))
     return root
 
 
@@ -705,6 +754,42 @@ def validate_surfaces(roots):
                 if area<1e-10:raise RuntimeError(f"Semantic surface has degenerate texture UVs: {part.name}")
 
 
+def validate_controls_and_light(roots):
+    bpy.context.view_layer.update()
+    crane=next(r for r in roots if r.name.split('.')[0]=="CraneBase")
+    parts={p.name.split('.')[0]:p for p in crane.children_recursive}
+    for side,x in (("Left",1.7),("Right",2.1)):
+        lever,grip=parts["Lever"+side],parts["ANCHOR_Control"+side]
+        point=Vector(source(crane.matrix_world.inverted()@grip.matrix_world.translation))
+        if grip.parent!=lever or (point-Vector((x,1.02,-.2))).length>.00001:
+            raise RuntimeError("Crane control lost its moving rest-position hand contact: "+side)
+        if not any(p.type=="MESH" for p in lever.children_recursive):
+            raise RuntimeError("Crane lever pivot has no authored geometry: "+side)
+    ship=next(r for r in roots if r.name.split('.')[0]=="Trawler")
+    parts={p.name.split('.')[0]:p for p in ship.children_recursive}
+    lamp=parts["ANCHOR_Searchlight"].matrix_world.translation
+    target=parts["ANCHOR_SearchlightTarget"].matrix_world.translation
+    direction=(target-lamp).normalized()
+    if source(direction)[1]>=-.1 or source(direction)[2]<.9:
+        raise RuntimeError("Searchlight must aim forward and down, outside its own housing")
+    vertices=[];faces=[]
+    for part in ship.children_recursive:
+        if part.type!="MESH" or part.name.split('.')[0]=="SearchlightBeam":continue
+        start=len(vertices)
+        vertices.extend(part.matrix_world@v.co for v in part.data.vertices)
+        faces.extend([start+i for i in p.vertices] for p in part.data.polygons)
+    hit,_,_,distance=BVHTree.FromPolygons(vertices,faces).ray_cast(lamp,direction,22)
+    if hit is not None and distance<4:
+        raise RuntimeError("Searchlight beam is masked by its housing or wheelhouse")
+    beam=parts["SearchlightBeam"]
+    beam_uv=[loop.uv.x for loop in beam.data.uv_layers.active.data]
+    if min(beam_uv)!=0 or max(beam_uv)!=1:
+        raise RuntimeError("Searchlight shaft lost its complete axial fade UVs")
+    lengths=[(beam.matrix_world@v.co-lamp).dot(direction) for v in beam.data.vertices]
+    if abs(min(lengths))>.001 or abs(max(lengths)-22)>.001:
+        raise RuntimeError("Searchlight shaft must remain bounded to twenty-two metres")
+
+
 def source_surface_materials(roots):
     """The editable source/review uses the same semantic images and tints.
 
@@ -771,10 +856,10 @@ def main():
     p=argparse.ArgumentParser();p.add_argument("--no-preview",action="store_true");p.add_argument("--validate-only",action="store_true")
     p.add_argument("--model-dir",type=Path,default=ROOT/"Assets/Resources/City/Port")
     p.add_argument("--source-dir",type=Path,default=ROOT/"ArtSource/City/Port")
-    p.add_argument("--only-part",choices=("Dock","Trawler","CraneBase","CraneBoom","Hook","Cargo","Trolley","RopeSegment","AccessRoad"))
+    p.add_argument("--only-part",action="append",choices=("Dock","Trawler","CraneBase","CraneBoom","Hook","Cargo","Trolley","RopeSegment","AccessRoad"))
     args=p.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     base.reset();mat=base.material("PortVertexPaint")
-    roots=build(mat);validate_holds(roots);validate_landing(roots);validate_surfaces(roots);entries=[describe(r) for r in roots]
+    roots=build(mat);validate_holds(roots);validate_landing(roots);validate_surfaces(roots);validate_controls_and_light(roots);entries=[describe(r) for r in roots]
     manifest={"design_id":"city_working_fishing_port_v1","generator":Path(__file__).name,
               "coordinate_system":"Unity +Y up / +Z bow; fixed metres; waterline origin",
               "parts":entries,"cargo_attachment_height":1.7,"crane_boom_length":8,"crane_pivot_height":4,
@@ -788,7 +873,7 @@ def main():
     else:
         args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
         for r in roots:
-            if args.only_part is None or r.name==args.only_part:base.export(r,args.model_dir/(r.name+".fbx"))
+            if args.only_part is None or r.name in args.only_part:base.export(r,args.model_dir/(r.name+".fbx"))
         (args.model_dir/"CityPort3D.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
         # Generated byte images save their pixel channels verbatim; use visual
         # swatches here, while mesh color_srgb converts the vertex paint once.
@@ -800,9 +885,9 @@ def main():
         bpy.context.preferences.filepaths.save_version=0
         bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"CityPort3D.blend"),check_existing=False)
         if not args.no_preview:preview(roots,args.source_dir/"CityPort3D.png")
-    base.reset();rebuilt=build(mat);validate_holds(rebuilt);validate_landing(rebuilt);validate_surfaces(rebuilt);repeated=[describe(r) for r in rebuilt]
+    base.reset();rebuilt=build(mat);validate_holds(rebuilt);validate_landing(rebuilt);validate_surfaces(rebuilt);validate_controls_and_light(rebuilt);repeated=[describe(r) for r in rebuilt]
     if entries!=repeated:raise RuntimeError("Port deterministic rebuild mismatch")
-    print("CITY PORT ART CONTRACT OK: fixed metre parts, real hold apertures, semantic UVs and deterministic geometry")
+    print("CITY PORT ART CONTRACT OK: fixed metre parts, real hold apertures, semantic UVs, moving controls, forward searchlight and deterministic geometry")
     print(json.dumps([{k:v for k,v in e.items() if k in ("name","triangles","bounds_min","bounds_max")} for e in entries]))
 
 

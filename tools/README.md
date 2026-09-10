@@ -10,13 +10,13 @@ geometry, UVs and contacts without publishing:
 python tools/run-blender.py tools/build-city-cannery-3d-model.py --validate-only -- --validate-only
 ```
 
-`build-city-port-3d-model.py` owns nine harbour FBXs and `CityPort3D.json` in
-`Assets/Resources/City/Port`, source under `ArtSource/City/Port`.
-`PortAccessLayout.json` shares road/yard/public-walk geometry with runtime.
-Validation covers geometry, metre UVs and holds. Twelve ImageGen maps retain
-originals/prompts/hashes in `ArtSource/City/Port/Textures/generation.json`;
-runtime imports use `512 px`, sRGB/mipmaps/repeat. Asphalt shares the city's
-sheet and `12 m` world phase; generated pixels are outside mesh signatures:
+`build-city-port-3d-model.py` owns nine FBXs/`CityPort3D.json` in
+`Assets/Resources/City/Port`, source in `ArtSource/City/Port`, including moving
+crane grips and broad-lens searchlight/soft beam. `PortAccessLayout.json` shares access
+geometry. Validation covers geometry, metre UVs and anchors. Twelve ImageGen
+maps retain originals/prompts/hashes in `ArtSource/City/Port/Textures/generation.json`;
+imports use `512 px`, sRGB/mipmaps/repeat. Asphalt shares the city's `12 m`
+phase; generated pixels stay outside mesh signatures:
 
 ```powershell
 python tools/run-blender.py tools/build-city-port-3d-model.py --expect Assets/Resources/City/Port/CityPort3D.json -- --no-preview

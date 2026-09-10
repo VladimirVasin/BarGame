@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>Two physical work lights share the coast's ordinary day/night law.</summary>
+    /// <summary>Quay fixtures and the vessel's lamp share the ordinary day/night law.</summary>
     public static class CityPortLighting
     {
         public static void Build(CityPortController port)
@@ -44,6 +44,90 @@ namespace BarPromenade
                     .30f, .95f, new Color(1f, .72f, .47f, .10f), new Color(.8f, .51f, .3f, .035f));
                 CityNightSiteLightRegistry.Register(light, index == 0 ? 3.8f : 3.3f, halo);
             }
+            BuildVesselSearchlight(port, warm);
+        }
+
+        private static void BuildVesselSearchlight(CityPortController port, Color warm)
+        {
+            Transform fixture = CityPortAssetProvider.FindPart(port.Vessel.gameObject, "ANCHOR_Searchlight");
+            Transform target = CityPortAssetProvider.FindPart(port.Vessel.gameObject, "ANCHOR_SearchlightTarget");
+            Renderer glass = CityPortAssetProvider.FindPart(port.Vessel.gameObject, "SearchlightGlass").GetComponent<Renderer>();
+            Renderer shaft = CityPortAssetProvider.FindPart(port.Vessel.gameObject, "SearchlightBeam").GetComponent<Renderer>();
+
+            Transform root = new GameObject("Port Vessel Searchlight").transform;
+            // The dedicated host is captured by the vessel's distance gate.
+            // Day/night can re-enable components without reopening that host.
+            root.SetParent(port.Vessel, false);
+            root.position = fixture.position;
+            root.rotation = Quaternion.LookRotation(target.position - fixture.position, port.Vessel.up);
+            Light light = root.gameObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = warm;
+            light.range = 26f;
+            light.spotAngle = 36f;
+            light.innerSpotAngle = 22f;
+            light.shadows = LightShadows.Soft;
+            light.shadowStrength = .72f;
+            light.shadowBias = .025f;
+            light.shadowNormalBias = .12f;
+            CityLightHalo halo = CityLightHalo.CreateNightRegistered(root, Vector3.zero,
+                .40f, 1.3f, new Color(1f, .72f, .47f, .18f), new Color(.8f, .51f, .3f, .055f));
+            CityNightSiteLightRegistry.Register(light, 22f, halo);
+            root.gameObject.AddComponent<CityPortSearchlightShaft>().Initialize(glass, shaft);
+        }
+    }
+
+    /// <summary>The passive Blender shaft shares the fleet's additive material and fixture floor.</summary>
+    internal sealed class CityPortSearchlightShaft : MonoBehaviour
+    {
+        private MaterialPropertyBlock properties;
+        private Renderer glass, shaft;
+        private float appliedFactor = -1f;
+
+        internal void Initialize(Renderer lens, Renderer beam)
+        {
+            glass = lens;
+            shaft = beam;
+            properties = new MaterialPropertyBlock();
+            Prepare(glass);
+            Prepare(shaft);
+            Apply();
+        }
+
+        private static void Prepare(Renderer renderer)
+        {
+            renderer.sharedMaterial = CityOffshoreBoatResources.Glow;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+            renderer.allowOcclusionWhenDynamic = false;
+        }
+
+        private void LateUpdate() => Apply();
+        private void OnEnable() { appliedFactor = -1f; Apply(); }
+
+        private void Apply()
+        {
+            if (shaft == null || glass == null) return;
+            float factor = GameTimeDayNightRules.FixtureFactor(CityNightSiteLightRegistry.NightFactor);
+            if (Mathf.Approximately(factor, appliedFactor)) return;
+            appliedFactor = factor;
+            // The finite shaft fades along its authored UV.x. The lens shares
+            // the same material with uniform glow; neither changes global fog.
+            Set(glass, 1f, .72f * factor);
+            Set(shaft, 0f, .085f * factor);
+        }
+
+        private void Set(Renderer renderer, float uniform, float intensity)
+        {
+            properties.Clear();
+            properties.SetColor("_BeamColor", new Color(2.3f, 1.55f, .68f, 1f));
+            properties.SetFloat("_Uniform", uniform);
+            properties.SetFloat("_Intensity", intensity);
+            properties.SetFloat("_FadeStartDistance", 36f);
+            properties.SetFloat("_FadeEndDistance", 46f);
+            renderer.SetPropertyBlock(properties);
         }
     }
 }

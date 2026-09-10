@@ -2507,6 +2507,422 @@
     {
       "key": "lastroute.ride.radio",
       "value": "What is this shit we're listening to? The composer is utterly talentless"
+    },
+    {
+      "key": "city.port.rest.01.a",
+      "value": "My sleeve keeps catching on the fence."
+    },
+    {
+      "key": "city.port.rest.01.b",
+      "value": "Roll it up. Mine did that too."
+    },
+    {
+      "key": "city.port.rest.02.a",
+      "value": "These gloves have gone stiff."
+    },
+    {
+      "key": "city.port.rest.02.b",
+      "value": "They will soften by the radiator."
+    },
+    {
+      "key": "city.port.rest.03.a",
+      "value": "Something squeaks in my boot."
+    },
+    {
+      "key": "city.port.rest.03.b",
+      "value": "Both of mine squeak."
+    },
+    {
+      "key": "city.port.rest.04.a",
+      "value": "Got any tobacco left?"
+    },
+    {
+      "key": "city.port.rest.04.b",
+      "value": "Enough until tonight."
+    },
+    {
+      "key": "city.port.rest.05.a",
+      "value": "The wind gets under my collar."
+    },
+    {
+      "key": "city.port.rest.05.b",
+      "value": "I pulled mine up higher."
+    },
+    {
+      "key": "city.port.rest.06.a",
+      "value": "Another button came off."
+    },
+    {
+      "key": "city.port.rest.06.b",
+      "value": "I am missing three now."
+    },
+    {
+      "key": "city.port.rest.07.a",
+      "value": "Your hat is inside out."
+    },
+    {
+      "key": "city.port.rest.07.b",
+      "value": "The seam digs in the other way."
+    },
+    {
+      "key": "city.port.rest.08.a",
+      "value": "My sleeves are finally dry."
+    },
+    {
+      "key": "city.port.rest.08.b",
+      "value": "Keep them off the railing."
+    },
+    {
+      "key": "city.port.work.01.a",
+      "value": "Your crates have gone dark."
+    },
+    {
+      "key": "city.port.work.01.b",
+      "value": "The bottoms are still intact."
+    },
+    {
+      "key": "city.port.work.02.a",
+      "value": "Was that sling replaced recently?"
+    },
+    {
+      "key": "city.port.work.02.b",
+      "value": "Earlier this week."
+    },
+    {
+      "key": "city.port.work.03.a",
+      "value": "The deck is wet again."
+    },
+    {
+      "key": "city.port.work.03.b",
+      "value": "It is wet over the side too."
+    },
+    {
+      "key": "city.port.work.04.a",
+      "value": "We can hear your crane from out at sea."
+    },
+    {
+      "key": "city.port.work.04.b",
+      "value": "That winch has hummed for ages."
+    },
+    {
+      "key": "city.port.work.05.a",
+      "value": "The crates are slippery today."
+    },
+    {
+      "key": "city.port.work.05.b",
+      "value": "Spray got them from above."
+    },
+    {
+      "key": "city.port.work.06.a",
+      "value": "Does that trolley wheel still rattle?"
+    },
+    {
+      "key": "city.port.work.06.b",
+      "value": "It does. The store is close enough."
+    },
+    {
+      "key": "city.port.work.07.a",
+      "value": "Your boom runs smoothly."
+    },
+    {
+      "key": "city.port.work.07.b",
+      "value": "The wind shifts it a little."
+    },
+    {
+      "key": "city.port.work.08.a",
+      "value": "Were you rolling much at the entrance?"
+    },
+    {
+      "key": "city.port.work.08.b",
+      "value": "It settled down by the pier."
+    },
+    {
+      "key": "city.port.greeting.01.a",
+      "value": "Welcome back, captain."
+    },
+    {
+      "key": "city.port.greeting.01.b",
+      "value": "Hello. A stiff wind today."
+    },
+    {
+      "key": "city.port.greeting.02.a",
+      "value": "Good to see you, captain."
+    },
+    {
+      "key": "city.port.greeting.02.b",
+      "value": "Good day to you too."
+    },
+    {
+      "key": "city.port.greeting.03.a",
+      "value": "Hello, lads."
+    },
+    {
+      "key": "city.port.greeting.03.b",
+      "value": "Hello. My hands are freezing."
+    },
+    {
+      "key": "city.port.greeting.04.a",
+      "value": "Welcome back. Catch much spray?"
+    },
+    {
+      "key": "city.port.greeting.04.b",
+      "value": "Enough. My sleeves are soaked."
+    },
+    {
+      "key": "city.port.greeting.05.a",
+      "value": "Hello. Is that a new jacket?"
+    },
+    {
+      "key": "city.port.greeting.05.b",
+      "value": "Patched the old one. Still good."
+    },
+    {
+      "key": "city.port.greeting.06.a",
+      "value": "Welcome back. How is it aboard?"
+    },
+    {
+      "key": "city.port.greeting.06.b",
+      "value": "Wet boots. Everything else is fine."
+    },
+    {
+      "key": "city.port.rest.09.a",
+      "value": "Got home yesterday and fell asleep."
+    },
+    {
+      "key": "city.port.rest.09.b",
+      "value": "I managed to heat up dinner first."
+    },
+    {
+      "key": "city.port.rest.10.a",
+      "value": "The sea seems quieter from shore."
+    },
+    {
+      "key": "city.port.rest.10.b",
+      "value": "You cannot hear it by the crane."
+    },
+    {
+      "key": "city.port.rest.11.a",
+      "value": "No more crates until tonight, I hope."
+    },
+    {
+      "key": "city.port.rest.11.b",
+      "value": "No more crates at all would suit me."
+    },
+    {
+      "key": "city.port.rest.12.a",
+      "value": "The same shift every day."
+    },
+    {
+      "key": "city.port.rest.12.b",
+      "value": "My back just starts aching earlier."
+    },
+    {
+      "key": "city.port.rest.13.a",
+      "value": "A beer after the shift?"
+    },
+    {
+      "key": "city.port.rest.13.b",
+      "value": "Just one. Back here tomorrow."
+    },
+    {
+      "key": "city.port.rest.14.a",
+      "value": "That beer was bitter yesterday."
+    },
+    {
+      "key": "city.port.rest.14.b",
+      "value": "You still had two mugs."
+    },
+    {
+      "key": "city.port.rest.15.a",
+      "value": "My wife put the bottle behind the cupboard."
+    },
+    {
+      "key": "city.port.rest.15.b",
+      "value": "Mine has stopped buying it."
+    },
+    {
+      "key": "city.port.rest.16.a",
+      "value": "My wife wants to go dancing."
+    },
+    {
+      "key": "city.port.rest.16.b",
+      "value": "I can barely get my boots off after work."
+    },
+    {
+      "key": "city.port.rest.17.a",
+      "value": "She is saving for a coat again."
+    },
+    {
+      "key": "city.port.rest.17.b",
+      "value": "Do not ask how much she still needs."
+    },
+    {
+      "key": "city.port.rest.18.a",
+      "value": "Did you buy her those flowers?"
+    },
+    {
+      "key": "city.port.rest.18.b",
+      "value": "I did. All the leaves fell off on the way."
+    },
+    {
+      "key": "city.port.rest.19.a",
+      "value": "Three days fixing a stool at home."
+    },
+    {
+      "key": "city.port.rest.19.b",
+      "value": "My door has squeaked for six months."
+    },
+    {
+      "key": "city.port.rest.20.a",
+      "value": "I would like one trip out to sea."
+    },
+    {
+      "key": "city.port.rest.20.b",
+      "value": "Get some boots without holes first."
+    },
+    {
+      "key": "city.port.rest.21.a",
+      "value": "Sick of pulling this lever all day."
+    },
+    {
+      "key": "city.port.rest.21.b",
+      "value": "I still hear that hum at home."
+    },
+    {
+      "key": "city.port.rest.22.a",
+      "value": "I said I would do nothing on my day off."
+    },
+    {
+      "key": "city.port.rest.22.b",
+      "value": "They will still send you out for bread."
+    },
+    {
+      "key": "city.port.rest.23.a",
+      "value": "The mugs at the bar are small again."
+    },
+    {
+      "key": "city.port.rest.23.b",
+      "value": "Plenty of foam over the rim, though."
+    },
+    {
+      "key": "city.port.rest.24.a",
+      "value": "Short waves past the pier today."
+    },
+    {
+      "key": "city.port.rest.24.b",
+      "value": "I will watch them from shore."
+    },
+    {
+      "key": "city.port.work.09.a",
+      "value": "At least you get a different shore."
+    },
+    {
+      "key": "city.port.work.09.b",
+      "value": "I cannot see it from the hold."
+    },
+    {
+      "key": "city.port.work.10.a",
+      "value": "Still on this crane?"
+    },
+    {
+      "key": "city.port.work.10.b",
+      "value": "Same lever. Different jacket."
+    },
+    {
+      "key": "city.port.work.11.a",
+      "value": "We will get beer when you come ashore."
+    },
+    {
+      "key": "city.port.work.11.b",
+      "value": "I still have the deck to scrub."
+    },
+    {
+      "key": "city.port.work.12.a",
+      "value": "My girlfriend changed her haircut again."
+    },
+    {
+      "key": "city.port.work.12.b",
+      "value": "Mine has started cutting hers short too."
+    },
+    {
+      "key": "city.port.work.13.a",
+      "value": "Was it rolling much out there?"
+    },
+    {
+      "key": "city.port.work.13.b",
+      "value": "Sloshed the tea out of my mug."
+    },
+    {
+      "key": "city.port.work.14.a",
+      "value": "I could use something strong after this trip."
+    },
+    {
+      "key": "city.port.work.14.b",
+      "value": "Have something to eat first."
+    },
+    {
+      "key": "city.port.work.15.a",
+      "value": "They want a shelf put up at home."
+    },
+    {
+      "key": "city.port.work.15.b",
+      "value": "Mine has been by the wall for three weeks."
+    },
+    {
+      "key": "city.port.work.16.a",
+      "value": "Will you get home today, captain?"
+    },
+    {
+      "key": "city.port.work.16.b",
+      "value": "Promised to be back for dinner. They will wait again."
+    },
+    {
+      "key": "city.port.farewell.01.a",
+      "value": "Until next time, captain."
+    },
+    {
+      "key": "city.port.farewell.01.b",
+      "value": "See you. Keep warm over there."
+    },
+    {
+      "key": "city.port.farewell.02.a",
+      "value": "Off we go, then. Goodbye."
+    },
+    {
+      "key": "city.port.farewell.02.b",
+      "value": "Take care, captain. See you."
+    },
+    {
+      "key": "city.port.farewell.03.a",
+      "value": "Take care, lads. Dry those boots."
+    },
+    {
+      "key": "city.port.farewell.03.b",
+      "value": "We will. You keep dry too."
+    },
+    {
+      "key": "city.port.farewell.04.a",
+      "value": "Bye. Do not stay here all night."
+    },
+    {
+      "key": "city.port.farewell.04.b",
+      "value": "Keep warm on that deck."
+    },
+    {
+      "key": "city.port.farewell.05.a",
+      "value": "See you. Zip up your jacket."
+    },
+    {
+      "key": "city.port.farewell.05.b",
+      "value": "Done. Do not lose your gloves."
+    },
+    {
+      "key": "city.port.farewell.06.a",
+      "value": "Bye. We will finish talking next time."
+    },
+    {
+      "key": "city.port.farewell.06.b",
+      "value": "All right. You know where to find me."
     }
   ]
 }

@@ -5,7 +5,7 @@ namespace BarPromenade
 {
     /// <summary>Five ordinary workers sampled from the port's absolute, seekable timeline.</summary>
     [DefaultExecutionOrder(200)]
-    public sealed class CityPortCrew : MonoBehaviour
+    public sealed partial class CityPortCrew : MonoBehaviour
     {
         private CityPortController port;
         private Transform captainDock, helmLeft, helmRight, deckhandDock;
@@ -94,6 +94,14 @@ namespace BarPromenade
                 var actor = library.Create(VillageResidentRole.StationWorker, host.transform);
                 actor.name = names[i];
                 actor.transform.localScale *= scales[i];
+                AlignWorkerModelWithPlacement(actor);
+                // As for the village's ordinary residents, the Default-layer
+                // body blocks the hero without adding physics-driven motion.
+                // The actor host already owns position and distance visibility.
+                var body = actor.gameObject.AddComponent<CapsuleCollider>();
+                body.center = Vector3.up * .94f;
+                body.height = 1.62f;
+                body.radius = .21f;
                 crew.workers[i] = actor;
                 crew.spines[i] = Require(actor.ModelRoot, "spine");
                 crew.clothing[i] = Array.FindAll(actor.GetComponentsInChildren<Renderer>(true),
@@ -113,19 +121,54 @@ namespace BarPromenade
             }
             crew.deckRoute = new Vector3[5];
             crew.shoreRoute = new Vector3[6];
+            crew.InitializeSocialLife();
             crew.initialized = true;
             crew.ApplyAt(controller.ElapsedSeconds);
+            host.AddComponent<CityPortConversationController>().Initialize(controller, crew);
             return crew;
+        }
+
+        private static void AlignWorkerModelWithPlacement(VillageResidentPresentation actor)
+        {
+            // The imported NpcHumanV2 body faces away from the placement
+            // wrapper's +Z. Measure the live shoulder/socket frame after its
+            // actual animation/import corrections, then align this port copy
+            // once. Work contacts and every route keep their existing +Z law.
+            actor.Apply(VillageResidentAction.Idle, 0f);
+            Transform right = Require(actor.ModelRoot, "upper_arm.R");
+            Transform left = Require(actor.ModelRoot, "upper_arm.L");
+            Transform mouth = Require(actor.ModelRoot, CityPedestrianHandProps.MouthSocketName);
+            Vector3 up = actor.transform.up;
+            Vector3 anatomicalRight = Vector3.ProjectOnPlane(right.position - left.position, up).normalized;
+            Vector3 anatomicalForward = Vector3.Cross(anatomicalRight, up).normalized;
+            if (anatomicalForward.sqrMagnitude < .9f || Vector3.Dot(anatomicalForward, mouth.up) < .85f)
+                throw new InvalidOperationException("Port worker shoulders and mouth disagree on the imported facing.");
+            float yaw = Vector3.SignedAngle(anatomicalForward, actor.transform.forward, up);
+            actor.ModelRoot.rotation = Quaternion.AngleAxis(yaw, up) * actor.ModelRoot.rotation;
+            Quaternion corrected = actor.ModelRoot.localRotation;
+            // The village generator keys bones only. Verify the sampled clip
+            // preserves this model-level correction before any sockets bind.
+            actor.Apply(VillageResidentAction.Idle, .25f);
+            if (Quaternion.Angle(actor.ModelRoot.localRotation, corrected) > .05f)
+                throw new InvalidOperationException("Port model facing was overwritten by a root animation track.");
+            anatomicalRight = Vector3.ProjectOnPlane(right.position - left.position, up).normalized;
+            if (Vector3.Dot(anatomicalRight, actor.transform.right) < .98f ||
+                Vector3.Dot(Vector3.Cross(anatomicalRight, up), actor.transform.forward) < .98f)
+                throw new InvalidOperationException("Port worker hands/facing did not align with its placement frame.");
         }
 
         private void LateUpdate()
         {
-            if (port != null) ApplyAt(port.ElapsedSeconds);
+            if (port != null && !UseManualClock) ApplyAt(port.ElapsedSeconds);
         }
 
         public void ApplyAt(double seconds)
+            => ApplyAt(seconds, UseManualClock ? LifeElapsedSeconds : SessionLifeSeconds);
+
+        public void ApplyAt(double seconds, double lifeSeconds)
         {
             if (port == null || !initialized) return;
+            BeginLifeSample(seconds, lifeSeconds);
             LastSnapshot = CityPortCycle.Sample(seconds);
             float t = (float)LastSnapshot.SecondsInStage;
             bool shipVisible = LastSnapshot.VesselPresent && port.VesselPresentationActive;
@@ -135,10 +178,11 @@ namespace BarPromenade
             if (shipVisible)
             {
                 Captain.transform.SetPositionAndRotation(captainDock.position, port.Vessel.rotation);
-                Captain.Apply(VillageResidentAction.Idle, (float)(seconds % 60d));
-                ApplyPlantedTorso(0, 3f, .8f, seconds);
+                Captain.Apply(VillageResidentAction.Idle, (float)(lifeSeconds % 60d));
+                ApplyPlantedTorso(0, 3f, .8f, lifeSeconds);
                 ApplyTaskLook(Captain, captainDock.position + port.Vessel.forward * 12f + port.Vessel.up * 1.4f);
-                CaptainHandsMatch = Captain.ApplyHandContacts(helmRight.position, helmLeft.position);
+                CaptainHandsMatch = Captain.ApplyHandContacts(helmRight.position, helmLeft.position,
+                    CaptainHandsWeight());
                 ApplyDeckhand(t);
             }
 
@@ -158,12 +202,14 @@ namespace BarPromenade
                 // A slight planted lean keeps the waist-height controls in
                 // reach even while the operator waits with both hands resting.
                 actor.Apply(VillageResidentAction.StationWork, Mathf.Lerp(1.02f, 1.4f, work));
-                ApplyPlantedTorso(i + 2, .6f, .9f, seconds + i * 2.1d);
+                ApplyPlantedTorso(i + 2, .6f, .9f, lifeSeconds + i * 2.1d);
                 ApplyTaskLook(actor, port.Hooks[i].position, work);
-                CraneHandsMatch &= actor.ApplyHandContacts(controlsRight[i].position, controlsLeft[i].position);
+                CraneHandsMatch &= actor.ApplyHandContacts(controlsRight[i].position, controlsLeft[i].position,
+                    CraneHandsWeight());
             }
             ApplyShoreWorker(t);
             }
+            ApplySocialLife();
             for (int i = 0; i < workers.Length; i++)
                 if (workers[i].gameObject.activeSelf) Tint(i);
         }
@@ -332,10 +378,19 @@ namespace BarPromenade
             }
             else
             {
-                float lane = port.Plan.Origin.z - 7.6f;
-                shoreRoute[1] = new Vector3(from.x, port.Plan.QuayTopY, lane);
-                shoreRoute[2] = new Vector3(to.x, port.Plan.QuayTopY, lane);
-                shoreRoute[3] = shoreRoute[4] = to;
+                // The empty tare occupies x=5.7125..7.7275, z=-7.94..-7.26.
+                // The former z=-7.6 cross-quay leg went through its middle.
+                // Pass south of the whole awning and step behind the trolley
+                // handle before turning, so the worker clears its rear corner.
+                float lane = port.Plan.Origin.z - 10.3f;
+                Vector3 fromClear = Vector3.Distance(from, TrolleyDock()) < .05f
+                    ? from - port.Trolley.forward : from;
+                Vector3 toClear = Vector3.Distance(to, TrolleyDock()) < .05f
+                    ? to - port.Trolley.forward : to;
+                shoreRoute[1] = fromClear;
+                shoreRoute[2] = new Vector3(fromClear.x, port.Plan.QuayTopY, lane);
+                shoreRoute[3] = new Vector3(toClear.x, port.Plan.QuayTopY, lane);
+                shoreRoute[4] = toClear;
             }
             shoreRoute[5] = to;
             Walk(ShoreWorker, shoreRoute, progress, duration, Vector3.up, ShoreFacing(from), ShoreFacing(to));

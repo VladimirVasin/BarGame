@@ -8,36 +8,29 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
 ## 2026-09-10 — Found-item screen, port and cannery
 
-- Found items reuse the refrigerator's `WorldItemInspectionTimeline` (now in
-  Rules) and shared `WorldItemInspectionPresenter`. `PlayerFactory` installs
-  `WorldItemFoundScreen`; generic `WorldItemPickup` replaces the scarf component.
-  Only confirmation credits the item; the first frame ignores the opening key
-  to prevent an accidental take. `Cancel` releases the modal lock even with full
-  pockets. Portrait, shelf and find share `InventoryItemPreviewPoses`; standing
-  turn hints remain absent under art §15a.
-- Focused EditMode checks: `WorldItemInspectionTimelineTests`,
-  `WorldItemPickupModelTests`, `HomeRefrigeratorItemCatalogTests`,
-  `InventoryPresentationTests`. `HomeRefrigeratorInteractionPlayModeTests` was
-  blocked by Home's seacoast graph during port integration, not by the refrigerator.
-- Port adds ImageGen maps, metre UVs, fittings, grounded crew and truck access
-  with a public bypass. Asphalt/markings share city assets. Import/terrain
-  checks caught buried rails; NPC links needed an orthogonal beach connector.
+- Found items share the refrigerator inspection timeline/presenter and inventory
+  poses. `WorldItemPickup` replaces the scarf component; confirmation credits
+  the item, ignores the opening key and cancel releases even with full pockets.
+  Standing hints stay absent under art §15a. `WorldItemInspectionTimelineTests`,
+  `WorldItemPickupModelTests`, `HomeRefrigeratorItemCatalogTests` and
+  `InventoryPresentationTests` passed; `HomeRefrigeratorInteractionPlayModeTests`
+  was blocked by Home's seacoast graph during port integration.
+- Port maps, metre UVs, fittings, grounded crew and truck access retain a public
+  bypass and city asphalt/markings. Checks caught buried rails and NPC links
+  needing an orthogonal beach connector.
   `build-city-port-3d-model.py --validate-only` and `AreaCaptureFixture.CityPort`
   passed grounding, access, custody and lifecycle checks; frames reviewed.
-  Documentation passed `python tools/check-docs.py` and `git diff --check`.
 - PlayMode warnings: unordered root lookup, runtime-only wind, direct GameView
   assembly lookup. Verified by `dotnet build BarPromenade.PlayModeTests.csproj`.
 - Cannery replaces the weighbridge: finite custody, unchanged shop stock,
-  deferred empty tare and free passages. Frontage, reservations, doors/bypass
-  keep transfers physical; distance gates preserve custody/collision/traffic.
-  Maps, fittings, aprons, poses and steam reveal the same cans filling, sealing
-  and packing. Rendered frames caught imported bases/reach.
-  Three crates retain geometry/crews. First receipt starts FIFO production
-  during unloading at twice speed; phases preserve order and the packer's walk.
-  Odd-count returns and receiver lean needed contact fixes.
+  deferred tare, free routes, physical handoffs and distance-gated presentation.
+  Maps, fittings, aprons, poses and steam show cans filling/sealing/packing.
+  Three crates feed FIFO production during unloading at twice speed.
+  Frames caught imported bases/reach; odd-count returns and receiver lean
+  needed contact fixes. Phases preserve order and the packer's walk.
   `AreaCaptureFixture.CityCannery`/`CityPort` passed overlap, custody, contacts,
   routes, traffic, distance, pause and reconstruction; frames/source reviewed.
-  Truck maps existed; missing front geometry and nonemissive lenses needed repair.
+  Existing truck maps needed front geometry and emissive lenses.
   `build-city-cannery-3d-model.py --only-part Truck` and
   `AreaCaptureFixture.CityCanneryTruckAppearance` passed; frames reviewed.
 - Working sound: eight mono `SfxWorld` voices add local reverb; Music drops
@@ -48,6 +41,13 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 - Village conifers by §6 row: five on the wall, nine behind the yard.
   Copse trunks block via the mask, not a collider: a graze zeroes planar speed.
   `Conifers_AreTheRoadsOwnTreesOnTheirOwnBand` passed.
+- Port life uses a pause-aware clock independent of held supply. Paired everyday
+  talk, breaks, body turns and reciprocal salutations retain task grips after
+  measured FBX-facing/reach fixes. Authored routes skirt tare; worker/cargo/cart
+  bodies block real hero motion, following custody without stale collision.
+  Levers and the warm lamp/shaft remain live. `AreaCaptureFixture.CityPortSocialLife`
+  passed; gesture, route and day/night frames reviewed.
+- Documentation: `python tools/check-docs.py` passed.
 
 ## 2026-09-09 — Village opening, journal and working port
 

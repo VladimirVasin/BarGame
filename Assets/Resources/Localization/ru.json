@@ -2507,6 +2507,422 @@
     {
       "key": "lastroute.ride.radio",
       "value": "Что за дерьмо у нас играет? Композитор - полная бездарность"
+    },
+    {
+      "key": "city.port.rest.01.a",
+      "value": "Рукав опять цепляется за ограду."
+    },
+    {
+      "key": "city.port.rest.01.b",
+      "value": "Подверни. У меня так же было."
+    },
+    {
+      "key": "city.port.rest.02.a",
+      "value": "Эти перчатки уже каменные."
+    },
+    {
+      "key": "city.port.rest.02.b",
+      "value": "У батареи к вечеру отойдут."
+    },
+    {
+      "key": "city.port.rest.03.a",
+      "value": "В сапоге что-то скрипит."
+    },
+    {
+      "key": "city.port.rest.03.b",
+      "value": "У меня оба скрипят."
+    },
+    {
+      "key": "city.port.rest.04.a",
+      "value": "У тебя ещё табак остался?"
+    },
+    {
+      "key": "city.port.rest.04.b",
+      "value": "До вечера хватит."
+    },
+    {
+      "key": "city.port.rest.05.a",
+      "value": "Ветер под воротник лезет."
+    },
+    {
+      "key": "city.port.rest.05.b",
+      "value": "Я свой повыше поднял."
+    },
+    {
+      "key": "city.port.rest.06.a",
+      "value": "Пуговица опять оторвалась."
+    },
+    {
+      "key": "city.port.rest.06.b",
+      "value": "У меня уже третьей нет."
+    },
+    {
+      "key": "city.port.rest.07.a",
+      "value": "У тебя шапка наизнанку."
+    },
+    {
+      "key": "city.port.rest.07.b",
+      "value": "Так шов не давит."
+    },
+    {
+      "key": "city.port.rest.08.a",
+      "value": "Наконец рукава просохли."
+    },
+    {
+      "key": "city.port.rest.08.b",
+      "value": "Не клади их на перила."
+    },
+    {
+      "key": "city.port.work.01.a",
+      "value": "У вас ящики совсем потемнели."
+    },
+    {
+      "key": "city.port.work.01.b",
+      "value": "Дно ещё целое."
+    },
+    {
+      "key": "city.port.work.02.a",
+      "value": "Эту стропу недавно меняли?"
+    },
+    {
+      "key": "city.port.work.02.b",
+      "value": "В начале недели."
+    },
+    {
+      "key": "city.port.work.03.a",
+      "value": "На палубе опять мокро."
+    },
+    {
+      "key": "city.port.work.03.b",
+      "value": "За бортом тоже не сухо."
+    },
+    {
+      "key": "city.port.work.04.a",
+      "value": "Твой кран слышно ещё с воды."
+    },
+    {
+      "key": "city.port.work.04.b",
+      "value": "Лебёдка давно так гудит."
+    },
+    {
+      "key": "city.port.work.05.a",
+      "value": "Ящики сегодня скользкие."
+    },
+    {
+      "key": "city.port.work.05.b",
+      "value": "Сверху брызгами достало."
+    },
+    {
+      "key": "city.port.work.06.a",
+      "value": "Колесо у тележки ещё стучит?"
+    },
+    {
+      "key": "city.port.work.06.b",
+      "value": "Стучит. До склада терпимо."
+    },
+    {
+      "key": "city.port.work.07.a",
+      "value": "Стрела у тебя ровно идёт."
+    },
+    {
+      "key": "city.port.work.07.b",
+      "value": "Только ветер чуть водит."
+    },
+    {
+      "key": "city.port.work.08.a",
+      "value": "Долго у входа качало?"
+    },
+    {
+      "key": "city.port.work.08.b",
+      "value": "У мола уже ровно."
+    },
+    {
+      "key": "city.port.greeting.01.a",
+      "value": "Капитан, с приходом."
+    },
+    {
+      "key": "city.port.greeting.01.b",
+      "value": "Здорово. Ветер сегодня крепкий."
+    },
+    {
+      "key": "city.port.greeting.02.a",
+      "value": "Капитан, рады видеть."
+    },
+    {
+      "key": "city.port.greeting.02.b",
+      "value": "И вам доброго дня."
+    },
+    {
+      "key": "city.port.greeting.03.a",
+      "value": "Здорово, ребята."
+    },
+    {
+      "key": "city.port.greeting.03.b",
+      "value": "Здорово. Руки уже застыли."
+    },
+    {
+      "key": "city.port.greeting.04.a",
+      "value": "С приходом. Много брызг поймали?"
+    },
+    {
+      "key": "city.port.greeting.04.b",
+      "value": "Хватило. Рукава насквозь."
+    },
+    {
+      "key": "city.port.greeting.05.a",
+      "value": "Здорово. Куртку новую взял?"
+    },
+    {
+      "key": "city.port.greeting.05.b",
+      "value": "Старую зашил. Ещё походит."
+    },
+    {
+      "key": "city.port.greeting.06.a",
+      "value": "С возвращением. Как там на борту?"
+    },
+    {
+      "key": "city.port.greeting.06.b",
+      "value": "Сапоги мокрые. Остальное цело."
+    },
+    {
+      "key": "city.port.rest.09.a",
+      "value": "Вчера до дома дошёл и сразу уснул."
+    },
+    {
+      "key": "city.port.rest.09.b",
+      "value": "Я ещё ужин разогреть успел."
+    },
+    {
+      "key": "city.port.rest.10.a",
+      "value": "С берега море потише кажется."
+    },
+    {
+      "key": "city.port.rest.10.b",
+      "value": "У крана и его не слышно."
+    },
+    {
+      "key": "city.port.rest.11.a",
+      "value": "До вечера бы без новых ящиков."
+    },
+    {
+      "key": "city.port.rest.11.b",
+      "value": "Мне бы вообще без ящиков."
+    },
+    {
+      "key": "city.port.rest.12.a",
+      "value": "Каждый день одна и та же смена."
+    },
+    {
+      "key": "city.port.rest.12.b",
+      "value": "Только спина раньше ныть начинает."
+    },
+    {
+      "key": "city.port.rest.13.a",
+      "value": "После смены по пиву?"
+    },
+    {
+      "key": "city.port.rest.13.b",
+      "value": "По одному. Завтра опять сюда."
+    },
+    {
+      "key": "city.port.rest.14.a",
+      "value": "Вчерашнее пиво горькое было."
+    },
+    {
+      "key": "city.port.rest.14.b",
+      "value": "Ты всё равно две кружки выпил."
+    },
+    {
+      "key": "city.port.rest.15.a",
+      "value": "Жена бутылку за шкаф переставила."
+    },
+    {
+      "key": "city.port.rest.15.b",
+      "value": "Моя теперь вообще не покупает."
+    },
+    {
+      "key": "city.port.rest.16.a",
+      "value": "Жена на танцы зовёт."
+    },
+    {
+      "key": "city.port.rest.16.b",
+      "value": "Я после смены еле сапоги снимаю."
+    },
+    {
+      "key": "city.port.rest.17.a",
+      "value": "Она опять на пальто копит."
+    },
+    {
+      "key": "city.port.rest.17.b",
+      "value": "Не спрашивай, сколько осталось."
+    },
+    {
+      "key": "city.port.rest.18.a",
+      "value": "Ты своей цветы-то купил?"
+    },
+    {
+      "key": "city.port.rest.18.b",
+      "value": "Купил. Пока нёс, все листья облетели."
+    },
+    {
+      "key": "city.port.rest.19.a",
+      "value": "Дома табурет третий день чиню."
+    },
+    {
+      "key": "city.port.rest.19.b",
+      "value": "У меня дверь так полгода скрипит."
+    },
+    {
+      "key": "city.port.rest.20.a",
+      "value": "Сходил бы раз в море."
+    },
+    {
+      "key": "city.port.rest.20.b",
+      "value": "Сначала сапоги без дыр купи."
+    },
+    {
+      "key": "city.port.rest.21.a",
+      "value": "Надоело этот рычаг весь день тянуть."
+    },
+    {
+      "key": "city.port.rest.21.b",
+      "value": "А мне этот гул ещё дома слышно."
+    },
+    {
+      "key": "city.port.rest.22.a",
+      "value": "В выходной обещал ничего не делать."
+    },
+    {
+      "key": "city.port.rest.22.b",
+      "value": "За хлебом всё равно пошлют."
+    },
+    {
+      "key": "city.port.rest.23.a",
+      "value": "В баре опять кружки маленькие."
+    },
+    {
+      "key": "city.port.rest.23.b",
+      "value": "Зато пена через край."
+    },
+    {
+      "key": "city.port.rest.24.a",
+      "value": "За молом сегодня волна короткая."
+    },
+    {
+      "key": "city.port.rest.24.b",
+      "value": "С берега на неё и посмотрю."
+    },
+    {
+      "key": "city.port.work.09.a",
+      "value": "Вам хоть берег каждый раз другой."
+    },
+    {
+      "key": "city.port.work.09.b",
+      "value": "Я из трюма его не вижу."
+    },
+    {
+      "key": "city.port.work.10.a",
+      "value": "Ты всё у этого крана?"
+    },
+    {
+      "key": "city.port.work.10.b",
+      "value": "Рычаг тот же. Куртка другая."
+    },
+    {
+      "key": "city.port.work.11.a",
+      "value": "На берег сойдёшь — пива возьмём."
+    },
+    {
+      "key": "city.port.work.11.b",
+      "value": "Мне ещё палубу драить."
+    },
+    {
+      "key": "city.port.work.12.a",
+      "value": "Девушка опять стрижку сменила."
+    },
+    {
+      "key": "city.port.work.12.b",
+      "value": "Моя теперь тоже коротко стрижётся."
+    },
+    {
+      "key": "city.port.work.13.a",
+      "value": "В море сильно качало?"
+    },
+    {
+      "key": "city.port.work.13.b",
+      "value": "Чай из кружки выплеснуло."
+    },
+    {
+      "key": "city.port.work.14.a",
+      "value": "После рейса мне бы чего покрепче."
+    },
+    {
+      "key": "city.port.work.14.b",
+      "value": "Сначала хоть поешь."
+    },
+    {
+      "key": "city.port.work.15.a",
+      "value": "Дома полку просили прибить."
+    },
+    {
+      "key": "city.port.work.15.b",
+      "value": "У меня такая третью неделю у стены."
+    },
+    {
+      "key": "city.port.work.16.a",
+      "value": "Капитан, домой сегодня успеешь?"
+    },
+    {
+      "key": "city.port.work.16.b",
+      "value": "К ужину обещал. Опять будут ждать."
+    },
+    {
+      "key": "city.port.farewell.01.a",
+      "value": "Капитан, до следующего захода."
+    },
+    {
+      "key": "city.port.farewell.01.b",
+      "value": "До встречи. Не мёрзните там."
+    },
+    {
+      "key": "city.port.farewell.02.a",
+      "value": "Ну, мы пошли. Бывайте."
+    },
+    {
+      "key": "city.port.farewell.02.b",
+      "value": "Счастливо, капитан. До встречи."
+    },
+    {
+      "key": "city.port.farewell.03.a",
+      "value": "Счастливо, ребята. Сапоги просушите."
+    },
+    {
+      "key": "city.port.farewell.03.b",
+      "value": "Просушим. И вам не промокнуть."
+    },
+    {
+      "key": "city.port.farewell.04.a",
+      "value": "Пока. Не сиди тут до ночи."
+    },
+    {
+      "key": "city.port.farewell.04.b",
+      "value": "И ты на палубе не мёрзни."
+    },
+    {
+      "key": "city.port.farewell.05.a",
+      "value": "До встречи. Куртку застегни."
+    },
+    {
+      "key": "city.port.farewell.05.b",
+      "value": "Застегнул. Ты перчатки не потеряй."
+    },
+    {
+      "key": "city.port.farewell.06.a",
+      "value": "Бывай. В следующий раз договорим."
+    },
+    {
+      "key": "city.port.farewell.06.b",
+      "value": "Давай. Здесь найдёшь."
     }
   ]
 }
