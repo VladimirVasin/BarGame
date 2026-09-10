@@ -3211,6 +3211,102 @@
     {
       "key": "city.port.access_wait",
       "value": "Жду тебя, дружище"
+    },
+    {
+      "key": "city.port.foreman.01.a",
+      "value": "Опять у тебя трос скрипит."
+    },
+    {
+      "key": "city.port.foreman.01.b",
+      "value": "С утра смазал. Это блок."
+    },
+    {
+      "key": "city.port.foreman.02.a",
+      "value": "От этого ветра покоя нет."
+    },
+    {
+      "key": "city.port.foreman.02.b",
+      "value": "Никуда он не денется."
+    },
+    {
+      "key": "city.port.foreman.03.a",
+      "value": "Ты эту тележку до завтра катать будешь?"
+    },
+    {
+      "key": "city.port.foreman.03.b",
+      "value": "Колесо заедает."
+    },
+    {
+      "key": "city.port.foreman.04.a",
+      "value": "Всё вам повторять надо."
+    },
+    {
+      "key": "city.port.foreman.04.b",
+      "value": "Слышали уже."
+    },
+    {
+      "key": "city.port.foreman.05.a",
+      "value": "Перчатки опять мокрые?"
+    },
+    {
+      "key": "city.port.foreman.05.b",
+      "value": "Вторая пара такая же."
+    },
+    {
+      "key": "city.port.foreman.06.a",
+      "value": "Одни ящики, а спина уже ноет."
+    },
+    {
+      "key": "city.port.foreman.06.b",
+      "value": "У меня ещё руки."
+    },
+    {
+      "key": "city.port.foreman.07.a",
+      "value": "Только сел, уже со всех сторон грохот."
+    },
+    {
+      "key": "city.port.foreman.07.b",
+      "value": "Здесь кран рядом."
+    },
+    {
+      "key": "city.port.foreman.08.a",
+      "value": "Из-за вас чай опять остыл."
+    },
+    {
+      "key": "city.port.foreman.08.b",
+      "value": "Да он у всех холодный."
+    },
+    {
+      "key": "city.port.foreman.09.a",
+      "value": "Опять одни и те же ящики."
+    },
+    {
+      "key": "city.port.foreman.09.b",
+      "value": "Какие привезли."
+    },
+    {
+      "key": "city.port.foreman.offer",
+      "value": "Подработать хочешь?"
+    },
+    {
+      "key": "city.port.foreman.accept",
+      "value": "Тогда зайди позже."
+    },
+    {
+      "key": "city.port.foreman.decline",
+      "value": "Ну, как знаешь."
+    },
+    {
+      "key": "interaction.talk_port_foreman",
+      "value": "Поговорить с бригадиром"
+    },
+    {
+      "key": "interaction.port_foreman_yes",
+      "value": "Хочу"
+    },
+    {
+      "key": "interaction.port_foreman_no",
+      "value": "Не сейчас"
     }
   ]
 }

@@ -25,6 +25,10 @@ namespace BarPromenade
         public Rect SeaBounds => RectAt(-30f, 0f, 60f, 90f);
         public Rect VesselExclusion => RectAt(-26f, 0f, 59f, 80f);
         public Vector3 WarehouseDropLocal => new Vector3(0f, DeckHeight, -17.5f);
+        // The stool sits against the front wall, east of the wash grate.
+        // Look at the initial trolley parking place even after it moves.
+        public Vector3 ForemanSeatWorld => World(new Vector3(-3.6f, DeckHeight, -11.45f));
+        public Quaternion ForemanFacing => Quaternion.LookRotation(World(LandingLocal(0)) - ForemanSeatWorld, Vector3.up);
         public Vector3 RavenPerch => World(new Vector3(-23f, DeckHeight, 30.9f));
         public Vector3 RavenCompanion => World(new Vector3(-23f, DeckHeight, 27.1f));
 

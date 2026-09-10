@@ -12,12 +12,12 @@ namespace BarPromenade
             CityPortCycle.IdleDurationSeconds - CityPortCycle.DepartDurationSeconds;
         public const float HornTailSeconds = 4.6f;
         private CityPortController port;
-        private Transform engineAnchor, hornAnchor;
+        private Transform engineAnchor, hornAnchor, refrigerationAnchor;
         private readonly Transform[] driveAnchors = new Transform[2];
-        private readonly AudioSource[] loops = new AudioSource[4];
-        private readonly AudioClip[] clips = new AudioClip[4];
-        private readonly bool[] started = new bool[4];
-        private readonly float[] gain = new float[4];
+        private readonly AudioSource[] loops = new AudioSource[5];
+        private readonly AudioClip[] clips = new AudioClip[5];
+        private readonly bool[] started = new bool[5];
+        private readonly float[] gain = new float[5];
         private AudioSource contact, horn;
         private AudioClip hornClip;
         private AudioEchoFilter hornEcho;
@@ -30,6 +30,7 @@ namespace BarPromenade
         public AudioSource FirstCraneSource => loops[1];
         public AudioSource SecondCraneSource => loops[2];
         public AudioSource TrolleySource => loops[3];
+        public AudioSource RefrigerationSource => loops[4];
         public AudioSource ContactSource => contact;
         public AudioSource HornSource => horn;
         public int ContactsPlayed { get; private set; }
@@ -46,18 +47,26 @@ namespace BarPromenade
             sound.port = controller;
             sound.engineAnchor = CityPortAssetProvider.FindPart(controller.Vessel.gameObject, "ANCHOR_Engine");
             sound.hornAnchor = CityPortAssetProvider.FindPart(controller.Vessel.gameObject, "ANCHOR_Horn");
+            sound.refrigerationAnchor = CityPortAssetProvider.FindPart(controller.Dock.gameObject,
+                "ANCHOR_WarehouseRefrigeration");
             for (int i = 0; i < sound.driveAnchors.Length; i++)
                 sound.driveAnchors[i] = CityPortAssetProvider.FindPart(controller.CraneBases[i].gameObject, "ANCHOR_HoistFeed");
             sound.clips[0] = CityOffshoreBoatSynthesis.CreateEngineClip(seed ^ 0x504F5254, 0);
             sound.clips[1] = CitySourceSoundSynthesis.CreateRuntimeClip(CitySourceSoundId.IndustrialWeighbridgeMechanismLoop, 0);
             sound.clips[2] = CitySourceSoundSynthesis.CreateRuntimeClip(CitySourceSoundId.IndustrialWeighbridgeMechanismLoop, 2);
             sound.clips[3] = CitySourceSoundSynthesis.CreateRuntimeClip(CitySourceSoundId.DryingYardCarpetStrike, 1);
-            string[] names = { "Trawler Diesel", "West Crane Drive", "East Crane Drive", "Cargo Trolley Wheels" };
+            float[] fanSamples = StairwellSoundscapeSynthesis.GenerateVentilationLoopSamples();
+            sound.clips[4] = AudioClip.Create("Port cold-store ventilation", fanSamples.Length, 1,
+                StairwellSoundscapeSynthesis.SampleRate, false);
+            sound.clips[4].SetData(fanSamples, 0);
+            string[] names = { "Trawler Diesel", "West Crane Drive", "East Crane Drive", "Cargo Trolley Wheels",
+                "Warehouse refrigeration fan" };
             for (int i = 0; i < sound.loops.Length; i++)
             {
                 sound.loops[i] = sound.CreateVoice(names[i], true,
-                    i == 0 ? 4000f : i == 3 ? 4200f : 6500f);
-                int clipIndex = i == 0 ? 0 : i == 3 ? 2 : 1;
+                    i == 4 ? 1700f : i == 0 ? 4000f : i == 3 ? 4200f : 6500f,
+                    i == 4, i == 4 ? 14f : 32f);
+                int clipIndex = i == 4 ? 4 : i == 0 ? 0 : i == 3 ? 2 : 1;
                 sound.loops[i].clip = sound.clips[clipIndex];
                 sound.loops[i].pitch = i == 3 ? .62f : i == 2 ? .92f : 1f;
             }
@@ -156,6 +165,9 @@ namespace BarPromenade
                 SetLoop(i + 1, now.ActiveCraneIndex == i && craneMoves ? .24f * movement : 0f, delta);
             bool cartMoves = now.CargoStage == CityPortCargoStage.Trolley || now.CargoStage == CityPortCargoStage.Return;
             SetLoop(3, cartMoves ? .16f * movement : 0f, delta);
+            // Cold storage remains working between deliveries. Its quiet fan
+            // belongs to the ceiling unit, with the same pause/distance owner.
+            SetLoop(4, .12f, delta);
         }
 
         private void SyncAnchors()
@@ -164,6 +176,7 @@ namespace BarPromenade
             horn.transform.position = hornAnchor.position;
             for (int i = 0; i < 2; i++) loops[i + 1].transform.position = driveAnchors[i].position;
             loops[3].transform.position = port.Trolley.position + Vector3.up * .2f;
+            loops[4].transform.position = refrigerationAnchor.position;
         }
 
         private void AdvanceHorn(double seconds, CityPortCycleSnapshot now, bool running, bool continuous, double elapsed)
@@ -262,7 +275,7 @@ namespace BarPromenade
             }
         }
 
-        private AudioSource CreateVoice(string name, bool loop, float cutoff)
+        private AudioSource CreateVoice(string name, bool loop, float cutoff, bool interior = false, float radius = 32f)
         {
             var host = new GameObject(name);
             host.transform.SetParent(transform, false);
@@ -270,7 +283,7 @@ namespace BarPromenade
             source.playOnAwake = false;
             source.loop = loop;
             source.volume = 0f;
-            CityWorkAudio.Configure(source, false, cutoff, 32f);
+            CityWorkAudio.Configure(source, interior, cutoff, radius);
             return source;
         }
 

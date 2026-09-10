@@ -1243,29 +1243,30 @@ The vertical slice contains:
   Cargo passes behind the store baffle; roller leaf/rails move together.
   Bumpers attach to outer jambs, clear of the opening.
   Sway <`9 cm` settles before lowering; empty trolley/cranes return.
-  Five StationWorker rigs: captain/deckhand/two operators/docker. Pause-aware
-  breath/weight/gaze continue. Three shore workers rest below the existing tare
-  canopy, return along clear southern lanes before duty. City/weather complaints:
-  paired bubbles/blips, no-repeat rounds retaining absent pairs. Rest replies
-  finish before greetings. Free turns retain grips; near-berth greetings/staggered replies,
-  farewells fit earshot/departure. No restore replay. Free Walk→hero Run preserves
-  routes/work grips. Driver speaks only to docker, including salutations.
-  Crane levers pivot with their grips. Shore routes skirt tare/cart; worker capsules stop the hero passing through. Tare uses
-  its mesh collider; cage, trolley and finite fish-unit bodies follow their
-  visible/custody owners. NPCs follow timelines.
+  Five StationWorkers: captain/deckhand/operators/docker; shore trio rests under
+  canopy, returns by clear south lanes. Paired speech retains absent/no-repeat
+  rounds; rest ends before greetings, staggered farewells fit earshot, no replay.
+  Pause-aware breath/weight/gaze; turns/Walk→Run retain grips, levers follow hands.
+  Driver talks only to docker. Tare/cart avoided; people/cargo physical, custody-owned.
+  `CityPortForeman`: against store wall facing initial cart spot, existing quay light;
+  left-palm carrot grip/three bites→stem into pail→
+  left-pocket reload. Speech keeps bite/clock, stops chewing/lowers left, right shakes.
+  Shared shore talk `60–100 s`, no-repeat; `E` waits pair/choices. No pickup/work/pay/
+  quest; pause/distance owned, exit cancels.
   Solid caissons reach `20 m` seaward and `-3.4 m` below sea level.
-  `CityPortAccessPlan`/`PortAccessLayout.json`: `6 m` road/regrade/L-yard for the
-  `6.481 x 2.4 m` closed truck; joined west ramp/yard masks and a `2 m` bypass with exact
-  mitered boundaries and one body-radius clearance. One crossing: hero diagonal
-  branch; NPC straight spur/orthogonal beach links. Fences separate cargo;
-  coast rails yield to paving. Offshore boats avoid the `3.4 m` basin.
-  `tools/build-city-port-3d-model.py`/`CityPortAssetProvider` own nine metre FBXs.
-  Twelve albedos share muted materials/metre UVs; thin hardware stays flat.
-  Asphalt shares city texture, `12 m` phase and wetness; the seven worn crossing
-  stripes reuse `CityRoadMarkingAlbedo`. Warm lights serve quay/store/canopy;
-  vessel searchlight/fog shaft light deck/near water with physical shadows,
-  day floor/distance gate. `CityPortWater` owns the wake; `CityPortSound` owns
-  engine/crane/wheel/contact and arrival/departure horn with a fading echo.
+  `CityPortAccessPlan`/`PortAccessLayout.json`: `6 m` road/regrade/L-yard,
+  `6.481 x 2.4 m` truck; joined ramp/yard masks, `2 m` mitered bypass with one
+  body-radius clearance. One crossing: hero diagonal, NPC straight/orthogonal
+  beach links. Cargo fences/coast rails yield to paving; boats avoid `3.4 m` basin.
+  Asphalt: city texture/`12 m` phase/wetness; seven crossing stripes use
+  `CityRoadMarkingAlbedo`. Store panels/guards, joists and wired guarded lamps
+  surround the unchanged baffle/east stock. West-wall rack/bench,
+  lids/inserts/empty tare/tools/gloves/squeegee have physical furniture bounds;
+  flush drains/wheel rubs leave handling lanes clear. One two-fan evaporator
+  feeds outside condensers/drain. Three warm shadowed spots
+  join quay/store/canopy lights; all retain the two-thirds day floor/distance gate.
+  Vessel searchlight/shaft lights deck/water with shadows. `CityPortWater` owns
+  wake; `CityPortSound` owns machinery/contact, horn/echo and a local cold-store fan.
   Pause stops time/audio; disable/destroy clears people/voices/wake.
   Small alternative blueprints without room retain their nonoperational mol;
 - Weighbridge→cannery: `8 x 14 m` hall on `18 x 18 m`, bay/

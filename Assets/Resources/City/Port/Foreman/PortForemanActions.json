@@ -1,0 +1,123 @@
+{
+  "generator": "build-city-port-foreman-3d-model.py",
+  "version": "1.3.0",
+  "anatomy_standard": "NpcHumanV2",
+  "bone_count": 31,
+  "fps": 24,
+  "root_motion": false,
+  "clips": [
+    {
+      "name": "SeatedIdle",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "SeatedGrumble",
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    {
+      "name": "CarrotBite1",
+      "duration_seconds": 4.0,
+      "loop": false
+    },
+    {
+      "name": "CarrotBite2",
+      "duration_seconds": 4.0,
+      "loop": false
+    },
+    {
+      "name": "CarrotBite3",
+      "duration_seconds": 4.0,
+      "loop": false
+    },
+    {
+      "name": "CarrotDiscard",
+      "duration_seconds": 2.4,
+      "loop": false
+    },
+    {
+      "name": "CarrotTake",
+      "duration_seconds": 2.4,
+      "loop": false
+    }
+  ],
+  "bite_contract": {
+    "raise": 0.4,
+    "contact": 1.3,
+    "commit": 1.65,
+    "lowered": 2.5,
+    "chew_end": 3.3
+  },
+  "discard_contract": {
+    "release": 1.0,
+    "inside_bin": 1.65,
+    "duration": 2.4
+  },
+  "take_contract": {
+    "pickup": 1.2,
+    "withdrawn": 2.0,
+    "duration": 2.4
+  },
+  "carrot_tip_anchor": "ANCHOR_ForemanCarrotTip",
+  "mouth_contact_anchor": "ANCHOR_ForemanBiteMouth",
+  "validation": {
+    "max_sole_error_m": 5e-07,
+    "max_seat_error_m": 1e-07,
+    "right_hand_height_range_m": 0.3309072,
+    "carrot_mouth_max_error_m": 4e-07,
+    "carrot_anchor_max_error_m": 4e-07,
+    "carrot_speech_min_distance_m": 0.6284986,
+    "chewing_lower_lip_travel_m": 0.0060296,
+    "pocket_pickup_error_m": 2e-07,
+    "throw_release_error_m": 2e-07,
+    "throw_release_rotation_error_rad": 0.0,
+    "neutral_endpoint_error": 2e-07,
+    "throw_mesh_transfer_error_m": 3e-07,
+    "pocket_body_outside_m": 0,
+    "thrown_stem_radius_m": 0.0858936,
+    "palm_grip": {
+      "stem_palm_signed_m": 0.054657,
+      "thumb_stem_gap_m": 0.0043964,
+      "fingers_stem_gap_m": 0.0007454,
+      "palm_stem_gap_m": 0.0030489
+    },
+    "seated_foot_bounds": {
+      "L": {
+        "bounds_min": [
+          0.286328,
+          -0.548163,
+          0.0
+        ],
+        "bounds_max": [
+          0.490483,
+          -0.235578,
+          0.178761
+        ]
+      },
+      "R": {
+        "bounds_min": [
+          -0.503216,
+          -0.590165,
+          -0.0
+        ],
+        "bounds_max": [
+          -0.29824,
+          -0.274455,
+          0.17876
+        ]
+      }
+    },
+    "posed_bounds_min": [
+      -0.56137,
+      -0.590165,
+      -0.0
+    ],
+    "posed_bounds_max": [
+      0.968827,
+      0.322,
+      1.45029
+    ],
+    "curve_signature": "1cfde14826226aba141bb58edc2b9447b32bda6218d394afae178c1e865d97c0"
+  }
+}

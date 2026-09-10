@@ -105,6 +105,38 @@
           ]
         },
         {
+          "name": "ANCHOR_WarehouseLightA",
+          "position": [
+            0.0,
+            4.58,
+            -13.7
+          ]
+        },
+        {
+          "name": "ANCHOR_WarehouseLightB",
+          "position": [
+            0.8,
+            4.58,
+            -17.45
+          ]
+        },
+        {
+          "name": "ANCHOR_WarehouseLightC",
+          "position": [
+            -6.6,
+            4.58,
+            -15.25
+          ]
+        },
+        {
+          "name": "ANCHOR_WarehouseRefrigeration",
+          "position": [
+            3.12,
+            4.02,
+            -17.1
+          ]
+        },
+        {
           "name": "ANCHOR_WorkLightA",
           "position": [
             -4.0,
@@ -129,6 +161,62 @@
           ]
         },
         {
+          "name": "DockWarehouseBench",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockWarehouseFloorWear",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockWarehousePanels",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockWarehouseRefrigeration",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockWarehouseStorage",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockWarehouseStructure",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "DockWarehouseTools",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
           "name": "MOVE_EastLoadingDoor",
           "position": [
             4.06,
@@ -143,10 +231,34 @@
             1.5,
             -14.0
           ]
+        },
+        {
+          "name": "WarehouseLampHousingA",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "WarehouseLampHousingB",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "WarehouseLampHousingC",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
         }
       ],
-      "triangles": 15504,
-      "geometry_signature": "ac5279a44d6dbefdee923471fbe0f966489cc81ce9c0fe7231d86bb9fe347155"
+      "triangles": 24572,
+      "geometry_signature": "f76cb4fd533c2337b188b4a8411c47107013c42bce1782aa3820a02c49815066"
     },
     {
       "name": "Trawler",

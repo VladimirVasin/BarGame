@@ -6,6 +6,35 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
+## 2026-09-11 — Dock cold store and shift foreman
+
+- Added shared-surface Blender liners/guards, joists/wiring, guarded lamps,
+  connected refrigeration/drainage, shallow rack/bench/tools and wheel wear.
+  West-wall furniture preserves the baffle, finite east stock and cart turns.
+  Warm shadowed lamps retain the day floor; the anchored fan shares existing
+  pause, distance and disposal ownership.
+- `build-city-port-3d-model.py --only-part Dock --no-preview` passed warehouse
+  validation and repeated geometry determinism. `AreaCaptureFixture.CityPortWarehouseInterior`
+  passed day/night lighting, loaded storage, handling clearances and fan lifecycle;
+  frames reviewed. Both bibles and current-world/index/README reflect the room.
+- Added the corpulent seated foreman: three carrot bites, stem into the stool-side
+  pail, left-pocket reload. Speech preserves bite/clock, stops chewing, lowers the
+  left hand and shakes the right. Shore remarks share the channel;
+  the E offer/choice placeholder
+  waits for the current pair, cancels on leaving and assigns no work or pay.
+  Story §6 records the bounded new role/first-pool/interaction exception.
+  Sits against the store wall, facing the initial cart spot under the existing quay light.
+  `build-city-port-foreman-3d-model.py`
+  passed palm/contact/stage validation; `AreaCaptureFixture.CityPortForeman` passed
+  snack transfers, worker approach/return clearances, wall/trolley alignment, speech ordering
+  and choice cancellation. Reviewed day/night frames show the wall placement,
+  readable face/carrot and physical mouth/pail/pocket handoffs.
+  Corrected the carrot's centreline attachment to a palmar finger/thumb grip;
+  the arm solve compensates its offset to keep all existing food contacts.
+  The same capture checks the imported palm/prop side and opposed thumb;
+  its close hand frame was reviewed.
+  `python tools/check-docs.py` passed the canon references and byte budgets.
+
 ## 2026-09-10 — Found-item screen, port and cannery
 
 - Finds: refrigerator inspection/inventory poses. `WorldItemPickup`

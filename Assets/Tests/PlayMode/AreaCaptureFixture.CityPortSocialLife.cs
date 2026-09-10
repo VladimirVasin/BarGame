@@ -430,7 +430,7 @@ namespace BarPromenade.Tests.PlayMode
             for (int first = 0; first < CityPortConversationCatalog.RoleCount; first++)
             for (int second = first + 1; second < CityPortConversationCatalog.RoleCount; second++)
                 Assert.That(pairBits.Add(CityPortConversationCatalog.PairBit(first, second)), Is.True,
-                    "The sixth role must not alias an existing speech pair.");
+                    "Every conversation role needs an unambiguous pair bit.");
             foreach (CityPortConversationKind kind in Enum.GetValues(typeof(CityPortConversationKind)))
             for (int variant = 0; variant < CityPortConversationCatalog.Count(kind); variant++)
             {
@@ -659,7 +659,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void ValidatePortConversationRounds()
         {
-            const int allRoles = (1 << CityPortConversationCatalog.RoleCount) - 1;
+            const int allRoles = (1 << CityPortConversationCatalog.ForemanRole) - 1;
             foreach (var kind in new[] { CityPortConversationKind.Rest, CityPortConversationKind.Work })
             {
                 var schedule = new CityPortConversationSchedule(812);
@@ -707,7 +707,8 @@ namespace BarPromenade.Tests.PlayMode
                 CityPortCycle.UnloadStartSeconds + 46;
             int working = kind == CityPortConversationKind.Work ? available : 0;
             int resting = kind == CityPortConversationKind.Rest ? available : 0;
-            for (int sample = 0; sample < count * 240 && heard.Count < count; sample++)
+            int samplesPerExchange = kind == CityPortConversationKind.Foreman ? 480 : 240;
+            for (int sample = 0; sample < count * samplesPerExchange && heard.Count < count; sample++)
             {
                 life += .25;
                 var turn = schedule.Advance(life, held, CityPortCycle.Sample(held), available, working, resting,
@@ -734,8 +735,8 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (var entry in catalog.entries)
                     if (entry.key.StartsWith("city.port.", StringComparison.Ordinal))
                         Assert.That(lines.TryAdd(entry.key, entry.value), Is.True, "Duplicate localized port key.");
-                Assert.That(lines.Count, Is.EqualTo(1 + 2 * (CityPortConversationCatalog.RestCount + CityPortConversationCatalog.WorkCount +
-                    CityPortConversationCatalog.GreetingCount + CityPortConversationCatalog.FarewellCount)));
+                Assert.That(lines.Count, Is.EqualTo(4 + 2 * (CityPortConversationCatalog.RestCount + CityPortConversationCatalog.WorkCount +
+                    CityPortConversationCatalog.GreetingCount + CityPortConversationCatalog.FarewellCount + CityPortConversationCatalog.ForemanCount)));
                 Assert.That(lines[CityPortConversationController.AccessWaitLineKey],
                     Is.EqualTo(language == "ru" ? "Жду тебя, дружище" : "Waiting for you, buddy"));
                 var ambientText = new HashSet<string>(StringComparer.Ordinal);
@@ -747,7 +748,7 @@ namespace BarPromenade.Tests.PlayMode
                     {
                         Assert.That(lines.ContainsKey(key), Is.True, language + ": " + key);
                         string value = lines[key];
-                        if (kind == CityPortConversationKind.Rest || kind == CityPortConversationKind.Work)
+                        if (kind == CityPortConversationKind.Rest || kind == CityPortConversationKind.Work || kind == CityPortConversationKind.Foreman)
                             Assert.That(ambientText.Add(value), Is.True, "Repeated authored phrase: " + key);
                         Assert.That(value.Length, Is.InRange(3, 120));
                         Assert.That(value.Contains("!") || value.Contains("(") || value.Contains(")"), Is.False, key);
@@ -757,6 +758,95 @@ namespace BarPromenade.Tests.PlayMode
                         Assert.That(lines[exchange.SecondKey].Contains("?"), Is.False, "A port question has an authored answer.");
                 }
             }
+        }
+
+        private static void ValidatePortForemanConversationSchedule()
+        {
+            ValidatePortSocialLocalization();
+            var pairs = new HashSet<uint>();
+            for (int first = 0; first < CityPortConversationCatalog.RoleCount; first++)
+            for (int second = first + 1; second < CityPortConversationCatalog.RoleCount; second++)
+                Assert.That(pairs.Add(CityPortConversationCatalog.PairBit(first, second)), Is.True);
+            const int shore = (1 << 2) | (1 << 3) | (1 << CityPortConversationCatalog.DockerRole);
+            const int foreman = 1 << CityPortConversationCatalog.ForemanRole;
+            int present = shore | foreman;
+            for (int variant = 0; variant < CityPortConversationCatalog.ForemanCount; variant++)
+            {
+                var entry = CityPortConversationCatalog.Get(CityPortConversationKind.Foreman, variant);
+                Assert.That(entry.FirstRole, Is.EqualTo(CityPortConversationCatalog.ForemanRole));
+                Assert.That(entry.SecondRole, Is.InRange(2, 4));
+            }
+            var rounds = new CityPortConversationSchedule(9187);
+            double life = 0d;
+            var firstRound = ReadPortConversationRound(rounds, CityPortConversationKind.Foreman,
+                present, CityPortConversationCatalog.ForemanCount, ref life);
+            var secondRound = ReadPortConversationRound(rounds, CityPortConversationKind.Foreman,
+                present, CityPortConversationCatalog.ForemanCount, ref life);
+            Assert.That(new HashSet<int>(firstRound).Count, Is.EqualTo(CityPortConversationCatalog.ForemanCount));
+            Assert.That(new HashSet<int>(secondRound).Count, Is.EqualTo(CityPortConversationCatalog.ForemanCount));
+            Assert.That(secondRound[0], Is.Not.EqualTo(firstRound[firstRound.Count - 1]));
+
+            double held = CityPortCycle.UnloadStartSeconds + 46d;
+            var snapshot = CityPortCycle.Sample(held);
+            var schedule = new CityPortConversationSchedule(1537);
+            schedule.Advance(0d, held, snapshot, present, 0, 0, uint.MaxValue, uint.MaxValue, true);
+            double deadline = schedule.NextForemanAttemptSeconds;
+            Assert.That(deadline, Is.InRange(60d, 100d));
+            int serial = schedule.StartedLineCount;
+            for (int sample = 0; sample < 12; sample++)
+                schedule.Advance(0d, held, snapshot, present, 0, 0, uint.MaxValue, uint.MaxValue, true);
+            Assert.That(schedule.StartedLineCount, Is.EqualTo(serial), "A stopped life clock cannot consume a timer.");
+            Assert.That(schedule.NextForemanAttemptSeconds, Is.EqualTo(deadline));
+            life = 0d;
+            while (life < deadline + 1d)
+            {
+                life += .25d;
+                var turn = schedule.Advance(life, held, snapshot, foreman, 0, 0, uint.MaxValue, uint.MaxValue, true);
+                Assert.That(turn.HasExchange, Is.False, "No subordinate means no complaint or detached reply.");
+            }
+            double next = schedule.NextForemanAttemptSeconds;
+            Assert.That(next - deadline, Is.InRange(60d, 100.25d));
+            for (int sample = 0; sample < 16; sample++)
+            {
+                life += .25d;
+                Assert.That(schedule.Advance(life, held, snapshot, present, 0, 0,
+                    uint.MaxValue, uint.MaxValue, true).HasExchange, Is.False, "Returning partners cannot replay a missed deadline.");
+            }
+            while (!schedule.Current.IsSpeaking)
+            {
+                life += .25d;
+                Assert.That(life, Is.LessThan(next + 2d));
+                schedule.Advance(life, held, snapshot, present, 0, 0, uint.MaxValue, uint.MaxValue, true);
+            }
+            var active = schedule.Current.Exchange;
+            bool replied = false;
+            int previousSerial = schedule.StartedLineCount;
+            for (int sample = 0; sample < 50; sample++)
+            {
+                life += .25d;
+                var turn = schedule.Advance(life, held, snapshot, present | (1 << CityPortConversationCatalog.DriverRole),
+                    0, 0, uint.MaxValue, uint.MaxValue, true, sample < 40, false, true, true);
+                if (!turn.HasExchange) continue;
+                Assert.That(turn.Exchange.Kind, Is.EqualTo(CityPortConversationKind.Foreman),
+                    "A pending player request or greeting cannot interrupt the selected pair.");
+                Assert.That(turn.Exchange.Variant, Is.EqualTo(active.Variant));
+                if (turn.IsSpeaking && turn.LineSerial != previousSerial)
+                {
+                    Assert.That(turn.SpeakerRole, Is.EqualTo(active.SecondRole));
+                    Assert.That(turn.LineKey, Is.EqualTo(active.SecondKey));
+                    replied = true;
+                }
+                previousSerial = turn.LineSerial;
+            }
+            Assert.That(replied, Is.True);
+            Assert.That(schedule.Current.HasExchange, Is.False);
+
+            // A clock reconstruction discards pending events and gives the
+            // foreman a fresh finite deadline, retaining his spoken round.
+            life += 500d;
+            Assert.That(schedule.Advance(life, held, snapshot, present, 0, 0,
+                uint.MaxValue, uint.MaxValue, true).HasExchange, Is.False);
+            Assert.That(schedule.NextForemanAttemptSeconds - life, Is.InRange(60d, 100d));
         }
     }
 }

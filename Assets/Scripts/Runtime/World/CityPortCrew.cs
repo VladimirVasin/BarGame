@@ -47,6 +47,7 @@ namespace BarPromenade
         public VillageResidentPresentation FirstCraneOperator => workers[2];
         public VillageResidentPresentation SecondCraneOperator => workers[3];
         public VillageResidentPresentation ShoreWorker => workers[4];
+        public CityPortForeman Foreman { get; private set; }
         public int WorkerCount => workers.Length;
         public bool CaptainHandsMatch { get; private set; }
         public bool CraneHandsMatch { get; private set; }
@@ -128,7 +129,9 @@ namespace BarPromenade
             crew.InitializeSocialLife();
             crew.initialized = true;
             crew.ApplyAt(controller.ElapsedSeconds);
-            host.AddComponent<CityPortConversationController>().Initialize(controller, crew);
+            var conversations = host.AddComponent<CityPortConversationController>();
+            conversations.Initialize(controller, crew);
+            crew.Foreman = CityPortForeman.Build(host.transform, controller, crew, conversations);
             return crew;
         }
 

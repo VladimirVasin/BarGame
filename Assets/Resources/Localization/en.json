@@ -3211,6 +3211,102 @@
     {
       "key": "city.port.access_wait",
       "value": "Waiting for you, buddy"
+    },
+    {
+      "key": "city.port.foreman.01.a",
+      "value": "Your cable is squeaking again."
+    },
+    {
+      "key": "city.port.foreman.01.b",
+      "value": "Greased it this morning. It's the pulley."
+    },
+    {
+      "key": "city.port.foreman.02.a",
+      "value": "Can't get any peace with this wind."
+    },
+    {
+      "key": "city.port.foreman.02.b",
+      "value": "It's not going anywhere."
+    },
+    {
+      "key": "city.port.foreman.03.a",
+      "value": "Going to push that trolley till tomorrow?"
+    },
+    {
+      "key": "city.port.foreman.03.b",
+      "value": "The wheel keeps sticking."
+    },
+    {
+      "key": "city.port.foreman.04.a",
+      "value": "Have to tell you everything twice."
+    },
+    {
+      "key": "city.port.foreman.04.b",
+      "value": "We heard you."
+    },
+    {
+      "key": "city.port.foreman.05.a",
+      "value": "Gloves wet again?"
+    },
+    {
+      "key": "city.port.foreman.05.b",
+      "value": "Other pair's the same."
+    },
+    {
+      "key": "city.port.foreman.06.a",
+      "value": "Nothing but crates, and my back already aches."
+    },
+    {
+      "key": "city.port.foreman.06.b",
+      "value": "My arms too."
+    },
+    {
+      "key": "city.port.foreman.07.a",
+      "value": "Just sat down, and there's clattering everywhere."
+    },
+    {
+      "key": "city.port.foreman.07.b",
+      "value": "There's a crane right here."
+    },
+    {
+      "key": "city.port.foreman.08.a",
+      "value": "My tea's gone cold again because of you lot."
+    },
+    {
+      "key": "city.port.foreman.08.b",
+      "value": "Everyone's tea is cold."
+    },
+    {
+      "key": "city.port.foreman.09.a",
+      "value": "Same old crates again."
+    },
+    {
+      "key": "city.port.foreman.09.b",
+      "value": "That's what they brought."
+    },
+    {
+      "key": "city.port.foreman.offer",
+      "value": "Want some work?"
+    },
+    {
+      "key": "city.port.foreman.accept",
+      "value": "Come back later, then."
+    },
+    {
+      "key": "city.port.foreman.decline",
+      "value": "Suit yourself."
+    },
+    {
+      "key": "interaction.talk_port_foreman",
+      "value": "Talk to the foreman"
+    },
+    {
+      "key": "interaction.port_foreman_yes",
+      "value": "I do"
+    },
+    {
+      "key": "interaction.port_foreman_no",
+      "value": "Not now"
     }
   ]
 }

@@ -17,7 +17,7 @@ namespace BarPromenade
             string[] fixtures = { "ANCHOR_WorkLightA", "ANCHOR_WorkLightB" };
             Vector3[] targets =
             {
-                new Vector3(-4f, CityPortPlan.DeckHeight + .05f, -6.7f),
+                new Vector3(-3.8f, CityPortPlan.DeckHeight + .05f, -10.8f),
                 new Vector3(1f, CityPortPlan.DeckHeight + .05f, -9.6f)
             };
             for (int index = 0; index < fixtures.Length; index++)
@@ -26,7 +26,7 @@ namespace BarPromenade
                 Transform root = new GameObject(index == 0 ? "Port Quay Work Light" : "Port Store Work Light").transform;
                 root.SetParent(port.transform, false);
                 root.position = fixture.position;
-                // Each authored housing owns a definite patch: landing and
+                // Each authored housing owns a definite patch: foreman/landing and
                 // warehouse threshold. Neither beam searches the open beach.
                 Vector3 target = port.Plan.Origin + targets[index];
                 root.rotation = Quaternion.LookRotation(target - fixture.position, Vector3.up);
@@ -34,18 +34,62 @@ namespace BarPromenade
                 light.type = LightType.Spot;
                 light.color = warm;
                 light.range = index == 0 ? 12f : 10f;
-                light.spotAngle = index == 0 ? 82f : 100f;
-                light.innerSpotAngle = index == 0 ? 48f : 64f;
+                light.spotAngle = index == 0 ? 120f : 100f;
+                light.innerSpotAngle = index == 0 ? 80f : 64f;
                 light.shadows = LightShadows.Soft;
                 light.shadowStrength = .72f;
                 light.shadowBias = .025f;
                 light.shadowNormalBias = .12f;
                 CityLightHalo halo = CityLightHalo.CreateNightRegistered(root, Vector3.zero,
                     .30f, .95f, new Color(1f, .72f, .47f, .10f), new Color(.8f, .51f, .3f, .035f));
-                CityNightSiteLightRegistry.Register(light, index == 0 ? 3.8f : 3.3f, halo);
+                CityNightSiteLightRegistry.Register(light, index == 0 ? 8f : 3.3f, halo);
             }
+            BuildWarehouseLights(port, warm);
             BuildCanopyLight(port, warm);
             BuildVesselSearchlight(port, warm);
+        }
+
+        private static void BuildWarehouseLights(CityPortController port, Color warm)
+        {
+            Vector3[] targets =
+            {
+                new Vector3(0f, 1.55f, -13.7f),
+                new Vector3(1.3f, 1.8f, -17.45f),
+                new Vector3(-6.8f, 2.1f, -15.25f)
+            };
+            for (int index = 0; index < targets.Length; index++)
+            {
+                char suffix = (char)('A' + index);
+                Transform anchor = CityPortAssetProvider.FindPart(port.Dock.gameObject,
+                    "ANCHOR_WarehouseLight" + suffix);
+                Renderer glass = CityPortAssetProvider.FindPart(port.Dock.gameObject,
+                    "WarehouseLampGlass" + suffix).GetComponent<Renderer>();
+                glass.sharedMaterial = CityNightResources.EmissiveMaterial;
+                CityNightGlowRegistry.Register(glass, warm * 3.5f);
+
+                // The emitter is below its authored lens. A dedicated host lets
+                // distance hiding turn it off without disabling solid furniture.
+                Transform fixture = new GameObject("Port Warehouse Work Light " + suffix).transform;
+                fixture.SetParent(port.transform, false);
+                fixture.position = anchor.position;
+                fixture.rotation = Quaternion.LookRotation(port.Plan.World(targets[index]) - anchor.position,
+                    Vector3.forward);
+                Light light = fixture.gameObject.AddComponent<Light>();
+                light.type = LightType.Spot;
+                light.color = warm;
+                light.range = 6.5f;
+                light.spotAngle = 130f;
+                light.innerSpotAngle = 100f;
+                light.shadows = LightShadows.Soft;
+                light.shadowStrength = .85f;
+                light.shadowBias = .015f;
+                light.shadowNormalBias = .06f;
+                light.renderMode = LightRenderMode.ForcePixel;
+                light.lightmapBakeType = LightmapBakeType.Realtime;
+                CityLightHalo halo = CityLightHalo.CreateNightRegistered(fixture, Vector3.zero,
+                    .16f, .50f, new Color(1f, .72f, .47f, .075f), new Color(.8f, .51f, .3f, .025f));
+                CityNightSiteLightRegistry.Register(light, 14f, halo);
+            }
         }
 
         private static void BuildCanopyLight(CityPortController port, Color warm)

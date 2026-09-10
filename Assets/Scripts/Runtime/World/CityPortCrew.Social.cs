@@ -8,7 +8,7 @@ namespace BarPromenade
         private enum BreakPhase { Work, Outward, Rest, Returning }
         private sealed class BreakWalk
         {
-            public readonly Vector3[] Route = new Vector3[6];
+            public Vector3[] Route = new Vector3[6];
             public BreakPhase Phase;
             public float Distance;
             public float Length;
@@ -34,6 +34,7 @@ namespace BarPromenade
         private double previousPortSeconds;
         private float lifeDelta;
         private VillageResidentPresentation conversationDriver;
+        private Transform conversationForemanHead;
 
         public bool UseManualClock { get; set; }
         public double LifeElapsedSeconds { get; private set; }
@@ -45,6 +46,9 @@ namespace BarPromenade
         public VillageResidentPresentation GetWorker(int role) =>
             role == CityPortConversationCatalog.DriverRole ? conversationDriver : workers[role];
         public void RegisterConversationDriver(VillageResidentPresentation driver) => conversationDriver = driver;
+        public void RegisterConversationForeman(Transform head) => conversationForemanHead = head;
+        public Transform GetConversationHead(int role) => role == CityPortConversationCatalog.ForemanRole
+            ? conversationForemanHead : GetWorker(role)?.Head;
         public CityPortWorkerGesture GetGesture(int role) => gestures[role];
         public Bounds RestCanopyBounds { get; private set; }
         public Vector3 RestPosition(int role) => restDocks[role - 2].position;
@@ -179,9 +183,9 @@ namespace BarPromenade
                     gestures[role].IsWaving || gestures[role].HasPendingWave ? salutationPartners[role] : -1;
                 if ((role == 2 || role == 3) && LastSnapshot.Stage == CityPortCycleStage.Prepare &&
                     LastSnapshot.SecondsInStage >= CityPortCycle.PrepareDurationSeconds - 3d) facingPartner = -1;
-                var partnerActor = facingPartner >= 0 ? GetWorker(facingPartner) : null;
-                if (partnerActor != null && partnerActor.gameObject.activeInHierarchy)
-                    target = partnerActor.Head.position;
+                Transform partnerHead = facingPartner >= 0 ? GetConversationHead(facingPartner) : null;
+                if (partnerHead != null && partnerHead.gameObject.activeInHierarchy)
+                    target = partnerHead.position;
                 // Resters can look across their small group even between lines.
                 else if (IsRoleResting(role) && role >= 2 &&
                     (long)((LifeElapsedSeconds + role * 2.7d) / (6d + role * .3d)) % 3 != 0)
@@ -299,15 +303,33 @@ namespace BarPromenade
             Vector3 dock = role == 4 ? ShoreCleatDock(0) : operatorDocks[role - 2].position;
             Vector3 rest = restDocks[role - 2].position;
             float lane = port.Plan.Origin.z - 9.9f - (role - 2) * .65f;
-            walk.Route[0] = dock;
-            // The east worker passes east of the finite tare stack; the other
-            // two pass behind the lifting area. Separate lanes stay north of
-            // the warehouse and enter the canopy between its southern posts.
-            walk.Route[1] = role == 3 ? new Vector3(port.Plan.Origin.x + 8.7f, dock.y, dock.z) : dock;
-            walk.Route[2] = new Vector3(walk.Route[1].x, dock.y, lane);
-            walk.Route[3] = new Vector3(rest.x, dock.y, lane);
-            walk.Route[4] = new Vector3(rest.x, dock.y, RestCanopyBounds.min.z + .65f);
-            walk.Route[5] = rest;
+            if (role == 4)
+            {
+                // Pass in front of the seated boss, then return to the
+                // docker's own lane before joining the other canopy routes.
+                // Keeping the eastern lane preserves their separation.
+                if (walk.Route.Length != 8) walk.Route = new Vector3[8];
+                float around = port.Plan.Origin.z - 10.3f;
+                float rejoin = port.Plan.ForemanSeatWorld.x + 1.2f;
+                walk.Route[0] = walk.Route[1] = dock;
+                walk.Route[2] = new Vector3(dock.x, dock.y, around);
+                walk.Route[3] = new Vector3(rejoin, dock.y, around);
+                walk.Route[4] = new Vector3(rejoin, dock.y, lane);
+                walk.Route[5] = new Vector3(rest.x, dock.y, lane);
+                walk.Route[6] = new Vector3(rest.x, dock.y, RestCanopyBounds.min.z + .65f);
+                walk.Route[7] = rest;
+            }
+            else
+            {
+                walk.Route[0] = dock;
+                // The east worker passes east of the finite tare stack; both
+                // crane operators retain their own canopy approach lanes.
+                walk.Route[1] = role == 3 ? new Vector3(port.Plan.Origin.x + 8.7f, dock.y, dock.z) : dock;
+                walk.Route[2] = new Vector3(walk.Route[1].x, dock.y, lane);
+                walk.Route[3] = new Vector3(rest.x, dock.y, lane);
+                walk.Route[4] = new Vector3(rest.x, dock.y, RestCanopyBounds.min.z + .65f);
+                walk.Route[5] = rest;
+            }
             walk.Length = 0f;
             for (int i = 1; i < walk.Route.Length; i++)
                 walk.Length += Vector3.Distance(walk.Route[i - 1], walk.Route[i]);
@@ -364,10 +386,10 @@ namespace BarPromenade
             if (walk.Phase == BreakPhase.Rest)
             {
                 Vector3 center = (restDocks[0].position + restDocks[1].position + restDocks[2].position) / 3f;
-                Vector3 face = center - walk.Route[5];
+                Vector3 face = center - walk.Route[walk.Route.Length - 1];
                 walk.Facing = Quaternion.RotateTowards(walk.Facing,
                     Quaternion.LookRotation(face, Vector3.up), lifeDelta * 100f);
-                actor.transform.SetPositionAndRotation(walk.Route[5], walk.Facing);
+                actor.transform.SetPositionAndRotation(walk.Route[walk.Route.Length - 1], walk.Facing);
                 actor.Apply(VillageResidentAction.Idle, (float)(LifeElapsedSeconds % 600d) + role * .73f);
                 return;
             }

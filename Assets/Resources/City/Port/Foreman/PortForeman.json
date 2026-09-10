@@ -1,0 +1,776 @@
+{
+  "generator": "build-city-port-foreman-3d-model.py",
+  "version": "1.3.0",
+  "role": "PortForeman",
+  "anatomy_standard": "NpcHumanV2",
+  "coordinate_system": "Blender metres +Z up / -Y facing; import swaps YZ, placement resolves facing",
+  "height_scale": 1.0,
+  "mesh_count": 71,
+  "triangle_count": 4888,
+  "bounds_min": [
+    -0.784455,
+    -0.3755,
+    -0.084183
+  ],
+  "bounds_max": [
+    0.968827,
+    0.322,
+    1.728333
+  ],
+  "seat_top_m": 0.5,
+  "coat_width_m": 0.72,
+  "coat_depth_m": 0.562,
+  "anchor_seat_unity": [
+    0,
+    0.5,
+    0.05
+  ],
+  "atlas_sha256": "e26907509a9cd59e6d70dc4fba4dbea37d8e4a9335b01bc008d1279d8528bcde",
+  "carrot_length_m": 0.238,
+  "carrot_hand": "hand.L",
+  "carrot_tip_heights_from_grip_m": [
+    0.205,
+    0.14,
+    0.075
+  ],
+  "palm_normal_source": [
+    -0.03533041849732399,
+    -0.9991490840911865,
+    0.021283412352204323
+  ],
+  "carrot_grip_offset_source": [
+    -0.0019431710243225098,
+    -0.0549531951546669,
+    0.0011706352233886719
+  ],
+  "carrot_visible_parts": [
+    "FOOD_ForemanCarrotBite1",
+    "FOOD_ForemanCarrotBite2",
+    "FOOD_ForemanCarrotBite3",
+    "FOOD_ForemanCarrotStem",
+    "FOOD_ForemanCarrotGreens"
+  ],
+  "thrown_stem_host": "MOVE_ForemanThrownStem",
+  "throw_release_anchor": "ANCHOR_ForemanThrowRelease",
+  "pocket_anchor": "ANCHOR_ForemanPocket",
+  "bin_target_anchor": "ANCHOR_ForemanBinTarget",
+  "bin_rim_height_m": 0.359,
+  "bin_inside_target_source": [
+    0.800000011920929,
+    0.05000000074505806,
+    0.18000000715255737
+  ],
+  "parts": [
+    {
+      "name": "GEO_Head",
+      "bone": "head",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Ear.L",
+      "bone": "head",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Ear.R",
+      "bone": "head",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Neck",
+      "bone": "neck",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "CLO_SleeveUpper.L",
+      "bone": "upper_arm.L",
+      "color": [
+        0.205,
+        0.275,
+        0.25,
+        1
+      ]
+    },
+    {
+      "name": "CLO_SleeveLower.L",
+      "bone": "forearm.L",
+      "color": [
+        0.205,
+        0.275,
+        0.25,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Hand.L",
+      "bone": "hand.L",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Thigh.L",
+      "bone": "thigh.L",
+      "color": [
+        0.195,
+        0.205,
+        0.2,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Shin.L",
+      "bone": "shin.L",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Shoe.L",
+      "bone": "foot.L",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ShoeSole.L",
+      "bone": "foot.L",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "CLO_SleeveUpper.R",
+      "bone": "upper_arm.R",
+      "color": [
+        0.205,
+        0.275,
+        0.25,
+        1
+      ]
+    },
+    {
+      "name": "CLO_SleeveLower.R",
+      "bone": "forearm.R",
+      "color": [
+        0.205,
+        0.275,
+        0.25,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Hand.R",
+      "bone": "hand.R",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Thumb.R",
+      "bone": "hand.R",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Thigh.R",
+      "bone": "thigh.R",
+      "color": [
+        0.195,
+        0.205,
+        0.2,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Shin.R",
+      "bone": "shin.R",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Shoe.R",
+      "bone": "foot.R",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ShoeSole.R",
+      "bone": "foot.R",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_FaceSurface",
+      "bone": "head",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Cuff.L",
+      "bone": "forearm.L",
+      "color": [
+        0.32,
+        0.35,
+        0.31,
+        1
+      ]
+    },
+    {
+      "name": "GEO_BootHeel.L",
+      "bone": "foot.L",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_BootToeCap.L",
+      "bone": "foot.L",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "CLO_Cuff.R",
+      "bone": "forearm.R",
+      "color": [
+        0.32,
+        0.35,
+        0.31,
+        1
+      ]
+    },
+    {
+      "name": "GEO_BootHeel.R",
+      "bone": "foot.R",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_BootToeCap.R",
+      "bone": "foot.R",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanGripFingers.L",
+      "bone": "hand.L",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "GEO_Thumb.L",
+      "bone": "hand.L",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "CLO_ForemanBarrelCoat",
+      "bone": "chest",
+      "color": [
+        0.205,
+        0.275,
+        0.25,
+        1
+      ]
+    },
+    {
+      "name": "CLO_ForemanSeat",
+      "bone": "pelvis",
+      "color": [
+        0.12,
+        0.175,
+        0.155,
+        1
+      ]
+    },
+    {
+      "name": "CLO_ForemanCollar",
+      "bone": "neck",
+      "color": [
+        0.32,
+        0.35,
+        0.31,
+        1
+      ]
+    },
+    {
+      "name": "HAIR_ForemanTemple.L",
+      "bone": "head",
+      "color": [
+        0.46,
+        0.47,
+        0.415,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanJowl.L",
+      "bone": "head",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "FACE_ForemanBrow.L",
+      "bone": "head",
+      "color": [
+        0.46,
+        0.47,
+        0.415,
+        1
+      ]
+    },
+    {
+      "name": "CLO_ForemanPocket.R",
+      "bone": "spine",
+      "color": [
+        0.12,
+        0.175,
+        0.155,
+        1
+      ]
+    },
+    {
+      "name": "HAIR_ForemanTemple.R",
+      "bone": "head",
+      "color": [
+        0.46,
+        0.47,
+        0.415,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanJowl.R",
+      "bone": "head",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "FACE_ForemanBrow.R",
+      "bone": "head",
+      "color": [
+        0.46,
+        0.47,
+        0.415,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanChin",
+      "bone": "head",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "HAIR_ForemanBack",
+      "bone": "head",
+      "color": [
+        0.46,
+        0.47,
+        0.415,
+        1
+      ]
+    },
+    {
+      "name": "FACE_ForemanLowerLip",
+      "bone": "face.mouth",
+      "color": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    },
+    {
+      "name": "FACE_ForemanMouth41",
+      "bone": "face.mouth",
+      "color": [
+        0.2,
+        0.15,
+        0.125,
+        1
+      ]
+    },
+    {
+      "name": "FACE_ForemanMouth42",
+      "bone": "face.mouth",
+      "color": [
+        0.2,
+        0.15,
+        0.125,
+        1
+      ]
+    },
+    {
+      "name": "CLO_ForemanPocket.L",
+      "bone": "spine",
+      "color": [
+        0.12,
+        0.175,
+        0.155,
+        1
+      ]
+    },
+    {
+      "name": "CLO_ForemanPocketRim",
+      "bone": "spine",
+      "color": [
+        0.205,
+        0.275,
+        0.25,
+        1
+      ]
+    },
+    {
+      "name": "FOOD_ForemanCarrotBite1",
+      "bone": "hand.L",
+      "color": [
+        0.7,
+        0.31,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "FOOD_ForemanCarrotBite2",
+      "bone": "hand.L",
+      "color": [
+        0.7,
+        0.31,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "FOOD_ForemanCarrotBite3",
+      "bone": "hand.L",
+      "color": [
+        0.7,
+        0.31,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "FOOD_ForemanCarrotStem",
+      "bone": "hand.L",
+      "color": [
+        0.7,
+        0.31,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "FOOD_ForemanCarrotGreens",
+      "bone": "hand.L",
+      "color": [
+        0.235,
+        0.31,
+        0.16,
+        1
+      ]
+    },
+    {
+      "name": "FOOD_ForemanThrownStem",
+      "bone": "root",
+      "color": [
+        0.7,
+        0.31,
+        0.105,
+        1
+      ]
+    },
+    {
+      "name": "FOOD_ForemanThrownGreens",
+      "bone": "root",
+      "color": [
+        0.235,
+        0.31,
+        0.16,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStemPailShell",
+      "bone": "root",
+      "color": [
+        0.19,
+        0.23,
+        0.205,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStemPailBottom",
+      "bone": "root",
+      "color": [
+        0.12,
+        0.175,
+        0.155,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStemPailRim",
+      "bone": "root",
+      "color": [
+        0.19,
+        0.23,
+        0.205,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStemPailHandle-1",
+      "bone": "root",
+      "color": [
+        0.19,
+        0.23,
+        0.205,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStemPailHandle1",
+      "bone": "root",
+      "color": [
+        0.19,
+        0.23,
+        0.205,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStemPailHandleBar",
+      "bone": "root",
+      "color": [
+        0.19,
+        0.23,
+        0.205,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_Seat",
+      "bone": "root",
+      "color": [
+        0.34,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_Leg-1_-1",
+      "bone": "root",
+      "color": [
+        0.34,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_Foot-1_-1",
+      "bone": "root",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_Leg-1_1",
+      "bone": "root",
+      "color": [
+        0.34,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_Foot-1_1",
+      "bone": "root",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_Leg1_-1",
+      "bone": "root",
+      "color": [
+        0.34,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_Foot1_-1",
+      "bone": "root",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_Leg1_1",
+      "bone": "root",
+      "color": [
+        0.34,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_Foot1_1",
+      "bone": "root",
+      "color": [
+        0.12,
+        0.13,
+        0.12,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_RungX-1",
+      "bone": "root",
+      "color": [
+        0.34,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_RungY-1",
+      "bone": "root",
+      "color": [
+        0.34,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_RungX1",
+      "bone": "root",
+      "color": [
+        0.34,
+        0.28,
+        0.22,
+        1
+      ]
+    },
+    {
+      "name": "GEO_ForemanStool_RungY1",
+      "bone": "root",
+      "color": [
+        0.34,
+        0.28,
+        0.22,
+        1
+      ]
+    }
+  ],
+  "geometry_signature": "464f5366a28fc6895879057c1b9b997abe08e21d65536874d34869fb175cb40f"
+}

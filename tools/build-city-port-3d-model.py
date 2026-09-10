@@ -56,10 +56,12 @@ PALETTE = [CONCRETE,EDGE,DARK,METAL,PAINT,RUST,CABIN,WOOD,ROPE,GLASS,FISH,ICE,LA
 SURFACE_TILES = {"Concrete":2.0,"ConcreteWall":2.0,"Steel":1.5,"SteelDark":1.5,"SteelLight":1.5,"SteelRust":1.5,"Plaster":2.0,"Timber":1.0,
                  "Roof":2.0,"Deck":1.0,"Tare":.75,"Fish":.5,"Ice":.5,"Rubber":.5,"Fabric":1.0,"Asphalt":12.0,"RoadMarking":2.0}
 ASPHALT_WORLD_ORIGIN=(-67.0,202.0)
+WAREHOUSE_LIGHTS = {"A":(0,4.58,-13.7),"B":(.8,4.58,-17.45),"C":(-6.6,4.58,-15.25)}
+WAREHOUSE_REFRIGERATION = (3.12,4.02,-17.1)
 
 
 def surface_role(name,color,face=None,geom=None,index=0):
-    if name.startswith("COL_") or name in ("CabinGlass","WorkLampGlass","SearchlightGlass"):
+    if name.startswith(("COL_","WarehouseLampGlass")) or name in ("CabinGlass","WorkLampGlass","SearchlightGlass"):
         return "Plain"
     if geom is not None and index<len(geom.face_roles) and geom.face_roles[index]:
         return geom.face_roles[index]
@@ -160,6 +162,200 @@ def crate(geom,x,y,z,fish=False):
                       (xx-.055,y+.255,zz-.22),(xx+.055,y+.255,zz-.22),(xx,y+.265,zz-.10)],
                      [(0,2,1),(3,4,5),(0,1,4,3),(1,2,5,4),(2,0,3,5)],FISH)
     geom.role=previous_role
+
+
+def warehouse_interior(root,mat):
+    """Passive cold-store fittings, outside both existing handling sweeps.
+
+    All coordinates remain in the port's Unity metre frame. The west wall is
+    the only floor furnishing bay: central turning space and the finite east
+    fish buffer belong to the existing docker/driver choreography.
+    """
+    panels,structure,cooling,storage,bench,tools,wear,collision=[Geometry() for _ in range(8)]
+    panels.role="SteelLight"
+    # Thin insulated liners stop at the real reveals. Seams and folded lower
+    # guards follow the walls; they never invent a second solid room shell.
+    for i in range(10):
+        x=-7.84+(i+.5)*1.168
+        chamfer(panels,(x,3.25,-18.842),(1.14,3.42,.026),CABIN,.008)
+    for x in (-7.84,3.84):
+        for z in (-18.25,-17.05,-15.85,-14.65,-13.45):
+            if x>0 and z>-16:continue
+            chamfer(panels,(x,3.25,z),(.026,3.42,1.16),CABIN,.008)
+    chamfer(panels,(-7.84,3.25,-12.50),(.026,3.42,.64),CABIN,.008)
+    for x,length in ((-4.70,6.26),(2.70,2.26)):
+        chamfer(panels,(x,3.25,-12.158),(length,3.42,.026),CABIN,.008)
+    panels.role="SteelDark"
+    for x in (-7.82,3.82):
+        z,run=(-15.5,6.60) if x<0 else (-17.3,2.75)
+        chamfer(panels,(x,1.75,z),(.026,.24,run),METAL,.006)
+    chamfer(panels,(-2,1.75,-18.82),(11.58,.24,.026),METAL,.006)
+    for x,length in ((-4.7,6.26),(2.7,2.26)):
+        chamfer(panels,(x,1.75,-12.18),(length,.24,.026),METAL,.006)
+    # Baffle keeps its opaque volume and west-side route. Low rubbed strips
+    # give that freestanding cold-store return an ordinary protective purpose.
+    for z in (-15.9,-16.1):
+        chamfer(panels,(1.5,1.82,z),(4.42,.34,.022),METAL,.006)
+    obj(panels,"DockWarehousePanels",root,mat)
+
+    # Rolled ceiling joists bear on wall plates; a connected cable tray feeds
+    # each pendant through one short conduit rather than floating wires.
+    for x in (-7.73,3.73):
+        chamfer(structure,(x,4.85,-15.5),(.16,.22,6.67),METAL,.015)
+    for z in (-13.1,-15.5,-18.0):
+        chamfer(structure,(-2,4.91,z),(11.5,.18,.19),METAL,.013)
+        chamfer(structure,(-2,4.81,z),(11.5,.10,.065),METAL,.010)
+    for x in (-7.58,-7.40):
+        structure.rod((x,4.79,-18.25),(x,4.79,-12.55),.028,METAL)
+    for i in range(16):
+        z=-18.2+i*.37
+        structure.rod((-7.62,4.79,z),(-7.36,4.79,z),.017,METAL)
+    chamfer(structure,(-7.72,3.42,-12.73),(.12,.36,.28),METAL,.018)
+    structure.rod((-7.70,3.6,-12.73),(-7.70,4.79,-12.73),.025,DARK)
+    structure.rod((-7.70,4.79,-12.73),(-7.49,4.79,-12.73),.025,DARK)
+    for suffix,(x,y,z) in WAREHOUSE_LIGHTS.items():
+        structure.rod((-7.40,4.79,z),(x,4.79,z),.020,DARK)
+        housing,lens=Geometry(),Geometry()
+        for dx in (-.47,.47):
+            housing.rod((x+dx,4.98,z),(x+dx,4.78,z),.018,METAL)
+            chamfer(housing,(x+dx,4.98,z),(.16,.035,.14),METAL,.008)
+        chamfer(housing,(x,4.74,z),(1.27,.12,.36),METAL,.035)
+        for dz in (-.17,.17):
+            chamfer(housing,(x,4.66,z+dz),(1.28,.12,.045),DARK,.012)
+        for dx in (-.62,.62):
+            chamfer(housing,(x+dx,4.65,z),(.065,.13,.35),METAL,.012)
+        chamfer(lens,(x,4.635,z),(1.13,.070,.267),LAMP,.025)
+        # Sparse retaining hoops read as a guarded industrial diffuser.
+        for dx in (-.40,0,.40):
+            housing.rod((x+dx,4.625,z-.175),(x+dx,4.59,z-.10),.009,METAL)
+            housing.rod((x+dx,4.59,z-.10),(x+dx,4.59,z+.10),.009,METAL)
+            housing.rod((x+dx,4.59,z+.10),(x+dx,4.625,z+.175),.009,METAL)
+        obj(housing,"WarehouseLampHousing"+suffix,root,mat)
+        obj(lens,"WarehouseLampGlass"+suffix,root,mat)
+        empty("ANCHOR_WarehouseLight"+suffix,root,(x,y,z))
+    obj(structure,"DockWarehouseStructure",root,mat)
+
+    # One ceiling-height evaporator has two guarded fans, a finned coil and a
+    # sloped condensate tray. Its lines cross the east wall into the existing
+    # two outdoor condenser bodies; the drain ends in the wall-side grate.
+    cooling.role="SteelLight"
+    chamfer(cooling,(3.49,4.07,-17.1),(.62,.76,2.12),CABIN,.045)
+    chamfer(cooling,(3.48,3.69,-17.1),(.69,.085,2.18),METAL,.025)
+    cooling.role="SteelDark"
+    for z in (-17.60,-16.60):
+        cooling.rod((3.173,4.09,z),(3.162,4.09,z),.286,DARK,16)
+        for r in (.10,.19,.29):ring(cooling,(3.145,4.09,z),r,.012,METAL,(1,0,0),16)
+        for angle in (0,math.pi/3,math.pi*2/3):
+            dy,dz=math.cos(angle)*.28,math.sin(angle)*.28
+            cooling.rod((3.13,4.09-dy,z-dz),(3.13,4.09+dy,z+dz),.011,METAL)
+        cooling.rod((3.15,4.09,z),(3.12,4.09,z),.057,METAL,10)
+    for i in range(12):
+        z=-18.05+i*.175
+        cooling.box((3.165,3.80,z),(.018,.10,.055),DARK)
+    for z in (-18.02,-16.20):
+        chamfer(cooling,(3.5,4.71,z),(.09,.54,.15),METAL,.012)
+        chamfer(cooling,(3.5,4.98,z),(.36,.045,.24),METAL,.012)
+    for z,outside_z in ((-17.77,-17.3),(-16.44,-16.0)):
+        cooling.role="Rubber"
+        cooling.rod((3.77,4.18,z),(4.02,4.18,z),.045,DARK)
+        cooling.rod((4.02,4.18,z),(4.36,4.18,z),.045,DARK)
+        cooling.rod((4.36,4.18,z),(4.36,3.35,outside_z),.045,DARK)
+        cooling.rod((4.36,3.35,outside_z),(4.36,3.23,outside_z),.045,DARK)
+    cooling.role="SteelLight"
+    cooling.rod((3.72,3.67,-18.06),(3.80,3.60,-18.28),.023,METAL)
+    cooling.rod((3.80,3.60,-18.28),(3.80,1.56,-18.28),.023,METAL)
+    for y in (2.0,2.8,3.5):
+        chamfer(cooling,(3.825,y,-18.28),(.045,.075,.10),METAL,.008)
+    obj(cooling,"DockWarehouseRefrigeration",root,mat)
+    empty("ANCHOR_WarehouseRefrigeration",root,WAREHOUSE_REFRIGERATION)
+
+    # A shallow bolted rack holds reusable lids, slatted inserts and only two
+    # empty crates. The actual finite catch is never duplicated by the art.
+    for x in (-7.75,-6.99):
+        for z in (-18.32,-15.88):
+            chamfer(storage,(x,2.55,z),(.055,2.10,.055),METAL,.010)
+            chamfer(storage,(x,1.52,z),(.16,.035,.16),METAL,.008)
+            for y in (1.70,2.38,3.08):
+                storage.rod((x+.04,y,z),(x+.045,y,z),.015,DARK,6)
+    for y in (1.70,2.38,3.08):
+        chamfer(storage,(-7.37,y,-17.1),(.82,.045,2.5),METAL,.012)
+        for x in (-7.79,-6.95):
+            chamfer(storage,(x,y+.035,-17.1),(.035,.075,2.53),METAL,.008)
+    storage.rod((-7.78,1.75,-18.28),(-7.78,3.54,-15.92),.018,METAL)
+    storage.rod((-7.78,1.75,-15.92),(-7.78,3.54,-18.28),.018,METAL)
+    for z in (-17.94,-16.93):crate(storage,-7.34,1.725,z)
+    storage.role="Tare"
+    for i in range(4):
+        chamfer(storage,(-7.34,2.435+i*.054,-17.75),(.57,.035,.72),PAINT,.012)
+        for z in (-18.045,-17.455):
+            storage.box((-7.34,2.454+i*.054,z),(.49,.014,.021),METAL)
+    storage.role="Timber"
+    for y in (2.42,2.51):
+        for z in (-16.72,-16.18):
+            chamfer(storage,(-7.36,y,z),(.64,.055,.055),WOOD,.008)
+        for i in range(5):
+            chamfer(storage,(-7.60+i*.12,y+.045,-16.45),(.08,.035,.64),WOOD,.008)
+    storage.role="Fabric"
+    chamfer(storage,(-7.39,3.14,-17.86),(.57,.08,.58),ROPE,.025)
+    chamfer(storage,(-7.34,3.20,-17.89),(.53,.045,.49),ROPE,.018)
+    obj(storage,"DockWarehouseStorage",root,mat)
+    # Conservative solid below the shelves: the shallow storage bay is not a
+    # walk-through tunnel. All imported floor furniture stays west of -6.90.
+    chamfer(collision,(-7.37,2.55,-17.1),(.90,2.10,2.60),METAL,.012)
+
+    # Maintenance surface beside the entry: rounded timber top, braced frame,
+    # real open tool tray, two spanners, rubber gloves and a wall hung squeegee.
+    chamfer(bench,(-7.36,2.40,-13.67),(.88,.10,1.42),WOOD,.025)
+    for x in (-7.69,-7.04):
+        for z in (-14.23,-13.11):
+            chamfer(bench,(x,1.94,z),(.07,.88,.07),METAL,.012)
+        chamfer(bench,(x,1.75,-13.67),(.06,.06,1.18),METAL,.010)
+    chamfer(bench,(-7.36,1.72,-13.67),(.71,.045,1.15),WOOD,.012)
+    chamfer(collision,(-7.36,1.98,-13.67),(.88,.96,1.42),METAL,.012)
+    obj(bench,"DockWarehouseBench",root,mat)
+    chamfer(tools,(-7.29,2.48,-14.02),(.43,.035,.38),METAL,.010)
+    for x in (-7.50,-7.08):tools.box((x,2.515,-14.02),(.026,.07,.38),METAL)
+    for z in (-14.20,-13.84):tools.box((-7.29,2.515,z),(.43,.07,.026),METAL)
+    for i in range(2):
+        x,z=-7.40+i*.18,-14.05+i*.025
+        tools.rod((x,2.53,z-.10),(x,2.53,z+.08),.013,METAL)
+        ring(tools,(x,2.53,z+.105),.029,.009,METAL,(0,1,0),8)
+        for dx in (-.022,.022):tools.rod((x+dx,2.53,z-.10),(x+dx,2.53,z-.14),.009,METAL)
+    tools.role="Rubber"
+    for i in range(2):
+        x,z=-7.51+i*.27,-13.33+i*.035
+        chamfer(tools,(x,2.475,z),(.15,.035,.16),DARK,.012)
+        chamfer(tools,(x,2.475,z+.115),(.18,.04,.085),DARK,.012)
+        for j in range(4):
+            tools.rod((x-.052+j*.034,2.475,z-.06),
+                      (x-.052+j*.034,2.475,z-.15-abs(j-1.5)*-.018),.014,DARK,6)
+        tools.rod((x+.065,2.475,z),(x+.105,2.475,z-.05),.020,DARK,6)
+    tools.role=None
+    chamfer(tools,(-7.73,2.95,-14.93),(.045,.17,.62),WOOD,.012)
+    for z in (-15.12,-14.83):
+        tools.rod((-7.69,2.95,z),(-7.57,2.95,z),.018,METAL)
+        tools.rod((-7.57,2.95,z),(-7.57,3.005,z),.018,METAL)
+    tools.rod((-7.54,2.99,-15.12),(-7.37,1.68,-15.12),.022,WOOD,8)
+    chamfer(tools,(-7.37,1.67,-15.12),(.11,.08,.60),METAL,.018)
+    tools.role="Rubber"
+    chamfer(tools,(-7.36,1.63,-15.12),(.12,.022,.62),DARK,.007)
+    obj(tools,"DockWarehouseTools",root,mat)
+    obj(collision,"COL_WarehouseFurniture",root,mat).hide_render=True
+
+    # Flush drains and discontinuous wheel rubs imply washing and repeated
+    # handling without loose rubbish, fresh damage, puddles or floor obstacles.
+    wear.role="SteelDark"
+    for x,z,width,length in ((3.65,-18.28,.28,.58),(-7.26,-14.72,.40,.32)):
+        chamfer(wear,(x,1.505,z),(width,.009,length),METAL,.003)
+        for i in range(6):
+            wear.box((x-width*.36+i*width*.144,1.511,z),(.017,.002,length*.79),DARK)
+    wear.role="ConcreteWall"
+    for x in (-.51,.51):
+        for i,(z,length) in enumerate(((-12.75,.72),(-13.8,.46),(-14.4,.31))):
+            chamfer(wear,(x+i*.035,1.503,z),(.043,.004,length),CONCRETE,.001)
+    for i in range(4):
+        chamfer(wear,(-2.83+i*.31,1.503,-17.2-i*.14),(.26,.004,.035),CONCRETE,.001)
+    obj(wear,"DockWarehouseFloorWear",root,mat)
 
 
 def dock(mat):
@@ -315,6 +511,7 @@ def dock(mat):
     for name,p in {"WarehouseDoor":(0,1.5,-12),"WarehouseHandoff":(0,1.5,-17.5),"Visitor":(0,1.5,-20.5),
                    "RestWest":(-12,1.5,-4.8),"RestEast":(-10.5,1.5,-5.7),"RestQuay":(-12.2,1.5,-6.3)}.items():
         empty("ANCHOR_"+name,root,p)
+    warehouse_interior(root,mat)
     return root
 
 
@@ -793,6 +990,76 @@ def validate_controls_and_light(roots):
         raise RuntimeError("Searchlight shaft must remain bounded to twenty-two metres")
 
 
+def validate_warehouse_interior(roots):
+    """Measure new art against the unchanged working room, not empty anchors.
+
+    The reserve covers both trolleys' west turns and trailing people well
+    beyond their centre lines. Runtime capture separately samples their actual
+    imported bodies through the existing finite pickup/handoff states.
+    """
+    bpy.context.view_layer.update()
+    dock_root=next(r for r in roots if r.name.split('.')[0]=="Dock")
+    parts={p.name.split('.')[0]:p for p in dock_root.children_recursive}
+
+    def measured(name):
+        part=parts[name]
+        meshes=([part] if part.type=="MESH" else [])+[
+            p for p in part.children_recursive if p.type=="MESH"]
+        points=[source(p.matrix_world@v.co) for p in meshes for v in p.data.vertices]
+        if not points:raise RuntimeError("Warehouse part has no measured geometry: "+name)
+        return points
+
+    def extents(name):
+        points=measured(name)
+        return tuple(max(p[i] for p in points)-min(p[i] for p in points) for i in range(3))
+
+    for name,minimum in (("DockWarehousePanels",(10,3,5)),
+                         ("DockWarehouseStorage",(.7,2,2)),
+                         ("DockWarehouseBench",(.7,.8,1.2)),
+                         ("DockWarehouseRefrigeration",(.8,2,2))):
+        if any(actual<expected for actual,expected in zip(extents(name),minimum)):
+            raise RuntimeError("Warehouse fitting lost its authored readable volume: "+name)
+    if any(x< -7.855 or x>3.855 or z< -18.86 or z> -12.14
+           for x,y,z in measured("DockWarehousePanels")):
+        raise RuntimeError("Warehouse insulated liners protrude through the existing exterior walls")
+    for name in ("DockWarehouseStorage","DockWarehouseBench","DockWarehouseTools","COL_WarehouseFurniture"):
+        points=measured(name)
+        # Existing driver uses x=-3.2 with a three-metre lower turn; docker
+        # uses x=-2.3. Reserve x>=-5.2 for the complete handling envelope.
+        # Requiring the entire furnishing bay west of -6.85 leaves extra room
+        # for the hero and means even its collider cannot cross those routes.
+        if any(x>-6.85 or z< -18.45 or z> -12.85 or y<1.48 for x,y,z in points):
+            raise RuntimeError("Warehouse furniture invades a wall or the reserved working floor: "+name)
+    if max(p[1] for p in measured("DockWarehouseFloorWear"))>1.515:
+        raise RuntimeError("Warehouse wash/wheel marks must remain flush, without floor obstacles")
+    for x,y,z in measured("DockWarehouseRefrigeration"):
+        if y<3.60 and x<3.72:
+            raise RuntimeError("Warehouse refrigeration line leaves its east-wall strip near stored fish")
+    actual=source(parts["ANCHOR_WarehouseRefrigeration"].matrix_world.translation)
+    if math.dist(actual,WAREHOUSE_REFRIGERATION)>.0001:
+        raise RuntimeError("Warehouse refrigeration sound lost its physical fan source")
+
+    vertices=[];faces=[]
+    for part in dock_root.children_recursive:
+        if part.type!="MESH" or part.name.startswith("COL_"):continue
+        start=len(vertices)
+        vertices.extend(part.matrix_world@v.co for v in part.data.vertices)
+        faces.extend([start+i for i in polygon.vertices] for polygon in part.data.polygons)
+    tree=BVHTree.FromPolygons(vertices,faces)
+    for suffix,position in WAREHOUSE_LIGHTS.items():
+        actual=source(parts["ANCHOR_WarehouseLight"+suffix].matrix_world.translation)
+        if math.dist(actual,position)>.0001:
+            raise RuntimeError("Warehouse light lost its authored source: "+suffix)
+        lens=measured("WarehouseLampGlass"+suffix)
+        if min(p[1] for p in lens)<position[1]+.019 or extents("WarehouseLampGlass"+suffix)[0]<1.1:
+            raise RuntimeError("Warehouse diffuser must sit above its source and retain a readable length: "+suffix)
+        if min(p[1] for p in measured("WarehouseLampHousing"+suffix))<4.575:
+            raise RuntimeError("Warehouse lamp hangs into the working headroom: "+suffix)
+        hit,_,_,distance=tree.ray_cast(Vector(source(position)),Vector(source((0,-1,0))),1.0)
+        if hit is not None:
+            raise RuntimeError(f"Warehouse light {suffix} is blocked below its source at {distance:.4f} m")
+
+
 def source_surface_materials(roots):
     """The editable source/review uses the same semantic images and tints.
 
@@ -862,7 +1129,7 @@ def main():
     p.add_argument("--only-part",action="append",choices=("Dock","Trawler","CraneBase","CraneBoom","Hook","Cargo","Trolley","RopeSegment","AccessRoad"))
     args=p.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     base.reset();mat=base.material("PortVertexPaint")
-    roots=build(mat);validate_holds(roots);validate_landing(roots);validate_surfaces(roots);validate_controls_and_light(roots);entries=[describe(r) for r in roots]
+    roots=build(mat);validate_holds(roots);validate_landing(roots);validate_surfaces(roots);validate_controls_and_light(roots);validate_warehouse_interior(roots);entries=[describe(r) for r in roots]
     manifest={"design_id":"city_working_fishing_port_v1","generator":Path(__file__).name,
               "coordinate_system":"Unity +Y up / +Z bow; fixed metres; waterline origin",
               "parts":entries,"cargo_attachment_height":1.7,"crane_boom_length":8,"crane_pivot_height":4,
@@ -888,9 +1155,9 @@ def main():
         bpy.context.preferences.filepaths.save_version=0
         bpy.ops.wm.save_as_mainfile(filepath=str(args.source_dir/"CityPort3D.blend"),check_existing=False)
         if not args.no_preview:preview(roots,args.source_dir/"CityPort3D.png")
-    base.reset();rebuilt=build(mat);validate_holds(rebuilt);validate_landing(rebuilt);validate_surfaces(rebuilt);validate_controls_and_light(rebuilt);repeated=[describe(r) for r in rebuilt]
+    base.reset();rebuilt=build(mat);validate_holds(rebuilt);validate_landing(rebuilt);validate_surfaces(rebuilt);validate_controls_and_light(rebuilt);validate_warehouse_interior(rebuilt);repeated=[describe(r) for r in rebuilt]
     if entries!=repeated:raise RuntimeError("Port deterministic rebuild mismatch")
-    print("CITY PORT ART CONTRACT OK: fixed metre parts, real hold apertures, semantic UVs, moving controls, forward searchlight and deterministic geometry")
+    print("CITY PORT ART CONTRACT OK: fixed metre parts, real holds, semantic UVs, moving controls, warehouse fittings/clearances/lamps, forward searchlight and deterministic geometry")
     print(json.dumps([{k:v for k,v in e.items() if k in ("name","triangles","bounds_min","bounds_max")} for e in entries]))
 
 

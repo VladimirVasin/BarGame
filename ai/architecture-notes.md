@@ -4,6 +4,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-11, dock shift foreman:**
+  §6 level `0`: left carrot, three bites→stem/pail→left-pocket reload.
+  Speech holds bite/clock, stops chewing/lowers left; right shakes.
+  Against store wall, facing initial cart spot; existing quay light.
+  Art §10d/observer/first-pool; shore trio/shared channel `60–100 s`. `E` choices wait
+  pair, no backlog.
+  No pickup/work/pay/quest/reward/crime/mystery/intoxication response;
+  custody/clear paths/rig/§16/§21/art checks stay.
+
+- **Accepted — 2026-09-11, passive dock cold-store fittings:**
+  `Dock`: liners/guards/joists/wiring, guarded lamps, evaporator/condenser/drain
+  lines, west rack/bench/tools; shared surfaces. `COL_WarehouseFurniture`
+  `x<=-6.92`, handling `x>=-5.2`; baffle/stock/routes stay. Warm shadowed spots:
+  `6.5 m`/night `14`/day `2/3`; anchored fan `.12/14 m`, shared pause/distance/
+  disposal. No text/interaction/exception.
+
 - **Accepted — 2026-09-10, hydraulic tail-lift rig:**
   Blender rear niches hold twin guides/carriage/hinge and lift/fold cylinders.
   Sliding rods, `Truck.up` slope clearance, worn steel/rubber; no dummy rods/text.
@@ -15,43 +31,34 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   release protects bodies, opposing lanes open.
 
 - **Accepted — 2026-09-10, ship-arrival dispatch and local handling:**
-  Dock latch spawns truck/driver/body on unseen road suffix: `3 m/s`, parked
-  at first crate `156 s`; later full factory trips. Double cab horn `.30/64 m`,
-  pause-owned/no replay. Reverse: ajar door/look-back/steer/beeper; exit `78°`.
-  Crates stored `156/220/284` uninterrupted. Driver waits until docker exits
-  (`167.181+64n s`); next loaded entry limits access. Grip `12.8 s` after parking,
-  queue `4 s` later, first fetch `172.8 s`. East pallets clear aisle/wall.
-  Port cart parks by tare at the canopy's west edge; north apron/west-side
-  approach reaches rear handles clear of cart and resting crew, returns likewise.
-  Port push/pull gait and apron turns clear lift; other routes stay.
-  Cart→cargo→stand. Doors `0–4`→unfold `4–7`→lower `7–11 s`;
-  return cart before reverse closure.
+  Dock latch spawns truck/driver/body on unseen road suffix: `3 m/s`, parked at
+  crate `156 s`; later full factory trips. Double horn `.30/64 m`, pause/no replay.
+  Reverse ajar door/look-back/steer/beeper, exit `78°`; stock `156/220/284` never
+  waits. Driver waits for docker exit `167.181+64n s`; next entry limits access.
+  Grip parking+`12.8 s`, queue+`4 s`, first fetch `172.8 s`; east pallets clear.
+  Cart by west canopy tare: north apron/west approach to rear grips clears crew,
+  return likewise. Push/pull/apron turns clear lift; other paths stay.
+  Cart→cargo→stand; doors `0–4`→unfold `4–7`→lower `7–11 s`, cart return→reverse.
 
 - **Accepted architecture exception — 2026-09-10, driver's first speech pool:**
   Driver↔docker only: city/weather/salutations, wait "Жду тебя, дружище".
   Port channel/route/grips retained; no player interaction. Canon/rig rules hold.
 
 - **Accepted architecture exception — 2026-09-10, port social life:**
-  Story §6/§21: paired city/weather speech; `36` rest/`36` work/`8` greeting/
-  `8` farewell. Per-kind shuffle marks first actual line, preserves unused
-  absent pairs and history on Reset/seek; replies stay paired. Greeting/arming
-  Approach `.86` (`60.2 s`), stagger/grips retained. Shore rest uses actual
-  `COL_Awning` footprint; southern routes clear tare/posts, return before duty.
-  Rest exchanges start only if the full paired reply fits before greetings.
-  A reused warm Spot/halo under the roof lights rest/tare locally (`7 m`),
-  daytime floor `2/3`; global light stays.
-  Free docker/deckhand Walk→hero Run `1.8–2.6 m/s`; routes/work grips stay.
-  Pause-aware breath/weight/gaze/smoking/levers. Finite catch, observation `0-5`;
-  no hero/crime/quest/boarding/reward layer.
+  §6/§21 city/weather pairs: `36` rest/`36` work/`8` greeting/`8` farewell.
+  Per-kind shuffle marks first spoken line, retains absent pairs/history across
+  Reset/seek. Greeting/arming `.86`/`60.2 s`, stagger/grips stay. `COL_Awning`
+  rest/southern routes clear tare/posts, return before duty; paired replies fit
+  before greetings. Warm Spot/halo `7 m`, day `2/3`, global light stays.
+  Free docker/deckhand Walk→hero Run `1.8–2.6 m/s`, paths/grips stay; pause-aware
+  breath/weight/gaze/smoking/levers. Finite catch/observation `0-5`; no crime/quest/ride/reward.
 
 - **Accepted — 2026-09-10, fish logistics/session start:**
-  Story §6: weighbridge→factory; routes/stock retained, tare Deferred.
-  Travel `3 m/s`, reverse `1.1`. Shared `CityFishSupplySession.HasStarted`:
-  unpaused running-clock entry into `CityPortPlan.LandBounds`,
-  `abs(Y-QuayTopY)<=3 m`, latches time. Before: Approach `0`, no catch-up;
-  after: autonomous across scenes/reentry, reset only by `BeginNewGame`.
-  Pause/obstacles stop work; `80/96 m` gates preserve
-  custody/collision/traffic and paused restore.
+  §6 weighbridge→factory; routes/stock stay, tare Deferred. Travel `3 m/s`,
+  reverse `1.1`. `CityFishSupplySession.HasStarted` latches running/unpaused
+  `CityPortPlan.LandBounds` entry at `abs(Y-QuayTopY)<=3 m`. Before Approach `0`,
+  no catch-up; then autonomous across scenes/reentry, reset `BeginNewGame` only.
+  Pause/obstacles stop work; `80/96 m` gates retain custody/collision/traffic/restore.
 
 - **Accepted — 2026-09-10, cannery surface and process detail:**
   Ten Blender models; floor/wall/steel/insulation/cardboard maps, shared port
@@ -78,36 +85,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   pause/distance/stop own DSP. Existing Spot/Soft shadows; global mix/light unchanged.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
-  Twelve opaque ImageGen albedos: concrete/walls/painted steel/plaster/timber/
-  roof/deck/plastic/fish/ice/rubber/fabric. Originals/prompts/hashes:
-  `ArtSource/City/Port/Textures/generation.json`; backend version unknown.
-  Shared muted materials: metre UVs, `512 px` sRGB/mipmaps/repeat; thin bare metal
-  stays flat. Asphalt shares `CityRoadAsphaltAlbedo`, `12 m` phase/city wetness.
-  Story §6 admits local regrading/nine measured FBXs, including `AccessRoad`.
-  `PortAccessLayout.json`/`CityPortAccessPlan`: `6 m` road/flare/L-yard at east
-  loading door; current compact-truck dimensions. `2 m` public bypass
-  crosses once. NPCs: straight spur/orthogonal beach links; player: diagonal
-  branch; graph rules stay. Heads slew with bearings/counterweights/winches;
-  grounded StationWorker rigs retain muted fabric/task gaze/contacts.
-  Hook/cargo sway <`9 cm`, settled before lowering. Quay/store lights retain
-  two-thirds daytime floor/global fog; story §16/§21 and all nine art checks hold.
+  Twelve opaque ImageGen maps: concrete/walls/painted steel/plaster/timber/
+  roof/deck/plastic/fish/ice/rubber/fabric. Originals/prompts/hashes in
+  `ArtSource/City/Port/Textures/generation.json`; backend unknown. Muted shared
+  metre-UV/`512 px` sRGB/mipmap/repeat surfaces; thin bare metal flat. Asphalt:
+  `CityRoadAsphaltAlbedo`, `12 m` phase/wetness. §6 permits regrading/nine metre
+  FBXs including `AccessRoad`. `PortAccessLayout.json`/`CityPortAccessPlan`:
+  `6 m` road/flare/east L-yard for truck, `2 m` bypass/one crossing; NPC straight/
+  orthogonal links, hero diagonal, graph unchanged. Heads/bearings/weights/winches
+  slew together; grounded StationWorkers retain fabric/gaze/contacts. Sway
+  <`9 cm`, settled before lowering. Quay/store: day `2/3`, global fog; §16/§21/art checks.
 
 - **Accepted — 2026-09-09, a small working fishing port:**
-  Story §6 level-`0` exception covers art §10d docking/dark shore/sand, story
-  §5/§7/§12/§18 and art §10g closed-port meaning. Closed mine, station and
-  fisherman remain; no reopening history. One berth/two cranes/~`20 m` trawler/
-  five workers serve finite catches. Fenders/bollards/moorings/free crane edge
-  face an approach clear of bed/mouth/island/pier. Solid caissons reach local
-  `-3.4 m`, `20 m` seaward; rear path `0.5 m` inland, physical side ramps above
-  sand. Public routes avoid hung loads. Moorings precede lifts, clear before
-  departure; crane→trolley→store handoffs require contact. Fog hides entry/exit;
-  offshore passes exclude this corridor.
-  `CityPortCycle` reconstructs `64 s` slots; `CityPortController` owns custody/
-  hatches/moorings/motion/crew/wake/sound. Blender anchors measure pure plans;
-  runtime owns pause/release. Shared water/materials, nonyellow workwear, causal
-  sound/warm lights preserve fisherman's accent/daytime floor. Hero observes
-  freely; no boarding/exit/earnings/quest/hero dialogue/crime-disease implications/
-  act-intoxication changes. Story §16/§21 and all nine art checks hold.
+  §6 level `0`: art §10d docking/dark shore/sand, story §5/§7/§12/§18, art §10g.
+  Mine/station/fisherman stay, no reopening lore. One berth/two cranes/~`20 m`
+  trawler/five workers/finite catch; fenders/bollards/moorings/free edge. Approach
+  clears bed/mouth/island/pier; caissons `-3.4 m`/`20 m` seaward, rear path `.5 m`
+  inland, side ramps above sand. Public lanes avoid hung loads. Moor→lift,
+  unmoor→depart; crane→cart→store contacts, fog entry/exit, offshore passes avoid.
+  `CityPortCycle` `64 s` slots; controller custody/hatches/moorings/motion/crew/
+  wake/sound, Blender plan anchors, runtime pause/release. Shared water/materials,
+  nonyellow clothes, causal sound/warm light retain fisherman accent/day floor.
+  No boarding/exit/earnings/quest/crime-disease/act-intoxication changes; §16/§21/art checks.
 
 - **Accepted — 2026-09-09, the Ferryman's radio and ordinary road speech:**
   The user approved the complete radio, glovebox-light and ten-line road-pool
