@@ -14,6 +14,7 @@ namespace BarPromenade
         [SerializeField] private Animator animator;
         [SerializeField] private Transform modelRoot;
         [SerializeField] private AnimationClip seatedIdle, seatedGrumble;
+        [SerializeField] private AnimationClip seatedListen, seatedTalk;
         [SerializeField] private AnimationClip[] snackActions = Array.Empty<AnimationClip>();
         [SerializeField] private Renderer[] renderers = Array.Empty<Renderer>();
         [SerializeField] private Color[] colors = Array.Empty<Color>();
@@ -26,10 +27,10 @@ namespace BarPromenade
         private AnimationClipPlayable[] playables;
         private AnimationClip[] poseClips;
         private readonly CityPortForemanSnackTimeline snackTimeline = new CityPortForemanSnackTimeline();
-        private double previousSeconds = double.NaN, speechStarted;
+        private double previousSeconds = double.NaN, speechStarted, dialogueStarted;
         private int speechPartner = -1;
         private bool speaking;
-        private float speechWeight, conversationWeight, lookYaw;
+        private float speechWeight, conversationWeight, lookYaw, lookPitch;
         private Collider[] solids;
         private Renderer[] carrotBites;
         private Renderer carrotStem, carrotGreens;
@@ -54,12 +55,16 @@ namespace BarPromenade
         public bool IsSpeaking => speaking;
         public float GestureWeight => speechWeight;
         public float EatingWeight => 1f - conversationWeight;
+        public string ConversationClipName => speechPartner == -1 ? string.Empty : speechPartner == -2
+            ? speaking ? "SeatedTalk" : "SeatedListen" : "SeatedGrumble";
         public CityPortForemanInteraction Interaction { get; private set; }
 
         public void Configure(Animator configuredAnimator, Transform model, AnimationClip idle,
-            AnimationClip grumble, AnimationClip[] foodActions, Renderer[] meshes, Color[] partColors, Texture2D texture)
+            AnimationClip grumble, AnimationClip[] foodActions, Renderer[] meshes, Color[] partColors, Texture2D texture,
+            AnimationClip dialogueListen, AnimationClip dialogueTalk)
         {
             animator = configuredAnimator; modelRoot = model; seatedIdle = idle; seatedGrumble = grumble;
+            seatedListen = dialogueListen; seatedTalk = dialogueTalk;
             snackActions = foodActions;
             renderers = meshes; colors = partColors; atlas = texture;
         }
@@ -88,7 +93,8 @@ namespace BarPromenade
         public void InitializePose()
         {
             if (graph.IsValid()) return;
-            if (animator == null || modelRoot == null || seatedIdle == null || seatedGrumble == null || snackActions.Length != 5)
+            if (animator == null || modelRoot == null || seatedIdle == null || seatedGrumble == null ||
+                seatedListen == null || seatedTalk == null || snackActions.Length != 5)
                 throw new InvalidOperationException("Incomplete seated foreman rig.");
             Transform Find(string name) => CityPedestrianHandProps.FindSocket(modelRoot, name)
                 ?? throw new InvalidOperationException("Missing foreman joint or contact: " + name);
@@ -116,7 +122,7 @@ namespace BarPromenade
             graph = PlayableGraph.Create("PortForeman.Seated");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             poseClips = new[] { seatedIdle, seatedGrumble, snackActions[0], snackActions[1],
-                snackActions[2], snackActions[3], snackActions[4], seatedGrumble };
+                snackActions[2], snackActions[3], snackActions[4], seatedGrumble, seatedTalk, seatedListen };
             mixer = AnimationMixerPlayable.Create(graph, poseClips.Length);
             playables = new AnimationClipPlayable[poseClips.Length];
             for (int i = 0; i < poseClips.Length; i++)
@@ -134,6 +140,7 @@ namespace BarPromenade
         private void SetSpeechPose(int partner, bool isSpeaking)
         {
             if (isSpeaking && !speaking) speechStarted = crew.LifeElapsedSeconds;
+            if (partner == -2 && speechPartner != -2) dialogueStarted = crew.LifeElapsedSeconds;
             speechPartner = partner; speaking = isSpeaking;
         }
 
@@ -156,7 +163,7 @@ namespace BarPromenade
             CityPortForemanSnackSnapshot snack = snackTimeline.Advance(seconds, conversing);
             conversation?.SetForemanState(visible && isActiveAndEnabled, visible && isActiveAndEnabled && snack.CanTalk);
             if (seek || !visible)
-            { speechWeight = conversationWeight = 0f; lookYaw = 0f; snackPose = 0; snackPoseSeconds = 0d; }
+            { speechWeight = conversationWeight = 0f; lookYaw = lookPitch = 0f; snackPose = 0; snackPoseSeconds = 0d; }
             if (!visible) return;
             speechWeight = Mathf.MoveTowards(speechWeight, speaking ? 1f : 0f, dt * 3f);
             conversationWeight = Mathf.MoveTowards(conversationWeight, conversing ? 1f : 0f, dt * 4f);
@@ -170,22 +177,32 @@ namespace BarPromenade
             playables[snackPose].SetTime(snackPose == 0 ? snackPoseSeconds % seatedIdle.length :
                 Math.Min(snackPoseSeconds, poseClips[snackPose].length));
             playables[1].SetTime(Math.Max(0d, seconds - speechStarted) % seatedGrumble.length);
+            playables[8].SetTime(Math.Max(0d, seconds - speechStarted) % seatedTalk.length);
+            playables[9].SetTime(Math.Max(0d, seconds - dialogueStarted) % seatedListen.length);
             for (int i = 0; i < poseClips.Length; i++) mixer.SetInputWeight(i, 0f);
             mixer.SetInputWeight(snackPose, 1f - conversationWeight);
-            mixer.SetInputWeight(1, conversationWeight * speechWeight);
-            mixer.SetInputWeight(7, conversationWeight * (1f - speechWeight));
+            mixer.SetInputWeight(speechPartner == -2 ? 8 : 1, conversationWeight * speechWeight);
+            mixer.SetInputWeight(speechPartner == -2 ? 9 : 7, conversationWeight * (1f - speechWeight));
             graph.Evaluate(0f);
             PresentCarrot(snack);
             Transform target = speechPartner >= 0 ? crew?.GetConversationHead(speechPartner) :
                 speechPartner == -2 ? Interaction?.Listener : null;
-            float yaw = 0f;
+            float yaw = 0f, pitch = 0f;
             if (target != null && conversationWeight >= .99f)
             {
                 Vector3 direction = transform.InverseTransformDirection(target.position - Head.position);
                 yaw = Mathf.Clamp(Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg, -38f, 38f);
+                // The hero stands while the foreman remains on his stool.
+                // Only this owned dialogue adds elevation; ambient exchanges
+                // retain their original horizontal head turn.
+                if (speechPartner == -2)
+                    pitch = Mathf.Clamp(-Mathf.Atan2(direction.y,
+                        Mathf.Max(.01f, new Vector2(direction.x, direction.z).magnitude)) * Mathf.Rad2Deg, -25f, 12f);
             }
             lookYaw = Mathf.MoveTowards(lookYaw, yaw, dt * 75f);
-            Head.rotation = Quaternion.AngleAxis(lookYaw, transform.up) * Head.rotation;
+            lookPitch = Mathf.MoveTowards(lookPitch, pitch, dt * 55f);
+            Head.rotation = Quaternion.AngleAxis(lookYaw, transform.up) *
+                Quaternion.AngleAxis(lookPitch, transform.right) * Head.rotation;
         }
 
         private void PresentCarrot(in CityPortForemanSnackSnapshot snack)
@@ -204,7 +221,7 @@ namespace BarPromenade
         private void OnDisable()
         {
             conversation?.SetForemanState(false, false);
-            speaking = false; speechPartner = -1; speechWeight = conversationWeight = 0f; previousSeconds = double.NaN;
+            speaking = false; speechPartner = -1; speechWeight = conversationWeight = 0f; lookYaw = lookPitch = 0f; previousSeconds = double.NaN;
             Interaction?.Cancel();
         }
 

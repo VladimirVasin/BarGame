@@ -63,6 +63,9 @@ decision recorded as an accepted exception in `ai/architecture-notes.md`.
    `enter → loop → exit` action on the same rig. The nested action owns its
    temporary look/input lock and completion callback, then returns to the
    exact parent loop without replacing that interaction's lifecycle or cleanup.
+   A held nested loop, such as dialogue Talk inside Listen, waits for an explicit
+   exit request; the parent resumes after the nested terminal pose unless the
+   whole interaction takes the stationary exit below.
 6. Sample the active clip first, then align its registered pelvis anchor to the
    authored world target. Reset that spatial offset on normal completion,
    cancellation, disable, destroy and failed preparation.
@@ -74,6 +77,12 @@ decision recorded as an accepted exception in `ai/architecture-notes.md`.
    crosses the nominal phase duration. Restore root, facing and neutral
    presentation at that endpoint, then defer input unlock until the final
    presentation `LateUpdate` completes.
+   Stationary actions may opt into `RequestExitWithPoseTransition` only when
+   the live and authored exit poses share root, pelvis and lower-body contacts.
+   It captures the last visible pose, including nested Talk, and uses the shared
+   recovery blend into authored Exit without waiting for the parent Listen loop.
+   It cannot bridge different docks or foot contacts, conceal a teleport, skip
+   the terminal frame or release input early. Camera return may run alongside it.
 9. Failed preparation, stale inventory requirements, scene transition,
    cancellation, disable and destroy use owned idempotent cleanup. Restore
    input, hero presentation, spatial offsets, visibility leases, contact

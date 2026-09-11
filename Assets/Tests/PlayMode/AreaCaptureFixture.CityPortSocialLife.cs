@@ -726,6 +726,13 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void ValidatePortSocialLocalization()
         {
+            string[] dialogueKeys =
+            {
+                CityPortConversationController.ForemanOfferKey,
+                CityPortConversationController.ForemanAcceptKey,
+                CityPortConversationController.ForemanDeclineKey,
+                "city.port.foreman.hero_yes", "city.port.foreman.hero_no"
+            };
             foreach (string language in new[] { "ru", "en" })
             {
                 TextAsset asset = Resources.Load<TextAsset>("Localization/" + language);
@@ -735,10 +742,11 @@ namespace BarPromenade.Tests.PlayMode
                 foreach (var entry in catalog.entries)
                     if (entry.key.StartsWith("city.port.", StringComparison.Ordinal))
                         Assert.That(lines.TryAdd(entry.key, entry.value), Is.True, "Duplicate localized port key.");
-                Assert.That(lines.Count, Is.EqualTo(4 + 2 * (CityPortConversationCatalog.RestCount + CityPortConversationCatalog.WorkCount +
+                Assert.That(lines.Count, Is.EqualTo(1 + dialogueKeys.Length + 2 * (CityPortConversationCatalog.RestCount + CityPortConversationCatalog.WorkCount +
                     CityPortConversationCatalog.GreetingCount + CityPortConversationCatalog.FarewellCount + CityPortConversationCatalog.ForemanCount)));
                 Assert.That(lines[CityPortConversationController.AccessWaitLineKey],
                     Is.EqualTo(language == "ru" ? "Жду тебя, дружище" : "Waiting for you, buddy"));
+                foreach (string key in dialogueKeys) ValidateLine(key);
                 var ambientText = new HashSet<string>(StringComparer.Ordinal);
                 foreach (CityPortConversationKind kind in Enum.GetValues(typeof(CityPortConversationKind)))
                 for (int variant = 0; variant < CityPortConversationCatalog.Count(kind); variant++)
@@ -746,16 +754,22 @@ namespace BarPromenade.Tests.PlayMode
                     var exchange = CityPortConversationCatalog.Get(kind, variant);
                     foreach (string key in new[] { exchange.FirstKey, exchange.SecondKey })
                     {
-                        Assert.That(lines.ContainsKey(key), Is.True, language + ": " + key);
+                        ValidateLine(key);
                         string value = lines[key];
                         if (kind == CityPortConversationKind.Rest || kind == CityPortConversationKind.Work || kind == CityPortConversationKind.Foreman)
                             Assert.That(ambientText.Add(value), Is.True, "Repeated authored phrase: " + key);
-                        Assert.That(value.Length, Is.InRange(3, 120));
-                        Assert.That(value.Contains("!") || value.Contains("(") || value.Contains(")"), Is.False, key);
-                        Assert.That(Regex.Matches(value, "[.?!]").Count, Is.InRange(1, 2), key);
                     }
                     if (lines[exchange.FirstKey].Contains("?"))
                         Assert.That(lines[exchange.SecondKey].Contains("?"), Is.False, "A port question has an authored answer.");
+                }
+
+                void ValidateLine(string key)
+                {
+                    Assert.That(lines.ContainsKey(key), Is.True, language + ": " + key);
+                    string value = lines[key];
+                    Assert.That(value.Length, Is.InRange(3, 120), language + ": " + key);
+                    Assert.That(value.Contains("!") || value.Contains("(") || value.Contains(")"), Is.False, key);
+                    Assert.That(Regex.Matches(value, "[.?!]").Count, Is.InRange(1, 2), key);
                 }
             }
         }

@@ -774,11 +774,10 @@ The vertical slice contains:
 - All speech/`E` uses shared head bubbles; bottom UI is silent. `SpeechDelivery`:
   `24` chars/s, `.13 s` clicks, `4.4 s` bubble, `2.5 s` tail; pairs/chess retain full lines;
 - ten RU/EN role labels: Foreman, Watchman, Fisherman, Ferryman, Chess player,
-  Checkers player, Bartender, Cashier, Cat and Cafe attendant. Village/Mother
-  excluded. Actor-bound heads follow movement; `6→4 m` fade from hero, `.25–.5 m`
-  clearance, fixed `10` logical px/shared font/charcoal. Camera depth/actor-ID
-  masking hides occlusion without colliders; no edge clamp. Speech/pause/modal/
-  transition hide labels; overlap keeps active interaction then nearest actor;
+  Checkers player, Bartender, Cashier, Cat, Cafe attendant; village/Mother excluded.
+  Moving actor/head: `6→4 m`, `.25–.5 m` gap, shared `10 px`/charcoal. Depth/actor-ID
+  mask rejects colliderless occlusion; no edge clamp. Speech/pause/modal/transition
+  suppress; overlap priority is active interaction→nearest;
 - one deterministic radius-safe sidewalk/crosswalk navigation graph with
   spawn anchors on long pavement segments. At most two low-poly walkers are
   active near the player: one randomized runtime event activates one slot at a
@@ -1248,11 +1247,13 @@ The vertical slice contains:
   rounds; rest ends before greetings, staggered farewells fit earshot, no replay.
   Pause-aware breath/weight/gaze; turns/Walk→Run retain grips, levers follow hands.
   Driver talks only to docker. Tare/cart avoided; people/cargo physical, custody-owned.
-  `CityPortForeman`: against store wall facing initial cart spot, existing quay light;
-  left-palm carrot grip/three bites→stem into pail→
-  left-pocket reload. Speech keeps bite/clock, stops chewing/lowers left, right shakes.
-  Shared shore talk `60–100 s`, no-repeat; `E` waits pair/choices. No pickup/work/pay/
-  quest; pause/distance owned, exit cancels.
+  `CityPortForeman`: store wall/cart-facing/quay light; left carrot, three bites→pail→pocket.
+  `E` prompt; pair admission, walk/facing `1.65 m` ahead.
+  Two side chest-up shots, shared speech, silent choices. Hero speaks
+  selected «Хочу»/«Не сейчас»; no new pool. Both Talk/Listen, no lipsync.
+  Carrot bite/clock retained, left lowered/right gesture. Cancel anytime;
+  parallel pose/camera entry/exit, shared input/HUD/rig cleanup.
+  No work/pay/quest; village/Mother unchanged.
   Solid caissons reach `20 m` seaward and `-3.4 m` below sea level.
   `CityPortAccessPlan`/`PortAccessLayout.json`: `6 m` road/regrade/L-yard,
   `6.481 x 2.4 m` truck; road/shoulders are the city approach, ramp/yard masks joined.
@@ -2890,10 +2891,10 @@ The vertical slice contains:
   locomotion, face, hybrid fall, bed, smoking, cat-feeding and bus-passenger
   action set.
 - Minimap, in-world GPS trail, route autopilot, and manual map zoom/pan.
-- Sobering mechanics, long-term save data, income/jobs, a broader economy,
-  branching dialogue with choices, combat, save slots, and online features.
-  Dated quests and the journal are implemented, as are the scripted local
-  exchanges; what is deferred is dialogue the player steers.
+- Sobering mechanics, long-term save data/slots, income/jobs, a broader economy,
+  combat/online features and other NPC/quest dialogue adapters.
+  Dated quests, the journal, local exchanges and the foreman's player-chosen
+  dialogue branches are implemented.
 - Final bespoke art and audio masters, accessibility and platform release work.
   RU/EN localization itself is implemented and carries every in-fiction line;
   what remains is coverage of strings added after a feature lands.

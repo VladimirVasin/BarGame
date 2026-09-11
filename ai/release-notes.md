@@ -8,23 +8,23 @@ Earlier notes: [`release-notes-2026-08.md`](archive/release-notes-2026-08.md).
 
 ### 2026-09-11 — Доки и речь
 
-- Склад: лампы, панели/опоры, гудящий холодильник, стеллаж/стол,
-  инструменты, сливы и следы колёс; грузовые проходы свободны.
-- Бригадир ест морковь, для речи опускает её и трясёт рукой.
-  `E`: предложение работы, согласие/отказ, без задания/оплаты.
-- Тропинка к докам и переход убраны; осталась дорога грузовика.
-- Вся речь, включая ответы на `E`, над говорящим: медленнее набор, реже щелчки,
-  дольше видны фразы. Парные ответы не обрывают их; внизу немые подсказки и выбор.
-  Пройдены `ParkQuarrelTests`, `MountainRoadCafeConversationTests`, `InteractionPromptViewTests`,
-  `AreaCaptureFixture.CitySpokenResponses`.
-- Склад занимает первый пришедший. Водитель не ждёт будущий груз на кране;
-  позже подошедший докер ждёт с тележкой снаружи. `CityFishSupplyCycleTests` и
-  `AreaCaptureFixture.CityPortWarehouseAccess` пройдены; оба порядка просмотрены.
-- Склад/бригадир проверены их генераторами и `AreaCaptureFixture.CityPortWarehouseInterior`,
-  `AreaCaptureFixture.CityPortForeman`; дорога — `AreaCaptureFixture.CityPortTraversalAudit`.
-  Кадры просмотрены, `python tools/check-docs.py` пройден.
-- Подписи ролей рядом с NPC скрываются стенами; деревня и мать исключены.
-  Проверено `AreaCaptureFixture.NpcNameplates`.
+- Склад оснащён, проходы свободны; бригадир ест морковь и жестикулирует.
+  Генераторы, `CityPortWarehouseInterior`/`CityPortForeman` пройдены, кадры просмотрены.
+- К докам ведёт дорога грузовика; тропинка/переход убраны.
+  `CityPortTraversalAudit` пройден.
+- Вся речь над говорящим, медленнее набор/щелчки, дольше чтение; внизу немой выбор.
+  `ParkQuarrelTests`, `MountainRoadCafeConversationTests`, `InteractionPromptViewTests`,
+  `AreaCaptureFixture.CitySpokenResponses` пройдены.
+- В склад входит первый пришедший, без резерва под будущий груз.
+  `CityFishSupplyCycleTests`/`CityPortWarehouseAccess` пройдены; кадры просмотрены.
+- Роли над NPC скрываются стенами; деревня/мать исключены. `NpcNameplates` пройден.
+- Разговор с бригадиром: подход/поворот героя, два боковых кадра по грудь,
+  речь над обоими. Выбранное «Хочу»/«Не сейчас» герой говорит вслух.
+  Отмена в любой момент; надкус сохранён, задания/оплаты нет.
+  `AreaCaptureFixture.CityPortForemanDialogue` пройден; RU/EN кадры просмотрены.
+  В подсказку вернулась `E`; камера и поза входят/выходят вместе, без ожидания
+  лишнего цикла. Проверка задержек/подсказки пройдена; RU/EN кадры просмотрены.
+  `python tools/check-docs.py` пройден.
 
 ### 2026-09-10 — Находки, порт, фабрика
 

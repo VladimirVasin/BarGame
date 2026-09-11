@@ -675,9 +675,9 @@ namespace BarPromenade
                    HasRequiredClips(definition);
         }
 
-        // Plays enter, one loop and exit without releasing the seated parent.
+        // A held nested action returns at its authored loop seam when its owner requests exit.
         public bool BeginNestedLoopAction(
-            PlayerAnimatedInteractionDefinition definition)
+            PlayerAnimatedInteractionDefinition definition, bool holdLoop = false)
         {
             if (!CanBeginNestedLoopAction(definition))
             {
@@ -687,7 +687,7 @@ namespace BarPromenade
             ApplyTimelinePresentation(timeline, GetCurrentPelvisPosition());
             nestedLoopAction = new PlayerAnimatedInteractionTimeline(
                 definition,
-                exitAfterOneLoopCycle: true);
+                exitAfterOneLoopCycle: !holdLoop);
             if (!nestedLoopAction.Begin())
             {
                 nestedLoopAction = null;
@@ -708,6 +708,9 @@ namespace BarPromenade
             return FinishNestedLoopAction(completedNormally: false);
         }
 
+        public bool RequestNestedLoopActionExit() => IsNestedLoopActionActive &&
+            nestedLoopAction.RequestExitAtLoopBoundary();
+
         public bool RequestExit()
         {
             return RequestExit(1f);
@@ -727,6 +730,27 @@ namespace BarPromenade
             ApplyInputForPhase(timeline.Phase);
             ApplyCurrentPresentation();
             PhaseChanged?.Invoke(timeline.Phase);
+            return true;
+        }
+
+        /// <summary>
+        /// Opt-in for stationary actions with matching lower-body samples. Settle
+        /// from the last visible pose into the authored exit without waiting for
+        /// an idle-loop seam; an owned nested gesture is included in that pose.
+        /// </summary>
+        public bool RequestExitWithPoseTransition(float durationMultiplier, float poseBlendSeconds)
+        {
+            if (float.IsNaN(durationMultiplier) || float.IsInfinity(durationMultiplier) || durationMultiplier <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(durationMultiplier));
+            if (float.IsNaN(poseBlendSeconds) || float.IsInfinity(poseBlendSeconds) || poseBlendSeconds <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(poseBlendSeconds));
+            if (isPositioning || timeline == null || timeline.Phase != PlayerAnimatedInteractionPhase.Looping ||
+                !(player.Visual is Player3DCharacterPresentation presentation)) return false;
+            if (IsNestedLoopActionActive) FinishNestedLoopAction(completedNormally: false);
+            if (!RequestExit(durationMultiplier)) return false;
+            // TryBeginClip cancels an old pose bridge. Arm this one AFTER the
+            // exit sample, using the presentation's saved last rendered pose.
+            presentation.BeginRecoveryPoseTransition(Mathf.Min(poseBlendSeconds, (float)ExitDurationSeconds));
             return true;
         }
 

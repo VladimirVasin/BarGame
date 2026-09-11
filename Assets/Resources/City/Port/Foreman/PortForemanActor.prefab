@@ -52,6 +52,8 @@ MonoBehaviour:
   modelRoot: {fileID: 2772682615026938076}
   seatedIdle: {fileID: -1578108864033860647, guid: 9b30f6e4609ff79b20e90d031b029575, type: 3}
   seatedGrumble: {fileID: 901464113524095256, guid: 9b30f6e4609ff79b20e90d031b029575, type: 3}
+  seatedListen: {fileID: -454184383516469099, guid: 9b30f6e4609ff79b20e90d031b029575, type: 3}
+  seatedTalk: {fileID: 6358578455954889775, guid: 9b30f6e4609ff79b20e90d031b029575, type: 3}
   snackActions:
   - {fileID: 321249049407829348, guid: 9b30f6e4609ff79b20e90d031b029575, type: 3}
   - {fileID: -4429974587211245059, guid: 9b30f6e4609ff79b20e90d031b029575, type: 3}

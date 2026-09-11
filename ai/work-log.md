@@ -8,43 +8,42 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
 ## 2026-09-11 — Dock access, cold store, foreman and speech
 
-- Added Blender warehouse fittings, lamps, refrigeration/drainage and wheel wear;
-  shared surfaces, baffle, stock and cart turns retained. Lamp day floor and fan
-  pause/distance/disposal verified by `build-city-port-3d-model.py` and
-  `AreaCaptureFixture.CityPortWarehouseInterior`; day/night frames reviewed.
-- Added the corpulent seated foreman: three carrot bites, stem into the stool-side
-  pail, left-pocket reload. Speech preserves bite/clock, stops chewing, lowers the
-  left hand and shakes the right. Shore remarks share the channel; E waits for
-  the current pair, cancels on leaving and assigns no work or pay.
-  Story §6 covers the role/first-pool/E exception.
-  Faces initial cart parking under the store light. `build-city-port-foreman-3d-model.py`
-  and `AreaCaptureFixture.CityPortForeman` verified food/grip contacts, worker paths,
-  wall/trolley alignment, speech order and cancellation; day/night/close frames reviewed.
-  The carrot's corrected palmar grip retains food contacts through arm compensation.
-  `python tools/check-docs.py` passed references and budgets.
-- Removed the separate dock footpath/spur/crossing, including terrain, walk/map
-  masks and fence openings; the truck road/shoulders and internal dock walks stay.
-  Shore NPCs use natural sand. Blender geometry validation and
-  `AreaCaptureFixture.CityPortTraversalAudit` passed road travel, both-way walking
-  and removed-path/graph contracts; approach frames reviewed.
-- Slowed shared typing/clicks, lengthened reading and port/chess replies.
-  Replaced the deliberate bottom-reply split: all speech, including E, uses
-  shared bubbles; bottom UI is silent. AI/AGENTS link the mandatory shared speech
-  standard. Text/input/cafe animation retained.
-  Focused `ParkQuarrelTests`, `MountainRoadCafeConversationTests` and
-  `NpcSpeechVoiceTests` passed RU/EN fit, reading and click/window timing.
-  `InteractionPromptViewTests` passed shared E routing, busy admission and cleanup.
-  `AreaCaptureFixture.CitySpokenResponses` passed; E frames reviewed.
-- Warehouse access now follows actual arrival: the crane reserves no future slot.
-  Driver first collects accepted stock; a later loaded docker holds outside,
-  delaying port work only. Docker first: driver waits for actual exit; empty stock
-  triggers no waiting remark. Focused `CityFishSupplyCycleTests` and
-  `AreaCaptureFixture.CityPortWarehouseAccess` passed both priorities, restored
-  custody and physical doorway/trolley clearance; frames reviewed.
-- Added nearby role labels outside village/Mother. The actor mask clears each
-  frame; hats/raised hands get clearance. `AreaCaptureFixture.NpcNameplates`
-  passed distance/depth/speech/lifecycle; frames reviewed. The fixture restores
-  cannery presentation before exit to avoid its existing teardown error.
+- Warehouse fittings, lamps, refrigeration/drainage and wear retain baffle/stock/
+  cart clearances. `build-city-port-3d-model.py` and
+  `AreaCaptureFixture.CityPortWarehouseInterior` passed light/fan/lifecycle;
+  day/night frames reviewed.
+- Foreman sits at store wall/cart parking under quay light; left carrot bites→
+  pail→pocket, palmar grip, right speech gesture. `build-city-port-foreman-3d-model.py`
+  and `AreaCaptureFixture.CityPortForeman` passed food/grip/path/alignment,
+  speech order/cancellation; frames reviewed.
+- Dock spur/footpath/crossing removed from terrain/walk/map/openings. Truck road/
+  shoulders and internal walks retained. Blender validation and
+  `AreaCaptureFixture.CityPortTraversalAudit` passed; approach frames reviewed.
+- Slower typing/clicks and longer reading use shared speech bubbles, including E;
+  bottom UI silent, mandatory speech standard linked. `ParkQuarrelTests`,
+  `MountainRoadCafeConversationTests`, `NpcSpeechVoiceTests`,
+  `InteractionPromptViewTests` passed timing/RU/EN/admission/cleanup;
+  `AreaCaptureFixture.CitySpokenResponses` passed, frames reviewed.
+- Warehouse priority follows actual arrival, never future crane stock. Driver
+  first: later docker waits outside; docker first: driver waits for actual exit.
+  Empty stock is silent. `CityFishSupplyCycleTests` and
+  `AreaCaptureFixture.CityPortWarehouseAccess` passed custody/clearance; frames reviewed.
+- Nearby role labels exclude village/Mother. Cleared actor mask prevents stale
+  visibility; hats/hands get clearance. `AreaCaptureFixture.NpcNameplates` passed
+  depth/distance/speech/lifecycle; frames reviewed. Capture restores cannery
+  presentation before exit around its existing teardown error.
+- Implemented reusable dialogue graph/session: foreman first, visible contextual
+  approach, two side speaking shots, both shared bubbles and body Talk/Listen.
+  Selected existing hero answers become speech; offer is absent from choice UI.
+  §6 dates held-face/reply exceptions; Cancel anytime preserves §16.16, carrot
+  custody and port-pair admission. Entry lies on flat quay; choices use a
+  flat panel with explicit focus. `AreaCaptureFixture.CityPortForemanDialogue`
+  passed branches/cancellation/cleanup; final RU/EN frames reviewed.
+  E restored in both prompts. Carrot/entry and pose/camera transitions now run
+  together; stationary exit bridges the last visible pose, including nested
+  Talk, through shared recovery. Pair/snack gates and terminal cleanup remain.
+  The fixture's latency/prompt regression passed; RU/EN prompt frames reviewed.
+  `python tools/check-docs.py` passed budgets and frozen canon references.
 
 ## 2026-09-10 — Found-item screen, port and cannery
 

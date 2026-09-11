@@ -57,7 +57,8 @@ namespace BarPromenade.Editor
                 animator.avatar = avatar; animator.applyRootMotion = false; animator.runtimeAnimatorController = null;
                 var actor = root.AddComponent<CityPortForeman>();
                 actor.Configure(animator, model.transform, idle, grumble, foodActions, renderers, colors,
-                    AssetDatabase.LoadAssetAtPath<Texture2D>(atlasPath));
+                    AssetDatabase.LoadAssetAtPath<Texture2D>(atlasPath),
+                    clips.Single(c => c.name == "SeatedListen"), clips.Single(c => c.name == "SeatedTalk"));
                 actor.InitializePose();
                 Transform Find(string name) => CityPedestrianHandProps.FindSocket(model.transform, name)
                     ?? throw new InvalidOperationException("Missing foreman joint " + name);
@@ -131,7 +132,8 @@ namespace BarPromenade.Editor
             foreach (ModelImporterClipAnimation clip in clips)
             {
                 int bar = clip.name.LastIndexOf('|'); if (bar >= 0) clip.name = clip.name.Substring(bar + 1);
-                clip.loopTime = clip.name == "SeatedIdle" || clip.name == "SeatedGrumble"; clip.loopPose = false;
+                clip.loopTime = clip.name == "SeatedIdle" || clip.name == "SeatedGrumble" ||
+                    clip.name == "SeatedListen" || clip.name == "SeatedTalk"; clip.loopPose = false;
                 clip.keepOriginalOrientation = true; clip.keepOriginalPositionXZ = true; clip.keepOriginalPositionY = true;
                 clip.lockRootRotation = true; clip.lockRootPositionXZ = true; clip.lockRootHeightY = true;
             }

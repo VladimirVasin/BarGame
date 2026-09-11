@@ -4,25 +4,43 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-11, voluntary NPC dialogue:**
+  Story §6 dates the §7/§22 held-hero-face exception and permits only selected
+  existing foreman replies «Хочу»/«Не сейчас» aloud. Cancel at ANY phase keeps
+  §16.16 intact; no self-analysis/new lore. First adapter: foreman, no job/pay/
+  quest; village/Mother unchanged. Other choices gain no automatic voice.
+  `DialogueGraph`/`DialogueCursor` (`Line/Choice/End`) feed `DialogueSessionController`:
+  admission, shared `BeginPositioned` placement/animation, owned shared bubbles,
+  `DialogueCameraDirector`, input/HUD. `DialogueStagingPlan` owns independent
+  entry/action/exit data. Visible approach/facing `1.65 m` ahead on flat quay;
+  no teleport. Axis-preserving side chest-up shots follow speaker on the same
+  world rigs. Both Talk/Listen, no lipsync; carrot custody/bite/clock retained.
+  `NpcSpeechBubbleView` owns both voices and full-line timing; bottom choices
+  never repeat the offer. The active port pair finishes before entry; no backlog.
+  Completion/cancel/failure/disable/destroy/scene exit restore owned camera,
+  input, HUD, rig/pose and speech state through the shared contextual cleanup.
+  `PlayerDialogueActions`: bone-only Enter/Listen/Talk/Exit; normal Talk completion
+  uses `RequestNestedLoopActionExit` to Listen. The port adapter reserves a callback.
+  Both prompts show E. Safe snack/active pair admission stays;
+  carrot lowering and approach run together, with no separate preparation delay.
+  After neutral settle, camera and Enter run together (`.3/.35 s`). Stationary
+  `RequestExitWithPoseTransition` bridges the last visible pose, including Talk,
+  through shared recovery into Exit `.35 s`; camera return `.3 s` runs alongside.
+  Same root/pelvis/feet only; no parent-loop wait. Terminal frame/cleanup retained.
+
 - **Accepted — 2026-09-11, nearby NPC role labels:**
-  Ten RU/EN role labels follow story §24.26/§21 and art §15a;
-  village/Mother excluded. No personal names, voice or lore.
-  `NpcNameplateTarget` registers once per actor with its real head/stable role,
-  apart from triggers; `PlayerFactory` binds the player's camera/listener.
-  Fade `6→4 m`; shared `10` px font/charcoal. Head gap `.25 m`, cafe `.4`, raised hands `.5`.
-  No edge clamp. Speech, pause, modal and transition suppress names; overlap
-  keeps the active interaction, then nearest actor. After PS1, camera depth and
-  an actor-ID redraw of existing meshes/shared materials reject occlusion even
-  without colliders; text fragments also depth-test. Identity survives movement/
-  reparenting/busy actions; shared scene cleanup.
+  §24.26/§21/art §15a: ten RU/EN roles, no personal names/lore/voice; village/Mother
+  excluded. Actor/head/stable ID via `NpcNameplateTarget`, camera/listener via
+  `PlayerFactory`. `6→4 m`, shared `10 px`/charcoal, gaps `.25/.4/.5 m`.
+  No edge clamp; speech/pause/modal/transition suppress. Overlap: selected→nearest.
+  After PS1: cleared actor-ID mask of existing meshes + camera/text depth rejects
+  colliderless occlusion. Identity survives movement/reparenting/busy; scene cleanup.
 
 - **Accepted — 2026-09-11, every spoken line above its speaker:**
-  `E`/prompt speech uses `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice`;
-  bottom UI keeps silent descriptions/hints/choices. Text/voices/reading/order stay.
-  `ai/speech-presentation-standard.md` (AI/AGENTS) mandates shared anchors/earshot/
-  lifetime/pause/cleanup/admission, no feature copies/new pool/voice acting.
-  Duration belongs to each line; live head ownership spans views, with silent
-  restoration of the same owned timeline.
+  `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice` own all speech, including E;
+  bottom descriptions/hints/choices are silent. The mandatory speech standard
+  preserves text/voices/order, shared anchors/earshot/line duration/admission/
+  pause/cleanup and cross-view head ownership; no feature copies/new pool/voice acting.
 
 - **Accepted — 2026-09-11, warehouse doorway priority:**
   Accepted stock and actual arrival decide access. Driver at the outside queue
@@ -34,26 +52,21 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `DriverWaitingForDockWorker` gates the waiting remark: missing stock is silent.
 
 - **Accepted — 2026-09-11, slower shared speech:**
-  `SpeechDelivery`: `24` chars/s, writing clicks at least `.13 s` apart;
-  default bubbles `4.4 s`, adaptive reading tail `2.5 s`. Port ordinary/foreman
-  lines `4.8 s`, farewells/driver `3.5 s`, access wait `3 s`; paired timing and
-  chess replies retain the full line (`4.6 s` cooldown/reply delay). Cafe speech
-  still fits its idle windows. Prompt floors: watchman `3.5 s`, fisherman/
-  Ferryman/mother `3.9 s`; longer lines retain their reading tail.
-  Text, voices, queues and input ownership stay; art §15a/story §21.
+  `SpeechDelivery`: `24 chars/s`, clicks ≥`.13 s`, bubble `4.4 s`, tail `2.5 s`.
+  Port/foreman `4.8 s`, farewells/driver `3.5 s`, access `3 s`; chess reply/cooldown
+  `4.6 s`; cafe fits idle windows. Prompt floors: watchman `3.5 s`, fisherman/
+  Ferryman/mother `3.9 s`; full-line tail retained. Text/voices/queues/input stay;
+  art §15a/story §21.
 
 - **Accepted architecture exception — 2026-09-11, dock approach:**
   User removes coast walk/spur/crossing from geometry/terrain/walk/map/openings.
   Truck road/shoulders, dock rear/side walks, station/east shore stay; art §10d/story §6.
 
 - **Accepted architecture exception — 2026-09-11, dock shift foreman:**
-  §6 level `0`: left carrot, three bites→stem/pail→left-pocket reload.
-  Speech holds bite/clock, stops chewing/lowers left; right shakes.
-  Against store wall, facing initial cart spot; existing quay light.
-  Art §10d/observer/first-pool; shore trio/shared channel `60–100 s`. `E` choices wait
-  pair, no backlog.
-  No pickup/work/pay/quest/reward/crime/mystery/intoxication response;
-  custody/clear paths/rig/§16/§21/art checks stay.
+  §6 level `0`/art §10d: store wall/cart-facing/quay light; left carrot, three
+  bites→pail→left pocket. Speech holds bite/clock, lowers left, shakes right.
+  Shore trio/shared first pool `60–100 s`; E waits pair, no backlog. No pickup/
+  work/pay/quest/reward/crime/mystery/intoxication response; paths/rig/canon stay.
 
 - **Accepted — 2026-09-11, passive dock cold-store fittings:**
   `Dock`: liners/guards/joists/wiring, guarded lamps, evaporator/condenser/drain
@@ -2939,26 +2952,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and prevents the ordinary effect pool's cooldown/cap from dropping or stealing
   speech. Reveal and audible-click pacing are governed by the later timing decision.
 - **Accepted — the reveal is stepped once a frame, in `Update`, and the fade is
-  a property of the bubble rather than of the view:** the count used to be
-  recomputed inside `OnGUI`, which fires several times a frame for layout and
-  repaint — fine while nothing depended on the step, and two or three
-  keystrokes per letter the moment something did. `SpeechDelivery.Step` is now
-  called once from `Update` and `OnGUI` only reads what it produced.
-  The opacity moved for a harder reason: `NpcSpeechBubbleView` carried ONE
-  `Opacity` for everything on screen, set from outside by
-  `CityParkQuarrelController` every frame. That was only ever correct because
-  the two speakers it served sit at the same table — two men at different
-  distances were not expressible at all. Each bubble now measures its own
-  anchor against the listener through `NpcEarshotProfile`, which also owns the
-  hard cull the request asked for: past the radius a line is ABSENT, not faint.
-  Three presets — `Shout` `11/26/30`, `Conversation` `5/13`, `Room` `8/18` —
-  and the third has a measured floor rather than a chosen value: nothing under
-  the mountain cafe's own footprint diagonal (`14.0 m`, from the `9.8 x 10 m`
-  in `MountainRoadTerminalPlanner.CreateCafe`) can satisfy the §6 registry's
-  «внутри физического объёма кафе». **Recompute that floor if the footprint
-  moves.** `CityParkQuarrelController` keeps `IsWithinEarshot` and its
-  hysteresis: whether the two of them are arguing at all is behaviour, and it
-  is not the same question as how solid a line is.
+  a property of the bubble rather than of the view:** `SpeechDelivery.Step`
+  runs in Update; repeated IMGUI layout/repaint events only read it, preventing
+  duplicate clicks. Each bubble measures its own anchor/listener distance via
+  `NpcEarshotProfile`; beyond cull radius the line is absent. Presets:
+  `Shout 11/26/30`, `Conversation 5/13`, `Room 8/18`. Room's minimum follows the
+  cafe diagonal (`14 m`, `9.8 x 10 m`, `MountainRoadTerminalPlanner.CreateCafe`),
+  required by §6 «внутри физического объёма кафе»; recompute if footprint changes.
+  `CityParkQuarrelController.IsWithinEarshot`/hysteresis still own whether an
+  argument starts, independently of each visible line's opacity.
 - **Accepted 2026-09-03 — the earshot radii are wider than the first build's,
   and the rolloff starts at the solid radius rather than at the speaker's
   elbow:** the user's report was that the sound cut off too close. Two separate
@@ -2984,15 +2986,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   two men start shouting, and the profile is now deliberately wider than the
   gate on both ends, so they fall silent before their words begin to fade.
 - **Accepted — shared speech is projected above the speaker:**
-  `NpcSpeechBubbleView` is an IMGUI layer at `GUI.depth = -75`: above the intoxication HUD,
-  below the interaction prompt, the city map and the pause menu, so it never
-  covers anything the player operates. It is not uGUI/TextMeshPro — that
-  would be the project's first `Canvas`, an asmdef reference and a committed
-  Cyrillic font atlas, where the built-in IMGUI font already renders all
-  `261` Russian entries. It is not world-space geometry either:
-  `Ps1CompositeRendererFeature` averages the frame to `640x360` and quantizes
-  to RGB555 *before* UI is drawn, so a panel in the world would be crushed
-  while this one stays sharp.
+  `NpcSpeechBubbleView`: shared-font IMGUI at `GUI.depth = -75`, above intoxication
+  HUD and below interaction prompt/map/pause. It stays readable after the world's
+  `640x360`/RGB555 PS1 pass; speech never covers controls or becomes world geometry.
 - **Accepted architecture exception, explicit user decision 2026-09-05 —
   roaming walkers curse the hero on the last stage, over their own heads:**
   the user asked for insults and, told that the literal request collides

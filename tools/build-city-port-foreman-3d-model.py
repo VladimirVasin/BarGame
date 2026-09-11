@@ -2,7 +2,7 @@
 """One stout elderly dock foreman, on the unchanged production NpcHumanV2 rig.
 
 The shared resident builder owns anatomy, skinning, UVs and export. This file
-owns his barrel coat, age/face, stool and seven grounded seated actions. No world
+owns his barrel coat, age/face, stool and nine grounded seated actions. No world
 placement, speech text or gameplay is authored into the passive asset.
 """
 from __future__ import annotations
@@ -25,10 +25,12 @@ sys.modules[spec.name]=resident
 spec.loader.exec_module(resident)
 base=resident.base
 VERSION="1.3.0"
+ACTIONS_VERSION="1.4.0"
 FPS=24
 CLIPS=(("SeatedIdle",4.0,True),("SeatedGrumble",4.0,True),
        ("CarrotBite1",4.0,False),("CarrotBite2",4.0,False),("CarrotBite3",4.0,False),
-       ("CarrotDiscard",2.4,False),("CarrotTake",2.4,False))
+       ("CarrotDiscard",2.4,False),("CarrotTake",2.4,False),
+       ("SeatedListen",4.0,True),("SeatedTalk",4.0,True))
 SEAT_TOP=.50
 PELVIS_HEIGHT=base.NPC_PELVIS_HEIGHT+SEAT_TOP-(.910-.132)
 FOOT_X=.37
@@ -363,13 +365,16 @@ def seated_pose(result,name,phase):
     seconds=phase*duration(name)
     eating,chew,contact=eating_state(seconds) if name.startswith("CarrotBite") else (0.0,0.0,False)
     breath=math.sin(phase*math.tau)**2
-    base.apply_pose(rig,{"spine":base.BonePose(rotation_degrees=(3+.65*breath,0,0)),
-                         "chest":base.BonePose(rotation_degrees=(-2-.35*breath,0,0)),
+    dialogue=math.sin(phase*math.pi)**2 if name in ("SeatedListen","SeatedTalk") else 0.
+    nod=math.sin(phase*math.tau*2)*dialogue
+    speaking=name=="SeatedTalk"
+    base.apply_pose(rig,{"spine":base.BonePose(rotation_degrees=(3+.65*breath+(.6 if speaking else -.25)*dialogue,0,0)),
+                         "chest":base.BonePose(rotation_degrees=(-2-.35*breath-(.35 if speaking else .15)*dialogue,0,0)),
                          "neck":base.BonePose(rotation_degrees=(-3,0,0)),
-                         "head":base.BonePose(rotation_degrees=(4+1.3*eating,0,0))})
+                         "head":base.BonePose(rotation_degrees=(4+1.3*eating+(1.6 if speaking else .65)*nod,0,0))})
     pelvis=rig.pose.bones["pelvis"];matrix=pelvis.matrix.copy();matrix.translation.z=PELVIS_HEIGHT;pelvis.matrix=matrix
     bpy.context.view_layer.update();solve_legs(result)
-    lift=math.sin(math.pi*phase)**2 if name=="SeatedGrumble" else 0
+    lift=math.sin(math.pi*phase)**2 if name in ("SeatedGrumble","SeatedTalk") else 0
     shake=math.sin(phase*math.tau*4)*lift
     # Left palm rests over the thigh; the right hand rises toward chest height
     # and shakes away from the body while speaking, returning exactly to rest.
@@ -500,7 +505,8 @@ def make_actions(result):
                 max_anchor_error=max(max_anchor_error,(tip-actual_tip).length)
                 if contact:
                     max_bite_error=max(max_bite_error,(tip-mouth).length);contact_samples+=1
-                if name=="SeatedGrumble":min_talking_clearance=min(min_talking_clearance,(tip-mouth).length)
+                if name in ("SeatedGrumble","SeatedTalk","SeatedListen"):
+                    min_talking_clearance=min(min_talking_clearance,(tip-mouth).length)
                 head_bvh=evaluated_bvh(result,lambda p:p.bone in ("head","face.mouth"))
                 hand_bvh=evaluated_bvh(result,lambda p:p.bone=="hand.L" and not p.obj.name.startswith("FOOD_"))
                 if hand_bvh.overlap(head_bvh):raise RuntimeError(f"Foreman left hand enters face during {name} at {frame/FPS:.3f}s")
@@ -573,7 +579,7 @@ def make_actions(result):
               "posed_bounds_min":[round(min(p[i] for p in pose_bounds),6) for i in range(3)],
               "posed_bounds_max":[round(max(p[i] for p in pose_bounds),6) for i in range(3)],
               "curve_signature":hashlib.sha256(json.dumps(tracks,separators=(",",":")).encode()).hexdigest()}
-    return {"generator":Path(__file__).name,"version":VERSION,"anatomy_standard":"NpcHumanV2",
+    return {"generator":Path(__file__).name,"version":ACTIONS_VERSION,"anatomy_standard":"NpcHumanV2",
             "bone_count":len(rig.data.bones),"fps":FPS,"root_motion":False,"clips":report,
             "bite_contract":{"raise":.4,"contact":1.3,"commit":BITE_COMMIT,"lowered":2.5,"chew_end":3.3},
             "discard_contract":{"release":1.0,"inside_bin":1.65,"duration":2.4},
@@ -657,20 +663,23 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument("--model-dir",type=Path,default=ROOT/"Assets/Resources/City/Port/Foreman")
     parser.add_argument("--source-dir",type=Path,default=ROOT/"ArtSource/City/Port/Foreman")
     parser.add_argument("--validate-only",action="store_true");parser.add_argument("--no-preview",action="store_true")
+    parser.add_argument("--actions-only",action="store_true",help="Preserve the published passive model and atlas; replace only the animation bank and source scene.")
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     texture=args.model_dir/"PortForemanAtlas.png"
-    texture_hash=atlas(texture,args.validate_only)
+    texture_hash=atlas(texture,args.validate_only or args.actions_only)
     builder=ForemanBuilder();result=builder.build();body=manifest(result,texture_hash)
-    if not args.validate_only:
+    if args.actions_only and json.loads((args.model_dir/"PortForeman.json").read_text(encoding="utf-8"))!=body:
+        raise RuntimeError("Actions-only publication would change the passive foreman model")
+    if not args.validate_only and not args.actions_only:
         args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
         base.export_fbx(args.model_dir/"PortForeman.fbx",result)
     actions=make_actions(result)
     if args.validate_only:
-        for stem,payload in (("PortForeman",body),("PortForemanActions",actions)):
+        for stem,payload in (("PortForemanActions",actions),) if args.actions_only else (("PortForeman",body),("PortForemanActions",actions)):
             if json.loads((args.model_dir/(stem+".json")).read_text(encoding="utf-8"))!=payload:
                 raise RuntimeError("Foreman deterministic manifest differs: "+stem)
     else:
-        for stem,payload in (("PortForeman",body),("PortForemanActions",actions)):
+        for stem,payload in (("PortForemanActions",actions),) if args.actions_only else (("PortForeman",body),("PortForemanActions",actions)):
             (args.model_dir/(stem+".json")).write_text(json.dumps(payload,indent=2)+"\n",encoding="utf-8")
         base.export_animation_fbx(args.model_dir/"PortForemanActions.fbx",result)
         if not args.no_preview:
@@ -680,6 +689,8 @@ def main():
             preview(result,args.source_dir/"PortForemanDiscard.png",texture,"CarrotDiscard",1.3)
             preview(result,args.source_dir/"PortForemanTake.png",texture,"CarrotTake",1.75)
             preview(result,args.source_dir/"PortForemanGrumble.png",texture,"SeatedGrumble",1.76)
+            preview(result,args.source_dir/"PortForemanListen.png",texture,"SeatedListen",1.4)
+            preview(result,args.source_dir/"PortForemanTalk.png",texture,"SeatedTalk",1.76)
             preview(result,args.source_dir/"PortForemanGrip.png",texture,grip_view="palm")
             preview(result,args.source_dir/"PortForemanGripSide.png",texture,grip_view="side")
         bpy.context.preferences.filepaths.save_version=0

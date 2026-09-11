@@ -142,6 +142,9 @@ namespace BarPromenade
         public bool FixedFocusActive =>
             fixedPoseActive && fixedFocus.Enabled;
 
+        /// <summary>The authored pan policy, retained by temporary camera owners.</summary>
+        public FixedCameraFocus FixedFocus => fixedFocus;
+
         /// <summary>The pan the focus is holding right now, in degrees:
         /// x yaw, y pitch. Zero while the shot sits exactly as
         /// authored.</summary>

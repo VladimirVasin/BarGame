@@ -2,133 +2,108 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>A short, optional job-offer stub in the port's existing speech channel.</summary>
-    [DefaultExecutionOrder(-825)]
+    /// <summary>Reserves the local port channel, then binds the foreman to shared dialogue.</summary>
+    [DefaultExecutionOrder(320)]
     [DisallowMultipleComponent]
     public sealed class CityPortForemanInteraction : MonoBehaviour, IInteractable
     {
-        private readonly BarMinigameModalLock modalLock = new BarMinigameModalLock();
+        // 1.5 m lands on the bevel between the two quay slabs. Stand on the flat top.
+        public const float ConversationDistance = 1.65f;
+        private static readonly DialogueGraph graph = new DialogueGraph("offer",
+            DialogueNode.Line("offer", DialogueSpeaker.Npc, CityPortConversationController.ForemanOfferKey, "choice"),
+            DialogueNode.Choice("choice", new DialogueChoice("interaction.port_foreman_yes", "hero_yes"),
+                new DialogueChoice("interaction.port_foreman_no", "hero_no")),
+            DialogueNode.Line("hero_yes", DialogueSpeaker.Hero, "city.port.foreman.hero_yes", "accept"),
+            DialogueNode.Line("hero_no", DialogueSpeaker.Hero, "city.port.foreman.hero_no", "decline"),
+            DialogueNode.Line("accept", DialogueSpeaker.Npc, CityPortConversationController.ForemanAcceptKey, "end"),
+            DialogueNode.Line("decline", DialogueSpeaker.Npc, CityPortConversationController.ForemanDeclineKey, "end"),
+            DialogueNode.End("end"));
         private CityPortForeman foreman;
         private CityPortConversationController conversation;
         private PlayerInteractor listener;
-        private CursorLockMode previousCursorLock;
-        private bool previousCursorVisible, cursorCaptured, confirmArmed;
-        private int inputUnlockFrame;
-        private GUIStyle optionStyle, selectedStyle, questionStyle;
-        public bool IsOpen { get; private set; }
-        public bool Accepts { get; private set; } = true;
-        public Transform Listener => listener != null ? listener.transform : null;
+        private DialogueSessionController session;
+        public bool IsOpen => session != null && session.IsChoosing;
+        public bool Accepts => session == null || session.SelectedChoice == 0;
+        public DialogueSessionController Session => session;
+        public static DialogueGraph Graph => graph;
+        public Transform Listener => session != null && session.IsActive ? session.HeroHead :
+            listener != null ? listener.GetComponentInChildren<Player3DAssetRegistry>()?.Anchors.Head : null;
         public string PromptKey => "interaction.talk_port_foreman";
         public Vector3 InteractionPosition => transform.position + Vector3.up * .85f;
 
         public void Initialize(CityPortForeman actor, CityPortConversationController channel)
-        { foreman = actor; conversation = channel; }
+        {
+            foreman = actor; conversation = channel;
+            session = GetComponent<DialogueSessionController>();
+            if (session == null) session = gameObject.AddComponent<DialogueSessionController>();
+        }
 
         public bool CanInteract(PlayerInteractor interactor) => foreman != null && conversation != null &&
             isActiveAndEnabled && foreman.isActiveAndEnabled && foreman.ModelRoot.gameObject.activeInHierarchy &&
-            !IsOpen && !conversation.ForemanInteractionPending && interactor != null &&
+            session != null && !session.IsActive && !conversation.ForemanInteractionPending && interactor != null &&
             interactor.isActiveAndEnabled && interactor.InputEnabled &&
-            !BarMinigameModalLock.IsAnyLocked && !SceneTransitionService.IsTransitioning;
+            !BarMinigameModalLock.IsAnyLocked && !SceneTransitionService.IsTransitioning &&
+            interactor.GetComponent<PlayerAnimatedInteractionController>() is { IsActive: false };
 
         public void Interact(PlayerInteractor interactor)
         {
             if (!CanInteract(interactor)) return;
             listener = interactor;
-            if (!conversation.RequestForemanInteraction(interactor, ShowChoices, CloseChoices)) listener = null;
+            if (!conversation.RequestForemanInteraction(interactor, BeginDialogue, CancelReservation)) listener = null;
         }
 
-        private void ShowChoices()
+        public bool TryResolveStaging(out DialogueStagingPlan staging)
         {
-            if (listener == null || !isActiveAndEnabled ||
-                !modalLock.TryCaptureAndDisable(listener, null, null)) { Cancel(); return; }
-            Accepts = true;
-            previousCursorLock = Cursor.lockState; previousCursorVisible = Cursor.visible;
-            cursorCaptured = true; Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
-            inputUnlockFrame = Time.frameCount + 1; confirmArmed = false; IsOpen = true;
+            staging = default;
+            Vector3 ground = transform.position + transform.forward * ConversationDistance;
+            if (!Physics.Raycast(ground + Vector3.up * .4f, Vector3.down, out RaycastHit hit, .8f,
+                ~0, QueryTriggerInteraction.Ignore) || hit.normal.y < .8f) return false;
+            ground.y = hit.point.y;
+            Quaternion facing = Quaternion.LookRotation(-Vector3.ProjectOnPlane(transform.forward, Vector3.up), Vector3.up);
+            Vector3 entryRoot = ground + facing * PlayerDialogueActions.EntryGroundOffset + Vector3.up * PlayerFactory.GroundedRootOffset;
+            Vector3 exitRoot = ground + facing * PlayerDialogueActions.ExitGroundOffset + Vector3.up * PlayerFactory.GroundedRootOffset;
+            staging = new DialogueStagingPlan(
+                new PlayerAnimatedInteractionPose(entryRoot, facing, ground + facing * PlayerDialogueActions.EntryPelvisFromGround),
+                ground + facing * PlayerDialogueActions.ActionPelvisFromGround,
+                new PlayerAnimatedInteractionPose(exitRoot, facing, ground + facing * PlayerDialogueActions.ExitPelvisFromGround));
+            return true;
         }
 
-        public bool SelectChoice(bool accepts)
-        { if (!IsOpen) return false; Accepts = accepts; return true; }
-
-        public bool Confirm()
+        private void BeginDialogue()
         {
-            if (!IsOpen || !GameInput.CanRead(GameInputContext.Menu)) return false;
-            var source = listener;
-            bool accepts = Accepts;
-            CloseChoices();
-            // Releasing the menu and reserving his answer happen in one call.
-            return source != null && conversation.RequestForemanChoice(source, accepts);
+            PlayerInteractor source = listener;
+            if (source == null || !isActiveAndEnabled || !TryResolveStaging(out DialogueStagingPlan staging) ||
+                !session.Begin(graph, staging,
+                    new DialogueParticipant(foreman, transform, foreman.Head, NpcVoiceCatalog.WatchmanDesignId), source,
+                    speaking => conversation.SetForemanDialogueSpeaking(source, speaking),
+                    () => ReleaseReservation(source)))
+                ReleaseReservation(source);
         }
 
+        public bool SelectChoice(bool accepts) => session != null && session.SelectChoice(accepts ? 0 : 1);
+        public bool Confirm() => session != null && session.Confirm();
         public void Cancel()
         {
-            var source = listener;
-            CloseChoices();
-            if (source != null && conversation != null) conversation.CancelForemanInteraction(source);
+            if (session != null && session.IsActive) session.Cancel();
+            else ReleaseReservation(listener);
         }
-
-        private void CloseChoices()
+        private void ReleaseReservation(PlayerInteractor source)
         {
-            IsOpen = false; confirmArmed = false;
-            if (cursorCaptured)
-            {
-                Cursor.lockState = previousCursorLock; Cursor.visible = previousCursorVisible;
-                cursorCaptured = false;
-            }
-            modalLock.Restore();
+            if (conversation != null && source != null) conversation.CancelForemanInteraction(source);
+            listener = null;
         }
-
+        private void CancelReservation()
+        {
+            session?.RestoreImmediate();
+            listener = null;
+        }
         private void Update()
         {
-            if (!IsOpen) return;
-            if (listener == null || !listener.isActiveAndEnabled || foreman == null ||
-                !foreman.isActiveAndEnabled || SceneTransitionService.IsTransitioning ||
-                Vector3.Distance(listener.transform.position, transform.position) > 3f)
-            { Cancel(); return; }
-            if (Time.frameCount <= inputUnlockFrame || !GameInput.CanRead(GameInputContext.Menu)) return;
-            if (GameInput.WasPressed(GameInputAction.Cancel, GameInputContext.Menu)) { Cancel(); return; }
-            if (!confirmArmed) confirmArmed = !GameInput.IsHeld(GameInputAction.Confirm, GameInputContext.Menu);
-            if (GameInput.ReadMenuSelectionDelta(GameInputContext.Menu) != 0) Accepts = !Accepts;
-            if (confirmArmed && GameInput.WasPressed(GameInputAction.Confirm, GameInputContext.Menu)) Confirm();
+            // A pending ambient pair has not taken manual control yet.
+            if (listener != null && session != null && !session.IsActive &&
+                GameInput.WasPressed(GameInputAction.Cancel, GameInputContext.Gameplay)) ReleaseReservation(listener);
         }
-
-        private void OnGUI()
-        {
-            if (!IsOpen || PauseMenuController.IsAnyPaused) return;
-            if (optionStyle == null)
-            {
-                optionStyle = RetroUiTheme.CreateButtonStyle(11, TextAnchor.MiddleCenter, RetroUiTheme.Text, true);
-                selectedStyle = RetroUiTheme.CreateButtonStyle(11, TextAnchor.MiddleCenter, RetroUiTheme.SelectionText, true);
-                questionStyle = RetroUiTheme.CreateButtonStyle(11, TextAnchor.MiddleCenter, RetroUiTheme.Text, true);
-            }
-            int depth = GUI.depth; bool enabled = GUI.enabled;
-            GUI.depth = -90;
-            GUI.enabled = enabled && Time.frameCount > inputUnlockFrame && GameInput.CanRead(GameInputContext.Menu);
-            var canvas = RetroUiTheme.CalculateCanvas(Screen.width, Screen.height);
-            Matrix4x4 matrix = RetroUiTheme.BeginCanvas(canvas);
-            try
-            {
-                Rect panel = new Rect((RetroUiTheme.LogicalWidth - 280f) * .5f,
-                    RetroUiTheme.LogicalHeight - 115f, 280f, 83f);
-                RetroUiTheme.DrawPanel(panel, RetroUiTheme.Panel, RetroUiTheme.BorderMuted, false, 0f, 1f);
-                GUI.Label(new Rect(panel.x + 10, panel.y + 8, 260, 24),
-                    LocalizationService.Get("city.port.foreman.offer"), questionStyle);
-                DrawChoice(new Rect(panel.x + 12, panel.y + 43, 122, 27), "interaction.port_foreman_yes", true);
-                DrawChoice(new Rect(panel.x + 146, panel.y + 43, 122, 27), "interaction.port_foreman_no", false);
-            }
-            finally { RetroUiTheme.EndCanvas(matrix); GUI.depth = depth; GUI.enabled = enabled; }
-        }
-
-        private void DrawChoice(Rect rect, string key, bool accepts)
-        {
-            bool selected = Accepts == accepts;
-            RetroUiTheme.DrawPanel(rect, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted, false, 0f, 1f);
-            RetroUiTheme.DrawSelection(rect, selected);
-            if (GUI.Button(rect, LocalizationService.Get(key), selected ? selectedStyle : optionStyle))
-            { SelectChoice(accepts); Confirm(); }
-        }
-
-        private void OnDisable() => Cancel();
-        private void OnDestroy() => Cancel();
+        private void OnDisable() { session?.RestoreImmediate(); ReleaseReservation(listener); }
+        private void OnDestroy() { session?.RestoreImmediate(); ReleaseReservation(listener); }
     }
 }

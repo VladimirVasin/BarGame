@@ -3338,7 +3338,7 @@
     },
     {
       "key": "interaction.talk_port_foreman",
-      "value": "Поговорить с бригадиром"
+      "value": "E — поговорить с бригадиром"
     },
     {
       "key": "interaction.port_foreman_yes",
@@ -3347,6 +3347,14 @@
     {
       "key": "interaction.port_foreman_no",
       "value": "Не сейчас"
+    },
+    {
+      "key": "city.port.foreman.hero_yes",
+      "value": "Хочу."
+    },
+    {
+      "key": "city.port.foreman.hero_no",
+      "value": "Не сейчас."
     }
   ]
 }

@@ -11,7 +11,8 @@ grants no new pool, voice acting, lore, gesture or interaction.
 Every spoken line uses `NpcSpeechBubbleView`, projected above its actual
 speaker. An interaction reply uses the same presentation as dock dialogue.
 The bottom `InteractionPromptView` contains silent descriptions, action hints
-and choice labels. A choice label is not automatically a spoken hero line.
+and choice labels. Only an explicitly approved graph node turns a silent choice
+into the hero's next spoken line.
 `ShowSpokenFeedback` is a compatibility entry into shared bubble delivery;
 it must never render a second spoken copy in the bottom panel.
 

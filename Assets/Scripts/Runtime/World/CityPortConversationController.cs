@@ -38,19 +38,18 @@ namespace BarPromenade
         private Transform foremanHead;
         private Action<int, bool> foremanSpeechPose;
         private bool foremanPresent, foremanAvailable;
-        private enum ForemanTalk { None, Requested, Preparing, Offer, Choice, ResponseRequested, Response }
+        private enum ForemanTalk { None, Requested, Reserved }
         private ForemanTalk foremanTalk;
         private PlayerInteractor foremanListener;
-        private Action showForemanChoices, cancelForemanChoices;
-        private double foremanLineUntil, foremanPrepareUntil;
+        private Action beginForemanDialogue, cancelForemanDialogue;
+        private bool foremanDialogueSpeaking;
         private double previousConversationLife = double.NaN, previousConversationPort = double.NaN;
-        private string foremanResponseKey;
         public const float ForemanInteractionRangeMeters = 3f;
         public const string ForemanOfferKey = "city.port.foreman.offer";
         public const string ForemanAcceptKey = "city.port.foreman.accept";
         public const string ForemanDeclineKey = "city.port.foreman.decline";
         public bool ForemanInteractionPending => foremanTalk != ForemanTalk.None;
-        public bool ForemanInteractionReady => foremanTalk == ForemanTalk.Choice;
+        public bool ForemanInteractionReady => foremanTalk == ForemanTalk.Reserved;
         public Transform ForemanInteractionListener => foremanListener != null ? foremanListener.transform : null;
         public const string AccessWaitLineKey = "city.port.access_wait";
         public int AccessWaitLinesPlayed { get; private set; }
@@ -113,33 +112,32 @@ namespace BarPromenade
             if (!foremanPresent) CancelForemanInteraction();
         }
 
-        public bool RequestForemanInteraction(PlayerInteractor listener, Action showChoices, Action cancelChoices = null)
+        public bool RequestForemanInteraction(PlayerInteractor listener, Action beginDialogue, Action cancelDialogue = null)
         {
             if (!isActiveAndEnabled || schedule == null || ForemanInteractionPending ||
                 !foremanPresent || !ForemanListenerInRange(listener)) return false;
             foremanListener = listener;
-            showForemanChoices = showChoices;
-            cancelForemanChoices = cancelChoices;
+            beginForemanDialogue = beginDialogue;
+            cancelForemanDialogue = cancelDialogue;
             foremanTalk = ForemanTalk.Requested;
             return true;
         }
 
-        public bool RequestForemanChoice(PlayerInteractor listener, bool accepts)
+        public void SetForemanDialogueSpeaking(PlayerInteractor listener, bool speaking)
         {
-            if (foremanTalk != ForemanTalk.Choice || listener != foremanListener || !ForemanListenerInRange(listener)) return false;
-            foremanResponseKey = accepts ? ForemanAcceptKey : ForemanDeclineKey;
-            foremanTalk = ForemanTalk.ResponseRequested;
-            return true;
+            if (foremanTalk == ForemanTalk.Reserved && listener == foremanListener)
+                foremanDialogueSpeaking = speaking;
         }
 
         public void CancelForemanInteraction(PlayerInteractor listener = null)
         {
             if (listener != null && listener != foremanListener) return;
             bool held = foremanTalk != ForemanTalk.None && foremanTalk != ForemanTalk.Requested;
-            Action cancel = cancelForemanChoices;
+            Action cancel = cancelForemanDialogue;
             foremanTalk = ForemanTalk.None;
             foremanListener = null;
-            showForemanChoices = cancelForemanChoices = null;
+            beginForemanDialogue = cancelForemanDialogue = null;
+            foremanDialogueSpeaking = false;
             if (held)
             {
                 bubbles?.DismissAll();
@@ -331,7 +329,7 @@ namespace BarPromenade
             }
             if (foremanLine)
             {
-                foremanSpeechPose?.Invoke(-2, foremanTalk == ForemanTalk.Offer || foremanTalk == ForemanTalk.Response);
+                foremanSpeechPose?.Invoke(-2, foremanTalk == ForemanTalk.Reserved && foremanDialogueSpeaking);
                 bubbles.AdvanceTo((float)crew.LifeElapsedSeconds);
                 return;
             }
@@ -408,47 +406,16 @@ namespace BarPromenade
             if (foremanTalk == ForemanTalk.Requested)
             {
                 if (accessLine || pendingAccessRole >= 0 || schedule.Current.HasExchange || !foremanAvailable) return false;
-                // Reserve this same channel while the foreman lowers his
-                // carrot. His mouth is clear before the spoken question starts.
-                foremanPrepareUntil = crew.LifeElapsedSeconds + .35d;
-                foremanTalk = ForemanTalk.Preparing;
-            }
-            else if (foremanTalk == ForemanTalk.Preparing && crew.LifeElapsedSeconds >= foremanPrepareUntil)
-            {
-                ShowForemanLine(ForemanOfferKey);
-                foremanTalk = ForemanTalk.Offer;
-            }
-            else if (foremanTalk == ForemanTalk.Offer && crew.LifeElapsedSeconds >= foremanLineUntil)
-            {
+                // Lower the carrot during the visible approach/entry settle.
+                // The session starts speech only after that body and camera settle.
+                // The session owns the entire conversation, including its hero lines.
+                // Ambient pairs retain their own shared view and resume without backlog.
                 bubbles.DismissAll();
                 hasVisibleLine = false;
-                foremanTalk = ForemanTalk.Choice;
-                showForemanChoices?.Invoke();
-            }
-            else if (foremanTalk == ForemanTalk.ResponseRequested)
-            {
-                ShowForemanLine(foremanResponseKey);
-                foremanTalk = ForemanTalk.Response;
-            }
-            else if (foremanTalk == ForemanTalk.Response && crew.LifeElapsedSeconds >= foremanLineUntil)
-            {
-                CancelForemanInteraction();
-                return false;
+                foremanTalk = ForemanTalk.Reserved;
+                beginForemanDialogue?.Invoke();
             }
             return foremanTalk != ForemanTalk.None;
-        }
-
-        private void ShowForemanLine(string key)
-        {
-            double now = crew.LifeElapsedSeconds;
-            bubbles.DismissAll();
-            bubbles.DeclareSpeaker(foremanOwner, foremanHead, voices[CityPortConversationCatalog.ForemanRole], NpcEarshotProfile.Conversation);
-            bubbles.LineDurationSeconds = (float)CityPortConversationSchedule.LineSeconds;
-            bubbles.ShowAt(foremanOwner, LocalizationService.Get(key), (float)now);
-            foremanLineUntil = now + CityPortConversationSchedule.LineSeconds;
-            hasVisibleLine = true;
-            LastLineKey = key;
-            LastSpeakerRole = CityPortConversationCatalog.ForemanRole;
         }
 
         private void SetSpeech(int role, int partner, bool speaking, bool salutation)

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 9b30f6e4609ff79b20e90d031b029575
+guid: ff8df481cc4c17b66c507de078ca41c8
 ModelImporter:
   serializedVersion: 24600
   internalIDToNameTable: []
@@ -32,11 +32,11 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: CarrotBite1
-      takeName: RIG_Player|CarrotBite1
-      internalID: 321249049407829348
+      name: DialogueEnter
+      takeName: RIG_Player|DialogueEnter
+      internalID: -3631563766197368773
       firstFrame: 0
-      lastFrame: 96
+      lastFrame: 18
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -61,11 +61,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: CarrotBite2
-      takeName: RIG_Player|CarrotBite2
-      internalID: -4429974587211245059
+      name: DialogueExit
+      takeName: RIG_Player|DialogueExit
+      internalID: 4944535038465420946
       firstFrame: 0
-      lastFrame: 96
+      lastFrame: 18
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -90,98 +90,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: CarrotBite3
-      takeName: RIG_Player|CarrotBite3
-      internalID: -3849003045470375501
+      name: DialogueListenLoop
+      takeName: RIG_Player|DialogueListenLoop
+      internalID: -4552594857120608063
       firstFrame: 0
-      lastFrame: 96
-      wrapMode: 0
-      orientationOffsetY: 0
-      level: 0
-      cycleOffset: 0
-      loop: 0
-      hasAdditiveReferencePose: 0
-      loopTime: 0
-      loopBlend: 0
-      loopBlendOrientation: 1
-      loopBlendPositionY: 1
-      loopBlendPositionXZ: 1
-      keepOriginalOrientation: 1
-      keepOriginalPositionY: 1
-      keepOriginalPositionXZ: 1
-      heightFromFeet: 0
-      mirror: 0
-      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000u
-      curves: []
-      events: []
-      transformMask: []
-      maskType: 3
-      maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 0
-    - serializedVersion: 16
-      name: CarrotDiscard
-      takeName: RIG_Player|CarrotDiscard
-      internalID: 5938398656619885174
-      firstFrame: 0
-      lastFrame: 58
-      wrapMode: 0
-      orientationOffsetY: 0
-      level: 0
-      cycleOffset: 0
-      loop: 0
-      hasAdditiveReferencePose: 0
-      loopTime: 0
-      loopBlend: 0
-      loopBlendOrientation: 1
-      loopBlendPositionY: 1
-      loopBlendPositionXZ: 1
-      keepOriginalOrientation: 1
-      keepOriginalPositionY: 1
-      keepOriginalPositionXZ: 1
-      heightFromFeet: 0
-      mirror: 0
-      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000u
-      curves: []
-      events: []
-      transformMask: []
-      maskType: 3
-      maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 0
-    - serializedVersion: 16
-      name: CarrotTake
-      takeName: RIG_Player|CarrotTake
-      internalID: 281558419922152886
-      firstFrame: 0
-      lastFrame: 58
-      wrapMode: 0
-      orientationOffsetY: 0
-      level: 0
-      cycleOffset: 0
-      loop: 0
-      hasAdditiveReferencePose: 0
-      loopTime: 0
-      loopBlend: 0
-      loopBlendOrientation: 1
-      loopBlendPositionY: 1
-      loopBlendPositionXZ: 1
-      keepOriginalOrientation: 1
-      keepOriginalPositionY: 1
-      keepOriginalPositionXZ: 1
-      heightFromFeet: 0
-      mirror: 0
-      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000u
-      curves: []
-      events: []
-      transformMask: []
-      maskType: 3
-      maskSource: {instanceID: 0}
-      additiveReferencePoseFrame: 0
-    - serializedVersion: 16
-      name: SeatedGrumble
-      takeName: RIG_Player|SeatedGrumble
-      internalID: 901464113524095256
-      firstFrame: 0
-      lastFrame: 96
+      lastFrame: 48
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -206,18 +119,18 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: SeatedIdle
-      takeName: RIG_Player|SeatedIdle
-      internalID: -1578108864033860647
+      name: DialogueTalkEnter
+      takeName: RIG_Player|DialogueTalkEnter
+      internalID: -5853371857164163017
       firstFrame: 0
-      lastFrame: 96
+      lastFrame: 12
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 1
+      loopTime: 0
       loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
@@ -235,18 +148,18 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: SeatedListen
-      takeName: RIG_Player|SeatedListen
-      internalID: -454184383516469099
+      name: DialogueTalkExit
+      takeName: RIG_Player|DialogueTalkExit
+      internalID: 8309156057545628489
       firstFrame: 0
-      lastFrame: 96
+      lastFrame: 12
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 1
+      loopTime: 0
       loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
@@ -264,11 +177,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: SeatedTalk
-      takeName: RIG_Player|SeatedTalk
-      internalID: 6358578455954889775
+      name: DialogueTalkLoop
+      takeName: RIG_Player|DialogueTalkLoop
+      internalID: 7529292163755161037
       firstFrame: 0
-      lastFrame: 96
+      lastFrame: 36
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -339,7 +252,7 @@ ModelImporter:
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0
-    tangentImportMode: 2
+    tangentImportMode: 4
     normalCalculationMode: 0
     legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 1
     blendShapeNormalImportMode: 1

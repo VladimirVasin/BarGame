@@ -1,0 +1,83 @@
+{
+  "generator": "player_dialogue_v1",
+  "rig": "HeroV2",
+  "bone_count": 31,
+  "fps": 24,
+  "root_motion": false,
+  "animation_events": 0,
+  "lip_sync": false,
+  "entry_ground_offset": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "exit_ground_offset": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "entry_facing": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "exit_facing": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "entry_pelvis_from_ground": [
+    -0.0,
+    0.8749999785423279,
+    -3.799796102765818e-10
+  ],
+  "action_pelvis_from_ground": [
+    -0.0,
+    0.8749999785423279,
+    -3.799796102765818e-10
+  ],
+  "exit_pelvis_from_ground": [
+    -0.0,
+    0.8749999785423279,
+    -3.799796102765818e-10
+  ],
+  "clips": [
+    {
+      "name": "DialogueEnter",
+      "duration_seconds": 0.75,
+      "loop": false
+    },
+    {
+      "name": "DialogueListenLoop",
+      "duration_seconds": 2.0,
+      "loop": true
+    },
+    {
+      "name": "DialogueTalkEnter",
+      "duration_seconds": 0.5,
+      "loop": false
+    },
+    {
+      "name": "DialogueTalkLoop",
+      "duration_seconds": 1.5,
+      "loop": true
+    },
+    {
+      "name": "DialogueTalkExit",
+      "duration_seconds": 0.5,
+      "loop": false
+    },
+    {
+      "name": "DialogueExit",
+      "duration_seconds": 0.75,
+      "loop": false
+    }
+  ],
+  "signature": "8ab270f3e46315ff01e4fd800841b5030cba6c29fe18482e4a7b7abe86e21fdf",
+  "maximum_lower_body_error": 0.0,
+  "maximum_endpoint_error": 2.384185791015625e-07,
+  "maximum_neutral_error": 0.0,
+  "maximum_mouth_motion": 0.0,
+  "talk_hand_travel_m": 0.04304427653659366,
+  "talk_head_travel_degrees": 2.605023050385462
+}
