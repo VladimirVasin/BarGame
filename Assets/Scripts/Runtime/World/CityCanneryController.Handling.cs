@@ -51,6 +51,14 @@ namespace BarPromenade
 
         private Vector3 GroundPath(Vector3 store, Vector3 liftPoint, float progress)
         {
+            if (Snapshot.Stage == CityFishSupplyStage.LoadFinished)
+            {
+                int unit = 0;
+                for (int i = 1; i < cases.Length; i++)
+                    if ((ReadyStore(i) - store).sqrMagnitude < (ReadyStore(unit) - store).sqrMagnitude) unit = i;
+                SampleFactoryJackGround(unit, progress, FactoryJackRoute.Loaded, out Vector3 readyPoint, out _);
+                return readyPoint;
+            }
             Vector3 door = Snapshot.Stage == CityFishSupplyStage.LoadFish
                 ? port.Plan.World(new Vector3(4.3f, CityPortPlan.DeckHeight, -14f))
                 : Snapshot.Stage == CityFishSupplyStage.UnloadShop ? Route.ShopDoorPoint
@@ -75,11 +83,6 @@ namespace BarPromenade
                 Vector3 local = Plan.Local(store);
                 bend = Plan.World(new Vector3(local.x, CityCanneryPlan.FloorTop, -4.875f));
                 aisle = Plan.World(new Vector3(-4.65f, CityCanneryPlan.FloorTop, -4.875f));
-            }
-            else if (Snapshot.Stage == CityFishSupplyStage.LoadFinished)
-            {
-                bend = Plan.World(new Vector3(-2.8f, CityCanneryPlan.FloorTop, 6.35f));
-                aisle = Plan.World(new Vector3(-2.8f, CityCanneryPlan.FloorTop, 5f));
             }
             else if (Snapshot.Stage == CityFishSupplyStage.UnloadShop)
                 bend = aisle = Route.ShopDoorPoint + ShopInward * 2.2f;
@@ -154,14 +157,13 @@ namespace BarPromenade
                     // The first empty jack comes from its own stand. Only
                     // later fetches start where the previous load left it.
                     cart = Snapshot.Stage==CityFishSupplyStage.LoadFish ? TrolleyFetchPosition(i,t/.18f) :
-                        i == 0 ? FirstTrolleyFetchPosition(FirstFetchProgress(t)) :
-                        GroundPath(ground, low, 1-Ease(t/.18f));
+                        FactoryTrolleyFetchPosition(i, i == 0 ? FirstFetchProgress(t) : t/.18f, i == 0);
                     cargo = ground;
                 }
                 else if (t < .35f)
                 {
-                    cart=Snapshot.Stage==CityFishSupplyStage.LoadFish ? PortLoadedGroundPosition(i,t) :
-                        GroundPath(ground, low, Ease((t-.18f)/.17f));
+                    if (Snapshot.Stage==CityFishSupplyStage.LoadFish) cart=PortLoadedGroundPosition(i,t);
+                    else SampleFactoryJackGround(i,(t-.18f)/.17f,FactoryJackRoute.Loaded,out cart,out _);
                     cargo=cart;
                 }
                 else if (t < .47f) { cart = Blend(low,high,(t-.35f)/.12f); cargo=cart; liftTravel=LiftPivotTravel(cart); }
@@ -202,6 +204,7 @@ namespace BarPromenade
         private Quaternion TransferTrolleyRotation(int unit,float time)
         {
             if(Snapshot.Stage==CityFishSupplyStage.LoadFish) return PortHandlingRotation(unit,time);
+            if(Snapshot.Stage==CityFishSupplyStage.LoadFinished) return FactoryHandlingRotation(unit,time);
             if(Loading && unit==0 && time<.18f) return FirstTrolleyFetchRotation(FirstFetchProgress(time));
             bool ground=Loading ? time<.35f : time>.55f && time<.93f;
             if(!ground) return Truck.rotation;
@@ -333,7 +336,8 @@ namespace BarPromenade
                     : Snapshot.Stage <= CityFishSupplyStage.FactoryReverse ? Truck.TransformPoint(cargoSlots[i]) : RawStore(i);
                 if (Snapshot.Stage == CityFishSupplyStage.LoadFish && i < Snapshot.Handled) fishPosition=Truck.TransformPoint(cargoSlots[i]);
                 if (Snapshot.Stage == CityFishSupplyStage.UnloadFish && unloadOrdinal >= Snapshot.Handled) fishPosition=Truck.TransformPoint(cargoSlots[i]);
-                bool caseVisible = caseGroup && i < Production.CompletedUnits && Snapshot.Stage <= CityFishSupplyStage.UnloadShop &&
+                bool packingBox = Production.Stage == CityCanneryProductionStage.Pack && i == Production.FirstUnit;
+                bool caseVisible = caseGroup && (i < Production.CompletedUnits || packingBox) && Snapshot.Stage <= CityFishSupplyStage.UnloadShop &&
                     (Snapshot.Stage != CityFishSupplyStage.UnloadShop || unloadOrdinal >= Snapshot.Handled);
                 Vector3 casePosition = Snapshot.Stage <= CityFishSupplyStage.LoadFinished ? ReadyStore(i) : Truck.TransformPoint(cargoSlots[i]);
                 if (Snapshot.Stage == CityFishSupplyStage.LoadFinished && i < Snapshot.Handled) casePosition=Truck.TransformPoint(cargoSlots[i]);
@@ -350,7 +354,41 @@ namespace BarPromenade
                     Snapshot.Stage == CityFishSupplyStage.LoadFish && i < Snapshot.Handled ||
                     Snapshot.Stage == CityFishSupplyStage.UnloadFish && unloadOrdinal >= Snapshot.Handled) fishRotation = Truck.rotation;
                 if (fishVisible) fish[i].SetPositionAndRotation(fishPosition,fishRotation);
-                if (caseVisible) cases[i].SetPositionAndRotation(casePosition,Snapshot.Stage < CityFishSupplyStage.LoadFinished ? Plan.Rotation : Truck.rotation);
+                bool inspected = i < Snapshot.Inspection.StoredUnits;
+                Quaternion supportRotation = Plan.Rotation * Quaternion.Euler(0, 90f, 0);
+                Quaternion boxRotation = Plan.Rotation * Quaternion.Euler(0, 180f, 0);
+                if (Snapshot.Stage == CityFishSupplyStage.LoadFinished)
+                {
+                    if (activeTransfer)
+                    {
+                        supportRotation = FactoryShippingSupportRotation(i, Snapshot.TransferProgress);
+                        boxRotation = supportRotation * Quaternion.Euler(0, 90f, 0);
+                    }
+                    else if (i < Snapshot.Handled)
+                    {
+                        supportRotation = Truck.rotation * Quaternion.Euler(0, 180f, 0);
+                        boxRotation = Truck.rotation * Quaternion.Euler(0, -90f, 0);
+                    }
+                }
+                else if (Snapshot.Stage > CityFishSupplyStage.LoadFinished)
+                {
+                    Quaternion cartRotation = activeTransfer && Snapshot.Stage == CityFishSupplyStage.UnloadShop
+                        ? TransferTrolleyRotation(i, Snapshot.TransferProgress) : Truck.rotation;
+                    supportRotation = cartRotation * Quaternion.Euler(0, 180f, 0);
+                    boxRotation = cartRotation * Quaternion.Euler(0, -90f, 0);
+                }
+                bool palletVisible = Snapshot.Stage < CityFishSupplyStage.LoadFinished ? FactoryPresentationActive : caseVisible;
+                shippingPallets[i].gameObject.SetActive(palletVisible);
+                shippingPallets[i].SetPositionAndRotation(Snapshot.Stage < CityFishSupplyStage.LoadFinished ? ReadyStore(i) : casePosition,
+                    supportRotation * shippingPalletRest[i]);
+                if (caseVisible)
+                {
+                    bool onPackingTable = Snapshot.Stage < CityFishSupplyStage.LoadFinished && !inspected;
+                    cases[i].SetPositionAndRotation(onPackingTable ? Anchor("PackingBox") : casePosition + Vector3.up * ShippingPalletHeight,
+                        onPackingTable ? Plan.Rotation : boxRotation);
+                    float closed = packingBox ? Ease(((float)Production.Seconds - (float)Production.Duration + 2f) / 2f) : 1f;
+                    ApplyCartonClosure(i, closed);
+                }
             }
             if (Snapshot.IsTransfer && TruckPresentationActive)
             {
@@ -393,7 +431,16 @@ namespace BarPromenade
                     if(carried) forks.position+=Vector3.up*.03f;
                     Transform load=(Snapshot.Stage==CityFishSupplyStage.LoadFish||Snapshot.Stage==CityFishSupplyStage.UnloadFish)
                         ? fish[ActiveUnit] : cases[ActiveUnit];
-                    if(carried) load.SetPositionAndRotation(cart+Vector3.up*.03f,rotation);
+                    if(carried)
+                    {
+                        bool finished = Snapshot.Stage == CityFishSupplyStage.LoadFinished || Snapshot.Stage == CityFishSupplyStage.UnloadShop;
+                        if (finished)
+                        {
+                            load.position += Vector3.up * .03f;
+                            shippingPallets[ActiveUnit].position += Vector3.up * .03f;
+                        }
+                        else load.SetPositionAndRotation(cart+Vector3.up*.03f,rotation);
+                    }
                 }
             }
             if (!FactoryPresentationActive) return;

@@ -39,7 +39,7 @@ CREW_SERVICE_ANCHORS = {
     "PreparationTidyHand":(-6.12,1.238,-2.50),
     "SeamerRestWorker":(-7.14,.18,-.35),
     "ReceiverRestWorker":(-2.9,.18,-6.5),
-    "ReceiverScaleHand":(-3.93,1.22,-5.98),
+    "ReceiverScaleHand":(.39,1.12,7.38),
     "ServiceLight":(-7.35,2.56,.55),
     "ColdStoreSound":(-7.5,3.46,-5.4),
 }
@@ -361,14 +361,14 @@ def crew_service_dressing(root,mat):
     for name,position in CREW_SERVICE_ANCHORS.items():anchor(name,root,position)
 
 
-def equipment(mat):
-    root=empty("Equipment");g=Geometry()
-    # Receiving scale: a foot platform and genuine mechanical dial, kept as
-    # useful equipment after the former weighbridge changes purpose.
+def shipping_scale(root,mat):
+    # The existing complete scale now occupies the outdoor pocket north of
+    # the shipping opening. Rotate its original metre geometry as one object,
+    # including the zero wheel and the dial, which now faces the worker east.
+    scale=empty("ShippingScale",root);g=Geometry()
     chamfer(g,(-3.5,.30,-5.45),(1.25,.24,1.45),METAL,.04)
     g.rod((-4.1,.42,-5.95),(-4.1,1.62,-5.95),.045,METAL,8)
-    # A physical zero-adjustment wheel belongs to the receiver's idle check;
-    # touching it never invents a weighed load or moves the unloaded needle.
+    # The physical adjustment wheel remains attached to the relocated stand.
     g.rod((-4.1,1.22,-5.95),(-3.947,1.22,-5.98),.018,METAL,8)
     ring(g,(-3.945,1.22,-5.98),.044,.015,METAL,(1,0,0),10)
     for offset in (-.03,.03):
@@ -377,9 +377,28 @@ def equipment(mat):
     g.rod((-4.11,1.67,-5.929),(-4.11,1.67,-5.915),.155,CABIN,16)
     dial_ticks(g,(-4.11,1.67,-5.907),.132)
     ring(g,(-4.11,1.67,-5.914),.17,.015,METAL,(0,0,1),16)
-    dial=empty("MOVE_ScaleNeedle",root,(-4.11,1.67,-5.90));d=Geometry()
-    d.rod((0,0,0),(.095,.07,0),.009,DARK,6);obj(d,"ScaleNeedle",dial,mat)
-    anchor("ReceivingLoad",root,(-3.5,.42,-5.45));anchor("Receiver",root,(-3.4,.18,-6.5))
+    for i,vertex in enumerate(g.vertices):
+        x,y,z=source(vertex)
+        g.vertices[i]=source((.92+(z+5.45),y-.10,6.95-(x+3.5)))
+    obj(g,"ShippingScaleVisible",scale,mat)
+    dial=empty("MOVE_ScaleNeedle",root,(.47,1.57,7.56));d=Geometry()
+    d.rod((0,0,0),(0,.07,-.095),.009,DARK,6);obj(d,"ScaleNeedle",dial,mat)
+    collision_box("ShippingScalePlatform",root,mat,(.92,.20,6.95),(1.45,.24,1.25))
+    collision_box("ShippingScaleStand",root,mat,(.42,1.02,7.55),(.14,1.40,.38))
+    anchor("WeighingLoad",root,(1.20,.32,6.95))
+    anchor("WeighingWorker",root,(2.0,.08,6.95))
+    anchor("ShippingScaleWorker",root,(2.0,.08,6.95))
+    anchor("ShippingRestWorker",root,(2.0,.08,4.3))
+    anchor("WeighingDial",root,(.47,1.57,7.56))
+    # Retain the old target name for import compatibility, with the real
+    # platform contact; no receiving-stage load is created by this anchor.
+    anchor("ReceivingLoad",root,(1.20,.32,6.95))
+
+
+def equipment(mat):
+    root=empty("Equipment");g=Geometry()
+    shipping_scale(root,mat)
+    anchor("Receiver",root,(-3.4,.18,-6.5))
     # Wash trough has an open dark bowl, a lip, tap, bottom drain and hose.
     wash_start=len(g.vertices)
     g.role="Stainless"
@@ -566,7 +585,8 @@ def equipment(mat):
     g.rod((-3.94,1.31,5.42),(-3.74,1.31,5.42),.018,METAL,8)
     g.box((-3.84,1.26,5.30),(.19,.025,.045),METAL)
     # One open work carton fits west of the tray's cooling dock, with a real
-    # gap between them. It is a Pack-only proxy for this batch, not stock.
+    # gap between them. Kept only as an authored reference; runtime uses the
+    # same independently movable CartonStack body from packing to shipment.
     carton=Geometry();carton.role="Cardboard"
     cx,cy,cz=-6.2725,1.14,5.05
     chamfer(carton,(cx,cy+.008,cz),(.255,.016,.70),WOOD,.004)
@@ -576,6 +596,8 @@ def equipment(mat):
     for z in (cz-.32,cz+.32):
         chamfer(carton,(cx,cy+.298,z),(.237,.012,.045),WOOD,.003)
     obj(carton,"PackingCarton",root,mat)
+    anchor("PackingBox",root,(cx,cy,cz))
+    anchor("BoxPickupWorker",root,(-6.94,.18,5.0))
     for index in range(15):
         layer=index//10;slot=index%10
         x=cx+(-.058 if slot<5 else .058) if layer==0 else cx
@@ -608,12 +630,16 @@ def equipment(mat):
     g.role=None
     chamfer(g,(-5.50,1.177,4.62),(.16,.075,.15),PAINT,.012)
     anchor("PackingPickup",root,(-6.31,1.225,4.62))
-    # Finished boxes stand in six floor slots, so the same low trolley can
-    # retrieve them. An upper shelf would falsely need a second hoist.
-    for i in range(6):
-        x=-7.25+i*.85
-        anchor("ReadyCase"+str(i),root,(x,.18,6.35))
-        for xx in (x-.39,x+.39):g.box((xx,.186,6.35),(.018,.012,1.16),METAL)
+    # Three empty pallet supports wait outside, south of the shipping ramp.
+    # The receiver places each approved real carton here; the driver can
+    # withdraw the jack east without occupying the public passage indoors.
+    for i,z in enumerate((3.2,1.7,.2)):
+        anchor("ReadyCase"+str(i),root,(.8,.08,z))
+        anchor("ApprovedWorker"+str(i),root,(1.85,.08,z))
+        for x in (.41,1.19):g.box((x,.086,z),(.018,.012,1.16),METAL)
+    # The legacy capacity anchors are kept for passive import compatibility;
+    # the finite delivery contract only materializes the three outdoor slots.
+    for i in range(3,6):anchor("ReadyCase"+str(i),root,(-7.25+i*.85,.18,6.35))
     anchor("PackingWorker",root,(-6.94,.18,5.0));anchor("PackingLeftHand",root,(-6.39,1.19,4.8))
     anchor("PackingRightHand",root,(-6.39,1.19,5.2));anchor("CoolingLoad",root,(-5.75,1.19,5.05))
     anchor("PackingLoad",root,(-4.25,1.14,5.05));anchor("FinishedLoad",root,(-3.15,.18,6.1))
@@ -966,14 +992,32 @@ def small_part(name,mat):
                 obj(lid,"CanLid"+str(index).zfill(2),unit,mat)
         anchor("Load",root,(0,.13,0))
     elif name=="CartonStack":
-        g.role="Cardboard"
-        for y in (.16,.47):
-            for x in (-.19,.19):
-                for z in (-.28,.28):
-                    chamfer(g,(x,y,z),(.36,.30,.53),WOOD,.018)
-                    g.box((x,y+.155,z),(.06,.014,.52),ROPE)
-                    g.box((x,y-.02,z-.273),(.065,.27,.014),ROPE)
-        g.role=None;anchor("Load",root,(0,.63,0))
+        # One finite finished carton replaces the former eight-box proxy.
+        # Its detachable empty support never adds another finished unit.
+        support=empty("ShippingPallet",root);wood=Geometry()
+        for x in (-.31,0,.31):
+            for z in (-.48,0,.48):chamfer(wood,(x,.064,z),(.15,.128,.18),WOOD,.013)
+        for z in (-.49,0,.49):chamfer(wood,(0,.022,z),(.8,.044,.18),WOOD,.008)
+        for x in (-.32,-.16,0,.16,.32):chamfer(wood,(x,.15,0),(.14,.044,1.2),WOOD,.008)
+        obj(wood,"ShippingPalletVisible",support,mat)
+        anchor("ShippingPalletTop",support,(0,.172,0))
+        body=Geometry();body.role="Cardboard"
+        chamfer(body,(0,.008,0),(.255,.016,.70),WOOD,.004)
+        for x in (-.1235,.1235):chamfer(body,(x,.15,0),(.008,.29,.70),WOOD,.003)
+        for z in (-.346,.346):chamfer(body,(0,.15,z),(.239,.29,.008),WOOD,.003)
+        obj(body,"CartonBody",root,mat)
+        for name,sign in (("Left",-1),("Right",1)):
+            flap=empty("MOVE_CartonFlap"+name,root,(sign*.1275,.300,0));panel=Geometry()
+            panel.role="Cardboard"
+            chamfer(panel,(-sign*.06375,0,0),(.1275,.008,.70),WOOD,.003)
+            obj(panel,"CartonFlap"+name,flap,mat)
+        seal=Geometry();seal.role="Cardboard"
+        seal.box((0,.306,0),(.035,.004,.69),ROPE)
+        obj(seal,"CartonSeal",root,mat)
+        anchor("CartonSupport",root,(0,0,0))
+        anchor("CartonLeftGrip",root,(0,.14,-.354))
+        anchor("CartonRightGrip",root,(0,.14,.354))
+        anchor("Load",root,(0,0,0))
     elif name=="Trolley":
         forks=empty("MOVE_Forks",root);f=Geometry()
         for x in (-.155,.155):
@@ -987,7 +1031,7 @@ def small_part(name,mat):
         g.rod((-.38,1.08,-.88),(.38,1.08,-.88),.03,METAL,8)
         anchor("Load",root,(0,0,0));anchor("TrolleyHandleLeft",root,(-.32,1.08,-.88))
         anchor("TrolleyHandleRight",root,(.32,1.08,-.88));anchor("Handle",root,(0,1.08,-.88))
-    obj(g,name+"Visible",root,mat)
+    if g.faces:obj(g,name+"Visible",root,mat)
     return root
 
 
@@ -1123,6 +1167,66 @@ def validate_crew_service(root,points):
                     raise RuntimeError('Cannery service fixture crosses a crew body corridor: '+name)
 
 
+def validate_shipping(equipment_root,carton_root,points):
+    def vertices(group):
+        return [source(equipment_root.matrix_world.inverted()@part.matrix_world@v.co)
+                for part in [group]+list(group.children_recursive)
+                if part.type=='MESH' for v in part.data.vertices]
+    scale=next(p for p in equipment_root.children if p.name.split('.')[0]=='ShippingScale')
+    mesh_points=vertices(scale)
+    low=[min(p[i] for p in mesh_points) for i in range(3)]
+    high=[max(p[i] for p in mesh_points) for i in range(3)]
+    if low[0]<.17 or low[2]<6.30 or high[0]>1.67 or high[2]>7.80 or abs(low[1]-.08)>.0001:
+        raise RuntimeError('The entire scale must stay in its outdoor shipping pocket, clear of wall/ramp')
+    if abs(points['ANCHOR_WeighingLoad'][1]-.32)>.0001:
+        raise RuntimeError('Weighed carton base does not contact the real scale platform')
+    # Body circles on the actual rerouted east and north crew corridors.
+    for first,last in (((2.75,.08,-2.7),(2.75,.08,8.1)),((2.75,.08,8.1),(-8.55,.08,8.1))):
+        for step in range(101):
+            p=Vector(first).lerp(Vector(last),step/100)
+            dx=max(low[0]-p.x,0,p.x-high[0]);dz=max(low[2]-p.z,0,p.z-high[2])
+            if math.hypot(dx,dz)<.29:
+                raise RuntimeError('Outdoor scale obstructs the crew body corridor')
+    # SAT against the real reverse/exit arc and straight bay, including the
+    # nose and rear overhang. Parking-only checks miss a swept vehicle corner.
+    scale_corners=[Vector((x,z)) for x in (low[0],high[0]) for z in (low[2],high[2])]
+    plan_text=(ROOT/'Assets/Scripts/Runtime/World/CityCanneryPlan.cs').read_text(encoding='utf-8')
+    radius=float(re.search(r'TurningRadius\s*=\s*([\d.]+)f',plan_text).group(1))+.25
+    poses=[]
+    for step in range(129):
+        a=math.pi*.5*step/128
+        poses.append((Vector((-1.25+radius*math.sin(a),6.75+radius*math.cos(a))),
+                      Vector((-math.cos(a),math.sin(a))),Vector((math.sin(a),math.cos(a)))))
+    poses.extend((Vector((5,6.75-8.05*step/128)),Vector((0,1)),Vector((1,0))) for step in range(129))
+    for centre,forward,right in poses:
+        corners=[centre+forward*z+right*x for x in (-TRUCK_HALF_WIDTH-.1,TRUCK_HALF_WIDTH+.1)
+                 for z in (TRUCK_REAR-.1,TRUCK_FRONT+.1)]
+        separated=False
+        for axis in (Vector((1,0)),Vector((0,1)),forward,right):
+            scale_projection=[p.dot(axis) for p in scale_corners]
+            truck_projection=[p.dot(axis) for p in corners]
+            if max(scale_projection)<min(truck_projection) or max(truck_projection)<min(scale_projection):
+                separated=True;break
+        if not separated:raise RuntimeError('Outdoor scale intersects the swept factory truck envelope')
+    for i,z in enumerate((3.2,1.7,.2)):
+        if math.dist(points['ANCHOR_ReadyCase'+str(i)],(.8,.08,z))>.0001:
+            raise RuntimeError('Approved carton support left its finite outdoor slot')
+        if z+.6>3.9 or .8-.4<.12:
+            raise RuntimeError('Approved carton support crosses the shipping ramp or facade')
+    carton_points={a['name']:a['position'] for a in port.describe(carton_root)['anchors']}
+    required={'CartonBody','ShippingPallet','MOVE_CartonFlapLeft','MOVE_CartonFlapRight','CartonSeal'}
+    if not required.issubset({p.name.split('.')[0] for p in carton_root.children}):
+        raise RuntimeError('Single carton lost its independently moving body/flaps/support')
+    for key,expected in (('ANCHOR_CartonSupport',(0,0,0)),('ANCHOR_CartonLeftGrip',(0,.14,-.354)),
+                         ('ANCHOR_CartonRightGrip',(0,.14,.354)),('ANCHOR_ShippingPalletTop',(0,.172,0))):
+        if math.dist(carton_points[key],expected)>.0001:
+            raise RuntimeError('Single carton/support contact differs: '+key)
+    for index in range(15):
+        p=Vector(points['ANCHOR_PackingCan'+str(index).zfill(2)])-Vector(points['ANCHOR_PackingBox'])
+        if p.x-.057<-.1195 or p.x+.057>.1195 or abs(p.z)+.057>.342 or p.y+.102>.295:
+            raise RuntimeError('A real packing can is outside the continuous finished carton')
+
+
 def validate(roots):
     port.validate_surfaces(roots)
     entries={r.name.split('.')[0]:port.describe(r) for r in roots}
@@ -1204,6 +1308,8 @@ def validate(roots):
     # raw units and the 1.5 m door; no bin is authored inside its wall.
     points={a['name']:a['position'] for a in entries['Equipment']['anchors']}
     validate_crew_service(next(r for r in roots if r.name.split('.')[0]=='Equipment'),points)
+    validate_shipping(next(r for r in roots if r.name.split('.')[0]=='Equipment'),
+                      next(r for r in roots if r.name.split('.')[0]=='CartonStack'),points)
     # The tidy stance faces the same cloth from clear floor. Reserve 10 cm
     # beyond the body radius for the walking/head pose along the approach;
     # the old endpoint put the body exactly against the cold-room wall.
@@ -1322,7 +1428,8 @@ def main():
                        help='Validate against the saved manifest and render only the source review PNG')
     p.add_argument('--model-dir',type=Path,default=ROOT/'Assets/Resources/City/Cannery')
     p.add_argument('--source-dir',type=Path,default=ROOT/'ArtSource/City/Cannery')
-    p.add_argument('--only-part',choices=NAMES)
+    p.add_argument('--only-part',choices=NAMES,action='append',
+                   help='Export only these changed parts; repeat for a coherent multi-part edit')
     args=p.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
     if args.preview_only and (args.no_preview or args.only_part):
         p.error('--preview-only cannot be combined with --no-preview or --only-part')
@@ -1347,6 +1454,12 @@ def main():
               'can_count':15,'can_unit_order':'x*3+z; body, contents and lid relative to each CanUnit base',
               'can_body_inner_bottom':.008,'can_rim_height':.0965,'can_lid_top':.102,
               'packing_carton_has_duplicate_cans':False,'packing_can_targets':'ANCHOR_PackingCan00..14',
+              'finished_carton_dimensions':[.255,.30,.70],'finished_cartons_per_delivery':3,
+              'finished_carton_bottom_origin':True,'shipping_pallet_top':.172,
+              'finished_carton_flaps':'Closed rest; Unity Z, Left +110 / Right -110 degrees opens',
+              'shipping_scale':'Whole scale outside shipping north jamb; Unity X needle axis, +X face',
+              'shipping_scale_platform_xz':[.195,1.645,6.325,7.575],'shipping_scale_platform_top':.32,
+              'shipping_scale_load':[1.20,.32,6.95],'shipping_crew_corridor_x':2.75,
               'conveyor_driven_roller_axes':list(CONVEYOR_ROLLER_AXES),'conveyor_driven_roller_signs':list(CONVEYOR_ROLLER_SIGNS),
               'retort_lock_axes':'Unity local Z; four pivots follow MOVE_RetortDoor',
               'retort_pressure_needle_axis':'Unity local X',
@@ -1374,7 +1487,7 @@ def main():
     else:
         args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
         for root in roots:
-            if args.only_part is None or root.name==args.only_part:port.base.export(root,args.model_dir/(root.name+'.fbx'))
+            if args.only_part is None or root.name in args.only_part:port.base.export(root,args.model_dir/(root.name+'.fbx'))
         (args.model_dir/'CityCannery3D.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
         port.source_surface_materials(roots)
         source_surface_materials(roots)

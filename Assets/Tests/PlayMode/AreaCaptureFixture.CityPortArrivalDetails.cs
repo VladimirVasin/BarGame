@@ -13,6 +13,19 @@ namespace BarPromenade.Tests.PlayMode
     public sealed partial class AreaCaptureFixture
     {
         [UnityTest]
+        [Explicit("Arrival horn gain and harbour reflections, unchanged departure, lifecycle and an offline Unity DSP WAV with speakers muted.")]
+        public IEnumerator CityPortArrivalHorn()
+        {
+            float volume = AudioListener.volume;
+            AudioListener.volume = 0f;
+            try
+            {
+                yield return CaptureFocusedPort((camera, city, port, crew) => AssertPortArrivalHorn(camera, port));
+            }
+            finally { AudioListener.volume = volume; }
+        }
+
+        [UnityTest]
         [Explicit("The complete production searchlight, visible fog shaft and shadows in ordinary day/night frames.")]
         public IEnumerator CityPortSearchlightAppearance() => CaptureFocusedPort(CapturePortSearchlightAppearance);
 
@@ -190,12 +203,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(horn.GetComponent<AudioLowPassFilter>().cutoffFrequency, Is.EqualTo(1250f));
                 AudioEchoFilter echo = horn.GetComponent<AudioEchoFilter>();
                 AudioReverbFilter reverb = horn.GetComponent<AudioReverbFilter>();
-                Assert.That(echo.delay, Is.EqualTo(620f));
-                Assert.That(echo.decayRatio, Is.EqualTo(.42f));
-                Assert.That(echo.wetMix, Is.EqualTo(.30f));
                 Assert.That(echo.dryMix, Is.EqualTo(1f));
-                Assert.That(reverb.decayTime, Is.EqualTo(3.8f));
-                Assert.That(horn.volume, Is.EqualTo(.32f));
                 port.ForcePresentation = true;
                 double cycle = (CityPortCycle.Sample(saved).CycleIndex + 1) * CityPortCycle.CycleDurationSeconds;
                 void Sample(double time, bool running = true)
@@ -205,6 +213,11 @@ namespace BarPromenade.Tests.PlayMode
                 double arrive = cycle + CityPortSound.ArrivalHornAtSeconds;
                 Sample(arrive - .02d); Sample(arrive + .02d);
                 Assert.That(sound.HornsPlayed, Is.EqualTo(1));
+                float arrivalGain = horn.volume, arrivalDecay = reverb.decayTime;
+                float arrivalEchoDecay = echo.decayRatio, arrivalWet = echo.wetMix;
+                Assert.That(arrivalGain, Is.EqualTo(.64f).Within(.00001f));
+                Assert.That(horn.clip.length, Is.EqualTo(CityOffshoreBoatSynthesis.FirstHornDuration +
+                    CityPortSound.ArrivalHornTailSeconds).Within(.002f));
                 Assert.That(Vector3.Distance(horn.transform.position,
                     CityPortAssetProvider.FindPart(port.Vessel.gameObject, "ANCHOR_Horn").position), Is.LessThan(.001f));
                 Sample(arrive + .02d, false);
@@ -218,6 +231,17 @@ namespace BarPromenade.Tests.PlayMode
                 double depart = cycle + CityPortSound.DepartureHornAtSeconds;
                 Sample(depart - .02d); Sample(depart + .02d);
                 Assert.That(sound.HornsPlayed, Is.EqualTo(2));
+                Assert.That(horn.volume, Is.EqualTo(.32f).Within(.00001f), "Departure keeps its existing gain.");
+                Assert.That(arrivalGain / horn.volume, Is.EqualTo(2f).Within(.001f));
+                Assert.That(horn.clip.length, Is.EqualTo(CityOffshoreBoatSynthesis.FirstHornDuration +
+                    CityPortSound.HornTailSeconds).Within(.002f), "Departure keeps its original reflection-tail clip.");
+                Assert.That(echo.delay, Is.EqualTo(620f));
+                Assert.That(echo.decayRatio, Is.EqualTo(.42f));
+                Assert.That(echo.wetMix, Is.EqualTo(.30f));
+                Assert.That(reverb.decayTime, Is.EqualTo(3.8f));
+                Assert.That(arrivalDecay, Is.GreaterThan(reverb.decayTime));
+                Assert.That(arrivalEchoDecay, Is.GreaterThan(echo.decayRatio));
+                Assert.That(arrivalWet, Is.GreaterThan(echo.wetMix));
                 port.ForcePresentation = false;
                 farObserver.transform.position = port.Plan.Origin + Vector3.one * 5000f;
                 port.PresentationObserver = farObserver.transform;
@@ -233,6 +257,11 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(sound.HornsPlayed, Is.EqualTo(2), "A seek past departure must remain silent.");
                 Sample(arrive + CityPortCycle.CycleDurationSeconds * 2d - .02d);
                 Sample(arrive + CityPortCycle.CycleDurationSeconds * 2d + .02d);
+                Assert.That(sound.HornsPlayed, Is.EqualTo(3), "A fresh arrival still triggers after the skipped windows.");
+                Assert.That(horn.volume, Is.EqualTo(arrivalGain));
+                Assert.That(reverb.decayTime, Is.EqualTo(arrivalDecay));
+                Assert.That(horn.clip.length, Is.EqualTo(CityOffshoreBoatSynthesis.FirstHornDuration +
+                    CityPortSound.ArrivalHornTailSeconds).Within(.002f));
                 yield return CapturePortHornTail(camera, horn);
             }
             finally
@@ -251,6 +280,10 @@ namespace BarPromenade.Tests.PlayMode
             bool followEnabled = follow != null && follow.enabled;
             Pose pose = new Pose(camera.transform.position, camera.transform.rotation);
             var muted = new Dictionary<AudioSource, bool>();
+            AudioEchoFilter echo = horn.GetComponent<AudioEchoFilter>();
+            AudioReverbFilter reverb = horn.GetComponent<AudioReverbFilter>();
+            bool echoEnabled = echo.enabled, reverbEnabled = reverb.enabled;
+            float arrivalGain = horn.volume;
             try
             {
                 if (follow != null) follow.enabled = false;
@@ -267,38 +300,71 @@ namespace BarPromenade.Tests.PlayMode
                 AudioListener.volume = 0f;
                 AudioRenderer.Stop(); capturing = false;
                 yield return null;
-                Assert.That(AudioRenderer.Start(), Is.True);
-                capturing = true;
-                AudioListener.volume = 1f;
-                horn.Play();
-                var pcm = new List<float>();
-                yield return PumpProductionAudio(Mathf.CeilToInt(rate * 2f * 6.2f), pcm, muted, new[] { horn }, null);
-                AudioListener.volume = 0f;
-                AudioRenderer.Stop(); capturing = false;
-                float[] samples = pcm.ToArray();
-                double body = ProductionAudioRms(samples, -1, rate * 2, rate * 4);
-                double tail = ProductionAudioRms(samples, -1, rate * 8, rate * 10);
-                // The source contains exact zeroes after 3.4 s: samples in
-                // this later window can only come from the real wet DSP path.
+                string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "CityCannery");
+                Directory.CreateDirectory(folder);
+                double referenceRms = 0d;
+                for (int take = 0; take < 3; take++)
+                {
+                    // Same dry waveform, distance and mixer path isolate the
+                    // requested gain from the deliberately stronger reflections.
+                    bool wet = take == 2;
+                    echo.enabled = reverb.enabled = wet;
+                    horn.volume = take == 0 ? .32f : arrivalGain;
+                    horn.Stop();
+                    horn.timeSamples = 0;
+                    Assert.That(AudioRenderer.Start(), Is.True);
+                    capturing = true;
+                    AudioListener.volume = 1f;
+                    horn.Play();
+                    float seconds = wet ? horn.clip.length : 2.6f;
+                    var pcm = new List<float>();
+                    yield return PumpProductionAudio(Mathf.CeilToInt(rate * 2f * seconds), pcm, muted, new[] { horn }, null,
+                        Mathf.CeilToInt(seconds * 30f) + 60);
+                    AudioListener.volume = 0f;
+                    AudioRenderer.Stop(); capturing = false;
+                    horn.Stop();
+                    float[] samples = pcm.ToArray();
+                    ProductionAudioRms(samples); // Entire recording must be finite and unclipped.
+                    double body = ProductionAudioRms(samples, -1, rate * 2, rate * 4);
+                    Assert.That(body, Is.GreaterThan(.0002d));
+                    string name = take == 0 ? "port-horn-dry-reference.wav" : take == 1
+                        ? "port-horn-dry-arrival.wav" : "port-arrival-horn-reverb-echo.wav";
+                    WritePcmWave(Path.Combine(folder, name), samples, rate, 2, 1f);
+                    if (take == 0) referenceRms = body;
+                    else if (take == 1)
+                    {
+                        double ratio = body / referenceRms;
+                        Debug.Log($"PORT ARRIVAL DRY GAIN: reference RMS={referenceRms:F7}, arrival RMS={body:F7}, ratio={ratio:F3}");
+                        Assert.That(ratio, Is.InRange(1.8d, 2.2d), "Actual Unity DSP dry output approximately doubles without normalizing the WAV.");
+                    }
+                    else
+                    {
+                        // Input is exactly silent after 3.4 s. The long late
+                        // decay therefore proves the real echo/reverb path.
+                        double tail = ProductionAudioRms(samples, -1, rate * 12, rate * 16);
+                        Debug.Log($"PORT ARRIVAL WET DSP: body RMS={body:F7}, zero-input tail RMS(6–8s)={tail:F7}");
+                        Assert.That(tail, Is.GreaterThan(.00002d));
+                        Assert.That(tail, Is.GreaterThan(body * .004d), "The stronger arrival has an audible extended reflection tail.");
+                    }
+                    yield return null;
+                }
+                // This assertion is independent of the wet recording: the
+                // source itself cannot be responsible for its measured tail.
                 var source = new float[horn.clip.samples];
                 horn.clip.GetData(source, 0);
                 float sourceTailPeak = 0f;
                 for (int i = Mathf.CeilToInt(CityOffshoreBoatSynthesis.FirstHornDuration * horn.clip.frequency); i < source.Length; ++i)
                     sourceTailPeak = Mathf.Max(sourceTailPeak, Mathf.Abs(source[i]));
                 Assert.That(sourceTailPeak, Is.Zero);
-                string folder = Path.Combine(Directory.GetCurrentDirectory(), "Captures", "CityCannery");
-                Directory.CreateDirectory(folder);
-                WritePcmWave(Path.Combine(folder, "port-arrival-horn-reverb-echo.wav"), samples, rate, 2, 1f);
-                Debug.Log($"PORT HORN DSP: direct RMS={body:F7}, zero-input tail RMS(4–5s)={tail:F7}");
-                Assert.That(body, Is.GreaterThan(.0002d));
-                Assert.That(tail, Is.GreaterThan(.00002d), "The low ship horn must have a real atmospheric reflection tail.");
-                Assert.That(tail, Is.GreaterThan(body * .004d));
             }
             finally
             {
                 AudioListener.volume = 0f;
                 if (capturing) AudioRenderer.Stop();
                 horn.Stop();
+                horn.volume = arrivalGain;
+                echo.enabled = echoEnabled;
+                reverb.enabled = reverbEnabled;
                 foreach (var pair in muted) if (pair.Key != null) pair.Key.mute = pair.Value;
                 AudioListener.pause = listenerPause; AudioListener.volume = volume;
                 Time.captureDeltaTime = captureDelta;

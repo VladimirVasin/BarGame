@@ -4,6 +4,21 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-12, glovebox handle callout:**
+  Radio UI on `glovebox_catch`; `E` opens/closes, contour follows
+  the hinge. No bottom duplicate; gaze/input/pause and driver lock gate it.
+
+- **Accepted — 2026-09-11, horn:**
+  Arrival/departure gain `.64/.32`; arrival echo `780 ms`, decay `.58`, wet `.45`;
+  reverb/tail `6.2/7.2` / `3.8/4.6 s`; roof horn `20/4 s`
+  pre-Moor/Depart. Pause/range own DSP; no seek/reentry replay.
+
+- **Accepted — 2026-09-11, outgoing carton inspection:**
+  User: scale outside «Отгрузка», clear of traffic. Existing receiver:
+  unload→packing→two-hand carry→release on scale→settle/nod→approved support→clear.
+  Three cartons: `CityCanneryInspectionPlan`→`CityFishSupplyCycle`.
+  nod commits approval, put-away storage, final clear permits loading.
+
 - **Accepted architecture exception — 2026-09-11, selectable new-game start:**
   User requests a location page after New Game: nine gameplay roots plus City
   docks/cannery; village first/default. Back returns to the main card; mouse,
@@ -18,18 +33,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   its exit. Starting inside Mother's house completes the reach-house quest.
 
 - **Accepted architecture exception — 2026-09-11, cannery shift life:**
-  Four workers, `6/6/4` work/wait/receiving pairs (§6/§21/art §8):
-  shared bubbles/no-repeat/free-hand gestures.
-  No E/hero address/boss/job/pay/quest/lore/illness/intoxication response; driver↔docker.
-  `LifeSeconds`: before dock entry/holds, pause freezes. Empty scale
-  stays zero; cloth returns, cuff/wrist checks; duty guards grips. Blender shelf/stool/
-  jacket/lamp clear `.29 m` corridors; shared surfaces. Local fan/can/crate/
-  latch/pressure audio; spot; no seek replay. Cargo/stock/routes/distance,
-  §16/§21/nine art checks stay.
-  User: four wait east facing the yard; unload→queued entry, final lot→exit
-  on delivery time. Side openings join public aisle. Enclosed west aisle gets a
-  staff cut in wall/liner/collision, no leaf/text; hero mask admits it,
-  machines/glass stay.
+  §6/§21/art §8: four, `6/6/4` pairs, shared bubbles/no-repeat/free-hand gestures;
+  no hero/job/lore/illness response; `LifeSeconds` survives holds,
+  pause freezes. Cloth/cuff/wrist; shelf/stool/jacket/lamp clear `.29 m`; shared
+  materials and anchored contact audio, no replay. Four wait east facing yard;
+  delivery time owns queued door walks. Side/public and west/staff cuts admit
+  hero, no leaf/text; machines/glass/cargo/stock/distance/canon stay.
 
 - **Accepted architecture exception — 2026-09-11, doubled calendar day:**
   User: art §2/story §20 now use 48 real minutes/day at ×1, two seconds/game
@@ -155,14 +164,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   gates retain custody/collision/traffic/restore.
 
 - **Accepted — 2026-09-10, cannery surface and process detail:**
-  Ten Blender models; floor/wall/steel/insulation/cardboard maps, port surfaces/
-  metre UVs. Workwear/aprons/poses/lamps/steam distance-gated; same cans fill/seal/
-  pack. Front/lenses/beams day/distance-gated; §21 labels. Outer-jamb bumpers;
-  leaf/rails move together.
+  Ten Blender models; floor/wall/steel/insulation/cardboard, shared port/metre UVs.
+  Workwear/aprons/poses/light/steam distance-gated; same cans fill/seal/pack.
+  Front/lenses/beams keep day floor; §21 labels. Outer-jamb bumpers; leaf/rails coupled.
 
 - **Accepted — 2026-09-10, first-crate production:**
-  `CityFishSupplyCycle`: FIFO unload `2x`, packer returns/truck takes output.
-  `Duration` first/`RepeatingDuration` repeats; `BatchStart`/batch queries restore first arrival.
+  `CityFishSupplyCycle`: FIFO `2x` during unload, packer returns.
+  `Duration` first/`RepeatingDuration` later; `BatchStart` queries restore arrival.
 
 - **Accepted — 2026-09-10, three crates per trawler:**
   `CityPortCycle.CargoCount=3`: unload `3*64=192 s`, visit `432 s`, factory/shop
@@ -170,11 +178,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 - **Accepted — 2026-09-10, readable working sound:**
   `CityWorkAudio`: mono `SfxWorld`, reverb `.28/.95 s` outdoor/factory;
-  crane `ANCHOR_HoistFeed`/retort body. City trims stay, Music −`6 dB`.
-  Vessel `ANCHOR_Horn`: `112 Hz/3.4 s`, `.32/64 m`, arrival/departure `66/336 s`;
-  forward crossings only, no seek/reentry replay. Echo `620 ms/.42/.30`, reverb
-  `3.8 s`, silent tail `4.6 s`; pause/distance/stop own DSP. Spot/Soft shadows;
-  global mix/light stay.
+  crane `ANCHOR_HoistFeed`/retort body. City trims retained, Music −`6 dB`.
+  Soft spot shadows; same mix/light.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
   12 opaque ImageGen maps; provenance:
@@ -199,14 +204,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   No boarding/exit/earnings/quest/crime-disease/act-intoxication changes; §16/§21/art checks.
 
 - **Accepted — 2026-09-09, the Ferryman's radio and ordinary road speech:**
-  The user approved the complete radio, glovebox-light and ten-line road-pool
-  plan. This is the bounded story-bible §6 exception to §17's parked-pool
-  counts and mandatory second person, and to a blanket reading of art §10f's
-  music silence. The existing twelve island and twelve mountain answers stay
-  separate. Road lines concern only ordinary driving and car maintenance;
-  they add no invitation, question, mysticism or lore. The single rhetorical
-  radio reaction below is separately authorized; the ten-line pool is unchanged.
-  Story §16/§21 and all nine art checks remain binding outside that exception.
+  User-approved radio, glovebox light and ten road lines: story §6 permits
+  exceptions to §17's parked-pool counts/second person and art §10f's music
+  silence. Twelve island/twelve mountain answers stay separate. Road lines
+  concern driving/maintenance: no invitation, question, mysticism or lore.
+  Only the radio reaction below permits a rhetorical question.
+  Story §16/§21 and all nine art checks otherwise bind.
   The user's station refinement fixes the radio to exactly three slots:
   `Resources/Audio/LastRouteRadio/Station1`, `Station2` and `Station3` each
   hold one user track, with any WAV/OGG/MP3 filename. All three now contain

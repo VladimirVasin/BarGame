@@ -13,6 +13,7 @@ namespace BarPromenade
         public const double DepartureHornAtSeconds = CityPortCycle.CycleDurationSeconds -
             CityPortCycle.IdleDurationSeconds - CityPortCycle.DepartDurationSeconds - 4d;
         public const float HornTailSeconds = 4.6f;
+        public const float ArrivalHornTailSeconds = 7.2f;
         private CityPortController port;
         private Transform engineAnchor, hornAnchor, refrigerationAnchor;
         private readonly Transform[] driveAnchors = new Transform[2];
@@ -21,7 +22,7 @@ namespace BarPromenade
         private readonly bool[] started = new bool[5];
         private readonly float[] gain = new float[5];
         private AudioSource contact, horn;
-        private AudioClip hornClip;
+        private AudioClip hornClip, arrivalHornClip;
         private AudioEchoFilter hornEcho;
         private AudioReverbFilter hornReverb;
         private bool hornSignalActive;
@@ -78,40 +79,54 @@ namespace BarPromenade
             sound.contact.volume = .36f;
             sound.horn = sound.CreateVoice("Trawler Arrival and Departure Horn", false, 1250f);
             float[] dryHorn = CityOffshoreBoatSynthesis.GenerateHornSamples(seed ^ 0x504F5254, 0);
-            var hornSamples = new float[dryHorn.Length + Mathf.RoundToInt(CityOffshoreBoatSynthesis.SampleRate * HornTailSeconds)];
-            Array.Copy(dryHorn, hornSamples, dryHorn.Length);
-            sound.hornClip = AudioClip.Create("Trawler low horn with reflection tail", hornSamples.Length, 1,
-                CityOffshoreBoatSynthesis.SampleRate, false);
-            sound.hornClip.SetData(hornSamples, 0);
-            sound.horn.clip = sound.hornClip;
-            sound.horn.volume = .32f;
+            sound.hornClip = CreateHornClip("Trawler departure horn", dryHorn, HornTailSeconds);
+            sound.arrivalHornClip = CreateHornClip("Trawler arrival horn", dryHorn, ArrivalHornTailSeconds);
             sound.horn.minDistance = 6f;
             sound.horn.maxDistance = 64f;
             // The roof horn alone has long harbour reflections. The appended
             // zero-input region lets the real DSP ring out on this same local
             // voice, under its distance, pause and lifetime owner.
             sound.hornEcho = sound.horn.gameObject.AddComponent<AudioEchoFilter>();
-            sound.hornEcho.delay = 620f;
-            sound.hornEcho.decayRatio = .42f;
-            sound.hornEcho.wetMix = .30f;
-            sound.hornEcho.dryMix = 1f;
             sound.hornReverb = sound.horn.GetComponent<AudioReverbFilter>();
-            sound.hornReverb.room = -1400f;
-            sound.hornReverb.roomHF = -2800f;
-            sound.hornReverb.decayTime = 3.8f;
-            sound.hornReverb.decayHFRatio = .42f;
-            sound.hornReverb.reflectionsLevel = -1200f;
-            sound.hornReverb.reflectionsDelay = .12f;
-            sound.hornReverb.reverbLevel = -1200f;
-            sound.hornReverb.reverbDelay = .08f;
-            sound.hornReverb.diffusion = 82f;
-            sound.hornReverb.density = 65f;
+            sound.ConfigureHorn(false);
             sound.RememberHornWindows(controller.ElapsedSeconds);
             sound.previousSeconds = controller.ElapsedSeconds;
             sound.hasPrevious = true;
             sound.IsInitialized = true;
             sound.SyncAnchors();
             return sound;
+        }
+
+        private static AudioClip CreateHornClip(string name, float[] dryHorn, float tailSeconds)
+        {
+            var samples = new float[dryHorn.Length + Mathf.RoundToInt(CityOffshoreBoatSynthesis.SampleRate * tailSeconds)];
+            Array.Copy(dryHorn, samples, dryHorn.Length);
+            var clip = AudioClip.Create(name, samples.Length, 1, CityOffshoreBoatSynthesis.SampleRate, false);
+            clip.SetData(samples, 0);
+            return clip;
+        }
+
+        private void ConfigureHorn(bool arrival)
+        {
+            // The approaching ship gets twice the direct gain and a broader,
+            // darker harbour response. Its own silence padding keeps the tail
+            // on the same physical source through pause/distance/cleanup.
+            horn.clip = arrival ? arrivalHornClip : hornClip;
+            horn.volume = arrival ? .64f : .32f;
+            hornEcho.delay = arrival ? 780f : 620f;
+            hornEcho.decayRatio = arrival ? .58f : .42f;
+            hornEcho.wetMix = arrival ? .45f : .30f;
+            hornEcho.dryMix = 1f;
+            hornReverb.room = arrival ? -1000f : -1400f;
+            hornReverb.roomHF = arrival ? -2600f : -2800f;
+            hornReverb.decayTime = arrival ? 6.2f : 3.8f;
+            hornReverb.decayHFRatio = .42f;
+            hornReverb.reflectionsLevel = arrival ? -750f : -1200f;
+            hornReverb.reflectionsDelay = arrival ? .18f : .12f;
+            hornReverb.reverbLevel = arrival ? -650f : -1200f;
+            hornReverb.reverbDelay = arrival ? .10f : .08f;
+            hornReverb.diffusion = arrival ? 88f : 82f;
+            hornReverb.density = arrival ? 72f : 65f;
         }
 
         private void LateUpdate()
@@ -194,8 +209,9 @@ namespace BarPromenade
                     previousSeconds < start + DepartureHornAtSeconds && seconds >= start + DepartureHornAtSeconds;
                 if (arrival || departure)
                 {
-                    // One restrained low ship blast at each manoeuvre, from
-                    // the actual roof horn; never an ambient repeating alarm.
+                    // One low ship blast at each manoeuvre, from the actual
+                    // roof horn; never an ambient repeating alarm.
+                    ConfigureHorn(arrival);
                     hornEcho.enabled = hornReverb.enabled = true;
                     horn.Play();
                     hornSignalActive = true;
@@ -310,6 +326,7 @@ namespace BarPromenade
             if (contact != null) DestroyOwned(contact.gameObject);
             if (horn != null) DestroyOwned(horn.gameObject);
             DestroyOwned(hornClip);
+            DestroyOwned(arrivalHornClip);
             foreach (AudioClip clip in clips) DestroyOwned(clip);
             IsInitialized = false;
         }

@@ -154,10 +154,10 @@ namespace BarPromenade
         private bool CanHearFactory()
         {
             if (listener == null || !factory.isActiveAndEnabled || !factory.FactoryPresentationActive) return false;
-            // The room, open passage and nearby outside waiting places share
-            // the same finite crew; individual earshot still limits each pair.
+            // Cover the complete 18 m site, including the yard in front of the
+            // relocated waiting places; individual earshot still limits pairs.
             Vector3 local = factory.Plan.Local(listener.position);
-            return local.x >= -9f && local.x <= 4f && local.z >= -9f && local.z <= 9f && local.y >= -1f && local.y <= 5f;
+            return local.x >= -9f && local.x <= 9f && local.z >= -9f && local.z <= 9f && local.y >= -1f && local.y <= 5f;
         }
 
         private bool PairPresent(in CityCanneryConversationExchange pair) =>
@@ -190,6 +190,11 @@ namespace BarPromenade
 
         public int PartnerFor(int role) => !hasExchange ? -1 : exchange.FirstRole == role ? exchange.SecondRole :
             exchange.SecondRole == role ? exchange.FirstRole : -1;
+
+        // The waiting pose yields its wandering gaze as the conversational
+        // turn arrives, and regains it smoothly when the pair releases.
+        public float WaitingLookWeight(int role) => 1f - Mathf.Clamp01(
+            (Mathf.Abs(headYaw[role]) + Mathf.Abs(bodyYaw[role])) / 25f);
 
         /// <summary>Called after the factory's base pose and contacts. Work keeps the arms and spine.</summary>
         public void ApplyCrewPose()

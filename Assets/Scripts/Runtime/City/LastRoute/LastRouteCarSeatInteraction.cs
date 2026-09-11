@@ -140,17 +140,11 @@ namespace BarPromenade
         {
             get
             {
-                if (TryResolveDashboardTarget(
-                        out LastRouteCarDashboardTarget target))
+                if (TryResolveDashboardTarget(out _))
                 {
-                    // Radio labels are attached to their knobs by the same
-                    // outline/leader UI as the shower controls.
-                    if (IsRadioTarget(target) || dashboard.IsGloveboxInputLocked)
-                        return null;
-                    return LastRouteCarDashboard.ResolvePromptKey(
-                        target,
-                        dashboard.RadioOn,
-                        dashboard.GloveboxOpen);
+                    // Dashboard labels attach to the knobs and glovebox handle
+                    // through the same outline/leader UI as the shower controls.
+                    return null;
                 }
 
                 return IsSeated ? StandPromptKey : SitPromptKey;
@@ -183,12 +177,19 @@ namespace BarPromenade
         /// </summary>
         public bool IsAttachedToCar => rootAttached;
 
-        public bool RadioControlsVisible => isActiveAndEnabled &&
+        private bool CanShowDashboardControls => isActiveAndEnabled &&
             GameInput.CanRead(GameInputContext.Contextual) &&
             player.Interactor != null && player.Interactor.InputEnabled &&
-            !player.Interactor.InteractKeyClaimed &&
+            !player.Interactor.InteractKeyClaimed;
+
+        public bool RadioControlsVisible => CanShowDashboardControls &&
             TryResolveDashboardTarget(out LastRouteCarDashboardTarget target) &&
             IsRadioTarget(target);
+
+        public bool GloveboxControlVisible => CanShowDashboardControls &&
+            TryResolveDashboardTarget(out LastRouteCarDashboardTarget target) &&
+            target == LastRouteCarDashboardTarget.Glovebox &&
+            !dashboard.IsGloveboxInputLocked;
 
         public bool TryTuneRadio()
         {

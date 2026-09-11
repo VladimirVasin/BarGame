@@ -39,6 +39,7 @@ namespace BarPromenade
         /// <summary>The renderer whose drawn box the gaze pick uses for the
         /// radio: the chrome frame, which is the whole face of it.</summary>
         public const string RadioBezelRole = "radio_bezel";
+        public const string GloveboxHandleRole = "glovebox_catch";
 
         /// <summary>How quickly the speedometer needle chases the road, in
         /// full-scale sweeps per second. A tired instrument, not a digital
@@ -105,6 +106,7 @@ namespace BarPromenade
         public bool IsGloveboxInputLocked { get; private set; }
         public MeshFilter RadioPowerKnobMesh { get; private set; }
         public MeshFilter RadioTuningKnobMesh { get; private set; }
+        public MeshFilter GloveboxHandleMesh { get; private set; }
         public Vector3 RadioKnobAxis => -ResolveForward();
         public float DriverTuningDegrees => driverTuningDegrees;
         public float Speed01 => speed01;
@@ -147,6 +149,8 @@ namespace BarPromenade
             tuningKnob = Capture(registry.RadioTuningKnobPivot);
             RadioPowerKnobMesh = registry.RadioPowerKnobPivot.GetComponentInChildren<MeshFilter>(true);
             RadioTuningKnobMesh = registry.RadioTuningKnobPivot.GetComponentInChildren<MeshFilter>(true);
+            Renderer gloveboxHandle = FindRenderer(GloveboxHandleRole);
+            GloveboxHandleMesh = gloveboxHandle != null ? gloveboxHandle.GetComponent<MeshFilter>() : null;
             needle = Capture(registry.RadioNeedlePivot);
             speedo = Capture(registry.SpeedoNeedlePivot);
             lidRenderers = registry.GloveboxLidPivot

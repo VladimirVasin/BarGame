@@ -111,7 +111,9 @@ namespace BarPromenade
             int packing=Mathf.Min(14,Mathf.FloorToInt(pack));
             float packPhase=pack-packing;
             bool isPacking=Production.Stage==CityCanneryProductionStage.Pack;
-            packingCarton.gameObject.SetActive(isPacking);
+            // The actual outgoing carton is present on the bench throughout
+            // packing and remains the same object through inspection/loading.
+            packingCarton.gameObject.SetActive(false);
             canSupply.gameObject.SetActive(Production.Stage<=CityCanneryProductionStage.Fill);
             lidSupply.gameObject.SetActive(Production.Stage<=CityCanneryProductionStage.Seal);
             for(int i=0;i<15;i++)

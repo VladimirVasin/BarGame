@@ -2,8 +2,8 @@
 
 `build-city-cannery-3d-model.py`: ten metre FBXs/`CityCannery3D.json` in
 `Assets/Resources/City/Cannery`, source `ArtSource/City/Cannery`; shared port maps.
-Equipment has crew cloth/shelf/stool/jacket/lamp. Validator checks metre
-contacts, `.29 m` crew clearance, UVs and determinism without publication:
+Equipment: outdoor scale/supports; `CartonStack`: one articulated carton.
+Validator: metre contacts, scale/truck/`.29 m` crew clearance, UVs/determinism:
 
 ```powershell
 python tools/run-blender.py tools/build-city-cannery-3d-model.py --validate-only -- --validate-only

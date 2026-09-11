@@ -6,6 +6,14 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
+## 2026-09-12 — Glovebox handle prompt
+
+- Reused radio contours/connected labels on the authored glovebox catch;
+  it follows the lid, shares gaze/input/pause guards and yields to the driver.
+  Removed the duplicate bottom prompt. Geometry/open-close/UI lifecycle:
+  `LastRouteCarRidePlayModeTests.Ride_AnswersTheRadioFromTheSeatWhileTheCarIsMoving`.
+  Documentation: `python tools/check-docs.py`, `git diff --check`.
+
 ## 2026-09-11 — Docks, speech, cannery and start menu
 
 Checks below passed except where stated; named capture frames reviewed.
@@ -31,16 +39,18 @@ Checks below passed except where stated; named capture frames reviewed.
   nested Talk recovers. Reveal drives mouths/brows/blink, chin/jowls damp.
   Branches/prompts/RU/EN/tail/mesh/pause/cleanup:
   `CityPortForemanDialogue`, `dialogue_face_atlas.py --validate-only`, foreman generator.
-- Louder/farther trawler motor, advance horns: `dotnet build BarPromenade.Runtime.csproj`.
+- Port motor/horn timing: `dotnet build BarPromenade.Runtime.csproj`;
+  arrival ×2/longer DSP tail: `CityPortArrivalHorn`.
 - F9 on; F1/F2/F3 ×3/×5/×10, repeat resets; world/calendar, fixed physics:
   `PauseMenuPlayModeTests.DebugSpeedHotkeys_ToggleGateAndSurviveSceneChanges`,
   `NestedPause_RestoresLatestTempoAndIgnoresOldSessionLeases`.
 - 48-minute day/needs, minute-aware test setup: `GameTimeStateTests`/needs checks.
-- Cannery: four wait at truck facade; queued door walks, mask bridges/west staff
-  opening. Wipe/scale/cuff/grips, 16 RU/EN pairs, dressing/light/sound:
-  `build-city-cannery-3d-model.py`, `CityCanneryLivingShift` cover
-  bodies/doors/contacts/pause/blocking/speech/audio; GameView reviewed.
-  Existing `CityCannery` has stale repeat-duration/dock-latch failures.
+- Cannery: doors/waits/grips/pairs/light/audio: generator,
+  `CityCanneryLivingShift`. Same cartons carried/weighed/approved outside;
+  loading awaits storage/clearance. Ramp/FBX support: `CityCanneryInspection`.
+  Yard speech gate/idle restored; reused bench clears crew/cart lanes:
+  `CityCanneryOutsideWait` (placement/physics, before/after shift, gestures/pause).
+  `CityCannery` retains stale repeat-duration/dock-latch failures.
 - City F9 stages the same loaded truck near factory, pre-dock/paused; only
   supply time rebases, repeats start a fresh batch. `CityCanneryDebugSpawn`:
   menu/pause/custody/resume/repeat.

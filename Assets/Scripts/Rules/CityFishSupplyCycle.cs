@@ -53,7 +53,7 @@ namespace BarPromenade
         internal CityFishSupplySnapshot(long batch, CityFishSupplyStage stage,
             double seconds, double duration, double portSeconds, double handlingSeconds,
             bool waitingForPortAccess, bool waitingForDockWorker, bool dockWorkerWaitingForPortAccess,
-            CityCanneryProductionSnapshot production)
+            CityCanneryProductionSnapshot production, CityCanneryInspectionSnapshot inspection)
         {
             Batch = batch; Stage = stage; Seconds = seconds; Duration = duration;
             PortSeconds = portSeconds; this.handlingSeconds = handlingSeconds;
@@ -61,11 +61,13 @@ namespace BarPromenade
             WaitingForDockWorker = waitingForDockWorker;
             DockWorkerWaitingForPortAccess = dockWorkerWaitingForPortAccess;
             Production = production;
+            Inspection = inspection;
         }
         private readonly double handlingSeconds;
         public long Batch { get; }
         public CityFishSupplyStage Stage { get; }
         public CityCanneryProductionSnapshot Production { get; }
+        public CityCanneryInspectionSnapshot Inspection { get; }
         public double Seconds { get; }
         public double Duration { get; }
         public float Progress => (float)(Seconds / Duration);
@@ -135,6 +137,8 @@ namespace BarPromenade
         private static readonly double[] productionDurations = { 0d, 36d, 30d, 24d, 30d, 48d, 30d, 42d };
         private readonly double[] durations;
         private readonly ProductionLot[] productionLots;
+        private readonly double[] inspectionStarts = new double[HandlingUnits];
+        private readonly double inspectionFinished;
         private readonly double[] portLoadStarts;
         private readonly double[] portDoorWaits = new double[HandlingUnits];
         private readonly double unloadStart;
@@ -149,12 +153,14 @@ namespace BarPromenade
         public double LastPortCrateStoredAtSeconds => PortEventTime(CityPortCycle.UnloadStartSeconds +
             (HandlingUnits - 1) * CityPortCycle.CargoDurationSeconds + CityPortCycle.StoredAtSeconds);
         public int ProductionLotCount => productionLots.Length;
+        public CityCanneryInspectionPlan InspectionPlan { get; }
 
         public CityFishSupplyCycle(double portToFactory, double factoryReverse,
             double factoryToShop, double shopToFactory, double portArrive, double portReverse, double factoryToPort,
             double? initialFactoryToPort = null,
             double dockWorkerStoreExitAtSeconds = CityPortCycle.DefaultDockWorkerStoreExitAtSeconds,
-            double trolleyStoreEntryAtSeconds = CityPortCycle.DefaultTrolleyStoreEntryAtSeconds)
+            double trolleyStoreEntryAtSeconds = CityPortCycle.DefaultTrolleyStoreEntryAtSeconds,
+            CityCanneryInspectionPlan inspectionPlan = null)
         {
             if(double.IsNaN(dockWorkerStoreExitAtSeconds) || double.IsInfinity(dockWorkerStoreExitAtSeconds) ||
                 dockWorkerStoreExitAtSeconds<CityPortCycle.StoredAtSeconds || dockWorkerStoreExitAtSeconds>CityPortCycle.CargoDurationSeconds)
@@ -164,6 +170,7 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(trolleyStoreEntryAtSeconds));
             this.dockWorkerStoreExitAtSeconds=dockWorkerStoreExitAtSeconds;
             this.trolleyStoreEntryAtSeconds=trolleyStoreEntryAtSeconds;
+            InspectionPlan = inspectionPlan ?? CityCanneryInspectionPlan.Default;
             foreach (double travel in new[] { portToFactory, factoryReverse, factoryToShop, shopToFactory,
                 portArrive, portReverse, factoryToPort })
                 if (double.IsNaN(travel) || double.IsInfinity(travel) || travel <= 0)
@@ -175,7 +182,7 @@ namespace BarPromenade
                     throw new ArgumentOutOfRangeException(nameof(initialFactoryToPort));
                 repeatingCycle = new CityFishSupplyCycle(portToFactory, factoryReverse, factoryToShop,
                     shopToFactory, portArrive, portReverse, factoryToPort,null,
-                    dockWorkerStoreExitAtSeconds,trolleyStoreEntryAtSeconds);
+                    dockWorkerStoreExitAtSeconds,trolleyStoreEntryAtSeconds,InspectionPlan);
                 factoryToPort = initial;
             }
             double dispatch = HasInitialArrival ? 0d : DriverDispatchAtSeconds;
@@ -210,11 +217,25 @@ namespace BarPromenade
             }
             productionLots = new ProductionLot[lotCount];
             Array.Copy(schedule, productionLots, lotCount);
+            // The receiver finishes incoming duty before visiting the output.
+            // Each physical box then waits for both packing and his previous
+            // put-away/clear walk. Production continues independently.
+            double receiverAvailable = TransferDuration;
+            double packingDuration = productionDurations[(int)CityCanneryProductionStage.Pack] / ProductionSpeed;
+            foreach (ProductionLot lot in productionLots)
+            for (int offset = 0; offset < lot.UnitCount; offset++)
+            {
+                int unit = lot.FirstUnit + offset;
+                double packedAt = lot.End - packingDuration + packingDuration * (offset + 1) / lot.UnitCount;
+                inspectionStarts[unit] = Math.Max(receiverAvailable, packedAt);
+                receiverAvailable = inspectionStarts[unit] + InspectionPlan.UnitDuration(unit);
+            }
+            inspectionFinished = receiverAvailable;
             // The floor-to-store round trip is walking work. Give each
             // handling unit time to traverse the real doorway and aisle.
             durations = new[] { dispatch, factoryToPort, portArrive, portReverse,
                 portLoadDuration, portToFactory, factoryReverse, TransferDuration,
-                availableAt - TransferDuration, TransferDuration, factoryToShop, TransferDuration,
+                inspectionFinished - TransferDuration, TransferDuration, factoryToShop, TransferDuration,
                 shopToFactory, factoryReverse };
             for (int i = 0; i < durations.Length; i++)
             {
@@ -323,6 +344,37 @@ namespace BarPromenade
 
         public int ProductionLotUnitCount(int lot) => GetProductionLot(lot).UnitCount;
 
+        /// <summary>Absolute working time when the receiver starts approaching
+        /// one available finished box. Includes the initial incoming duty.</summary>
+        public double InspectionStart(int unit, long batch = 0)
+        {
+            CityCanneryInspectionPlan.ValidateUnit(unit);
+            if (batch > 0 && repeatingCycle != null)
+                return BatchStart(batch) + repeatingCycle.InspectionStart(unit);
+            return BatchStart(batch) + unloadStart + inspectionStarts[unit];
+        }
+
+        public double InspectionPhaseStart(CityCanneryInspectionStage stage, int unit, long batch = 0)
+        {
+            InspectionPlan.PhaseDuration(stage, unit);
+            double start = InspectionStart(unit, batch);
+            for (int phase = 1; phase < (int)stage; phase++)
+                start += InspectionPlan.PhaseDuration((CityCanneryInspectionStage)phase, unit);
+            return start;
+        }
+
+        public double InspectionPhaseDuration(CityCanneryInspectionStage stage, int unit = 0) =>
+            InspectionPlan.PhaseDuration(stage, unit);
+
+        /// <summary>All boxes approved and stored; receiver clear of the load.
+        /// This is also the first allowed LoadFinished sample.</summary>
+        public double InspectionFinishedAt(long batch = 0)
+        {
+            if (batch > 0 && repeatingCycle != null)
+                return BatchStart(batch) + repeatingCycle.InspectionFinishedAt();
+            return BatchStart(batch) + unloadStart + inspectionFinished;
+        }
+
         /// <summary>Absolute session working time, in real seconds.</summary>
         public double ProductionStageStart(CityCanneryProductionStage stage, int lot = 0, long batch = 0)
         {
@@ -406,7 +458,35 @@ namespace BarPromenade
             if (Math.Abs(handling - handoff) <= tolerance) handling = handoff;
             return new CityFishSupplySnapshot(batch,(CityFishSupplyStage)stage,stageSeconds,durations[stage],
                 portSeconds,handling,waiting,waitingForDockWorker,dockWaiting,
-                SampleProduction(local - unloadStart, tolerance));
+                SampleProduction(local - unloadStart, tolerance), SampleInspection(local - unloadStart, tolerance));
+        }
+
+        private CityCanneryInspectionSnapshot SampleInspection(double seconds, double tolerance)
+        {
+            int completed = 0;
+            for (int unit = 0; unit < HandlingUnits; unit++)
+            {
+                double start = inspectionStarts[unit];
+                if (seconds >= start + InspectionPlan.UnitDuration(unit) - tolerance)
+                {
+                    completed++;
+                    continue;
+                }
+                if (seconds < start - tolerance) break;
+                int phase = 1;
+                double duration = InspectionPlan.PhaseDuration((CityCanneryInspectionStage)phase, unit);
+                while (phase < (int)CityCanneryInspectionStage.Clear && seconds >= start + duration - tolerance)
+                {
+                    start += duration;
+                    phase++;
+                    duration = InspectionPlan.PhaseDuration((CityCanneryInspectionStage)phase, unit);
+                }
+                var stage = (CityCanneryInspectionStage)phase;
+                return new CityCanneryInspectionSnapshot(stage, unit, Math.Max(0d, seconds - start), duration,
+                    unit + (stage > CityCanneryInspectionStage.Approve ? 1 : 0),
+                    unit + (stage > CityCanneryInspectionStage.PutAway ? 1 : 0));
+            }
+            return new CityCanneryInspectionSnapshot(CityCanneryInspectionStage.Idle, -1, 0d, 1d, completed, completed);
         }
 
         private CityCanneryProductionSnapshot SampleProduction(double seconds, double tolerance)

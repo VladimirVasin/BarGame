@@ -193,9 +193,15 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(state.AccountedUnits, Is.EqualTo(received), $"Custody at {time:F3}s / {state.Stage}.");
                 Assert.That(state.PortFish, Is.InRange(0, CityFishSupplyCycle.HandlingUnits));
                 Assert.That(state.FactoryFish, Is.InRange(0, CityFishSupplyCycle.HandlingUnits));
+                Assert.That(state.Inspection.StoredUnits, Is.InRange(0, state.Inspection.ApprovedUnits));
+                Assert.That(state.Inspection.ApprovedUnits, Is.InRange(0, state.Production.CompletedUnits));
                 CityFishSupplySnapshot restored = cycle.Sample(cycle.Duration * 37 + time);
                 Assert.That(restored.Stage, Is.EqualTo(state.Stage));
                 Assert.That(restored.AccountedUnits, Is.EqualTo(state.AccountedUnits));
+                Assert.That(restored.Inspection.Stage, Is.EqualTo(state.Inspection.Stage));
+                Assert.That(restored.Inspection.UnitIndex, Is.EqualTo(state.Inspection.UnitIndex));
+                Assert.That(restored.Inspection.ApprovedUnits, Is.EqualTo(state.Inspection.ApprovedUnits));
+                Assert.That(restored.Inspection.StoredUnits, Is.EqualTo(state.Inspection.StoredUnits));
             }
             CityFishSupplySnapshot returning = cycle.Sample(cycle.Duration - .001d);
             Assert.That(returning.Stage, Is.EqualTo(CityFishSupplyStage.FactoryReturnReverse));
@@ -204,6 +210,82 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(next.Stage, Is.EqualTo(CityFishSupplyStage.PortVisit));
             Assert.That(next.Batch, Is.EqualTo(1));
             Assert.That(next.PortStored, Is.Zero);
+            Assert.That(next.Inspection.ApprovedUnits, Is.Zero);
+            Assert.That(next.Inspection.StoredUnits, Is.Zero);
+        }
+
+        [TestCase(1d)]
+        [TestCase(40d)]
+        public void EveryFinishedBoxRequiresReceiverInspectionAndClearanceBeforeTruckLoading(double walkSeconds)
+        {
+            var plan = new CityCanneryInspectionPlan(walkSeconds * 2, walkSeconds,
+                walkSeconds, walkSeconds, walkSeconds);
+            var cycle = new CityFishSupplyCycle(45d, 18d, 35d, 40d, 24d, 4d, 169d, 128d,
+                inspectionPlan: plan);
+            double firstPacked = cycle.ProductionStageStart(CityCanneryProductionStage.Pack) +
+                cycle.ProductionStageDuration(CityCanneryProductionStage.Pack);
+            Assert.That(cycle.Sample(firstPacked).Stage, Is.EqualTo(CityFishSupplyStage.UnloadFish),
+                "Output inspection must preserve production during receiving.");
+            Assert.That(cycle.Sample(firstPacked).FactoryCases, Is.EqualTo(1));
+            Assert.That(cycle.Sample(firstPacked).Inspection.IsActive, Is.False,
+                "The receiver still owns incoming duty when the first box finishes.");
+
+            foreach (long batch in new[] { 0L, 1L, 37L })
+            {
+                double receiverAvailable = cycle.StageStart(CityFishSupplyStage.UnloadFish, batch) +
+                    cycle.StageDuration(CityFishSupplyStage.UnloadFish, batch);
+                Assert.That(cycle.Sample(receiverAvailable - .001d).Inspection.IsActive, Is.False);
+                for (int unit = 0; unit < CityFishSupplyCycle.HandlingUnits; unit++)
+                {
+                    double begin = cycle.InspectionStart(unit, batch);
+                    Assert.That(begin, Is.GreaterThanOrEqualTo(receiverAvailable),
+                        "One receiver cannot overlap incoming work or the previous box.");
+                    Assert.That(cycle.Sample(begin).Production.CompletedUnits, Is.GreaterThan(unit),
+                        "The receiver cannot fetch an unfinished box.");
+                    if (begin > receiverAvailable + .001d)
+                    {
+                        CityCanneryInspectionSnapshot waiting = cycle.Sample((begin + receiverAvailable) * .5d).Inspection;
+                        Assert.That(waiting.IsActive, Is.False);
+                        Assert.That(waiting.StoredUnits, Is.EqualTo(unit));
+                    }
+                    foreach (CityCanneryInspectionStage stage in Enum.GetValues(typeof(CityCanneryInspectionStage)))
+                    {
+                        if (stage == CityCanneryInspectionStage.Idle) continue;
+                        double at = cycle.InspectionPhaseStart(stage, unit, batch);
+                        CityFishSupplySnapshot state = cycle.Sample(at);
+                        Assert.That(state.Inspection.Stage, Is.EqualTo(stage), $"Exact inspection boundary {batch}/{unit}/{stage}.");
+                        Assert.That(state.Inspection.UnitIndex, Is.EqualTo(unit));
+                        Assert.That(state.Inspection.Seconds, Is.EqualTo(0d).Within(1e-8d));
+                        Assert.That(state.Stage, Is.EqualTo(CityFishSupplyStage.WaitForProduction));
+                        Assert.That(state.TruckCases, Is.Zero);
+                        Assert.That(state.AccountedUnits, Is.EqualTo(CityFishSupplyCycle.HandlingUnits));
+                        cycle.Sample(cycle.InspectionFinishedAt(batch));
+                        Assert.That(cycle.Sample(at).Inspection.Stage, Is.EqualTo(stage),
+                            "Seeking past approval and back cannot commit an extra box.");
+                    }
+                    double approval = cycle.InspectionPhaseStart(CityCanneryInspectionStage.Lift, unit, batch);
+                    Assert.That(cycle.Sample(approval - .001d).Inspection.ApprovedUnits, Is.EqualTo(unit),
+                        "The complete approval gesture precedes approval.");
+                    Assert.That(cycle.Sample(approval).Inspection.ApprovedUnits, Is.EqualTo(unit + 1));
+                    Assert.That(cycle.Sample(approval).Inspection.StoredUnits, Is.EqualTo(unit));
+                    double clear = cycle.InspectionPhaseStart(CityCanneryInspectionStage.Clear, unit, batch);
+                    Assert.That(cycle.Sample(clear - .001d).Inspection.StoredUnits, Is.EqualTo(unit));
+                    Assert.That(cycle.Sample(clear).Inspection.StoredUnits, Is.EqualTo(unit + 1));
+                    receiverAvailable = clear + cycle.InspectionPhaseDuration(CityCanneryInspectionStage.Clear, unit);
+                }
+                double finished = cycle.InspectionFinishedAt(batch);
+                Assert.That(finished, Is.EqualTo(receiverAvailable).Within(1e-8d));
+                Assert.That(cycle.StageStart(CityFishSupplyStage.LoadFinished, batch), Is.EqualTo(finished).Within(1e-8d));
+                CityFishSupplySnapshot before = cycle.Sample(finished - .001d);
+                Assert.That(before.Inspection.ApprovedUnits, Is.EqualTo(3));
+                Assert.That(before.Inspection.StoredUnits, Is.EqualTo(3));
+                Assert.That(before.Stage, Is.EqualTo(CityFishSupplyStage.WaitForProduction),
+                    "Even three approved boxes cannot load until the receiver clears their aisle.");
+                CityFishSupplySnapshot released = cycle.Sample(finished);
+                Assert.That(released.Inspection.IsActive, Is.False);
+                Assert.That(released.Stage, Is.EqualTo(CityFishSupplyStage.LoadFinished));
+                Assert.That(released.FactoryCases, Is.EqualTo(3));
+            }
         }
 
         [TestCase(0d)]
@@ -213,6 +295,11 @@ namespace BarPromenade.Tests.EditMode
         public void OutboundTravelMustBeFiniteAndPositive(double duration)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Cycle(duration));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityCanneryInspectionPlan(duration, 1d, 1d, 1d, 1d));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityCanneryInspectionPlan(1d, duration, 1d, 1d, 1d));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityCanneryInspectionPlan(1d, 1d, duration, 1d, 1d));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityCanneryInspectionPlan(1d, 1d, 1d, duration, 1d));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new CityCanneryInspectionPlan(1d, 1d, 1d, 1d, duration));
         }
     }
 }

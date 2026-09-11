@@ -22,6 +22,9 @@ namespace BarPromenade
         private readonly Vector3[] emptyTrolleyPath = new Vector3[4];
         private readonly Vector3[] firstTrolleyFetchPath = new Vector3[10];
         private readonly Vector3[] driverTrolleyApproach = new Vector3[8];
+        private readonly Vector3[] factoryJackPoints = new Vector3[8];
+        private readonly Quaternion[] factoryJackRotations = new Quaternion[8];
+        private enum FactoryJackRoute { Loaded, FirstFetch, RepeatFetch, Return }
         private RuntimeOrientedBox[] deliverySidewalks;
         private CityLayout deliveryLayout;
         private float trolleyHandWeight;
@@ -148,6 +151,11 @@ namespace BarPromenade
                 return;
             }
             float drive = Mathf.InverseLerp(TrolleyTravelStart, TransferEdge, seconds);
+            if (Snapshot.Stage == CityFishSupplyStage.LoadFinished)
+            {
+                SampleFactoryJackGround(0, Ease(drive), FactoryJackRoute.Return, out cart, out rotation);
+                return;
+            }
             cart = EmptyTrolleyPosition(Ease(drive));
             // Steer across each corner continuously; the operator must not
             // jump a handle-length when the polyline changes segment.
@@ -172,6 +180,8 @@ namespace BarPromenade
 
         private Vector3 TrolleyFetchPosition(int unit, float progress)
         {
+            if (Snapshot.Stage == CityFishSupplyStage.LoadFinished)
+                return FactoryTrolleyFetchPosition(unit, progress, true);
             // Reuse the same door, aisle and shelf bends as the loaded trip,
             // replacing only the unnecessary empty detour across the lift.
             GroundPath(GroundCargo(unit), trolleyParkingPositions[TrolleySite], 0f);
@@ -191,6 +201,11 @@ namespace BarPromenade
 
         private Quaternion TrolleyFetchRotation(int unit, float progress)
         {
+            if (Snapshot.Stage == CityFishSupplyStage.LoadFinished)
+            {
+                SampleFactoryJackGround(unit, progress, FactoryJackRoute.FirstFetch, out _, out Quaternion readyRotation);
+                return readyRotation;
+            }
             float p = Mathf.Clamp01(progress);
             Vector3 direction = TrolleyFetchPosition(unit,p-.035f)-TrolleyFetchPosition(unit,p+.035f);
             if (Snapshot.Stage==CityFishSupplyStage.LoadFish) direction=-direction;
@@ -291,8 +306,105 @@ namespace BarPromenade
             return Truck.rotation;
         }
 
+        private Vector3 FactoryTrolleyFetchPosition(int unit, float progress, bool fromStand)
+        {
+            SampleFactoryJackGround(unit, progress,
+                fromStand ? FactoryJackRoute.FirstFetch : FactoryJackRoute.RepeatFetch, out Vector3 point, out _);
+            return point;
+        }
+
+        private Quaternion FactoryHandlingRotation(int unit, float time)
+        {
+            if (time >= .35f) return Truck.rotation;
+            bool fetching = time < .18f;
+            float progress = fetching ? unit == 0 ? FirstFetchProgress(time) : time/.18f : (time-.18f)/.17f;
+            FactoryJackRoute route = fetching ? unit == 0 ? FactoryJackRoute.FirstFetch : FactoryJackRoute.RepeatFetch :
+                FactoryJackRoute.Loaded;
+            SampleFactoryJackGround(unit, progress, route, out _, out Quaternion rotation);
+            return rotation;
+        }
+
+        // The support's fork tunnels face the east approach. Its authored
+        // orientation remains continuous when the jack starts pulling west-facing.
+        private Quaternion FactoryShippingSupportRotation(int unit, float time) =>
+            time < .18f ? Plan.Rotation * Quaternion.Euler(0f, 90f, 0f) :
+            (time < .62f ? FactoryHandlingRotation(unit, time) : Truck.rotation) * Quaternion.Euler(0f, 180f, 0f);
+
+        private void SampleFactoryJackGround(int unit, float progress, FactoryJackRoute route,
+            out Vector3 point, out Quaternion rotation)
+        {
+            Vector3 store = GroundCargo(unit);
+            Vector3 local = Plan.Local(store);
+            // Side entry keeps the operator east of the pallet, outside the
+            // facade. The x=1.9 lane leaves 0.1 m between the moving support
+            // and the remaining east-facing supports, clear of people at x=2.75.
+            Vector3 extracted = Plan.World(new Vector3(1.9f, CityCanneryPlan.YardTop, local.z));
+            Vector3 corner = Plan.World(new Vector3(1.9f, CityCanneryPlan.YardTop, -6.15f));
+            Vector3 low = LowLift;
+            Vector3 across = Plan.World(new Vector3(Plan.Local(low).x, CityCanneryPlan.YardTop, -6.15f));
+            Quaternion west = Quaternion.LookRotation(-Plan.Right);
+            Quaternion south = Quaternion.LookRotation(-Plan.Forward);
+            Quaternion east = Quaternion.LookRotation(Plan.Right);
+            int count = 0;
+            if (route == FactoryJackRoute.Loaded)
+            {
+                Add(store, west); Add(extracted, west); Add(extracted, south); Add(corner, south);
+                Add(corner, east); Add(across, east); Add(across, Truck.rotation); Add(low, Truck.rotation);
+            }
+            else if (route == FactoryJackRoute.FirstFetch)
+            {
+                Add(trolleyParkingPositions[1], trolleyParkingRotations[1]); Add(corner, east);
+                Add(corner, south); Add(extracted, south); Add(extracted, west); Add(store, west);
+            }
+            else if (route == FactoryJackRoute.RepeatFetch)
+            {
+                Add(low, Truck.rotation); Add(across, Truck.rotation); Add(across, east); Add(corner, east);
+                Add(corner, south); Add(extracted, south); Add(extracted, west); Add(store, west);
+            }
+            else
+            {
+                // Sampled stand-to-lift; the returning edge traverses it in
+                // reverse, through the open south yard rather than the hall.
+                Add(trolleyParkingPositions[1], trolleyParkingRotations[1]); Add(corner, east);
+                Add(across, east); Add(across, Truck.rotation); Add(low, Truck.rotation);
+            }
+            float total = 0f;
+            for (int i = 1; i < count; i++) total += Length(i);
+            float remaining = Mathf.Clamp01(progress) * total;
+            point = factoryJackPoints[count - 1];
+            rotation = factoryJackRotations[count - 1];
+            for (int i = 1; i < count; i++)
+            {
+                float length = Length(i);
+                if (remaining <= length || i == count - 1)
+                {
+                    float phase = Ease(length > .0001f ? remaining / length : 1f);
+                    point = Vector3.Lerp(factoryJackPoints[i - 1], factoryJackPoints[i], phase);
+                    rotation = Quaternion.Slerp(factoryJackRotations[i - 1], factoryJackRotations[i], phase);
+                    break;
+                }
+                remaining -= length;
+            }
+            Vector3 liftDelta = point - low; liftDelta.y = 0f;
+            float rise = low.y - HandlingGroundHeight(low);
+            point.y = HandlingGroundHeight(point) + rise * Ease(1f - liftDelta.magnitude / .6f);
+
+            void Add(Vector3 position, Quaternion facing)
+            {
+                factoryJackPoints[count] = position; factoryJackRotations[count++] = facing;
+            }
+            float Length(int index) => Vector3.Distance(factoryJackPoints[index - 1], factoryJackPoints[index]) +
+                Quaternion.Angle(factoryJackRotations[index - 1], factoryJackRotations[index]) * Mathf.Deg2Rad *
+                CityCanneryTruckDimensions.GroundOperatorOffset;
+        }
+
         private Vector3 EmptyTrolleyPosition(float progress)
         {
+            if (Snapshot.Stage == CityFishSupplyStage.LoadFinished)
+            {
+                SampleFactoryJackGround(0, progress, FactoryJackRoute.Return, out Vector3 point, out _);
+                return point;
+            }
             Vector3 park = trolleyParkingPositions[TrolleySite], low = LowLift;
             if (TrolleySite == 2) return GroundPath(park, low, progress);
             Vector3 near = low - Truck.forward * .85f;

@@ -21,6 +21,7 @@ namespace BarPromenade
         public RoadEdge FrontageEdge { get; }
         public Vector3 Forward => Rotation * Vector3.forward;
         public Vector3 Right => Rotation * Vector3.right;
+        public static Vector3 WaitingBenchLocalPosition => new Vector3(.65f, YardTop, -2.25f);
         public Vector3 TruckParkedRearAxle => World(new Vector3(5f, YardTop, -1.3f));
         public Vector3 ReverseStart => World(new Vector3(-1.25f, YardTop, 13f));
         public Bounds HallBounds => World(new Bounds(new Vector3(-4f, 2.1f, 0f), new Vector3(8f, 4.2f, 14f)));

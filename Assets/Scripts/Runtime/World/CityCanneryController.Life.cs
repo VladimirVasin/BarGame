@@ -21,7 +21,7 @@ namespace BarPromenade
         private Vector3 preparationClothDock;
         public double LifeSeconds { get; private set; }
         public CityCanneryConversationController FactoryConversation { get; private set; }
-        public float ReceivingScaleWeight { get; private set; }
+        public float ReceivingScaleWeight => ShippingScaleWeight;
         public bool PreparationClothInContact { get; private set; }
 
         public VillageResidentPresentation GetFactoryWorker(int index) =>
@@ -36,6 +36,7 @@ namespace BarPromenade
         {
             if (index < 0 || index >= 4 || !FactoryPresentationActive) return 0d;
             if (factoryShiftWalking[index]) return 0d;
+            if (index == 0 && Snapshot.Inspection.IsActive) return 0d;
             if (factoryDutyBusy[index])
                 return index == 0 ? Math.Max(0d, Snapshot.Duration - Snapshot.Seconds) :
                     Math.Max(0d, (Production.Duration - Production.Seconds) / CityFishSupplyCycle.ProductionSpeed);
@@ -83,7 +84,8 @@ namespace BarPromenade
             Array.Clear(factoryDutyBusy, 0, factoryDutyBusy.Length);
             Array.Clear(factorySecondaryWeight, 0, factorySecondaryWeight.Length);
             PreparationClothInContact = false;
-            ReceivingScaleWeight = 0f;
+            ShippingScaleWeight = 0f;
+            InspectionBoxInHands = false;
             if (receivingNeedle != null) receivingNeedle.localRotation = receivingNeedleRest;
             if (preparationCloth != null)
                 preparationCloth.SetPositionAndRotation(preparationClothDock, preparationClothRest);
@@ -100,6 +102,9 @@ namespace BarPromenade
                     Cycle.StageDuration(CityFishSupplyStage.UnloadFish, Snapshot.Batch));
                 Reserve(Cycle.StageStart(CityFishSupplyStage.UnloadFish, Snapshot.Batch + 1),
                     Cycle.StageDuration(CityFishSupplyStage.UnloadFish, Snapshot.Batch + 1));
+                for (long batch = Snapshot.Batch; batch <= Snapshot.Batch + 1; batch++)
+                    Reserve(Cycle.InspectionStart(0, batch),
+                        Cycle.InspectionFinishedAt(batch) - Cycle.InspectionStart(0, batch));
                 return distance;
             }
             // Include the next batch so a rest never straddles its first job.
@@ -136,40 +141,19 @@ namespace BarPromenade
 
         private void ApplyReceiver()
         {
+            if (ApplyInspectionReceiver()) return;
             VillageResidentPresentation actor = workers[0];
-            Vector3 scale = Anchor("ReceivingLoad");
-            StandWorker(actor, Anchor("Receiver"), Plan.Forward, scale);
-            ReceivingScaleWeight = 0f;
-            Vector3 target = receivingNeedle.position;
+            Vector3 target = Anchor("RawDoor") + Vector3.up;
+            StandWorker(actor, Anchor("Receiver"), Plan.Forward, target);
             bool receiving = Snapshot.Stage == CityFishSupplyStage.UnloadFish;
             if (receiving)
             {
                 factoryDutyBusy[0] = true;
                 Transform load = fish[ActiveUnit];
                 if (load.gameObject.activeSelf) target = load.position + Vector3.up * .5f;
-                // This scale is not a second cargo transaction. It reads only
-                // a real unit physically supported by its platform; an empty
-                // scale never pretends that stock in the cold room weighs on it.
-                foreach (Transform unit in fish)
-                {
-                    if (!unit.gameObject.activeSelf) continue;
-                    Vector3 relative = Plan.Local(unit.position) - Plan.Local(scale);
-                    if (Mathf.Abs(relative.x) < .50f && Mathf.Abs(relative.z) < .60f && Mathf.Abs(relative.y) < .06f)
-                        ReceivingScaleWeight = 1f;
-                }
-                float check = CrewWorkWindow((float)Snapshot.TransferProgress, .78f, .94f, .04f);
-                // A small zero check belongs to the fixed scale stem, away
-                // from the pallet and the driver's two occupied hands.
-                Vector3 control = Anchor("ReceiverScaleHand");
-                Vector3 toward = Vector3.ProjectOnPlane(control - actor.transform.position, Vector3.up).normalized;
-                workerSpines[0].rotation = Quaternion.AngleAxis(12f * check, Vector3.Cross(Vector3.up, toward)) * workerSpines[0].rotation;
-                bool rightNear = (factoryPoseBones[0, 8].position - control).sqrMagnitude <
-                    (factoryPoseBones[0, 5].position - control).sqrMagnitude;
-                ApplyCrewContacts(actor, rightNear ? control : (Vector3?)null, rightNear ? (Vector3?)null : control, check);
-                ApplyCrewLook(actor, Vector3.Lerp(target, receivingNeedle.position, check), .85f);
+                ApplyCrewLook(actor, target, .85f);
             }
             else ApplyFactoryIdleLife(0, Anchor("Receiver"), Plan.Forward, target);
-            receivingNeedle.localRotation = receivingNeedleRest * Quaternion.AngleAxis(-68f * ReceivingScaleWeight, Vector3.forward);
         }
 
         private void ApplyFactoryIdleLife(int role, Vector3 home, Vector3 forward, Vector3 ordinaryLook)

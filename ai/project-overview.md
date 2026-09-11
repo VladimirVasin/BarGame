@@ -98,8 +98,9 @@ contracts are documented in [../tools/README.md](../tools/README.md).
   existing canopy. Driver talks only to docker; idle is pause-aware.
   Moving grips, vessel horn/echo and warm shadowed searchlight share the scene.
   First received crate starts FIFO production at twice authored speed; same cans
-  enter cartons. Four factory workers wait/talk outside before unloading and
-  after the final lot, queuing through real doors to/from duty. Side doors reach
+  enter three continuous cartons. Receiver weighs each outside shipping,
+  nods and stores it before loading is allowed. Four workers wait/talk outside
+  before/after duty, queuing through doors. Side doors reach
   the public aisle, a west staff opening the work aisle. Grips win; pause freezes life. Service fittings/light and local
   fan/contact/pressure sounds follow activity. Distant meshes sleep while
   production/collision/traffic continue; approach restores without replay.

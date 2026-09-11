@@ -208,15 +208,47 @@
       "name": "Equipment",
       "bounds_min": [
         -7.82,
-        0.17783,
-        -6.175
+        0.08,
+        -2.8325
       ],
       "bounds_max": [
-        -2.53,
+        1.645,
         4.035,
-        6.93
+        7.75
       ],
       "anchors": [
+        {
+          "name": "ANCHOR_ApprovedWorker0",
+          "position": [
+            1.85,
+            0.08,
+            3.2
+          ]
+        },
+        {
+          "name": "ANCHOR_ApprovedWorker1",
+          "position": [
+            1.85,
+            0.08,
+            1.7
+          ]
+        },
+        {
+          "name": "ANCHOR_ApprovedWorker2",
+          "position": [
+            1.85,
+            0.08,
+            0.2
+          ]
+        },
+        {
+          "name": "ANCHOR_BoxPickupWorker",
+          "position": [
+            -6.94,
+            0.18,
+            5.0
+          ]
+        },
         {
           "name": "ANCHOR_CanTray",
           "position": [
@@ -311,6 +343,14 @@
             -1.1,
             1.72,
             0.5
+          ]
+        },
+        {
+          "name": "ANCHOR_PackingBox",
+          "position": [
+            -6.2725,
+            1.14,
+            5.05
           ]
         },
         {
@@ -596,25 +636,25 @@
         {
           "name": "ANCHOR_ReadyCase0",
           "position": [
-            -7.25,
-            0.18,
-            6.35
+            0.8,
+            0.08,
+            3.2
           ]
         },
         {
           "name": "ANCHOR_ReadyCase1",
           "position": [
-            -6.4,
-            0.18,
-            6.35
+            0.8,
+            0.08,
+            1.7
           ]
         },
         {
           "name": "ANCHOR_ReadyCase2",
           "position": [
-            -5.55,
-            0.18,
-            6.35
+            0.8,
+            0.08,
+            0.2
           ]
         },
         {
@@ -660,17 +700,17 @@
         {
           "name": "ANCHOR_ReceiverScaleHand",
           "position": [
-            -3.93,
-            1.22,
-            -5.98
+            0.39,
+            1.12,
+            7.38
           ]
         },
         {
           "name": "ANCHOR_ReceivingLoad",
           "position": [
-            -3.5,
-            0.42,
-            -5.45
+            1.2,
+            0.32,
+            6.95
           ]
         },
         {
@@ -762,11 +802,51 @@
           ]
         },
         {
+          "name": "ANCHOR_ShippingRestWorker",
+          "position": [
+            2.0,
+            0.08,
+            4.3
+          ]
+        },
+        {
+          "name": "ANCHOR_ShippingScaleWorker",
+          "position": [
+            2.0,
+            0.08,
+            6.95
+          ]
+        },
+        {
           "name": "ANCHOR_SteamOutlet",
           "position": [
             -7.65,
             5.1,
             2.15
+          ]
+        },
+        {
+          "name": "ANCHOR_WeighingDial",
+          "position": [
+            0.47,
+            1.57,
+            7.56
+          ]
+        },
+        {
+          "name": "ANCHOR_WeighingLoad",
+          "position": [
+            1.2,
+            0.32,
+            6.95
+          ]
+        },
+        {
+          "name": "ANCHOR_WeighingWorker",
+          "position": [
+            2.0,
+            0.08,
+            6.95
           ]
         },
         {
@@ -1092,9 +1172,9 @@
         {
           "name": "MOVE_ScaleNeedle",
           "position": [
-            -4.11,
-            1.67,
-            -5.9
+            0.47,
+            1.57,
+            7.56
           ]
         },
         {
@@ -1194,6 +1274,22 @@
           ]
         },
         {
+          "name": "ShippingScale",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ShippingScaleVisible",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
           "name": "StoredWorkJacket",
           "position": [
             0.0,
@@ -1202,8 +1298,8 @@
           ]
         }
       ],
-      "triangles": 34728,
-      "geometry_signature": "cc60978ef4e85f2b3198288e9e5c07d0a3b52541aac1780d5786524fe1b211fb"
+      "triangles": 34680,
+      "geometry_signature": "bcd725d568c9d50caf80249195e27fe15fb4e8f235c36f5613515a62168bdd1b"
     },
     {
       "name": "Truck",
@@ -2502,26 +2598,114 @@
     {
       "name": "CartonStack",
       "bounds_min": [
-        -0.37,
-        0.005,
-        -0.56
+        -0.4,
+        0.0,
+        -0.6
       ],
       "bounds_max": [
-        0.37,
-        0.632,
-        0.545
+        0.4,
+        0.308,
+        0.6
       ],
       "anchors": [
         {
-          "name": "ANCHOR_Load",
+          "name": "ANCHOR_CartonLeftGrip",
           "position": [
             0.0,
-            0.63,
+            0.14,
+            -0.354
+          ]
+        },
+        {
+          "name": "ANCHOR_CartonRightGrip",
+          "position": [
+            0.0,
+            0.14,
+            0.354
+          ]
+        },
+        {
+          "name": "ANCHOR_CartonSupport",
+          "position": [
+            0.0,
+            0.0,
             0.0
           ]
         },
         {
-          "name": "CartonStackVisible",
+          "name": "ANCHOR_Load",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "CartonBody",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "CartonSeal",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "MOVE_CartonFlapLeft",
+          "position": [
+            -0.1275,
+            0.3,
+            0.0
+          ]
+        },
+        {
+          "name": "CartonFlapLeft",
+          "position": [
+            -0.1275,
+            0.3,
+            0.0
+          ]
+        },
+        {
+          "name": "MOVE_CartonFlapRight",
+          "position": [
+            0.1275,
+            0.3,
+            0.0
+          ]
+        },
+        {
+          "name": "CartonFlapRight",
+          "position": [
+            0.1275,
+            0.3,
+            0.0
+          ]
+        },
+        {
+          "name": "ShippingPallet",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_ShippingPalletTop",
+          "position": [
+            0.0,
+            0.172,
+            0.0
+          ]
+        },
+        {
+          "name": "ShippingPalletVisible",
           "position": [
             0.0,
             0.0,
@@ -2529,8 +2713,8 @@
           ]
         }
       ],
-      "triangles": 416,
-      "geometry_signature": "8d668f0138759ad76eb32c0b9463897e83f36f318046cb868233c336497900bd"
+      "triangles": 684,
+      "geometry_signature": "61074027db2f36b0740e1d0e64bde97f4deae8ee30c39ec45653f7212eee2031"
     },
     {
       "name": "Trolley",
@@ -2720,6 +2904,29 @@
   "can_lid_top": 0.102,
   "packing_carton_has_duplicate_cans": false,
   "packing_can_targets": "ANCHOR_PackingCan00..14",
+  "finished_carton_dimensions": [
+    0.255,
+    0.3,
+    0.7
+  ],
+  "finished_cartons_per_delivery": 3,
+  "finished_carton_bottom_origin": true,
+  "shipping_pallet_top": 0.172,
+  "finished_carton_flaps": "Closed rest; Unity Z, Left +110 / Right -110 degrees opens",
+  "shipping_scale": "Whole scale outside shipping north jamb; Unity X needle axis, +X face",
+  "shipping_scale_platform_xz": [
+    0.195,
+    1.645,
+    6.325,
+    7.575
+  ],
+  "shipping_scale_platform_top": 0.32,
+  "shipping_scale_load": [
+    1.2,
+    0.32,
+    6.95
+  ],
+  "shipping_crew_corridor_x": 2.75,
   "conveyor_driven_roller_axes": [
     "Z",
     "Z",

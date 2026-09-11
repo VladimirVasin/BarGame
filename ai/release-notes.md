@@ -6,9 +6,16 @@ Earlier notes: [`release-notes-2026-08.md`](archive/release-notes-2026-08.md).
 
 ## Unreleased
 
+### 2026-09-12 — Ручка бардачка
+
+- У Перевозчика ручка бардачка обведена жёлтым и соединена с подсказкой
+  «открыть/закрыть», как кнопки магнитолы. Контур следует крышке и скрывается,
+  когда действие недоступно. Проверка:
+  `LastRouteCarRidePlayModeTests.Ride_AnswersTheRadioFromTheSeatWhileTheCarIsMoving`.
+
 ### 2026-09-11 — Доки, речь, фабрика и старт
 
-Проверки ниже пройдены, кадры просмотрены.
+Проверки пройдены, кадры просмотрены.
 
 - Склад оснащён; бригадир жуёт: генераторы,
   `CityPortWarehouseInterior`/`CityPortForeman`.
@@ -21,13 +28,13 @@ Earlier notes: [`release-notes-2026-08.md`](archive/release-notes-2026-08.md).
 - Роли скрыты стенами, без деревни/матери: `NpcNameplates`.
 - `E`: подход/кадр/ответ вслух, отмена с сохранением надкуса; лица/рот:
   `CityPortForemanDialogue`, атласы/генератор, `python tools/check-docs.py`.
-- Мотор громче/гудки заранее: сборка `BarPromenade.Runtime.csproj`.
+- Мотор/гудки: `BarPromenade.Runtime.csproj`; прибытие ×2/эхо: `CityPortArrivalHorn`.
 - F9: флаг; F1/F2/F3 ×3/×5/×10, повтор ×1:
   `PauseMenuPlayModeTests.DebugSpeedHotkeys_ToggleGateAndSurviveSceneChanges`.
 - Сутки 48 минут при ×1: `GameTimeStateTests`.
-- Завод: четверо ждут со стороны грузовика, идут в цех и обратно;
-  проёмы проходимы. Уборка/весы/отдых, 16 пар, обстановка/свет/звук:
-  `build-city-cannery-3d-model.py`, `CityCanneryLivingShift`.
+- Завод: проходы/речь/свет/звук — `CityCanneryLivingShift`/генератор.
+  Весы снаружи, три проверки до погрузки: `CityCanneryInspection`.
+  Лавка вне путей; ожидание/жесты/речь восстановлены: `CityCanneryOutsideWait`.
 - F9 → «Грузовик с рыбой»: готовая доставка у завода. `CityCanneryDebugSpawn`.
 - «Новая игра» → 11 мест, «Назад», 07:40. `StartMenuModelTests`,
   `TechnicalLifecyclePlayModeTests.NewGame_*`; меню RU/EN.

@@ -8,6 +8,7 @@ namespace BarPromenade
         private readonly Vector3[][] factoryEntryRoutes = new Vector3[4][];
         private readonly Vector3[][] factoryExitRoutes = new Vector3[4][];
         private readonly double[] factoryWalkDurations = new double[4];
+        private readonly double[] factoryExitDurations = new double[4];
         private readonly bool[] factoryWaitingOutside = new bool[4];
         private readonly bool[] factoryShiftWalking = new bool[4];
 
@@ -16,6 +17,7 @@ namespace BarPromenade
         public double FactoryShiftEntryTime(int role) =>
             Cycle.StageStart(CityFishSupplyStage.UnloadFish, Snapshot.Batch) + EntryDelay(role);
         public double FactoryShiftExitTime(int role) =>
+            role == 0 ? Cycle.InspectionFinishedAt(Snapshot.Batch) :
             Cycle.ProductionStageStart(CityCanneryProductionStage.Pack, Cycle.ProductionLotCount - 1, Snapshot.Batch) +
             Cycle.ProductionStageDuration(CityCanneryProductionStage.Pack) + 6d + ExitDelay(role);
 
@@ -27,25 +29,27 @@ namespace BarPromenade
         private void CreateFactoryShift()
         {
             SetRoute(0, new[] {
-                Local(1.35f, -2.7f, true), Local(1.35f, -5.5f, true),
+                Local(2.75f, -1.2f, true), Local(2.75f, -5.5f, true),
                 Local(-1.1f, -5.5f),
                 Local(-2.55f, -5.5f), Local(-2.55f, -6.55f),
                 Local(-3.4f, -6.55f), Anchor("Receiver") });
             SetRoute(1, new[] {
-                Local(1.35f, 1.5f, true), Local(1.35f, 8.1f, true),
+                Local(2.75f, -2.3f, true), Local(2.75f, 8.1f, true),
                 Local(-8.55f, 8.1f, true), Local(-8.55f, 2.65f, true),
                 Local(-7.18f, 2.65f), Local(-6.9f, 1.25f),
                 Local(-6.9f, .15f), Local(-7.18f, -.6f),
                 Local(-7.18f, -2.05f), Anchor("PreparationWorker") });
             SetRoute(2, new[] {
-                Local(1.35f, .1f, true), Local(1.35f, 8.1f, true),
+                Local(2.75f, -3.4f, true), Local(2.75f, 8.1f, true),
                 Local(-8.55f, 8.1f, true), Local(-8.55f, 2.65f, true),
                 Local(-7.18f, 2.65f), Local(-6.9f, 1.25f),
                 Local(-6.9f, .15f), Anchor("SeamerWorker") });
             SetRoute(3, new[] {
-                Local(1.35f, -1.3f, true), Local(1.35f, 8.1f, true),
+                Local(2.75f, -4.5f, true), Local(2.75f, 8.1f, true),
                 Local(-8.55f, 8.1f, true), Local(-8.55f, 2.65f, true),
                 Local(-7.18f, 2.65f), Anchor("RetortOperator") });
+            factoryExitRoutes[0] = new[] { Anchor("ShippingRestWorker"), Local(2.75f, 4.3f, true), factoryEntryRoutes[0][0] };
+            factoryExitDurations[0] = InspectionWalkDuration(factoryExitRoutes[0]);
 
             Vector3 Local(float x, float z, bool outside = false) =>
                 Plan.World(new Vector3(x, outside ? CityCanneryPlan.YardTop : CityCanneryPlan.FloorTop, z));
@@ -59,6 +63,7 @@ namespace BarPromenade
                 for (int i = 1; i < route.Length; i++) length += Vector3.Distance(route[i - 1], route[i]);
                 // WalkWorker's eased arc peaks at 1.5 times average speed.
                 factoryWalkDurations[role] = Math.Max(4d, length * 1.5d / 1.2d);
+                factoryExitDurations[role] = factoryWalkDurations[role];
             }
         }
 
@@ -68,7 +73,7 @@ namespace BarPromenade
             factoryShiftWalking[role] = false;
             double enter = FactoryShiftEntryTime(role), leave = FactoryShiftExitTime(role);
             double duration = factoryWalkDurations[role];
-            bool waiting = WorkingSeconds < enter || WorkingSeconds >= leave + duration;
+            bool waiting = WorkingSeconds < enter || WorkingSeconds >= leave + factoryExitDurations[role];
             if (waiting)
             {
                 factoryWaitingOutside[role] = true;
@@ -77,11 +82,12 @@ namespace BarPromenade
             }
             bool entering = WorkingSeconds < enter + duration;
             if (!entering && WorkingSeconds < leave) return false;
+            if (!entering) duration = factoryExitDurations[role];
 
             factoryDutyBusy[role] = true;
             factoryShiftWalking[role] = true;
             Vector3 outsideForward = Plan.Right;
-            Vector3 workForward = role == 0 ? Plan.Forward : Plan.Right;
+            Vector3 workForward = role == 0 && entering ? Plan.Forward : Plan.Right;
             WalkWorker(workers[role], (float)((WorkingSeconds - (entering ? enter : leave)) / duration),
                 (float)duration, entering ? outsideForward : workForward,
                 entering ? workForward : outsideForward, false,
@@ -112,11 +118,22 @@ namespace BarPromenade
             Vector3 forward = Plan.Right;
             Vector3 position = FactoryWaitingPosition(role);
             StandWorker(actor, position, forward, position + forward * 3f + Vector3.up * 1.35f);
-            float time = (float)(LifeSeconds % 1000d) + role * 3.41f;
-            workerSpines[role].rotation = Quaternion.AngleAxis(.65f * Mathf.Sin(time * (1.05f + role * .08f)),
+            double time = LifeSeconds + role * 3.41d;
+            float Wave(double rate) => (float)Math.Sin(time * rate);
+            // The shared idle clip only breathes. Give the outdoor wait its
+            // own unhurried gaze and shoulder shifts, even before deliveries
+            // start and while nobody is close enough to hear a conversation.
+            // Everything stays above the planted feet and uses the life clock.
+            float lookWeight = FactoryConversation != null ? FactoryConversation.WaitingLookWeight(role) : 1f;
+            float glance = (18f * Wave(.31d) + 5f * Wave(.13d)) * lookWeight;
+            workerSpines[role].rotation = Quaternion.AngleAxis(.65f * Wave(1.05d + role * .08d),
                 actor.transform.right) * workerSpines[role].rotation;
-            workerSpines[role].rotation = Quaternion.AngleAxis(.65f * Mathf.Sin(time * .37f),
+            workerSpines[role].rotation = Quaternion.AngleAxis(1.2f * Wave(.37d),
                 actor.transform.forward) * workerSpines[role].rotation;
+            workerSpines[role].rotation = Quaternion.AngleAxis(glance * .16f,
+                actor.transform.up) * workerSpines[role].rotation;
+            actor.Head.rotation = Quaternion.AngleAxis(glance * .84f, actor.transform.up) *
+                Quaternion.AngleAxis(2f * Wave(.43d) * lookWeight, actor.transform.right) * actor.Head.rotation;
         }
 
         private double FactoryShiftBoundaryDistance(int role, bool futureOnly)

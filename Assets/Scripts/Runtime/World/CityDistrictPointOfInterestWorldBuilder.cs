@@ -1246,6 +1246,41 @@ namespace BarPromenade
                     renderer.receiveShadows=false;
                 }
             }
+            BuildCanneryWaitingBench(recipe, homeExterior);
+        }
+
+        private static void BuildCanneryWaitingBench(Transform parent, bool homeExterior)
+        {
+            // Reuse the metre-space Blender bench. Its narrow depth fits the
+            // facade pocket behind the crew, clear of both goods-door routes.
+            var bench = new GameObject("Cannery Waiting Bench");
+            bench.transform.SetParent(parent, false);
+            bench.transform.localPosition = CityCanneryPlan.WaitingBenchLocalPosition;
+            bench.transform.localRotation = Quaternion.LookRotation(Vector3.right);
+            CityMiscAssetProvider provider = CityMiscAssetProvider.LoadOrThrow();
+            Bounds bounds = default;
+            for (int i = 0; i < CityMiscAssetProvider.GetPartCount(CityMiscKind.YardBench); i++)
+            {
+                CityMiscMeshPart part = provider.GetPartOrThrow(CityMiscKind.YardBench, 0, i);
+                var model = new GameObject(part.Component);
+                model.transform.SetParent(bench.transform, false);
+                model.AddComponent<MeshFilter>().sharedMesh = part.Mesh;
+                var renderer = model.AddComponent<MeshRenderer>();
+                bool timber = part.Role == CityMiscMeshRole.Timber;
+                CityPointOfInterestSurfaceAppearance.Apply(renderer,
+                    timber ? CityPointOfInterestSurfaceKind.Timber : CityPointOfInterestSurfaceKind.PaintedMetal,
+                    SurfaceProjection.BoxXZ,
+                    timber ? new Color(.24f, .19f, .14f) : new Color(.19f, .20f, .19f));
+                ConfigureRenderer(model, homeExterior);
+                if (i == 0) bounds = part.Mesh.bounds;
+                else bounds.Encapsulate(part.Mesh.bounds);
+            }
+            if (!homeExterior)
+            {
+                var body = bench.AddComponent<BoxCollider>();
+                body.center = bounds.center;
+                body.size = bounds.size;
+            }
         }
 
         private static Transform CreateSiteRoot(

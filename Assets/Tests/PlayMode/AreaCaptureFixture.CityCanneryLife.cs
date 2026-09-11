@@ -212,16 +212,13 @@ namespace BarPromenade.Tests.PlayMode
             });
             double receive = TransferTime(cannery, CityFishSupplyStage.UnloadFish, 0, .86f);
             cannery.ApplyAt(receive);
-            DeferCanneryContract(failures, "receiver touches the actual zero control", () =>
+            DeferCanneryContract(failures, "receiving leaves the outgoing scale empty", () =>
             {
-                var receiver = cannery.GetFactoryWorker(0);
-                Transform control = CityCanneryAssetProvider.FindPart(cannery.Equipment.gameObject, "ANCHOR_ReceiverScaleHand");
-                Assert.That(Mathf.Min(Vector3.Distance(receiver.RightGrip.position, control.position),
-                    Vector3.Distance(receiver.LeftGrip.position, control.position)), Is.LessThan(.025f));
-                Assert.That(cannery.ReceivingScaleWeight, Is.Zero,
+                Assert.That(cannery.ShippingScaleWeight, Is.Zero,
                     "Receiving stock in the cold room must not weigh on the empty scale.");
+                Assert.That(cannery.Snapshot.Inspection.IsActive, Is.False);
             });
-            yield return CaptureCannery(camera, city, cannery, receive, "20-receiver-checks-scale",
+            yield return CaptureCannery(camera, city, cannery, receive, "20-receiver-follows-incoming-cargo",
                 plan.World(new Vector3(-1.1f, 1.9f, -5.3f)), plan.World(new Vector3(-3.8f, 1.2f, -6.0f)));
 
             // Block the actual driver/cart using the hero, and let Update run.
@@ -298,7 +295,7 @@ namespace BarPromenade.Tests.PlayMode
                     local.z - radius > 7.12f || local.z + radius < -7.12f;
                 Assert.That(outside, Is.True, actor.name + " must wait wholly outside the actual hall, at " + local);
                 Assert.That(local.x, Is.InRange(.4f, 3f), "All workers wait on the truck-facing side, clear of its parking lane.");
-                Assert.That(local.z, Is.InRange(-4f, 3.5f), "The group stays between the receiving and shipping openings.");
+                Assert.That(local.z, Is.InRange(-5f, 3.5f), "The group stays clear of the receiving and shipping openings.");
                 Assert.That(Vector3.Dot(actor.transform.forward, cannery.Plan.Right), Is.GreaterThan(.99f));
                 Assert.That(actor.CurrentAction, Is.EqualTo(VillageResidentAction.Idle));
             }

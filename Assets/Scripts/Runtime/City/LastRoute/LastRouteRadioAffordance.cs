@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace BarPromenade
 {
-    /// <summary>The shower's measured yellow contours and connected labels, on the radio knobs.</summary>
+    /// <summary>The shower's measured yellow contours and connected labels, on the dashboard controls.</summary>
     [DisallowMultipleComponent]
     public sealed class LastRouteRadioAffordance : MonoBehaviour
     {
@@ -31,12 +31,16 @@ namespace BarPromenade
 
         public KnobCallout Power { get; } = new KnobCallout();
         public KnobCallout Tuning { get; } = new KnobCallout();
+        public KnobCallout Glovebox { get; } = new KnobCallout();
         public int RepaintFrame { get; private set; } = -1;
         public bool PowerVisible => seat != null && seat.RadioControlsVisible;
         public bool TuningVisible => PowerVisible && dashboard != null && dashboard.RadioOn;
+        public bool GloveboxVisible => seat != null && seat.GloveboxControlVisible;
         public string PowerPromptKey => dashboard != null && dashboard.RadioOn
             ? LastRouteCarDashboard.RadioOffPromptKey : LastRouteCarDashboard.RadioOnPromptKey;
         public string TuningPromptKey => LastRouteCarDashboard.RadioTunePromptKey;
+        public string GloveboxPromptKey => dashboard != null && dashboard.GloveboxOpen
+            ? LastRouteCarDashboard.CloseGloveboxPromptKey : LastRouteCarDashboard.OpenGloveboxPromptKey;
 
         public void Initialize(LastRouteCarSeatInteraction owner, LastRouteCarDashboard carDashboard,
             Camera viewCamera)
@@ -46,22 +50,27 @@ namespace BarPromenade
             camera = viewCamera;
             Power.Mesh = dashboard != null ? dashboard.RadioPowerKnobMesh : null;
             Tuning.Mesh = dashboard != null ? dashboard.RadioTuningKnobMesh : null;
+            Glovebox.Mesh = dashboard != null ? dashboard.GloveboxHandleMesh : null;
         }
 
         private void OnGUI()
         {
             if (Event.current.type != EventType.Repaint) return;
             RepaintFrame = Time.frameCount;
-            Power.RenderedFrame = Tuning.RenderedFrame = -1;
-            Power.OutlineCount = Tuning.OutlineCount = 0;
-            if (!PowerVisible || camera == null) return;
+            Power.RenderedFrame = Tuning.RenderedFrame = Glovebox.RenderedFrame = -1;
+            Power.OutlineCount = Tuning.OutlineCount = Glovebox.OutlineCount = 0;
+            if (camera == null || (!PowerVisible && !GloveboxVisible)) return;
             int oldDepth = GUI.depth;
             Color oldColor = GUI.color;
             GUI.depth = -86;
             try
             {
-                DrawCallout(Power, LocalizationService.Get(PowerPromptKey), true);
-                if (TuningVisible) DrawCallout(Tuning, LocalizationService.Get(TuningPromptKey), false);
+                if (PowerVisible)
+                {
+                    DrawCallout(Power, LocalizationService.Get(PowerPromptKey), true);
+                    if (TuningVisible) DrawCallout(Tuning, LocalizationService.Get(TuningPromptKey), false);
+                }
+                if (GloveboxVisible) DrawCallout(Glovebox, LocalizationService.Get(GloveboxPromptKey), true);
             }
             finally { GUI.color = oldColor; GUI.depth = oldDepth; }
         }

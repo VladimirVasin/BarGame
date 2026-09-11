@@ -1389,6 +1389,12 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(affordance, Is.Not.Null);
                 Assert.That(affordance.Power.Mesh.transform.IsChildOf(harness.Car.RadioPowerKnobPivot), Is.True);
                 Assert.That(affordance.Tuning.Mesh.transform.IsChildOf(harness.Car.RadioTuningKnobPivot), Is.True);
+                MeshFilter gloveboxHandle = FindCabinRenderer(harness.Car, "glovebox_catch")
+                    .GetComponent<MeshFilter>();
+                Assert.That(gloveboxHandle, Is.Not.Null);
+                Assert.That(dashboard.GloveboxHandleMesh, Is.SameAs(gloveboxHandle));
+                Assert.That(affordance.Glovebox.Mesh, Is.SameAs(gloveboxHandle));
+                Assert.That(gloveboxHandle.transform.IsChildOf(harness.Car.GloveboxLidPivot), Is.True);
                 Vector3 powerKnob =
                     bezel.bounds.center + (dashboard.TowardsDriver * 0.06f);
                 harness.Seat.LookAtForTests(powerKnob);
@@ -1481,20 +1487,49 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(harness.Seat.TryTuneRadio(), Is.False);
                 Assert.That(dashboard.TuningDetent, Is.EqualTo(LastRouteCarRadioModel.StepDetent(originalDetent)));
 
-                Vector3 lidCentre = harness.Car.GloveboxLidPivot
-                    .GetComponentInChildren<Renderer>(true).bounds.center;
-                harness.Seat.LookAtForTests(lidCentre);
+                harness.Seat.LookAtForTests(gloveboxHandle.transform.TransformPoint(gloveboxHandle.sharedMesh.bounds.center));
                 Assert.That(affordance.PowerVisible || affordance.TuningVisible, Is.False);
-                Assert.That(
-                    harness.Seat.PromptKey,
+                Assert.That(affordance.GloveboxVisible, Is.True);
+                Assert.That(harness.Seat.CanInteract(interactor), Is.True);
+                Assert.That(harness.Seat.PromptKey, Is.Null, "The handle's connected label owns the glovebox prompt.");
+                Assert.That(affordance.GloveboxPromptKey,
                     Is.EqualTo(LastRouteCarDashboard.OpenGloveboxPromptKey));
+                yield return CaptureGloveboxControlsUi(affordance, "11-glovebox-closed-handle");
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    yield return AssertGloveboxControlsHidden(affordance);
+                }
+                interactor.SetInteractKeyClaimed(true);
+                yield return AssertGloveboxControlsHidden(affordance);
+                interactor.SetInteractKeyClaimed(false);
+                dashboard.SetGloveboxInputLocked(true);
+                try
+                {
+                    yield return AssertGloveboxControlsHidden(affordance);
+                    Assert.That(harness.Seat.CanInteract(interactor), Is.False,
+                        "The driver's hand owns the lid while its input lock is held.");
+                    harness.Seat.Interact(interactor);
+                    Assert.That(dashboard.GloveboxOpen, Is.False);
+                }
+                finally { dashboard.SetGloveboxInputLocked(false); }
+                Assert.That(affordance.GloveboxVisible, Is.True);
+                Vector3 closedHandle = harness.CarRoot.InverseTransformPoint(
+                    gloveboxHandle.transform.TransformPoint(gloveboxHandle.sharedMesh.bounds.center));
                 harness.Seat.Interact(interactor);
                 Assert.That(dashboard.GloveboxOpen, Is.True);
                 int settling = 0;
+                bool sawMovingHandle = false;
                 while (dashboard.IsGloveboxSwinging && settling < 120)
                 {
                     yield return null;
                     settling++;
+                    harness.Seat.LookAtForTests(gloveboxHandle.transform.TransformPoint(gloveboxHandle.sharedMesh.bounds.center));
+                    if (dashboard.GloveboxOpenness > 0.1f && dashboard.GloveboxOpenness < 0.9f)
+                    {
+                        sawMovingHandle = true;
+                        Assert.That(affordance.GloveboxVisible, Is.True,
+                            "The seated gaze must still reach the handle while its lid swings.");
+                    }
                 }
 
                 Assert.That(dashboard.GloveboxOpenness, Is.EqualTo(1f).Within(0.001f));
@@ -1502,6 +1537,16 @@ namespace BarPromenade.Tests.PlayMode
                     settling,
                     Is.GreaterThan(5).And.LessThan(60),
                     "The lid takes a third of a second on the pinned clock.");
+                Assert.That(sawMovingHandle, Is.True);
+                Assert.That(Vector3.Distance(closedHandle,
+                    harness.CarRoot.InverseTransformPoint(gloveboxHandle.transform.TransformPoint(
+                        gloveboxHandle.sharedMesh.bounds.center))), Is.GreaterThan(0.03f),
+                    "The real catch moves with the lid, independently of the car's journey.");
+                Assert.That(affordance.GloveboxVisible, Is.True);
+                Assert.That(harness.Seat.CanInteract(interactor), Is.True);
+                Assert.That(affordance.GloveboxPromptKey, Is.EqualTo(LastRouteCarDashboard.CloseGloveboxPromptKey));
+                Assert.That(harness.Seat.PromptKey, Is.Null);
+                yield return CaptureGloveboxControlsUi(affordance, "12-glovebox-open-handle");
 
                 Assert.That(
                     dashboard.Speed01,
@@ -1522,6 +1567,7 @@ namespace BarPromenade.Tests.PlayMode
                     "Looking away from the dash, the ride is a ride again.");
                 Assert.That(affordance.PowerVisible || affordance.TuningVisible, Is.False);
                 Assert.That(harness.Seat.TryTuneRadio(), Is.False);
+                yield return AssertGloveboxControlsHidden(affordance);
             }
             finally
             {
@@ -1556,6 +1602,53 @@ namespace BarPromenade.Tests.PlayMode
             else Assert.That(affordance.Tuning.RenderedFrame, Is.EqualTo(-1), "The off radio offers only E.");
 
             yield return CaptureRadioGameView(shot);
+        }
+
+        private static IEnumerator CaptureGloveboxControlsUi(LastRouteRadioAffordance affordance, string shot)
+        {
+            int earliestFrame = Time.frameCount + 1;
+            float deadline = Time.realtimeSinceStartup + 2f;
+            while (affordance.Glovebox.RenderedFrame < earliestFrame &&
+                   Time.realtimeSinceStartup < deadline) yield return null;
+            // The car moves in Update and the seated eye follows in LateUpdate.
+            // Measure the mesh and its OnGUI contour from the same rendered frame.
+            yield return new WaitForEndOfFrame();
+            AssertRadioKnobCallout(affordance.Glovebox, earliestFrame);
+            Assert.That(affordance.Power.RenderedFrame, Is.EqualTo(-1));
+            Assert.That(affordance.Tuning.RenderedFrame, Is.EqualTo(-1));
+            Camera camera = affordance.GetComponent<LastRouteCarSeatInteraction>().SeatCamera;
+            MeshFilter mesh = affordance.Glovebox.Mesh;
+            Bounds bounds = mesh.sharedMesh.bounds;
+            Vector2 minimum = Vector2.positiveInfinity, maximum = Vector2.negativeInfinity;
+            for (int index = 0; index < 8; index++)
+            {
+                Vector3 corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3(
+                    (index & 1) == 0 ? -1f : 1f, (index & 2) == 0 ? -1f : 1f,
+                    (index & 4) == 0 ? -1f : 1f));
+                Vector3 screen = camera.WorldToScreenPoint(mesh.transform.TransformPoint(corner));
+                Assert.That(screen.z, Is.GreaterThan(0f));
+                Vector2 point = new Vector2(screen.x, Screen.height - screen.y);
+                minimum = Vector2.Min(minimum, point);
+                maximum = Vector2.Max(maximum, point);
+            }
+            Rect outline = affordance.Glovebox.OutlineScreenRect;
+            Assert.That(Vector2.Distance(outline.min, minimum), Is.LessThan(3f),
+                "The rendered contour follows the current catch, not the full lid or its closed pose.");
+            Assert.That(Vector2.Distance(outline.max, maximum), Is.LessThan(3f));
+            yield return CaptureRadioGameView(shot);
+        }
+
+        private static IEnumerator AssertGloveboxControlsHidden(LastRouteRadioAffordance affordance)
+        {
+            Assert.That(affordance.GloveboxVisible, Is.False);
+            int earliestFrame = Time.frameCount + 1;
+            float deadline = Time.realtimeSinceStartup + 2f;
+            while (affordance.RepaintFrame < earliestFrame &&
+                   Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(affordance.RepaintFrame, Is.GreaterThanOrEqualTo(earliestFrame));
+            Assert.That(affordance.Glovebox.RenderedFrame, Is.EqualTo(-1));
+            Assert.That(affordance.Glovebox.OutlineCount, Is.Zero,
+                "An unavailable glovebox leaves no stale contour or connected label in the actual GUI.");
         }
 
         private static IEnumerator CaptureRadioGameView(string shot)

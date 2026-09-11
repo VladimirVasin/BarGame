@@ -1086,11 +1086,10 @@ The vertical slice contains:
   stops radio music/hiss and any detached tail, preserving the station and
   playhead. Starting the passenger's exit invokes this same power switch only
   if it is on; the city resumes through its usual `1 s` fade-in.
-  Power-on and scene exit retain
-  the shared music rule. Gaze-based radio callouts outline each knob
-  separately: power uses `E`, and only while powered, `Q` cycles stations
-  `1 → 2 → 3 → 1` and moves the needle with a short tuning hiss/crackle from
-  the existing car audio. Each trip randomly chooses one station for the
+  Power-on/scene exit retain the shared music rule. Gaze callouts outline
+  radio knobs and the moving glovebox handle: `E` powers/opens/closes;
+  powered `Q` cycles `1 → 2 → 3 → 1`, moving the needle with tuning hiss/crackle.
+  Each trip randomly chooses one station for the
   driver's single permitted radio reaction. After `10 s` of its actual
   playback, he starts `lastroute.ride.radio` and reaches for the tuning knob
   with the distal palm gripping its side. A low, outboard elbow lets the fingers
@@ -1260,33 +1259,33 @@ The vertical slice contains:
   wheel rubs clear handling lanes. Two-fan evaporator→outside condensers/drain.
   Three warm shadowed spots join quay/store/canopy lights: two-thirds day/distance gate.
   Searchlight shadows deck/water; wake `CityPortWater`; `CityPortSound`:
-  run/idle motor `.6/.24`, `48 m`; horn/echo `20/4 s` pre-Moor/Depart;
-  mechanics/contacts/fan.
-  Pause stops time/audio; teardown clears people/voices/wake.
+  Motor `.6/.24`, `48 m`; horns `20/4 s` pre-Moor/Depart. Arrival ×2,
+  echo `780 ms`/reverb `6.2 s`. Pause/teardown own people/audio/wake.
   Small blueprints without room retain the nonoperational mol;
 - Cannery: `8 x 14 m` hall/`18 x 18 m` lot, bay/public bypass;
   side openings join yard/public aisle; west staff cut in wall/liner/collision
   opens work aisle to the hero; machines/glass stay.
   Home shell: `CityCanneryPlan`; ten Blender parts/five maps share port surfaces.
-  Fifteen cans fill/seal/pack, four workers/driver/two aprons,
-  lamps/steam/labels.
-  Before unload/after final lot, four wait on the truck side facing the yard;
-  queued walks use delivery time. `LifeSeconds` runs through holds, pauses. Receiver
-  tracks cargo/checks zero wheel; empty scale stays zero. Prep steps/wipes/returns
-  cloth; seamer steps back/checks cuff; retort releases wrist. Duty guards grips.
-  `CityCanneryConversationDeck`: `6/6/4` work/wait/receiving pairs, shared bubbles,
-  free hands/no-repeat; no hero speech/job, driver↔docker. Shelf/stool/jacket/lamp
-  clear routes; anchored fan/tin/crate/latch/pressure follow action/pause/distance/seek.
-  `CityFishSupplyCycle`: FIFO `2x`, lots `100/220/340→220/340/460 s`, transfer
-  `276 s`, line wait `184 s`; held by pause/obstacles. Stock fixed/tare Deferred.
-  Truck `6.481 x 2.4 x 3.2 m`/full cab/lift guides/carriage/cylinders above ground.
-  Factory exit central, then right lane/parking; turns clear furniture.
-  Streets/asphalt `8/6 m`; six-second access yields to entering/unbrakeable bus,
-  protects bodies on release.
-  Dock latch spawns truck/driver/body unseen; `3 m/s` parks at first
-  crate (`156 s`), later full factory trips.
+  Fifteen cans/three continuous cartons; four workers/driver/aprons/light/steam.
+  Scale outside shipping, clear of traffic.
+  Receiver: unload→two-hand carton carry from packing→setdown/release→needle
+  settle/nod→approved support outside. Empty scale returns to zero; loading
+  waits for all three approvals/put-aways and receiver clearance.
+  Four wait by a yard bench before/after work: gaze/shoulders/speech.
+  `LifeSeconds` pauses; work clock owns walks.
+  Prep steps/wipes/returns cloth; seamer checks cuff; retort releases wrist.
+  Inspection owns receiver hands/gestures.
+  `CityCanneryConversationDeck`: `6/6/4` pairs/shared bubbles/free hands/no-repeat;
+  no hero/job, driver↔docker. Fittings clear paths; fan/tin/crate/latch/pressure
+  follow action/pause/distance/seek.
+  `CityFishSupplyCycle`: FIFO `2x`/measured inspection, `276 s` transfers;
+  pause/obstacle holds, fixed stock/tare Deferred.
+  Truck `6.481 x 2.4 x 3.2 m`, full cab/guided lift above ground.
+  Central factory exit→right lane/parking; clear turns. Streets `8/6 m`;
+  six-second access yields to entering/unbrakeable bus, protects release.
+  Dock latch spawns unseen truck/driver; `3 m/s`, first crate parking (`156 s`), later factory trips.
   Two soft horns; reverse beeper/ajar door/look-back steering. Cranes never wait.
-  Port cart pushes/pulls with signed gait/clear apron turns.
+  Cart: signed push/pull, clear turns.
   Arrival decides doorway access: driver takes accepted stock if docker is outside;
   crane filling reserves nothing. Docker first: driver waits for exit,
   "Жду тебя, дружище". Driver first: later trolley holds north threshold;

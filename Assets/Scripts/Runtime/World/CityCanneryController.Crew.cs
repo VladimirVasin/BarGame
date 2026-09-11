@@ -276,49 +276,59 @@ namespace BarPromenade
         private void FitTrolleyContactStance(VillageResidentPresentation actor, float weight)
         {
             if (actor != workers[4] || weight <= 0f) return;
-            Vector3 pelvisStart = driverPelvis.position, up = actor.transform.up;
+            FitCrewContactStance(actor, 4, trolleyRightHand.position, trolleyLeftHand.position, weight);
+        }
+
+        private void FitCrewContactStance(VillageResidentPresentation actor, int role, Vector3 right, Vector3 left, float weight)
+        {
+            Transform pelvis = role == 4 ? driverPelvis : factoryPoseBones[role, 0];
+            Transform Leg(int side, int bone) => role == 4
+                ? (bone == 0 ? driverThighs[side] : bone == 1 ? driverShins[side] : driverFeet[side])
+                : factoryPoseBones[role, 11 + side * 3 + bone];
+            Transform Arm(int side, int bone) => role == 4
+                ? (bone == 0 ? driverTrolleyShoulders[side] : bone == 1 ? driverTrolleyForearms[side] : driverTrolleyHands[side])
+                : factoryPoseBones[role, 5 + side * 3 + bone];
+            Vector3 pelvisStart = pelvis.position, up = actor.transform.up;
             for (int i = 0; i < 2; i++)
             {
-                driverPlantedFeet[i] = driverFeet[i].position;
-                driverPlantedFootRotations[i] = driverFeet[i].rotation;
+                driverPlantedFeet[i] = Leg(i, 2).position;
+                driverPlantedFootRotations[i] = Leg(i, 2).rotation;
             }
-            // At a kerb the driver's feet and jack wheels stand on different
-            // levels. Bring the pelvis toward both grips instead of stretching
-            // the arms or lowering the actor through the pavement.
+            // The jack and the low weighing platform share the same planted
+            // stoop: move the pelvis into reach, then close both grounded legs.
             for (int iteration = 0; iteration < 4; iteration++)
             {
                 Vector3 correction = Vector3.zero;
                 for (int i = 0; i < 2; i++)
                 {
                     Transform grip = i == 0 ? actor.LeftGrip : actor.RightGrip;
-                    Vector3 handle = i == 0 ? trolleyLeftHand.position : trolleyRightHand.position;
-                    Vector3 wrist = handle - (grip.position - driverTrolleyHands[i].position);
-                    Vector3 delta = wrist - driverTrolleyShoulders[i].position;
-                    float reach = LimbTwoBoneIk.ChainLength(driverTrolleyShoulders[i],
-                        driverTrolleyForearms[i], driverTrolleyHands[i]) - .008f;
+                    Vector3 handle = i == 0 ? left : right;
+                    Vector3 wrist = handle - (grip.position - Arm(i, 2).position);
+                    Vector3 delta = wrist - Arm(i, 0).position;
+                    float reach = LimbTwoBoneIk.ChainLength(Arm(i, 0), Arm(i, 1), Arm(i, 2)) - .008f;
                     correction += delta.normalized * Mathf.Max(0f, delta.magnitude - reach);
                 }
                 correction *= .5f * weight;
                 // This is a planted stoop: an upward reach never pulls the
                 // pelvis beyond the legs' length or lifts a sole off its step.
                 correction -= up * Mathf.Max(0f, Vector3.Dot(correction, up));
-                driverPelvis.position += correction;
+                pelvis.position += correction;
                 float lower = 0f;
                 for (int i = 0; i < 2; i++)
                 {
-                    Vector3 hip = driverThighs[i].position - driverPlantedFeet[i];
+                    Vector3 hip = Leg(i, 0).position - driverPlantedFeet[i];
                     float height = Vector3.Dot(hip, up);
-                    float reach = LimbTwoBoneIk.ChainLength(driverThighs[i], driverShins[i], driverFeet[i]) * .998f;
+                    float reach = LimbTwoBoneIk.ChainLength(Leg(i, 0), Leg(i, 1), Leg(i, 2)) * .998f;
                     float availableHeight = Mathf.Sqrt(Mathf.Max(0f, reach * reach - Vector3.ProjectOnPlane(hip, up).sqrMagnitude));
                     lower = Mathf.Max(lower, height - availableHeight);
                 }
-                driverPelvis.position -= up * lower;
+                pelvis.position -= up * lower;
                 if (correction.sqrMagnitude < .0000001f && lower < .0001f) break;
             }
-            if ((driverPelvis.position - pelvisStart).sqrMagnitude < .0000001f) return;
+            if ((pelvis.position - pelvisStart).sqrMagnitude < .0000001f) return;
             for (int i = 0; i < 2; i++)
-                LimbTwoBoneIk.Solve(driverThighs[i], driverShins[i], driverFeet[i], driverPlantedFeet[i],
-                    driverPlantedFootRotations[i], driverThighs[i].position + actor.transform.forward * .65f,
+                LimbTwoBoneIk.Solve(Leg(i, 0), Leg(i, 1), Leg(i, 2), driverPlantedFeet[i],
+                    driverPlantedFootRotations[i], Leg(i, 0).position + actor.transform.forward * .65f,
                     1f, 1f, true);
         }
 

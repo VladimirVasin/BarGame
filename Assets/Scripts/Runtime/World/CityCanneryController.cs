@@ -60,11 +60,6 @@ namespace BarPromenade
         {
             Plan = plan; port = source; hero = player; deliveryLayout = layout;
             Route = CityCanneryTruckRoute.Create(layout, plan, port.Plan.Access);
-            Cycle = new CityFishSupplyCycle(Travel(CityCanneryTruckLeg.PortToFactory),
-                Travel(CityCanneryTruckLeg.FactoryReverse), Travel(CityCanneryTruckLeg.FactoryToShop),
-                Travel(CityCanneryTruckLeg.ShopToFactory), Travel(CityCanneryTruckLeg.PortArrive),
-                Travel(CityCanneryTruckLeg.PortReverse), Travel(CityCanneryTruckLeg.FactoryToPort),
-                Route.InitialFactoryToPortDuration,port.DockWorkerStoreExitAtSeconds,port.TrolleyStoreEntryAtSeconds);
             // The site builder owns the passive shell, including the Home vista.
             // This owner adds only the working parts and the shared delivery vehicle.
             factory = new GameObject("Cannery Process").transform;
@@ -73,6 +68,12 @@ namespace BarPromenade
             equipment = CityCanneryAssetProvider.Create("Equipment", factory).transform;
             foreach (Transform part in equipment.GetComponentsInChildren<Transform>(true))
                 if (part.name.StartsWith("ANCHOR_", StringComparison.Ordinal)) anchors[part.name.Substring(7)] = part;
+            Cycle = new CityFishSupplyCycle(Travel(CityCanneryTruckLeg.PortToFactory),
+                Travel(CityCanneryTruckLeg.FactoryReverse), Travel(CityCanneryTruckLeg.FactoryToShop),
+                Travel(CityCanneryTruckLeg.ShopToFactory), Travel(CityCanneryTruckLeg.PortArrive),
+                Travel(CityCanneryTruckLeg.PortReverse), Travel(CityCanneryTruckLeg.FactoryToPort),
+                Route.InitialFactoryToPortDuration, port.DockWorkerStoreExitAtSeconds, port.TrolleyStoreEntryAtSeconds,
+                CreateInspectionRoutes());
             Truck = CityCanneryAssetProvider.Create("Truck", transform).transform;
             Traffic=new CityCanneryTraffic(this,GetComponentInParent<CityGameRoot>()?.Bus);
             CacheDeliverySidewalks(layout);
@@ -85,6 +86,7 @@ namespace BarPromenade
                 fish[i].name = "Fish handling unit " + i;
                 cases[i] = CityCanneryAssetProvider.Create("CartonStack", transform).transform;
                 cases[i].name = "Finished handling unit " + i;
+                CreateInspectionBox(i);
                 // Fill the nose first; unload in reverse order so later units
                 // never need to pass through an already parked pallet.
                 int slot = 4 - i / 2 * 2 + i % 2;
@@ -155,7 +157,8 @@ namespace BarPromenade
                 return;
             }
             bool trafficClear=Traffic.TryAcquire(Snapshot);
-            IsBlocked = !trafficClear || (Snapshot.IsDriving || Snapshot.IsTransfer) && DetectObstacle();
+            IsBlocked = !trafficClear || ((Snapshot.IsDriving || Snapshot.IsTransfer) && DetectObstacle()) ||
+                DetectInspectionObstacle();
             movementRate = Mathf.MoveTowards(movementRate, IsBlocked ? 0f : 1f, Time.deltaTime * 1.5f);
             // Stop at the sensor boundary; easing is used when setting off again.
             if (IsBlocked) movementRate = 0;

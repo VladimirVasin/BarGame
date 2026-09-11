@@ -85,6 +85,15 @@ namespace BarPromenade
                 ProcessCue(2, Cycle.TransferUnitStart(CityFishSupplyStage.UnloadFish, i, Snapshot.Batch) +
                     CityFishSupplyCycle.TransferUnitDuration * .75d,
                     RawStore(CityFishSupplyCycle.HandlingUnits - 1 - i), .23f, continuous);
+            for (int i = 0; i < CityFishSupplyCycle.HandlingUnits; i++)
+            {
+                ProcessCue(2, Cycle.InspectionPhaseStart(CityCanneryInspectionStage.SetDown, i, Snapshot.Batch) +
+                    Cycle.InspectionPhaseDuration(CityCanneryInspectionStage.SetDown, i) * .70d,
+                    ShippingScaleLoadPosition, .18f, continuous);
+                ProcessCue(2, Cycle.InspectionPhaseStart(CityCanneryInspectionStage.PutAway, i, Snapshot.Batch) +
+                    Cycle.InspectionPhaseDuration(CityCanneryInspectionStage.PutAway, i) * .70d,
+                    ReadyStore(i) + Vector3.up * ShippingPalletHeight, .15f, continuous);
+            }
             if (Production.IsActive)
             {
                 double start = Cycle.ProductionStageStart(Production.Stage, Production.LotIndex, Snapshot.Batch);
