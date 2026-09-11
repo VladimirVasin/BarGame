@@ -55,10 +55,8 @@ namespace BarPromenade
         public void Initialize(InteractionPromptView view)
         {
             promptView = view;
-            // The panel needs the hero for one thing only: a line
-            // somebody is saying to him stops when he walks away from
-            // the man saying it. Every scene root gets that for free
-            // here rather than having to remember it.
+            // Interaction speech uses the same head bubble and listener
+            // distance as ambient speech in every scene root.
             promptView?.SetListener(transform);
             if (promptAction == null)
             {
@@ -71,7 +69,11 @@ namespace BarPromenade
             InputEnabled = enabled;
             if (!enabled)
             {
-                promptView?.ClearFeedback();
+                // Menus acquire their lock before pausing time. Preserve an
+                // already spoken line through that capture; the shared facade
+                // freezes it until input returns. Ordinary disable still clears.
+                if (promptView == null || !promptView.IsSpeaking || !BarMinigameModalLock.IsAnyLocked)
+                    promptView?.ClearFeedback();
                 SetActive(null);
             }
         }
@@ -118,10 +120,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// A line somebody actually said to him, rather than a
-        /// description of what he is looking at. It types out in that
-        /// man's own tone; the two calls above stay whole and silent,
-        /// which is what separates a locked door from an answer.
+        /// A line somebody says to him, displayed only above that speaker's
+        /// head. The two calls above remain instant, silent bottom feedback.
         /// </summary>
         public bool ShowSpokenFeedback(
             string localizationKey,

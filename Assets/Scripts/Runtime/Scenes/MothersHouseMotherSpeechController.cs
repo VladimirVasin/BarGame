@@ -28,7 +28,7 @@ namespace BarPromenade
         /// </summary>
         public const float GreetingDelaySeconds = 1.2f;
 
-        public const float ReadingTailSeconds = 2f;
+        public const float ReadingTailSeconds = SpeechDelivery.ReadingTailSeconds;
 
         /// <summary>How close he has to be for her to be talking to
         /// him rather than to the room. The ground floor is about nine
@@ -60,6 +60,8 @@ namespace BarPromenade
             bubbles != null &&
             speaker.Owner != null &&
             bubbles.IsShowing(speaker.Owner);
+        public bool CanSpeak => IsInitialized && isActiveAndEnabled &&
+            speaker.IsValid && speaker.Anchor != null && !IsSpeaking;
         public string LineKey { get; private set; } = string.Empty;
         public string FullText { get; private set; } = string.Empty;
         public NpcSpeechBubbleView Bubbles => bubbles;
@@ -194,38 +196,31 @@ namespace BarPromenade
         /// </summary>
         public bool Say(string key)
         {
-            if (!IsInitialized ||
-                string.IsNullOrEmpty(key) ||
-                !speaker.IsValid ||
-                speaker.Anchor == null)
+            if (!CanSpeak || string.IsNullOrEmpty(key))
             {
                 return false;
             }
 
-            LineKey = key;
-            FullText = LocalizationService.Get(key);
-            lineElapsed = 0f;
+            string text = LocalizationService.Get(key);
             bubbles.LineDurationSeconds =
                 SpeechDelivery.ResolveSpokenDuration(
-                    FullText,
+                    text,
                     ReadingTailSeconds);
             bubbles.DeclareSpeaker(speaker);
-            return bubbles.ShowAt(speaker.Owner, FullText, lineElapsed);
+            if (!bubbles.ShowAt(speaker.Owner, text, 0f)) return false;
+            LineKey = key;
+            FullText = text;
+            lineElapsed = 0f;
+            return true;
         }
 
         /// <summary>
-        /// The talk stub interrupting her with an answer. It closes
-        /// whatever she was saying, so `E` never stacks a second
-        /// bubble on a line already up, and it rolls the ordinary
-        /// silence afterwards.
+        /// Answer only when her current line has finished. The talk
+        /// trigger uses the same gate before it activates the scarf
+        /// request or spends an ordinary line from her bag.
         /// </summary>
         public bool SayOnDemand(string key)
         {
-            if (IsSpeaking)
-            {
-                FinishLine();
-            }
-
             return Say(key);
         }
 

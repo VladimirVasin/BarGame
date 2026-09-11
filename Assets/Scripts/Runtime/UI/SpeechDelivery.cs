@@ -4,10 +4,9 @@ namespace BarPromenade
 {
     /// <summary>
     /// One line being said, mid-delivery. This is the whole typewriter,
-    /// and it is the ONLY one: the bubble over a speaker's head and the
-    /// prompt panel at the bottom of the screen both embed this struct
-    /// rather than each keeping their own idea of how fast a character
-    /// talks.
+    /// and it is the ONLY one: every spoken line uses the shared head
+    /// bubble, including responses to the hero. Actions and silent
+    /// descriptions stay in the prompt panel.
     ///
     /// It is a plain struct with no Unity object in it, so the timing
     /// of a line can be proved in EditMode without a camera, a canvas
@@ -23,26 +22,14 @@ namespace BarPromenade
     /// </summary>
     public struct SpeechDelivery
     {
-        /// <summary>Typing speed. Fast enough that a 46-character line
-        /// is complete in under a second and a half, which leaves most
-        /// of the time it is up for actually reading it. Moved here
-        /// from the bubble because the speed belongs to the typewriter,
-        /// not to one of the two panels it types into.</summary>
-        public const float CharactersPerSecond = 34f;
+        /// <summary>Shared reveal rate for every spoken line.</summary>
+        public const float CharactersPerSecond = 24f;
 
-        /// <summary>
-        /// The shortest gap between two blips. At <see
-        /// cref="CharactersPerSecond"/> a letter lands every `29 ms`,
-        /// and a blip that often is not typing — it is a modem. Ninety
-        /// milliseconds leaves a clear silence between two `45 ms`
-        /// blips, so each one is heard as a separate keystroke, and on
-        /// real Russian text (a fifth of which is spaces and
-        /// punctuation, which never blip) it settles at about nine
-        /// ticks a second: the tempo of a comfortable mechanical
-        /// typewriter. A 46-character park taunt makes fifteen blips
-        /// instead of forty-six.
-        /// </summary>
-        public const float MinimumBlipIntervalSeconds = 0.09f;
+        /// <summary>Space the short writing sounds so slower speech stays distinct.</summary>
+        public const float MinimumBlipIntervalSeconds = 0.13f;
+
+        /// <summary>Reading time after the final letter of a length-based response.</summary>
+        public const float ReadingTailSeconds = 2.5f;
 
         /// <summary>The whole line, already localized and, where it
         /// carries a number, already composed.</summary>
@@ -130,7 +117,7 @@ namespace BarPromenade
         /// <summary>
         /// How much of a line has been typed by now. Saturates at the
         /// whole line and never runs backwards. Pure: this is the
-        /// source of truth both channels share, and the reason the
+        /// source of truth every spoken line shares, and the reason the
         /// stepping below can be observed without being trusted.
         /// </summary>
         public static int ResolveRevealedCharacters(
@@ -241,13 +228,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// How long a spoken line needs on screen: the time it takes to
-        /// type plus a tail to read it in. The bubble keeps its own
-        /// fixed life, but the prompt panel is handed lines of very
-        /// different lengths — the watchman's longest runs to
-        /// sixty-seven characters in English, two seconds of typing
-        /// inside a three-second window — and a constant would leave
-        /// almost nothing to read.
+        /// Time to reveal the complete line, followed by the caller's reading tail.
         /// </summary>
         public static float ResolveSpokenDuration(
             string text,

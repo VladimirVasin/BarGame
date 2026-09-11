@@ -82,13 +82,23 @@ namespace BarPromenade.Tests.EditMode
         {
             CityFishSupplyCycle cycle = Cycle(outbound);
             double firstFetch = cycle.TransferUnitStart(CityFishSupplyStage.LoadFish, 0);
-            Assert.That(cycle.LastPortCrateStoredAtSeconds, Is.EqualTo(284d));
+            Assert.That(cycle.LastPortCrateStoredAtSeconds, Is.GreaterThanOrEqualTo(284d));
             for (double time = 0; time < CityPortCycle.CycleDurationSeconds; time += .5d)
             {
-                Assert.That(cycle.Sample(time).PortSeconds, Is.EqualTo(time).Within(1e-8d),
-                    "Neither the crane nor the docker waits for the driver to collect a stored crate.");
+                CityFishSupplySnapshot state = cycle.Sample(time);
+                CityPortCycleSnapshot dock = CityPortCycle.Sample(state.PortSeconds);
+                if (state.DockWorkerWaitingForPortAccess)
+                {
+                    Assert.That(dock.CargoStage, Is.EqualTo(CityPortCargoStage.Trolley));
+                    Assert.That(dock.SecondsInCargo,
+                        Is.EqualTo(CityPortCycle.DefaultTrolleyStoreEntryAtSeconds).Within(1e-8d));
+                    Assert.That(state.WaitingForDockWorker, Is.False);
+                }
+                else if (time > 0d && !cycle.Sample(time - .01d).DockWorkerWaitingForPortAccess)
+                    Assert.That(state.PortSeconds - cycle.Sample(time - .01d).PortSeconds,
+                        Is.EqualTo(.01d).Within(1e-8d), "Only a later cart at the door can hold the port clock.");
                 Assert.That(cycle.Sample(cycle.BatchStart(1) + time).PortSeconds,
-                    Is.EqualTo(CityPortCycle.CycleDurationSeconds + time).Within(1e-8d));
+                    Is.EqualTo(CityPortCycle.CycleDurationSeconds + state.PortSeconds).Within(1e-8d));
             }
             if (firstFetch >= CityPortCycle.UnloadStartSeconds + CityPortCycle.UnloadDurationSeconds)
                 Assert.That(cycle.Sample(firstFetch).PortStored, Is.EqualTo(3));
@@ -97,12 +107,12 @@ namespace BarPromenade.Tests.EditMode
             {
                 double start = cycle.TransferUnitStart(CityFishSupplyStage.LoadFish, unit);
                 Assert.That(start, Is.GreaterThanOrEqualTo(previousEnd));
-                Assert.That(start, Is.GreaterThanOrEqualTo(CityFishSupplyCycle.FirstPortCrateStoredAtSeconds +
-                    unit * CityPortCycle.CargoDurationSeconds));
+                Assert.That(start, Is.GreaterThanOrEqualTo(cycle.PortEventTime(
+                    CityFishSupplyCycle.FirstPortCrateStoredAtSeconds + unit * CityPortCycle.CargoDurationSeconds)));
                 for (double t = start; t <= start + CityFishSupplyCycle.TransferUnitDuration * .35d; t += .1d)
                 {
                     CityPortCycleSnapshot dock = CityPortCycle.Sample(cycle.Sample(t).PortSeconds);
-                    Assert.That(dock.Stage != CityPortCycleStage.Unload ||
+                    Assert.That(cycle.Sample(t).DockWorkerWaitingForPortAccess || dock.Stage != CityPortCycleStage.Unload ||
                         dock.SecondsInCargo < CityPortCycle.DefaultTrolleyStoreEntryAtSeconds ||
                         dock.SecondsInCargo >= CityPortCycle.DefaultDockWorkerStoreExitAtSeconds,
                         Is.True, $"Shared store passage at {t:F3}s for unit {unit}.");
@@ -120,6 +130,54 @@ namespace BarPromenade.Tests.EditMode
             }
             Assert.That(cycle.StageStart(CityFishSupplyStage.PortToFactory),
                 Is.EqualTo(previousEnd + CityFishSupplyCycle.TransferEdgeDuration));
+        }
+
+        [TestCase(-.01d)]
+        [TestCase(0d)]
+        [TestCase(.01d)]
+        public void WarehousePriorityBelongsToTheFirstArrivalAndSurvivesSeeking(double arrivalOffset)
+        {
+            double entry = CityPortCycle.UnloadStartSeconds + CityPortCycle.CargoDurationSeconds +
+                CityPortCycle.DefaultTrolleyStoreEntryAtSeconds;
+            double arrival = entry + arrivalOffset;
+            CityFishSupplyCycle cycle = Cycle(arrival - CityFishSupplyCycle.DriverDispatchAtSeconds -
+                4d - CityFishSupplyCycle.TrolleyQueueArrivalDuration);
+            double fetch = cycle.TransferUnitStart(CityFishSupplyStage.LoadFish, 0);
+            if (arrivalOffset < 0d)
+            {
+                Assert.That(fetch, Is.EqualTo(arrival).Within(1e-8d));
+                CityFishSupplySnapshot held = cycle.Sample(entry + .001d);
+                Assert.That(held.DockWorkerWaitingForPortAccess, Is.True);
+                Assert.That(held.WaitingForDockWorker, Is.False);
+                Assert.That(held.PortStored, Is.EqualTo(1));
+                double release = arrival + CityFishSupplyCycle.DriverStoreClearDuration;
+                Assert.That(cycle.Sample(release - .001d).DockWorkerWaitingForPortAccess, Is.True);
+                Assert.That(cycle.Sample(release + .001d).DockWorkerWaitingForPortAccess, Is.False);
+                cycle.Sample(release + 20d);
+                Assert.That(cycle.Sample(entry + .001d).PortSeconds, Is.EqualTo(held.PortSeconds));
+            }
+            else
+            {
+                double exit = CityPortCycle.UnloadStartSeconds + CityPortCycle.CargoDurationSeconds +
+                    CityPortCycle.DefaultDockWorkerStoreExitAtSeconds;
+                Assert.That(fetch, Is.EqualTo(exit).Within(1e-8d));
+                Assert.That(cycle.Sample(arrival + .001d).WaitingForDockWorker, Is.True);
+                Assert.That(cycle.Sample(fetch + .001d).WaitingForPortAccess, Is.False);
+                Assert.That(cycle.Sample(fetch + .001d).DockWorkerWaitingForPortAccess, Is.False);
+            }
+        }
+
+        [Test]
+        public void ReceivingCargoAtTheCraneDoesNotReserveTheWarehouseForDocker()
+        {
+            var cycle = new CityFishSupplyCycle(45d, 18d, 35d, 40d, 24d, 4d, 169d, 128d);
+            double first = cycle.TransferUnitStart(CityFishSupplyStage.LoadFish, 0);
+            double second = cycle.TransferUnitStart(CityFishSupplyStage.LoadFish, 1);
+            Assert.That(second, Is.EqualTo(first + CityFishSupplyCycle.TransferUnitDuration).Within(1e-8d));
+            CityFishSupplySnapshot state = cycle.Sample(second + .01d);
+            Assert.That(state.WaitingForDockWorker, Is.False);
+            Assert.That(state.TransferProgress, Is.GreaterThan(0f));
+            Assert.That(CityPortCycle.Sample(state.PortSeconds).CargoStage, Is.EqualTo(CityPortCargoStage.Hoist));
         }
 
         [TestCase(2d)]

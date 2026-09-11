@@ -33,8 +33,8 @@ namespace BarPromenade
 
         /// <summary>
         /// `45 ms`: eight to twenty-three cycles at the catalog's
-        /// `138-262 Hz`, so the blip has a pitch to hear, and half the
-        /// `90 ms` throttle, so two of them are never heard as one
+        /// `138-262 Hz`, so the blip has a pitch to hear, and shorter than the
+        /// shared speech throttle, so two of them are never heard as one
         /// held tone.
         /// </summary>
         public const float DurationSeconds = 0.045f;

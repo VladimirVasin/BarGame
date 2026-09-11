@@ -632,6 +632,15 @@ namespace BarPromenade.Tests.EditMode
         public void WomanLineWindow_FitsBetweenPlumeAndNextCigaretteLift()
         {
             const float idleLengthSeconds = 11f;
+            float neededSeconds = MountainRoadCafeConversationLook.TurnInSeconds +
+                                  NpcSpeechBubbleView.VisibleSeconds +
+                                  MountainRoadCafeConversationLook.TurnOutSeconds +
+                                  MountainRoadCafeConversationController.WomanWindowSafetySeconds;
+            float lastStart = 1f + MountainRoadCafeConversationController.WomanNextLiftNormalized -
+                              neededSeconds / idleLengthSeconds;
+            Assert.That((lastStart - MountainRoadCafeConversationController.WomanRestStartNormalized) *
+                        idleLengthSeconds, Is.GreaterThan(1f / 30f),
+                "The authored eleven-second idle must still offer a usable speech window.");
             Assert.That(
                 MountainRoadCafeConversationController.CanBeginWomanLine(
                     0.68f,
@@ -640,13 +649,13 @@ namespace BarPromenade.Tests.EditMode
                 "The settled post-exhale window accepts a whole line.");
             Assert.That(
                 MountainRoadCafeConversationController.CanBeginWomanLine(
-                    0.72f,
+                    lastStart - 0.001f,
                     idleLengthSeconds),
                 Is.True,
                 "The last safe start still leaves the authored margin.");
             Assert.That(
                 MountainRoadCafeConversationController.CanBeginWomanLine(
-                    0.73f,
+                    lastStart + 0.001f,
                     idleLengthSeconds),
                 Is.False,
                 "A later start would let the return reach the next lift.");

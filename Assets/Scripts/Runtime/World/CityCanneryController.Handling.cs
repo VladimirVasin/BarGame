@@ -66,8 +66,7 @@ namespace BarPromenade
             if(Snapshot.Stage==CityFishSupplyStage.LoadFish)
             {
                 // The opaque baffle has only one west-side passage. LoadFish
-                // reserves its fetch intervals around the dock worker's route;
-                // the driver waits outside without stopping the cranes.
+                // gives the first arrival access; the later cart waits outside.
                 bend=port.Plan.World(new Vector3(-3.2f,CityPortPlan.DeckHeight,store.z-port.Plan.Origin.z));
                 aisle=port.Plan.World(new Vector3(-3.2f,CityPortPlan.DeckHeight,-14.8f));
             }

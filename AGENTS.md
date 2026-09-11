@@ -80,6 +80,12 @@ Rules:
 - Keep runtime, editor, and test code separated with assembly definitions as the project grows.
 - Prefer deterministic, data-first world generation and test its pure logic outside scene construction.
 - Reuse shared materials and assets; avoid per-instance material creation.
+- All speech and dialogue must follow
+  [`ai/speech-presentation-standard.md`](ai/speech-presentation-standard.md).
+  Every spoken line, including `E` replies, uses the shared bubble above its
+  speaker; bottom UI is silent. Do not copy speech UI/typewriter/audio/lifetime
+  logic per feature. A deviation requires an explicit user decision recorded
+  as an accepted architecture exception.
 - Every future contextual interaction must follow
   `ai/contextual-animation-standard.md`. The production hero is one continuous
   modular 3D character: an interaction either drives that world rig or derives a

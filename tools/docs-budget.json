@@ -115,6 +115,10 @@
       "type": "canon",
       "budget": 8000
     },
+    "ai/speech-presentation-standard.md": {
+      "type": "canon",
+      "budget": 4000
+    },
     "ai/work-log.md": {
       "type": "ledger",
       "entry_heading": "## ",

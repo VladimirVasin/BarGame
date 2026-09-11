@@ -278,12 +278,17 @@ namespace BarPromenade
             }
 
             CityPortAccessPlan portAccess = CityPortAccessPlan.ForLayout(layout);
-            Vector3 spurPosition = portAccess != null
-                ? portAccess.World(portAccess.PublicStreetSpur[0])
-                : new Vector3(access.Center.x,
-                    (first.Position.y + second.Position.y) * 0.5f,
-                    first.Position.z);
-            spurPosition.z = first.Position.z;
+            Vector3 spurPosition = new Vector3(access.Center.x,
+                (first.Position.y + second.Position.y) * 0.5f, first.Position.z);
+            if (portAccess != null)
+            {
+                spurPosition.x = portAccess.StreetOpening.xMax - 1.2f;
+                float startX = layout.GetNodeWorldPosition(frontage.A).x;
+                float endX = layout.GetNodeWorldPosition(frontage.B).x;
+                float amount = (spurPosition.x - startX) / (endX - startX);
+                spurPosition.y = layout.ElevationPlan.SampleRoadDatum(frontage, amount) +
+                    CityStreetSurfacePlanner.SidewalkTop;
+            }
             int spurNode = graph.AddNode(
                 "coast:spur",
                 spurPosition,
@@ -307,17 +312,13 @@ namespace BarPromenade
                 return;
             }
 
-            // The existing NPC graph uses orthogonal beach lanes. Continue
-            // from the straight public entrance onto the adjacent sand lane;
-            // the diagonal paved branch remains the player's port approach.
-            // Both NPC legs stay east of the truck road and manoeuvre yard.
-            Vector3 entrance = portAccess.World(portAccess.PublicStreetSpur[1]);
-            int entranceNode = graph.AddNode("coast:port-public:1", entrance, false);
-            Vector3 corner = new Vector3(entrance.x, 0, graph.Nodes[accessNode].Position.z);
+            // Share the east edge of the truck opening, then continue on the
+            // natural beach. The road curves west while the shore walk stays
+            // outside the manoeuvre yard; no separate paved spur is authored.
+            Vector3 corner = new Vector3(spurPosition.x, 0, graph.Nodes[accessNode].Position.z);
             corner.y = CitySeacoastPlanner.SampleShoreWalkTop(layout, frame, corner.x, corner.z);
             int cornerNode = graph.AddNode("coast:port-shore:corner", corner, false);
-            AddPortShoreAxis(layout, frame, graph, spurNode, entranceNode, "coast-spur:public");
-            AddPortShoreAxis(layout, frame, graph, entranceNode, cornerNode, "coast-spur:sand");
+            AddPortShoreAxis(layout, frame, graph, spurNode, cornerNode, "coast-spur:sand");
             AddPortShoreAxis(layout, frame, graph, cornerNode, accessNode, "coast-spur:shore");
         }
 

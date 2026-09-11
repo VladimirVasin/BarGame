@@ -204,9 +204,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Who he is when he answers: which head the sound comes from,
-        /// what tone he writes in, and how far it carries. Without it
-        /// his answer is whole, instant and silent, as it was before.
+        /// His actual head anchors the overhead answer and positional
+        /// voice; the declared tone and earshot belong to this speaker.
         /// </summary>
         public void AttachSpeaker(in NpcSpeaker value)
         {

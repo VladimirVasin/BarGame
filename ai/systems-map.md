@@ -83,7 +83,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City yards | Only west stone terraces add a mason's cart; other fringe yards retain their existing service-belt infrastructure. | `CityFringeYard*`, `CityFringeYardLifePlanner` | Current |
 | District public places | Four public lots retain validated street approaches, causal props and bounded local practicals. | `CityDistrictPointOfInterest{Plan,Planner,WorldBuilder}`, `CityPointOfInterestSurfaceAppearance` | Current |
 | Drying yard babushkas | Staged drying-yard residents share authored domestic actions and local speech/prop ownership. | `DryingYardBabushka{Provider,Plan,Presentation,Factory}`, `CityPedestrianHandProps` | Current |
-| Cannery and fish deliveries | First entry: truck with first crate; cranes continue, driver yields; local carts/lift. Empty-tare return deferred. | `CityCannery*`, `CityFishSupply{Cycle,Session}`, `WorldDistancePresentation` | Partial |
+| Cannery and fish deliveries | Truck with first crate; warehouse access follows actual arrival, later trolley waits. Empty-tare return deferred. | `CityCannery*`, `CityFishSupply{Cycle,Session}`, `WorldDistancePresentation` | Partial |
 | Cemetery mourner | The grave-side mourner uses her own authored presence, gestures and localized response. | `CemeteryMourner{Provider,Plan,Timeline,Presentation,Factory}`, `CityCemeteryMournerController` | Current |
 | Cemetery watchman and gate lodge | The watchman and lodge provide the authored grave-work offer and payment interaction. | `CemeteryWatchman{Provider,Plan,Quips,Interaction,Presentation,Factory}`, `CityCemeteryPlanner.AddLodge` | Current |
 | Cemetery gravedigging | Up to three open jobs; grave acts/epitaphs persist per plot, with payment committed through the watchman. | `CemeteryGravedigging{Plan,Controller,Register}`, `CemeteryGraveWork{Stage,Ledger}` | Current |
@@ -92,7 +92,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Sitting on the mother's sofa | The sofa reuses shared bench seating with front-only approach, measured cushion contact and owned shadow cleanup. | `MothersHouseSofaSeatPlanner`, `CityBenchSit{Plan,Interaction,WorldBuilder}` | Current |
 | The mother in her chair | She rocks on measured runner contact, greets him at the door and speaks from one shuffled bag that `E` shares. | `MothersHouseMother{Presentation,Factory,Interaction,Quips,SpeechSession,SpeechController}`, `NpcHeroAttentionLook` | Current |
 | Outdoor raven roosts | Seeded pairs occupy bounded open-world perches, flush locally and obey area exclusion/vehicle gates. | `RavenRoost{Plan,Controller}`, `{City,MountainRoad,AlpineVillage}RavenRoostPlanner` | Current |
-| Seacoast precinct | Working port: joined ramp/yard walk masks, 2 m bypass and truck access; station/east-shore approaches retained. | `CitySeacoast*`, `CityPort*`, `CitySeaResources` | Current |
+| Seacoast precinct | Port reached by truck road/shoulders; internal dock walks and station/east-shore approaches retained. | `CitySeacoast*`, `CityPort*`, `CitySeaResources` | Current |
 | Port social life | Canopy breaks, paired city/weather talk in nonrepeating rounds; driver speaks only to docker. | `CityPortCrew*`, `CityPortConversation*`, `CityPortLighting` | Current |
 | Port cold store | Three warm lamps, refrigeration and passive furniture retain cargo lanes; local fan follows pause/distance. | `build-city-port-3d-model.py`, `CityPortLighting`, `CityPortSound` | Current |
 | Port foreman | At store wall, faces cart parking; three carrot bites→pail/pocket, speech keeps stage. Talk/E offer, no work/pay. | `CityPortForeman*`, `CityPortConversation*`, `build-city-port-foreman-3d-model.py` | Current |
@@ -156,6 +156,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Home refrigerator | Shelf browsing and atomic collection over the shared inspection screen. Gap: `Use` is unavailable. | `HomeRefrigerator{Plan,WorldBuilder,View,Interaction}`, `WorldItemInspection{Timeline,Presenter}` | Partial |
 | Player shadows | Real mesh shadows and an analytic contact patch follow hero/contextual visibility ownership. | `Player3DCharacterPresentation`, `Player3DRagdollController` | Current |
 | Interaction/UI | Common action bindings and explicit input priorities serve shared prompts and menus; look/debug input stays local. | `PlayerInteractor`, `InteractionPromptView` | Current |
+| Spoken text | All speech, including E, uses shared speaker bubbles; silent bottom UI. Mandatory speech standard in `ai/`. | `SpeechDelivery`, `NpcSpeechBubbleView`, `InteractionPromptView` | Current |
 | F9 debug controls | City/Bar/Road/Home share intoxication and day `1–7` controls. | `MinigameDebugWindow`, `HomeDebugCityMapShortcut` | Current |
 | Structured session diagnostics | Bounded NDJSON records correlated operations; optional performance reports are separate from the support log. | `Runtime/Diagnostics`, `MinigameDebugWindow` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |

@@ -290,13 +290,14 @@ namespace BarPromenade
                         float length = ShoreWorker.ClipLength(VillageResidentAction.Walk);
                         gait = length - Mathf.Repeat(gait, length);
                     }
-                    ShoreWorker.ApplyLocomotion(speed, false, gait);
+                    ShoreWorker.ApplyLocomotion(speed, false,
+                        port.WaitingForStoreAccess ? (float)LifeElapsedSeconds : gait);
                     // The planted spine carries the effort, not elongated arms.
                     // The original gait still owns every foot and the cart's
                     // measured operator dock still owns the complete root path.
                     float effort = Mathf.Clamp01(speed / 1.8f);
                     ApplyPlantedTorso(4, Mathf.Lerp(4f, port.IsTrolleyReversing ? 2f : 8f, effort),
-                        Mathf.Lerp(.7f, .3f, effort), port.ElapsedSeconds);
+                        Mathf.Lerp(.7f, .3f, effort), LifeElapsedSeconds);
                     Vector3 attention = moving ? trolleyHandle.position + port.Trolley.forward * 2f :
                         port.Hooks[Mathf.Max(0, LastSnapshot.ActiveCraneIndex)].position;
                     ApplyTaskLook(ShoreWorker, attention, .75f);

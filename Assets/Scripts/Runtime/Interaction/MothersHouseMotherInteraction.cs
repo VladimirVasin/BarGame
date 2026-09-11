@@ -23,8 +23,8 @@ namespace BarPromenade
         IInteractable
     {
         public const string TalkPromptKey = "interaction.talk_mother";
-        public const float ResponseDurationSeconds = 3.4f;
-        public const float ReadingTailSeconds = 2.0f;
+        public const float ResponseDurationSeconds = 3.9f;
+        public const float ReadingTailSeconds = SpeechDelivery.ReadingTailSeconds;
 
         /// <summary>How far in front of her the trigger stands, and how
         /// big it is. Measured off her seat rather than off the room, so
@@ -66,10 +66,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The bubble she already talks to herself through. Answering
-        /// `E` goes out of the same mouth rather than into the bottom
-        /// prompt panel: she has an overhead voice now, and a second
-        /// channel for the same woman reads as two people.
+        /// Ambient speech and an answer to `E` share her overhead
+        /// bubble and finish one line before starting the next.
         /// </summary>
         public void AttachSpeech(
             MothersHouseMotherSpeechController controller)
@@ -84,6 +82,7 @@ namespace BarPromenade
                    interactor != null &&
                    interactor.isActiveAndEnabled &&
                    interactor.InputEnabled &&
+                   (speech != null ? speech.CanSpeak : speaker.IsValid && speaker.Anchor != null) &&
                    !SceneTransitionService.IsTransitioning;
         }
 
@@ -101,9 +100,8 @@ namespace BarPromenade
                 return;
             }
 
-            // No bubble in this room yet, or she has no valid anchor:
-            // the bottom panel still carries what she said rather than
-            // the talk swallowing itself.
+            // A scene without her ambient controller still uses the
+            // shared overhead speech view and her actual head anchor.
             interactor.ShowSpokenFeedback(
                 lineKey,
                 ResolveResponseSeconds(lineKey),

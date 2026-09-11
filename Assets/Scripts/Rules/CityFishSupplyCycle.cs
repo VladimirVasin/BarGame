@@ -52,11 +52,15 @@ namespace BarPromenade
     {
         internal CityFishSupplySnapshot(long batch, CityFishSupplyStage stage,
             double seconds, double duration, double portSeconds, double handlingSeconds,
-            bool waitingForPortAccess, CityCanneryProductionSnapshot production)
+            bool waitingForPortAccess, bool waitingForDockWorker, bool dockWorkerWaitingForPortAccess,
+            CityCanneryProductionSnapshot production)
         {
             Batch = batch; Stage = stage; Seconds = seconds; Duration = duration;
             PortSeconds = portSeconds; this.handlingSeconds = handlingSeconds;
-            WaitingForPortAccess = waitingForPortAccess; Production = production;
+            WaitingForPortAccess = waitingForPortAccess;
+            WaitingForDockWorker = waitingForDockWorker;
+            DockWorkerWaitingForPortAccess = dockWorkerWaitingForPortAccess;
+            Production = production;
         }
         private readonly double handlingSeconds;
         public long Batch { get; }
@@ -74,9 +78,11 @@ namespace BarPromenade
         public float TransferProgress => Handled == CityFishSupplyCycle.HandlingUnits
             ? 1f : IsTransfer ? (float)(handlingSeconds / CityFishSupplyCycle.TransferUnitDuration - Handled)
                 : HandlingProgress * CityFishSupplyCycle.HandlingUnits - Handled;
-        /// <summary>The driver waits with the local trolley while the dock worker
-        /// owns the store passage. Port working time continues through this wait.</summary>
+        /// <summary>The driver is fetching his cart or waiting for stock or
+        /// a previously arrived docker to release the store passage.</summary>
         public bool WaitingForPortAccess { get; }
+        public bool WaitingForDockWorker { get; }
+        public bool DockWorkerWaitingForPortAccess { get; }
         public bool IsDriving => Stage == CityFishSupplyStage.PortToFactory ||
             Stage == CityFishSupplyStage.FactoryReverse || Stage == CityFishSupplyStage.FactoryToShop ||
             Stage == CityFishSupplyStage.ShopToFactory || Stage == CityFishSupplyStage.FactoryToPort ||
@@ -122,11 +128,15 @@ namespace BarPromenade
         public const double TrolleyReadyDuration = 12.8d;
         public const double TrolleyQueueArrivalDuration = TrolleyReadyDuration + 4d;
         public const double TransferUnitDuration = 76d;
+        // The driver clears the aisle onto the lift at .35, then leaves a
+        // short physical clearance before the loaded dock cart may enter.
+        public const double DriverStoreClearDuration = TransferUnitDuration * .35d + 2d;
         private const double TransferDuration = TransferEdgeDuration * 2 + HandlingUnits * TransferUnitDuration;
         private static readonly double[] productionDurations = { 0d, 36d, 30d, 24d, 30d, 48d, 30d, 42d };
         private readonly double[] durations;
         private readonly ProductionLot[] productionLots;
         private readonly double[] portLoadStarts;
+        private readonly double[] portDoorWaits = new double[HandlingUnits];
         private readonly double unloadStart;
         private readonly double dockWorkerStoreExitAtSeconds;
         private readonly double trolleyStoreEntryAtSeconds;
@@ -136,8 +146,8 @@ namespace BarPromenade
         public double Duration { get; }
         public double RepeatingDuration => repeatingCycle?.Duration ?? Duration;
         public bool HasInitialArrival => repeatingCycle != null;
-        public double LastPortCrateStoredAtSeconds => FirstPortCrateStoredAtSeconds +
-            (HandlingUnits - 1) * CityPortCycle.CargoDurationSeconds;
+        public double LastPortCrateStoredAtSeconds => PortEventTime(CityPortCycle.UnloadStartSeconds +
+            (HandlingUnits - 1) * CityPortCycle.CargoDurationSeconds + CityPortCycle.StoredAtSeconds);
         public int ProductionLotCount => productionLots.Length;
 
         public CityFishSupplyCycle(double portToFactory, double factoryReverse,
@@ -177,7 +187,7 @@ namespace BarPromenade
             for (int i = 1; i < HandlingUnits; i++)
             {
                 nextFetch = NextPortFetchStart(Math.Max(nextFetch,
-                    FirstPortCrateStoredAtSeconds + i * CityPortCycle.CargoDurationSeconds));
+                    PortEventTime(FirstPortCrateStoredAtSeconds + i * CityPortCycle.CargoDurationSeconds)));
                 portLoadStarts[i] = nextFetch - portLoadStart;
                 nextFetch += TransferUnitDuration;
             }
@@ -221,19 +231,61 @@ namespace BarPromenade
 
         private double NextPortFetchStart(double earliest)
         {
-            // The cranes and docker keep their full uninterrupted schedule.
-            // Release the passage when the worker crosses the exit, not when
-            // he has walked all the way back to the crane. The next trolley's
-            // actual entry still bounds a complete, safe driver round trip.
+            // Claim only on arrival: a future loaded cart does not reserve
+            // the warehouse while the docker is still waiting at a crane.
             for (int i = 0; i < HandlingUnits; i++)
             {
                 double boundary = CityPortCycle.UnloadStartSeconds + i * CityPortCycle.CargoDurationSeconds;
-                double start = Math.Max(earliest,boundary+dockWorkerStoreExitAtSeconds);
-                if(i==HandlingUnits-1) return start;
-                double clearBy=boundary+CityPortCycle.CargoDurationSeconds+trolleyStoreEntryAtSeconds-2d;
-                if (start + TransferUnitDuration * .35d <= clearBy) return start;
+                double entry = PortEventTime(boundary + trolleyStoreEntryAtSeconds);
+                double exit = PortEventTime(boundary + dockWorkerStoreExitAtSeconds);
+                if (earliest >= exit) continue;
+                if (earliest >= entry)
+                {
+                    earliest = exit;
+                    continue;
+                }
+                // The driver arrived first. Let him complete this passage;
+                // the docker holds at the entrance only if he catches up.
+                portDoorWaits[i] += Math.Max(0d, earliest + DriverStoreClearDuration - entry);
+                break;
             }
             return earliest;
+        }
+
+        /// <summary>Session time of an authored event within a port visit,
+        /// including doorway waits. At a held entrance this is its release.</summary>
+        public double PortEventTime(double portSeconds, long batch = 0)
+        {
+            if (double.IsNaN(portSeconds) || double.IsInfinity(portSeconds) || portSeconds < 0d ||
+                portSeconds > CityPortCycle.CycleDurationSeconds)
+                throw new ArgumentOutOfRangeException(nameof(portSeconds));
+            if (batch > 0 && repeatingCycle != null)
+                return BatchStart(batch) + repeatingCycle.PortEventTime(portSeconds);
+            double result = BatchStart(batch) + portSeconds;
+            for (int i = 0; i < HandlingUnits; i++)
+                if (portSeconds >= CityPortCycle.UnloadStartSeconds +
+                    i * CityPortCycle.CargoDurationSeconds + trolleyStoreEntryAtSeconds)
+                    result += portDoorWaits[i];
+            return result;
+        }
+
+        private double SamplePortTime(double local, out bool waiting)
+        {
+            double delay = 0d;
+            waiting = false;
+            for (int i = 0; i < HandlingUnits; i++)
+            {
+                double arrival = CityPortCycle.UnloadStartSeconds + i * CityPortCycle.CargoDurationSeconds +
+                    trolleyStoreEntryAtSeconds + delay;
+                if (local < arrival) break;
+                if (local < arrival + portDoorWaits[i])
+                {
+                    waiting = true;
+                    return arrival - delay;
+                }
+                delay += portDoorWaits[i];
+            }
+            return Math.Min(local - delay, CityPortCycle.CycleDurationSeconds - .001d);
         }
 
         /// <summary>Absolute session working time when an
@@ -345,11 +397,15 @@ namespace BarPromenade
                 }
             }
             double portSeconds = batch * CityPortCycle.CycleDurationSeconds +
-                Math.Min(local, CityPortCycle.CycleDurationSeconds - .001d);
+                SamplePortTime(local, out bool dockWaiting);
+            CityPortCycleSnapshot dock = CityPortCycle.Sample(portSeconds);
+            bool waitingForDockWorker = waiting && dock.Stage == CityPortCycleStage.Unload &&
+                dock.SecondsInCargo >= trolleyStoreEntryAtSeconds &&
+                dock.SecondsInCargo < dockWorkerStoreExitAtSeconds && !dockWaiting;
             double handoff = Math.Round(handling / TransferUnitDuration) * TransferUnitDuration;
             if (Math.Abs(handling - handoff) <= tolerance) handling = handoff;
             return new CityFishSupplySnapshot(batch,(CityFishSupplyStage)stage,stageSeconds,durations[stage],
-                portSeconds,handling,waiting,
+                portSeconds,handling,waiting,waitingForDockWorker,dockWaiting,
                 SampleProduction(local - unloadStart, tolerance));
         }
 

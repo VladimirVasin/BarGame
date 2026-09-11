@@ -125,14 +125,18 @@ namespace BarPromenade.Tests.PlayMode
             DeferCanneryContract(failures, "simultaneous port loading", () => ValidateCanneryConcurrentPortLoading(cannery, port));
             DeferCanneryContract(failures, "warehouse access clears at the actual docker exit", () =>
                 ValidatePortWarehouseExitRelease(cannery, port, crew));
-            DeferCanneryContract(failures, "cranes never wait for a driver pickup", () =>
+            DeferCanneryContract(failures, "doorway waits never interrupt crane handling", () =>
             {
                 for (int batch = 0; batch < 2; batch++)
                     for (double t = 0d; t < CityPortCycle.CycleDurationSeconds; t += 2d)
                     {
                         CityFishSupplySnapshot state = cannery.Cycle.Sample(cannery.Cycle.BatchStart(batch) + t);
-                        Assert.That(state.PortSeconds - batch * CityPortCycle.CycleDurationSeconds,
-                            Is.EqualTo(t).Within(.001d), "The dock clock must not hold a crane for truck custody, batch " + batch);
+                        CityPortCycleSnapshot dock = CityPortCycle.Sample(state.PortSeconds);
+                        if (state.DockWorkerWaitingForPortAccess)
+                        {
+                            Assert.That(dock.CargoStage, Is.EqualTo(CityPortCargoStage.Trolley));
+                            Assert.That(dock.SecondsInCargo, Is.EqualTo(port.TrolleyStoreEntryAtSeconds).Within(.001d));
+                        }
                     }
             });
             DeferCanneryContract(failures, "driver only addresses docker", CityPortDriverConversation_OnlyDockerAndObservedDeliveryWindows);

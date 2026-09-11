@@ -709,14 +709,14 @@
     {
       "name": "AccessRoad",
       "bounds_min": [
-        1.0,
-        1.252,
+        27.0,
+        1.26994,
         -46.0
       ],
       "bounds_max": [
-        61.0,
+        59.5,
         2.96944,
-        -7.0
+        -22.5
       ],
       "anchors": [
         {
@@ -744,14 +744,6 @@
           ]
         },
         {
-          "name": "ANCHOR_AccessPedestrianCrossing",
-          "position": [
-            46.5,
-            2.28005,
-            -31.5
-          ]
-        },
-        {
           "name": "ANCHOR_AccessStreet",
           "position": [
             54.0,
@@ -765,14 +757,6 @@
             7.0,
             1.5,
             -14.0
-          ]
-        },
-        {
-          "name": "ANCHOR_PublicCrossing",
-          "position": [
-            46.5,
-            2.28005,
-            -31.5
           ]
         },
         {
@@ -790,26 +774,10 @@
             2.67,
             -46.0
           ]
-        },
-        {
-          "name": "PublicCoastWalk",
-          "position": [
-            0.0,
-            0.0,
-            0.0
-          ]
-        },
-        {
-          "name": "PublicCrossingMarks",
-          "position": [
-            0.0,
-            0.0,
-            0.0
-          ]
         }
       ],
-      "triangles": 7232,
-      "geometry_signature": "3642ff0d7bbf15a3017e1daf0bab9563cae1f2e12c2d350954e5d8deb2c2e5b2"
+      "triangles": 6912,
+      "geometry_signature": "40ea20785c58ce8121d93fd6871a0d5fc9e466585e0d2ab3dc47fab69554f432"
     }
   ],
   "cargo_attachment_height": 1.7,
@@ -846,7 +814,7 @@
     202.0
   ],
   "asphalt_texture": "Textures/CityRoadAsphaltAlbedo",
-  "access_layout_sha256": "4012164daf9c1ac1a2b53f0dfb42d26d8e20d6e51dc0c1857765ab2268ca40a9",
+  "access_layout_sha256": "d660acc59d5f01459efa684bf3a7dbeb98ee090e50acc14f60ef8da9730359f4",
   "hatch_centres": [
     [
       0,

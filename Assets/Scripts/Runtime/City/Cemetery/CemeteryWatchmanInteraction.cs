@@ -52,12 +52,12 @@ namespace BarPromenade
         /// to read it in. <see cref="ResolveResponseSeconds"/> gives a
         /// long line the room it needs and a short one this.
         /// </summary>
-        public const float ResponseDurationSeconds = 3.0f;
+        public const float ResponseDurationSeconds = 3.5f;
 
         /// <summary>How long a fully typed line is left standing.
         /// Matches the two and a half seconds a forty-eight character
         /// line keeps in the overhead bubble.</summary>
-        public const float ReadingTailSeconds = 2.0f;
+        public const float ReadingTailSeconds = SpeechDelivery.ReadingTailSeconds;
 
         private Vector3 standPosition;
         private NpcSpeaker speaker = NpcSpeaker.None;
@@ -91,10 +91,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Who he is when he opens his mouth: which head the sound
-        /// comes from, what tone he writes in, and how far his answer
-        /// carries. Without it he still answers — whole, instantly and
-        /// silently, exactly as he did before.
+        /// His actual head anchors the overhead answer and positional
+        /// voice; the declared tone and earshot belong to this speaker.
         /// </summary>
         public void AttachSpeaker(in NpcSpeaker value)
         {

@@ -1556,12 +1556,6 @@ namespace BarPromenade
                         projection.WorldToScreen(port.World(port.RoadSamples[i].center)),
                         Mathf.Max(2f,roadWidth*port.CarriagewayWidth/controller.Layout.RoadWidth),
                         GetPathColor(CityPathKind.Street));
-                for (int i=1;i<port.PublicPath.Count;i++)
-                    DrawLine(projection.WorldToScreen(port.World(port.PublicPath[i-1])),
-                        projection.WorldToScreen(port.World(port.PublicPath[i])),1f,GetPathColor(CityPathKind.ParkPath));
-                for (int i=1;i<port.PublicStreetSpur.Count;i++)
-                    DrawLine(projection.WorldToScreen(port.World(port.PublicStreetSpur[i-1])),
-                        projection.WorldToScreen(port.World(port.PublicStreetSpur[i])),1f,GetPathColor(CityPathKind.ParkPath));
             }
         }
 

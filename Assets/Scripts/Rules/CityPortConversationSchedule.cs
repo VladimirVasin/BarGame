@@ -217,8 +217,8 @@ namespace BarPromenade
     /// </summary>
     public sealed class CityPortConversationSchedule
     {
-        public const double LineSeconds = 4.3d;
-        public const double FarewellLineSeconds = 3d;
+        public const double LineSeconds = 4.8d;
+        public const double FarewellLineSeconds = 3.5d;
         public const double DepartureWindowSeconds = 22d;
         public const double MaximumContinuousStepSeconds = 2d;
         public const double GreetingUnloadWindowSeconds = 54d;
@@ -226,7 +226,8 @@ namespace BarPromenade
         // approaching ship. Greet about three seconds earlier, within nine
         // metres of the berth, while keeping distant approaches silent.
         public const float GreetingApproachProgress = .86f;
-        public const double DriverLineSeconds = 3d;
+        public const double DriverLineSeconds = 3.5d;
+        public const double AccessWaitLineSeconds = 3d;
         public const double ForemanMinimumIntervalSeconds = 60d;
         public const double ForemanMaximumIntervalSeconds = 100d;
         private static readonly int kindCount = Enum.GetValues(typeof(CityPortConversationKind)).Length;

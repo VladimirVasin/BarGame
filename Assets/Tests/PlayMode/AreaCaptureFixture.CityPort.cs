@@ -174,7 +174,7 @@ namespace BarPromenade.Tests.PlayMode
                 CityPortCycle.SecureDurationSeconds + CityPortCycle.UnmoorDurationSeconds;
             yield return CapturePort(camera, city, port, crew, depart + 30d, "port-09-departure",
                 new Vector3(18.5f, 3.22f, -5f), new Vector3(24f, 3f, 12f));
-            yield return CapturePort(camera, city, port, crew, unload + 16d, "port-10-public-back-path",
+            yield return CapturePort(camera, city, port, crew, unload + 16d, "port-10-unpaved-backshore",
                 new Vector3(22f, 4.22f, -37f), new Vector3(3f, 3.2f, -37f));
             yield return CapturePort(camera, city, port, crew, unload + 16d, "port-11-west-ramp",
                 new Vector3(-29f, 2.5f, -20.5f), new Vector3(-23f, 2f, -15f));
@@ -184,7 +184,7 @@ namespace BarPromenade.Tests.PlayMode
                 new Vector3(48f, 4.5f, -46f), new Vector3(44f, 2f, -30f));
             yield return CapturePort(camera, city, port, crew, unload + 16d, "port-16-truck-yard-loading-bay",
                 new Vector3(25f, 3.22f, -18f), new Vector3(5f, 2.7f, -17f));
-            yield return CapturePort(camera, city, port, crew, unload + 16d, "port-17-public-road-crossing",
+            yield return CapturePort(camera, city, port, crew, unload + 16d, "port-17-shared-access-road",
                 new Vector3(42f, 4.2f, -36.5f), new Vector3(49.5f, 2.5f, -27.5f));
             yield return CapturePort(camera, city, port, crew, unload + 25.5d, "port-18-crane-operator-contact",
                 new Vector3(-.4f, 3.22f, -5.1f), new Vector3(-2.1f, 2.9f, -2.7f));
@@ -204,7 +204,7 @@ namespace BarPromenade.Tests.PlayMode
             foreach (AudioSource source in sound.GetComponentsInChildren<AudioSource>(true))
                 Assert.That(source.isPlaying, Is.False, "Port disable releases its physical voices.");
             Assert.That(crew.gameObject.activeInHierarchy, Is.False);
-            Debug.Log("CITY PORT ACCEPTANCE OK: imported metres, connected graded truck access and forward street turns, physical public detour, berth and departure clearance, finite cage custody, cold-store concealment, session reconstruction, pause, independent presence, spatial audio and day/night public frames.");
+            Debug.Log("CITY PORT ACCEPTANCE OK: imported metres, shared graded access and forward truck turns, unpaved former footpath, berth and departure clearance, finite cage custody, cold-store concealment, session reconstruction, pause, independent presence, spatial audio and day/night public frames.");
         }
 
         private static void ValidatePortTimeline()
@@ -245,7 +245,7 @@ namespace BarPromenade.Tests.PlayMode
                     Debug.Log("PORT COAST ACCESS local=" + (access.Center - port.Plan.Origin) +
                         " outward=" + access.OutwardNormal);
             foreach (Vector3 local in new[] { new Vector3(0f, 1.5f, -20.5f),
-                new Vector3(-30f, .32f, -20.5f), new Vector3(25f, 1.5f, -18f) })
+                new Vector3(-30f, .32f, -20.5f), new Vector3(21f, 1.5f, -18f) })
             {
                 Vector3 point = port.Plan.World(local);
                 bool found = CityTerrainSurfacePlan.TrySampleGroundTop(city.Layout,
@@ -258,14 +258,14 @@ namespace BarPromenade.Tests.PlayMode
                 Is.False, "The water beside a narrow ramp must not become an invisible extension of the quay.");
             foreach (Vector3 local in new[] { new Vector3(-19.5f, 1.5f, -6f),
                 new Vector3(0f, 1.5f, -20.5f), new Vector3(-23f, 1.5f, 20f),
-                new Vector3(-28f, .91f, -20.5f), new Vector3(25f, 1.5f, -18f) })
+                new Vector3(-28f, .91f, -20.5f), new Vector3(21f, 1.5f, -18f) })
             {
                 Vector3 expected = port.Plan.World(local);
                 Assert.That(city.World.WalkableArea.Contains(expected, .3f), Is.True);
                 Assert.That(Physics.Raycast(expected + Vector3.up * 6f, Vector3.down,
                     out RaycastHit hit, 10f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore), Is.True);
                 Assert.That(hit.collider.transform.IsChildOf(port.transform), Is.True,
-                    "The authored public path/ramp must be the actual exposed ground: " + local);
+                    "The authored quay, yard and ramp must be the actual exposed ground: " + local);
                 Assert.That(hit.point.y, Is.EqualTo(expected.y).Within(.08f));
             }
         }
@@ -316,18 +316,7 @@ namespace BarPromenade.Tests.PlayMode
                 for(float x=yard.xMin+1;x<yard.xMax;x+=3f)
                 for(float z=yard.yMin+1;z<yard.yMax;z+=3f)
                     AssertPortPavedPoint(port,city,new Vector3(x-port.Plan.Origin.x,1.5f,z-port.Plan.Origin.z),"yard");
-            foreach(IReadOnlyList<Vector3> path in new[]{access.PublicPath,access.PublicStreetSpur})
-                for(int i=1;i<path.Count;i++)
-                {
-                    int count=Mathf.Max(1,Mathf.CeilToInt(Vector3.Distance(path[i-1],path[i])));
-                    for(int j=0;j<=count;j++)
-                    {
-                        Vector3 local=Vector3.Lerp(path[i-1],path[i],j/(float)count);
-                        AssertPortPavedPoint(port,city,local,"public route "+i);
-                        Assert.That(city.World.WalkableArea.Contains(port.Plan.World(local),.3f),Is.True,
-                            "The public detour must stay connected through the real ground mask.");
-                    }
-                }
+            ValidateRemovedPortFootpath(port, city);
             for(int leg=0;leg<3;leg++)
             {
                 var kind=(CityPortTruckLeg)leg;
@@ -388,16 +377,7 @@ namespace BarPromenade.Tests.PlayMode
             CityPortTruckPose departure=access.SampleTruck(CityPortTruckLeg.Leave,1);
             Assert.That(Vector3.Dot(arrival.Rotation*Vector3.forward,Vector3.right),Is.GreaterThan(.999f));
             Assert.That(Vector3.Dot(departure.Rotation*Vector3.forward,Vector3.left),Is.GreaterThan(.999f));
-            CityPedestrianDirector pedestrians=Object.FindAnyObjectByType<CityPedestrianDirector>();
-            Assert.That(pedestrians,Is.Not.Null);
-            bool connectedPublicSpur=false;
-            foreach(CityPedestrianNode node in pedestrians.Plan.Nodes)
-                if(node.Id=="coast:port-public:1")
-                {
-                    connectedPublicSpur=true;
-                    Assert.That(Vector3.Distance(node.Position,access.World(access.PublicStreetSpur[1])),Is.LessThan(.001f));
-                }
-            Assert.That(connectedPublicSpur,Is.True,"The existing coast population uses the new public street entrance.");
+            Assert.That(PortShoreEntryRoute(port).Count, Is.GreaterThan(1));
         }
 
         private static void AssertPortPavedPoint(CityPortController port,CityGameRoot city,Vector3 local,string label)

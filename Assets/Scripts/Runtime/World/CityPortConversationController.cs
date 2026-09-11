@@ -384,10 +384,10 @@ namespace BarPromenade
                     var actor = crew.GetWorker(role);
                     bubbles.DismissAll();
                     bubbles.DeclareSpeaker(actor, actor.Head, voices[role], NpcEarshotProfile.Shout);
-                    bubbles.LineDurationSeconds = 2.5f;
+                    bubbles.LineDurationSeconds = (float)CityPortConversationSchedule.AccessWaitLineSeconds;
                     bubbles.ShowAt(actor, LocalizationService.Get(AccessWaitLineKey), (float)now);
                     accessLineRole = role;
-                    accessLineUntil = now + 2.5d;
+                    accessLineUntil = now + CityPortConversationSchedule.AccessWaitLineSeconds;
                     hasVisibleLine = true;
                     LastLineKey = AccessWaitLineKey;
                     LastSpeakerRole = role;

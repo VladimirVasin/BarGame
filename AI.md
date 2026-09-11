@@ -40,6 +40,10 @@ repository evidence. This does not require running every test layer.
   is the requested deliverable or release gate; add a smoke only when requested
   or when packaged startup behavior is the changed contract.
 - Start from `ai/project-overview.md` and `ai/systems-map.md`.
+- **All speech and dialogue must follow**
+  [the mandatory speech standard](ai/speech-presentation-standard.md): every
+  spoken line, including `E` replies, uses the shared bubble above its speaker.
+  No feature may copy speech UI, typing, audio or lifetime ownership.
 - **Anything the player sees, hears, reads or does in the world is governed by
   two mandatory documents:** `ai/city-zones-art-bible.md` for form and
   `ai/city-story-bible.md` for meaning. Before adding a detail, find the

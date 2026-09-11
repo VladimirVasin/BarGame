@@ -779,6 +779,9 @@ The vertical slice contains:
 
 ### Streets, transport and sound
 
+- All speech, including `E`, uses shared bubbles above the speaker; bottom UI is
+  silent. `SpeechDelivery`: `24` chars/s, clicks `.13 s`, bubble `4.4 s`, tail `2.5 s`.
+  Pair/chess timing retains full lines;
 - one deterministic radius-safe sidewalk/crosswalk navigation graph with
   spawn anchors on long pavement segments. At most two low-poly walkers are
   active near the player: one randomized runtime event activates one slot at a
@@ -1255,11 +1258,11 @@ The vertical slice contains:
   quest; pause/distance owned, exit cancels.
   Solid caissons reach `20 m` seaward and `-3.4 m` below sea level.
   `CityPortAccessPlan`/`PortAccessLayout.json`: `6 m` road/regrade/L-yard,
-  `6.481 x 2.4 m` truck; joined ramp/yard masks, `2 m` mitered bypass with one
-  body-radius clearance. One crossing: hero diagonal, NPC straight/orthogonal
-  beach links. Cargo fences/coast rails yield to paving; boats avoid `3.4 m` basin.
-  Asphalt: city texture/`12 m` phase/wetness; seven crossing stripes use
-  `CityRoadMarkingAlbedo`. Store panels/guards, joists and wired guarded lamps
+  `6.481 x 2.4 m` truck; road/shoulders are the city approach, ramp/yard masks joined.
+  No bypass/spur/crossing in geometry, terrain, walk/map masks or fence openings.
+  Shore NPCs use natural sand east of the road opening.
+  Internal rear/side walks stay; boats avoid the `3.4 m` basin.
+  Asphalt: city texture/`12 m` phase/wetness. Store panels/guards, joists and wired guarded lamps
   surround the unchanged baffle/east stock. West-wall rack/bench,
   lids/inserts/empty tare/tools/gloves/squeegee have physical furniture bounds;
   flush drains/wheel rubs leave handling lanes clear. One two-fan evaporator
@@ -1284,7 +1287,10 @@ The vertical slice contains:
   a road suffix; `3 m/s` parks with first crate (`156 s`), later full factory trips.
   Two soft horns; reverse beeper/ajar door/look-back steering. Cranes never wait.
   Port cart pushes forward, short pullbacks use backward gait/clear apron turns.
-  Waits beside entrance: "Жду тебя, дружище" until docker clears the doorway.
+  Doorway arrival decides access: driver takes accepted stock if docker is outside;
+  crane filling reserves nothing. Docker first: driver waits for exit with
+  "Жду тебя, дружище". Driver first: later loaded trolley holds at the north threshold,
+  shifting port work only; idle/speech/waves continue. Pure event time restores custody.
   Port cart parks by canopy tare; north approach skirts it to rear handles.
   Carts return; east aisle clear. Signed gait elsewhere.
   Doors→unfold→lower; after cart return, reverse order.
@@ -2018,21 +2024,14 @@ The vertical slice contains:
   climbed and a grain of city, all measured from the tunnel mouth's own
   height and lit after dark with no Light at all. One mercury practical burns
   over the freight dock and the brink stays dark. The Ferryman answers on the
-  summit from a second repertoire that offers nothing, the road having
-  ended. While driving, a separate ten-line ordinary road pool uses the
-  standard overhead bubble and writing clicks without modal input ownership;
-  the driver turns his head towards the passenger during every line.
-  Its shuffle bag does not repeat until exhausted, including across area
-  loads; a refill cannot immediately repeat the last line. The first line
-  waits `12–18 s` of travel, later lines wait `30–45 s` after the previous
-  line finishes printing and its `2 s` reading hold, with at most five per
-  complete trip. Stopping and pause freeze delivery; fades and skip discard
-  the active line instead of carrying it onto the next leg or flushing a queue.
-  The passenger can still look around and operate the dashboard. A passive
-  glovebox pile contains `107` copies of the same authored octagonal brass
-  coin as the idle toss, combined in one mesh with the shared material and
-  no physics or pickup. The resource preserves the coin's `54 x 9 mm`
-  silhouette; its generator checks the closed compartment and bulb clearance.
+  summit from a second repertoire that offers nothing. While driving, ten
+  ordinary road lines use shared bubbles/clicks, turning his head to the passenger.
+  The shuffle persists across scenes, with no round/seam repeats. First line:
+  `12–18 s` of travel; later: `30–45 s` after typing plus the `2.5 s` reading hold,
+  at most five per trip. Stop/pause freeze delivery; fades/skip discard the line,
+  with no backlog. Passenger look/dashboard input remain available. The glovebox
+  combines `107` idle-toss octagonal brass coins (`54 x 9 mm`) in one shared-material
+  mesh, no physics/pickup; generation checks the closed compartment/bulb clearance.
   Opening the lid gives a short ownership remark; after `2 s` the driver
   leans and reaches with the nearer hand. Its palm meets the lid's underside;
   a low elbow and fingers following the forearm preserve the whole arm through

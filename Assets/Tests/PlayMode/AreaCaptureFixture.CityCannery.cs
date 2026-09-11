@@ -645,12 +645,12 @@ namespace BarPromenade.Tests.PlayMode
             {
                 for(int batch=0;batch<2;batch++)
                 {
-                double batchStart=cannery.Cycle.BatchStart(batch);
                 double start=cannery.Cycle.StageStart(CityFishSupplyStage.LoadFish,batch);
                 double end=start+cannery.Cycle.StageDuration(CityFishSupplyStage.LoadFish,batch);
                 double pickup=cannery.Cycle.TransferUnitStart(CityFishSupplyStage.LoadFish,0,batch)+
                     CityFishSupplyCycle.TransferUnitDuration*.18d;
-                double lastStored=batchStart+cannery.Cycle.LastPortCrateStoredAtSeconds;
+                double lastStored=cannery.Cycle.PortEventTime(CityFishSupplyCycle.FirstPortCrateStoredAtSeconds +
+                    (CityPortCycle.CargoCount - 1) * CityPortCycle.CargoDurationSeconds, batch);
                 if(batch==0) Assert.That(pickup,Is.LessThan(lastStored),
                     "The actual city route must allow the first loading pickup before the dock worker stores the last crate.");
                 // Check the three independent ship-to-store custody boundaries,
@@ -658,8 +658,8 @@ namespace BarPromenade.Tests.PlayMode
                 for(int unit=0;unit<CityPortCycle.CargoCount;unit++)
                 foreach(double edge in new[]{-.001d,0d,.001d})
                 {
-                    cannery.ApplyAt((unit == CityPortCycle.CargoCount - 1 ? lastStored :
-                        batchStart + CityFishSupplyCycle.FirstPortCrateStoredAtSeconds + unit * CityPortCycle.CargoDurationSeconds) + edge);
+                    cannery.ApplyAt(cannery.Cycle.PortEventTime(CityFishSupplyCycle.FirstPortCrateStoredAtSeconds +
+                        unit * CityPortCycle.CargoDurationSeconds, batch) + edge);
                     ValidateCanneryPortCargoVisibility(cannery,port);
                 }
                 for(double seconds=start;seconds<end;seconds+=.5d)

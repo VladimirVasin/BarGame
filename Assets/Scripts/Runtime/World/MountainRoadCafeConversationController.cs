@@ -196,7 +196,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// True only when a complete turn-in and four-second line fit after
+        /// True only when a complete turn-in and the configured line fit after
         /// the cigarette plume and before the next lift begins.
         /// </summary>
         public static bool CanBeginWomanLine(

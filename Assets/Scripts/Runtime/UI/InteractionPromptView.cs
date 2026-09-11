@@ -21,15 +21,15 @@ namespace BarPromenade
         private GUIStyle buttonStyle;
         private GUIStyle labelStyle;
 
-        // The typing and the keystroke, shared with the overhead
-        // bubble. Narration and the live prompt hold an Instant
-        // delivery, which is whole from the first frame and silent —
-        // a description of what the hero is looking at is not somebody
-        // talking, and neither is a button telling him what E does.
-        private SpeechDelivery delivery = SpeechDelivery.Instant(string.Empty);
+        // Spoken feedback keeps this facade's key and input lifecycle, but
+        // its only presentation and voice live in the ordinary head bubble.
+        private NpcSpeechBubbleView spokenBubbles;
+        private bool spokenFeedback;
+        private bool speechClockPaused;
+        private float speechClock;
+        private float lastSpeechTime;
         private NpcSpeaker speaker = NpcSpeaker.None;
         private Transform listener;
-        private int voiceLease = -1;
 
         // Reused for text measurement: the prompt renders during
         // ordinary gameplay, and a fresh GUIContent per IMGUI event is
@@ -46,18 +46,18 @@ namespace BarPromenade
         public Rect LastRenderedPanelRect { get; private set; }
         public Rect LastRenderedTextRect { get; private set; }
 
-        /// <summary>What was actually drawn — the typed part of a
-        /// spoken line, the whole of anything else. <see
-        /// cref="LastRenderedText"/> stays the WHOLE line, because that
-        /// is what the panel is framed for.</summary>
+        /// <summary>The bottom panel is always whole and silent. Spoken
+        /// feedback is drawn only by <see cref="SpokenBubbles"/>.</summary>
         public string LastRenderedRevealedText { get; private set; } =
             string.Empty;
 
         /// <summary>True while the line on screen is one a character is
         /// saying, rather than a description or a prompt.</summary>
         public bool IsSpeaking =>
-            !delivery.IsSilent &&
+            spokenFeedback &&
             IsFeedbackVisibleAt(Time.unscaledTime);
+
+        public NpcSpeechBubbleView SpokenBubbles => spokenBubbles;
 
         /// <summary>The hero, so a line can be dropped when he walks
         /// away from the man saying it. Without one nothing is ever
@@ -65,6 +65,7 @@ namespace BarPromenade
         public void SetListener(Transform hero)
         {
             listener = hero;
+            spokenBubbles?.SetListener(hero);
         }
 
         public void SetPrompt(
@@ -130,15 +131,14 @@ namespace BarPromenade
                 durationSeconds,
                 unscaledTime,
                 NpcSpeaker.None,
-                arguments);
+                arguments,
+                false);
         }
 
         /// <summary>
-        /// A line a character actually says to the hero. It types out
-        /// and ticks in his own tone, where narration on this same
-        /// panel stays whole and silent — the difference is not how
-        /// important the line is, it is whether somebody is speaking
-        /// it.
+        /// A line a character says to the hero, typed and sounded by the
+        /// same head bubble as ambient speech. The bottom panel never
+        /// repeats it, and a missing speaker cannot become silent narration.
         /// </summary>
         public bool ShowSpokenFeedback(
             string key,
@@ -150,7 +150,8 @@ namespace BarPromenade
                 durationSeconds,
                 Time.unscaledTime,
                 source,
-                null);
+                null,
+                true);
         }
 
         public bool ShowFormattedSpokenFeedback(
@@ -164,7 +165,8 @@ namespace BarPromenade
                 durationSeconds,
                 Time.unscaledTime,
                 source,
-                arguments);
+                arguments,
+                true);
         }
 
         public bool ShowSpokenFeedbackAt(
@@ -179,7 +181,8 @@ namespace BarPromenade
                 durationSeconds,
                 unscaledTime,
                 source,
-                arguments);
+                arguments,
+                true);
         }
 
         private bool ShowFeedbackInternal(
@@ -187,7 +190,8 @@ namespace BarPromenade
             float durationSeconds,
             float unscaledTime,
             in NpcSpeaker source,
-            object[] arguments)
+            object[] arguments,
+            bool spoken)
         {
             if (string.IsNullOrWhiteSpace(key) ||
                 durationSeconds <= 0f ||
@@ -199,14 +203,45 @@ namespace BarPromenade
                 return false;
             }
 
+            if (spoken && (!isActiveAndEnabled || !source.IsValid || source.Anchor == null ||
+                           !source.Anchor.gameObject.activeInHierarchy))
+            {
+                return false;
+            }
+            if (spokenFeedback)
+            {
+                AdvanceTo(unscaledTime);
+                if (spoken && IsFeedbackVisibleAt(unscaledTime)) return false;
+            }
+
+            string trimmedKey = key.Trim();
+            string composed = LocalizationService.Get(trimmedKey);
+            if (arguments != null && arguments.Length > 0)
+                composed = string.Format(composed, arguments);
+            if (spoken)
+                durationSeconds = Mathf.Max(durationSeconds,
+                    SpeechDelivery.ResolveSpokenDuration(composed, SpeechDelivery.ReadingTailSeconds));
             float expiresAt = unscaledTime + durationSeconds;
             if (float.IsInfinity(expiresAt))
             {
                 return false;
             }
 
-            ReleaseVoice();
-            feedbackKey = key.Trim();
+            if (spoken)
+            {
+                EnsureSpokenBubbles();
+                if (!spokenBubbles.DeclareSpeaker(source)) return false;
+                if (!spokenBubbles.ShowAt(source.Owner, composed, unscaledTime, durationSeconds))
+                {
+                    spokenBubbles.WithdrawSpeaker(source.Owner);
+                    return false;
+                }
+            }
+            else
+            {
+                ClearFeedback();
+            }
+            feedbackKey = trimmedKey;
             feedbackArguments =
                 arguments != null && arguments.Length > 0
                     ? arguments
@@ -214,22 +249,26 @@ namespace BarPromenade
             feedbackStartedAt = unscaledTime;
             feedbackExpiresAt = expiresAt;
             speaker = source;
-            string composed = ComposeFeedbackText();
-            delivery = source.IsValid
-                ? SpeechDelivery.Spoken(composed, unscaledTime)
-                : SpeechDelivery.Instant(composed);
+            spokenFeedback = spoken;
+            speechClock = lastSpeechTime = unscaledTime;
+            speechClockPaused = false;
             return true;
         }
 
         public void ClearFeedback()
         {
-            ReleaseVoice();
+            // This child has only the interaction's one line. Clear it even
+            // when Unity has already destroyed the owner or head transform.
+            spokenBubbles?.DismissAll();
+            if (spokenBubbles != null && speaker.Owner != null)
+                spokenBubbles.WithdrawSpeaker(speaker.Owner);
             feedbackKey = string.Empty;
             feedbackArguments = null;
             feedbackStartedAt = 0f;
             feedbackExpiresAt = 0f;
             speaker = NpcSpeaker.None;
-            delivery = SpeechDelivery.Instant(string.Empty);
+            spokenFeedback = speechClockPaused = false;
+            speechClock = lastSpeechTime = 0f;
         }
 
         /// <summary>
@@ -253,24 +292,18 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// What is actually on screen at that moment. For a spoken line
-        /// that is the part typed so far; for everything else it is the
-        /// whole of <see cref="GetDisplayedTextAt"/>.
-        ///
-        /// The panel is still MEASURED from the whole line, which is
-        /// what keeps a frame from growing a row taller halfway through
-        /// a word. The bubble over a speaker's head has always done
-        /// this; until now the prompt panel never had to.
+        /// Compatibility observation of the active feedback. Spoken text
+        /// comes from the bubble's delivery; the bottom panel never draws it.
         /// </summary>
         public string GetRevealedTextAt(float unscaledTime)
         {
             if (!IsFeedbackVisibleAt(unscaledTime) ||
-                delivery.IsSilent)
+                !spokenFeedback)
             {
                 return GetDisplayedTextAt(unscaledTime);
             }
 
-            return delivery.RevealedText;
+            return spokenBubbles.RevealedTextOf(speaker.Owner);
         }
 
         public string GetPromptKeyAt(float unscaledTime)
@@ -278,6 +311,12 @@ namespace BarPromenade
             return IsFeedbackVisibleAt(unscaledTime)
                 ? feedbackKey
                 : promptKey;
+        }
+
+        public string GetBottomPromptKeyAt(float unscaledTime)
+        {
+            return spokenFeedback && IsFeedbackVisibleAt(unscaledTime)
+                ? string.Empty : GetPromptKeyAt(unscaledTime);
         }
 
         public bool IsClickableAt(float unscaledTime)
@@ -289,6 +328,14 @@ namespace BarPromenade
 
         public bool IsFeedbackVisibleAt(float unscaledTime)
         {
+            if (spokenFeedback)
+            {
+                if (!speaker.IsValid || speaker.Anchor == null ||
+                    !speaker.Anchor.gameObject.activeInHierarchy || spokenBubbles == null ||
+                    !spokenBubbles.IsShowing(speaker.Owner)) return false;
+                unscaledTime = speechClock + (speechClockPaused || IsSpeechSuspended ? 0f :
+                    Mathf.Max(0f, unscaledTime - lastSpeechTime));
+            }
             return !string.IsNullOrEmpty(feedbackKey) &&
                    unscaledTime >= feedbackStartedAt &&
                    unscaledTime < feedbackExpiresAt;
@@ -302,17 +349,16 @@ namespace BarPromenade
                    action();
         }
 
-        private string ComposeFeedbackText()
+        private void EnsureSpokenBubbles()
         {
-            if (string.IsNullOrEmpty(feedbackKey))
+            if (spokenBubbles == null)
             {
-                return string.Empty;
+                var host = new GameObject("Interaction Speech");
+                host.transform.SetParent(transform, false);
+                spokenBubbles = host.AddComponent<NpcSpeechBubbleView>();
+                spokenBubbles.UseManualClock = true;
             }
-
-            string text = LocalizationService.Get(feedbackKey);
-            return feedbackArguments == null
-                ? text
-                : string.Format(text, feedbackArguments);
+            spokenBubbles.Initialize(Camera.main, listener);
         }
 
         /// <summary>
@@ -327,76 +373,37 @@ namespace BarPromenade
         /// </summary>
         public void AdvanceTo(float unscaledTime)
         {
-            if (float.IsNaN(unscaledTime))
-            {
-                return;
-            }
-
-            if (!IsFeedbackVisibleAt(unscaledTime))
-            {
-                ReleaseVoice();
-                return;
-            }
-
-            if (delivery.IsSilent || !speaker.IsValid)
-            {
-                return;
-            }
-
-            // The panel itself never fades — it is the hero's own
-            // channel at the bottom of the screen, and a line he asked
-            // for is either there or it is not. The distance only
-            // decides whether it is still his conversation, and how
-            // loud the keystrokes are.
-            float gain = 1f;
-            if (listener != null)
-            {
-                float distance = speaker.ResolveDistance(
-                    listener,
-                    transform.position);
-                gain = speaker.Earshot.ResolveOpacity(distance);
-                if (gain <= 0f)
-                {
-                    ClearFeedback();
-                    return;
-                }
-            }
-
-            if (!delivery.Step(unscaledTime, out char blip))
-            {
-                return;
-            }
-
-            if (voiceLease < 0)
-            {
-                voiceLease = NpcSpeechVoice.Lease();
-            }
-
-            if (voiceLease < 0)
-            {
-                return;
-            }
-
-            NpcSpeechVoice.Blip(
-                voiceLease,
-                speaker.VoiceOrdinal,
-                blip,
-                delivery.BlipOrdinal,
-                speaker.ResolvePosition(transform.position),
-                gain,
-                speaker.Earshot);
+            AdvanceTo(unscaledTime, IsSpeechSuspended);
         }
 
-        private void ReleaseVoice()
+        /// <summary>The raw clock is injectable; menus hold the same line
+        /// rather than letting its typing and expiry jump on resume.</summary>
+        public void AdvanceTo(float unscaledTime, bool paused)
         {
-            if (voiceLease < 0)
+            if (!spokenFeedback || float.IsNaN(unscaledTime) || float.IsInfinity(unscaledTime)) return;
+            if (!isActiveAndEnabled || spokenBubbles == null) { ClearFeedback(); return; }
+            float delta = Mathf.Max(0f, unscaledTime - lastSpeechTime);
+            lastSpeechTime = Mathf.Max(lastSpeechTime, unscaledTime);
+            speechClockPaused = paused;
+            spokenBubbles.RenderEnabled = !paused;
+            if (!speaker.IsValid || speaker.Anchor == null ||
+                !speaker.Anchor.gameObject.activeInHierarchy || SceneTransitionService.IsTransitioning ||
+                listener != null && speaker.Earshot.ResolveOpacity(
+                    speaker.ResolveDistance(listener, transform.position)) <= 0f)
             {
+                ClearFeedback();
                 return;
             }
-
-            NpcSpeechVoice.Release(voiceLease);
-            voiceLease = -1;
+            if (paused) return;
+            speechClock += delta;
+            spokenBubbles.Initialize(Camera.main, listener);
+            spokenBubbles.AdvanceTo(speechClock);
+            if (speechClock >= feedbackExpiresAt || !spokenBubbles.IsShowing(speaker.Owner))
+                ClearFeedback();
         }
+
+        private static bool IsSpeechSuspended => PauseMenuController.IsAnyPaused ||
+            GameTimeScaleRuntime.IsPaused || JournalController.IsAnyOpen || BarMinigameModalLock.IsAnyLocked;
 
         private void Update()
         {
@@ -405,7 +412,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
-            ReleaseVoice();
+            ClearFeedback();
         }
 
         private Rect CalculatePanelRect(
@@ -442,7 +449,7 @@ namespace BarPromenade
             HasRenderedLayout = false;
             float unscaledTime = Time.unscaledTime;
             string displayedPromptKey =
-                GetPromptKeyAt(unscaledTime);
+                GetBottomPromptKeyAt(unscaledTime);
             if (string.IsNullOrEmpty(displayedPromptKey))
             {
                 return;
@@ -457,11 +464,7 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
-                // Framed from the WHOLE line, drawn from the typed
-                // part. Sizing the panel off the growing substring
-                // would step the box a row taller mid-word, which is
-                // the one thing the bubble's own rule exists to
-                // prevent.
+                // Only instant narration and action labels reach this panel.
                 string text = GetDisplayedTextAt(unscaledTime);
                 string drawn = GetRevealedTextAt(unscaledTime);
                 bool clickable = IsClickableAt(unscaledTime);

@@ -34,6 +34,8 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator CityPortTraversalAudit()
         {
             GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeFromWake();
+            GameSessionState.AdvanceGameTime(360f);
             yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
             CityGameRoot city = null;
             float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
@@ -52,6 +54,8 @@ namespace BarPromenade.Tests.PlayMode
                 radius = hero.radius, height = hero.height, stepOffset = hero.stepOffset };
             Vector3 savedHero = hero.transform.position;
             bool savedForce = port.ForcePresentation;
+            bool savedAdvance = port.AutoAdvance;
+            var hiddenHero = new List<Renderer>();
             var dynamicBodies = new List<Collider>();
             // Diagnose static access separately from visible movable work bodies.
             // Restore every enabled state even when an assertion fails.
@@ -66,8 +70,10 @@ namespace BarPromenade.Tests.PlayMode
             try
             {
                 port.ForcePresentation = true;
+                port.AutoAdvance = false;
                 port.RefreshPresentation();
                 Physics.SyncTransforms();
+                ValidatePortAccess(port, city);
                 for (int side = -1; side <= 1; side++)
                 {
                     var points = new List<Vector3>();
@@ -78,8 +84,7 @@ namespace BarPromenade.Tests.PlayMode
                     }
                     AuditPortRouteBothWays("road-lane-" + side, points, city, hero, port, report);
                 }
-                AuditPortRouteBothWays("public-bypass", access.PublicPath, city, hero, port, report);
-                AuditPortRouteBothWays("street-public-spur", access.PublicStreetSpur, city, hero, port, report);
+                AuditPortRouteBothWays("shared-shore-entry", PortShoreEntryRoute(port), city, hero, port, report);
                 AuditPortRouteBothWays("west-ramp-rear-walk", new[] {
                     new Vector3(-31, .32f, -20.5f), new Vector3(-28, .91f, -20.5f),
                     new Vector3(-25, 1.5f, -20.5f), new Vector3(18, 1.5f, -20.5f) }, city, hero, port, report);
@@ -91,19 +96,6 @@ namespace BarPromenade.Tests.PlayMode
                     new Vector3(-9, 1.5f, 30) }, city, hero, port, report);
                 AuditPortRouteBothWays("yard-seam-east", new[] {
                     new Vector3(21, 1.5f, -30), new Vector3(21, 1.5f, -13) }, city, hero, port, report);
-                AuditPortRouteBothWays("quay-east-public-seam", new[] {
-                    new Vector3(17, 1.5f, -18), new Vector3(26, 1.5f, -18) }, city, hero, port, report);
-                for (int side = -1; side <= 1; side += 2)
-                {
-                    AuditPortRouteBothWays("public-straight-edge-" + side, new[] {
-                        new Vector3(25 + side * .6f, 1.512f, -16),
-                        new Vector3(25 + side * .6f, 1.512f, -10) }, city, hero, port, report);
-                    Vector3 a = access.PublicPath[5], b = access.PublicPath[6];
-                    Vector3 tangent = b - a; tangent.y = 0; tangent.Normalize();
-                    Vector3 offset = new Vector3(tangent.z, 0, -tangent.x) * (side * .6f);
-                    AuditPortRouteBothWays("public-diagonal-edge-" + side, new[] {
-                        Vector3.Lerp(a, b, .15f) + offset, Vector3.Lerp(a, b, .85f) + offset }, city, hero, port, report);
-                }
 
                 // A grid catches lateral boundaries which centreline routes miss.
                 // Probe the centre and cardinal capsule edges on shallow ground,
@@ -133,16 +125,26 @@ namespace BarPromenade.Tests.PlayMode
                     "Isolated grid candidates still require boundary classification.");
                 Assert.That(report.supportedGridPoints, Is.GreaterThan(100), "The audit must measure actual physical ground.");
                 foreach (PortTraversalRoute route in report.routes)
-                    if (!route.name.StartsWith("quay-east-public-seam/", StringComparison.Ordinal))
-                        Assert.That(route.result, Is.EqualTo("clear"),
-                            $"{route.name} {route.mode} stopped at {route.stoppedAt}: {route.colliders}");
-                ValidatePortWalkClearance(city, port, hero.radius);
+                    Assert.That(route.result, Is.EqualTo("clear"),
+                        $"{route.name} {route.mode} stopped at {route.stoppedAt}: {route.colliders}");
+                foreach (Renderer renderer in city.Player.GameObject.GetComponentsInChildren<Renderer>())
+                    if (renderer.enabled) { hiddenHero.Add(renderer); renderer.enabled = false; }
+                var crew = UnityEngine.Object.FindAnyObjectByType<CityPortCrew>();
+                Assert.That(crew, Is.Not.Null);
+                Camera camera = Camera.main;
+                city.DayNight.ApplyCurrentTime(true);
+                yield return CapturePort(camera, city, port, crew, CityPortCycle.UnloadStartSeconds,
+                    "port-access-00-shared-road", new Vector3(48f, 6f, -46f), new Vector3(39f, 1.9f, -28f));
+                yield return CapturePort(camera, city, port, crew, CityPortCycle.UnloadStartSeconds,
+                    "port-access-01-former-footpath", new Vector3(22f, 9f, -44f), new Vector3(20f, 1.8f, -25f));
             }
             finally
             {
                 hero.enabled = true;
                 hero.transform.position = savedHero;
                 port.ForcePresentation = savedForce;
+                port.AutoAdvance = savedAdvance;
+                foreach (Renderer renderer in hiddenHero) if (renderer != null) renderer.enabled = true;
                 foreach (Collider body in dynamicBodies) if (body != null) body.enabled = true;
                 city.Player.Motor.SetInputEnabled(true);
                 port.RefreshPresentation();
@@ -150,60 +152,76 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static void ValidatePortWalkClearance(CityGameRoot city, CityPortController port, float radius)
+        private static void ValidateRemovedPortFootpath(CityPortController port, CityGameRoot city)
         {
             CityPortAccessPlan access = port.Plan.Access;
-            // Radius is applied once to the actual 2 m straight strip. These
-            // points are over water, so beach rectangles cannot mask a mistake.
-            foreach (float bodyRadius in new[] { 0f, .2f, radius, CityGroundTraversalPlanner.MaximumAgentRadius })
-            for (int side = -1; side <= 1; side += 2)
+            foreach (Transform part in port.GetComponentsInChildren<Transform>(true))
+                Assert.That(part.name.StartsWith("PublicCoastWalk", StringComparison.Ordinal) ||
+                    part.name.StartsWith("PublicCrossingMarks", StringComparison.Ordinal), Is.False,
+                    "The removed footpath and zebra must be absent from the imported world: " + part.name);
+            bool roadOpening = false;
+            foreach (RoadFenceOpeningDescriptor opening in RoadFencePlanner.CreatePlan(city.Layout).Openings)
             {
-                Vector3 inside = port.Plan.World(new Vector3(25 + side * (1 - bodyRadius - .01f), 1.512f, -12));
-                Vector3 outside = port.Plan.World(new Vector3(25 + side * (1 - bodyRadius + .03f), 1.512f, -12));
-                Assert.That(city.World.WalkableArea.Contains(inside, bodyRadius), Is.True, "Full physical walk width must remain usable.");
-                Assert.That(city.World.WalkableArea.ClosestPoint(inside, bodyRadius), Is.EqualTo(inside),
-                    "An already valid walk point must not snap to the old narrow rectangle core.");
-                Assert.That(city.World.WalkableArea.Contains(outside, bodyRadius), Is.False, "Do not open unsupported water beside the walk.");
+                Assert.That(opening.Id, Is.Not.EqualTo("port-public-spur"), "The deleted footpath must not leave its own fence opening.");
+                roadOpening |= opening.Id == "port-service-road";
             }
+            Assert.That(roadOpening, Is.True, "The shared truck approach keeps its entrance open.");
             var paving = CityPortAssetProvider.FindPart(port.gameObject, "COL_AccessRoad").GetComponent<Collider>();
             Assert.That(paving, Is.Not.Null);
-            int supported = 0;
-            // Compare new membership with the imported collider at diagonals,
-            // joins and the capped sharp corner, not another copy of the formula.
-            foreach (IReadOnlyList<Vector3> path in new[] { access.PublicPath, access.PublicStreetSpur })
-            for (int i = 1; i < path.Count; i++)
-            for (int step = 1; step <= 9; step++)
-            for (int side = -1; side <= 1; side++)
+            // Former route points are clear of the retained road, yards and
+            // their two-metre earthwork blend. Probe both the real imported
+            // collider and the terrain owner, so hidden paving cannot survive.
+            foreach (Vector3 local in new[] { new Vector3(2f, 2f, -30f), new Vector3(20f, 2.5f, -37f),
+                new Vector3(60f, 2.3f, -36f), new Vector3(25f, 1.5f, -8f) })
             {
-                Vector3 tangent = path[i] - path[i - 1]; tangent.y = 0; tangent.Normalize();
-                Vector3 point = access.World(Vector3.Lerp(path[i - 1], path[i], step * .1f) +
-                    new Vector3(tangent.z, 0, -tangent.x) * (side * .6f));
-                Assert.That(access.ContainsPublicWalk(point, radius), Is.True, "The walk's side lanes must be connected: " + (point - access.Origin));
-                AssertPortWalkFootprint(paving, point, radius);
-                supported++;
+                Vector3 point = access.World(local);
+                var xz = new Vector2(point.x, point.z);
+                Assert.That(access.TrySampleTop(xz, out _), Is.False, "Former footpath has no paved terrain sample: " + local);
+                Assert.That(access.ApplyGroundTop(xz, .73f), Is.EqualTo(.73f).Within(.00001f),
+                    "The removed path no longer raises or cuts natural ground: " + local);
+                Assert.That(paving.Raycast(new Ray(point + Vector3.up * 7f, Vector3.down), out _, 12f), Is.False,
+                    "No invisible footpath collider remains at " + local);
             }
-            Vector3 corner = access.PublicPath[5];
-            for (float x = corner.x - 2; x <= corner.x + 2; x += .2f)
-            for (float z = corner.z - 2; z <= corner.z + 2; z += .2f)
-            {
-                Vector3 point = access.World(new Vector3(x, corner.y, z));
-                if (!access.ContainsPublicWalk(point, radius)) continue;
-                AssertPortWalkFootprint(paving, point, radius);
-                supported++;
-            }
-            Assert.That(supported, Is.GreaterThan(100));
+            Assert.That(city.World.WalkableArea.Contains(access.World(new Vector3(25f, 1.5f, -8f)), .3f), Is.False,
+                "The removed east branch must not leave an invisible walking strip over water.");
         }
 
-        private static void AssertPortWalkFootprint(Collider paving, Vector3 point, float radius)
+        private static List<Vector3> PortShoreEntryRoute(CityPortController port)
         {
-            for (int sample = 0; sample < 16; sample++)
+            var pedestrians = UnityEngine.Object.FindAnyObjectByType<CityPedestrianDirector>();
+            Assert.That(pedestrians, Is.Not.Null);
+            CityPedestrianPlan plan = pedestrians.Plan;
+            int spur = -1, coast = -1;
+            for (int i = 0; i < plan.Nodes.Count; i++)
             {
-                float angle = sample * Mathf.PI / 8;
-                Vector3 edge = point + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
-                Assert.That(paving.Raycast(new Ray(edge + Vector3.up, Vector3.down), out RaycastHit hit, 2), Is.True,
-                    "The full admitted capsule needs real imported paving at " + edge);
-                Assert.That(hit.normal.y, Is.GreaterThan(.72f));
+                Assert.That(plan.Nodes[i].Id, Is.Not.EqualTo("coast:port-public:1"));
+                if (plan.Nodes[i].Id == "coast:spur") spur = i;
+                if (plan.Nodes[i].Id == "coast:access") coast = i;
             }
+            Assert.That(spur, Is.GreaterThanOrEqualTo(0));
+            Assert.That(coast, Is.GreaterThanOrEqualTo(0));
+            var parents = new Dictionary<int, int> { { spur, -1 } };
+            var pending = new Queue<int>();
+            pending.Enqueue(spur);
+            while (pending.Count > 0 && !parents.ContainsKey(coast))
+            {
+                int current = pending.Dequeue();
+                foreach (int index in plan.GetLinkIndices(current))
+                {
+                    CityPedestrianLink link = plan.Links[index];
+                    if (!link.Id.StartsWith("coast-spur", StringComparison.Ordinal)) continue;
+                    int next = link.Other(current);
+                    if (parents.ContainsKey(next)) continue;
+                    parents.Add(next, current); pending.Enqueue(next);
+                }
+            }
+            Assert.That(parents.ContainsKey(coast), Is.True,
+                "The coast population must retain its direct connection to the shared street entrance.");
+            var points = new List<Vector3>();
+            for (int current = coast; current >= 0; current = parents[current])
+                points.Add(plan.Nodes[current].Position - port.Plan.Origin);
+            points.Reverse();
+            return points;
         }
 
         private static bool PortAuditFloor(Vector3 point, float seaY, out Vector3 floor)

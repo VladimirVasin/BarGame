@@ -9,7 +9,7 @@ namespace BarPromenade
     /// WHY IT IS NOT <see cref="RetroAudioService"/>. That pool is
     /// built for events: each effect carries a `CooldownSeconds` and a
     /// voice cap of one to three, `RetroAudio.PlayAt` has no per-play
-    /// pitch, and a blip is due every `90 ms` at a pitch chosen by the
+    /// pitch, and blips follow the shared speech cadence at a pitch chosen by the
     /// letter. Routed through there, most of a line would be swallowed
     /// by its own cooldown and the rest would come out at whatever the
     /// global play counter happened to be on. Nothing in this file

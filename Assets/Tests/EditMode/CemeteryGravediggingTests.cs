@@ -1217,6 +1217,11 @@ namespace BarPromenade.Tests.EditMode
             watchman.Initialize(
                 Vector3.zero,
                 GameSessionState.DefaultCitySeed);
+            var head = new GameObject("Watchman Head").transform;
+            head.SetParent(host.transform, false);
+            head.localPosition = Vector3.up * 1.65f;
+            watchman.AttachSpeaker(new NpcSpeaker(host, head,
+                NpcVoiceCatalog.WatchmanDesignId, NpcEarshotProfile.Conversation));
             watchman.AttachGravedigging(controller);
             return watchman;
         }

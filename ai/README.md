@@ -23,6 +23,7 @@ compares them, so this index cannot quietly drift out of date again.
 | `debug-log.md` | state | 8000 | Structured diagnostics format, events and support workflow |
 | `player-art-spec.md` | canon | 32000 | Locked player design for the 3D production hero; the 2D atlas contract it once held is retired |
 | `contextual-animation-standard.md` | canon | 8000 | Mandatory entry/exit, hard-handoff, authoring and test contract for contextual interactions on the 3D hero rig |
+| `speech-presentation-standard.md` | canon | 4000 | Mandatory shared bubbles for all speech, including E replies; ownership, ordering, pause and cleanup |
 | `bartender-spec.md` | canon | 13000 | The active two-armed bar worker; the six-armed design is quarantined in its appendix |
 | `city-zones-art-bible.md` | canon | 473000 | Locked target visual, spatial, emotional, light and sound identity. Binding: §16 holds nine acceptance checks |
 | `city-story-bible.md` | canon | 305000 | Binding story canon: the crime, the hero, the poisoning scale, the Cat, what every built place means, and the register every written line must keep. §16 is hard, §6 is the dated registry, §21 governs text |

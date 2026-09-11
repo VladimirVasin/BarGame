@@ -19,7 +19,7 @@ namespace BarPromenade
         /// <summary>How long a spoken answer is left standing once it
         /// has finished typing — the same tail every other spoken line
         /// in the game keeps.</summary>
-        public const float SpokenReadingTailSeconds = 2.0f;
+        public const float SpokenReadingTailSeconds = SpeechDelivery.ReadingTailSeconds;
 
         private static InventoryTargetInteractionController
             activeController;

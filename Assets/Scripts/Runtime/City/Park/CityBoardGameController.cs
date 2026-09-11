@@ -49,12 +49,12 @@ namespace BarPromenade
         /// A little longer than a bubble stays up, so lines queue behind
         /// each other instead of cutting each other off.
         /// </summary>
-        public const float SpeechCooldownSeconds = 3f;
+        public const float SpeechCooldownSeconds = NpcSpeechBubbleView.VisibleSeconds + .2f;
 
         /// <summary>And how long after the result he offers another
         /// game — long enough that the two lines read as two
         /// sentences rather than as one wall of text.</summary>
-        public const float AgainDelaySeconds = 4f;
+        public const float AgainDelaySeconds = NpcSpeechBubbleView.VisibleSeconds + .2f;
 
         private enum CameraPhase
         {

@@ -83,10 +83,10 @@ namespace BarPromenade
             CityPortAccessPlan portAccess = CityPortAccessPlan.ForLayout(layout);
             if (portAccess != null)
             {
-                // The imported yard and walks physically bridge the old
+                // The imported yard and road physically bridge the old
                 // beach/water descriptor boundary. Its raised fill is not an
                 // exposed drop: the port's authored perimeter owns protection.
-                var openings = new List<Rect> { portAccess.StreetOpening, portAccess.StreetPublicOpening };
+                var openings = new List<Rect> { portAccess.StreetOpening };
                 portAccess.AppendWalkableFootprints(openings);
                 var cleared = new List<Bounds>();
                 var slices = new List<Bounds>();

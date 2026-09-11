@@ -370,8 +370,8 @@ namespace BarPromenade.Tests.EditMode
             }
 
             Assert.That(previous, Is.EqualTo(line.Length));
-            // The whole line has to be typed out well inside the four
-            // seconds it is up, or the panel takes itself down while the
+            // The whole line has to be typed out well inside its visible
+            // interval, or the panel takes itself down while the
             // player is still being handed the words a letter at a time.
             float typedIn = line.Length /
                 SpeechDelivery.CharactersPerSecond;
@@ -380,15 +380,22 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThan(NpcSpeechBubbleView.VisibleSeconds * 0.5f));
         }
 
-        [Test]
-        public void Bubble_TakesItselfDownAfterFourSeconds()
+        [TestCase(NpcSpeechBubbleView.VisibleSeconds)]
+        [TestCase((float)CityPortConversationSchedule.LineSeconds)]
+        [TestCase((float)CityPortConversationSchedule.DriverLineSeconds)]
+        [TestCase((float)CityPortConversationSchedule.AccessWaitLineSeconds)]
+        public void Bubble_TakesItselfDownAfterItsConfiguredLifetime(float duration)
         {
             var host = new GameObject("Bubble Lifetime Test Host");
             try
             {
                 var view = host.AddComponent<NpcSpeechBubbleView>();
+                Assert.That(view.LineDurationSeconds,
+                    Is.EqualTo(NpcSpeechBubbleView.VisibleSeconds));
+                view.LineDurationSeconds = duration;
                 var speaker = new GameObject("Speaker");
                 speaker.transform.SetParent(host.transform, false);
+                const string line = "Шашки — это шахматы для уставших.";
 
                 Assert.That(
                     view.DeclareSpeaker(
@@ -400,17 +407,20 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     view.ShowAt(
                         speaker,
-                        "Шашки — это шахматы для уставших.",
+                        line,
                         100f),
                     Is.True);
 
+                view.LineDurationSeconds = .05f;
                 view.AdvanceTo(
-                    100f + NpcSpeechBubbleView.VisibleSeconds - 0.01f);
+                    100f + duration - 0.01f);
                 Assert.That(view.IsShowing(speaker), Is.True,
-                    "It is still up on the last frame of its life.");
+                    "Changing the next line's duration cannot shorten an open line.");
+                Assert.That(view.RevealedTextOf(speaker), Is.EqualTo(line),
+                    "The whole line is readable before its owner closes it.");
 
                 view.AdvanceTo(
-                    100f + NpcSpeechBubbleView.VisibleSeconds + 0.01f);
+                    100f + duration + 0.01f);
                 Assert.That(view.IsShowing(speaker), Is.False,
                     "And gone by itself after that, unanswered.");
 
@@ -418,7 +428,7 @@ namespace BarPromenade.Tests.EditMode
                 // the neighbour's turn comes round, or nothing was
                 // actually taken down between lines.
                 Assert.That(
-                    NpcSpeechBubbleView.VisibleSeconds,
+                    duration,
                     Is.LessThan(
                         ParkQuarrelTimeline.TauntIntervalSeconds));
             }
@@ -447,6 +457,64 @@ namespace BarPromenade.Tests.EditMode
             }
             finally
             {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void Bubble_OneHeadCannotSpeakThroughTwoOwnersOrViews()
+        {
+            var host = new GameObject("Shared speech ownership");
+            var otherHost = new GameObject("Interaction speech ownership");
+            try
+            {
+                var ambient = host.AddComponent<NpcSpeechBubbleView>();
+                var response = otherHost.AddComponent<NpcSpeechBubbleView>();
+                var actor = new GameObject("Speaking actor");
+                actor.transform.SetParent(host.transform, false);
+                var alias = new GameObject("Talk adapter");
+                alias.transform.SetParent(host.transform, false);
+                var speaker = new NpcSpeaker(actor, actor.transform,
+                    NpcVoiceCatalog.WatchmanDesignId, NpcEarshotProfile.Conversation);
+                var sameHead = new NpcSpeaker(alias, actor.transform,
+                    NpcVoiceCatalog.WatchmanDesignId, NpcEarshotProfile.Conversation);
+                ambient.DeclareSpeaker(speaker);
+                ambient.DeclareSpeaker(sameHead);
+                response.DeclareSpeaker(speaker);
+                response.DeclareSpeaker(sameHead);
+                Assert.That(ambient.ShowAt(actor, "Старая строка.", 10f, 5f), Is.True);
+                ambient.AdvanceTo(10.2f);
+                string held = ambient.RevealedTextOf(actor);
+                Assert.That(response.ShowAt(actor, "Ответ.", 0f), Is.False,
+                    "An interaction cannot steal the ambient speaker across different clocks.");
+                Assert.That(response.ShowAt(alias, "Ответ.", 0f), Is.False,
+                    "Separate adapters using the same head still belong to one speaker.");
+                Assert.That(ambient.ShowAt(alias, "Ответ.", 10.2f), Is.False);
+                Assert.That(ambient.RevealedTextOf(actor), Is.EqualTo(held));
+                ambient.AdvanceTo(15.01f);
+                Assert.That(response.ShowAt(alias, "Ответ.", 0f), Is.True,
+                    "Normal completion releases the head for an answer.");
+                response.enabled = false;
+                Assert.That(ambient.ShowAt(actor, "Снова.", 20f), Is.True,
+                    "Disabling the other view releases its ownership.");
+                // A presentation can replace its model before the old manual
+                // view gets another tick. A dead head must not retain the owner.
+                actor.SetActive(false);
+                response.enabled = true;
+                var replacement = new GameObject("Replacement head");
+                replacement.transform.SetParent(host.transform, false);
+                response.DeclareSpeaker(new NpcSpeaker(actor, replacement.transform,
+                    NpcVoiceCatalog.WatchmanDesignId, NpcEarshotProfile.Conversation));
+                Assert.That(response.ShowAt(actor, "Ответ.", 30f), Is.True);
+                response.DismissAll();
+                Object.DestroyImmediate(actor);
+                ambient.AdvanceTo(20.1f);
+                Assert.That(ambient.IsShowing(alias), Is.False);
+                Assert.That(ambient.RevealedTextOf(actor), Is.Empty);
+            }
+            finally
+            {
+                Object.DestroyImmediate(otherHost);
                 Object.DestroyImmediate(host);
             }
         }
@@ -690,16 +758,17 @@ namespace BarPromenade.Tests.EditMode
             SpeechDelivery delivery =
                 SpeechDelivery.Spoken("абвгде", 0f);
 
-            // A tenth of a second at 34 characters a second reveals
-            // three letters at once. The ear must get one stroke.
-            Assert.That(delivery.Step(0.1f, out char blip), Is.True);
+            // One missed frame reveals three letters at once at any
+            // configured cadence. The ear must get one stroke.
+            float hitchTime = 3.1f / SpeechDelivery.CharactersPerSecond;
+            Assert.That(delivery.Step(hitchTime, out char blip), Is.True);
             Assert.That(delivery.RevealedCharacters, Is.EqualTo(3));
             Assert.That(
                 blip,
                 Is.EqualTo('в'),
                 "Pitched from the newest letter, the one the eye is on.");
             Assert.That(
-                delivery.Step(0.1f, out _),
+                delivery.Step(hitchTime, out _),
                 Is.False,
                 "And the same frame asked twice adds nothing.");
         }
@@ -721,19 +790,15 @@ namespace BarPromenade.Tests.EditMode
                 "A description of a door is not somebody talking.");
         }
 
-        [Test]
-        public void Delivery_SpokenDurationLeavesRoomToReadTheLongest()
+        [TestCase("ru")]
+        [TestCase("en")]
+        public void Delivery_SpokenDurationLeavesRoomToReadTheLongest(string language)
         {
-            // The watchman's longest line is the longest anybody says.
-            string longest = string.Empty;
-            foreach (string key in CemeteryWatchmanQuips.LineKeys)
-            {
-                string text = LocalizationService.Get(key);
-                if (text.Length > longest.Length)
-                {
-                    longest = text;
-                }
-            }
+            var catalog = JsonUtility.FromJson<SpeechCatalog>(LoadCatalog(language));
+            Dictionary<string, string> lines = catalog.entries.ToDictionary(
+                entry => entry.key, entry => entry.value);
+            string longest = CemeteryWatchmanQuips.LineKeys.Select(key => lines[key])
+                .OrderByDescending(line => line.Length).First();
 
             Assert.That(
                 CemeteryWatchmanInteraction.ResolveResponseSeconds(
@@ -755,6 +820,69 @@ namespace BarPromenade.Tests.EditMode
                     CemeteryWatchmanInteraction.ReadingTailSeconds -
                     0.0001f),
                 "Even his longest line keeps its whole reading tail.");
+            Assert.That(new[]
+                {
+                    CemeteryWatchmanInteraction.ReadingTailSeconds,
+                    SeacoastFishermanInteraction.ReadingTailSeconds,
+                    LastRouteFerrymanTalkInteraction.ReadingTailSeconds,
+                    MothersHouseMotherInteraction.ReadingTailSeconds,
+                    InventoryTargetInteractionController.SpokenReadingTailSeconds,
+                    LastRouteRideSpeechView.ReadingTailSeconds,
+                    MothersHouseMotherSpeechController.ReadingTailSeconds
+                }, Is.All.EqualTo(SpeechDelivery.ReadingTailSeconds),
+                "Every length-derived spoken response keeps the same reading tail.");
+
+            string[] ambientPrefixes =
+            {
+                "park.quarrel.", "park.board.", "mountain.cafe.",
+                "city.pedestrian.insult.", "hero.mutter.", "village.life."
+            };
+            foreach (KeyValuePair<string, string> line in lines.Where(entry =>
+                         ambientPrefixes.Any(prefix => entry.Key.StartsWith(prefix,
+                             System.StringComparison.Ordinal))))
+            {
+                Assert.That(NpcSpeechBubbleView.VisibleSeconds -
+                            line.Value.Length / SpeechDelivery.CharactersPerSecond,
+                    Is.GreaterThanOrEqualTo(1f),
+                    $"{language} '{line.Key}' must finish before the ambient bubble closes.");
+            }
+            Assert.That(HeroMutterModel.SpeakingSeconds -
+                        HeroMutterSlur.MaximumWrappedSlurredLength / SpeechDelivery.CharactersPerSecond,
+                Is.GreaterThanOrEqualTo(1f),
+                "Even the longest permitted slur finishes inside its speaking phase.");
+
+            // Port exchanges use a fixed schedule instead of a length-derived
+            // prompt lifetime. Check both participants in every localized pair
+            // so a slower typewriter cannot lose the end before the reply.
+            foreach (CityPortConversationKind kind in System.Enum.GetValues(
+                         typeof(CityPortConversationKind)))
+            {
+                for (int variant = 0; variant < CityPortConversationCatalog.Count(kind); variant++)
+                {
+                    CityPortConversationExchange exchange = CityPortConversationCatalog.Get(kind, variant);
+                    float duration = (float)CityPortConversationSchedule.LineDuration(exchange);
+                    foreach (string key in new[] { exchange.FirstKey, exchange.SecondKey })
+                    {
+                        string line = lines[key];
+                        Assert.That(duration - line.Length / SpeechDelivery.CharactersPerSecond,
+                            Is.GreaterThanOrEqualTo(1f),
+                            $"{language} '{key}' needs a reading pause before its partner answers.");
+                    }
+                }
+            }
+        }
+
+        [System.Serializable]
+        private sealed class SpeechCatalog
+        {
+            public SpeechCatalogEntry[] entries = System.Array.Empty<SpeechCatalogEntry>();
+        }
+
+        [System.Serializable]
+        private sealed class SpeechCatalogEntry
+        {
+            public string key = string.Empty;
+            public string value = string.Empty;
         }
     }
 }

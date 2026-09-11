@@ -1650,6 +1650,135 @@ namespace BarPromenade.Tests.PlayMode
                 () => CityBuildingSurfaceShots(cityRoot));
         }
 
+        [UnityTest]
+        [Explicit("Shared overhead speech through City talk/menu adapters. Run without -batchmode to render Game view UI.")]
+        public IEnumerator CitySpokenResponses()
+        {
+            Assert.That(Application.isBatchMode, Is.False, "IMGUI capture requires the ordinary Editor Game view.");
+#if UNITY_EDITOR
+            Type viewType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.GameView");
+            Assert.That(viewType, Is.Not.Null);
+            UnityEditor.EditorWindow gameView = UnityEditor.EditorWindow.GetWindow(viewType);
+            gameView.Show();
+            gameView.Focus();
+#endif
+            GameSessionState.BeginNewGame();
+            GameSessionState.TryStartGameTimeFromWake();
+            GameSessionState.AdvanceGameTime(360f);
+            yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
+            CityGameRoot city = null;
+            float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
+            while (city == null || !city.IsInitialized)
+            {
+                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "City initialization timed out.");
+                city = Object.FindAnyObjectByType<CityGameRoot>();
+                yield return null;
+            }
+            Camera camera = Camera.main;
+            Assert.That(camera, Is.Not.Null);
+            var follow = camera.GetComponent<PlayerCameraFollow>();
+            bool followed = follow != null && follow.enabled;
+            var motor = city.Player.Motor;
+            bool motorEnabled = motor.enabled;
+            Vector3 savedHero = motor.transform.position;
+            Pose savedCamera = new Pose(camera.transform.position, camera.transform.rotation);
+            float savedField = camera.fieldOfView;
+            var hidden = new List<Renderer>();
+            var prompt = Object.FindAnyObjectByType<InteractionPromptView>();
+            Assert.That(prompt, Is.Not.Null);
+            if (follow != null) follow.enabled = false;
+            motor.enabled = false;
+            city.CemeteryWatchman.Talk.AttachGravedigging(null);
+            foreach (Renderer renderer in city.Player.GameObject.GetComponentsInChildren<Renderer>(true))
+                if (renderer.enabled) { hidden.Add(renderer); renderer.enabled = false; }
+            try
+            {
+                Component[] actors = { city.CemeteryWatchman, city.SeacoastFisherman, city.LastRouteFerryman };
+                string[] names = { "watchman", "fisherman", "ferryman" };
+                foreach (Component actor in actors) Assert.That(actor, Is.Not.Null);
+                for (int index = 0; index < actors.Length; index++)
+                {
+                    Component actor = actors[index];
+                    var registry = actor.GetComponentInChildren<CityPedestrianAssetRegistry>(true);
+                    Assert.That(registry, Is.Not.Null);
+                    Transform head = registry.HeadAnchor;
+                    Vector3 forward = actor.transform.forward;
+                    motor.Teleport(actor.transform.position + forward * 1.1f);
+                    camera.transform.SetPositionAndRotation(head.position + forward * 3.2f + actor.transform.right * .7f,
+                        Quaternion.LookRotation(-forward));
+                    camera.transform.LookAt(head.position - Vector3.up * .35f);
+                    camera.fieldOfView = 58f;
+                    Physics.SyncTransforms();
+                    prompt.ClearFeedback();
+                    if (index == 0) city.CemeteryWatchman.Talk.Interact(city.Player.Interactor);
+                    else if (index == 1)
+                        Object.FindAnyObjectByType<SeacoastFishermanInteraction>().Interact(city.Player.Interactor);
+                    else
+                    {
+                        var talk = Object.FindAnyObjectByType<LastRouteFerrymanInteraction>();
+                        Assert.That(talk, Is.Not.Null);
+                        talk.Interact(city.Player.Interactor);
+                        var menu = Object.FindAnyObjectByType<InventoryTargetInteractionController>();
+                        Assert.That(menu.IsOpen, Is.True);
+                        menu.SelectChoice(InventoryTargetInteractionChoice.Talk);
+                        Assert.That(menu.SelectedChoice, Is.EqualTo(InventoryTargetInteractionChoice.Talk));
+                        Assert.That(menu.Confirm(), Is.True);
+                    }
+                    Assert.That(prompt.IsSpeaking, Is.True, names[index] + " uses the shared spoken path.");
+                    NpcSpeechBubbleView bubble = prompt.SpokenBubbles;
+                    Assert.That(bubble, Is.Not.Null);
+                    Assert.That(bubble.IsShowing(actor), Is.True, "The actual factory attaches the speaker to its actor.");
+                    float shownAt = Time.unscaledTime;
+                    while (Time.unscaledTime < shownAt + .6f) yield return null;
+                    Assert.That(bubble.HasRenderedLayout, Is.True);
+                    Assert.That(bubble.LastRenderedBubbleCount, Is.EqualTo(1));
+                    Assert.That(bubble.RevealedTextOf(actor), Is.Not.Empty);
+                    Assert.That(prompt.HasRenderedLayout, Is.False, "The answer is never duplicated in the bottom panel.");
+                    Rect frame = bubble.LastRenderedPanelRect;
+                    string held = bubble.RevealedTextOf(actor);
+                    using (GameTimeScaleRuntime.AcquirePause())
+                    {
+                        yield return null;
+                        held = bubble.RevealedTextOf(actor);
+                        for (int paused = 0; paused < 3; paused++) yield return null;
+                        Assert.That(bubble.RevealedTextOf(actor), Is.EqualTo(held));
+                        Assert.That(bubble.RenderEnabled, Is.False);
+                    }
+                    yield return null;
+                    Assert.That(bubble.RenderEnabled, Is.True);
+                    Assert.That(bubble.LastRenderedPanelRect.width, Is.EqualTo(frame.width));
+                    Assert.That(bubble.LastRenderedPanelRect.height, Is.EqualTo(frame.height));
+                    string completeLine = prompt.GetDisplayedTextAt(Time.unscaledTime);
+                    deadline = Time.realtimeSinceStartup + 10f;
+                    while (bubble.RevealedTextOf(actor) != completeLine && Time.realtimeSinceStartup < deadline)
+                        yield return null;
+                    Assert.That(bubble.RevealedTextOf(actor), Is.EqualTo(completeLine));
+                    string path = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Captures", "City",
+                        "speech-" + names[index] + ".png"));
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    DateTime oldWrite = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
+                    ScreenCapture.CaptureScreenshot(path);
+                    deadline = Time.realtimeSinceStartup + 3f;
+                    do { yield return null; }
+                    while ((!File.Exists(path) || File.GetLastWriteTimeUtc(path) <= oldWrite) && Time.realtimeSinceStartup < deadline);
+                    Assert.That(File.Exists(path) && File.GetLastWriteTimeUtc(path) > oldWrite, Is.True,
+                        "The captured Game view must include the actual overhead UI.");
+                    Assert.That(prompt.IsSpeaking, Is.True, "The complete line remains readable during capture.");
+                }
+            }
+            finally
+            {
+                prompt.ClearFeedback();
+                city.CemeteryWatchman.Talk.AttachGravedigging(city.Gravedigging);
+                foreach (Renderer renderer in hidden) if (renderer != null) renderer.enabled = true;
+                motor.Teleport(savedHero);
+                motor.enabled = motorEnabled;
+                camera.transform.SetPositionAndRotation(savedCamera.position, savedCamera.rotation);
+                camera.fieldOfView = savedField;
+                if (follow != null) follow.enabled = followed;
+            }
+        }
+
         /// <summary>
         /// The first sealed grave and the raven pair that holds to
         /// it. The ledger is sealed BEFORE the load, so the city

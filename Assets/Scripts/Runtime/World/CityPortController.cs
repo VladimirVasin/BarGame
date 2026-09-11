@@ -46,6 +46,7 @@ namespace BarPromenade
         public Transform Trolley { get; private set; }
         public float TrolleySpeed { get; private set; }
         public float TrolleyOperatorSpeed { get; private set; }
+        public bool WaitingForStoreAccess { get; private set; }
         public bool IsTrolleyReversing => Snapshot.CargoStage == CityPortCargoStage.Return;
         /// <summary>Seconds within a cargo slot at which the actual operator
         /// crosses the warehouse exit on his return to the quay.</summary>
@@ -164,9 +165,10 @@ namespace BarPromenade
             ApplyAt(CityFishSupplySession.Advance(false), lastWaveTime);
         }
 
-        public void ApplyAt(double seconds, float waveTime)
+        public void ApplyAt(double seconds, float waveTime, bool waitingForStoreAccess = false)
         {
             Snapshot = CityPortCycle.Sample(seconds);
+            WaitingForStoreAccess = waitingForStoreAccess;
             ElapsedSeconds = seconds;
             lastWaveTime = waveTime;
             UpdatePresentationVisibility();
@@ -258,7 +260,7 @@ namespace BarPromenade
             Trolley.SetPositionAndRotation(TrolleyPosition(crane, progress), TrolleyRotation(crane, progress));
             TrolleySpeed = 0f;
             TrolleyOperatorSpeed = 0f;
-            if (motionDuration > 0d)
+            if (motionDuration > 0d && !WaitingForStoreAccess)
             {
                 float offset = .01f / (float)motionDuration;
                 TrolleySpeed = Vector3.Distance(TrolleyPosition(crane, progress - offset),

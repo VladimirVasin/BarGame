@@ -4,6 +4,38 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-11, every spoken line above its speaker:**
+  User replaces the two-channel speech split: `E` replies also use
+  `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice`; prompt spoken feedback
+  delegates there. Bottom UI keeps silent descriptions, hints and choices.
+  Text/voices/reading/order stay. `ai/speech-presentation-standard.md`, linked
+  from AI/AGENTS, mandates shared anchors/earshot/lifetime/pause/cleanup and
+  channel admission, forbidding per-feature copies. No new pool or voice acting.
+  Duration is per line; live head ownership spans views, while the same owned
+  timeline may restore silently.
+
+- **Accepted — 2026-09-11, warehouse doorway priority:**
+  Accepted stock and actual arrival decide access. Driver at the outside queue
+  may collect if docker is not inside; a load on the crane reserves nothing.
+  Docker first: driver waits only until exit. Driver first: later loaded docker
+  trolley holds at the north threshold until his return clears the doorway.
+  That hold shifts remaining port work, not idle/speech/waves; pure event time
+  restores batch/custody through pause/seek without replay. Stock remains finite.
+  `DriverWaitingForDockWorker` gates the waiting remark: missing stock is silent.
+
+- **Accepted — 2026-09-11, slower shared speech:**
+  `SpeechDelivery`: `24` chars/s, writing clicks at least `.13 s` apart;
+  default bubbles `4.4 s`, adaptive reading tail `2.5 s`. Port ordinary/foreman
+  lines `4.8 s`, farewells/driver `3.5 s`, access wait `3 s`; paired timing and
+  chess replies retain the full line (`4.6 s` cooldown/reply delay). Cafe speech
+  still fits its idle windows. Prompt floors: watchman `3.5 s`, fisherman/
+  Ferryman/mother `3.9 s`; longer lines retain their reading tail.
+  Text, voices, queues and input ownership stay; art §15a/story §21.
+
+- **Accepted architecture exception — 2026-09-11, dock approach:**
+  User removes coast walk/spur/crossing from geometry/terrain/walk/map/openings.
+  Truck road/shoulders, dock rear/side walks, station/east shore stay; art §10d/story §6.
+
 - **Accepted architecture exception — 2026-09-11, dock shift foreman:**
   §6 level `0`: left carrot, three bites→stem/pail→left-pocket reload.
   Speech holds bite/clock, stops chewing/lowers left; right shakes.
@@ -33,8 +65,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — 2026-09-10, ship-arrival dispatch and local handling:**
   Dock latch spawns truck/driver/body on unseen road suffix: `3 m/s`, parked at
   crate `156 s`; later full factory trips. Double horn `.30/64 m`, pause/no replay.
-  Reverse ajar door/look-back/steer/beeper, exit `78°`; stock `156/220/284` never
-  waits. Driver waits for docker exit `167.181+64n s`; next entry limits access.
+  Reverse ajar door/look-back/steer/beeper, exit `78°`.
   Grip parking+`12.8 s`, queue+`4 s`, first fetch `172.8 s`; east pallets clear.
   Cart by west canopy tare: north apron/west approach to rear grips clears crew,
   return likewise. Push/pull/apron turns clear lift; other paths stay.
@@ -85,16 +116,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   pause/distance/stop own DSP. Existing Spot/Soft shadows; global mix/light unchanged.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
-  Twelve opaque ImageGen maps: concrete/walls/painted steel/plaster/timber/
-  roof/deck/plastic/fish/ice/rubber/fabric. Originals/prompts/hashes in
-  `ArtSource/City/Port/Textures/generation.json`; backend unknown. Muted shared
-  metre-UV/`512 px` sRGB/mipmap/repeat surfaces; thin bare metal flat. Asphalt:
-  `CityRoadAsphaltAlbedo`, `12 m` phase/wetness. §6 permits regrading/nine metre
-  FBXs including `AccessRoad`. `PortAccessLayout.json`/`CityPortAccessPlan`:
-  `6 m` road/flare/east L-yard for truck, `2 m` bypass/one crossing; NPC straight/
-  orthogonal links, hero diagonal, graph unchanged. Heads/bearings/weights/winches
-  slew together; grounded StationWorkers retain fabric/gaze/contacts. Sway
-  <`9 cm`, settled before lowering. Quay/store: day `2/3`, global fog; §16/§21/art checks.
+  12 opaque ImageGen maps; provenance:
+  `ArtSource/City/Port/Textures/generation.json`, backend unknown. Shared muted
+  metre-UV/`512 px` sRGB/mipmap/repeat; thin metal flat. Asphalt:
+  `CityRoadAsphaltAlbedo`, `12 m` phase/wetness. §6: regrade/nine metre FBXs;
+  `AccessRoad`/`PortAccessLayout.json`/`CityPortAccessPlan`: `6 m` road/flare/east
+  L-yard. Crane heads/bearings/weights/winches slew together; grounded workers
+  retain fabric/gaze/contacts. Sway <`9 cm` settles before lowering.
+  Quay/store: day `2/3`, global fog; §16/§21/art checks.
 
 - **Accepted — 2026-09-09, a small working fishing port:**
   §6 level `0`: art §10d docking/dark shore/sand, story §5/§7/§12/§18, art §10g.
@@ -145,7 +174,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   typewriter and writing clicks without modal ownership. The driver's head
   turns towards the passenger during both ordinary and reactive lines.
   First delivery waits `12–18 s` of
-  visible driving; later lines wait `30–45 s` after printing and a `2 s`
+  visible driving; later lines wait `30–45 s` after printing and a `2.5 s`
   reading hold. At most five lines span both scenes of one trip. Stopping and
   pause freeze delivery; fades and skip discard the active line. Boarding,
   alighting and loading never release accumulated lines.
@@ -2888,38 +2917,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   still not repeatable, so it does not recur daily the way §9's «Каждый день»
   describes. That was already true before this work and is left alone.
 - **Accepted 2026-09-02 by direct user decision — every spoken line types out,
-  and every letter it writes ticks:** the game had two ways of saying a thing.
-  The park quarrel and the mountain cafe typed into a bubble over the speaker's
-  head; the watchman, the fisherman and the Ferryman answered whole and
-  instantly in the prompt panel. Both are now one mechanism —
-  `SpeechDelivery` owns the typing at `34` characters a second and emits one
-  keystroke per newly revealed letter, and both views embed it. The user chose
-  to KEEP the two channels (see the note below, which stands): an answer to the
-  hero stays at the bottom of the screen, and only what he overhears hangs over
-  a head. What is unified is how a character speaks, not where.
-  **This lifts a prohibition, so it is a §6 registry amendment, not a
-  refactor.** The story bible's two mountain-cafe rows said «Реплики не
-  озвучиваются и не добавляют AudioSource» and «Муж не получает … голоса,
-  AudioSource»; §17 said the same in prose; this paragraph said NPC voice audio
-  was deliberately absent. All four are rewritten around one distinction: a
-  blip is the sound of a letter being WRITTEN, not a voice. There are no
-  phonemes, no words, no intonation and no recording anywhere in
-  `NpcSpeechBlipSynthesis` — one triangle, its inharmonic partial, a little
-  grit, `45 ms`, quantized to 127 steps like everything else in the village
-  one-shot family. What the eight authored profiles in `NpcVoiceCatalog` carry
-  is a fundamental and a timbre, which is how two men shouting at each other
-  every ten seconds are told apart by ear rather than only by which head the
-  panel sits over.
-  The literal half of the old prohibition is also kept rather than argued away:
-  **no staged prefab gains an `AudioSource`.** `CemeteryWatchmanFactory`,
-  `SeacoastFishermanFactory` and `LastRouteFerrymanFactory` each throw if their
-  imported model contains one, and those guards are untouched — the sources
-  live on the `NpcSpeechVoice` service host and are moved to the speaker's
-  position for the length of a line. They are also not `RetroAudioService`'s:
-  that pool enforces a per-effect cooldown and a voice cap of one to three, and
-  has no per-play pitch, so a keystroke every `90 ms` at a pitch chosen by the
-  letter would have been mostly swallowed. A lease is held for a whole line, so
-  a keystroke can never steal the voice out from under the line still typing.
+  and writing has sound:** `SpeechDelivery` owns typing and letter-triggered
+  clicks; shared bubbles present spoken lines.
+  Story §6's two cafe rows/§17 permit writing sound, not voice acting:
+  `NpcSpeechBlipSynthesis` has no phonemes, words, intonation or recording.
+  Its triangle, inharmonic partial and grit last `45 ms`, quantized to 127 steps;
+  eight `NpcVoiceCatalog` profiles distinguish speakers by fundamental/timbre.
+  Staged prefabs gain no `AudioSource`; the watchman/fisherman/Ferryman factory
+  guards remain. Sources belong to `NpcSpeechVoice`, follow the speaker and are
+  leased for the whole line. This separate service preserves per-letter pitch
+  and prevents the ordinary effect pool's cooldown/cap from dropping or stealing
+  speech. Reveal and audible-click pacing are governed by the later timing decision.
 - **Accepted — the reveal is stepped once a frame, in `Update`, and the fade is
   a property of the bubble rather than of the view:** the count used to be
   recomputed inside `OnGUI`, which fires several times a frame for layout and
@@ -2965,12 +2973,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `22`/`25` again. Widening how far a line can be READ must not move the moment
   two men start shouting, and the profile is now deliberately wider than the
   gate on both ends, so they fall silent before their words begin to fade.
-- **Accepted — a line nobody said to the hero is drawn over the speaker, not
-  in the prompt panel:** `InteractionPromptView` is the hero's own channel —
-  what he can do, and what he was just told when he asked. A quarrel he is
-  merely standing next to has no business in it, and putting it there would
-  also make two men look like they were addressing him. `NpcSpeechBubbleView`
-  is a separate IMGUI layer at `GUI.depth = -75`: above the intoxication HUD,
+- **Accepted — shared speech is projected above the speaker:**
+  `NpcSpeechBubbleView` is an IMGUI layer at `GUI.depth = -75`: above the intoxication HUD,
   below the interaction prompt, the city map and the pause menu, so it never
   covers anything the player operates. It is not uGUI/TextMeshPro — that
   would be the project's first `Canvas`, an asmdef reference and a committed
@@ -2999,10 +3003,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and a profanity list); staged, seated, riding and balcony bodies; the
   mourner's street copy (`CityPedestrianInsultRules.SilentDesignIds`); no
   crowd, no pursuit, no new `AudioSource` (the shared writing blip). Design
-  decisions worth keeping. (1) THE CHANNEL: an insult aimed at him hangs
-  over the speaker's head like an overheard line, never in the prompt panel
-  — the panel is where somebody answers an interaction of his, and nobody
-  asked this man anything. (2) ONE SHARED POOL of twenty lines in the voice
+  decisions worth keeping. (1) THE CHANNEL: an insult hangs above its speaker,
+  through the shared bubble. (2) ONE SHARED POOL of twenty lines in the voice
   of the anonymous role, the user's choice over per-design pools; the
   walker's own design id still picks the voice through
   `NpcVoiceCatalog.ResolveOrdinal`. **Corrected 2026-09-07 on the user's
@@ -3045,20 +3047,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `CityPedestrianInsultPlayModeTests` walks the lifecycle on real prefabs.
 
 - **Accepted and implemented 2026-09-05 — the drunk hero mutters over his own
-  head, and this knowingly breaks the two-channel split above:** past the
+  head:** past the
   balance threshold he says short lines about himself on a long timer, and the
   user lifted the story bible's §16.3 and §7 «никогда о себе» for that one
   channel (registry row §6, `2026-09-05`; the banned words, reflection,
   repentance and self-irony are NOT lifted, and a test over both catalogs
-  fails the build if a line reaches for any of them). The line goes over his
-  head rather than into the prompt panel even though he is the one talking:
-  the panel is where somebody ANSWERS him, and a mutter with no addressee put
-  there would read as a reply to nobody — and it would also fight the «E —
-  open» prompt for the same rect. Seven decisions worth keeping.
-  (1) HIS OWN VIEW, on a child object of `IntoxicationStatusController`. Seven
-  of the nine roots that build the hero have no bubble view at all, so
-  borrowing the City's would leave him mute in most of the game; a view of his
-  own also means the eviction ladder can never trade his line against a
+  fails the build if a line reaches for any of them). The shared bubble follows
+  his head and leaves action prompts readable. Seven decisions worth keeping.
+  (1) HIS OWN SHARED-CLASS INSTANCE, under `IntoxicationStatusController`, serves
+  every gameplay root without depending on City's speech host. Its eviction
+  ladder never trades his line against a
   quarrel in the park. It costs one voice: `NpcSpeechVoice.VoiceCount` is now
   `Capacity + 2`. (2) NO ROOT CHANGED. All nine roots add the status
   controller, the prompt view and the HUD to the same `ui` object, so the

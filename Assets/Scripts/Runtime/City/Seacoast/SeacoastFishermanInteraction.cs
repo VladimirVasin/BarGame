@@ -19,11 +19,11 @@ namespace BarPromenade
 
         /// <summary>A shade longer than the watchman's three seconds:
         /// his lines are shorter, but they are meant to sit.</summary>
-        public const float ResponseDurationSeconds = 3.4f;
+        public const float ResponseDurationSeconds = 3.9f;
 
         /// <summary>How long a fully typed line is left standing —
         /// the same tail the watchman's answers keep.</summary>
-        public const float ReadingTailSeconds = 2.0f;
+        public const float ReadingTailSeconds = SpeechDelivery.ReadingTailSeconds;
 
         private Vector3 standPosition;
         private NpcSpeaker speaker = NpcSpeaker.None;
@@ -49,9 +49,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Who he is when he answers: which head the sound comes from,
-        /// what tone he writes in, and how far it carries. Without it
-        /// he answers whole, instantly and silently, as he did before.
+        /// His actual head anchors the overhead answer and positional
+        /// voice; the declared tone and earshot belong to this speaker.
         /// </summary>
         public void AttachSpeaker(in NpcSpeaker value)
         {

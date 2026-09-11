@@ -33,11 +33,10 @@ namespace BarPromenade
         }
         [Serializable] private sealed class Definition
         {
-            public int version, crossingRoadIndex;
-            public float carriagewayWidth, roadLength, publicPathWidth;
+            public int version;
+            public float carriagewayWidth, roadLength;
             public float truckLength, truckWidth, truckWheelbase, truckRearOverhang, turnRadius;
             public RoadSample[] roadSamples;
-            public Vector3[] publicPath, publicStreetSpur;
             public YardDefinition lowerYard, upperYard;
             public Vector3 gate, loadingRearAxle, turnCenter;
         }
@@ -55,27 +54,21 @@ namespace BarPromenade
         private readonly float[][] truckDistances;
         private readonly Definition data;
         private readonly CityLayout layout;
-        private readonly PublicWalkOutline[] publicWalks;
         public Vector3 Origin { get; }
         public RoadEdge StreetEdge { get; }
         public Vector3 StreetConnection => World(data.roadSamples[0].center);
         public Vector3 Gate => World(data.gate);
         public Vector3 StoreRearAxle => World(data.loadingRearAxle);
-        public Vector3 Crossing => World(data.roadSamples[data.crossingRoadIndex].center);
         public float CarriagewayWidth => data.carriagewayWidth;
         public float TruckLength => data.truckLength;
         public float TruckWidth => data.truckWidth;
         public float TruckWheelbase => data.truckWheelbase;
         public float MinimumTurningRadius => data.turnRadius;
-        public float PublicPathWidth => data.publicPathWidth;
         public IReadOnlyList<RoadSample> RoadSamples => data.roadSamples;
-        public IReadOnlyList<Vector3> PublicPath => data.publicPath;
-        public IReadOnlyList<Vector3> PublicStreetSpur => data.publicStreetSpur;
         public Rect LowerYard => World(data.lowerYard.Bounds);
         public Rect UpperYard => World(data.upperYard.Bounds);
         public Rect StreetOpening => World(Rect.MinMaxRect(48.8f, -43.05f, 59.2f, -41.85f));
-        public Rect StreetPublicOpening => World(Rect.MinMaxRect(58.9f, -42.15f, 61.1f, -41.8f));
-        public Rect ReservedBounds => World(Rect.MinMaxRect(.5f, -46f, 61.5f, -7f));
+        public Rect ReservedBounds => World(Rect.MinMaxRect(.5f, -46f, 59.5f, -7f));
         public Vector3 World(Vector3 local) => Origin + local;
         public Rect World(Rect local) => new Rect(local.position + new Vector2(Origin.x, Origin.z), local.size);
 
@@ -84,8 +77,6 @@ namespace BarPromenade
             this.layout = layout;
             Origin = port.Origin;
             data = source;
-            publicWalks = new[] { new PublicWalkOutline(data.publicPath, data.publicPathWidth),
-                new PublicWalkOutline(data.publicStreetSpur, data.publicPathWidth) };
             bool found = false;
             foreach (CityOpenAreaAccessDescriptor access in layout.OpenAreaAccesses)
             {
@@ -293,20 +284,6 @@ namespace BarPromenade
                 if(d<distance || d<=distance && offset<bestRoadOffset)
                 {distance=d;bestRoadOffset=offset;top=Origin.y+Mathf.Lerp(a.center.y,b.center.y,t)+lateral*Mathf.Lerp(a.crossfall,b.crossfall,t);}
             }
-            for(int i=1;i<data.publicPath.Length;i++)
-            {
-                Vector3 a=data.publicPath[i-1],b=data.publicPath[i];
-                float t=Project(p,a,b,out Vector2 point);
-                float d=Mathf.Max(0,Vector2.Distance(p,point)-data.publicPathWidth*.5f);
-                if(d<distance){distance=d;top=Origin.y+Mathf.Lerp(a.y,b.y,t);}
-            }
-            for(int i=1;i<data.publicStreetSpur.Length;i++)
-            {
-                Vector3 a=data.publicStreetSpur[i-1],b=data.publicStreetSpur[i];
-                float t=Project(p,a,b,out Vector2 point);
-                float d=Mathf.Max(0,Vector2.Distance(p,point)-data.publicPathWidth*.5f);
-                if(d<distance){distance=d;top=Origin.y+Mathf.Lerp(a.y,b.y,t);}
-            }
         }
 
         private static float Project(Vector2 p,Vector3 a,Vector3 b,out Vector2 point)
@@ -324,13 +301,6 @@ namespace BarPromenade
                 Mathf.Min(LowerYard.xMax, UpperYard.xMax), seam + reach));
             for(int i=1;i<data.roadSamples.Length;i++)
                 AddWalkStrip(rectangles,data.roadSamples[i-1].center,data.roadSamples[i].center,2f);
-            // These conservative rectangles still bridge endpoints and serve
-            // terrain-rail trimming/recovery. Ordinary walking also queries the
-            // complete authored outline, with the capsule radius applied once.
-            for(int i=1;i<data.publicPath.Length;i++)
-                AddWalkStrip(rectangles,data.publicPath[i-1],data.publicPath[i],.68f);
-            for(int i=1;i<data.publicStreetSpur.Length;i++)
-                AddWalkStrip(rectangles,data.publicStreetSpur[i-1],data.publicStreetSpur[i],.68f);
         }
         private void AddWalkStrip(ICollection<Rect> rectangles,Vector3 a,Vector3 b,float half)
         {
@@ -342,75 +312,9 @@ namespace BarPromenade
             }
         }
 
-        internal bool ContainsPublicWalk(Vector3 world, float radius)
-        {
-            var local = new Vector2(world.x - Origin.x, world.z - Origin.z);
-            foreach (PublicWalkOutline walk in publicWalks)
-                if (walk.Contains(local, radius)) return true;
-            return false;
-        }
-
-        private sealed class PublicWalkOutline
-        {
-            private readonly Vector2[] vertices;
-            private readonly Rect bounds;
-
-            internal PublicWalkOutline(Vector3[] path, float width)
-            {
-                vertices = new Vector2[path.Length * 2];
-                Vector2 minimum = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
-                Vector2 maximum = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
-                for (int i = 0; i < path.Length; i++)
-                {
-                    Vector3 incoming = path[i] - path[Mathf.Max(0, i - 1)]; incoming.y = 0;
-                    Vector3 outgoing = path[Mathf.Min(path.Length - 1, i + 1)] - path[i]; outgoing.y = 0;
-                    incoming.Normalize(); outgoing.Normalize();
-                    Vector3 tangent = i == 0 ? outgoing : i == path.Length - 1 ? incoming : (incoming + outgoing).normalized;
-                    Vector2 normal = new Vector2(tangent.z, -tangent.x);
-                    Vector3 segment = i == path.Length - 1 ? incoming : outgoing;
-                    // Match pedestrian_strip in build-city-port-3d-model.py,
-                    // including its capped miter at the sharp crossing turn.
-                    float miter = Mathf.Min(1.45f, 1f / Mathf.Max(.3f,
-                        Vector2.Dot(normal, new Vector2(segment.z, -segment.x))));
-                    Vector2 point = new Vector2(path[i].x, path[i].z);
-                    Vector2 left = point - normal * (width * .5f * miter);
-                    Vector2 right = point + normal * (width * .5f * miter);
-                    vertices[i] = left; vertices[vertices.Length - 1 - i] = right;
-                    minimum = Vector2.Min(minimum, Vector2.Min(left, right));
-                    maximum = Vector2.Max(maximum, Vector2.Max(left, right));
-                }
-                bounds = Rect.MinMaxRect(minimum.x, minimum.y, maximum.x, maximum.y);
-            }
-
-            internal bool Contains(Vector2 point, float radius)
-            {
-                if (point.x < bounds.xMin || point.x > bounds.xMax ||
-                    point.y < bounds.yMin || point.y > bounds.yMax) return false;
-                bool inside = false, onBoundary = false;
-                float radiusSquared = radius * radius;
-                for (int i = 0, previous = vertices.Length - 1; i < vertices.Length; previous = i++)
-                {
-                    Vector2 a = vertices[previous], b = vertices[i], edge = b - a;
-                    float t = Mathf.Clamp01(Vector2.Dot(point - a, edge) / Mathf.Max(.000001f, edge.sqrMagnitude));
-                    float distanceSquared = (point - a - edge * t).sqrMagnitude;
-                    if (distanceSquared + .000001f < radiusSquared) return false;
-                    onBoundary |= distanceSquared < .00000001f;
-                    if ((a.y > point.y) != (b.y > point.y) &&
-                        point.x < a.x + (point.y - a.y) * edge.x / edge.y) inside = !inside;
-                }
-                return inside || onBoundary;
-            }
-        }
-
         public void ValidateOrThrow(CityLayout layout)
         {
             if(!layout.HasRoad(StreetEdge))throw new InvalidOperationException("Disconnected port service graph.");
-            Vector3 firstStreet=layout.GetNodeWorldPosition(StreetEdge.A),lastStreet=layout.GetNodeWorldPosition(StreetEdge.B);
-            Vector3 publicStart=World(data.publicStreetSpur[0]);
-            float amount=(publicStart.x-firstStreet.x)/(lastStreet.x-firstStreet.x);
-            float sidewalkTop=layout.ElevationPlan.SampleRoadDatum(StreetEdge,amount)+CityStreetSurfacePlanner.SidewalkTop;
-            if(Mathf.Abs(publicStart.y-sidewalkTop)>.015f || Mathf.Abs(publicStart.z-firstStreet.z-3.5f)>.015f)
-                throw new InvalidOperationException("The public port path must physically meet its city sidewalk.");
             for(int i=1;i<data.roadSamples.Length;i++)
             for(int side=-1;side<=1;side++)
             {
@@ -419,12 +323,6 @@ namespace BarPromenade
                 Vector3 second=b.center+b.right*b.halfWidth*side+Vector3.up*(b.crossfall*b.halfWidth*side);
                 if(Mathf.Abs(second.y-first.y)/new Vector2(second.x-first.x,second.z-first.z).magnitude>.06f)
                     throw new InvalidOperationException("The actual port carriageway exceeds six percent grade.");
-            }
-            for(int i=1;i<data.publicPath.Length;i++)
-            {
-                Vector3 a=data.publicPath[i-1],b=data.publicPath[i];
-                if(Mathf.Abs(b.y-a.y)/new Vector2(b.x-a.x,b.z-a.z).magnitude>.083f)
-                    throw new InvalidOperationException("Port public access is too steep.");
             }
             if(Mathf.Abs(TruckWheelbase/MinimumTurningRadius)>Mathf.Tan(36f*Mathf.Deg2Rad))
                 throw new InvalidOperationException("Truck steering exceeds the reserved rigid-truck envelope.");

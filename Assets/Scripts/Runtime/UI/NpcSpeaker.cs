@@ -4,9 +4,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// Who is talking: where the sound comes from, what he sounds like,
-    /// and how far away he can still be heard. One struct, because both
-    /// channels need all three and neither should be assembling them
-    /// itself.
+    /// and how far away he can still be heard. Ambient and interaction
+    /// speech share this identity and the same head-bubble presentation.
     ///
     /// <see cref="None"/> is narration — a description of what the hero
     /// is looking at, the locked door, the cashier who does not blink.

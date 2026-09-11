@@ -523,7 +523,7 @@ def ribbon_piece(geom,a_left,a_right,b_left,b_right,depth,color):
 
 def access_road(mat):
     layout=json.loads(ACCESS_LAYOUT_PATH.read_text(encoding="utf-8"))
-    root=empty("AccessRoad");road,shoulder,path,collision=[Geometry() for _ in range(4)]
+    root=empty("AccessRoad");road,shoulder,collision=[Geometry() for _ in range(3)]
     road.role="Asphalt"
     def station(s,lateral):
         p,r=s["center"],s["right"]
@@ -534,67 +534,18 @@ def access_road(mat):
         bl,br=station(b,-b["halfWidth"]),station(b,b["halfWidth"])
         ribbon_piece(road,al,ar,bl,br,.18,METAL)
         ribbon_piece(collision,al,ar,bl,br,.18,CONCRETE)
-        # Flush shoulders keep the flared street join and sole pedestrian
-        # crossing entirely free of raised curbs or incidental rail posts.
+        # Flush shoulders keep the shared approach and flared street join
+        # free of raised curbs or incidental rail posts.
         for sign in (-1,1):
             aa=station(a,sign*a["halfWidth"]);bb=station(b,sign*b["halfWidth"])
             ao=station(a,sign*(a["halfWidth"]+.5));bo=station(b,sign*(b["halfWidth"]+.5))
             ribbon_piece(shoulder,aa,ao,bb,bo,.23,CONCRETE)
             ribbon_piece(collision,aa,ao,bb,bo,.23,CONCRETE)
-    # A continuous mitered strip follows the shared public route, including
-    # its measured crossfall across the road. At that crossing it is asphalt.
-    def pedestrian_strip(key,width_key,crossing_segments=()):
-        points=[Vector((p["x"],p["y"],p["z"])) for p in layout[key]]
-        pairs=[]
-        for i,p in enumerate(points):
-            before=points[max(0,i-1)];after=points[min(len(points)-1,i+1)]
-            incoming=Vector((p.x-before.x,0,p.z-before.z)).normalized() if i else None
-            outgoing=Vector((after.x-p.x,0,after.z-p.z)).normalized() if i<len(points)-1 else None
-            tangent=((incoming+outgoing).normalized() if incoming is not None and outgoing is not None
-                     else outgoing if outgoing is not None else incoming)
-            normal=Vector((tangent.z,0,-tangent.x))
-            segment=outgoing if outgoing is not None else incoming
-            factor=min(1.45,1/max(.3,normal.dot(Vector((segment.z,0,-segment.x)))))
-            width=layout[width_key]*.5*factor
-            pairs.append((tuple(p-normal*width+Vector((0,.012,0))),tuple(p+normal*width+Vector((0,.012,0)))))
-        for i,(a,b) in enumerate(zip(pairs,pairs[1:])):
-            path.role="Asphalt" if i in crossing_segments else "Concrete"
-            ribbon_piece(path,a[0],a[1],b[0],b[1],.26,CONCRETE)
-            ribbon_piece(collision,a[0],a[1],b[0],b[1],.26,CONCRETE)
-    pedestrian_strip("publicPath","publicPathWidth",(3,4))
-    pedestrian_strip("publicStreetSpur","publicPathWidth")
-    # Seven worn paint strips make the sole crossing legible. Sample the
-    # actual road/walk top so the sloping carriageway cannot bury the paint.
-    # These are top-only visual polygons, never a raised physical obstacle.
-    vertices=[];faces=[]
-    for surface in (road,path):
-        offset=len(vertices);vertices.extend(surface.vertices)
-        faces.extend([offset+i for i in face] for face in surface.faces)
-    crossing_tree=BVHTree.FromPolygons(vertices,faces)
-    crossing=samples[layout["crossingRoadIndex"]]
-    center=crossing["center"];right=crossing["right"]
-    tangent=(-right["z"],right["x"])
-    marks=Geometry();marks.role="RoadMarking"
-    def paint_point(across,along):
-        x=center["x"]+right["x"]*across+tangent[0]*along
-        z=center["z"]+right["z"]*across+tangent[1]*along
-        hit,_,_,_=crossing_tree.ray_cast(Vector(source((x,10,z))),Vector((0,0,-1)),20)
-        if hit is None:raise RuntimeError("Crossing paint lies outside authored road/walk surface")
-        return (x,source(hit)[1]+.006,z)
-    for stripe in range(-3,4):
-        across=stripe*.8
-        for segment in range(4):
-            a=-.85+segment*.425;b=a+.425
-            marks.add([paint_point(across-.18,a),paint_point(across+.18,a),
-                       paint_point(across+.18,b),paint_point(across-.18,b)],[(0,3,2,1)],ICE,solid=False)
     obj(road,"AccessCarriageway",root,mat);obj(shoulder,"AccessShoulders",root,mat)
-    obj(path,"PublicCoastWalk",root,mat);obj(collision,"COL_AccessRoad",root,mat).hide_render=True
-    obj(marks,"PublicCrossingMarks",root,mat)
-    for name,p in (("Street",samples[0]["center"]),("Gate",layout["gate"]),
-                   ("PedestrianCrossing",samples[layout["crossingRoadIndex"]]["center"])):
+    obj(collision,"COL_AccessRoad",root,mat).hide_render=True
+    for name,p in (("Street",samples[0]["center"]),("Gate",layout["gate"])):
         empty("ANCHOR_Access"+name,root,(p["x"],p["y"],p["z"]))
     for name,p in (("RoadStart",samples[0]["center"]),("RoadGate",layout["gate"]),
-                   ("PublicCrossing",samples[layout["crossingRoadIndex"]]["center"]),
                    ("LoadingStop",layout["loadingRearAxle"])):
         empty("ANCHOR_"+name,root,(p["x"],p["y"],p["z"]))
     return root

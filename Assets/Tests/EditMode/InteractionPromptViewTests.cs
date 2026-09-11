@@ -163,8 +163,9 @@ namespace BarPromenade.Tests.EditMode
         /// mid-word, which is the whole reason the overhead bubble has
         /// always measured from the whole line.
         /// </summary>
-        [Test]
-        public void SpokenFeedback_TypesOutButIsFramedForTheWholeLine()
+        [TestCase(0.1f, false)]
+        [TestCase(6f, true)]
+        public void SpokenFeedback_TypesOutButIsFramedForTheWholeLine(float requestedDuration, bool pause)
         {
             var gameObject = new GameObject("Spoken Prompt Test");
             var speakerObject = new GameObject("Speaker");
@@ -178,16 +179,23 @@ namespace BarPromenade.Tests.EditMode
                     NpcVoiceCatalog.WatchmanDesignId,
                     NpcEarshotProfile.Conversation);
 
+                string line = LocalizationService.Get(CemeteryWatchmanQuips.LineKeys[0]);
+                float duration = Mathf.Max(requestedDuration,
+                    SpeechDelivery.ResolveSpokenDuration(line, SpeechDelivery.ReadingTailSeconds));
                 Assert.That(
                     view.ShowSpokenFeedbackAt(
                         CemeteryWatchmanQuips.LineKeys[0],
-                        6f,
+                        requestedDuration,
                         10f,
                         speaker),
                     Is.True);
 
                 string whole = view.GetDisplayedTextAt(10f);
                 Assert.That(whole, Is.Not.Empty);
+                Assert.That(view.SpokenBubbles, Is.Not.Null);
+                Assert.That(view.SpokenBubbles.IsShowing(speakerObject), Is.True);
+                Assert.That(view.GetBottomPromptKeyAt(10f), Is.Empty,
+                    "A spoken answer is never duplicated in the bottom panel.");
                 Assert.That(
                     view.GetRevealedTextAt(10f),
                     Is.Empty,
@@ -201,19 +209,45 @@ namespace BarPromenade.Tests.EditMode
                     Is.LessThan(whole.Length),
                     "A fifth of a second is not a whole line.");
                 Assert.That(whole, Does.StartWith(partial));
+                Assert.That(view.SpokenBubbles.RevealedTextOf(speakerObject), Is.EqualTo(partial),
+                    "The facade observes the bubble's one typewriter.");
+                Assert.That(view.ShowSpokenFeedbackAt(CemeteryWatchmanQuips.LineKeys[1],
+                    6f, 10.2f, speaker), Is.False,
+                    "Repeated E cannot replace a sentence which is still being read.");
                 Assert.That(
                     view.GetDisplayedTextAt(10.2f),
                     Is.EqualTo(whole),
                     "The frame is still measured from the whole line.");
 
+                float pausedSeconds = pause ? 20f : 0f;
+                if (pause)
+                {
+                    view.AdvanceTo(10.2f, true);
+                    view.AdvanceTo(10.2f + pausedSeconds, true);
+                    Assert.That(view.IsFeedbackVisibleAt(10.2f + pausedSeconds), Is.True);
+                    Assert.That(view.GetRevealedTextAt(10.2f + pausedSeconds), Is.EqualTo(partial));
+                    Assert.That(view.SpokenBubbles.RenderEnabled, Is.False);
+                    view.AdvanceTo(10.2f + pausedSeconds, false);
+                    Assert.That(view.SpokenBubbles.RenderEnabled, Is.True);
+                }
+
                 view.AdvanceTo(
-                    10f +
+                    10f + pausedSeconds +
                     whole.Length / SpeechDelivery.CharactersPerSecond +
                     0.1f);
                 Assert.That(
                     view.GetRevealedTextAt(10.1f),
                     Is.EqualTo(whole),
                     "And it finishes.");
+                Assert.That(duration - whole.Length / SpeechDelivery.CharactersPerSecond,
+                    Is.GreaterThanOrEqualTo(SpeechDelivery.ReadingTailSeconds - 0.0001f),
+                    "The completed sentence keeps the shared reading tail.");
+                view.AdvanceTo(10f + pausedSeconds + duration - 0.01f);
+                Assert.That(view.IsFeedbackVisibleAt(10f + pausedSeconds + duration - 0.01f), Is.True);
+                Assert.That(view.GetRevealedTextAt(10f + pausedSeconds + duration - 0.01f), Is.EqualTo(whole));
+                view.AdvanceTo(10f + pausedSeconds + duration + 0.01f);
+                Assert.That(view.IsFeedbackVisibleAt(10f + pausedSeconds + duration + 0.01f), Is.False);
+                Assert.That(view.SpokenBubbles.IsShowing(speakerObject), Is.False);
             }
             finally
             {
@@ -249,6 +283,11 @@ namespace BarPromenade.Tests.EditMode
                         10f),
                     Is.True);
                 Assert.That(view.IsSpeaking, Is.False);
+                Assert.That(view.ShowSpokenFeedbackAt("city.dumpster.placeholder", 3f, 10f,
+                    NpcSpeaker.None), Is.False,
+                    "A missing speaker cannot turn an attempted speech into bottom narration.");
+                Assert.That(view.SpokenBubbles, Is.Null);
+                Assert.That(view.GetBottomPromptKeyAt(10f), Is.EqualTo("city.dumpster.placeholder"));
                 Assert.That(
                     view.GetRevealedTextAt(10f),
                     Is.EqualTo(view.GetDisplayedTextAt(10f)),
@@ -266,15 +305,20 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// New behaviour: walking away used to leave the answer hanging
-        /// at the bottom of the screen for its full duration. Only
-        /// disabling input ever cleared it.
+        /// A spoken answer belongs to a live, nearby speaker and to the
+        /// active interaction view; teardown must release its bubble too.
         /// </summary>
-        [Test]
-        public void SpokenFeedback_IsDroppedWhenTheHeroWalksAway()
+        [TestCase("distance")]
+        [TestCase("anchor")]
+        [TestCase("speaker")]
+        [TestCase("disable")]
+        [TestCase("clear")]
+        public void SpokenFeedback_ReleasesItsBubbleWhenTheInteractionEnds(string reason)
         {
             var gameObject = new GameObject("Walk Away Prompt Test");
             var speakerObject = new GameObject("Speaker");
+            var headObject = new GameObject("Actual Head");
+            headObject.transform.SetParent(speakerObject.transform, false);
             var heroObject = new GameObject("Hero");
             try
             {
@@ -286,7 +330,7 @@ namespace BarPromenade.Tests.EditMode
 
                 var speaker = new NpcSpeaker(
                     speakerObject,
-                    speakerObject.transform,
+                    headObject.transform,
                     NpcVoiceCatalog.FishermanDesignId,
                     NpcEarshotProfile.Conversation);
 
@@ -300,16 +344,19 @@ namespace BarPromenade.Tests.EditMode
                 view.AdvanceTo(10.1f);
                 Assert.That(view.IsFeedbackVisibleAt(10.1f), Is.True);
 
-                heroObject.transform.position = new Vector3(
-                    NpcEarshotProfile.ConversationFaintRadiusMeters +
-                    2f,
-                    0f,
-                    0f);
+                if (reason == "distance")
+                    heroObject.transform.position = new Vector3(
+                        NpcEarshotProfile.ConversationFaintRadiusMeters + 2f, 0f, 0f);
+                else if (reason == "anchor") Object.DestroyImmediate(headObject);
+                else if (reason == "speaker") Object.DestroyImmediate(speakerObject);
+                else if (reason == "disable") view.enabled = false;
+                else view.ClearFeedback();
                 view.AdvanceTo(10.2f);
                 Assert.That(
                     view.IsFeedbackVisibleAt(10.2f),
                     Is.False,
-                    "Out of his earshot, the answer is gone.");
+                    "The ended interaction cannot leave an orphaned line.");
+                Assert.That(view.SpokenBubbles.IsShowing(speakerObject), Is.False);
             }
             finally
             {
@@ -367,11 +414,15 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        [Test]
-        public void PlayerInteractor_DisablingInputClearsTimedFeedback()
+        [TestCase(false, false)]
+        [TestCase(true, false)]
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public void PlayerInteractor_DisablingInputClearsFeedbackExceptSpeechHeldByAMenu(bool spoken, bool modal)
         {
             var gameObject = new GameObject("Player Interactor Test");
             var viewObject = new GameObject("Interaction Prompt Test");
+            var modalLock = new BarMinigameModalLock();
             try
             {
                 InteractionPromptView view =
@@ -380,19 +431,22 @@ namespace BarPromenade.Tests.EditMode
                     gameObject.AddComponent<PlayerInteractor>();
                 interactor.Initialize(view);
 
-                Assert.That(
-                    interactor.ShowFeedback(
-                        "interaction.feedback",
-                        5f),
-                    Is.True);
+                bool shown = spoken
+                    ? interactor.ShowSpokenFeedback(CemeteryWatchmanQuips.LineKeys[0], 5f,
+                        new NpcSpeaker(gameObject, gameObject.transform,
+                            NpcVoiceCatalog.WatchmanDesignId, NpcEarshotProfile.Conversation))
+                    : interactor.ShowFeedback("interaction.feedback", 5f);
+                Assert.That(shown, Is.True);
                 Assert.That(view.IsFeedbackVisible, Is.True);
 
-                interactor.SetInputEnabled(false);
+                if (modal) Assert.That(modalLock.TryCaptureAndDisable(interactor, null, null), Is.True);
+                else interactor.SetInputEnabled(false);
 
-                Assert.That(view.IsFeedbackVisible, Is.False);
+                Assert.That(view.IsFeedbackVisible, Is.EqualTo(spoken && modal));
             }
             finally
             {
+                modalLock.Restore();
                 Object.DestroyImmediate(gameObject);
                 Object.DestroyImmediate(viewObject);
             }

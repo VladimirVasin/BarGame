@@ -155,7 +155,7 @@ namespace BarPromenade
             WorkingSeconds = seconds;
             Snapshot = Cycle.Sample(seconds);
             port.ForcePresentation = ForcePresentation;
-            port.ApplyAt(Snapshot.PortSeconds, waveTime);
+            port.ApplyAt(Snapshot.PortSeconds, waveTime, Snapshot.DockWorkerWaitingForPortAccess);
             CityPortTruckPose pose = TruckPose(Snapshot);
             Truck.SetPositionAndRotation(pose.RearAxle, pose.Rotation);
             UpdatePresentationVisibility();

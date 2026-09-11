@@ -3,11 +3,9 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Lines spoken by somebody who is not talking to the hero, drawn
-    /// over their head instead of in the prompt panel at the bottom of
-    /// the screen. The prompt panel is the hero's own channel — it says
-    /// what he can do and what he was just told — and a quarrel he is
-    /// merely standing next to does not belong in it.
+    /// Every spoken line, including an answer to the hero, is drawn over
+    /// its speaker's head. Actions and silent descriptions use the prompt.
+    /// See ai/speech-presentation-standard.md for the mandatory contract.
     ///
     /// It is IMGUI on the shared 640x360 retro canvas, like everything
     /// else in this project, and deliberately not a world-space mesh:
@@ -35,6 +33,11 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class NpcSpeechBubbleView : MonoBehaviour
     {
+        // A scene may have several local conversation views, but a head
+        // cannot speak through two of them at once.
+        private static readonly System.Collections.Generic.HashSet<NpcSpeechBubbleView>
+            speakingViews = new System.Collections.Generic.HashSet<NpcSpeechBubbleView>();
+
         /// <summary>
         /// Lines on screen at once. Two was sized for the park quarrel,
         /// where one man answers the other and never over him. Four is
@@ -51,17 +54,10 @@ namespace BarPromenade
         public const int SpeakerCapacity = 8;
 
         /// <summary>
-        /// How long a line stays up before it takes itself down. Nobody
-        /// has to close it: a line is a thing that was said, and a thing
-        /// that was said stops being on screen whether or not anybody
-        /// answers it. Four seconds is the whole of a 48-character line
-        /// typed out plus a little over two and a half to read it in.
-        ///
-        /// This stays on the bubble rather than moving to the shared
-        /// typewriter: it is the BUBBLE's own life, and the mountain
-        /// cafe schedules its conversation against it.
+        /// Shared ambient lifetime, including typing and reading. It also fits
+        /// the cafe pair's settled interval between cigarette actions.
         /// </summary>
-        public const float VisibleSeconds = 4f;
+        public const float VisibleSeconds = 4.4f;
 
         public const float MinimumPanelWidth = 70f;
         public const float MaximumPanelWidth = 180f;
@@ -85,6 +81,7 @@ namespace BarPromenade
             public int Speaker;
 
             public SpeechDelivery Line;
+            public float DurationSeconds;
 
             /// <summary>This bubble's own fade, from its own anchor's
             /// own distance.</summary>
@@ -140,7 +137,7 @@ namespace BarPromenade
         public float LastRenderedOpacity { get; private set; }
 
         // Dedicated interaction views can use a pause-aware clock; ambient views
-        // retain their existing frame clock and four-second lifetime.
+        // retain their existing frame clock and shared lifetime.
         public bool UseManualClock { get; set; }
         public bool RenderEnabled { get; set; } = true;
         public float LineDurationSeconds { get; set; } = VisibleSeconds;
@@ -241,15 +238,28 @@ namespace BarPromenade
             string text,
             float unscaledTime)
         {
+            return ShowAt(owner, text, unscaledTime, LineDurationSeconds);
+        }
+
+        /// <summary>The duration belongs to this line; a later line cannot
+        /// shorten an earlier speaker's reading time.</summary>
+        public bool ShowAt(
+            Object owner,
+            string text,
+            float unscaledTime,
+            float durationSeconds)
+        {
             if (string.IsNullOrWhiteSpace(text) ||
                 float.IsNaN(unscaledTime) ||
-                float.IsInfinity(unscaledTime))
+                float.IsInfinity(unscaledTime) ||
+                durationSeconds <= 0f || float.IsNaN(durationSeconds) ||
+                float.IsInfinity(durationSeconds))
             {
                 return false;
             }
 
             int speaker = FindSpeaker(owner);
-            if (speaker < 0)
+            if (speaker < 0 || IsSpeakingElsewhere(speakers[speaker]))
             {
                 return false;
             }
@@ -285,6 +295,7 @@ namespace BarPromenade
             {
                 Speaker = speaker,
                 Line = SpeechDelivery.Spoken(text, unscaledTime),
+                DurationSeconds = durationSeconds,
                 Opacity = opacity,
                 IsCulled = opacity <= 0f,
                 VoiceLease = -1,
@@ -292,8 +303,33 @@ namespace BarPromenade
                 ExtraJitterCents = 0f,
                 ScatterSeed = 0u
             };
+            speakingViews.Add(this);
             return true;
         }
+
+        private bool IsSpeakingElsewhere(in NpcSpeaker speaker)
+        {
+            foreach (NpcSpeechBubbleView view in speakingViews)
+            {
+                if (view == null || !view.isActiveAndEnabled) continue;
+                foreach (Bubble bubble in view.bubbles)
+                {
+                    if (bubble.Speaker < 0) continue;
+                    NpcSpeaker other = view.speakers[bubble.Speaker];
+                    if (other.Owner == null || other.Anchor == null ||
+                        !other.Anchor.gameObject.activeInHierarchy) continue;
+                    // The owning timeline may deliberately reconstruct its own
+                    // current line. A different owner cannot reuse that head.
+                    if (view == this && other.Owner == speaker.Owner) continue;
+                    if (other.Owner == speaker.Owner ||
+                        (speaker.Anchor != null && other.Anchor == speaker.Anchor)) return true;
+                }
+            }
+            return false;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSpeakingViews() => speakingViews.Clear();
 
         /// <summary>
         /// Tells one open line how far gone the man saying it is: how much
@@ -380,6 +416,7 @@ namespace BarPromenade
             {
                 CloseSlot(ref bubbles[index]);
             }
+            speakingViews.Remove(this);
         }
 
         public bool IsShowing(Object owner)
@@ -487,13 +524,15 @@ namespace BarPromenade
                 return;
             }
 
-            if (unscaledTime - bubble.Line.StartedAt > LineDurationSeconds)
+            NpcSpeaker speaker = speakers[bubble.Speaker];
+            if (speaker.Owner == null || speaker.Anchor == null ||
+                !speaker.Anchor.gameObject.activeInHierarchy ||
+                unscaledTime - bubble.Line.StartedAt > bubble.DurationSeconds)
             {
                 CloseSlot(ref bubble);
                 return;
             }
 
-            NpcSpeaker speaker = speakers[bubble.Speaker];
             float distance = listener != null
                 ? speaker.ResolveDistance(listener, Vector3.zero)
                 : 0f;
@@ -553,6 +592,7 @@ namespace BarPromenade
             ReleaseVoice(ref bubble);
             bubble.Speaker = -1;
             bubble.Line = default;
+            bubble.DurationSeconds = 0f;
             bubble.Opacity = 0f;
             bubble.IsCulled = false;
             bubble.Scatter = 0f;

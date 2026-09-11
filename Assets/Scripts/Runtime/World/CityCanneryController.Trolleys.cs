@@ -41,7 +41,7 @@ namespace BarPromenade
         private Quaternion PortQueueRotation => Quaternion.LookRotation(port.Plan.World(new Vector3(4.3f,
             CityPortPlan.DeckHeight,-14f))-PortTrolleyQueuePosition);
         public bool DriverWaitingForDockWorker => Snapshot.Stage == CityFishSupplyStage.LoadFish &&
-            Snapshot.WaitingForPortAccess && Snapshot.Seconds >= CityFishSupplyCycle.TrolleyQueueArrivalDuration;
+            Snapshot.WaitingForDockWorker && Snapshot.Seconds >= CityFishSupplyCycle.TrolleyQueueArrivalDuration;
         public CityCanneryTrolleyPhase TrolleyPhase { get; private set; }
 
         private void CacheDeliverySidewalks(CityLayout layout)

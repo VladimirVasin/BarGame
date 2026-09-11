@@ -9,7 +9,7 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class LastRouteRideSpeechView : MonoBehaviour
     {
-        public const float ReadingTailSeconds = 2f;
+        public const float ReadingTailSeconds = SpeechDelivery.ReadingTailSeconds;
         private NpcSpeechBubbleView bubbles;
         private NpcSpeaker speaker;
         private float elapsed;

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
@@ -286,6 +287,54 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.GetQuestStatus(QuestId.FindTheScarf),
                 Is.EqualTo(QuestStatus.NotStarted));
+        }
+
+        [Test]
+        public void TalkingWaitsForHerCurrentLineWithoutSpendingTheScarfRequest()
+        {
+            var mother = new GameObject("Test Mother");
+            var hero = new GameObject("Test Hero");
+            try
+            {
+                var head = new GameObject("Mother Head").transform;
+                head.SetParent(mother.transform, false);
+                head.localPosition = Vector3.up * 1.5f;
+                var speaker = new NpcSpeaker(mother, head, MothersHouseMotherProvider.DesignId,
+                    NpcEarshotProfile.Conversation);
+                var speech = mother.AddComponent<MothersHouseMotherSpeechController>();
+                speech.Initialize(null, null, Vector3.zero, speaker);
+                var talk = mother.AddComponent<MothersHouseMotherInteraction>();
+                talk.Initialize(Vector3.zero);
+                talk.AttachSpeaker(speaker);
+                talk.AttachSpeech(speech);
+                var interactor = hero.AddComponent<PlayerInteractor>();
+
+                Assert.That(speech.Say(MothersHouseMotherQuips.GreetingLineKey), Is.True);
+                speech.Bubbles.AdvanceTo(.25f);
+                string revealed = speech.Bubbles.RevealedTextOf(mother);
+                Assert.That(revealed, Is.Not.Empty);
+                Assert.That(talk.CanInteract(interactor), Is.False);
+                talk.Interact(interactor);
+                Assert.That(GameSessionState.GetQuestStatus(QuestId.FindTheScarf), Is.EqualTo(QuestStatus.NotStarted));
+                Assert.That(talk.LastSpokenKey, Is.Empty);
+                Assert.That(speech.SayOnDemand(MothersHouseMotherQuips.RequestLineKey), Is.False);
+                Assert.That(speech.LineKey, Is.EqualTo(MothersHouseMotherQuips.GreetingLineKey));
+                Assert.That(speech.Bubbles.RevealedTextOf(mother), Is.EqualTo(revealed));
+
+                speech.Bubbles.AdvanceTo(speech.Bubbles.LineDurationSeconds + .01f);
+                Assert.That(talk.CanInteract(interactor), Is.True);
+                talk.Interact(interactor);
+                Assert.That(GameSessionState.GetQuestStatus(QuestId.FindTheScarf), Is.EqualTo(QuestStatus.Active));
+                Assert.That(talk.LastSpokenKey, Is.EqualTo(MothersHouseMotherQuips.RequestLineKey));
+                Assert.That(speech.LineKey, Is.EqualTo(MothersHouseMotherQuips.RequestLineKey));
+                Assert.That(speech.IsSpeaking, Is.True);
+                Assert.That(talk.CanInteract(interactor), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(mother);
+                Object.DestroyImmediate(hero);
+            }
         }
 
         /// <summary>
