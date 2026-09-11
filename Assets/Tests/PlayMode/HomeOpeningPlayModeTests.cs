@@ -836,7 +836,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(GameSessionState.GameHour, Is.EqualTo(12));
             Assert.That(GameSessionState.GameMinute, Is.Zero);
 
@@ -1047,7 +1047,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.AlarmClock.IsFollowingSessionTime,
                 Is.True);
-            GameSessionState.AdvanceGameTime(1f);
+            GameSessionState.AdvanceGameTime((float)(1f / GameTimeState.GameMinutesPerRealSecond));
             yield return null;
             Assert.That(
                 home.AlarmClock.DisplayedTime,

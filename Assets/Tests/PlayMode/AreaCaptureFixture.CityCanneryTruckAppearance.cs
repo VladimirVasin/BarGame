@@ -52,7 +52,7 @@ namespace BarPromenade.Tests.PlayMode
                     if(renderer.enabled){hidden.Add(renderer);renderer.enabled=false;}
                 if(follow!=null)follow.enabled=false;
                 camera.aspect=(float)Width/Height;
-                GameSessionState.AdvanceGameTime((float)(12d*60d-GameSessionState.GameTimeOfDayMinutes));
+                GameSessionState.AdvanceGameTime((float)((12d*60d-GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
                 city.DayNight.ApplyCurrentTime(true);
                 for(int frame=0;frame<SettleFrames;frame++)yield return null;
                 DeferCanneryContract(failures,"truck painted surfaces",()=>AssertTruckPaintedSurfaces(cannery));
@@ -66,7 +66,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return CaptureTruckAppearance(camera,cannery,"01-day-front-closeup",
                     new Vector3(0,1.65f,7.9f),new Vector3(0,1.58f,5.3f),58f);
 
-                GameSessionState.AdvanceGameTime((float)(21d*60d-GameSessionState.GameTimeOfDayMinutes));
+                GameSessionState.AdvanceGameTime((float)((21d*60d-GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
                 city.DayNight.ApplyCurrentTime(true);
                 DeferCanneryContract(failures,"truck night lamps",()=>
                 {

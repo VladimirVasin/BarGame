@@ -167,7 +167,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(1834f);
+            GameSessionState.AdvanceGameTime((float)(1834f / GameTimeState.GameMinutesPerRealSecond));
             double gameTimeBeforeOpen =
                 GameSessionState.GameTimeOfDayMinutes;
             int hungerBeforeOpen = GameSessionState.HungerLevel;

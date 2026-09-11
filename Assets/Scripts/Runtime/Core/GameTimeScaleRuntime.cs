@@ -21,7 +21,13 @@ namespace BarPromenade
             instance != null ? instance.presentationLevel :
                 GameSessionState.IntoxicationLevel;
         public static float CalendarDeltaTime =>
-            IsPaused ? 0f : Time.unscaledDeltaTime;
+            IsPaused ? 0f : instance != null
+                ? instance.state.CalendarDelta(Time.unscaledDeltaTime)
+                : Time.unscaledDeltaTime;
+        public static int DebugTimeMultiplier =>
+            instance != null ? instance.state.DebugTimeMultiplier : 1;
+        public static bool DebugSpeedSelectionEnabled =>
+            instance == null || instance.state.DebugSpeedSelectionEnabled;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -63,6 +69,23 @@ namespace BarPromenade
             return new PauseLease(runtime, lease);
         }
 
+        public static void SetDebugSpeedSelectionEnabled(bool enabled)
+        {
+            GameTimeScaleRuntime runtime = EnsureInstalled();
+            runtime.AdoptExternalBaseline();
+            runtime.state.SetDebugSpeedSelectionEnabled(enabled);
+            runtime.Apply();
+        }
+
+        public static bool ToggleDebugTimeMultiplier(int multiplier)
+        {
+            GameTimeScaleRuntime runtime = EnsureInstalled();
+            runtime.AdoptExternalBaseline();
+            if (!runtime.state.ToggleDebugTimeMultiplier(multiplier)) return false;
+            runtime.Apply();
+            return true;
+        }
+
         public static void ResetSession()
         {
             // Pure session tests need no runtime GameObject. An installed
@@ -89,6 +112,7 @@ namespace BarPromenade
             state.SetIntoxicationLevel(presentationLevel);
             DontDestroyOnLoad(gameObject);
             Apply();
+            gameObject.AddComponent<DebugTimeControls>();
         }
 
         private void Update()
@@ -109,12 +133,12 @@ namespace BarPromenade
             if (!state.IsPaused && Time.timeScale != lastAppliedScale)
             {
                 state.SetBaseTimeScale(
-                    Time.timeScale / state.IntoxicationTimeScale);
+                    Time.timeScale / (state.IntoxicationTimeScale * state.DebugTimeMultiplier));
             }
             else if (state.BaseTimeScale == 0f && Time.timeScale > 0f)
             {
                 state.SetBaseTimeScale(
-                    Time.timeScale / state.IntoxicationTimeScale);
+                    Time.timeScale / (state.IntoxicationTimeScale * state.DebugTimeMultiplier));
             }
         }
 

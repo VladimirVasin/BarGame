@@ -1557,6 +1557,10 @@
       "value": "ДЕНЬ"
     },
     {
+      "key": "debug.speed_selection",
+      "value": "Выбор скорости: F1 / F2 / F3"
+    },
+    {
       "key": "debug.teleport.disabled",
       "value": "ТЕСТОВАЯ ТЕЛЕПОРТАЦИЯ: ВЫКЛ"
     },

@@ -45,7 +45,7 @@ namespace BarPromenade.Tests.PlayMode
                 yield return null;
             }
             Assert.That(city != null && city.IsInitialized, Is.True);
-            GameSessionState.AdvanceGameTime((float)(12d * 60d - GameSessionState.GameTimeOfDayMinutes));
+            GameSessionState.AdvanceGameTime((float)((12d * 60d - GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
             city.DayNight.ApplyCurrentTime(true);
             CityCanneryController cannery = city.Cannery;
             Assert.That(cannery, Is.Not.Null);

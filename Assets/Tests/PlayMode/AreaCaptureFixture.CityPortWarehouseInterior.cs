@@ -86,7 +86,7 @@ namespace BarPromenade.Tests.PlayMode
                 double pickup = TransferTime(cannery, CityFishSupplyStage.LoadFish, 2, .25f);
                 foreach (int hour in new[] { 12, 21 })
                 {
-                    GameSessionState.AdvanceGameTime((float)(hour * 60d - GameSessionState.GameTimeOfDayMinutes));
+                    GameSessionState.AdvanceGameTime((float)((hour * 60d - GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
                     city.DayNight.ApplyCurrentTime(true);
                     string light = hour == 12 ? "day" : "night";
                     foreach (var state in new[] { (time: empty, name: "empty"), (time: fullest, name: "stock"), (time: pickup, name: "pickup") })

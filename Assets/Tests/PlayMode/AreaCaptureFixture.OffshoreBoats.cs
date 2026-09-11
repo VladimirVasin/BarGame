@@ -19,7 +19,7 @@ namespace BarPromenade.Tests.PlayMode
             assetSetup.GetMethod("ValidateOrThrow").Invoke(null, null);
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             CityGameRoot city = null;
             CityOffshoreBoatController fleet = null;
             yield return Capture(SceneIds.City, () =>
@@ -184,7 +184,7 @@ namespace BarPromenade.Tests.PlayMode
             sound.Advance(4000f, true);
             Assert.That(sound.HornsPlayed, Is.LessThanOrEqualTo(2), "Never replay missed horn windows.");
 
-            GameSessionState.AdvanceGameTime((float)(21d * 60d - GameSessionState.GameTimeOfDayMinutes));
+            GameSessionState.AdvanceGameTime((float)((21d * 60d - GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
             city.DayNight.ApplyCurrentTime(true);
             yield return null;
             for (int i = 0; i < fleet.Plan.Routes.Count; i++)

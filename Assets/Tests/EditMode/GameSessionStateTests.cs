@@ -592,7 +592,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(5.5f);
+            GameSessionState.AdvanceGameTime((float)(5.5f / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(73));
 
             GameSessionState.ResetFatigueAfterSleep();
@@ -601,10 +601,10 @@ namespace BarPromenade.Tests.EditMode
                 GameSessionState.FatigueLevel,
                 Is.EqualTo(GameSessionState.DefaultFatigue));
 
-            GameSessionState.AdvanceGameTime(5.5f);
+            GameSessionState.AdvanceGameTime((float)(5.5f / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(GameSessionState.FatigueLevel, Is.Zero);
 
-            GameSessionState.AdvanceGameTime(5.5f);
+            GameSessionState.AdvanceGameTime((float)(5.5f / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(1));
         }
 
@@ -619,7 +619,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
 
             Assert.That(GameSessionState.HungerLevel, Is.EqualTo(25));
             Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(33));
@@ -631,7 +631,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(7.3f);
+            GameSessionState.AdvanceGameTime((float)(7.3f / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(GameSessionState.HungerLevel, Is.Zero);
             Assert.That(GameSessionState.FatigueLevel, Is.Zero);
 
@@ -643,12 +643,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(7.3f);
+            GameSessionState.AdvanceGameTime((float)(7.3f / GameTimeState.GameMinutesPerRealSecond));
 
             Assert.That(GameSessionState.HungerLevel, Is.Zero);
             Assert.That(GameSessionState.FatigueLevel, Is.Zero);
 
-            GameSessionState.AdvanceGameTime(7.2f);
+            GameSessionState.AdvanceGameTime((float)(7.2f / GameTimeState.GameMinutesPerRealSecond));
 
             Assert.That(GameSessionState.HungerLevel, Is.EqualTo(1));
             Assert.That(GameSessionState.FatigueLevel, Is.EqualTo(1));
@@ -671,7 +671,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(7.3f);
+            GameSessionState.AdvanceGameTime((float)(7.3f / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(GameSessionState.HungerLevel, Is.EqualTo(60));
 
             InventoryItemUseResult result =
@@ -681,10 +681,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(result.Succeeded, Is.True);
             Assert.That(GameSessionState.HungerLevel, Is.EqualTo(25));
 
-            GameSessionState.AdvanceGameTime(7.3f);
+            GameSessionState.AdvanceGameTime((float)(7.3f / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(GameSessionState.HungerLevel, Is.EqualTo(25));
 
-            GameSessionState.AdvanceGameTime(7.2f);
+            GameSessionState.AdvanceGameTime((float)(7.2f / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(GameSessionState.HungerLevel, Is.EqualTo(26));
         }
 

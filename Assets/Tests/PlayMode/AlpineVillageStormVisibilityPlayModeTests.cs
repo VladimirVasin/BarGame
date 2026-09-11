@@ -75,7 +75,7 @@ namespace BarPromenade.Tests.PlayMode
             // describe the same weather.
             Assert.That(GameSessionState.TryStartGameTimeFromWake(), Is.True);
             Assert.That(GameSessionState.TrySetDebugGameDay(2), Is.True);
-            GameSessionState.AdvanceGameTime(100f);
+            GameSessionState.AdvanceGameTime((float)(100f / GameTimeState.GameMinutesPerRealSecond));
         }
 
         [TearDown]

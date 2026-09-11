@@ -394,7 +394,7 @@ namespace BarPromenade.Tests.PlayMode
                 yardSpotlight,
                 yardDescriptor);
 
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             city.DayNight.ApplyCurrentTime();
 
             Assert.That(GameSessionState.GameHour, Is.EqualTo(12));
@@ -477,7 +477,7 @@ namespace BarPromenade.Tests.PlayMode
 
             Quaternion stableSunRotation = directional.transform.rotation;
             directional.transform.hasChanged = false;
-            GameSessionState.AdvanceGameTime(1f);
+            GameSessionState.AdvanceGameTime((float)(1f / GameTimeState.GameMinutesPerRealSecond));
             city.DayNight.ApplyCurrentTime();
             city.Night.Atmosphere.RefreshImmediate();
             Assert.That(
@@ -574,7 +574,7 @@ namespace BarPromenade.Tests.PlayMode
                 backgroundColor,
                 farClipPlane);
 
-            GameSessionState.AdvanceGameTime(479f);
+            GameSessionState.AdvanceGameTime((float)(479f / GameTimeState.GameMinutesPerRealSecond));
             city.DayNight.ApplyCurrentTime();
 
             Assert.That(GameSessionState.GameHour, Is.EqualTo(20));

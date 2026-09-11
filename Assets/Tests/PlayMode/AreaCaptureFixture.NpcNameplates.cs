@@ -66,7 +66,7 @@ namespace BarPromenade.Tests.PlayMode
             {
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             NpcNameplateTarget[] previous = Array.Empty<NpcNameplateTarget>();
             for (int area = 0; area < scenes.Length; area++)
             {

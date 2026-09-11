@@ -91,7 +91,7 @@ namespace BarPromenade.Tests.PlayMode
             capturePause = GameTimeScaleRuntime.AcquirePause();
             double minutesUntilNoon = 720d - GameSessionState.GameTimeOfDayMinutes;
             Assert.That(minutesUntilNoon, Is.GreaterThan(0d));
-            GameSessionState.AdvanceGameTime((float)minutesUntilNoon);
+            GameSessionState.AdvanceGameTime((float)(minutesUntilNoon / GameTimeState.GameMinutesPerRealSecond));
             home.DayNight.RefreshImmediate();
             HomeApartmentDressing dressing = home.Room.GetComponent<HomeApartmentDressing>();
             Assert.That(dressing, Is.Not.Null);

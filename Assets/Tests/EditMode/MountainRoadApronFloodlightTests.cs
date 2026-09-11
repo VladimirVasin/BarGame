@@ -187,7 +187,7 @@ namespace BarPromenade.Tests.EditMode
 
                 GameSessionState.BeginNewGame();
                 GameSessionState.TryStartGameTimeFromWake();
-                GameSessionState.AdvanceGameTime(13f * 60f);
+                GameSessionState.AdvanceGameTime((float)(13f * 60f / GameTimeState.GameMinutesPerRealSecond));
                 atmosphere.Initialize(camera, plan, world);
 
                 Light flood = atmosphere.ApronFloodlight;
@@ -239,7 +239,7 @@ namespace BarPromenade.Tests.EditMode
                 // Seventeen hours on from 19:00 is noon, not eleven - eleven
                 // lands on 06:00, where dawn has not started and the night
                 // factor is still a hard 1.
-                GameSessionState.AdvanceGameTime(17f * 60f);
+                GameSessionState.AdvanceGameTime((float)(17f * 60f / GameTimeState.GameMinutesPerRealSecond));
                 atmosphere.ApplyCurrentTime(true);
                 Assert.That(
                     atmosphere.CurrentSample.NightFactor,

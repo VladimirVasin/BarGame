@@ -30,7 +30,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
 
             CityGameRoot city = null;
             yield return Capture(SceneIds.City, () =>

@@ -23,7 +23,7 @@ namespace BarPromenade.Tests.PlayMode
             portSetup.GetMethod("ValidateOrThrow").Invoke(null,null);
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             CityGameRoot city=null;
             string constructionError=null;
             Application.LogCallback captureError=(message,trace,type)=>
@@ -213,7 +213,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(cannery.WorkerHandsMatch,Is.True);
                 Assert.That(cannery.DriverSeatedContactsMatch,Is.True);
             });
-            GameSessionState.AdvanceGameTime((float)(21d*60d-GameSessionState.GameTimeOfDayMinutes));
+            GameSessionState.AdvanceGameTime((float)((21d*60d-GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
             city.DayNight.ApplyCurrentTime(true);
             yield return CaptureCannery(camera,city,cannery,CanneryTime(cannery,CityCanneryProductionStage.Seal,.5f),
                 "11-night-street",plan.World(new Vector3(8,1.8f,12)),plan.World(new Vector3(-3,2,1)));

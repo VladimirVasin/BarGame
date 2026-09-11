@@ -929,7 +929,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.BeginNewGame();
             Assert.That(GameSessionState.TryStartGameTimeFromWake(), Is.True);
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
 
             CityGameRoot city = null;
             yield return Capture(
@@ -1255,7 +1255,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             CityGameRoot city = null;
             yield return Capture(SceneIds.City,
                 () =>
@@ -1358,7 +1358,7 @@ namespace BarPromenade.Tests.PlayMode
             BuildChurchGardenEditorAssets("ChurchGardenPotActionAssetSetup");
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             CityGameRoot city = null;
             yield return Capture(SceneIds.City,
                 () =>
@@ -1459,7 +1459,7 @@ namespace BarPromenade.Tests.PlayMode
                 pot.Plan.GetDockPosition(0)), Is.LessThan(0.005f));
             pot.enabled = true;
             Debug.Log("Church garden acceptance: placement, session rebind and disable cleanup passed.");
-            GameSessionState.AdvanceGameTime((float)(21d * 60d - GameSessionState.GameTimeOfDayMinutes));
+            GameSessionState.AdvanceGameTime((float)((21d * 60d - GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
             city.DayNight.ApplyCurrentTime(true);
             yield return null;
             ValidateChurchGardenLights(city, true);
@@ -1616,7 +1616,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
 
             CityGameRoot cityRoot = null;
             yield return Capture(
@@ -1637,7 +1637,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
 
             CityGameRoot cityRoot = null;
             yield return Capture(
@@ -1664,7 +1664,7 @@ namespace BarPromenade.Tests.PlayMode
 #endif
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             yield return SceneManager.LoadSceneAsync(SceneIds.City, LoadSceneMode.Single);
             CityGameRoot city = null;
             float deadline = Time.realtimeSinceStartup + TimeoutSeconds;
@@ -2118,7 +2118,7 @@ namespace BarPromenade.Tests.PlayMode
             // stress case, but a bad single contact sheet for judging six
             // hundred metres of silhouette and material hierarchy.
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(90f);
+            GameSessionState.AdvanceGameTime((float)(90f / GameTimeState.GameMinutesPerRealSecond));
 
             MountainRoadRoot mountainRoot = null;
             yield return Capture(
@@ -2154,7 +2154,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator MountainRoadSummitNight()
         {
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(14f * 60f);
+            GameSessionState.AdvanceGameTime((float)(14f * 60f / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(
                 GameSessionState.GameHour,
                 Is.EqualTo(20),
@@ -2228,7 +2228,7 @@ namespace BarPromenade.Tests.PlayMode
             // direction reads cleanly across the uphill camera.
             GameSessionState.TryStartGameTimeFromWake();
             Assert.That(GameSessionState.TrySetDebugGameDay(2), Is.True);
-            GameSessionState.AdvanceGameTime(100f);
+            GameSessionState.AdvanceGameTime((float)(100f / GameTimeState.GameMinutesPerRealSecond));
 
             AlpineVillageRoot villageRoot = null;
             yield return Capture(
@@ -2254,7 +2254,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator MountainCableway()
         {
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(90f);
+            GameSessionState.AdvanceGameTime((float)(90f / GameTimeState.GameMinutesPerRealSecond));
 
             MountainRoadRoot mountainRoot = null;
             yield return Capture(
@@ -3349,7 +3349,7 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator MountainRoadCulvert()
         {
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(400f);
+            GameSessionState.AdvanceGameTime((float)(400f / GameTimeState.GameMinutesPerRealSecond));
 
             MountainRoadRoot mountainRoot = null;
             yield return Capture(

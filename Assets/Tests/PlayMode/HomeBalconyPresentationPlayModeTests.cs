@@ -57,7 +57,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
 
             AsyncOperation load =
                 SceneManager.LoadSceneAsync(
@@ -121,7 +121,7 @@ namespace BarPromenade.Tests.PlayMode
             Color stableWindowColor = home.Atmosphere.WindowLight.color;
             float stableWindowIntensity =
                 home.Atmosphere.WindowLight.intensity;
-            GameSessionState.AdvanceGameTime(1f);
+            GameSessionState.AdvanceGameTime((float)(1f / GameTimeState.GameMinutesPerRealSecond));
             yield return null;
             Assert.That(
                 home.DayNight.VisualApplicationCount,
@@ -337,7 +337,7 @@ namespace BarPromenade.Tests.PlayMode
             float dayFogDensity = RenderSettings.fogDensity;
             Color dayBackgroundColor = camera.backgroundColor;
             float dayFarClipPlane = camera.farClipPlane;
-            GameSessionState.AdvanceGameTime(720f);
+            GameSessionState.AdvanceGameTime((float)(720f / GameTimeState.GameMinutesPerRealSecond));
             home.DayNight.RefreshImmediate();
             Assert.That(RenderSettings.fog, Is.EqualTo(dayFog));
             Assert.That(RenderSettings.fogMode, Is.EqualTo(dayFogMode));
@@ -395,7 +395,7 @@ namespace BarPromenade.Tests.PlayMode
             // again afterwards. So: let it run, and check the sun is the
             // home's own current sample rather than the city's.
             yield return null;
-            GameSessionState.AdvanceGameTime(20f);
+            GameSessionState.AdvanceGameTime((float)(20f / GameTimeState.GameMinutesPerRealSecond));
             yield return null;
             yield return null;
 
@@ -483,7 +483,7 @@ namespace BarPromenade.Tests.PlayMode
             // and visibly different colours. Freezing the scale makes the
             // two the same instant; it is restored immediately after.
             yield return null;
-            GameSessionState.AdvanceGameTime(20f);
+            GameSessionState.AdvanceGameTime((float)(20f / GameTimeState.GameMinutesPerRealSecond));
             yield return null;
             yield return null;
 

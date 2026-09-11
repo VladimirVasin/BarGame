@@ -21,7 +21,7 @@ namespace BarPromenade.Tests.PlayMode
             ValidatePortSocialLocalization();
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             CityGameRoot city = null;
             CityPortController port = null;
             CityPortCrew crew = null;
@@ -344,7 +344,7 @@ namespace BarPromenade.Tests.PlayMode
                 Renderer beam = ValidatePortSearchlightBeam(port, lamp);
                 var beamProperties = new MaterialPropertyBlock();
                 double lampTime = nextVisit + CityPortCycle.UnloadStartSeconds + 16d;
-                GameSessionState.AdvanceGameTime((float)(12d * 60d - GameSessionState.GameTimeOfDayMinutes));
+                GameSessionState.AdvanceGameTime((float)((12d * 60d - GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
                 city.DayNight.ApplyCurrentTime(true);
                 SamplePortSocial(port, crew, speech, lampTime, life += 3d);
                 yield return null;
@@ -355,7 +355,7 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(lamp.enabled && lamp.gameObject.activeInHierarchy, Is.True);
                 yield return CapturePort(camera, city, port, crew, lampTime, "port-social-04-searchlight-day",
                     new Vector3(-17f, 7f, -5f), new Vector3(-2f, 3f, 2f));
-                GameSessionState.AdvanceGameTime((float)(21d * 60d - GameSessionState.GameTimeOfDayMinutes));
+                GameSessionState.AdvanceGameTime((float)((21d * 60d - GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
                 city.DayNight.ApplyCurrentTime(true);
                 yield return null;
                 Assert.That(dayIntensity, Is.GreaterThanOrEqualTo(lamp.intensity * GameTimeDayNightRules.DayFixtureFloor - .001f));

@@ -55,8 +55,8 @@ A row never carries a status outside this table. Product-level scope cuts
 | Runtime area composition | Twelve scenes/nine gameplay roots; three area roots construct incrementally during area travel. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | Startup village arrival | New Game card, session clock at `07:40` on day `1`, lane-foot spawn through the loading screen. | `StartMenuRoot`, `StartMenuModel`, `AlpineVillageRoot` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
-| Session clock and day/night rules | Persistent calendar at one game minute per unpaused real second; intoxication slowdown preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
-| World time and pause ownership | One world factor (`1`-`0.88`) with a matching physics step; pause leases freeze world and calendar, then restore it. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
+| Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
+| World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
 | Session day/time displays | Home clock, inventory and queued day announcements follow one persistent calendar. | `HomeAlarmClock`, `InventoryView` | Current |
 | Gameplay pause menu | Escape/Start owns input/time/audio; confirmed restart/quit and persistent graphics options remain shared. | `PauseMenu{Model,Controller}`, `GraphicsEffectsSettings` | Current |
 | Hero inventory | Shared modal inventory owns item actions and clothing equipment status; both persist within the session. | `Inventory{Types,State,MenuModel,Controller,View}`, `GameSessionState` | Current |
@@ -160,7 +160,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Interaction/UI | Common action bindings and explicit input priorities serve shared prompts and menus; look/debug input stays local. | `PlayerInteractor`, `InteractionPromptView` | Current |
 | Spoken text | All speech, including E, uses shared speaker bubbles; silent bottom UI. Mandatory speech standard in `ai/`. | `SpeechDelivery`, `NpcSpeechBubbleView`, `InteractionPromptView` | Current |
 | NPC role labels | Ten roles, excluding village/Mother; 6–4 m, depth occlusion, speech/modal priority. | `NpcNameplateTarget`, `NpcNameplateContext`, `NpcNameplatePolicy` | Current |
-| F9 debug controls | City/Bar/Road/Home share intoxication and day `1–7` controls. | `MinigameDebugWindow`, `HomeDebugCityMapShortcut` | Current |
+| Debug controls | F9: intoxication, day `1–7`, speed-key gate (default on). F1/F2/F3: ×3/×5/×10 in every gameplay scene. | `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |
 | Structured session diagnostics | Bounded NDJSON records correlated operations; optional performance reports are separate from the support log. | `Runtime/Diagnostics`, `MinigameDebugWindow` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
 | Area map UI | City/MountainRoad/Village tabs consume pure plans; area travel and teleport share destination validation. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |

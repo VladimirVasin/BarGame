@@ -4,6 +4,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
@@ -132,6 +133,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Time.timeScale, Is.EqualTo(0.66f).Within(0.00001f));
             Assert.That(Time.fixedDeltaTime,
                 Is.EqualTo(normalFixedDelta * 0.66f).Within(0.00001f));
+            Assert.That(GameTimeScaleRuntime.ToggleDebugTimeMultiplier(3), Is.True);
+            Assert.That(Time.timeScale, Is.EqualTo(1.98f).Within(0.00001f));
+            Assert.That(Time.fixedDeltaTime,
+                Is.EqualTo(normalFixedDelta * 0.66f).Within(0.00001f));
             Assert.That(menu.Open(), Is.True);
             System.IDisposable nested = GameTimeScaleRuntime.AcquirePause();
             try
@@ -144,13 +149,23 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.UpdateDrinkingProgress(0, DrinkId.None, 0);
                 GameTimeScaleRuntime.SetIntoxicationLevel(0f);
                 Assert.That(Time.timeScale, Is.Zero);
+                Assert.That(GameTimeScaleRuntime.ToggleDebugTimeMultiplier(10), Is.True);
+                Assert.That(Time.timeScale, Is.Zero);
             }
             finally
             {
                 nested.Dispose();
             }
 
-            Assert.That(Time.timeScale, Is.EqualTo(0.75f));
+            Assert.That(Time.timeScale, Is.EqualTo(7.5f));
+            Assert.That(GameTimeScaleRuntime.CalendarDeltaTime,
+                Is.EqualTo(Time.unscaledDeltaTime * 10f).Within(0.00001f));
+            // Explicit external overrides must be adopted without applying debug twice.
+            Time.timeScale = 5f;
+            GameTimeScaleRuntime.SetIntoxicationLevel(0f);
+            Assert.That(Time.timeScale, Is.EqualTo(5f));
+            GameTimeScaleRuntime.SetDebugSpeedSelectionEnabled(false);
+            Assert.That(Time.timeScale, Is.EqualTo(0.5f));
             GameSessionState.UpdateDrinkingProgress(100, DrinkId.None, 0);
             GameTimeScaleRuntime.SetIntoxicationLevel(100f);
             System.IDisposable obsolete = GameTimeScaleRuntime.AcquirePause();
@@ -159,6 +174,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(Time.fixedDeltaTime,
                 Is.EqualTo(normalFixedDelta).Within(0.00001f));
             Assert.That(GameTimeScaleRuntime.PerceptionIntensity, Is.Zero);
+            Assert.That(GameTimeScaleRuntime.DebugTimeMultiplier, Is.EqualTo(1));
+            Assert.That(GameTimeScaleRuntime.DebugSpeedSelectionEnabled, Is.True);
             System.IDisposable current = GameTimeScaleRuntime.AcquirePause();
             try
             {
@@ -172,6 +189,85 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             Assert.That(Time.timeScale, Is.EqualTo(1f));
+        }
+
+        [UnityTest]
+        public IEnumerator DebugSpeedHotkeys_ToggleGateAndSurviveSceneChanges()
+        {
+            Scene previousScene = SceneManager.GetActiveScene();
+            Scene city = SceneManager.CreateScene(SceneIds.City);
+            Scene village = SceneManager.CreateScene(SceneIds.AlpineVillage);
+            GameSessionState.BeginNewGame();
+            try
+            {
+                Assert.That(SceneManager.SetActiveScene(city), Is.True);
+                KeyControlTest[] selections =
+                {
+                    new KeyControlTest(keyboard.f1Key, 3),
+                    new KeyControlTest(keyboard.f2Key, 5),
+                    new KeyControlTest(keyboard.f3Key, 10)
+                };
+                foreach (KeyControlTest selection in selections)
+                {
+                    inputFixture.Press(selection.Key, queueEventOnly: true);
+                    yield return null;
+                    Assert.That(Time.timeScale, Is.EqualTo(selection.Multiplier));
+                    Assert.That(GameTimeScaleRuntime.CalendarDeltaTime,
+                        Is.EqualTo(Time.unscaledDeltaTime * selection.Multiplier).Within(0.00001f));
+                    inputFixture.Release(selection.Key, queueEventOnly: true);
+                    yield return null;
+                    inputFixture.Press(selection.Key, queueEventOnly: true);
+                    yield return null;
+                    Assert.That(Time.timeScale, Is.EqualTo(1f));
+                    inputFixture.Release(selection.Key, queueEventOnly: true);
+                    yield return null;
+                }
+
+                inputFixture.Press(keyboard.f2Key, queueEventOnly: true);
+                yield return null;
+                inputFixture.Release(keyboard.f2Key, queueEventOnly: true);
+                Assert.That(SceneManager.SetActiveScene(village), Is.True);
+                yield return null;
+                Assert.That(Time.timeScale, Is.EqualTo(5f));
+                using (GameTimeScaleRuntime.AcquirePause())
+                {
+                    inputFixture.Press(keyboard.f3Key, queueEventOnly: true);
+                    yield return null;
+                    Assert.That(Time.timeScale, Is.Zero);
+                    Assert.That(GameTimeScaleRuntime.DebugTimeMultiplier, Is.EqualTo(5));
+                    inputFixture.Release(keyboard.f3Key, queueEventOnly: true);
+                    yield return null;
+                }
+                Assert.That(Time.timeScale, Is.EqualTo(5f));
+                GameTimeScaleRuntime.SetDebugSpeedSelectionEnabled(false);
+                Assert.That(Time.timeScale, Is.EqualTo(1f));
+                inputFixture.Press(keyboard.f1Key, queueEventOnly: true);
+                yield return null;
+                Assert.That(Time.timeScale, Is.EqualTo(1f));
+                inputFixture.Release(keyboard.f1Key, queueEventOnly: true);
+                yield return null;
+                GameTimeScaleRuntime.SetDebugSpeedSelectionEnabled(true);
+                inputFixture.Press(keyboard.f3Key, queueEventOnly: true);
+                yield return null;
+                Assert.That(Time.timeScale, Is.EqualTo(10f));
+                GameSessionState.BeginNewGame();
+                Assert.That(Time.timeScale, Is.EqualTo(1f));
+            }
+            finally
+            {
+                SceneManager.SetActiveScene(previousScene);
+                SceneManager.UnloadSceneAsync(city);
+                SceneManager.UnloadSceneAsync(village);
+            }
+            yield return null;
+        }
+
+        private readonly struct KeyControlTest
+        {
+            public readonly UnityEngine.InputSystem.Controls.KeyControl Key;
+            public readonly int Multiplier;
+            public KeyControlTest(UnityEngine.InputSystem.Controls.KeyControl key, int multiplier)
+            { Key = key; Multiplier = multiplier; }
         }
 
         [UnityTest]

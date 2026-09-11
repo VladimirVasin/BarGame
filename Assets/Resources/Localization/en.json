@@ -1557,6 +1557,10 @@
       "value": "DAY"
     },
     {
+      "key": "debug.speed_selection",
+      "value": "Speed selection: F1 / F2 / F3"
+    },
+    {
       "key": "debug.teleport.disabled",
       "value": "TEST TELEPORT: OFF"
     },

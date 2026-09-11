@@ -24,7 +24,7 @@ namespace BarPromenade.Tests.PlayMode
             Renderer beam = CityPortAssetProvider.FindPart(port.Vessel.gameObject, "SearchlightBeam").GetComponent<Renderer>();
             foreach (int hour in new[] { 12, 21 })
             {
-                GameSessionState.AdvanceGameTime((float)(hour * 60d - GameSessionState.GameTimeOfDayMinutes));
+                GameSessionState.AdvanceGameTime((float)((hour * 60d - GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
                 city.DayNight.ApplyCurrentTime(true);
                 port.ApplyAt(seconds, 15f);
                 crew.ApplyAt(seconds, seconds);

@@ -16,7 +16,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(90f);
+            GameSessionState.AdvanceGameTime((float)(90f / GameTimeState.GameMinutesPerRealSecond));
             yield return SceneManager.LoadSceneAsync(SceneIds.MountainRoad, LoadSceneMode.Single);
             MountainRoadRoot mountain = null;
             float deadline = Time.realtimeSinceStartup + TimeoutSeconds;

@@ -381,7 +381,7 @@ namespace BarPromenade
                     RetroUiTheme.Backdrop,
                     0.92f));
 
-            Rect panel = new Rect(112f, 24f, 416f, 232f);
+            Rect panel = new Rect(112f, 24f, 416f, 262f);
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
@@ -412,11 +412,12 @@ namespace BarPromenade
 
             DrawNauseaControl();
             DrawVomitControl();
+            DrawSpeedSelectionControl();
 
             if (!string.IsNullOrEmpty(LastLaunchErrorKey))
             {
                 GUI.Label(
-                    new Rect(132f, 223f, 376f, 20f),
+                    new Rect(132f, 253f, 376f, 20f),
                     LocalizationService.Get(LastLaunchErrorKey),
                     footerStyle);
             }
@@ -446,6 +447,21 @@ namespace BarPromenade
                 "+20  →",
                 IntoxicationStep,
                 intoxication < 100);
+        }
+
+        private void DrawSpeedSelectionControl()
+        {
+            bool enabled = GameTimeScaleRuntime.DebugSpeedSelectionEnabled;
+            Rect button = new Rect(132f, 216f, 376f, 24f);
+            RetroUiTheme.DrawPanel(button, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted);
+            RetroUiTheme.DrawSelection(button, enabled);
+            string label = (enabled ? "[X] " : "[ ] ") +
+                LocalizationService.Get("debug.speed_selection");
+            if (GUI.Button(button, label, rowStyle))
+            {
+                GameTimeScaleRuntime.SetDebugSpeedSelectionEnabled(!enabled);
+                RetroAudio.Play(RetroSfxId.UiMove);
+            }
         }
 
         private void DrawNauseaControl()

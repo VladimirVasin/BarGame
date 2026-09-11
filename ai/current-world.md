@@ -189,8 +189,8 @@ The vertical slice contains:
   The retained Home opening still holds it frozen at `05:59` until its Wake or
   the accepted Home debug city-map skip sets it to `06:00`. It advances on
   unpaused real time at
-  `1.0` game minute per real second, so a full `24 h` cycle takes exactly
-  `1440` real seconds (`24` minutes), crosses midnight with a zero-based day
+  `0.5` game minute per real second, so a full `24 h` cycle takes exactly
+  `2880` real seconds (`48` minutes), crosses midnight with a zero-based day
   index exposed to the player as one-based `DAY N`. True pause stops it;
   intoxication's world slowdown does not. The Home clock shows `HH:MM`;
   the inventory Status panel shows `DAY N · HH:MM`, while one persistent view
@@ -1793,8 +1793,9 @@ The vertical slice contains:
   `GameTimeScaleRuntime` owns the shared `0.7 s` unpaused real-time level
   smoothing used by status and audio, composes pause leases and a matching
   positive physics step. Physical bar service and fall/rise/crawl share world time with the
-  bodies; UI, input response, calendar, needs and recovery retain their
-  intended real-time rates, with progression stopped by true pause;
+  bodies; intoxication leaves calendar, needs and recovery at their intended
+  real-time rates. Explicit debug speed multiplies world/calendar progression;
+  UI/input keep real-time response, true pause freezes progression;
 - above `60` the hero is balanced by a continuous seeded model rather than a
   check: the drink pushes his centre of mass, the ankles chase it late, the
   torso and arms whip to buy ground, the boots step to catch it, and A/D
@@ -2763,21 +2764,18 @@ The vertical slice contains:
   activity fixture (beer-pong table, stage) survives purely as layout
   dressing. The bar-visited mechanic is removed entirely: the map route is
   edited only by hand and entering a bar changes nothing about it;
-- an `F9` debug window in `City`, `BarInterior`, `MountainRoad` and `HomeInterior`; opening it closes a
-  conflicting map before taking the modal lock; clickable controls or the
-  Left/Right arrow keys change the session
-  intoxication by `-20/+20`, clamped to `0–100`, without changing the
-  last-drink or consumed-drink context. Seven direct buttons select displayed
-  game days `1–7` while preserving the current `HH:MM`, running state and
-  needs; the ordinary calendar itself remains unbounded. A committed physical drink service
-  cannot be interrupted through this debug path. In `City` the same window
-  also owns a
-  persistent scene-local test-teleport toggle consumed by the city map. In
-  `HomeInterior`, day selection also resolves the exact apartment appearance,
-  including backward changes, and a separate button invokes
-  `HomeDebugCityMapShortcut` to arrive beside the home with the debug map open.
-  Opening, contextual actions, door actions and other modal ownership block
-  Home debug; ordinary midnight presentation waits for the same safe state;
+- `F9` in City/Bar/Road/Home closes the map and takes the modal lock. Clicks or
+  Left/Right change intoxication `±20` within `0–100`, retaining drink context.
+  Day buttons `1–7` preserve `HH:MM`, running state and needs; normal days are
+  unbounded. City owns its scene-local map-teleport flag. Home resolves exact
+  day appearance in both directions; `HomeDebugCityMapShortcut` opens the City
+  debug map beside home. Opening/actions/doors/other modals block Home debug
+  and delay midnight presentation; committed drink service cannot be interrupted.
+  A default-on F9 flag enables `F1/F2/F3` (`×3/×5/×10`) in all nine gameplay
+  scenes, including actions. Same key or disabling the flag returns `×1`.
+  Pause/loading block keys; transitions retain speed, new game restores `×1`
+  and flag. A readout shows acceleration/briefly `×1`; world/calendar accelerate,
+  UI/audio keep real-time clocks, existing motion-step limits remain;
 - bounded structured session diagnostics in `debug.log`: stable NDJSON
   envelopes correlate scene transitions, generated-city/bar/home initialization,
   route state, drinking and balance outcomes, plus

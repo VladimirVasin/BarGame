@@ -126,8 +126,7 @@ namespace BarPromenade
         public const int HeavyRainPercent = 12;
 
         /// <summary>
-        /// One potential lightning strike per window; at one game minute per
-        /// real second a window lasts 12 real seconds.
+        /// One potential lightning strike per window, measured in game minutes.
         /// </summary>
         public const double LightningWindowMinutes = 12d;
 
@@ -142,8 +141,7 @@ namespace BarPromenade
         public const float ThunderstormWindStrength = 0.95f;
 
         /// <summary>
-        /// Gust periods in game minutes; at one game minute per real
-        /// second the primary gust swells roughly every seven seconds.
+        /// Gust periods in game minutes, following the session calendar rate.
         /// </summary>
         public const double WindGustPrimaryPeriodMinutes = 7.3d;
 

@@ -4,6 +4,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-11, doubled calendar day:**
+  User: art §2/story §20 now use 48 real minutes/day at ×1, two seconds/game
+  minute. Calendar-based needs/weather slow with it; world motion/debug factors stay.
+
+- **Accepted — 2026-09-11, debug time acceleration:**
+  User-requested F9 flag only, default on. `DebugTimeControls`: `F1/F2/F3` =
+  `3/5/10` in every gameplay scene/contextual action; same key returns `1`.
+  Flag off resets speed; new game restores `1`/on. Pauses retain selection;
+  transitions block keys, preserve selection. No story event/text.
+  `GameTimeScaleState` multiplies world/calendar; `RealGameplayDelta` keeps
+  perception smoothing in real seconds. Physics retains its positive step
+  (not `0.2 s`), potentially costing CPU. External scale adoption divides out
+  intoxication/debug. UI/audio/loading retain real-time clocks. Per-frame
+  motion caps and Unity's maximum delta limit speed on slow frames: exact
+  wall-clock acceleration is not guaranteed everywhere.
+
 - **Accepted architecture exception — 2026-09-11, voluntary NPC dialogue:**
   Story §6: held face/selected «Хочу»/«Не сейчас» aloud; Cancel always keeps §16.16.
   Foreman first; no lore/job/pay/quest; village/Mother/other choices unchanged.
@@ -1049,42 +1065,34 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   perceived sound and world pace:** `IntoxicationPerceptionRules.Evaluate`
   clamps the alcohol level to `0-100` and returns
   `A = (exp(4.5 L/100)-1)/(exp(4.5)-1)` plus `WorldTimeScale = 1-0.12 A`.
-  These are reversible alcohol effects, independent of the story's monotonic
-  `0-5` scale and degradation. The most severe sound breakup belongs to the
-  last alcohol stage; time remains gently bounded at `0.88` even at `100`.
-  The persistent `GameTimeScaleRuntime` owns the shared `0.7 s` unpaused
-  real-time level smoothing; status reads its smoothed level and
-  `IntoxicationAudioDriver` forwards its intensity to the native
-  `Intoxication VHS` mixer effect. `Master/Perception` contains Music,
-  Ambience, SFX and the reverb/echo returns; UI is a dry sibling. One bounded
-  history and shared stereo transport produce wow/flutter, brief dropouts,
-  saturation and tape-chewing episodes (`0.4-1 s`, every `2-4 s` at maximum),
-  while preserving spatial relationships. The effect transforms existing
-  audio only: no generated hiss, voice, new sound source or in-fiction
-  explanation. The explicit follow-up correction on `2026-09-05` adds
-  native audio-only smoothing: two cascaded `0.22 s` poles ease changes of
-  strength, and a full-episode quintic attack/release softens every chewing
-  event. Repetition seams crossfade, and the repeated cursor integrates its
-  speed so a changed strength cannot reposition already-travelled playback.
-  Returning to sober fades out before exact bypass, with no persistent delay.
-  Episode length and spacing, the host's shared level smoothing, world tempo
-  and visuals remain unchanged; `tools/audio-vhs/README.md` owns the DSP details.
-  Source and native validation live in `tools/audio-vhs`; the packaged
-  Windows x86_64 plugin is
+  Reversible alcohol effects are independent of monotonic story scale `0-5`
+  and degradation. Sound breakup peaks at the last alcohol stage; world pace
+  bottoms at `0.88` at level `100`. Persistent `GameTimeScaleRuntime` shares
+  `0.7 s` unpaused real-time smoothing: status reads the level;
+  `IntoxicationAudioDriver` sends intensity to native `Intoxication VHS`.
+  `Master/Perception` groups Music/Ambience/SFX/reverb/echo; UI is a dry sibling.
+  One bounded history/shared stereo transport preserves spatial relationships
+  through wow/flutter, brief dropouts, saturation and tape-chewing (`0.4-1 s`,
+  every `2-4 s` at maximum). Existing audio only: no generated hiss, voice,
+  new source or in-fiction explanation. Explicit `2026-09-05` correction:
+  native audio-only smoothing uses two cascaded `0.22 s` strength poles and
+  full-episode quintic chewing attack/release. Seams crossfade; the repeated
+  cursor integrates speed, so strength changes cannot reposition travelled
+  playback. Sobering fades to exact bypass without persistent delay. Episode
+  length/spacing, host smoothing, world tempo and visuals stay unchanged.
+  DSP details: `tools/audio-vhs/README.md`; source/native validation:
+  `tools/audio-vhs`; packaged Windows x86_64 plugin:
   `Assets/Plugins/AudioVhs/x86_64/AudioPluginIntoxicationVhs.dll`.
-  `GameTimeScaleState` and the persistent `GameTimeScaleRuntime` are the
-  single authority for world speed and independent pause leases. A pause
-  forces zero and release restores the current world factor; it never
-  restores an obsolete captured intoxication scale. The positive physics
-  step follows world scale, never becoming zero during pause. Bar movement,
-  hand-contact service, drinking, refrigerator interaction/inspection and the
-  hero's fall/rise/crawl advance on coherent world time. Camera input, UI and
-  loading retain real-time response.
-  Calendar and needs keep one game minute per unpaused real second
-  (`24` real minutes per day), and alcohol recovery keeps its previous
-  unscaled rate and modal/transition blockers. This explicitly supersedes
-  the earlier scaled-calendar and unscaled physical bar/refrigerator
-  descriptions below.
+  `GameTimeScaleState`/persistent `GameTimeScaleRuntime` alone own world speed
+  and independent pause leases. Pause forces zero; release restores the current,
+  never captured, intoxication factor. The physics step follows non-debug world
+  scale and stays positive during pause. Bar movement, hand-contact service,
+  drinking, refrigerator interaction/inspection and hero fall/rise/crawl share
+  world time; camera input/UI/loading stay real-time. Outside debug acceleration,
+  calendar/needs advance half a game minute per unpaused real second (`48` real
+  minutes/day); alcohol recovery retains its unscaled rate and modal/transition
+  blockers. This supersedes earlier scaled-calendar/unscaled physical
+  bar/refrigerator descriptions below.
 - **Accepted:** Unity `6000.6.0f1` with URP `17.6.0` (moved from `6000.5.10f1` / URP `17.5.0` on 2026-09-04; the package set — test framework `1.8.0`, Timeline `6.6.0`, uGUI `2.6.0` — came with the editor).
 - **Accepted:** New Input System is enabled.
 - **Corrected — balcony smokers are a local population, not a city-load
@@ -3693,24 +3701,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   which is the case that class exists for. Bracketing her presentation's own
   evaluate, the way the watchman does, would buy nothing.
 - **Accepted — Home F9 window and one-shot entry to the City debug map:**
-  `HomeInteriorRoot` installs `MinigameDebugWindow.BindHome`; it is the sole
-  F9 owner. Opening, contextual actions, door actions and other modal ownership
-  block it. Direct day buttons select exact apartment states `1–7` in both
-  directions while retaining `HH:MM`, running state and needs. A separate
-  localized button invokes `HomeDebugCityMapShortcut`, which disables the motor,
-  directly requests `City`, starts the session clock from `06:00` if it is
-  still frozen, prepares `CityReturnKind.PlayerHome` and sets
-  `DebugCityMapOnArrivalRequested`; a rejected or duplicate transition does
-  not mutate that handoff. `CityGameRoot` waits until the transition guard is
-  clear, enables `CityMapController` test teleport and then uses a
-  success-driven retry window bounded to `2 s` of realtime. It accepts an
-  already-open map immediately and otherwise retries `Open` only after both
-  the scene transition and the previous scene's `BarMinigameModalLock` have
-  released. Success clears the request exactly once; timeout also consumes the
-  one-shot and records the final lock, transition and attempt state instead of
-  leaking the request into a later City load. The debug branch preserves the
-  fresh seed, cash, needs and starter inventory and does not alter the ordinary
-  Wake/Quit or Home -> Stairwell -> City path.
+  `HomeInteriorRoot` installs sole F9 owner `MinigameDebugWindow.BindHome`;
+  opening/contextual/door actions and other modals block it. Day buttons select
+  exact apartment states `1–7` forward/backward, preserving `HH:MM`, running
+  state and needs. A separate localized `HomeDebugCityMapShortcut` button
+  disables motor, requests `City`, starts a frozen clock at `06:00`, prepares
+  `CityReturnKind.PlayerHome` and sets `DebugCityMapOnArrivalRequested`.
+  Rejected/duplicate transitions leave this handoff intact. After the transition
+  guard clears, `CityGameRoot` enables `CityMapController` test teleport and
+  retries for at most `2 s` realtime: an open map succeeds immediately; `Open`
+  waits for transition and outgoing `BarMinigameModalLock` release. Success
+  consumes the request once; timeout consumes it and logs final lock/transition/
+  attempt state, preventing later-load leakage. Fresh seed/cash/needs/starter
+  inventory and ordinary Wake/Quit or Home -> Stairwell -> City remain unchanged.
 - **Accepted — Persistent transition context:** Static subsystem-reset session
   state carries the seed, active bar context, explicit
   bar/home/supermarket city return kind, the next stairwell arrival side and
@@ -3723,14 +3726,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   atomically moves it to `06:00` and starts it; later bed interactions do not
   reset or pause it.
   `GameTimeRuntime` persists across Single-mode loads and advances through
-  `Time.deltaTime` at `1.0` game minute per real second, making one full `24 h`
-  day exactly `1440` real seconds (`24` minutes). Midnight increments a
-  zero-based session day index; runtime/UI code exposes its one-based
-  `DayNumber`. A persistent top-centre label announces the first Wake and each
-  later day change, while inventory keeps `DAY N` beside `HH:MM`.
-  The existing F9 window may directly select days `1–7` for testing, changing
-  only the day index and preserving time of day, running state and needs; this
-  debug limit does not cap ordinary midnight progression.
+  `CalendarDeltaTime` at `0.5` game minute/real second: `2880 s` (`48 min`)/day
+  at ×1. Midnight increments the zero-based index; UI exposes one-based
+  `DayNumber`. A top-centre label announces Wake/new days; inventory shows
+  `DAY N · HH:MM`. F9 selects days `1–7`, preserving hour/running state/needs;
+  ordinary days are unbounded.
   Stateful City one-shot audio detects a backward absolute-time jump and
   rebases its schedule cursors and cooldown timestamps at the selected day.
   `GameTimeState.Advance` also returns the actually elapsed
@@ -6929,12 +6929,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The budget is test-enforced: six lights, none directional, all
   shadowless.
 - **Accepted — Debug window without a launcher:** The City and BarInterior
-  roots still install the F9 debug window, but it owns only deliberate test
-  controls: the Left/Right arrow keys or clickable buttons change the real
-  session intoxication by `-20/+20` and clamp at `0/100` while preserving
-  last-drink and consumed-drink context, and City exposes the test-teleport
-  toggle. Opening it still closes a conflicting city map or drink service
-  before capturing the modal state.
+  roots install F9 test controls: Left/Right or buttons change actual session
+  intoxication by `-20/+20`, clamped `0/100`, preserving last/consumed-drink
+  context; City adds test teleport. Opening closes a conflicting city map or
+  drink service before capturing modal state.
 - **Accepted — Session-only drinking persistence:** Intoxication, last
   alcoholic drink, total consumed-drink count and explicit alcohol-value
   stress relief are committed through `GameSessionState` by the physical bar

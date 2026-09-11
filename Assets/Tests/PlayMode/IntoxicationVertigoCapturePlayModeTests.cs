@@ -97,7 +97,7 @@ namespace BarPromenade.Tests.PlayMode
 
             if (delta > 0)
             {
-                GameSessionState.AdvanceGameTime(delta);
+                GameSessionState.AdvanceGameTime((float)(delta / GameTimeState.GameMinutesPerRealSecond));
             }
 
             bool weatherWasEnabled = root.Weather != null && root.Weather.enabled;

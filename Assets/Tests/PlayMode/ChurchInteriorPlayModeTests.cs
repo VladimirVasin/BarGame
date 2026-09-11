@@ -435,7 +435,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(dayNight.IsInitialized, Is.True);
 
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(6f * 60f);
+            GameSessionState.AdvanceGameTime((float)(6f * 60f / GameTimeState.GameMinutesPerRealSecond));
             dayNight.RefreshImmediate();
             yield return null;
 
@@ -497,7 +497,7 @@ namespace BarPromenade.Tests.PlayMode
             float dayWarm = atmosphere.CandleFlames[0].BaseIntensity;
             Color dayAmbient = RenderSettings.ambientLight;
 
-            GameSessionState.AdvanceGameTime(12f * 60f);
+            GameSessionState.AdvanceGameTime((float)(12f * 60f / GameTimeState.GameMinutesPerRealSecond));
             dayNight.RefreshImmediate();
             yield return null;
 

@@ -20,7 +20,7 @@ namespace BarPromenade.Tests.PlayMode
             ValidatePortTimeline();
             GameSessionState.BeginNewGame();
             GameSessionState.TryStartGameTimeFromWake();
-            GameSessionState.AdvanceGameTime(360f);
+            GameSessionState.AdvanceGameTime((float)(360f / GameTimeState.GameMinutesPerRealSecond));
             CityGameRoot city = null;
             CityPortController port = null;
             CityPortCrew crew = null;
@@ -189,7 +189,7 @@ namespace BarPromenade.Tests.PlayMode
             yield return CapturePort(camera, city, port, crew, unload + 25.5d, "port-18-crane-operator-contact",
                 new Vector3(-.4f, 3.22f, -5.1f), new Vector3(-2.1f, 2.9f, -2.7f));
 
-            GameSessionState.AdvanceGameTime((float)(21d * 60d - GameSessionState.GameTimeOfDayMinutes));
+            GameSessionState.AdvanceGameTime((float)((21d * 60d - GameSessionState.GameTimeOfDayMinutes) / GameTimeState.GameMinutesPerRealSecond));
             city.DayNight.ApplyCurrentTime(true);
             yield return null;
             yield return CapturePort(camera, city, port, crew, unload + 16d, "port-13-night-working-quay",

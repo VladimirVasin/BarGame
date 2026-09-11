@@ -28,7 +28,7 @@ namespace BarPromenade.Tests.PlayMode
         {
             GameSessionState.TryStartGameTimeFromWake();
             Assert.That(GameSessionState.TrySetDebugGameDay(2), Is.True);
-            GameSessionState.AdvanceGameTime(100f);
+            GameSessionState.AdvanceGameTime((float)(100f / GameTimeState.GameMinutesPerRealSecond));
             AlpineVillageRoot village = null;
             float minimumWaterGap = float.PositiveInfinity;
             float maximumWaterGap = 0f;

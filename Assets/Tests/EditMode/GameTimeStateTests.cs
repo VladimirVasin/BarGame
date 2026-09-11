@@ -4,19 +4,34 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class GameTimeStateTests
     {
-        [Test]
-        public void Tempo_NestedPausePreservesClockRateAndLatestIntoxication()
+        [TestCase(1)]
+        [TestCase(3)]
+        [TestCase(5)]
+        [TestCase(10)]
+        public void Tempo_NestedPausePreservesClockRateAndLatestIntoxication(
+            int debugMultiplier)
         {
             GameTimeScaleState tempo = new GameTimeScaleState(0.75f, 0.02f);
+            if (debugMultiplier != 1)
+            {
+                Assert.That(tempo.ToggleDebugTimeMultiplier(debugMultiplier), Is.True);
+            }
+
             tempo.SetIntoxicationLevel(100f);
-            Assert.That(tempo.EffectiveTimeScale, Is.EqualTo(0.66f).Within(0.00001f));
+            Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(debugMultiplier));
+            Assert.That(tempo.EffectiveTimeScale,
+                Is.EqualTo(0.66f * debugMultiplier).Within(0.00001f));
             Assert.That(tempo.FixedDeltaTime, Is.EqualTo(0.0132f).Within(0.00001f));
+            Assert.That(tempo.RealGameplayDelta(10f), Is.EqualTo(10f),
+                "Debug speed must not change real-time presentation smoothing.");
+            Assert.That(tempo.CalendarDelta(10f), Is.EqualTo(10f * debugMultiplier));
             GameTimeState clock = new GameTimeState();
-            clock.Advance(tempo.RealGameplayDelta(10f));
+            clock.Advance(tempo.CalendarDelta(10f));
             Assert.That(clock.MinuteOfDay, Is.EqualTo(359), "Pre-wake stays frozen.");
             clock.TryStartFromWake();
-            clock.Advance(tempo.RealGameplayDelta(GameTimeState.RealSecondsPerGameDay));
-            Assert.That(clock.DayIndex, Is.EqualTo(1), "Slow motion keeps a 24-minute day.");
+            clock.Advance(tempo.CalendarDelta(GameTimeState.RealSecondsPerGameDay));
+            Assert.That(clock.DayIndex, Is.EqualTo(debugMultiplier),
+                "Debug speed advances the calendar; intoxication and baseline slow motion do not.");
             Assert.That(clock.MinuteOfDay, Is.EqualTo(360));
 
             long first = tempo.AcquirePause();
@@ -24,10 +39,13 @@ namespace BarPromenade.Tests.EditMode
             tempo.ReleasePause(first);
             Assert.That(tempo.EffectiveTimeScale, Is.Zero);
             Assert.That(tempo.RealGameplayDelta(5f), Is.Zero);
+            Assert.That(tempo.CalendarDelta(5f), Is.Zero);
+            Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(debugMultiplier));
             tempo.SetIntoxicationLevel(0f);
             Assert.That(tempo.EffectiveTimeScale, Is.Zero);
             tempo.ReleasePause(second);
-            Assert.That(tempo.EffectiveTimeScale, Is.EqualTo(0.75f));
+            Assert.That(tempo.EffectiveTimeScale, Is.EqualTo(0.75f * debugMultiplier));
+            Assert.That(tempo.CalendarDelta(5f), Is.EqualTo(5f * debugMultiplier));
             Assert.That(tempo.ReleasePause(second), Is.False);
 
             long obsolete = tempo.AcquirePause();
@@ -38,6 +56,59 @@ namespace BarPromenade.Tests.EditMode
             tempo.ReleasePause(current);
             Assert.That(tempo.EffectiveTimeScale, Is.EqualTo(1f));
             Assert.That(tempo.FixedDeltaTime, Is.EqualTo(0.02f));
+            Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(1));
+            Assert.That(tempo.CalendarDelta(5f), Is.EqualTo(5f));
+        }
+
+        [Test]
+        public void Tempo_DebugSelectionTogglesSupportedSpeedsAndHonorsDisable()
+        {
+            GameTimeScaleState tempo = new GameTimeScaleState(1f, 0.02f);
+            Assert.That(tempo.DebugSpeedSelectionEnabled, Is.True);
+            Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(1));
+
+            foreach (int multiplier in new[] { 3, 5, 10 })
+            {
+                Assert.That(tempo.ToggleDebugTimeMultiplier(multiplier), Is.True);
+                Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(multiplier));
+                Assert.That(tempo.ToggleDebugTimeMultiplier(multiplier), Is.True);
+                Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(1));
+            }
+
+            Assert.That(tempo.ToggleDebugTimeMultiplier(3), Is.True);
+            Assert.That(tempo.ToggleDebugTimeMultiplier(5), Is.True);
+            Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(5));
+            foreach (int invalid in new[] { int.MinValue, -1, 0, 1, 2, 4, int.MaxValue })
+            {
+                Assert.That(tempo.ToggleDebugTimeMultiplier(invalid), Is.False);
+                Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(5));
+            }
+
+            long pause = tempo.AcquirePause();
+            Assert.That(tempo.ToggleDebugTimeMultiplier(10), Is.True);
+            Assert.That(tempo.EffectiveTimeScale, Is.Zero);
+            tempo.SetDebugSpeedSelectionEnabled(false);
+            Assert.That(tempo.DebugSpeedSelectionEnabled, Is.False);
+            Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(1));
+            foreach (int multiplier in new[] { 3, 5, 10 })
+            {
+                Assert.That(tempo.ToggleDebugTimeMultiplier(multiplier), Is.False);
+                Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(1));
+            }
+
+            Assert.That(tempo.IsPaused, Is.True,
+                "Disabling debug speed must not release an unrelated pause.");
+            Assert.That(tempo.ReleasePause(pause), Is.True);
+            Assert.That(tempo.EffectiveTimeScale, Is.EqualTo(1f));
+            tempo.SetDebugSpeedSelectionEnabled(true);
+            Assert.That(tempo.DebugSpeedSelectionEnabled, Is.True);
+            Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(1));
+            Assert.That(tempo.ToggleDebugTimeMultiplier(10), Is.True);
+            tempo.SetDebugSpeedSelectionEnabled(false);
+            tempo.ResetSession();
+            Assert.That(tempo.DebugSpeedSelectionEnabled, Is.True);
+            Assert.That(tempo.DebugTimeMultiplier, Is.EqualTo(1));
+            Assert.That(tempo.ToggleDebugTimeMultiplier(3), Is.True);
         }
 
         [SetUp]
@@ -127,19 +198,22 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void Exactly1440RealSeconds_AdvancesOneCompleteGameDay()
+        public void Exactly2880RealSeconds_AdvancesOneCompleteGameDay()
         {
             GameTimeState state = new GameTimeState();
             state.TryStartFromWake();
 
-            state.Advance(GameTimeState.RealSecondsPerGameDay);
+            state.Advance(GameTimeState.RealSecondsPerGameDay / 2f);
+            Assert.That(state.DayIndex, Is.Zero);
+            Assert.That(state.Hour, Is.EqualTo(18), "24 real minutes now advance only half a day.");
+            state.Advance(GameTimeState.RealSecondsPerGameDay / 2f);
 
             Assert.That(
                 GameTimeState.RealSecondsPerGameDay,
-                Is.EqualTo(1440f));
+                Is.EqualTo(2880f));
             Assert.That(
                 GameTimeState.GameMinutesPerRealSecond,
-                Is.EqualTo(1d));
+                Is.EqualTo(0.5d));
             Assert.That(state.DayIndex, Is.EqualTo(1));
             Assert.That(state.DayNumber, Is.EqualTo(2));
             Assert.That(state.Hour, Is.EqualTo(6));
@@ -156,7 +230,7 @@ namespace BarPromenade.Tests.EditMode
         public void BeginNewGame_ResetsSessionTimeToFrozen0559()
         {
             Assert.That(GameSessionState.TryStartGameTimeFromWake(), Is.True);
-            GameSessionState.AdvanceGameTime(1080f);
+            GameSessionState.AdvanceGameTime((float)(1080d / GameTimeState.GameMinutesPerRealSecond));
             Assert.That(GameSessionState.GameDayIndex, Is.EqualTo(1));
             Assert.That(GameSessionState.GameDayNumber, Is.EqualTo(2));
             Assert.That(GameSessionState.GameMinuteOfDay, Is.Zero);
@@ -179,7 +253,7 @@ namespace BarPromenade.Tests.EditMode
         {
             GameTimeState state = new GameTimeState();
             state.TryStartFromWake();
-            state.Advance(394.5f);
+            state.Advance((float)(394.5d / GameTimeState.GameMinutesPerRealSecond));
             double timeBeforeChange = state.TimeOfDayMinutes;
 
             Assert.That(state.TrySetDayNumber(7), Is.True);
@@ -190,7 +264,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(state.TrySetDayNumber(7), Is.False);
             Assert.That(state.TrySetDayNumber(0), Is.False);
 
-            state.Advance(685.5f);
+            state.Advance((float)(685.5d / GameTimeState.GameMinutesPerRealSecond));
 
             Assert.That(state.DayNumber, Is.EqualTo(8));
             Assert.That(
