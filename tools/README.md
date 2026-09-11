@@ -1,23 +1,22 @@
 # Art and native tool entry points
 
-`build-city-cannery-3d-model.py` builds nine fixed-metre FBXs: hall, equipment,
-truck, pallet, retort basket, can tray, cartons, trolley and yard. The pack and
-measured `CityCannery3D.json` live in `Assets/Resources/City/Cannery`, source in
-`ArtSource/City/Cannery`. It reuses port maps/materials; validation rebuilds
-geometry, UVs and contacts without publishing:
+`build-city-cannery-3d-model.py`: nine fixed-metre FBXs (hall/equipment/truck/pallet/
+retort basket/can tray/cartons/trolley/yard), measured `CityCannery3D.json`:
+`Assets/Resources/City/Cannery`; source `ArtSource/City/Cannery`. Port maps/materials;
+validation rebuilds geometry/UVs/contacts without publishing:
 
 ```powershell
 python tools/run-blender.py tools/build-city-cannery-3d-model.py --validate-only -- --validate-only
 ```
 
-`build-city-port-3d-model.py`: nine FBXs/`CityPort3D.json` in
-`Assets/Resources/City/Port`, source `ArtSource/City/Port`; crane grips, warehouse,
-searchlight/beam. `PortAccessLayout.json` shares access. Validation: geometry,
-metre UVs/anchors. Twelve ImageGen maps: originals/prompts/hashes in
-`ArtSource/City/Port/Textures/generation.json`, `512 px` sRGB/mipmap/repeat.
-Asphalt: city `12 m` phase; pixels excluded from mesh signatures.
-`build-city-port-foreman-3d-model.py` owns the `Foreman` subfolder:
-`PortForeman` model/manifest, `PortForemanActions.fbx`, `PortForemanAtlas.png`.
+`build-city-port-3d-model.py`: 9 FBXs/`CityPort3D.json`: `Assets/Resources/City/Port`;
+source `ArtSource/City/Port`; grips/store/beam, `PortAccessLayout.json`, metre UVs/anchors.
+Twelve ImageGen maps: `512 px`, sRGB/mipmap/repeat; originals/prompts/hashes in
+`ArtSource/City/Port/Textures/generation.json`. Asphalt: city `12 m`; pixels outside mesh hashes.
+`build-city-port-foreman-3d-model.py`: `Foreman/PortForeman` model/manifest,
+`PortForemanActions.fbx`, `PortForemanAtlas.png`; continuous lower face and chin/jowl
+blendshapes, mouth/export validation. `python tools/dialogue_face_atlas.py [--validate-only]`
+derives face PNGs/manifest from atlases; no Blender.
 
 ```powershell
 python tools/run-blender.py tools/build-city-port-3d-model.py --expect Assets/Resources/City/Port/CityPort3D.json -- --no-preview

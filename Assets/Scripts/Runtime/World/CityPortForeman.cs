@@ -8,7 +8,7 @@ namespace BarPromenade
     /// <summary>The seated shift boss. The port owns time and all speech; this actor owns only his pose.</summary>
     [DefaultExecutionOrder(220)]
     [DisallowMultipleComponent]
-    public sealed class CityPortForeman : MonoBehaviour
+    public sealed partial class CityPortForeman : MonoBehaviour, ISpeechFaceActor
     {
         public const string ResourcePath = "City/Port/Foreman/PortForemanActor";
         [SerializeField] private Animator animator;
@@ -38,6 +38,12 @@ namespace BarPromenade
         private Transform thrownStem, throwRelease, binTarget;
         private int snackPose;
         private double snackPoseSeconds;
+        private readonly SpeechFaceAtlasPresenter facePresenter = new SpeechFaceAtlasPresenter();
+        private object speechFaceOwner;
+        private SpeechFacePose speechFacePose;
+        public bool HasSpeechFace => speechFaceOwner != null;
+        public bool UsesSpriteFace => facePresenter.IsConfigured;
+        public SpeechFacePose CurrentSpeechFace { get; private set; }
         public Transform ModelRoot => modelRoot;
         public Transform Head { get; private set; }
         public Transform RightHand { get; private set; }
@@ -117,6 +123,10 @@ namespace BarPromenade
                 properties.SetTexture("_BaseMap", atlas); properties.SetTexture("_MainTex", atlas);
                 renderers[i].SetPropertyBlock(properties);
             }
+            if (!facePresenter.Configure(Find("GEO_FaceSurface").GetComponent<Renderer>(),
+                    SpeechFaceAtlasResources.ForemanPath, false))
+                throw new InvalidOperationException("The foreman requires his authored dialogue face atlas.");
+            InitializeChin();
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             graph = PlayableGraph.Create("PortForeman.Seated");
@@ -203,6 +213,51 @@ namespace BarPromenade
             lookPitch = Mathf.MoveTowards(lookPitch, pitch, dt * 55f);
             Head.rotation = Quaternion.AngleAxis(lookYaw, transform.up) *
                 Quaternion.AngleAxis(lookPitch, transform.right) * Head.rotation;
+            PresentFace(seconds, snack, conversing);
+            UpdateChin(seconds);
+        }
+
+        public bool TrySetSpeechFace(object owner, SpeechFacePose pose)
+        {
+            if (owner == null || !isActiveAndEnabled || !facePresenter.IsConfigured ||
+                (speechFaceOwner != null && !ReferenceEquals(speechFaceOwner, owner))) return false;
+            speechFaceOwner = owner; speechFacePose = pose;
+            ApplyFace(pose);
+            return true;
+        }
+
+        public void ReleaseSpeechFace(object owner)
+        {
+            if (owner == null || !ReferenceEquals(speechFaceOwner, owner)) return;
+            speechFaceOwner = null;
+            ApplyFace(SpeechFaceAnimation.ResolveListening(SpeechFaceProfile.Foreman,
+                crew != null ? crew.LifeElapsedSeconds : 0d));
+        }
+
+        private void PresentFace(double seconds, in CityPortForemanSnackSnapshot snack, bool conversing)
+        {
+            if (speechFaceOwner != null) { ApplyFace(speechFacePose); return; }
+            if (conversing && conversation != null && conversation.Bubbles != null &&
+                conversation.Bubbles.TryGetSpeechFaceSample(this, out SpeechFaceSample sample))
+            { ApplyFace(SpeechFaceAnimation.Resolve(sample, SpeechFaceProfile.Foreman, seconds)); return; }
+            SpeechFacePose rest = SpeechFaceAnimation.ResolveListening(SpeechFaceProfile.Foreman, seconds);
+            SpeechMouthPose mouth = SpeechMouthPose.Closed;
+            if (!conversing && snack.Phase >= CityPortForemanSnackPhase.Bite1 &&
+                snack.Phase <= CityPortForemanSnackPhase.Bite3)
+            {
+                double bite = snack.ActionSeconds;
+                if (bite >= 1.3d && bite < CityPortForemanSnackTimeline.BiteCommitSeconds)
+                    mouth = SpeechMouthPose.Open;
+                else if (bite >= CityPortForemanSnackTimeline.BiteCommitSeconds && bite < 3.3d)
+                    mouth = ((int)((bite - CityPortForemanSnackTimeline.BiteCommitSeconds) * 5.6d) & 1) == 0
+                        ? SpeechMouthPose.Narrow : SpeechMouthPose.Closed;
+            }
+            ApplyFace(new SpeechFacePose(mouth, rest.Expression));
+        }
+
+        private void ApplyFace(SpeechFacePose pose)
+        {
+            if (facePresenter.Apply(pose)) CurrentSpeechFace = pose;
         }
 
         private void PresentCarrot(in CityPortForemanSnackSnapshot snack)
@@ -220,6 +275,9 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ResetChin();
+            speechFaceOwner = null;
+            ApplyFace(new SpeechFacePose(SpeechMouthPose.Closed, SpeechFaceExpression.Rest));
             conversation?.SetForemanState(false, false);
             speaking = false; speechPartner = -1; speechWeight = conversationWeight = 0f; lookYaw = lookPitch = 0f; previousSeconds = double.NaN;
             Interaction?.Cancel();
@@ -227,6 +285,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            facePresenter.Clear();
             if (graph.IsValid()) graph.Destroy();
         }
     }

@@ -96,7 +96,8 @@ A row never carries a status outside this table. Product-level scope cuts
 | Port social life | Canopy breaks, paired city/weather talk in nonrepeating rounds; driver speaks only to docker. | `CityPortCrew*`, `CityPortConversation*`, `CityPortLighting` | Current |
 | Port cold store | Three warm lamps, refrigeration and passive furniture retain cargo lanes; local fan follows pause/distance. | `build-city-port-3d-model.py`, `CityPortLighting`, `CityPortSound` | Current |
 | Port foreman | Carrot custody retained; voluntary two-speaker E dialogue, no work/pay. | `CityPortForeman*`, `CityPortConversation*` | Current |
-| NPC dialogue | Shared graph, visible approach, two speaking shots and cancellation; first adapter: foreman. | `DialogueGraph`, `DialogueSessionController`, `DialogueCameraDirector` | Current |
+| NPC dialogue | Shared graph, visible approach, two speaking shots and cancellation; foreman first. | `DialogueGraph`, `DialogueSessionController`, `DialogueCameraDirector` | Current |
+| Dialogue faces | Expressive hero/foreman mouths, brows/blink follow reveal/pause; soil and snack state retained. | `SpeechFaceAnimation`, `SpeechFaceAtlasPresenter` | Current |
 | Sea water | Shared water drive owns sea swell, foam and uneven shore swash. | `CitySeaResources`, `CityWaterResources` | Current |
 | Beach sand | Deterministic shallow relief and compressible foot trails over fixed collision. | `CityBeachSandPlan`, `CitySandTreading` | Current |
 | Lighthouse island | One distant fog-framed island landmark owns its silhouette, beacon/beam and authored sightline. | `CityLighthouseIsland{Plan,Planner,MeshFactory,WorldBuilder,Resources}` | Current |
@@ -128,7 +129,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City wind dressing | Shared wind drives authored trees/props/cloth while preserving causal movement limits. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
 | Scene and place music | Guarded handoffs; radio power suppresses the city theme. Gap: cemetery and church slots are empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
 | Common audio mix | One shared mixer routes scene themes, causal ambience, effects and reversible intoxication processing. | `GameAudioMixer`, `BarPromenadeAudio.mixer` | Current |
-| Port and cannery audio | Machinery voices/reverse beeper; vessel arrival/departure horn has local echo/reverb. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.Sound` | Current |
+| Port and cannery audio | Machinery/beeper; louder trawler engine and advance arrival/departure horn with local echo/reverb. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.Sound` | Current |
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
 | Begotten sound perception | The print's optical track tears against its own mask throughout the ramp and adds surface and apparatus at 24/s. | `BegottenAudioRules`, `BegottenAudioDriver`, `OpticalProcessor.h` | Current |
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |

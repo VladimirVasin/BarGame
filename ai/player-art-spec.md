@@ -60,7 +60,17 @@ the no-variant `Player3DResources` / `PlayerFactory` path to `Player3DV2`.
   pixel for pixel. The result has `34` mesh parts and
   `2,384` triangles, with the same `31` bones, six sockets and `48` bone-only
   production actions.
-- One curved head surface uses an `8 x 4` face atlas (`512 x 256`) with
+- Expressive dialogue faces, accepted `2026-09-11`, use the same curved head
+  and a separate `512 x 512` atlas under `Resources/Dialogue/Faces`.
+  Six mouths (`Closed/Narrow/Open/Round/Wide/Teeth`) combine with five upper-face
+  states (`Rest/HalfBlink/Blink/Emphasis/Skeptical`): thirty `64 px` cells and
+  their thirty soiled twins at index `+32`. Broad opening, pursed rounding,
+  visible teeth, asymmetric brows and squint must read through the existing PS1
+  dialogue shot. The hero remains weary; expression conveys delivery, never
+  guilt, revelation or a smile. Bubble reveal owns approximate articulation;
+  punctuation/tail close the mouth, independent blink continues, pause freezes.
+  UV/property-block switching preserves shared materials and existing expressions.
+- Outside dialogue the curved head uses an `8 x 4` face atlas (`512 x 256`) with
   twenty-six cells: thirteen expressions in columns `c0..c3` and their
   thirteen soiled twins at column `+4`. The five sober faces `Neutral`, `HalfBlink`,
   `ClosedBlink`, `Watchful` and `Tense`

@@ -42,6 +42,7 @@ namespace BarPromenade.Tests.PlayMode
         private static IEnumerator ValidatePortForemanDialogue(Camera camera, CityGameRoot city,
             CityPortController port, CityPortCrew crew)
         {
+            ValidateSpeechFaceContract();
             ValidatePortForemanConversationSchedule();
             ValidatePortForemanSnackTimeline();
             ValidateForemanDialogueGraph();
@@ -54,6 +55,10 @@ namespace BarPromenade.Tests.PlayMode
             var motor = city.Player.Motor;
             var animation = hero.GetComponent<PlayerAnimatedInteractionController>();
             var registry = hero.GetComponentInChildren<Player3DAssetRegistry>();
+            Material heroFaceMaterial = registry.FaceAtlas.Renderer.sharedMaterial;
+            Renderer foremanFaceRenderer = Array.Find(foreman.ModelRoot.GetComponentsInChildren<Renderer>(),
+                r => r.name == "GEO_FaceSurface");
+            Material foremanFaceMaterial = foremanFaceRenderer.sharedMaterial;
             var follow = camera.GetComponent<PlayerCameraFollow>();
             var visual = (Player3DCharacterPresentation)city.Player.Visual;
             float savedDelta = Time.captureDeltaTime;
@@ -114,8 +119,11 @@ namespace BarPromenade.Tests.PlayMode
                     AssertOwned(); AssertShot(false);
                     int bites = foreman.Snack.BitesTaken;
                     Assert.That(foreman.EatingWeight, Is.LessThan(.05f));
-                    yield return Until(() => session.Bubbles.RevealedTextOf(foreman) == LocalizationService.Get(session.CurrentNode.TextKey), 60);
-                    yield return CaptureDialogueUiFrame(session, branch == 0 ? "dialogue-ru-01-foreman" : "dialogue-en-01-foreman", false);
+                    Time.captureDeltaTime = .025f;
+                    yield return Until(() => foreman.HasSpeechFace && foreman.CurrentSpeechFace.Mouth != SpeechMouthPose.Closed, 30);
+                    yield return new WaitForEndOfFrame();
+                    AssertFacePixels(false);
+                    CaptureTalkingFace(branch == 0 ? "dialogue-ru-01-foreman-speaking" : "dialogue-en-01-foreman-speaking");
 
                     if (branch == 0)
                     {
@@ -125,6 +133,9 @@ namespace BarPromenade.Tests.PlayMode
                             float stopped = session.SpeechClock;
                             Pose pose = new Pose(camera.transform.position, camera.transform.rotation);
                             Vector3 hand = foreman.RightHand.position;
+                            int foremanCell = foreman.CurrentSpeechFace.AtlasCell;
+                            int heroCell = visual.CurrentSpeechFace.AtlasCell;
+                            Vector3 chin = foreman.ChinDisplacement;
                             string text = session.Bubbles.RevealedTextOf(foreman);
                             for (int i = 0; i < 3; i++) yield return null;
                             Assert.That(session.SpeechClock, Is.EqualTo(stopped));
@@ -133,11 +144,40 @@ namespace BarPromenade.Tests.PlayMode
                             Assert.That(Vector3.Distance(camera.transform.position, pose.position), Is.LessThan(.001f));
                             Assert.That(Quaternion.Angle(camera.transform.rotation, pose.rotation), Is.LessThan(.01f));
                             Assert.That(Vector3.Distance(foreman.RightHand.position, hand), Is.LessThan(.001f));
+                            Assert.That(foreman.CurrentSpeechFace.AtlasCell, Is.EqualTo(foremanCell));
+                            Assert.That(visual.CurrentSpeechFace.AtlasCell, Is.EqualTo(heroCell));
+                            Assert.That(foreman.ChinDisplacement, Is.EqualTo(chin), "Pause freezes the physical chin with speech.");
+                            AssertFacePixels(false);
                         }
                     }
+                    yield return Until(() => foreman.ChinDisplacement.sqrMagnitude > .0025f, 30);
+                    yield return new WaitForEndOfFrame();
+                    AssertForemanChinShapes(true);
+                    CaptureTalkingFace(branch == 0 ? "dialogue-ru-01-foreman-chin-motion" : "dialogue-en-01-foreman-chin-motion");
+                    var mouths = new System.Collections.Generic.HashSet<SpeechMouthPose>();
+                    var brows = new System.Collections.Generic.HashSet<SpeechFaceExpression>();
+                    float chinTravel = 0f;
+                    Vector3 previousChin = foreman.ChinDisplacement;
+                    yield return Until(() => session.Bubbles.RevealedTextOf(foreman) == LocalizationService.Get(session.CurrentNode.TextKey), 300,
+                        () =>
+                        {
+                            mouths.Add(foreman.CurrentSpeechFace.Mouth); brows.Add(foreman.CurrentSpeechFace.Expression);
+                            chinTravel += Vector3.Distance(previousChin, foreman.ChinDisplacement);
+                            previousChin = foreman.ChinDisplacement;
+                        });
+                    yield return new WaitForEndOfFrame();
+                    Assert.That(mouths.Count, Is.GreaterThanOrEqualTo(3), "The actual spoken phrase articulates distinct shapes.");
+                    Assert.That(brows.Count, Is.GreaterThanOrEqualTo(2), "The actual spoken phrase carries upper-face accents.");
+                    Assert.That(chinTravel, Is.GreaterThan(.1f), "The volumetric chin responds with visible secondary motion.");
+                    AssertForemanChinShapes(false);
+                    Assert.That(foreman.CurrentSpeechFace.Mouth, Is.EqualTo(SpeechMouthPose.Closed));
+                    Time.captureDeltaTime = .1f;
+                    yield return CaptureDialogueUiFrame(session, branch == 0 ? "dialogue-ru-01-foreman" : "dialogue-en-01-foreman", false);
                     yield return Until(() => session.IsChoosing, 90);
                     AssertOwned(); AssertShot(true);
                     Assert.That(session.Bubbles.IsShowing(foreman), Is.False);
+                    Assert.That(visual.CurrentSpeechFace.Mouth, Is.EqualTo(SpeechMouthPose.Closed));
+                    Assert.That(foreman.CurrentSpeechFace.Mouth, Is.EqualTo(SpeechMouthPose.Closed));
                     Assert.That(foreman.Snack.BitesTaken, Is.EqualTo(bites), "Listening preserves the interrupted carrot.");
                     double worldTime = GameSessionState.GameTimeOfDayMinutes;
                     for (int i = 0; i < 3; i++) { Sample(); yield return null; }
@@ -152,7 +192,21 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(animation.IsNestedLoopActionActive, Is.True);
                     Assert.That(animation.NestedLoopActionPhase, Is.EqualTo(PlayerAnimatedInteractionPhase.Looping));
                     float began = session.SpeechClock;
-                    yield return Until(() => session.Bubbles.RevealedTextOf(hero) == LocalizationService.Get(session.CurrentNode.TextKey), 45);
+                    Time.captureDeltaTime = .0125f;
+                    yield return Until(() => visual.HasSpeechFace && visual.CurrentSpeechFace.Mouth != SpeechMouthPose.Closed, 30);
+                    yield return new WaitForEndOfFrame();
+                    AssertFacePixels(true);
+                    CaptureTalkingFace(branch == 0 ? "dialogue-ru-03-hero-speaking" : "dialogue-en-03-hero-speaking");
+                    SpeechMouthPose firstHeroMouth = visual.CurrentSpeechFace.Mouth;
+                    yield return Until(() => visual.CurrentSpeechFace.Mouth != firstHeroMouth &&
+                        visual.CurrentSpeechFace.Mouth != SpeechMouthPose.Closed, 55);
+                    yield return new WaitForEndOfFrame();
+                    AssertFacePixels(true);
+                    CaptureTalkingFace(branch == 0 ? "dialogue-ru-03-hero-articulation" : "dialogue-en-03-hero-articulation");
+                    yield return Until(() => session.Bubbles.RevealedTextOf(hero) == LocalizationService.Get(session.CurrentNode.TextKey), 90);
+                    yield return new WaitForEndOfFrame();
+                    Assert.That(visual.CurrentSpeechFace.Mouth, Is.EqualTo(SpeechMouthPose.Closed));
+                    Time.captureDeltaTime = .1f;
                     yield return CaptureDialogueUiFrame(session, branch == 0 ? "dialogue-ru-03-hero" : "dialogue-en-03-hero", false);
                     bool heldPastOneCycle = false;
                     yield return Until(() => IsLine(branch == 0 ? "accept" : "decline"), 100, () =>
@@ -308,9 +362,65 @@ namespace BarPromenade.Tests.PlayMode
             }
             void AssertReleased()
             {
+                Assert.That(visual.HasSpeechFace || foreman.HasSpeechFace, Is.False);
+                var faceProperties = new MaterialPropertyBlock();
+                registry.FaceAtlas.Renderer.GetPropertyBlock(faceProperties);
+                Assert.That(faceProperties.GetTexture("_BaseMap"), Is.SameAs(registry.FaceAtlas.Texture),
+                    "Dialogue releases the hero's ordinary facial atlas.");
                 Assert.That(session.IsActive || animation.IsActive || channel.ForemanInteractionPending, Is.False);
                 Assert.That(BarMinigameModalLock.IsAnyLocked || follow.FixedPoseActive || CinematicDepthOfField.IsActive, Is.False);
                 Assert.That(hero.InputEnabled && motor.InputEnabled && follow.OrbitInputEnabled, Is.True);
+            }
+            void AssertFacePixels(bool playerSpeaking)
+            {
+                Assert.That(visual.HasSpeechFace && foreman.HasSpeechFace && foreman.UsesSpriteFace, Is.True);
+                var face = playerSpeaking ? registry.FaceAtlas.Renderer : foremanFaceRenderer;
+                var properties = new MaterialPropertyBlock(); face.GetPropertyBlock(properties);
+                var texture = Resources.Load<Texture2D>(playerSpeaking ? SpeechFaceAtlasResources.HeroPath : SpeechFaceAtlasResources.ForemanPath);
+                var pose = playerSpeaking ? visual.CurrentSpeechFace : foreman.CurrentSpeechFace;
+                int rows = playerSpeaking ? 8 : 4;
+                int cell = pose.AtlasCell + (playerSpeaking && visual.IsMouthSoiledVisible ? 32 : 0);
+                Assert.That(properties.GetTexture("_BaseMap"), Is.SameAs(texture));
+                Assert.That(properties.GetVector("_BaseMap_ST"), Is.EqualTo(new Vector4(.125f, 1f / rows,
+                    cell % 8 * .125f, (rows - 1 - cell / 8) / (float)rows)));
+                Assert.That(face.sharedMaterial, Is.SameAs(playerSpeaking ? heroFaceMaterial : foremanFaceMaterial));
+                if (!playerSpeaking) AssertForemanMouthPlacement(face, foreman.Mouth);
+                Assert.That(playerSpeaking ? foreman.CurrentSpeechFace.Mouth : visual.CurrentSpeechFace.Mouth,
+                    Is.EqualTo(SpeechMouthPose.Closed), "The listener never mouths the other speaker's line.");
+            }
+            void AssertForemanChinShapes(bool requireDeformation)
+            {
+                int fleshParts = 0;
+                foreach (SkinnedMeshRenderer skin in foreman.ModelRoot.GetComponentsInChildren<SkinnedMeshRenderer>())
+                {
+                    if (skin.name != "GEO_ForemanChin" && !skin.name.StartsWith("GEO_ForemanJowl.", StringComparison.Ordinal)) continue;
+                    fleshParts++;
+                    Assert.That(skin.sharedMesh.blendShapeCount, Is.EqualTo(6));
+                    for (int shape = 0; shape < skin.sharedMesh.blendShapeCount; shape++)
+                        Assert.That(skin.GetBlendShapeWeight(shape), Is.InRange(0f, 100f));
+                    if (!requireDeformation) continue;
+                    var moving = new Mesh();
+                    var rest = new Mesh();
+                    var weights = new float[skin.sharedMesh.blendShapeCount];
+                    for (int i = 0; i < weights.Length; i++) weights[i] = skin.GetBlendShapeWeight(i);
+                    try
+                    {
+                        skin.BakeMesh(moving, true);
+                        for (int i = 0; i < weights.Length; i++) skin.SetBlendShapeWeight(i, 0f);
+                        skin.BakeMesh(rest, true);
+                        Vector3[] moved = moving.vertices, original = rest.vertices;
+                        float largest = 0f;
+                        for (int i = 0; i < moved.Length; i++)
+                            largest = Mathf.Max(largest, skin.transform.TransformVector(moved[i] - original[i]).magnitude);
+                        Assert.That(largest, Is.GreaterThan(.0003f), "Speech physically deforms " + skin.name);
+                    }
+                    finally
+                    {
+                        for (int i = 0; i < weights.Length; i++) skin.SetBlendShapeWeight(i, weights[i]);
+                        Object.Destroy(moving); Object.Destroy(rest);
+                    }
+                }
+                Assert.That(fleshParts, Is.EqualTo(3), "The chin and both cheek folds retain their original skinned ownership.");
             }
             void AssertShot(bool player)
             {
@@ -358,6 +468,22 @@ namespace BarPromenade.Tests.PlayMode
             while ((!File.Exists(path) || File.GetLastWriteTimeUtc(path) <= previous) && Time.realtimeSinceStartup < deadline);
             Assert.That(File.Exists(path) && File.GetLastWriteTimeUtc(path) > previous, Is.True, "Capture the actual shared UI, not a rebuilt overlay.");
             Debug.Log("FOREMAN DIALOGUE FRAME: " + name);
+        }
+
+        // Called at end-of-frame: capture THIS articulation, including its actual bubble.
+        // Deferred screenshots can otherwise land after a four-letter answer has finished.
+        private static void CaptureTalkingFace(string name)
+        {
+            string path = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Captures", SceneIds.City, name + ".png"));
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            Texture2D frame = ScreenCapture.CaptureScreenshotAsTexture();
+            try
+            {
+                Assert.That(frame, Is.Not.Null);
+                File.WriteAllBytes(path, frame.EncodeToPNG());
+            }
+            finally { if (frame != null) Object.Destroy(frame); }
+            Debug.Log("FOREMAN TALKING FACE: " + name);
         }
 
         private static void ValidateForemanDialogueGraph()

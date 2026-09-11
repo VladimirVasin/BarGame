@@ -38,6 +38,7 @@ namespace BarPromenade
         private PlayerAnimatedInteractionController animation;
         private PlayerCameraFollow follow;
         private NpcSpeechBubbleView bubbles;
+        private ISpeechFaceActor heroFace, npcFace;
         private Action<bool> setNpcSpeaking;
         private Action finished;
         private bool cameraStarted, confirmArmed, cursorCaptured, preparingTalk, exitingAnimation;
@@ -73,6 +74,8 @@ namespace BarPromenade
             if (!modal.TryCaptureAndDisable(interactor, follow,
                 FindFirstObjectByType<IntoxicationHudView>())) return false;
             listener = interactor; npc = participant;
+            heroFace = interactor.GetComponentInChildren<Player3DCharacterPresentation>();
+            npcFace = participant.Owner as ISpeechFaceActor;
             hero = new DialogueParticipant(interactor, interactor.transform, registry.Anchors.Head,
                 NpcVoiceCatalog.HeroMutterDesignId);
             setNpcSpeaking = speaking; finished = completed;
@@ -120,6 +123,7 @@ namespace BarPromenade
         {
             if (!IsActive || Phase == DialoguePhase.Exiting) return;
             bubbles?.DismissAll(); setNpcSpeaking?.Invoke(false);
+            ReleaseFaces();
             Cursor.visible = false;
             Phase = DialoguePhase.Exiting;
             if (animation != null && animation.Phase == PlayerAnimatedInteractionPhase.Positioning)
@@ -249,6 +253,12 @@ namespace BarPromenade
         private void LateUpdate()
         {
             if (!IsActive || PauseMenuController.IsAnyPaused || GameTimeScaleRuntime.IsPaused || !GameSessionState.IsGameTimeRunning) return;
+            if (Phase != DialoguePhase.Positioning && Phase != DialoguePhase.Exiting)
+            {
+                if (!PresentFace(heroFace, hero.Owner, SpeechFaceProfile.Hero) ||
+                    !PresentFace(npcFace, npc.Owner, SpeechFaceProfile.Foreman))
+                { Cancel(); return; }
+            }
             if (cameraStarted)
             {
                 director.Tick(Time.deltaTime);
@@ -264,6 +274,7 @@ namespace BarPromenade
             if (!IsActive && !modal.IsLocked) return;
             Action callback = finished; finished = null;
             Phase = DialoguePhase.Idle;
+            ReleaseFaces(); heroFace = npcFace = null;
             bubbles?.DismissAll();
             bubbles?.WithdrawSpeaker(npc.Owner); bubbles?.WithdrawSpeaker(hero.Owner);
             setNpcSpeaking?.Invoke(false); setNpcSpeaking = null;
@@ -274,6 +285,21 @@ namespace BarPromenade
             modal.Restore();
             listener = null; hero = npc = default; cursor = null;
             callback?.Invoke();
+        }
+
+        private bool PresentFace(ISpeechFaceActor actor, UnityEngine.Object owner, SpeechFaceProfile profile)
+        {
+            if (actor == null) return true;
+            SpeechFacePose pose = bubbles.TryGetSpeechFaceSample(owner, out SpeechFaceSample sample)
+                ? SpeechFaceAnimation.Resolve(sample, profile, clock)
+                : SpeechFaceAnimation.ResolveListening(profile, clock);
+            return actor.TrySetSpeechFace(this, pose);
+        }
+
+        private void ReleaseFaces()
+        {
+            if (heroFace is UnityEngine.Object heroObject && heroObject != null) heroFace.ReleaseSpeechFace(this);
+            if (npcFace is UnityEngine.Object npcObject && npcObject != null) npcFace.ReleaseSpeechFace(this);
         }
 
         private void OnGUI()

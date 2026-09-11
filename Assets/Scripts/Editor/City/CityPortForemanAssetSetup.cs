@@ -15,6 +15,10 @@ namespace BarPromenade.Editor
         public static void BuildOrThrow()
         {
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            foreach (string resource in new[] { SpeechFaceAtlasResources.HeroPath, SpeechFaceAtlasResources.ForemanPath })
+                AssetDatabase.ImportAsset("Assets/Resources/" + resource + ".png",
+                    ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+            DialogueFaceTextureImporter.ValidateOrThrow();
             Avatar avatar = AssetDatabase.LoadAllAssetsAtPath(CityPedestrianAssetSetup.PlayerModelPath)
                 .OfType<Avatar>().FirstOrDefault();
             if (avatar == null || !avatar.isValid) throw new InvalidOperationException("Foreman requires the shared Generic avatar.");
@@ -122,6 +126,7 @@ namespace BarPromenade.Editor
             importer.globalScale = 1f; importer.useFileScale = true; importer.bakeAxisConversion = true;
             importer.preserveHierarchy = true; importer.optimizeGameObjects = false;
             importer.importAnimation = animations; importer.animationCompression = ModelImporterAnimationCompression.Off;
+            importer.importBlendShapes = !animations;
             importer.importCameras = false; importer.importLights = false; importer.addCollider = false;
             importer.isReadable = true; importer.materialImportMode = ModelImporterMaterialImportMode.None;
             importer.importNormals = ModelImporterNormals.Import; importer.importTangents = ModelImporterTangents.None;

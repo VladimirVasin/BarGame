@@ -1,0 +1,57 @@
+{
+  "generator": "dialogue_face_atlas.py",
+  "version": "1.0.0",
+  "cell_size": 64,
+  "columns": 8,
+  "index_origin": "top_left",
+  "index_formula": "upper_face * 6 + mouth + (hero_soiled ? 32 : 0)",
+  "mouths": [
+    "Closed",
+    "Narrow",
+    "Open",
+    "Round",
+    "Wide",
+    "Teeth"
+  ],
+  "upper_faces": [
+    "Rest",
+    "HalfBlink",
+    "Blink",
+    "Emphasis",
+    "Skeptical"
+  ],
+  "faces": {
+    "Hero": {
+      "texture": "HeroDialogueFace.png",
+      "width": 512,
+      "height": 512,
+      "rows": 8,
+      "soiled_offset": 32,
+      "source": "Assets/Player3D/V2/Textures/PlayerFaceAtlas.png",
+      "source_sha256": "91aea0e3956334283dcf7dba0374b41b33c7f756827d9eb379869e0ad8a0b799",
+      "sha256": "5b8d832c1307c83c648c0442a1c2486f78e1897a19093dab743ab063b00f18bf",
+      "base_tint": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "Foreman": {
+      "texture": "ForemanDialogueFace.png",
+      "width": 512,
+      "height": 256,
+      "rows": 4,
+      "soiled_offset": 0,
+      "source": "Assets/Resources/City/Port/Foreman/PortForemanAtlas.png",
+      "source_sha256": "e26907509a9cd59e6d70dc4fba4dbea37d8e4a9335b01bc008d1279d8528bcde",
+      "sha256": "555ce63182ac808b8e5d25909ca3e8c272b7183c5ff4b7402ce360daf835ec1b",
+      "base_tint": [
+        0.61,
+        0.47,
+        0.385,
+        1
+      ]
+    }
+  }
+}

@@ -73,7 +73,7 @@ namespace BarPromenade.Tests.PlayMode
                 var all=new[]{sound.EngineSource,sound.FirstCraneSource,sound.SecondCraneSource,
                     sound.TrolleySource,sound.ContactSource,cannery.TruckEngineSource,cannery.SeamerSource,
                     cannery.RetortSource,cannery.ReverseAlarmSource};
-                foreach(AudioSource source in all)AssertProductionVoice(source);
+                foreach(AudioSource source in all)AssertProductionVoice(source, source == sound.EngineSource);
 
                 // Exercise the actual pause gate once with the ordinary frame
                 // owners, then return to controlled offline sampling.
@@ -154,7 +154,7 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private static void AssertProductionVoice(AudioSource source)
+        private static void AssertProductionVoice(AudioSource source, bool trawlerEngine)
         {
             Assert.That(source,Is.Not.Null);
             Assert.That(source.clip,Is.Not.Null,source.name);
@@ -165,7 +165,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(source.dopplerLevel,Is.Zero);
             Assert.That(source.rolloffMode,Is.EqualTo(AudioRolloffMode.Linear));
             Assert.That(source.minDistance,Is.InRange(2f,3f));
-            Assert.That(source.maxDistance,Is.InRange(24f,32f));
+            if(trawlerEngine)Assert.That(source.maxDistance,Is.EqualTo(48f));
+            else Assert.That(source.maxDistance,Is.InRange(24f,32f));
             Assert.That(source.outputAudioMixerGroup,Is.SameAs(GameAudioMixer.SfxWorldGroup));
             AudioReverbFilter reverb=source.GetComponent<AudioReverbFilter>();
             Assert.That(reverb,Is.Not.Null,source.name+" owns its work-space reflections.");

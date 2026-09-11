@@ -23,8 +23,7 @@ reject delivery; never invent an anchor or fall back to bottom speech.
 ## Shared owners
 
 - `NpcSpeechBubbleView` owns presentation, active-line lifetime and cleanup.
-  Duration is captured per line; later view settings cannot alter it. A scene
-  or channel may own an instance of this shared class.
+  Captured per-line duration is immutable; scenes/channels may own shared views.
 - `SpeechDelivery` owns reveal, audible-letter pacing and duration calculation.
   Current defaults: `24` chars/s, clicks at least `.13 s` apart, adaptive
   reading tail `2.5 s`; the shared ambient bubble default is `4.4 s`.
@@ -35,16 +34,18 @@ reject delivery; never invent an anchor or fall back to bottom speech.
 - The dialogue/channel controller owns selection, ordering and admission, not
   another renderer or reveal clock. Register speakers once and release owned
   lines/declarations/leases on cancellation, disable, destruction and scene exit.
+- Faces read bubble reveal through `SpeechFaceAnimation`; no second clock.
+  Punctuation/reading tail close mouths; brows/blink remain independent.
+  Pause freezes all face
+  motion; termination restores ordinary faces. Hero/foreman use `SpeechFaceAtlasPresenter`.
 
 ## Ordering and lifetime
 
-One speaker/channel owner arbitrates ambient lines, paired replies and `E`.
-A live head cannot speak through two views. Silent restoration may rebuild
-the same owned timeline without replaying events.
-A new request must not replace a line still typing or being read. Defer it
-through the existing bounded queue/admission rule, or reject it without consuming
-its shuffle entry. Preserve pair order and the existing no-repeat contract.
-Do not accumulate missed events or replay them after pause, distance exit or seek.
+One speaker/channel owner arbitrates ambient lines, paired replies and E.
+One live head, one view. Silent restoration rebuilds without replay.
+Typing/reading lines cannot be replaced: bounded admission defers or rejects
+without consuming a shuffle entry. Preserve pair order/no-repeat; never
+accumulate missed events after pause, distance exit or seek.
 
 Use the shared resolved duration/active-line state for busy gates, reply delay,
 gestures and completion. Existing authored windows may supply parameters to the

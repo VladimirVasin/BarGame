@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import itertools
 from pathlib import Path
 import sys
 
@@ -24,7 +25,7 @@ resident=importlib.util.module_from_spec(spec)
 sys.modules[spec.name]=resident
 spec.loader.exec_module(resident)
 base=resident.base
-VERSION="1.3.0"
+VERSION="1.4.0"
 ACTIONS_VERSION="1.4.0"
 FPS=24
 CLIPS=(("SeatedIdle",4.0,True),("SeatedGrumble",4.0,True),
@@ -47,6 +48,101 @@ BITE_MOUTH=Vector((0,-.146,1.533))
 BITE_COMMIT=1.65
 POCKET=Vector((.18,-.318,1.125))
 BIN_TARGET=Vector((.80,.05,.18))
+CHIN_PARTS=("GEO_ForemanChin","GEO_ForemanJowl.L","GEO_ForemanJowl.R")
+CHIN_SHAPES={"ChinDrop":(0,0,-.018),"ChinLift":(0,0,.010),
+             "ChinLeft":(.012,0,0),"ChinRight":(-.012,0,0),
+             "ChinForward":(0,-.008,0),"ChinBack":(0,.006,0)}
+
+
+def build_chin_shapes(result,face_bottom):
+    """Continuous flesh deformation with the upper attachment held in place."""
+    bpy.context.view_layer.update()
+    for part in result.parts:
+        obj=part.obj
+        if obj.name not in CHIN_PARTS:continue
+        # Evaluating a modifier in Blender's FBX exporter discards shape keys.
+        # Bake this topology-only modifier first; the armature stays live.
+        bpy.ops.object.select_all(action="DESELECT");obj.select_set(True)
+        bpy.context.view_layer.objects.active=obj
+        for modifier in list(obj.modifiers):
+            if modifier.type=="TRIANGULATE":bpy.ops.object.modifier_apply(modifier=modifier.name)
+        rest=obj.shape_key_add(name="Basis",from_mix=False)
+        points=[obj.matrix_world@vertex.co for vertex in obj.data.vertices]
+        bottom=min(point.z for point in points)
+        attachment=face_bottom if obj.name=="GEO_ForemanChin" else 1.545
+        obj["bp_secondary_chin_pin_height_source"]=attachment
+        weights=[]
+        for point in points:
+            fraction=max(0,min(1,(attachment-point.z)/(attachment-bottom)))
+            weights.append(fraction*fraction*(3-2*fraction))
+        inverse=obj.matrix_world.inverted().to_3x3()
+        for name,direction in CHIN_SHAPES.items():
+            key=obj.shape_key_add(name=name,from_mix=False);delta=inverse@Vector(direction)
+            for index,weight in enumerate(weights):key.data[index].co=rest.data[index].co+delta*weight
+            key.value=0
+
+
+def validate_chin_shapes(result):
+    records=[];signature=[];minimum_normal_dot=1;minimum_volume=10
+    for part in result.parts:
+        obj=part.obj
+        if obj.name not in CHIN_PARTS:continue
+        keys=obj.data.shape_keys.key_blocks
+        if list(keys.keys())!=["Basis",*CHIN_SHAPES]:raise RuntimeError("Foreman fat shape bank differs: "+obj.name)
+        rest=[obj.matrix_world@point.co for point in keys["Basis"].data]
+        deltas={name:[obj.matrix_world.to_3x3()@(point.co-keys["Basis"].data[index].co)
+                      for index,point in enumerate(keys[name].data)] for name in CHIN_SHAPES}
+        pin=obj["bp_secondary_chin_pin_height_source"]
+        pinned=[index for index,point in enumerate(rest) if point.z>=pin-.000001]
+        if len(pinned)<len(rest)//3:raise RuntimeError("Foreman fat lacks a broad fixed attachment")
+        for name,direction in CHIN_SHAPES.items():
+            if keys[name].value!=0:raise RuntimeError("Foreman fat must import at its neutral shape")
+            if any(deltas[name][index].length>.000001 for index in pinned):raise RuntimeError("Foreman fat tears its attachment")
+            maximum=max(delta.length for delta in deltas[name])
+            if abs(maximum-Vector(direction).length)>.000001:raise RuntimeError("Foreman fat displacement differs from its contract")
+            signature.append((obj.name,name,[[round(value,7) for value in point.co] for point in keys[name].data]))
+        triangles=[tuple(face.vertices) for face in obj.data.polygons]
+        if any(len(face)!=3 for face in triangles):raise RuntimeError("Fat shape topology must be baked before FBX export")
+        # All signed-axis combinations cover the runtime's independently
+        # clamped spring channels, including simultaneous vertical/lateral sway.
+        for vertical,lateral,depth in itertools.product((None,"ChinDrop","ChinLift"),(None,"ChinLeft","ChinRight"),(None,"ChinForward","ChinBack")):
+            active=[name for name in (vertical,lateral,depth) if name]
+            points=[point+sum((deltas[name][index] for name in active),Vector()) for index,point in enumerate(rest)]
+            volume=0
+            for first,second,third in triangles:
+                old=(rest[second]-rest[first]).cross(rest[third]-rest[first]).normalized()
+                new=(points[second]-points[first]).cross(points[third]-points[first]).normalized()
+                minimum_normal_dot=min(minimum_normal_dot,old.dot(new))
+                volume+=points[first].dot(points[second].cross(points[third]))/6
+            minimum_volume=min(minimum_volume,volume)
+        records.append({"renderer":obj.name,"pinned_from_source_z":round(pin,7),"pinned_vertices":len(pinned)})
+    if len(records)!=3 or minimum_normal_dot<.25 or minimum_volume<=0:raise RuntimeError("Foreman fat inverts during combined spring deformation")
+    moving=[part.obj for part in result.parts if part.obj.name in CHIN_PARTS]
+    mouth_clearance=10
+    try:
+        for name in CHIN_SHAPES:
+            for obj in moving:obj.data.shape_keys.key_blocks[name].value=1
+            bpy.context.view_layer.update()
+            mouth_clearance=min(mouth_clearance,dialogue_face_visibility(result)["mouth_skin_min_clearance_m"])
+            for obj in moving:obj.data.shape_keys.key_blocks[name].value=0
+    finally:
+        for obj in moving:
+            for key in obj.data.shape_keys.key_blocks:key.value=0
+        bpy.context.view_layer.update()
+    return {"renderers":records,"shapes_source_metres":CHIN_SHAPES,"default_weight":0,
+            "minimum_deformed_normal_dot":round(minimum_normal_dot,7),"minimum_signed_volume_m3":round(minimum_volume,9),
+            "minimum_mouth_clearance_during_shapes_m":round(mouth_clearance,7),
+            "shape_signature":hashlib.sha256(json.dumps(signature,separators=(",",":")).encode()).hexdigest()}
+
+
+def validate_exported_chin_shapes(path):
+    from io_scene_fbx import parse_fbx
+    root,_=parse_fbx.parse(str(path))
+    objects=next(element for element in root.elems if element.id==b"Objects")
+    channels=[element for element in objects.elems if element.id==b"Deformer" and element.props[-1]==b"BlendShapeChannel"]
+    names=[element.props[1].split(b"\x00",1)[0].decode() for element in channels]
+    if len(names)!=18 or any(sum(value.endswith(name) for value in names)!=3 for name in CHIN_SHAPES):
+        raise RuntimeError("Foreman FBX lost its three six-direction flesh shape banks: "+repr(names))
 
 
 def atlas(path,validate_only=False):
@@ -155,6 +251,22 @@ class ForemanBuilder(resident.ResidentBuilder):
                     point=part.obj.matrix_world@vertex.co
                     along=start+axis*(point-start).dot(axis)
                     vertex.co=inv@(along+(point-along)*(1.40 if part.bone.startswith("thigh") else 1.24))
+        # Resident anatomy remapping pulled this lower patch behind the
+        # canonical jowls and lifted its painted lips above the bite socket.
+        # Fit its lower four rows to the foreman's existing lip/chin planes;
+        # keep the upper head, surrounding flesh and bite anchor untouched.
+        face=next(p.obj for p in result.parts if p.obj.name=="GEO_FaceSurface")
+        face_inverse=face.matrix_world.inverted()
+        top=max((face.matrix_world@v.co).z for v in face.data.vertices)
+        bottom=(BITE_MOUTH.z-(1-50/64)*top)/(50/64)
+        lower_rows=((bottom,.062,-.114),(1.507,.083,-.1405),(1.557,.101,-.1405),(1.584423,.108,-.142))
+        for vertex in face.data.vertices:
+            row,column=divmod(vertex.index,7)
+            if row>=4:continue
+            height,width,depth=lower_rows[row]
+            nx=(-.92,-.61,-.30,0,.30,.61,.92)[column]
+            nose=.018*max(0,1-abs(nx)*1.7) if row==3 else 0
+            vertex.co=face_inverse@Vector((nx*width,depth+.015*nx*nx-nose,height))
         self.canonical=True
         self.remove("GEO_Thumb.L")
         # The ordinary palm remains the same NpcHumanV2 anatomy. Four compact
@@ -191,12 +303,12 @@ class ForemanBuilder(resident.ResidentBuilder):
                 self.add_part("CLO_ForemanPocket."+side,base.make_tapered_box((sign*.205,-.240,1.07),(sign*.205,-.244,1.115),(.14,.018,0),(.155,.019,0)),"spine","clothing","f_dark")
             self.add_part("HAIR_ForemanTemple."+side,base.make_ellipsoid((sign*.094,.013,1.610),(.023,.058,.059),10,5),"head","hair","f_hair")
             self.add_part("GEO_ForemanJowl."+side,base.make_ellipsoid((sign*.067,-.020,1.525),(.050,.072,.055),12,6),"head","body_detail","f_skin")
-            self.add_part("FACE_ForemanBrow."+side,base.make_frustum_between((sign*.018,-.128,1.642),(sign*.078,-.120,1.654),.009,.012,8),"head","face_detail","f_hair")
         self.add_part("GEO_ForemanChin",base.make_ellipsoid((0,-.049,1.486),(.094,.070,.034),14,6),"head","body_detail","f_skin")
         self.add_part("HAIR_ForemanBack",base.make_ellipsoid((0,.062,1.602),(.101,.038,.055),14,5),"head","hair","f_hair")
-        self.add_part("FACE_ForemanLowerLip",base.make_ellipsoid((0,-.133,1.523),(.038,.010,.006),12,4),"face.mouth","face_detail","f_skin")
-        for a,b in (((-.038,-.134,1.525),(0,-.140,1.533)),((0,-.140,1.533),(.038,-.134,1.525))):
-            self.add_part("FACE_ForemanMouth"+str(len(result.parts)),base.make_frustum_between(a,b,.003,.003,6),"face.mouth","face_detail","f_mouth")
+        build_chin_shapes(result,bottom)
+        # Brows/lips belong wholly to the expressive sprite surface. Keep the
+        # canonical face.mouth bone and the measured bite anchor/actions, but
+        # no static brow or lip can cover the selected speech/chewing frame.
         # A usable open patch pocket follows the convex coat. Its opaque front,
         # two gussets and bottom conceal the fresh carrot before withdrawal.
         pocket_faces=[]
@@ -276,6 +388,17 @@ class ForemanBuilder(resident.ResidentBuilder):
             self.add_part("GEO_ForemanStool_RungY"+str(side),base.make_frustum_between((side*.215,-.140,.255),(side*.215,.240,.255),.021,.021,8),"root","furniture","f_wood")
         for part in result.parts:
             if len(part.obj.data.uv_layers)==0:self.uv(part)
+        face=next(p.obj for p in result.parts if p.obj.name=="GEO_FaceSurface")
+        # Preserve the resident face's physical landmark mapping while removing
+        # its old body-atlas rectangle. Runtime applies one dialogue cell ST.
+        coordinates=[face.matrix_world@vertex.co for vertex in face.data.vertices]
+        low=[min(point[i] for point in coordinates) for i in range(3)]
+        high=[max(point[i] for point in coordinates) for i in range(3)]
+        for loop in face.data.loops:
+            point=coordinates[loop.vertex_index]
+            face.data.uv_layers.active.data[loop.index].uv=((point.x-low[0])/(high[0]-low[0]),(point.z-low[2])/(high[2]-low[2]))
+        face["bp_face_atlas_renderer"]=True
+        face["bp_uv_contract"]="local_0_1_runtime_cell_scale_offset"
         bpy.context.view_layer.update()
         for carrot in carrots:
             for loop in carrot.data.loops:
@@ -569,7 +692,7 @@ def make_actions(result):
               "carrot_mouth_max_error_m":round(max_bite_error,7),
               "carrot_anchor_max_error_m":round(max_anchor_error,7),
               "carrot_speech_min_distance_m":round(min_talking_clearance,7),
-              "chewing_lower_lip_travel_m":round(mouth_travel,7),
+              "chewing_jaw_bone_travel_m":round(mouth_travel,7),
               "pocket_pickup_error_m":round(max_pickup_error,7),"throw_release_error_m":round(release_error,7),
               "throw_release_rotation_error_rad":round(release_rotation_error,7),"neutral_endpoint_error":round(neutral_error,7),
               "throw_mesh_transfer_error_m":round(transfer_mesh_error,7),"pocket_body_outside_m":round(pocket_body_outside,7),
@@ -587,6 +710,46 @@ def make_actions(result):
             "carrot_tip_anchor":"ANCHOR_ForemanCarrotTip","mouth_contact_anchor":"ANCHOR_ForemanBiteMouth","validation":measured}
 
 
+def dialogue_face_visibility(result,enforce=True):
+    """Measure the complete drawn mouth against skull, cheeks and chin."""
+    face=next(p.obj for p in result.parts if p.obj.name=="GEO_FaceSurface")
+    mesh=face.data;mesh.calc_loop_triangles();bpy.context.view_layer.update()
+    vertices=[face.matrix_world@v.co for v in mesh.vertices]
+    skin=evaluated_bvh(result,lambda p:p.bone=="head" and p.obj.name!="GEO_FaceSurface")
+    minimum=10;forward=1;samples=0;positions=[];mouth_center=None
+    for triangle in mesh.loop_triangles:
+        points=[vertices[i] for i in triangle.vertices]
+        uv=[mesh.uv_layers.active.data[i].uv for i in triangle.loops]
+        normal=(points[1]-points[0]).cross(points[2]-points[0]).normalized()
+        target=Vector((.5,1-50/64));a=uv[1]-uv[0];b=uv[2]-uv[0];delta=target-uv[0]
+        determinant=a.x*b.y-a.y*b.x
+        if abs(determinant)>.0000001:
+            first=(delta.x*b.y-delta.y*b.x)/determinant
+            second=(a.x*delta.y-a.y*delta.x)/determinant
+            if first>=-.00001 and second>=-.00001 and first+second<=1.00001:
+                mouth_center=points[0]*(1-first-second)+points[1]*first+points[2]*second
+        for first in range(17):
+            for second in range(17-first):
+                a,b=first/16,second/16;c=1-a-b
+                texel=uv[0]*a+uv[1]*b+uv[2]*c
+                if not (18/64<=texel.x<=47/64 and 1-57/64<=texel.y<=1-42/64):continue
+                point=points[0]*a+points[1]*b+points[2]*c;positions.append(point)
+                forward=min(forward,-normal.y)
+                for yaw in (-35,-20,0,20,35):
+                    direction=Vector((math.sin(math.radians(yaw)),-math.cos(math.radians(yaw)),0))
+                    location,_,_,distance=skin.ray_cast(point+direction,-direction,2)
+                    if location is None:continue
+                    minimum=min(minimum,distance-1);samples+=1
+    metrics={"mouth_skin_min_clearance_m":round(minimum,7),"mouth_min_forward_normal":round(forward,7),
+             "mouth_visibility_rays":samples,"camera_yaw_range_degrees":[-35,35],
+             "mouth_center_uv":[.5,1-50/64],"mouth_bite_anchor_gap_m":round((mouth_center-BITE_MOUTH).length,7),
+             "mouth_bounds_source_min":[round(min(v[i] for v in positions),6) for i in range(3)],
+             "mouth_bounds_source_max":[round(max(v[i] for v in positions),6) for i in range(3)]}
+    if enforce and (samples<500 or minimum<.001 or forward<.75 or (mouth_center-BITE_MOUTH).length>.008):
+        raise RuntimeError("Foreman mouth visibility/contact alignment failed: "+json.dumps(metrics))
+    return metrics
+
+
 def manifest(result,texture_hash):
     metrics=resident.measured(result)
     if len(result.rig.data.bones)!=31:raise RuntimeError("Foreman lost the canonical31 bones")
@@ -595,10 +758,20 @@ def manifest(result,texture_hash):
     width=max(v.x for v in vertices)-min(v.x for v in vertices)
     depth=max(v.y for v in vertices)-min(v.y for v in vertices)
     if width<.70 or depth<.54:raise RuntimeError("Foreman lost the stout belly silhouette")
+    face=next(p for p in result.parts if p.obj.name=="GEO_FaceSurface")
+    uv=[loop.uv for loop in face.obj.data.uv_layers.active.data]
+    if any(value<-.00001 or value>1.00001 for point in uv for value in point):
+        raise RuntimeError("Foreman dialogue face UVs leave the local unit square")
+    if any(p.obj.name.startswith("FACE_Foreman") for p in result.parts):
+        raise RuntimeError("Static face overlays conceal the expressive face atlas")
     return {"generator":Path(__file__).name,"version":VERSION,"role":"PortForeman","anatomy_standard":"NpcHumanV2",
             "coordinate_system":"Blender metres +Z up / -Y facing; import swaps YZ, placement resolves facing",
             "height_scale":1.0,**metrics,"seat_top_m":SEAT_TOP,"coat_width_m":round(width,6),"coat_depth_m":round(depth,6),
             "anchor_seat_unity":[0,SEAT_TOP,.05],"atlas_sha256":texture_hash,
+            "dialogue_face":{"renderer":"GEO_FaceSurface","texture":"Dialogue/Faces/ForemanDialogueFace",
+                             "uv_contract":"local_0_1_runtime_cell_scale_offset","base_tint":list(face.color),
+                             "validation":dialogue_face_visibility(result)},
+            "secondary_chin":validate_chin_shapes(result),
             "carrot_length_m":.238,"carrot_hand":"hand.L","carrot_tip_heights_from_grip_m":list(CARROT_TIPS),
             "palm_normal_source":list(PALM_NORMAL),"carrot_grip_offset_source":list(CARROT_GRIP-HAND_GRIP),
             "carrot_visible_parts":["FOOD_ForemanCarrotBite1","FOOD_ForemanCarrotBite2","FOOD_ForemanCarrotBite3","FOOD_ForemanCarrotStem","FOOD_ForemanCarrotGreens"],
@@ -664,15 +837,22 @@ def main():
     parser.add_argument("--source-dir",type=Path,default=ROOT/"ArtSource/City/Port/Foreman")
     parser.add_argument("--validate-only",action="store_true");parser.add_argument("--no-preview",action="store_true")
     parser.add_argument("--actions-only",action="store_true",help="Preserve the published passive model and atlas; replace only the animation bank and source scene.")
+    parser.add_argument("--face-review-only",action="store_true",help="Only measure the curved dialogue face against surrounding skin; no assets are written.")
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
     texture=args.model_dir/"PortForemanAtlas.png"
-    texture_hash=atlas(texture,args.validate_only or args.actions_only)
-    builder=ForemanBuilder();result=builder.build();body=manifest(result,texture_hash)
+    texture_hash=atlas(texture,args.validate_only or args.actions_only or args.face_review_only)
+    builder=ForemanBuilder();result=builder.build()
+    if args.face_review_only:
+        print(json.dumps(dialogue_face_visibility(result)),flush=True)
+        print(json.dumps(validate_chin_shapes(result)),flush=True)
+        return
+    body=manifest(result,texture_hash)
     if args.actions_only and json.loads((args.model_dir/"PortForeman.json").read_text(encoding="utf-8"))!=body:
         raise RuntimeError("Actions-only publication would change the passive foreman model")
     if not args.validate_only and not args.actions_only:
         args.model_dir.mkdir(parents=True,exist_ok=True);args.source_dir.mkdir(parents=True,exist_ok=True)
         base.export_fbx(args.model_dir/"PortForeman.fbx",result)
+        validate_exported_chin_shapes(args.model_dir/"PortForeman.fbx")
     actions=make_actions(result)
     if args.validate_only:
         for stem,payload in (("PortForemanActions",actions),) if args.actions_only else (("PortForeman",body),("PortForemanActions",actions)):

@@ -1247,13 +1247,12 @@ The vertical slice contains:
   rounds; rest ends before greetings, staggered farewells fit earshot, no replay.
   Pause-aware breath/weight/gaze; turns/Walk→Run retain grips, levers follow hands.
   Driver talks only to docker. Tare/cart avoided; people/cargo physical, custody-owned.
-  `CityPortForeman`: store wall/cart-facing/quay light; left carrot, three bites→pail→pocket.
-  `E` prompt; pair admission, walk/facing `1.65 m` ahead.
-  Two side chest-up shots, shared speech, silent choices. Hero speaks
-  selected «Хочу»/«Не сейчас»; no new pool. Both Talk/Listen, no lipsync.
-  Carrot bite/clock retained, left lowered/right gesture. Cancel anytime;
-  parallel pose/camera entry/exit, shared input/HUD/rig cleanup.
-  No work/pay/quest; village/Mother unchanged.
+  `CityPortForeman`: store wall/cart-facing/quay light; left carrot: 3 bites→pail→pocket.
+  E/pair gate, `1.65 m` approach, two side chest shots; «Хочу»/«Не сейчас» spoken.
+  Shared reveal: expressive sprite mouths/brows/blink, soil twins; punctuation/tail close.
+  Foreman face fills mouth hollow; chin/jowls spring with lag/decay.
+  Pause freezes; cancel restores faces/input/HUD/rig. Carrot clock/bites held,
+  left lowered/right gesture; pose/camera together. No job/pay/quest; village/Mother unchanged.
   Solid caissons reach `20 m` seaward and `-3.4 m` below sea level.
   `CityPortAccessPlan`/`PortAccessLayout.json`: `6 m` road/regrade/L-yard,
   `6.481 x 2.4 m` truck; road/shoulders are the city approach, ramp/yard masks joined.
@@ -1266,8 +1265,9 @@ The vertical slice contains:
   flush drains/wheel rubs leave handling lanes clear. One two-fan evaporator
   feeds outside condensers/drain. Three warm shadowed spots
   join quay/store/canopy lights; all retain the two-thirds day floor/distance gate.
-  Vessel searchlight/shaft lights deck/water with shadows. `CityPortWater` owns
-  wake; `CityPortSound` owns machinery/contact, horn/echo and a local cold-store fan.
+  Searchlight shadows deck/water; wake `CityPortWater`; `CityPortSound`:
+  run/idle motor `.6/.24`, `48 m`; horn/echo `20/4 s` pre-Moor/Depart;
+  mechanics/contacts/fan.
   Pause stops time/audio; disable/destroy clears people/voices/wake.
   Small alternative blueprints without room retain their nonoperational mol;
 - Weighbridge→cannery: `8 x 14 m` hall on `18 x 18 m`, bay/

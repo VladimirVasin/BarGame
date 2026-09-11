@@ -82,6 +82,8 @@ namespace BarPromenade
 
             public SpeechDelivery Line;
             public float DurationSeconds;
+            public uint LineToken;
+            public float SampledElapsedSeconds;
 
             /// <summary>This bubble's own fade, from its own anchor's
             /// own distance.</summary>
@@ -113,6 +115,7 @@ namespace BarPromenade
         private GUIStyle labelStyle;
         private GUIStyle scatterStyle;
         private bool slotsPrepared;
+        private uint nextLineToken;
 
         // Reused for measurement: a fresh GUIContent per bubble per
         // IMGUI event is steady garbage for lines that change rarely.
@@ -296,6 +299,8 @@ namespace BarPromenade
                 Speaker = speaker,
                 Line = SpeechDelivery.Spoken(text, unscaledTime),
                 DurationSeconds = durationSeconds,
+                LineToken = NextLineToken(),
+                SampledElapsedSeconds = 0f,
                 Opacity = opacity,
                 IsCulled = opacity <= 0f,
                 VoiceLease = -1,
@@ -474,6 +479,35 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Borrows the already-stepped delivery for an optional illustrated face. Reading never
+        /// advances time, allocates a substring or depends on a voice lease. The owning clock's
+        /// pause freezes this sample; closed, culled or missing heads cannot leave a stale pose.
+        /// </summary>
+        public bool TryGetSpeechFaceSample(Object owner, out SpeechFaceSample sample)
+        {
+            sample = default;
+            int speaker = FindSpeaker(owner);
+            if (speaker < 0) return false;
+            int slot = FindSlotOf(speaker);
+            if (slot < 0) return false;
+            NpcSpeaker declared = speakers[speaker];
+            Bubble bubble = bubbles[slot];
+            if (declared.Owner == null || declared.Anchor == null ||
+                !declared.Anchor.gameObject.activeInHierarchy || bubble.IsCulled || !bubble.Line.HasText)
+                return false;
+            sample = new SpeechFaceSample(bubble.LineToken, bubble.Line.Text,
+                bubble.Line.RevealedCharacters, !bubble.Line.IsComplete, bubble.SampledElapsedSeconds);
+            return true;
+        }
+
+        private uint NextLineToken()
+        {
+            unchecked { nextLineToken++; }
+            if (nextLineToken == 0) nextLineToken = 1;
+            return nextLineToken;
+        }
+
+        /// <summary>
         /// One frame of every open line: expiry, its own fade from its
         /// own anchor, and one step of typing with the keystroke that
         /// comes with it.
@@ -564,7 +598,9 @@ namespace BarPromenade
                 ReleaseVoice(ref bubble);
             }
 
-            if (!bubble.Line.Step(unscaledTime, out char blip) ||
+            bool hasBlip = bubble.Line.Step(unscaledTime, out char blip);
+            bubble.SampledElapsedSeconds = Mathf.Max(0f, unscaledTime - bubble.Line.StartedAt);
+            if (!hasBlip ||
                 bubble.IsCulled)
             {
                 return;
@@ -612,6 +648,8 @@ namespace BarPromenade
             bubble.Speaker = -1;
             bubble.Line = default;
             bubble.DurationSeconds = 0f;
+            bubble.LineToken = 0;
+            bubble.SampledElapsedSeconds = 0f;
             bubble.Opacity = 0f;
             bubble.IsCulled = false;
             bubble.Scatter = 0f;

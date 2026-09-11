@@ -32,18 +32,21 @@ Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
   visibility; hats/hands get clearance. `AreaCaptureFixture.NpcNameplates` passed
   depth/distance/speech/lifecycle; frames reviewed. Capture restores cannery
   presentation before exit around its existing teardown error.
-- Implemented reusable dialogue graph/session: foreman first, visible contextual
-  approach, two side speaking shots, both shared bubbles and body Talk/Listen.
-  Selected existing hero answers become speech; offer is absent from choice UI.
-  §6 dates held-face/reply exceptions; Cancel anytime preserves §16.16, carrot
-  custody and port-pair admission. Entry lies on flat quay; choices use a
-  flat panel with explicit focus. `AreaCaptureFixture.CityPortForemanDialogue`
-  passed branches/cancellation/cleanup; final RU/EN frames reviewed.
-  E restored in both prompts. Carrot/entry and pose/camera transitions now run
-  together; stationary exit bridges the last visible pose, including nested
-  Talk, through shared recovery. Pair/snack gates and terminal cleanup remain.
-  The fixture's latency/prompt regression passed; RU/EN prompt frames reviewed.
-  `python tools/check-docs.py` passed budgets and frozen canon references.
+- Reusable dialogue graph/session: foreman first, visible flat-quay approach,
+  side shots, shared bubbles/Talk/Listen; selected answers spoken, offer omitted
+  from focused choices. §6 dates face/reply exceptions; Cancel anytime keeps
+  §16.16, carrot custody and pair/snack gates. E prompts; carrot/entry and pose/
+  camera transitions run together; shared stationary recovery bridges nested Talk.
+- Expressive sprite mouths/brows/blink follow actual reveal; hero soil retained.
+  Foreman mouth was hidden by old head mass: continuous face now reaches its
+  hollow; real chin/jowls use damped spring deformation with fixed attachments.
+  `AreaCaptureFixture.CityPortForemanDialogue` passed branches/prompts, RU/EN
+  articulation/tail, placed mouth, deformed meshes, pause/settle and cleanup;
+  frames reviewed. `dialogue_face_atlas.py --validate-only` and
+  `build-city-port-foreman-3d-model.py` validation passed.
+  `python tools/check-docs.py` passed budgets/frozen references.
+- Trawler motor louder/farther; horns precede mooring/departure.
+  `dotnet build BarPromenade.Runtime.csproj` and `python tools/check-docs.py` passed.
 
 ## 2026-09-10 — Found-item screen, port and cannery
 

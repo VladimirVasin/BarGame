@@ -65,7 +65,7 @@ namespace BarPromenade
                     continue;
                 }
                 // Keep the normal weary face. A brief authored blink uses the
-                // existing atlas expressions; mouth motion is deliberately absent.
+                // existing atlas expressions. Shared delivery overrides these while speaking.
                 Player3DFacialExpressionKey[] face = IsLoop(name) ? new[]
                 {
                     new Player3DFacialExpressionKey(0f, PlayerFacialExpression.Neutral),
@@ -93,6 +93,8 @@ namespace BarPromenade
             if (source == null) return false;
             loaded = JsonUtility.FromJson<Manifest>(source.text);
             if (loaded == null || loaded.generator != "player_dialogue_v1" || loaded.rig != "HeroV2" ||
+                // This flag describes baked body-bank lip tracks. Runtime sprite speech
+                // comes from shared delivery and is deliberately absent from these clips.
                 loaded.bone_count != 31 || loaded.fps != 24 || loaded.root_motion || loaded.lip_sync ||
                 loaded.animation_events != 0 || loaded.clips == null || loaded.clips.Length != names.Length ||
                 !ValidPoint(loaded.entry_pelvis_from_ground) || !ValidPoint(loaded.action_pelvis_from_ground) ||

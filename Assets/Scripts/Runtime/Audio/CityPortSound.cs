@@ -7,9 +7,11 @@ namespace BarPromenade
     [DefaultExecutionOrder(210)]
     public sealed class CityPortSound : MonoBehaviour
     {
-        public const double ArrivalHornAtSeconds = CityPortCycle.ApproachDurationSeconds - 4d;
+        // Announce the approach while the hull is still coming in; departure
+        // gets its signal just before the vessel starts moving away.
+        public const double ArrivalHornAtSeconds = CityPortCycle.ApproachDurationSeconds - 20d;
         public const double DepartureHornAtSeconds = CityPortCycle.CycleDurationSeconds -
-            CityPortCycle.IdleDurationSeconds - CityPortCycle.DepartDurationSeconds;
+            CityPortCycle.IdleDurationSeconds - CityPortCycle.DepartDurationSeconds - 4d;
         public const float HornTailSeconds = 4.6f;
         private CityPortController port;
         private Transform engineAnchor, hornAnchor, refrigerationAnchor;
@@ -65,7 +67,7 @@ namespace BarPromenade
             {
                 sound.loops[i] = sound.CreateVoice(names[i], true,
                     i == 4 ? 1700f : i == 0 ? 4000f : i == 3 ? 4200f : 6500f,
-                    i == 4, i == 4 ? 14f : 32f);
+                    i == 4, i == 4 ? 14f : i == 0 ? 48f : 32f);
                 int clipIndex = i == 4 ? 4 : i == 0 ? 0 : i == 3 ? 2 : 1;
                 sound.loops[i].clip = sound.clips[clipIndex];
                 sound.loops[i].pitch = i == 3 ? .62f : i == 2 ? .92f : 1f;
@@ -154,7 +156,7 @@ namespace BarPromenade
             if (!timeRunning) return;
 
             float engine = now.VesselPresent ?
-                now.Stage == CityPortCycleStage.Approach || now.Stage == CityPortCycleStage.Depart ? .30f : .12f : 0f;
+                now.Stage == CityPortCycleStage.Approach || now.Stage == CityPortCycleStage.Depart ? .60f : .24f : 0f;
             SetLoop(0, engine, delta);
             bool craneMoves = now.CargoStage == CityPortCargoStage.LowerHook ||
                 now.CargoStage == CityPortCargoStage.Hoist || now.CargoStage == CityPortCargoStage.Slew ||

@@ -78,7 +78,7 @@
     "carrot_mouth_max_error_m": 4e-07,
     "carrot_anchor_max_error_m": 4e-07,
     "carrot_speech_min_distance_m": 0.6258049,
-    "chewing_lower_lip_travel_m": 0.0060296,
+    "chewing_jaw_bone_travel_m": 0.0060296,
     "pocket_pickup_error_m": 2e-07,
     "throw_release_error_m": 2e-07,
     "throw_release_rotation_error_rad": 0.0,

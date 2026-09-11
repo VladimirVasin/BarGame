@@ -1,12 +1,12 @@
 {
   "generator": "build-city-port-foreman-3d-model.py",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "role": "PortForeman",
   "anatomy_standard": "NpcHumanV2",
   "coordinate_system": "Blender metres +Z up / -Y facing; import swaps YZ, placement resolves facing",
   "height_scale": 1.0,
-  "mesh_count": 71,
-  "triangle_count": 4888,
+  "mesh_count": 66,
+  "triangle_count": 4720,
   "bounds_min": [
     -0.784455,
     -0.3755,
@@ -26,6 +26,97 @@
     0.05
   ],
   "atlas_sha256": "e26907509a9cd59e6d70dc4fba4dbea37d8e4a9335b01bc008d1279d8528bcde",
+  "dialogue_face": {
+    "renderer": "GEO_FaceSurface",
+    "texture": "Dialogue/Faces/ForemanDialogueFace",
+    "uv_contract": "local_0_1_runtime_cell_scale_offset",
+    "base_tint": [
+      0.61,
+      0.47,
+      0.385,
+      1
+    ],
+    "validation": {
+      "mouth_skin_min_clearance_m": 0.0437075,
+      "mouth_min_forward_normal": 0.7878007,
+      "mouth_visibility_rays": 5380,
+      "camera_yaw_range_degrees": [
+        -35,
+        35
+      ],
+      "mouth_center_uv": [
+        0.5,
+        0.21875
+      ],
+      "mouth_bite_anchor_gap_m": 0.0055,
+      "mouth_bounds_source_min": [
+        -0.043312,
+        -0.142937,
+        1.510125
+      ],
+      "mouth_bounds_source_max": [
+        0.046562,
+        -0.135712,
+        1.560428
+      ]
+    }
+  },
+  "secondary_chin": {
+    "renderers": [
+      {
+        "renderer": "GEO_ForemanJowl.L",
+        "pinned_from_source_z": 1.545,
+        "pinned_vertices": 25
+      },
+      {
+        "renderer": "GEO_ForemanJowl.R",
+        "pinned_from_source_z": 1.545,
+        "pinned_vertices": 25
+      },
+      {
+        "renderer": "GEO_ForemanChin",
+        "pinned_from_source_z": 1.483545,
+        "pinned_vertices": 43
+      }
+    ],
+    "shapes_source_metres": {
+      "ChinDrop": [
+        0,
+        0,
+        -0.018
+      ],
+      "ChinLift": [
+        0,
+        0,
+        0.01
+      ],
+      "ChinLeft": [
+        0.012,
+        0,
+        0
+      ],
+      "ChinRight": [
+        -0.012,
+        0,
+        0
+      ],
+      "ChinForward": [
+        0,
+        -0.008,
+        0
+      ],
+      "ChinBack": [
+        0,
+        0.006,
+        0
+      ]
+    },
+    "default_weight": 0,
+    "minimum_deformed_normal_dot": 0.9273881,
+    "minimum_signed_volume_m3": 0.0006589,
+    "minimum_mouth_clearance_during_shapes_m": 0.0437075,
+    "shape_signature": "2d0e19291592bf47e105b63d8c17dd112ceed4eb75c78948c3603b306e2e12a3"
+  },
   "carrot_length_m": 0.238,
   "carrot_hand": "hand.L",
   "carrot_tip_heights_from_grip_m": [
@@ -392,16 +483,6 @@
       ]
     },
     {
-      "name": "FACE_ForemanBrow.L",
-      "bone": "head",
-      "color": [
-        0.46,
-        0.47,
-        0.415,
-        1
-      ]
-    },
-    {
       "name": "CLO_ForemanPocket.R",
       "bone": "spine",
       "color": [
@@ -432,16 +513,6 @@
       ]
     },
     {
-      "name": "FACE_ForemanBrow.R",
-      "bone": "head",
-      "color": [
-        0.46,
-        0.47,
-        0.415,
-        1
-      ]
-    },
-    {
       "name": "GEO_ForemanChin",
       "bone": "head",
       "color": [
@@ -458,36 +529,6 @@
         0.46,
         0.47,
         0.415,
-        1
-      ]
-    },
-    {
-      "name": "FACE_ForemanLowerLip",
-      "bone": "face.mouth",
-      "color": [
-        0.61,
-        0.47,
-        0.385,
-        1
-      ]
-    },
-    {
-      "name": "FACE_ForemanMouth41",
-      "bone": "face.mouth",
-      "color": [
-        0.2,
-        0.15,
-        0.125,
-        1
-      ]
-    },
-    {
-      "name": "FACE_ForemanMouth42",
-      "bone": "face.mouth",
-      "color": [
-        0.2,
-        0.15,
-        0.125,
         1
       ]
     },
@@ -772,5 +813,5 @@
       ]
     }
   ],
-  "geometry_signature": "464f5366a28fc6895879057c1b9b997abe08e21d65536874d34869fb175cb40f"
+  "geometry_signature": "af09892b8be71e6815255d44f9ea7533a69ecf76087c0cefbb3e9a8db8cd1c1f"
 }

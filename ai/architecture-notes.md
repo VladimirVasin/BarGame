@@ -5,28 +5,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 ## Current facts
 
 - **Accepted architecture exception — 2026-09-11, voluntary NPC dialogue:**
-  Story §6 dates the §7/§22 held-hero-face exception and permits only selected
-  existing foreman replies «Хочу»/«Не сейчас» aloud. Cancel at ANY phase keeps
-  §16.16 intact; no self-analysis/new lore. First adapter: foreman, no job/pay/
-  quest; village/Mother unchanged. Other choices gain no automatic voice.
-  `DialogueGraph`/`DialogueCursor` (`Line/Choice/End`) feed `DialogueSessionController`:
-  admission, shared `BeginPositioned` placement/animation, owned shared bubbles,
-  `DialogueCameraDirector`, input/HUD. `DialogueStagingPlan` owns independent
-  entry/action/exit data. Visible approach/facing `1.65 m` ahead on flat quay;
-  no teleport. Axis-preserving side chest-up shots follow speaker on the same
-  world rigs. Both Talk/Listen, no lipsync; carrot custody/bite/clock retained.
-  `NpcSpeechBubbleView` owns both voices and full-line timing; bottom choices
-  never repeat the offer. The active port pair finishes before entry; no backlog.
-  Completion/cancel/failure/disable/destroy/scene exit restore owned camera,
-  input, HUD, rig/pose and speech state through the shared contextual cleanup.
-  `PlayerDialogueActions`: bone-only Enter/Listen/Talk/Exit; normal Talk completion
-  uses `RequestNestedLoopActionExit` to Listen. The port adapter reserves a callback.
-  Both prompts show E. Safe snack/active pair admission stays;
-  carrot lowering and approach run together, with no separate preparation delay.
-  After neutral settle, camera and Enter run together (`.3/.35 s`). Stationary
-  `RequestExitWithPoseTransition` bridges the last visible pose, including Talk,
-  through shared recovery into Exit `.35 s`; camera return `.3 s` runs alongside.
-  Same root/pelvis/feet only; no parent-loop wait. Terminal frame/cleanup retained.
+  Story §6: held face/selected «Хочу»/«Не сейчас» aloud; Cancel always keeps §16.16.
+  Foreman first; no lore/job/pay/quest; village/Mother/other choices unchanged.
+  `DialogueGraph`/`DialogueCursor` (`Line/Choice/End`) → `DialogueSessionController`:
+  shared `BeginPositioned`, bubbles/camera/input/HUD. `DialogueStagingPlan`: entry/action/exit.
+  Visible `1.65 m` flat-quay approach; side chest shots retain axis/rigs. Talk/Listen,
+  carrot custody/bite/clock; bubbles own voices/timing; choices omit offer. E prompts;
+  snack/pair gates, no backlog. Shared cleanup restores all owned state on every exit.
+  Bone-only `PlayerDialogueActions`: Enter/Listen/Talk/Exit; `RequestNestedLoopActionExit`.
+  Carrot/approach parallel; camera/Enter `.3/.35 s` after settle. Stationary
+  `RequestExitWithPoseTransition` recovers last pose including Talk: Exit `.35 s`/
+  camera `.3 s` together. Same root/pelvis/feet; no parent-loop wait; terminal cleanup.
+
+- **Accepted architecture exception — 2026-09-11, expressive dialogue faces:**
+  User-approved hero/foreman sprites: §6/art §10d; six mouths × five eye/brow states,
+  `64 px` faces; weary hero/soil twins, grumbling foreman. `SpeechFaceAnimation`
+  follows bubble reveal: RU/EN articulation/brows/blink; punctuation/tail close.
+  Face-local UV/property blocks share materials; paint replaces 3D duplicates.
+  User: continuous foreman face extends into the mouth hollow;
+  existing chin/jowls physically swing. `ForemanChinDynamics` drives Blender
+  blendshapes with bounded damped inertia from speech/head motion, upper seams pinned.
+  Speech end settles, pause freezes, seek resets; same rig/anchors/snack custody.
+  Cancel restores faces; text/audio/camera unchanged; no inner-life interpretation.
 
 - **Accepted — 2026-09-11, nearby NPC role labels:**
   §24.26/§21/art §15a: ten RU/EN roles, no personal names/lore/voice; village/Mother

@@ -368,6 +368,7 @@ namespace BarPromenade
             }
 
             DestroyGraph();
+            ClearSpeechFace();
             ClearContextualFacialExpression();
             registry = assetRegistry;
             faceAtlasPresenter.Configure(registry.FaceAtlas);
@@ -1137,6 +1138,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ClearSpeechFace();
             ClearCarryPose();
             ResetColdPose();
             ClearRecoveryPresentation();
@@ -1195,6 +1197,7 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            ClearSpeechFace();
             layer.Dispose();
             faceAtlasPresenter.Reset();
             DestroyGraph();
@@ -2928,6 +2931,8 @@ namespace BarPromenade
             // The soiled twin rides every atlas face the same way; the
             // binding falls back to the clean cell where an atlas has no
             // twin, so an older atlas simply never shows the mess.
+            // Clip expression keys cannot overwrite a dialogue's mouth/brow frame.
+            if (HasSpeechFace && speechFacePresenter.Apply(speechFacePose, IsMouthSoiledVisible)) return;
             if (faceAtlasPresenter.Apply(expression, IsMouthSoiledVisible))
             {
                 return;
