@@ -21,6 +21,7 @@ namespace BarPromenade.Rendering
         private Ps1VertexSnapGlobalsPass snapPass;
         private HomeToiletUnderwaterPass toiletUnderwaterPass;
         private AlpineColdFrostPass coldFrostPass;
+        private NpcNameplatePass nameplatePass;
         private bool loggedMissingResources;
         private int rampFrame = -1;
 
@@ -39,6 +40,18 @@ namespace BarPromenade.Rendering
         /// <summary>The picture last handed to the print pass.</summary>
         internal BegottenFilmFrame DebugFilmState =>
             pass != null ? pass.FilmState : default;
+
+        internal int DebugNameplateCandidateCount => nameplatePass?.CandidateCount ?? 0;
+        internal Rect DebugNameplatePanelRect => nameplatePass?.LastPanelRect ?? default;
+        internal float DebugNameplateOpacity => nameplatePass?.LastOpacity ?? 0f;
+        internal string DebugNameplateText => nameplatePass?.LastText ?? string.Empty;
+        internal bool DebugTryGetNameplate(NpcNameplateTarget target, out Rect rect, out float opacity)
+        {
+            if (nameplatePass != null) return nameplatePass.TryGetLayout(target, out rect, out opacity);
+            rect = default;
+            opacity = 0f;
+            return false;
+        }
 
         /// <summary>
         /// Puts the projector back to its first foot of stock. The
@@ -61,6 +74,8 @@ namespace BarPromenade.Rendering
             pass?.Dispose();
             toiletUnderwaterPass?.Dispose();
             coldFrostPass?.Dispose();
+            nameplatePass?.Dispose();
+            nameplatePass = new NpcNameplatePass { renderPassEvent = injectionPoint };
             toiletUnderwaterPass = new HomeToiletUnderwaterPass();
             coldFrostPass = new AlpineColdFrostPass
             {
@@ -216,6 +231,7 @@ namespace BarPromenade.Rendering
 
             if (!present)
             {
+                EnqueueNameplates(renderer, cameraData, 1f);
                 return;
             }
 
@@ -269,6 +285,15 @@ namespace BarPromenade.Rendering
                 outputHeight,
                 DebugForceFilmFrame);
             renderer.EnqueuePass(pass);
+            EnqueueNameplates(renderer, cameraData, aspectFraction);
+        }
+
+        private void EnqueueNameplates(ScriptableRenderer renderer, CameraData cameraData, float fraction)
+        {
+            if (nameplatePass == null || !cameraData.resolveFinalTarget ||
+                !nameplatePass.IsNeeded(cameraData.camera)) return;
+            nameplatePass.Setup(fraction);
+            renderer.EnqueuePass(nameplatePass);
         }
 
         /// <summary>
@@ -310,6 +335,8 @@ namespace BarPromenade.Rendering
             toiletUnderwaterPass = null;
             coldFrostPass?.Dispose();
             coldFrostPass = null;
+            nameplatePass?.Dispose();
+            nameplatePass = null;
         }
 
         private void ResolveResources()

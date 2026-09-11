@@ -665,24 +665,16 @@ The vertical slice contains:
   maximum radius at `0.55`, keeping nearby people, furniture and gestures
   legible. A separate priority-10 Bokeh owner remains available only to an
   active modal close-up and yields back to the scene grade when released;
-- a crisp interface-only soot/charcoal/dirty-bone IMGUI layer after the world
-  composite: prompts, pause/start, inventory, shops, inspectors, journal,
-  HUD and all map modes share a logical `640x360` canvas, flat
-  rectangular panels, thin nested frames, stable panel grain and
-  grayscale-readable focus. `J` opens the journal over the whole canvas as a
-  scrolling list of ticked and empty boxes above one description panel for the
-  selected quest, and an unread entry blinks a notebook in the top right
-  corner — spelling out the key until the journal has been opened once, and
-  for six seconds after that. The layer keeps flat
-  rectangular panels, thin nested frames, stable panel grain and
-  grayscale-readable focus. Packaged `Roboto-Regular` is the deterministic
-  RU/EN primary face; runtime UI has no installed-OS-font dependency, and
-  Unity's legacy face is emergency fallback only. Persistent
-  key-binding guides and control-hint footers are intentionally absent from
-  menus, modal inspectors and the map; every active contextual prompt is a full pointer
-  click target routed through the same guarded action as keyboard/gamepad
-  interaction. Loading retains that UI framing and its one progress bar, with
-  the separately accepted static painterly illustration described above;
+- prompts, pause/start, inventory, shops, inspectors, journal, HUD and maps
+  share a crisp `640x360` IMGUI layer after the world composite: soot/charcoal/
+  dirty-bone, flat rectangular panels, thin nested frames, stable grain and
+  grayscale-readable focus. Packaged `Roboto-Regular` supplies RU/EN without
+  OS fonts; Unity legacy is emergency fallback. `J` opens a full-canvas scrolling
+  checklist above the selected quest description. Unread entries blink a top-right
+  notebook; its key persists until first opening, then appears for six seconds.
+  Menus, inspectors and map omit persistent key guides/footers. Contextual prompts
+  are full pointer targets for the same guarded keyboard/gamepad action. Loading
+  retains framing/progress and its separately accepted painterly illustration;
 - a localized PS1-style pause menu in City, Bar, Supermarket, Home and
   Stairwell gameplay:
   Escape or gamepad Start captures the shared modal lock, freezes scaled time,
@@ -779,9 +771,14 @@ The vertical slice contains:
 
 ### Streets, transport and sound
 
-- All speech, including `E`, uses shared bubbles above the speaker; bottom UI is
-  silent. `SpeechDelivery`: `24` chars/s, clicks `.13 s`, bubble `4.4 s`, tail `2.5 s`.
-  Pair/chess timing retains full lines;
+- All speech/`E` uses shared head bubbles; bottom UI is silent. `SpeechDelivery`:
+  `24` chars/s, `.13 s` clicks, `4.4 s` bubble, `2.5 s` tail; pairs/chess retain full lines;
+- ten RU/EN role labels: Foreman, Watchman, Fisherman, Ferryman, Chess player,
+  Checkers player, Bartender, Cashier, Cat and Cafe attendant. Village/Mother
+  excluded. Actor-bound heads follow movement; `6→4 m` fade from hero, `.25–.5 m`
+  clearance, fixed `10` logical px/shared font/charcoal. Camera depth/actor-ID
+  masking hides occlusion without colliders; no edge clamp. Speech/pause/modal/
+  transition hide labels; overlap keeps active interaction then nearest actor;
 - one deterministic radius-safe sidewalk/crosswalk navigation graph with
   spawn anchors on long pavement segments. At most two low-poly walkers are
   active near the player: one randomized runtime event activates one slot at a

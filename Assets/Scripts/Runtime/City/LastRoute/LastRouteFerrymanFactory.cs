@@ -134,6 +134,9 @@ namespace BarPromenade
             var presentation = instance
                 .AddComponent<LastRouteFerrymanPresentation>();
             presentation.Initialize(registry, anchors, stance, car);
+            NpcNameplateTarget.Attach(
+                instance, "npc.name.ferryman", registry.HeadAnchor, "ferryman")
+                .SetInteractionRoot(root).SetHeadClearance(0.5f);
 
             // The coin and the coat are both children of the ROOT rather
             // than of any bone: the imported hierarchy carries Unity's 100x

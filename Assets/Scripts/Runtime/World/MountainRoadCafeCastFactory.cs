@@ -124,6 +124,15 @@ namespace BarPromenade
                         registry,
                         member.Role,
                         member.IdlePhaseSeconds);
+                    if (member.Role == MountainRoadCafeCastRole.Attendant)
+                    {
+                        NpcNameplateTarget.Attach(
+                            instance,
+                            "npc.name.cafe_attendant",
+                            registry.FindModelTransform("head"),
+                            "cafe_attendant").SetHeadClearance(0.4f);
+                    }
+
                     if (member.Role ==
                         MountainRoadCafeCastRole.PairWoman)
                     {

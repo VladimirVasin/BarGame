@@ -1,6 +1,46 @@
 {
   "entries": [
     {
+      "key": "npc.name.foreman",
+      "value": "Foreman"
+    },
+    {
+      "key": "npc.name.watchman",
+      "value": "Watchman"
+    },
+    {
+      "key": "npc.name.fisherman",
+      "value": "Fisherman"
+    },
+    {
+      "key": "npc.name.ferryman",
+      "value": "Ferryman"
+    },
+    {
+      "key": "npc.name.chess_player",
+      "value": "Chess player"
+    },
+    {
+      "key": "npc.name.checkers_player",
+      "value": "Checkers player"
+    },
+    {
+      "key": "npc.name.bartender",
+      "value": "Bartender"
+    },
+    {
+      "key": "npc.name.cashier",
+      "value": "Cashier"
+    },
+    {
+      "key": "npc.name.cat",
+      "value": "Cat"
+    },
+    {
+      "key": "npc.name.cafe_attendant",
+      "value": "Cafe attendant"
+    },
+    {
       "key": "interaction.inspect_garden_pot",
       "value": "Pick up pot"
     },

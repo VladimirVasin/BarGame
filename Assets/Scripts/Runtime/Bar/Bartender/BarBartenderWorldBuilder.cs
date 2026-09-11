@@ -95,6 +95,8 @@ namespace BarPromenade
             BarBartenderPresentation presentation =
                 bartender.AddComponent<BarBartenderPresentation>();
             presentation.Initialize(registry);
+            NpcNameplateTarget.Attach(
+                bartender, "npc.name.bartender", registry.Head, "bartender");
             if (heroRoot != null)
             {
                 AttachHeroAttention(presentation, registry, heroRoot);

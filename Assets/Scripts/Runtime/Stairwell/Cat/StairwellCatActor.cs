@@ -137,6 +137,8 @@ namespace BarPromenade
             feedingTimeline = new StairwellCatFeedingTimeline();
             IsInitialized = true;
             AdvancePresentation(0f);
+            NpcNameplateTarget.Attach(
+                gameObject, "npc.name.cat", anchors.HeadPivot, "cat");
         }
 
         public bool BeginFeeding()

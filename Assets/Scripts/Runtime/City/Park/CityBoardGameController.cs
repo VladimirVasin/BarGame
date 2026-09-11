@@ -232,6 +232,9 @@ namespace BarPromenade
                         : new DraughtsMatch()
                 };
                 controller.boards.Add(board);
+                Component opponent = table.Game == CityBoardGameKind.Chess
+                    ? (Component)parkChessPlayer : parkCheckersPlayer;
+                opponent?.GetComponent<NpcNameplateTarget>()?.SetInteractionRoot(seat.transform);
                 seat.SeatedChanged += controller.HandleSeatedChanged;
                 GameLog.Info(
                     "city",

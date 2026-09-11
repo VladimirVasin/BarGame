@@ -125,6 +125,9 @@ namespace BarPromenade
             var presentation = instance
                 .AddComponent<SeacoastFishermanPresentation>();
             presentation.Initialize(registry, stance);
+            NpcNameplateTarget.Attach(
+                instance, "npc.name.fisherman", registry.HeadAnchor, "fisherman")
+                .SetInteractionRoot(root);
 
             // Attached AFTER the passivity check (the props are as
             // passive as the body, but the check is about the art) and

@@ -98,6 +98,9 @@ namespace BarPromenade
                 .AddComponent<CemeteryWatchmanPresentation>();
             presentation.Initialize(registry, stance);
             presentation.SetHero(heroRoot);
+            NpcNameplateTarget.Attach(
+                instance, "npc.name.watchman", registry.HeadAnchor, "watchman")
+                .SetInteractionRoot(root);
 
             // Colliderless like every staged NPC: the hero's
             // attention finds him through a magnet at his capped

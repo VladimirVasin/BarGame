@@ -307,6 +307,25 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>Silent labels yield to the existing line without claiming a speech slot.</summary>
+        public static bool IsPresentingAt(Transform head)
+        {
+            if (head == null) return false;
+            foreach (NpcSpeechBubbleView view in speakingViews)
+            {
+                if (view == null || !view.isActiveAndEnabled || !view.RenderEnabled) continue;
+                foreach (Bubble bubble in view.bubbles)
+                {
+                    if (bubble.Speaker < 0 || bubble.IsCulled || bubble.Opacity <= 0f ||
+                        !bubble.Line.HasText) continue;
+                    NpcSpeaker speaker = view.speakers[bubble.Speaker];
+                    if (speaker.Owner != null && speaker.Anchor == head &&
+                        head.gameObject.activeInHierarchy) return true;
+                }
+            }
+            return false;
+        }
+
         private bool IsSpeakingElsewhere(in NpcSpeaker speaker)
         {
             foreach (NpcSpeechBubbleView view in speakingViews)

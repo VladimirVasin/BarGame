@@ -4,15 +4,25 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-11, nearby NPC role labels:**
+  Ten RU/EN role labels follow story §24.26/§21 and art §15a;
+  village/Mother excluded. No personal names, voice or lore.
+  `NpcNameplateTarget` registers once per actor with its real head/stable role,
+  apart from triggers; `PlayerFactory` binds the player's camera/listener.
+  Fade `6→4 m`; shared `10` px font/charcoal. Head gap `.25 m`, cafe `.4`, raised hands `.5`.
+  No edge clamp. Speech, pause, modal and transition suppress names; overlap
+  keeps the active interaction, then nearest actor. After PS1, camera depth and
+  an actor-ID redraw of existing meshes/shared materials reject occlusion even
+  without colliders; text fragments also depth-test. Identity survives movement/
+  reparenting/busy actions; shared scene cleanup.
+
 - **Accepted — 2026-09-11, every spoken line above its speaker:**
-  User replaces the two-channel speech split: `E` replies also use
-  `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice`; prompt spoken feedback
-  delegates there. Bottom UI keeps silent descriptions, hints and choices.
-  Text/voices/reading/order stay. `ai/speech-presentation-standard.md`, linked
-  from AI/AGENTS, mandates shared anchors/earshot/lifetime/pause/cleanup and
-  channel admission, forbidding per-feature copies. No new pool or voice acting.
-  Duration is per line; live head ownership spans views, while the same owned
-  timeline may restore silently.
+  `E`/prompt speech uses `NpcSpeechBubbleView`/`SpeechDelivery`/`NpcSpeechVoice`;
+  bottom UI keeps silent descriptions/hints/choices. Text/voices/reading/order stay.
+  `ai/speech-presentation-standard.md` (AI/AGENTS) mandates shared anchors/earshot/
+  lifetime/pause/cleanup/admission, no feature copies/new pool/voice acting.
+  Duration belongs to each line; live head ownership spans views, with silent
+  restoration of the same owned timeline.
 
 - **Accepted — 2026-09-11, warehouse doorway priority:**
   Accepted stock and actual arrival decide access. Driver at the outside queue

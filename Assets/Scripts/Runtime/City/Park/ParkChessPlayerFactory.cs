@@ -127,6 +127,8 @@ namespace BarPromenade
             var presentation = instance
                 .AddComponent<ParkChessPlayerPresentation>();
             presentation.Initialize(registry, stance);
+            NpcNameplateTarget.Attach(
+                instance, "npc.name.chess_player", registry.HeadAnchor, "chess_player").SetHeadClearance(0.5f);
 
             // Colliderless like every staged NPC.
             var magnet = instance.AddComponent<PlayerAttentionMagnet>();

@@ -123,6 +123,13 @@ namespace BarPromenade
             PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
             interactor.Initialize(promptView);
 
+            if (camera != null)
+            {
+                if (!camera.TryGetComponent(out NpcNameplateContext nameplates))
+                    nameplates = camera.gameObject.AddComponent<NpcNameplateContext>();
+                nameplates.Initialize(interactor);
+            }
+
             // The Silent Hill head: the hero notices interactables and
             // characters near his path and turns his head toward them.
             PlayerAttentionController attention =

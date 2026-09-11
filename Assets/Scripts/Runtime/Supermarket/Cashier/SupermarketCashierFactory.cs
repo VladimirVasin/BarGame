@@ -93,6 +93,8 @@ namespace BarPromenade
 
             var actor = instance.AddComponent<SupermarketCashierActor>();
             actor.Initialize(presentation, playerBody, playerHead);
+            NpcNameplateTarget.Attach(
+                instance, "npc.name.cashier", registry.Head, "cashier");
 
             // The clerk is colliderless, so the hero's attention notices him
             // through a magnet placed at the authored head height. This is

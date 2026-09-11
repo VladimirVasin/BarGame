@@ -1,6 +1,46 @@
 {
   "entries": [
     {
+      "key": "npc.name.foreman",
+      "value": "Бригадир"
+    },
+    {
+      "key": "npc.name.watchman",
+      "value": "Сторож"
+    },
+    {
+      "key": "npc.name.fisherman",
+      "value": "Рыбак"
+    },
+    {
+      "key": "npc.name.ferryman",
+      "value": "Перевозчик"
+    },
+    {
+      "key": "npc.name.chess_player",
+      "value": "Шахматист"
+    },
+    {
+      "key": "npc.name.checkers_player",
+      "value": "Шашист"
+    },
+    {
+      "key": "npc.name.bartender",
+      "value": "Бармен"
+    },
+    {
+      "key": "npc.name.cashier",
+      "value": "Кассир"
+    },
+    {
+      "key": "npc.name.cat",
+      "value": "Кот"
+    },
+    {
+      "key": "npc.name.cafe_attendant",
+      "value": "Работник кафе"
+    },
+    {
       "key": "interaction.inspect_garden_pot",
       "value": "Поднять горшок"
     },

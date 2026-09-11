@@ -76,6 +76,7 @@ namespace BarPromenade
             if (foreman == null) throw new InvalidOperationException("Missing foreman presentation bindings.");
             foreman.port = port; foreman.crew = crew; foreman.conversation = conversation;
             foreman.InitializePose();
+            NpcNameplateTarget.Attach(host, "npc.name.foreman", foreman.Head, "foreman");
             crew.RegisterConversationForeman(foreman.Head);
             conversation.RegisterForeman(foreman, foreman.Head, foreman.SetSpeechPose);
             foreman.Interaction = host.GetComponent<CityPortForemanInteraction>();
