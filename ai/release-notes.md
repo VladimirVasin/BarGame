@@ -6,27 +6,31 @@ Earlier notes: [`release-notes-2026-08.md`](archive/release-notes-2026-08.md).
 
 ## Unreleased
 
-### 2026-09-11 — Доки и речь
+### 2026-09-11 — Доки, речь, фабрика и старт
 
-- Склад оснащён; бригадир ест морковь. Генераторы,
-  `CityPortWarehouseInterior`/`CityPortForeman` пройдены, кадры просмотрены.
-- К докам ведёт дорога грузовика; тропинка/переход убраны.
-  `CityPortTraversalAudit` пройден.
-- Вся речь над говорящим, медленнее набор/щелчки, дольше чтение; внизу немой выбор.
-  `ParkQuarrelTests`, `MountainRoadCafeConversationTests`, `InteractionPromptViewTests`,
-  `AreaCaptureFixture.CitySpokenResponses` пройдены.
-- В склад входит первый пришедший, без резерва под будущий груз.
-  `CityFishSupplyCycleTests`/`CityPortWarehouseAccess` пройдены; кадры просмотрены.
-- Роли над NPC скрываются стенами; деревня/мать исключены. `NpcNameplates` пройден.
-- `E`: подход, боковые кадры, «Хочу»/«Не сейчас» вслух; камера/поза вместе.
-  Отмена всегда, надкус сохранён, оплаты нет. Лица меняются; рот в углублении,
-  подбородок/складки качаются и затухают.
-  `AreaCaptureFixture.CityPortForemanDialogue`, валидация атласов/генератора,
-  `python tools/check-docs.py` пройдены; RU/EN кадры просмотрены.
-- Мотор траулера громче, гудки заранее. `BarPromenade.Runtime.csproj` собран.
-- F9: флаг скорости; F1/F2/F3: ×3/×5/×10, повтор → ×1.
-  `PauseMenuPlayModeTests.DebugSpeedHotkeys_ToggleGateAndSurviveSceneChanges` пройден.
-- Сутки — 48 минут при ×1; `GameTimeStateTests` пройден.
+Проверки ниже пройдены, кадры просмотрены.
+
+- Склад оснащён; бригадир жуёт: генераторы,
+  `CityPortWarehouseInterior`/`CityPortForeman`.
+- К докам — дорога, без тропы/перехода: `CityPortTraversalAudit`.
+- Речь сверху, медленнее набор/щелчки, дольше чтение; выбор немой:
+  `ParkQuarrelTests`, `MountainRoadCafeConversationTests`,
+  `InteractionPromptViewTests`, `CitySpokenResponses`.
+- Склад — первому пришедшему, без будущего резерва:
+  `CityFishSupplyCycleTests`/`CityPortWarehouseAccess`.
+- Роли скрыты стенами, без деревни/матери: `NpcNameplates`.
+- `E`: подход/кадр/ответ вслух, отмена с сохранением надкуса; лица/рот:
+  `CityPortForemanDialogue`, атласы/генератор, `python tools/check-docs.py`.
+- Мотор громче/гудки заранее: сборка `BarPromenade.Runtime.csproj`.
+- F9: флаг; F1/F2/F3 ×3/×5/×10, повтор ×1:
+  `PauseMenuPlayModeTests.DebugSpeedHotkeys_ToggleGateAndSurviveSceneChanges`.
+- Сутки 48 минут при ×1: `GameTimeStateTests`.
+- Завод: четверо ждут со стороны грузовика, идут в цех и обратно;
+  проёмы проходимы. Уборка/весы/отдых, 16 пар, обстановка/свет/звук:
+  `build-city-cannery-3d-model.py`, `CityCanneryLivingShift`.
+- F9 → «Грузовик с рыбой»: готовая доставка у завода. `CityCanneryDebugSpawn`.
+- «Новая игра» → 11 мест, «Назад», 07:40. `StartMenuModelTests`,
+  `TechnicalLifecyclePlayModeTests.NewGame_*`; меню RU/EN.
 
 ### 2026-09-10 — Находки, порт, фабрика
 

@@ -57,6 +57,58 @@
       "value": "НОВАЯ ИГРА"
     },
     {
+      "key": "opening.choose_location",
+      "value": "Выберите локацию"
+    },
+    {
+      "key": "opening.back",
+      "value": "Назад"
+    },
+    {
+      "key": "opening.location.village",
+      "value": "Альпийская деревня"
+    },
+    {
+      "key": "opening.location.mothers_house",
+      "value": "Дом матери"
+    },
+    {
+      "key": "opening.location.city",
+      "value": "Город"
+    },
+    {
+      "key": "opening.location.docks",
+      "value": "Доки"
+    },
+    {
+      "key": "opening.location.cannery",
+      "value": "Консервный завод"
+    },
+    {
+      "key": "opening.location.mountain_road",
+      "value": "Горная дорога"
+    },
+    {
+      "key": "opening.location.home",
+      "value": "Квартира"
+    },
+    {
+      "key": "opening.location.stairwell",
+      "value": "Подъезд"
+    },
+    {
+      "key": "opening.location.bar",
+      "value": "Бар"
+    },
+    {
+      "key": "opening.location.supermarket",
+      "value": "Супермаркет"
+    },
+    {
+      "key": "opening.location.church",
+      "value": "Церковь"
+    },
+    {
       "key": "opening.wake_up",
       "value": "ПРОСНУТЬСЯ"
     },
@@ -3359,6 +3411,138 @@
     {
       "key": "city.port.foreman.hero_no",
       "value": "Не сейчас."
+    },
+    {
+      "key": "debug.cannery.spawn_loaded",
+      "value": "Грузовик с рыбой"
+    },
+    {
+      "key": "city.cannery.work.01.a",
+      "value": "Фартук опять мокрый."
+    },
+    {
+      "key": "city.cannery.work.01.b",
+      "value": "У меня рукав тоже."
+    },
+    {
+      "key": "city.cannery.work.02.a",
+      "value": "Эта ручка натирает ладонь."
+    },
+    {
+      "key": "city.cannery.work.02.b",
+      "value": "У меня к вечеру так же."
+    },
+    {
+      "key": "city.cannery.work.03.a",
+      "value": "От железа пальцы стынут."
+    },
+    {
+      "key": "city.cannery.work.03.b",
+      "value": "Здесь и летом не согреешься."
+    },
+    {
+      "key": "city.cannery.work.04.a",
+      "value": "Крышки звенят в ушах."
+    },
+    {
+      "key": "city.cannery.work.04.b",
+      "value": "Дома ещё слышно."
+    },
+    {
+      "key": "city.cannery.work.05.a",
+      "value": "Соль опять на рукавах."
+    },
+    {
+      "key": "city.cannery.work.05.b",
+      "value": "Сохнет белыми полосами."
+    },
+    {
+      "key": "city.cannery.work.06.a",
+      "value": "До вечера спину не разогну."
+    },
+    {
+      "key": "city.cannery.work.06.b",
+      "value": "Я уже разогнуться не могу."
+    },
+    {
+      "key": "city.cannery.wait.01.a",
+      "value": "От двери тянет."
+    },
+    {
+      "key": "city.cannery.wait.01.b",
+      "value": "У стены потише."
+    },
+    {
+      "key": "city.cannery.wait.02.a",
+      "value": "Сапоги за ночь не высохли."
+    },
+    {
+      "key": "city.cannery.wait.02.b",
+      "value": "Мои тоже сырые."
+    },
+    {
+      "key": "city.cannery.wait.03.a",
+      "value": "Шапку бы снять."
+    },
+    {
+      "key": "city.cannery.wait.03.b",
+      "value": "Потом уши мёрзнут."
+    },
+    {
+      "key": "city.cannery.wait.04.a",
+      "value": "У тебя нитка на рукаве."
+    },
+    {
+      "key": "city.cannery.wait.04.b",
+      "value": "Всё собираюсь обрезать."
+    },
+    {
+      "key": "city.cannery.wait.05.a",
+      "value": "После смены сразу домой?"
+    },
+    {
+      "key": "city.cannery.wait.05.b",
+      "value": "Сначала за хлебом."
+    },
+    {
+      "key": "city.cannery.wait.06.a",
+      "value": "К вечеру ноги гудят."
+    },
+    {
+      "key": "city.cannery.wait.06.b",
+      "value": "У меня уже с утра."
+    },
+    {
+      "key": "city.cannery.receiving.01.a",
+      "value": "Колёса опять песком шуршат."
+    },
+    {
+      "key": "city.cannery.receiving.01.b",
+      "value": "До вечера выметать будем."
+    },
+    {
+      "key": "city.cannery.receiving.02.a",
+      "value": "От ящиков холодом тянет."
+    },
+    {
+      "key": "city.cannery.receiving.02.b",
+      "value": "У меня пальцы уже свело."
+    },
+    {
+      "key": "city.cannery.receiving.03.a",
+      "value": "Опять дверь настежь."
+    },
+    {
+      "key": "city.cannery.receiving.03.b",
+      "value": "Зато не так душно."
+    },
+    {
+      "key": "city.cannery.receiving.04.a",
+      "value": "Слышно машину с другого конца."
+    },
+    {
+      "key": "city.cannery.receiving.04.b",
+      "value": "У стены ещё громче."
     }
   ]
 }

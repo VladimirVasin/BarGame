@@ -13,7 +13,7 @@
 
 | Index | Scene | Role |
 | --- | --- | --- |
-| 0 | `MainMenu` | New Game / Quit card into the village lane |
+| 0 | `MainMenu` | New Game / Quit; eleven starts, village default |
 | 1 | `City` | Gameplay |
 | 2 | `DoorTransition` | Door presentation |
 | 3 | `BarInterior` | Gameplay |
@@ -83,28 +83,27 @@ contracts are documented in [../tools/README.md](../tools/README.md).
 - A validated connected city with streets, river/shore, neighbourhoods,
   cemetery, church, deterministic weather, residents and Route 01 transport.
   First unpaused dock entry starts finite port→factory→shop supply once;
-  later departure/reentry never stops or resets it. Catch-up survives scenes,
-  excluding pre-entry time. Three units, two cranes, crews and a
+  catch-up survives scenes/reentry, excluding pre-entry time. Three units,
+  two cranes, crews and a
   `6.481 x 2.4 x 3.2 m` closed truck/full cab share the cycle.
   After its existing central factory-exit turn, it keeps/parks right and yields
   locally to the bus. Six-second traffic access protects actual bodies; graph
   turns avoid street furniture. Streets stay `8 m`/`6 m` asphalt; stops stay put.
-  At event start, the truck appears beyond dock visibility on the
-  road and parks with the first crate; later trips leave the factory.
+  Truck spawns on unseen road, parks with first crate; later trips leave factory.
   Two soft arrival horns, reverse beeper/ajar door/look-back steering. Cranes
-  continue while the driver yields at the store entrance. Local trolleys
-  go directly to cargo and return to their stands. Doors open before the
-  guided hydraulic lift unfolds/lowers; closing reverses this order above ground.
-  Store clearance releases the waiting driver; jamb bumpers stay outside.
+  continue while the driver yields at the store entrance. Local carts go to
+  cargo/return; doors→guided lift unfolds/lowers, closing reverses above ground.
+  Store clearance releases driver; jamb bumpers stay outside.
   Paired city/weather complaints shuffle without repeats; shore breaks use the
   existing canopy. Driver talks only to docker; idle is pause-aware.
   Moving grips, vessel horn/echo and warm shadowed searchlight share the scene.
-  Production starts with the first received crate during unloading, taking FIFO lots at twice authored
-  speed. Worn machines, cans entering cartons, task poses, lamps and steam make
-  that cycle visible. Distant presentation
-  sleeps while production, truck collision and traffic continue; approach
-  restores the current phase. The hero observes; shop stock stays unchanged.
-  Port/factory voices use physical anchors and local reverb through
+  First received crate starts FIFO production at twice authored speed; same cans
+  enter cartons. Four factory workers wait/talk outside before unloading and
+  after the final lot, queuing through real doors to/from duty. Side doors reach
+  the public aisle, a west staff opening the work aisle. Grips win; pause freezes life. Service fittings/light and local
+  fan/contact/pressure sounds follow activity. Distant meshes sleep while
+  production/collision/traffic continue; approach restores without replay.
+  Hero observes; shop stock stays. Anchored port/factory voices use local reverb via
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.
 - Separate mountain/village areas, cableway travel and accessible interiors.
 - Six village residents perform finite household work; optional hero help and

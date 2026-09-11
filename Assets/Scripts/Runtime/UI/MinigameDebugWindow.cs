@@ -7,7 +7,7 @@ namespace BarPromenade
     /// The F9 debug window. The bar minigames it once launched are cut
     /// from the project; what remains is the debug surface itself:
     /// intoxication adjustment, game-day selection, the City map's
-    /// test-teleport toggle and the F8 diagnostics hotkeys, under the same
+    /// test-teleport toggle, loaded cannery truck and F8 diagnostics, under the same
     /// modal lock.
     /// </summary>
     [DisallowMultipleComponent]
@@ -22,6 +22,7 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView intoxicationHud;
         private CityMapController cityMap;
+        private CityCanneryController cannery;
         private BarDrinkShopController drinkShop;
         private HomeInteriorRoot home;
         private HomeDebugCityMapShortcut homeCityShortcut;
@@ -40,6 +41,8 @@ namespace BarPromenade
             cityMap != null && cityMap.DebugTeleportEnabled;
         public int CurrentGameDayNumber =>
             GameSessionState.GameDayNumber;
+        public bool CanSpawnLoadedCanneryTruck =>
+            cannery != null && cannery.IsInitialized && cannery.isActiveAndEnabled;
 
         public void Initialize(
             PlayerRuntime playerRuntime,
@@ -54,6 +57,23 @@ namespace BarPromenade
             cityMap = map;
             drinkShop = activeDrinkShop;
             IsInitialized = player.Interactor != null;
+        }
+
+        public void BindCannery(CityCanneryController controller) => cannery = controller;
+
+        public bool TrySpawnLoadedCanneryTruck()
+        {
+            if (!IsOpen) return false;
+            if (!CanSpawnLoadedCanneryTruck || !cannery.TryDebugSpawnLoadedTruckNearFactory())
+            {
+                LastLaunchErrorKey = "debug.minigames.unavailable";
+                return false;
+            }
+
+            LastLaunchErrorKey = string.Empty;
+            Close(false);
+            RetroAudio.Play(RetroSfxId.UiConfirm);
+            return true;
         }
 
         /// <summary>
@@ -413,6 +433,7 @@ namespace BarPromenade
             DrawNauseaControl();
             DrawVomitControl();
             DrawSpeedSelectionControl();
+            if (cannery != null) DrawCanneryTruckControl();
 
             if (!string.IsNullOrEmpty(LastLaunchErrorKey))
             {
@@ -523,6 +544,17 @@ namespace BarPromenade
             {
                 ToggleDebugTeleport();
             }
+        }
+
+        private void DrawCanneryTruckControl()
+        {
+            Rect button = new Rect(132f, 186f, 184f, 24f);
+            RetroUiTheme.DrawPanel(button, RetroUiTheme.PanelInset, RetroUiTheme.BorderMuted);
+            bool previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && CanSpawnLoadedCanneryTruck;
+            if (GUI.Button(button, LocalizationService.Get("debug.cannery.spawn_loaded"), rowStyle))
+                TrySpawnLoadedCanneryTruck();
+            GUI.enabled = previousEnabled;
         }
 
         private void DrawDayControls()

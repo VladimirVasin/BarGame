@@ -115,9 +115,13 @@ namespace BarPromenade
             retortDoorDock = factory.InverseTransformPoint(retortDoor.position);
             retortDoorRest = Quaternion.Inverse(factory.rotation) * retortDoor.rotation;
             CreateWorkers();
+            CreateFactoryLife();
+            FactoryConversation = gameObject.AddComponent<CityCanneryConversationController>();
+            FactoryConversation.Initialize(this, hero, layout.Seed);
             CreateVisualDetails();
             CreateSounds(layout.Seed);
             CreateTruckLights();
+            CreateFactoryServiceLight();
             CreateShopReceivingDoor();
             previousPortAutoAdvance = port.AutoAdvance;
             previousPortSupplyDriven = port.IsSupplyDriven;
@@ -139,8 +143,17 @@ namespace BarPromenade
             if (!IsInitialized) return;
             RefreshPresentation();
             if (!AutoAdvance || !GameSessionState.IsGameTimeRunning || GameTimeScaleRuntime.IsPaused) return;
+            LifeSeconds += Time.deltaTime;
             if (!CityFishSupplySession.HasStarted &&
-                !CityFishSupplySession.TryStart(hero != null && port.Plan.IsAtDocks(hero.position))) return;
+                !CityFishSupplySession.TryStart(hero != null && port.Plan.IsAtDocks(hero.position)))
+            {
+                // People are already here before the first delivery. Only
+                // cargo and vehicles wait for the player's first dock visit.
+                IsBlocked = false;
+                LastObstacleName = null;
+                ApplyWorkers();
+                return;
+            }
             bool trafficClear=Traffic.TryAcquire(Snapshot);
             IsBlocked = !trafficClear || (Snapshot.IsDriving || Snapshot.IsTransfer) && DetectObstacle();
             movementRate = Mathf.MoveTowards(movementRate, IsBlocked ? 0f : 1f, Time.deltaTime * 1.5f);

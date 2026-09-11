@@ -201,14 +201,14 @@
           ]
         }
       ],
-      "triangles": 6060,
-      "geometry_signature": "7974da6243b46293704144af1ff5fbe9d3dd57da6cd8939b2736eeee3f375733"
+      "triangles": 6256,
+      "geometry_signature": "e94d77244bdd8fbbd4e81723cb652c44e71e10abe94807c052a55f8933c6b9d0"
     },
     {
       "name": "Equipment",
       "bounds_min": [
-        -7.65,
-        0.18,
+        -7.82,
+        0.17783,
         -6.175
       ],
       "bounds_max": [
@@ -223,6 +223,14 @@
             -5.0,
             1.19,
             -0.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ColdStoreSound",
+          "position": [
+            -7.5,
+            3.46,
+            -5.4
           ]
         },
         {
@@ -506,6 +514,22 @@
           ]
         },
         {
+          "name": "ANCHOR_PreparationTidyHand",
+          "position": [
+            -6.12,
+            1.238,
+            -2.5
+          ]
+        },
+        {
+          "name": "ANCHOR_PreparationTidyWorker",
+          "position": [
+            -6.65,
+            0.18,
+            -2.35
+          ]
+        },
+        {
           "name": "ANCHOR_PreparationWorker",
           "position": [
             -6.65,
@@ -626,6 +650,22 @@
           ]
         },
         {
+          "name": "ANCHOR_ReceiverRestWorker",
+          "position": [
+            -2.9,
+            0.18,
+            -6.5
+          ]
+        },
+        {
+          "name": "ANCHOR_ReceiverScaleHand",
+          "position": [
+            -3.93,
+            1.22,
+            -5.98
+          ]
+        },
+        {
           "name": "ANCHOR_ReceivingLoad",
           "position": [
             -3.5,
@@ -682,6 +722,14 @@
           ]
         },
         {
+          "name": "ANCHOR_SeamerRestWorker",
+          "position": [
+            -7.14,
+            0.18,
+            -0.35
+          ]
+        },
+        {
           "name": "ANCHOR_SeamerRightHand",
           "position": [
             -6.24,
@@ -695,6 +743,22 @@
             -6.78,
             0.18,
             -0.35
+          ]
+        },
+        {
+          "name": "ANCHOR_ServiceLight",
+          "position": [
+            -7.35,
+            2.56,
+            0.55
+          ]
+        },
+        {
+          "name": "ANCHOR_ServiceStoolSeat",
+          "position": [
+            -7.52,
+            0.7,
+            0.75
           ]
         },
         {
@@ -871,6 +935,22 @@
             -5.92,
             1.19,
             4.62
+          ]
+        },
+        {
+          "name": "MOVE_PreparationCloth",
+          "position": [
+            -6.12,
+            1.238,
+            -2.5
+          ]
+        },
+        {
+          "name": "PreparationWipeCloth",
+          "position": [
+            -6.12,
+            1.238,
+            -2.5
           ]
         },
         {
@@ -1088,10 +1168,42 @@
             1.62,
             -0.89
           ]
+        },
+        {
+          "name": "ServiceLampHousing",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ServiceShelf",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ServiceStool",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "StoredWorkJacket",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
         }
       ],
-      "triangles": 31996,
-      "geometry_signature": "81dea294a4ce77757f6ccd8e94606db361e69fffe6ce659a82f7bb28de93c702"
+      "triangles": 34728,
+      "geometry_signature": "cc60978ef4e85f2b3198288e9e5c07d0a3b52541aac1780d5786524fe1b211fb"
     },
     {
       "name": "Truck",
@@ -2632,6 +2744,15 @@
   "retort_pressure_needle_axis": "Unity local X",
   "seamer_roller_axes": "Unity local Y; two pivots follow MOVE_SeamerHead",
   "packing_feed_roller_axis": "Unity local +Z; same-can feed to ANCHOR_PackingPickup",
+  "crew_service_clearance_radius": 0.29,
+  "crew_service_fixtures": [
+    "shallow tool and sealing-ring shelf",
+    "stored service stool",
+    "hung work jacket",
+    "preparation wipe cloth",
+    "local service lamp"
+  ],
+  "preparation_wipe_rest": "MOVE_PreparationCloth matches ANCHOR_PreparationTidyHand; returns before release",
   "workwear_local_front": "Unity +Z; centered separate ApronBib and ApronSkirt groups",
   "semantic_uv_tiles_metres": {
     "Concrete": 2.0,

@@ -53,7 +53,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
 | Runtime area composition | Twelve scenes/nine gameplay roots; three area roots construct incrementally during area travel. | `Runtime/Core`, `Runtime/Scenes` | Current |
-| Startup village arrival | New Game card, session clock at `07:40` on day `1`, lane-foot spawn through the loading screen. | `StartMenuRoot`, `StartMenuModel`, `AlpineVillageRoot` | Current |
+| New-game starting place | Eleven starts after New Game, village default; chosen root at day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
 | World time and pause ownership | Intoxication/debug factors compose; pauses freeze world/calendar. Debug speed preserves the physics step. | `GameTimeScale{State,Runtime}`, `PauseMenuController` | Current |
@@ -83,7 +83,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City yards | Only west stone terraces add a mason's cart; other fringe yards retain their existing service-belt infrastructure. | `CityFringeYard*`, `CityFringeYardLifePlanner` | Current |
 | District public places | Four public lots retain validated street approaches, causal props and bounded local practicals. | `CityDistrictPointOfInterest{Plan,Planner,WorldBuilder}`, `CityPointOfInterestSurfaceAppearance` | Current |
 | Drying yard babushkas | Staged drying-yard residents share authored domestic actions and local speech/prop ownership. | `DryingYardBabushka{Provider,Plan,Presentation,Factory}`, `CityPedestrianHandProps` | Current |
-| Cannery and fish deliveries | Truck with first crate; warehouse access follows actual arrival, later trolley waits. Empty-tare return deferred. | `CityCannery*`, `CityFishSupply{Cycle,Session}`, `WorldDistancePresentation` | Partial |
+| Cannery and fish deliveries | FIFO supply; side/staff openings, outdoor waits, queued entry and shared speech. Empty-tare return deferred. | `CityCannery*`, `CityFishSupply{Cycle,Session}`, `WorldDistancePresentation` | Partial |
 | Cemetery mourner | The grave-side mourner uses her own authored presence, gestures and localized response. | `CemeteryMourner{Provider,Plan,Timeline,Presentation,Factory}`, `CityCemeteryMournerController` | Current |
 | Cemetery watchman and gate lodge | The watchman and lodge provide the authored grave-work offer and payment interaction. | `CemeteryWatchman{Provider,Plan,Quips,Interaction,Presentation,Factory}`, `CityCemeteryPlanner.AddLodge` | Current |
 | Cemetery gravedigging | Up to three open jobs; grave acts/epitaphs persist per plot, with payment committed through the watchman. | `CemeteryGravedigging{Plan,Controller,Register}`, `CemeteryGraveWork{Stage,Ledger}` | Current |
@@ -129,7 +129,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | City wind dressing | Shared wind drives authored trees/props/cloth while preserving causal movement limits. | `CityWindDressing{Plan,Planner,Validator,WorldBuilder}`, `CityRopeSpanGeometry` | Current |
 | Scene and place music | Guarded handoffs; radio power suppresses the city theme. Gap: cemetery and church slots are empty. | `MusicMix`, `SceneMusicPlayer`, `CityMusicPlayer` | Partial |
 | Common audio mix | One shared mixer routes scene themes, causal ambience, effects and reversible intoxication processing. | `GameAudioMixer`, `BarPromenadeAudio.mixer` | Current |
-| Port and cannery audio | Machinery/beeper; louder trawler engine and advance arrival/departure horn with local echo/reverb. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.Sound` | Current |
+| Port and cannery audio | Anchored machinery/fan/contact cues; advance vessel horn/echo. Pause/distance/seek own playback. | `CityWorkAudio`, `CityPortSound`, `CityCanneryController.{Sound,ProcessSound}` | Current |
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
 | Begotten sound perception | The print's optical track tears against its own mask throughout the ramp and adds surface and apparatus at 24/s. | `BegottenAudioRules`, `BegottenAudioDriver`, `OpticalProcessor.h` | Current |
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |
@@ -160,7 +160,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Interaction/UI | Common action bindings and explicit input priorities serve shared prompts and menus; look/debug input stays local. | `PlayerInteractor`, `InteractionPromptView` | Current |
 | Spoken text | All speech, including E, uses shared speaker bubbles; silent bottom UI. Mandatory speech standard in `ai/`. | `SpeechDelivery`, `NpcSpeechBubbleView`, `InteractionPromptView` | Current |
 | NPC role labels | Ten roles, excluding village/Mother; 6–4 m, depth occlusion, speech/modal priority. | `NpcNameplateTarget`, `NpcNameplateContext`, `NpcNameplatePolicy` | Current |
-| Debug controls | F9: intoxication, day `1–7`, speed-key gate (default on). F1/F2/F3: ×3/×5/×10 in every gameplay scene. | `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |
+| Debug controls | F9: intoxication/day/speed gate; City loaded truck near factory. F1/F2/F3: ×3/×5/×10 across gameplay. | `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |
 | Structured session diagnostics | Bounded NDJSON records correlated operations; optional performance reports are separate from the support log. | `Runtime/Diagnostics`, `MinigameDebugWindow` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
 | Area map UI | City/MountainRoad/Village tabs consume pure plans; area travel and teleport share destination validation. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
@@ -211,10 +211,11 @@ rows are preserved in `ai/archive/systems-map-2026-09-06.md` as a superseded sna
 
 ```text
 build index 0 -> MainMenu -> New Game / Quit card
-  -> BeginNewGame + session clock 07:40 on day 1
-  -> AreaLoading with no directed still -> AlpineVillage Single
-     -> lane-foot spawn 2 m up the lane, facing the mother's house
-     -> ordinary village control -> cableway or map -> MountainRoad -> City
+  -> New Game -> eleven locations / Back -> confirmed choice
+  -> BeginNewGame + day 1 clock 07:40 -> area/scene loading, no journey still
+     -> chosen gameplay root (City also offers docks/cannery)
+     -> village default: lane-foot, 2 m up, facing mother's house
+     -> ordinary controls and existing travel routes
   retained, unreached: MainMenuRoot -> HomeInterior sleeping opening
      -> 05:59 clock shot -> 5 s input lock -> Wake Up / Quit
      -> Wake -> 06:00 + session clock starts -> alarm hold -> 6 s wake

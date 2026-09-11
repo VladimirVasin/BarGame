@@ -6,48 +6,49 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-11 — Dock access, cold store, foreman and speech
+## 2026-09-11 — Docks, speech, cannery and start menu
 
-- Warehouse fittings retain stock/cart clearance.
-  `build-city-port-3d-model.py` and `AreaCaptureFixture.CityPortWarehouseInterior`
-  passed light/fan/lifecycle; day/night frames reviewed.
-- Foreman sits at store wall/cart parking under quay light; left carrot bites→
-  pail→pocket, palmar grip, right speech gesture. `build-city-port-foreman-3d-model.py`
-  and `AreaCaptureFixture.CityPortForeman` passed food/grip/path/alignment,
-  speech order/cancellation; frames reviewed.
-- Dock spur/footpath/crossing removed from terrain/walk/map/openings. Truck road/
-  shoulders and internal walks retained. Blender validation and
-  `AreaCaptureFixture.CityPortTraversalAudit` passed; approach frames reviewed.
-- Slower typing/clicks and longer reading use shared speech bubbles, including E;
-  bottom UI silent, mandatory speech standard linked. `ParkQuarrelTests`,
-  `MountainRoadCafeConversationTests`, `NpcSpeechVoiceTests`,
-  `InteractionPromptViewTests` passed timing/RU/EN/admission/cleanup;
-  `AreaCaptureFixture.CitySpokenResponses` passed, frames reviewed.
-- Warehouse priority follows actual arrival, never future crane stock. Driver
-  first: later docker waits outside; docker first: driver waits for actual exit.
-  Empty stock is silent. `CityFishSupplyCycleTests` and
-  `AreaCaptureFixture.CityPortWarehouseAccess` passed custody/clearance; frames reviewed.
-- Role labels exclude village/Mother; cleared masks prevent stale visibility;
-  hats/hands get clearance. `AreaCaptureFixture.NpcNameplates` passed
-  depth/distance/speech/lifecycle; frames reviewed. Capture restores cannery
-  presentation before exit around its existing teardown error.
-- Dialogue graph/session: foreman, flat-quay approach, side shots, shared bubbles/
-  Talk/Listen; spoken answers, no duplicate offer. §6 dates face/reply exceptions;
-  Cancel keeps §16.16/custody/snack gates. E prompts; parallel carrot/entry and
-  pose/camera transitions; stationary recovery bridges nested Talk.
-- Sprite mouths/brows/blink follow reveal; hero soil retained. Foreman face
-  reaches the formerly occluded mouth; chin/jowls use damped deformation.
-  `AreaCaptureFixture.CityPortForemanDialogue` passed branches/prompts, RU/EN
-  articulation/tail, placed mouth, deformed meshes, pause/settle and cleanup;
-  frames reviewed. `dialogue_face_atlas.py --validate-only` and
-  `build-city-port-foreman-3d-model.py` validation passed.
-  `python tools/check-docs.py` passed budgets/frozen references.
-- Trawler motor louder/farther; horns precede mooring/departure.
-  `dotnet build BarPromenade.Runtime.csproj` passed.
-- F9 gate on; F1/F2/F3 ×3/×5/×10, same key resets. World/calendar speed,
-  fixed physics. `PauseMenuPlayModeTests.DebugSpeedHotkeys_ToggleGateAndSurviveSceneChanges`
-  and `NestedPause_RestoresLatestTempoAndIgnoresOldSessionLeases` passed.
-- 48-minute day; needs follow, test setup converts minutes. `GameTimeStateTests`/needs checks passed.
+Checks below passed except where stated; named capture frames reviewed.
+
+- Warehouse fittings clear stock/carts; light/fan/lifecycle:
+  `build-city-port-3d-model.py`, `AreaCaptureFixture.CityPortWarehouseInterior`.
+- Foreman at store/cart/quay light; left carrot→pail→pocket, palmar grip/right
+  gesture. Food/grip/paths/alignment/speech/cancel:
+  `build-city-port-foreman-3d-model.py`, `CityPortForeman`.
+- Dock spur/footpath/crossing removed from terrain/walk/map/openings; truck road/
+  shoulders/internal walks stay. Blender validation, `CityPortTraversalAudit`.
+- All speech/E: slower shared bubbles, silent bottom, standard linked.
+  Timing/RU/EN/admission/cleanup: `ParkQuarrelTests`, `MountainRoadCafeConversationTests`,
+  `NpcSpeechVoiceTests`, `InteractionPromptViewTests`, `CitySpokenResponses`.
+- Arrival-owned warehouse access: later docker waits outside or driver waits
+  for exit; no crane reservation/empty-stock remark. Custody/clearance:
+  `CityFishSupplyCycleTests`, `CityPortWarehouseAccess`.
+- Labels exclude village/Mother; cleared masks/hat-hand clearance:
+  `NpcNameplates` depth/distance/speech/lifecycle. Capture restores factory
+  presentation around existing teardown error.
+- Foreman dialogue: flat-quay approach/side shots, shared spoken replies;
+  §6 face/reply exceptions. Cancel preserves §16.16/custody/snack;
+  nested Talk recovers. Reveal drives mouths/brows/blink, chin/jowls damp.
+  Branches/prompts/RU/EN/tail/mesh/pause/cleanup:
+  `CityPortForemanDialogue`, `dialogue_face_atlas.py --validate-only`, foreman generator.
+- Louder/farther trawler motor, advance horns: `dotnet build BarPromenade.Runtime.csproj`.
+- F9 on; F1/F2/F3 ×3/×5/×10, repeat resets; world/calendar, fixed physics:
+  `PauseMenuPlayModeTests.DebugSpeedHotkeys_ToggleGateAndSurviveSceneChanges`,
+  `NestedPause_RestoresLatestTempoAndIgnoresOldSessionLeases`.
+- 48-minute day/needs, minute-aware test setup: `GameTimeStateTests`/needs checks.
+- Cannery: four wait at truck facade; queued door walks, mask bridges/west staff
+  opening. Wipe/scale/cuff/grips, 16 RU/EN pairs, dressing/light/sound:
+  `build-city-cannery-3d-model.py`, `CityCanneryLivingShift` cover
+  bodies/doors/contacts/pause/blocking/speech/audio; GameView reviewed.
+  Existing `CityCannery` has stale repeat-duration/dock-latch failures.
+- City F9 stages the same loaded truck near factory, pre-dock/paused; only
+  supply time rebases, repeats start a fresh batch. `CityCanneryDebugSpawn`:
+  menu/pause/custody/resume/repeat.
+- New Game opens eleven RU/EN places; Back keeps time stopped, confirmation
+  resets day one/07:40. Village/Cannery/Home arrivals:
+  `TechnicalLifecyclePlayModeTests.NewGame_*`; navigation/catalog:
+  `StartMenuModelTests`. Main/picker GameView frames reviewed.
+- Budgets/frozen references: `python tools/check-docs.py`.
 
 ## 2026-09-10 — Found-item screen, port and cannery
 

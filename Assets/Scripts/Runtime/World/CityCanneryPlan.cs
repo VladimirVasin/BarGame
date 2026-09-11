@@ -71,7 +71,18 @@ namespace BarPromenade
             PublicRectangles = new[] {
                 World(Rect.MinMaxRect(-9,-9,9,-7)), World(Rect.MinMaxRect(-9,7,9,9)),
                 World(Rect.MinMaxRect(-9,-9,-8,9)), World(Rect.MinMaxRect(0,-9,9,9)),
-                World(Rect.MinMaxRect(-1.95f,-9,-.25f,9))
+                World(Rect.MinMaxRect(-1.95f,-9,-.25f,9)),
+                // The authored east wall has two floor-level openings.
+                // Bridge its excluded strip to the public aisle and yard;
+                // each rectangle must overlap both by a full body diameter
+                // because RoadWalkableArea insets rectangles separately.
+                World(Rect.MinMaxRect(-1.95f,-6.5f,1f,-4.5f)),
+                World(Rect.MinMaxRect(-1.95f,3.9f,1f,6.1f)),
+                // The west staff opening reaches the clear work aisle even
+                // while finished stock occupies the north wall. Physical
+                // equipment and wall colliders still bound this narrow strip.
+                World(Rect.MinMaxRect(-9f,1.95f,-6.4f,3.35f)),
+                World(Rect.MinMaxRect(-7.85f,-2.4f,-6.4f,5.65f))
             };
         }
 

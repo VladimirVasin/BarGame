@@ -216,7 +216,8 @@ namespace BarPromenade
             BuildExit();
             BuildNpcCrowd(camera);
             IsInitialized = true;
-            BuildArrivalPresentation(camera, follow);
+            if (!NewGameStartService.TryConsumeArrival(NewGameLocation.Bar))
+                BuildArrivalPresentation(camera, follow);
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
                 Player,

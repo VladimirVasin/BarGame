@@ -151,22 +151,18 @@ The vertical slice contains:
   re-entering does not restart it. She holds nothing, the hero does not
   answer, and there is no branch or choice. Cat, dinner and the news remain
   outside this MVP;
-- a `MainMenu` launch boundary at build index `0` that resets every
-  session-owned value, keeps its black field and shows one compact card with
-  two localized rows, `НОВАЯ ИГРА / NEW GAME` and `ВЫЙТИ / QUIT`. New Game
-  starts the session clock at `07:40` on day `1` and Single-loads
-  `AlpineVillage` through the existing `AreaLoading` screen; ordinary Editor
-  Play also enters through `MainMenu` regardless of which scene is currently
-  open;
-- a first playable frame on the village lane: the hero stands at the village
-  plan's own lane-foot spawn, two metres up from the station threshold and
-  facing uphill at the mother's house. There is no cabin, no ride and no
-  arrival sequence — the loading screen ends and he is simply there, and that
-  screen carries no directed illustration because no leg was travelled. Day
-  one carries one quest, raised by the calendar like every other dated event:
-  the mother's house is up in the journal, marked on the village chart while
-  it is open, and closed by stepping inside from either the door or the map.
-  The village itself gets no signpost;
+- `MainMenu` is build index `0` and Editor Play's session boundary: black card,
+  New Game/Quit. New Game opens eleven starts: nine gameplay scenes plus City's
+  docks/cannery; village first/default. Back returns to the card. Mouse,
+  keyboard/gamepad share selection. `NewGameStartService` confirms day `1`/`07:40`:
+  areas use `AreaLoading`, six interiors load directly without door travel;
+- starts have no prologue, ride/cabin/arrival sequence or directed travel
+  illustration. The default village uses its lane-foot spawn, two metres up
+  from the station threshold facing the mother's house. Other choices use
+  their gameplay roots; City uses home's return point, docks/cannery clear
+  pedestrian positions. Operation-scoped City/Bar markers preserve later arrivals.
+  Day one raises the mother's-house quest and map marker, closed on entry
+  through door/map or immediately when starting inside; no village signpost;
 - a cinematic waking opening inside Home, retained whole but reached by no
   shipped run and only by an explicit legacy request: the hero begins directly in
   the persistent bed-sleep loop while the first rendered Home frame fixes on
@@ -184,8 +180,8 @@ The vertical slice contains:
   open. Opening, contextual actions, door actions and other modal owners block
   the window. The city-map button retains the existing one-shot arrival
   request consumed after the transition;
-- one session-owned in-game clock that starts running at `07:40` on day `1`
-  the moment New Game is chosen, and persists through Single-mode scene loads.
+- one session clock starts at `07:40`/day `1` when the starting place is confirmed
+  and persists through Single-mode scene loads.
   The retained Home opening still holds it frozen at `05:59` until its Wake or
   the accepted Home debug city-map skip sets it to `06:00`. It advances on
   unpaused real time at
@@ -1128,11 +1124,12 @@ The vertical slice contains:
   three scheduled and one action voice, creates only deterministic quantized
   mono `22050 Hz` clips, activates them inside their finite radii and applies
   coarse building-mass occlusion. Carpet impacts fire on the authored contact
-  frame. `CityWorkAudio` separately routes nine mono port/cannery voices to
+  frame. `CityWorkAudio` routes anchored mono port/cannery sources to
   `SfxWorld`, with full 3D, no pan/spread/Doppler and `0 dB` direct level.
   Source reverb is `.28 s` outside, `.95 s` inside; linear ranges `3–32/2–24 m`.
   Zone mix is zero; City's mixer return stays. Crane audio follows the hoist
-  drive; retort audio stays in the body. The old scale and unbound swing are silent.
+  drive; retort stays in its body. Factory fan/contact cues share this route;
+  an empty scale and unbound swing are silent.
   Surf is one fully spatial voice following the nearest point of the finite
   waterline and reuses the same building-mass attenuation; thunder is placed
   at the deterministic lightning azimuth, and
@@ -1234,66 +1231,69 @@ The vertical slice contains:
   camera-distance self-fade inside the 48 m far plane — visible from
   the esplanade, sand and pier head, gone from every street;
 - Port (`CityPort{Plan,Cycle,Controller}`): `20 m` trawler, one berth west of
-  river mouth; 2 cranes/trolley/cold store, 3 units. First dock entry
-  starts ship/supply once while unpaused/running; earlier time excluded.
-  Autonomous across scenes/reentry; only new game resets. Before: Approach `0`.
+  river mouth; 2 cranes/trolley/cold store, 3 units. First running/unpaused dock
+  entry starts ship/supply once; earlier time excluded. Autonomous across scenes/
+  reentry, reset by new game only. Before: Approach `0`.
   `432 s`+waits: mooring, `3*64 s` deliveries, securing/departure/idle;
   next ship awaits truck. Seek restores custody silently.
-  Cargo passes behind the store baffle; roller leaf/rails move together.
-  Bumpers attach to outer jambs, clear of the opening.
+  Cargo passes store baffle; roller leaf/rails move together, bumpers on outer jambs.
   Sway <`9 cm` settles before lowering; empty trolley/cranes return.
   Five StationWorkers: captain/deckhand/operators/docker; shore trio rests under
   canopy, returns by clear south lanes. Paired speech retains absent/no-repeat
   rounds; rest ends before greetings, staggered farewells fit earshot, no replay.
   Pause-aware breath/weight/gaze; turns/Walk→Run retain grips, levers follow hands.
   Driver talks only to docker. Tare/cart avoided; people/cargo physical, custody-owned.
-  `CityPortForeman`: store wall/cart-facing/quay light; left carrot: 3 bites→pail→pocket.
-  E/pair gate, `1.65 m` approach, two side chest shots; «Хочу»/«Не сейчас» spoken.
-  Shared reveal: expressive sprite mouths/brows/blink, soil twins; punctuation/tail close.
-  Foreman face fills mouth hollow; chin/jowls spring with lag/decay.
-  Pause freezes; cancel restores faces/input/HUD/rig. Carrot clock/bites held,
-  left lowered/right gesture; pose/camera together. No job/pay/quest; village/Mother unchanged.
+  `CityPortForeman`: store wall/cart-facing/quay light, left carrot: 3 bites→pail→pocket.
+  E/pair gate, `1.65 m` approach/two side chest shots; spoken «Хочу»/«Не сейчас».
+  Shared sprite mouths/brows/blink/soil twins; punctuation/tail close. Face fills
+  mouth; chin/jowls lag/decay. Pause freezes; cancel restores faces/input/HUD/rig.
+  Held carrot clock/bite, lowered left/right gesture, pose/camera together.
+  No job/pay/quest; village/Mother unchanged.
   Solid caissons reach `20 m` seaward and `-3.4 m` below sea level.
   `CityPortAccessPlan`/`PortAccessLayout.json`: `6 m` road/regrade/L-yard,
   `6.481 x 2.4 m` truck; road/shoulders are the city approach, ramp/yard masks joined.
   No bypass/spur/crossing in geometry, terrain, walk/map masks or fence openings.
   Shore NPCs use natural sand east of the road opening.
-  Internal rear/side walks stay; boats avoid the `3.4 m` basin.
-  Asphalt: city texture/`12 m` phase/wetness. Store panels/guards, joists and wired guarded lamps
-  surround the unchanged baffle/east stock. West-wall rack/bench,
-  lids/inserts/empty tare/tools/gloves/squeegee have physical furniture bounds;
-  flush drains/wheel rubs leave handling lanes clear. One two-fan evaporator
-  feeds outside condensers/drain. Three warm shadowed spots
-  join quay/store/canopy lights; all retain the two-thirds day floor/distance gate.
+  Rear/side walks stay; boats avoid `3.4 m` basin. City asphalt/`12 m` phase/wetness.
+  Store panels/guards/joists/wired lamps preserve baffle/east stock. West rack/
+  bench/lids/inserts/tare/tools/gloves/squeegee have physical bounds; flush drains/
+  wheel rubs clear handling lanes. Two-fan evaporator→outside condensers/drain.
+  Three warm shadowed spots join quay/store/canopy lights: two-thirds day/distance gate.
   Searchlight shadows deck/water; wake `CityPortWater`; `CityPortSound`:
   run/idle motor `.6/.24`, `48 m`; horn/echo `20/4 s` pre-Moor/Depart;
   mechanics/contacts/fan.
-  Pause stops time/audio; disable/destroy clears people/voices/wake.
-  Small alternative blueprints without room retain their nonoperational mol;
-- Weighbridge→cannery: `8 x 14 m` hall on `18 x 18 m`, bay/
-  public bypass. `CityCanneryPlan` supplies Home's shell. Ten Blender models/
-  five maps share port materials; fifteen cans fill/seal/pack. Four workers/
-  driver, workwear/two aprons; phase poses/lamps/steam, plain labels.
-  `CityFishSupplyCycle`: FIFO `2x`, lots `100/220/340→220/340/460 s`.
-  Transfer `276 s`, line wait `184 s`; stock fixed/tare Deferred. Pause/obstacles
-  stop time.
-  Closed truck `6.481 x 2.4 x 3.2 m`, full cab; lift guides/carriage/cylinders
-  visible above ground. Factory exit central, then right lane/shop parking;
-  turns skirt furniture. Streets/asphalt `8 m`/`6 m`. Six-second access yields
-  to entering/unbrakeable bus, protects bodies when released.
-  Dock latch activates truck/driver/body beyond sight on
-  a road suffix; `3 m/s` parks with first crate (`156 s`), later full factory trips.
+  Pause stops time/audio; teardown clears people/voices/wake.
+  Small blueprints without room retain the nonoperational mol;
+- Cannery: `8 x 14 m` hall/`18 x 18 m` lot, bay/public bypass;
+  side openings join yard/public aisle; west staff cut in wall/liner/collision
+  opens work aisle to the hero; machines/glass stay.
+  Home shell: `CityCanneryPlan`; ten Blender parts/five maps share port surfaces.
+  Fifteen cans fill/seal/pack, four workers/driver/two aprons,
+  lamps/steam/labels.
+  Before unload/after final lot, four wait on the truck side facing the yard;
+  queued walks use delivery time. `LifeSeconds` runs through holds, pauses. Receiver
+  tracks cargo/checks zero wheel; empty scale stays zero. Prep steps/wipes/returns
+  cloth; seamer steps back/checks cuff; retort releases wrist. Duty guards grips.
+  `CityCanneryConversationDeck`: `6/6/4` work/wait/receiving pairs, shared bubbles,
+  free hands/no-repeat; no hero speech/job, driver↔docker. Shelf/stool/jacket/lamp
+  clear routes; anchored fan/tin/crate/latch/pressure follow action/pause/distance/seek.
+  `CityFishSupplyCycle`: FIFO `2x`, lots `100/220/340→220/340/460 s`, transfer
+  `276 s`, line wait `184 s`; held by pause/obstacles. Stock fixed/tare Deferred.
+  Truck `6.481 x 2.4 x 3.2 m`/full cab/lift guides/carriage/cylinders above ground.
+  Factory exit central, then right lane/parking; turns clear furniture.
+  Streets/asphalt `8/6 m`; six-second access yields to entering/unbrakeable bus,
+  protects bodies on release.
+  Dock latch spawns truck/driver/body unseen; `3 m/s` parks at first
+  crate (`156 s`), later full factory trips.
   Two soft horns; reverse beeper/ajar door/look-back steering. Cranes never wait.
-  Port cart pushes forward, short pullbacks use backward gait/clear apron turns.
-  Doorway arrival decides access: driver takes accepted stock if docker is outside;
-  crane filling reserves nothing. Docker first: driver waits for exit with
-  "Жду тебя, дружище". Driver first: later loaded trolley holds at the north threshold,
-  shifting port work only; idle/speech/waves continue. Pure event time restores custody.
-  Port cart parks by canopy tare; north approach skirts it to rear handles.
-  Carts return; east aisle clear. Signed gait elsewhere.
-  Doors→unfold→lower; after cart return, reverse order.
-  Factory/shore/vessel/truck mesh/light gates use `80/96 m`; handoffs couple.
-  Custody/collision/traffic run; approach restores while paused;
+  Port cart pushes/pulls with signed gait/clear apron turns.
+  Arrival decides doorway access: driver takes accepted stock if docker is outside;
+  crane filling reserves nothing. Docker first: driver waits for exit,
+  "Жду тебя, дружище". Driver first: later trolley holds north threshold;
+  only port work shifts, idle/speech/waves live. Event time restores custody.
+  Canopy cart/north approach clear tare/rear grips; carts return, east aisle clear.
+  Doors→unfold→lower, cart return→reverse. Coupled `80/96 m`
+  mesh/light gates retain custody/collision/traffic; approach restores even paused;
 - up to two decorative old fishing vessels spawn only near the actual hero
   at the coast (`CityOffshoreBoat{Planner,Controller}`): full presence within
   `8 m` of the finite shore or pier/mol decks, zero at `28 m`. Their cleared
@@ -2764,18 +2764,19 @@ The vertical slice contains:
   activity fixture (beer-pong table, stage) survives purely as layout
   dressing. The bar-visited mechanic is removed entirely: the map route is
   edited only by hand and entering a bar changes nothing about it;
-- `F9` in City/Bar/Road/Home closes the map and takes the modal lock. Clicks or
-  Left/Right change intoxication `±20` within `0–100`, retaining drink context.
-  Day buttons `1–7` preserve `HH:MM`, running state and needs; normal days are
-  unbounded. City owns its scene-local map-teleport flag. Home resolves exact
-  day appearance in both directions; `HomeDebugCityMapShortcut` opens the City
-  debug map beside home. Opening/actions/doors/other modals block Home debug
-  and delay midnight presentation; committed drink service cannot be interrupted.
-  A default-on F9 flag enables `F1/F2/F3` (`×3/×5/×10`) in all nine gameplay
-  scenes, including actions. Same key or disabling the flag returns `×1`.
-  Pause/loading block keys; transitions retain speed, new game restores `×1`
-  and flag. A readout shows acceleration/briefly `×1`; world/calendar accelerate,
-  UI/audio keep real-time clocks, existing motion-step limits remain;
+- `F9` City/Bar/Road/Home: closes map, modal lock; clicks/Left/Right adjust
+  intoxication `±20` within `0–100`, keep drink context. Days `1–7` keep
+  `HH:MM`/running/needs; days uncapped. City owns teleport flag;
+  Home days reversible; `HomeDebugCityMapShortcut`: City map beside home.
+  Opening/actions/doors/modals block Home debug/delay midnight;
+  Committed drink protected. Default-on speed flag: `F1/F2/F3`
+  `×3/×5/×10` across nine scenes/actions; repeat/flag-off→`×1`. Pause/loading
+  block keys; transitions retain speed, new game resets `×1`/flag. Readout:
+  speed/brief `×1`; world/calendar accelerate, UI/audio realtime, motion caps stay.
+  City «Loaded fish truck» closes F9 on success: same truck/seated driver/three
+  crates, clear final approach about `20 m` from factory→normal unload/production.
+  Works pre-dock/paused; seeks only delivery time/batch (repeat→next batch),
+  calendar/needs/hero stay;
 - bounded structured session diagnostics in `debug.log`: stable NDJSON
   envelopes correlate scene transitions, generated-city/bar/home initialization,
   route state, drinking and balance outcomes, plus

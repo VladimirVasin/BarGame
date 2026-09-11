@@ -1220,8 +1220,10 @@ namespace BarPromenade
                         Transform anchor=CityCanneryAssetProvider.FindPart(model,"ANCHOR_HallLight"+i);
                         var host=new GameObject("Cannery Ceiling Light "+i);
                         host.transform.SetParent(recipe,false);
-                        Vector3[] workPoints={new Vector3(-5.5f,1.1f,-2.05f),new Vector3(-5,1.2f,-.35f),
-                            new Vector3(-5,1.3f,2.8f),new Vector3(-6,1.2f,5.0f)};
+                        // The existing practicals expose the people and their
+                        // hands from the public aisle, above the machine tops.
+                        Vector3[] workPoints={new Vector3(-3.2f,1.4f,-5.9f),new Vector3(-6.65f,1.4f,-1.4f),
+                            new Vector3(-6.4f,1.45f,1.7f),new Vector3(-6.4f,1.35f,5.1f)};
                         host.transform.SetPositionAndRotation(anchor.position,
                             Quaternion.LookRotation(recipe.TransformPoint(workPoints[i])-anchor.position));
                         Light light=host.AddComponent<Light>();
@@ -1230,7 +1232,7 @@ namespace BarPromenade
                         light.range=6;
                         light.spotAngle=96;
                         light.innerSpotAngle=65;
-                        light.intensity=3.0f;
+                        light.intensity=4.5f;
                         light.shadows=LightShadows.Soft;
                         light.shadowBias=.025f;
                         light.shadowNormalBias=.1f;

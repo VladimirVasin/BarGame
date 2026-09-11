@@ -51,6 +51,7 @@ namespace BarPromenade
             arrivalHorn.volume = .30f;
             CityWorkAudio.Configure(arrivalHorn, false, 3400f, 64f);
             arrivalHorn.minDistance = 6f;
+            CreateProcessSounds(seed);
         }
 
         private void LateUpdate() { if (IsInitialized) ApplySounds(); }
@@ -75,12 +76,14 @@ namespace BarPromenade
                 bool visible = i == 0 || i == 3 ? TruckPresentationActive : FactoryPresentationActive;
                 bool active = timeRunning && visible && near && (i == 0 ? Snapshot.IsDriving && !IsBlocked :
                     i == 3 ? IsReversing && !IsBlocked :
-                    i == 1 ? Production.Stage == CityCanneryProductionStage.Seal : Production.Stage == CityCanneryProductionStage.Heat);
+                    i == 1 ? Production.Stage == CityCanneryProductionStage.Seal && !IsBlocked :
+                    Production.Stage == CityCanneryProductionStage.Heat && !IsBlocked);
                 source.volume = active ? (i == 0 ? .24f : i == 1 ? .32f : i == 2 ? .26f : .26f) : 0;
                 if (active && !source.isPlaying) source.Play();
                 else if (!active && source.isPlaying) source.Stop();
             }
             AdvanceArrivalHorn(timeRunning);
+            AdvanceProcessSounds(timeRunning);
         }
 
         private void AdvanceArrivalHorn(bool timeRunning)
@@ -165,6 +168,8 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            if (FactoryConversation != null) FactoryConversation.Suspend();
+            StopProcessSounds();
             foreach (AudioSource source in voices) if (source != null) source.Stop();
             arrivalHorn?.Stop();
             hornPaused = hasHornSample = false;
@@ -173,6 +178,7 @@ namespace BarPromenade
 
         private void DestroySounds()
         {
+            DestroyProcessSounds();
             foreach (AudioSource source in voices) if (source != null) source.Stop();
             arrivalHorn?.Stop();
             if (arrivalHornClip != null)

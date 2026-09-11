@@ -410,7 +410,16 @@ namespace BarPromenade
                 out Vector3 areaArrivalPoint,
                 out bool hasAreaArrivalPoint);
             var arrivalGround = new CityMapCityTeleportGround(Layout);
-            if (hasAreaArrival &&
+            if (hasAreaArrival && NewGameStartService.TryConsumeCityArrival(
+                    Layout, World, out NewGameLocation startingLocation,
+                    out Vector3 startingPosition, out Vector3 startingForward))
+            {
+                spawnPosition = startingPosition;
+                arrivalForward = startingForward;
+                spawnOnSidewalk = true;
+                spawnSource = "new_game_" + startingLocation.ToString().ToLowerInvariant();
+            }
+            else if (hasAreaArrival &&
                 hasAreaArrivalPoint &&
                 // Resolve the height from the ground under the coordinate
                 // first: a chart point carries whatever Y suited the thing
@@ -1250,6 +1259,7 @@ namespace BarPromenade
                 follow,
                 intoxicationHud,
                 Map);
+            DebugWindow.BindCannery(Cannery);
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
                 Player,

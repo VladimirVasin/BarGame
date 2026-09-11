@@ -4,6 +4,27 @@ namespace BarPromenade
 {
     public sealed partial class CityCanneryController
     {
+        public Light ServiceWorkLight { get; private set; }
+
+        private void CreateFactoryServiceLight()
+        {
+            Transform anchor = Require(equipment, "ANCHOR_ServiceLight");
+            Vector3 target = Require(equipment, "ANCHOR_SeamerRestWorker").position + Vector3.up * 1.1f;
+            var host = new GameObject("Cannery Service Work Light");
+            host.transform.SetParent(factory, false);
+            host.transform.SetPositionAndRotation(anchor.position, Quaternion.LookRotation(target - anchor.position));
+            ServiceWorkLight = host.AddComponent<Light>();
+            ServiceWorkLight.type = LightType.Spot;
+            ServiceWorkLight.color = new Color(1f, .84f, .63f);
+            ServiceWorkLight.range = 4.8f;
+            ServiceWorkLight.spotAngle = 88f;
+            ServiceWorkLight.innerSpotAngle = 54f;
+            ServiceWorkLight.shadows = LightShadows.Hard;
+            ServiceWorkLight.shadowBias = .018f;
+            ServiceWorkLight.shadowNormalBias = .08f;
+            CityNightSiteLightRegistry.Register(ServiceWorkLight, 5.5f, 5.5f * 2f / 3f, null);
+        }
+
         private void CreateTruckLights()
         {
             // Read the authored lens through world space: the imported FBX

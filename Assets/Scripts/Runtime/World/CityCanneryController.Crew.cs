@@ -73,6 +73,7 @@ namespace BarPromenade
             WorkerHandsMatch = true;
             LastCrewContactFailure = null;
             DriverSeatedContactsMatch = true;
+            ResetFactoryLifePose();
             for (int i = 0; i < workers.Length; i++)
             {
                 bool visible = i == 4 ? TruckPresentationActive : FactoryPresentationActive;
@@ -83,12 +84,14 @@ namespace BarPromenade
             float seconds = (float)Snapshot.Seconds;
             if (FactoryPresentationActive)
             {
-                StandWorker(workers[0], Anchor("Receiver"), Plan.Forward, Anchor("ReceivingLoad"));
+                if (!ApplyFactoryShift(0)) ApplyReceiver();
 
-                ApplyStationWorker(1, "Preparation", Production.Stage == CityCanneryProductionStage.Prepare);
-                ApplyStationWorker(2, "Seamer", Production.Stage == CityCanneryProductionStage.Fill ||
-                    Production.Stage == CityCanneryProductionStage.Seal);
-                ApplyRetortWorker((float)Production.Seconds);
+                if (!ApplyFactoryShift(1))
+                    ApplyStationWorker(1, "Preparation", Production.Stage == CityCanneryProductionStage.Prepare);
+                if (!ApplyFactoryShift(2))
+                    ApplyStationWorker(2, "Seamer", Production.Stage == CityCanneryProductionStage.Fill ||
+                        Production.Stage == CityCanneryProductionStage.Seal);
+                if (!ApplyFactoryShift(3)) ApplyRetortWorker((float)Production.Seconds);
             }
 
             if (TruckPresentationActive)
@@ -110,6 +113,7 @@ namespace BarPromenade
             for (int i = 0; i < workers.Length; i++)
                 if (workers[i].gameObject.activeSelf && workerAppearanceDirty[i]) ApplyCrewAppearance(i);
             ApplyDriverConversation();
+            FactoryConversation?.ApplyCrewPose();
         }
 
         private void ApplyStationWorker(int index, string station, bool working)
@@ -118,7 +122,12 @@ namespace BarPromenade
             Vector3 right = Anchor(station + "RightHand"), left = Anchor(station + "LeftHand");
             Vector3 load = index == 1 ? Anchor("PreparationLoad") : tray.position;
             StandWorker(actor, Anchor(station + "Worker"), Plan.Right, load);
-            if (!working) return;
+            if (!working)
+            {
+                ApplyFactoryIdleLife(index, Anchor(station + "Worker"), Plan.Right, load);
+                return;
+            }
+            factoryDutyBusy[index] = true;
             // Preparation follows the available lot; the powered line doses
             // its fifteen visible cans. Only the active station works.
             int operations = Production.Stage == CityCanneryProductionStage.Prepare ? Production.UnitCount : 15;
@@ -161,7 +170,7 @@ namespace BarPromenade
         private void ApplyStationPose(int index, float weight, float lean)
         {
             VillageResidentPresentation actor = workers[index];
-            actor.Apply(VillageResidentAction.StationWork, 1.1f * weight);
+            BlendFactoryWorkPose(index, weight);
             // Only the spine changes after the authored planted pose: the
             // pelvis, knees and feet keep their grounded station positions.
             workerSpines[index].rotation = Quaternion.AngleAxis(lean * weight, actor.transform.right) *
@@ -179,6 +188,7 @@ namespace BarPromenade
             bool toRetort = Production.ReturnSeconds < 12;
             if (toPacking || toRetort)
             {
+                factoryDutyBusy[3] = true;
                 Vector3 from = toPacking ? retort : packing, to = toPacking ? packing : retort;
                 workerRoute[0] = from;
                 workerRoute[1] = Plan.World(new Vector3(-7.18f, CityCanneryPlan.FloorTop, Plan.Local(from).z));
@@ -190,12 +200,19 @@ namespace BarPromenade
             }
             if (Production.Stage == CityCanneryProductionStage.Pack)
             {
+                factoryDutyBusy[3] = true;
                 ApplyPackingWorker(seconds);
                 return;
             }
             Vector3 hand = Anchor("RetortHand");
             StandWorker(actor, retort, Plan.Right, hand);
-            if (Production.Stage != CityCanneryProductionStage.LoadRetort && Production.Stage != CityCanneryProductionStage.Cool) return;
+            if (Production.Stage != CityCanneryProductionStage.LoadRetort && Production.Stage != CityCanneryProductionStage.Cool)
+            {
+                ApplyFactoryIdleLife(3, retort, Plan.Right,
+                    Production.Stage == CityCanneryProductionStage.Heat ? pressureNeedle.position : hand);
+                return;
+            }
+            factoryDutyBusy[3] = true;
             float duration = Production.Stage == CityCanneryProductionStage.Cool ? (float)Production.Duration - 12 : (float)Production.Duration;
             // A command to open/extend and one to close/retract. The long
             // middle is observation of the drawer, with the hand off the button.
@@ -413,7 +430,8 @@ namespace BarPromenade
         private void StandWorker(VillageResidentPresentation actor, Vector3 point, Vector3 forward, Vector3 look)
         {
             actor.transform.SetPositionAndRotation(point, Quaternion.LookRotation(forward, Vector3.up));
-            actor.Apply(VillageResidentAction.Idle, (float)(WorkingSeconds % 120d));
+            int role = Array.IndexOf(workers, actor);
+            actor.Apply(VillageResidentAction.Idle, (float)((LifeSeconds + role * 7.37d) % 120d));
             ApplyCrewLook(actor, look, .7f);
         }
 

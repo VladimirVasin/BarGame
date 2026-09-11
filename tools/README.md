@@ -1,9 +1,9 @@
 # Art and native tool entry points
 
-`build-city-cannery-3d-model.py`: nine fixed-metre FBXs (hall/equipment/truck/pallet/
-retort basket/can tray/cartons/trolley/yard), measured `CityCannery3D.json`:
-`Assets/Resources/City/Cannery`; source `ArtSource/City/Cannery`. Port maps/materials;
-validation rebuilds geometry/UVs/contacts without publishing:
+`build-city-cannery-3d-model.py`: ten metre FBXs/`CityCannery3D.json` in
+`Assets/Resources/City/Cannery`, source `ArtSource/City/Cannery`; shared port maps.
+Equipment has crew cloth/shelf/stool/jacket/lamp. Validator checks metre
+contacts, `.29 m` crew clearance, UVs and determinism without publication:
 
 ```powershell
 python tools/run-blender.py tools/build-city-cannery-3d-model.py --validate-only -- --validate-only

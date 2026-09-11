@@ -3,19 +3,17 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The launch card. Two items over a black field: a new game, which starts
-    /// the session clock at the village morning and travels to the village
-    /// through the ordinary area loading screen, and quit.
+    /// The launch card and a second screen choosing where the fresh session
+    /// starts. Only confirming a destination starts the clock and loading.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class StartMenuRoot : MonoBehaviour
     {
         /// <summary>
-        /// 07:40. The village is the game's first place, and this is the hour
-        /// its light is graded for; the retained Home opening still begins at
-        /// 05:59 whenever it is entered.
+        /// 07:40 for every selectable start. The village remains the first
+        /// choice; the retained Home waking opening uses its own earlier hour.
         /// </summary>
-        public const int VillageMorningMinuteOfDay = (7 * 60) + 40;
+        public const int VillageMorningMinuteOfDay = NewGameStartService.MorningMinuteOfDay;
 
         // One compact vertical card, centred on the shared 640x360 canvas.
         // Keep these logical rects together so drawing and pointer hitboxes
@@ -26,16 +24,22 @@ namespace BarPromenade
             new Rect(218f, 156f, 204f, 22f);
         internal static Rect MenuQuitRect =>
             new Rect(218f, 182f, 204f, 22f);
+        internal static Rect LocationPanelRect => new Rect(166f, 18f, 308f, 324f);
+        internal static Rect LocationOptionRect(int index) => new Rect(178f, 54f + index * 22f, 284f, 20f);
 
         private readonly StartMenuModel model = new StartMenuModel();
 
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
+        private GUIStyle titleStyle;
 
         public Camera BackdropCamera { get; private set; }
         public bool IsStartingNewGame { get; private set; }
         public bool QuitRequested { get; private set; }
         public StartMenuOption SelectedOption => model.SelectedOption;
+        public bool IsChoosingLocation => model.IsChoosingLocation;
+        public NewGameLocation SelectedLocation => model.SelectedLocation;
+        public bool IsBackSelected => model.IsBackSelected;
 
         private bool IsBusy => IsStartingNewGame || QuitRequested;
 
@@ -82,6 +86,12 @@ namespace BarPromenade
             StartMenuAction action = model.Confirm();
             switch (action)
             {
+                case StartMenuAction.ChooseLocation:
+                    RetroAudio.Play(RetroSfxId.UiConfirm);
+                    return true;
+                case StartMenuAction.Back:
+                    RetroAudio.Play(RetroSfxId.UiCancel);
+                    return true;
                 case StartMenuAction.NewGame:
                     RetroAudio.Play(RetroSfxId.UiConfirm);
                     return BeginNewGame();
@@ -95,26 +105,47 @@ namespace BarPromenade
             }
         }
 
+        public bool SelectLocation(NewGameLocation location)
+        {
+            if (IsBusy || !model.SelectLocation(location)) return false;
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        public bool SelectBack()
+        {
+            if (IsBusy || !model.SelectBack()) return false;
+            RetroAudio.Play(RetroSfxId.UiMove);
+            return true;
+        }
+
+        public bool ReturnToMainMenu()
+        {
+            if (IsBusy || !model.ReturnToMainMenu()) return false;
+            RetroAudio.Play(RetroSfxId.UiCancel);
+            return true;
+        }
+
         private bool BeginNewGame()
         {
             IsStartingNewGame = true;
-            GameSessionState.TryStartGameTimeAt(
-                VillageMorningMinuteOfDay);
-            if (AreaTravelService.Request(GameAreaId.AlpineVillage))
+            NewGameLocation location = model.SelectedLocation;
+            if (NewGameStartService.TryStart(location))
             {
                 return true;
             }
 
-            // A refused trip must leave a working card rather than a dead
-            // screen. The clock stays started; a retry only re-requests.
+            // Keep the selected destination available when loading is refused.
             IsStartingNewGame = false;
             model.Open();
+            model.Confirm();
+            model.SelectLocation(location);
             GameLog.Warning(
                 "menu",
                 "new_game_travel_refused",
                 GameLog.Field(
-                    "destination_area",
-                    GameAreaId.AlpineVillage.ToString()));
+                    "destination_location",
+                    location.ToString()));
             return false;
         }
 
@@ -136,9 +167,8 @@ namespace BarPromenade
                     GameInputAction.Cancel,
                     GameInputContext.Menu))
             {
-                // Escape selects quit without taking it, exactly as the
-                // retained waking card does.
-                SelectOption(StartMenuOption.Quit);
+                if (model.IsChoosingLocation) ReturnToMainMenu();
+                else SelectOption(StartMenuOption.Quit);
                 return;
             }
 
@@ -166,6 +196,11 @@ namespace BarPromenade
                 RetroUiTheme.BeginCanvas(canvas);
             try
             {
+                if (model.IsChoosingLocation)
+                {
+                    DrawLocations(canvas);
+                    return;
+                }
                 RetroUiTheme.DrawPanel(
                     MenuPanelRect,
                     RetroUiTheme.PanelInset,
@@ -187,6 +222,34 @@ namespace BarPromenade
             finally
             {
                 RetroUiTheme.EndCanvas(previousMatrix);
+            }
+        }
+
+        private void DrawLocations(RetroUiCanvas canvas)
+        {
+            RetroUiTheme.DrawPanel(LocationPanelRect, RetroUiTheme.PanelInset, RetroUiTheme.FrameOuter,
+                false, 0f, 1f);
+            GUI.Label(new Rect(178f, 26f, 284f, 22f),
+                LocalizationService.Get("opening.choose_location"), titleStyle);
+            Vector2 mouse = RetroUiTheme.LogicalMousePosition(canvas);
+            for (int index = 0; index <= NewGameLocationCatalog.Count; index++)
+            {
+                bool back = index == NewGameLocationCatalog.Count;
+                NewGameLocation location = back ? NewGameLocation.Count : NewGameLocationCatalog.Get(index);
+                Rect rect = LocationOptionRect(index);
+                if (rect.Contains(mouse) && Event.current.type == EventType.MouseMove)
+                {
+                    if (back) SelectBack(); else SelectLocation(location);
+                }
+                bool selected = model.SelectedLocation == location;
+                if (selected) RetroUiTheme.DrawSelection(rect, true);
+                string label = LocalizationService.Get(back ? "opening.back" : NewGameLocationCatalog.LabelKey(location));
+                if (GUI.Button(rect, (selected ? "> " : "  ") + label, selected ? selectedStyle : optionStyle))
+                {
+                    if (back) SelectBack(); else SelectLocation(location);
+                    ConfirmSelection();
+                    break;
+                }
             }
         }
 
@@ -241,6 +304,7 @@ namespace BarPromenade
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Muted,
                 false);
+            titleStyle = RetroUiTheme.CreateLabelStyle(13, TextAnchor.MiddleCenter, RetroUiTheme.Text, true);
         }
     }
 }

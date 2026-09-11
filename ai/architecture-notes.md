@@ -4,6 +4,33 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-11, selectable new-game start:**
+  User requests a location page after New Game: nine gameplay roots plus City
+  docks/cannery; village first/default. Back returns to the main card; mouse,
+  keyboard/gamepad share selection. Confirmation resets the session and sets
+  day `1`/`07:40` without elapsed needs, then area/scene loading. No prologue,
+  ride/arrival sequence, lore or new in-world route. §6 revises the `2026-09-09`
+  fixed-village start only; §16/§21/nine art checks and retained legacy waking stay.
+  `NewGameLocationCatalog`/`NewGameStartService` own selection/bootstrap. City/Bar
+  arrival markers belong to one load operation. City uses home's return point;
+  docks/cannery use clear authored pedestrian positions. Six interiors load
+  without door travel; Home Normal/Stairwell StreetDoor, real bar context keeps
+  its exit. Starting inside Mother's house completes the reach-house quest.
+
+- **Accepted architecture exception — 2026-09-11, cannery shift life:**
+  Four workers, `6/6/4` work/wait/receiving pairs (§6/§21/art §8):
+  shared bubbles/no-repeat/free-hand gestures.
+  No E/hero address/boss/job/pay/quest/lore/illness/intoxication response; driver↔docker.
+  `LifeSeconds`: before dock entry/holds, pause freezes. Empty scale
+  stays zero; cloth returns, cuff/wrist checks; duty guards grips. Blender shelf/stool/
+  jacket/lamp clear `.29 m` corridors; shared surfaces. Local fan/can/crate/
+  latch/pressure audio; spot; no seek replay. Cargo/stock/routes/distance,
+  §16/§21/nine art checks stay.
+  User: four wait east facing the yard; unload→queued entry, final lot→exit
+  on delivery time. Side openings join public aisle. Enclosed west aisle gets a
+  staff cut in wall/liner/collision, no leaf/text; hero mask admits it,
+  machines/glass stay.
+
 - **Accepted architecture exception — 2026-09-11, doubled calendar day:**
   User: art §2/story §20 now use 48 real minutes/day at ×1, two seconds/game
   minute. Calendar-based needs/weather slow with it; world motion/debug factors stay.
@@ -59,13 +86,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   pause/cleanup and cross-view head ownership; no feature copies/new pool/voice acting.
 
 - **Accepted — 2026-09-11, warehouse doorway priority:**
-  Accepted stock and actual arrival decide access. Driver at the outside queue
-  may collect if docker is not inside; a load on the crane reserves nothing.
-  Docker first: driver waits only until exit. Driver first: later loaded docker
-  trolley holds at the north threshold until his return clears the doorway.
-  That hold shifts remaining port work, not idle/speech/waves; pure event time
-  restores batch/custody through pause/seek without replay. Stock remains finite.
-  `DriverWaitingForDockWorker` gates the waiting remark: missing stock is silent.
+  Arrival/accepted stock decide access; crane load reserves nothing. Docker
+  inside: driver waits for exit. Driver first: later loaded trolley holds north
+  threshold until his return clears it. Hold shifts port work, not idle/speech/
+  waves; event time restores finite batch/custody on pause/seek, no replay.
+  `DriverWaitingForDockWorker` gates remark; missing stock is silent.
 
 - **Accepted — 2026-09-11, slower shared speech:**
   `SpeechDelivery`: `24 chars/s`, clicks ≥`.13 s`, bubble `4.4 s`, tail `2.5 s`.
@@ -87,72 +112,69 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — 2026-09-11, passive dock cold-store fittings:**
   `Dock`: liners/guards/joists/wiring, guarded lamps, evaporator/condenser/drain
   lines, west rack/bench/tools; shared surfaces. `COL_WarehouseFurniture`
-  `x<=-6.92`, handling `x>=-5.2`; baffle/stock/routes stay. Warm shadowed spots:
-  `6.5 m`/night `14`/day `2/3`; anchored fan `.12/14 m`, shared pause/distance/
-  disposal. No text/interaction/exception.
+  `x<=-6.92`, handling `x>=-5.2`; baffle/stock/routes stay. Spots `6.5 m`/night
+  `14`/day `2/3`, shadows; fan `.12/14 m`, pause/distance/disposal.
+  No text/interaction/exception.
 
 - **Accepted — 2026-09-10, hydraulic tail-lift rig:**
-  Blender rear niches hold twin guides/carriage/hinge and lift/fold cylinders.
-  Sliding rods, `Truck.up` slope clearance, worn steel/rubber; no dummy rods/text.
+  Blender rear niches: twin guides/carriage/hinge/lift/fold cylinders; sliding
+  rods/`Truck.up` slope clearance, worn steel/rubber; no dummy rods/text.
 
 - **Accepted — 2026-09-10, compact truck and local traffic:**
-  Closed truck `6.481 x 2.4 x 3.2 m`, full cab/three units; streets/asphalt
-  `8 m`/`6 m`. Turns skirt furniture; factory exit central, then right/park right.
+  Closed truck `6.481 x 2.4 x 3.2 m`, full cab/three units; streets/asphalt `8/6 m`.
+  Turns clear furniture; factory exit central, then right/park right.
   `CityCanneryTraffic`: six-second access, entering/unbrakeable bus first;
-  release protects bodies, opposing lanes open.
+  release protects bodies/opposing lanes.
 
 - **Accepted — 2026-09-10, ship-arrival dispatch and local handling:**
-  Dock latch spawns truck/driver/body on unseen road suffix: `3 m/s`, parked at
-  crate `156 s`; later full factory trips. Double horn `.30/64 m`, pause/no replay.
-  Reverse ajar door/look-back/steer/beeper, exit `78°`.
-  Grip parking+`12.8 s`, queue+`4 s`, first fetch `172.8 s`; east pallets clear.
-  Cart by west canopy tare: north apron/west approach to rear grips clears crew,
-  return likewise. Push/pull/apron turns clear lift; other paths stay.
-  Cart→cargo→stand; doors `0–4`→unfold `4–7`→lower `7–11 s`, cart return→reverse.
+  Dock latch spawns truck/driver/body on unseen road: `3 m/s`, parks at first
+  crate `156 s`; later factory trips. Horn `.30/64 m`, pause/no replay.
+  Reverse ajar/look-back/steer/beeper; exit `78°`. Grip parking+`12.8 s`,
+  queue+`4 s`, fetch `172.8 s`; east pallets clear. West canopy cart:
+  north/west approach and return clear tare/crew/lift. Cart→cargo→stand;
+  doors `0–4`→unfold `4–7`→lower `7–11 s`, cart return→reverse.
 
 - **Accepted architecture exception — 2026-09-10, driver's first speech pool:**
-  Driver↔docker only: city/weather/salutations, wait "Жду тебя, дружище".
-  Port channel/route/grips retained; no player interaction. Canon/rig rules hold.
+  Driver↔docker: city/weather/salutations, "Жду тебя, дружище" wait.
+  Port channel/route/grips/canon stay; no player interaction.
 
 - **Accepted architecture exception — 2026-09-10, port social life:**
   §6/§21 city/weather pairs: `36` rest/`36` work/`8` greeting/`8` farewell.
-  Per-kind shuffle marks first spoken line, retains absent pairs/history across
-  Reset/seek. Greeting/arming `.86`/`60.2 s`, stagger/grips stay. `COL_Awning`
-  rest/southern routes clear tare/posts, return before duty; paired replies fit
-  before greetings. Warm Spot/halo `7 m`, day `2/3`, global light stays.
+  Shuffle commits first speech; history/absent pairs survive Reset/seek.
+  Greeting/arming `.86`/`60.2 s`; stagger/grips stay. `COL_Awning`/south routes
+  clear tare/posts; return/replies precede duty/greetings. Spot/halo `7 m`, day
+  `2/3`; global light stays.
   Free docker/deckhand Walk→hero Run `1.8–2.6 m/s`, paths/grips stay; pause-aware
   breath/weight/gaze/smoking/levers. Finite catch/observation `0-5`; no crime/quest/ride/reward.
 
 - **Accepted — 2026-09-10, fish logistics/session start:**
-  §6 weighbridge→factory; routes/stock stay, tare Deferred. Travel `3 m/s`,
-  reverse `1.1`. `CityFishSupplySession.HasStarted` latches running/unpaused
-  `CityPortPlan.LandBounds` entry at `abs(Y-QuayTopY)<=3 m`. Before Approach `0`,
-  no catch-up; then autonomous across scenes/reentry, reset `BeginNewGame` only.
-  Pause/obstacles stop work; `80/96 m` gates retain custody/collision/traffic/restore.
+  Stock/routes stay, tare Deferred. Travel/reverse `3/1.1 m/s`.
+  `CityFishSupplySession.HasStarted`: running/unpaused `CityPortPlan.LandBounds`
+  entry, `abs(Y-QuayTopY)<=3 m`. Before: Approach `0`/no catch-up; then autonomous
+  across scenes, reset `BeginNewGame` only. Pause/obstacles hold work; `80/96 m`
+  gates retain custody/collision/traffic/restore.
 
 - **Accepted — 2026-09-10, cannery surface and process detail:**
-  Ten Blender models; floor/wall/steel/insulation/cardboard maps, shared port
-  surfaces/metre UVs. Workwear/aprons/poses/lamps/steam distance-gated;
-  same cans fill/seal/pack. Front/lenses/beams day/distance-gated; §21 labels.
-  Outer-jamb bumpers; leaf/rails move together.
+  Ten Blender models; floor/wall/steel/insulation/cardboard maps, port surfaces/
+  metre UVs. Workwear/aprons/poses/lamps/steam distance-gated; same cans fill/seal/
+  pack. Front/lenses/beams day/distance-gated; §21 labels. Outer-jamb bumpers;
+  leaf/rails move together.
 
 - **Accepted — 2026-09-10, first-crate production:**
-  `CityFishSupplyCycle`: FIFO during unload at `2x`; packer returns between
-  passes, truck takes all output. `Duration` first batch, `RepeatingDuration`
-  repeats; `BatchStart`/optional batch on stage/transfer/production queries
-  reconstruct the shorter first arrival.
+  `CityFishSupplyCycle`: FIFO unload `2x`, packer returns/truck takes output.
+  `Duration` first/`RepeatingDuration` repeats; `BatchStart`/batch queries restore first arrival.
 
 - **Accepted — 2026-09-10, three crates per trawler:**
-  `CityPortCycle.CargoCount=3`, no extra loads. Unload `3*64=192 s`, visit `432 s`,
-  Factory/shop `48+3*76=276 s`; fifteen cans, odd returns retain endpoints.
+  `CityPortCycle.CargoCount=3`: unload `3*64=192 s`, visit `432 s`, factory/shop
+  `48+3*76=276 s`; fifteen cans, odd returns keep endpoints.
 
 - **Accepted — 2026-09-10, readable working sound:**
-  `CityWorkAudio`: mono `SfxWorld`, `.28/.95 s` outdoor/factory reverb;
-  crane `ANCHOR_HoistFeed`/retort body sources. City trims stay, Music −`6 dB`.
-  Vessel `ANCHOR_Horn`: `112 Hz/3.4 s`, `.32/64 m`, once at arrival `66 s` and
-  departure `336 s`; continuous crossings only, no seek/reentry replay.
-  Local echo `620 ms/.42/.30`, dark reverb `3.8 s`, silent clip tail `4.6 s`;
-  pause/distance/stop own DSP. Existing Spot/Soft shadows; global mix/light unchanged.
+  `CityWorkAudio`: mono `SfxWorld`, reverb `.28/.95 s` outdoor/factory;
+  crane `ANCHOR_HoistFeed`/retort body. City trims stay, Music −`6 dB`.
+  Vessel `ANCHOR_Horn`: `112 Hz/3.4 s`, `.32/64 m`, arrival/departure `66/336 s`;
+  forward crossings only, no seek/reentry replay. Echo `620 ms/.42/.30`, reverb
+  `3.8 s`, silent tail `4.6 s`; pause/distance/stop own DSP. Spot/Soft shadows;
+  global mix/light stay.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
   12 opaque ImageGen maps; provenance:
@@ -3601,35 +3623,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `DoorTransition` installs an idle presentation root; only the transition
   service initializes and plays it.
 - **Accepted architecture exception — 2026-09-09, explicit user request — the
-  game begins in the alpine village, and the Home waking opening leaves the
+  alpine village default, and the Home waking opening leaves the
   launch path:** One §6 registry row lifts four rules together: story bible
   §15 «Пролог», §20 «Время», §2 «Дорога наверх собрана целиком» and art bible
-  §10g «Порог и ориентиры». `MainMenu` stays build index `0` and keeps its
-  black field, but `StartMenuRoot` draws one localized card of two rows — the
-  new `opening.new_game` and the existing `opening.quit` — instead of loading
-  Home after a frame. New Game resets the run, starts the session clock at
-  `07:40` on day `1` through `GameTimeState.TryStartAt`, and Single-loads
-  `AlpineVillage` through the existing `AreaLoading` screen. The clock is set
-  rather than woken and advanced: advancing is elapsed time and would age
-  hunger and fatigue for minutes a new run has not lived. No leg is travelled,
-  so the screen keeps its black field and bottom bar and shows none of art
-  bible §15a's four directed illustrations; no fifth image is authored.
-  `AreaArrivalToken.Default` leaves the village's own `lane_foot` spawn in
-  force, so the hero stands two metres up the lane facing the mother's house,
-  with no cabin, ride, seat or arrival sequence.
-  **What moves is the place and the hour, not the prologue:** the prologue
-  stays unwritten, the Cat, the dinner, the news and the mother's event still
-  do not exist, and the cableway stays the only way in and out during play.
-  `HomeArrivalKind.OpeningSleep`, `HomeOpeningController` and
-  `HomeOpeningTimeline` are retained unchanged and still play the whole
-  `05:59` opening described in `ai/current-world.md`. `MainMenuRoot` keeps
-  that launch and is its only entrance: `MainMenuRoot.RequestLegacyOpening()`
-  before the launch scene loads makes the bootstrap install the black boundary
-  instead of the card. No shipped path requests it, so the opening is retained
-  and unreached rather than deleted.
-  Editor Play pins its start scene to `MainMenu`; the exact temporary
-  `InitTestScene{GUID}` bootstrap used by Unity Test Framework suppresses that
-  override for PlayMode tests and restores it after returning to Edit Mode.
+  §10g «Порог и ориентиры». `MainMenu` remains index `0`, black field/card.
+  Village is the default choice: `GameTimeState.TryStartAt` sets day `1`/`07:40`,
+  never advances needs; `AreaLoading` Single-loads without a directed travel
+  illustration. `AreaArrivalToken.Default` uses `lane_foot`, two metres up the
+  lane facing the mother's house, without cabin/ride/arrival.
+  Prologue/Cat/dinner/news/mother's event remain unwritten; the choice is a start,
+  not another route. `HomeArrivalKind.OpeningSleep`, `HomeOpening{Controller,Timeline}`
+  retain the `05:59` waking flow. Only explicit `MainMenuRoot.RequestLegacyOpening()`
+  before launch requests that boundary; no shipped path does. Editor Play pins
+  `MainMenu`; test `InitTestScene{GUID}` temporarily suppresses that override.
 - **Accepted architecture exception — 2026-09-09, explicit user request — day
   one carries one quest, and the journal becomes a page:** A §6 registry row
   lifts story bible §12 «Форма» «ни указателя» for the map schematic only, and

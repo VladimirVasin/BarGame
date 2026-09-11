@@ -34,6 +34,15 @@ CONVEYOR_ROLLER_AXES=("Z","Z","X","X","Z","Z","X","X")
 CONVEYOR_ROLLER_SIGNS=(-1,-1,1,1,1,1,1,1)
 TRUCK_REAR, TRUCK_FRONT, TRUCK_HALF_WIDTH, TRUCK_WHEELBASE = -2.0, 4.5, 1.2, 3.3
 TRUCK_CAB_OFFSET = -.9
+CREW_SERVICE_ANCHORS = {
+    "PreparationTidyWorker":(-6.65,.18,-2.35),
+    "PreparationTidyHand":(-6.12,1.238,-2.50),
+    "SeamerRestWorker":(-7.14,.18,-.35),
+    "ReceiverRestWorker":(-2.9,.18,-6.5),
+    "ReceiverScaleHand":(-3.93,1.22,-5.98),
+    "ServiceLight":(-7.35,2.56,.55),
+    "ColdStoreSound":(-7.5,3.46,-5.4),
+}
 
 
 def anchor(name, parent, position):
@@ -74,7 +83,8 @@ def hall(mat):
     # glazed east side gives a second view of the same live machinery.
     walls=[kit.translated(kit.wall_run(8,3.92,.24,[kit.Opening(2.9,1.7,2.8)]),(-4,7,.18)),
            kit.translated(kit.wall_run(8,3.92,.24,[kit.Opening(2.9,1.7,2.8)]),(-4,-7,.18)),
-           kit.translated(kit.rotated_z(kit.wall_run(14,3.92,.24),90),(-8,0,.18)),
+           kit.translated(kit.rotated_z(kit.wall_run(14,3.92,.24,
+               [kit.Opening(2.65,1.4,2.8)]),90),(-8,0,.18)),
            kit.translated(kit.rotated_z(kit.wall_run(14,3.92,.24,
                [kit.Opening(-5.5,2,2.8),kit.Opening(-2.5,2.7,3,.6),
                 kit.Opening(.65,2.7,3,.6),kit.Opening(5,2.2,2.8)]),90),(0,0,.18))]
@@ -136,10 +146,11 @@ def hall(mat):
         chamfer(g,(.13,3.48,z),(.045,.22,width*.72),METAL,.008)
     anchor("ReceiveSign",root,(.156,3.48,-5.5));anchor("FinishedSign",root,(.156,3.48,5))
     # The wet-process wall is washable only where work actually takes place.
-    g.role="WashWall"
-    chamfer(g,(-7.863,1.05,1.45),(.033,1.72,8.55),CABIN,.012)
-    g.role="Stainless"
-    for y in (.22,1.94):chamfer(g,(-7.83,y,1.45),(.035,.07,8.55),METAL,.008)
+    for low,high in ((-2.825,1.95),(3.35,5.725)):
+        g.role="WashWall"
+        chamfer(g,(-7.863,1.05,(low+high)*.5),(.033,1.72,high-low),CABIN,.012)
+        g.role="Stainless"
+        for y in (.22,1.94):chamfer(g,(-7.83,y,(low+high)*.5),(.035,.07,high-low),METAL,.008)
     g.role=None
     # Drains lead under prep and retort; no loose decorative pipe ends.
     for z in (-2.30,2.45):
@@ -276,12 +287,92 @@ def roller_run(g, root, mat, run_index, start, end, open_start=True, open_end=Tr
         chamfer(g,(foot.x,.205,foot.z),(.14,.05,.14),METAL,.01)
 
 
+def crew_service_dressing(root,mat):
+    """Finite service objects stay against real walls, outside working routes."""
+    shelf=Geometry();shelf.role="Stainless"
+    # A shallow wall rack keeps hand tools and spare sealing rings beside the
+    # seamer. It remains west of the retort worker's 58 cm body corridor.
+    for y in (1.70,2.18):
+        chamfer(shelf,(-7.70,y,.25),(.22,.035,.95),METAL,.009)
+        for z in (-.18,.68):
+            shelf.rod((-7.80,y-.20,z),(-7.80,y+.03,z),.013,METAL,6)
+            shelf.rod((-7.80,y-.18,z),(-7.60,y-.025,z),.014,METAL,6)
+        for z in (-.225,.725):shelf.box((-7.70,y+.027,z),(.22,.025,.012),METAL)
+    shelf.role=None
+    for z,length in ((-.10,.20),(.12,.15)):
+        shelf.rod((-7.73,1.737,z),(-7.73,1.737,z+length),.015,METAL,8)
+        ring(shelf,(-7.73,1.737,z),.035,.012,METAL,(0,1,0),8)
+        ring(shelf,(-7.73,1.737,z+length),.041,.012,METAL,(0,1,0),8)
+    shelf.role="Rubber"
+    for index in range(3):ring(shelf,(-7.69,2.21+index*.015,.52),.064,.006,DARK,(0,1,0),12)
+    shelf.role="Fabric"
+    for index in range(3):chamfer(shelf,(-7.70,2.21+index*.020,.02),(.17,.018,.23),CABIN,.005)
+    shelf.role=None
+    obj(shelf,"ServiceShelf",root,mat)
+
+    stool=Geometry();cx,cz=-7.52,.75
+    stool.role="Timber"
+    chamfer(stool,(cx,.672,cz),(.42,.055,.40),WOOD,.035)
+    stool.role=None
+    for dx in (-1,1):
+        for dz in (-1,1):
+            stool.rod((cx+dx*.155,.18,cz+dz*.145),(cx+dx*.115,.646,cz+dz*.105),.018,METAL,8)
+    for x in (cx-.14,cx+.14):stool.rod((x,.35,cz-.13),(x,.35,cz+.13),.012,METAL,6)
+    stool.rod((cx-.14,.35,cz),(cx+.14,.35,cz),.012,METAL,6)
+    obj(stool,"ServiceStool",root,mat)
+    collision_box("ServiceStool",root,mat,(cx,.44,cz),(.42,.52,.40))
+    anchor("ServiceStoolSeat",root,(cx,.70,cz))
+
+    # A jacket on the cold-room's real north wall belongs to this shift.
+    # The hanger, empty second hook and soft hems avoid a locker-shaped block.
+    coat=Geometry();coat.role=None
+    chamfer(coat,(-7.40,2.10,-2.81),(.76,.055,.045),METAL,.01)
+    for x in (-7.58,-7.22):
+        coat.rod((x,2.1,-2.79),(x,2.1,-2.735),.012,METAL,6)
+        coat.rod((x,2.1,-2.735),(x,2.135,-2.735),.012,METAL,6)
+    coat.rod((-7.58,2.1,-2.74),(-7.40,1.94,-2.76),.009,METAL,6)
+    for x in (-7.64,-7.16):coat.rod((-7.40,1.94,-2.76),(x,1.87,-2.76),.009,METAL,6)
+    coat.role="Fabric"
+    outline=[(-.12,.05),(-.27,.02),(-.38,-.22),(-.29,-.26),(-.20,-.10),
+             (-.20,-.58),(.20,-.58),(.20,-.10),(.29,-.26),(.38,-.22),(.27,.02),(.12,.05),(0,-.025)]
+    vertices=[(-7.4+x,1.85+y,z) for z in (-2.81,-2.755) for x,y in outline]
+    count=len(outline)
+    faces=[tuple(reversed(range(count))),tuple(range(count,count*2))]
+    faces.extend((i,(i+1)%count,(i+1)%count+count,i+count) for i in range(count))
+    coat.add(vertices,faces,PAINT)
+    for x in (-7.53,-7.27):coat.rod((x,1.33,-2.747),(x,1.72,-2.747),.008,PAINT,6)
+    coat.rod((-7.40,1.3,-2.742),(-7.40,1.82,-2.742),.005,DARK,6)
+    obj(coat,"StoredWorkJacket",root,mat)
+
+    # The cloth straddles the supported west rim, clear of the raw crate.
+    cloth=empty("MOVE_PreparationCloth",root,CREW_SERVICE_ANCHORS["PreparationTidyHand"])
+    fabric=Geometry();fabric.role="Fabric"
+    chamfer(fabric,(0,.004,0),(.15,.008,.16),CABIN,.003)
+    for z in (-.065,.055):fabric.rod((-.07,.009,z),(.07,.009,z+.004),.003,CABIN,6)
+    obj(fabric,"PreparationWipeCloth",cloth,mat)
+
+    lamp=Geometry()
+    chamfer(lamp,(-7.78,2.74,.55),(.08,.20,.16),METAL,.014)
+    lamp.rod((-7.74,2.74,.55),(-7.35,2.68,.55),.022,METAL,8)
+    lamp.rod((-7.35,2.64,.55),(-7.35,2.71,.55),.13,METAL,12,end_radius=.065)
+    obj(lamp,"ServiceLampHousing",root,mat)
+    lens=Geometry();lens.rod((-7.35,2.628,.55),(-7.35,2.638,.55),.111,LAMP,12)
+    obj(lens,"CanneryLampGlass",root,mat)
+    for name,position in CREW_SERVICE_ANCHORS.items():anchor(name,root,position)
+
+
 def equipment(mat):
     root=empty("Equipment");g=Geometry()
     # Receiving scale: a foot platform and genuine mechanical dial, kept as
     # useful equipment after the former weighbridge changes purpose.
     chamfer(g,(-3.5,.30,-5.45),(1.25,.24,1.45),METAL,.04)
     g.rod((-4.1,.42,-5.95),(-4.1,1.62,-5.95),.045,METAL,8)
+    # A physical zero-adjustment wheel belongs to the receiver's idle check;
+    # touching it never invents a weighed load or moves the unloaded needle.
+    g.rod((-4.1,1.22,-5.95),(-3.947,1.22,-5.98),.018,METAL,8)
+    ring(g,(-3.945,1.22,-5.98),.044,.015,METAL,(1,0,0),10)
+    for offset in (-.03,.03):
+        g.rod((-3.945,1.22,-5.98),(-3.945,1.22+offset,-5.98),.008,METAL,6)
     g.rod((-4.11,1.67,-6.05),(-4.11,1.67,-5.93),.19,METAL,16)
     g.rod((-4.11,1.67,-5.929),(-4.11,1.67,-5.915),.155,CABIN,16)
     dial_ticks(g,(-4.11,1.67,-5.907),.132)
@@ -553,6 +644,7 @@ def equipment(mat):
     anchor("ConveyorEntry",root,(-4.36,1.19,-.35));anchor("ConveyorBendEast",root,(-3.1,1.19,-.35))
     anchor("ConveyorBendNorth",root,(-3.1,1.19,3.95));anchor("ConveyorBasketMouth",root,(-5,1.19,3.95))
     anchor("ConveyorPackBend",root,(-5.75,1.19,3.95));anchor("RetortTrayDock",root,(-5,1.19,3.34))
+    crew_service_dressing(root,mat)
     obj(g,"EquipmentVisible",root,mat)
     for name,center,size in (("Wash",(-5,.71,-2.05),(2.25,1.06,1.2)),
                              ("Seamer",(-5,1.17,-.35),(2.5,1.98,1.45)),
@@ -996,6 +1088,41 @@ def build(mat):
     return [hall(mat),equipment(mat),truck(mat)]+[small_part(n,mat) for n in NAMES[3:8]]+[yard(mat),workwear(mat)]
 
 
+def validate_crew_service(root,points):
+    for name,expected in CREW_SERVICE_ANCHORS.items():
+        if math.dist(points['ANCHOR_'+name],expected)>.0001:
+            raise RuntimeError('Cannery crew service anchor differs from its metre contact: '+name)
+    if math.dist(points['MOVE_PreparationCloth'],CREW_SERVICE_ANCHORS['PreparationTidyHand'])>.0001:
+        raise RuntimeError('Preparation cloth lost its resting hand contact')
+    # Measure the new meshes against the body corridors actually used by
+    # crew life and the pre-existing retort-to-packing route. Bounds are
+    # conservative here: even empty space inside each fixture must stay clear.
+    paths=[(points['ANCHOR_PreparationWorker'],points['ANCHOR_PreparationTidyWorker']),
+           (points['ANCHOR_SeamerWorker'],points['ANCHOR_SeamerRestWorker']),
+           (points['ANCHOR_Receiver'],points['ANCHOR_ReceiverRestWorker']),
+           (points['ANCHOR_RetortOperator'],(-7.18,.18,2.55)),
+           ((-7.18,.18,2.55),(-7.18,.18,5.0)),
+           ((-7.18,.18,5.0),points['ANCHOR_PackingWorker'])]
+    inverse=root.matrix_world.inverted()
+    for name in ('ServiceShelf','ServiceStool','StoredWorkJacket','ServiceLampHousing'):
+        group=next(part for part in root.children if part.name.split('.')[0]==name)
+        vertices=[source(inverse@part.matrix_world@v.co)
+                  for part in group.children_recursive if part.type=='MESH' for v in part.data.vertices]
+        if not vertices:raise RuntimeError('Cannery service fixture has no measured mesh: '+name)
+        low=[min(v[i] for v in vertices) for i in range(3)]
+        high=[max(v[i] for v in vertices) for i in range(3)]
+        if low[0]<-7.89 or high[0]>-6.80 or low[2]<-2.84 or high[2]>1.0:
+            raise RuntimeError('Cannery service fixture leaves its wall pocket: '+name)
+        if low[1]>2.08:continue
+        for first,last in paths:
+            for step in range(81):
+                point=Vector(first).lerp(Vector(last),step/80)
+                dx=max(low[0]-point.x,0,point.x-high[0])
+                dz=max(low[2]-point.z,0,point.z-high[2])
+                if math.hypot(dx,dz)<.29:
+                    raise RuntimeError('Cannery service fixture crosses a crew body corridor: '+name)
+
+
 def validate(roots):
     port.validate_surfaces(roots)
     entries={r.name.split('.')[0]:port.describe(r) for r in roots}
@@ -1054,11 +1181,40 @@ def validate(roots):
     # The public corridor remains 1.84 metres wide between east wall and the
     # partition. Hall wall openings are measured from actual kit geometry.
     if entries['Hall']['bounds_max'][0]>.4:raise RuntimeError("Hall intrudes into the service strip")
+    hall_root=next(r for r in roots if r.name.split('.')[0]=='Hall')
+    vertices=[];faces=[];inverse=hall_root.matrix_world.inverted()
+    for part in hall_root.children_recursive:
+        if part.type!='MESH':continue
+        first=len(vertices)
+        vertices.extend(inverse@part.matrix_world@v.co for v in part.data.vertices)
+        faces.extend(tuple(first+i for i in face.vertices) for face in part.data.polygons)
+    hall_tree=port.BVHTree.FromPolygons(vertices,faces)
+    # Test the real visible and collision meshes together: a cut in the
+    # structural wall alone would leave the washable lining across the door.
+    for z in (2.3,2.65,3.0):
+        for y in (.3,.8,1.35,1.9,2.15):
+            hit,_,_,_=hall_tree.ray_cast(Vector(source((-8.5,y,z))),Vector(source((1,0,0))),1.0)
+            if hit is not None:raise RuntimeError('Cannery west staff doorway is obstructed by hall geometry')
+    for z in (1.6,3.7):
+        hit,_,_,_=hall_tree.ray_cast(Vector(source((-8.5,1.3,z))),Vector(source((1,0,0))),1.0)
+        if hit is None:raise RuntimeError('Cannery west staff doorway lost its solid side wall')
     if entries['Truck']['triangles']>22000 or entries['Equipment']['triangles']>65000:
         raise RuntimeError("Cannery mesh kit exceeds compact game-slice budget")
     # Explicit storage geometry: a 1.35 m centre aisle reaches all six
     # raw units and the 1.5 m door; no bin is authored inside its wall.
     points={a['name']:a['position'] for a in entries['Equipment']['anchors']}
+    validate_crew_service(next(r for r in roots if r.name.split('.')[0]=='Equipment'),points)
+    # The tidy stance faces the same cloth from clear floor. Reserve 10 cm
+    # beyond the body radius for the walking/head pose along the approach;
+    # the old endpoint put the body exactly against the cold-room wall.
+    first,last=Vector(points['ANCHOR_PreparationWorker']),Vector(points['ANCHOR_PreparationTidyWorker'])
+    for step in range(21):
+        position=first.lerp(last,step/20)
+        for height in (.45,1.0,1.6):
+            sample=position+Vector((0,height,0))
+            _,_,_,distance=hall_tree.find_nearest(Vector(source(sample)))
+            if distance is None or distance<.39:
+                raise RuntimeError('Preparation tidy approach lacks body/head clearance from hall geometry')
     for i in range(6):
         x,y,z=points['ANCHOR_RawStore'+str(i)]
         if x-.4< -7.88 or x+.4> -5.26 or z-.6< -6.79 or z+.6> -2.96:
@@ -1196,6 +1352,9 @@ def main():
               'retort_pressure_needle_axis':'Unity local X',
               'seamer_roller_axes':'Unity local Y; two pivots follow MOVE_SeamerHead',
               'packing_feed_roller_axis':'Unity local +Z; same-can feed to ANCHOR_PackingPickup',
+              'crew_service_clearance_radius':.29,
+              'crew_service_fixtures':['shallow tool and sealing-ring shelf','stored service stool','hung work jacket','preparation wipe cloth','local service lamp'],
+              'preparation_wipe_rest':'MOVE_PreparationCloth matches ANCHOR_PreparationTidyHand; returns before release',
               'workwear_local_front':'Unity +Z; centered separate ApronBib and ApronSkirt groups',
               'semantic_uv_tiles_metres':port.SURFACE_TILES,
               'geometry_signature_includes':['vertices','faces','colors','uv0','transforms']}

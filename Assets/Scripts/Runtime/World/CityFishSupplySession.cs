@@ -35,6 +35,18 @@ namespace BarPromenade
             return WorkingSeconds;
         }
 
+        /// <summary>The City debug delivery selects only this supply timeline.
+        /// Rebase against the unchanged calendar so closing a paused menu
+        /// continues from the selected pose without adding earlier elapsed time.</summary>
+        public static bool TrySetDebugWorkingSeconds(double seconds)
+        {
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds < 0d) return false;
+            WorkingSeconds = seconds;
+            lastSessionSeconds = SessionSeconds;
+            HasStarted = true;
+            return true;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void ResetForNewGame()
         {

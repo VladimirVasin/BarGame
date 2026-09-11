@@ -57,6 +57,58 @@
       "value": "NEW GAME"
     },
     {
+      "key": "opening.choose_location",
+      "value": "Choose a location"
+    },
+    {
+      "key": "opening.back",
+      "value": "Back"
+    },
+    {
+      "key": "opening.location.village",
+      "value": "Alpine village"
+    },
+    {
+      "key": "opening.location.mothers_house",
+      "value": "Mother's house"
+    },
+    {
+      "key": "opening.location.city",
+      "value": "City"
+    },
+    {
+      "key": "opening.location.docks",
+      "value": "Docks"
+    },
+    {
+      "key": "opening.location.cannery",
+      "value": "Cannery"
+    },
+    {
+      "key": "opening.location.mountain_road",
+      "value": "Mountain road"
+    },
+    {
+      "key": "opening.location.home",
+      "value": "Apartment"
+    },
+    {
+      "key": "opening.location.stairwell",
+      "value": "Stairwell"
+    },
+    {
+      "key": "opening.location.bar",
+      "value": "Bar"
+    },
+    {
+      "key": "opening.location.supermarket",
+      "value": "Supermarket"
+    },
+    {
+      "key": "opening.location.church",
+      "value": "Church"
+    },
+    {
       "key": "opening.wake_up",
       "value": "WAKE UP"
     },
@@ -3359,6 +3411,138 @@
     {
       "key": "city.port.foreman.hero_no",
       "value": "Not now."
+    },
+    {
+      "key": "debug.cannery.spawn_loaded",
+      "value": "Loaded fish truck"
+    },
+    {
+      "key": "city.cannery.work.01.a",
+      "value": "My apron's wet again."
+    },
+    {
+      "key": "city.cannery.work.01.b",
+      "value": "My sleeve is wet too."
+    },
+    {
+      "key": "city.cannery.work.02.a",
+      "value": "This handle rubs my palm raw."
+    },
+    {
+      "key": "city.cannery.work.02.b",
+      "value": "Mine gets like that by evening."
+    },
+    {
+      "key": "city.cannery.work.03.a",
+      "value": "The metal chills your fingers."
+    },
+    {
+      "key": "city.cannery.work.03.b",
+      "value": "You can't get warm here even in summer."
+    },
+    {
+      "key": "city.cannery.work.04.a",
+      "value": "Those lids keep ringing in my ears."
+    },
+    {
+      "key": "city.cannery.work.04.b",
+      "value": "I can still hear them at home."
+    },
+    {
+      "key": "city.cannery.work.05.a",
+      "value": "Salt on my sleeves again."
+    },
+    {
+      "key": "city.cannery.work.05.b",
+      "value": "It dries in white streaks."
+    },
+    {
+      "key": "city.cannery.work.06.a",
+      "value": "My back won't straighten till evening."
+    },
+    {
+      "key": "city.cannery.work.06.b",
+      "value": "Mine won't straighten now."
+    },
+    {
+      "key": "city.cannery.wait.01.a",
+      "value": "There's a draught from the door."
+    },
+    {
+      "key": "city.cannery.wait.01.b",
+      "value": "It's calmer by the wall."
+    },
+    {
+      "key": "city.cannery.wait.02.a",
+      "value": "My boots didn't dry overnight."
+    },
+    {
+      "key": "city.cannery.wait.02.b",
+      "value": "Mine are damp too."
+    },
+    {
+      "key": "city.cannery.wait.03.a",
+      "value": "I'd like to take this hat off."
+    },
+    {
+      "key": "city.cannery.wait.03.b",
+      "value": "Then your ears get cold."
+    },
+    {
+      "key": "city.cannery.wait.04.a",
+      "value": "There's a thread on your sleeve."
+    },
+    {
+      "key": "city.cannery.wait.04.b",
+      "value": "I keep meaning to cut it off."
+    },
+    {
+      "key": "city.cannery.wait.05.a",
+      "value": "Straight home after the shift?"
+    },
+    {
+      "key": "city.cannery.wait.05.b",
+      "value": "Bread first."
+    },
+    {
+      "key": "city.cannery.wait.06.a",
+      "value": "My feet ache by evening."
+    },
+    {
+      "key": "city.cannery.wait.06.b",
+      "value": "Mine start in the morning."
+    },
+    {
+      "key": "city.cannery.receiving.01.a",
+      "value": "Sand's crunching under the wheels again."
+    },
+    {
+      "key": "city.cannery.receiving.01.b",
+      "value": "We'll be sweeping it out till evening."
+    },
+    {
+      "key": "city.cannery.receiving.02.a",
+      "value": "You can feel the cold from those crates."
+    },
+    {
+      "key": "city.cannery.receiving.02.b",
+      "value": "My fingers are already stiff."
+    },
+    {
+      "key": "city.cannery.receiving.03.a",
+      "value": "The door's wide open again."
+    },
+    {
+      "key": "city.cannery.receiving.03.b",
+      "value": "At least it's less stuffy."
+    },
+    {
+      "key": "city.cannery.receiving.04.a",
+      "value": "You can hear the truck at the far end."
+    },
+    {
+      "key": "city.cannery.receiving.04.b",
+      "value": "It's louder by the wall."
     }
   ]
 }
