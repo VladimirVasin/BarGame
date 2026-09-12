@@ -701,6 +701,31 @@ namespace BarPromenade
             return LoadPrefabs(CreatePoolComposition(poolSize));
         }
 
+        /// <summary>
+        /// The distinct prefab resource paths <see cref="LoadPooledPrefabs"/>
+        /// resolves for a pool of <paramref name="poolSize"/>, in first
+        /// appearance order of <see cref="CreatePoolComposition"/>. Read-only:
+        /// what a warm-up may fetch ahead of the pool, never a second list of
+        /// prefabs.
+        /// </summary>
+        public static IReadOnlyList<string>
+            CollectPooledPrefabResourcePaths(int poolSize)
+        {
+            IReadOnlyList<CityPedestrianArchetype> composition =
+                CreatePoolComposition(poolSize);
+            var paths = new List<string>(composition.Count);
+            for (int index = 0; index < composition.Count; index++)
+            {
+                string path = composition[index].PrefabResourcePath;
+                if (!paths.Contains(path))
+                {
+                    paths.Add(path);
+                }
+            }
+
+            return paths;
+        }
+
         private static GameObject[] LoadPrefabs(
             IReadOnlyList<CityPedestrianArchetype> archetypes)
         {

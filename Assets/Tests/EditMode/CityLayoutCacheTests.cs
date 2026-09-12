@@ -20,6 +20,11 @@ namespace BarPromenade.Tests.EditMode
         public void DropCache()
         {
             CityLayoutCache.Reset();
+            // A run the reset abandoned finishes on its pool thread; wait
+            // for it here so it cannot overlap a fixture that plans directly.
+            Assert.That(
+                CityLayoutCache.AbandonedForeignAreaPlanWork.Wait(60_000),
+                Is.True);
         }
 
         [Test]
@@ -174,6 +179,116 @@ namespace BarPromenade.Tests.EditMode
                 Is.SameAs(village));
             Assert.That(road.Seed, Is.EqualTo(Seed));
             Assert.That(village.Seed, Is.EqualTo(Seed));
+        }
+
+        [Test]
+        public void PrimeForeignAreaPlans_JoinsPlansEqualToPlanningOnTheMainThread()
+        {
+            CityLayoutCache.PrimeForeignAreaPlans(Seed);
+            Assert.That(CityLayoutCache.PendingForeignAreaPlanCount, Is.EqualTo(2));
+            // Priming again starts nothing: the seed's work is already out.
+            CityLayoutCache.PrimeForeignAreaPlans(Seed);
+            Assert.That(CityLayoutCache.PendingForeignAreaPlanCount, Is.EqualTo(2));
+
+            MountainRoadPlan road = CityLayoutCache.GetOrCreateMountainRoad(Seed);
+            AlpineVillagePlan village =
+                CityLayoutCache.GetOrCreateAlpineVillage(Seed);
+
+            Assert.That(CityLayoutCache.PendingForeignAreaPlanCount, Is.Zero);
+            // Joined once: the getters memoise what the task handed back.
+            Assert.That(
+                CityLayoutCache.GetOrCreateMountainRoad(Seed),
+                Is.SameAs(road));
+            Assert.That(
+                CityLayoutCache.GetOrCreateAlpineVillage(Seed),
+                Is.SameAs(village));
+            AssertSamePlan(road, MountainRoadPlanner.Create(Seed));
+            AssertSamePlan(village, AlpineVillagePlanner.Create(Seed));
+        }
+
+        [Test]
+        public void PrimeForeignAreaPlans_SkipsThePlanTheSessionHolds()
+        {
+            // An exterior root holds its own plan before it primes; only
+            // the other exterior's planner may start.
+            MountainRoadPlan road = CityLayoutCache.GetOrCreateMountainRoad(Seed);
+
+            CityLayoutCache.PrimeForeignAreaPlans(Seed);
+
+            Assert.That(CityLayoutCache.PendingForeignAreaPlanCount, Is.EqualTo(1));
+            Assert.That(
+                CityLayoutCache.GetOrCreateMountainRoad(Seed),
+                Is.SameAs(road));
+            Assert.That(
+                CityLayoutCache.GetOrCreateAlpineVillage(Seed).Seed,
+                Is.EqualTo(Seed));
+            Assert.That(CityLayoutCache.PendingForeignAreaPlanCount, Is.Zero);
+        }
+
+        [Test]
+        public void Reset_DropsPendingForeignAreaPlansWithoutWaiting()
+        {
+            CityLayoutCache.PrimeForeignAreaPlans(Seed);
+            Assert.That(CityLayoutCache.PendingForeignAreaPlanCount, Is.EqualTo(2));
+
+            Assert.DoesNotThrow(CityLayoutCache.Reset);
+
+            Assert.That(CityLayoutCache.PendingForeignAreaPlanCount, Is.Zero);
+            // Nothing left to join: the getter plans on the main thread
+            // again and memoises that.
+            AlpineVillagePlan village =
+                CityLayoutCache.GetOrCreateAlpineVillage(Seed);
+            Assert.That(village.Seed, Is.EqualTo(Seed));
+            Assert.That(
+                CityLayoutCache.GetOrCreateAlpineVillage(Seed),
+                Is.SameAs(village));
+        }
+
+        /// <summary>
+        /// Exact, not approximate: a plan is a pure function of its seed and
+        /// the memo's contract is that a hit is bit-identical to a fresh
+        /// generation, on whichever thread the generation ran.
+        /// </summary>
+        private static void AssertSamePlan(
+            MountainRoadPlan actual,
+            MountainRoadPlan expected)
+        {
+            Assert.That(actual.Seed, Is.EqualTo(expected.Seed));
+            Assert.That(actual.WorldBounds, Is.EqualTo(expected.WorldBounds));
+            Assert.That(
+                actual.Route.Samples.Count,
+                Is.EqualTo(expected.Route.Samples.Count));
+            Assert.That(actual.Misc.Count, Is.EqualTo(expected.Misc.Count));
+            Assert.That(actual.Ridges.Count, Is.EqualTo(expected.Ridges.Count));
+            Assert.That(actual.Forest.Count, Is.EqualTo(expected.Forest.Count));
+            for (int index = 0; index < expected.Forest.Count; index++)
+            {
+                Assert.That(
+                    actual.Forest[index].Position,
+                    Is.EqualTo(expected.Forest[index].Position));
+            }
+        }
+
+        private static void AssertSamePlan(
+            AlpineVillagePlan actual,
+            AlpineVillagePlan expected)
+        {
+            Assert.That(actual.Seed, Is.EqualTo(expected.Seed));
+            Assert.That(actual.WorldBounds, Is.EqualTo(expected.WorldBounds));
+            Assert.That(
+                actual.Lane.Samples.Count,
+                Is.EqualTo(expected.Lane.Samples.Count));
+            Assert.That(actual.Ridges.Count, Is.EqualTo(expected.Ridges.Count));
+            Assert.That(
+                actual.MothersHouse.DoorGroundPosition,
+                Is.EqualTo(expected.MothersHouse.DoorGroundPosition));
+            Assert.That(actual.Plots.Count, Is.EqualTo(expected.Plots.Count));
+            for (int index = 0; index < expected.Plots.Count; index++)
+            {
+                Assert.That(
+                    actual.Plots[index].GroundCenter,
+                    Is.EqualTo(expected.Plots[index].GroundCenter));
+            }
         }
     }
 }

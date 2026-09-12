@@ -10,7 +10,9 @@ namespace BarPromenade
         private const float OpenAngle = 86f;
         private const float HandleAngle = -34f;
         private const float CameraPushDistance = 0.38f;
-        private const float SecondCreakDelay = 0.82f;
+        // Not the proportional 0.42 s: DoorCreak lasts 0.48 s with one voice,
+        // so an earlier second creak is dropped, not overlapped.
+        private const float SecondCreakDelay = 0.50f;
 
         private readonly Vector3 cameraStartPosition =
             new Vector3(-0.04f, 1.52f, -4.25f);

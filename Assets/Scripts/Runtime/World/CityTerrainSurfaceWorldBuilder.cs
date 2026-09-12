@@ -62,6 +62,52 @@ namespace BarPromenade
     }
 
     /// <summary>
+    /// The sampled lists a continuous terrain mesh is set from. A caller
+    /// that reshapes the drawn skin afterwards (the loose beach sand)
+    /// works on these instead of reading the finished mesh back through
+    /// the marshal; the mesh itself is made here so there is one place
+    /// that decides its name, flags and index format.
+    /// </summary>
+    internal readonly struct CityTerrainMeshSource
+    {
+        internal CityTerrainMeshSource(
+            List<Vector3> vertices,
+            List<Vector3> normals,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            Vertices = vertices;
+            Normals = normals;
+            Uvs = uvs;
+            Triangles = triangles;
+        }
+
+        internal List<Vector3> Vertices { get; }
+        internal List<Vector3> Normals { get; }
+        internal List<Vector2> Uvs { get; }
+        internal List<int> Triangles { get; }
+        internal bool IsEmpty => Triangles == null || Triangles.Count == 0;
+
+        internal Mesh CreateMesh(string meshName)
+        {
+            var mesh = new Mesh
+            {
+                name = meshName,
+                hideFlags = HideFlags.HideAndDontSave,
+                indexFormat = Vertices.Count > ushort.MaxValue
+                    ? IndexFormat.UInt32
+                    : IndexFormat.UInt16
+            };
+            mesh.SetVertices(Vertices);
+            mesh.SetNormals(Normals);
+            mesh.SetUVs(0, Uvs);
+            mesh.SetTriangles(Triangles, 0, true);
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+    }
+
+    /// <summary>
     /// Materializes the continuous city-terrain contract as one static mesh.
     /// The mesh owns only its upward-facing terrain skin: authored retaining
     /// walls and safety rails remain responsible for deliberate exposed drops.
@@ -86,6 +132,40 @@ namespace BarPromenade
             CityTerrainSurfaceAreaFilter areaFilter = null,
             bool seabedOnly = false)
         {
+            return BuildWithSource(
+                name,
+                parent,
+                layout,
+                kind,
+                color,
+                applyGroundAppearance,
+                worldUvTileSize,
+                excavations,
+                areaFilter,
+                seabedOnly,
+                out _);
+        }
+
+        /// <summary>
+        /// <see cref="Build"/>, also handing back the sampled lists the
+        /// drawn mesh was set from, for a caller that reshapes that skin.
+        /// The beach collides on a coarser second mesh of the same plan
+        /// (see <see cref="CityBeachSandPlan.CollisionPitch"/>); every
+        /// other kind collides on what it draws.
+        /// </summary>
+        internal static GameObject BuildWithSource(
+            string name,
+            Transform parent,
+            CityLayout layout,
+            CitySurfaceKind kind,
+            Color color,
+            bool applyGroundAppearance,
+            float? worldUvTileSize,
+            IReadOnlyList<Rect> excavations,
+            CityTerrainSurfaceAreaFilter areaFilter,
+            bool seabedOnly,
+            out CityTerrainMeshSource visualSource)
+        {
             if (string.IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentException(
@@ -99,19 +179,20 @@ namespace BarPromenade
             }
 
             Stopwatch meshTimer = Stopwatch.StartNew();
-            Mesh mesh = CreateMesh(
-                name,
+            visualSource = CreateMeshSource(
                 layout,
                 kind,
                 worldUvTileSize,
                 excavations,
                 areaFilter,
-                seabedOnly);
-            if (mesh == null)
+                seabedOnly,
+                CityBeachSandPlan.MeshPitch);
+            if (visualSource.IsEmpty)
             {
                 return null;
             }
 
+            Mesh mesh = visualSource.CreateMesh(ContinuousMeshName(name));
             var result = new GameObject(name);
             result.transform.SetParent(parent, false);
             MeshFilter filter = result.AddComponent<MeshFilter>();
@@ -126,23 +207,48 @@ namespace BarPromenade
 
             meshTimer.Stop();
             double colliderMs = 0d;
+            int colliderVertices = 0;
+            Mesh collisionMesh = null;
             if (!seabedOnly)
             {
                 Stopwatch colliderTimer = Stopwatch.StartNew();
+                if (kind == CitySurfaceKind.Beach)
+                {
+                    collisionMesh = CreateMesh(
+                        $"{name} Collision",
+                        layout,
+                        kind,
+                        worldUvTileSize,
+                        excavations,
+                        areaFilter,
+                        false,
+                        CityBeachSandPlan.CollisionPitch);
+                }
+
                 MeshCollider terrainCollider =
                     result.AddComponent<MeshCollider>();
-                terrainCollider.sharedMesh = mesh;
+                terrainCollider.sharedMesh =
+                    collisionMesh != null ? collisionMesh : mesh;
                 colliderTimer.Stop();
                 colliderMs = colliderTimer.Elapsed.TotalMilliseconds;
+                colliderVertices = terrainCollider.sharedMesh.vertexCount;
             }
 
             ReportTerrainMesh(
                 result.name,
                 mesh,
                 meshTimer.Elapsed.TotalMilliseconds,
-                colliderMs);
+                colliderMs,
+                colliderVertices);
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
+            if (collisionMesh != null)
+            {
+                // Never drawn, so it is not sent to the GPU.
+                result.AddComponent<RuntimeGeneratedMeshOwner>()
+                    .Initialize(collisionMesh);
+            }
+
             mesh.UploadMeshData(false);
             return result;
         }
@@ -233,7 +339,44 @@ namespace BarPromenade
             float? worldUvTileSize,
             IReadOnlyList<Rect> excavations,
             CityTerrainSurfaceAreaFilter areaFilter,
-            bool seabedOnly = false)
+            bool seabedOnly = false,
+            float beachPitch = CityBeachSandPlan.MeshPitch)
+        {
+            CityTerrainMeshSource source = CreateMeshSource(
+                layout,
+                kind,
+                worldUvTileSize,
+                excavations,
+                areaFilter,
+                seabedOnly,
+                beachPitch);
+            return source.IsEmpty
+                ? null
+                : source.CreateMesh(ContinuousMeshName(name));
+        }
+
+        private static string ContinuousMeshName(string name)
+        {
+            return $"{name} Continuous Terrain Mesh";
+        }
+
+        /// <summary>
+        /// The lists <see cref="CreateMesh"/> sets its mesh from.
+        /// <paramref name="beachPitch"/> is the sand's vertex pitch: the
+        /// drawn skin passes <see cref="CityBeachSandPlan.MeshPitch"/>;
+        /// the sand's collider passes its coarser pitch and keeps the
+        /// drawn pitch only inside the port's graded box, whose earthwork
+        /// blend a coarse chord would miss (see
+        /// <see cref="CityBeachSandPlan.CollisionPitch"/>).
+        /// </summary>
+        internal static CityTerrainMeshSource CreateMeshSource(
+            CityLayout layout,
+            CitySurfaceKind kind,
+            float? worldUvTileSize,
+            IReadOnlyList<Rect> excavations,
+            CityTerrainSurfaceAreaFilter areaFilter,
+            bool seabedOnly,
+            float beachPitch)
         {
             if (layout == null)
             {
@@ -245,12 +388,20 @@ namespace BarPromenade
                 throw new ArgumentException("Only the beach continues into the sea.", nameof(kind));
             }
 
+            if (beachPitch <= 0f || float.IsNaN(beachPitch) || float.IsInfinity(beachPitch))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(beachPitch),
+                    "A beach vertex pitch must be finite and positive.");
+            }
+
             float tileSize = ResolveTileSize(worldUvTileSize);
             CityPortPlan port = seabedOnly ? CitySeacoastPlanner.CreatePortPlan(layout) : null;
             var vertices = new List<Vector3>();
             var normals = new List<Vector3>();
             var uvs = new List<Vector2>();
             var triangles = new List<int>();
+            var pieces = new List<Rect>();
             for (int surfaceIndex = 0;
                  surfaceIndex < layout.Surfaces.Count;
                  surfaceIndex++)
@@ -271,12 +422,20 @@ namespace BarPromenade
                     surface,
                     excavations);
                 // The cell corners and the port plan are the surface's, not
-                // the vertex's; the seabed extension has its own sampler.
-                CityTerrainSurfacePlan.SurfaceContext context = seabedOnly
-                    ? default
-                    : CityTerrainSurfacePlan.ResolveSurfaceContext(
+                // the vertex's; the seabed extension samples through the
+                // same context instead of resolving it fifteen times a vertex.
+                CityTerrainSurfacePlan.SurfaceContext context =
+                    CityTerrainSurfacePlan.ResolveSurfaceContext(
                         layout,
                         surface);
+                // Only a coarse sand collider is split; the drawn skin and
+                // the seabed take each patch whole at the drawn pitch.
+                Rect? gradedCore = !seabedOnly &&
+                                   surface.Kind == CitySurfaceKind.Beach &&
+                                   beachPitch != CityBeachSandPlan.MeshPitch &&
+                                   context.Access != null
+                    ? context.Access.GradedBounds
+                    : (Rect?)null;
                 for (int patchIndex = 0;
                      patchIndex < patches.Count;
                      patchIndex++)
@@ -292,39 +451,79 @@ namespace BarPromenade
                             patch.xMax, port != null && patch.xMin < port.SeaBounds.xMax && patch.xMax > port.SeaBounds.xMin
                                 ? port.SeaBounds.yMax : patch.yMax + CitySeacoastSeaLayout.SeabedReach);
                     }
-                    AppendPatch(
-                        layout,
-                        surface,
-                        in context,
-                        patch,
-                        tileSize,
-                        vertices,
-                        normals,
-                        uvs,
-                        triangles,
-                        seabedOnly, port);
+
+                    if (!gradedCore.HasValue)
+                    {
+                        AppendPatch(
+                            layout,
+                            surface,
+                            in context,
+                            patch,
+                            tileSize,
+                            vertices,
+                            normals,
+                            uvs,
+                            triangles,
+                            beachPitch,
+                            seabedOnly, port);
+                        continue;
+                    }
+
+                    // The pieces around the graded box at the coarse pitch,
+                    // the piece inside it at the drawn pitch. The seams
+                    // between them are T-junctions like those between any
+                    // two cut patches: the same plan on both sides.
+                    Rect core = gradedCore.Value;
+                    pieces.Clear();
+                    SubtractRectangle(patch, core, pieces);
+                    for (int pieceIndex = 0;
+                         pieceIndex < pieces.Count;
+                         pieceIndex++)
+                    {
+                        AppendPatch(
+                            layout,
+                            surface,
+                            in context,
+                            pieces[pieceIndex],
+                            tileSize,
+                            vertices,
+                            normals,
+                            uvs,
+                            triangles,
+                            beachPitch);
+                    }
+
+                    pieces.Clear();
+                    AddRectIfPositive(
+                        pieces,
+                        Mathf.Max(patch.xMin, core.xMin),
+                        Mathf.Max(patch.yMin, core.yMin),
+                        Mathf.Min(patch.xMax, core.xMax),
+                        Mathf.Min(patch.yMax, core.yMax));
+                    for (int pieceIndex = 0;
+                         pieceIndex < pieces.Count;
+                         pieceIndex++)
+                    {
+                        AppendPatch(
+                            layout,
+                            surface,
+                            in context,
+                            pieces[pieceIndex],
+                            tileSize,
+                            vertices,
+                            normals,
+                            uvs,
+                            triangles,
+                            CityBeachSandPlan.MeshPitch);
+                    }
                 }
             }
 
-            if (triangles.Count == 0)
-            {
-                return null;
-            }
-
-            var mesh = new Mesh
-            {
-                name = $"{name} Continuous Terrain Mesh",
-                hideFlags = HideFlags.HideAndDontSave,
-                indexFormat = vertices.Count > ushort.MaxValue
-                    ? IndexFormat.UInt32
-                    : IndexFormat.UInt16
-            };
-            mesh.SetVertices(vertices);
-            mesh.SetNormals(normals);
-            mesh.SetUVs(0, uvs);
-            mesh.SetTriangles(triangles, 0, true);
-            mesh.RecalculateBounds();
-            return mesh;
+            return new CityTerrainMeshSource(
+                vertices,
+                normals,
+                uvs,
+                triangles);
         }
 
         /// <summary>
@@ -517,7 +716,8 @@ namespace BarPromenade
                 result.name,
                 mesh,
                 meshTimer.Elapsed.TotalMilliseconds,
-                colliderTimer.Elapsed.TotalMilliseconds);
+                colliderTimer.Elapsed.TotalMilliseconds,
+                mesh.vertexCount);
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
             mesh.UploadMeshData(false);
@@ -528,7 +728,8 @@ namespace BarPromenade
             string name,
             Mesh mesh,
             double meshMs,
-            double colliderMs)
+            double colliderMs,
+            int colliderVertices)
         {
             GameLog.Debug(
                 "city",
@@ -537,7 +738,8 @@ namespace BarPromenade
                 GameLog.Field("vertices", mesh.vertexCount),
                 GameLog.Field("indices", (long)mesh.GetIndexCount(0)),
                 GameLog.Field("mesh_ms", meshMs),
-                GameLog.Field("collider_ms", colliderMs));
+                GameLog.Field("collider_ms", colliderMs),
+                GameLog.Field("collider_vertices", colliderVertices));
         }
 
         private static void AppendDiscSurfaceVertices(
@@ -756,6 +958,7 @@ namespace BarPromenade
             ICollection<Vector3> normals,
             ICollection<Vector2> uvs,
             ICollection<int> triangles,
+            float beachPitch,
             bool seabedOnly = false,
             CityPortPlan port = null)
         {
@@ -770,12 +973,12 @@ namespace BarPromenade
             var zAnchors = new List<float>();
             if (surface.Kind == CitySurfaceKind.Beach)
             {
-                for (float x = patch.xMin + CityBeachSandPlan.MeshPitch; x < patch.xMax;
-                     x += CityBeachSandPlan.MeshPitch)
+                for (float x = patch.xMin + beachPitch; x < patch.xMax;
+                     x += beachPitch)
                     xAnchors.Add(x);
                 if (!seabedOnly)
-                    for (float z = patch.yMin + CityBeachSandPlan.MeshPitch; z < patch.yMax;
-                         z += CityBeachSandPlan.MeshPitch)
+                    for (float z = patch.yMin + beachPitch; z < patch.yMax;
+                         z += beachPitch)
                         zAnchors.Add(z);
             }
             if (seabedOnly)
@@ -831,11 +1034,11 @@ namespace BarPromenade
                     vertices.Add(new Vector3(
                         worldXZ.x,
                         seabedOnly
-                            ? CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, worldXZ, port)
+                            ? CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, worldXZ, port, in context)
                             : CityTerrainSurfacePlan.SampleTop(layout, surface, worldXZ, in context),
                         worldXZ.y));
                     normals.Add(seabedOnly
-                        ? CitySeacoastSeaLayout.SampleSeabedNormal(layout, surface, worldXZ, port)
+                        ? CitySeacoastSeaLayout.SampleSeabedNormal(layout, surface, worldXZ, port, in context)
                         : CityTerrainSurfacePlan.SampleNormal(layout, surface, worldXZ, in context));
                     uvs.Add(worldXZ * tilesPerMeter);
                 }

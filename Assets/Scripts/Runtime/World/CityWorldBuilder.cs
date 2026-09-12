@@ -478,7 +478,7 @@ namespace BarPromenade
             // The sand carries the seacoast's tide-banded sheet over
             // UVs baked at its metre pitch; the tint stays the flat
             // colour the map and the compensation were solved against.
-            GameObject beach = CityTerrainSurfaceWorldBuilder.Build(
+            GameObject beach = CityTerrainSurfaceWorldBuilder.BuildWithSource(
                 "Beach",
                 surfaces,
                 layout,
@@ -486,14 +486,18 @@ namespace BarPromenade
                 CityExteriorAppearance.BeachSand,
                 false,
                 CitySeacoastSurfaceAppearance.GetRecipe(
-                    CitySeacoastSurfaceKind.Sand).MetersPerTile);
+                    CitySeacoastSurfaceKind.Sand).MetersPerTile,
+                null,
+                null,
+                false,
+                out CityTerrainMeshSource beachSource);
             if (beach != null)
             {
                 CitySeacoastSurfaceAppearance.ApplyCombined(
                     beach.GetComponent<Renderer>(),
                     CitySeacoastSurfaceKind.Sand,
                     CityExteriorAppearance.BeachSand);
-                AddLooseBeachSand(beach, layout);
+                AddLooseBeachSand(beach, layout, in beachSource);
             }
             // The cemetery slab is built apart from the other
             // surfaces because it is the one ground in the city that
@@ -555,49 +559,58 @@ namespace BarPromenade
         /// middle of a road. Any buildable ground that belongs to no
         /// district keeps the neutral sheet.
         /// </summary>
-        private static void AddLooseBeachSand(GameObject beach, CityLayout layout)
+        private static void AddLooseBeachSand(
+            GameObject beach,
+            CityLayout layout,
+            in CityTerrainMeshSource source)
         {
             MeshFilter filter = beach.GetComponent<MeshFilter>();
-            // Keep the original mesh under the collider. The visual skin
-            // alone carries loose grains and can be pressed by a foot.
-            Mesh visual = UnityEngine.Object.Instantiate(filter.sharedMesh);
+            // The collider stands on its own coarser skin, so the drawn
+            // mesh is reshaped in place: it alone carries loose grains and
+            // can be pressed by a foot. Positions and normals come from
+            // the lists the builder sampled, not from the mesh read back
+            // through the marshal.
+            Mesh visual = filter.sharedMesh;
             visual.name = "Beach Loose Sand Mesh";
-            visual.hideFlags = HideFlags.HideAndDontSave;
-            Vector3[] vertices = visual.vertices;
-            Vector3[] normals = filter.sharedMesh.normals;
+            Vector3[] vertices = source.Vertices.ToArray();
+            Vector3[] normals = source.Normals.ToArray();
             var grounds = new float[vertices.Length];
             var depths = new float[vertices.Length];
             var beachSurfaces = new List<CitySurfaceDescriptor>();
+            var fields = new List<CityBeachSandPlan.Field>();
             foreach (CitySurfaceDescriptor surface in layout.Surfaces)
-                if (surface.Kind == CitySurfaceKind.Beach)
-                    beachSurfaces.Add(surface);
+            {
+                if (surface.Kind != CitySurfaceKind.Beach)
+                    continue;
+                beachSurfaces.Add(surface);
+                fields.Add(new CityBeachSandPlan.Field(
+                    layout.ElevationPlan, surface));
+            }
 
             for (int index = 0; index < vertices.Length; index++)
             {
                 Vector3 vertex = vertices[index];
                 grounds[index] = vertex.y;
                 var point = new Vector2(vertex.x, vertex.z);
-                foreach (CitySurfaceDescriptor surface in beachSurfaces)
+                for (int surfaceIndex = 0;
+                     surfaceIndex < beachSurfaces.Count;
+                     surfaceIndex++)
                 {
-                    Rect bounds = surface.WorldBounds;
+                    Rect bounds = beachSurfaces[surfaceIndex].WorldBounds;
                     if (point.x < bounds.xMin - 0.001f || point.x > bounds.xMax + 0.001f ||
                         point.y < bounds.yMin - 0.001f || point.y > bounds.yMax + 0.001f)
                         continue;
-                    depths[index] = CityBeachSandPlan.SampleLooseDepth(
-                        layout.ElevationPlan, surface, point);
+                    CityBeachSandPlan.Field field = fields[surfaceIndex];
+                    depths[index] = field.SampleLooseDepth(point);
                     // Different terrain patches duplicate edge vertices.
                     // Analytic normals keep their loose skin continuous too.
                     if (depths[index] > 0f)
                     {
                         const float delta = 0.1f;
-                        float west = CityBeachSandPlan.SampleLooseDepth(
-                            layout.ElevationPlan, surface, point - Vector2.right * delta);
-                        float east = CityBeachSandPlan.SampleLooseDepth(
-                            layout.ElevationPlan, surface, point + Vector2.right * delta);
-                        float south = CityBeachSandPlan.SampleLooseDepth(
-                            layout.ElevationPlan, surface, point - Vector2.up * delta);
-                        float north = CityBeachSandPlan.SampleLooseDepth(
-                            layout.ElevationPlan, surface, point + Vector2.up * delta);
+                        float west = field.SampleLooseDepth(point - Vector2.right * delta);
+                        float east = field.SampleLooseDepth(point + Vector2.right * delta);
+                        float south = field.SampleLooseDepth(point - Vector2.up * delta);
+                        float north = field.SampleLooseDepth(point + Vector2.up * delta);
                         Vector3 normal = normals[index] / Mathf.Max(0.01f, normals[index].y);
                         normal.x += (west - east) / (delta * 2f);
                         normal.z += (south - north) / (delta * 2f);
@@ -611,8 +624,6 @@ namespace BarPromenade
             visual.SetVertices(vertices);
             visual.SetNormals(normals);
             visual.RecalculateBounds();
-            filter.sharedMesh = visual;
-            beach.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(visual);
             beach.AddComponent<CitySandTreading>().Initialize(layout, visual, grounds, depths);
         }
 

@@ -33,16 +33,22 @@ namespace BarPromenade
 
     public static class DoorTransitionTimeline
     {
-        public const float TotalDuration = 3.15f;
-        public const float RevealStartTime = 0.12f;
-        public const float RevealEndTime = 0.46f;
-        public const float HandleStartTime = 0.35f;
-        public const float HandleEndTime = 0.60f;
-        public const float DoorOpenStartTime = 0.60f;
-        public const float DoorOpenEndTime = 2.35f;
-        public const float CameraPushStartTime = 2.05f;
-        public const float CameraPushEndTime = 2.80f;
-        public const float FadeOutStartTime = 2.70f;
+        // Absolute unscaled seconds. The sequence is short on purpose: the
+        // door scene's cost is paid on top of the destination's own build,
+        // so every extra second here is pure waiting (decision 2026-09-12,
+        // the 3.15 s keyframes scaled by 1.6 / 3.15). The screen is fully
+        // black up to RevealStartTime and again from TotalDuration, when
+        // activation is released.
+        public const float TotalDuration = 1.60f;
+        public const float RevealStartTime = 0.06f;
+        public const float RevealEndTime = 0.23f;
+        public const float HandleStartTime = 0.18f;
+        public const float HandleEndTime = 0.30f;
+        public const float DoorOpenStartTime = 0.30f;
+        public const float DoorOpenEndTime = 1.19f;
+        public const float CameraPushStartTime = 1.04f;
+        public const float CameraPushEndTime = 1.42f;
+        public const float FadeOutStartTime = 1.37f;
 
         public static DoorTransitionPose Evaluate(
             float unscaledElapsedTime)

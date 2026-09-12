@@ -32,6 +32,9 @@ namespace BarPromenade.Tests.EditMode
         public void Evaluate_PhasesUseOrderedExactEndpoints()
         {
             Assert.That(
+                DoorTransitionTimeline.TotalDuration,
+                Is.EqualTo(1.6f).Within(Tolerance));
+            Assert.That(
                 DoorTransitionTimeline.RevealStartTime,
                 Is.LessThan(DoorTransitionTimeline.HandleStartTime));
             Assert.That(

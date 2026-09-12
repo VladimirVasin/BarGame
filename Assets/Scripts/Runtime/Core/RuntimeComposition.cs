@@ -19,9 +19,11 @@ namespace BarPromenade
 
     /// <summary>
     /// One ordered construction path for synchronous authoring and staged
-    /// travel. All Unity object work stays on the main thread. A stage is
-    /// indivisible; the budget yields between stages, never halfway through
-    /// an asset's initialization.
+    /// travel. All Unity object work stays on the main thread; only the
+    /// engine-free foreign-area planners may run on a <c>Task</c>, joined
+    /// there (see <see cref="CityLayoutCache"/>). A stage is indivisible;
+    /// the budget yields between stages, never halfway through an asset's
+    /// initialization.
     /// </summary>
     internal sealed class RuntimeComposition : IDisposable
     {

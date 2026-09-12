@@ -52,6 +52,12 @@ namespace BarPromenade
             // pause-menu restart must leave no clock running behind the card.
             GameSessionState.BeginNewGame();
             model.Open();
+            // The card is now interactive and will sit idle for as long as
+            // the player reads it: fetch the hero and pooled pedestrian
+            // prefabs in the background so the first composition finds them
+            // resident. Every load is asynchronous; a restart that returns
+            // here skips what is already warm.
+            AreaAssetWarmup.BeginFromMenu();
         }
 
         public bool MoveSelection(int delta)

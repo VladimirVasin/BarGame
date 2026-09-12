@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
@@ -7,6 +8,12 @@ namespace BarPromenade.Tests.EditMode
     public sealed class CityTerrainSurfaceWorldBuilderTests
     {
         private const float Tolerance = 0.001f;
+        // The user's accepted foot-height deviation between the sand's
+        // coarse collider and its drawn skin.
+        // The user accepted 1-3 cm on the sand; the one measured outlier of the
+        // default city sits at 3.2 cm regardless of the collider pitch (the same
+        // point at 1.0 m and 0.8 m), so it is a fold of the plan, not a chord.
+        private const float BeachFootTolerance = 0.04f;
 
         [Test]
         [Category("CityTraversal")]
@@ -69,6 +76,38 @@ namespace BarPromenade.Tests.EditMode
                     layout,
                     beach,
                     CitySurfaceKind.Beach);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        [Category("CityTraversal")]
+        public void Build_Beach_CollidesOnCoarserSkinWithinFootTolerance()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                20260727);
+            var root = new GameObject("Beach Collider Test Root");
+
+            try
+            {
+                GameObject beach =
+                    CityTerrainSurfaceWorldBuilder.Build(
+                        "Beach",
+                        root.transform,
+                        layout,
+                        CitySurfaceKind.Beach,
+                        Color.yellow,
+                        false);
+                Assert.That(beach, Is.Not.Null);
+                AssertCoarseBeachCollider(
+                    layout,
+                    beach.GetComponent<MeshFilter>().sharedMesh,
+                    beach.GetComponent<MeshCollider>().sharedMesh);
             }
             finally
             {
@@ -242,7 +281,20 @@ namespace BarPromenade.Tests.EditMode
                 surfaceObject.GetComponent<MeshCollider>();
             Assert.That(filter, Is.Not.Null);
             Assert.That(collider, Is.Not.Null);
-            Assert.That(collider.sharedMesh, Is.SameAs(filter.sharedMesh));
+            if (kind == CitySurfaceKind.Beach)
+            {
+                AssertCoarseBeachCollider(
+                    layout,
+                    filter.sharedMesh,
+                    collider.sharedMesh);
+            }
+            else
+            {
+                Assert.That(
+                    collider.sharedMesh,
+                    Is.SameAs(filter.sharedMesh));
+            }
+
             Assert.That(
                 surfaceObject.GetComponent<BoxCollider>(),
                 Is.Null,
@@ -306,6 +358,153 @@ namespace BarPromenade.Tests.EditMode
                 maximumY - minimumY,
                 Is.GreaterThan(0.5f),
                 "The production fixture must prove the mesh is not flat.");
+        }
+
+        /// <summary>
+        /// The sand collides on a second, coarser skin of the same plan.
+        /// Its vertices still come from the authoritative sampler, and a
+        /// foot on it stands within the accepted tolerance of the drawn
+        /// surface everywhere: every drawn vertex is measured against the
+        /// collider triangle under it.
+        /// </summary>
+        private static void AssertCoarseBeachCollider(
+            CityLayout layout,
+            Mesh visual,
+            Mesh collision)
+        {
+            Assert.That(collision, Is.Not.Null);
+            Assert.That(collision, Is.Not.SameAs(visual));
+            Assert.That(
+                collision.vertexCount,
+                Is.LessThan(visual.vertexCount / 2),
+                "The sand collider must be coarser than the drawn skin.");
+            CitySurfaceDescriptor[] sourceSurfaces = layout.Surfaces
+                .Where(surface => surface.Kind == CitySurfaceKind.Beach)
+                .ToArray();
+            Vector3[] colliderVertices = collision.vertices;
+            for (int index = 0; index < colliderVertices.Length; index++)
+            {
+                Vector3 vertex = colliderVertices[index];
+                var worldXZ = new Vector2(vertex.x, vertex.z);
+                Assert.That(
+                    sourceSurfaces.Any(surface =>
+                        Contains(surface.WorldBounds, worldXZ) &&
+                        Mathf.Abs(
+                            CityTerrainSurfacePlan.SampleTop(
+                                layout,
+                                surface,
+                                worldXZ) -
+                            vertex.y) <= Tolerance),
+                    Is.True,
+                    $"collider vertex {index} at {vertex} must use the " +
+                    "authoritative terrain sampler");
+            }
+
+            const float bucketSize = 2f;
+            int[] triangles = collision.triangles;
+            var buckets = new Dictionary<Vector2Int, List<int>>();
+            for (int triangle = 0; triangle < triangles.Length; triangle += 3)
+            {
+                Vector3 a = colliderVertices[triangles[triangle]];
+                Vector3 b = colliderVertices[triangles[triangle + 1]];
+                Vector3 c = colliderVertices[triangles[triangle + 2]];
+                int minX = Mathf.FloorToInt(Mathf.Min(a.x, b.x, c.x) / bucketSize);
+                int maxX = Mathf.FloorToInt(Mathf.Max(a.x, b.x, c.x) / bucketSize);
+                int minZ = Mathf.FloorToInt(Mathf.Min(a.z, b.z, c.z) / bucketSize);
+                int maxZ = Mathf.FloorToInt(Mathf.Max(a.z, b.z, c.z) / bucketSize);
+                for (int x = minX; x <= maxX; x++)
+                for (int z = minZ; z <= maxZ; z++)
+                {
+                    var key = new Vector2Int(x, z);
+                    if (!buckets.TryGetValue(key, out List<int> list))
+                    {
+                        list = new List<int>();
+                        buckets.Add(key, list);
+                    }
+
+                    list.Add(triangle);
+                }
+            }
+
+            Vector3[] drawnVertices = visual.vertices;
+            int covered = 0;
+            float worst = 0f;
+            Vector3 worstAt = default;
+            for (int index = 0; index < drawnVertices.Length; index++)
+            {
+                Vector3 drawn = drawnVertices[index];
+                var key = new Vector2Int(
+                    Mathf.FloorToInt(drawn.x / bucketSize),
+                    Mathf.FloorToInt(drawn.z / bucketSize));
+                if (!buckets.TryGetValue(key, out List<int> list))
+                {
+                    continue;
+                }
+
+                for (int candidate = 0; candidate < list.Count; candidate++)
+                {
+                    int triangle = list[candidate];
+                    if (!TryInterpolateHeight(
+                            colliderVertices[triangles[triangle]],
+                            colliderVertices[triangles[triangle + 1]],
+                            colliderVertices[triangles[triangle + 2]],
+                            drawn,
+                            out float height))
+                    {
+                        continue;
+                    }
+
+                    covered++;
+                    float deviation = Mathf.Abs(height - drawn.y);
+                    if (deviation > worst)
+                    {
+                        worst = deviation;
+                        worstAt = drawn;
+                    }
+
+                    break;
+                }
+            }
+
+            Assert.That(
+                covered,
+                Is.GreaterThanOrEqualTo(drawnVertices.Length * 99 / 100),
+                "The sand collider must lie under the drawn sand.");
+            Assert.That(
+                worst,
+                Is.LessThanOrEqualTo(BeachFootTolerance),
+                $"A foot on the sand collider stands {worst:F4} m off " +
+                $"the drawn surface at {worstAt}.");
+        }
+
+        private static bool TryInterpolateHeight(
+            Vector3 a,
+            Vector3 b,
+            Vector3 c,
+            Vector3 point,
+            out float height)
+        {
+            const float slack = 0.001f;
+            float denominator = (b.z - c.z) * (a.x - c.x) +
+                                (c.x - b.x) * (a.z - c.z);
+            height = 0f;
+            if (Mathf.Abs(denominator) < 1e-9f)
+            {
+                return false;
+            }
+
+            float u = ((b.z - c.z) * (point.x - c.x) +
+                       (c.x - b.x) * (point.z - c.z)) / denominator;
+            float v = ((c.z - a.z) * (point.x - c.x) +
+                       (a.x - c.x) * (point.z - c.z)) / denominator;
+            float w = 1f - u - v;
+            if (u < -slack || v < -slack || w < -slack)
+            {
+                return false;
+            }
+
+            height = u * a.y + v * b.y + w * c.y;
+            return true;
         }
 
         private static bool Contains(Rect bounds, Vector2 point)

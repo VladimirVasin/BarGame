@@ -1180,6 +1180,48 @@ namespace BarPromenade
             return port != null ? port.DredgedBottom(point, natural) : natural;
         }
 
+        /// <summary>
+        /// The same slope, sampled with the surface's context resolved once:
+        /// a terrain mesh asks this fifteen times per vertex, and every one
+        /// of the public overloads re-resolved the corners and the port.
+        /// Only a Beach surface is ever extended into the sea, so
+        /// <c>context.Access</c> is exactly what <c>ForLayout</c> returned.
+        /// </summary>
+        internal static float SampleSeabedTop(
+            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point, CityPortPlan port,
+            in CityTerrainSurfacePlan.SurfaceContext context)
+        {
+            float distance = point.y - surface.WorldBounds.yMax;
+            if (distance <= 0f)
+                return CityTerrainSurfacePlan.SampleTop(layout, surface, point, in context);
+            var edge = new Vector2(point.x, surface.WorldBounds.yMax);
+            float edgeTop = CityTerrainSurfacePlan.SampleTop(layout, surface, edge, in context);
+            const float tangentSample = 0.10f;
+            float shoreSlope = Mathf.Max(0f,
+                (CityTerrainSurfacePlan.SampleTop(layout, surface,
+                    edge - Vector2.up * tangentSample, in context) - edgeTop) / tangentSample);
+            float easedDistance = ShoreSlopeBlendReach *
+                (1f - Mathf.Exp(-distance / ShoreSlopeBlendReach));
+            float natural = edgeTop - DeepSandSlope * distance -
+                (shoreSlope - DeepSandSlope) * easedDistance;
+            CityPortAccessPlan access = context.Access;
+            if (access != null)
+                natural = access.ApplyGroundTop(point, natural);
+            return port != null ? port.DredgedBottom(point, natural) : natural;
+        }
+
+        internal static Vector3 SampleSeabedNormal(
+            CityLayout layout, CitySurfaceDescriptor surface, Vector2 point, CityPortPlan port,
+            in CityTerrainSurfacePlan.SurfaceContext context)
+        {
+            const float offset = 0.10f;
+            float west = SampleSeabedTop(layout, surface, point - Vector2.right * offset, port, in context);
+            float east = SampleSeabedTop(layout, surface, point + Vector2.right * offset, port, in context);
+            float south = SampleSeabedTop(layout, surface, point - Vector2.up * offset, port, in context);
+            float north = SampleSeabedTop(layout, surface, point + Vector2.up * offset, port, in context);
+            return new Vector3(west - east, offset * 2f, south - north).normalized;
+        }
+
         internal static Vector3 SampleSeabedNormal(
             CityLayout layout, CitySurfaceDescriptor surface, Vector2 point, CityPortPlan port = null)
         {

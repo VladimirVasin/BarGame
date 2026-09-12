@@ -359,6 +359,10 @@ namespace BarPromenade
                       (CabinSeat != null && CabinSeat.IsSeated) ||
                       (Workroom != null && Workroom.Environment.IsInside));
             GameLogPhases.Report("alpine_village", "ready", phaseTimer);
+            // The village's own plan is held already; this starts the road
+            // planner on the pool so the map's first open or idle warm
+            // joins finished work instead of running it in one frame.
+            CityLayoutCache.PrimeForeignAreaPlans(GameSessionState.CitySeed);
             yield return new CompositionStep("ready", 1f);
             Map.ScheduleIdleAreaWarm();
 

@@ -50,7 +50,13 @@ namespace BarPromenade
             // Day/night registries may re-enable Light and halo components;
             // a dedicated inactive fixture host remains dark in that case.
             for (int i = 0; i < lights.Length; i++)
-                if (lights[i] != null) lights[i].SetActive(visible && originalLightActive[i]);
+            {
+                // A fixture whose scene is already unloading cannot be
+                // re-activated (Unity logs an error and the test runner
+                // fails the teardown); the scene takes it down anyway.
+                if (lights[i] != null && lights[i].scene.isLoaded)
+                    lights[i].SetActive(visible && originalLightActive[i]);
+            }
         }
 
         public static bool ShouldShow(Transform observer, Bounds influence, bool wasVisible, bool force = false)

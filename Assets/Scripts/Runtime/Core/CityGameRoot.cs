@@ -1316,6 +1316,10 @@ namespace BarPromenade
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
             GameLogPhases.Report("city", "player_and_ui", phaseTimer);
+            // Both foreign planners start on the pool now, so the first M
+            // press or the idle warm above joins finished work instead of
+            // paying the two of them in one frame (895 ms measured).
+            CityLayoutCache.PrimeForeignAreaPlans(citySeed);
             Stopwatch firstFrameTimer = Stopwatch.StartNew();
             yield return new CompositionStep("ready", 1f);
             GameLogPhases.Report("city", "first_frame", firstFrameTimer);

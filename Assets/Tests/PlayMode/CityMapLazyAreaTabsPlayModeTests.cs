@@ -34,6 +34,15 @@ namespace BarPromenade.Tests.PlayMode
                     scene.name == SceneIds.AreaLoading))
                     yield return SceneManager.UnloadSceneAsync(scene);
             }
+            // Voices that outlive the city (pooled effects, a detached music
+            // tail) would play into the next test's listener-less scene and
+            // trip its log assertions.
+            foreach (AudioSource source in Object.FindObjectsByType<AudioSource>(
+                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (source != null) source.Stop();
+            }
+            MusicMix.ClearFadeOuts();
             GameSessionState.BeginNewGame();
         }
 

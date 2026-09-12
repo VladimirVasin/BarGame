@@ -296,6 +296,10 @@ namespace BarPromenade
             BuildLastRoute(camera);
             IsInitialized = true;
             GameLogPhases.Report("mountain_road", "last_route", phaseTimer);
+            // The road's own plan is held already; this starts the village
+            // planner on the pool so the map's first open or idle warm
+            // joins finished work instead of running it in one frame.
+            CityLayoutCache.PrimeForeignAreaPlans(GameSessionState.CitySeed);
             yield return new CompositionStep("ready", 1f);
             Map.ScheduleIdleAreaWarm();
 
