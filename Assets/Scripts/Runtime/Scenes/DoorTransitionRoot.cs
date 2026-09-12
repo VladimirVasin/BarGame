@@ -449,23 +449,10 @@ namespace BarPromenade
 
         private void OnGUI()
         {
-            if (!IsInitialized ||
-                blackOpacity <= 0f ||
-                Event.current.type != EventType.Repaint)
+            if (IsInitialized)
             {
-                return;
+                TransitionBlackoutOverlay.Draw(blackOpacity);
             }
-
-            Color previousColor = GUI.color;
-            int previousDepth = GUI.depth;
-            GUI.depth = -1000;
-            GUI.color = new Color(0f, 0f, 0f, blackOpacity);
-            GUI.DrawTexture(
-                new Rect(0f, 0f, Screen.width, Screen.height),
-                Texture2D.whiteTexture,
-                ScaleMode.StretchToFill);
-            GUI.color = previousColor;
-            GUI.depth = previousDepth;
         }
 
         private void OnDestroy()

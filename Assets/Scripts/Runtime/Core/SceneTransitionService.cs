@@ -21,6 +21,9 @@ namespace BarPromenade
 
         private static bool isSceneTransitioning;
         private AsyncOperation activeLoadOperation;
+        private bool acceptingComposition;
+        private CompositionDriver doorComposition;
+        private TransitionBlackoutOverlay blackout;
 
         public static bool IsTransitioning
         {
@@ -119,6 +122,31 @@ namespace BarPromenade
 
             instance.StartCoroutine(
                 instance.ExecuteSafely(instance.LoadThroughDoor(sceneName, direction)));
+            return true;
+        }
+
+        /// <summary>
+        /// Accepts a destination's construction iterator only in the window
+        /// between the door path releasing its held activation and seeing
+        /// the load done - the frames in which the destination root awakes.
+        /// Direct and fallback loads reach destinations too, but nothing
+        /// pumps there, so outside that window the root builds itself.
+        /// </summary>
+        internal static bool TryScheduleComposition(
+            MonoBehaviour owner, IEnumerator steps)
+        {
+            if (owner == null || instance == null ||
+                !instance.acceptingComposition ||
+                instance.doorComposition == null ||
+                !string.Equals(
+                    owner.gameObject.scene.name,
+                    activeTargetScene,
+                    StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            instance.doorComposition.Register(owner, steps);
             return true;
         }
 
@@ -304,10 +332,38 @@ namespace BarPromenade
                 yield return null;
             }
 
-            targetOperation.allowSceneActivation = true;
-            while (!targetOperation.isDone)
+            // The door scene dies with the Single load, and its black with
+            // it. An overlay that outlives the load keeps the screen black
+            // while the destination, registered from its Awake, is built a
+            // frame at a time instead of inside the activation frame.
+            blackout = TransitionBlackoutOverlay.Create();
+            doorComposition = new CompositionDriver("door", sceneName);
+            acceptingComposition = true;
+            try
             {
-                yield return null;
+                targetOperation.allowSceneActivation = true;
+                while (!targetOperation.isDone)
+                {
+                    yield return null;
+                }
+            }
+            finally
+            {
+                acceptingComposition = false;
+            }
+
+            if (doorComposition.HasComposition)
+            {
+                while (doorComposition.AdvanceFrame())
+                {
+                    yield return null;
+                }
+
+                if (doorComposition.Failure != null)
+                {
+                    FinishTransition("destination_composition_failed", false);
+                    yield break;
+                }
             }
 
             FinishTransition("completed", true);
@@ -490,9 +546,14 @@ namespace BarPromenade
             }
 
             instance?.ReleasePendingLoad();
+            // A door composition still running here is drained first, so
+            // the duration below covers the build the player waited for.
+            int compositionFrames = instance != null
+                ? instance.ReleaseDoorComposition()
+                : -1;
             long durationMilliseconds =
                 GetActiveElapsedMilliseconds();
-            GameLogField[] fields =
+            var fields = new List<GameLogField>
             {
                 GameLog.Field(
                     "operation_id",
@@ -515,23 +576,63 @@ namespace BarPromenade
                     "duration_ms",
                     durationMilliseconds)
             };
+            if (compositionFrames >= 0)
+            {
+                fields.Add(GameLog.Field(
+                    "composition_frames",
+                    compositionFrames));
+            }
+
             if (succeeded)
             {
                 GameLog.Info(
                     "scene",
                     "transition_completed",
-                    fields);
+                    fields.ToArray());
             }
             else
             {
                 GameLog.Error(
                     "scene",
                     "transition_failed",
-                    fields);
+                    fields.ToArray());
             }
 
             IsTransitioning = false;
             ClearActiveOperation();
+        }
+
+        /// <summary>
+        /// Ends the door path's construction in whatever state it is. Work
+        /// still pending is drained, never dropped: the source scene is
+        /// already gone and a half-built destination has nowhere to fall
+        /// back to. Only a destination whose root was destroyed is disposed,
+        /// there being nothing left to build into. Returns the frame count
+        /// when a composition was registered, else -1.
+        /// </summary>
+        private int ReleaseDoorComposition()
+        {
+            acceptingComposition = false;
+            int frames = -1;
+            if (doorComposition != null)
+            {
+                doorComposition.Drain();
+                if (doorComposition.Registered)
+                {
+                    frames = doorComposition.Frames;
+                }
+
+                doorComposition.Dispose();
+                doorComposition = null;
+            }
+
+            if (blackout != null)
+            {
+                Destroy(blackout.gameObject);
+                blackout = null;
+            }
+
+            return frames;
         }
 
         private static long GetActiveElapsedMilliseconds()

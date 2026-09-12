@@ -268,7 +268,7 @@ namespace BarPromenade.Tests.PlayMode
                 float lastProgress = 0f;
                 while (AreaTravelService.IsTraveling && Time.realtimeSinceStartup < deadline)
                 {
-                    if (AreaTravelService.IsComposing)
+                    if (CompositionDriver.IsComposing)
                     {
                         compositionFrames++;
                         AreaLoadingRoot overlay = Object.FindAnyObjectByType<AreaLoadingRoot>();

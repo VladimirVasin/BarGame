@@ -41,7 +41,7 @@ namespace BarPromenade.Tests.PlayMode
             while (Time.realtimeSinceStartup < deadline)
             {
                 city = Object.FindAnyObjectByType<CityGameRoot>();
-                if (city != null && city.IsInitialized && !AreaTravelService.IsComposing) break;
+                if (city != null && city.IsInitialized && !CompositionDriver.IsComposing) break;
                 yield return null;
             }
             Assert.That(city != null && city.IsInitialized, Is.True);

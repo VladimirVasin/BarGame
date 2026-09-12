@@ -291,7 +291,11 @@ namespace BarPromenade
         private void Initialize()
         {
             IEnumerator steps = InitializeSteps();
-            if (!AreaTravelService.TryScheduleComposition(this, steps))
+            // Under the loading bar or behind the door's black the build is
+            // pumped a frame at a time; a direct load has neither and builds
+            // here, in this frame.
+            if (!AreaTravelService.TryScheduleComposition(this, steps) &&
+                !SceneTransitionService.TryScheduleComposition(this, steps))
             {
                 RuntimeComposition.RunSynchronously(steps);
             }

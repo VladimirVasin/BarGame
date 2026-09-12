@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -30,15 +29,8 @@ namespace BarPromenade
         private static int compositionFrameCount;
 
         private AsyncOperation activeLoadOperation;
-        private RuntimeComposition composition;
-        private MonoBehaviour compositionOwner;
+        private CompositionDriver composition;
         private AreaLoadingRoot activeLoadingRoot;
-        private IDisposable compositionPause;
-        private bool ownsAudioPause;
-        private bool previousAudioPause;
-
-        public static bool IsComposing => instance != null &&
-            instance.composition != null;
 
         public static bool IsTraveling { get; private set; }
         public static float Progress { get; private set; }
@@ -196,20 +188,14 @@ namespace BarPromenade
             MonoBehaviour owner, IEnumerator steps)
         {
             if (owner == null || instance == null || !IsTraveling ||
-                !hasPendingRequest || owner.gameObject.scene.name !=
+                !hasPendingRequest || instance.composition == null ||
+                owner.gameObject.scene.name !=
                 AreaSceneCatalog.GetSceneName(pendingRequest.DestinationArea))
             {
                 return false;
             }
 
-            if (instance.composition != null)
-            {
-                throw new InvalidOperationException(
-                    "The destination has already registered its composition.");
-            }
-
-            instance.compositionOwner = owner;
-            instance.composition = new RuntimeComposition(steps);
+            instance.composition.Register(owner, steps);
             return true;
         }
 
@@ -356,12 +342,11 @@ namespace BarPromenade
             }
 
             // Keep the same bar over the destination's staged construction.
+            // The driver holds the tempo and listener pauses from here, so
+            // they already cover the destination's Awake.
             activeLoadingRoot = loadingRoot;
             loadingRoot?.KeepDuringComposition();
-            compositionPause = GameTimeScaleRuntime.AcquirePause();
-            previousAudioPause = AudioListener.pause;
-            ownsAudioPause = true;
-            AudioListener.pause = true;
+            composition = new CompositionDriver("area", destinationScene);
             yield return null;
 
             // Arm the token before activation: destination Awake is allowed
@@ -378,7 +363,7 @@ namespace BarPromenade
             }
 
             activeLoadOperation = null;
-            if (composition == null)
+            if (composition == null || !composition.HasComposition)
             {
                 yield return RecoverSourceThenFail(
                     "destination_composition_missing", loadingRoot);
@@ -386,67 +371,21 @@ namespace BarPromenade
                 yield break;
             }
 
-            int compositionFrames = 0;
-            double advanceMs = 0d;
-            long pumpStarted = Stopwatch.GetTimestamp();
-            while (composition != null)
+            while (composition.AdvanceFrame(ReportCompositionStep))
             {
-                bool more = false;
-                Exception failure = null;
-                try
-                {
-                    if (compositionOwner == null)
-                    {
-                        throw new InvalidOperationException(
-                            "The destination root was destroyed during composition.");
-                    }
-
-                    long advanceStarted = Stopwatch.GetTimestamp();
-                    more = composition.AdvanceFrame(ReportCompositionStep);
-                    advanceMs += (Stopwatch.GetTimestamp() - advanceStarted) *
-                        1000d / Stopwatch.Frequency;
-                    compositionFrames++;
-                }
-                catch (Exception exception)
-                {
-                    failure = exception;
-                }
-
-                if (failure != null)
-                {
-                    Debug.LogException(failure);
-                    composition.Dispose();
-                    composition = null;
-                    hasArrival = false;
-                    yield return RecoverSourceThenFail(
-                        "destination_composition_failed", loadingRoot);
-                    ReleaseComposition();
-                    yield break;
-                }
-
-                if (!more)
-                {
-                    break;
-                }
-
                 yield return null;
             }
 
-            double wallMs = (Stopwatch.GetTimestamp() - pumpStarted) *
-                1000d / Stopwatch.Frequency;
-            compositionFrameCount = compositionFrames;
-            GameLog.Debug(
-                "scene",
-                "composition_frames",
-                GameLog.Field("destination", destinationScene),
-                GameLog.Field("frames", compositionFrames),
-                GameLog.Field("advance_ms", advanceMs),
-                GameLog.Field("wall_ms", wallMs),
-                GameLog.Field("overhead_ms", wallMs - advanceMs),
-                GameLog.Field(
-                    "target_frame_rate",
-                    Application.targetFrameRate));
+            if (composition.Failure != null)
+            {
+                hasArrival = false;
+                yield return RecoverSourceThenFail(
+                    "destination_composition_failed", loadingRoot);
+                ReleaseComposition();
+                yield break;
+            }
 
+            compositionFrameCount = composition.Frames;
             Progress = 1f;
             loadingRoot?.SetProgress(Progress);
             yield return null;
@@ -466,15 +405,6 @@ namespace BarPromenade
         {
             composition?.Dispose();
             composition = null;
-            compositionOwner = null;
-            compositionPause?.Dispose();
-            compositionPause = null;
-            if (ownsAudioPause)
-            {
-                AudioListener.pause = previousAudioPause;
-                ownsAudioPause = false;
-            }
-
             if (activeLoadingRoot != null)
             {
                 activeLoadingRoot.Dismiss();

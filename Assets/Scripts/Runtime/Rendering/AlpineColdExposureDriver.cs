@@ -35,7 +35,7 @@ namespace BarPromenade
 
         private bool ContextReady => owner != null && gameplayCamera != null &&
             owner.gameObject.scene == SceneManager.GetActiveScene() && ready != null && ready() &&
-            !AreaTravelService.IsTraveling && !AreaTravelService.IsComposing &&
+            !AreaTravelService.IsTraveling && !CompositionDriver.IsComposing &&
             !SceneTransitionService.IsTransitioning;
 
         public bool IsVisible(Camera camera) => camera != null && camera == gameplayCamera &&

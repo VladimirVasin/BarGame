@@ -510,7 +510,7 @@ namespace BarPromenade.Tests.PlayMode
                 bool ready = indoors
                     ? Object.FindAnyObjectByType<MothersHouseInteriorRoot>()?.IsInitialized == true
                     : Object.FindAnyObjectByType<AlpineVillageRoot>()?.IsInitialized == true;
-                if (ready && !SceneTransitionService.IsTransitioning && !AreaTravelService.IsComposing)
+                if (ready && !SceneTransitionService.IsTransitioning && !CompositionDriver.IsComposing)
                 {
                     yield return null;
                     yield break;

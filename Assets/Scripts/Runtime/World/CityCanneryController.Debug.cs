@@ -15,7 +15,7 @@ namespace BarPromenade
         public bool TryDebugSpawnLoadedTruckNearFactory()
         {
             if (!IsInitialized || !isActiveAndEnabled || Truck == null || Route == null || Cycle == null ||
-                port == null || SceneTransitionService.IsTransitioning || AreaTravelService.IsComposing)
+                port == null || SceneTransitionService.IsTransitioning || CompositionDriver.IsComposing)
                 return false;
             Physics.SyncTransforms();
             if (!TryFindDebugLoadedTruckApproach(out float progress)) return false;

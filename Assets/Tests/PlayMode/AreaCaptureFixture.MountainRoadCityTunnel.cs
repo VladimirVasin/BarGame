@@ -23,7 +23,7 @@ namespace BarPromenade.Tests.PlayMode
             while (Time.realtimeSinceStartup < deadline)
             {
                 mountain = Object.FindAnyObjectByType<MountainRoadRoot>();
-                if (mountain != null && mountain.IsInitialized && !AreaTravelService.IsComposing) break;
+                if (mountain != null && mountain.IsInitialized && !CompositionDriver.IsComposing) break;
                 yield return null;
             }
             Assert.That(mountain != null && mountain.IsInitialized, Is.True);

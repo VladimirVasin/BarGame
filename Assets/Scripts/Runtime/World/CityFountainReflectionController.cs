@@ -85,7 +85,7 @@ namespace BarPromenade
         {
             // A staged city can already contain water before its buildings
             // exist. Keep the first snapshot pending until construction ends.
-            if (AreaTravelService.IsComposing)
+            if (CompositionDriver.IsComposing)
             {
                 return;
             }
