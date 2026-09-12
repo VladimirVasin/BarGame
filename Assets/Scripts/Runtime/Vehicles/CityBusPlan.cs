@@ -444,6 +444,42 @@ namespace BarPromenade
                 links.Count);
         }
 
+        /// <summary>
+        /// The routing plan with its shelters grounded. Every route
+        /// collection is shared with the source - each is already a
+        /// read-only copy nobody can write to - and only the stops and
+        /// the decoration seed differ, so this is the plan the full
+        /// pipeline would have assembled, without the second routing.
+        /// </summary>
+        internal CityBusPlan(
+            CityBusPlan source,
+            int decorationSeed,
+            IList<CityBusStopDescriptor> stops)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            LayoutSeed = source.LayoutSeed;
+            DecorationSeed = decorationSeed;
+            StableSeed = source.StableSeed;
+            RouteId = source.RouteId;
+            OrderedLinkIndices = source.OrderedLinkIndices;
+            LoopLength = source.LoopLength;
+            LaneCenterOffset = source.LaneCenterOffset;
+            Vehicle = source.Vehicle;
+            Nodes = source.Nodes;
+            Links = source.Links;
+            SpawnAnchors = source.SpawnAnchors;
+            Stops = Copy(stops);
+            ClearanceFailures = source.ClearanceFailures;
+            StreetStateCount = source.StreetStateCount;
+            ClearanceAcceptedLinkCount = source.ClearanceAcceptedLinkCount;
+            stopIndicesByLink = BuildStopIndex(stops, Links.Count);
+            nextOrderedLinkByLink = source.nextOrderedLinkByLink;
+        }
+
         private readonly IReadOnlyList<int>[] stopIndicesByLink;
         private readonly int[] nextOrderedLinkByLink;
 

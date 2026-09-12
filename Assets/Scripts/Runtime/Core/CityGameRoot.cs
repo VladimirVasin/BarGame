@@ -6,7 +6,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
-    public sealed class CityGameRoot : MonoBehaviour
+    public sealed class CityGameRoot : MonoBehaviour, IResidentExteriorRoot
     {
         private const float DebugMapOpenTimeoutSeconds = 2f;
 
@@ -20,11 +20,17 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
 
         /// <summary>
-        /// True while the built City sleeps behind a bar door: hierarchy,
-        /// camera and listener off, this object awake so the bootstrap and
-        /// the transition still find it. See <see cref="EnterDormant"/>.
+        /// True while the built City sleeps behind an interior door:
+        /// hierarchy, camera and listener off, this object awake so the
+        /// bootstrap and the transition still find it. See
+        /// <see cref="EnterDormant"/>.
         /// </summary>
         public bool IsDormant { get; private set; }
+
+        public string SceneName => gameObject.scene.name;
+        public Scene Scene => gameObject.scene;
+        bool IResidentExteriorRoot.EnterDormant() => EnterDormant();
+        void IResidentExteriorRoot.ResumeFromDormant() => ResumeFromDormant();
 
         /// <summary>The scene camera the build adopted or made.</summary>
         public Camera Camera { get; private set; }
@@ -492,104 +498,19 @@ namespace BarPromenade
                             areaArrivalToken.ToString()));
                 }
             }
-            else if (GameSessionState.TryGetReturnBarId(out string barId))
+            else if (TryResolveDoorReturn(
+                         out PlayerDoorArrivalPose doorArrival,
+                         out string doorSource,
+                         out returnBarId))
             {
-                returnBarId = barId;
-                if (World.TryGetBar(barId, out BarEntrance entrance))
-                {
-                    spawnPosition = entrance.ReturnPosition;
-                    exteriorDoorArrival =
-                        PlayerDoorArrivalPose.FromDestinationDoor(
-                            spawnPosition,
-                            entrance.GetComponent<
-                                PlayerDoorActionTarget>());
-                    spawnSource = "bar_return";
-                    spawnOnSidewalk = true;
-                }
-                else
-                {
-                    spawnSource = "missing_return_bar";
-                    GameLog.Warning(
-                        "city",
-                        "return_bar_missing",
-                        GameLog.Field("bar_id", barId));
-                }
+                spawnPosition = doorArrival.RootPosition;
+                exteriorDoorArrival = doorArrival;
+                spawnSource = doorSource;
+                spawnOnSidewalk = true;
             }
-            else if (
-                GameSessionState.TryGetCityReturnKind(
-                    out CityReturnKind returnKind) &&
-                returnKind == CityReturnKind.PlayerHome)
+            else if (doorSource != null)
             {
-                if (World.PlayerHome != null)
-                {
-                    spawnPosition =
-                        World.PlayerHome.ReturnPosition;
-                    exteriorDoorArrival =
-                        PlayerDoorArrivalPose.FromDestinationDoor(
-                            spawnPosition,
-                            World.PlayerHome.GetComponent<
-                                PlayerDoorActionTarget>());
-                    spawnSource = "home_return";
-                    spawnOnSidewalk = true;
-                }
-                else
-                {
-                    spawnSource = "missing_home_return";
-                    GameLog.Warning(
-                        "city",
-                        "return_home_missing");
-                }
-            }
-            else if (
-                GameSessionState.TryGetCityReturnKind(
-                    out CityReturnKind supermarketReturnKind) &&
-                supermarketReturnKind ==
-                CityReturnKind.Supermarket)
-            {
-                if (World.Supermarket != null)
-                {
-                    spawnPosition =
-                        World.Supermarket.ReturnPosition;
-                    exteriorDoorArrival =
-                        PlayerDoorArrivalPose.FromDestinationDoor(
-                            spawnPosition,
-                            World.Supermarket.GetComponent<
-                                PlayerDoorActionTarget>());
-                    spawnSource = "supermarket_return";
-                    spawnOnSidewalk = true;
-                }
-                else
-                {
-                    spawnSource = "missing_supermarket_return";
-                    GameLog.Warning(
-                        "city",
-                        "return_supermarket_missing");
-                }
-            }
-            else if (
-                GameSessionState.TryGetCityReturnKind(
-                    out CityReturnKind churchReturnKind) &&
-                churchReturnKind == CityReturnKind.Church)
-            {
-                if (World.ChurchPlan != null)
-                {
-                    // The exterior plan owns this point. No raw scene
-                    // coordinate survives a round trip through the church.
-                    spawnPosition = World.ChurchPlan.ReturnPosition;
-                    exteriorDoorArrival =
-                        PlayerDoorArrivalPose.FromDestinationDoor(
-                            spawnPosition,
-                            World.ChurchPlan.DoorAction);
-                    spawnSource = "church_return";
-                    spawnOnSidewalk = true;
-                }
-                else
-                {
-                    spawnSource = "missing_church_return";
-                    GameLog.Warning(
-                        "city",
-                        "return_church_missing");
-                }
+                spawnSource = doorSource;
             }
 
             if (!spawnOnSidewalk)
@@ -1408,31 +1329,101 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The dormant City a transition may wake, if one is loaded.
+        /// The door the session says the hero is coming back through,
+        /// resolved to its exterior dock: the bar, the home's street door,
+        /// the supermarket or the church. One ladder for the build and for
+        /// a resume, so a dormant City wakes exactly where a rebuilt one
+        /// would spawn. False with <paramref name="spawnSource"/> naming
+        /// the missing door when the session names a return the world
+        /// cannot honour, and with it null when no return is pending.
         /// </summary>
-        internal static bool TryFindDormant(out CityGameRoot city)
+        private bool TryResolveDoorReturn(
+            out PlayerDoorArrivalPose arrival,
+            out string spawnSource,
+            out string returnBarId)
         {
-            CityGameRoot[] roots = FindObjectsByType<CityGameRoot>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
-            for (int index = 0; index < roots.Length; index++)
+            arrival = default;
+            spawnSource = null;
+            returnBarId = string.Empty;
+            if (GameSessionState.TryGetReturnBarId(out string barId))
             {
-                CityGameRoot candidate = roots[index];
-                if (candidate != null &&
-                    candidate.IsDormant &&
-                    candidate.gameObject.scene.isLoaded)
+                returnBarId = barId;
+                if (World.TryGetBar(barId, out BarEntrance entrance))
                 {
-                    city = candidate;
+                    arrival = PlayerDoorArrivalPose.FromDestinationDoor(
+                        entrance.ReturnPosition,
+                        entrance.GetComponent<PlayerDoorActionTarget>());
+                    spawnSource = "bar_return";
                     return true;
                 }
+
+                spawnSource = "missing_return_bar";
+                GameLog.Warning(
+                    "city",
+                    "return_bar_missing",
+                    GameLog.Field("bar_id", barId));
+                return false;
             }
 
-            city = null;
-            return false;
+            if (!GameSessionState.TryGetCityReturnKind(
+                    out CityReturnKind returnKind))
+            {
+                return false;
+            }
+
+            switch (returnKind)
+            {
+                case CityReturnKind.PlayerHome:
+                    if (World.PlayerHome != null)
+                    {
+                        arrival = PlayerDoorArrivalPose.FromDestinationDoor(
+                            World.PlayerHome.ReturnPosition,
+                            World.PlayerHome.GetComponent<
+                                PlayerDoorActionTarget>());
+                        spawnSource = "home_return";
+                        return true;
+                    }
+
+                    spawnSource = "missing_home_return";
+                    GameLog.Warning("city", "return_home_missing");
+                    return false;
+                case CityReturnKind.Supermarket:
+                    if (World.Supermarket != null)
+                    {
+                        arrival = PlayerDoorArrivalPose.FromDestinationDoor(
+                            World.Supermarket.ReturnPosition,
+                            World.Supermarket.GetComponent<
+                                PlayerDoorActionTarget>());
+                        spawnSource = "supermarket_return";
+                        return true;
+                    }
+
+                    spawnSource = "missing_supermarket_return";
+                    GameLog.Warning("city", "return_supermarket_missing");
+                    return false;
+                case CityReturnKind.Church:
+                    if (World.ChurchPlan != null)
+                    {
+                        // The exterior plan owns this point. No raw scene
+                        // coordinate survives a round trip through the
+                        // church.
+                        arrival = PlayerDoorArrivalPose.FromDestinationDoor(
+                            World.ChurchPlan.ReturnPosition,
+                            World.ChurchPlan.DoorAction);
+                        spawnSource = "church_return";
+                        return true;
+                    }
+
+                    spawnSource = "missing_church_return";
+                    GameLog.Warning("city", "return_church_missing");
+                    return false;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
-        /// Puts the built City to sleep behind a bar door instead of
+        /// Puts the built City to sleep behind an interior door instead of
         /// unloading it. Every other root object of the scene (the authored
         /// camera, sun and volume) and every child of this one is
         /// deactivated - the interior is built at the same origin, so city
@@ -1500,18 +1491,20 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Wakes a dormant City behind the door back out of the bar, in the
-        /// state a fresh build would have reached: the hierarchy and the
+        /// Wakes a dormant City behind the door back out of an interior, in
+        /// the state a fresh build would have reached: the hierarchy and the
         /// clock controllers back, the build's own camera/fog/lighting call
         /// (which also re-adopts the listener), clock and weather forced to
         /// the session's minute so the hours spent inside are on the sky
-        /// and the asphalt, the hero at the bar-return dock facing away
-        /// from the door with the chase camera re-seeded behind him, the
-        /// motor's input back (the entrance silenced it for the load, as
-        /// every door does), the drunk presentation re-initialised (disabling
-        /// shut it down, as destroying does) and a scene theme of its own
-        /// again after the old one left through the mix. Then the return is
-        /// completed exactly where the build completes it.
+        /// and the asphalt, the hero at the door's return dock - the bar,
+        /// the home's street door, the supermarket or the church, by the
+        /// build's own ladder - facing away from it with the chase camera
+        /// re-seeded behind him, the motor's input back (the entrance
+        /// silenced it for the load, as every door does), the drunk
+        /// presentation re-initialised (disabling shut it down, as
+        /// destroying does) and a scene theme of its own again after the
+        /// old one left through the mix. Then the return is completed
+        /// exactly where the build completes it.
         /// </summary>
         internal void ResumeFromDormant()
         {
@@ -1563,33 +1556,24 @@ namespace BarPromenade
                 Weather.ApplyCurrentWeather(true);
             }
 
-            // The bar_return branch of the build's spawn ladder, and the
-            // only one a dormant City can wake on.
+            // The door-return branches of the build's spawn ladder - the
+            // only ones a dormant City can wake on; a door is never an
+            // area arrival.
             Vector3 spawnPosition = Player.GameObject.transform.position;
             string spawnSource = "resumed_in_place";
-            string returnBarId = string.Empty;
-            if (GameSessionState.TryGetReturnBarId(out string barId))
+            if (TryResolveDoorReturn(
+                    out PlayerDoorArrivalPose arrival,
+                    out string doorSource,
+                    out string returnBarId))
             {
-                returnBarId = barId;
-                if (World.TryGetBar(barId, out BarEntrance entrance))
-                {
-                    PlayerDoorArrivalPose arrival =
-                        PlayerDoorArrivalPose.FromDestinationDoor(
-                            entrance.ReturnPosition,
-                            entrance.GetComponent<PlayerDoorActionTarget>());
-                    Player.Motor.Teleport(arrival.RootPosition);
-                    Player.GameObject.transform.rotation = arrival.Rotation;
-                    spawnPosition = arrival.RootPosition;
-                    spawnSource = "bar_return";
-                }
-                else
-                {
-                    spawnSource = "missing_return_bar";
-                    GameLog.Warning(
-                        "city",
-                        "return_bar_missing",
-                        GameLog.Field("bar_id", barId));
-                }
+                Player.Motor.Teleport(arrival.RootPosition);
+                Player.GameObject.transform.rotation = arrival.Rotation;
+                spawnPosition = arrival.RootPosition;
+                spawnSource = doorSource;
+            }
+            else if (doorSource != null)
+            {
+                spawnSource = doorSource;
             }
 
             Player.Motor.SetInputEnabled(true);

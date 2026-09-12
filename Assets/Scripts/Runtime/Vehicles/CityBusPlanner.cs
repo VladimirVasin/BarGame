@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -26,15 +27,63 @@ namespace BarPromenade
         private const uint StableSeedSalt = 0x42555331u;
         private const float DirectionTolerance = 0.5f;
         private const float GeometryTolerance = 0.001f;
-        private static readonly ConditionalWeakTable<CityLayout, CityBusPlan> RoadRoutingPlans =
-            new ConditionalWeakTable<CityLayout, CityBusPlan>();
+
+        /// <summary>
+        /// Slack a linear run's end corners must keep inside the
+        /// tolerance-expanded carriageway before the run is accepted
+        /// without visiting every sample: far above the few float ULPs a
+        /// lerped interior sample can stray from the segment between its
+        /// ends, far below the ~0.7 m the lane really keeps.
+        /// </summary>
+        private const float LinearRunSafetyMargin = 0.02f;
+
+        private const string PhaseCategory = "city";
+        private const string PhaseEvent = "bus_phase";
+
+        /// <summary>
+        /// The routing is a pure function of the layout instance, and a
+        /// plan is never mutated after construction (every collection on
+        /// it is a read-only copy), so a memo hit is bit-identical to a
+        /// fresh run. The cannery routes its trucks around this loop
+        /// during the world build, so by the bus phase the loop is
+        /// normally already here. Main thread only, like
+        /// <c>CityLayoutCache</c>.
+        /// </summary>
+        private static readonly ConditionalWeakTable<CityLayout, CityBusPlan>
+            RoadRoutingPlans =
+                new ConditionalWeakTable<CityLayout, CityBusPlan>();
+        private static readonly ConditionalWeakTable<CityLayout, CityBusPlan>
+            .CreateValueCallback PlanRoutingCallback = PlanRouting;
+
+        /// <summary>
+        /// The grounded plans, one per decoration seed the layout was
+        /// asked for. A grounded plan is the routing plus the shelter
+        /// heights, so this memo only ever saves the street-surface
+        /// sampling; the routing behind it is shared with
+        /// <see cref="CreateRoadRouting"/>.
+        /// </summary>
+        private static readonly ConditionalWeakTable<CityLayout, GroundedPlanMemo>
+            GroundedPlans =
+                new ConditionalWeakTable<CityLayout, GroundedPlanMemo>();
+        private static readonly ConditionalWeakTable<CityLayout, GroundedPlanMemo>
+            .CreateValueCallback CreateGroundedMemo =
+                _ => new GroundedPlanMemo();
 
         /// <summary>The exact service loop before shelter grounding. Layout consumers
         /// can inspect road occupancy without recursively constructing terrain.</summary>
         public static CityBusPlan CreateRoadRouting(CityLayout layout)
         {
             if (layout == null) throw new ArgumentNullException(nameof(layout));
-            return RoadRoutingPlans.GetValue(layout, value => Create(value, value.Seed, false));
+            if (RoadRoutingPlans.TryGetValue(layout, out CityBusPlan memoised))
+            {
+                ReportPhase(
+                    "routing",
+                    Stopwatch.StartNew(),
+                    GameLog.Field("reused", true));
+                return memoised;
+            }
+
+            return RoadRoutingPlans.GetValue(layout, PlanRoutingCallback);
         }
 
         public static HashSet<RoadEdge> ServiceRoadEdges(CityBusPlan plan)
@@ -64,26 +113,108 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(decorationPlan));
             }
 
-            return Create(layout, decorationPlan.Seed);
+            return GetOrCreateGrounded(layout, decorationPlan.Seed);
         }
 
         public static CityBusPlan Create(CityLayout layout)
         {
-            return Create(
+            return GetOrCreateGrounded(
                 layout ?? throw new ArgumentNullException(nameof(layout)),
                 layout.Seed);
         }
 
-        private static CityBusPlan Create(
+        /// <summary>
+        /// One row of the bus load profile: <c>bus_phase</c> under the
+        /// city category, a stage name and the stage's whole duration -
+        /// one row per stage, never per stop or per link.
+        /// </summary>
+        internal static void ReportPhase(
+            string phase,
+            Stopwatch timer,
+            params GameLogField[] extra)
+        {
+            timer.Stop();
+            var fields = new GameLogField[2 + extra.Length];
+            fields[0] = GameLog.Field("phase", phase);
+            fields[1] = GameLog.Field(
+                "duration_ms",
+                timer.Elapsed.TotalMilliseconds);
+            Array.Copy(extra, 0, fields, 2, extra.Length);
+            GameLog.Debug(PhaseCategory, PhaseEvent, fields);
+        }
+
+        private static CityBusPlan GetOrCreateGrounded(
             CityLayout layout,
-            int decorationSeed,
-            bool groundShelters = true)
+            int decorationSeed)
+        {
+            GroundedPlanMemo memo = GroundedPlans.GetValue(
+                layout,
+                CreateGroundedMemo);
+            Stopwatch timer = Stopwatch.StartNew();
+            if (memo.BySeed.TryGetValue(decorationSeed, out CityBusPlan plan))
+            {
+                ReportPhase(
+                    "plan",
+                    timer,
+                    GameLog.Field("reused", true),
+                    GameLog.Field("decoration_seed", decorationSeed));
+                return plan;
+            }
+
+            plan = CreateGrounded(layout, decorationSeed);
+            memo.BySeed.Add(decorationSeed, plan);
+            ReportPhase(
+                "plan",
+                timer,
+                GameLog.Field("reused", false),
+                GameLog.Field("decoration_seed", decorationSeed),
+                GameLog.Field("stops", plan.Stops.Count),
+                GameLog.Field("links", plan.Links.Count));
+            return plan;
+        }
+
+        /// <summary>
+        /// The grounded plan is the routing plan with its shelters stood
+        /// on the physical pavement. The decoration seed was only ever
+        /// stored on the plan, and the spawn anchors read a stop through
+        /// nothing but its link index, which grounding never touches; so
+        /// the routing - all of the clearance sampling and the loop
+        /// search - is taken from <see cref="CreateRoadRouting"/> instead
+        /// of being planned a second time, and the plan built here is the
+        /// one the full pipeline produced.
+        /// </summary>
+        private static CityBusPlan CreateGrounded(
+            CityLayout layout,
+            int decorationSeed)
+        {
+            CityBusPlan routing = CreateRoadRouting(layout);
+            Stopwatch timer = Stopwatch.StartNew();
+            CityStreetSurfacePlan surfacePlan =
+                CityStreetSurfacePlanner.Create(layout);
+            ReportPhase("street_surface_plan", timer);
+            timer.Restart();
+            List<CityBusStopDescriptor> stops = GroundShelterPositions(
+                layout,
+                surfacePlan,
+                routing.Stops,
+                out int regrounded);
+            ReportPhase(
+                "ground_shelters",
+                timer,
+                GameLog.Field("stops", stops.Count),
+                GameLog.Field("regrounded", regrounded));
+            return new CityBusPlan(routing, decorationSeed, stops);
+        }
+
+        private static CityBusPlan PlanRouting(CityLayout layout)
         {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
             }
 
+            Stopwatch total = Stopwatch.StartNew();
+            Stopwatch timer = Stopwatch.StartNew();
             CityBusDesignVehicle vehicle = CityBusDesignVehicle.Default;
             float carriagewayWidth = layout.RoadWidth -
                 (CityStreetSurfacePlanner.SidewalkWidth * 2f);
@@ -98,6 +229,12 @@ namespace BarPromenade
                 CityBusIntersectionSelector.Select(layout));
             var trafficSignalIntersections = new HashSet<Vector2Int>(
                 CityStreetIntersectionSelector.Select(layout));
+            ReportPhase(
+                "intersections",
+                timer,
+                GameLog.Field("bus_aprons", busIntersections.Count),
+                GameLog.Field("signals", trafficSignalIntersections.Count));
+            timer.Restart();
             List<DirectedStreet> streets = CreateDirectedStreets(
                 layout,
                 laneCenterOffset);
@@ -122,6 +259,13 @@ namespace BarPromenade
                 nodes.Add(CreateNode(street, false, layout));
             }
 
+            Dictionary<Vector2Int, List<RoadEdge>> streetEdgesByNode =
+                CreateStreetEdgesByNode(layout);
+            ReportPhase(
+                "streets",
+                timer,
+                GameLog.Field("directed_streets", streets.Count));
+            timer.Restart();
             var acceptedLinks = new List<TemporaryLink>();
             var failures = new List<CityBusClearanceFailure>();
             for (int index = 0; index < streets.Count; index++)
@@ -135,6 +279,14 @@ namespace BarPromenade
                     failures);
             }
 
+            int roadSegmentCount = acceptedLinks.Count;
+            int roadFailureCount = failures.Count;
+            ReportPhase(
+                "road_segments",
+                timer,
+                GameLog.Field("accepted", roadSegmentCount),
+                GameLog.Field("rejected", roadFailureCount));
+            timer.Restart();
             for (int index = 0; index < streets.Count; index++)
             {
                 AddJunctionManeuvers(
@@ -142,6 +294,7 @@ namespace BarPromenade
                     vehicle,
                     streets[index],
                     streetByDirection,
+                    streetEdgesByNode,
                     busIntersections,
                     trafficSignalIntersections,
                     laneCenterOffset,
@@ -149,11 +302,28 @@ namespace BarPromenade
                     failures);
             }
 
+            ReportPhase(
+                "junctions",
+                timer,
+                GameLog.Field(
+                    "accepted",
+                    acceptedLinks.Count - roadSegmentCount),
+                GameLog.Field(
+                    "rejected",
+                    failures.Count - roadFailureCount));
+            timer.Restart();
             List<RouteOccurrence> route = CreateTargetRoute(
                 layout,
                 vehicle,
                 nodes,
-                acceptedLinks);
+                acceptedLinks,
+                out int assignmentAttempts);
+            ReportPhase(
+                "target_route",
+                timer,
+                GameLog.Field("route_links", route.Count),
+                GameLog.Field("assignment_attempts", assignmentAttempts));
+            timer.Restart();
             var finalLinks = new List<CityBusRouteLink>(
                 route.Count);
             var routeLinkMetadata = new List<RouteLinkMetadata>(
@@ -200,6 +370,11 @@ namespace BarPromenade
                 routeLinkMetadata,
                 finalLinks);
             stops = CoalesceCloseStops(stops, loopLength);
+            ReportPhase(
+                "target_stops",
+                timer,
+                GameLog.Field("stops", stops.Count));
+            timer.Restart();
             stops = InsertSpacingStops(
                 layout,
                 vehicle,
@@ -208,6 +383,11 @@ namespace BarPromenade
                 finalLinks,
                 loopLength,
                 stops);
+            ReportPhase(
+                "spacing_stops",
+                timer,
+                GameLog.Field("stops", stops.Count));
+            timer.Restart();
             stops = CoalescePlanarCloseStops(
                 layout,
                 vehicle,
@@ -216,16 +396,25 @@ namespace BarPromenade
                 finalLinks,
                 loopLength,
                 stops);
-            if (groundShelters) stops = GroundShelterPositions(layout, stops);
+            ReportPhase(
+                "planar_coalesce",
+                timer,
+                GameLog.Field("stops", stops.Count));
+            timer.Restart();
             List<CityBusSpawnAnchor> anchors = CreateSpawnAnchors(
                 layout,
                 vehicle,
                 routeLinkMetadata,
                 finalLinks,
                 stops);
-            return new CityBusPlan(
+            ReportPhase(
+                "spawn_anchors",
+                timer,
+                GameLog.Field("anchors", anchors.Count));
+            timer.Restart();
+            var plan = new CityBusPlan(
                 layout.Seed,
-                decorationSeed,
+                layout.Seed,
                 stableSeed,
                 routeId,
                 orderedLinkIndices,
@@ -239,6 +428,25 @@ namespace BarPromenade
                 failures,
                 streets.Count,
                 acceptedLinks.Count);
+            ReportPhase("assemble_routing", timer);
+            ReportPhase(
+                "routing",
+                total,
+                GameLog.Field("reused", false),
+                GameLog.Field("links", finalLinks.Count),
+                GameLog.Field("stops", stops.Count),
+                GameLog.Field("rejected", failures.Count));
+            return plan;
+        }
+
+        /// <summary>
+        /// The grounded plans of one layout by decoration seed. Read and
+        /// written on the main thread only.
+        /// </summary>
+        private sealed class GroundedPlanMemo
+        {
+            public readonly Dictionary<int, CityBusPlan> BySeed =
+                new Dictionary<int, CityBusPlan>();
         }
 
         /// <summary>
@@ -287,10 +495,11 @@ namespace BarPromenade
         /// </summary>
         private static List<CityBusStopDescriptor> GroundShelterPositions(
             CityLayout layout,
-            List<CityBusStopDescriptor> stops)
+            CityStreetSurfacePlan surfacePlan,
+            IReadOnlyList<CityBusStopDescriptor> stops,
+            out int regroundedCount)
         {
-            CityStreetSurfacePlan surfacePlan =
-                CityStreetSurfacePlanner.Create(layout);
+            regroundedCount = 0;
             var result = new List<CityBusStopDescriptor>(stops.Count);
             for (int index = 0; index < stops.Count; index++)
             {
@@ -308,6 +517,7 @@ namespace BarPromenade
                     continue;
                 }
 
+                regroundedCount++;
                 Vector3 shelterPosition = stop.ShelterPosition;
                 shelterPosition.y = groundTop;
                 result.Add(new CityBusStopDescriptor(
@@ -368,6 +578,44 @@ namespace BarPromenade
             return result;
         }
 
+        /// <summary>
+        /// Every bus-traversable street edge under both of its nodes, in
+        /// road-edge order, so a junction asks for its own few edges
+        /// instead of filtering the whole road graph per street.
+        /// </summary>
+        private static Dictionary<Vector2Int, List<RoadEdge>>
+            CreateStreetEdgesByNode(CityLayout layout)
+        {
+            var result = new Dictionary<Vector2Int, List<RoadEdge>>();
+            for (int index = 0; index < layout.RoadEdges.Count; index++)
+            {
+                RoadEdge edge = layout.RoadEdges[index];
+                if (!IsBusTraversableStreet(layout, edge))
+                {
+                    continue;
+                }
+
+                AddStreetEdge(result, edge.A, edge);
+                AddStreetEdge(result, edge.B, edge);
+            }
+
+            return result;
+        }
+
+        private static void AddStreetEdge(
+            Dictionary<Vector2Int, List<RoadEdge>> target,
+            Vector2Int node,
+            RoadEdge edge)
+        {
+            if (!target.TryGetValue(node, out List<RoadEdge> edges))
+            {
+                edges = new List<RoadEdge>(4);
+                target.Add(node, edges);
+            }
+
+            edges.Add(edge);
+        }
+
         private static TemporaryNode CreateNode(
             DirectedStreet street,
             bool departure,
@@ -400,10 +648,13 @@ namespace BarPromenade
                 end,
                 street.GradeForward);
             Rect carriageway = GetCarriagewayRect(layout, street.RoadEdge);
-            CityBusClearanceResult clearance = ValidateSamples(
-                vehicle,
-                samples,
-                new[] { carriageway });
+            CityBusClearanceResult clearance =
+                IsLinearRunProvablyClear(vehicle, samples, carriageway)
+                    ? CreateClearResult(vehicle)
+                    : ValidateSamples(
+                        vehicle,
+                        samples,
+                        new[] { carriageway });
             string id = $"bus:road:{NodeId(street.From)}:" +
                         $"{NodeId(street.To)}";
             if (clearance.IsClear)
@@ -441,30 +692,37 @@ namespace BarPromenade
             DirectedStreet incoming,
             IReadOnlyDictionary<DirectedKey, DirectedStreet>
                 streetByDirection,
+            IReadOnlyDictionary<Vector2Int, List<RoadEdge>>
+                streetEdgesByNode,
             ISet<Vector2Int> busIntersections,
             ISet<Vector2Int> trafficSignalIntersections,
             float laneCenterOffset,
             ICollection<TemporaryLink> accepted,
             ICollection<CityBusClearanceFailure> failures)
         {
+            // The junction's own traversable edges rather than a filter
+            // over every road edge per street. The candidates are sorted
+            // below, so the order they are collected in never reaches
+            // the maneuvers.
             var nextNodes = new List<Vector2Int>();
-            for (int edgeIndex = 0;
-                 edgeIndex < layout.RoadEdges.Count;
-                 edgeIndex++)
+            if (streetEdgesByNode.TryGetValue(
+                    incoming.To,
+                    out List<RoadEdge> edges))
             {
-                RoadEdge edge = layout.RoadEdges[edgeIndex];
-                if (!edge.Contains(incoming.To) ||
-                    edge == incoming.RoadEdge ||
-                    !IsBusTraversableStreet(layout, edge))
+                for (int edgeIndex = 0; edgeIndex < edges.Count; edgeIndex++)
                 {
-                    continue;
-                }
+                    RoadEdge edge = edges[edgeIndex];
+                    if (edge == incoming.RoadEdge)
+                    {
+                        continue;
+                    }
 
-                Vector2Int next = edge.Other(incoming.To);
-                if (streetByDirection.ContainsKey(
-                        new DirectedKey(incoming.To, next)))
-                {
-                    nextNodes.Add(next);
+                    Vector2Int next = edge.Other(incoming.To);
+                    if (streetByDirection.ContainsKey(
+                            new DirectedKey(incoming.To, next)))
+                    {
+                        nextNodes.Add(next);
+                    }
                 }
             }
 
@@ -830,6 +1088,11 @@ namespace BarPromenade
         {
             float halfLength = vehicle.InflatedLength * 0.5f;
             float halfWidth = vehicle.InflatedWidth * 0.5f;
+            // The tolerance-expanded bounds once per link rather than once
+            // per corner test: the same float sums, formed once.
+            ExpandedRect[] allowed = ExpandRectangles(
+                allowedRectangles,
+                GeometryTolerance);
             for (int sampleIndex = 0;
                  sampleIndex < samples.Count;
                  sampleIndex++)
@@ -852,6 +1115,11 @@ namespace BarPromenade
                     forward.z,
                     0f,
                     -forward.x);
+                // `forward * halfLength * sign` associates to the left, so
+                // these are the very vectors the per-corner form scaled,
+                // and scaling them by -1, 0 and 1 is exact.
+                Vector3 alongLength = forward * halfLength;
+                Vector3 acrossWidth = right * halfWidth;
                 for (int forwardSign = -1;
                      forwardSign <= 1;
                      forwardSign++)
@@ -861,9 +1129,9 @@ namespace BarPromenade
                          rightSign++)
                     {
                         Vector3 point = sample.Position +
-                            (forward * halfLength * forwardSign) +
-                            (right * halfWidth * rightSign);
-                        if (!ContainsAny(allowedRectangles, point))
+                            (alongLength * forwardSign) +
+                            (acrossWidth * rightSign);
+                        if (!ContainsAny(allowed, point.x, point.z))
                         {
                             return new CityBusClearanceResult(
                                 false,
@@ -876,6 +1144,12 @@ namespace BarPromenade
                 }
             }
 
+            return CreateClearResult(vehicle);
+        }
+
+        private static CityBusClearanceResult CreateClearResult(
+            CityBusDesignVehicle vehicle)
+        {
             return new CityBusClearanceResult(
                 true,
                 CityBusClearanceFailureKind.None,
@@ -884,24 +1158,139 @@ namespace BarPromenade
                 vehicle.ClearanceMargin);
         }
 
-        private static bool ContainsAny(
-            IList<Rect> rectangles,
-            Vector3 point)
+        /// <summary>
+        /// A road segment's samples are one linear run (see
+        /// <see cref="AppendLinear"/>): every position is a lerp between
+        /// the run's two ends and every sample carries the same forward.
+        /// So every interior corner point lies on the segment between the
+        /// corresponding end corners, within the few float ULPs a lerp can
+        /// stray - well under a millimetre at city coordinates - and the
+        /// tolerance-expanded carriageway is convex. When both ends' nine
+        /// corners sit inside it with <see cref="LinearRunSafetyMargin"/>
+        /// to spare, the per-sample scan could only have said "clear";
+        /// when they do not, the caller runs that scan and takes whatever
+        /// it says. The verdict is identical either way; only the ~180
+        /// samples per street stop being visited one by one.
+        /// </summary>
+        private static bool IsLinearRunProvablyClear(
+            CityBusDesignVehicle vehicle,
+            IList<CityBusPathSample> samples,
+            Rect carriageway)
         {
-            Vector2 planar = new Vector2(point.x, point.z);
-            for (int index = 0; index < rectangles.Count; index++)
+            if (samples.Count < 2)
             {
-                Rect rect = rectangles[index];
-                if (planar.x >= rect.xMin - GeometryTolerance &&
-                    planar.x <= rect.xMax + GeometryTolerance &&
-                    planar.y >= rect.yMin - GeometryTolerance &&
-                    planar.y <= rect.yMax + GeometryTolerance)
+                return false;
+            }
+
+            float halfLength = vehicle.InflatedLength * 0.5f;
+            float halfWidth = vehicle.InflatedWidth * 0.5f;
+            var inset = new ExpandedRect(
+                carriageway,
+                GeometryTolerance - LinearRunSafetyMargin);
+            return AreCornersInside(
+                       samples[0],
+                       halfLength,
+                       halfWidth,
+                       inset) &&
+                   AreCornersInside(
+                       samples[samples.Count - 1],
+                       halfLength,
+                       halfWidth,
+                       inset);
+        }
+
+        private static bool AreCornersInside(
+            CityBusPathSample sample,
+            float halfLength,
+            float halfWidth,
+            ExpandedRect inset)
+        {
+            Vector3 forward = sample.Forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude <= 0.0001f)
+            {
+                return false;
+            }
+
+            forward.Normalize();
+            Vector3 right = new Vector3(forward.z, 0f, -forward.x);
+            Vector3 alongLength = forward * halfLength;
+            Vector3 acrossWidth = right * halfWidth;
+            for (int forwardSign = -1; forwardSign <= 1; forwardSign++)
+            {
+                for (int rightSign = -1; rightSign <= 1; rightSign++)
+                {
+                    Vector3 point = sample.Position +
+                        (alongLength * forwardSign) +
+                        (acrossWidth * rightSign);
+                    if (!inset.Contains(point.x, point.z))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static ExpandedRect[] ExpandRectangles(
+            IList<Rect> rectangles,
+            float expansion)
+        {
+            var result = new ExpandedRect[rectangles.Count];
+            for (int index = 0; index < result.Length; index++)
+            {
+                result[index] = new ExpandedRect(
+                    rectangles[index],
+                    expansion);
+            }
+
+            return result;
+        }
+
+        private static bool ContainsAny(
+            ExpandedRect[] rectangles,
+            float x,
+            float z)
+        {
+            for (int index = 0; index < rectangles.Length; index++)
+            {
+                if (rectangles[index].Contains(x, z))
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// A rectangle grown by a tolerance on every side. The bounds are
+        /// the same <c>xMin - tolerance</c> and <c>xMax + tolerance</c>
+        /// sums the per-test form computed, formed once.
+        /// </summary>
+        private readonly struct ExpandedRect
+        {
+            public ExpandedRect(Rect rect, float expansion)
+            {
+                MinX = rect.xMin - expansion;
+                MaxX = rect.xMax + expansion;
+                MinZ = rect.yMin - expansion;
+                MaxZ = rect.yMax + expansion;
+            }
+
+            public float MinX { get; }
+            public float MaxX { get; }
+            public float MinZ { get; }
+            public float MaxZ { get; }
+
+            public bool Contains(float x, float z)
+            {
+                return x >= MinX &&
+                       x <= MaxX &&
+                       z >= MinZ &&
+                       z <= MaxZ;
+            }
         }
 
         private static Rect GetCarriagewayRect(

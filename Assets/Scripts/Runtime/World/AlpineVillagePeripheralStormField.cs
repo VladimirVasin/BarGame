@@ -590,6 +590,25 @@ namespace BarPromenade
             emissionCarry = carry;
         }
 
+        /// <summary>
+        /// The sheets do not play on awake, so a field whose object was
+        /// deactivated - the village dormant behind the mother's house door
+        /// - would come back with the sides of the bowl clear. Refilled and
+        /// restarted the way the build starts it; nothing to do at first
+        /// activation, before Initialize.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (!IsInitialized || Particles == null || Particles.isPlaying)
+            {
+                return;
+            }
+
+            Prewarm();
+            RefreshLiveParticles();
+            Particles.Play(true);
+        }
+
         private void EnsureParticleBuffer(int count)
         {
             int capacity = Mathf.Max(Particles.main.maxParticles, count);

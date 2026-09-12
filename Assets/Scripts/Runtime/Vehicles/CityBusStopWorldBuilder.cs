@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -54,6 +55,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(plan));
             }
 
+            Stopwatch timer = Stopwatch.StartNew();
             Transform root = new GameObject("City Bus Stops").transform;
             root.SetParent(parent, false);
             CityMiscAssetProvider miscProvider =
@@ -67,6 +69,13 @@ namespace BarPromenade
                     miscProvider);
             }
 
+            // One row for the whole roster: every shelter combines the
+            // imported pole and shell parts into meshes of its own.
+            CityBusPlanner.ReportPhase(
+                "stop_world",
+                timer,
+                GameLog.Field("stops", plan.Stops.Count),
+                GameLog.Field("imported", miscProvider != null));
             return root.gameObject;
         }
 

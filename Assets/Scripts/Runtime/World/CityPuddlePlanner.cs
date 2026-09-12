@@ -73,6 +73,7 @@ namespace BarPromenade
             }
 
             var candidates = new List<Candidate>();
+            var cover = new CoverIndex(streetPlan);
             IReadOnlyList<RuntimeOrientedBox> streets =
                 streetPlan.StreetGeometry;
             for (int index = 0; index < streets.Count; index++)
@@ -99,7 +100,7 @@ namespace BarPromenade
                     index * 2,
                     CreatePatch(surface, hash),
                     index,
-                    streetPlan);
+                    cover);
                 if (longest >= 16f &&
                     ((hash >> 8) & 1u) != 0u)
                 {
@@ -112,7 +113,7 @@ namespace BarPromenade
                         (index * 2) + 1,
                         CreatePatch(surface, secondHash),
                         index,
-                        streetPlan);
+                        cover);
                 }
             }
 
@@ -381,9 +382,9 @@ namespace BarPromenade
             int stableOrder,
             RuntimeOrientedBox patch,
             int sourceIndex,
-            CityStreetSurfacePlan streetPlan)
+            CoverIndex cover)
         {
-            if (IsCovered(patch, sourceIndex, streetPlan))
+            if (IsCovered(patch, sourceIndex, cover))
             {
                 return;
             }
@@ -414,21 +415,14 @@ namespace BarPromenade
         private static bool IsCovered(
             RuntimeOrientedBox patch,
             int sourceIndex,
-            CityStreetSurfacePlan streetPlan)
+            CoverIndex cover)
         {
             for (int sample = 0; sample < SheetSamplePoints.Length; sample++)
             {
                 Vector3 point = patch.Center + patch.Rotation *
                     Vector3.Scale(SheetSamplePoints[sample], patch.Size);
                 float ceiling = point.y - CoverClearance;
-                if (AnyTopAbove(
-                        streetPlan.StreetGeometry, point, ceiling, sourceIndex) ||
-                    AnyTopAbove(
-                        streetPlan.SidewalkGeometry, point, ceiling, -1) ||
-                    AnyTopAbove(
-                        streetPlan.CrosswalkMarkingGeometry, point, ceiling, -1) ||
-                    AnyTopAbove(
-                        streetPlan.CenterMarkingGeometry, point, ceiling, -1))
+                if (cover.AnyTopAbove(point, ceiling, sourceIndex))
                 {
                     return true;
                 }
@@ -437,27 +431,195 @@ namespace BarPromenade
             return false;
         }
 
-        private static bool AnyTopAbove(
-            IReadOnlyList<RuntimeOrientedBox> surfaces,
-            Vector3 point,
-            float ceiling,
-            int skipIndex)
+        /// <summary>
+        /// The street plan's surfaces - streets, pavements, crossings and
+        /// centre dashes - bucketed by their footprint on the ground, so the
+        /// cover test asks each sample point only the boxes that can hold
+        /// it. The answer is the same OR over the same
+        /// <see cref="RuntimeOrientedBox.TrySampleTop"/> calls as a scan of
+        /// every box: a box's rotated top face lies inside the axis-aligned
+        /// bounds of its eight corners, padded a hundred times past the
+        /// sampler's own footprint tolerance, so a box the index never
+        /// offers is one the sampler would have refused. A box whose bounds
+        /// are not finite, or which stands steeper than sixty degrees, is
+        /// offered to every query, as the scan did. Some
+        /// four hundred patches, five points each, used to ask every one of
+        /// two thousand boxes for a quaternion inverse apiece.
+        /// </summary>
+        private sealed class CoverIndex
         {
-            for (int index = 0; index < surfaces.Count; index++)
+            private const float CellSize = 8f;
+            private const float Padding = 0.01f;
+
+            private readonly Dictionary<Vector2Int, List<Entry>> cells =
+                new Dictionary<Vector2Int, List<Entry>>();
+            private readonly List<Entry> unbounded = new List<Entry>();
+
+            public CoverIndex(CityStreetSurfacePlan plan)
             {
-                if (index == skipIndex)
+                Add(plan.StreetGeometry, true);
+                Add(plan.SidewalkGeometry, false);
+                Add(plan.CrosswalkMarkingGeometry, false);
+                Add(plan.CenterMarkingGeometry, false);
+            }
+
+            /// <summary>
+            /// True when some indexed surface other than street number
+            /// <paramref name="skipStreetIndex"/> has its top over
+            /// <paramref name="ceiling"/> under <paramref name="point"/>.
+            /// </summary>
+            public bool AnyTopAbove(
+                Vector3 point,
+                float ceiling,
+                int skipStreetIndex)
+            {
+                if (cells.TryGetValue(
+                        CellOf(point.x, point.z),
+                        out List<Entry> entries))
                 {
-                    continue;
+                    for (int index = 0; index < entries.Count; index++)
+                    {
+                        Entry entry = entries[index];
+                        if (point.x < entry.MinX || point.x > entry.MaxX ||
+                            point.z < entry.MinZ || point.z > entry.MaxZ)
+                        {
+                            continue;
+                        }
+
+                        if (TopAbove(entry, point, ceiling, skipStreetIndex))
+                        {
+                            return true;
+                        }
+                    }
                 }
 
-                if (surfaces[index].TrySampleTop(point, out float top) &&
-                    top > ceiling)
+                for (int index = 0; index < unbounded.Count; index++)
                 {
-                    return true;
+                    if (TopAbove(unbounded[index], point, ceiling, skipStreetIndex))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            private static bool TopAbove(
+                Entry entry,
+                Vector3 point,
+                float ceiling,
+                int skipStreetIndex)
+            {
+                if (entry.StreetIndex >= 0 &&
+                    entry.StreetIndex == skipStreetIndex)
+                {
+                    return false;
+                }
+
+                return entry.Box.TrySampleTop(point, out float top) &&
+                       top > ceiling;
+            }
+
+            private void Add(
+                IReadOnlyList<RuntimeOrientedBox> boxes,
+                bool streets)
+            {
+                for (int index = 0; index < boxes.Count; index++)
+                {
+                    RuntimeOrientedBox box = boxes[index];
+                    // The ground footprint of all eight corners:
+                    // sum over the box's axes of |axis| times half size.
+                    Vector3 half = box.Size * 0.5f;
+                    Vector3 right = box.Rotation * Vector3.right;
+                    Vector3 up = box.Rotation * Vector3.up;
+                    Vector3 forward = box.Rotation * Vector3.forward;
+                    float extentX =
+                        Mathf.Abs(right.x) * half.x +
+                        Mathf.Abs(up.x) * half.y +
+                        Mathf.Abs(forward.x) * half.z +
+                        Padding;
+                    float extentZ =
+                        Mathf.Abs(right.z) * half.x +
+                        Mathf.Abs(up.z) * half.y +
+                        Mathf.Abs(forward.z) * half.z +
+                        Padding;
+                    var entry = new Entry(
+                        box,
+                        streets ? index : -1,
+                        box.Center.x - extentX,
+                        box.Center.z - extentZ,
+                        box.Center.x + extentX,
+                        box.Center.z + extentZ);
+                    // A box on its side, or nearly, is offered to every
+                    // query: the sampler extrapolates its top plane by
+                    // 1/normal.y, and past sixty degrees of tilt that
+                    // extrapolation's rounding could outgrow the padding.
+                    // No street-plan box tilts more than a grade.
+                    if (!IsFinite(entry.MinX) || !IsFinite(entry.MinZ) ||
+                        !IsFinite(entry.MaxX) || !IsFinite(entry.MaxZ) ||
+                        !(Mathf.Abs(up.y) >= 0.5f))
+                    {
+                        unbounded.Add(entry);
+                        continue;
+                    }
+
+                    Vector2Int minimum = CellOf(entry.MinX, entry.MinZ);
+                    Vector2Int maximum = CellOf(entry.MaxX, entry.MaxZ);
+                    for (int z = minimum.y; z <= maximum.y; z++)
+                    {
+                        for (int x = minimum.x; x <= maximum.x; x++)
+                        {
+                            var key = new Vector2Int(x, z);
+                            if (!cells.TryGetValue(key, out List<Entry> entries))
+                            {
+                                entries = new List<Entry>();
+                                cells.Add(key, entries);
+                            }
+
+                            entries.Add(entry);
+                        }
+                    }
                 }
             }
 
-            return false;
+            private static Vector2Int CellOf(float x, float z)
+            {
+                return new Vector2Int(
+                    Mathf.FloorToInt(x / CellSize),
+                    Mathf.FloorToInt(z / CellSize));
+            }
+
+            private static bool IsFinite(float value)
+            {
+                return !float.IsNaN(value) && !float.IsInfinity(value);
+            }
+
+            private readonly struct Entry
+            {
+                public Entry(
+                    RuntimeOrientedBox box,
+                    int streetIndex,
+                    float minX,
+                    float minZ,
+                    float maxX,
+                    float maxZ)
+                {
+                    Box = box;
+                    StreetIndex = streetIndex;
+                    MinX = minX;
+                    MinZ = minZ;
+                    MaxX = maxX;
+                    MaxZ = maxZ;
+                }
+
+                public RuntimeOrientedBox Box { get; }
+                /// <summary>Index in the street geometry, or -1.</summary>
+                public int StreetIndex { get; }
+                public float MinX { get; }
+                public float MinZ { get; }
+                public float MaxX { get; }
+                public float MaxZ { get; }
+            }
         }
 
         private static float Unit(uint hash, int shift)

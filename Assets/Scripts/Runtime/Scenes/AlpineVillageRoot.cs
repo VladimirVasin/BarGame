@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
@@ -9,12 +11,31 @@ namespace BarPromenade
     /// cableway. Built line for line on <see cref="MountainRoadRoot"/>, which
     /// is the working shape for an outdoor area: it reconstructs only pure map
     /// data for the tabs it is not standing in, and keeps no other area's world
-    /// alive behind it.
+    /// alive behind it. It is itself kept alive behind the mother's house
+    /// door: see <see cref="EnterDormant"/>.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class AlpineVillageRoot : MonoBehaviour
+    public sealed class AlpineVillageRoot : MonoBehaviour, IResidentExteriorRoot
     {
+        private readonly List<GameObject> dormantObjects =
+            new List<GameObject>();
+        private readonly List<Behaviour> dormantBehaviours =
+            new List<Behaviour>();
+        private AudioListener dormantListener;
+
         public bool IsInitialized { get; private set; }
+
+        /// <summary>
+        /// True while the built village sleeps behind the mother's house
+        /// door: hierarchy, camera and listener off, this object awake so
+        /// the bootstrap and the transition still find it.
+        /// </summary>
+        public bool IsDormant { get; private set; }
+
+        public string SceneName => gameObject.scene.name;
+        public Scene Scene => gameObject.scene;
+        bool IResidentExteriorRoot.EnterDormant() => EnterDormant();
+        void IResidentExteriorRoot.ResumeFromDormant() => ResumeFromDormant();
         public AlpineVillagePlan Plan { get; private set; }
         public AlpineVillageWorldResult World { get; private set; }
         public PlayerRuntime Player { get; private set; }
@@ -354,10 +375,7 @@ namespace BarPromenade
             ApplyCurrentAtmosphere(true);
             ApplyVisibility();
             IsInitialized = true;
-            AlpineColdExposure.Bind(this, areaCamera, () => IsInitialized,
-                () => GameSessionState.IsRidingAVehicle ||
-                      (CabinSeat != null && CabinSeat.IsSeated) ||
-                      (Workroom != null && Workroom.Environment.IsInside));
+            BindColdExposure();
             GameLogPhases.Report("alpine_village", "ready", phaseTimer);
             // The village's own plan is held already; this starts the road
             // planner on the pool so the map's first open or idle warm
@@ -388,8 +406,250 @@ namespace BarPromenade
         {
             WarmthGrade = Mathf.Clamp01(grade);
             Soundscape?.SetWarmthGrade(WarmthGrade);
+            // A dormant village writes nothing to the active scene's
+            // atmosphere; the resume re-applies the grade it holds.
+            if (IsDormant)
+            {
+                return;
+            }
+
             ApplyCurrentAtmosphere(true);
             ApplyVisibility();
+        }
+
+        /// <summary>
+        /// The frost driver is process-wide and the mother's house takes it
+        /// over on the way in, so the village binds it at the end of the
+        /// build and again on a resume.
+        /// </summary>
+        private void BindColdExposure()
+        {
+            AlpineColdExposure.Bind(this, areaCamera,
+                () => IsInitialized && !IsDormant,
+                () => GameSessionState.IsRidingAVehicle ||
+                      (CabinSeat != null && CabinSeat.IsSeated) ||
+                      (Workroom != null && Workroom.Environment.IsInside));
+        }
+
+        /// <summary>
+        /// Puts the built village to sleep behind the mother's house door
+        /// instead of unloading it: every other root object of the scene
+        /// (the authored camera, sun and volume) and every child of this one
+        /// off - the house is built at the same origin, so village
+        /// colliders, renderers and voices must be gone, not hidden - the
+        /// weather controller on this object disabled so it stops writing
+        /// the active scene's snow, and the listener switched off by hand so
+        /// the house's listener setup finds nothing to disable and the
+        /// resume knows which to give back. This object stays active: the
+        /// bootstrap finds the root by it, its own per-frame atmosphere
+        /// writer is gated on <see cref="IsDormant"/>, and the resume is
+        /// driven from it.
+        /// </summary>
+        internal bool EnterDormant()
+        {
+            if (!IsInitialized || IsDormant)
+            {
+                return false;
+            }
+
+            IsDormant = true;
+            dormantObjects.Clear();
+            dormantBehaviours.Clear();
+            dormantListener = areaCamera != null
+                ? areaCamera.GetComponent<AudioListener>()
+                : null;
+            if (dormantListener != null && dormantListener.enabled)
+            {
+                dormantListener.enabled = false;
+            }
+            else
+            {
+                dormantListener = null;
+            }
+
+            GameObject[] roots = gameObject.scene.GetRootGameObjects();
+            for (int index = 0; index < roots.Length; index++)
+            {
+                Sleep(roots[index]);
+            }
+
+            for (int index = 0; index < transform.childCount; index++)
+            {
+                Sleep(transform.GetChild(index).gameObject);
+            }
+
+            if (areaCamera != null)
+            {
+                Sleep(areaCamera.gameObject);
+            }
+
+            Sleep(Weather);
+            GameLog.Info(
+                "alpine_village",
+                "dormant_entered",
+                GameLog.Field("deactivated_objects", dormantObjects.Count),
+                GameLog.Field(
+                    "disabled_behaviours",
+                    dormantBehaviours.Count));
+            return true;
+        }
+
+        /// <summary>
+        /// Wakes the dormant village behind the door back out of the
+        /// mother's house, in the state a fresh build would have reached:
+        /// the hierarchy and the weather controller back, the build's own
+        /// camera/fog/lighting call (which also re-adopts the listener) with
+        /// the held warmth grade and storm wave re-applied over it, the
+        /// weather forced to the session's minute, the hero at the house's
+        /// return dock by the build's own mother's-house branch - the
+        /// session's arrival token consumed exactly as the build consumes
+        /// it - facing away from the door with the chase camera re-seeded
+        /// behind him, the motor's input back, the drunk presentation
+        /// re-initialised (disabling shut it down), the frost driver bound
+        /// to the village again after the house took it, and the map's
+        /// idle warm restarted.
+        /// </summary>
+        internal void ResumeFromDormant()
+        {
+            if (!IsDormant)
+            {
+                return;
+            }
+
+            if (dormantListener != null)
+            {
+                dormantListener.enabled = true;
+                dormantListener = null;
+            }
+
+            for (int index = dormantObjects.Count - 1; index >= 0; index--)
+            {
+                GameObject sleeper = dormantObjects[index];
+                if (sleeper != null)
+                {
+                    sleeper.SetActive(true);
+                }
+            }
+
+            dormantObjects.Clear();
+            for (int index = 0; index < dormantBehaviours.Count; index++)
+            {
+                Behaviour sleeper = dormantBehaviours[index];
+                if (sleeper != null)
+                {
+                    sleeper.enabled = true;
+                }
+            }
+
+            dormantBehaviours.Clear();
+            IsDormant = false;
+
+            GameAudioMixer.ApplyProfile(GameAudioProfile.City);
+            GameLog.SetScene(gameObject.scene.name);
+            GameLog.SetCitySeed(GameSessionState.CitySeed);
+            areaCamera = RuntimeSceneSetup.EnsureAlpineVillage();
+            ApplyCurrentAtmosphere(true);
+            ApplyVisibility();
+            if (Weather != null)
+            {
+                Weather.ApplyCurrentWeather(true);
+            }
+
+            // The mothers_house_return branch of the build's spawn ladder,
+            // and the only one a dormant village can wake on: a door is
+            // never an area arrival.
+            VillageArrival = GameSessionState.ConsumeAlpineVillageArrival();
+            Vector3 spawnPosition = Player.GameObject.transform.position;
+            string spawnSource = "resumed_in_place";
+            if (VillageArrival == AlpineVillageArrivalKind.MothersHouseDoor)
+            {
+                PlayerDoorArrivalPose arrival =
+                    PlayerDoorArrivalPose.FromDestinationDoor(
+                        MothersHouseEntrance.ReturnPosition,
+                        MothersHouseEntrance.GetComponent<
+                            PlayerDoorActionTarget>());
+                Player.Motor.Teleport(arrival.RootPosition);
+                Player.GameObject.transform.rotation = arrival.Rotation;
+                spawnPosition = arrival.RootPosition;
+                spawnSource = "mothers_house_return";
+            }
+
+            Player.Motor.SetInputEnabled(true);
+            CameraFollow = areaCamera.GetComponent<PlayerCameraFollow>();
+            if (CameraFollow == null)
+            {
+                CameraFollow = areaCamera.gameObject
+                    .AddComponent<PlayerCameraFollow>();
+            }
+
+            CameraFollow.Initialize(
+                areaCamera,
+                Player.GameObject.transform,
+                false);
+            if (IntoxicationStatus != null)
+            {
+                IntoxicationStatus.Initialize(
+                    Player,
+                    CameraFollow,
+                    IntoxicationHud);
+            }
+
+            // The village holds no scene theme, but a place theme parked
+            // under it would still carry the exit request the door put on
+            // it; withdrawn exactly as the City withdraws its own.
+            SceneMusicPlayer[] themes =
+                GetComponentsInChildren<SceneMusicPlayer>(true);
+            for (int index = 0; index < themes.Length; index++)
+            {
+                themes[index].CancelSceneExitFade();
+            }
+
+            BindColdExposure();
+            if (Map != null)
+            {
+                Map.ScheduleIdleAreaWarm();
+            }
+
+            GameLog.Info(
+                "alpine_village",
+                "spawn_selected",
+                GameLog.Field("source", spawnSource),
+                GameLog.Field("arrival", ArrivalToken.ToString()),
+                GameLog.Field("x", spawnPosition.x),
+                GameLog.Field("y", spawnPosition.y),
+                GameLog.Field("z", spawnPosition.z));
+            GameLog.Info(
+                "alpine_village",
+                "dormant_resumed",
+                GameLog.Field("spawn_source", spawnSource),
+                GameLog.Field(
+                    "day_index",
+                    GameSessionState.GameDayIndex),
+                GameLog.Field(
+                    "minute_of_day",
+                    GameSessionState.GameMinuteOfDay));
+        }
+
+        private void Sleep(GameObject target)
+        {
+            if (target == null || target == gameObject || !target.activeSelf)
+            {
+                return;
+            }
+
+            dormantObjects.Add(target);
+            target.SetActive(false);
+        }
+
+        private void Sleep(Behaviour target)
+        {
+            if (target == null || !target.enabled)
+            {
+                return;
+            }
+
+            dormantBehaviours.Add(target);
+            target.enabled = false;
         }
 
         /// <summary>
@@ -685,7 +945,9 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (!IsInitialized)
+            // Dormant, this object is the one thing of the village left
+            // active, and it must not write the house's fog.
+            if (!IsInitialized || IsDormant)
             {
                 return;
             }

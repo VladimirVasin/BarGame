@@ -904,6 +904,33 @@ namespace BarPromenade
             Advance(Time.deltaTime);
         }
 
+        /// <summary>
+        /// The looping voices are started once in Initialize and none plays
+        /// on awake, so a soundscape whose object was deactivated - the
+        /// village dormant behind the mother's house door - would come back
+        /// with its beds silent. The scheduled one-shots need nothing: the
+        /// clock they run on stopped with the object and resumes with it.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            for (int index = 0; index < voices.Count; index++)
+            {
+                Voice voice = voices[index];
+                if (voice.Definition.IsLoop &&
+                    voice.Source != null &&
+                    voice.Source.clip != null &&
+                    !voice.Source.isPlaying)
+                {
+                    voice.Source.Play();
+                }
+            }
+        }
+
         private void CreateVoice(AlpineVillageSoundAnchorDescriptor anchor)
         {
             AlpineVillageSoundDefinition definition =

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -47,13 +48,17 @@ namespace BarPromenade
             CityPedestrianDirector pedestrians,
             Func<float> nightFactorProvider = null)
         {
+            Stopwatch timer = Stopwatch.StartNew();
+            GameObject presentationPrefab = CityBusResources.LoadPrefab();
+            GameObject driverPrefab = CityBusDriverResources.LoadPrefab();
+            CityBusPlanner.ReportPhase("bus_prefab_load", timer);
             return Create(
                 parent,
                 plan,
                 player,
                 pedestrians,
-                CityBusResources.LoadPrefab(),
-                CityBusDriverResources.LoadPrefab(),
+                presentationPrefab,
+                driverPrefab,
                 nightFactorProvider);
         }
 
@@ -124,6 +129,7 @@ namespace BarPromenade
                     new GameObject("Model Pool").transform;
                 modelPoolRoot.SetParent(runtimeRoot.transform, false);
 
+                Stopwatch timer = Stopwatch.StartNew();
                 CityBusActor actor = null;
                 CityBusPresentation presentation = null;
                 if (!plan.IsEmpty)
@@ -174,6 +180,11 @@ namespace BarPromenade
                         registry.Dimensions);
                 }
 
+                CityBusPlanner.ReportPhase(
+                    "bus_model",
+                    timer,
+                    GameLog.Field("pooled", actor != null));
+                timer.Restart();
                 CityBusDirector director =
                     runtimeRoot.AddComponent<CityBusDirector>();
                 director.Initialize(
@@ -184,6 +195,7 @@ namespace BarPromenade
                     pedestrians,
                     modelPoolRoot,
                     nightFactorProvider);
+                CityBusPlanner.ReportPhase("bus_director", timer);
                 return director;
             }
             catch

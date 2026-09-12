@@ -161,6 +161,22 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// The bed is started once in Awake and does not play on awake, so
+        /// a player whose object was deactivated - the village dormant
+        /// behind the mother's house door - would come back silent for the
+        /// rest of the run, its strength still written every frame into a
+        /// stopped source. A no-op at first activation, where Awake has
+        /// just started it.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (Source != null && Source.clip != null && !Source.isPlaying)
+            {
+                Source.Play();
+            }
+        }
+
+        /// <summary>
         /// Takes the UNCLAMPED sway amplitude, so a storm at the summit is
         /// audibly worse than the same storm at the tunnel instead of both
         /// pinning at full.

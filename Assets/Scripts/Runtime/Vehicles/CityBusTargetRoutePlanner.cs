@@ -14,8 +14,12 @@ namespace BarPromenade
             CityLayout layout,
             CityBusDesignVehicle vehicle,
             IReadOnlyList<TemporaryNode> nodes,
-            IList<TemporaryLink> acceptedLinks)
+            IList<TemporaryLink> acceptedLinks,
+            out int assignmentAttemptTotal)
         {
+            // Diagnostics only: how many closed loops the two assignment
+            // phases tried before one was accepted, for the load profile.
+            assignmentAttemptTotal = 0;
             List<StopTarget> targets = CreateStopTargets(layout);
             if (targets.Count == 0 || acceptedLinks.Count == 0)
             {
@@ -133,6 +137,7 @@ namespace BarPromenade
                         ref fallback,
                         out List<RouteOccurrence> winding))
                 {
+                    assignmentAttemptTotal = assignmentAttempts;
                     return winding;
                 }
 
@@ -142,6 +147,7 @@ namespace BarPromenade
                 }
             }
 
+            assignmentAttemptTotal = assignmentAttempts;
             if (fallback != null)
             {
                 return fallback;
@@ -189,10 +195,12 @@ namespace BarPromenade
                         ref fallback,
                         out List<RouteOccurrence> winding))
                 {
+                    assignmentAttemptTotal += assignmentAttempts;
                     return winding;
                 }
             }
 
+            assignmentAttemptTotal += assignmentAttempts;
             if (fallback == null)
             {
                 return new List<RouteOccurrence>();
@@ -979,12 +987,24 @@ namespace BarPromenade
             return false;
         }
 
+        /// <summary>
+        /// A candidate survives when its link lies on a cycle: its arrival
+        /// node must reach its departure node again. The link itself is an
+        /// edge of the graph, so that is exactly "both ends in one strongly
+        /// connected component", and one component labelling answers every
+        /// candidate where a flood fill per candidate used to - the same
+        /// booleans, no floats involved, the same removals in the same
+        /// order.
+        /// </summary>
         private static bool KeepCycleCapableCandidates(
             List<StopTarget> targets,
             List<List<StopCandidate>> candidatesByTarget,
             IReadOnlyList<List<int>> outgoing,
             IList<TemporaryLink> acceptedLinks)
         {
+            int[] component = LabelStronglyConnectedComponents(
+                outgoing,
+                acceptedLinks);
             for (int targetIndex = candidatesByTarget.Count - 1;
                  targetIndex >= 0;
                  targetIndex--)
@@ -996,12 +1016,8 @@ namespace BarPromenade
                      candidateIndex--)
                 {
                     StopCandidate candidate = candidates[candidateIndex];
-                    bool[] reachable = MarkReachable(
-                        candidate.Source.ToNodeIndex,
-                        outgoing,
-                        acceptedLinks,
-                        false);
-                    if (!reachable[candidate.Source.FromNodeIndex])
+                    if (component[candidate.Source.FromNodeIndex] !=
+                        component[candidate.Source.ToNodeIndex])
                     {
                         candidates.RemoveAt(candidateIndex);
                     }
@@ -1572,6 +1588,98 @@ namespace BarPromenade
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Tarjan's labelling, iterative so a long street chain cannot
+        /// overflow the call stack. Labels are arbitrary; only equality of
+        /// two nodes' labels is ever read.
+        /// </summary>
+        private static int[] LabelStronglyConnectedComponents(
+            IReadOnlyList<List<int>> outgoing,
+            IList<TemporaryLink> acceptedLinks)
+        {
+            int nodeCount = outgoing.Count;
+            var index = new int[nodeCount];
+            var lowLink = new int[nodeCount];
+            var onStack = new bool[nodeCount];
+            var component = new int[nodeCount];
+            for (int node = 0; node < nodeCount; node++)
+            {
+                index[node] = -1;
+                component[node] = -1;
+            }
+
+            var stack = new List<int>(nodeCount);
+            var frames = new Stack<(int node, int edge)>();
+            int nextIndex = 0;
+            int nextComponent = 0;
+            for (int root = 0; root < nodeCount; root++)
+            {
+                if (index[root] >= 0)
+                {
+                    continue;
+                }
+
+                index[root] = nextIndex;
+                lowLink[root] = nextIndex;
+                nextIndex++;
+                stack.Add(root);
+                onStack[root] = true;
+                frames.Push((root, 0));
+                while (frames.Count > 0)
+                {
+                    (int node, int edge) = frames.Pop();
+                    List<int> links = outgoing[node];
+                    if (edge < links.Count)
+                    {
+                        frames.Push((node, edge + 1));
+                        int next = acceptedLinks[links[edge]].ToNodeIndex;
+                        if (index[next] < 0)
+                        {
+                            index[next] = nextIndex;
+                            lowLink[next] = nextIndex;
+                            nextIndex++;
+                            stack.Add(next);
+                            onStack[next] = true;
+                            frames.Push((next, 0));
+                        }
+                        else if (onStack[next])
+                        {
+                            lowLink[node] = Mathf.Min(
+                                lowLink[node],
+                                index[next]);
+                        }
+
+                        continue;
+                    }
+
+                    if (lowLink[node] == index[node])
+                    {
+                        int member;
+                        do
+                        {
+                            member = stack[stack.Count - 1];
+                            stack.RemoveAt(stack.Count - 1);
+                            onStack[member] = false;
+                            component[member] = nextComponent;
+                        }
+                        while (member != node);
+
+                        nextComponent++;
+                    }
+
+                    if (frames.Count > 0)
+                    {
+                        (int parent, _) = frames.Peek();
+                        lowLink[parent] = Mathf.Min(
+                            lowLink[parent],
+                            lowLink[node]);
+                    }
+                }
+            }
+
+            return component;
         }
 
         private static int CountTurningManeuvers(

@@ -272,6 +272,11 @@ namespace BarPromenade
         {
             float halfRoad = layout.RoadWidth * 0.5f;
             float sideOffset = halfRoad - (SidewalkWidth * 0.5f);
+            // Both precinct plans are pure functions of the layout (and
+            // memoised on it); resolved once here instead of under every
+            // pavement strip.
+            CityCanneryPlan cannery = CityCanneryPlan.Create(layout);
+            CityPortAccessPlan port = CityPortAccessPlan.ForLayout(layout);
             for (int index = 0; index < sortedEdges.Count; index++)
             {
                 RoadEdge edge = sortedEdges[index];
@@ -357,7 +362,7 @@ namespace BarPromenade
 
                 if (!hasStair || !stairOnLeft)
                 {
-                    AddSidewalkWithPortOpening(layout,
+                    AddSidewalkWithPortOpening(cannery, port,
                             start + left * sideOffset + Vector3.up * SidewalkTop,
                             end + left * sideOffset + Vector3.up * SidewalkTop,
                         sidewalks,
@@ -367,7 +372,7 @@ namespace BarPromenade
 
                 if (!hasStair || stairOnLeft)
                 {
-                    AddSidewalkWithPortOpening(layout,
+                    AddSidewalkWithPortOpening(cannery, port,
                             start - left * sideOffset + Vector3.up * SidewalkTop,
                             end - left * sideOffset + Vector3.up * SidewalkTop,
                         sidewalks,
@@ -388,10 +393,10 @@ namespace BarPromenade
             }
         }
 
-        private static void AddSidewalkWithPortOpening(CityLayout layout, Vector3 start, Vector3 end,
+        private static void AddSidewalkWithPortOpening(CityCanneryPlan cannery, CityPortAccessPlan port,
+            Vector3 start, Vector3 end,
             ICollection<Bounds> sidewalks, ICollection<RuntimeOrientedBox> geometry, ICollection<Rect> walkable)
         {
-            CityCanneryPlan cannery=CityCanneryPlan.Create(layout);
             if(cannery!=null)
             {
                 Rect opening=cannery.StreetOpening;
@@ -415,7 +420,6 @@ namespace BarPromenade
                     return;
                 }
             }
-            CityPortAccessPlan port=CityPortAccessPlan.ForLayout(layout);
             if(port!=null && Mathf.Abs(end.z-start.z)<.01f && Mathf.Abs(end.x-start.x)>.01f)
             {
                 Rect opening=port.StreetOpening;
@@ -610,24 +614,29 @@ namespace BarPromenade
             ICollection<Rect> markingExclusions)
         {
             float halfRoad = layout.RoadWidth * 0.5f;
+            Dictionary<Vector2Int, List<RoadEdge>> approachesByNode =
+                IndexCrosswalkApproaches(
+                    layout,
+                    sortedEdges,
+                    edgesWithSidewalks);
             for (int nodeIndex = 0;
                  nodeIndex < selectedNodes.Count;
                  nodeIndex++)
             {
                 Vector2Int node = selectedNodes[nodeIndex];
+                if (!approachesByNode.TryGetValue(
+                        node,
+                        out List<RoadEdge> approaches))
+                {
+                    continue;
+                }
+
                 Vector3 nodePosition = layout.GetNodeWorldPosition(node);
                 for (int edgeIndex = 0;
-                     edgeIndex < sortedEdges.Count;
+                     edgeIndex < approaches.Count;
                      edgeIndex++)
                 {
-                    RoadEdge edge = sortedEdges[edgeIndex];
-                    if (!edge.Contains(node) ||
-                        layout.GetPathKind(edge) != CityPathKind.Street ||
-                        !edgesWithSidewalks.Contains(edge))
-                    {
-                        continue;
-                    }
-
+                    RoadEdge edge = approaches[edgeIndex];
                     Vector2Int other = edge.Other(node);
                     Vector3 otherPosition =
                         layout.GetNodeWorldPosition(other);
@@ -683,6 +692,54 @@ namespace BarPromenade
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// The street edges with pavements, listed under each of their two
+        /// nodes in sorted-edge order. A crossing node reads its list
+        /// instead of filtering the whole sorted edge list; the list is
+        /// that filter's own subsequence, so the crossings come out in the
+        /// same order.
+        /// </summary>
+        private static Dictionary<Vector2Int, List<RoadEdge>>
+            IndexCrosswalkApproaches(
+                CityLayout layout,
+                IReadOnlyList<RoadEdge> sortedEdges,
+                ISet<RoadEdge> edgesWithSidewalks)
+        {
+            var result = new Dictionary<Vector2Int, List<RoadEdge>>();
+            for (int edgeIndex = 0;
+                 edgeIndex < sortedEdges.Count;
+                 edgeIndex++)
+            {
+                RoadEdge edge = sortedEdges[edgeIndex];
+                if (layout.GetPathKind(edge) != CityPathKind.Street ||
+                    !edgesWithSidewalks.Contains(edge))
+                {
+                    continue;
+                }
+
+                AddApproach(result, edge.A, edge);
+                AddApproach(result, edge.B, edge);
+            }
+
+            return result;
+        }
+
+        private static void AddApproach(
+            IDictionary<Vector2Int, List<RoadEdge>> approachesByNode,
+            Vector2Int node,
+            RoadEdge edge)
+        {
+            if (!approachesByNode.TryGetValue(
+                    node,
+                    out List<RoadEdge> approaches))
+            {
+                approaches = new List<RoadEdge>(4);
+                approachesByNode.Add(node, approaches);
+            }
+
+            approaches.Add(edge);
         }
 
         private static void CreateCenterMarkings(

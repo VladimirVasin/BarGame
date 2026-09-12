@@ -46,6 +46,18 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// The closed-form partial derivatives of
+        /// <see cref="Field.SampleLooseDepth"/> at <paramref name="point"/>:
+        /// <c>x</c> is dDepth/dx, <c>y</c> is dDepth/dz. One evaluation
+        /// replaces the four finite-difference taps the loose-sand normal
+        /// pass used to take around every vertex.
+        /// </summary>
+        internal static Vector2 SampleLooseDepthGradient(in Field field, Vector2 point)
+        {
+            return field.SampleLooseDepthGradient(point);
+        }
+
+        /// <summary>
         /// What the envelope takes from the surface and the elevation plan,
         /// resolved once so a pass over a whole mesh does not redo it under
         /// every vertex and every gradient tap. The static samplers are this
@@ -90,6 +102,70 @@ namespace BarPromenade
                 float grain = 0.5f + 0.25f * Mathf.Sin(point.x * 0.83f + point.y * 0.37f) +
                               0.25f * Mathf.Sin(point.x * 1.31f - point.y * 0.69f);
                 return envelope * Mathf.Lerp(0.025f, MaximumLooseDepth, grain);
+            }
+
+            /// <summary>
+            /// (dDepth/dx, dDepth/dz) of <see cref="SampleLooseDepth"/>,
+            /// differentiated term by term:
+            /// <list type="bullet">
+            /// <item>The envelope depends on z alone, so its x-derivative
+            /// is zero. Each factor is <c>Mathf.SmoothStep(0, 1, t)</c> =
+            /// 3t² − 2t³ on a clamped t: its slope in t is 6t(1 − t) on the
+            /// ramp and exactly zero on both clamp plateaus, so the product
+            /// rule below is right across the clamp edges too (the field is
+            /// C¹ there; only the second derivative jumps).</item>
+            /// <item>The grain lerp is affine in the grain — its clamp is
+            /// inert because the grain is 0.5 ± 0.25 ± 0.25 and never
+            /// leaves [0, 1] — so its slope is the constant
+            /// <c>MaximumLooseDepth − 0.025</c> times the grain's
+            /// sinusoid derivatives.</item>
+            /// </list>
+            /// Zero where the field does not apply, exactly as the depth is.
+            /// </summary>
+            internal Vector2 SampleLooseDepthGradient(Vector2 point)
+            {
+                if (!applies)
+                    return Vector2.zero;
+                const float shoreStart = 4f;
+                const float shoreFull = 6f;
+                const float inlandRun = 2.5f;
+                const float shoreRun = shoreFull - shoreStart;
+                float inlandT = (point.y - street) / inlandRun;
+                float shoreT = (shoreZ - point.y - shoreStart) / shoreRun;
+                float inland = Mathf.SmoothStep(0f, 1f, inlandT);
+                float shore = Mathf.SmoothStep(0f, 1f, shoreT);
+                // d/dz of each ramp: the chain rule pulls in dt/dz, which is
+                // +1/run for the inland ramp and -1/run for the shore ramp.
+                float inlandSlope = SmoothStepSlope(inlandT) / inlandRun;
+                float shoreSlope = -SmoothStepSlope(shoreT) / shoreRun;
+                float envelope = inland * shore;
+                float envelopeSlopeZ = inlandSlope * shore + inland * shoreSlope;
+
+                float phaseA = point.x * 0.83f + point.y * 0.37f;
+                float phaseB = point.x * 1.31f - point.y * 0.69f;
+                float grain = 0.5f + 0.25f * Mathf.Sin(phaseA) +
+                              0.25f * Mathf.Sin(phaseB);
+                float cosA = 0.25f * Mathf.Cos(phaseA);
+                float cosB = 0.25f * Mathf.Cos(phaseB);
+                float grainSlopeX = cosA * 0.83f + cosB * 1.31f;
+                float grainSlopeZ = cosA * 0.37f - cosB * 0.69f;
+                const float depthPerGrain = MaximumLooseDepth - 0.025f;
+                float depthFactor = Mathf.Lerp(0.025f, MaximumLooseDepth, grain);
+                return new Vector2(
+                    envelope * depthPerGrain * grainSlopeX,
+                    envelopeSlopeZ * depthFactor +
+                    envelope * depthPerGrain * grainSlopeZ);
+            }
+
+            /// <summary>
+            /// d/dt of <c>Mathf.SmoothStep(0f, 1f, t)</c>: 6t(1 − t) inside
+            /// the ramp, zero on the clamped plateaus either side.
+            /// </summary>
+            private static float SmoothStepSlope(float t)
+            {
+                if (t <= 0f || t >= 1f)
+                    return 0f;
+                return 6f * t * (1f - t);
             }
         }
 

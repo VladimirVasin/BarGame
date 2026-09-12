@@ -565,5 +565,24 @@ namespace BarPromenade
         {
             windSound?.SetNormalizedStrength(0f);
         }
+
+        /// <summary>
+        /// The system does not play on awake, so a field whose object was
+        /// deactivated - the village dormant behind the mother's house door
+        /// - would come back with still air over the lane. Refilled and
+        /// restarted the way the build starts it; nothing to do at first
+        /// activation, before Initialize. The wind bed the disable silenced
+        /// comes back through the next LateUpdate's strength write.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (!IsInitialized || Particles == null || Particles.isPlaying)
+            {
+                return;
+            }
+
+            Prewarm();
+            Particles.Play(true);
+        }
     }
 }

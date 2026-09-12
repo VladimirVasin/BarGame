@@ -460,6 +460,10 @@ namespace BarPromenade
             Transform rails = new GameObject("Quay Guard Rails").transform;
             rails.SetParent(parent, false);
             CityRiverDefinition definition = layout.River.Definition;
+            // A pure predicate on the layout, so one answer serves both
+            // banks; it re-collected the waterfront surfaces per promenade.
+            bool hasSeacoast =
+                CitySeacoastPlanner.HasDressableSeacoast(layout);
             for (int bankIndex = 0;
                  bankIndex < layout.River.Promenades.Count;
                  bankIndex++)
@@ -515,8 +519,6 @@ namespace BarPromenade
                 // promenade. Its paving has an extra structural lip
                 // up to the waterside rail; cap that lip visibly so it
                 // cannot masquerade as another route.
-                bool hasSeacoast =
-                    CitySeacoastPlanner.HasDressableSeacoast(layout);
                 if (hasSeacoast)
                 {
                     float lipMinimum = promenade.WestBank

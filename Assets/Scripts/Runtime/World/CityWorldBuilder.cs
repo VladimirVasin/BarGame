@@ -142,14 +142,32 @@ namespace BarPromenade
                 mountainBoundaryPlan.IsEnabled
                     ? CityMountainBackdropWorldBuilder.Build(world)
                     : null;
+            // The block's sub-stages report under their own rows so the
+            // split between planning, batching, the river's primitives,
+            // the stairs and the fences is measurable; the block row
+            // itself keeps its old meaning and its old timer.
             BuildRoads(world, layout, fringeYardPlan);
+            Stopwatch subTimer = Stopwatch.StartNew();
             GameObject riverRoot = CityRiverWorldBuilder.Build(
                 world,
                 layout,
                 mountainBoundaryPlan,
                 out IReadOnlyList<Transform> riverQuayLampAnchors);
+            ReportBlock("roads_and_river/river", subTimer);
+            subTimer.Restart();
             BuildElevationStructures(world, layout);
+            ReportBlock(
+                "roads_and_river/stairs",
+                subTimer,
+                GameLog.Field(
+                    "stairs",
+                    layout.ElevationPlan.SignatureStairs.Count));
+            subTimer.Restart();
             RoadFenceWorldBuilder.Build(world, fencePlan);
+            ReportBlock(
+                "roads_and_river/fences",
+                subTimer,
+                GameLog.Field("segments", fencePlan.Segments.Count));
             ReportBlock("roads_and_river", blockTimer);
             yield return new CompositionStep("roads_and_river", 0.40f);
             blockTimer.Restart();
@@ -576,13 +594,15 @@ namespace BarPromenade
             Vector3[] normals = source.Normals.ToArray();
             var grounds = new float[vertices.Length];
             var depths = new float[vertices.Length];
-            var beachSurfaces = new List<CitySurfaceDescriptor>();
+            // The surface bounds and the field constants are resolved once
+            // per surface, not read back under every vertex.
+            var beachBounds = new List<Rect>();
             var fields = new List<CityBeachSandPlan.Field>();
             foreach (CitySurfaceDescriptor surface in layout.Surfaces)
             {
                 if (surface.Kind != CitySurfaceKind.Beach)
                     continue;
-                beachSurfaces.Add(surface);
+                beachBounds.Add(surface.WorldBounds);
                 fields.Add(new CityBeachSandPlan.Field(
                     layout.ElevationPlan, surface));
             }
@@ -593,10 +613,10 @@ namespace BarPromenade
                 grounds[index] = vertex.y;
                 var point = new Vector2(vertex.x, vertex.z);
                 for (int surfaceIndex = 0;
-                     surfaceIndex < beachSurfaces.Count;
+                     surfaceIndex < beachBounds.Count;
                      surfaceIndex++)
                 {
-                    Rect bounds = beachSurfaces[surfaceIndex].WorldBounds;
+                    Rect bounds = beachBounds[surfaceIndex];
                     if (point.x < bounds.xMin - 0.001f || point.x > bounds.xMax + 0.001f ||
                         point.y < bounds.yMin - 0.001f || point.y > bounds.yMax + 0.001f)
                         continue;
@@ -604,16 +624,19 @@ namespace BarPromenade
                     depths[index] = field.SampleLooseDepth(point);
                     // Different terrain patches duplicate edge vertices.
                     // Analytic normals keep their loose skin continuous too.
+                    // The loose skin's slope is the closed-form gradient of
+                    // the depth field, tilting the sampled ground normal the
+                    // way the four finite-difference taps used to: a rise
+                    // of dDepth/dx leans the normal by -dDepth/dx.
                     if (depths[index] > 0f)
                     {
-                        const float delta = 0.1f;
-                        float west = field.SampleLooseDepth(point - Vector2.right * delta);
-                        float east = field.SampleLooseDepth(point + Vector2.right * delta);
-                        float south = field.SampleLooseDepth(point - Vector2.up * delta);
-                        float north = field.SampleLooseDepth(point + Vector2.up * delta);
+                        Vector2 gradient =
+                            CityBeachSandPlan.SampleLooseDepthGradient(
+                                in field,
+                                point);
                         Vector3 normal = normals[index] / Mathf.Max(0.01f, normals[index].y);
-                        normal.x += (west - east) / (delta * 2f);
-                        normal.z += (south - north) / (delta * 2f);
+                        normal.x -= gradient.x;
+                        normal.z -= gradient.y;
                         normals[index] = normal.normalized;
                     }
                     break;
@@ -724,8 +747,19 @@ namespace BarPromenade
         {
             Transform roads = new GameObject("Road Network").transform;
             roads.SetParent(parent, false);
+            Stopwatch subTimer = Stopwatch.StartNew();
             CityStreetSurfacePlan plan =
                 CityStreetSurfacePlanner.Create(layout);
+            ReportBlock(
+                "roads_and_river/street_plan",
+                subTimer,
+                GameLog.Field("street_boxes", plan.StreetGeometry.Count),
+                GameLog.Field("sidewalk_boxes", plan.SidewalkGeometry.Count),
+                GameLog.Field(
+                    "marking_boxes",
+                    plan.CenterMarkingGeometry.Count +
+                    plan.CrosswalkMarkingGeometry.Count));
+            subTimer.Restart();
             BuildOrientedSurfaceBoxesIfAny(
                 "Street Surfaces",
                 roads,
@@ -747,6 +781,14 @@ namespace BarPromenade
                     renderer,
                     CityParkSurfaceKind.Path,
                     CityExteriorAppearance.ParkPath));
+            ReportBlock(
+                "roads_and_river/streets",
+                subTimer,
+                GameLog.Field(
+                    "boxes",
+                    plan.StreetGeometry.Count +
+                    plan.ParkPathGeometry.Count));
+            subTimer.Restart();
             BuildOrientedSurfaceBoxesIfAny(
                 "Sidewalk Surfaces",
                 roads,
@@ -755,6 +797,11 @@ namespace BarPromenade
                 true,
                 CityExteriorAppearance.SidewalkTextureTileSize,
                 CityExteriorAppearance.ApplySidewalkSurface);
+            ReportBlock(
+                "roads_and_river/sidewalks",
+                subTimer,
+                GameLog.Field("boxes", plan.SidewalkGeometry.Count));
+            subTimer.Restart();
             BuildOrientedSurfaceBoxesIfAny(
                 "Road Center Markings",
                 roads,
@@ -771,6 +818,14 @@ namespace BarPromenade
                 false,
                 CityExteriorAppearance.RoadMarkingTextureTileSize,
                 CityExteriorAppearance.ApplyRoadMarkingSurface);
+            ReportBlock(
+                "roads_and_river/markings",
+                subTimer,
+                GameLog.Field(
+                    "boxes",
+                    plan.CenterMarkingGeometry.Count +
+                    plan.CrosswalkMarkingGeometry.Count));
+            subTimer.Restart();
             // Gutters and the flat open precincts pool separately but
             // draw as one sheet: the cemetery terrace and the church
             // ground are the only ground level enough for a
@@ -784,7 +839,13 @@ namespace BarPromenade
                     layout,
                     layout.Seed,
                     fringeYardPlan));
+            double puddlePlanMs = subTimer.Elapsed.TotalMilliseconds;
             CityPuddleWorldBuilder.Build(roads, puddles);
+            ReportBlock(
+                "roads_and_river/puddles",
+                subTimer,
+                GameLog.Field("plan_ms", puddlePlanMs),
+                GameLog.Field("patches", puddles.Count));
         }
 
         private static void AddRoadGeometry(

@@ -255,9 +255,9 @@ namespace BarPromenade
             AreaTravelRequest request)
         {
             yield return null;
-            // Area travel is a Single-mode boundary: a City left dormant
-            // behind a bar door is not carried across it.
-            yield return ResidentCityPolicy.DiscardDormantCity();
+            // Area travel is a Single-mode boundary: an exterior left
+            // dormant behind an interior door is not carried across it.
+            yield return ResidentExteriorPolicy.DiscardDormantExterior();
 
             AsyncOperation loadingOperation = TryStartLoad(
                 SceneIds.AreaLoading);
