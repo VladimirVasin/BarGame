@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -200,6 +201,21 @@ namespace BarPromenade
                 out halfWidth);
         }
 
+        /// <summary>
+        /// The nearest route segment, found the way the terrain grid always
+        /// found it - the first segment in route order whose point distance
+        /// is strictly below every earlier one - but without visiting all
+        /// six hundred segments per vertex. The segments sit in
+        /// <see cref="RouteIndex"/> as run-length chunks with planar bounds;
+        /// a chunk whose box is provably farther than the best answer can
+        /// contain no segment that would ever have passed the strict
+        /// comparison, so leaving it out changes no bit of the result.
+        /// The scan otherwise runs the original body over the original
+        /// order with the original comparison, and the pose of the winner
+        /// is evaluated once at the end instead of at every provisional
+        /// improvement: the old loop overwrote it on each one, so only the
+        /// last evaluation ever reached the caller.
+        /// </summary>
         private static void FindClosest(
             MountainRoadRoutePlan route,
             Vector2 point,
@@ -209,48 +225,301 @@ namespace BarPromenade
             out Vector3 right,
             out float halfWidth)
         {
+            RouteIndex index = RouteIndex.For(route);
+            RouteSegment[] segments = index.Segments;
+            RouteChunk[] chunks = skipBridgeSegments
+                ? index.LandChunks
+                : index.AllChunks;
+            float px = point.x;
+            float pz = point.y;
+
+            // Every eligible segment of a chunk lies inside the chunk's box,
+            // so the far corner of any non-empty box bounds the nearest
+            // distance from above. Without this the first chunk at the
+            // portal would set the bar, and for a vertex by the terminal
+            // every chunk between would survive the box test.
+            float upperSqr = float.PositiveInfinity;
+            for (int chunk = 0; chunk < chunks.Length; chunk++)
+            {
+                ref RouteChunk box = ref chunks[chunk];
+                if (box.Count == 0)
+                {
+                    continue;
+                }
+
+                float farX = Mathf.Max(px - box.MinX, box.MaxX - px);
+                float farZ = Mathf.Max(pz - box.MinZ, box.MaxZ - pz);
+                float farSqr = farX * farX + farZ * farZ;
+                if (farSqr < upperSqr)
+                {
+                    upperSqr = farSqr;
+                }
+            }
+
+            float reach = Mathf.Sqrt(upperSqr) + RouteIndex.PruneSafety;
+            float reachSqr = reach * reach;
+            float reachBestSqr = float.PositiveInfinity;
             float bestSqr = float.PositiveInfinity;
+            float bestT = 0f;
+            int bestSegment = -1;
+            for (int chunk = 0; chunk < chunks.Length; chunk++)
+            {
+                ref RouteChunk box = ref chunks[chunk];
+                if (box.Count == 0)
+                {
+                    continue;
+                }
+
+                if (bestSqr < reachBestSqr)
+                {
+                    reachBestSqr = bestSqr;
+                    float tightened = Mathf.Sqrt(bestSqr) +
+                                      RouteIndex.PruneSafety;
+                    float tightenedSqr = tightened * tightened;
+                    if (tightenedSqr < reachSqr)
+                    {
+                        reachSqr = tightenedSqr;
+                    }
+                }
+
+                float nearX = Mathf.Max(
+                    Mathf.Max(box.MinX - px, px - box.MaxX),
+                    0f);
+                float nearZ = Mathf.Max(
+                    Mathf.Max(box.MinZ - pz, pz - box.MaxZ),
+                    0f);
+                if (nearX * nearX + nearZ * nearZ > reachSqr)
+                {
+                    continue;
+                }
+
+                int last = Mathf.Min(
+                    box.First + RouteIndex.ChunkSize,
+                    segments.Length);
+                for (int segment = box.First; segment < last; segment++)
+                {
+                    ref RouteSegment candidate = ref segments[segment];
+                    if (skipBridgeSegments && candidate.InsideBridge)
+                    {
+                        continue;
+                    }
+
+                    float denominator = candidate.Denominator;
+                    float t = denominator <= 0.000001f
+                        ? 0f
+                        : Mathf.Clamp01(
+                            Vector2.Dot(point - candidate.A, candidate.AB) /
+                            denominator);
+                    Vector2 closest = Vector2.Lerp(
+                        candidate.A,
+                        candidate.B,
+                        t);
+                    float sqr = (point - closest).sqrMagnitude;
+                    if (sqr >= bestSqr)
+                    {
+                        continue;
+                    }
+
+                    bestSqr = sqr;
+                    bestT = t;
+                    bestSegment = segment;
+                }
+            }
+
             center = route.Start;
             right = route.Samples[0].Right;
             halfWidth = route.Samples[0].Width * 0.5f;
-            for (int index = 1; index < route.Samples.Count; index++)
+            if (bestSegment >= 0)
             {
-                MountainRoadRouteSample first = route.Samples[index - 1];
-                MountainRoadRouteSample second = route.Samples[index];
-                float segmentDistance =
-                    (first.Distance + second.Distance) * 0.5f;
-                if (skipBridgeSegments &&
-                    segmentDistance > route.Bridge.StartDistance + 0.05f &&
-                    segmentDistance < route.Bridge.EndDistance - 0.05f)
-                {
-                    continue;
-                }
-
-                Vector2 a = new Vector2(first.Position.x, first.Position.z);
-                Vector2 b = new Vector2(second.Position.x, second.Position.z);
-                Vector2 ab = b - a;
-                float denominator = ab.sqrMagnitude;
-                float t = denominator <= 0.000001f
-                    ? 0f
-                    : Mathf.Clamp01(Vector2.Dot(point - a, ab) / denominator);
-                Vector2 closest = Vector2.Lerp(a, b, t);
-                float sqr = (point - closest).sqrMagnitude;
-                if (sqr >= bestSqr)
-                {
-                    continue;
-                }
-
-                bestSqr = sqr;
-                center = Vector3.Lerp(first.Position, second.Position, t);
+                MountainRoadRouteSample first = route.Samples[bestSegment];
+                MountainRoadRouteSample second =
+                    route.Samples[bestSegment + 1];
+                center = Vector3.Lerp(first.Position, second.Position, bestT);
                 Vector3 forward = Vector3.Slerp(
                     first.Forward,
                     second.Forward,
-                    t).normalized;
+                    bestT).normalized;
                 right = Vector3.Cross(Vector3.up, forward).normalized;
-                halfWidth = Mathf.Lerp(first.Width, second.Width, t) * 0.5f;
+                halfWidth = Mathf.Lerp(first.Width, second.Width, bestT) *
+                            0.5f;
             }
 
             distance = Mathf.Sqrt(bestSqr);
+        }
+
+        /// <summary>
+        /// One route segment as the nearest-segment scan reads it. The
+        /// planar endpoints, their difference and its squared length are the
+        /// very values the scan used to rebuild from the samples on every
+        /// vertex; computed once by the same expressions they are the same
+        /// floats, so the per-vertex arithmetic downstream is unchanged.
+        /// </summary>
+        private readonly struct RouteSegment
+        {
+            internal RouteSegment(
+                Vector2 a,
+                Vector2 b,
+                Vector2 ab,
+                float denominator,
+                bool insideBridge)
+            {
+                A = a;
+                B = b;
+                AB = ab;
+                Denominator = denominator;
+                InsideBridge = insideBridge;
+            }
+
+            internal readonly Vector2 A;
+            internal readonly Vector2 B;
+            internal readonly Vector2 AB;
+            internal readonly float Denominator;
+
+            /// <summary>
+            /// True where the terrain scan skips the segment because the
+            /// gorge, not the deck, owns the ground under it.
+            /// </summary>
+            internal readonly bool InsideBridge;
+        }
+
+        /// <summary>
+        /// The planar box around one run of consecutive segments, holding
+        /// only the segments a scan mode may visit. Consecutive runs keep
+        /// the visiting order equal to the route order, which the strict
+        /// first-wins comparison depends on.
+        /// </summary>
+        private struct RouteChunk
+        {
+            internal int First;
+            internal int Count;
+            internal float MinX;
+            internal float MinZ;
+            internal float MaxX;
+            internal float MaxZ;
+        }
+
+        /// <summary>
+        /// Per-route acceleration data, built once per route plan and held
+        /// by reference to it. The plan is immutable, so the index can never
+        /// go stale; the cache keeps one slot because every consumer walks
+        /// a single route at a time, and even a caller alternating between
+        /// two plans pays a rebuild that costs no more than the linear scan
+        /// it replaces.
+        /// </summary>
+        private sealed class RouteIndex
+        {
+            internal const int ChunkSize = 16;
+
+            /// <summary>
+            /// Metres a chunk box must stand beyond the best distance before
+            /// the chunk is skipped. The box test is exact geometry and the
+            /// scan is rounded float arithmetic; half a metre is thousands
+            /// of ulps at any coordinate the mountain uses, so no segment
+            /// the rounded scan could have preferred is ever left out.
+            /// </summary>
+            internal const float PruneSafety = 0.5f;
+
+            private static RouteIndex cached;
+
+            private RouteIndex(MountainRoadRoutePlan route)
+            {
+                Route = route;
+                IReadOnlyList<MountainRoadRouteSample> samples = route.Samples;
+                int count = Mathf.Max(0, samples.Count - 1);
+                Segments = new RouteSegment[count];
+                float bridgeStart = route.Bridge.StartDistance + 0.05f;
+                float bridgeEnd = route.Bridge.EndDistance - 0.05f;
+                for (int index = 1; index < samples.Count; index++)
+                {
+                    MountainRoadRouteSample first = samples[index - 1];
+                    MountainRoadRouteSample second = samples[index];
+                    float segmentDistance =
+                        (first.Distance + second.Distance) * 0.5f;
+                    Vector2 a = new Vector2(
+                        first.Position.x,
+                        first.Position.z);
+                    Vector2 b = new Vector2(
+                        second.Position.x,
+                        second.Position.z);
+                    Vector2 ab = b - a;
+                    Segments[index - 1] = new RouteSegment(
+                        a,
+                        b,
+                        ab,
+                        ab.sqrMagnitude,
+                        segmentDistance > bridgeStart &&
+                        segmentDistance < bridgeEnd);
+                }
+
+                AllChunks = BuildChunks(Segments, false);
+                LandChunks = BuildChunks(Segments, true);
+            }
+
+            internal MountainRoadRoutePlan Route { get; }
+            internal RouteSegment[] Segments { get; }
+            internal RouteChunk[] AllChunks { get; }
+            internal RouteChunk[] LandChunks { get; }
+
+            internal static RouteIndex For(MountainRoadRoutePlan route)
+            {
+                RouteIndex index = cached;
+                if (index == null || !ReferenceEquals(index.Route, route))
+                {
+                    index = new RouteIndex(route);
+                    cached = index;
+                }
+
+                return index;
+            }
+
+            private static RouteChunk[] BuildChunks(
+                RouteSegment[] segments,
+                bool skipBridgeSegments)
+            {
+                int chunkCount = (segments.Length + ChunkSize - 1) / ChunkSize;
+                var chunks = new RouteChunk[chunkCount];
+                for (int chunk = 0; chunk < chunkCount; chunk++)
+                {
+                    RouteChunk box = new RouteChunk
+                    {
+                        First = chunk * ChunkSize,
+                        Count = 0,
+                        MinX = float.PositiveInfinity,
+                        MinZ = float.PositiveInfinity,
+                        MaxX = float.NegativeInfinity,
+                        MaxZ = float.NegativeInfinity
+                    };
+                    int last = Mathf.Min(
+                        box.First + ChunkSize,
+                        segments.Length);
+                    for (int segment = box.First; segment < last; segment++)
+                    {
+                        ref RouteSegment candidate = ref segments[segment];
+                        if (skipBridgeSegments && candidate.InsideBridge)
+                        {
+                            continue;
+                        }
+
+                        box.Count++;
+                        box.MinX = Mathf.Min(
+                            box.MinX,
+                            Mathf.Min(candidate.A.x, candidate.B.x));
+                        box.MinZ = Mathf.Min(
+                            box.MinZ,
+                            Mathf.Min(candidate.A.y, candidate.B.y));
+                        box.MaxX = Mathf.Max(
+                            box.MaxX,
+                            Mathf.Max(candidate.A.x, candidate.B.x));
+                        box.MaxZ = Mathf.Max(
+                            box.MaxZ,
+                            Mathf.Max(candidate.A.y, candidate.B.y));
+                    }
+
+                    chunks[chunk] = box;
+                }
+
+                return chunks;
+            }
         }
 
         private static float ApplyBridgeGorge(

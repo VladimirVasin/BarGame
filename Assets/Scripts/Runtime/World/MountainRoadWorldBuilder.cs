@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -141,6 +142,12 @@ namespace BarPromenade
             MountainRoadValidator.ValidateOrThrow(plan);
             ConfigureCamera(camera);
 
+            // The root's timer brackets this whole enumerator as one
+            // `world_build` phase; these blocks say which builder inside it
+            // the time went to. Reported before each yield and restarted
+            // after it, so a frame's wait never lands on a block.
+            Stopwatch blockTimer = Stopwatch.StartNew();
+            Stopwatch blocksTotal = Stopwatch.StartNew();
             var root = new GameObject("Mountain Road World");
             root.transform.SetParent(parent, false);
             var physicalRoot = new GameObject("Physical World");
@@ -153,11 +160,14 @@ namespace BarPromenade
             GameObject terrainRoot = BuildTerrain(
                 physicalRoot.transform,
                 plan);
+            ReportBlock("terrain", blockTimer);
             yield return new CompositionStep("terrain", 0.20f);
-            GameObject road = CreateMeshObject(
+            blockTimer.Restart();
+            GameObject road = CreateTerrainMeshObject(
                 "Continuous Narrow Road",
                 physicalRoot.transform,
                 MountainRoadSurfaceMeshFactory.Create(plan),
+                blockTimer.Elapsed.TotalMilliseconds,
                 RoadColor,
                 true,
                 ShadowCastingMode.On,
@@ -177,6 +187,8 @@ namespace BarPromenade
             // car stops on this apron under its own headlights, and it is
             // the surface the passenger is looking at when he gets out.
             terminalApron.GetComponent<MeshRenderer>().receiveShadows = true;
+            ReportBlock("road_and_apron", blockTimer);
+            blockTimer.Restart();
             MountainRoadBridgeWorldResult bridge =
                 MountainRoadBridgeWorldBuilder.Build(
                     physicalRoot.transform,
@@ -184,8 +196,12 @@ namespace BarPromenade
             MergeSemanticObjects(
                 semanticObjects,
                 bridge.SemanticObjects);
+            ReportBlock("bridge", blockTimer);
+            blockTimer.Restart();
             BuildTunnel(physicalRoot.transform, plan.Tunnel);
+            ReportBlock("tunnel", blockTimer);
             yield return new CompositionStep("road_bridge_tunnel", 0.40f);
+            blockTimer.Restart();
             MountainRoadCafeWorldResult cafe =
                 MountainRoadCafeWorldBuilder.Build(
                     physicalRoot.transform,
@@ -193,7 +209,9 @@ namespace BarPromenade
             MergeSemanticObjects(
                 semanticObjects,
                 cafe.SemanticAnchors);
+            ReportBlock("cafe", blockTimer);
             yield return new CompositionStep("cafe", 0.55f);
+            blockTimer.Restart();
             MountainCablewayWorldResult cableway =
                 MountainCablewayWorldBuilder.Build(
                     physicalRoot.transform,
@@ -201,6 +219,8 @@ namespace BarPromenade
             MergeSemanticObjects(
                 semanticObjects,
                 cableway.SemanticObjects);
+            ReportBlock("cableway", blockTimer);
+            blockTimer.Restart();
             MountainRoadTerminalSiteWorldResult site =
                 MountainRoadTerminalSiteWorldBuilder.Build(
                     physicalRoot.transform,
@@ -208,23 +228,44 @@ namespace BarPromenade
             MergeSemanticObjects(
                 semanticObjects,
                 site.SemanticObjects);
+            ReportBlock("terminal_site", blockTimer);
             yield return new CompositionStep("terminal", 0.70f);
+            blockTimer.Restart();
             BuildForest(physicalRoot.transform, plan.Forest);
+            ReportBlock(
+                "forest",
+                blockTimer,
+                GameLog.Field("tree_count", plan.Forest.Count));
             yield return new CompositionStep("forest", 0.80f);
+            blockTimer.Restart();
             BuildMisc(
                 physicalRoot.transform,
                 plan.Misc,
                 semanticObjects);
+            ReportBlock(
+                "misc",
+                blockTimer,
+                GameLog.Field("item_count", plan.Misc.Count));
+            blockTimer.Restart();
 
             // After the misc, because the culvert it crosses under is one of
             // them and the pour has to stand in a bore that exists.
             MountainRoadBrookBuilder.Build(physicalRoot.transform, plan);
+            ReportBlock("brook", blockTimer);
             yield return new CompositionStep("roadside", 0.90f);
+            blockTimer.Restart();
             BuildRidges(backdropRoot.transform, plan.Ridges);
+            ReportBlock(
+                "ridges",
+                blockTimer,
+                GameLog.Field("ridge_count", plan.Ridges.Count));
+            blockTimer.Restart();
             MountainRoadVistaWorldResult vista =
                 MountainRoadVistaWorldBuilder.Build(
                     backdropRoot.transform,
                     plan.Vista);
+            ReportBlock("vista", blockTimer);
+            blockTimer.Restart();
 
             completed(new MountainRoadWorldResult(
                 root,
@@ -240,7 +281,69 @@ namespace BarPromenade
                 site,
                 vista,
                 semanticObjects));
+            ReportBlock(
+                "world_complete",
+                blockTimer,
+                GameLog.Field(
+                    "blocks_total_ms",
+                    blocksTotal.Elapsed.TotalMilliseconds));
             yield return new CompositionStep("world_complete", 1f);
+        }
+
+        private static void ReportBlock(
+            string block,
+            Stopwatch timer,
+            params GameLogField[] extra)
+        {
+            timer.Stop();
+            var fields = new GameLogField[2 + extra.Length];
+            fields[0] = GameLog.Field("block", block);
+            fields[1] = GameLog.Field(
+                "duration_ms",
+                timer.Elapsed.TotalMilliseconds);
+            Array.Copy(extra, 0, fields, 2, extra.Length);
+            GameLog.Debug("mountain_road", "world_build_block", fields);
+        }
+
+        /// <summary>
+        /// One row per generated ground-like mesh: what it cost to make and
+        /// what its collider cost on top. Internal so the brook builder,
+        /// which makes the same kind of mesh, files its rows under the same
+        /// event and category.
+        /// </summary>
+        internal static void ReportTerrainMesh(
+            string name,
+            Mesh mesh,
+            double meshMs,
+            double colliderMs,
+            params GameLogField[] extra)
+        {
+            if (mesh == null)
+            {
+                return;
+            }
+
+            var fields = new GameLogField[5 + extra.Length];
+            fields[0] = GameLog.Field("name", name);
+            fields[1] = GameLog.Field("vertices", mesh.vertexCount);
+            fields[2] = GameLog.Field("indices", CountIndices(mesh));
+            fields[3] = GameLog.Field("mesh_ms", meshMs);
+            fields[4] = GameLog.Field("collider_ms", colliderMs);
+            Array.Copy(extra, 0, fields, 5, extra.Length);
+            GameLog.Debug("mountain_road", "terrain_mesh", fields);
+        }
+
+        /// <summary>Every submesh, so a split ground counts its whole
+        /// surface rather than its first material's share.</summary>
+        internal static long CountIndices(Mesh mesh)
+        {
+            long total = 0;
+            for (int index = 0; index < mesh.subMeshCount; index++)
+            {
+                total += (long)mesh.GetIndexCount(index);
+            }
+
+            return total;
         }
 
         private static void MergeSemanticObjects(
@@ -279,23 +382,85 @@ namespace BarPromenade
             root.transform.SetParent(parent, false);
             MountainRoadTerrainMeshes meshes =
                 MountainRoadTerrainMeshFactory.Create(plan);
-            CreateMeshObject(
+
+            // The grid row carries what the two meshes share - one sampled
+            // vertex grid, one split, one normal pass - and each mesh row
+            // below carries only its own upload and collider, so the sum
+            // of the rows is the terrain and nothing is counted twice.
+            GameLog.Debug(
+                "mountain_road",
+                "terrain_grid",
+                GameLog.Field("name", root.name),
+                GameLog.Field("columns", meshes.Columns),
+                GameLog.Field("rows", meshes.Rows),
+                GameLog.Field("vertices", meshes.Soil.vertexCount),
+                GameLog.Field("sample_ms", meshes.SampleMs),
+                GameLog.Field("split_ms", meshes.SplitMs),
+                GameLog.Field("normals_ms", meshes.NormalsMs));
+            CreateTerrainMeshObject(
                 "Forest Soil",
                 root.transform,
                 meshes.Soil,
+                meshes.SoilMeshMs,
                 SoilColor,
                 true,
                 ShadowCastingMode.On,
-                MountainRoadSurfaceKind.ForestFloor);
-            CreateMeshObject(
+                MountainRoadSurfaceKind.ForestFloor,
+                null,
+                GameLog.Field("columns", meshes.Columns),
+                GameLog.Field("rows", meshes.Rows));
+            CreateTerrainMeshObject(
                 "Upper Snow",
                 root.transform,
                 meshes.Snow,
+                meshes.SnowMeshMs,
                 SnowColor,
                 true,
                 ShadowCastingMode.On,
-                MountainRoadSurfaceKind.WindSnow);
+                MountainRoadSurfaceKind.WindSnow,
+                null,
+                GameLog.Field("columns", meshes.Columns),
+                GameLog.Field("rows", meshes.Rows));
             return root;
+        }
+
+        /// <summary>
+        /// <see cref="CreateMeshObject"/> for a ground-like mesh, with the
+        /// collider added under its own clock and the row filed. The
+        /// collider still goes on last, exactly where the plain path puts
+        /// it; only the measurement is new.
+        /// </summary>
+        private static GameObject CreateTerrainMeshObject(
+            string name,
+            Transform parent,
+            Mesh mesh,
+            double meshMs,
+            Color color,
+            bool collider,
+            ShadowCastingMode shadowCasting,
+            MountainRoadSurfaceKind surface,
+            Material sharedMaterial = null,
+            params GameLogField[] extra)
+        {
+            GameObject result = CreateMeshObject(
+                name,
+                parent,
+                mesh,
+                color,
+                false,
+                shadowCasting,
+                surface,
+                sharedMaterial);
+            double colliderMs = 0d;
+            if (collider)
+            {
+                Stopwatch colliderTimer = Stopwatch.StartNew();
+                result.AddComponent<MeshCollider>().sharedMesh = mesh;
+                colliderMs = colliderTimer.Elapsed.TotalMilliseconds;
+            }
+
+            ReportTerrainMesh(name, mesh, meshMs, colliderMs, extra);
+            return result;
         }
 
         private static void BuildTunnel(
@@ -1015,28 +1180,38 @@ namespace BarPromenade
                 MountainRoadSurfaceKind.LayeredStone;
             const MountainRoadSurfaceKind snowSurface =
                 MountainRoadSurfaceKind.WindSnow;
-            CreateMeshObject(
+            Stopwatch meshTimer = Stopwatch.StartNew();
+            Mesh midMesh = MountainRoadSceneryMeshFactory.CreateRidges(
+                "Middle Rock Ridges",
+                mid,
+                midSurface);
+            CreateTerrainMeshObject(
                 "Middle Rock Ridges",
                 parent,
-                MountainRoadSceneryMeshFactory.CreateRidges(
-                    "Middle Rock Ridges",
-                    mid,
-                    midSurface),
+                midMesh,
+                meshTimer.Elapsed.TotalMilliseconds,
                 MiddleRidgeColor,
                 false,
                 ShadowCastingMode.On,
-                midSurface);
-            GameObject snow = CreateMeshObject(
+                midSurface,
+                null,
+                GameLog.Field("ridge_count", mid.Count));
+            meshTimer.Restart();
+            Mesh snowMesh = MountainRoadSceneryMeshFactory.CreateRidges(
+                "Far Snowy Mountain Ring",
+                snowy,
+                snowSurface);
+            GameObject snow = CreateTerrainMeshObject(
                 "Far Snowy Mountain Ring",
                 parent,
-                MountainRoadSceneryMeshFactory.CreateRidges(
-                    "Far Snowy Mountain Ring",
-                    snowy,
-                    snowSurface),
+                snowMesh,
+                meshTimer.Elapsed.TotalMilliseconds,
                 FarSnowyRidgeColor,
                 false,
                 ShadowCastingMode.Off,
-                snowSurface);
+                snowSurface,
+                null,
+                GameLog.Field("ridge_count", snowy.Count));
             snow.GetComponent<MeshRenderer>().receiveShadows = false;
         }
 

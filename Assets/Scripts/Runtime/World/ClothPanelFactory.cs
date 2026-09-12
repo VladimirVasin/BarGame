@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -106,6 +107,7 @@ namespace BarPromenade
                     "Cloth panels need at least a 1x2 grid.");
             }
 
+            Stopwatch panelTimer = Stopwatch.StartNew();
             Mesh mesh = BuildPanelMesh(
                 name,
                 width,
@@ -170,6 +172,16 @@ namespace BarPromenade
             cloth.worldAccelerationScale = 0f;
             cloth.externalAcceleration = Vector3.zero;
             cloth.randomAcceleration = Vector3.zero;
+            panelTimer.Stop();
+            // There is no batch entry point: every caller builds its
+            // rags one at a time, so each panel is a batch of one.
+            GameLog.Debug(
+                "city",
+                "cloth_panels",
+                GameLog.Field("count", 1),
+                GameLog.Field(
+                    "duration_ms",
+                    panelTimer.Elapsed.TotalMilliseconds));
             return panel;
         }
 

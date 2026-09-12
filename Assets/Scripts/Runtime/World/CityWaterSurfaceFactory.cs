@@ -98,6 +98,12 @@ namespace BarPromenade
                 Mathf.RoundToInt(bounds.width / surfacePitch));
             int rows = Mathf.Max(MinimumSpans,
                 Mathf.RoundToInt(bounds.height / surfacePitch));
+            GameLog.Debug(
+                "city",
+                "water_surface",
+                GameLog.Field("name", name),
+                GameLog.Field("columns", columns),
+                GameLog.Field("rows", rows));
             var vertices = new Vector3[(columns + 1) * (rows + 1)];
             var normals = new Vector3[vertices.Length];
             var triangles = new int[columns * rows * 6];

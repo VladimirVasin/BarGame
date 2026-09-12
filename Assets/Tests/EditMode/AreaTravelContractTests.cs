@@ -197,20 +197,19 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        [TestCase(0f, 0f, 0f)]
-        [TestCase(0.45f, 0.275f, 0.1f)]
-        [TestCase(0.90f, 0.275f, 0.1f)]
-        [TestCase(0.45f, 1f, 0.1f)]
-        [TestCase(0.90f, 1f, 0.2f)]
+        [TestCase(-0.5f, 0f)]
+        [TestCase(0f, 0f)]
+        [TestCase(0.45f, 0.1f)]
+        [TestCase(0.90f, 0.2f)]
+        [TestCase(1f, 0.2f)]
         public void LoadingProgress_ReservesMostOfTheBarForWorldComposition(
             float sceneProgress,
-            float visibleSeconds,
             float expected)
         {
+            // The scene load owns the first fifth of the bar and nothing
+            // else feeds it: no minimum display time can hold it back.
             Assert.That(
-                AreaTravelService.EvaluateDisplayedProgress(
-                    sceneProgress,
-                    visibleSeconds),
+                AreaTravelService.EvaluateDisplayedProgress(sceneProgress),
                 Is.EqualTo(expected).Within(0.0001f));
         }
 

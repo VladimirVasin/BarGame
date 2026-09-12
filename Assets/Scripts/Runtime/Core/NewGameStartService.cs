@@ -95,7 +95,9 @@ namespace BarPromenade
 
         private static BuildingLot FindStartingBar()
         {
-            CityLayout layout = CityLayoutGenerator.Generate(
+            // The same city the launch will compose, so the memo the City
+            // root reads is already warm when the bar door opens onto it.
+            CityLayout layout = CityLayoutCache.GetOrGenerate(
                 CityBlueprintCatalog.Resolve(GameSessionState.DefaultCityBlueprintId),
                 CityGenerationSettings.Default, GameSessionState.DefaultCitySeed);
             BuildingLot nearest = null;

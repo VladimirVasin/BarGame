@@ -127,7 +127,7 @@ namespace BarPromenade
 
             Camera camera = RuntimeSceneSetup.EnsureBarInterior();
             Audio = RetroAudioService.EnsureInstalled();
-            ReportPhase("runtime_setup", phaseTimer);
+            GameLogPhases.Report("bar", "runtime_setup", phaseTimer);
 
             phaseTimer.Restart();
             activeBarId = GameSessionState.ActiveBarId;
@@ -156,7 +156,7 @@ namespace BarPromenade
                 layoutBarId,
                 ActiveActivity,
                 GameSessionState.ActiveBarDistrict);
-            ReportPhase("layout_generation", phaseTimer);
+            GameLogPhases.Report("bar", "layout_generation", phaseTimer);
             ReportLayout(Layout);
 
             phaseTimer.Restart();
@@ -169,7 +169,7 @@ namespace BarPromenade
             Ambience =
                 ambienceObject.AddComponent<BarAmbiencePlayer>();
             BuildSoundscape();
-            ReportPhase("environment_build", phaseTimer);
+            GameLogPhases.Report("bar", "environment_build", phaseTimer);
 
             phaseTimer.Restart();
             GameObject ui = new GameObject("Runtime UI");
@@ -209,7 +209,7 @@ namespace BarPromenade
                 intoxicationHud,
                 null,
                 DrinkShop);
-            ReportPhase("player_and_ui", phaseTimer);
+            GameLogPhases.Report("bar", "player_and_ui", phaseTimer);
 
             phaseTimer.Restart();
             BuildCounterStation(follow);
@@ -239,7 +239,7 @@ namespace BarPromenade
                 intoxicationHud,
                 () => ArrivalPresentation == null ||
                       !ArrivalPresentation.IsPlaying);
-            ReportPhase("activity_and_crowd", phaseTimer);
+            GameLogPhases.Report("bar", "activity_and_crowd", phaseTimer);
             totalTimer.Stop();
             GameLog.Info(
                 "bar",
@@ -700,20 +700,6 @@ namespace BarPromenade
                 GameLog.Field(
                     "counter_station_z",
                     layout.CounterStationPosition.z));
-        }
-
-        private static void ReportPhase(
-            string phase,
-            Stopwatch timer)
-        {
-            timer.Stop();
-            GameLog.Debug(
-                "bar",
-                "initialize_phase",
-                GameLog.Field("phase", phase),
-                GameLog.Field(
-                    "duration_ms",
-                    timer.ElapsedMilliseconds));
         }
     }
 }

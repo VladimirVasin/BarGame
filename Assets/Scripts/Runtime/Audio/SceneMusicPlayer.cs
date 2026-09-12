@@ -35,11 +35,24 @@ namespace BarPromenade
         private bool pauseWhenFadeCompletes;
         private bool sourcePaused;
         private bool waitingForClipLoad;
+        // The clip the pending background load belongs to. Whoever hands the
+        // source another clip mid-load must not inherit a wait for data that
+        // clip already has; the old synchronous import never left one behind.
+        private AudioClip loadingClip;
         private bool resumeWhenClipLoads;
         private bool detachedForSceneExit;
         private bool fadeInDeferred;
         private bool playbackRequested;
         private bool playbackSuppressed;
+
+        /// <summary>
+        /// True while a theme born suppressed has not loaded its clip yet.
+        /// A city score under a switched-on radio, or a radio under a
+        /// switched-off one, may never be heard in this scene, so it must
+        /// not pay the decode at Awake; the load happens the first time the
+        /// gate opens. Until then the player reads as Unavailable.
+        /// </summary>
+        private bool themeDeferred;
         private float deferredFadeInDurationSeconds =
             MusicMix.FadeInSeconds;
         private float pendingFadeInDurationSeconds =
@@ -104,7 +117,19 @@ namespace BarPromenade
             ConfigureSource();
             ConfigureTone();
             playbackSuppressed = InitiallySuppressed;
-            LoadTheme();
+            if (playbackSuppressed)
+            {
+                // Requested at birth exactly as a loaded theme would be, so
+                // a later FadeOutAndPause/Resume pair still decides whether
+                // the deferred load starts playing or parks.
+                themeDeferred = true;
+                playbackRequested = true;
+                ApplyNormalizedGain(0f);
+                PlaybackState = SceneMusicPlaybackState.Unavailable;
+                return;
+            }
+
+            LoadTheme(true);
         }
 
         protected virtual void Update()
@@ -172,6 +197,7 @@ namespace BarPromenade
         public void FadeOutAndPause(float durationSeconds)
         {
             ValidateDuration(durationSeconds);
+            DropStaleClipWait();
             playbackRequested = false;
             IsSceneExitFadeRequested = false;
             fadeInDeferred = false;
@@ -205,6 +231,7 @@ namespace BarPromenade
         public void ResumeWithFadeIn(float durationSeconds)
         {
             ValidateDuration(durationSeconds);
+            DropStaleClipWait();
             playbackRequested = true;
             if (playbackSuppressed)
             {
@@ -254,6 +281,17 @@ namespace BarPromenade
             {
                 FadeOutAndPause(SuppressionFadeOutSeconds);
                 playbackRequested = requested;
+                return;
+            }
+
+            // The gate opened for the first time: pay the load now. A clip
+            // that reached the source while the load was deferred is the
+            // theme already and only needs the ordinary resume.
+            bool loadDeferred = themeDeferred && ActiveClip == null;
+            themeDeferred = false;
+            if (loadDeferred)
+            {
+                LoadTheme(requested);
             }
             else if (requested)
             {
@@ -346,6 +384,9 @@ namespace BarPromenade
         protected void ReloadTheme()
         {
             if (IsSceneExitFadeRequested) return;
+            // A deferred player has nothing to replace; the load that the
+            // open gate triggers reads the track path current at that time.
+            if (themeDeferred) return;
             CancelFade();
             MusicMix.ReleaseFadeOut(audioSource);
             audioSource.Stop();
@@ -353,12 +394,17 @@ namespace BarPromenade
             resumeWhenClipLoads = false;
             sourcePaused = false;
             fadeInDeferred = false;
-            LoadTheme();
+            LoadTheme(true);
         }
 
-        private void LoadTheme()
+        /// <summary>
+        /// Loads the track and, when playback is requested, starts it through
+        /// the mixing rule once the data is in; otherwise it parks loaded and
+        /// paused, the way a director-held theme waits.
+        /// </summary>
+        private void LoadTheme(bool requestPlayback)
         {
-            playbackRequested = true;
+            playbackRequested = requestPlayback;
             AudioClip clip = LoadThemeClip();
             audioSource.clip = clip;
             ApplyNormalizedGain(0f);
@@ -368,7 +414,7 @@ namespace BarPromenade
                 return;
             }
 
-            resumeWhenClipLoads = true;
+            resumeWhenClipLoads = requestPlayback;
             pendingFadeInDurationSeconds = MusicMix.FadeInSeconds;
             if (clip.loadState == AudioDataLoadState.Loaded)
             {
@@ -377,6 +423,7 @@ namespace BarPromenade
             }
 
             waitingForClipLoad = true;
+            loadingClip = clip;
             PlaybackState = SceneMusicPlaybackState.Loading;
             bool loadRequested = clip.LoadAudioData();
             if (clip.loadState == AudioDataLoadState.Loaded)
@@ -390,8 +437,18 @@ namespace BarPromenade
             }
         }
 
+        private void DropStaleClipWait()
+        {
+            if (waitingForClipLoad && ActiveClip != loadingClip)
+            {
+                waitingForClipLoad = false;
+                loadingClip = null;
+            }
+        }
+
         private void RefreshClipLoadState()
         {
+            DropStaleClipWait();
             if (!waitingForClipLoad || ActiveClip == null)
             {
                 return;
@@ -410,6 +467,7 @@ namespace BarPromenade
         private void CompleteClipLoad()
         {
             waitingForClipLoad = false;
+            loadingClip = null;
             if (IsSceneExitFadeRequested)
             {
                 ApplyNormalizedGain(0f);
@@ -430,6 +488,7 @@ namespace BarPromenade
         private void FailClipLoad()
         {
             waitingForClipLoad = false;
+            loadingClip = null;
             resumeWhenClipLoads = false;
             sourcePaused = false;
             fadeInDeferred = false;

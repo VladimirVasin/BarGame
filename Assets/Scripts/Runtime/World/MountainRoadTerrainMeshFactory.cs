@@ -2,19 +2,59 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
     public sealed class MountainRoadTerrainMeshes
     {
-        internal MountainRoadTerrainMeshes(Mesh soil, Mesh snow)
+        internal MountainRoadTerrainMeshes(
+            Mesh soil,
+            Mesh snow,
+            int columns,
+            int rows,
+            double sampleMs,
+            double splitMs,
+            double normalsMs,
+            double soilMeshMs,
+            double snowMeshMs)
         {
             Soil = soil;
             Snow = snow;
+            Columns = columns;
+            Rows = rows;
+            SampleMs = sampleMs;
+            SplitMs = splitMs;
+            NormalsMs = normalsMs;
+            SoilMeshMs = soilMeshMs;
+            SnowMeshMs = snowMeshMs;
         }
 
         public Mesh Soil { get; }
         public Mesh Snow { get; }
+
+        /// <summary>Grid cells along X and Z. The two meshes are cut from
+        /// this one grid, so the count belongs to the pair.</summary>
+        internal int Columns { get; }
+
+        internal int Rows { get; }
+
+        /// <summary>
+        /// Where the factory's time went, kept on the result so the world
+        /// builder can put it on the log row beside the collider cost it
+        /// alone can measure. The first three are shared by both meshes -
+        /// one vertex grid, one triangle split, one normal pass - and the
+        /// last two are each mesh's own upload.
+        /// </summary>
+        internal double SampleMs { get; }
+
+        internal double SplitMs { get; }
+
+        internal double NormalsMs { get; }
+
+        internal double SoilMeshMs { get; }
+
+        internal double SnowMeshMs { get; }
     }
 
     public static class MountainRoadTerrainMeshFactory
@@ -62,6 +102,11 @@ namespace BarPromenade
             float zPitch = bounds.height / zSteps;
             var vertices = new List<Vector3>((xSteps + 1) * (zSteps + 1));
             var uvs = new List<Vector2>(vertices.Capacity);
+
+            // Timed in stages because the sampler is pure arithmetic per
+            // vertex and the upload is Unity's: a slow terrain has to say
+            // which of the two it is before anyone tunes either.
+            Stopwatch stageTimer = Stopwatch.StartNew();
             for (int z = 0; z <= zSteps; z++)
             {
                 float worldZ = Mathf.Lerp(bounds.yMin, bounds.yMax, z / (float)zSteps);
@@ -78,6 +123,8 @@ namespace BarPromenade
                 }
             }
 
+            double sampleMs = stageTimer.Elapsed.TotalMilliseconds;
+            stageTimer.Restart();
             var soilTriangles = new List<int>(xSteps * zSteps * 6);
             var snowTriangles = new List<int>(xSteps * zSteps);
             int row = xSteps + 1;
@@ -109,23 +156,39 @@ namespace BarPromenade
             // recalculate its own would give the vertices along the snow
             // line two different normals for the same ground and light the
             // boundary as a seam that is not there.
+            double splitMs = stageTimer.Elapsed.TotalMilliseconds;
+            stageTimer.Restart();
             List<Vector3> normals = CreateSharedNormals(
                 vertices,
                 soilTriangles,
                 snowTriangles);
+            double normalsMs = stageTimer.Elapsed.TotalMilliseconds;
+            stageTimer.Restart();
+            Mesh soil = CreateMesh(
+                "Mountain Road Soil",
+                vertices,
+                uvs,
+                normals,
+                soilTriangles);
+            double soilMeshMs = stageTimer.Elapsed.TotalMilliseconds;
+            stageTimer.Restart();
+            Mesh snow = CreateMesh(
+                "Mountain Road Snow",
+                vertices,
+                uvs,
+                normals,
+                snowTriangles);
+            double snowMeshMs = stageTimer.Elapsed.TotalMilliseconds;
             return new MountainRoadTerrainMeshes(
-                CreateMesh(
-                    "Mountain Road Soil",
-                    vertices,
-                    uvs,
-                    normals,
-                    soilTriangles),
-                CreateMesh(
-                    "Mountain Road Snow",
-                    vertices,
-                    uvs,
-                    normals,
-                    snowTriangles));
+                soil,
+                snow,
+                xSteps,
+                zSteps,
+                sampleMs,
+                splitMs,
+                normalsMs,
+                soilMeshMs,
+                snowMeshMs);
         }
 
         private static float LowerBelowTunnel(MountainRoadTunnelDescriptor tunnel,

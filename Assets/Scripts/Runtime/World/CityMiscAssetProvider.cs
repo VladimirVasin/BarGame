@@ -572,6 +572,12 @@ namespace BarPromenade
             Array.Empty<CityMiscMeshEntry>();
         [SerializeField] private string buildSignature = string.Empty;
 
+        // The catalogue is one immutable Resources asset, yet eight builders
+        // on the City path each ask for it and every ask re-walked all 259
+        // meshes with geometry checks. The instance that passed once is the
+        // answer for the rest of the session; a domain reload starts over.
+        private static CityMiscAssetProvider validatedProvider;
+
         public string BuildSignature => buildSignature;
 
         public bool HasCompleteMeshes
@@ -597,6 +603,13 @@ namespace BarPromenade
 
         public static CityMiscAssetProvider LoadOrThrow()
         {
+            // Unity's null check also covers an asset unloaded since the
+            // last call, so a stale reference reloads rather than returns.
+            if (validatedProvider != null)
+            {
+                return validatedProvider;
+            }
+
             CityMiscAssetProvider provider = Load();
             if (provider == null)
             {
@@ -606,7 +619,15 @@ namespace BarPromenade
             }
 
             provider.ValidateOrThrow();
+            validatedProvider = provider;
             return provider;
+        }
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetValidatedProvider()
+        {
+            validatedProvider = null;
         }
 
         public void ValidateOrThrow()

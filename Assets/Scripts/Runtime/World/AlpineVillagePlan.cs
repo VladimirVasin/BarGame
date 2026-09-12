@@ -73,6 +73,8 @@ namespace BarPromenade
     public sealed class AlpineVillageLanePlan
     {
         private readonly ReadOnlyCollection<AlpineVillageLaneSample> samples;
+        private AlpineVillagePolylineIndex nearestIndex;
+        private float maximumWidth = float.NaN;
 
         internal AlpineVillageLanePlan(
             IList<AlpineVillageLaneSample> sourceSamples,
@@ -116,7 +118,53 @@ namespace BarPromenade
 
         public AlpineVillageLaneSample Sample(float distance)
         {
-            float clamped = Mathf.Clamp(distance, 0f, Length);
+            Locate(
+                distance,
+                out float clamped,
+                out AlpineVillageLaneSample first,
+                out AlpineVillageLaneSample second,
+                out float amount);
+            return new AlpineVillageLaneSample(
+                clamped,
+                Vector3.Lerp(first.Position, second.Position, amount),
+                Vector3.Slerp(first.Forward, second.Forward, amount)
+                    .normalized,
+                Mathf.Lerp(first.Width, second.Width, amount));
+        }
+
+        /// <summary>
+        /// The centreline height and the width at a distance - what the
+        /// terrain sampler reads of a sample, and nothing else. It is
+        /// <see cref="Sample"/> without the forward: the same search, the
+        /// same lerps, and no <c>Vector3.Slerp</c>, which is a native call
+        /// per ground vertex spent on a direction nobody then looks at.
+        /// </summary>
+        internal void SampleGround(
+            float distance,
+            out float centreHeight,
+            out float width)
+        {
+            Locate(
+                distance,
+                out _,
+                out AlpineVillageLaneSample first,
+                out AlpineVillageLaneSample second,
+                out float amount);
+            centreHeight = Vector3.Lerp(
+                first.Position,
+                second.Position,
+                amount).y;
+            width = Mathf.Lerp(first.Width, second.Width, amount);
+        }
+
+        private void Locate(
+            float distance,
+            out float clamped,
+            out AlpineVillageLaneSample first,
+            out AlpineVillageLaneSample second,
+            out float amount)
+        {
+            clamped = Mathf.Clamp(distance, 0f, Length);
             int low = 0;
             int high = samples.Count - 1;
             while (high - low > 1)
@@ -132,61 +180,169 @@ namespace BarPromenade
                 }
             }
 
-            AlpineVillageLaneSample first = samples[low];
-            AlpineVillageLaneSample second = samples[high];
+            first = samples[low];
+            second = samples[high];
             float span = Mathf.Max(
                 0.0001f,
                 second.Distance - first.Distance);
-            float amount = Mathf.Clamp01(
+            amount = Mathf.Clamp01(
                 (clamped - first.Distance) / span);
-            return new AlpineVillageLaneSample(
-                clamped,
-                Vector3.Lerp(first.Position, second.Position, amount),
-                Vector3.Slerp(first.Forward, second.Forward, amount)
-                    .normalized,
-                Mathf.Lerp(first.Width, second.Width, amount));
+        }
+
+        /// <summary>
+        /// The widest the lane gets anywhere, or positive infinity when any
+        /// width is not a number. A bound for readers that want to know
+        /// whether the lane can reach a point at all before they ask exactly
+        /// where it is; an unbounded one tells them nothing, which is the
+        /// right answer for a lane with no width in it.
+        /// </summary>
+        internal float MaximumWidth
+        {
+            get
+            {
+                if (float.IsNaN(maximumWidth))
+                {
+                    float widest = 0f;
+                    for (int index = 0; index < samples.Count; index++)
+                    {
+                        float width = samples[index].Width;
+                        if (float.IsNaN(width) || float.IsInfinity(width))
+                        {
+                            widest = float.PositiveInfinity;
+                            break;
+                        }
+
+                        widest = Mathf.Max(widest, width);
+                    }
+
+                    maximumWidth = widest;
+                }
+
+                return maximumWidth;
+            }
+        }
+
+        /// <summary>
+        /// Pruning data over the centreline on the ground plane, built on
+        /// first use. The samples never change after construction, so the
+        /// index never goes stale.
+        /// </summary>
+        internal AlpineVillagePolylineIndex NearestIndex
+        {
+            get
+            {
+                if (nearestIndex == null)
+                {
+                    var points = new Vector2[samples.Count];
+                    for (int index = 0; index < points.Length; index++)
+                    {
+                        Vector3 position = samples[index].Position;
+                        points[index] = new Vector2(position.x, position.z);
+                    }
+
+                    nearestIndex = new AlpineVillagePolylineIndex(points);
+                }
+
+                return nearestIndex;
+            }
         }
 
         /// <summary>
         /// Distance along the lane of the nearest centreline point, and how
         /// far the query sits from it on the ground plane.
+        ///
+        /// The answer is the EARLIEST segment with the smallest computed
+        /// lateral, and that is a contract the terrain hashes rest on. The
+        /// loop below is the original scan in the original order with the
+        /// original per-segment arithmetic; the index only lets it skip
+        /// runs of segments that provably cannot beat a lateral it has
+        /// already computed - see <see cref="AlpineVillagePolylineIndex"/>
+        /// for why that cannot move the winner. The first bound comes from
+        /// the segment under the query's grid cell; it is a bound and not a
+        /// record, so the record still starts empty and fills in index
+        /// order, and a tie between that segment and an earlier one still
+        /// goes to the earlier one.
         /// </summary>
         public float FindNearest(Vector2 pointXZ, out float lateralDistance)
         {
+            AlpineVillagePolylineIndex index = NearestIndex;
+            float pruneBound = float.PositiveInfinity;
+            int guess = index.GuessSegment(pointXZ);
+            if (guess >= 0)
+            {
+                pruneBound = LateralTo(guess, pointXZ, out _);
+            }
+
             float bestDistance = 0f;
             float bestLateral = float.PositiveInfinity;
-            for (int index = 0; index < samples.Count - 1; index++)
+            int segmentCount = samples.Count - 1;
+            for (int chunk = 0; chunk < index.ChunkCount; chunk++)
             {
-                AlpineVillageLaneSample first = samples[index];
-                AlpineVillageLaneSample second = samples[index + 1];
-                Vector2 a = new Vector2(
-                    first.Position.x,
-                    first.Position.z);
-                Vector2 b = new Vector2(
-                    second.Position.x,
-                    second.Position.z);
-                Vector2 segment = b - a;
-                float lengthSquared = segment.sqrMagnitude;
-                float amount = lengthSquared <= 0.000001f
-                    ? 0f
-                    : Mathf.Clamp01(
-                        Vector2.Dot(pointXZ - a, segment) / lengthSquared);
-                Vector2 closest = a + segment * amount;
-                float lateral = (pointXZ - closest).magnitude;
-                if (lateral >= bestLateral)
+                if (index.ChunkCannotWin(chunk, pointXZ, pruneBound))
                 {
                     continue;
                 }
 
-                bestLateral = lateral;
-                bestDistance = Mathf.Lerp(
-                    first.Distance,
-                    second.Distance,
-                    amount);
+                int end = Math.Min(
+                    segmentCount,
+                    (chunk + 1) * AlpineVillagePolylineIndex.ChunkSize);
+                for (int segment = chunk * AlpineVillagePolylineIndex.ChunkSize;
+                     segment < end;
+                     segment++)
+                {
+                    if (index.CannotWin(segment, pointXZ, pruneBound))
+                    {
+                        continue;
+                    }
+
+                    float lateral = LateralTo(
+                        segment,
+                        pointXZ,
+                        out float amount);
+                    if (lateral >= bestLateral)
+                    {
+                        continue;
+                    }
+
+                    bestLateral = lateral;
+                    bestDistance = Mathf.Lerp(
+                        samples[segment].Distance,
+                        samples[segment + 1].Distance,
+                        amount);
+                    if (lateral < pruneBound)
+                    {
+                        pruneBound = lateral;
+                    }
+                }
             }
 
             lateralDistance = bestLateral;
             return bestDistance;
+        }
+
+        /// <summary>
+        /// The ground-plane distance from the query to one segment, and
+        /// where along the segment the nearest point falls. This is the
+        /// per-segment arithmetic of the scan, operation for operation.
+        /// </summary>
+        private float LateralTo(int index, Vector2 pointXZ, out float amount)
+        {
+            AlpineVillageLaneSample first = samples[index];
+            AlpineVillageLaneSample second = samples[index + 1];
+            Vector2 a = new Vector2(
+                first.Position.x,
+                first.Position.z);
+            Vector2 b = new Vector2(
+                second.Position.x,
+                second.Position.z);
+            Vector2 segment = b - a;
+            float lengthSquared = segment.sqrMagnitude;
+            amount = lengthSquared <= 0.000001f
+                ? 0f
+                : Mathf.Clamp01(
+                    Vector2.Dot(pointXZ - a, segment) / lengthSquared);
+            Vector2 closest = a + segment * amount;
+            return (pointXZ - closest).magnitude;
         }
     }
 

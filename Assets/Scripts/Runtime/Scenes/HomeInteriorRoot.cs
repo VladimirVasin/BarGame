@@ -176,18 +176,25 @@ namespace BarPromenade
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Arrival = GameSessionState.ConsumeHomeArrival();
             Stopwatch timer = Stopwatch.StartNew();
+            Stopwatch phaseTimer = Stopwatch.StartNew();
             Camera camera =
                 RuntimeSceneSetup.EnsureHomeInterior();
             Audio = RetroAudioService.EnsureInstalled();
+            GameLogPhases.Report("home", "runtime_setup", phaseTimer);
+            phaseTimer.Restart();
             Layout = HomeInteriorLayoutPlanner.Generate();
             RefrigeratorPlan =
                 HomeRefrigeratorPlan.Create(Layout);
             BalconyLayout =
                 HomeBalconyLayoutPlanner.Generate(Layout);
+            GameLogPhases.Report("home", "layout", phaseTimer);
+            phaseTimer.Restart();
             ExteriorContext =
                 HomeExteriorContextPlanner.Generate(
                     GameSessionState.CityBlueprintId,
                     GameSessionState.CitySeed);
+            GameLogPhases.Report("home", "exterior_context_plan", phaseTimer);
+            phaseTimer.Restart();
             Room = HomeInteriorWorldBuilder.Build(
                 transform,
                 Layout,
@@ -195,6 +202,8 @@ namespace BarPromenade
                 ExteriorContext,
                 out CityNightWorldResult exteriorNight);
             ExteriorNight = exteriorNight;
+            GameLogPhases.Report("home", "room_build", phaseTimer);
+            phaseTimer.Restart();
             OcclusionRegistry =
                 Room.GetComponent<HomeOcclusionRegistry>();
             if (OcclusionRegistry == null)
@@ -239,6 +248,8 @@ namespace BarPromenade
             }
 
             Atmosphere.Initialize(bathroomLightFixture);
+            GameLogPhases.Report("home", "room_fixtures", phaseTimer);
+            phaseTimer.Restart();
 
             GameObject ambienceObject =
                 new GameObject("Home Ambience");
@@ -258,6 +269,8 @@ namespace BarPromenade
                     transform));
             Soundscape.BindBathroomFlicker(
                 Atmosphere.BathroomFlicker);
+            GameLogPhases.Report("home", "audio", phaseTimer);
+            phaseTimer.Restart();
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
@@ -302,6 +315,8 @@ namespace BarPromenade
                 CreateCameraShots(
                     Layout,
                     BalconyLayout));
+            GameLogPhases.Report("home", "player_and_camera", phaseTimer);
+            phaseTimer.Restart();
             PedestrianPlan = HomeExteriorPedestrianPlanner.Create(
                 ExteriorContext,
                 GameSessionState.CitySeed);
@@ -353,6 +368,8 @@ namespace BarPromenade
                 Atmosphere,
                 ExteriorAtmosphere,
                 ExteriorNight);
+            GameLogPhases.Report("home", "exterior_life", phaseTimer);
+            phaseTimer.Restart();
             BuildBedInteraction();
             BuildRefrigeratorInteraction();
             BuildBalconySmokingInteraction();
@@ -375,14 +392,20 @@ namespace BarPromenade
             DebugCityMapShortcut.Initialize(Player);
 
             BuildLockedRoomDoor();
+            GameLogPhases.Report("home", "interactions", phaseTimer);
+            phaseTimer.Restart();
             ApartmentDays = ui.AddComponent<HomeApartmentDayController>();
             HomeApartmentDressing dressing = Room.GetComponent<HomeApartmentDressing>();
             ApartmentDays.Initialize(this, dressing.ApplyDay);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(Player, CameraFollow, IntoxicationHud);
             DebugWindow.BindHome(this, DebugCityMapShortcut, ApartmentDays);
+            GameLogPhases.Report("home", "apartment_days", phaseTimer);
+            phaseTimer.Restart();
 
             BuildPlayerOcclusion(camera);
+            GameLogPhases.Report("home", "player_occlusion", phaseTimer);
+            phaseTimer.Restart();
 
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
@@ -399,6 +422,7 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("home", "ui_controllers", phaseTimer);
 
             IsInitialized = true;
             timer.Stop();

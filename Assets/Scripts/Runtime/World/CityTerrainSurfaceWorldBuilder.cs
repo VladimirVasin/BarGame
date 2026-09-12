@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -97,6 +98,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(parent));
             }
 
+            Stopwatch meshTimer = Stopwatch.StartNew();
             Mesh mesh = CreateMesh(
                 name,
                 layout,
@@ -122,12 +124,23 @@ namespace BarPromenade
                 CityExteriorAppearance.ApplyGroundSurface(renderer);
             }
 
+            meshTimer.Stop();
+            double colliderMs = 0d;
             if (!seabedOnly)
             {
+                Stopwatch colliderTimer = Stopwatch.StartNew();
                 MeshCollider terrainCollider =
                     result.AddComponent<MeshCollider>();
                 terrainCollider.sharedMesh = mesh;
+                colliderTimer.Stop();
+                colliderMs = colliderTimer.Elapsed.TotalMilliseconds;
             }
+
+            ReportTerrainMesh(
+                result.name,
+                mesh,
+                meshTimer.Elapsed.TotalMilliseconds,
+                colliderMs);
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
             mesh.UploadMeshData(false);
@@ -257,6 +270,13 @@ namespace BarPromenade
                     layout,
                     surface,
                     excavations);
+                // The cell corners and the port plan are the surface's, not
+                // the vertex's; the seabed extension has its own sampler.
+                CityTerrainSurfacePlan.SurfaceContext context = seabedOnly
+                    ? default
+                    : CityTerrainSurfacePlan.ResolveSurfaceContext(
+                        layout,
+                        surface);
                 for (int patchIndex = 0;
                      patchIndex < patches.Count;
                      patchIndex++)
@@ -275,6 +295,7 @@ namespace BarPromenade
                     AppendPatch(
                         layout,
                         surface,
+                        in context,
                         patch,
                         tileSize,
                         vertices,
@@ -420,6 +441,7 @@ namespace BarPromenade
                     "thickness deeper than its top offset.");
             }
 
+            Stopwatch meshTimer = Stopwatch.StartNew();
             int surfaceVertexCount = 1 + DiscSegments * DiscRings;
             var vertices = new List<Vector3>(
                 surfaceVertexCount * 2 + DiscSegments * 2);
@@ -486,12 +508,36 @@ namespace BarPromenade
             MeshRenderer renderer = result.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
             RuntimePrimitiveFactory.SetColor(renderer, color);
+            meshTimer.Stop();
+            Stopwatch colliderTimer = Stopwatch.StartNew();
             MeshCollider collider = result.AddComponent<MeshCollider>();
             collider.sharedMesh = mesh;
+            colliderTimer.Stop();
+            ReportTerrainMesh(
+                result.name,
+                mesh,
+                meshTimer.Elapsed.TotalMilliseconds,
+                colliderTimer.Elapsed.TotalMilliseconds);
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(mesh);
             mesh.UploadMeshData(false);
             return result;
+        }
+
+        private static void ReportTerrainMesh(
+            string name,
+            Mesh mesh,
+            double meshMs,
+            double colliderMs)
+        {
+            GameLog.Debug(
+                "city",
+                "terrain_mesh",
+                GameLog.Field("name", name),
+                GameLog.Field("vertices", mesh.vertexCount),
+                GameLog.Field("indices", (long)mesh.GetIndexCount(0)),
+                GameLog.Field("mesh_ms", meshMs),
+                GameLog.Field("collider_ms", colliderMs));
         }
 
         private static void AppendDiscSurfaceVertices(
@@ -703,6 +749,7 @@ namespace BarPromenade
         private static void AppendPatch(
             CityLayout layout,
             CitySurfaceDescriptor surface,
+            in CityTerrainSurfacePlan.SurfaceContext context,
             Rect patch,
             float worldUvTileSize,
             ICollection<Vector3> vertices,
@@ -785,11 +832,11 @@ namespace BarPromenade
                         worldXZ.x,
                         seabedOnly
                             ? CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, worldXZ, port)
-                            : CityTerrainSurfacePlan.SampleTop(layout, surface, worldXZ),
+                            : CityTerrainSurfacePlan.SampleTop(layout, surface, worldXZ, in context),
                         worldXZ.y));
                     normals.Add(seabedOnly
                         ? CitySeacoastSeaLayout.SampleSeabedNormal(layout, surface, worldXZ, port)
-                        : CityTerrainSurfacePlan.SampleNormal(layout, surface, worldXZ));
+                        : CityTerrainSurfacePlan.SampleNormal(layout, surface, worldXZ, in context));
                     uvs.Add(worldXZ * tilesPerMeter);
                 }
             }

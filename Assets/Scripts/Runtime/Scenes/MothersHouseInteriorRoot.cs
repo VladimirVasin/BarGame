@@ -141,12 +141,19 @@ namespace BarPromenade
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Stopwatch timer = Stopwatch.StartNew();
+            Stopwatch phaseTimer = Stopwatch.StartNew();
             Camera camera = RuntimeSceneSetup.EnsureHomeInterior();
             Audio = RetroAudioService.EnsureInstalled();
+            GameLogPhases.Report("mothers_house", "runtime_setup", phaseTimer);
+            phaseTimer.Restart();
             Layout = MothersHouseInteriorLayoutPlanner.Generate();
+            GameLogPhases.Report("mothers_house", "layout", phaseTimer);
+            phaseTimer.Restart();
             World = MothersHouseInteriorWorldBuilder.Build(
                 transform,
                 Layout);
+            GameLogPhases.Report("mothers_house", "world_build", phaseTimer);
+            phaseTimer.Restart();
             Kettle = MothersHouseKettleProp.Create(
                 World.Root,
                 World.TeapotDockAnchor);
@@ -158,6 +165,8 @@ namespace BarPromenade
                 transform,
                 Layout,
                 World);
+            GameLogPhases.Report("mothers_house", "props_and_atmosphere", phaseTimer);
+            phaseTimer.Restart();
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
@@ -194,11 +203,17 @@ namespace BarPromenade
                 CameraFollow,
                 Player.GameObject.transform,
                 Layout.CameraShots);
+            GameLogPhases.Report("mothers_house", "player_and_camera", phaseTimer);
+            phaseTimer.Restart();
 
             BuildStatus(ui, camera);
             BuildExit();
             BuildSeats(camera);
+            GameLogPhases.Report("mothers_house", "seats_and_exit", phaseTimer);
+            phaseTimer.Restart();
             BuildMother();
+            GameLogPhases.Report("mothers_house", "mother", phaseTimer);
+            phaseTimer.Restart();
             ScarfPickup = WorldItemPickup.Create(
                 transform,
                 MothersHouseScarfPickupPlan.Create(Layout));
@@ -217,6 +232,7 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("mothers_house", "pickup_and_ui", phaseTimer);
 
             IsInitialized = true;
             AlpineColdExposure.Bind(this, camera, () => IsInitialized, () => true);

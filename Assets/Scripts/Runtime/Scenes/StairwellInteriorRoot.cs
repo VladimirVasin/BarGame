@@ -96,11 +96,18 @@ namespace BarPromenade
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Stopwatch timer = Stopwatch.StartNew();
+            Stopwatch phaseTimer = Stopwatch.StartNew();
             Camera camera =
                 RuntimeSceneSetup.EnsureStairwellInterior();
             Audio = RetroAudioService.EnsureInstalled();
+            GameLogPhases.Report("stairwell", "runtime_setup", phaseTimer);
+            phaseTimer.Restart();
             Layout = StairwellLayoutPlanner.Generate();
+            GameLogPhases.Report("stairwell", "layout", phaseTimer);
+            phaseTimer.Restart();
             World = StairwellWorldBuilder.Build(transform, Layout);
+            GameLogPhases.Report("stairwell", "world_build", phaseTimer);
+            phaseTimer.Restart();
 
             GameObject atmosphereObject =
                 new GameObject("Stairwell Atmosphere");
@@ -133,6 +140,8 @@ namespace BarPromenade
                     .CreateStairwellWorld(
                         Layout,
                         transform));
+            GameLogPhases.Report("stairwell", "atmosphere_and_audio", phaseTimer);
+            phaseTimer.Restart();
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
@@ -185,7 +194,11 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("stairwell", "player_and_camera", phaseTimer);
+            phaseTimer.Restart();
             BuildCat(camera);
+            GameLogPhases.Report("stairwell", "cat", phaseTimer);
+            phaseTimer.Restart();
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
@@ -219,6 +232,7 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("stairwell", "exits_and_ui", phaseTimer);
 
             IsInitialized = true;
             timer.Stop();

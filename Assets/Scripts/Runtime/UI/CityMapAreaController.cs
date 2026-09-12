@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
@@ -124,6 +125,12 @@ namespace BarPromenade
 
         private Func<AreaTravelRequest, bool> areaTravelRequested;
         private bool areaTabsConfigured;
+
+        // The charting of the tabs, held back until somebody looks at them.
+        // The two foreign tabs are pure plans that cost over a second to
+        // build, and a scene root used to pay for them under the loading
+        // bar to draw a chart nobody had opened. Null once it has run.
+        private Action deferredAreaConfiguration;
         private GameAreaId currentArea = GameAreaId.City;
         private GameAreaId selectedArea = GameAreaId.City;
         private CityMapMountainRoadOverlay mountainRoadOverlay =
@@ -160,6 +167,15 @@ namespace BarPromenade
         /// never cuts a block in half.
         /// </summary>
         public const float MountainRoadTeleportCellSize = 8f;
+
+        /// <summary>
+        /// How long the map waits after its scene reports ready before it
+        /// charts the deferred tabs on its own. Long enough that the first
+        /// frames go to the world the player is standing in; short enough
+        /// that an M press a moment later finds them already drawn.
+        /// Unscaled seconds: the warm must not wait out a paused clock.
+        /// </summary>
+        public const float IdleAreaWarmDelaySeconds = 3f;
 
         public bool AreaTabsConfigured => areaTabsConfigured;
         public IReadOnlyList<GameAreaId> AreaTabs => MapAreas;
@@ -353,6 +369,9 @@ namespace BarPromenade
             currentArea = activeArea;
             selectedArea = activeArea;
             areaTabsConfigured = true;
+            // A direct configuration supersedes a deferred one; the deferred
+            // closure itself lands here with the field already cleared.
+            deferredAreaConfiguration = null;
             pendingAreaMapCommands.Clear();
             SelectedMapObjectIndex = -1;
             selectedMapPointIndex = -1;
@@ -361,8 +380,58 @@ namespace BarPromenade
             RebuildMapPointCatalogs();
         }
 
+        /// <summary>
+        /// Holds the charting of the tabs until the map is first looked at.
+        /// The closure is expected to end in one of the ConfigureAreas
+        /// overloads; until it runs the controller reports no tabs at all,
+        /// exactly as an unconfigured one always has.
+        /// </summary>
+        internal void ConfigureAreasOnFirstUse(Action configure)
+        {
+            deferredAreaConfiguration = configure ??
+                throw new ArgumentNullException(nameof(configure));
+        }
+
+        /// <summary>
+        /// Charts the deferred tabs after <see cref="IdleAreaWarmDelaySeconds"/>
+        /// of the scene being ready, so the first M press does not stall on
+        /// them. A press that comes sooner charts them itself and the warm
+        /// then finds nothing left to do. Started by the scene root once it
+        /// reports initialized; a no-op when nothing was deferred.
+        /// </summary>
+        internal void ScheduleIdleAreaWarm()
+        {
+            if (deferredAreaConfiguration == null)
+            {
+                return;
+            }
+
+            StartCoroutine(WarmAreasWhenIdle());
+        }
+
+        private IEnumerator WarmAreasWhenIdle()
+        {
+            yield return new WaitForSecondsRealtime(IdleAreaWarmDelaySeconds);
+            EnsureAreasConfigured();
+        }
+
+        private void EnsureAreasConfigured()
+        {
+            Action configure = deferredAreaConfiguration;
+            if (configure == null)
+            {
+                return;
+            }
+
+            // Cleared before it runs: a closure that throws is a programming
+            // error to surface once, not on every frame the map is open.
+            deferredAreaConfiguration = null;
+            configure();
+        }
+
         public bool SelectArea(GameAreaId area)
         {
+            EnsureAreasConfigured();
             if (!areaTabsConfigured || !IsKnownArea(area))
             {
                 return false;
@@ -406,6 +475,7 @@ namespace BarPromenade
             AreaTravelRequest request,
             string closeReason)
         {
+            EnsureAreasConfigured();
             if (!areaTabsConfigured ||
                 !IsKnownArea(request.DestinationArea) ||
                 request.DestinationArea == currentArea ||
@@ -475,6 +545,7 @@ namespace BarPromenade
 
         public Vector3 GetSelectedAreaTravelTargetPosition()
         {
+            EnsureAreasConfigured();
             if (selectedArea == GameAreaId.MountainRoad)
             {
                 return mountainRoadOverlay.TunnelPosition;
@@ -1010,6 +1081,10 @@ namespace BarPromenade
         /// </summary>
         private ICityMapTeleportGround EnsureCurrentAreaGround()
         {
+            // The deferred configuration is what names the current area and
+            // hands over its ground; without it an exterior would measure
+            // itself against the city layout the map holds for its own tab.
+            EnsureAreasConfigured();
             if (currentAreaGround != null &&
                 currentAreaGround.Area == currentArea)
             {
@@ -1032,6 +1107,9 @@ namespace BarPromenade
         /// </summary>
         private void EnsureTeleportLattice()
         {
+            // Before the built flag: the configuration resets the lattice,
+            // and running it from inside the build would undo the flag.
+            EnsureAreasConfigured();
             if (teleportLatticeBuilt)
             {
                 return;
@@ -1624,6 +1702,7 @@ namespace BarPromenade
 
         private void MoveAreaSelection(int delta)
         {
+            EnsureAreasConfigured();
             if (!areaTabsConfigured || delta == 0)
             {
                 return;

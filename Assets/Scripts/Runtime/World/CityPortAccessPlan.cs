@@ -54,6 +54,13 @@ namespace BarPromenade
         private readonly float[][] truckDistances;
         private readonly Definition data;
         private readonly CityLayout layout;
+        // Local-frame box outside which FindSurface cannot find pavement: it
+        // holds both yards and every road centreline point, grown by the widest
+        // shoulder (halfWidth + .5 m) and one more metre for the .015 m
+        // acceptance and float rounding. TrySampleTop answers false out there
+        // without the scan; its top is then 0 rather than the nearest surface,
+        // which no caller reads on a false answer.
+        private readonly Vector2 pavedMin, pavedMax;
         public Vector3 Origin { get; }
         public RoadEdge StreetEdge { get; }
         public Vector3 StreetConnection => World(data.roadSamples[0].center);
@@ -77,6 +84,25 @@ namespace BarPromenade
             this.layout = layout;
             Origin = port.Origin;
             data = source;
+            pavedMin = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+            pavedMax = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+            float shoulder = 0f;
+            for (int yard=0; yard<2; yard++)
+            {
+                // Both rect edges, so a negative authored size still lands inside.
+                Rect rect = yard==0 ? data.lowerYard.Bounds : data.upperYard.Bounds;
+                pavedMin = Vector2.Min(pavedMin, new Vector2(Mathf.Min(rect.xMin,rect.xMax), Mathf.Min(rect.yMin,rect.yMax)));
+                pavedMax = Vector2.Max(pavedMax, new Vector2(Mathf.Max(rect.xMin,rect.xMax), Mathf.Max(rect.yMin,rect.yMax)));
+            }
+            foreach (RoadSample sample in data.roadSamples)
+            {
+                pavedMin = Vector2.Min(pavedMin, new Vector2(sample.center.x, sample.center.z));
+                pavedMax = Vector2.Max(pavedMax, new Vector2(sample.center.x, sample.center.z));
+                shoulder = Mathf.Max(shoulder, sample.halfWidth);
+            }
+            shoulder += .5f + 1f;
+            pavedMin -= new Vector2(shoulder, shoulder);
+            pavedMax += new Vector2(shoulder, shoulder);
             bool found = false;
             foreach (CityOpenAreaAccessDescriptor access in layout.OpenAreaAccesses)
             {
@@ -247,6 +273,10 @@ namespace BarPromenade
 
         public bool TrySampleTop(Vector2 world, out float top)
         {
+            // The same local point FindSurface derives, so the box test and
+            // the scan judge one value.
+            Vector2 p=world-new Vector2(Origin.x,Origin.z);
+            if(p.x<pavedMin.x||p.x>pavedMax.x||p.y<pavedMin.y||p.y>pavedMax.y){top=0;return false;}
             FindSurface(world,out float distance,out top);
             return distance <= .015f;
         }

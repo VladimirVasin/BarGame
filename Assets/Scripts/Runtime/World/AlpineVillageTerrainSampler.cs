@@ -222,20 +222,43 @@ namespace BarPromenade
 
             // The lane's own shelf. Inside the carriageway the ground is the
             // centreline height; past the shoulder it eases back to the slope.
-            float laneDistance = plan.Lane.FindNearest(
-                point,
-                out float lateralDistance);
-            AlpineVillageLaneSample sample = plan.Lane.Sample(laneDistance);
-            float laneHalfWidth = sample.Width * 0.5f;
-            float laneBed = sample.Position.y - LaneBedClearance;
-            float pastEdge = Mathf.Max(
-                0f,
-                lateralDistance - laneHalfWidth - LaneShoulder);
-            float laneWeight = 1f - SmoothRange(
-                0f,
-                ShelfBlendDistance,
-                pastEdge);
-            height = Mathf.Lerp(height, laneBed, laneWeight);
+            //
+            // Beyond `ShelfCache.LaneReach` the block is not run at all, and
+            // that is a no-op and not an approximation: out there `pastEdge`
+            // is past `ShelfBlendDistance`, the smooth-step saturates to
+            // exactly `1`, the weight is exactly `+0`, and
+            // `height + (laneBed - height) * 0` is `height` itself. The two
+            // ways that identity can fail are both held off: `height` is
+            // required to be a finite non-zero of ordinary size (a `-0`
+            // would come back `+0`; an infinity, or a difference that
+            // overflows, would come back NaN), and the cache only names a
+            // finite reach for a lane whose heights and widths are the same.
+            // The nearest-segment search and the centreline sample this
+            // saves were a third of every ground vertex's cost, most of it
+            // on the ridge and the far bank of the brook.
+            ShelfCache cache = ShelfCache.Get(plan);
+            if (!(height != 0f &&
+                  Mathf.Abs(height) < ShelfCache.SkipMagnitudeLimit &&
+                  plan.Lane.NearestIndex.FartherThan(point, cache.LaneReach)))
+            {
+                float laneDistance = plan.Lane.FindNearest(
+                    point,
+                    out float lateralDistance);
+                plan.Lane.SampleGround(
+                    laneDistance,
+                    out float laneCentreHeight,
+                    out float laneWidth);
+                float laneHalfWidth = laneWidth * 0.5f;
+                float laneBed = laneCentreHeight - LaneBedClearance;
+                float pastEdge = Mathf.Max(
+                    0f,
+                    lateralDistance - laneHalfWidth - LaneShoulder);
+                float laneWeight = 1f - SmoothRange(
+                    0f,
+                    ShelfBlendDistance,
+                    pastEdge);
+                height = Mathf.Lerp(height, laneBed, laneWeight);
+            }
 
             // THE STATION STANDS ON GROUND, and until this it did not.
             //
@@ -269,6 +292,16 @@ namespace BarPromenade
             // centimetres.
             for (int index = 0; index < plan.Plots.Count; index++)
             {
+                // Outside the rectangle the apron and its blend can reach,
+                // `outside` comes back past ShelfBlendDistance and the plot
+                // `continue`s without touching `height`. The rectangle is
+                // that same `continue`, taken four compares earlier instead
+                // of after a normalise, two dots and a square root.
+                if (cache.IsClearOfPlot(index, point))
+                {
+                    continue;
+                }
+
                 AlpineVillagePlotDescriptor plot = plan.Plots[index];
                 float outside = DistanceOutsidePlot(plot, point);
                 if (outside >= ShelfBlendDistance)
@@ -287,9 +320,167 @@ namespace BarPromenade
 
             float enclosedHeight = height + SampleRidgeRise(plan, point);
             height = SampleCablewayBrink(plan, point, enclosedHeight);
-            foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
-                height = VillageWorkroomPlan.LowerTerrainBed(plot, point, height);
+            // LowerTerrainBed returns `height` untouched for every plot but
+            // the workroom's house, so only that one is asked - the same
+            // string comparison, made once per plan instead of once per plot
+            // per vertex.
+            AlpineVillagePlotDescriptor[] workrooms = cache.WorkroomPlots;
+            for (int index = 0; index < workrooms.Length; index++)
+            {
+                height = VillageWorkroomPlan.LowerTerrainBed(
+                    workrooms[index],
+                    point,
+                    height);
+            }
+
             return height;
+        }
+
+        /// <summary>
+        /// What <see cref="SampleHeight"/> can decide about a plan once
+        /// rather than once per vertex: the plots' reject rectangles, the
+        /// workroom's house, and how far the lane's shelf can reach. One
+        /// entry, keyed by plan reference, exactly as
+        /// <see cref="AlpineVillageTerrainGrid"/> keeps its axes - the tests
+        /// build a handful of plans and the game builds one.
+        /// </summary>
+        private sealed class ShelfCache
+        {
+            /// <summary>
+            /// Added to every reach so that a float error of a few
+            /// ten-thousandths of a metre in the distances being compared
+            /// can never turn a "cannot reach" into a "reaches".
+            /// </summary>
+            private const float ReachMargin = 1f;
+
+            /// <summary>
+            /// The lane skip is taken only while `height`, and every lane
+            /// height and width, are under this: then `laneBed - height`
+            /// cannot overflow, `(laneBed - height) * 0` is a signed zero,
+            /// and adding a signed zero to a non-zero `height` is `height`.
+            /// Village ground is at `96 m`; this is a guard, not a limit.
+            /// </summary>
+            internal const float SkipMagnitudeLimit = 1e30f;
+
+            private static ShelfCache cached;
+
+            private readonly AlpineVillagePlan plan;
+            private readonly float[] plotMinX;
+            private readonly float[] plotMinZ;
+            private readonly float[] plotMaxX;
+            private readonly float[] plotMaxZ;
+
+            private ShelfCache(AlpineVillagePlan plan)
+            {
+                this.plan = plan;
+
+                // Past this distance from every lane segment the lane
+                // weight is exactly zero: `pastEdge` is at least
+                // `ShelfBlendDistance` however wide the lane is there
+                // (`SampleGround` lerps between widths, so it is never
+                // wider than the widest sample by more than a rounding).
+                // An infinite reach switches the skip off; that is what a
+                // lane with a NaN, an infinity or an absurd magnitude in
+                // its heights or widths gets, because for such a lane the
+                // lerp the skip stands in for would not be an identity.
+                LaneReach = float.PositiveInfinity;
+                if (IsSkipSafe(plan.Lane))
+                {
+                    LaneReach = plan.Lane.MaximumWidth * 0.5f +
+                                LaneShoulder +
+                                ShelfBlendDistance +
+                                ReachMargin;
+                }
+
+                // The apron rectangle sits inside the footprint's own
+                // axis-aligned envelope grown by the apron on every side
+                // (grown by twice the apron, to spare the rotation
+                // arithmetic and stay conservative); a point outside THAT
+                // envelope grown by the blend distance is farther than the
+                // blend from the apron, whatever the plot's facing.
+                IReadOnlyList<AlpineVillagePlotDescriptor> plots = plan.Plots;
+                plotMinX = new float[plots.Count];
+                plotMinZ = new float[plots.Count];
+                plotMaxX = new float[plots.Count];
+                plotMaxZ = new float[plots.Count];
+                float grow = PlotApron * 2f + ShelfBlendDistance + ReachMargin;
+                var workrooms = new List<AlpineVillagePlotDescriptor>();
+                for (int index = 0; index < plots.Count; index++)
+                {
+                    AlpineVillagePlotDescriptor plot = plots[index];
+                    Rect bounds = plot.BoundsXZ;
+                    plotMinX[index] = bounds.xMin - grow;
+                    plotMinZ[index] = bounds.yMin - grow;
+                    plotMaxX[index] = bounds.xMax + grow;
+                    plotMaxZ[index] = bounds.yMax + grow;
+                    // DistanceOutsidePlot substitutes `Vector2.up` for a
+                    // facing with no horizontal part, and BoundsXZ does
+                    // not, so for such a plot the envelope says nothing:
+                    // it is never rejected and always measured.
+                    var facing = new Vector2(plot.Facing.x, plot.Facing.z);
+                    if (facing.sqrMagnitude <= 0.000001f)
+                    {
+                        plotMinX[index] = float.NegativeInfinity;
+                        plotMinZ[index] = float.NegativeInfinity;
+                        plotMaxX[index] = float.PositiveInfinity;
+                        plotMaxZ[index] = float.PositiveInfinity;
+                    }
+
+                    if (plot.StableId == VillageWorkroomPlan.HouseId)
+                    {
+                        workrooms.Add(plot);
+                    }
+                }
+
+                WorkroomPlots = workrooms.ToArray();
+            }
+
+            internal float LaneReach { get; }
+
+            /// <summary>The plots <c>VillageWorkroomPlan.LowerTerrainBed</c>
+            /// does anything for, in plan order.</summary>
+            internal AlpineVillagePlotDescriptor[] WorkroomPlots { get; }
+
+            private static bool IsSkipSafe(AlpineVillageLanePlan lane)
+            {
+                IReadOnlyList<AlpineVillageLaneSample> samples = lane.Samples;
+                for (int index = 0; index < samples.Count; index++)
+                {
+                    AlpineVillageLaneSample sample = samples[index];
+                    if (!(Mathf.Abs(sample.Position.y) < SkipMagnitudeLimit) ||
+                        !(Mathf.Abs(sample.Width) < SkipMagnitudeLimit))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            internal static ShelfCache Get(AlpineVillagePlan plan)
+            {
+                ShelfCache cache = cached;
+                if (cache == null || !ReferenceEquals(cache.plan, plan))
+                {
+                    cache = new ShelfCache(plan);
+                    cached = cache;
+                }
+
+                return cache;
+            }
+
+            /// <summary>
+            /// True when the plot's shelf provably cannot reach the point.
+            /// A NaN point fails every comparison and is never "clear", so
+            /// it runs the full arithmetic as it always did.
+            /// </summary>
+            internal bool IsClearOfPlot(int index, Vector2 point)
+            {
+                return point.x < plotMinX[index] ||
+                       point.x > plotMaxX[index] ||
+                       point.y < plotMinZ[index] ||
+                       point.y > plotMaxZ[index];
+            }
         }
 
         /// <summary>
@@ -352,31 +543,92 @@ namespace BarPromenade
             }
 
             IReadOnlyList<AlpineVillageBrookSample> samples = brook.Samples;
+            if (samples.Count < 2)
+            {
+                // No segment at all: the scan below would find nothing and
+                // hand the height back, so hand it back.
+                return height;
+            }
+
+            // The swale cannot reach past `support`, and `support` cannot be
+            // more than the widest half-width plus its two constants, so a
+            // point farther than that from every segment comes back with
+            // `height` untouched - the `nearestDistance >= support` return
+            // below, taken before the scan instead of after it. This is the
+            // whole village's ground except the strip along the water.
+            AlpineVillagePolylineIndex index = brook.NearestIndex;
+            if (index.FartherThan(
+                    point,
+                    brook.MaximumHalfWidth + BrookTerrainCell +
+                    BrookBankBlendWidth + BrookReachMargin))
+            {
+                return height;
+            }
+
+            // The scan itself, in index order with the original per-segment
+            // arithmetic and the original strict `<` - so the EARLIEST
+            // segment at the minimum distance wins exactly as before - and
+            // pruned by the index: a run of segments provably farther than a
+            // distance already computed is skipped, and cannot have been
+            // the winner. See AlpineVillagePolylineIndex for the argument.
+            // The first bound is the segment under the query's grid cell; it
+            // is a bound, not a record, so the record fills in index order.
+            float pruneBound = float.PositiveInfinity;
+            int guess = index.GuessSegment(point);
+            if (guess >= 0 &&
+                TryBrookSegmentDistance(
+                    samples,
+                    guess,
+                    point,
+                    out float guessDistance,
+                    out _))
+            {
+                pruneBound = guessDistance;
+            }
+
             int nearestIndex = -1;
             float nearestAmount = 0f;
             float nearestDistance = float.MaxValue;
-            for (int index = 0; index < samples.Count - 1; index++)
+            int segmentCount = samples.Count - 1;
+            for (int chunk = 0; chunk < index.ChunkCount; chunk++)
             {
-                AlpineVillageBrookSample first = samples[index];
-                AlpineVillageBrookSample second = samples[index + 1];
-                Vector2 start = new Vector2(
-                    first.Position.x, first.Position.z);
-                Vector2 segment = new Vector2(
-                    second.Position.x, second.Position.z) - start;
-                float lengthSquared = segment.sqrMagnitude;
-                if (lengthSquared <= 0.000001f)
+                if (index.ChunkCannotWin(chunk, point, pruneBound))
                 {
                     continue;
                 }
-                float amount = Mathf.Clamp01(
-                    Vector2.Dot(point - start, segment) / lengthSquared);
-                float distance = Vector2.Distance(
-                    point, start + segment * amount);
-                if (distance < nearestDistance)
+
+                int end = Math.Min(
+                    segmentCount,
+                    (chunk + 1) * AlpineVillagePolylineIndex.ChunkSize);
+                for (int segment = chunk * AlpineVillagePolylineIndex.ChunkSize;
+                     segment < end;
+                     segment++)
                 {
-                    nearestIndex = index;
-                    nearestAmount = amount;
-                    nearestDistance = distance;
+                    if (index.CannotWin(segment, point, pruneBound))
+                    {
+                        continue;
+                    }
+
+                    if (!TryBrookSegmentDistance(
+                            samples,
+                            segment,
+                            point,
+                            out float distance,
+                            out float amount))
+                    {
+                        continue;
+                    }
+
+                    if (distance < nearestDistance)
+                    {
+                        nearestIndex = segment;
+                        nearestAmount = amount;
+                        nearestDistance = distance;
+                        if (distance < pruneBound)
+                        {
+                            pruneBound = distance;
+                        }
+                    }
                 }
             }
             if (nearestIndex < 0)
@@ -407,6 +659,48 @@ namespace BarPromenade
 
         private const float BrookBedDepth = 0.19f;
         private const float BrookBankBlendWidth = 0.35f;
+
+        /// <summary>
+        /// Added to the swale's reach before a point is declared out of it,
+        /// so that a float error of a few ten-thousandths of a metre in the
+        /// nearest distance can never turn "outside the swale" into "inside".
+        /// </summary>
+        private const float BrookReachMargin = 1f;
+
+        /// <summary>
+        /// The ground-plane distance from the point to one channel segment
+        /// and where along it the nearest point falls - the per-segment
+        /// arithmetic of the swale's scan, operation for operation. False
+        /// for a degenerate segment, which the scan skips exactly as it
+        /// always did.
+        /// </summary>
+        private static bool TryBrookSegmentDistance(
+            IReadOnlyList<AlpineVillageBrookSample> samples,
+            int index,
+            Vector2 point,
+            out float distance,
+            out float amount)
+        {
+            AlpineVillageBrookSample first = samples[index];
+            AlpineVillageBrookSample second = samples[index + 1];
+            Vector2 start = new Vector2(
+                first.Position.x, first.Position.z);
+            Vector2 segment = new Vector2(
+                second.Position.x, second.Position.z) - start;
+            float lengthSquared = segment.sqrMagnitude;
+            if (lengthSquared <= 0.000001f)
+            {
+                distance = 0f;
+                amount = 0f;
+                return false;
+            }
+
+            amount = Mathf.Clamp01(
+                Vector2.Dot(point - start, segment) / lengthSquared);
+            distance = Vector2.Distance(
+                point, start + segment * amount);
+            return true;
+        }
 
         /// <summary>
         /// The original swale reach used by route and walkability planning.

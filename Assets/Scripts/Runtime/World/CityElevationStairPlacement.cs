@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace BarPromenade
@@ -58,6 +60,21 @@ namespace BarPromenade
             new Vector2Int(0, -1)
         };
 
+        // A placement is a pure function of the immutable layout and the
+        // descriptor, and every ground builder, walkable area, boundary plan
+        // and street planner re-plans the same handful of stairs. The layout
+        // keys the memo so it dies with the layout; the descriptor is matched
+        // field by field, floats by their bits, so only an identical request
+        // is ever answered from the cache.
+        private static readonly ConditionalWeakTable<
+            CityLayout,
+            List<KeyValuePair<CityElevationStairDescriptor,
+                CityElevationStairPlacement>>> Placements =
+            new ConditionalWeakTable<
+                CityLayout,
+                List<KeyValuePair<CityElevationStairDescriptor,
+                    CityElevationStairPlacement>>>();
+
         public static CityElevationStairPlacement Create(
             CityLayout layout,
             CityElevationStairDescriptor stair)
@@ -67,6 +84,55 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(layout));
             }
 
+            List<KeyValuePair<CityElevationStairDescriptor,
+                CityElevationStairPlacement>> cache = Placements.GetValue(
+                layout,
+                _ => new List<KeyValuePair<CityElevationStairDescriptor,
+                    CityElevationStairPlacement>>());
+            lock (cache)
+            {
+                for (int index = 0; index < cache.Count; index++)
+                {
+                    if (SameStair(cache[index].Key, stair))
+                    {
+                        return cache[index].Value;
+                    }
+                }
+
+                CityElevationStairPlacement placement = Plan(layout, stair);
+                cache.Add(new KeyValuePair<CityElevationStairDescriptor,
+                    CityElevationStairPlacement>(stair, placement));
+                return placement;
+            }
+        }
+
+        private static bool SameStair(
+            in CityElevationStairDescriptor first,
+            in CityElevationStairDescriptor second)
+        {
+            return string.Equals(first.Id, second.Id, StringComparison.Ordinal) &&
+                   first.District == second.District &&
+                   first.Edge == second.Edge &&
+                   first.LowerNode == second.LowerNode &&
+                   first.UpperNode == second.UpperNode &&
+                   first.Side == second.Side &&
+                   first.StepCount == second.StepCount &&
+                   SameBits(first.StepRise, second.StepRise) &&
+                   SameBits(first.TreadDepth, second.TreadDepth) &&
+                   SameBits(first.Width, second.Width) &&
+                   SameBits(first.LandingLength, second.LandingLength);
+        }
+
+        private static bool SameBits(float first, float second)
+        {
+            return BitConverter.SingleToInt32Bits(first) ==
+                   BitConverter.SingleToInt32Bits(second);
+        }
+
+        private static CityElevationStairPlacement Plan(
+            CityLayout layout,
+            CityElevationStairDescriptor stair)
+        {
             Vector3 lower = layout.GetNodeWorldPosition(stair.LowerNode);
             Vector3 upper = layout.GetNodeWorldPosition(stair.UpperNode);
             Vector3 ascent = upper - lower;

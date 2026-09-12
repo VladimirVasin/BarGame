@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -19,6 +20,13 @@ namespace BarPromenade
         internal const float FoundationHorizontalInset = 0.08f;
 
         private static CityBuildingAssetProvider provider;
+
+        // Every instance is a byte copy of one of four source prefabs, so the
+        // registry contract is proved on the source once per prefab, not on
+        // every lot: the passive-hierarchy walk alone is nine
+        // GetComponentsInChildren sweeps, ~1300 per City load when run per lot.
+        private static readonly HashSet<GameObject> validatedSources =
+            new HashSet<GameObject>();
 
         public static CityBuildingAssetRegistry BuildCity(
             Transform parent,
@@ -114,6 +122,7 @@ namespace BarPromenade
             BuildingLot lot)
         {
             GameObject source = Provider.GetPrefabOrThrow(lot.District);
+            ValidateSourceOnce(source, lot.District);
             GameObject instance = UnityEngine.Object.Instantiate(
                 source,
                 parent,
@@ -128,24 +137,46 @@ namespace BarPromenade
                     "registry.");
             }
 
-            registry.ValidateOrThrow();
             return registry;
         }
 
         private static CityBuildingAssetRegistry GetSourceRegistry(
             BuildingLot lot)
         {
-            CityBuildingAssetRegistry registry = Provider
-                .GetPrefabOrThrow(lot.District)
-                .GetComponent<CityBuildingAssetRegistry>();
+            return GetSourceRegistry(
+                Provider.GetPrefabOrThrow(lot.District),
+                lot.District);
+        }
+
+        private static CityBuildingAssetRegistry GetSourceRegistry(
+            GameObject source,
+            CityDistrictKind district)
+        {
+            CityBuildingAssetRegistry registry =
+                source.GetComponent<CityBuildingAssetRegistry>();
             if (registry == null)
             {
                 throw new InvalidOperationException(
-                    $"City building prefab for {lot.District} lost its " +
+                    $"City building prefab for {district} lost its " +
                     "registry.");
             }
 
             return registry;
+        }
+
+        private static void ValidateSourceOnce(
+            GameObject source,
+            CityDistrictKind district)
+        {
+            if (validatedSources.Contains(source))
+            {
+                return;
+            }
+
+            // A failed source stays out of the set so a later build reports
+            // the same fault instead of trusting a prefab that never passed.
+            GetSourceRegistry(source, district).ValidateOrThrow();
+            validatedSources.Add(source);
         }
 
         private static CityBuildingAssetProvider Provider
@@ -346,6 +377,7 @@ namespace BarPromenade
         private static void ResetCachedResources()
         {
             provider = null;
+            validatedSources.Clear();
         }
     }
 }

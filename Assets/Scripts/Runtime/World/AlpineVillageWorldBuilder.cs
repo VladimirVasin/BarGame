@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -256,8 +257,16 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(plan));
             }
 
+            // The root's timer brackets this whole enumerator as one
+            // `world_build` phase; these blocks say which builder inside it
+            // the time went to. Reported before each yield and restarted
+            // after it, so a frame's wait never lands on a block.
+            Stopwatch blockTimer = Stopwatch.StartNew();
+            Stopwatch blocksTotal = Stopwatch.StartNew();
             plan.ValidateOrThrow();
             VillageAssetProvider kit = VillageAssetProvider.LoadOrThrow();
+            ReportBlock("validate_and_kit", blockTimer);
+            blockTimer.Restart();
 
             var root = new GameObject("Alpine Village");
             root.transform.SetParent(parent, false);
@@ -265,14 +274,22 @@ namespace BarPromenade
                 StringComparer.Ordinal);
 
             GameObject terrainRoot = BuildTerrain(root.transform, plan);
+            ReportBlock("terrain", blockTimer);
+            blockTimer.Restart();
             AlpineVillageRockBuilder.Build(root.transform, plan);
+            ReportBlock("rock", blockTimer);
+            blockTimer.Restart();
 
             // Beside the rock, because both dress the same wall from the same
             // walk along its four sides, and the trees are keyed to the panels.
             AlpineVillageTreeBuilder.Build(root.transform, plan);
+            ReportBlock("trees", blockTimer);
+            blockTimer.Restart();
             GameObject laneSurface = BuildLane(root.transform, plan);
             BuildPathSurfaces(root.transform, plan);
+            ReportBlock("lane_and_paths", blockTimer);
             yield return new CompositionStep("terrain_and_lane", 0.25f);
+            blockTimer.Restart();
 
             // Before the snow, so the drifts can be told where the open
             // water is and keep off it.
@@ -281,9 +298,13 @@ namespace BarPromenade
                 plan,
                 kit,
                 semanticObjects);
+            ReportBlock("brook", blockTimer);
+            blockTimer.Restart();
             AlpineVillageSnowTreading snowTreading =
                 BuildSnowDrifts(root.transform, plan);
+            ReportBlock("snow_drifts", blockTimer);
             yield return new CompositionStep("brook_and_snow", 0.45f);
+            blockTimer.Restart();
 
             // The station is the cableway builder's, not this one's. Both
             // terminals are the same building and the second must not be a
@@ -305,14 +326,21 @@ namespace BarPromenade
                 cableway.Bullwheel;
 
             var houseDoors = new List<LockedDoorInteraction>();
+            ReportBlock("cableway", blockTimer);
             yield return new CompositionStep("cableway", 0.60f);
+            blockTimer.Restart();
             BuildPlots(
                 root.transform,
                 plan,
                 kit,
                 semanticObjects,
                 houseDoors);
+            ReportBlock(
+                "plots",
+                blockTimer,
+                GameLog.Field("plot_count", plan.Plots.Count));
             yield return new CompositionStep("houses", 0.80f);
+            blockTimer.Restart();
             MothersHouseEntrance mothersHouseEntrance =
                 BuildMothersHouseEntrance(
                     root.transform,
@@ -323,7 +351,11 @@ namespace BarPromenade
                 plan,
                 kit,
                 semanticObjects);
+            ReportBlock("entrance_and_dressing", blockTimer);
+            blockTimer.Restart();
             BuildGarlands(root.transform, plan, kit, semanticObjects);
+            ReportBlock("garlands", blockTimer);
+            blockTimer.Restart();
 
             var walkableArea = new AlpineVillageWalkableArea(plan);
             completed(new AlpineVillageWorldResult(
@@ -336,7 +368,89 @@ namespace BarPromenade
                 snowTreading,
                 mothersHouseEntrance,
                 houseDoors));
+            ReportBlock(
+                "world_complete",
+                blockTimer,
+                GameLog.Field(
+                    "blocks_total_ms",
+                    blocksTotal.Elapsed.TotalMilliseconds));
             yield return new CompositionStep("world_complete", 1f);
+        }
+
+        private static void ReportBlock(
+            string block,
+            Stopwatch timer,
+            params GameLogField[] extra)
+        {
+            timer.Stop();
+            var fields = new GameLogField[2 + extra.Length];
+            fields[0] = GameLog.Field("block", block);
+            fields[1] = GameLog.Field(
+                "duration_ms",
+                timer.Elapsed.TotalMilliseconds);
+            Array.Copy(extra, 0, fields, 2, extra.Length);
+            GameLog.Debug("alpine_village", "world_build_block", fields);
+        }
+
+        /// <summary>
+        /// One row per generated ground-like mesh: what it cost to make and
+        /// what its collider cost on top. Internal so the brook and path
+        /// builders, which make the same kind of mesh, file their rows under
+        /// the same event and category.
+        /// </summary>
+        internal static void ReportTerrainMesh(
+            string name,
+            Mesh mesh,
+            double meshMs,
+            double colliderMs,
+            params GameLogField[] extra)
+        {
+            if (mesh == null)
+            {
+                return;
+            }
+
+            ReportTerrainMesh(
+                name,
+                mesh.vertexCount,
+                CountIndices(mesh),
+                meshMs,
+                colliderMs,
+                extra);
+        }
+
+        /// <summary>The same row from counts, for a builder that sums
+        /// several small meshes into one line rather than logging each.
+        /// </summary>
+        internal static void ReportTerrainMesh(
+            string name,
+            int vertices,
+            long indices,
+            double meshMs,
+            double colliderMs,
+            params GameLogField[] extra)
+        {
+            var fields = new GameLogField[5 + extra.Length];
+            fields[0] = GameLog.Field("name", name);
+            fields[1] = GameLog.Field("vertices", vertices);
+            fields[2] = GameLog.Field("indices", indices);
+            fields[3] = GameLog.Field("mesh_ms", meshMs);
+            fields[4] = GameLog.Field("collider_ms", colliderMs);
+            Array.Copy(extra, 0, fields, 5, extra.Length);
+            GameLog.Debug("alpine_village", "terrain_mesh", fields);
+        }
+
+        /// <summary>Every submesh, so the split ground counts its whole
+        /// surface rather than the floor material's share.</summary>
+        internal static long CountIndices(Mesh mesh)
+        {
+            long total = 0;
+            for (int index = 0; index < mesh.subMeshCount; index++)
+            {
+                total += (long)mesh.GetIndexCount(index);
+            }
+
+            return total;
         }
 
         /// <summary>
@@ -387,6 +501,11 @@ namespace BarPromenade
             // the planned mountains exist only as descriptors and the ground
             // simply ends. TerrainMeshBounds carries the complete physical
             // rise, the hidden crest and the cableway brink.
+            //
+            // Timed in stages because the sampler is pure arithmetic per
+            // vertex and the upload is Unity's: a slow ground has to say
+            // which of the two it is before anyone tunes either.
+            Stopwatch stageTimer = Stopwatch.StartNew();
             AlpineVillageTerrainGrid grid = AlpineVillageTerrainGrid.Get(plan);
             int columns = grid.Columns;
             int rows = grid.Rows;
@@ -408,6 +527,9 @@ namespace BarPromenade
                     uvs.Add(AlpineVillageRidgeAppearance.CreateWorldUv(point));
                 }
             }
+
+            double sampleMs = stageTimer.Elapsed.TotalMilliseconds;
+            stageTimer.Restart();
 
             // Classify every cell once at its centre, then split.
             var riseCells = new bool[rows, columns];
@@ -439,6 +561,8 @@ namespace BarPromenade
                 }
             }
 
+            double splitMs = stageTimer.Elapsed.TotalMilliseconds;
+            stageTimer.Restart();
             var mesh = new Mesh
             {
                 name = "Alpine Village Ground",
@@ -453,6 +577,7 @@ namespace BarPromenade
             mesh.SetTriangles(riseTriangles, TerrainRiseMaterialIndex);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+            double uploadMs = stageTimer.Elapsed.TotalMilliseconds;
 
             var host = new GameObject("Village Ground");
             host.transform.SetParent(parent, false);
@@ -486,7 +611,19 @@ namespace BarPromenade
                 TerrainRiseMaterialIndex);
             renderer.sharedMaterials = materials;
 
+            stageTimer.Restart();
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
+            double colliderMs = stageTimer.Elapsed.TotalMilliseconds;
+            ReportTerrainMesh(
+                mesh.name,
+                mesh,
+                sampleMs + splitMs + uploadMs,
+                colliderMs,
+                GameLog.Field("columns", columns),
+                GameLog.Field("rows", rows),
+                GameLog.Field("sample_ms", sampleMs),
+                GameLog.Field("split_ms", splitMs),
+                GameLog.Field("upload_ms", uploadMs));
             return host;
         }
 
@@ -558,6 +695,7 @@ namespace BarPromenade
             Transform parent,
             AlpineVillagePlan plan)
         {
+            Stopwatch stageTimer = Stopwatch.StartNew();
             IReadOnlyList<AlpineVillagePathDescriptor> paths =
                 AlpineVillagePathPlanner.Create(plan);
             var vertices = new List<Vector3>();
@@ -568,6 +706,9 @@ namespace BarPromenade
             var grounds = new List<float>();
             var depths = new List<float>();
 
+            // Three stages, because each asks the depth field a different
+            // number of times: the ribbons per station, the field per cell,
+            // and the cull only per triangle it is about to keep.
             AppendLaneDrifts(
                 plan, paths, vertices, uvs, triangles, grounds, depths);
             for (int index = 0; index < paths.Count; index++)
@@ -583,8 +724,12 @@ namespace BarPromenade
                     depths);
             }
 
+            double ribbonsMs = stageTimer.Elapsed.TotalMilliseconds;
+            stageTimer.Restart();
             AppendSnowField(
                 plan, paths, vertices, uvs, triangles, grounds, depths);
+            double fieldMs = stageTimer.Elapsed.TotalMilliseconds;
+            stageTimer.Restart();
 
             if (plan.Brook != null)
             {
@@ -620,6 +765,8 @@ namespace BarPromenade
                 triangles.RemoveRange(kept, triangles.Count - kept);
             }
 
+            double cullMs = stageTimer.Elapsed.TotalMilliseconds;
+            stageTimer.Restart();
             if (triangles.Count == 0)
             {
                 return null;
@@ -637,6 +784,16 @@ namespace BarPromenade
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+            double uploadMs = stageTimer.Elapsed.TotalMilliseconds;
+            ReportTerrainMesh(
+                mesh.name,
+                mesh,
+                ribbonsMs + fieldMs + cullMs + uploadMs,
+                0d,
+                GameLog.Field("ribbons_ms", ribbonsMs),
+                GameLog.Field("field_ms", fieldMs),
+                GameLog.Field("cull_ms", cullMs),
+                GameLog.Field("upload_ms", uploadMs));
 
             var host = new GameObject(SnowDriftObjectName);
             host.transform.SetParent(parent, false);
@@ -1033,6 +1190,7 @@ namespace BarPromenade
             int across = LaneSkinCrossSteps + 1;
             var vertices = new Vector3[samples.Count * across];
             var uvs = new Vector2[vertices.Length];
+            Stopwatch stageTimer = Stopwatch.StartNew();
             for (int index = 0; index < samples.Count; index++)
             {
                 AlpineVillageLaneSample sample = samples[index];
@@ -1076,6 +1234,7 @@ namespace BarPromenade
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+            double meshMs = stageTimer.Elapsed.TotalMilliseconds;
 
             var host = new GameObject("Village Lane");
             host.transform.SetParent(parent, false);
@@ -1090,7 +1249,14 @@ namespace BarPromenade
                 renderer,
                 MountainRoadSurfaceKind.ForestFloor,
                 LaneColor);
+            stageTimer.Restart();
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
+            ReportTerrainMesh(
+                mesh.name,
+                mesh,
+                meshMs,
+                stageTimer.Elapsed.TotalMilliseconds,
+                GameLog.Field("sample_count", samples.Count));
             return host;
         }
         /// <summary>

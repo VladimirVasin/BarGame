@@ -334,30 +334,31 @@ namespace BarPromenade
 
             Camera camera = RuntimeSceneSetup.EnsureCityNight();
             Audio = RetroAudioService.EnsureInstalled();
-            ReportPhase("runtime_setup", phaseTimer);
+            GameLogPhases.Report("city", "runtime_setup", phaseTimer);
             yield return new CompositionStep("runtime_setup", 0.03f);
 
             phaseTimer.Restart();
             CityGenerationSettings settings = CityGenerationSettings.Default;
             CityBlueprint blueprint = CityBlueprintCatalog.Resolve(
                 GameSessionState.CityBlueprintId);
-            Layout = CityLayoutGenerator.Generate(
+            Layout = CityLayoutCache.GetOrGenerate(
                 blueprint,
                 settings,
                 GameSessionState.CitySeed);
-            ReportPhase("layout_generation", phaseTimer);
+            GameLogPhases.Report("city", "layout_generation", phaseTimer);
             ReportLayout(Layout);
             yield return new CompositionStep("layout", 0.10f);
 
             phaseTimer.Restart();
             CityNightFixturePlan nightPlan =
-                CityNightFixturePlanner.CreatePlan(Layout);
+                CityLayoutCache.GetOrCreateNightPlan(Layout);
             yield return RuntimeComposition.Range(CityWorldBuilder.BuildSteps(
                 transform,
                 Layout,
                 settings,
                 nightPlan, value => World = value), 0.10f, 0.65f);
-            ReportPhase("world_build", phaseTimer);
+            GameLogPhases.Report("city", "world_build", phaseTimer);
+            ReportWorldInventory();
             ReportWorld(World, Layout);
             yield return new CompositionStep("world", 0.65f);
 
@@ -366,7 +367,7 @@ namespace BarPromenade
                 transform,
                 nightPlan,
                 World.Bars);
-            ReportPhase("night_build", phaseTimer);
+            GameLogPhases.Report("city", "night_build", phaseTimer);
             yield return new CompositionStep("night", 0.68f);
             GameLog.Info(
                 "city",
@@ -385,6 +386,7 @@ namespace BarPromenade
                     Night.TrafficSignals.Count));
 
             phaseTimer.Restart();
+            Stopwatch stepTimer = Stopwatch.StartNew();
             GameObject musicObject = new GameObject("City Music");
             musicObject.transform.SetParent(transform, false);
             Music = musicObject.AddComponent<CityMusicPlayer>();
@@ -393,6 +395,7 @@ namespace BarPromenade
             ambienceObject.transform.SetParent(transform, false);
             Ambience =
                 ambienceObject.AddComponent<CityAmbiencePlayer>();
+            GameLogPhases.Report("city", "music_and_ambience", stepTimer);
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
@@ -583,12 +586,14 @@ namespace BarPromenade
                 GameLog.Field("y", spawnPosition.y),
                 GameLog.Field("z", spawnPosition.z),
                 GameLog.Field("walkable", spawnIsWalkable));
+            stepTimer.Restart();
             Player = PlayerFactory.Create(
                 transform,
                 spawnPosition,
                 camera,
                 World.WalkableArea,
                 prompt);
+            GameLogPhases.Report("city", "hero", stepTimer);
             World.Root.GetComponentInChildren<CityOffshoreBoatController>()
                 ?.AttachHero(Player.GameObject.transform);
             CitySandTreading sand = World.Root.GetComponentInChildren<CitySandTreading>();
@@ -632,6 +637,7 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 Music,
                 World.CemeteryPlan);
+            stepTimer.Restart();
             CityStreetSurfacePlan pedestrianStreetSurfacePlan =
                 CityStreetSurfacePlanner.Create(Layout);
             PedestrianPlan = CityPedestrianPlanner.Create(
@@ -640,11 +646,14 @@ namespace BarPromenade
                 pedestrianStreetSurfacePlan);
             RoadWalkableArea pedestrianWalkableArea =
                 CityPedestrianPlanner.CreateWalkableArea(PedestrianPlan);
+            GameLogPhases.Report("city", "pedestrian_plan", stepTimer);
+            stepTimer.Restart();
             Pedestrians = CityPedestrianFactory.Create(
                 transform,
                 PedestrianPlan,
                 Player.GameObject.transform,
                 pedestrianWalkableArea);
+            GameLogPhases.Report("city", "pedestrian_pool", stepTimer);
             Night.InitializeLighting(
                 Player.GameObject.transform,
                 Layout.Seed,
@@ -661,6 +670,7 @@ namespace BarPromenade
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night);
             yield return new CompositionStep("player_and_pedestrians", 0.76f);
+            stepTimer.Restart();
             BusPlan = CityBusPlanner.Create(
                 Layout,
                 World.DecorationPlan);
@@ -673,6 +683,7 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 Pedestrians,
                 () => Night.NightFactor);
+            GameLogPhases.Report("city", "bus", stepTimer);
             // The yard rider is authored, not ambient: one staged NPC on
             // the invisible circuit immediately left of the selected bar,
             // outside the pedestrian pool and its spawn bands.
@@ -717,8 +728,10 @@ namespace BarPromenade
             // tableau and its player-sensitive scale are never instantiated.
             WeighbridgeAttendants = System.Array.Empty<WeighbridgeAttendantPresentation>();
             WeighbridgeNeedle = null;
+            stepTimer.Restart();
             Cannery = CityCanneryController.Build(transform, Layout,
                 World.Root.GetComponentInChildren<CityPortController>(), Player.GameObject.transform);
+            GameLogPhases.Report("city", "cannery", stepTimer);
             // The cemetery's one scripted visitor: while the hero is
             // near the grounds a mourner spawns out of sight, walks
             // through the gate to a deterministic random grave, lays
@@ -785,6 +798,7 @@ namespace BarPromenade
                 areaArrivalToken == AreaArrivalToken.FerrymanReturn &&
                 GameSessionState.FerrymanRide ==
                 LastRouteFerrymanRideStage.Returning;
+            stepTimer.Restart();
             if (GameSessionState.FerrymanRide ==
                 LastRouteFerrymanRideStage.NotTaken)
             {
@@ -810,6 +824,7 @@ namespace BarPromenade
                     camera,
                     LastRouteCarLamps.RideOnly);
             }
+            GameLogPhases.Report("city", "last_route_car", stepTimer);
             // The park kept a place for company and two men still keep
             // it: an old player at each of the two chess tables, on
             // seats that are each other's rotated 180 degrees about the
@@ -1028,6 +1043,7 @@ namespace BarPromenade
             // The city sound layer is composed only after every moving
             // physical owner exists. Its plan contains no anonymous fallback
             // emitters: missing fixtures stay silent.
+            stepTimer.Restart();
             SoundscapePlan = CitySoundscapeAnchorPlanner.Create(
                 Layout,
                 World.DecorationPlan);
@@ -1119,6 +1135,7 @@ namespace BarPromenade
                     (BusRide != null && BusRide.IsPassengerAboard) ||
                     (TunnelShelter != null && TunnelShelter.IsSheltered),
                 new CityEternalRainShaper());
+            GameLogPhases.Report("city", "soundscape_and_weather", stepTimer);
             Clouds = ExteriorCloudField.Create(
                 transform,
                 camera,
@@ -1172,13 +1189,16 @@ namespace BarPromenade
             // may do anything observable inside that shot. The
             // closure reads GraveWork lazily per poll, the same
             // null-guarded idiom the cemetery pair applies to a yard
-            // with no work controller at all.
+            // with no work controller at all. The ground is the one the
+            // arrival already built: it is a function of the layout, and
+            // the map takes the same instance below.
+            stepTimer.Restart();
             CityRavenRoosts = RavenRoostController.Create(
                 transform,
                 CityRavenRoostPlanner.Create(
                     Layout,
                     World,
-                    new CityMapCityTeleportGround(Layout),
+                    arrivalGround,
                     GameSessionState.CitySeed),
                 RavenRoostSettings.City,
                 Player.GameObject.transform,
@@ -1223,12 +1243,14 @@ namespace BarPromenade
                 ParkCheckersPlayer,
                 ParkQuarrel,
                 GameSessionState.CitySeed);
+            GameLogPhases.Report("city", "raven_and_board", stepTimer);
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
                 Player,
                 follow,
                 intoxicationHud);
+            stepTimer.Restart();
             Map = ui.AddComponent<CityMapController>();
             Map.Initialize(
                 Layout,
@@ -1238,21 +1260,36 @@ namespace BarPromenade
                 BusPlan,
                 World.MountainBoundaryPlan,
                 World.SeacoastPlan);
-            MountainRoadPlan mountainMapPlan =
-                MountainRoadPlanner.Create(GameSessionState.CitySeed);
-            // The village tab charts pure data, exactly as the mountain tab
-            // does. Without it the third tab drew an empty rectangle and
-            // named nothing up there - the chart offered a place it could
-            // not describe.
-            AlpineVillagePlan villageMapPlan =
-                AlpineVillagePlanner.Create(GameSessionState.CitySeed);
-            Map.ConfigureAreas(
-                GameAreaId.City,
-                CityMapMountainRoadOverlayBuilder.Create(mountainMapPlan),
-                request => AreaTravelService.Request(request),
-                null,
-                CityMapAlpineVillageOverlayBuilder.Create(villageMapPlan),
-                villageMapPlan.Plots);
+            GameLogPhases.Report("city", "map_initialize", stepTimer);
+            // The two foreign tabs chart pure plans that take over a second
+            // to build and are looked at only with the map open on them, so
+            // they are charted on the first M press - or by the map's own
+            // idle warm a few seconds after the city is ready, whichever
+            // comes first. The plans come through the cache so a later real
+            // visit to either area reuses them. The village tab charts pure
+            // data exactly as the mountain tab does; without it the third
+            // tab drew an empty rectangle and named nothing up there - the
+            // chart offered a place it could not describe.
+            int citySeed = GameSessionState.CitySeed;
+            Map.ConfigureAreasOnFirstUse(() =>
+            {
+                Stopwatch areaTimer = Stopwatch.StartNew();
+                MountainRoadPlan mountainMapPlan =
+                    CityLayoutCache.GetOrCreateMountainRoad(citySeed);
+                AlpineVillagePlan villageMapPlan =
+                    CityLayoutCache.GetOrCreateAlpineVillage(citySeed);
+                GameLogPhases.Report("city", "foreign_area_plans", areaTimer);
+                areaTimer.Restart();
+                Map.ConfigureAreas(
+                    GameAreaId.City,
+                    CityMapMountainRoadOverlayBuilder.Create(mountainMapPlan),
+                    request => AreaTravelService.Request(request),
+                    arrivalGround,
+                    CityMapAlpineVillageOverlayBuilder.Create(villageMapPlan),
+                    villageMapPlan.Plots);
+                GameLogPhases.Report("city", "map_configure_areas", areaTimer);
+            });
+            stepTimer.Restart();
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,
@@ -1275,10 +1312,14 @@ namespace BarPromenade
                 Player,
                 follow,
                 intoxicationHud);
+            GameLogPhases.Report("city", "ui_controllers", stepTimer);
             GameSessionState.CompleteCityReturn();
             IsInitialized = true;
+            GameLogPhases.Report("city", "player_and_ui", phaseTimer);
+            Stopwatch firstFrameTimer = Stopwatch.StartNew();
             yield return new CompositionStep("ready", 1f);
-            ReportPhase("player_and_ui", phaseTimer);
+            GameLogPhases.Report("city", "first_frame", firstFrameTimer);
+            Map.ScheduleIdleAreaWarm();
             totalTimer.Stop();
             GameLog.Info(
                 "city",
@@ -1545,18 +1586,60 @@ namespace BarPromenade
                     world.Bounds.size.z));
         }
 
-        private static void ReportPhase(
-            string phase,
-            Stopwatch timer)
+        private static void ReportWorldInventory()
         {
-            timer.Stop();
+            // Five whole-scene scans only pay for themselves when the row
+            // they feed survives: the verbose profile.
+            if (!GameLog.IsVerbose)
+            {
+                return;
+            }
+
+            Stopwatch inventoryTimer = Stopwatch.StartNew();
+            MeshCollider[] meshColliders = FindObjectsByType<MeshCollider>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+            long meshColliderVertices = 0;
+            for (int i = 0; i < meshColliders.Length; i++)
+            {
+                Mesh sharedMesh = meshColliders[i].sharedMesh;
+                if (sharedMesh != null)
+                {
+                    meshColliderVertices += sharedMesh.vertexCount;
+                }
+            }
+
+            int boxColliderCount = FindObjectsByType<BoxCollider>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None).Length;
+            int rendererCount = FindObjectsByType<Renderer>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None).Length;
+            int clothCount = FindObjectsByType<Cloth>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None).Length;
+            int transformCount = FindObjectsByType<Transform>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None).Length;
+            inventoryTimer.Stop();
             GameLog.Debug(
                 "city",
-                "initialize_phase",
-                GameLog.Field("phase", phase),
+                "world_inventory",
+                GameLog.Field(
+                    "mesh_collider_count",
+                    meshColliders.Length),
+                GameLog.Field(
+                    "mesh_collider_vertices",
+                    meshColliderVertices),
+                GameLog.Field(
+                    "box_collider_count",
+                    boxColliderCount),
+                GameLog.Field("renderer_count", rendererCount),
+                GameLog.Field("cloth_count", clothCount),
+                GameLog.Field("transform_count", transformCount),
                 GameLog.Field(
                     "duration_ms",
-                    timer.ElapsedMilliseconds));
+                    inventoryTimer.Elapsed.TotalMilliseconds));
         }
 
         private void OnDestroy()

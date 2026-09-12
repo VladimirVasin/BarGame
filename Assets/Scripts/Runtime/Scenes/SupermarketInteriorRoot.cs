@@ -111,16 +111,23 @@ namespace BarPromenade
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Stopwatch timer = Stopwatch.StartNew();
+            Stopwatch phaseTimer = Stopwatch.StartNew();
             Camera camera =
                 RuntimeSceneSetup.EnsureSupermarketInterior();
             Audio = RetroAudioService.EnsureInstalled();
+            GameLogPhases.Report("supermarket", "runtime_setup", phaseTimer);
+            phaseTimer.Restart();
             Layout = SupermarketInteriorLayoutPlanner.Generate(
                 GameSessionState.CitySeed);
+            GameLogPhases.Report("supermarket", "layout", phaseTimer);
+            phaseTimer.Restart();
             World = SupermarketInteriorWorldBuilder.Build(
                 transform,
                 Layout,
                 sourceId =>
                     !GameSessionState.IsWorldItemCollected(sourceId));
+            GameLogPhases.Report("supermarket", "world_build", phaseTimer);
+            phaseTimer.Restart();
 
             Atmosphere = SupermarketInteriorAtmosphere.Install(
                 transform,
@@ -132,6 +139,8 @@ namespace BarPromenade
             musicObject.transform.SetParent(transform, false);
             Music =
                 musicObject.AddComponent<SupermarketMusicPlayer>();
+            GameLogPhases.Report("supermarket", "atmosphere_and_music", phaseTimer);
+            phaseTimer.Restart();
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
@@ -157,14 +166,22 @@ namespace BarPromenade
                 camera,
                 Player.GameObject.transform,
                 true);
+            GameLogPhases.Report("supermarket", "player_and_camera", phaseTimer);
+            phaseTimer.Restart();
 
             BuildCashier();
+            GameLogPhases.Report("supermarket", "cashier", phaseTimer);
+            phaseTimer.Restart();
             SecurityCameras = SupermarketSecurityCameraWorldBuilder.Build(
                 transform,
                 Layout,
                 Player.GameObject.transform,
                 World.AssetRegistry);
+            GameLogPhases.Report("supermarket", "security_cameras", phaseTimer);
+            phaseTimer.Restart();
             BuildShelfShop(ui);
+            GameLogPhases.Report("supermarket", "shelf_shop", phaseTimer);
+            phaseTimer.Restart();
             BuildStatus(ui, camera);
             BuildExit();
             Inventory = ui.AddComponent<InventoryController>();
@@ -182,6 +199,7 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("supermarket", "ui_and_exit", phaseTimer);
 
             IsInitialized = true;
             timer.Stop();

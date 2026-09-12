@@ -27,6 +27,14 @@ namespace BarPromenade
         private readonly Dictionary<(Vector2Int node,Vector2Int incoming,Vector2Int outgoing,bool centered),bool>
             turnClearance = new Dictionary<(Vector2Int,Vector2Int,Vector2Int,bool),bool>();
         private readonly HashSet<RoadEdge> streetEdges = new HashSet<RoadEdge>();
+        // Street edges by endpoint, in layout order, so the search visits a
+        // node's few neighbours instead of filtering the whole road graph per
+        // expanded state. Equal-cost ties resolve exactly as the full scan did.
+        private readonly Dictionary<Vector2Int,List<(Vector2Int node,RoadEdge edge)>> streetNeighbours =
+            new Dictionary<Vector2Int,List<(Vector2Int,RoadEdge)>>();
+        // The road profile lookup walks every edge of the city. Grounding the
+        // axles re-asks the rear point each pose was placed at; same XZ, same answer.
+        private readonly Dictionary<Vector2,float> streetHeights = new Dictionary<Vector2,float>();
         public IReadOnlyCollection<RoadEdge> StreetEdges => streetEdges;
         public int SharedBusStreetCount { get; private set; }
         public float LaneCenterOffset { get; }
@@ -70,6 +78,7 @@ namespace BarPromenade
             LaneCenterOffset = Mathf.Max(0f, (layout.RoadWidth - 2f * CityStreetSurfacePlanner.SidewalkWidth) * .25f);
             turnNodes = new HashSet<Vector2Int>(CityBusIntersectionSelector.Select(layout));
             CreatePaving();
+            CreateStreetNeighbours();
             for (int i=0; i<poses.Length; i++) poses[i] = new List<CityPortTruckPose>();
             // The old reserved pose left only .4 m behind the truck. Keep 3.2 m
             // at the cold store for the 2.5 m lift, jack and standing operator.
@@ -113,6 +122,9 @@ namespace BarPromenade
             for(int leg=0;leg<poses.Length;leg++)
             for(int i=0;i<poses[leg].Count;i++)
                 poses[leg][i]=GroundAxles(poses[leg][i]);
+            // Both lookups only serve construction; the poses are final now.
+            streetHeights.Clear();
+            streetNeighbours.Clear();
             ShopPose=poses[4][poses[4].Count-1];
             for (int leg=0;leg<poses.Length;leg++)
             {
@@ -287,13 +299,9 @@ namespace BarPromenade
                     while(previous.TryGetValue(state,out var p)){state=p;result.Add(state.node);}
                     result.Reverse();return result;
                 }
-                foreach(RoadEdge edge in layout.RoadEdges)
+                if(!streetNeighbours.TryGetValue(state.node,out var neighbours))continue;
+                foreach((Vector2Int next,RoadEdge edge) in neighbours)
                 {
-                    if(layout.GetPathKind(edge)!=CityPathKind.Street)continue;
-                    Vector2Int next;
-                    if(edge.A==state.node)next=edge.B;
-                    else if(edge.B==state.node)next=edge.A;
-                    else continue;
                     Vector2Int direction=next-state.node;
                     if(direction==-state.direction)continue;
                     bool departureCorner = state==initial && factoryDeparture && !turnNodes.Contains(state.node);
@@ -402,8 +410,11 @@ namespace BarPromenade
         private static Vector3 Right(Vector3 forward) => new Vector3(forward.z,0,-forward.x);
         private float StreetHeight(Vector3 p)
         {
-            if(!layout.ElevationPlan.TrySampleSurface(new Vector2(p.x,p.z),CitySurfaceRole.RoadTop,out float y,out _))
+            var key=new Vector2(p.x,p.z);
+            if(streetHeights.TryGetValue(key,out float y))return y;
+            if(!layout.ElevationPlan.TrySampleSurface(key,CitySurfaceRole.RoadTop,out y,out _))
                 throw new InvalidOperationException($"Cannery street path leaves the road at {p}.");
+            streetHeights[key]=y;
             return y;
         }
         private CityPortTruckPose GroundAxles(CityPortTruckPose pose)
@@ -473,6 +484,24 @@ namespace BarPromenade
                 Vector3 p = layout.GetNodeWorldPosition(node);
                 paving.Add(Rect.MinMaxRect(p.x-halfRoad,p.z-halfRoad,p.x+halfRoad,p.z+halfRoad));
             }
+        }
+
+        private void CreateStreetNeighbours()
+        {
+            foreach (RoadEdge edge in layout.RoadEdges)
+            {
+                if (layout.GetPathKind(edge) != CityPathKind.Street) continue;
+                Neighbours(edge.A).Add((edge.B, edge));
+                Neighbours(edge.B).Add((edge.A, edge));
+            }
+        }
+
+        private List<(Vector2Int node,RoadEdge edge)> Neighbours(Vector2Int node)
+        {
+            if (streetNeighbours.TryGetValue(node, out var list)) return list;
+            list = new List<(Vector2Int,RoadEdge)>(4);
+            streetNeighbours[node] = list;
+            return list;
         }
 
         private void AddApproachApron(RoadEdge edge, Vector2Int node, float halfRoad)

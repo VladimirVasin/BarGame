@@ -152,6 +152,21 @@ namespace BarPromenade
             DistrictElevationProfile> profiles;
         private readonly HashSet<Vector2Int> cellSet;
         private readonly List<RoadEdge> orderedEdges;
+        // Lazily built cell index over orderedEdges for TrySampleRoad. Each
+        // edge is filed under every node-spacing cell that its segment,
+        // widened by halfRoad plus RoadIndexMargin, overlaps, so a point
+        // within halfRoad of an edge always finds that edge under the point's
+        // own cell. The per-cell lists keep orderedEdges order and the scan
+        // over them is the original comparison, so the winner and its
+        // first-wins tie-break are unchanged; a point outside the indexed
+        // cells (or a NaN) takes the original full scan.
+        private const float RoadIndexMargin = 1f;
+        private const int RoadIndexCellLimit = 1 << 22;
+        private int[] roadCellStarts;
+        private int[] roadCellEntries;
+        private Vector2Int roadCellMin;
+        private Vector2Int roadCellSize;
+        private bool roadIndexBuilt;
 
         internal CityElevationPlan(
             string blueprintId,
@@ -380,9 +395,34 @@ namespace BarPromenade
             RoadEdge bestEdge = default;
             float bestAmount = 0f;
             float halfRoad = RoadWidth * 0.5f + 0.001f;
-            for (int index = 0; index < orderedEdges.Count; index++)
+            EnsureRoadIndex();
+            int firstSlot = 0;
+            int lastSlot = orderedEdges.Count;
+            int[] slots = null;
+            // A NaN or infinite query has no cell: float-to-int of such a
+            // value is unspecified by the CLI, so it takes the full scan
+            // exactly as before instead of trusting the range check.
+            if (roadCellSize.x > 0 &&
+                !float.IsNaN(worldXZ.x) && !float.IsInfinity(worldXZ.x) &&
+                !float.IsNaN(worldXZ.y) && !float.IsInfinity(worldXZ.y))
             {
-                RoadEdge edge = orderedEdges[index];
+                int cellX = RoadIndexCell(worldXZ.x, WorldOrigin.x, NodeSpacing.x)
+                    - roadCellMin.x;
+                int cellZ = RoadIndexCell(worldXZ.y, WorldOrigin.z, NodeSpacing.y)
+                    - roadCellMin.y;
+                if ((uint)cellX < (uint)roadCellSize.x &&
+                    (uint)cellZ < (uint)roadCellSize.y)
+                {
+                    int cell = cellZ * roadCellSize.x + cellX;
+                    firstSlot = roadCellStarts[cell];
+                    lastSlot = roadCellStarts[cell + 1];
+                    slots = roadCellEntries;
+                }
+            }
+
+            for (int slot = firstSlot; slot < lastSlot; slot++)
+            {
+                RoadEdge edge = orderedEdges[slots == null ? slot : slots[slot]];
                 Vector2 start = GetNodeWorldXZ(edge.A);
                 Vector2 end = GetNodeWorldXZ(edge.B);
                 Vector2 delta = end - start;
@@ -452,6 +492,115 @@ namespace BarPromenade
             Vector3 right = new Vector3(tangent.z, 0f, -tangent.x);
             normal = Vector3.Cross(tangent, right).normalized;
             return true;
+        }
+
+        // The same floor the query uses: it is monotone in x, so a cell range
+        // taken from the widened segment ends covers every cell a point of
+        // that range can land in.
+        private static int RoadIndexCell(float value, float origin, float spacing)
+        {
+            return Mathf.FloorToInt((value - origin) / spacing);
+        }
+
+        private void EnsureRoadIndex()
+        {
+            if (roadIndexBuilt)
+            {
+                return;
+            }
+
+            roadIndexBuilt = true;
+            int edgeCount = orderedEdges.Count;
+            if (edgeCount == 0 || NodeSpacing.x <= 0f || NodeSpacing.y <= 0f)
+            {
+                return;
+            }
+
+            // The distance test accepts an edge whose closest segment point is
+            // within halfRoad of the query, so the query lies inside the
+            // segment's bounding box grown by halfRoad; the margin absorbs the
+            // rounding of that distance and of the box ends.
+            float reach = RoadWidth * 0.5f + 0.001f + RoadIndexMargin;
+            var ranges = new int[edgeCount * 4];
+            int minX = int.MaxValue;
+            int minZ = int.MaxValue;
+            int maxX = int.MinValue;
+            int maxZ = int.MinValue;
+            for (int index = 0; index < edgeCount; index++)
+            {
+                RoadEdge edge = orderedEdges[index];
+                Vector2 start = GetNodeWorldXZ(edge.A);
+                Vector2 end = GetNodeWorldXZ(edge.B);
+                int x0 = RoadIndexCell(
+                    Mathf.Min(start.x, end.x) - reach, WorldOrigin.x, NodeSpacing.x);
+                int x1 = RoadIndexCell(
+                    Mathf.Max(start.x, end.x) + reach, WorldOrigin.x, NodeSpacing.x);
+                int z0 = RoadIndexCell(
+                    Mathf.Min(start.y, end.y) - reach, WorldOrigin.z, NodeSpacing.y);
+                int z1 = RoadIndexCell(
+                    Mathf.Max(start.y, end.y) + reach, WorldOrigin.z, NodeSpacing.y);
+                if (x1 < x0 || z1 < z0)
+                {
+                    // Non-finite node coordinates: leave the plan on the full scan.
+                    return;
+                }
+
+                ranges[index * 4] = x0;
+                ranges[index * 4 + 1] = x1;
+                ranges[index * 4 + 2] = z0;
+                ranges[index * 4 + 3] = z1;
+                minX = Math.Min(minX, x0);
+                maxX = Math.Max(maxX, x1);
+                minZ = Math.Min(minZ, z0);
+                maxZ = Math.Max(maxZ, z1);
+            }
+
+            long columns = (long)maxX - minX + 1;
+            long rows = (long)maxZ - minZ + 1;
+            if (columns <= 0 || rows <= 0 || columns * rows > RoadIndexCellLimit)
+            {
+                return;
+            }
+
+            int cellCount = (int)(columns * rows);
+            var starts = new int[cellCount + 1];
+            for (int index = 0; index < edgeCount; index++)
+            {
+                for (int z = ranges[index * 4 + 2]; z <= ranges[index * 4 + 3]; z++)
+                {
+                    for (int x = ranges[index * 4]; x <= ranges[index * 4 + 1]; x++)
+                    {
+                        starts[(z - minZ) * (int)columns + (x - minX) + 1]++;
+                    }
+                }
+            }
+
+            for (int cell = 0; cell < cellCount; cell++)
+            {
+                starts[cell + 1] += starts[cell];
+            }
+
+            // Filing in ascending edge order fills each cell's slots in that
+            // same order, which is what keeps the tie-break of the scan.
+            var entries = new int[starts[cellCount]];
+            var fill = new int[cellCount];
+            for (int index = 0; index < edgeCount; index++)
+            {
+                for (int z = ranges[index * 4 + 2]; z <= ranges[index * 4 + 3]; z++)
+                {
+                    for (int x = ranges[index * 4]; x <= ranges[index * 4 + 1]; x++)
+                    {
+                        int cell = (z - minZ) * (int)columns + (x - minX);
+                        entries[starts[cell] + fill[cell]] = index;
+                        fill[cell]++;
+                    }
+                }
+            }
+
+            roadCellStarts = starts;
+            roadCellEntries = entries;
+            roadCellMin = new Vector2Int(minX, minZ);
+            roadCellSize = new Vector2Int((int)columns, (int)rows);
         }
 
         private Vector2 GetNodeWorldXZ(Vector2Int node)

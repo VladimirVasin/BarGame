@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -22,12 +23,25 @@ namespace BarPromenade
         {
             if (plan == null) throw new ArgumentNullException(nameof(plan));
             if (paths == null) throw new ArgumentNullException(nameof(paths));
+            // One log row for all the ribbons, not one per chain: there are
+            // a few dozen and each is small, and what the loading plan needs
+            // is what the routes cost together.
+            Stopwatch meshTimer = Stopwatch.StartNew();
+            double meshMs = 0d;
+            int vertices = 0;
+            long indices = 0;
+            int meshCount = 0;
             for (int index = 0; index < paths.Count;)
             {
                 var chain = new List<AlpineVillagePathDescriptor> { paths[index++] };
                 while (index < paths.Count && Continues(chain[chain.Count - 1], paths[index]))
                     chain.Add(paths[index++]);
+                meshTimer.Restart();
                 Mesh mesh = CreateMesh(plan, chain);
+                meshMs += meshTimer.Elapsed.TotalMilliseconds;
+                vertices += mesh.vertexCount;
+                indices += AlpineVillageWorldBuilder.CountIndices(mesh);
+                meshCount++;
                 var host = new GameObject("Visible Path - " + chain[0].StableId);
                 host.transform.SetParent(parent, false);
                 host.AddComponent<MeshFilter>().sharedMesh = mesh;
@@ -38,6 +52,9 @@ namespace BarPromenade
                 MountainRoadSurfaceAppearance.ApplyCombined(renderer,
                     MountainRoadSurfaceKind.ForestFloor, tint);
             }
+            AlpineVillageWorldBuilder.ReportTerrainMesh(
+                "Visible Village Paths", vertices, indices, meshMs, 0d,
+                GameLog.Field("mesh_count", meshCount));
         }
 
         private static bool Continues(AlpineVillagePathDescriptor first,

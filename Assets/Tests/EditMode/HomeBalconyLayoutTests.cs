@@ -108,6 +108,9 @@ namespace BarPromenade.Tests.EditMode
         {
             HomeExteriorContextPlan first =
                 HomeExteriorContextPlanner.Generate(seed);
+            // The session memo would hand the same instance back; the
+            // contract under test is that a fresh generation agrees.
+            CityLayoutCache.Reset();
             HomeExteriorContextPlan second =
                 HomeExteriorContextPlanner.Generate(seed);
 

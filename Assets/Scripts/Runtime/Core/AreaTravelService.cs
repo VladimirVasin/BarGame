@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -13,7 +14,6 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class AreaTravelService : MonoBehaviour
     {
-        internal const float MinimumLoadingScreenSeconds = 0.55f;
         internal const float SceneLoadProgressShare = 0.20f;
 
         private static AreaTravelService instance;
@@ -27,6 +27,7 @@ namespace BarPromenade
         private static long operationSequence;
         private static string activeOperationId = string.Empty;
         private static string sourceScene = string.Empty;
+        private static int compositionFrameCount;
 
         private AsyncOperation activeLoadOperation;
         private RuntimeComposition composition;
@@ -67,6 +68,7 @@ namespace BarPromenade
             operationSequence = 0L;
             activeOperationId = string.Empty;
             sourceScene = string.Empty;
+            compositionFrameCount = 0;
             IsTraveling = false;
             Progress = 0f;
         }
@@ -178,17 +180,16 @@ namespace BarPromenade
             return true;
         }
 
-        internal static float EvaluateDisplayedProgress(
-            float sceneProgress,
-            float visibleSeconds)
+        /// <summary>
+        /// The first fifth of the bar follows the scene load alone. Unity
+        /// parks a held load at 0.9, so that value is the full share; there
+        /// is no time term - the loading illustration holds for as long as
+        /// the destination's construction takes, never for a timer.
+        /// </summary>
+        internal static float EvaluateDisplayedProgress(float sceneProgress)
         {
-            float normalizedScene = Mathf.Clamp01(
-                sceneProgress / 0.9f);
-            float normalizedTime = Mathf.Clamp01(
-                Mathf.Max(0f, visibleSeconds) /
-                MinimumLoadingScreenSeconds);
             return SceneLoadProgressShare *
-                Mathf.Min(normalizedScene, normalizedTime);
+                Mathf.Clamp01(sceneProgress / 0.9f);
         }
 
         internal static bool TryScheduleComposition(
@@ -247,6 +248,7 @@ namespace BarPromenade
             arrivalToken = default;
             arrivalPosition = default;
             hasArrivalPosition = false;
+            compositionFrameCount = 0;
             Progress = 0f;
             IsTraveling = true;
 
@@ -332,14 +334,13 @@ namespace BarPromenade
             }
 
             activeLoadOperation = destinationOperation;
-            float visibleStartedAt = Time.realtimeSinceStartup;
-            while (destinationOperation.progress < 0.9f ||
-                   Time.realtimeSinceStartup - visibleStartedAt <
-                   MinimumLoadingScreenSeconds)
+            // Activation waits only for the held load itself. The
+            // illustration is kept on screen by the construction that
+            // follows, not by a minimum display time.
+            while (destinationOperation.progress < 0.9f)
             {
                 Progress = EvaluateDisplayedProgress(
-                    destinationOperation.progress,
-                    Time.realtimeSinceStartup - visibleStartedAt);
+                    destinationOperation.progress);
                 if (loadingRoot != null)
                 {
                     loadingRoot.SetProgress(Progress);
@@ -385,6 +386,9 @@ namespace BarPromenade
                 yield break;
             }
 
+            int compositionFrames = 0;
+            double advanceMs = 0d;
+            long pumpStarted = Stopwatch.GetTimestamp();
             while (composition != null)
             {
                 bool more = false;
@@ -397,7 +401,11 @@ namespace BarPromenade
                             "The destination root was destroyed during composition.");
                     }
 
+                    long advanceStarted = Stopwatch.GetTimestamp();
                     more = composition.AdvanceFrame(ReportCompositionStep);
+                    advanceMs += (Stopwatch.GetTimestamp() - advanceStarted) *
+                        1000d / Stopwatch.Frequency;
+                    compositionFrames++;
                 }
                 catch (Exception exception)
                 {
@@ -423,6 +431,21 @@ namespace BarPromenade
 
                 yield return null;
             }
+
+            double wallMs = (Stopwatch.GetTimestamp() - pumpStarted) *
+                1000d / Stopwatch.Frequency;
+            compositionFrameCount = compositionFrames;
+            GameLog.Debug(
+                "scene",
+                "composition_frames",
+                GameLog.Field("destination", destinationScene),
+                GameLog.Field("frames", compositionFrames),
+                GameLog.Field("advance_ms", advanceMs),
+                GameLog.Field("wall_ms", wallMs),
+                GameLog.Field("overhead_ms", wallMs - advanceMs),
+                GameLog.Field(
+                    "target_frame_rate",
+                    Application.targetFrameRate));
 
             Progress = 1f;
             loadingRoot?.SetProgress(Progress);
@@ -556,7 +579,10 @@ namespace BarPromenade
                     request.DestinationArea.ToString()),
                 GameLog.Field(
                     "arrival_token",
-                    request.ArrivalToken.ToString()));
+                    request.ArrivalToken.ToString()),
+                GameLog.Field(
+                    "composition_frames",
+                    compositionFrameCount));
             ClearPending();
         }
 

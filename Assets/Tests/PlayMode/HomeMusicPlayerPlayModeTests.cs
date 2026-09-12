@@ -24,6 +24,15 @@ namespace BarPromenade.Tests.PlayMode
                 musicObject.AddComponent<HomeMusicPlayer>();
             music.Initialize(controller);
             yield return null;
+            // The theme streams and opens in the background, so the first
+            // frames may still be loading it.
+            float loadDeadline = Time.realtimeSinceStartup + 5f;
+            while (music.PlaybackState ==
+                       SceneMusicPlaybackState.Loading &&
+                   Time.realtimeSinceStartup < loadDeadline)
+            {
+                yield return null;
+            }
 
             Assert.That(
                 HomeMusicPlayer.ResourcePath,

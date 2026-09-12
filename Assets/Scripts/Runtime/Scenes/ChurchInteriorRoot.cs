@@ -89,13 +89,20 @@ namespace BarPromenade
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Stopwatch timer = Stopwatch.StartNew();
+            Stopwatch phaseTimer = Stopwatch.StartNew();
             Camera camera = RuntimeSceneSetup.EnsureChurchInterior();
             Audio = RetroAudioService.EnsureInstalled();
+            GameLogPhases.Report("church", "runtime_setup", phaseTimer);
+            phaseTimer.Restart();
             Layout = ChurchInteriorLayoutPlanner.Generate(
                 GameSessionState.CitySeed);
+            GameLogPhases.Report("church", "layout", phaseTimer);
+            phaseTimer.Restart();
             World = ChurchInteriorWorldBuilder.Build(
                 transform,
                 Layout);
+            GameLogPhases.Report("church", "world_build", phaseTimer);
+            phaseTimer.Restart();
             Atmosphere = ChurchInteriorAtmosphere.Install(
                 transform,
                 Layout,
@@ -111,6 +118,8 @@ namespace BarPromenade
             GameObject musicObject = new GameObject("Church Music");
             musicObject.transform.SetParent(transform, false);
             Music = musicObject.AddComponent<ChurchMusicPlayer>();
+            GameLogPhases.Report("church", "atmosphere_and_music", phaseTimer);
+            phaseTimer.Restart();
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
@@ -137,6 +146,8 @@ namespace BarPromenade
                 camera,
                 Player.GameObject.transform,
                 true);
+            GameLogPhases.Report("church", "player_and_camera", phaseTimer);
+            phaseTimer.Restart();
             BuildStatus(ui, camera);
             BuildExit();
             Inventory = ui.AddComponent<InventoryController>();
@@ -154,6 +165,7 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("church", "ui_and_exit", phaseTimer);
 
             IsInitialized = true;
             timer.Stop();

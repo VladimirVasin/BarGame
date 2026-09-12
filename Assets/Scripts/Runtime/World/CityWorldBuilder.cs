@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -67,49 +69,46 @@ namespace BarPromenade
             layout.ValidateOrThrow();
             if (nightPlan == null)
             {
-                nightPlan = CityNightFixturePlanner.CreatePlan(layout);
+                nightPlan = CityLayoutCache.GetOrCreateNightPlan(layout);
             }
 
-            CityArchShelterPlan archShelterPlan =
-                CityArchShelterPlanner.Create(layout);
+            Stopwatch blockTimer = Stopwatch.StartNew();
+            Stopwatch blocksTotal = Stopwatch.StartNew();
+            bool plansReused = CityWorldPlans.IsMemoised(layout);
+            CityWorldPlans plans = CityWorldPlans.GetOrCreate(layout);
+            CityArchShelterPlan archShelterPlan = plans.ArchShelter;
 
             Transform world = new GameObject("Generated City").transform;
             world.SetParent(parent, false);
             Material emissiveMaterial = CityNightResources.EmissiveMaterial;
-            RoadFencePlan fencePlan =
-                RoadFencePlanner.CreatePlan(layout);
+            RoadFencePlan fencePlan = plans.Fence;
             CityMountainBoundaryPlan mountainBoundaryPlan =
-                CityMountainBoundaryPlanner.Create(layout);
+                plans.MountainBoundary;
+            // Never memoised: the church, the port and the cannery add
+            // their own rectangles to it while the world is built, so a
+            // reused area would carry a previous entry's additions twice.
             RoadWalkableArea walkableArea =
                 RoadWalkableArea.FromLayout(
                     layout,
                     mountainBoundaryPlan);
-            CityChurchPlan churchPlan =
-                CityChurchPlanner.Create(layout);
+            CityChurchPlan churchPlan = plans.Church;
             CityChurchCemeteryPassagePlan churchCemeteryPassagePlan =
-                CityChurchCemeteryPassagePlanner.Create(
-                    layout,
-                    churchPlan);
+                plans.ChurchCemeteryPassage;
             CityChurchCourtyardPlan churchCourtyardPlan =
-                CityChurchCourtyardPlanner.Create(
-                    layout,
-                    churchPlan,
-                    churchCemeteryPassagePlan);
-            CityFringeYardPlan fringeYardPlan =
-                CityFringeYardPlanner.Create(
-                    layout,
-                    mountainBoundaryPlan);
+                plans.ChurchCourtyard;
+            CityFringeYardPlan fringeYardPlan = plans.FringeYard;
             CityDecorationPlan decorationPlan =
-                CityDecorationPlanner.CreatePlan(
-                    layout,
-                    fencePlan,
-                    nightPlan);
+                plans.GetDecoration(nightPlan);
             // Planned before the ground pass: when the seacoast will
             // draw its own animated sea, the ground pass must not lay
             // the flat municipal slab under it.
-            CitySeacoastPlan seacoastPlan =
-                CitySeacoastPlanner.Create(layout);
+            CitySeacoastPlan seacoastPlan = plans.Seacoast;
+            ReportBlock(
+                "world_plans",
+                blockTimer,
+                GameLog.Field("reused", plansReused));
             yield return new CompositionStep("world_plans", 0.10f);
+            blockTimer.Restart();
             Bounds bounds = BuildGround(
                 world,
                 layout,
@@ -118,7 +117,9 @@ namespace BarPromenade
                 seacoastPlan != null,
                 out GameObject parkLawn,
                 out CityCemeteryGroundExcavation cemeteryExcavation);
+            ReportBlock("ground", blockTimer);
             yield return new CompositionStep("ground", 0.18f);
+            blockTimer.Restart();
             CityTerrainSafetyWorldBuilder.Build(
                 world,
                 layout,
@@ -134,7 +135,9 @@ namespace BarPromenade
                 CityFringeYardWorldBuilder.Build(
                     world,
                     fringeYardPlan);
+            ReportBlock("mountain_and_fringe", blockTimer);
             yield return new CompositionStep("mountain_and_fringe", 0.30f);
+            blockTimer.Restart();
             CityMountainBackdropWorldResult mountainBackdrop =
                 mountainBoundaryPlan.IsEnabled
                     ? CityMountainBackdropWorldBuilder.Build(world)
@@ -147,7 +150,9 @@ namespace BarPromenade
                 out IReadOnlyList<Transform> riverQuayLampAnchors);
             BuildElevationStructures(world, layout);
             RoadFenceWorldBuilder.Build(world, fencePlan);
+            ReportBlock("roads_and_river", blockTimer);
             yield return new CompositionStep("roads_and_river", 0.40f);
+            blockTimer.Restart();
             GameObject parkRoot = BuildPark(
                 world,
                 layout,
@@ -162,7 +167,9 @@ namespace BarPromenade
                 CityOpenAreaWorldBuilder.Build(
                     world,
                     openAreaDecorationPlan);
+            ReportBlock("park_and_districts", blockTimer);
             yield return new CompositionStep("park_and_districts", 0.50f);
+            blockTimer.Restart();
             CityCemeteryPlan cemeteryPlan =
                 CityCemeteryPlanner.Create(
                     layout,
@@ -180,7 +187,9 @@ namespace BarPromenade
                 world,
                 churchPlan,
                 walkableArea);
+            ReportBlock("cemetery_and_church", blockTimer);
             yield return new CompositionStep("cemetery_and_church", 0.60f);
+            blockTimer.Restart();
 
             if (seacoastPlan != null)
             {
@@ -219,11 +228,18 @@ namespace BarPromenade
             }
 
             var bars = new List<BarEntrance>(settings.BarCount);
+            ReportBlock("seacoast", blockTimer);
             yield return new CompositionStep("seacoast", 0.68f);
+            blockTimer.Restart();
             HomeEntrance playerHome = null;
             SupermarketEntrance supermarket = null;
+            Stopwatch lotTimer = new Stopwatch();
+            double lotsMs = 0d;
+            double maxLotMs = 0d;
+            int builtCount = 0;
             for (int i = 0; i < layout.BuildingLots.Count; i++)
             {
+                lotTimer.Restart();
                 BuildBuilding(
                     world,
                     layout,
@@ -234,9 +250,40 @@ namespace BarPromenade
                     bars,
                     ref playerHome,
                     ref supermarket);
-                yield return new CompositionStep("buildings",
-                    0.68f + 0.17f * (i + 1) / layout.BuildingLots.Count);
+                lotTimer.Stop();
+                double lotMs = lotTimer.Elapsed.TotalMilliseconds;
+                lotsMs += lotMs;
+                if (lotMs > maxLotMs)
+                {
+                    maxLotMs = lotMs;
+                }
+
+                if (layout.BuildingLots[i].HasBuilding)
+                {
+                    builtCount++;
+                }
+
+                // A yield is where the frame budget may cut in, and a lot
+                // costs about as much as the budget, so one yield per lot
+                // meant one rendered frame of the half-built city per lot;
+                // sixteen lots per yield keeps the bar moving on nine frames
+                // instead of ~130.
+                if ((i + 1) % 16 == 0 || i == layout.BuildingLots.Count - 1)
+                {
+                    yield return new CompositionStep("buildings",
+                        0.68f + 0.17f * (i + 1) / layout.BuildingLots.Count);
+                    blockTimer.Restart();
+                }
             }
+
+            GameLog.Debug(
+                "city",
+                "world_build_block",
+                GameLog.Field("block", "buildings"),
+                GameLog.Field("duration_ms", lotsMs),
+                GameLog.Field("lot_count", layout.BuildingLots.Count),
+                GameLog.Field("built_count", builtCount),
+                GameLog.Field("max_lot_ms", maxLotMs));
 
             // This precinct measures and joins the two already placed
             // Nightlife facades, so it is built after the building pass but
@@ -252,7 +299,9 @@ namespace BarPromenade
                     world,
                     layout,
                     decorationPlan);
+            ReportBlock("street_dressing", blockTimer);
             yield return new CompositionStep("street_dressing", 0.94f);
+            blockTimer.Restart();
 
             // The playground's seats hang outside the batched decoration
             // layer on purpose: they are the one piece of it that moves.
@@ -270,6 +319,9 @@ namespace BarPromenade
                 world,
                 layout,
                 decorationPlan);
+            ReportBlock("fountain_and_swings", blockTimer);
+            yield return new CompositionStep("wind_dressing", 0.97f);
+            blockTimer.Restart();
 
             // Cloth is a live skinned sim and can never join a
             // combined batch, so the wind dressing builds with the
@@ -320,7 +372,28 @@ namespace BarPromenade
                 archShelterPlan,
                 archShelter,
                 bounds));
+            ReportBlock(
+                "world_complete",
+                blockTimer,
+                GameLog.Field(
+                    "blocks_total_ms",
+                    blocksTotal.Elapsed.TotalMilliseconds));
             yield return new CompositionStep("world_complete", 1f);
+        }
+
+        private static void ReportBlock(
+            string block,
+            Stopwatch timer,
+            params GameLogField[] extra)
+        {
+            timer.Stop();
+            var fields = new GameLogField[2 + extra.Length];
+            fields[0] = GameLog.Field("block", block);
+            fields[1] = GameLog.Field(
+                "duration_ms",
+                timer.Elapsed.TotalMilliseconds);
+            Array.Copy(extra, 0, fields, 2, extra.Length);
+            GameLog.Debug("city", "world_build_block", fields);
         }
 
         private static Bounds BuildGround(
@@ -2445,6 +2518,109 @@ namespace BarPromenade
                 new List<Bounds>();
             public readonly List<Bounds> CrosswalkMarkings =
                 new List<Bounds>();
+        }
+    }
+
+    /// <summary>
+    /// The plans the world builder draws before its first yield, kept per
+    /// layout so a second entry into the same city reads them instead of
+    /// planning them again. Every member is a pure function of the layout
+    /// and is read, never written, by the builders and the world result.
+    ///
+    /// Not here on purpose: the walkable area, which the church, the port
+    /// and the cannery extend while building; the cemetery, which reads the
+    /// session's excavations; and everything planned after the first
+    /// yield, which is not the cost this memo exists for.
+    /// </summary>
+    internal sealed class CityWorldPlans
+    {
+        private static ConditionalWeakTable<CityLayout, CityWorldPlans> plans =
+            new ConditionalWeakTable<CityLayout, CityWorldPlans>();
+
+        private CityNightFixturePlan decorationNightPlan;
+        private CityDecorationPlan decoration;
+
+        private CityWorldPlans(CityLayout layout)
+        {
+            // The same order the builder used to plan in. None of these
+            // reads another's output except where it is passed in, so the
+            // order changes no value; it is kept so a profile still reads
+            // the same way.
+            Layout = layout;
+            ArchShelter = CityArchShelterPlanner.Create(layout);
+            Fence = RoadFencePlanner.CreatePlan(layout);
+            MountainBoundary = CityMountainBoundaryPlanner.Create(layout);
+            Church = CityChurchPlanner.Create(layout);
+            ChurchCemeteryPassage =
+                CityChurchCemeteryPassagePlanner.Create(
+                    layout,
+                    Church);
+            ChurchCourtyard =
+                CityChurchCourtyardPlanner.Create(
+                    layout,
+                    Church,
+                    ChurchCemeteryPassage);
+            FringeYard =
+                CityFringeYardPlanner.Create(
+                    layout,
+                    MountainBoundary);
+            Seacoast = CitySeacoastPlanner.Create(layout);
+        }
+
+        internal CityLayout Layout { get; }
+        internal CityArchShelterPlan ArchShelter { get; }
+        internal RoadFencePlan Fence { get; }
+        internal CityMountainBoundaryPlan MountainBoundary { get; }
+        internal CityChurchPlan Church { get; }
+        internal CityChurchCemeteryPassagePlan ChurchCemeteryPassage { get; }
+        internal CityChurchCourtyardPlan ChurchCourtyard { get; }
+        internal CityFringeYardPlan FringeYard { get; }
+        internal CitySeacoastPlan Seacoast { get; }
+
+        internal static bool IsMemoised(CityLayout layout)
+        {
+            return plans.TryGetValue(layout, out _);
+        }
+
+        internal static CityWorldPlans GetOrCreate(CityLayout layout)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            return plans.GetValue(layout, value => new CityWorldPlans(value));
+        }
+
+        /// <summary>
+        /// The decoration plan is the one member with a second input. A
+        /// caller that brings its own night plan instance gets decorations
+        /// planned against that instance, so the fixtures the dressing
+        /// avoids are the ones that will actually stand there.
+        /// </summary>
+        internal CityDecorationPlan GetDecoration(
+            CityNightFixturePlan nightPlan)
+        {
+            if (nightPlan == null)
+            {
+                throw new ArgumentNullException(nameof(nightPlan));
+            }
+
+            if (!ReferenceEquals(decorationNightPlan, nightPlan))
+            {
+                decoration = CityDecorationPlanner.CreatePlan(
+                    Layout,
+                    Fence,
+                    nightPlan);
+                decorationNightPlan = nightPlan;
+            }
+
+            return decoration;
+        }
+
+        internal static void Reset()
+        {
+            plans = new ConditionalWeakTable<CityLayout, CityWorldPlans>();
         }
     }
 }

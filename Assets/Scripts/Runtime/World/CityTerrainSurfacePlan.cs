@@ -26,6 +26,70 @@ namespace BarPromenade
                    surface.Kind == CitySurfaceKind.Beach;
         }
 
+        /// <summary>
+        /// Everything a sample needs that depends on the surface alone: the
+        /// four corner elevations of its cell and, for the beach, the port
+        /// access plan. A terrain mesh samples one surface tens of
+        /// thousands of times, so these are resolved once per surface and
+        /// carried in rather than looked up under every vertex.
+        /// </summary>
+        internal readonly struct SurfaceContext
+        {
+            internal SurfaceContext(
+                float southWest,
+                float southEast,
+                float northWest,
+                float northEast,
+                CityPortAccessPlan access)
+            {
+                SouthWest = southWest;
+                SouthEast = southEast;
+                NorthWest = northWest;
+                NorthEast = northEast;
+                Access = access;
+            }
+
+            internal float SouthWest { get; }
+            internal float SouthEast { get; }
+            internal float NorthWest { get; }
+            internal float NorthEast { get; }
+            internal CityPortAccessPlan Access { get; }
+        }
+
+        internal static SurfaceContext ResolveSurfaceContext(
+            CityLayout layout,
+            CitySurfaceDescriptor surface)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            ResolveCornerElevations(
+                layout.ElevationPlan,
+                surface.Cell,
+                surface.DatumY,
+                out float southWest,
+                out float southEast,
+                out float northWest,
+                out float northEast);
+            // Only the beach is graded by the port; the other kinds never
+            // needed the plan, and looking it up per sample was the cost.
+            // Skipping the lookup here cannot change which port creates the
+            // per-layout plan first: RoadFencePlanner.CreatePlan builds it
+            // among the world plans before any ground is sampled, and the
+            // only plan ahead of it (the arch shelter) never samples terrain.
+            CityPortAccessPlan access = surface.Kind == CitySurfaceKind.Beach
+                ? CityPortAccessPlan.ForLayout(layout)
+                : null;
+            return new SurfaceContext(
+                southWest,
+                southEast,
+                northWest,
+                northEast,
+                access);
+        }
+
         public static float SampleDatum(
             CityLayout layout,
             CitySurfaceDescriptor surface,
@@ -41,18 +105,41 @@ namespace BarPromenade
                 return CityChurchGroundPlan.SampleDatum(layout, surface, worldXZ);
             }
 
+            return SampleDatum(
+                layout,
+                surface,
+                worldXZ,
+                ResolveSurfaceContext(layout, surface));
+        }
+
+        internal static float SampleDatum(
+            CityLayout layout,
+            CitySurfaceDescriptor surface,
+            Vector2 worldXZ,
+            in SurfaceContext context)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            if (surface.Kind == CitySurfaceKind.ChurchGround)
+            {
+                return CityChurchGroundPlan.SampleDatum(layout, surface, worldXZ);
+            }
+
             float baseDatum = SampleDatum(
                 layout.ElevationPlan,
                 surface,
-                worldXZ);
+                worldXZ,
+                in context);
             float datum = ApplyDistrictPointPad(
                 layout,
                 surface,
                 worldXZ,
                 baseDatum);
-            CityPortAccessPlan access = CityPortAccessPlan.ForLayout(layout);
-            if (surface.Kind == CitySurfaceKind.Beach && access != null)
-                datum = access.ApplyGroundTop(worldXZ, datum + CityElevationPlan.GroundTopOffset) -
+            if (surface.Kind == CitySurfaceKind.Beach && context.Access != null)
+                datum = context.Access.ApplyGroundTop(worldXZ, datum + CityElevationPlan.GroundTopOffset) -
                     CityElevationPlan.GroundTopOffset;
             return datum;
         }
@@ -60,7 +147,8 @@ namespace BarPromenade
         internal static float SampleDatum(
             CityElevationPlan elevation,
             CitySurfaceDescriptor surface,
-            Vector2 worldXZ)
+            Vector2 worldXZ,
+            in SurfaceContext context)
         {
             if (elevation == null)
             {
@@ -97,7 +185,7 @@ namespace BarPromenade
                     new Vector2(
                         worldXZ.x,
                         landwardZ),
-                    surface.DatumY);
+                    in context);
                 return Mathf.Lerp(
                     landwardDatum,
                     waterlineDatum,
@@ -108,7 +196,7 @@ namespace BarPromenade
                 elevation,
                 surface.Cell,
                 worldXZ,
-                surface.DatumY) + CityBeachSandPlan.SampleRelief(elevation, surface, worldXZ);
+                in context) + CityBeachSandPlan.SampleRelief(elevation, surface, worldXZ);
         }
 
         internal static float SampleContinuousDatum(
@@ -130,6 +218,39 @@ namespace BarPromenade
                 out float southEast,
                 out float northWest,
                 out float northEast);
+            return SampleContinuousDatum(
+                elevation,
+                cell,
+                worldXZ,
+                new SurfaceContext(
+                    southWest,
+                    southEast,
+                    northWest,
+                    northEast,
+                    null));
+        }
+
+        /// <summary>
+        /// The clamped bilinear blend of four corner elevations already
+        /// resolved for <paramref name="cell"/>. The arithmetic is the whole
+        /// contract: a caller that resolves the corners once and blends here
+        /// per vertex gets the same bits as the per-sample overload.
+        /// </summary>
+        internal static float SampleContinuousDatum(
+            CityElevationPlan elevation,
+            Vector2Int cell,
+            Vector2 worldXZ,
+            in SurfaceContext context)
+        {
+            if (elevation == null)
+            {
+                throw new ArgumentNullException(nameof(elevation));
+            }
+
+            float southWest = context.SouthWest;
+            float southEast = context.SouthEast;
+            float northWest = context.NorthWest;
+            float northEast = context.NorthEast;
 
             float cellMinimumX = elevation.WorldOrigin.x +
                                  cell.x *
@@ -160,6 +281,18 @@ namespace BarPromenade
                 ? 0f
                 : CityElevationPlan.GroundTopOffset;
             return SampleDatum(layout, surface, worldXZ) + offset;
+        }
+
+        internal static float SampleTop(
+            CityLayout layout,
+            CitySurfaceDescriptor surface,
+            Vector2 worldXZ,
+            in SurfaceContext context)
+        {
+            float offset = surface.Kind == CitySurfaceKind.ParkGround
+                ? 0f
+                : CityElevationPlan.GroundTopOffset;
+            return SampleDatum(layout, surface, worldXZ, in context) + offset;
         }
 
         public static bool TrySampleGroundTop(
@@ -202,24 +335,40 @@ namespace BarPromenade
             CitySurfaceDescriptor surface,
             Vector2 worldXZ)
         {
+            return SampleNormal(
+                layout,
+                surface,
+                worldXZ,
+                ResolveSurfaceContext(layout, surface));
+        }
+
+        internal static Vector3 SampleNormal(
+            CityLayout layout,
+            CitySurfaceDescriptor surface,
+            Vector2 worldXZ,
+            in SurfaceContext context)
+        {
             float west = SampleTop(
                 layout,
                 surface,
-                worldXZ + Vector2.left * SampleNormalOffset);
+                worldXZ + Vector2.left * SampleNormalOffset,
+                in context);
             float east = SampleTop(
                 layout,
                 surface,
-                worldXZ + Vector2.right * SampleNormalOffset);
+                worldXZ + Vector2.right * SampleNormalOffset,
+                in context);
             float south = SampleTop(
                 layout,
                 surface,
-                worldXZ + Vector2.down * SampleNormalOffset);
+                worldXZ + Vector2.down * SampleNormalOffset,
+                in context);
             Vector2 northPoint = worldXZ + Vector2.up * SampleNormalOffset;
             float north = surface.Kind == CitySurfaceKind.Beach &&
                           surface.Feature == CityAreaFeatureKind.NorthWaterfront &&
                           northPoint.y > surface.WorldBounds.yMax
                 ? CitySeacoastSeaLayout.SampleSeabedTop(layout, surface, northPoint)
-                : SampleTop(layout, surface, northPoint);
+                : SampleTop(layout, surface, northPoint, in context);
             var tangentX = new Vector3(
                 SampleNormalOffset * 2f,
                 east - west,

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -444,6 +445,7 @@ namespace BarPromenade
             // crosses the water or overlays the bed. Each outer edge follows
             // the same refined ground triangles as the terrain collider.
             const int Strips = 8;
+            Stopwatch stageTimer = Stopwatch.StartNew();
             var profiles = new Vector3[samples.Count][];
             for (int index = 0; index < samples.Count; index++)
             {
@@ -489,11 +491,19 @@ namespace BarPromenade
             mesh.SetTriangles(bankTriangles, 1);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+            double meshMs = stageTimer.Elapsed.TotalMilliseconds;
             var host = new GameObject("Spring Brook Bed");
             host.transform.SetParent(parent, false);
             host.AddComponent<MeshFilter>().sharedMesh = mesh;
             host.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
+            stageTimer.Restart();
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
+            AlpineVillageWorldBuilder.ReportTerrainMesh(
+                mesh.name,
+                mesh,
+                meshMs,
+                stageTimer.Elapsed.TotalMilliseconds,
+                GameLog.Field("sample_count", samples.Count));
             MeshRenderer renderer = host.AddComponent<MeshRenderer>();
             renderer.sharedMaterials = new[] { RuntimePrimitiveFactory.DefaultMaterial,
                 RuntimePrimitiveFactory.DefaultMaterial };
@@ -692,6 +702,7 @@ namespace BarPromenade
             var uvs = new Vector2[vertices.Length];
             var triangles = new int[(centres.Count - 1) * (across - 1) * 6];
 
+            Stopwatch meshTimer = Stopwatch.StartNew();
             for (int index = 0; index < centres.Count; index++)
             {
                 Vector3 right = rights[index];
@@ -742,6 +753,11 @@ namespace BarPromenade
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+            AlpineVillageWorldBuilder.ReportTerrainMesh(
+                name,
+                mesh,
+                meshTimer.Elapsed.TotalMilliseconds,
+                0d);
 
             var host = new GameObject(name);
             host.transform.SetParent(parent, false);

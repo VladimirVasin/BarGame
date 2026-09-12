@@ -157,13 +157,21 @@ namespace BarPromenade
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Stopwatch timer = Stopwatch.StartNew();
+            Stopwatch phaseTimer = Stopwatch.StartNew();
             areaCamera = RuntimeSceneSetup.EnsureAlpineVillage();
             Audio = RetroAudioService.EnsureInstalled();
+            GameLogPhases.Report("alpine_village", "runtime_setup", phaseTimer);
             yield return new CompositionStep("runtime_setup", 0.03f);
-            Plan = AlpineVillagePlanner.Create(GameSessionState.CitySeed);
+            phaseTimer.Restart();
+            Plan = CityLayoutCache.GetOrCreateAlpineVillage(
+                GameSessionState.CitySeed);
+            GameLogPhases.Report("alpine_village", "layout", phaseTimer);
             yield return new CompositionStep("layout", 0.10f);
+            phaseTimer.Restart();
             yield return RuntimeComposition.Range(AlpineVillageWorldBuilder.BuildSteps(
                 transform, Plan, value => World = value), 0.10f, 0.72f);
+            GameLogPhases.Report("alpine_village", "world_build", phaseTimer);
+            phaseTimer.Restart();
             MothersHouseEntrance = World.MothersHouseEntrance;
 
             // The loading service arms this before destination activation, so
@@ -239,6 +247,8 @@ namespace BarPromenade
                 GameLog.Field("x", spawnPosition.x),
                 GameLog.Field("y", spawnPosition.y),
                 GameLog.Field("z", spawnPosition.z));
+            GameLogPhases.Report("alpine_village", "spawn_selection", phaseTimer);
+            phaseTimer.Restart();
             // The raised station must be present in physics before the hero
             // measures neutral foot clearance, even during paused construction.
             Physics.SyncTransforms();
@@ -312,6 +322,8 @@ namespace BarPromenade
                     () => Snow == null ? 1f : Snow.Intensity);
                 Player.Motor.SetFootstepSurface(World.SnowTreading);
             }
+            GameLogPhases.Report("alpine_village", "player_and_camera", phaseTimer);
+            phaseTimer.Restart();
             BuildAtmosphere();
             if (Player.Visual is Player3DCharacterPresentation coldHero)
             {
@@ -324,13 +336,21 @@ namespace BarPromenade
                           !Player.PresentationVisibility.RenderersHidden,
                     () => Weather.CurrentWind);
             }
+            GameLogPhases.Report("alpine_village", "atmosphere", phaseTimer);
             yield return new CompositionStep("player_and_atmosphere", 0.85f);
+            phaseTimer.Restart();
             BuildCableway();
+            GameLogPhases.Report("alpine_village", "cableway", phaseTimer);
+            phaseTimer.Restart();
             Life = AlpineVillageLifeController.Create(transform, Plan, World.WalkableArea,
                 Player.GameObject.transform, areaCamera, World.ResidentDoors, World.SnowTreading);
             Workroom = VillageWorkroomController.Create(this);
             OutdoorHelp = VillageOutdoorHelpController.Create(this);
+            GameLogPhases.Report("alpine_village", "life", phaseTimer);
+            phaseTimer.Restart();
             BuildCommonUi(ui);
+            GameLogPhases.Report("alpine_village", "common_ui", phaseTimer);
+            phaseTimer.Restart();
             ApplyCurrentAtmosphere(true);
             ApplyVisibility();
             IsInitialized = true;
@@ -338,7 +358,9 @@ namespace BarPromenade
                 () => GameSessionState.IsRidingAVehicle ||
                       (CabinSeat != null && CabinSeat.IsSeated) ||
                       (Workroom != null && Workroom.Environment.IsInside));
+            GameLogPhases.Report("alpine_village", "ready", phaseTimer);
             yield return new CompositionStep("ready", 1f);
+            Map.ScheduleIdleAreaWarm();
 
             timer.Stop();
             GameLog.Info(
@@ -847,16 +869,21 @@ namespace BarPromenade
 
         private void BuildCommonUi(GameObject ui)
         {
+            Stopwatch uiTimer = Stopwatch.StartNew();
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("alpine_village", "ui_status", uiTimer);
+            uiTimer.Restart();
 
             CityLayout cityMapLayout = GenerateCityMapLayout();
             CityMountainBoundaryPlan cityMountains =
                 CityMountainBoundaryPlanner.Create(cityMapLayout);
+            GameLogPhases.Report("alpine_village", "map_city_layout", uiTimer);
+            uiTimer.Restart();
             Map = ui.AddComponent<CityMapController>();
             Map.Initialize(
                 cityMapLayout,
@@ -866,19 +893,41 @@ namespace BarPromenade
                 null,
                 cityMountains,
                 null);
+            GameLogPhases.Report("alpine_village", "map_initialize", uiTimer);
+            uiTimer.Restart();
 
-            // Every tab charts pure data, so the two areas that are not loaded
-            // cost a planner run each and no GameObject at all. The teleport
-            // ground handed over is THIS scene's, because the lattice measures
-            // against the mask of the place the player is actually standing in.
-            Map.ConfigureAreas(
-                GameAreaId.AlpineVillage,
-                CityMapMountainRoadOverlayBuilder.Create(
-                    MountainRoadPlanner.Create(GameSessionState.CitySeed)),
-                request => AreaTravelService.Request(request),
-                new CityMapAlpineVillageTeleportGround(World.WalkableArea),
-                CityMapAlpineVillageOverlayBuilder.Create(Plan),
-                Plan.Plots);
+            // Every tab charts pure data, so the area that is not loaded
+            // costs a planner run and no GameObject at all - and nobody
+            // looks at it until the map is open, so the charting waits for
+            // the first M press, or for the map's own idle warm a few
+            // seconds after the village is ready. The road plan comes
+            // through the cache so the ride down reuses it. The teleport
+            // ground handed over is THIS scene's, because the lattice
+            // measures against the mask of the place the player is actually
+            // standing in.
+            int citySeed = GameSessionState.CitySeed;
+            Map.ConfigureAreasOnFirstUse(() =>
+            {
+                Stopwatch areaTimer = Stopwatch.StartNew();
+                MountainRoadPlan mountainRoadMapPlan =
+                    CityLayoutCache.GetOrCreateMountainRoad(citySeed);
+                GameLogPhases.Report(
+                    "alpine_village",
+                    "map_mountain_road_plan",
+                    areaTimer);
+                areaTimer.Restart();
+                Map.ConfigureAreas(
+                    GameAreaId.AlpineVillage,
+                    CityMapMountainRoadOverlayBuilder.Create(mountainRoadMapPlan),
+                    request => AreaTravelService.Request(request),
+                    new CityMapAlpineVillageTeleportGround(World.WalkableArea),
+                    CityMapAlpineVillageOverlayBuilder.Create(Plan),
+                    Plan.Plots);
+                GameLogPhases.Report(
+                    "alpine_village",
+                    "map_configure_areas",
+                    areaTimer);
+            });
 
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
@@ -902,6 +951,7 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("alpine_village", "ui_controllers", uiTimer);
         }
 
         private static CityLayout GenerateCityMapLayout()
@@ -910,7 +960,7 @@ namespace BarPromenade
                 CityGenerationSettings.Default;
             CityBlueprint blueprint = CityBlueprintCatalog.Resolve(
                 GameSessionState.CityBlueprintId);
-            return CityLayoutGenerator.Generate(
+            return CityLayoutCache.GetOrGenerate(
                 blueprint,
                 settings,
                 GameSessionState.CitySeed);

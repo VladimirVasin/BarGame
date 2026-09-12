@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -96,6 +97,7 @@ namespace BarPromenade
                 MountainRoadSurfaceKind.LayeredStone,
                 BedColor);
 
+            Stopwatch waterTimer = Stopwatch.StartNew();
             GameObject water = CityWaterSurfaceFactory.CreateRibbonSurface(
                 $"{name} Water",
                 parent,
@@ -104,7 +106,16 @@ namespace BarPromenade
                 waterHalfWidths,
                 WaterCrossSteps,
                 AlpineSpringWaterResources.RoadBrookMaterial);
+            double waterMs = waterTimer.Elapsed.TotalMilliseconds;
             ConfigureWaterRenderer(water);
+            MeshFilter waterFilter = water == null
+                ? null
+                : water.GetComponent<MeshFilter>();
+            MountainRoadWorldBuilder.ReportTerrainMesh(
+                $"{name} Water",
+                waterFilter == null ? null : waterFilter.sharedMesh,
+                waterMs,
+                0d);
         }
 
         private static void BuildBorePour(
@@ -155,6 +166,7 @@ namespace BarPromenade
             var uvs = new Vector2[vertices.Length];
             var triangles = new int[(centres.Count - 1) * (across - 1) * 6];
 
+            Stopwatch meshTimer = Stopwatch.StartNew();
             for (int index = 0; index < centres.Count; index++)
             {
                 Vector3 right = rights[index];
@@ -201,6 +213,11 @@ namespace BarPromenade
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+            MountainRoadWorldBuilder.ReportTerrainMesh(
+                name,
+                mesh,
+                meshTimer.Elapsed.TotalMilliseconds,
+                0d);
 
             var host = new GameObject(name);
             host.transform.SetParent(parent, false);

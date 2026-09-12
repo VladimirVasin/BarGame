@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace BarPromenade
@@ -174,6 +175,16 @@ namespace BarPromenade
         public static Vector3 ExteriorEntranceModelOffset =>
             ExteriorEntranceAnchorLocalPosition * ExteriorModelScale;
 
+        // One plan per layout. The world builder, the cemetery, the passage,
+        // the church ground and the teleport ground each ask for it, and the
+        // answer is a function of the layout alone; the plan is immutable,
+        // so handing every caller the same instance changes nothing they
+        // can observe. Weak on the layout, as the port access plan is, so a
+        // discarded city takes its plan with it. A null answer (no church)
+        // is remembered too; a throw is not, and comes back on every call.
+        private static readonly ConditionalWeakTable<CityLayout, CityChurchPlan> Plans =
+            new ConditionalWeakTable<CityLayout, CityChurchPlan>();
+
         /// <summary>
         /// Returns null for a blueprint without a church precinct. A present
         /// precinct is strict: it must be one rectangular ChurchGround area
@@ -186,6 +197,18 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(layout));
             }
 
+            if (Plans.TryGetValue(layout, out CityChurchPlan cached))
+            {
+                return cached;
+            }
+
+            CityChurchPlan plan = CreateUncached(layout);
+            Plans.Add(layout, plan);
+            return plan;
+        }
+
+        private static CityChurchPlan CreateUncached(CityLayout layout)
+        {
             var surfaces = new List<CitySurfaceDescriptor>(8);
             for (int index = 0; index < layout.Surfaces.Count; index++)
             {

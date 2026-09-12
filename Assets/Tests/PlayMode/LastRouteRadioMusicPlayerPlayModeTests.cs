@@ -253,6 +253,9 @@ namespace BarPromenade.Tests.PlayMode
                     "Turning the radio off inside another music zone must not revive City.");
                 hero.transform.position = Vector3.zero;
                 director.RefreshLocation();
+                // The power-off above paid the deferred load; the return to
+                // the street is the first resume of a streaming clip.
+                yield return WaitForTheme(city);
                 place.AdvanceFade(MusicMix.FadeOutSeconds);
                 yield return null;
                 city.AdvanceFade(MusicMix.FadeInSeconds);
@@ -294,6 +297,8 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.SetCarDashboard(
                     GameSessionState.CarDashboard.WithRadioOn(false));
                 AssertRadioPowerIsSilent(radio);
+                // The power-off is what pays the city theme's deferred load.
+                yield return WaitForTheme(city);
                 Assert.That(city.IsFadeInDeferred, Is.False, "Power-off leaves no radio tail for City to wait on.");
                 Assert.That(city.Source.isPlaying, Is.True);
                 Assert.That(city.PlaybackState, Is.EqualTo(SceneMusicPlaybackState.FadingIn));
@@ -382,6 +387,14 @@ namespace BarPromenade.Tests.PlayMode
             for (int frame = 0; frame < 300 &&
                  player.PlaybackState == SceneMusicPlaybackState.Loading; frame++)
                 yield return null;
+            if (player.IsPlaybackSuppressed)
+            {
+                // A theme born suppressed defers its load until the switch
+                // releases it: nothing to wait for, and no clip to own yet.
+                Assert.That(player.ActiveClip, Is.Null);
+                Assert.That(player.PlaybackState, Is.EqualTo(SceneMusicPlaybackState.Unavailable));
+                yield break;
+            }
             Assert.That(player.ActiveClip, Is.Not.Null);
             Assert.That(player.PlaybackState, Is.Not.EqualTo(SceneMusicPlaybackState.Loading));
         }

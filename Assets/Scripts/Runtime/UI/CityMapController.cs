@@ -408,6 +408,9 @@ namespace BarPromenade
                 return false;
             }
 
+            // The tabs are charted the first time the map is looked at,
+            // before the lock is taken so a failure here holds nothing.
+            EnsureAreasConfigured();
             if (!modalLock.TryCaptureAndDisable(
                     player.Interactor,
                     cameraFollow,

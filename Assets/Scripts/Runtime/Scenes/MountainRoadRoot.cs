@@ -148,15 +148,23 @@ namespace BarPromenade
             GameLog.SetScene(gameObject.scene.name);
             GameLog.SetCitySeed(GameSessionState.CitySeed);
             Stopwatch timer = Stopwatch.StartNew();
+            Stopwatch phaseTimer = Stopwatch.StartNew();
             Camera camera = RuntimeSceneSetup.EnsureMountainRoad();
             Audio = RetroAudioService.EnsureInstalled();
+            GameLogPhases.Report("mountain_road", "runtime_setup", phaseTimer);
             yield return new CompositionStep("runtime_setup", 0.03f);
-            Plan = MountainRoadPlanner.Create(GameSessionState.CitySeed);
+            phaseTimer.Restart();
+            Plan = CityLayoutCache.GetOrCreateMountainRoad(
+                GameSessionState.CitySeed);
+            GameLogPhases.Report("mountain_road", "layout", phaseTimer);
             yield return new CompositionStep("layout", 0.10f);
+            phaseTimer.Restart();
             yield return RuntimeComposition.Range(MountainRoadWorldBuilder.BuildSteps(
                 transform,
                 Plan,
                 camera, value => World = value), 0.10f, 0.72f);
+            GameLogPhases.Report("mountain_road", "world_build", phaseTimer);
+            phaseTimer.Restart();
 
             // The loading service arms this before destination activation,
             // so consume it before any spawn decision or PlayerFactory call.
@@ -208,6 +216,8 @@ namespace BarPromenade
                 GameLog.Field("x", spawnPosition.x),
                 GameLog.Field("y", spawnPosition.y),
                 GameLog.Field("z", spawnPosition.z));
+            GameLogPhases.Report("mountain_road", "spawn_selection", phaseTimer);
+            phaseTimer.Restart();
             // Construction can finish while physics is paused, with automatic
             // transform sync disabled. Foot calibration must see the raised
             // boarding platform, not cache its height above the lower pad as
@@ -265,17 +275,29 @@ namespace BarPromenade
                 camera,
                 Player.GameObject.transform,
                 false);
+            GameLogPhases.Report("mountain_road", "player_and_cafe", phaseTimer);
+            phaseTimer.Restart();
             BuildAtmosphere(camera);
+            GameLogPhases.Report("mountain_road", "atmosphere", phaseTimer);
             yield return new CompositionStep("player_and_atmosphere", 0.85f);
+            phaseTimer.Restart();
             BuildSeats(camera);
+            GameLogPhases.Report("mountain_road", "seats", phaseTimer);
+            phaseTimer.Restart();
             BuildCableway(camera);
+            GameLogPhases.Report("mountain_road", "cableway", phaseTimer);
+            phaseTimer.Restart();
             BuildCommonUi(ui);
+            GameLogPhases.Report("mountain_road", "common_ui", phaseTimer);
+            phaseTimer.Restart();
             // After the camera follow, because arriving in the car takes the
             // lens on its very first frame and the seat resolves the follow
             // rig off the camera to do it.
             BuildLastRoute(camera);
             IsInitialized = true;
+            GameLogPhases.Report("mountain_road", "last_route", phaseTimer);
             yield return new CompositionStep("ready", 1f);
+            Map.ScheduleIdleAreaWarm();
 
             timer.Stop();
             GameLog.Info(
@@ -660,16 +682,21 @@ namespace BarPromenade
 
         private void BuildCommonUi(GameObject ui)
         {
+            Stopwatch uiTimer = Stopwatch.StartNew();
             IntoxicationStatus =
                 ui.AddComponent<IntoxicationStatusController>();
             IntoxicationStatus.Initialize(
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("mountain_road", "ui_status", uiTimer);
+            uiTimer.Restart();
 
             CityLayout cityMapLayout = GenerateCityMapLayout();
             CityMountainBoundaryPlan cityMountains =
                 CityMountainBoundaryPlanner.Create(cityMapLayout);
+            GameLogPhases.Report("mountain_road", "map_city_layout", uiTimer);
+            uiTimer.Restart();
             Map = ui.AddComponent<CityMapController>();
             Map.Initialize(
                 cityMapLayout,
@@ -679,22 +706,42 @@ namespace BarPromenade
                 null,
                 cityMountains,
                 null);
+            GameLogPhases.Report("mountain_road", "map_initialize", uiTimer);
+            uiTimer.Restart();
             // The map is handed THIS scene's walkable mask. Without it the
             // teleport would measure a mountain coordinate against the city
             // layout above, which shares the same origin and answers with
             // streets that are not in this scene.
             // The village tab charts pure data here too: one planner run,
-            // no GameObject. Without it the road's third tab drew an empty
+            // no GameObject - and nobody looks at it until the map is open,
+            // so the charting waits for the first M press, or for the map's
+            // own idle warm a few seconds after the road is ready. The
+            // village plan comes through the cache so the ride up reuses
+            // it. Without the tab the road's third tab drew an empty
             // rectangle and named nothing above the cableway.
-            AlpineVillagePlan villageMapPlan =
-                AlpineVillagePlanner.Create(GameSessionState.CitySeed);
-            Map.ConfigureAreas(
-                GameAreaId.MountainRoad,
-                CityMapMountainRoadOverlayBuilder.Create(Plan),
-                request => AreaTravelService.Request(request),
-                new CityMapMountainRoadTeleportGround(World.WalkableArea),
-                CityMapAlpineVillageOverlayBuilder.Create(villageMapPlan),
-                villageMapPlan.Plots);
+            int citySeed = GameSessionState.CitySeed;
+            Map.ConfigureAreasOnFirstUse(() =>
+            {
+                Stopwatch areaTimer = Stopwatch.StartNew();
+                AlpineVillagePlan villageMapPlan =
+                    CityLayoutCache.GetOrCreateAlpineVillage(citySeed);
+                GameLogPhases.Report(
+                    "mountain_road",
+                    "map_alpine_village_plan",
+                    areaTimer);
+                areaTimer.Restart();
+                Map.ConfigureAreas(
+                    GameAreaId.MountainRoad,
+                    CityMapMountainRoadOverlayBuilder.Create(Plan),
+                    request => AreaTravelService.Request(request),
+                    new CityMapMountainRoadTeleportGround(World.WalkableArea),
+                    CityMapAlpineVillageOverlayBuilder.Create(villageMapPlan),
+                    villageMapPlan.Plots);
+                GameLogPhases.Report(
+                    "mountain_road",
+                    "map_configure_areas",
+                    areaTimer);
+            });
 
             // Without this the mountain road had no way to switch the test
             // teleport ON at all - the F9 window only ever existed in the
@@ -723,6 +770,7 @@ namespace BarPromenade
                 Player,
                 CameraFollow,
                 IntoxicationHud);
+            GameLogPhases.Report("mountain_road", "ui_controllers", uiTimer);
         }
 
         private static CityLayout GenerateCityMapLayout()
@@ -731,7 +779,7 @@ namespace BarPromenade
                 CityGenerationSettings.Default;
             CityBlueprint blueprint = CityBlueprintCatalog.Resolve(
                 GameSessionState.CityBlueprintId);
-            return CityLayoutGenerator.Generate(
+            return CityLayoutCache.GetOrGenerate(
                 blueprint,
                 settings,
                 GameSessionState.CitySeed);

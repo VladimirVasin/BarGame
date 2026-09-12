@@ -106,14 +106,17 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(blueprint));
             }
 
+            // The seed-based entries go through the memo; the layout-based
+            // one below is what the memo computes, so it must never come
+            // back here.
             CityGenerationSettings settings =
                 CityGenerationSettings.Default;
             CityLayout layout =
-                CityLayoutGenerator.Generate(
+                CityLayoutCache.GetOrGenerate(
                     blueprint,
                     settings,
                     citySeed);
-            return Generate(layout);
+            return CityLayoutCache.GetOrCreateHomeExteriorContext(layout);
         }
 
         public static HomeExteriorContextPlan Generate(
@@ -196,7 +199,7 @@ namespace BarPromenade
             }
 
             CityNightFixturePlan night =
-                CityNightFixturePlanner.CreatePlan(layout);
+                CityLayoutCache.GetOrCreateNightPlan(layout);
             var lamps = new List<StreetLampDescriptor>();
             for (int index = 0;
                  index < night.StreetLamps.Count;

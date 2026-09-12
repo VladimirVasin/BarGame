@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -106,11 +107,16 @@ namespace BarPromenade
     public static class RuntimePrimitiveFactory
     {
         private const int LowPolyCylinderSides = 8;
+        // The same built-in asset GameObject.CreatePrimitive(Cube) mounts: a
+        // unit cube centred on the origin, 24 vertices. It is engine-owned,
+        // so it is never destroyed or re-flagged here, only cached.
+        private const string CubeMeshResource = "Cube.fbx";
         public const string DefaultMaterialResourcePath =
             "Materials/RuntimePrimitiveLit";
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
+        private static Mesh cubeMesh;
         private static Mesh lowPolyCylinderMesh;
         private static Material defaultMaterial;
 
@@ -481,16 +487,14 @@ namespace BarPromenade
                 };
             }
 
-            GameObject result = CreatePrimitive(
-                PrimitiveType.Cube,
+            GameObject result = CreateMeshHost(
                 name,
                 parent,
-                Vector3.zero,
-                Vector3.one,
                 color,
-                false,
-                null);
-            MeshFilter meshFilter = result.GetComponent<MeshFilter>();
+                null,
+                true,
+                out MeshFilter meshFilter);
+            long combineStart = Stopwatch.GetTimestamp();
             var combinedMesh = new Mesh
             {
                 name = $"{name} Combined Mesh",
@@ -514,15 +518,25 @@ namespace BarPromenade
             }
 
             combinedMesh.RecalculateBounds();
+            long combineEnd = Stopwatch.GetTimestamp();
             meshFilter.sharedMesh = combinedMesh;
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(combinedMesh);
+            long colliderTicks = 0;
             if (collider)
             {
+                long colliderStart = Stopwatch.GetTimestamp();
                 result.AddComponent<MeshCollider>().sharedMesh =
                     combinedMesh;
+                colliderTicks = Stopwatch.GetTimestamp() - colliderStart;
             }
 
+            ReportCombinedMesh(
+                name,
+                combine.Length,
+                combinedMesh,
+                combineEnd - combineStart,
+                colliderTicks);
             combinedMesh.UploadMeshData(!collider);
             return result;
         }
@@ -604,17 +618,14 @@ namespace BarPromenade
                     nameof(transforms));
             }
 
-            GameObject result = CreatePrimitive(
-                PrimitiveType.Cube,
+            GameObject result = CreateMeshHost(
                 name,
                 parent,
-                Vector3.zero,
-                Vector3.one,
                 color,
-                false,
-                sharedMaterial);
-            MeshFilter meshFilter = result.GetComponent<MeshFilter>();
-            Mesh sourceMesh = meshFilter.sharedMesh;
+                sharedMaterial,
+                true,
+                out MeshFilter meshFilter);
+            Mesh sourceMesh = GetCubeMesh();
             var combine = new CombineInstance[transforms.Count];
             for (int index = 0; index < transforms.Count; index++)
             {
@@ -625,6 +636,7 @@ namespace BarPromenade
                 };
             }
 
+            long combineStart = Stopwatch.GetTimestamp();
             var combinedMesh = new Mesh
             {
                 name = $"{name} Combined Mesh",
@@ -649,18 +661,53 @@ namespace BarPromenade
             }
 
             combinedMesh.RecalculateBounds();
+            long combineEnd = Stopwatch.GetTimestamp();
             meshFilter.sharedMesh = combinedMesh;
             result.AddComponent<RuntimeGeneratedMeshOwner>()
                 .Initialize(combinedMesh);
+            long colliderTicks = 0;
             if (collider)
             {
+                long colliderStart = Stopwatch.GetTimestamp();
                 MeshCollider surfaceCollider =
                     result.AddComponent<MeshCollider>();
                 surfaceCollider.sharedMesh = combinedMesh;
+                colliderTicks = Stopwatch.GetTimestamp() - colliderStart;
             }
 
+            ReportCombinedMesh(
+                name,
+                combine.Length,
+                combinedMesh,
+                combineEnd - combineStart,
+                colliderTicks);
             combinedMesh.UploadMeshData(!collider && !keepReadable);
             return result;
+        }
+
+        // One row per combined batch, never per source box: these two
+        // sites run hundreds of times per load, so the cost is a few
+        // timestamp reads and one dropped Debug row outside Verbose.
+        private static void ReportCombinedMesh(
+            string name,
+            int sources,
+            Mesh combinedMesh,
+            long combineTicks,
+            long colliderTicks)
+        {
+            GameLog.Debug(
+                "primitive",
+                "combined_mesh",
+                GameLog.Field("name", name),
+                GameLog.Field("sources", sources),
+                GameLog.Field("vertices", combinedMesh.vertexCount),
+                GameLog.Field("combine_ms", TicksToMilliseconds(combineTicks)),
+                GameLog.Field("collider_ms", TicksToMilliseconds(colliderTicks)));
+        }
+
+        private static double TicksToMilliseconds(long ticks)
+        {
+            return ticks * 1000d / Stopwatch.Frequency;
         }
 
         private static void ApplyWorldUvs(
@@ -736,6 +783,12 @@ namespace BarPromenade
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
+        // Assembled by hand rather than through GameObject.CreatePrimitive:
+        // that path always mounts a collider, and most callers (every
+        // combined batch, every decorative box) asked for none, so a load
+        // paid hundreds of add-disable-destroy cycles for colliders that
+        // never lived past the call. Components are added in the order the
+        // primitive path used, so GetComponent lookups resolve the same.
         private static GameObject CreatePrimitive(
             PrimitiveType type,
             string name,
@@ -747,49 +800,88 @@ namespace BarPromenade
             Material sharedMaterial,
             bool applyColor = true)
         {
-            GameObject result = GameObject.CreatePrimitive(type);
-            result.name = name;
-            result.transform.SetParent(parent, false);
+            GameObject result = CreateMeshHost(
+                name,
+                parent,
+                color,
+                sharedMaterial,
+                applyColor,
+                out MeshFilter meshFilter);
             result.transform.localPosition = localPosition;
             result.transform.localScale = size;
-            Renderer renderer = result.GetComponent<Renderer>();
+            // The mesh goes on before the collider so a collider that
+            // measures itself from the filter sees the same unit shape the
+            // primitive path measured; the numbers below are that shape's.
+            meshFilter.sharedMesh =
+                type == PrimitiveType.Cylinder
+                    ? GetLowPolyCylinderMesh()
+                    : GetCubeMesh();
+
+            if (collider)
+            {
+                if (type == PrimitiveType.Cylinder)
+                {
+                    // CreatePrimitive(Cylinder)'s capsule: two units tall,
+                    // half a unit wide, upright, centred. The eight-sided
+                    // mesh fills the same box.
+                    CapsuleCollider capsule =
+                        result.AddComponent<CapsuleCollider>();
+                    capsule.center = Vector3.zero;
+                    capsule.radius = 0.5f;
+                    capsule.height = 2f;
+                    capsule.direction = 1;
+                }
+                else
+                {
+                    // CreatePrimitive(Cube)'s box: the unit cube's own
+                    // bounds, which are also this component's defaults.
+                    BoxCollider box = result.AddComponent<BoxCollider>();
+                    box.center = Vector3.zero;
+                    box.size = Vector3.one;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// The bare renderer host every factory object starts from: a
+        /// filter with no mesh yet and a renderer already on its material,
+        /// coloured through the shared property block when asked.
+        /// </summary>
+        private static GameObject CreateMeshHost(
+            string name,
+            Transform parent,
+            Color color,
+            Material sharedMaterial,
+            bool applyColor,
+            out MeshFilter meshFilter)
+        {
+            var result = new GameObject(name);
+            result.transform.SetParent(parent, false);
+            meshFilter = result.AddComponent<MeshFilter>();
+            MeshRenderer renderer = result.AddComponent<MeshRenderer>();
             renderer.sharedMaterial =
                 sharedMaterial != null
                     ? sharedMaterial
                     : DefaultMaterial;
-
-            if (type == PrimitiveType.Cylinder)
-            {
-                MeshFilter meshFilter = result.GetComponent<MeshFilter>();
-                if (meshFilter != null)
-                {
-                    meshFilter.sharedMesh = GetLowPolyCylinderMesh();
-                }
-            }
-
             if (applyColor)
             {
                 SetColor(renderer, color);
             }
 
-            if (!collider)
+            return result;
+        }
+
+        private static Mesh GetCubeMesh()
+        {
+            if (cubeMesh == null)
             {
-                Collider primitiveCollider = result.GetComponent<Collider>();
-                if (primitiveCollider != null)
-                {
-                    if (Application.isPlaying)
-                    {
-                        primitiveCollider.enabled = false;
-                        Object.Destroy(primitiveCollider);
-                    }
-                    else
-                    {
-                        Object.DestroyImmediate(primitiveCollider);
-                    }
-                }
+                cubeMesh = Resources.GetBuiltinResource<Mesh>(
+                    CubeMeshResource);
             }
 
-            return result;
+            return cubeMesh;
         }
 
         private static Mesh GetLowPolyCylinderMesh()
@@ -922,6 +1014,7 @@ namespace BarPromenade
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetCachedResources()
         {
+            cubeMesh = null;
             lowPolyCylinderMesh = null;
             defaultMaterial = null;
             sharedPropertyBlock = null;

@@ -165,6 +165,8 @@ namespace BarPromenade
         private readonly ReadOnlyCollection<AlpineVillageBrookSeep> seeps;
         private readonly ReadOnlyCollection<AlpineVillageBrookCascade>
             cascades;
+        private AlpineVillagePolylineIndex nearestIndex;
+        private float maximumHalfWidth = float.NaN;
 
         internal AlpineVillageBrookPlan(
             IList<AlpineVillageBrookSample> sourceSamples,
@@ -256,6 +258,68 @@ namespace BarPromenade
         public float Length => samples.Count == 0
             ? 0f
             : samples[samples.Count - 1].Distance;
+
+        /// <summary>
+        /// The widest half-width of the channel anywhere along it. A bound
+        /// for readers that want to know whether the water can reach a point
+        /// at all before they ask exactly how far it is.
+        /// </summary>
+        internal float MaximumHalfWidth
+        {
+            get
+            {
+                if (float.IsNaN(maximumHalfWidth))
+                {
+                    float widest = 0f;
+                    for (int index = 0; index < samples.Count; index++)
+                    {
+                        float halfWidth = samples[index].HalfWidth;
+                        // Mathf.Max drops a NaN, so a broken width would
+                        // shrink the reach and let the index skip a segment
+                        // the full scan would still have visited; refuse the
+                        // reach instead, and the skip is never taken.
+                        if (float.IsNaN(halfWidth) || float.IsInfinity(halfWidth))
+                        {
+                            widest = float.PositiveInfinity;
+                            break;
+                        }
+
+                        widest = Mathf.Max(widest, halfWidth);
+                    }
+
+                    maximumHalfWidth = widest;
+                }
+
+                return maximumHalfWidth;
+            }
+        }
+
+        /// <summary>
+        /// Pruning data over the channel centreline on the ground plane,
+        /// built on first use; the samples never change after construction.
+        /// Only meaningful with two samples or more - the caller checks
+        /// <see cref="Samples"/> first, exactly as it did before the index
+        /// existed, because an empty channel is "no channel" and not an
+        /// error.
+        /// </summary>
+        internal AlpineVillagePolylineIndex NearestIndex
+        {
+            get
+            {
+                if (nearestIndex == null)
+                {
+                    var points = new Vector2[samples.Count];
+                    for (int index = 0; index < points.Length; index++)
+                    {
+                        points[index] = ToXZ(samples[index].Position);
+                    }
+
+                    nearestIndex = new AlpineVillagePolylineIndex(points);
+                }
+
+                return nearestIndex;
+            }
+        }
 
         /// <summary>
         /// How far the point lies outside the channel's centreline, and how
