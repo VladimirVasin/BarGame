@@ -389,6 +389,9 @@ namespace BarPromenade
             }
 
             compositionFrameCount = composition.Frames;
+            // The driver put full-rate drawing back as the build ended, so
+            // this frame draws the finished world - first-use shader
+            // compilation included - under the bar rather than after it.
             Progress = 1f;
             loadingRoot?.SetProgress(Progress);
             yield return null;

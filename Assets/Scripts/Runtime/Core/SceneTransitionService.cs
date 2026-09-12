@@ -387,6 +387,13 @@ namespace BarPromenade
                     FinishTransition("destination_composition_failed", false);
                     yield break;
                 }
+
+                // The driver put full-rate drawing back as the build ended.
+                // This frame draws the finished destination - and, in the
+                // editor, compiles the shader variants it uses for the first
+                // time - under the black, so the player's first frame of it
+                // is not the slow one.
+                yield return null;
             }
 
             FinishTransition("completed", true);

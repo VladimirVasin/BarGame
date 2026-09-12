@@ -1,6 +1,7 @@
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -95,6 +96,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(city.IsInitialized, Is.True, "The transition ended before the city was ready.");
             Assert.That(GameTimeScaleRuntime.IsPaused, Is.False);
             Assert.That(AudioListener.pause, Is.EqualTo(previousAudioPause));
+            Assert.That(OnDemandRendering.renderFrameInterval, Is.EqualTo(1),
+                "Full-rate drawing must return with the finished city.");
             yield return null;
             Assert.That(Object.FindAnyObjectByType<TransitionBlackoutOverlay>(), Is.Null,
                 "The black must leave with the transition.");

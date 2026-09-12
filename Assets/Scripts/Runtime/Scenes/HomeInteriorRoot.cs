@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -164,11 +165,27 @@ namespace BarPromenade
             Initialize();
         }
 
+        /// <summary>
+        /// Behind a door (Stairwell -> Home) the build is pumped a frame at
+        /// a time under the transition's black; the main menu's direct load
+        /// and the tests have no pump and build here, in this frame. Home is
+        /// never an area-travel destination, so the loading bar's path is
+        /// not offered the steps.
+        /// </summary>
         private void Initialize()
+        {
+            IEnumerator steps = InitializeSteps();
+            if (!SceneTransitionService.TryScheduleComposition(this, steps))
+            {
+                RuntimeComposition.RunSynchronously(steps);
+            }
+        }
+
+        private IEnumerator InitializeSteps()
         {
             if (IsInitialized)
             {
-                return;
+                yield break;
             }
 
             GameAudioMixer.ApplyProfile(GameAudioProfile.Home);
@@ -181,6 +198,7 @@ namespace BarPromenade
                 RuntimeSceneSetup.EnsureHomeInterior();
             Audio = RetroAudioService.EnsureInstalled();
             GameLogPhases.Report("home", "runtime_setup", phaseTimer);
+            yield return new CompositionStep("runtime_setup", 0.03f);
             phaseTimer.Restart();
             Layout = HomeInteriorLayoutPlanner.Generate();
             RefrigeratorPlan =
@@ -188,12 +206,14 @@ namespace BarPromenade
             BalconyLayout =
                 HomeBalconyLayoutPlanner.Generate(Layout);
             GameLogPhases.Report("home", "layout", phaseTimer);
+            yield return new CompositionStep("layout", 0.06f);
             phaseTimer.Restart();
             ExteriorContext =
                 HomeExteriorContextPlanner.Generate(
                     GameSessionState.CityBlueprintId,
                     GameSessionState.CitySeed);
             GameLogPhases.Report("home", "exterior_context_plan", phaseTimer);
+            yield return new CompositionStep("exterior_context", 0.30f);
             phaseTimer.Restart();
             Room = HomeInteriorWorldBuilder.Build(
                 transform,
@@ -203,6 +223,7 @@ namespace BarPromenade
                 out CityNightWorldResult exteriorNight);
             ExteriorNight = exteriorNight;
             GameLogPhases.Report("home", "room_build", phaseTimer);
+            yield return new CompositionStep("room", 0.70f);
             phaseTimer.Restart();
             OcclusionRegistry =
                 Room.GetComponent<HomeOcclusionRegistry>();
@@ -249,6 +270,7 @@ namespace BarPromenade
 
             Atmosphere.Initialize(bathroomLightFixture);
             GameLogPhases.Report("home", "room_fixtures", phaseTimer);
+            yield return new CompositionStep("room_fixtures", 0.74f);
             phaseTimer.Restart();
 
             GameObject ambienceObject =
@@ -270,6 +292,7 @@ namespace BarPromenade
             Soundscape.BindBathroomFlicker(
                 Atmosphere.BathroomFlicker);
             GameLogPhases.Report("home", "audio", phaseTimer);
+            yield return new CompositionStep("audio", 0.76f);
             phaseTimer.Restart();
 
             GameObject ui = new GameObject("Runtime UI");
@@ -316,6 +339,7 @@ namespace BarPromenade
                     Layout,
                     BalconyLayout));
             GameLogPhases.Report("home", "player_and_camera", phaseTimer);
+            yield return new CompositionStep("player_and_camera", 0.82f);
             phaseTimer.Restart();
             PedestrianPlan = HomeExteriorPedestrianPlanner.Create(
                 ExteriorContext,
@@ -369,6 +393,7 @@ namespace BarPromenade
                 ExteriorAtmosphere,
                 ExteriorNight);
             GameLogPhases.Report("home", "exterior_life", phaseTimer);
+            yield return new CompositionStep("exterior_life", 0.90f);
             phaseTimer.Restart();
             BuildBedInteraction();
             BuildRefrigeratorInteraction();
@@ -393,6 +418,7 @@ namespace BarPromenade
 
             BuildLockedRoomDoor();
             GameLogPhases.Report("home", "interactions", phaseTimer);
+            yield return new CompositionStep("interactions", 0.95f);
             phaseTimer.Restart();
             ApartmentDays = ui.AddComponent<HomeApartmentDayController>();
             HomeApartmentDressing dressing = Room.GetComponent<HomeApartmentDressing>();
@@ -405,6 +431,7 @@ namespace BarPromenade
 
             BuildPlayerOcclusion(camera);
             GameLogPhases.Report("home", "player_occlusion", phaseTimer);
+            yield return new CompositionStep("player_occlusion", 0.97f);
             phaseTimer.Restart();
 
             Inventory = ui.AddComponent<InventoryController>();
@@ -425,6 +452,7 @@ namespace BarPromenade
             GameLogPhases.Report("home", "ui_controllers", phaseTimer);
 
             IsInitialized = true;
+            yield return new CompositionStep("ready", 1f);
             timer.Stop();
             GameLog.Info(
                 "home",

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
@@ -12,18 +13,31 @@ namespace BarPromenade
     /// its tempo and listener pauses already hold when the root registers
     /// from Awake, and disposed by the service that owns the transition,
     /// which also decides what an abort does with unfinished work.
+    /// While it pumps, the growing world is not drawn every frame: only the
+    /// overlay is meant to be seen, and in the editor each draw of the
+    /// half-built city cost 14-27 ms on top of the build itself.
     /// </summary>
     internal sealed class CompositionDriver : IDisposable
     {
+        /// <summary>
+        /// Frames between draws while a composition runs. Only a game view
+        /// is affected; batch mode presents nothing, so it changes nothing
+        /// there. The IMGUI overlay repaints at this rate too, which a
+        /// static black or a bar moving a few times a second can bear.
+        /// </summary>
+        internal const int ThrottledRenderFrameInterval = 4;
+
         private static CompositionDriver active;
 
         private readonly string path;
         private readonly string destination;
         private readonly bool previousListenerPause;
+        private readonly int previousRenderFrameInterval;
         private RuntimeComposition composition;
         private MonoBehaviour owner;
         private IDisposable tempoPause;
         private bool holdsPauses;
+        private bool throttlesRendering;
         private long pumpStarted;
         private double advanceMs;
 
@@ -35,6 +49,11 @@ namespace BarPromenade
             previousListenerPause = AudioListener.pause;
             AudioListener.pause = true;
             holdsPauses = true;
+            previousRenderFrameInterval =
+                OnDemandRendering.renderFrameInterval;
+            OnDemandRendering.renderFrameInterval =
+                ThrottledRenderFrameInterval;
+            throttlesRendering = true;
             active = this;
         }
 
@@ -178,6 +197,12 @@ namespace BarPromenade
         private void Finish(bool drained)
         {
             Completed = true;
+            // Full-rate drawing returns here, not in Dispose: the owning
+            // service keeps its overlay up for one more frame, so the first
+            // draw of the finished world - and, in the editor, the shader
+            // variants it compiles on first use - lands under the overlay
+            // rather than on the first frame the player sees.
+            RestoreRendering();
             double wallMs = (Stopwatch.GetTimestamp() - pumpStarted) *
                 1000d / Stopwatch.Frequency;
             GameLog.Debug(
@@ -197,9 +222,27 @@ namespace BarPromenade
 
         private void ReleaseComposition()
         {
+            RestoreRendering();
             composition?.Dispose();
             composition = null;
             owner = null;
+        }
+
+        /// <summary>
+        /// Puts back the interval found at construction - 1 on every path
+        /// the game takes - once, whether the build finished, failed, lost
+        /// its owner or the driver is disposed without a registration.
+        /// </summary>
+        private void RestoreRendering()
+        {
+            if (!throttlesRendering)
+            {
+                return;
+            }
+
+            throttlesRendering = false;
+            OnDemandRendering.renderFrameInterval =
+                previousRenderFrameInterval;
         }
     }
 }

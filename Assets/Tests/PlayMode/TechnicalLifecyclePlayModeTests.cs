@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -290,6 +291,8 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(AreaSceneCatalog.GetSceneName(destination)));
                 Assert.That(AudioListener.pause, Is.EqualTo(previousAudioPause));
                 Assert.That(GameTimeScaleRuntime.IsPaused, Is.False);
+                Assert.That(OnDemandRendering.renderFrameInterval, Is.EqualTo(1),
+                    "Full-rate drawing must return with the finished world.");
                 yield return null;
                 Assert.That(Object.FindAnyObjectByType<AreaLoadingRoot>(), Is.Null);
             }
