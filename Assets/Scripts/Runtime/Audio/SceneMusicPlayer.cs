@@ -299,6 +299,24 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Withdraws a scene-exit request from a theme whose scene did not
+        /// end after all: the resident City resuming behind a bar door. A
+        /// request holds every later suppression, reload and location
+        /// handover off, so a theme that kept it would never play again. A
+        /// theme that already left through the mix is not here to be told;
+        /// it finishes its tail and goes.
+        /// </summary>
+        internal void CancelSceneExitFade()
+        {
+            if (detachedForSceneExit)
+            {
+                return;
+            }
+
+            IsSceneExitFadeRequested = false;
+        }
+
         public void CompleteSceneExitFadeImmediately()
         {
             IsSceneExitFadeRequested = true;

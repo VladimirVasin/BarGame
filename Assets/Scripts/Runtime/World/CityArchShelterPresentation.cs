@@ -123,6 +123,32 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// Sparks and crackle are started once at build and neither plays
+        /// on awake, so a shelter whose object was deactivated - the City
+        /// dormant behind a bar door - would come back with a silent, still
+        /// fire.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            if (FireSparks != null && !FireSparks.isPlaying)
+            {
+                FireSparks.Play(false);
+            }
+
+            if (CrackleSource != null &&
+                CrackleSource.clip != null &&
+                !CrackleSource.isPlaying)
+            {
+                CrackleSource.Play();
+            }
+        }
+
         private void OnDestroy()
         {
             if (crackleClip != null)

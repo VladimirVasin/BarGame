@@ -1694,10 +1694,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 returnedCity.Music.ActiveClip.name,
                 Is.EqualTo(CityMusicPlayer.TrackName));
-            Assert.That(
-                UnityEngine.Object.FindObjectsByType<BarMusicPlayer>(
-                    FindObjectsInactive.Include),
-                Is.Empty,
+            // The interior's theme leaves through the mix exactly as the
+            // city's did on the way in: detached, fading, then gone. A
+            // resident City wakes in well under that fade, so the tail is
+            // waited out here rather than expected to be gone already.
+            yield return WaitUntil(
+                () => UnityEngine.Object.FindObjectsByType<BarMusicPlayer>(
+                          FindObjectsInactive.Include).Length == 0,
                 "Bar music must stop when City replaces the interior.");
             Assert.That(returnedCity.Layout.Seed, Is.EqualTo(expectedSeed));
             CollectionAssert.AreEqual(expectedRoads, returnedCity.Layout.RoadEdges);

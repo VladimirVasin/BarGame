@@ -269,7 +269,36 @@ namespace BarPromenade
             Advance(Time.deltaTime);
         }
 
+        /// <summary>
+        /// Disabling releases the street, not the controller: a City dormant
+        /// behind a bar door comes back with the same bus, and a controller
+        /// that shut itself down here stayed dead for the rest of the run,
+        /// its cleanup unregistered from a director it never rejoined. The
+        /// registration is kept; destruction alone takes it away.
+        /// </summary>
         private void OnDisable()
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            ReleaseEveryWaiter();
+            busWasSpawned = false;
+        }
+
+        private void OnEnable()
+        {
+            if (!IsInitialized)
+            {
+                return;
+            }
+
+            busWasSpawned = false;
+            spawnCooldown = GetNextSpawnDelay();
+        }
+
+        private void OnDestroy()
         {
             Shutdown();
         }

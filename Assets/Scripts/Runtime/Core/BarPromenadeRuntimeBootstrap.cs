@@ -70,7 +70,13 @@ namespace BarPromenade
             }
         }
 
-        private static void InstallForScene(Scene scene)
+        /// <summary>
+        /// Installs the runtime root a scene needs. Fires by itself for the
+        /// active scene of every load; a scene loaded additively behind a
+        /// resident City is not active when it loads, so the transition
+        /// that made it active calls this by name.
+        /// </summary>
+        internal static void InstallForScene(Scene scene)
         {
             if (!scene.IsValid() || !scene.isLoaded || creating)
             {

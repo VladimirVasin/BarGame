@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
@@ -9,7 +10,24 @@ namespace BarPromenade
     {
         private const float DebugMapOpenTimeoutSeconds = 2f;
 
+        private readonly List<GameObject> dormantObjects =
+            new List<GameObject>();
+        private readonly List<Behaviour> dormantBehaviours =
+            new List<Behaviour>();
+        private AudioListener dormantListener;
+        private IntoxicationHudView intoxicationHud;
+
         public bool IsInitialized { get; private set; }
+
+        /// <summary>
+        /// True while the built City sleeps behind a bar door: hierarchy,
+        /// camera and listener off, this object awake so the bootstrap and
+        /// the transition still find it. See <see cref="EnterDormant"/>.
+        /// </summary>
+        public bool IsDormant { get; private set; }
+
+        /// <summary>The scene camera the build adopted or made.</summary>
+        public Camera Camera { get; private set; }
         public CityLayout Layout { get; private set; }
         public CityWorldResult World { get; private set; }
         public ChurchGardenPotInteraction ChurchGardenPot { get; private set; }
@@ -337,6 +355,7 @@ namespace BarPromenade
                     GameSessionState.PlannedBarRoute.Count));
 
             Camera camera = RuntimeSceneSetup.EnsureCityNight();
+            Camera = camera;
             Audio = RetroAudioService.EnsureInstalled();
             GameLogPhases.Report("city", "runtime_setup", phaseTimer);
             yield return new CompositionStep("runtime_setup", 0.03f);
@@ -896,8 +915,7 @@ namespace BarPromenade
                 CityStreetUtilityDock.CreateAll(
                     Layout,
                     World.DecorationPlan));
-            IntoxicationHudView intoxicationHud =
-                ui.AddComponent<IntoxicationHudView>();
+            intoxicationHud = ui.AddComponent<IntoxicationHudView>();
 
             PlayerCameraFollow follow = camera.GetComponent<PlayerCameraFollow>();
             if (follow == null)
@@ -1387,6 +1405,292 @@ namespace BarPromenade
                     YardWheelchair != null
                         ? YardWheelchair.Plan.Radius
                         : 0f));
+        }
+
+        /// <summary>
+        /// The dormant City a transition may wake, if one is loaded.
+        /// </summary>
+        internal static bool TryFindDormant(out CityGameRoot city)
+        {
+            CityGameRoot[] roots = FindObjectsByType<CityGameRoot>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+            for (int index = 0; index < roots.Length; index++)
+            {
+                CityGameRoot candidate = roots[index];
+                if (candidate != null &&
+                    candidate.IsDormant &&
+                    candidate.gameObject.scene.isLoaded)
+                {
+                    city = candidate;
+                    return true;
+                }
+            }
+
+            city = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Puts the built City to sleep behind a bar door instead of
+        /// unloading it. Every other root object of the scene (the authored
+        /// camera, sun and volume) and every child of this one is
+        /// deactivated - the interior is built at the same origin, so city
+        /// colliders, renderers and voices must all be gone, not hidden -
+        /// and the two clock-driven controllers on this object are disabled
+        /// so they stop writing the active scene's lighting. The listener is
+        /// switched off by hand as well, so the interior's listener setup
+        /// finds nothing to disable and the resume knows which to give
+        /// back. This object stays active: the bootstrap finds the root by
+        /// it, and the resume is driven from it. The scene theme is not
+        /// touched here - the door already sent it out through the mix, and
+        /// its object went with it.
+        /// </summary>
+        internal bool EnterDormant()
+        {
+            if (!IsInitialized || IsDormant)
+            {
+                return false;
+            }
+
+            IsDormant = true;
+            dormantObjects.Clear();
+            dormantBehaviours.Clear();
+            dormantListener = Camera != null
+                ? Camera.GetComponent<AudioListener>()
+                : null;
+            if (dormantListener != null && dormantListener.enabled)
+            {
+                dormantListener.enabled = false;
+            }
+            else
+            {
+                dormantListener = null;
+            }
+
+            Scene scene = gameObject.scene;
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int index = 0; index < roots.Length; index++)
+            {
+                Sleep(roots[index]);
+            }
+
+            for (int index = 0; index < transform.childCount; index++)
+            {
+                Sleep(transform.GetChild(index).gameObject);
+            }
+
+            if (Camera != null)
+            {
+                // Normally a scene root, already down above; guarded for a
+                // camera that was parented somewhere else.
+                Sleep(Camera.gameObject);
+            }
+
+            Sleep(DayNight);
+            Sleep(Weather);
+            GameLog.Info(
+                "city",
+                "dormant_entered",
+                GameLog.Field("deactivated_objects", dormantObjects.Count),
+                GameLog.Field(
+                    "disabled_behaviours",
+                    dormantBehaviours.Count));
+            return true;
+        }
+
+        /// <summary>
+        /// Wakes a dormant City behind the door back out of the bar, in the
+        /// state a fresh build would have reached: the hierarchy and the
+        /// clock controllers back, the build's own camera/fog/lighting call
+        /// (which also re-adopts the listener), clock and weather forced to
+        /// the session's minute so the hours spent inside are on the sky
+        /// and the asphalt, the hero at the bar-return dock facing away
+        /// from the door with the chase camera re-seeded behind him, the
+        /// motor's input back (the entrance silenced it for the load, as
+        /// every door does), the drunk presentation re-initialised (disabling
+        /// shut it down, as destroying does) and a scene theme of its own
+        /// again after the old one left through the mix. Then the return is
+        /// completed exactly where the build completes it.
+        /// </summary>
+        internal void ResumeFromDormant()
+        {
+            if (!IsDormant)
+            {
+                return;
+            }
+
+            if (dormantListener != null)
+            {
+                dormantListener.enabled = true;
+                dormantListener = null;
+            }
+
+            for (int index = dormantObjects.Count - 1; index >= 0; index--)
+            {
+                GameObject sleeper = dormantObjects[index];
+                if (sleeper != null)
+                {
+                    sleeper.SetActive(true);
+                }
+            }
+
+            dormantObjects.Clear();
+            for (int index = 0; index < dormantBehaviours.Count; index++)
+            {
+                Behaviour sleeper = dormantBehaviours[index];
+                if (sleeper != null)
+                {
+                    sleeper.enabled = true;
+                }
+            }
+
+            dormantBehaviours.Clear();
+            IsDormant = false;
+
+            GameAudioMixer.ApplyProfile(GameAudioProfile.City);
+            GameLog.SetScene(gameObject.scene.name);
+            GameLog.SetCitySeed(GameSessionState.CitySeed);
+            Camera camera = RuntimeSceneSetup.EnsureCityNight();
+            Camera = camera;
+            if (DayNight != null)
+            {
+                DayNight.ApplyCurrentTime(true);
+            }
+
+            if (Weather != null)
+            {
+                Weather.ApplyCurrentWeather(true);
+            }
+
+            // The bar_return branch of the build's spawn ladder, and the
+            // only one a dormant City can wake on.
+            Vector3 spawnPosition = Player.GameObject.transform.position;
+            string spawnSource = "resumed_in_place";
+            string returnBarId = string.Empty;
+            if (GameSessionState.TryGetReturnBarId(out string barId))
+            {
+                returnBarId = barId;
+                if (World.TryGetBar(barId, out BarEntrance entrance))
+                {
+                    PlayerDoorArrivalPose arrival =
+                        PlayerDoorArrivalPose.FromDestinationDoor(
+                            entrance.ReturnPosition,
+                            entrance.GetComponent<PlayerDoorActionTarget>());
+                    Player.Motor.Teleport(arrival.RootPosition);
+                    Player.GameObject.transform.rotation = arrival.Rotation;
+                    spawnPosition = arrival.RootPosition;
+                    spawnSource = "bar_return";
+                }
+                else
+                {
+                    spawnSource = "missing_return_bar";
+                    GameLog.Warning(
+                        "city",
+                        "return_bar_missing",
+                        GameLog.Field("bar_id", barId));
+                }
+            }
+
+            Player.Motor.SetInputEnabled(true);
+            PlayerCameraFollow follow =
+                camera.GetComponent<PlayerCameraFollow>();
+            if (follow == null)
+            {
+                follow = camera.gameObject.AddComponent<PlayerCameraFollow>();
+            }
+
+            follow.Initialize(camera, Player.GameObject.transform, false);
+            if (IntoxicationStatus != null)
+            {
+                IntoxicationStatus.Initialize(Player, follow, intoxicationHud);
+            }
+
+            RestoreMusicAfterDormancy();
+            if (Map != null)
+            {
+                Map.ScheduleIdleAreaWarm();
+            }
+
+            bool spawnIsWalkable =
+                World.WalkableArea.Contains(spawnPosition);
+            GameLog.Info(
+                "city",
+                "spawn_selected",
+                GameLog.Field("source", spawnSource),
+                GameLog.Field("return_bar_id", returnBarId),
+                GameLog.Field("x", spawnPosition.x),
+                GameLog.Field("y", spawnPosition.y),
+                GameLog.Field("z", spawnPosition.z),
+                GameLog.Field("walkable", spawnIsWalkable));
+            GameSessionState.CompleteCityReturn();
+            GameLog.Info(
+                "city",
+                "dormant_resumed",
+                GameLog.Field("spawn_source", spawnSource),
+                GameLog.Field(
+                    "day_index",
+                    GameSessionState.GameDayIndex),
+                GameLog.Field(
+                    "minute_of_day",
+                    GameSessionState.GameMinuteOfDay));
+        }
+
+        /// <summary>
+        /// The door sent the theme through the mix, and it took its object
+        /// with it - or is still on its way out, detached. Either way this
+        /// root needs a theme of its own again, born requesting playback as
+        /// the build's is and waiting on the tail through the mixing rule.
+        /// The themes that stayed (a place theme parked silent, the car
+        /// radio) withdraw the exit request the door put on them.
+        /// </summary>
+        private void RestoreMusicAfterDormancy()
+        {
+            if (Music == null || Music.IsDetachedForSceneExit)
+            {
+                GameObject musicObject = new GameObject("City Music");
+                musicObject.transform.SetParent(transform, false);
+                Music = musicObject.AddComponent<CityMusicPlayer>();
+            }
+
+            SceneMusicPlayer[] themes =
+                GetComponentsInChildren<SceneMusicPlayer>(true);
+            for (int index = 0; index < themes.Length; index++)
+            {
+                themes[index].CancelSceneExitFade();
+            }
+
+            // Requested exactly as a theme born in the build is; a theme
+            // that stayed (silent at the door, so never detached) would
+            // otherwise keep the silence the door left it in. The director
+            // below hands over to a place theme if the dock is inside one.
+            Music.ResumeWithFadeIn();
+            if (LocationMusic != null && LocationMusic.IsInitialized)
+            {
+                LocationMusic.ReplaceDefaultTheme(Music);
+            }
+        }
+
+        private void Sleep(GameObject target)
+        {
+            if (target == null || target == gameObject || !target.activeSelf)
+            {
+                return;
+            }
+
+            dormantObjects.Add(target);
+            target.SetActive(false);
+        }
+
+        private void Sleep(Behaviour target)
+        {
+            if (target == null || !target.enabled)
+            {
+                return;
+            }
+
+            dormantBehaviours.Add(target);
+            target.enabled = false;
         }
 
         private void InstallChurchGardenPot()

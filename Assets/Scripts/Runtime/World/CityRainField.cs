@@ -486,6 +486,24 @@ namespace BarPromenade
             particles.Play(true);
         }
 
+        /// <summary>
+        /// The system does not play on awake, so a field whose object was
+        /// deactivated - the City dormant behind a bar door - would come back
+        /// with an empty sky. Refilled and restarted the way the build
+        /// starts it; nothing to do at first activation, before Initialize.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (!IsInitialized || particles == null || particles.isPlaying)
+            {
+                return;
+            }
+
+            particles.Simulate(profile.PrewarmSeconds, true, true, true);
+            CullShelterCoreParticles();
+            particles.Play(true);
+        }
+
         private void ApplyWindDrift(Vector2 wind)
         {
             ParticleSystem.VelocityOverLifetimeModule velocity =

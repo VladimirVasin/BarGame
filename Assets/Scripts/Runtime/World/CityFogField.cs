@@ -81,6 +81,28 @@ namespace BarPromenade
             particles.Play(true);
         }
 
+        /// <summary>
+        /// The sheets do not play on awake, so a field whose object was
+        /// deactivated - the City dormant behind a bar door - would come
+        /// back clear. Refilled exactly as after leaving a shelter.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (!IsInitialized ||
+                isSheltered ||
+                particles == null ||
+                particles.isPlaying ||
+                player == null ||
+                particleTransform == null)
+            {
+                return;
+            }
+
+            PositionEmitter();
+            particles.Simulate(InitialFillSeconds, true, true, true);
+            particles.Play(true);
+        }
+
         private void LateUpdate()
         {
             if (!IsInitialized || player == null || particleTransform == null)

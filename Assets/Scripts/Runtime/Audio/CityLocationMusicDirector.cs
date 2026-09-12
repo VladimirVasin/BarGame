@@ -169,6 +169,37 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Hands the director a new scene theme after the old one left
+        /// through the mix with a door the City survived. Place themes
+        /// withdraw the exit request that door put on them, and the location
+        /// is observed afresh, so whatever the hero stands in owns the mix
+        /// from the first resumed frame - exactly as on a fresh build.
+        /// </summary>
+        internal void ReplaceDefaultTheme(SceneMusicPlayer sceneTheme)
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException(
+                    "The location music director is not initialized.");
+            }
+
+            defaultTheme = sceneTheme ??
+                throw new ArgumentNullException(nameof(sceneTheme));
+            for (int index = 0; index < slots.Length; index++)
+            {
+                SceneMusicPlayer theme = slots[index].Theme;
+                if (theme != null)
+                {
+                    theme.CancelSceneExitFade();
+                }
+            }
+
+            activeIndex = CityLocationMusicZones.NoLocationIndex;
+            hasObservedLocation = false;
+            RefreshLocation();
+        }
+
+        /// <summary>
         /// Reads where the hero is standing and hands the mix over when that
         /// changed. Returns true only when the observed place changed.
         /// </summary>

@@ -127,6 +127,19 @@ namespace BarPromenade
             Source.Play();
         }
 
+        /// <summary>
+        /// The bed is started once in Awake; a rain object re-activated
+        /// with a resident City restarts it here, at the volume the last
+        /// intensity left on the source.
+        /// </summary>
+        private void OnEnable()
+        {
+            if (Source != null && Source.clip != null && !Source.isPlaying)
+            {
+                Source.Play();
+            }
+        }
+
         public void SetIntensity(float intensity)
         {
             float clamped = Mathf.Clamp01(intensity);

@@ -198,6 +198,21 @@ namespace BarPromenade
             Source.Play();
         }
 
+        /// <summary>
+        /// Awake starts the bed once and the source does not play on awake,
+        /// so a bed whose object was deactivated - the City dormant behind a
+        /// bar door - would come back silent. Symmetric with the stop that
+        /// deactivation is; a no-op at first activation, where Awake has
+        /// just started it.
+        /// </summary>
+        protected virtual void OnEnable()
+        {
+            if (Source != null && Source.clip != null && !Source.isPlaying)
+            {
+                Source.Play();
+            }
+        }
+
         protected virtual void OnDestroy()
         {
             if (generatedClip == null)
