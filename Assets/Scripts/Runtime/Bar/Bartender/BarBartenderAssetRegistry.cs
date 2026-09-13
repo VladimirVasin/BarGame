@@ -389,8 +389,14 @@ namespace BarPromenade
             NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
         }
 
+        private void OnDisable()
+        {
+            NpcFootstepSources.Unregister(transform);
+        }
+
         private void OnEnable()
         {
+            NpcFootstepSources.Register(transform);
             ApplyBaseColors();
             SetServiceTowelVisible(true);
         }

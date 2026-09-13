@@ -62,7 +62,8 @@ namespace BarPromenade.Tests.EditMode
                     result.Root.GetComponentsInChildren<Collider>(true);
                 Assert.That(
                     colliders,
-                    Has.Length.EqualTo(result.ColliderCount));
+                    Has.Length.EqualTo(
+                        result.ColliderCount + result.FloorColliders.Count));
                 for (int index = 0; index < colliders.Length; index++)
                 {
                     Assert.That(
@@ -76,11 +77,75 @@ namespace BarPromenade.Tests.EditMode
                 AssertPublishedDescriptorOrder(result);
                 AssertExpandedKitchenRun(plan, result);
                 AssertStoolPositions(plan, result);
+                AssertLinoleumFloor(plan, result);
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(parent);
+                FootstepGroundOverlay.ResetForTests();
             }
+        }
+
+        /// <summary>
+        /// The slab is not an obstacle - the descriptor list and count the
+        /// prefab validation pins stay as they were - but it is the floor
+        /// a step inside the cafe reads, millimetres over the plateau.
+        /// </summary>
+        private static void AssertLinoleumFloor(
+            MountainRoadCafePlan plan,
+            MountainRoadCafeCollisionWorldResult result)
+        {
+            Assert.That(
+                result.FloorColliders,
+                Has.Count.EqualTo(
+                    MountainRoadCafeCollisionWorldBuilder.FloorColliderCount));
+            float expectedTop =
+                plan.FloorY + MountainRoadCafeCollisionWorldBuilder.FloorLift;
+            foreach (Collider floor in result.FloorColliders)
+            {
+                Assert.That(floor, Is.InstanceOf<BoxCollider>());
+                Assert.That(result.Colliders, Has.No.Member(floor));
+                var box = (BoxCollider)floor;
+                Assert.That(
+                    box.transform.position.y + box.size.y * 0.5f,
+                    Is.EqualTo(expectedTop).Within(0.0005f),
+                    floor.name);
+                Assert.That(
+                    floor.GetComponentInParent<FootstepGround>()?.Kind,
+                    Is.EqualTo(FootstepGroundKind.Tile),
+                    floor.name);
+
+                // Every slab corner stays inside the five-sided footprint:
+                // the chamfer staircase must not lay linoleum outside the
+                // glass. Tested two centimetres in from each corner, since
+                // the slabs meet the footprint's own edges exactly.
+                Vector3 half = box.size * 0.5f - new Vector3(0.02f, 0f, 0.02f);
+                for (int corner = 0; corner < 4; corner++)
+                {
+                    Vector3 local = new Vector3(
+                        (corner & 1) == 0 ? -half.x : half.x,
+                        box.size.y * 0.5f,
+                        (corner & 2) == 0 ? -half.z : half.z);
+                    Vector3 world = box.transform.TransformPoint(local);
+                    Assert.That(
+                        plan.ContainsInterior(world, 0f),
+                        Is.True,
+                        $"{floor.name} corner {corner} lies outside the cafe.");
+                }
+            }
+
+            // A step in the middle of the hall names the linoleum, not the
+            // snow the plateau is cut from.
+            Physics.SyncTransforms();
+            Assert.That(
+                HeroFootstepGround.TryResolve(
+                    plan.Center + Vector3.up * MountainRoadCafeCollisionWorldBuilder.FloorLift,
+                    null,
+                    out FootstepGroundKind kind,
+                    out Vector3 contact),
+                Is.True);
+            Assert.That(kind, Is.EqualTo(FootstepGroundKind.Tile));
+            Assert.That(contact.y, Is.EqualTo(expectedTop).Within(0.001f));
         }
 
         private static void AssertPublishedDescriptorOrder(

@@ -299,6 +299,7 @@ namespace BarPromenade
         {
             Transform root = new GameObject("Upper Embankments").transform;
             root.SetParent(parent, false);
+            FootstepGround.Stamp(root, FootstepGroundKind.Stone);
             for (int bankIndex = 0;
                  bankIndex < layout.River.Promenades.Count;
                  bankIndex++)
@@ -697,6 +698,7 @@ namespace BarPromenade
         {
             Transform banks = new GameObject("Upper Embankments").transform;
             banks.SetParent(parent, false);
+            FootstepGround.Stamp(banks, FootstepGroundKind.Stone);
             BuildRiverCaveBank(
                 banks,
                 "River Cave West Bank Approach",
@@ -863,6 +865,9 @@ namespace BarPromenade
             Rect span = bridge.SpanBounds;
             float deckY = bridge.AverageY + CityStreetSurfacePlanner.RoadTop;
             bool works = bridge.Definition.Style == CityBridgeStyle.Works;
+            FootstepGround.Stamp(
+                root,
+                works ? FootstepGroundKind.Concrete : FootstepGroundKind.Stone);
             Color structure = works ? WorksSteel : MouthStone;
             Color accent = works ? WorksAccent : GraniteEdge;
             CityRiverSurfaceKind surface = ResolveBridgeSurface(
@@ -1045,6 +1050,7 @@ namespace BarPromenade
             Transform root = new GameObject(
                 "Central Park Timber Footbridge").transform;
             root.SetParent(parent, false);
+            FootstepGround.Stamp(root, FootstepGroundKind.Wood);
             Rect span = bridge.SpanBounds;
             float deckY = bridge.AverageY +
                           CityStreetSurfacePlanner.RoadTop;
@@ -1156,6 +1162,7 @@ namespace BarPromenade
             Transform root = new GameObject(
                 "Lower River Landings").transform;
             root.SetParent(parent, false);
+            FootstepGround.Stamp(root, FootstepGroundKind.Stone);
             for (int index = 0; index < layout.River.Landings.Count; index++)
             {
                 CityRiverLandingDescriptor landing =

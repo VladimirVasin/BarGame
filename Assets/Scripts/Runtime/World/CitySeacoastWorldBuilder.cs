@@ -336,6 +336,12 @@ namespace BarPromenade
                         surface.Value,
                         ResolveColor(key.Style));
                 }
+
+                FootstepGroundKind footstep = ResolveFootstep(key.Style);
+                if (footstep != FootstepGroundKind.None)
+                {
+                    FootstepGround.Stamp(chunk, footstep);
+                }
             }
 
             keys = new List<BatchKey>(importedBatches.Keys);
@@ -381,6 +387,11 @@ namespace BarPromenade
                         ResolveColor(key.Style),
                         true);
                 proxy.GetComponent<Renderer>().enabled = false;
+                FootstepGroundKind footstep = ResolveFootstep(key.Style);
+                if (footstep != FootstepGroundKind.None)
+                {
+                    FootstepGround.Stamp(proxy, footstep);
+                }
             }
         }
 
@@ -805,6 +816,30 @@ namespace BarPromenade
                 part.Center,
                 part.Rotation,
                 part.Size));
+        }
+
+        /// <summary>
+        /// What a boot hears on a style that can be stood on. Hull paint,
+        /// iron and the ankle-high dressings stay unstamped: a step on
+        /// them is the plain footstep, as it was.
+        /// </summary>
+        private static FootstepGroundKind ResolveFootstep(
+            CitySeacoastStyle style)
+        {
+            switch (style)
+            {
+                case CitySeacoastStyle.Concrete:
+                    return FootstepGroundKind.Concrete;
+                case CitySeacoastStyle.Granite:
+                    return FootstepGroundKind.Stone;
+                case CitySeacoastStyle.Planking:
+                case CitySeacoastStyle.TarredTimber:
+                    return FootstepGroundKind.Wood;
+                case CitySeacoastStyle.Sand:
+                    return FootstepGroundKind.Sand;
+                default:
+                    return FootstepGroundKind.None;
+            }
         }
 
         private static CitySeacoastSurfaceKind? ResolveSurface(

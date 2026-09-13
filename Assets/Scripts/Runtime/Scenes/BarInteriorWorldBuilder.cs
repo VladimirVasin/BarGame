@@ -114,6 +114,9 @@ namespace BarPromenade
             //  collision behind, and so the boxes hang off the room
             //  rather than off a model part.
             AddColliders(room, registry);
+            //  Before the registry goes with `instance`: the guard reads
+            //  the carpet parts through it.
+            AddCarpetOverlays(room, registry);
             EnsureRegularStoolSeatColliders(room);
             Object.DestroyImmediate(instance);
             return room;
@@ -336,7 +339,139 @@ namespace BarPromenade
                     BoxCollider collider =
                         holder.AddComponent<BoxCollider>();
                     collider.size = spec.Size;
+                    if (partName == FloorPartName)
+                    {
+                        FootstepGround.Stamp(holder, FootstepGroundKind.Wood);
+                    }
                 }
+            }
+        }
+
+        // ------------------------------------------------ footsteps --
+
+        private const string FloorPartName = "Floor";
+        private const string CarpetFieldsPartName = "Pub Carpet Fields";
+        private const string BayRugPartName = "Activity Bay Rug";
+        private const float CarpetDriftTolerance = 0.05f;
+
+        /// <summary>
+        /// The carpet fields and the bay rug as the model lays them, in
+        /// room-space metres - the numbers `tools/build-bar-3d-model.py`
+        /// gives `carpet_fields` and the rug. They are render-only parts
+        /// with no collider, and the fields are ONE merged mesh, so its
+        /// bounds alone would lay carpet across the plank aisle between the
+        /// two big fields. The rectangles are repeated here, and
+        /// <see cref="GuardCarpetDrift"/> refuses a model whose part no
+        /// longer fits them, so the two cannot drift apart unnoticed.
+        /// </summary>
+        private static readonly RuntimeOrientedBox[] CarpetFields =
+        {
+            RoomBox(-0.75f, 0.018f, -0.65f, 7.50f, 0.035f, 8.05f),
+            RoomBox(-8.72f, 0.018f, -0.40f, 4.10f, 0.035f, 10.75f),
+            RoomBox(0.0f, 0.018f, -6.20f, 2.05f, 0.035f, 2.25f)
+        };
+
+        private static readonly RuntimeOrientedBox[] BayRug =
+        {
+            RoomBox(7.00f, 0.018f, 0.55f, 6.15f, 0.035f, 5.65f)
+        };
+
+        private static RuntimeOrientedBox RoomBox(
+            float x, float y, float z,
+            float width, float height, float depth)
+        {
+            return new RuntimeOrientedBox(
+                new Vector3(x, y, z),
+                Quaternion.identity,
+                new Vector3(width, height, depth));
+        }
+
+        private static void AddCarpetOverlays(
+            Transform room,
+            BarAssetRegistry registry)
+        {
+            AddCarpetOverlay(room, registry, CarpetFieldsPartName, CarpetFields);
+            AddCarpetOverlay(room, registry, BayRugPartName, BayRug);
+        }
+
+        private static void AddCarpetOverlay(
+            Transform room,
+            BarAssetRegistry registry,
+            string partName,
+            RuntimeOrientedBox[] roomBoxes)
+        {
+            Renderer renderer = FindPartRenderer(registry, partName);
+            if (renderer != null)
+            {
+                GuardCarpetDrift(room, renderer, partName, roomBoxes);
+            }
+
+            var holder = new GameObject(partName + " Footstep");
+            holder.transform.SetParent(room, false);
+            var world = new RuntimeOrientedBox[roomBoxes.Length];
+            for (int index = 0; index < roomBoxes.Length; index++)
+            {
+                RuntimeOrientedBox box = roomBoxes[index];
+                world[index] = new RuntimeOrientedBox(
+                    room.TransformPoint(box.Center),
+                    room.rotation * box.Rotation,
+                    Vector3.Scale(box.Size, room.lossyScale));
+            }
+
+            holder.AddComponent<FootstepGroundOverlay>()
+                .Initialize(FootstepGroundKind.Carpet, world);
+        }
+
+        private static Renderer FindPartRenderer(
+            BarAssetRegistry registry,
+            string partName)
+        {
+            foreach (BarPartBinding binding in registry.Parts)
+            {
+                Renderer renderer = binding?.Renderer;
+                if (renderer != null &&
+                    renderer.gameObject.name == partName)
+                {
+                    return renderer;
+                }
+            }
+
+            return null;
+        }
+
+        private static void GuardCarpetDrift(
+            Transform room,
+            Renderer renderer,
+            string partName,
+            RuntimeOrientedBox[] roomBoxes)
+        {
+            Bounds authored = default;
+            for (int index = 0; index < roomBoxes.Length; index++)
+            {
+                var box = new Bounds(
+                    roomBoxes[index].Center,
+                    roomBoxes[index].Size);
+                if (index == 0)
+                {
+                    authored = box;
+                }
+                else
+                {
+                    authored.Encapsulate(box);
+                }
+            }
+
+            Bounds actual = CalculateRendererBoundsInSpace(renderer, room);
+            if (Mathf.Abs(authored.min.x - actual.min.x) > CarpetDriftTolerance ||
+                Mathf.Abs(authored.max.x - actual.max.x) > CarpetDriftTolerance ||
+                Mathf.Abs(authored.min.z - actual.min.z) > CarpetDriftTolerance ||
+                Mathf.Abs(authored.max.z - actual.max.z) > CarpetDriftTolerance)
+            {
+                throw new System.InvalidOperationException(
+                    $"The bar model's '{partName}' spans {actual} in the " +
+                    $"room while the footstep overlay repeats {authored}: " +
+                    "update the carpet rectangles in BarInteriorWorldBuilder " +
+                    "alongside tools/build-bar-3d-model.py.");
             }
         }
 

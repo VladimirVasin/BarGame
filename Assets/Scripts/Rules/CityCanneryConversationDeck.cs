@@ -18,14 +18,14 @@ namespace BarPromenade
             (Variant + 1).ToString("D2") + (reply ? ".b" : ".a");
     }
 
-    /// <summary>Only the four existing factory roles. No driver, hero or new speaker.</summary>
+    /// <summary>The four factory roles, including the woman's own lines at the seamer. No driver or hero.</summary>
     public static class CityCanneryConversationCatalog
     {
         public const int RoleCount = 4;
         private static readonly int[][] pairs =
         {
-            new[] { 1, 2, 2, 1, 2, 3, 3, 2, 0, 1, 1, 0 },
-            new[] { 0, 1, 1, 2, 2, 3, 3, 2, 2, 1, 1, 0 },
+            new[] { 1, 2, 2, 1, 2, 3, 3, 2, 0, 1, 1, 0, 2, 1, 3, 2 },
+            new[] { 0, 1, 1, 2, 2, 3, 3, 2, 2, 1, 1, 0, 2, 0, 1, 2, 2, 3, 0, 2 },
             new[] { 0, 1, 1, 0, 1, 2, 2, 3 }
         };
 

@@ -1,27 +1,24 @@
 # Art and native tool entry points
 
-`build-city-cannery-3d-model.py`: ten metre FBXs/`CityCannery3D.json` in
-`Assets/Resources/City/Cannery`, source `ArtSource/City/Cannery`; shared port maps.
-Equipment: outdoor scale/supports; `CartonStack`: one articulated carton.
-Validator: metre contacts, scale/truck/`.29 m` crew clearance, UVs/determinism:
+`build-city-cannery-3d-model.py`: ten metre FBXs/manifest in `Assets/Resources/City/Cannery`,
+source `ArtSource/City/Cannery`; port maps, outdoor scales, articulated `CartonStack`.
+Validator: contacts/scale/truck/`.29 m` crew clearance/UVs/determinism.
+`build-cannery-woman-3d-model.py`: `Woman/CanneryWoman{,Actions}.fbx`/JSONs,
+wardrobe/painted-face PNGs; source/review views `ArtSource/City/CanneryWoman`.
+Five clips, hero rig, mesh/atlas hashes, garment/hair clearance across phases:
 
 ```powershell
 python tools/run-blender.py tools/build-city-cannery-3d-model.py --validate-only -- --validate-only
+python tools/run-blender.py tools/build-cannery-woman-3d-model.py --validate-only -- --validate-only
 ```
 
-`build-city-port-3d-model.py`: 9 FBXs/`CityPort3D.json`: `Assets/Resources/City/Port`;
-source `ArtSource/City/Port`; grips/store/beam, `PortAccessLayout.json`, metre UVs/anchors.
-Twelve ImageGen maps: `512 px`, sRGB/mipmap/repeat; originals/prompts/hashes in
-`ArtSource/City/Port/Textures/generation.json`. Asphalt: city `12 m`; pixels outside mesh hashes.
-`build-city-port-foreman-3d-model.py`: `Foreman/PortForeman` model/manifest,
-`PortForemanActions.fbx`, `PortForemanAtlas.png`; continuous lower face and chin/jowl
-blendshapes, mouth/export validation. `python tools/dialogue_face_atlas.py [--validate-only]`
-derives face PNGs/manifest from atlases; no Blender.
-
-```powershell
-python tools/run-blender.py tools/build-city-port-3d-model.py --expect Assets/Resources/City/Port/CityPort3D.json -- --no-preview
-python tools/run-blender.py tools/build-city-port-3d-model.py --validate-only -- --validate-only
-```
+`build-city-port-3d-model.py`: same launcher/`--validate-only`, nine FBXs/`CityPort3D.json` in
+`Assets/Resources/City/Port`, source `ArtSource/City/Port`, grips/store/beam/
+`PortAccessLayout.json`/metre UVs. Twelve `512 px` ImageGen maps (sRGB/mipmap/repeat):
+originals/prompts/hashes `ArtSource/City/Port/Textures/generation.json`, outside mesh hashes;
+asphalt city `12 m`. `build-city-port-foreman-3d-model.py`: `Foreman/PortForeman`
+model/manifest/actions/atlas, continuous lower face/chin-jowl shapes/mouth/export validation.
+`python tools/dialogue_face_atlas.py [--validate-only]`: face PNGs/manifest, no Blender.
 
 The Ferryman's coin and glovebox contents share one small passive resource.
 `build-last-route-coin-3d-model.py` preserves the earlier octagonal brass coin's

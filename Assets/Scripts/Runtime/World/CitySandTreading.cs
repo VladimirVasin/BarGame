@@ -146,7 +146,7 @@ namespace BarPromenade
             if (!TryFindBeachContact(position, out Vector3 contact)) return false;
             float depth = SampleVisibleDepth(contact);
             Press(contact);
-            RetroAudio.PlayAt(RetroSfxId.FootstepSoil, contact);
+            RetroAudio.PlayAt(RetroSfxId.FootstepSand, contact);
             if (depth > 0.015f)
             {
                 AlpineVillageSnowKickup.Spawn(

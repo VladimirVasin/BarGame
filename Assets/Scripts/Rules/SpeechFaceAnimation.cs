@@ -2,7 +2,7 @@ using System;
 
 namespace BarPromenade
 {
-    public enum SpeechFaceProfile { Hero, Foreman }
+    public enum SpeechFaceProfile { Hero, Foreman, CanneryWoman }
     public enum SpeechMouthPose { Closed = 0, Narrow = 1, Open = 2, Round = 3, Wide = 4, Teeth = 5 }
     public enum SpeechFaceExpression { Rest = 0, HalfBlink = 1, Blink = 2, Emphasis = 3, Skeptical = 4 }
 
@@ -66,6 +66,10 @@ namespace BarPromenade
             SpeechFaceExpression blink = ResolveBlink(profile, actorSeconds);
             if (blink != SpeechFaceExpression.Rest)
                 return new SpeechFacePose(SpeechMouthPose.Closed, blink);
+            // Her ordinary attentive face stays quiet; warmth is an authored
+            // social cue owned by the actual exchange, never a periodic smile.
+            if (profile == SpeechFaceProfile.CanneryWoman)
+                return new SpeechFacePose(SpeechMouthPose.Closed, SpeechFaceExpression.Rest);
             // A held, occasional listening squint; the foreman keeps it longer. It never mouths
             // silent choices, and is independent of the speaker's mouth and line boundaries.
             double phase = Phase(actorSeconds + (profile == SpeechFaceProfile.Hero ? .7d : 2.1d), 6.8d);
@@ -82,7 +86,7 @@ namespace BarPromenade
             // its CPS or estimating the reveal from time. Word/punctuation closures are immediate.
             // Short replies need a second articulation before their final letter closes the
             // mouth. In particular, "Хочу" must not hold its initial х for the entire reply.
-            int stride = profile == SpeechFaceProfile.Hero && sample.Text.Length > 12 ? 3 : 2;
+            int stride = profile != SpeechFaceProfile.Foreman && sample.Text.Length > 12 ? 3 : 2;
             int current = sample.RevealedCharacters - 1;
             int cue = current - current % stride;
             // A new word can start inside a held group. Do not let its preceding space hold
@@ -112,6 +116,9 @@ namespace BarPromenade
         {
             SpeechFaceExpression blink = ResolveBlink(profile, actorSeconds);
             if (blink != SpeechFaceExpression.Rest) return blink;
+            if (profile == SpeechFaceProfile.CanneryWoman)
+                return Phase(sample.ElapsedSeconds, 2.3d) < .48d
+                    ? SpeechFaceExpression.Emphasis : SpeechFaceExpression.Rest;
             int current = sample.RevealedCharacters - 1;
             int phrase = 0;
             for (int index = 0; index < current; index++)
@@ -141,7 +148,7 @@ namespace BarPromenade
         private static SpeechFaceExpression ResolveBlink(SpeechFaceProfile profile, double seconds)
         {
             double phase = Phase(seconds + (profile == SpeechFaceProfile.Hero ? .43d : 1.27d),
-                profile == SpeechFaceProfile.Hero ? 4.1d : 3.55d);
+                profile == SpeechFaceProfile.CanneryWoman ? 4.65d : profile == SpeechFaceProfile.Hero ? 4.1d : 3.55d);
             if (phase < .055d || phase >= .14d && phase < .205d) return SpeechFaceExpression.HalfBlink;
             return phase < .14d ? SpeechFaceExpression.Blink : SpeechFaceExpression.Rest;
         }

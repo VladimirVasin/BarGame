@@ -1,0 +1,61 @@
+{
+  "generator": "build-cannery-woman-3d-model.py",
+  "version": "1.0.0",
+  "bone_count": 43,
+  "fps": 24,
+  "root_motion": false,
+  "clips": [
+    {
+      "name": "CanneryWomanIdle",
+      "duration_seconds": 8.0,
+      "loop": true
+    },
+    {
+      "name": "CanneryWomanWalk",
+      "duration_seconds": 1.375,
+      "loop": true
+    },
+    {
+      "name": "CanneryWomanWork",
+      "duration_seconds": 6.0,
+      "loop": true
+    },
+    {
+      "name": "CanneryWomanListen",
+      "duration_seconds": 5.0,
+      "loop": true
+    },
+    {
+      "name": "CanneryWomanBreak",
+      "duration_seconds": 11.0,
+      "loop": true
+    }
+  ],
+  "work_grips_unity": {
+    "L": [
+      0.17,
+      1.02,
+      0.54
+    ],
+    "R": [
+      -0.17,
+      1.02,
+      0.54
+    ]
+  },
+  "validation": {
+    "max_ground_error_m": 1e-07,
+    "max_grip_error_m": 4e-07,
+    "max_loop_endpoint_error": 0.0,
+    "layer_clearance_min_m": {
+      "hem_inside_jeans_m": 0.0036066,
+      "sleeve_root_inside_top_m": 0.0052211,
+      "kerchief_outer_to_crown_m": 0.0025955,
+      "free_hair_between_layers_m": 0.0173881,
+      "free_hair_to_clothing_m": 0.0057189,
+      "nape_scalp_to_skull_m": 0.0011467,
+      "nape_scalp_to_body_m": 0.0177072
+    },
+    "curve_signature": "ccd59e8d123334dd85169bb5db149a0095bb85441f6f61e20eaabaf5f5a3e798"
+  }
+}

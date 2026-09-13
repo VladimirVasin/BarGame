@@ -65,6 +65,7 @@ namespace BarPromenade
                     null,
                     CityTerrainSurfaceAreaFilter.Excluding(
                         mountainAreaIds));
+            FootstepGround.Stamp(genericGround, FootstepGroundKind.Soil);
 
             GameObject mountainGround = null;
             if (mountainAreaIds.Count > 0)
@@ -85,6 +86,9 @@ namespace BarPromenade
                         mountainAreaIds));
                 if (mountainGround != null)
                 {
+                    FootstepGround.Stamp(
+                        mountainGround,
+                        FootstepGroundKind.Soil);
                     CityFringeYardSurfaceAppearance.ApplyCombined(
                         mountainGround.GetComponent<Renderer>(),
                         CityFringeYardSurfaceKind.ForefieldGround,

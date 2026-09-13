@@ -284,6 +284,7 @@ namespace BarPromenade
                 deck.GetComponent<Renderer>(),
                 MountainRoadSurfaceKind.Concrete,
                 AgedConcrete);
+            FootstepGround.Stamp(deck, FootstepGroundKind.Concrete);
             return deck;
         }
 

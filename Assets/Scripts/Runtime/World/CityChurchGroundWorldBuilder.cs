@@ -52,6 +52,7 @@ namespace BarPromenade
                 GardenGrass);
             CloseTerrainSkirt(ground, layout, church.Grounds);
             ReplaceGrassUnderPaving(ground, layout, church);
+            FootstepGround.Stamp(ground, FootstepGroundKind.Grass);
             BuildFence(ground.transform,
                 CityChurchGroundPlan.CreateFenceSpans(layout, church));
             return ground;

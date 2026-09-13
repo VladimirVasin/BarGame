@@ -575,20 +575,22 @@ namespace BarPromenade
             float slabThickness =
                 PlayerHomeBalconyGeometry
                     .BalconySlabThickness;
-            CreateExteriorSurfaceBox(
-                "Home Balcony Deck",
-                parent,
-                new Vector3(
-                    bounds.center.x,
-                    -slabThickness * 0.5f,
-                    bounds.center.y),
-                new Vector3(
-                    bounds.width,
-                    slabThickness,
-                    bounds.height),
-                PlayerHomeExteriorSurfaceKind.Concrete,
-                SurfaceProjection.BoxXZ,
-                true);
+            FootstepGround.Stamp(
+                CreateExteriorSurfaceBox(
+                    "Home Balcony Deck",
+                    parent,
+                    new Vector3(
+                        bounds.center.x,
+                        -slabThickness * 0.5f,
+                        bounds.center.y),
+                    new Vector3(
+                        bounds.width,
+                        slabThickness,
+                        bounds.height),
+                    PlayerHomeExteriorSurfaceKind.Concrete,
+                    SurfaceProjection.BoxXZ,
+                    true),
+                FootstepGroundKind.Concrete);
 
             CreateExteriorSurfaceBox(
                 "Home Balcony Threshold",

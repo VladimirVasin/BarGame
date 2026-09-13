@@ -58,6 +58,8 @@ namespace BarPromenade
             Transform collisionRoot = new GameObject(
                 CollisionRootName).transform;
             collisionRoot.SetParent(root, false);
+            // Every walkable box under this root is the nave's stone floor.
+            FootstepGround.Stamp(collisionRoot, FootstepGroundKind.Stone);
             var colliders = new List<Collider>();
             BuildRoomCollision(collisionRoot, plan, colliders);
             BuildFixtureCollision(collisionRoot, plan, colliders);

@@ -65,6 +65,8 @@ namespace BarPromenade
                 Transform collisionRoot = new GameObject(
                     CollisionRootName).transform;
                 collisionRoot.SetParent(root, false);
+                // Boards on both storeys and up the stair ramp between.
+                FootstepGround.Stamp(collisionRoot, FootstepGroundKind.Wood);
                 var colliders = new List<Collider>();
                 Collider stairRamp = BuildRoomCollision(
                     collisionRoot,

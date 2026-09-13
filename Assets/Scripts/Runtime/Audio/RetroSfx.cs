@@ -55,6 +55,17 @@ namespace BarPromenade
         VomitGush,
         VomitSplat,
         VomitCough,
+        // One cue per ground the hero can stand on. Snow and soil above
+        // came first; these complete the set and, like every member, sit
+        // before Count with their definitions at the END of the table.
+        FootstepConcrete,
+        FootstepStone,
+        FootstepGrass,
+        FootstepSand,
+        FootstepWood,
+        FootstepCarpet,
+        FootstepTile,
+        FootstepPuddle,
         Count
     }
 
@@ -72,7 +83,8 @@ namespace BarPromenade
             int quantizationSteps,
             float lowPassFrequency,
             float pitchVariation,
-            int priority)
+            int priority,
+            int variantCount = 1)
         {
             Id = id;
             Category = category;
@@ -86,6 +98,7 @@ namespace BarPromenade
             LowPassFrequency = lowPassFrequency;
             PitchVariation = pitchVariation;
             Priority = priority;
+            VariantCount = Math.Max(1, variantCount);
         }
 
         public RetroSfxId Id { get; }
@@ -100,6 +113,14 @@ namespace BarPromenade
         public float LowPassFrequency { get; }
         public float PitchVariation { get; }
         public int Priority { get; }
+
+        /// <summary>
+        /// How many differently seeded clips the service keeps for this
+        /// cue. One for nearly everything; a footstep gets three, because
+        /// the same sample every 1.35 m is a metronome, and the pitch
+        /// wander alone never hid that.
+        /// </summary>
+        public int VariantCount { get; }
     }
 
     public static class RetroSfxLibrary
@@ -173,7 +194,8 @@ namespace BarPromenade
                 512,
                 4400f,
                 0.08f,
-                132),
+                132,
+                3),
             new RetroSfxDefinition(
                 RetroSfxId.Door,
                 RetroSfxCategory.World,
@@ -556,7 +578,8 @@ namespace BarPromenade
                 512,
                 5200f,
                 0.18f,
-                131),
+                131,
+                3),
             // And the trodden path answers back: shorter and drier than
             // snow, with a knock the snow has not got. This is what makes a
             // route audible - step off the path and the sound changes before
@@ -573,7 +596,8 @@ namespace BarPromenade
                 512,
                 3600f,
                 0.10f,
-                131),
+                131,
+                3),
             // The drunk hero's hiccup, on the last stage while he fights
             // the nausea down: a body sound of his own like his footsteps,
             // placed at his head. One voice — a hiccup over a hiccup is a
@@ -660,7 +684,130 @@ namespace BarPromenade
                 512,
                 3800f,
                 0.10f,
-                130)
+                130),
+            // The ground cues. Each is what the same boot sounds like on a
+            // different floor, so they share the footstep's cooldown and
+            // voice budget and differ in body: the road stops the foot
+            // dead (short, a flat thump, no glide), granite adds a tick,
+            // grass and sand swallow the knock, a board rings under it, a
+            // carpet muffles everything, tile is a slap, and a puddle is
+            // the one step that starts late and ends with drops. The tight
+            // pitch wander on the hard floors says "hard, regular"; the
+            // wide one on grass and sand says no two steps alike.
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepConcrete,
+                RetroSfxCategory.World,
+                0.09f,
+                0.21f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                4800f,
+                0.06f,
+                132,
+                3),
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepStone,
+                RetroSfxCategory.World,
+                0.10f,
+                0.22f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                6400f,
+                0.08f,
+                132,
+                3),
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepGrass,
+                RetroSfxCategory.World,
+                0.16f,
+                0.17f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                3200f,
+                0.14f,
+                131,
+                3),
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepSand,
+                RetroSfxCategory.World,
+                0.15f,
+                0.20f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                3000f,
+                0.16f,
+                131,
+                3),
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepWood,
+                RetroSfxCategory.World,
+                0.13f,
+                0.22f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                3800f,
+                0.09f,
+                132,
+                3),
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepCarpet,
+                RetroSfxCategory.World,
+                0.12f,
+                0.15f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                1400f,
+                0.10f,
+                130,
+                3),
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepTile,
+                RetroSfxCategory.World,
+                0.08f,
+                0.20f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                7000f,
+                0.06f,
+                132,
+                3),
+            // Two voices: a run through a gutter puddle clusters splashes
+            // and the second must not wait for the first's tail.
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepPuddle,
+                RetroSfxCategory.World,
+                0.22f,
+                0.24f,
+                1f,
+                2,
+                0.075f,
+                3,
+                512,
+                5200f,
+                0.12f,
+                131,
+                3)
         };
 
         public static int Count => definitions.Length - 1;
@@ -694,15 +841,92 @@ namespace BarPromenade
             return definition;
         }
 
+        /// <summary>Every clip the service generates, variants included.</summary>
+        public static int TotalClipCount
+        {
+            get
+            {
+                int total = 0;
+                for (int index = 1; index < definitions.Length; index++)
+                {
+                    total += definitions[index].VariantCount;
+                }
+
+                return total;
+            }
+        }
+
+        /// <summary>
+        /// The variant to play after <paramref name="lastVariant"/>: never
+        /// the same one twice running, and every one in turn over a short
+        /// sequence. Pure, so the choice is testable without a service.
+        /// </summary>
+        public static int NextVariant(
+            int lastVariant,
+            int variantCount,
+            uint sequence)
+        {
+            if (variantCount <= 1)
+            {
+                return 0;
+            }
+
+            int last = Mathf.Clamp(lastVariant, 0, variantCount - 1);
+            // Hash the sequence before taking it modulo: on a walk only
+            // footsteps advance it, and a bare `sequence % 2` would then
+            // alternate two of three variants forever.
+            uint mixed = sequence * 2654435761u;
+            mixed ^= mixed >> 15;
+            mixed *= 2246822519u;
+            mixed ^= mixed >> 13;
+            int advance = 1 + (int)(mixed % (uint)(variantCount - 1));
+            return (last + advance) % variantCount;
+        }
+
+        /// <summary>
+        /// The tonal detune of a variant. Variant 0 is the canonical clip
+        /// and stays bit-identical to the single-clip days; the others
+        /// step down and up by four percent in turn, so a footstep's
+        /// variants differ in the body of the knock and not only in the
+        /// grain of the noise.
+        /// </summary>
+        internal static float VariantDetune(int variant)
+        {
+            if (variant <= 0)
+            {
+                return 1f;
+            }
+
+            int step = (variant + 1) / 2;
+            return variant % 2 == 1
+                ? 1f - 0.04f * step
+                : 1f + 0.04f * step;
+        }
+
         public static float[] GenerateSamples(RetroSfxId id)
         {
+            return GenerateSamples(id, 0);
+        }
+
+        public static float[] GenerateSamples(RetroSfxId id, int variant)
+        {
             RetroSfxDefinition definition = GetDefinition(id);
+            if (variant < 0 || variant >= definition.VariantCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(variant));
+            }
+
             int sampleCount = Mathf.Max(
                 1,
                 Mathf.CeilToInt(definition.Duration * SampleRate));
             var samples = new float[sampleCount];
+            // Variant 0 XORs in zero, so it is the seed every clip had
+            // before variants existed.
             uint noiseState =
-                0x9E3779B9u ^ ((uint)id * 0x85EBCA6Bu);
+                0x9E3779B9u ^
+                ((uint)id * 0x85EBCA6Bu) ^
+                ((uint)variant * 0xC2B2AE35u);
+            float detune = VariantDetune(variant);
             int holdLength = Mathf.Max(1, definition.SampleHold);
             float quantizationScale =
                 Mathf.Max(2, definition.QuantizationSteps);
@@ -725,7 +949,8 @@ namespace BarPromenade
                         id,
                         time,
                         definition.Duration,
-                        ref noiseState);
+                        ref noiseState,
+                        detune);
                     heldSample =
                         Mathf.Round(heldSample * quantizationScale) /
                         quantizationScale;
@@ -744,9 +969,16 @@ namespace BarPromenade
 
         internal static AudioClip CreateRuntimeClip(RetroSfxId id)
         {
-            float[] samples = GenerateSamples(id);
+            return CreateRuntimeClip(id, 0);
+        }
+
+        internal static AudioClip CreateRuntimeClip(RetroSfxId id, int variant)
+        {
+            float[] samples = GenerateSamples(id, variant);
             AudioClip clip = AudioClip.Create(
-                "RetroSfx_" + id,
+                variant == 0
+                    ? "RetroSfx_" + id
+                    : "RetroSfx_" + id + "_" + variant,
                 samples.Length,
                 1,
                 SampleRate,
@@ -760,7 +992,8 @@ namespace BarPromenade
             RetroSfxId id,
             float time,
             float duration,
-            ref uint noiseState)
+            ref uint noiseState,
+            float detune)
         {
             switch (id)
             {
@@ -776,7 +1009,8 @@ namespace BarPromenade
                     return GenerateFootstep(
                         time,
                         duration,
-                        ref noiseState);
+                        ref noiseState,
+                        detune);
                 case RetroSfxId.Hiccup:
                     return GenerateHiccup(
                         time,
@@ -811,7 +1045,56 @@ namespace BarPromenade
                     return GenerateFootstepSoil(
                         time,
                         duration,
-                        ref noiseState);
+                        ref noiseState,
+                        detune);
+                case RetroSfxId.FootstepConcrete:
+                    return GenerateFootstepConcrete(
+                        time,
+                        duration,
+                        ref noiseState,
+                        detune);
+                case RetroSfxId.FootstepStone:
+                    return GenerateFootstepStone(
+                        time,
+                        duration,
+                        ref noiseState,
+                        detune);
+                case RetroSfxId.FootstepGrass:
+                    return GenerateFootstepGrass(
+                        time,
+                        duration,
+                        ref noiseState,
+                        detune);
+                case RetroSfxId.FootstepSand:
+                    return GenerateFootstepSand(
+                        time,
+                        duration,
+                        ref noiseState,
+                        detune);
+                case RetroSfxId.FootstepWood:
+                    return GenerateFootstepWood(
+                        time,
+                        duration,
+                        ref noiseState,
+                        detune);
+                case RetroSfxId.FootstepCarpet:
+                    return GenerateFootstepCarpet(
+                        time,
+                        duration,
+                        ref noiseState,
+                        detune);
+                case RetroSfxId.FootstepTile:
+                    return GenerateFootstepTile(
+                        time,
+                        duration,
+                        ref noiseState,
+                        detune);
+                case RetroSfxId.FootstepPuddle:
+                    return GenerateFootstepPuddle(
+                        time,
+                        duration,
+                        ref noiseState,
+                        detune);
                 case RetroSfxId.Door:
                     return GenerateDoor(
                         time,
@@ -996,14 +1279,15 @@ namespace BarPromenade
         private static float GenerateFootstep(
             float time,
             float duration,
-            ref uint noiseState)
+            ref uint noiseState,
+            float detune)
         {
             float envelope = Envelope(time, duration, 0.002f, 3.1f);
             float thump = GlideSine(
                 time,
                 duration,
-                105f,
-                52f);
+                105f * detune,
+                52f * detune);
             return (
                        thump * 0.68f +
                        NextNoise(ref noiseState) * 0.32f) *
@@ -1042,19 +1326,179 @@ namespace BarPromenade
         private static float GenerateFootstepSoil(
             float time,
             float duration,
-            ref uint noiseState)
+            ref uint noiseState,
+            float detune)
         {
             float envelope = Envelope(time, duration, 0.002f, 4.2f);
             float knock = GlideSine(
                 time,
                 duration,
-                168f,
-                84f);
+                168f * detune,
+                84f * detune);
             return (
                        knock * 0.45f +
                        NextNoise(ref noiseState) * 0.55f) *
                    envelope *
                    0.8f;
+        }
+
+        /// <summary>
+        /// The road and every poured floor: the foot is stopped dead, so
+        /// the slap is over in a few milliseconds and what remains is a
+        /// flat body at a FIXED pitch. No glide - a glide is the give of
+        /// something under the boot, and asphalt has none.
+        /// </summary>
+        private static float GenerateFootstepConcrete(
+            float time,
+            float duration,
+            ref uint noiseState,
+            float detune)
+        {
+            float slap = Envelope(time, duration, 0.0005f, 14f);
+            float body = Envelope(time, duration, 0.002f, 6f);
+            return NextNoise(ref noiseState) * 0.55f * slap +
+                   Triangle(88f * detune, time) * 0.35f * body;
+        }
+
+        /// <summary>
+        /// Paving flags and granite: the concrete's slap with a knock under
+        /// it and a tick on top. The tick is a fixed high triangle a few
+        /// milliseconds long - long enough to be heard as stone, too short
+        /// to be heard as a note - and the knock's glide starts well under
+        /// the BLASTER register the snow step once fell into.
+        /// </summary>
+        private static float GenerateFootstepStone(
+            float time,
+            float duration,
+            ref uint noiseState,
+            float detune)
+        {
+            float knock = Envelope(time, duration, 0.001f, 7f);
+            float bite = Envelope(time, duration, 0.0005f, 16f);
+            float tick = Envelope(time, duration, 0.0005f, 22f);
+            return GlideSine(time, duration, 220f * detune, 110f * detune) *
+                   0.35f * knock +
+                   NextNoise(ref noiseState) * 0.45f * bite +
+                   Triangle(1400f * detune, time) * 0.10f * tick;
+        }
+
+        /// <summary>
+        /// A lawn swallows the impact: no knock at all, a slow attack, and
+        /// a duller roll-off than snow, whose grain is crisp. The slow
+        /// flutter on the second noise layer is the blades giving way one
+        /// after another rather than all at once.
+        /// </summary>
+        private static float GenerateFootstepGrass(
+            float time,
+            float duration,
+            ref uint noiseState,
+            float detune)
+        {
+            float brush = Envelope(time, duration, 0.008f, 2.6f);
+            float fibres = Envelope(time, duration, 0.004f, 3.2f);
+            float flutter = 0.5f + 0.5f * Mathf.Abs(
+                Mathf.Sin(2f * Mathf.PI * 70f * detune * time));
+            return NextNoise(ref noiseState) * 0.55f * brush +
+                   NextNoise(ref noiseState) * 0.45f * flutter * fibres;
+        }
+
+        /// <summary>
+        /// Loose sand: the snow's two grain layers, heavier and slower,
+        /// with a sub-thump of the weight sinking that snow has not got.
+        /// </summary>
+        private static float GenerateFootstepSand(
+            float time,
+            float duration,
+            ref uint noiseState,
+            float detune)
+        {
+            float body = Envelope(time, duration, 0.006f, 2.8f);
+            float bite = Envelope(time, duration, 0.001f, 9f);
+            float weight = Envelope(time, duration, 0.003f, 5f);
+            return NextNoise(ref noiseState) * 0.5f * body +
+                   NextNoise(ref noiseState) * 0.3f * bite +
+                   GlideSine(time, duration, 80f * detune, 50f * detune) *
+                   0.2f * weight;
+        }
+
+        /// <summary>
+        /// A board: the knock of the boot and, under it, the plank's own
+        /// note ringing on after the knock is gone. That resonance is what
+        /// a wooden floor has and soil never had.
+        /// </summary>
+        private static float GenerateFootstepWood(
+            float time,
+            float duration,
+            ref uint noiseState,
+            float detune)
+        {
+            float knock = Envelope(time, duration, 0.002f, 4f);
+            float ring = Envelope(time, duration, 0.002f, 3f);
+            float grain = Envelope(time, duration, 0.001f, 12f);
+            return GlideSine(time, duration, 200f * detune, 120f * detune) *
+                   0.5f * knock +
+                   Triangle(96f * detune, time) * 0.28f * ring +
+                   NextNoise(ref noiseState) * 0.22f * grain;
+        }
+
+        /// <summary>
+        /// A thump under a blanket: the pile takes the slap away and the
+        /// low-pass in the definition takes the rest, so what is left is
+        /// the quietest step in the table.
+        /// </summary>
+        private static float GenerateFootstepCarpet(
+            float time,
+            float duration,
+            ref uint noiseState,
+            float detune)
+        {
+            float thump = Envelope(time, duration, 0.004f, 3.4f);
+            float pile = Envelope(time, duration, 0.006f, 2.8f);
+            return GlideSine(time, duration, 95f * detune, 55f * detune) *
+                   0.6f * thump +
+                   NextNoise(ref noiseState) * 0.4f * pile;
+        }
+
+        /// <summary>
+        /// Linoleum and ceramic: the shortest step, a slap with a click on
+        /// it. Both pitched parts are fixed triangles, so nothing here can
+        /// glide into science fiction however bright the roll-off is.
+        /// </summary>
+        private static float GenerateFootstepTile(
+            float time,
+            float duration,
+            ref uint noiseState,
+            float detune)
+        {
+            float slap = Envelope(time, duration, 0.0005f, 18f);
+            float body = Envelope(time, duration, 0.001f, 9f);
+            float click = Envelope(time, duration, 0.0005f, 24f);
+            return NextNoise(ref noiseState) * 0.5f * slap +
+                   Triangle(240f * detune, time) * 0.3f * body +
+                   Triangle(2200f * detune, time) * 0.08f * click;
+        }
+
+        /// <summary>
+        /// A boot into a gutter puddle: the only step that starts late,
+        /// because the water has to get out of the way first, and the only
+        /// one with a tail, the drops coming back down through the sheet
+        /// spray. The glide under it is the boot meeting the road beneath.
+        /// </summary>
+        private static float GenerateFootstepPuddle(
+            float time,
+            float duration,
+            ref uint noiseState,
+            float detune)
+        {
+            float spray = Envelope(time, duration, 0.012f, 2.2f);
+            float drops = Envelope(time, duration, 0.02f, 1.8f);
+            float boot = Envelope(time, duration, 0.002f, 5f);
+            float patter = Mathf.Abs(
+                Mathf.Sin(2f * Mathf.PI * 23f * time));
+            return NextNoise(ref noiseState) * 0.55f * spray +
+                   NextNoise(ref noiseState) * 0.25f * patter * drops +
+                   GlideSine(time, duration, 140f * detune, 70f * detune) *
+                   0.25f * boot;
         }
 
         private static float GenerateDoor(

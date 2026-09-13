@@ -40,6 +40,14 @@ namespace BarPromenade
             workerFabricTexture = fabric.GetTexture("_BaseMap");
             for (int i = 0; i < workers.Length; i++)
             {
+                // Her authored coloured atlas survives enable/disable untouched.
+                if (i == CanneryWomanPresentation.WorkerSlot)
+                {
+                    workerClothes[i] = Array.Empty<Renderer>();
+                    workerClothingColors[i] = Array.Empty<Color>();
+                    workerFabricUv[i] = Array.Empty<Vector4>();
+                    continue;
+                }
                 workerClothes[i] = Array.FindAll(workers[i].GetComponentsInChildren<Renderer>(true),
                     renderer => renderer.name.StartsWith("CLO_", StringComparison.Ordinal) || IsCrewGlove(renderer.name));
                 workerClothingColors[i] = new Color[workerClothes[i].Length];

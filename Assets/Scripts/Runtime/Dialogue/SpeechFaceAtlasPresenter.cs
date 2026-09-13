@@ -41,10 +41,13 @@ namespace BarPromenade
         }
 
         public bool Apply(SpeechFacePose pose, bool soiled = false)
+            => ApplyCell(pose.AtlasCell + (soiled && rows == 8 ? SpeechFaceAtlasResources.SoiledOffset : 0));
+
+        /// <summary>Optional authored quiet expressions use spare cells in the same atlas.</summary>
+        public bool ApplyCell(int cell)
         {
-            if (!IsConfigured) return false;
+            if (!IsConfigured || cell < 0 || cell >= rows * 8) return false;
             properties ??= new MaterialPropertyBlock();
-            int cell = pose.AtlasCell + (soiled && rows == 8 ? SpeechFaceAtlasResources.SoiledOffset : 0);
             // Authoring counts rows from the image top; Unity counts from the bottom.
             Vector4 transform = new Vector4(1f / 8f, 1f / rows,
                 (cell % 8) / 8f, (rows - 1 - cell / 8) / (float)rows);

@@ -33,9 +33,12 @@ namespace BarPromenade
         [SerializeField] private Renderer[] renderers = Array.Empty<Renderer>();
         [SerializeField] private Color[] colors = Array.Empty<Color>();
         [SerializeField] private Texture2D atlas;
+        [SerializeField] private AnimationClip outsideIdleClip, listeningIdleClip;
+        [SerializeField] private string authoredActorId;
         private PlayableGraph graph;
         private AnimationMixerPlayable mixer;
         private AnimationClipPlayable[] playables;
+        private AnimationClipPlayable outsideIdlePlayable, listeningIdlePlayable;
         private AnimationClip freeRunClip;
         private AnimationClipPlayable freeRunPlayable;
         private Animator freeRunSourceAnimator;
@@ -80,6 +83,18 @@ namespace BarPromenade
         public bool IsInitialized => graph.IsValid();
         public float ClipLength(VillageResidentAction action) => clips[(int)action].length;
 
+        /// <summary>A city actor can reuse this sampler without joining the village cast.</summary>
+        public void ConfigureAuthoredActor(string identity, Animator configuredAnimator, Transform configuredModelRoot,
+            Transform configuredRightGrip, Transform configuredLeftGrip, Transform configuredHead,
+            AnimationClip[] configuredClips, Renderer[] configuredRenderers, Color[] configuredColors,
+            Texture2D configuredAtlas, AnimationClip outsideIdle, AnimationClip listeningIdle)
+        {
+            authoredActorId = identity;
+            outsideIdleClip = outsideIdle; listeningIdleClip = listeningIdle;
+            Configure(default, configuredAnimator, configuredModelRoot, configuredRightGrip, configuredLeftGrip,
+                configuredHead, configuredClips, configuredRenderers, configuredColors, configuredAtlas);
+        }
+
         public void Configure(VillageResidentRole configuredRole, Animator configuredAnimator,
             Transform configuredModelRoot, Transform configuredRightGrip, Transform configuredLeftGrip,
             Transform configuredHead, AnimationClip[] configuredClips, Renderer[] configuredRenderers,
@@ -100,9 +115,9 @@ namespace BarPromenade
             ApplyAppearance();
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            graph = PlayableGraph.Create("VillageResident." + role);
+            graph = PlayableGraph.Create(string.IsNullOrEmpty(authoredActorId) ? "VillageResident." + role : authoredActorId);
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-            mixer = AnimationMixerPlayable.Create(graph, clips.Length);
+            mixer = AnimationMixerPlayable.Create(graph, clips.Length + 2);
             playables = new AnimationClipPlayable[clips.Length];
             for (int i = 0; i < clips.Length; ++i)
             {
@@ -112,6 +127,8 @@ namespace BarPromenade
                 playables[i].SetSpeed(0);
                 graph.Connect(playables[i], 0, mixer, i);
             }
+            if (outsideIdleClip != null) outsideIdlePlayable = CreateIdleVariant(outsideIdleClip, clips.Length);
+            if (listeningIdleClip != null) listeningIdlePlayable = CreateIdleVariant(listeningIdleClip, clips.Length + 1);
             if (freeRunClip != null) CreateFreeRunPlayable();
             Transform Find(string name) => CityPedestrianHandProps.FindSocket(modelRoot, name)
                 ?? throw new InvalidOperationException("Missing ordinary village joint " + name);
@@ -144,21 +161,28 @@ namespace BarPromenade
 
         public void Apply(VillageResidentAction action, float elapsedSeconds, Vector3? lookAt = null)
         {
+            PrepareAction(action, elapsedSeconds);
+            graph.Evaluate(0);
+            ApplyLook(lookAt);
+        }
+
+        private void PrepareAction(VillageResidentAction action, float elapsedSeconds)
+        {
             Initialize();
+            ResetIdleVariants();
             weatherLayers.SetInputWeight(1, 0);
             contactLayers.SetInputWeight(1, 0);
             ResetFreeLocomotion();
             CurrentAction = action; CurrentActionSeconds = Mathf.Max(0, elapsedSeconds);
             for (int i = 0; i < clips.Length; ++i) mixer.SetInputWeight(i, i == (int)action ? 1f : 0f);
             SampleTime((int)action, elapsedSeconds);
-            graph.Evaluate(0);
-            ApplyLook(lookAt);
         }
 
         /// <summary>Blend planted rest with the authored gait as actual speed approaches zero.</summary>
         public void ApplyLocomotion(float speed, bool carry, float elapsedSeconds, Vector3? lookAt = null)
         {
             Initialize();
+            ResetIdleVariants();
             weatherLayers.SetInputWeight(1, 0);
             contactLayers.SetInputWeight(1, 0);
             ResetFreeLocomotion();
@@ -247,6 +271,7 @@ namespace BarPromenade
         public void ApplyFreeLocomotion(float speed, float gaitCycles, Vector3? lookAt = null)
         {
             Initialize();
+            ResetIdleVariants();
             if (!freeRunPlayable.IsValid())
                 throw new InvalidOperationException("Free running needs the shared authored run clip.");
             weatherLayers.SetInputWeight(1, 0);
@@ -420,6 +445,35 @@ namespace BarPromenade
         }
 
         private static float Smooth(float value) { value = Mathf.Clamp01(value); return value * value * (3f - 2f * value); }
+
+        private AnimationClipPlayable CreateIdleVariant(AnimationClip clip, int input)
+        {
+            var playable = AnimationClipPlayable.Create(graph, clip);
+            playable.SetSpeed(0); playable.SetApplyFootIK(false); playable.SetApplyPlayableIK(false);
+            graph.Connect(playable, 0, mixer, input);
+            return playable;
+        }
+
+        private void ResetIdleVariants()
+        {
+            mixer.SetInputWeight(clips.Length, 0f);
+            mixer.SetInputWeight(clips.Length + 1, 0f);
+        }
+
+        /// <summary>Sample before contact solving; all variants remain planted idle for speech admission.</summary>
+        public void ApplyIdleVariation(float seconds, bool outside, float listeningWeight)
+        {
+            // Configure the complete blend before evaluating it. Sampling the
+            // unblended idle first would immediately be overwritten below.
+            PrepareAction(VillageResidentAction.Idle, seconds);
+            float listen = listeningIdlePlayable.IsValid() ? Mathf.Clamp01(listeningWeight) : 0f;
+            float rest = outside && outsideIdlePlayable.IsValid() ? 1f - listen : 0f;
+            mixer.SetInputWeight((int)VillageResidentAction.Idle, 1f - rest - listen);
+            mixer.SetInputWeight(clips.Length, rest); mixer.SetInputWeight(clips.Length + 1, listen);
+            if (outsideIdlePlayable.IsValid()) outsideIdlePlayable.SetTime(Mathf.Repeat(seconds, outsideIdleClip.length));
+            if (listeningIdlePlayable.IsValid()) listeningIdlePlayable.SetTime(Mathf.Repeat(seconds, listeningIdleClip.length));
+            graph.Evaluate(0);
+        }
 
         /// <summary>Local pose of the separate shovel; origin is the bottom of its blade.</summary>
         public static Pose SampleShovelPose(VillageResidentAction action, float elapsedSeconds)

@@ -4,6 +4,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted architecture exception — 2026-09-13, seamer:**
+  User: SAME §11 woman alive (§6/§16.10); §3 outcome stays, §25 open.
+  No romance/hero interaction. Art §8; hero-style sprite face. `cannery_workwear`:
+  garment slots; identity kept. Extra outfits/switch/story/save Deferred.
+
+- **Accepted — 2026-09-12, cannery driver's lunch:**
+  `DriverRest`/`DriverLunch`: same driver/yard bench.
+  Last `12 s` unload: walk `9`/sit `3`; wait: pocket→bread→mouth/chew.
+  Reuse `DayOldLoaf3D`, `SewingEnter/Exit`, measured seat/planted feet.
+  Loading's first `12 s`: stow `2.4`/stand `3`/walk `6.6`; grips/load/cab follow.
+  Snapshot owns pause/seek/range/debug; three approvals/storage/clear gate
+  loading. Paths free; no E/new speech/hero food/lore/illness link.
+
 - **Accepted — 2026-09-12, glovebox handle callout:**
   Radio UI on `glovebox_catch`; `E` opens/closes, contour follows
   the hinge. No bottom duplicate; gaze/input/pause and driver lock gate it.
@@ -14,10 +27,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   pre-Moor/Depart. Pause/range own DSP; no seek/reentry replay.
 
 - **Accepted — 2026-09-11, outgoing carton inspection:**
-  User: scale outside «Отгрузка», clear of traffic. Existing receiver:
-  unload→packing→two-hand carry→release on scale→settle/nod→approved support→clear.
-  Three cartons: `CityCanneryInspectionPlan`→`CityFishSupplyCycle`.
-  nod commits approval, put-away storage, final clear permits loading.
+  Receiver unloads, carries three cartons two-handed from packing to outdoor
+  «Отгрузка» scales. Release/settle→nod approves→put-away stores→clear permits
+  loading; traffic free. `CityCanneryInspectionPlan`/`CityFishSupplyCycle`.
 
 - **Accepted architecture exception — 2026-09-11, selectable new-game start:**
   User requests a location page after New Game: nine gameplay roots plus City
@@ -33,12 +45,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   its exit. Starting inside Mother's house completes the reach-house quest.
 
 - **Accepted architecture exception — 2026-09-11, cannery shift life:**
-  §6/§21/art §8: four, `6/6/4` pairs, shared bubbles/no-repeat/free-hand gestures;
-  no hero/job/lore/illness response; `LifeSeconds` survives holds,
-  pause freezes. Cloth/cuff/wrist; shelf/stool/jacket/lamp clear `.29 m`; shared
-  materials and anchored contact audio, no replay. Four wait east facing yard;
-  delivery time owns queued door walks. Side/public and west/staff cuts admit
-  hero, no leaf/text; machines/glass/cargo/stock/distance/canon stay.
+  §6/§21/art §8: four/shared speech/no-repeat/free gestures; no hero/job/lore/illness.
+  `LifeSeconds`: holds run/pause freezes; shared materials/audio/no replay.
+  Dressing `.29 m` clear; east wait/queued walks/side-public/west-staff cuts.
 
 - **Accepted architecture exception — 2026-09-11, doubled calendar day:**
   User: art §2/story §20 now use 48 real minutes/day at ×1, two seconds/game
@@ -70,15 +79,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   camera `.3 s` together. Same root/pelvis/feet; no parent-loop wait; terminal cleanup.
 
 - **Accepted architecture exception — 2026-09-11, expressive dialogue faces:**
-  User-approved hero/foreman sprites: §6/art §10d; six mouths × five eye/brow states,
-  `64 px` faces; weary hero/soil twins, grumbling foreman. `SpeechFaceAnimation`
-  follows bubble reveal: RU/EN articulation/brows/blink; punctuation/tail close.
-  Face-local UV/property blocks share materials; paint replaces 3D duplicates.
-  User: continuous foreman face extends into the mouth hollow;
-  existing chin/jowls physically swing. `ForemanChinDynamics` drives Blender
-  blendshapes with bounded damped inertia from speech/head motion, upper seams pinned.
-  Speech end settles, pause freezes, seek resets; same rig/anchors/snack custody.
-  Cancel restores faces; text/audio/camera unchanged; no inner-life interpretation.
+  §6/art §10d: weary hero/soil twins/grumbling foreman; `64 px`, `6 × 5` mouth/eyes.
+  `SpeechFaceAnimation`: bubble RU/EN reveal, punctuation/tail close; shared UV/
+  property blocks, paint replaces geometry/mouth hollow. `ForemanChinDynamics`:
+  Blender chin/jowl speech/head inertia/pinned seams; end settle/pause freeze/
+  seek reset/cancel restore. Rig/snack/speech stay.
 
 - **Accepted — 2026-09-11, nearby NPC role labels:**
   §24.26/§21/art §15a: ten RU/EN roles, no personal names/lore/voice; village/Mother
@@ -130,18 +135,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   rods/`Truck.up` slope clearance, worn steel/rubber; no dummy rods/text.
 
 - **Accepted — 2026-09-10, compact truck and local traffic:**
-  Closed truck `6.481 x 2.4 x 3.2 m`, full cab/three units; streets/asphalt `8/6 m`.
-  Turns clear furniture; factory exit central, then right/park right.
-  `CityCanneryTraffic`: six-second access, entering/unbrakeable bus first;
-  release protects bodies/opposing lanes.
+  Closed `6.481 x 2.4 x 3.2 m` truck/full cab/three units; streets/asphalt `8/6 m`.
+  Furniture-clear turns; central factory exit→right/park right.
+  `CityCanneryTraffic`: six-second access, entering/unbrakeable bus first,
+  bodies/opposing lanes protected through release.
 
 - **Accepted — 2026-09-10, ship-arrival dispatch and local handling:**
-  Dock latch spawns truck/driver/body on unseen road: `3 m/s`, parks at first
-  crate `156 s`; later factory trips. Horn `.30/64 m`, pause/no replay.
-  Reverse ajar/look-back/steer/beeper; exit `78°`. Grip parking+`12.8 s`,
-  queue+`4 s`, fetch `172.8 s`; east pallets clear. West canopy cart:
-  north/west approach and return clear tare/crew/lift. Cart→cargo→stand;
-  doors `0–4`→unfold `4–7`→lower `7–11 s`, cart return→reverse.
+  Dock-latched truck/driver/body unseen, `3 m/s`, first-crate parking `156 s`,
+  then factory trips. Horn `.30/64 m`, pause/no replay. Reverse ajar/look-back/
+  steer/beeper; exit `78°`. Grip parking+`12.8 s`, queue+`4 s`, fetch `172.8 s`.
+  East pallets/west-canopy cart's north/west approach/return clear tare/crew/lift.
+  Cart→cargo→stand; doors `0–4`→unfold `4–7`→lower `7–11 s`; return reverses.
 
 - **Accepted architecture exception — 2026-09-10, driver's first speech pool:**
   Driver↔docker: city/weather/salutations, "Жду тебя, дружище" wait.
@@ -157,29 +161,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   breath/weight/gaze/smoking/levers. Finite catch/observation `0-5`; no crime/quest/ride/reward.
 
 - **Accepted — 2026-09-10, fish logistics/session start:**
-  Stock/routes stay, tare Deferred. Travel/reverse `3/1.1 m/s`.
+  Stock/routes stay, tare Deferred; travel/reverse `3/1.1 m/s`.
   `CityFishSupplySession.HasStarted`: running/unpaused `CityPortPlan.LandBounds`
-  entry, `abs(Y-QuayTopY)<=3 m`. Before: Approach `0`/no catch-up; then autonomous
-  across scenes, reset `BeginNewGame` only. Pause/obstacles hold work; `80/96 m`
-  gates retain custody/collision/traffic/restore.
+  entry, `abs(Y-QuayTopY)<=3 m`. Approach `0`/no catch-up before; autonomous
+  across scenes after; reset only `BeginNewGame`. Pause/obstacles hold work;
+  `80/96 m` gates retain custody/collision/traffic/restore.
 
 - **Accepted — 2026-09-10, cannery surface and process detail:**
-  Ten Blender models; floor/wall/steel/insulation/cardboard, shared port/metre UVs.
-  Workwear/aprons/poses/light/steam distance-gated; same cans fill/seal/pack.
-  Front/lenses/beams keep day floor; §21 labels. Outer-jamb bumpers; leaf/rails coupled.
+  Ten Blender models/metre UVs/port floor/wall/steel/insulation/cardboard maps.
+  Workwear/light/steam distance-gated, same cans fill/seal/pack; front/lenses/beams
+  day floor, §21 labels/jamb bumpers/leaf-rail coupling.
 
 - **Accepted — 2026-09-10, first-crate production:**
-  `CityFishSupplyCycle`: FIFO `2x` during unload, packer returns.
-  `Duration` first/`RepeatingDuration` later; `BatchStart` queries restore arrival.
+  `CityFishSupplyCycle`: unload FIFO `2x`, packer returns; `Duration` then
+  `RepeatingDuration`; `BatchStart` restores arrival.
 
 - **Accepted — 2026-09-10, three crates per trawler:**
-  `CityPortCycle.CargoCount=3`: unload `3*64=192 s`, visit `432 s`, factory/shop
-  `48+3*76=276 s`; fifteen cans, odd returns keep endpoints.
+  `CityPortCycle.CargoCount=3`: unload/visit/factory-shop `192/432/276 s`;
+  fifteen cans/odd-return endpoints.
 
 - **Accepted — 2026-09-10, readable working sound:**
-  `CityWorkAudio`: mono `SfxWorld`, reverb `.28/.95 s` outdoor/factory;
-  crane `ANCHOR_HoistFeed`/retort body. City trims retained, Music −`6 dB`.
-  Soft spot shadows; same mix/light.
+  `CityWorkAudio`: mono `SfxWorld`, outdoor/factory reverb `.28/.95 s`, crane
+  `ANCHOR_HoistFeed`/retort. City trims, Music −`6 dB`, soft spot shadows.
 
 - **Accepted — 2026-09-09, port surface detail and a service-road connection:**
   12 opaque ImageGen maps; provenance:
@@ -991,18 +994,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   ride. Shared `GameInput` owns common bindings; context-specific look/debug
   controls remain with their callers. Both ride skips respect pause, modal
   ownership and scene transitions.
-- **Current — Staged area composition (2026-09-06):** City, Mountain Road and
-  Alpine Village register ordered construction iterators during area travel.
-  The existing synchronous builders drain the same iterators for direct scene
-  startup, tests and authoring. The Single-load boundary still unloads the source
-  world first; only the loading overlay persists over destination
-  construction. Scene loading occupies the first 20% of its bar, construction
-  the remaining 80%, and completion requires the destination root to finish.
-  `RuntimeComposition` yields between stages against an 8 ms budget; individual
-  geometry/planning stages are indivisible and can exceed that budget. No Unity
-  work was moved to a worker thread. A tempo lease and owned listener pause hold
-  gameplay during construction, with restoration on completion or teardown.
-  Automatic water cubemap capture waits until the whole world exists.
+- **Current — Staged area composition (2026-09-06, ext. 2026-09-12):** City,
+  Mountain Road, Alpine Village and Home (door only) register construction
+  iterators; direct loads drain them. A Single load unloads the source
+  first; a door build runs behind a black overlay. Activation waits for the
+  held load. `RuntimeComposition` yields between indivisible stages at an
+  8 ms floor. `CityLayoutCache` memoises plans per session; foreign planners
+  may run on a `Task`, never `UnityEngine.Object` work. The driver holds a
+  tempo lease, a listener pause and `renderFrameInterval` 4 until a frame
+  before the overlay leaves. Water cubemaps wait for the whole world.
 - **Current — Transition/resource ownership (2026-09-06):** Both transition
   services release held scene activation on disable/destruction. Ordinary
   transitions drive nested routines through one exception/cleanup boundary.
@@ -1353,11 +1353,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   at a coarse cross pitch. A test for either must measure the CHORD that is
   drawn, not a point on it — the point-sampled version passes while the street
   is visibly cut.
-- **Accepted — the motor decides WHEN a footstep happens, the surface decides
-  what it is:** `IPlayerFootstepSurface` hands the step to whoever the hero is
-  standing on, and a claimant owns sound and effect together so a surface and
-  the default can never double. Snow-versus-trodden is what makes a route
-  audible before it is visible.
+- **Accepted — the motor decides WHEN a footstep happens, the ground decides
+  what it is:** a scene claimant (`IPlayerFootstepSurface`) answers first and
+  owns sound and effect, so nothing doubles; else `HeroFootstepGround` asks
+  the render-only overlays by footprint (rugs, tiles, paving, puddles), then
+  the `FootstepGround` stamped on the walkable collider's root; unstamped
+  ground keeps the plain step. Three seeded variants per cue, never one
+  twice. NPC rigs register roots and `NpcFootstepDirector` on the hero steps
+  those in earshot by the same stride and ground, quieter; a bus, car or
+  cabin floor is unstamped, so a rider is silent.
 - **Accepted — a dock is an interaction pose, never an arrival:** a chart
   point carries a place's `DoorDockPosition`, which stands `1.1 m` off a
   threshold facing it. Landing a player there puts him against a wall, and the
@@ -3753,19 +3757,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and development runs default to verbose, release players to basic, and
   batch/command-line tests to off. Files rotate at 5 MiB with three retained
   archives, while `F8` writes and flushes a manual state snapshot.
-- **Accepted — Separate classic door transition:** Bar, supermarket, home and
-  stairwell doors
-  first run the shared source-scene `DoorUseEnter/Loop/Exit` action from an
-  explicit grounded dock. Its terminal neutral completion alone may reserve
-  one transition guard for the complete
-  `source -> DoorTransition -> destination` chain. The intermediate scene
-  runs a deterministic `3.15 s` unscaled handle/door/camera timeline in a
-  black void while the destination loads asynchronously with activation held
-  at the preload boundary. Activation is released only after the sequence is
-  complete and fully black; a missing presentation root falls back to the
-  requested destination. The door opens outward toward the fixed camera and a
-  black sprite keeps the revealed doorway opaque; direction changes only the
-  warm/cold lighting treatment and does not own persistent gameplay state.
+- **Accepted — Separate classic door transition:** Building doors first run
+  the shared source-scene `DoorUseEnter/Loop/Exit` action from an explicit
+  grounded dock. Only its terminal neutral completion reserves the
+  transition guard for the `source -> DoorTransition -> destination` chain.
+  The door scene runs a deterministic `1.6 s` unscaled handle/door/camera
+  timeline in a black void while the destination preloads. Activation waits
+  for the sequence to end fully black; a missing presentation root falls
+  back to the destination. Direction only picks the warm/cold lighting and
+  owns no gameplay state. Accepted 2026-09-12: an interior door keeps its
+  exterior (City, village) resident - root active; hierarchy, camera,
+  listener, clock, weather off; door and interior load additively, the
+  interior installed active once the door is gone; doors between its
+  interiors (stairwell, flat) keep it dormant; the door back resumes the
+  same root at that door's dock, lighting, clock, weather, intoxication and
+  theme re-synced. `ResidentExteriorPolicy` gates it; any other load is
+  Single and discards a dormant exterior.
 - **Accepted by explicit user decision, 2026-09-04 — every exterior building
   exit leaves the door behind the hero:** Arrival orientation belongs to the
   destination door, not to `DoorTransitionDirection` and not to the source
@@ -7128,23 +7135,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   meet continuously across strip boundaries. Swash remains disabled on all
   other water materials. This adds no object authoring system or exception.
 - **Accepted — Beach sand continues beneath the sea and answers footsteps:**
-  The existing terrain builder extends each beach patch into one `18 m`
-  seabed slope, retaining its river-mouth cuts. Exact shore heights, normals,
-  sand tint, texture and world UV scale are shared across the join; the slope
-  starts at the beach tangent and eases toward `1:5`. Water-depth absorption
-  hides the far edge. This replaces the former two-step silt boxes without
-  extending navigation into the sea.
-  `CityBeachSandPlan` adds at most `0.15 m` of deterministic relief to the
-  compacted beach base on a `0.4 m` grid. Its `0.025–0.10 m` loose skin fades
-  away across the `4–6 m` shore band and at the street approach.
-  `CitySandTreading` deforms only that visual skin through the village snow's
-  bounded stamp approach, with `10 Hz` mesh uploads and slow recovery.
-  `IPlayerFootstepSurface` claims the step only when the actual fixed beach
-  collider is the topmost support near the feet, so decks and other paving
-  cannot produce sand trails or sand audio. It reuses `FootstepSoil` and the
-  existing kickup effect with smaller, lower sand-textured grains. Collision
-  remains independent of the visual deformation. This is an extension of
-  existing procedural terrain and surface response, with no canon exception.
+  The terrain builder extends each beach patch into one `18 m` seabed slope,
+  keeping its river-mouth cuts. Shore heights, normals, tint, texture and UV
+  scale are shared across the join; the slope starts at the beach tangent
+  and eases toward `1:5`. Navigation never extends into the sea.
+  `CityBeachSandPlan` adds at most `0.15 m` of relief on a `0.4 m` grid. Its
+  `0.025–0.10 m` loose skin fades across the `4–6 m` shore band and at the
+  street approach. `CitySandTreading` deforms only that visual skin with the
+  village snow's stamp, `10 Hz` mesh uploads and slow recovery. It claims the
+  step only when the fixed beach collider is topmost under the feet, so decks
+  cannot trail or sound sand, and plays `FootstepSand` over the smaller sand
+  kickup. Collision is a separate `0.8 m` lattice of the same plan (`0.4 m`
+  inside the port's graded box), independent of the visual deformation; no
+  canon exception.
 - **Accepted — A precinct's water edge is authored, or the rail stays:**
   `CityTerrainSafetyWorldBuilder` rails any drop past
   `CityRoadGroundBoundaryPlanner.MaximumSafeStep`; the skip that exists for

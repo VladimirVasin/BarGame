@@ -15,7 +15,7 @@ namespace BarPromenade
         private static readonly string[] voices =
         {
             NpcVoiceCatalog.CheckersPlayerDesignId, NpcVoiceCatalog.ChessPlayerDesignId,
-            NpcVoiceCatalog.CafeManDesignId, NpcVoiceCatalog.WatchmanDesignId
+            NpcVoiceCatalog.CafeWomanDesignId, NpcVoiceCatalog.WatchmanDesignId
         };
         private readonly VillageResidentPresentation[] workers = new VillageResidentPresentation[4];
         private readonly Transform[] spines = new Transform[4];
@@ -185,6 +185,7 @@ namespace BarPromenade
             if (!bubbles.ShowAt(workers[role], LocalizationService.Get(key), (float)now, LineDuration(key))) return false;
             activeRole = LastSpeakerRole = role;
             LastLineKey = key;
+            factory.Woman?.ObserveReply(key, now, LineDuration(key));
             return true;
         }
 
@@ -230,13 +231,15 @@ namespace BarPromenade
                 float time = (float)(now % 60d) + role;
                 Vector3 target = actor.transform.position + actor.transform.up * (1.06f + .03f * Mathf.Sin(time * 2.4f)) +
                     actor.transform.right * (.25f + .035f * Mathf.Sin(time * 1.7f)) + actor.transform.forward * .22f;
-                actor.ApplyHandContacts(target, null, gesture[role] * .7f);
+                actor.ApplyHandContacts(target, null, gesture[role] *
+                    (role == CanneryWomanPresentation.WorkerSlot ? .34f : .7f));
             }
         }
 
         private void CancelExchange()
         {
             bubbles?.DismissAll();
+            factory?.Woman?.ResetSocialFace();
             hasExchange = replyPending = replyStarted = false;
             activeRole = -1;
         }
@@ -246,6 +249,7 @@ namespace BarPromenade
             Array.Clear(headYaw, 0, headYaw.Length);
             Array.Clear(bodyYaw, 0, bodyYaw.Length);
             Array.Clear(gesture, 0, gesture.Length);
+            factory?.Woman?.ResetSocialFace();
         }
 
         private void ResetContinuity()

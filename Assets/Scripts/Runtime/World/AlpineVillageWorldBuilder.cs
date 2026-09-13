@@ -613,6 +613,9 @@ namespace BarPromenade
 
             stageTimer.Restart();
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
+            // For the residents' steps: the hero's own are claimed by the
+            // snow treading, which reads the depth instead.
+            FootstepGround.Stamp(host, FootstepGroundKind.Snow);
             double colliderMs = stageTimer.Elapsed.TotalMilliseconds;
             ReportTerrainMesh(
                 mesh.name,
@@ -1251,6 +1254,7 @@ namespace BarPromenade
                 LaneColor);
             stageTimer.Restart();
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
+            FootstepGround.Stamp(host, FootstepGroundKind.Soil);
             ReportTerrainMesh(
                 mesh.name,
                 mesh,

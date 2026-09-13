@@ -12,9 +12,11 @@ namespace BarPromenade
         private const float Acceleration = 6.5f;
         private const float Deceleration = 11f;
         private const float Gravity = 24f;
-        private const float FootstepStride = 1.35f;
-        private const float RunFootstepStride = 1.58f;
-        private const float FootstepMinimumSpeedSquared = 0.36f;
+        // Shared with the NPC stride tracker, so a passer-by and the hero
+        // step to one measure.
+        internal const float FootstepStride = 1.35f;
+        internal const float RunFootstepStride = 1.58f;
+        internal const float FootstepMinimumSpeedSquared = 0.36f;
         private const float FacingThresholdSquared = 0.0004f;
         private const float InteractionStallTimeoutSeconds = 1.5f;
         private const float InteractionProgressDistance = 0.0001f;
@@ -104,8 +106,9 @@ namespace BarPromenade
         /// <summary>
         /// Hands the footstep to whatever the hero is standing ON, if the
         /// area has an opinion. A surface that answers owns the step - sound
-        /// and effect both - and the default is played only when nothing
-        /// does, so an area cannot accidentally double it.
+        /// and effect both - so an area cannot accidentally double it. When
+        /// none answers, <see cref="HeroFootstepGround"/> reads the stamped
+        /// floor under the feet, and the plain footstep is the last resort.
         /// </summary>
         public void SetFootstepSurface(IPlayerFootstepSurface surface)
         {
@@ -829,6 +832,14 @@ namespace BarPromenade
             Vector3 at = transform.position;
             if (footstepSurface != null &&
                 footstepSurface.TryPlayFootstep(at, runBlend))
+            {
+                return;
+            }
+
+            // No claimant, or one that declined: the floor the builders
+            // stamped says what the step is, and only ground nobody
+            // stamped keeps the plain footstep.
+            if (HeroFootstepGround.TryPlay(at, transform))
             {
                 return;
             }

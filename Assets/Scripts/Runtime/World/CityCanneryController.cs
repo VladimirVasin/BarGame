@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace BarPromenade
 {
@@ -58,26 +59,35 @@ namespace BarPromenade
 
         private void Initialize(CityLayout layout, CityCanneryPlan plan, CityPortController source, Transform player)
         {
+            Stopwatch phaseTimer = Stopwatch.StartNew();
             Plan = plan; port = source; hero = player; deliveryLayout = layout;
             Route = CityCanneryTruckRoute.Create(layout, plan, port.Plan.Access);
+            // The street search and the per-pose ground sampling are pure
+            // arithmetic over the whole road graph; they are timed apart from
+            // the imported model so a slow row names its own cause.
+            ReportCanneryPhase("equipment_route", phaseTimer);
             // The site builder owns the passive shell, including the Home vista.
             // This owner adds only the working parts and the shared delivery vehicle.
             factory = new GameObject("Cannery Process").transform;
             factory.SetParent(transform, false);
             factory.SetPositionAndRotation(plan.Origin, plan.Rotation);
             equipment = CityCanneryAssetProvider.Create("Equipment", factory).transform;
+            ReportCanneryPhase("equipment_model", phaseTimer);
             foreach (Transform part in equipment.GetComponentsInChildren<Transform>(true))
                 if (part.name.StartsWith("ANCHOR_", StringComparison.Ordinal)) anchors[part.name.Substring(7)] = part;
+            ReportCanneryPhase("equipment_anchors", phaseTimer);
             Cycle = new CityFishSupplyCycle(Travel(CityCanneryTruckLeg.PortToFactory),
                 Travel(CityCanneryTruckLeg.FactoryReverse), Travel(CityCanneryTruckLeg.FactoryToShop),
                 Travel(CityCanneryTruckLeg.ShopToFactory), Travel(CityCanneryTruckLeg.PortArrive),
                 Travel(CityCanneryTruckLeg.PortReverse), Travel(CityCanneryTruckLeg.FactoryToPort),
                 Route.InitialFactoryToPortDuration, port.DockWorkerStoreExitAtSeconds, port.TrolleyStoreEntryAtSeconds,
                 CreateInspectionRoutes());
+            ReportCanneryPhase("equipment_cycle", phaseTimer);
             Truck = CityCanneryAssetProvider.Create("Truck", transform).transform;
             Traffic=new CityCanneryTraffic(this,GetComponentInParent<CityGameRoot>()?.Bus);
             CacheDeliverySidewalks(layout);
             CreateLocalTrolleys();
+            ReportCanneryPhase("truck_and_trolleys", phaseTimer);
             tray = CityCanneryAssetProvider.Create("CanTray", factory).transform;
             basket = CityCanneryAssetProvider.Create("RetortBasket", factory).transform;
             for (int i = 0; i < fish.Length; i++)
@@ -116,7 +126,10 @@ namespace BarPromenade
             seamerDock = factory.InverseTransformPoint(seamer.position);
             retortDoorDock = factory.InverseTransformPoint(retortDoor.position);
             retortDoorRest = Quaternion.Inverse(factory.rotation) * retortDoor.rotation;
+            ReportCanneryPhase("handling_units", phaseTimer);
             CreateWorkers();
+            ReportCanneryPhase("workers", phaseTimer);
+            CreateDriverRest();
             CreateFactoryLife();
             FactoryConversation = gameObject.AddComponent<CityCanneryConversationController>();
             FactoryConversation.Initialize(this, hero, layout.Seed);
@@ -130,8 +143,17 @@ namespace BarPromenade
             port.AutoAdvance = false;
             port.IsSupplyDriven = true;
             CreatePresentation();
+            ReportCanneryPhase("life_and_presentation", phaseTimer);
             IsInitialized = true;
             ApplyAt(CityFishSupplySession.Advance(false));
+        }
+
+        private static void ReportCanneryPhase(string phase, Stopwatch timer)
+        {
+            GameLog.Debug("city", "cannery_phase",
+                GameLog.Field("phase", phase),
+                GameLog.Field("duration_ms", timer.ElapsedMilliseconds));
+            timer.Restart();
         }
 
         private double Travel(CityCanneryTruckLeg leg)

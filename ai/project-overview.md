@@ -99,8 +99,8 @@ contracts are documented in [../tools/README.md](../tools/README.md).
   Moving grips, vessel horn/echo and warm shadowed searchlight share the scene.
   First received crate starts FIFO production at twice authored speed; same cans
   enter three continuous cartons. Receiver weighs each outside shipping,
-  nods and stores it before loading is allowed. Four workers wait/talk outside
-  before/after duty, queuing through doors. Side doors reach
+  nods/stores before loading. Seamer: chestnut-haired woman/painted face.
+  Four wait/talk outside, queue through doors. Side doors reach
   the public aisle, a west staff opening the work aisle. Grips win; pause freezes life. Service fittings/light and local
   fan/contact/pressure sounds follow activity. Distant meshes sleep while
   production/collision/traffic continue; approach restores without replay.

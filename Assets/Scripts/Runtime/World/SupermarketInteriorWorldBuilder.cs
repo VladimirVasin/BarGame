@@ -156,11 +156,13 @@ namespace BarPromenade
             float halfDepth = depth * 0.5f;
             const float entranceWidth = 2.4f;
 
-            CreatePhysicsBox(
-                "Supermarket Floor Collision",
-                root,
-                new Vector3(0f, -0.06f, 0f),
-                new Vector3(width, 0.12f, depth));
+            FootstepGround.Stamp(
+                CreatePhysicsBox(
+                    "Supermarket Floor Collision",
+                    root,
+                    new Vector3(0f, -0.06f, 0f),
+                    new Vector3(width, 0.12f, depth)),
+                FootstepGroundKind.Tile);
             CreatePhysicsBox(
                 "Supermarket Back Wall Collision",
                 root,

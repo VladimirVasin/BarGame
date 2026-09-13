@@ -120,6 +120,11 @@ namespace BarPromenade
             PlayerMotor motor = player.AddComponent<PlayerMotor>();
             motor.Initialize(walkableArea, visual);
 
+            // The steps of everyone else, heard from where he stands: on
+            // the hero because he is the one object every scene builds.
+            player.AddComponent<NpcFootstepDirector>()
+                .Initialize(player.transform);
+
             PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
             interactor.Initialize(promptView);
 

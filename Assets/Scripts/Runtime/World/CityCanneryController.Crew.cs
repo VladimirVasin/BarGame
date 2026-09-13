@@ -6,6 +6,7 @@ namespace BarPromenade
     public sealed partial class CityCanneryController
     {
         private VillageResidentPresentation[] workers;
+        public CanneryWomanPresentation Woman { get; private set; }
         private Transform driverPelvis, driverSeat, driverLeftHand, driverRightHand, driverFoot;
         private Transform driverDoor, driverExit, driverRearWalk, trolleyLeftHand, trolleyRightHand;
         private Transform driverSteeringShoulder, driverMouth;
@@ -34,11 +35,13 @@ namespace BarPromenade
             workers = new VillageResidentPresentation[names.Length];
             for (int i = 0; i < workers.Length; i++)
             {
-                workers[i] = library.Create(VillageResidentRole.StationWorker, transform);
+                workers[i] = i == CanneryWomanPresentation.WorkerSlot ? CanneryWomanAssetProvider.Create(transform) :
+                    library.Create(VillageResidentRole.StationWorker, transform);
                 workers[i].name = names[i];
                 if (i == 4) CityPortCrew.AlignWorkerModelWithPlacement(workers[i]);
                 workerSpines[i] = Require(workers[i].ModelRoot, "spine");
             }
+            Woman = workers[CanneryWomanPresentation.WorkerSlot].GetComponent<CanneryWomanPresentation>();
             driverPelvis = Require(workers[4].ModelRoot, "pelvis");
             driverSteeringShoulder = Require(workers[4].ModelRoot, "upper_arm.R");
             driverMouth = Require(workers[4].ModelRoot, CityPedestrianHandProps.MouthSocketName);
@@ -73,6 +76,8 @@ namespace BarPromenade
             WorkerHandsMatch = true;
             LastCrewContactFailure = null;
             DriverSeatedContactsMatch = true;
+            DriverRestPhase = CityCanneryDriverRestPhase.None;
+            DriverBenchSeatWeight = 0f;
             ResetFactoryLifePose();
             for (int i = 0; i < workers.Length; i++)
             {
@@ -99,21 +104,35 @@ namespace BarPromenade
                 bool driverHandling = Snapshot.IsTransfer;
                 float open = driverHandling ? Mathf.Min(Ease(seconds), Ease((float)Snapshot.Duration - seconds)) :
                     IsReversing ? ReverseDoorWeight : 0;
+                if (Snapshot.Stage == CityFishSupplyStage.LoadFinished)
+                    open *= Ease(seconds - ((float)Snapshot.Duration - TransferEdge));
                 driverDoor.SetPositionAndRotation(Truck.TransformPoint(driverDoorDock),
                     Truck.rotation * Quaternion.AngleAxis((IsReversing ? ReverseDoorMaximumAngle : 78f) * open, Vector3.up) * driverDoorRest);
-                if (IsReversing) ApplyReversingDriver();
-                else if (!driverHandling) ApplySeatedDriver();
-                else if (handlingActive) ApplyTrolleyWorker(workers[4], 1f);
-                else ApplyDriverApproach(seconds >= Snapshot.Duration - TransferEdge
-                    ? (float)(Snapshot.Duration - Snapshot.Seconds) : seconds,
-                    seconds >= Snapshot.Duration - TransferEdge);
+                if (!ApplyDriverRest())
+                {
+                    if (IsReversing) ApplyReversingDriver();
+                    else if (!driverHandling) ApplySeatedDriver();
+                    else if (handlingActive) ApplyTrolleyWorker(workers[4], 1f);
+                    else ApplyDriverApproach(seconds >= Snapshot.Duration - TransferEdge
+                        ? (float)(Snapshot.Duration - Snapshot.Seconds) : seconds,
+                        seconds >= Snapshot.Duration - TransferEdge);
+                }
             }
+            if (DriverRestPhase != CityCanneryDriverRestPhase.GettingLunch &&
+                DriverRestPhase != CityCanneryDriverRestPhase.Eating &&
+                DriverRestPhase != CityCanneryDriverRestPhase.StowingLunch) HideDriverLunch();
             // Enabling the shared resident rig restores its village atlas.
             // Reapply this crew's clothes after that first pose, once per wake.
             for (int i = 0; i < workers.Length; i++)
                 if (workers[i].gameObject.activeSelf && workerAppearanceDirty[i]) ApplyCrewAppearance(i);
             ApplyDriverConversation();
             FactoryConversation?.ApplyCrewPose();
+            if (Woman != null && Woman.gameObject.activeInHierarchy)
+            {
+                Woman.ApplyFaceAt(LifeSeconds, FactoryConversation?.Bubbles);
+                Woman.Hair?.ApplyAt(LifeSeconds, !GameSessionState.IsGameTimeRunning || GameTimeScaleRuntime.IsPaused,
+                    factoryWaitingOutside[CanneryWomanPresentation.WorkerSlot], GameWeatherRules.EvaluateCurrentWind());
+            }
         }
 
         private void ApplyStationWorker(int index, string station, bool working)
@@ -441,7 +460,10 @@ namespace BarPromenade
         {
             actor.transform.SetPositionAndRotation(point, Quaternion.LookRotation(forward, Vector3.up));
             int role = Array.IndexOf(workers, actor);
-            actor.Apply(VillageResidentAction.Idle, (float)((LifeSeconds + role * 7.37d) % 120d));
+            if (role == CanneryWomanPresentation.WorkerSlot)
+                actor.ApplyIdleVariation((float)(LifeSeconds % 120d), factoryWaitingOutside[role],
+                    FactoryConversation != null ? 1f - FactoryConversation.WaitingLookWeight(role) : 0f);
+            else actor.Apply(VillageResidentAction.Idle, (float)((LifeSeconds + role * 7.37d) % 120d));
             ApplyCrewLook(actor, look, .7f);
         }
 

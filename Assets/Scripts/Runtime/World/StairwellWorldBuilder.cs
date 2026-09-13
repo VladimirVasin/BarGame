@@ -30,6 +30,9 @@ namespace BarPromenade
             Transform root =
                 new GameObject("Apartment Stairwell").transform;
             root.SetParent(parent, false);
+            // Floor, landings, treads and their hidden ramps are all one
+            // poured concrete, so the root answers for every one of them.
+            FootstepGround.Stamp(root, FootstepGroundKind.Concrete);
 
             BuildShell(root, plan);
             var stairColliders = new List<Collider>();

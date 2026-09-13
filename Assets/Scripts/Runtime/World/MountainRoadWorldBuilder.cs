@@ -172,6 +172,7 @@ namespace BarPromenade
                 true,
                 ShadowCastingMode.On,
                 MountainRoadSurfaceKind.Asphalt);
+            FootstepGround.Stamp(road, FootstepGroundKind.Concrete);
             GameObject terminalApron = CreateMeshObject(
                 "Visible Terminal Vehicle Apron",
                 physicalRoot.transform,
@@ -397,7 +398,7 @@ namespace BarPromenade
                 GameLog.Field("sample_ms", meshes.SampleMs),
                 GameLog.Field("split_ms", meshes.SplitMs),
                 GameLog.Field("normals_ms", meshes.NormalsMs));
-            CreateTerrainMeshObject(
+            GameObject soil = CreateTerrainMeshObject(
                 "Forest Soil",
                 root.transform,
                 meshes.Soil,
@@ -409,7 +410,8 @@ namespace BarPromenade
                 null,
                 GameLog.Field("columns", meshes.Columns),
                 GameLog.Field("rows", meshes.Rows));
-            CreateTerrainMeshObject(
+            FootstepGround.Stamp(soil, FootstepGroundKind.Soil);
+            GameObject snow = CreateTerrainMeshObject(
                 "Upper Snow",
                 root.transform,
                 meshes.Snow,
@@ -421,6 +423,9 @@ namespace BarPromenade
                 null,
                 GameLog.Field("columns", meshes.Columns),
                 GameLog.Field("rows", meshes.Rows));
+            // Two colliders cut from one grid, so soil and snow are told
+            // apart for free: the ray lands on one or the other.
+            FootstepGround.Stamp(snow, FootstepGroundKind.Snow);
             return root;
         }
 
@@ -468,6 +473,10 @@ namespace BarPromenade
             MountainRoadTunnelDescriptor tunnel)
         {
             var root = new GameObject("Tunnel Exit");
+            // The physical shell carries the floor the car and the hero
+            // stand on; its walls are vertical and a downward ray never
+            // lands on them, so the root answers for the floor.
+            FootstepGround.Stamp(root, FootstepGroundKind.Concrete);
             root.transform.SetParent(parent, false);
             const float wallThickness = 0.72f;
             var physicalShell = new List<RuntimeOrientedBox>();

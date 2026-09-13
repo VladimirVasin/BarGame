@@ -66,6 +66,9 @@ namespace BarPromenade
                 Vector3.up * MirrorProbeHeight;
             mirror.AddComponent<CityFountainReflectionController>()
                 .Initialize(CityPuddleWaterResources.Material);
+            // The film has no collider, so the hero's footstep learns of a
+            // puddle by footprint, and only where the film is visible.
+            result.AddComponent<PuddleFootstepOverlay>().Initialize(patches);
             return result;
         }
 

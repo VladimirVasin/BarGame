@@ -498,6 +498,7 @@ namespace BarPromenade
             host.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             stageTimer.Restart();
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
+            FootstepGround.Stamp(host, FootstepGroundKind.Stone);
             AlpineVillageWorldBuilder.ReportTerrainMesh(
                 mesh.name,
                 mesh,

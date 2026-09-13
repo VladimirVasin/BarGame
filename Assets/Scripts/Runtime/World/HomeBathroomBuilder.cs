@@ -169,21 +169,25 @@ namespace BarPromenade
             Transform room,
             Rect bathroom)
         {
-            HomeSurfacePrimitives.CreateBox(
-                "Home Bathroom Tile Floor",
-                room,
-                new Vector3(
-                    bathroom.center.x,
-                    0.012f,
-                    bathroom.center.y),
-                new Vector3(
-                    bathroom.width - 0.20f,
-                    0.024f,
-                    bathroom.height - 0.20f),
-                Tile,
-                HomeSurfaceKind.BathroomTile,
-                SurfaceProjection.BoxXZ,
-                false);
+            // The tiles lie on the plank floor without a collider of their
+            // own, so they are a footstep overlay over the boards.
+            FootstepGroundOverlay.AddForPrimitiveBox(
+                HomeSurfacePrimitives.CreateBox(
+                    "Home Bathroom Tile Floor",
+                    room,
+                    new Vector3(
+                        bathroom.center.x,
+                        0.012f,
+                        bathroom.center.y),
+                    new Vector3(
+                        bathroom.width - 0.20f,
+                        0.024f,
+                        bathroom.height - 0.20f),
+                    Tile,
+                    HomeSurfaceKind.BathroomTile,
+                    SurfaceProjection.BoxXZ,
+                    false),
+                FootstepGroundKind.Tile);
             HomeSurfacePrimitives.CreateBox(
                 "Home Bathroom Back Tile",
                 room,

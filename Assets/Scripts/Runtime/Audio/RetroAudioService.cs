@@ -54,7 +54,8 @@ namespace BarPromenade
                 AudioClip clip,
                 Vector3 position,
                 float pitch,
-                double dspTime)
+                double dspTime,
+                float volumeScale)
             {
                 int activeForEffect = 0;
                 int freeIndex = -1;
@@ -103,7 +104,8 @@ namespace BarPromenade
                 source.Stop();
                 source.transform.position = position;
                 source.clip = clip;
-                source.volume = definition.Volume;
+                source.volume =
+                    definition.Volume * Mathf.Clamp01(volumeScale);
                 source.pitch = pitch;
                 source.priority = definition.Priority;
                 source.spatialBlend = definition.SpatialBlend;
@@ -139,6 +141,11 @@ namespace BarPromenade
         private static RetroAudioService instance;
 
         private AudioClip[] clips;
+        // Per id, the bank of differently seeded clips for a cue that has
+        // more than one; slot 0 is the same object as `clips[id]`. Null
+        // where a cue has a single clip, which is nearly everything.
+        private AudioClip[][] variantClips;
+        private int[] lastVariants;
         private SourcePool[] pools;
         private double[] nextAllowedTimes;
         private uint playSequence;
@@ -147,6 +154,7 @@ namespace BarPromenade
         public static RetroAudioService Instance => instance;
         public bool IsInitialized => initialized;
         public int GeneratedClipCount { get; private set; }
+        public int GeneratedVariantClipCount { get; private set; }
         public int SourceCount { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(
@@ -197,9 +205,57 @@ namespace BarPromenade
                 : null;
         }
 
+        /// <summary>
+        /// One clip of a cue's bank; variant 0 is <see cref="GetClip"/>.
+        /// Null for a variant the cue has not got.
+        /// </summary>
+        public AudioClip GetClip(RetroSfxId id, int variant)
+        {
+            if (variant == 0)
+            {
+                return GetClip(id);
+            }
+
+            int index = (int)id;
+            if (variantClips == null ||
+                index <= 0 ||
+                index >= variantClips.Length ||
+                variantClips[index] == null ||
+                variant < 0 ||
+                variant >= variantClips[index].Length)
+            {
+                return null;
+            }
+
+            return variantClips[index][variant];
+        }
+
+        /// <summary>The bank slot the last play of this cue used.</summary>
+        public int GetLastVariant(RetroSfxId id)
+        {
+            int index = (int)id;
+            return lastVariants != null &&
+                   index > 0 &&
+                   index < lastVariants.Length
+                ? lastVariants[index]
+                : 0;
+        }
+
         public bool TryPlay(
             RetroSfxId id,
             Vector3 position)
+        {
+            return TryPlay(id, position, 1f);
+        }
+
+        /// <summary>
+        /// Plays a cue at a fraction of its authored volume: another body's
+        /// footstep is the same sound as the hero's, further from the ear.
+        /// </summary>
+        public bool TryPlay(
+            RetroSfxId id,
+            Vector3 position,
+            float volumeScale)
         {
             Initialize();
             int index = (int)id;
@@ -219,13 +275,26 @@ namespace BarPromenade
             }
 
             SourcePool pool = pools[(int)definition.Category];
+            AudioClip clip = clips[index];
+            AudioClip[] bank = variantClips[index];
+            if (bank != null && bank.Length > 1)
+            {
+                int variant = RetroSfxLibrary.NextVariant(
+                    lastVariants[index],
+                    bank.Length,
+                    playSequence);
+                lastVariants[index] = variant;
+                clip = bank[variant] != null ? bank[variant] : clip;
+            }
+
             float pitch = GetNextPitch(definition);
             if (!pool.TryPlay(
                     definition,
-                    clips[index],
+                    clip,
                     position,
                     pitch,
-                    dspTime))
+                    dspTime,
+                    volumeScale))
             {
                 return false;
             }
@@ -291,12 +360,32 @@ namespace BarPromenade
             }
 
             clips = new AudioClip[(int)RetroSfxId.Count];
+            variantClips = new AudioClip[clips.Length][];
+            lastVariants = new int[clips.Length];
             nextAllowedTimes = new double[clips.Length];
             for (int index = 1; index < clips.Length; index++)
             {
-                clips[index] =
-                    RetroSfxLibrary.CreateRuntimeClip((RetroSfxId)index);
+                var id = (RetroSfxId)index;
+                clips[index] = RetroSfxLibrary.CreateRuntimeClip(id);
                 GeneratedClipCount++;
+
+                int variantCount =
+                    RetroSfxLibrary.GetDefinition(id).VariantCount;
+                if (variantCount <= 1)
+                {
+                    continue;
+                }
+
+                var bank = new AudioClip[variantCount];
+                bank[0] = clips[index];
+                for (int variant = 1; variant < variantCount; variant++)
+                {
+                    bank[variant] =
+                        RetroSfxLibrary.CreateRuntimeClip(id, variant);
+                    GeneratedVariantClipCount++;
+                }
+
+                variantClips[index] = bank;
             }
 
             pools = new SourcePool[(int)RetroSfxCategory.Count];
@@ -341,25 +430,44 @@ namespace BarPromenade
 
             for (int index = 1; index < clips.Length; index++)
             {
-                AudioClip clip = clips[index];
-                if (clip == null)
+                DestroyClip(clips[index]);
+                AudioClip[] bank =
+                    variantClips != null ? variantClips[index] : null;
+                if (bank == null)
                 {
                     continue;
                 }
 
-                if (Application.isPlaying)
+                // Slot 0 is the clip destroyed just above.
+                for (int variant = 1; variant < bank.Length; variant++)
                 {
-                    Destroy(clip);
-                }
-                else
-                {
-                    DestroyImmediate(clip);
+                    DestroyClip(bank[variant]);
                 }
             }
 
             clips = null;
+            variantClips = null;
+            lastVariants = null;
             GeneratedClipCount = 0;
+            GeneratedVariantClipCount = 0;
             initialized = false;
+        }
+
+        private static void DestroyClip(AudioClip clip)
+        {
+            if (clip == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(clip);
+            }
+            else
+            {
+                DestroyImmediate(clip);
+            }
         }
     }
 
@@ -381,6 +489,14 @@ namespace BarPromenade
             RetroSfxId id,
             Vector3 worldPosition)
         {
+            return PlayAt(id, worldPosition, 1f);
+        }
+
+        public static bool PlayAt(
+            RetroSfxId id,
+            Vector3 worldPosition,
+            float volumeScale)
+        {
             // Outside play mode there is nothing to hear and no scene to
             // keep the service in: EditMode tests now drive the nausea and
             // vomit controllers to their outcomes, and the service's
@@ -392,7 +508,7 @@ namespace BarPromenade
 
             return RetroAudioService
                 .EnsureInstalled()
-                .TryPlay(id, worldPosition);
+                .TryPlay(id, worldPosition, volumeScale);
         }
     }
 }

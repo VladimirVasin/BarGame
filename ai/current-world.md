@@ -1110,8 +1110,9 @@ The vertical slice contains:
   Stairwell, Home and DoorTransition retain reverb/echo returns. Wet tails
   blend over `.25 s`, except DoorTransition's immediate blackout. Detail/world
   sends compensate dry boosts, preserving room energy;
-- deterministic generated mono retro SFX at `22050 Hz`, including a separate
-  door latch and sustained hinge creak, with bounded
+- deterministic generated mono retro SFX at `22050 Hz`, including a footstep
+  per ground with three variants for the hero and NPC rigs, a door latch and
+  hinge creak, with bounded
   category pools, per-effect cooldowns and voice limits, all routed through
   canonical mixer groups;
 - separate scene-local procedural City, Bar, Home and Stairwell ambience beds,
@@ -1201,16 +1202,15 @@ The vertical slice contains:
   night-fixture placement. Open west/east sand receives uneven swash tongues
   reaching up to `2.8 m`, with a faster advance, slower retreat, broken foam
   and a brief wet-sand tail. The shared transparent swash strips conform to
-  the existing beach, add no collision and exclude the central sea wall and port quay.
-  Beach sand now carries bounded `0.15 m` deterministic relief on a `0.4 m`
-  grid and a shallow loose visual skin. `CitySandTreading` presses that skin
-  into soft trails while retaining separate fixed ground collision; confirmed
-  beach contacts use `FootstepSoil` and small sand-textured grains through the
-  village's existing kickup effect. The loose skin fades away across the
+  the beach, add no collision and exclude the sea wall and port quay.
+  Beach sand carries bounded `0.15 m` deterministic relief on a `0.4 m`
+  grid and a shallow loose visual skin; its collider is a coarser `0.8 m`
+  lattice (`0.4 m` in the port's graded box). `CitySandTreading` presses only
+  the skin into soft trails; confirmed beach contacts use `FootstepSand` and
+  small sand grains through the village kickup effect. The loose skin fades across the
   last `4–6 m` toward the surf. The same sand texture, tint and world UVs
   continue from exact shared shore heights and normals down an `18 m`
-  seabed, easing toward a `1:5` slope instead of two stepped silt boxes.
-  River-mouth cuts remain open.
+  seabed, easing toward a `1:5` slope. River-mouth cuts remain open.
   The shore is zoned around the river mouth — a
   working fishing port with a quay, two cranes and a breakwater
   to the west; a granite esplanade with sparse glow lamps, benches and the
@@ -1262,37 +1262,37 @@ The vertical slice contains:
   Motor `.6/.24`, `48 m`; horns `20/4 s` pre-Moor/Depart. Arrival ×2,
   echo `780 ms`/reverb `6.2 s`. Pause/teardown own people/audio/wake.
   Small blueprints without room retain the nonoperational mol;
-- Cannery: `8 x 14 m` hall/`18 x 18 m` lot, bay/public bypass;
-  side openings join yard/public aisle; west staff cut in wall/liner/collision
-  opens work aisle to the hero; machines/glass stay.
-  Home shell: `CityCanneryPlan`; ten Blender parts/five maps share port surfaces.
-  Fifteen cans/three continuous cartons; four workers/driver/aprons/light/steam.
-  Scale outside shipping, clear of traffic.
-  Receiver: unload→two-hand carton carry from packing→setdown/release→needle
-  settle/nod→approved support outside. Empty scale returns to zero; loading
-  waits for all three approvals/put-aways and receiver clearance.
-  Four wait by a yard bench before/after work: gaze/shoulders/speech.
-  `LifeSeconds` pauses; work clock owns walks.
-  Prep steps/wipes/returns cloth; seamer checks cuff; retort releases wrist.
-  Inspection owns receiver hands/gestures.
-  `CityCanneryConversationDeck`: `6/6/4` pairs/shared bubbles/free hands/no-repeat;
-  no hero/job, driver↔docker. Fittings clear paths; fan/tin/crate/latch/pressure
-  follow action/pause/distance/seek.
-  `CityFishSupplyCycle`: FIFO `2x`/measured inspection, `276 s` transfers;
-  pause/obstacle holds, fixed stock/tare Deferred.
-  Truck `6.481 x 2.4 x 3.2 m`, full cab/guided lift above ground.
-  Central factory exit→right lane/parking; clear turns. Streets `8/6 m`;
-  six-second access yields to entering/unbrakeable bus, protects release.
-  Dock latch spawns unseen truck/driver; `3 m/s`, first crate parking (`156 s`), later factory trips.
-  Two soft horns; reverse beeper/ajar door/look-back steering. Cranes never wait.
-  Cart: signed push/pull, clear turns.
-  Arrival decides doorway access: driver takes accepted stock if docker is outside;
-  crane filling reserves nothing. Docker first: driver waits for exit,
-  "Жду тебя, дружище". Driver first: later trolley holds north threshold;
-  only port work shifts, idle/speech/waves live. Event time restores custody.
-  Canopy cart/north approach clear tare/rear grips; carts return, east aisle clear.
-  Doors→unfold→lower, cart return→reverse. Coupled `80/96 m`
-  mesh/light gates retain custody/collision/traffic; approach restores even paused;
+- Cannery: `8 x 14 m` hall/`18 x 18 m` lot/bay/public bypass.
+  Side/public + west/staff openings admit hero; machines/glass stay.
+  `CityCanneryPlan`: ten Blender parts/five maps/port surfaces, fifteen cans/
+  three continuous cartons/four workers/driver. Receiver: unload→two-hand carry→
+  outdoor scales→release/settle/nod→approved support; empty zeroes.
+  Three approvals/put-aways/clearance gate loading.
+  Four wait at bench. Driver: cart→bench/personal bread→
+  stow/stand→load; `DriverRest`/`DriverLunch`: shared seat/food/snapshot pause/seek/
+  range/debug/actor/custody. `LifeSeconds` pauses; work time owns walks.
+  Prep wipes/returns cloth; seamer cuff, retort wrist; receiver hands inspection-owned.
+  `CanneryWomanActor`: one outfit, 5 clips/shared contacts;
+  pelvis hem; nape/bend/inertia/wind, skin/sleeve/arm/strand contacts.
+  Body/pose skin cached; conservative groups/pose-checked plane hints, lazy diagnostics.
+  Idle samples once; pause freezes, seek/range reset, palette kept.
+  Hero-face atlas; 16 RU/EN lines, smile `wait.07.b`/`wait.10.b`.
+  `CityCanneryConversationDeck`: `8/10/4` pairs/shared bubbles/free hands/no-repeat;
+  no hero/job/romance, driver↔docker. Fittings/routes clear; fan/tin/crate/latch/
+  pressure follow action/pause/distance/seek.
+  `CityFishSupplyCycle`: FIFO `2x`/inspection/`276 s` transfers, pause/obstacle holds;
+  fixed stock, tare Deferred. Truck `6.481 x 2.4 x 3.2 m`, full cab/guided lift
+  above ground; central exit→right lane/parking, clear turns, streets `8/6 m`.
+  Six-second access yields to entering/unbrakeable bus through release.
+  Dock-latched unseen truck/driver `3 m/s`, first-crate parking `156 s`, later
+  factory trips. Two soft horns, reverse beeper/ajar door/look-back steering.
+  Cranes never wait/reserve access. First arrival owns store doorway: driver
+  takes accepted stock, docker first makes him wait ("Жду тебя, дружище"); later
+  docker holds north threshold. Only work shifts; idle/speech/waves live,
+  event time restores custody. Signed cart push/pull/turns clear; canopy/north
+  approach clears tare/rear grips, east aisle free. Doors→unfold→lower;
+  cart return reverses. `80/96 m` mesh/light gates retain custody/collision/traffic,
+  restore on approach even paused;
 - up to two decorative old fishing vessels spawn only near the actual hero
   at the coast (`CityOffshoreBoat{Planner,Controller}`): full presence within
   `8 m` of the finite shore or pier/mol decks, zero at `28 m`. Their cleared
@@ -1879,12 +1879,12 @@ The vertical slice contains:
   and mountain hatches remain decorative. Point inspection is mutually
   exclusive with debug teleport and suppresses route editing, area travel and
   teleport confirmation until the player exits `XYZ` mode. Confirming the
-  other area requests a map arrival, Single-loads the
-  `AreaLoading` scene and Single-loads the destination. Its loading overlay
-  persists until incremental world construction finishes, with 20% progress
-  for the scene load and 80% for construction. The source area is unloaded
-  before the destination world is composed: City and Mountain Road are never resident or rendered
-  together. Mountain Road is drawn as its exit tunnel, complete winding route,
+  other area requests a map arrival, Single-loads `AreaLoading`, then the
+  destination. Its overlay holds until construction ends: 20% of the bar for
+  the load, 80% for the build. The source unloads before the destination
+  composes: two exteriors are never resident together. Interior doors keep
+  the City or village dormant and wake it; the City map's house door is
+  Single. Mountain Road is drawn as its exit tunnel, complete winding route,
   all ten authored hairpins, distinct mountain bridge, enlarged endpoint
   terminal and surrounding mountain hatch. Hairpins and bridge come from the
   same pure route plan used by the world. The terminal plan also supplies
@@ -1892,23 +1892,24 @@ The vertical slice contains:
   infer them from runtime GameObjects. The physical terminal
   keeps a clear `7.5 m` vehicle circle on its irregular roughly `42 x 27 m`
   plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
-  enterable without a scene load. Its lone patron, neighbouring couple and
-  attendant are four dedicated staged models rather than pedestrian-pool
-  substitutes. Its deterministic fixed-metre Blender set contains `61` meshes /
+  enterable without a scene load; a linoleum slab `4 mm` over the plateau is
+  its floor collider, so a step inside reads linoleum. Its lone patron,
+  neighbouring couple and attendant are four dedicated staged models, not
+  pedestrian-pool substitutes. Its fixed-metre Blender set has `61` meshes /
   `5,794` triangles, `52` semantic anchors and seven dynamic prop assemblies.
-  The rear service wall now reads as one kitchen run: an extended cabinet and
-  worktop with `CuttingBoardDock`, a compact stove and pan at `StovePanDock`,
-  and a refrigerator cavity with two shelves. `FridgeDoor` is the sixth
-  dynamic prop, rooted at the authored `FridgeDoorPivot` with child
-  `Grip.FridgeDoor`; it remains the sixth prop, ships closed and has no runtime
-  driver, Animator, Rigidbody or attendant/player interaction. The napkin
-  dispenser, sugar shaker and salt shaker have moved away from the hero's
-  counter place so they no longer occupy the menu handoff area. The seventh
-  prop is a thin open `Menu.Hero`, with its own hand grip, counter dock and
-  three item/one selection anchors; it begins hidden and is presented only by
-  the cafe menu runtime. At runtime its `menu_pages` role uses plain warm paper
-  rather than the green-banded shared props sheet, and the TMP readable face
-  and horizontal glyph direction are resolved against the actual focus camera.
+  The rear service wall reads as one kitchen run: a long cabinet and worktop
+  with `CuttingBoardDock`, a compact stove and pan at `StovePanDock`, and a
+  refrigerator cavity with two shelves.
+  `FridgeDoor` is the sixth dynamic prop, rooted at the authored
+  `FridgeDoorPivot` with child `Grip.FridgeDoor`; it ships closed and has no
+  runtime driver, Animator, Rigidbody or attendant/player interaction. The
+  napkin dispenser, sugar and salt shakers sit clear of the hero's counter
+  place and the menu handoff area. The seventh prop is a thin open
+  `Menu.Hero`, with its own hand grip, counter dock and three item/one
+  selection anchors; it begins hidden until the cafe menu runtime presents
+  it. At runtime its `menu_pages` role uses plain warm paper rather than the
+  green-banded shared props sheet, and the TMP face and glyph direction are
+  resolved against the focus camera.
   Seven stools follow the main counter and return with their seat tops at
   `0.8175 m`: three are occupied with real butt contact and four remain empty.
   The hero may take the middle main-row gap; its dock remains in the aisle while
@@ -2063,7 +2064,7 @@ The vertical slice contains:
   camera initializes, so the leaf is behind him and the first outdoor frame
   is already an over-shoulder view. This covers bar, home, supermarket,
   church and the mother's house without encoding geometry in transition enums;
-- a dedicated `3.15 s` `DoorTransition` scene after that source-scene gesture:
+- a dedicated `1.6 s` `DoorTransition` scene after that source-scene gesture:
   an unscaled fixed-camera handle/door sequence opens the leaf outward toward
   the camera against a solid black doorway while the destination preloads,
   then activates only after the final blackout;

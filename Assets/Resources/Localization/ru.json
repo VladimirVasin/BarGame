@@ -3422,23 +3422,23 @@
     },
     {
       "key": "city.cannery.work.01.b",
-      "value": "У меня рукав тоже."
+      "value": "У меня только манжета."
     },
     {
       "key": "city.cannery.work.02.a",
-      "value": "Эта ручка натирает ладонь."
+      "value": "Ручку опять приходится дожимать."
     },
     {
       "key": "city.cannery.work.02.b",
-      "value": "У меня к вечеру так же."
+      "value": "К вечеру ладонь ноет."
     },
     {
       "key": "city.cannery.work.03.a",
-      "value": "От железа пальцы стынут."
+      "value": "Эта крышка села ровно."
     },
     {
       "key": "city.cannery.work.03.b",
-      "value": "Здесь и летом не согреешься."
+      "value": "Остальные тоже ровные."
     },
     {
       "key": "city.cannery.work.04.a",
@@ -3478,15 +3478,15 @@
     },
     {
       "key": "city.cannery.wait.02.b",
-      "value": "Мои тоже сырые."
+      "value": "Мои тоже. У самого носка."
     },
     {
       "key": "city.cannery.wait.03.a",
-      "value": "Шапку бы снять."
+      "value": "У стены меньше дует."
     },
     {
       "key": "city.cannery.wait.03.b",
-      "value": "Потом уши мёрзнут."
+      "value": "А ноги всё равно мёрзнут."
     },
     {
       "key": "city.cannery.wait.04.a",
@@ -3498,11 +3498,11 @@
     },
     {
       "key": "city.cannery.wait.05.a",
-      "value": "После смены сразу домой?"
+      "value": "После смены зайду за хлебом."
     },
     {
       "key": "city.cannery.wait.05.b",
-      "value": "Сначала за хлебом."
+      "value": "Мне тоже нужен."
     },
     {
       "key": "city.cannery.wait.06.a",
@@ -3538,11 +3538,59 @@
     },
     {
       "key": "city.cannery.receiving.04.a",
-      "value": "Слышно машину с другого конца."
+      "value": "Я слышала машину ещё из цеха."
     },
     {
       "key": "city.cannery.receiving.04.b",
       "value": "У стены ещё громче."
+    },
+    {
+      "key": "city.cannery.work.07.a",
+      "value": "Здесь рукав быстрее стирается."
+    },
+    {
+      "key": "city.cannery.work.07.b",
+      "value": "У меня уже локоть насквозь."
+    },
+    {
+      "key": "city.cannery.work.08.a",
+      "value": "Сегодня банки идут ровнее."
+    },
+    {
+      "key": "city.cannery.work.08.b",
+      "value": "Я заметила."
+    },
+    {
+      "key": "city.cannery.wait.07.a",
+      "value": "Сегодня рукава сухие."
+    },
+    {
+      "key": "city.cannery.wait.07.b",
+      "value": "Только никому не говори."
+    },
+    {
+      "key": "city.cannery.wait.08.a",
+      "value": "Ты опять к стене встала."
+    },
+    {
+      "key": "city.cannery.wait.08.b",
+      "value": "Здесь ворот не продувает."
+    },
+    {
+      "key": "city.cannery.wait.09.a",
+      "value": "На ступеньке опять песок."
+    },
+    {
+      "key": "city.cannery.wait.09.b",
+      "value": "С подошв сыплется."
+    },
+    {
+      "key": "city.cannery.wait.10.a",
+      "value": "Обед уже скоро."
+    },
+    {
+      "key": "city.cannery.wait.10.b",
+      "value": "Ты это давно говоришь."
     }
   ]
 }

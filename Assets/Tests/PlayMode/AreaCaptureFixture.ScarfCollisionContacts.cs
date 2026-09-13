@@ -256,6 +256,8 @@ namespace BarPromenade.Tests.PlayMode
                 return false;
             }
 
+            public bool Contains(Vector3 point, ScarfContactSurface surface) => surface.Closed && Inside(point, surface);
+
             private bool Record(ScarfContactSurface cloth, ScarfContactSurface other, string phase, string reason)
             {
                 Witness = new ScarfContactWitness

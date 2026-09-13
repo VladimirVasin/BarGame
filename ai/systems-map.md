@@ -52,7 +52,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Unity URP foundation | Twelve build scenes and PC renderer settings on a project-owned Neutral/Bloom/Vignette baseline volume. | `6000.6.0f1`, `17.6.0` | Current |
 | PS1 presentation | Shared low-res composite. Optional 4:3, vertex jitter and Begotten keep controls; Begotten ramps `15 s` in, `3 s` out. | `Runtime/Rendering`, `IntoxicationRenderState`, `BegottenModeRamp` | Current |
 | Depth of field tiers | Exteriors keep broad Gaussian far blur; the six interior scenes cap it at radius `0.55`. | `RuntimeSceneSetup`, `DepthOfFieldSettingsBinder` | Current |
-| Runtime area composition | Twelve scenes/nine gameplay roots; three area roots construct incrementally during area travel. | `Runtime/Core`, `Runtime/Scenes` | Current |
+| Runtime area composition | Nine gameplay roots; four build in frames; interior doors keep the City/village resident and dormant, resumed on exit. | `Runtime/Core`, `Runtime/Scenes` | Current |
 | New-game starting place | Eleven starts after New Game, village default; chosen root at day `1`/`07:40`, ordinary loading. | `StartMenu{Root,Model}`, `NewGame{LocationCatalog,StartService}` | Current |
 | Retained Home waking opening | Frozen `05:59`, five-second lock, Wake Up/Quit, continuous wake. Gap: no shipped path reaches it. | `MainMenuRoot`, `HomeOpening{Controller,Timeline}` | Partial |
 | Session clock and day/night rules | Persistent 48-minute day at ×1; two real seconds per game minute. Intoxication preserves its rate. | `GameTimeState`, `GameTimeRuntime` | Current |
@@ -83,7 +83,8 @@ A row never carries a status outside this table. Product-level scope cuts
 | City yards | Only west stone terraces add a mason's cart; other fringe yards retain their existing service-belt infrastructure. | `CityFringeYard*`, `CityFringeYardLifePlanner` | Current |
 | District public places | Four public lots retain validated street approaches, causal props and bounded local practicals. | `CityDistrictPointOfInterest{Plan,Planner,WorldBuilder}`, `CityPointOfInterestSurfaceAppearance` | Current |
 | Drying yard babushkas | Staged drying-yard residents share authored domestic actions and local speech/prop ownership. | `DryingYardBabushka{Provider,Plan,Presentation,Factory}`, `CityPedestrianHandProps` | Current |
-| Cannery and fish deliveries | FIFO; outdoor weighing before loading; yard bench, clear routes/shared speech. Empty-tare return deferred. | `CityCannery*`, `CityFishSupply{Cycle,Session}`, `WorldDistancePresentation` | Partial |
+| Cannery and fish deliveries | FIFO/weighing gate loading; driver lunches on bench; shared speech/clear routes. Gap: empty-tare return. | `CityCannery*`, `CityFishSupply{Cycle,Session}`, `WorldDistancePresentation` | Partial |
+| Cannery woman | Seamer/painted face/own actions; hair/body contacts; shared speech/pause, one outfit. | `CanneryWoman{AssetProvider,Presentation,Hair,Wardrobe}`, `CanneryWomanAssetSetup` | Current |
 | Cemetery mourner | The grave-side mourner uses her own authored presence, gestures and localized response. | `CemeteryMourner{Provider,Plan,Timeline,Presentation,Factory}`, `CityCemeteryMournerController` | Current |
 | Cemetery watchman and gate lodge | The watchman and lodge provide the authored grave-work offer and payment interaction. | `CemeteryWatchman{Provider,Plan,Quips,Interaction,Presentation,Factory}`, `CityCemeteryPlanner.AddLodge` | Current |
 | Cemetery gravedigging | Up to three open jobs; grave acts/epitaphs persist per plot, with payment committed through the watchman. | `CemeteryGravedigging{Plan,Controller,Register}`, `CemeteryGraveWork{Stage,Ledger}` | Current |
@@ -99,7 +100,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | NPC dialogue | Shared graph, visible approach, two speaking shots and cancellation; foreman first. | `DialogueGraph`, `DialogueSessionController`, `DialogueCameraDirector` | Current |
 | Dialogue faces | Expressive hero/foreman mouths, brows/blink follow reveal/pause; soil and snack state retained. | `SpeechFaceAnimation`, `SpeechFaceAtlasPresenter` | Current |
 | Sea water | Shared water drive owns sea swell, foam and uneven shore swash. | `CitySeaResources`, `CityWaterResources` | Current |
-| Beach sand | Deterministic shallow relief and compressible foot trails over fixed collision. | `CityBeachSandPlan`, `CitySandTreading` | Current |
+| Beach sand | Deterministic shallow relief and compressible foot trails over a coarser fixed collider. | `CityBeachSandPlan`, `CitySandTreading` | Current |
 | Lighthouse island | One distant fog-framed island landmark owns its silhouette, beacon/beam and authored sightline. | `CityLighthouseIsland{Plan,Planner,MeshFactory,WorldBuilder,Resources}` | Current |
 | Seacoast fisherman | The boat-station fisherman uses his staged rod/line action and localized response at the real dock. | `SeacoastFisherman{Provider,Plan,Quips,Interaction,Presentation,Factory,PipeEffect,Line}` | Current |
 | Park chess set inhabitants and wire lamp | The Central Park chess set gets its two permanent inhabitants and its one light. | `ParkChessPlayer{Provider,Plan,Presentation,Factory}` | Current |
@@ -133,6 +134,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Intoxication sound perception | Bounded VHS processing follows the smoothed alcohol level and returns to exact bypass when sober. | `IntoxicationPerceptionRules`, `IntoxicationAudioDriver` | Current |
 | Begotten sound perception | The print's optical track tears against its own mask throughout the ramp and adds surface and apparatus at 24/s. | `BegottenAudioRules`, `BegottenAudioDriver`, `OpticalProcessor.h` | Current |
 | Retro SFX and ambience | Generated retro cues and local ambience share routing, distance limits and scene-owned cleanup. | `RetroSfx`, `RetroAudioService` | Current |
+| Footstep surfaces | Stamped ground and overlays pick a per-surface cue for the hero and registered NPC rigs; three variants per cue. | `FootstepGround`, `HeroFootstepGround`, `NpcFootstepDirector` | Current |
 | Causal City soundscape | Visible local sources own City sound; bounded schedules and shared routing control the mix. | `CitySound{SourceDescriptor,scapePlan,scapePlanner,SchedulePlanner,Occlusion}` | Current |
 | Home alarm clock | Bed-relative `27.6 cm` clock: frozen flickering `05:59`, solid `06:00` on Wake, then session time. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock` | Current |
 | Road, park and ground navigation | Pure walkable masks constrain roads, parks and authored ground consistently with physical boundaries. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}` | Current |
@@ -163,12 +165,12 @@ A row never carries a status outside this table. Product-level scope cuts
 | Debug controls | F9: intoxication/day/speed gate; City loaded truck near factory. F1/F2/F3: ×3/×5/×10 across gameplay. | `MinigameDebugWindow`, `DebugTimeControls`, `HomeDebugCityMapShortcut` | Current |
 | Structured session diagnostics | Bounded NDJSON records correlated operations; optional performance reports are separate from the support log. | `Runtime/Diagnostics`, `MinigameDebugWindow` | Current |
 | Bar activity flavour | Legacy activity identity still selects bar flavour; the removed sprite minigames remain absent. | `BarActivityKind`, `BarActivityAssignment` | Current |
-| Area map UI | City/MountainRoad/Village tabs consume pure plans; area travel and teleport share destination validation. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
+| Area map UI | City/MountainRoad/Village tabs chart pure plans on first open; area travel and teleport share destination validation. | `CityMap{Controller,View,AreaController,AreaView,MountainRoadOverlay,AlpineVillageOverlay}` | Current |
 | Map XYZ inspection | Map points expose precise world coordinates and validated teleport destinations in the existing debug flow. | `CityMapTeleport{Lattice,Grounds}`, `CityMapPointDescriptor` | Current |
 | Map arrival ground | Area-owned ground; City lot/XYZ arrivals re-sample land Y and move occupied markers to a clear street. | `ICityMapTeleportGround`, `CityMap{City,MountainRoad}TeleportGround` | Current |
 | Scene transition | Guarded direct/door loads own pending activation and terminal cleanup; failure handling is centralized. | `PlayerDoorAction{Plan,Controller,Target}`, `CityGameRoot` | Current |
 | Area loading transition | One directed illustration and bottom bar; 20% load / 80% construction, owned until the destination is ready. | `AreaTravelService`, `AreaLoading{Root,ArtCatalog}` | Current |
-| Door transition presentation | A deterministic `3.15 s` unscaled fixed-camera door sequence in a black void, warm on entry and cold on exit. | `DoorTransition{Root,Timeline,Direction}`, `RuntimeSceneSetup` | Current |
+| Door transition presentation | A deterministic `1.6 s` unscaled fixed-camera door sequence in a black void, warm on entry and cold on exit. | `DoorTransition{Root,Timeline,Direction}`, `RuntimeSceneSetup` | Current |
 | Session state | Session facade delegates temporary vehicle ownership; resets and stale leases cannot leak ride state into a new game. | `GameSessionState`, `CityBlueprintCatalog` | Current |
 | Bar drink retail and physical service | The inset 2x2 menu offers exactly four low-grade drinks; either order-key family pays once. | `BarDrink{Catalog,MenuPresentation,ServicePlan,ServiceTimeline,ShopController,VesselView}` | Current |
 | Intoxication stages and presentation | Session alcohol drives reversible visual/audio/body presentation and bounded passive recovery. | `IntoxicationStageRules`, `IntoxicationStatusController` | Current |

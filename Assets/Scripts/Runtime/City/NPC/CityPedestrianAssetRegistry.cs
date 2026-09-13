@@ -352,6 +352,15 @@ namespace BarPromenade
         private void OnEnable()
         {
             ApplyPaletteVariant(paletteVariant);
+            // Every body this prefab dresses can be heard walking: the
+            // pooled passer-by, the park players, the watchman, the
+            // ferryman on his way to the car.
+            NpcFootstepSources.Register(transform);
+        }
+
+        private void OnDisable()
+        {
+            NpcFootstepSources.Unregister(transform);
         }
     }
 }

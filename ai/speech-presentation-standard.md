@@ -37,7 +37,7 @@ reject delivery; never invent an anchor or fall back to bottom speech.
 - Faces read bubble reveal through `SpeechFaceAnimation`; no second clock.
   Punctuation/reading tail close mouths; brows/blink remain independent.
   Pause freezes all face
-  motion; termination restores ordinary faces. Hero/foreman use `SpeechFaceAtlasPresenter`.
+  motion; termination restores faces. Hero/foreman/cannery woman use `SpeechFaceAtlasPresenter`.
 
 ## Ordering and lifetime
 

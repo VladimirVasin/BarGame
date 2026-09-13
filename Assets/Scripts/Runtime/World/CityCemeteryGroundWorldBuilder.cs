@@ -111,6 +111,9 @@ namespace BarPromenade
                 ground.GetComponent<Renderer>(),
                 CityCemeterySurfaceKind.Soil,
                 CityExteriorAppearance.CemeteryGround);
+            // A dig swaps this object's mesh and keeps the object, so the
+            // stamp outlives every rebuild of the slab.
+            FootstepGround.Stamp(ground, FootstepGroundKind.Soil);
             return ground;
         }
     }

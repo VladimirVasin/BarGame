@@ -96,7 +96,42 @@ namespace BarPromenade
 
             BuildGardenModels(root, plan);
             BuildCollision(root, plan);
+            AddPavingFootsteps(root, plan);
             return root.gameObject;
+        }
+
+        /// <summary>
+        /// The paving is render-only over the continuous lawn collider, so
+        /// a boot on the flags would hear grass: every non-lawn surface is
+        /// a stone footstep overlay at the ground top.
+        /// </summary>
+        private static void AddPavingFootsteps(
+            Transform root,
+            CityChurchCourtyardPlan plan)
+        {
+            var paving = new List<RuntimeOrientedBox>();
+            foreach (CityChurchCourtyardSurfaceDescriptor surface in plan.Surfaces)
+            {
+                if (surface.Kind == CityChurchCourtyardSurfaceKind.Lawn)
+                {
+                    continue;
+                }
+
+                Rect bounds = surface.Bounds;
+                paving.Add(new RuntimeOrientedBox(
+                    new Vector3(
+                        bounds.center.x,
+                        plan.GroundTopY,
+                        bounds.center.y),
+                    Quaternion.identity,
+                    new Vector3(bounds.width, 0.024f, bounds.height)));
+            }
+
+            if (paving.Count > 0)
+            {
+                root.gameObject.AddComponent<FootstepGroundOverlay>()
+                    .Initialize(FootstepGroundKind.Stone, paving);
+            }
         }
 
         /// <summary>

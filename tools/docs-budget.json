@@ -132,7 +132,7 @@
       "entry_heading": "### ",
       "entry_max": 2000,
       "archive_floor": 70000,
-      "archive_pointer": "ai/archive/release-notes-2026-08.md",
+      "archive_pointer": "ai/archive/release-notes-2026-09.md",
       "budget": 211000
     },
     "tools/README.md": {
@@ -301,7 +301,7 @@
         "9/Проверка": "sha256:1c3f4ce00942c5bf3bc19cc1f315166b",
         "10/Нельзя": "sha256:8ceeb19f7626199cd3039226a4633252",
         "10/Проверка": "sha256:f3313c35160f2a37d8bf9b21272095cb",
-        "11/Нельзя": "sha256:7d499c5f688161f821a85b682b9aa6ad",
+        "11/Нельзя": "sha256:786f781a05331c7b9eac44ab14c80f24",
         "11/Проверка": "sha256:259a6b9695d6150ce3bba33080be1ad5",
         "12/Нельзя": "sha256:4cfd6fd08701e88ae8b9e91800556f31",
         "12/Проверка": "sha256:00fa2d7b3f90d1b36d42224ac4b95121",

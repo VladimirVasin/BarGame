@@ -3422,23 +3422,23 @@
     },
     {
       "key": "city.cannery.work.01.b",
-      "value": "My sleeve is wet too."
+      "value": "Just my cuff."
     },
     {
       "key": "city.cannery.work.02.a",
-      "value": "This handle rubs my palm raw."
+      "value": "The handle needs another push again."
     },
     {
       "key": "city.cannery.work.02.b",
-      "value": "Mine gets like that by evening."
+      "value": "My palm aches by evening."
     },
     {
       "key": "city.cannery.work.03.a",
-      "value": "The metal chills your fingers."
+      "value": "That lid went on straight."
     },
     {
       "key": "city.cannery.work.03.b",
-      "value": "You can't get warm here even in summer."
+      "value": "The others are straight too."
     },
     {
       "key": "city.cannery.work.04.a",
@@ -3478,15 +3478,15 @@
     },
     {
       "key": "city.cannery.wait.02.b",
-      "value": "Mine are damp too."
+      "value": "Mine too. Right at the toe."
     },
     {
       "key": "city.cannery.wait.03.a",
-      "value": "I'd like to take this hat off."
+      "value": "Less wind by the wall."
     },
     {
       "key": "city.cannery.wait.03.b",
-      "value": "Then your ears get cold."
+      "value": "Your feet still get cold."
     },
     {
       "key": "city.cannery.wait.04.a",
@@ -3498,11 +3498,11 @@
     },
     {
       "key": "city.cannery.wait.05.a",
-      "value": "Straight home after the shift?"
+      "value": "I'll get some bread after the shift."
     },
     {
       "key": "city.cannery.wait.05.b",
-      "value": "Bread first."
+      "value": "I need some too."
     },
     {
       "key": "city.cannery.wait.06.a",
@@ -3538,11 +3538,59 @@
     },
     {
       "key": "city.cannery.receiving.04.a",
-      "value": "You can hear the truck at the far end."
+      "value": "I could hear the truck from inside."
     },
     {
       "key": "city.cannery.receiving.04.b",
       "value": "It's louder by the wall."
+    },
+    {
+      "key": "city.cannery.work.07.a",
+      "value": "The sleeve wears out faster here."
+    },
+    {
+      "key": "city.cannery.work.07.b",
+      "value": "Mine's worn through at the elbow."
+    },
+    {
+      "key": "city.cannery.work.08.a",
+      "value": "The cans are running smoother today."
+    },
+    {
+      "key": "city.cannery.work.08.b",
+      "value": "I noticed."
+    },
+    {
+      "key": "city.cannery.wait.07.a",
+      "value": "My sleeves are dry today."
+    },
+    {
+      "key": "city.cannery.wait.07.b",
+      "value": "Just don't tell anyone."
+    },
+    {
+      "key": "city.cannery.wait.08.a",
+      "value": "You're by the wall again."
+    },
+    {
+      "key": "city.cannery.wait.08.b",
+      "value": "The wind doesn't get down my collar here."
+    },
+    {
+      "key": "city.cannery.wait.09.a",
+      "value": "Sand on the step again."
+    },
+    {
+      "key": "city.cannery.wait.09.b",
+      "value": "It falls off our soles."
+    },
+    {
+      "key": "city.cannery.wait.10.a",
+      "value": "Lunch won't be long now."
+    },
+    {
+      "key": "city.cannery.wait.10.b",
+      "value": "You've been saying that for a while."
     }
   ]
 }

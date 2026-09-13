@@ -57,6 +57,9 @@ namespace BarPromenade
             Transform root = new GameObject(
                 $"Exterior Stair {plan.Id}").transform;
             root.SetParent(parent, false);
+            // On the root: the tread triggers and the hidden ramp under
+            // them are one flight of the sidewalk's flags.
+            FootstepGround.Stamp(root, FootstepGroundKind.Stone);
             var rampColliders = new List<Collider>(plan.Flights.Count);
 
             BuildFlights(root, plan.Flights, rampColliders);

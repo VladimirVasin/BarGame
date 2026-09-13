@@ -17,6 +17,7 @@ namespace BarPromenade
             GameObject root,
             IList<Collider> colliders,
             IList<CapsuleCollider> stoolColliders,
+            IList<Collider> floorColliders,
             Vector3 entranceStart,
             Vector3 entranceEnd)
         {
@@ -24,13 +25,22 @@ namespace BarPromenade
             Colliders = new ReadOnlyCollection<Collider>(colliders);
             StoolColliders =
                 new ReadOnlyCollection<CapsuleCollider>(stoolColliders);
+            FloorColliders = new ReadOnlyCollection<Collider>(floorColliders);
             EntranceStart = entranceStart;
             EntranceEnd = entranceEnd;
         }
 
         public GameObject Root { get; }
+
+        /// <summary>The obstacles: walls, counter, service run, stools.</summary>
         public IReadOnlyList<Collider> Colliders { get; }
         public IReadOnlyList<CapsuleCollider> StoolColliders { get; }
+
+        /// <summary>
+        /// The linoleum slab, apart from the obstacles: it stops nothing,
+        /// it is what a boot lands on.
+        /// </summary>
+        public IReadOnlyList<Collider> FloorColliders { get; }
         public Vector3 EntranceStart { get; }
         public Vector3 EntranceEnd { get; }
         public int ColliderCount => Colliders.Count;
@@ -39,8 +49,10 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Builds the cafe's collider-only gameplay shell from its terminal plan.
-    /// The plateau remains the floor, so this builder emits obstacles only.
+    /// Builds the cafe's collider-only gameplay shell from its terminal plan:
+    /// the obstacles, and a linoleum slab a few millimetres over the plateau
+    /// so a step inside names the floor it lands on rather than the snow
+    /// the plateau is cut from.
     /// </summary>
     public static class MountainRoadCafeCollisionWorldBuilder
     {
@@ -48,6 +60,23 @@ namespace BarPromenade
         public const float BoundaryHeight = 4.16f;
         public const float WallThickness = 0.24f;
         public const float GlazedWallThickness = 0.12f;
+
+        /// <summary>
+        /// How far the slab's top stands over the plateau: enough that a
+        /// downward ray meets it first, well inside the two centimetres an
+        /// interaction dock tolerates under the hero's root.
+        /// </summary>
+        public const float FloorLift = 0.004f;
+        public const float FloorThickness = 0.06f;
+
+        /// <summary>
+        /// The chamfer corner is covered by a staircase of axis-aligned
+        /// boxes rather than a mesh, so the shell stays primitives. Six
+        /// bands leave slivers along the glass shallower than the hero's
+        /// capsule can reach past the wall.
+        /// </summary>
+        public const int FloorChamferBandCount = 6;
+        public const int FloorColliderCount = 2 + FloorChamferBandCount;
 
         public const int PerimeterColliderCount = 6;
         public const int CounterColliderCount = 2;
@@ -148,21 +177,91 @@ namespace BarPromenade
             Transform stoolRoot = CreateGroup(root.transform, "Seven Stools");
             BuildStools(plan, stoolRoot, colliders, stools);
 
+            var floors = new List<Collider>(FloorColliderCount);
+            BuildFloor(plan, CreateGroup(root.transform, "Linoleum Floor"), floors);
+
             if (colliders.Count != ExpectedColliderCount ||
-                stools.Count != StoolColliderCount)
+                stools.Count != StoolColliderCount ||
+                floors.Count != FloorColliderCount)
             {
                 throw new InvalidOperationException(
                     $"Cafe collision recipe produced {colliders.Count} " +
-                    $"colliders and {stools.Count} stools; expected " +
-                    $"{ExpectedColliderCount} and {StoolColliderCount}.");
+                    $"colliders, {stools.Count} stools and {floors.Count} " +
+                    $"floor slabs; expected {ExpectedColliderCount}, " +
+                    $"{StoolColliderCount} and {FloorColliderCount}.");
             }
 
             return new MountainRoadCafeCollisionWorldResult(
                 root,
                 colliders,
                 stools,
+                floors,
                 entranceStart,
                 entranceEnd);
+        }
+
+        /// <summary>
+        /// The slab: the main hall and the entry bay as two boxes, the
+        /// chamfer corner as a staircase under the diagonal glass. Stamped
+        /// once on the group, so every band answers "linoleum".
+        /// </summary>
+        private static void BuildFloor(
+            MountainRoadCafePlan plan,
+            Transform parent,
+            ICollection<Collider> floors)
+        {
+            FootstepGround.Stamp(parent, FootstepGroundKind.Tile);
+            AddFloorBox("floor-hall", parent, plan, -5.32f, 4.48f, -1.76f, 5.44f, floors);
+            AddFloorBox("floor-entry", parent, plan, -5.32f, 1.68f, -4.56f, -1.76f, floors);
+
+            // The corner is the right triangle between the entry edge, the
+            // east glass and the diagonal: right in [1.68, 4.48], forward in
+            // [-4.56, -1.76], with (right - 1.68) + (-1.76 - forward) <= 2.8.
+            const float leg = 2.8f;
+            float rise = leg / (FloorChamferBandCount + 1);
+            for (int band = 0; band < FloorChamferBandCount; band++)
+            {
+                float forwardMax = -1.76f - band * rise;
+                float forwardMin = forwardMax - rise;
+                float rightMax = 1.68f + (leg - (band + 1) * rise);
+                AddFloorBox(
+                    $"floor-chamfer-{band:00}",
+                    parent,
+                    plan,
+                    1.68f,
+                    rightMax,
+                    forwardMin,
+                    forwardMax,
+                    floors);
+            }
+        }
+
+        private static void AddFloorBox(
+            string name,
+            Transform parent,
+            MountainRoadCafePlan plan,
+            float rightMin,
+            float rightMax,
+            float forwardMin,
+            float forwardMax,
+            ICollection<Collider> floors)
+        {
+            Vector3 center = Local(
+                plan,
+                (rightMin + rightMax) * 0.5f,
+                0f,
+                (forwardMin + forwardMax) * 0.5f);
+            center.y = plan.FloorY + FloorLift - FloorThickness * 0.5f;
+            AddBox(
+                name,
+                parent,
+                center,
+                FrameRotation(plan),
+                new Vector3(
+                    rightMax - rightMin,
+                    FloorThickness,
+                    forwardMax - forwardMin),
+                floors);
         }
 
         private static void BuildPerimeter(

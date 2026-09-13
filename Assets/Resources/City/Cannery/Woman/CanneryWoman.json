@@ -1,0 +1,1634 @@
+{
+  "generator": "build-cannery-woman-3d-model.py",
+  "version": "1.0.0",
+  "role": "CanneryWoman",
+  "anatomy_standard": "NpcHumanV2",
+  "height_scale": 0.9287749287749287,
+  "height_m": 1.63,
+  "bone_count": 43,
+  "mesh_count": 55,
+  "triangle_count": 8000,
+  "bounds_min": [
+    -0.717035,
+    -0.204,
+    0.0
+  ],
+  "bounds_max": [
+    0.718142,
+    0.193883,
+    1.755
+  ],
+  "triangle_budget": [
+    6000,
+    8000
+  ],
+  "body_bone_count": 31,
+  "hair_chains": [
+    {
+      "name": "HairBack",
+      "bones": [
+        "HairBack.00",
+        "HairBack.01",
+        "HairBack.02",
+        "HairBack.Tip"
+      ],
+      "points_blender": [
+        [
+          0,
+          0.06,
+          1.681
+        ],
+        [
+          0,
+          0.156,
+          1.48
+        ],
+        [
+          0,
+          0.158,
+          1.3
+        ],
+        [
+          0.004,
+          0.145,
+          1.115
+        ]
+      ]
+    },
+    {
+      "name": "HairLeft",
+      "bones": [
+        "HairLeft.00",
+        "HairLeft.01",
+        "HairLeft.02",
+        "HairLeft.Tip"
+      ],
+      "points_blender": [
+        [
+          0.07,
+          0.008,
+          1.68
+        ],
+        [
+          0.114,
+          0.077,
+          1.486
+        ],
+        [
+          0.119,
+          0.117,
+          1.294
+        ],
+        [
+          0.085,
+          0.119,
+          1.154
+        ]
+      ]
+    },
+    {
+      "name": "HairRight",
+      "bones": [
+        "HairRight.00",
+        "HairRight.01",
+        "HairRight.02",
+        "HairRight.Tip"
+      ],
+      "points_blender": [
+        [
+          -0.071,
+          0.014,
+          1.678
+        ],
+        [
+          -0.115,
+          0.083,
+          1.474
+        ],
+        [
+          -0.123,
+          0.12,
+          1.283
+        ],
+        [
+          -0.088,
+          0.116,
+          1.128
+        ]
+      ]
+    }
+  ],
+  "hair_envelopes": [
+    {
+      "renderer": "HAIR_LongBack",
+      "chain": "HairBack",
+      "free_from_progress": 0.25,
+      "rings": [
+        {
+          "progress": 0.0,
+          "center_blender": [
+            0.0,
+            0.06,
+            1.6809999
+          ],
+          "half_width": 0.075,
+          "half_depth": 0.025,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "head",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 0.08333333333333333,
+          "center_blender": [
+            0.0010353,
+            0.0876266,
+            1.6302581
+          ],
+          "half_width": 0.0828675,
+          "half_depth": 0.0252651,
+          "half_height": 4e-07,
+          "weights": [
+            {
+              "bone": "head",
+              "value": 0.509804
+            },
+            {
+              "bone": "HairBack.00",
+              "value": 0.4901961
+            }
+          ]
+        },
+        {
+          "progress": 0.16666666666666666,
+          "center_blender": [
+            0.0034641,
+            0.1186381,
+            1.5791875
+          ],
+          "half_width": 0.0912456,
+          "half_depth": 0.0250495,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "head",
+              "value": 0.0196078
+            },
+            {
+              "bone": "HairBack.00",
+              "value": 0.9803922
+            }
+          ]
+        },
+        {
+          "progress": 0.25,
+          "center_blender": [
+            0.0056569,
+            0.1463875,
+            1.5287738
+          ],
+          "half_width": 0.0986756,
+          "half_depth": 0.0256219,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "HairBack.00",
+              "value": 0.7575758
+            },
+            {
+              "bone": "HairBack.01",
+              "value": 0.2424242
+            }
+          ]
+        },
+        {
+          "progress": 0.3333333333333333,
+          "center_blender": [
+            0.006,
+            0.16425,
+            1.4799998
+          ],
+          "half_width": 0.1044277,
+          "half_depth": 0.0262003,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "HairBack.00",
+              "value": 0.5050505
+            },
+            {
+              "bone": "HairBack.01",
+              "value": 0.4949495
+            }
+          ]
+        },
+        {
+          "progress": 0.4166666666666667,
+          "center_blender": [
+            0.00377,
+            0.1687735,
+            1.4336408
+          ],
+          "half_width": 0.1026823,
+          "half_depth": 0.0251096,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "HairBack.00",
+              "value": 0.2525252
+            },
+            {
+              "bone": "HairBack.01",
+              "value": 0.7474747
+            }
+          ]
+        },
+        {
+          "progress": 0.5,
+          "center_blender": [
+            -0.00025,
+            0.1638125,
+            1.3890001
+          ],
+          "half_width": 0.1009214,
+          "half_depth": 0.0232951,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairBack.01",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 0.5833333333333334,
+          "center_blender": [
+            -0.004145,
+            0.1554452,
+            1.3448595
+          ],
+          "half_width": 0.0971538,
+          "half_depth": 0.0226925,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "HairBack.01",
+              "value": 0.7474747
+            },
+            {
+              "bone": "HairBack.02",
+              "value": 0.2525252
+            }
+          ]
+        },
+        {
+          "progress": 0.6666666666666666,
+          "center_blender": [
+            -0.006,
+            0.14975,
+            1.3
+          ],
+          "half_width": 0.0918469,
+          "half_depth": 0.0221642,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairBack.01",
+              "value": 0.4949495
+            },
+            {
+              "bone": "HairBack.02",
+              "value": 0.5050505
+            }
+          ]
+        },
+        {
+          "progress": 0.75,
+          "center_blender": [
+            -0.0049381,
+            0.1480265,
+            1.2541015
+          ],
+          "half_width": 0.0851138,
+          "half_depth": 0.017634,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "HairBack.01",
+              "value": 0.2424242
+            },
+            {
+              "bone": "HairBack.02",
+              "value": 0.7575758
+            }
+          ]
+        },
+        {
+          "progress": 0.8333333333333334,
+          "center_blender": [
+            -0.0017141,
+            0.1476744,
+            1.2078125
+          ],
+          "half_width": 0.0786415,
+          "half_depth": 0.0127426,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "HairBack.02",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 0.9166666666666666,
+          "center_blender": [
+            0.001871,
+            0.1471781,
+            1.1613672
+          ],
+          "half_width": 0.0708358,
+          "half_depth": 0.0083898,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "HairBack.02",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 1.0,
+          "center_blender": [
+            0.004,
+            0.145,
+            1.1149998
+          ],
+          "half_width": 0.063,
+          "half_depth": 0.004,
+          "half_height": 0.0394315,
+          "weights": [
+            {
+              "bone": "HairBack.02",
+              "value": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "renderer": "HAIR_LongLeft",
+      "chain": "HairLeft",
+      "free_from_progress": 0.25,
+      "rings": [
+        {
+          "progress": 0.0,
+          "center_blender": [
+            0.07,
+            0.008,
+            1.6800002
+          ],
+          "half_width": 0.021,
+          "half_depth": 0.019,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "head",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 0.08333333333333333,
+          "center_blender": [
+            0.0829493,
+            0.0273532,
+            1.631453
+          ],
+          "half_width": 0.0273675,
+          "half_depth": 0.0200151,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "head",
+              "value": 0.509804
+            },
+            {
+              "bone": "HairLeft.00",
+              "value": 0.4901961
+            }
+          ]
+        },
+        {
+          "progress": 0.16666666666666666,
+          "center_blender": [
+            0.0979016,
+            0.0490756,
+            1.5828749
+          ],
+          "half_width": 0.0342456,
+          "half_depth": 0.0205495,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "head",
+              "value": 0.0196078
+            },
+            {
+              "bone": "HairLeft.00",
+              "value": 0.9803922
+            }
+          ]
+        },
+        {
+          "progress": 0.25,
+          "center_blender": [
+            0.1113991,
+            0.0695672,
+            1.5343591
+          ],
+          "half_width": 0.0401756,
+          "half_depth": 0.0218719,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "HairLeft.00",
+              "value": 0.7575758
+            },
+            {
+              "bone": "HairLeft.01",
+              "value": 0.2424242
+            }
+          ]
+        },
+        {
+          "progress": 0.3333333333333333,
+          "center_blender": [
+            0.12,
+            0.08525,
+            1.4859999
+          ],
+          "half_width": 0.0444277,
+          "half_depth": 0.0232003,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairLeft.00",
+              "value": 0.5050505
+            },
+            {
+              "bone": "HairLeft.01",
+              "value": 0.4949495
+            }
+          ]
+        },
+        {
+          "progress": 0.4166666666666667,
+          "center_blender": [
+            0.12277,
+            0.0952423,
+            1.4366404
+          ],
+          "half_width": 0.0439323,
+          "half_depth": 0.0221096,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "HairLeft.00",
+              "value": 0.2525252
+            },
+            {
+              "bone": "HairLeft.01",
+              "value": 0.7474747
+            }
+          ]
+        },
+        {
+          "progress": 0.5,
+          "center_blender": [
+            0.121375,
+            0.1011875,
+            1.3866252
+          ],
+          "half_width": 0.0434214,
+          "half_depth": 0.0202951,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "HairLeft.01",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 0.5833333333333334,
+          "center_blender": [
+            0.1175426,
+            0.105039,
+            1.338297
+          ],
+          "half_width": 0.0409038,
+          "half_depth": 0.0196925,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairLeft.01",
+              "value": 0.7474747
+            },
+            {
+              "bone": "HairLeft.02",
+              "value": 0.2525252
+            }
+          ]
+        },
+        {
+          "progress": 0.6666666666666666,
+          "center_blender": [
+            0.113,
+            0.10875,
+            1.294
+          ],
+          "half_width": 0.036847,
+          "half_depth": 0.0191641,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairLeft.01",
+              "value": 0.4949495
+            },
+            {
+              "bone": "HairLeft.02",
+              "value": 0.5050505
+            }
+          ]
+        },
+        {
+          "progress": 0.75,
+          "center_blender": [
+            0.1075853,
+            0.1123937,
+            1.2553438
+          ],
+          "half_width": 0.0336138,
+          "half_depth": 0.015384,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairLeft.01",
+              "value": 0.2424242
+            },
+            {
+              "bone": "HairLeft.02",
+              "value": 0.7575758
+            }
+          ]
+        },
+        {
+          "progress": 0.8333333333333334,
+          "center_blender": [
+            0.1009734,
+            0.1156119,
+            1.2207501
+          ],
+          "half_width": 0.0306415,
+          "half_depth": 0.0112427,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairLeft.02",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 0.9166666666666666,
+          "center_blender": [
+            0.0933788,
+            0.1179671,
+            1.1877811
+          ],
+          "half_width": 0.0263358,
+          "half_depth": 0.0076398,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "HairLeft.02",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 1.0,
+          "center_blender": [
+            0.085,
+            0.119,
+            1.1539998
+          ],
+          "half_width": 0.022,
+          "half_depth": 0.004,
+          "half_height": 0.0396665,
+          "weights": [
+            {
+              "bone": "HairLeft.02",
+              "value": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "renderer": "HAIR_LongRight",
+      "chain": "HairRight",
+      "free_from_progress": 0.25,
+      "rings": [
+        {
+          "progress": 0.0,
+          "center_blender": [
+            -0.071,
+            0.014,
+            1.6779996
+          ],
+          "half_width": 0.021,
+          "half_depth": 0.019,
+          "half_height": 4e-07,
+          "weights": [
+            {
+              "bone": "head",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 0.08333333333333333,
+          "center_blender": [
+            -0.083879,
+            0.0334235,
+            1.6266955
+          ],
+          "half_width": 0.0273675,
+          "half_depth": 0.0200151,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "head",
+              "value": 0.509804
+            },
+            {
+              "bone": "HairRight.00",
+              "value": 0.4901961
+            }
+          ]
+        },
+        {
+          "progress": 0.16666666666666666,
+          "center_blender": [
+            -0.0987141,
+            0.0552631,
+            1.5751876
+          ],
+          "half_width": 0.0342456,
+          "half_depth": 0.0205495,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "head",
+              "value": 0.0196078
+            },
+            {
+              "bone": "HairRight.00",
+              "value": 0.9803922
+            }
+          ]
+        },
+        {
+          "progress": 0.25,
+          "center_blender": [
+            -0.1121881,
+            0.0757782,
+            1.524086
+          ],
+          "half_width": 0.0401756,
+          "half_depth": 0.0218719,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairRight.00",
+              "value": 0.7575758
+            },
+            {
+              "bone": "HairRight.01",
+              "value": 0.2424242
+            }
+          ]
+        },
+        {
+          "progress": 0.3333333333333333,
+          "center_blender": [
+            -0.121,
+            0.09125,
+            1.4739997
+          ],
+          "half_width": 0.0444278,
+          "half_depth": 0.0232003,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "HairRight.00",
+              "value": 0.5050505
+            },
+            {
+              "bone": "HairRight.01",
+              "value": 0.4949495
+            }
+          ]
+        },
+        {
+          "progress": 0.4166666666666667,
+          "center_blender": [
+            -0.1244028,
+            0.1007735,
+            1.424492
+          ],
+          "half_width": 0.0439323,
+          "half_depth": 0.0221097,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "HairRight.00",
+              "value": 0.2525252
+            },
+            {
+              "bone": "HairRight.01",
+              "value": 0.7474747
+            }
+          ]
+        },
+        {
+          "progress": 0.5,
+          "center_blender": [
+            -0.1239375,
+            0.1060625,
+            1.3754374
+          ],
+          "half_width": 0.0434214,
+          "half_depth": 0.0202951,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "HairRight.01",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 0.5833333333333334,
+          "center_blender": [
+            -0.1210035,
+            0.1090702,
+            1.327914
+          ],
+          "half_width": 0.0409038,
+          "half_depth": 0.0196925,
+          "half_height": 1e-07,
+          "weights": [
+            {
+              "bone": "HairRight.01",
+              "value": 0.7474747
+            },
+            {
+              "bone": "HairRight.02",
+              "value": 0.2525252
+            }
+          ]
+        },
+        {
+          "progress": 0.6666666666666666,
+          "center_blender": [
+            -0.117,
+            0.11175,
+            1.2830002
+          ],
+          "half_width": 0.0368469,
+          "half_depth": 0.0191641,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "HairRight.01",
+              "value": 0.4949495
+            },
+            {
+              "bone": "HairRight.02",
+              "value": 0.5050505
+            }
+          ]
+        },
+        {
+          "progress": 0.75,
+          "center_blender": [
+            -0.1116166,
+            0.1141046,
+            1.2417185
+          ],
+          "half_width": 0.0336138,
+          "half_depth": 0.015384,
+          "half_height": 2e-07,
+          "weights": [
+            {
+              "bone": "HairRight.01",
+              "value": 0.2424242
+            },
+            {
+              "bone": "HairRight.02",
+              "value": 0.7575758
+            }
+          ]
+        },
+        {
+          "progress": 0.8333333333333334,
+          "center_blender": [
+            -0.1047234,
+            0.1157994,
+            1.2032502
+          ],
+          "half_width": 0.0306415,
+          "half_depth": 0.0112427,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairRight.02",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 0.9166666666666666,
+          "center_blender": [
+            -0.0967225,
+            0.1165374,
+            1.1659062
+          ],
+          "half_width": 0.0263358,
+          "half_depth": 0.0076398,
+          "half_height": 0.0,
+          "weights": [
+            {
+              "bone": "HairRight.02",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "progress": 1.0,
+          "center_blender": [
+            -0.088,
+            0.116,
+            1.128
+          ],
+          "half_width": 0.022,
+          "half_depth": 0.004,
+          "half_height": 0.0368872,
+          "weights": [
+            {
+              "bone": "HairRight.02",
+              "value": 1.0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "closed_mesh_count": 52,
+  "surface_signature": "3365726bc28ab95efced8ea2a86132f58a81cf75e5a898ca86aff397ec2ab2d4",
+  "atlas_sha256": "1e530d6b801456107f72f9112009a6ec413ad2bb24e00c1f33f8ac6b3765cc4d",
+  "face_atlas_sha256": "ddf2e89542daea1c06d74553c4b5c8ba9a9a1317fc59d77049468171646c6eef",
+  "face": {
+    "renderer": "GEO_FaceSurface",
+    "texture": "CanneryWomanFaceAtlas.png",
+    "width": 512,
+    "height": 256,
+    "columns": 8,
+    "rows": 4,
+    "cell_size": 64,
+    "uv_contract": "local_0_1_runtime_cell_scale_offset",
+    "expressions": [
+      "Rest",
+      "HalfBlink",
+      "Blink",
+      "Emphasis",
+      "Focused"
+    ],
+    "mouths": [
+      "Closed",
+      "Narrow",
+      "Open",
+      "Round",
+      "Wide",
+      "Teeth"
+    ],
+    "softened_cell": 30,
+    "warm_smile_cell": 31
+  },
+  "parts": [
+    {
+      "name": "GEO_FaceSurface",
+      "color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "role": "facial_atlas",
+      "triangles": 160
+    },
+    {
+      "name": "GEO_Head",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body",
+      "triangles": 360
+    },
+    {
+      "name": "GEO_Neck",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body",
+      "triangles": 156
+    },
+    {
+      "name": "GEO_Ear.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 100
+    },
+    {
+      "name": "GEO_Ear.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 100
+    },
+    {
+      "name": "HAIR_Crown",
+      "color": [
+        0.14412847085805777,
+        0.05780543019106723,
+        0.03189603307301153,
+        1.0
+      ],
+      "role": "hair",
+      "triangles": 280
+    },
+    {
+      "name": "HAIR_NapeScalp",
+      "color": [
+        0.14412847085805777,
+        0.05780543019106723,
+        0.03189603307301153,
+        1.0
+      ],
+      "role": "hair",
+      "triangles": 56
+    },
+    {
+      "name": "HAIR_SweptSide.L",
+      "color": [
+        0.14412847085805777,
+        0.05780543019106723,
+        0.03189603307301153,
+        1.0
+      ],
+      "role": "hair",
+      "triangles": 96
+    },
+    {
+      "name": "HAIR_SweptSide.R",
+      "color": [
+        0.14412847085805777,
+        0.05780543019106723,
+        0.03189603307301153,
+        1.0
+      ],
+      "role": "hair",
+      "triangles": 96
+    },
+    {
+      "name": "HAIR_PartSweep",
+      "color": [
+        0.14412847085805777,
+        0.05780543019106723,
+        0.03189603307301153,
+        1.0
+      ],
+      "role": "hair",
+      "triangles": 76
+    },
+    {
+      "name": "HAIR_LongBack",
+      "color": [
+        0.14412847085805777,
+        0.05780543019106723,
+        0.03189603307301153,
+        1.0
+      ],
+      "role": "hair",
+      "triangles": 412
+    },
+    {
+      "name": "HAIR_LongLeft",
+      "color": [
+        0.14412847085805777,
+        0.05780543019106723,
+        0.03189603307301153,
+        1.0
+      ],
+      "role": "hair",
+      "triangles": 412
+    },
+    {
+      "name": "HAIR_LongRight",
+      "color": [
+        0.14412847085805777,
+        0.05780543019106723,
+        0.03189603307301153,
+        1.0
+      ],
+      "role": "hair",
+      "triangles": 412
+    },
+    {
+      "name": "CLO_HairKerchief",
+      "color": [
+        0.13286832155381798,
+        0.21223075741405523,
+        0.24620132670783548,
+        1.0
+      ],
+      "role": "headwear",
+      "triangles": 148
+    },
+    {
+      "name": "CLO_KerchiefFold.L",
+      "color": [
+        0.13286832155381798,
+        0.21223075741405523,
+        0.24620132670783548,
+        1.0
+      ],
+      "role": "headwear",
+      "triangles": 32
+    },
+    {
+      "name": "CLO_KerchiefFold.R",
+      "color": [
+        0.13286832155381798,
+        0.21223075741405523,
+        0.24620132670783548,
+        1.0
+      ],
+      "role": "headwear",
+      "triangles": 32
+    },
+    {
+      "name": "CLO_KerchiefKnot",
+      "color": [
+        0.13286832155381798,
+        0.21223075741405523,
+        0.24620132670783548,
+        1.0
+      ],
+      "role": "headwear",
+      "triangles": 80
+    },
+    {
+      "name": "CLO_KerchiefTuckedEnd.L",
+      "color": [
+        0.13286832155381798,
+        0.21223075741405523,
+        0.24620132670783548,
+        1.0
+      ],
+      "role": "headwear",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_KerchiefTuckedEnd.R",
+      "color": [
+        0.13286832155381798,
+        0.21223075741405523,
+        0.24620132670783548,
+        1.0
+      ],
+      "role": "headwear",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_LongSleeveTop",
+      "color": [
+        0.5711248294648731,
+        0.5520114015120001,
+        0.4793201831008268,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 1148
+    },
+    {
+      "name": "CLO_HighWaistJeans",
+      "color": [
+        0.04518620438567554,
+        0.07618538148130785,
+        0.1301364766903643,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 1316
+    },
+    {
+      "name": "CLO_LeatherBelt",
+      "color": [
+        0.09084171118340768,
+        0.05448027644244237,
+        0.03433980680868217,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 124
+    },
+    {
+      "name": "CLO_BeltBuckle22",
+      "color": [
+        0.23455058216100522,
+        0.2232279573168085,
+        0.18116424424986022,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltBuckle23",
+      "color": [
+        0.23455058216100522,
+        0.2232279573168085,
+        0.18116424424986022,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltBuckle24",
+      "color": [
+        0.23455058216100522,
+        0.2232279573168085,
+        0.18116424424986022,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltBuckle25",
+      "color": [
+        0.23455058216100522,
+        0.2232279573168085,
+        0.18116424424986022,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltBuckle26",
+      "color": [
+        0.23455058216100522,
+        0.2232279573168085,
+        0.18116424424986022,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop27",
+      "color": [
+        0.04518620438567554,
+        0.07618538148130785,
+        0.1301364766903643,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop28",
+      "color": [
+        0.04518620438567554,
+        0.07618538148130785,
+        0.1301364766903643,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop29",
+      "color": [
+        0.04518620438567554,
+        0.07618538148130785,
+        0.1301364766903643,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop30",
+      "color": [
+        0.04518620438567554,
+        0.07618538148130785,
+        0.1301364766903643,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BeltLoop31",
+      "color": [
+        0.04518620438567554,
+        0.07618538148130785,
+        0.1301364766903643,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 12
+    },
+    {
+      "name": "CLO_CrewNeckRib",
+      "color": [
+        0.5711248294648731,
+        0.5520114015120001,
+        0.4793201831008268,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 92
+    },
+    {
+      "name": "CLO_Sleeve.L",
+      "color": [
+        0.5711248294648731,
+        0.5520114015120001,
+        0.4793201831008268,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 360
+    },
+    {
+      "name": "CLO_Cuff.L",
+      "color": [
+        0.5711248294648731,
+        0.5520114015120001,
+        0.4793201831008268,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 52
+    },
+    {
+      "name": "GEO_Palm.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body",
+      "triangles": 144
+    },
+    {
+      "name": "GEO_Finger0.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Finger1.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Finger2.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Finger3.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Thumb.L",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 60
+    },
+    {
+      "name": "GEO_WorkShoe.L",
+      "color": [
+        0.05126945837404324,
+        0.046665086336880095,
+        0.03954623527673284,
+        1.0
+      ],
+      "role": "footwear",
+      "triangles": 156
+    },
+    {
+      "name": "GEO_ShoeWelt.L",
+      "color": [
+        0.022173884793387385,
+        0.02315336617811041,
+        0.0202885630566524,
+        1.0
+      ],
+      "role": "footwear",
+      "triangles": 92
+    },
+    {
+      "name": "GEO_ShoeHeel.L",
+      "color": [
+        0.022173884793387385,
+        0.02315336617811041,
+        0.0202885630566524,
+        1.0
+      ],
+      "role": "footwear",
+      "triangles": 44
+    },
+    {
+      "name": "CLO_Sleeve.R",
+      "color": [
+        0.5711248294648731,
+        0.5520114015120001,
+        0.4793201831008268,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 360
+    },
+    {
+      "name": "CLO_Cuff.R",
+      "color": [
+        0.5711248294648731,
+        0.5520114015120001,
+        0.4793201831008268,
+        1.0
+      ],
+      "role": "clothing",
+      "triangles": 52
+    },
+    {
+      "name": "GEO_Palm.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body",
+      "triangles": 144
+    },
+    {
+      "name": "GEO_Finger0.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Finger1.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Finger2.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Finger3.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Thumb.R",
+      "color": [
+        0.47353149614800955,
+        0.32314320911295075,
+        0.24228112246555486,
+        1.0
+      ],
+      "role": "body_detail",
+      "triangles": 60
+    },
+    {
+      "name": "GEO_WorkShoe.R",
+      "color": [
+        0.05126945837404324,
+        0.046665086336880095,
+        0.03954623527673284,
+        1.0
+      ],
+      "role": "footwear",
+      "triangles": 156
+    },
+    {
+      "name": "GEO_ShoeWelt.R",
+      "color": [
+        0.022173884793387385,
+        0.02315336617811041,
+        0.0202885630566524,
+        1.0
+      ],
+      "role": "footwear",
+      "triangles": 92
+    },
+    {
+      "name": "GEO_ShoeHeel.R",
+      "color": [
+        0.022173884793387385,
+        0.02315336617811041,
+        0.0202885630566524,
+        1.0
+      ],
+      "role": "footwear",
+      "triangles": 44
+    }
+  ],
+  "geometry_signature": "396660b150b672152e3ad7e0850a835182cf7acb0c766cfc9f037550302ac93d",
+  "outfit": {
+    "id": "cannery_workwear",
+    "atlas": "CanneryWomanAtlas.png",
+    "parts": [
+      {
+        "slot": "top",
+        "renderers": [
+          "CLO_LongSleeveTop",
+          "CLO_CrewNeckRib"
+        ]
+      },
+      {
+        "slot": "sleeves",
+        "renderers": [
+          "CLO_Sleeve.L",
+          "CLO_Sleeve.R"
+        ]
+      },
+      {
+        "slot": "cuffs",
+        "renderers": [
+          "CLO_Cuff.L",
+          "CLO_Cuff.R"
+        ]
+      },
+      {
+        "slot": "jeans",
+        "renderers": [
+          "CLO_HighWaistJeans"
+        ]
+      },
+      {
+        "slot": "belt",
+        "renderers": [
+          "CLO_LeatherBelt"
+        ]
+      },
+      {
+        "slot": "buckle",
+        "renderers": [
+          "CLO_BeltBuckle22",
+          "CLO_BeltBuckle23",
+          "CLO_BeltBuckle24",
+          "CLO_BeltBuckle25",
+          "CLO_BeltBuckle26"
+        ]
+      },
+      {
+        "slot": "belt_loops",
+        "renderers": [
+          "CLO_BeltLoop27",
+          "CLO_BeltLoop28",
+          "CLO_BeltLoop29",
+          "CLO_BeltLoop30",
+          "CLO_BeltLoop31"
+        ]
+      },
+      {
+        "slot": "shoes",
+        "renderers": [
+          "GEO_WorkShoe.L",
+          "GEO_ShoeWelt.L",
+          "GEO_ShoeHeel.L",
+          "GEO_WorkShoe.R",
+          "GEO_ShoeWelt.R",
+          "GEO_ShoeHeel.R"
+        ]
+      },
+      {
+        "slot": "kerchief",
+        "renderers": [
+          "CLO_HairKerchief",
+          "CLO_KerchiefFold.L",
+          "CLO_KerchiefFold.R"
+        ]
+      },
+      {
+        "slot": "knot",
+        "renderers": [
+          "CLO_KerchiefKnot"
+        ]
+      },
+      {
+        "slot": "ends",
+        "renderers": [
+          "CLO_KerchiefTuckedEnd.L",
+          "CLO_KerchiefTuckedEnd.R"
+        ]
+      }
+    ]
+  },
+  "signature": "194617cb1d8adfaaa31b434f5ccbd95723b4b1c3239af69aff8157e0d49470ae"
+}

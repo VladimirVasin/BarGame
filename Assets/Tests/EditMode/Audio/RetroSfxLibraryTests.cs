@@ -32,6 +32,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(definition.Duration, Is.InRange(0.04f, 3f));
                 Assert.That(definition.Volume, Is.InRange(0.01f, 1f));
                 Assert.That(definition.MaxVoices, Is.InRange(1, 3));
+                Assert.That(definition.VariantCount, Is.InRange(1, 4));
                 Assert.That(definition.SampleHold, Is.InRange(1, 4));
                 Assert.That(
                     definition.QuantizationSteps,
@@ -58,6 +59,16 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(RetroSfxId.UiCancel)]
         [TestCase(RetroSfxId.MapOpen)]
         [TestCase(RetroSfxId.Footstep)]
+        [TestCase(RetroSfxId.FootstepSnow)]
+        [TestCase(RetroSfxId.FootstepSoil)]
+        [TestCase(RetroSfxId.FootstepConcrete)]
+        [TestCase(RetroSfxId.FootstepStone)]
+        [TestCase(RetroSfxId.FootstepGrass)]
+        [TestCase(RetroSfxId.FootstepSand)]
+        [TestCase(RetroSfxId.FootstepWood)]
+        [TestCase(RetroSfxId.FootstepCarpet)]
+        [TestCase(RetroSfxId.FootstepTile)]
+        [TestCase(RetroSfxId.FootstepPuddle)]
         [TestCase(RetroSfxId.Door)]
         [TestCase(RetroSfxId.DoorCreak)]
         [TestCase(RetroSfxId.Pour)]
@@ -229,6 +240,163 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(retch, Is.Not.EqualTo(hiccup));
             Assert.That(gush, Is.Not.EqualTo(hiccup));
             Assert.That(splat, Is.Not.EqualTo(hiccup));
+        }
+
+        private static readonly RetroSfxId[] FootstepCues =
+        {
+            RetroSfxId.Footstep,
+            RetroSfxId.FootstepSnow,
+            RetroSfxId.FootstepSoil,
+            RetroSfxId.FootstepConcrete,
+            RetroSfxId.FootstepStone,
+            RetroSfxId.FootstepGrass,
+            RetroSfxId.FootstepSand,
+            RetroSfxId.FootstepWood,
+            RetroSfxId.FootstepCarpet,
+            RetroSfxId.FootstepTile,
+            RetroSfxId.FootstepPuddle
+        };
+
+        [Test]
+        public void FootstepCues_AreDistinctSpatialWorldEffectsWithVariants()
+        {
+            var canonical = new float[FootstepCues.Length][];
+            for (int index = 0; index < FootstepCues.Length; index++)
+            {
+                RetroSfxId id = FootstepCues[index];
+                RetroSfxDefinition definition =
+                    RetroSfxLibrary.GetDefinition(id);
+                Assert.That(
+                    definition.Category,
+                    Is.EqualTo(RetroSfxCategory.World),
+                    id.ToString());
+                Assert.That(
+                    definition.SpatialBlend,
+                    Is.GreaterThanOrEqualTo(0.9f),
+                    id.ToString());
+                // A step, not an event: the puddle's tail is the longest.
+                Assert.That(
+                    definition.Duration,
+                    Is.LessThanOrEqualTo(0.25f),
+                    id.ToString());
+                Assert.That(
+                    definition.Volume,
+                    Is.LessThanOrEqualTo(0.3f),
+                    id.ToString());
+                Assert.That(
+                    definition.VariantCount,
+                    Is.EqualTo(3),
+                    id.ToString());
+
+                canonical[index] = RetroSfxLibrary.GenerateSamples(id);
+                // Variant 0 IS the clip the single-clip days had.
+                CollectionAssert.AreEqual(
+                    canonical[index],
+                    RetroSfxLibrary.GenerateSamples(id, 0),
+                    id.ToString());
+                float[] previous = canonical[index];
+                for (int variant = 1;
+                     variant < definition.VariantCount;
+                     variant++)
+                {
+                    float[] samples =
+                        RetroSfxLibrary.GenerateSamples(id, variant);
+                    string label = id + " variant " + variant;
+                    Assert.That(
+                        samples.Length,
+                        Is.EqualTo(canonical[index].Length),
+                        label);
+                    AssertAudible(samples, label);
+                    Assert.That(samples, Is.Not.EqualTo(previous), label);
+                    Assert.That(
+                        samples,
+                        Is.Not.EqualTo(canonical[index]),
+                        label);
+                    previous = samples;
+                }
+            }
+
+            for (int first = 0; first < FootstepCues.Length; first++)
+            {
+                for (int second = first + 1;
+                     second < FootstepCues.Length;
+                     second++)
+                {
+                    Assert.That(
+                        canonical[first],
+                        Is.Not.EqualTo(canonical[second]),
+                        FootstepCues[first] + " vs " + FootstepCues[second]);
+                }
+            }
+
+            // A run through a puddle clusters splashes; every other step
+            // keeps the footstep's three voices.
+            Assert.That(
+                RetroSfxLibrary.GetDefinition(RetroSfxId.FootstepPuddle)
+                    .MaxVoices,
+                Is.EqualTo(2));
+
+            // Only footsteps carry a bank; the service generates exactly
+            // the extra clips those banks add.
+            for (int index = 1; index < (int)RetroSfxId.Count; index++)
+            {
+                var id = (RetroSfxId)index;
+                if (System.Array.IndexOf(FootstepCues, id) >= 0)
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    RetroSfxLibrary.GetDefinition(id).VariantCount,
+                    Is.EqualTo(1),
+                    id.ToString());
+            }
+
+            Assert.That(
+                RetroSfxLibrary.TotalClipCount,
+                Is.EqualTo(RetroSfxLibrary.Count + FootstepCues.Length * 2));
+        }
+
+        [Test]
+        public void NextVariant_NeverRepeatsAndCoversEveryVariant()
+        {
+            // Consecutive footsteps on a walk advance the sequence by one
+            // each; the choice must still not settle into two of three.
+            int last = 0;
+            var seen = new bool[3];
+            for (uint sequence = 0; sequence < 60; sequence++)
+            {
+                int next = RetroSfxLibrary.NextVariant(last, 3, sequence);
+                Assert.That(next, Is.InRange(0, 2));
+                Assert.That(
+                    next,
+                    Is.Not.EqualTo(last),
+                    "sequence " + sequence);
+                seen[next] = true;
+                last = next;
+            }
+
+            Assert.That(seen, Is.All.True);
+            Assert.That(RetroSfxLibrary.NextVariant(0, 1, 7u), Is.EqualTo(0));
+            Assert.That(RetroSfxLibrary.NextVariant(3, 2, 7u), Is.EqualTo(0));
+        }
+
+        private static void AssertAudible(float[] samples, string label)
+        {
+            float peak = 0f;
+            double energy = 0d;
+            for (int index = 0; index < samples.Length; index++)
+            {
+                float sample = samples[index];
+                Assert.That(float.IsNaN(sample), Is.False, label);
+                Assert.That(float.IsInfinity(sample), Is.False, label);
+                peak = Mathf.Max(peak, Mathf.Abs(sample));
+                energy += sample * sample;
+            }
+
+            Assert.That(peak, Is.GreaterThan(0.04f), label);
+            Assert.That(peak, Is.LessThanOrEqualTo(0.981f), label);
+            Assert.That(energy, Is.GreaterThan(0.01d), label);
         }
 
         [Test]

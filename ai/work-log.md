@@ -6,13 +6,88 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-12 — Glovebox handle prompt
+## 2026-09-13 — Cannery woman
+
+- Replaced the seamer with an authored `1.63 m`/`8000`-triangle woman (art §8).
+  Hero-style face blinks/articulates; rare smile belongs to colleagues.
+  Own idle/walk/work/listen/break retain factory contacts; sixteen RU/EN lines
+  share bubbles; palette/wardrobe survive range re-enable.
+- Hair has skin/sleeve/arm/strand contacts, a fixed nape and `20°/30°/40°` bend
+  caps; pause freezes, seek/range reset. Model/garment/hair/clip contacts:
+  `build-cannery-woman-3d-model.py --validate-only`.
+- Hair CPU reduced: body/pose skin caches, conservative groups and pose-checked
+  plane hints; diagnostics on demand, idle sampled once. Full contacts/bends kept.
+  CPU/GC and contact verification:
+  `AreaCaptureFixture.CityCanneryWomanPerformance`,
+  `AreaCaptureFixture.CityCanneryWomanContacts`.
+- Approved same-woman decision: story §6/§11/§16.10, art §8.
+  Crime outcome stays; chronology open in §25, romance undeveloped.
+  Documentation: `python tools/check-docs.py`, `git diff --check`.
+- Triaged the fixtures that had been red for weeks rather than leaving them.
+  Two were real defects, fixed in the runtime: the chart's village arrival at
+  the spring put the hero on the dock with no room to walk out, because the
+  spring's path has ended on the brook's approach since the water was traced
+  (`CityMapTeleportGrounds.RouteEnd`); and the brook bank stood past the
+  hero's slope limit where the trace crosses a crest, now held by a grade
+  cone opening from the cut (`AlpineVillageTerrainSampler`). The rest were
+  expectations outrun by decided changes and were re-pinned to the plan:
+  shell collision on the inhabited houses, walkable rects plus declared
+  continuations, port perches, a per-owner audio-source contract in place of
+  a total, the beach held to the hero's limit. `Has.Count` on an array never
+  worked. The seated bar smoke browses and rests the menu; the committed-
+  cancel contract moved to the physical shop test. Checks: EditMode
+  `AlpineVillage*|VillageAsset|CityChurchPlanning|CityTerrainSurfaceWorldBuilder|RavenRoostPlan|CityFishSupplyCycle|CityMiscAsset|CityStreetSurfacePlanner|CityWetSurface|BarSurfaceAppearance`,
+  PlayMode `SceneFlowSmoke|HomeOpening|MothersHouseInterior|BarDrinkPhysicalShop|StairwellInteriorPresentation`.
+- Footsteps per ground: eight cues before `Count`, rows at the END of the
+  table; `FootstepGround` on collision roots, overlays for rugs, tiles,
+  paving and the puddle film (shader formula, mean noise);
+  `HeroFootstepGround` between claimant and plain step; three seeded
+  variants, hashed so a walk cannot alternate two of three. NPC rigs
+  register roots; the hero-side director steps them on known ground only, so
+  riders stay silent; the cafe gets a `4 mm` linoleum slab. Checks: EditMode
+  `RetroSfxLibraryTests|HeroFootstepGroundTests|NpcFootstepsTests|MountainRoadCafeCollision*`.
+
+## 2026-09-12 — Glovebox prompt and cannery driver's lunch
 
 - Reused radio contours/connected labels on the authored glovebox catch;
   it follows the lid, shares gaze/input/pause guards and yields to the driver.
   Removed the duplicate bottom prompt. Geometry/open-close/UI lifecycle:
   `LastRouteCarRidePlayModeTests.Ride_AnswersTheRadioFromTheSeatWhileTheCarIsMoving`.
   Documentation: `python tools/check-docs.py`, `git diff --check`.
+- Driver waits for the inspected cartons on the yard bench and eats personal
+  bread; shared seat clips/food and measured contacts keep the same actor.
+  Existing delivery time owns approach, lunch and return without moving the
+  loading gate. Verification pending: `AreaCaptureFixture.CityCanneryDriverLunch`.
+- Loading: per-phase timers in every root (shared `GameLogPhases`), per-block
+  and per-mesh rows in the three world builders, composition-frame accounting
+  in the travel pump. On those numbers: themes stream and load in the
+  background (a suppressed player defers its theme), the loading-screen floor
+  is gone, the city yields once per sixteen lots, the map's foreign tabs chart
+  on first open or an idle warm with their planners on a task from the moment a
+  root is ready, pure plans are memoised per session in `CityLayoutCache`, the
+  three terrain samplers and the port and truck-route lookups narrow candidates
+  through spatial indexes, the bus plan is derived from the
+  routing the world build already paid for, the beach collider is a coarser
+  lattice of the same plan, the door sequence is `1.6 s`, the menu warms the hero and pedestrian
+  prefabs, prototype validation runs once per source and primitives no longer
+  cook a throwaway collider. Not obvious because the two largest phases were
+  opaque blocks and the door path builds the city in one frame. Every drawn
+  mesh and every truck pose hashed identical before and after (temporary
+  EditMode probes). Proof: `AreaTravelContractTests`, `SceneMusicImportTests`,
+  `CityLayoutCacheTests`, `CityTerrainSurfaceWorldBuilderTests`,
+  `MountainRoadTests`, `DoorTransitionTimelineTests`, `AreaAssetWarmupTests`,
+  `CityMapLazyAreaTabsPlayModeTests`, `LastRouteRadioMusicPlayerPlayModeTests`,
+  `TechnicalLifecyclePlayModeTests`.
+- Doors: one `CompositionDriver` pumps the area and door paths, so a door
+  into the City or Home composes behind the black instead of freezing one
+  frame (an abort drains the remainder); the City stays resident across the
+  every interior door (supermarket, church, stairwell and home, the village's
+  mother's house) - dormant behind it, woken at its return dock - and every
+  other load discards it first; a composition renders every fourth frame under its
+  overlay. Six enable/disable asymmetries fixed on the way. Proof:
+  `DoorPathCompositionPlayModeTests`, `ResidentCityRoundTripPlayModeTests`
+  (two cycles), `SceneFlowSmokeTests.EnterAndExitBar_ReturnsToSameBarInSameCity`,
+  `HomeBalconyLayoutTests`, `AreaTravelContractTests`.
 
 ## 2026-09-11 — Docks, speech, cannery and start menu
 

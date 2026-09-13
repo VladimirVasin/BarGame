@@ -516,6 +516,9 @@ namespace BarPromenade
                     CitySeacoastSurfaceKind.Sand,
                     CityExteriorAppearance.BeachSand);
                 AddLooseBeachSand(beach, layout, in beachSource);
+                // The sand claimant answers first while it is attached;
+                // the stamp is what a bare beach sounds like otherwise.
+                FootstepGround.Stamp(beach, FootstepGroundKind.Sand);
             }
             // The cemetery slab is built apart from the other
             // surfaces because it is the one ground in the city that
@@ -683,6 +686,7 @@ namespace BarPromenade
                     continue;
                 }
 
+                FootstepGround.Stamp(ground, FootstepGroundKind.Soil);
                 // Build applies the neutral ground sheet itself, so the
                 // district cast has to be written after it, not through
                 // the colour argument it overwrites.
@@ -694,7 +698,7 @@ namespace BarPromenade
                             .Wear));
             }
 
-            CityTerrainSurfaceWorldBuilder.Build(
+            GameObject openLand = CityTerrainSurfaceWorldBuilder.Build(
                 "Active Land",
                 surfaces,
                 layout,
@@ -704,6 +708,7 @@ namespace BarPromenade
                 null,
                 null,
                 CityTerrainSurfaceAreaFilter.Excluding(districtAreaIds));
+            FootstepGround.Stamp(openLand, FootstepGroundKind.Soil);
         }
 
         internal static GameObject BuildParkLawn(
@@ -722,6 +727,7 @@ namespace BarPromenade
                     .MetersPerTile);
             if (lawn != null)
             {
+                FootstepGround.Stamp(lawn, FootstepGroundKind.Grass);
                 CityParkSurfaceAppearance.ApplyCombined(
                     lawn.GetComponent<Renderer>(),
                     CityParkSurfaceKind.Lawn,
@@ -767,7 +773,8 @@ namespace BarPromenade
                 CityExteriorAppearance.Asphalt,
                 true,
                 CityExteriorAppearance.RoadTextureTileSize,
-                CityExteriorAppearance.ApplyRoadSurface);
+                CityExteriorAppearance.ApplyRoadSurface,
+                FootstepGroundKind.Concrete);
             BuildOrientedSurfaceBoxesIfAny(
                 "Park Paths",
                 roads,
@@ -780,7 +787,8 @@ namespace BarPromenade
                 renderer => CityParkSurfaceAppearance.ApplyCombined(
                     renderer,
                     CityParkSurfaceKind.Path,
-                    CityExteriorAppearance.ParkPath));
+                    CityExteriorAppearance.ParkPath),
+                FootstepGroundKind.Soil);
             ReportBlock(
                 "roads_and_river/streets",
                 subTimer,
@@ -789,6 +797,9 @@ namespace BarPromenade
                     plan.StreetGeometry.Count +
                     plan.ParkPathGeometry.Count));
             subTimer.Restart();
+            // The raised sidewalk is laid in light flags, so it sounds of
+            // stone against the road's asphalt: the most-walked join in
+            // the city is audible.
             BuildOrientedSurfaceBoxesIfAny(
                 "Sidewalk Surfaces",
                 roads,
@@ -796,7 +807,8 @@ namespace BarPromenade
                 Color.white,
                 true,
                 CityExteriorAppearance.SidewalkTextureTileSize,
-                CityExteriorAppearance.ApplySidewalkSurface);
+                CityExteriorAppearance.ApplySidewalkSurface,
+                FootstepGroundKind.Stone);
             ReportBlock(
                 "roads_and_river/sidewalks",
                 subTimer,
@@ -953,6 +965,7 @@ namespace BarPromenade
                     plaza.GetComponent<Renderer>(),
                     CityParkSurfaceKind.Plaza,
                     ParkPlaza);
+                FootstepGround.Stamp(plaza, FootstepGroundKind.Stone);
             }
 
             var trunks = new List<RuntimeMeshPlacement>(
@@ -2345,7 +2358,8 @@ namespace BarPromenade
             Color color,
             bool collider,
             float? xzPlanarUvTileSize,
-            Action<Renderer> applyAppearance)
+            Action<Renderer> applyAppearance,
+            FootstepGroundKind footstep = FootstepGroundKind.None)
         {
             if (boxes.Count == 0)
             {
@@ -2361,6 +2375,10 @@ namespace BarPromenade
                     collider,
                     xzPlanarUvTileSize);
             applyAppearance?.Invoke(surface.GetComponent<Renderer>());
+            if (footstep != FootstepGroundKind.None)
+            {
+                FootstepGround.Stamp(surface, footstep);
+            }
         }
 
         private static void BuildRoadSurfaceBoxesIfAny(

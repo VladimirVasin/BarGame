@@ -32,6 +32,7 @@ namespace BarPromenade.Editor
         private void OnPreprocessModel()
         {
             if (!assetPath.StartsWith(ModelFolder, StringComparison.Ordinal) ||
+                assetPath.StartsWith(CanneryWomanAssetSetup.Folder, StringComparison.Ordinal) ||
                 !(assetImporter is ModelImporter importer)) return;
             importer.globalScale = 1f;
             importer.bakeAxisConversion = true;
@@ -55,7 +56,8 @@ namespace BarPromenade.Editor
 
         private void OnPostprocessModel(GameObject model)
         {
-            if (!assetPath.StartsWith(ModelFolder, StringComparison.Ordinal)) return;
+            if (!assetPath.StartsWith(ModelFolder, StringComparison.Ordinal) ||
+                assetPath.StartsWith(CanneryWomanAssetSetup.Folder, StringComparison.Ordinal)) return;
             foreach (Transform part in model.GetComponentsInChildren<Transform>(true))
             {
                 int suffix = part.name.LastIndexOf('.');

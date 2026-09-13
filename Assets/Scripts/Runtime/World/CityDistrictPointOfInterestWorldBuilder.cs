@@ -1340,6 +1340,10 @@ namespace BarPromenade
                 CityPointOfInterestSurfaceKind.Paving,
                 SurfaceProjection.BoxXZ,
                 color);
+            if (collider)
+            {
+                FootstepGround.Stamp(ground, FootstepGroundKind.Concrete);
+            }
         }
 
         private static float ResolvePublicGroundFoundationDepth(

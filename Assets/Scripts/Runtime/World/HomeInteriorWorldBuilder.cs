@@ -211,17 +211,19 @@ namespace BarPromenade
             float halfDepth = plan.RoomSize.y * 0.5f;
             float wallThickness =
                 PlayerHomeBalconyGeometry.WallThickness;
-            HomeSurfacePrimitives.CreateBox(
-                "Home Floor",
-                room,
-                new Vector3(0f, -0.08f, 0f),
-                new Vector3(
-                    plan.RoomSize.x,
-                    0.16f,
-                    plan.RoomSize.y),
-                Floor,
-                HomeSurfaceKind.PlankFloor,
-                SurfaceProjection.BoxXZ);
+            FootstepGround.Stamp(
+                HomeSurfacePrimitives.CreateBox(
+                    "Home Floor",
+                    room,
+                    new Vector3(0f, -0.08f, 0f),
+                    new Vector3(
+                        plan.RoomSize.x,
+                        0.16f,
+                        plan.RoomSize.y),
+                    Floor,
+                    HomeSurfaceKind.PlankFloor,
+                    SurfaceProjection.BoxXZ),
+                FootstepGroundKind.Wood);
             GameObject ceiling =
                 HomeSurfacePrimitives.CreateBox(
                     "Home Ceiling",
@@ -398,15 +400,19 @@ namespace BarPromenade
                 Wall,
                 HomeSurfaceKind.Wallpaper,
                 SurfaceProjection.BoxXY);
-            HomeSurfacePrimitives.CreateBox(
-                "Home Entry Rug",
-                room,
-                new Vector3(0f, 0.015f, -2.65f),
-                new Vector3(1.55f, 0.03f, 1.35f),
-                new Color(0.22f, 0.075f, 0.065f),
-                HomeSurfaceKind.Rug,
-                SurfaceProjection.BoxXZ,
-                false);
+            // No collider - the hero stands on the boards beneath - so the
+            // rug tells the footstep about itself by footprint.
+            FootstepGroundOverlay.AddForPrimitiveBox(
+                HomeSurfacePrimitives.CreateBox(
+                    "Home Entry Rug",
+                    room,
+                    new Vector3(0f, 0.015f, -2.65f),
+                    new Vector3(1.55f, 0.03f, 1.35f),
+                    new Color(0.22f, 0.075f, 0.065f),
+                    HomeSurfaceKind.Rug,
+                    SurfaceProjection.BoxXZ,
+                    false),
+                FootstepGroundKind.Carpet);
             HomeSurfacePrimitives.CreateBox(
                 "Home Exit Door",
                 room,
