@@ -5,36 +5,11 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Takes the hero's clothes off for the shower and puts them back on
-    /// afterwards, on the one production prefab.
-    ///
-    /// There is no bare body under the clothes on this rig: the torso
-    /// mesh is the charcoal shirt, and the pelvis, thighs, shins and
-    /// boots are body geometry painted from the jeans atlas. So "naked"
-    /// is a costume, not a model: every renderer whose role is
-    /// <c>clothing</c> goes off, and every body part that wears a
-    /// garment as its material is repainted skin through a property
-    /// block on the hero's own borrowed skin material — never a new
-    /// Material, never a second prefab (the art spec locks Hero V2 as
-    /// the sole packaged player). Both forearms wear the same jacket
-    /// sleeve, so both come off together; the left one carried a bandage
-    /// that stayed on until it was removed from the hero on 2026-09-08.
-    ///
-    /// The repaint is a texture, not a flat tone: the generator paints a
-    /// bare-skin atlas for the same UV0 the jeans regions already carry
-    /// (plus the torso strip it bakes for exactly this), and the block
-    /// binds it as the base map with a white tint, the way the registry
-    /// binds the face atlas. A build without the atlas falls back to the
-    /// flat skin tones, so the shower never fails for want of a texture.
-    ///
-    /// Like <see cref="Player3DHeadVisibility"/>, the rule is stated
-    /// against the rig — roles and bones — not a list of mesh names, it
-    /// leaves alone anything somebody else already switched off, and
-    /// <see cref="Restore"/> writes back exactly what it captured:
-    /// enabled flag, shared material and the original property block
-    /// (an atlas part carries a white tint; on the bare skin material a
-    /// missing tint would render white, not jeans). Only one lease can
-    /// be out at a time.
+    /// Temporarily undresses the one production hero. The modular wardrobe
+    /// reveals authored bare anatomy and leases its selection until restoration.
+    /// Older rigs retain the material/atlas fallback. Neither route creates
+    /// a material or changes a renderer already hidden by another owner.
+    /// Only one bathing lease can be active; restoration is idempotent.
     /// </summary>
     public sealed class Player3DBathingAppearance
     {
@@ -70,6 +45,7 @@ namespace BarPromenade
         private static bool bareSkinAtlasResolved;
 
         private readonly List<Snapshot> snapshots = new List<Snapshot>(16);
+        private PlayerWardrobe.AppearanceLease wardrobeLease;
 
         private Player3DBathingAppearance()
         {
@@ -103,7 +79,7 @@ namespace BarPromenade
 
         public int HiddenRendererCount { get; private set; }
         public int RepaintedRendererCount { get; private set; }
-        public bool IsApplied => snapshots.Count > 0;
+        public bool IsApplied => wardrobeLease != null || snapshots.Count > 0;
 
         /// <summary>Whether this lease painted the atlas rather than the flat fallback tones.</summary>
         public bool UsesBareSkinAtlas { get; private set; }
@@ -167,6 +143,19 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The hero is already undressed by another owner.");
+            }
+
+            PlayerWardrobe wardrobe = registry.GetComponent<PlayerWardrobe>();
+            if (wardrobe != null && wardrobe.IsConfigured)
+            {
+                var modularLease = new Player3DBathingAppearance();
+                foreach (PlayerWardrobe.GarmentBinding garment in wardrobe.Garments)
+                    foreach (Renderer renderer in garment.Renderers)
+                        if (renderer.enabled) modularLease.HiddenRendererCount++;
+                modularLease.wardrobeLease = wardrobe.Undress();
+                modularLease.UsesBareSkinAtlas = BareSkinAtlas != null;
+                active = modularLease;
+                return modularLease;
             }
 
             IReadOnlyList<Player3DMeshBinding> bindings = registry.MeshBindings;
@@ -257,6 +246,8 @@ namespace BarPromenade
         /// <summary>Dresses him again, exactly as he was. Idempotent.</summary>
         public void Restore()
         {
+            wardrobeLease?.Dispose();
+            wardrobeLease = null;
             for (int index = snapshots.Count - 1; index >= 0; index--)
             {
                 Snapshot snapshot = snapshots[index];

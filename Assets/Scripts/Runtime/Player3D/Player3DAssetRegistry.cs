@@ -576,11 +576,30 @@ namespace BarPromenade
                 target.GetPropertyBlock(properties);
                 properties.SetColor(BaseColorId, binding.BaseColor);
                 properties.SetColor(LegacyColorId, binding.BaseColor);
+                if (bareSkinAtlas != null && Array.IndexOf(bareSkinRenderers, target) >= 0)
+                {
+                    properties.SetColor(BaseColorId, Color.white);
+                    properties.SetColor(LegacyColorId, Color.white);
+                    properties.SetTexture(BaseMapId, bareSkinAtlas);
+                    properties.SetTexture(LegacyMapId, bareSkinAtlas);
+                    properties.SetVector(BaseMapTransformId, new Vector4(1f, 1f, 0f, 0f));
+                    properties.SetVector(LegacyMapTransformId, new Vector4(1f, 1f, 0f, 0f));
+                }
                 target.SetPropertyBlock(properties);
                 properties.Clear();
             }
 
             ApplyNeutralFaceAtlas(properties);
+        }
+
+        [SerializeField] private Texture2D bareSkinAtlas;
+        [SerializeField] private Renderer[] bareSkinRenderers = Array.Empty<Renderer>();
+
+        public void ConfigureBareSkinAtlas(Texture2D texture, Renderer[] renderers)
+        {
+            bareSkinAtlas = texture;
+            bareSkinRenderers = renderers ?? Array.Empty<Renderer>();
+            ApplyPalette();
         }
 
         private void ApplyNeutralFaceAtlas(

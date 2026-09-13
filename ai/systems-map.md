@@ -145,7 +145,10 @@ A row never carries a status outside this table. Product-level scope cuts
 | Third-person chase camera | Shared collision-aware chase/orbit blends cinematic motion and yields to owned fixed/modal shots. | `PlayerCameraFollow`, `IntoxicationDollyZoomModel` | Current |
 | Home fixed camera | Authored fixed shots with explicit contextual ownership; the main-room shot pans up to 18/9 degrees to hold the hero. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `FixedCameraFocus` | Current |
 | Home player visibility | Grouped occluder dither and fixed-shot rules keep the hero visible without changing collision. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController` | Current |
-| Modular 3D hero presentation | Hero V2: 34 parts / 2,384 triangles, 31 bones and 48 source-validated actions. | `Player3D*`, `PlayerFactory` | Current |
+| Modular 3D hero presentation | Refined Hero V2/M-65; 31 body bones, 12 auxiliary hair bones and 48 core actions. | `Player3D*`, `PlayerFactory` | Current |
+| Hero wardrobe | Atomic slot replacement and body coverage; one authored outfit. Gap: extra outfits, UI and persistence. | `PlayerWardrobe`, `Player3DBathingAppearance` | Partial |
+| Hero hair | Parted curtains: bounded motion/wind/body/clothing/scarf contacts; pause freeze and copied mirror pose. | `PlayerHair`, `PlayerHairContacts` | Current |
+| Hero jacket cloth | Anchored hem/cuffs: motion/wind/body/hand contacts; pause/reset and passive mirror/arm copies. | `PlayerJacketCloth`, `PlayerJacketClothSurface` | Current |
 | Wearable scarf | Bounded wind/motion and simple hero-body contacts; external objects are ignored. Mouth, visibility and mirror share it. | `PlayerScarf*`, `PlayerFactory` | Current |
 | Alpine Village cold hero | Self-hug and rubs persist through running; an equipped scarf halves shiver amplitude, gait and breath keep priority. | `Player3DCharacterPresentation.Cold`, `PlayerCold{PresentationModel,BreathEffect}` | Current |
 | Alpine frost presentation | Rim frost survives village/house travel; scarf halves new exposure and leaves existing ice and ordinary thaw intact. | `AlpineColdExposure{Model,Driver}`, `AlpineColdFrostPass`, `AlpineFrostAudio` | Current |

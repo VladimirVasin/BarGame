@@ -821,7 +821,8 @@ namespace BarPromenade
                     gameObject.AddComponent<BarDrinkFirstPersonArms>();
             }
 
-            firstPersonArms.Initialize(targetCamera);
+            firstPersonArms.Initialize(targetCamera,
+                (playerRuntime.Visual as Player3DCharacterPresentation)?.Registry);
             playerInteraction = playerRuntime.GameObject.GetComponent<
                 PlayerAnimatedInteractionController>();
             if (playerInteraction == null ||

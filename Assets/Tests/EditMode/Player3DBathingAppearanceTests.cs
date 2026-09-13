@@ -7,13 +7,9 @@ using UnityEngine;
 namespace BarPromenade.Tests.EditMode
 {
     /// <summary>
-    /// Undressing the production hero for the shower, and dressing him
-    /// again exactly. The rule is stated against roles and bones; on the
-    /// V2 prefab it takes off all five jacket parts — both forearms
-    /// included, since the left one stopped being a bandage — then
-    /// paints the shirt and the jeans-wearing body parts skin on the
-    /// hero's own material, and puts every flag, material and tint back
-    /// byte for byte.
+    /// The production wardrobe reveals independent bare anatomy without
+    /// repainting clothing, then restores the exact prior outfit and flags.
+    /// Pure palette cases retain the compatibility contract for older rigs.
     /// </summary>
     public sealed class Player3DBathingAppearanceTests
     {
@@ -39,7 +35,7 @@ namespace BarPromenade.Tests.EditMode
             "GEO_Foot.L"
         };
 
-        private static readonly string[] MustBeRepainted =
+        private static readonly string[] AtlasBodyParts =
         {
             "GEO_Torso",
             "GEO_Pelvis",
@@ -95,13 +91,11 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(registry, Is.Not.Null);
                 IReadOnlyList<Player3DMeshBinding> bindings = registry.MeshBindings;
                 Assert.That(bindings.Count, Is.GreaterThanOrEqualTo(30));
-                foreach (Player3DMeshBinding binding in bindings)
-                {
-                    if (binding?.Renderer != null)
-                    {
-                        binding.Renderer.enabled = true;
-                    }
-                }
+                var wardrobe = registry.GetComponent<PlayerWardrobe>();
+                Assert.That(wardrobe, Is.Not.Null);
+                wardrobe.ValidateBindings();
+                Renderer[] clothing = wardrobe.Garments.SelectMany(item => item.Renderers).ToArray();
+                Assert.That(Find(bindings, "GEO_Torso").Renderer.enabled, Is.False, "The worn shirt covers bare torso.");
 
                 Dictionary<string, Snapshot> before = Capture(bindings);
                 Player3DMeshBinding skin = Find(bindings, "GEO_Hand.R");
@@ -111,8 +105,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(Player3DBathingAppearance.IsActive, Is.False);
                 lease = Player3DBathingAppearance.Apply(registry);
                 Assert.That(Player3DBathingAppearance.IsActive, Is.True);
-                Assert.That(lease.HiddenRendererCount, Is.EqualTo(MustBeHidden.Length));
-                Assert.That(lease.RepaintedRendererCount, Is.EqualTo(MustBeRepainted.Length));
+                Assert.That(lease.HiddenRendererCount, Is.EqualTo(clothing.Length));
+                Assert.That(lease.RepaintedRendererCount, Is.Zero, "Bare geometry already has its skin appearance.");
                 Assert.Throws<InvalidOperationException>(
                     () => Player3DBathingAppearance.Apply(registry),
                     "Only one owner may undress him at a time.");
@@ -121,6 +115,7 @@ namespace BarPromenade.Tests.EditMode
                 {
                     Assert.That(Find(bindings, name).Renderer.enabled, Is.False, name + " must be off.");
                 }
+                Assert.That(clothing.All(renderer => !renderer.enabled), Is.True, "Every outfit piece comes off.");
 
                 foreach (string name in MustStayVisible)
                 {
@@ -130,13 +125,13 @@ namespace BarPromenade.Tests.EditMode
                 var block = new MaterialPropertyBlock();
                 Texture2D atlas = Player3DBathingAppearance.BareSkinAtlas;
                 Assert.That(lease.UsesBareSkinAtlas, Is.EqualTo(atlas != null));
-                foreach (string name in MustBeRepainted)
+                foreach (string name in AtlasBodyParts)
                 {
                     Player3DMeshBinding binding = Find(bindings, name);
                     Assert.That(
-                        ReferenceEquals(binding.Renderer.sharedMaterial, skin.Renderer.sharedMaterial),
+                        ReferenceEquals(binding.Renderer.sharedMaterial, before[name].Material),
                         Is.True,
-                        name + " must borrow the hero's own skin material, never a new one.");
+                        name + " retains its authored shared skin material.");
                     binding.Renderer.GetPropertyBlock(block);
                     Color tint = block.GetColor("_BaseColor");
                     if (atlas != null)
@@ -144,27 +139,11 @@ namespace BarPromenade.Tests.EditMode
                         Assert.That(block.GetTexture("_BaseMap"), Is.EqualTo(atlas), name + " must wear the bare-skin atlas.");
                         AssertColor(tint, Color.white, name + " must not tint the atlas a second time.");
                     }
-                    else
-                    {
-                        Assert.That(tint, Is.Not.EqualTo(Color.white), name + " must carry a skin tint.");
-                        Assert.That(tint, Is.Not.EqualTo(before[name].Color), name + " must have changed colour.");
-                    }
+                    AssertColor(tint, before[name].Color, name + " skin was already configured before undressing.");
                 }
-
-                if (atlas == null)
-                {
-                    Find(bindings, "GEO_Torso").Renderer.GetPropertyBlock(block);
-                    AssertColor(block.GetColor("_BaseColor"), skin.BaseColor, "The torso wears the hand's skin tone.");
-                    Find(bindings, "GEO_Foot.L").Renderer.GetPropertyBlock(block);
-                    AssertColor(block.GetColor("_BaseColor"), Player3DBathingAppearance.SkinDark, "The boots go dark skin.");
-                }
-
-                // Nothing that was never repainted carries the atlas.
-                Find(bindings, "GEO_Hand.L").Renderer.GetPropertyBlock(block);
-                Assert.That(block.GetTexture("_BaseMap"), Is.Null, "The hands were skin already.");
 
                 // Untouched parts are exactly as they were.
-                foreach (string name in new[] { "GEO_Head", "GEO_Hand.L", "GEO_Forearm.L", "GEO_Forearm.R" })
+                foreach (string name in new[] { "GEO_Head", "GEO_Hand.L", "GEO_Hand.R" })
                 {
                     AssertSame(before[name], Find(bindings, name), name);
                 }
@@ -265,11 +244,21 @@ namespace BarPromenade.Tests.EditMode
                 var registry = instance.GetComponentInChildren<Player3DAssetRegistry>(true);
                 Player3DMeshBinding jacket = Find(registry.MeshBindings, "CLO_JacketBody");
                 jacket.Renderer.enabled = false;
+                Renderer hand = Find(registry.MeshBindings, "GEO_Hand.R").Renderer;
+                hand.enabled = false;
+                int visibleClothes = registry.GetComponent<PlayerWardrobe>().Garments
+                    .SelectMany(item => item.Renderers).Count(renderer => renderer.enabled);
                 lease = Player3DBathingAppearance.Apply(registry);
-                Assert.That(lease.HiddenRendererCount, Is.EqualTo(MustBeHidden.Length - 1));
+                Assert.That(lease.HiddenRendererCount, Is.EqualTo(visibleClothes));
+                Assert.That(hand.enabled, Is.False, "A skin renderer hidden by another owner stays hidden during washing.");
+                Player3DHeadVisibility hiddenHead = Player3DHeadVisibility.Hide(registry);
                 lease.Restore();
                 lease = null;
                 Assert.That(jacket.Renderer.enabled, Is.False, "It was off before and it stays off.");
+                Assert.That(hand.enabled, Is.False);
+                Assert.That(Find(registry.MeshBindings, "GEO_Head").Renderer.enabled, Is.False,
+                    "Dressing must not release the independent first-person head lease.");
+                hiddenHead.Restore();
             }
             finally
             {
@@ -321,6 +310,65 @@ namespace BarPromenade.Tests.EditMode
                 lease = null;
                 Assert.That(left.Renderer.enabled, Is.True);
                 Assert.That(right.Renderer.enabled, Is.True);
+            }
+            finally
+            {
+                lease?.Restore();
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void WardrobeReplacementIsAtomicAndTemporaryUndressRestoresTheSelectedOutfit()
+        {
+            GameObject prefab = Player3DResources.LoadPrefab();
+            Assert.That(prefab, Is.Not.Null);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            Player3DBathingAppearance lease = null;
+            try
+            {
+                var registry = instance.GetComponentInChildren<Player3DAssetRegistry>(true);
+                var wardrobe = registry.GetComponent<PlayerWardrobe>();
+                Assert.That(wardrobe, Is.Not.Null);
+                string originalJacket = wardrobe.GetEquippedItem("jacket");
+                PlayerWardrobe.GarmentBinding jacket = wardrobe.Garments.First(item => item.Id == originalJacket);
+                var alternative = new GameObject("Synthetic alternative jacket");
+                alternative.transform.SetParent(instance.transform, false);
+                Renderer replacement = alternative.AddComponent<MeshRenderer>();
+                replacement.sharedMaterial = jacket.Renderers[0].sharedMaterial;
+                PlayerWardrobe.GarmentBinding[] catalog = wardrobe.Garments.Concat(new[]
+                {
+                    new PlayerWardrobe.GarmentBinding("test_jacket", "jacket", new[] { replacement },
+                        jacket.CoveredBodyRenderers.ToArray())
+                }).ToArray();
+                wardrobe.Configure(wardrobe.CurrentOutfitId, wardrobe.BodyRenderers.ToArray(), catalog);
+                var original = wardrobe.CaptureOutfit();
+                Assert.That(replacement.enabled, Is.False, "Only the first item in each slot starts equipped.");
+                Dictionary<string, Snapshot> before = Capture(registry.MeshBindings);
+                Assert.Throws<ArgumentException>(() => wardrobe.SetSlot("boots", "test_jacket"));
+                Assert.Throws<InvalidOperationException>(() => wardrobe.Configure("invalid", wardrobe.BodyRenderers.ToArray(),
+                    new[] { new PlayerWardrobe.GarmentBinding("bad", "jacket", new[] { replacement }, new[] { replacement }) }));
+                Assert.That(wardrobe.GetEquippedItem("jacket"), Is.EqualTo(originalJacket));
+                foreach (Player3DMeshBinding binding in registry.MeshBindings)
+                    AssertSame(before[binding.MeshName], binding, binding.MeshName);
+
+                wardrobe.SetSlot("jacket", "test_jacket");
+                Assert.That(replacement.enabled, Is.True);
+                Assert.That(jacket.Renderers.All(renderer => !renderer.enabled), Is.True);
+                foreach (Renderer renderer in jacket.CoveredBodyRenderers) Assert.That(renderer.enabled, Is.False);
+                lease = Player3DBathingAppearance.Apply(registry);
+                Assert.That(replacement.enabled, Is.False);
+                foreach (Renderer renderer in jacket.CoveredBodyRenderers) Assert.That(renderer.enabled, Is.True);
+                Assert.Throws<InvalidOperationException>(() => wardrobe.SetSlot("jacket", originalJacket));
+                lease.Restore();
+                lease = null;
+                Assert.That(wardrobe.GetEquippedItem("jacket"), Is.EqualTo("test_jacket"));
+                Assert.That(replacement.enabled, Is.True);
+                wardrobe.SetSlot("jacket", null);
+                foreach (Renderer renderer in jacket.CoveredBodyRenderers) Assert.That(renderer.enabled, Is.True);
+                wardrobe.RestoreOutfit(original);
+                Assert.That(replacement.enabled, Is.False);
+                Assert.That(jacket.Renderers.All(renderer => renderer.enabled), Is.True);
             }
             finally
             {

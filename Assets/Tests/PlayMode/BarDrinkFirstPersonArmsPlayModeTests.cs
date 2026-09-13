@@ -236,12 +236,16 @@ namespace BarPromenade.Tests.PlayMode
                     binding.Renderer.shadowCastingMode,
                     Is.EqualTo(ShadowCastingMode.Off));
                 Assert.That(binding.Renderer.receiveShadows, Is.False);
-                hasUpperArm |= binding.MeshName.StartsWith("GEO_UpperArm");
-                hasForearm |= binding.MeshName.StartsWith("GEO_Forearm");
-                hasHand |= binding.MeshName.StartsWith("GEO_Hand");
+                hasUpperArm |= binding.BoneName.StartsWith("upper_arm.");
+                hasForearm |= binding.BoneName.StartsWith("forearm.");
+                hasHand |= binding.BoneName.StartsWith("hand.");
+                PlayerWardrobe wardrobe = registry.GetComponent<PlayerWardrobe>();
+                if (wardrobe != null)
+                    Assert.That(wardrobe.IsRendererWorn(binding.Renderer), Is.True,
+                        "The arm subset must not expose bare anatomy through its clothes.");
             }
 
-            Assert.That(enabledRendererCount, Is.GreaterThanOrEqualTo(6));
+            Assert.That(enabledRendererCount, Is.GreaterThanOrEqualTo(3));
             Assert.That(hasUpperArm, Is.True);
             Assert.That(hasForearm, Is.True);
             Assert.That(hasHand, Is.True);

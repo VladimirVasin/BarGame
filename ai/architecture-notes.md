@@ -4,6 +4,60 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-13, refined hero, M-65 and modular clothing:**
+  The user accepts refining the existing Hero V2 to the latest cannery
+  characters' detail level, with a recognisable Vietnam-era M-65, physical
+  parted curtains and a foundation for changing clothes. The same lean `1.75 m`
+  hero, face/expressions, right repair patch, 31 body bones, six sockets and
+  existing actions remain; no insignia, biography, speech or new activity.
+  The bartender's shared Walk copies body curves and excludes the hero's
+  auxiliary hair tracks, which have no target on that rig.
+  `player_detailed_model.py` extends the existing deterministic generator:
+  shaped hands/neck, slim torso/upper arms and narrow shoulders inside an
+  oversized open M-65: slimmer upper sleeves, loose sides/hem, long bunched
+  cuffs, trouser/boot profiles, constructed
+  pockets/flaps/collar/plackets/cuffs, refined atlas painting. The manifest
+  separately measures dressed geometry and hidden anatomy against a
+  maximum `8,000` dressed-triangle budget.
+  The user's same-day cloth-physics request uses `PlayerJacketCloth`: eight
+  open-hem nodes plus four per cuff, with smooth pinned-to-free fields over
+  the existing coat surfaces. Shoulders/chest/upper sleeves stay fixed;
+  loose sides, hem, lower pockets/plackets and cuffs respond to motion,
+  gravity and outdoor wind with damping/edge constraints. Hem/cuff tethers
+  cap excursion at `7.5/2.5 cm`. Shared body/hand envelopes exclude the jacket
+  itself and retain the shirt/trousers/boots.
+  Hair/coat contacts use cached mesh support planes so broad scarf ellipsoids
+  cannot trap cuffs or push locks outward; thin collar panels use boxes.
+  Owned mesh buffers preserve imported geometry, weights, shared materials and the existing bone/action
+  contract. Pause freezes cloth; discontinuities or removing the jacket reset
+  history. Camera hiding preserves it; mirror/first-person subsets copy the
+  live hero's vertices without another simulation. The manifest's
+  `hero_jacket_cloth_v1` fields come from `player_jacket_cloth.py`.
+  `PlayerWardrobe` binds explicit body coverage and
+  `shirt/jacket/trousers/boots` items. One original `hero_field_workwear` outfit
+  is supplied; catalogs can include alternatives per slot. Configuration and
+  replacement validate before mutation, share materials and preserve the
+  selected outfit through bathing/toilet leases. Whole-body visibility leases
+  lock outfit edits; restoring clothes never releases the independent head
+  lease. First-person arms copy the current outfit and the mirror copies
+  renderer state. The shower exposes actual bare anatomy without the old
+  shoulder/nape bridge overlays; seated toilet fabric derives from trousers,
+  skin from anatomy. Existing bathroom staging exceptions remain bounded.
+  The medium-length curtains have a part, full temples/ears and continuous nape
+  coverage. Sides and back share jaw/upper-neck length, without a ponytail;
+  three regions use 12 auxiliary bones. `PlayerHair` follows the
+  final body/scarf pose with inertia, gravity, damping, outdoor wind and
+  bounded bends/lengths. Shared `PlayerScarfBodyContacts` caches bare/primary
+  garment variants for at most 17 active anatomy envelopes: torso selects
+  jacket→shirt→skin, limbs select worn sleeves/trousers/boots. Camera hiding
+  retains clothing contacts; an undress lease selects bare anatomy. Pose
+  updates move cached envelopes without body baking. Hair adds collar/scarf
+  envelopes, existing scarf-tail vertices and strand separation; no scene scan.
+  Pause/transitions freeze it, discontinuities reset history, and the
+  mirror copies the solved pose. Derived arm prefabs never simulate hair.
+  New outfits, acquisition, wardrobe UI and persistence are Deferred. Form is
+  recorded in art-bible §2/player-art-spec; story-bible §7 preserves meaning.
+
 - **Accepted — 2026-09-13, cannery receiver:**
   Slot `0`, art §8/story §18: own rig/Avatar/five clips, painted face/3D glasses;
   shared motion/speech/lifecycle. `work.06.b`/`wait.06.b` cause a smirk;
@@ -317,9 +371,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   with the hero, NPCs, buildings and other models. The matching scarf exception
   in story-bible §6 and art-bible §10g now permits approximate hero-body contact
   and no external-object contact in ordinary gameplay.
-  `PlayerScarfBodyContacts` measures authored body geometry once at installation
-  and then follows the bones with simple ellipsoids; it does not bake body
-  meshes each frame. `PlayerScarfClothSimulation` uses bounded procedural
+  `PlayerScarfBodyContacts` follows cached body/clothing ellipsoids; the current
+  outfit-selection contract is in the `2026-09-13` hero decision.
+  `PlayerScarfClothSimulation` uses bounded procedural
   wind/movement bending and these body contacts by default. The user's further
   same-day clarification makes the tail visibly rise and trail behind during
   running, with a curved ribbon shape, travelling flutter and a smooth rise
@@ -513,7 +567,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Model import explicitly enables FBX file units and a 2D atlas shape;
   publication measures transformed mesh vertices against the source bounds.
   Both residents have separate 256px atlases, 40 mesh parts and at least the
-  hero's 2,384 triangles; equal-scale in-scene captures also verify the face,
+  `2,384`-triangle baseline of that decision; equal-scale in-scene captures also verify the face,
   clothing, hand and boot detail. The focused `VillageLife` journey checks
   physical delivery, deformed visible hand contacts and the real station exit.
 
@@ -1426,7 +1480,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `CityPedestrianArchetype`, on the editor `PedestrianDescriptor`, and
   `signature_effects: ["boiling_kettle"]` in the model manifest; the factory
   refuses a prefab whose `CityKettleHatRigAnchors` disagree with its catalog
-  entry. The rig stays the exact 31-bone Hero V2 hierarchy: the prefab build
+  entry. The rig keeps the 31-bone Hero V2 body core: the prefab build
   creates an identity-frame `ANCHOR_KettleLid` under the head bone and
   re-points the one `head` entry in the lid's and knob's
   `SkinnedMeshRenderer.bones` at it (bind poses untouched, found by reference,
@@ -4860,7 +4914,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the generated modular 3D character. `PlayerFactory` preserves the
   authoritative `PlayerMotor`/`CharacterController` root and instantiates one
   hero prefab in every gameplay root. Its Generic Animator uses no root motion;
-  the prefab contains a 31-bone armature with six non-deforming sockets, while
+  the prefab retains a 31-bone body core with six non-deforming sockets, while
   `Player3DAssetRegistry` serializes the mesh bindings, the 16 required
   anatomical parts, the metrics and the in-place Actions. The counts and the
   prefab named here were this decision's own, on its date; the current ones are
@@ -6475,24 +6529,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   reporting `Walking/Arrived/Stalled`) and the per-change stop-prompt
   refresh stay as introduced; grounded guided legs carry the hero through
   the curtain's opening and between its action docks and the wash dock. The
-  costume is an owner-scoped lease (`Player3DBathingAppearance`): the
-  `clothing` renderers off — four until 2026-09-08, five once the left
-  forearm stopped being a bandage and became jacket — the shirt torso and
-  the jeans-atlas pelvis/thighs/shins/feet switched to the hero's own
-  borrowed skin material with the bare-skin atlas bound through their
-  property blocks (`_BaseMap`, white tint — the registry's face-atlas
-  idiom; flat tones if the resource is missing), everything restored
-  exactly. The atlas
-  (`Assets/Resources/Player/PlayerBareSkinAtlas.png`, `build_bare_skin_atlas`
-  in the hero generator, `1.5.0`) reuses the jeans UV0 rects byte for byte —
-  asserted by the generator and by `Player3DV2AssetSetup` — and the torso
-  carries a ring-strip UV0 into the cell the jacket body owns in the clothing
-  atlas; the manifest's `bare_skin_atlas` section is validated like the
-  clothing binding, and its texels are stored gamma-lifted so the sRGB
-  sample equals the flat `_BaseColor` number the hands and arms wear.
-  Three Blender bridge pieces close the nape and shoulder
-  gaps, and the toilet's authored anatomy hangs at rest from the measured
-  bare pelvis. A further user correction rotates only the shower's two
+  appearance is an owner-scoped lease (`Player3DBathingAppearance`); the
+  independent body and clothing contract is owned by the accepted
+  `2026-09-13` hero decision. The bare-skin atlas retains gamma-lifted texels
+  so its sRGB sample equals the flat `_BaseColor` worn by the hands and arms.
+  The toilet's authored anatomy hangs at rest from the measured bare pelvis.
+  A further user correction rotates only the shower's two
   scrotum lobes down by `30°` around their unchanged attachments; their
   authored forward reach falls from `82 mm` to `47.514/49.514 mm`, removing
   the coat clearance needed by the toilet pose. The shared meshes, shaft
@@ -7201,17 +7243,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   drifting — the moment somebody sits down, the set they were looking at is
   the position they are playing.
 - **Accepted — a first-person camera hides the head by rig rule, never by
-  mesh:** the hero's head is twenty-two separate meshes on this model — skull,
-  neck, hair cap and fourteen tufts, ears, nose, stubble, under-eye shadows,
-  and then eyes, pupils, brows and a mouth on their own `face.*` bones. The
-  first seated view hid the two anatomical parts named Head and Neck and left
-  the player looking at the inside of his own hair, which is the exact class of
-  bug that a list of mesh names reintroduces every time the model grows a part.
-  `Player3DHeadVisibility` therefore classifies by bone (`head`, `neck`,
-  `face.*`), so a part added later is covered by where it is weighted rather
-  than by somebody remembering to add it. Nothing below the collar is ever
-  hidden: the body is what tells the player he is sitting at the board, and the
-  camera is moved out of the skull instead.
+  mesh:** `Player3DHeadVisibility` classifies registered parts by `head`,
+  `neck`, `face.*` and the `HairBack./HairLeft./HairRight.` auxiliary chains.
+  The `2026-09-13` curtains follow this same contract: adding a weighted hair
+  mesh cannot leave the first-person camera inside it. Restoration leaves
+  previously hidden renderers off; wardrobe leases exclude the head.
+  Torso and limbs remain visible; the camera moves
+  out of the skull while the body still locates the player at the board.
 - **Accepted — player graphics toggles are one static service over
   `PlayerPrefs`, the project's first persistence:** `GraphicsEffectsSettings`
   holds seven booleans (`graphics.dof`, `graphics.intoxication_fx`,
@@ -7587,45 +7625,6 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   batch collider. Cloth at rope width (`<= 0.12 m`) keeps the factory's flat
   colour — the weave is sub-pixel — while wider panels ride the shared POI
   cloth sheet through `ApplyClothPanel`.
-- **Accepted — Hero V2 changes the canonical outer garment, while V1 remains
-  the production fallback:** by the user's explicit 2026-08-29 decision, the
-  successor wears an unfastened faded dark olive-drab field jacket with long
-  sleeves and no diagonal satchel strap or buckle, replacing the former
-  burgundy overshirt/strap target in story-bible §7. Pocket construction,
-  cuffs, seams, the right ochre repair patch and the left bandage are painted;
-  no readable insignia or copied film marking implies a military biography.
-  Amended 2026-09-08 at the user's request: the bandage is gone outright and
-  the left forearm is now the right forearm — same profile, same atlas cell
-  painting — leaving the ochre patch as the only asymmetry.
-  The same user also required Hero V1 not be removed, so its byte-frozen
-  burgundy/strap prefab remains the temporary gameplay default until a later
-  explicit promotion. That bounded production/canon mismatch is accepted and
-  does not license either design to leak into the other.
-- **Accepted — Hero V2 is a parallel explicit variant, not a mutable player
-  preference:** `Player3DResources` and `PlayerFactory` default their old APIs
-  to `ProductionV1`; only a caller naming `ExperimentalV2` can instantiate the
-  candidate. At that decision point V2 preserved the 31-bone/37-action
-  contract; the later production-only Run raised live V2 to 38 and the
-  three-part seated drink subsequently raised the current total to 41.
-  The variant selects five facial
-  states from a merge-safe MPB atlas and binds one full-colour clothing atlas
-  to a shared white-tint material. Gameplay roots and inventory remain V1, so
-  there is no cross-scene toggle or half-promoted saved state. Direct resource
-  instantiation reapplies the registry palette immediately because prefab MPBs
-  are runtime state and cannot be serialized.
-- **Accepted and implemented 2026-08-29 — Hero V2 is the production default;
-  Hero V1 remains an explicit retained fallback:** by the user's correction,
-  every no-variant `PlayerFactory`/`Player3DResources` route, all eight gameplay
-  roots, prefab-derived first-person subsets and the inventory portrait now
-  resolve to `ProductionV2` / `Player3DV2`. `ProductionV1` still resolves the
-  byte-frozen former prefab and its portrait for rollback and legacy contract
-  checks; those assets are not deleted. This supersedes only the temporary
-  default/candidate clauses in the two decisions immediately above. The live
-  `PlayerCharacterDimensions.PelvisHeight` follows V2's measured `0.835 m`
-  pelvis so contextual clips remain grounded. NpcHumanV2 now gives Route 01
-  ambient walkers the same rest-pelvis and Avatar contract; their per-archetype
-  seated offsets remain independent so canonical silhouettes still clear the
-  cabin.
 - **Accepted and implemented 2026-09-04 — Hero V2 is the sole packaged player;
   the retained Hero V1 is removed:** by the user's explicit decision, the old
   rollback route is deleted rather than carried beside production. All nine
@@ -7637,19 +7636,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   generator remains `tools/build-player-3d-model-v2.py`; reusable rig, action,
   export and bed validation lives in the non-runnable
   `tools/player_3d_model_common.py`. The V2 pipeline contract also pins the old
-  asset paths as absent. This supersedes only the retention, non-deletion and
-  selectable-fallback clauses of the three `2026-08-29` decisions above; those
-  entries remain the historical record of the staged promotion. Hero V2's
+  asset paths as absent. Hero V2's
   visible design, its Action bank and the independent pedestrian bank do not
   change, and this removal adds no world fact or lore.
 - **Accepted and implemented 2026-09-05 — the hero's back deforms across
   pelvis, lower spine and chest:** the user's segmented-torso request uses the
   existing `pelvis -> spine -> chest` chain, preserving the shared 31-bone
-  Generic Avatar, six sockets and NPC compatibility. `GEO_Torso` and
-  `CLO_JacketBody` remain continuous meshes with horizontal rings and smooth
-  adjacent weights, at most two bones per vertex; other parts remain rigid.
-  The regenerated hero keeps its mesh and triangle budget and its whole action
-  bank, with independent spine/chest channels, timings, contacts and seams.
+  body core, six sockets and NPC compatibility. The torso, shirt and jacket
+  remain continuous meshes with horizontal rings and smooth adjacent weights,
+  at most two bones per vertex. The action bank retains independent
+  spine/chest channels, timings, contacts and seams.
   The registry stores an explicit `Spine` anchor; the representative `chest`
   mesh binding remains the gameplay anchor. Runtime lean is distributed
   `40/60` between spine and chest with both included in capture/restore.

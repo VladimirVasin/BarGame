@@ -38,6 +38,9 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 
 import atlas_kit  # noqa: E402  (after the sys.path fix)
 import player_cold_actions  # noqa: E402
+import player_detailed_model  # noqa: E402
+import player_face_paint  # noqa: E402
+import player_jacket_cloth  # noqa: E402
 
 PUBLISHED_PATHS: dict[Path, Path] = {}
 
@@ -48,8 +51,8 @@ def asset_reference(path: Path) -> str:
     return PUBLISHED_PATHS.get(resolved, resolved).relative_to(REPO_ROOT).as_posix()
 
 COMMON_AUTHORING_PATH = REPO_ROOT / "tools" / "player_3d_model_common.py"
-V2_GENERATOR_VERSION = "1.7.0"
-TORSO_SKIN_MESHES = ("GEO_Torso", "CLO_JacketBody")
+V2_GENERATOR_VERSION = "2.0.0"
+TORSO_SKIN_MESHES = ("GEO_Torso", "CLO_ShirtBody", "CLO_JacketBody")
 TORSO_SKIN_BONES = ("pelvis", "spine", "chest")
 # Metres at the canonical 1.75 m height. Both garment and shirt use exactly
 # the same field, so their layers cannot part company when the waist bends.
@@ -175,13 +178,13 @@ CLOTHING_REGIONS = {
     "JacketSleeveLeft": ("CLO_JacketSleeve.L", 128, 192, 64, 64),
     "JacketSleeveRight": ("CLO_JacketSleeve.R", 192, 192, 64, 64),
     "JacketForearmLeft": ("CLO_JacketForearm.L", 128, 128, 64, 64),
-    "JeansPelvis": ("GEO_Pelvis", 192, 128, 64, 64),
-    "JeansThighLeft": ("GEO_Thigh.L", 0, 64, 64, 64),
-    "JeansThighRight": ("GEO_Thigh.R", 64, 64, 64, 64),
-    "JeansShinLeft": ("GEO_Shin.L", 128, 64, 64, 64),
-    "JeansShinRight": ("GEO_Shin.R", 192, 64, 64, 64),
-    "BootLeft": ("GEO_Foot.L", 0, 0, 64, 64),
-    "BootRight": ("GEO_Foot.R", 64, 0, 64, 64),
+    "JeansPelvis": ("CLO_TrousersPelvis", 192, 128, 64, 64),
+    "JeansThighLeft": ("CLO_TrousersThigh.L", 0, 64, 64, 64),
+    "JeansThighRight": ("CLO_TrousersThigh.R", 64, 64, 64, 64),
+    "JeansShinLeft": ("CLO_TrousersShin.L", 128, 64, 64, 64),
+    "JeansShinRight": ("CLO_TrousersShin.R", 192, 64, 64, 64),
+    "BootLeft": ("CLO_Boot.L", 0, 0, 64, 64),
+    "BootRight": ("CLO_Boot.R", 64, 0, 64, 64),
     "JacketForearmRight": ("CLO_JacketForearm.R", 128, 0, 64, 64),
 }
 CLOTHING_RENDERER_REGIONS = {
@@ -292,7 +295,7 @@ def resolve_path(path: Path) -> Path:
     return path.resolve()
 
 
-def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool]:
+def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path, Path, bool, bool]:
     user_args: list[str] = []
     if "--" in sys.argv:
         user_args = sys.argv[sys.argv.index("--") + 1 :]
@@ -317,6 +320,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
     )
     parser.add_argument("--skip-animation-export", action="store_true",
                         help="Keep the existing animation FBX when only model geometry changes.")
+    parser.add_argument("--preview-only", action="store_true",
+                        help="Validate geometry and render Relaxed studies into a review folder without publishing production assets.")
     parser.add_argument(
         "--clothing-atlas",
         type=Path,
@@ -361,6 +366,8 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
     args = parser.parse_args(user_args)
     if not 1.40 <= args.height <= 2.10:
         parser.error("--height must be between 1.40 and 2.10 metres")
+    if args.preview_only and (args.no_previews or args.face_atlas_only):
+        parser.error("--preview-only cannot be combined with --no-previews or --face-atlas-only")
 
     # Directory flags make the launcher's checked staged publication possible;
     # existing per-file and no-argument production invocations keep their paths.
@@ -375,6 +382,15 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
                 staged = resolve_path(directory / published.name)
                 PUBLISHED_PATHS[staged] = published
                 setattr(args, name, staged)
+
+    if args.preview_only:
+        # Source reviews own their textures too. A visual iteration never
+        # repaints a packaged atlas or replaces the last complete source file.
+        review_dir = resolve_path(args.source_dir or Path("Captures/HeroAppearanceSource"))
+        for name in ("output", "preview", "portrait", "face_atlas", "clothing_atlas",
+                     "bare_skin_atlas", "expression_sheet", "head_front",
+                     "head_three_quarter", "lower_body_closeup"):
+            setattr(args, name, review_dir / Path(getattr(args, name)).name)
 
     config = common.BuildConfig(
         output=resolve_path(args.output),
@@ -398,6 +414,7 @@ def parse_args() -> tuple[common.BuildConfig, Path, Path, Path, Path, Path, Path
         None if args.no_previews else resolve_path(args.head_three_quarter),
         None if args.no_previews else resolve_path(args.lower_body_closeup),
         args.face_atlas_only,
+        args.preview_only,
     )
 
 
@@ -430,204 +447,9 @@ SOIL_DARK = (66, 56, 30, 255)
 SOIL_PALE = (150, 140, 84, 255)
 
 
-def draw_face_tile(
-    canvas: PixelCanvas,
-    column: int,
-    top_row: int,
-    expression: str,
-    soiled: bool = False,
-) -> None:
-    ox = column * ATLAS_CELL_SIZE
-    oy = top_row * ATLAS_CELL_SIZE
-    canvas.rect(ox, oy, ox + 64, oy + 64, SKIN)
-
-    # Broad hand-painted planes, deliberately large enough to survive 640x360.
-    canvas.rect(ox, oy, ox + 2, oy + 64, SKIN_SHADOW)
-    canvas.rect(ox + 62, oy, ox + 64, oy + 64, SKIN_SHADOW)
-    canvas.rect(ox + 14, oy + 8, ox + 49, oy + 10, SKIN_LIGHT)
-    canvas.line(ox + 10, oy + 55, ox + 20, oy + 60, SKIN_SHADOW, 2)
-    canvas.line(ox + 20, oy + 60, ox + 44, oy + 61, SKIN_SHADOW, 1)
-    canvas.line(ox + 44, oy + 60, ox + 54, oy + 55, SKIN_SHADOW, 2)
-    canvas.line(ox + 12, oy + 24, ox + 29, oy + 25, SOCKET, 2)
-    canvas.line(ox + 35, oy + 25, ox + 52, oy + 24, SOCKET, 2)
-    canvas.line(ox + 28, oy + 17, ox + 31, oy + 39, SKIN_SHADOW)
-    canvas.line(ox + 33, oy + 17, ox + 34, oy + 38, SKIN_LIGHT)
-    canvas.line(ox + 30, oy + 39, ox + 36, oy + 40, SKIN_DARK)
-    canvas.put(ox + 29, oy + 40, SKIN_DARK)
-    canvas.put(ox + 37, oy + 40, SKIN_DARK)
-    canvas.line(ox + 8, oy + 39, ox + 22, oy + 35, CHEEK, 2)
-    canvas.line(ox + 42, oy + 35, ox + 56, oy + 39, CHEEK, 2)
-    canvas.line(ox + 10, oy + 42, ox + 23, oy + 40, SKIN_SHADOW)
-    canvas.line(ox + 41, oy + 40, ox + 54, oy + 42, SKIN_SHADOW)
-    for y in range(49, 60):
-        for x in range(11, 53):
-            selector = x * 11 + y * 7 + column * 13 + top_row * 17
-            if selector % 31 == 0:
-                canvas.put(ox + x, oy + y, SKIN_DARK)
-            elif selector % 19 < 2:
-                canvas.put(ox + x, oy + y, SKIN_SHADOW)
-
-    eye_y = 26
-    eye_heights = {
-        "Watchful": 5,
-        "HalfBlink": 2,
-        "ClosedBlink": 0,
-        "Tense": 2,
-        # The drink's faces: lids that will not stay up, eyes that will
-        # not focus, a jaw that hangs, and the wince of the floor coming.
-        "Drowsy": 1,
-        "Glazed": 3,
-        "Slack": 2,
-        "Grimace": 1,
-    }
-    eye_height = eye_heights.get(expression, 3)
-    dull_eyes = expression in ("Tense", "Grimace", "Drowsy")
-
-    # Flat brows and heavy upper lids communicate exhaustion, not pleading.
-    if expression == "Tense":
-        canvas.line(ox + 13, oy + 20, ox + 27, oy + 22, HAIR, 1)
-        canvas.line(ox + 37, oy + 22, ox + 51, oy + 20, HAIR, 1)
-    elif expression == "Grimace":
-        # Knitted: the inner ends drawn down and together.
-        canvas.line(ox + 13, oy + 20, ox + 28, oy + 24, HAIR, 1)
-        canvas.line(ox + 36, oy + 24, ox + 51, oy + 20, HAIR, 1)
-    elif expression == "Drowsy":
-        # Low and flat, almost on the lids.
-        canvas.line(ox + 13, oy + 23, ox + 27, oy + 23, HAIR, 1)
-        canvas.line(ox + 37, oy + 24, ox + 51, oy + 23, HAIR, 1)
-    elif expression == "Slack":
-        # One brow up, the other where it fell: nothing is being held.
-        canvas.line(ox + 13, oy + 19, ox + 27, oy + 20, HAIR, 1)
-        canvas.line(ox + 37, oy + 23, ox + 51, oy + 22, HAIR, 1)
-    else:
-        canvas.line(ox + 13, oy + 21, ox + 27, oy + 21, HAIR, 1)
-        canvas.line(ox + 37, oy + 22, ox + 51, oy + 21, HAIR, 1)
-
-    for eye_index, (center_x, pupil_shift) in enumerate(((21, 1), (43, 0))):
-        left = center_x - 7
-        right = center_x + 7
-        if eye_height == 0:
-            canvas.line(ox + left, oy + eye_y + 2, ox + right, oy + eye_y + 2, SKIN_DARK)
-            canvas.line(ox + left + 2, oy + eye_y + 4, ox + right - 2, oy + eye_y + 4, UNDER_EYE)
-            continue
-        top = eye_y
-        bottom = eye_y + eye_height
-        if expression == "Glazed" and eye_index == 1:
-            # One lid hangs lower than the other.
-            top += 1
-        canvas.rect(ox + left, oy + top, ox + right + 1, oy + bottom + 1, EYE_DULL if dull_eyes else EYE_WHITE)
-        canvas.line(ox + left, oy + top, ox + right, oy + top, SKIN_DARK, 1)
-        if expression == "Drowsy":
-            # A heavy upper lid: the shadow sits on the eye itself.
-            canvas.line(ox + left, oy + top - 1, ox + right, oy + top - 1, SKIN_SHADOW, 1)
-        if expression == "HalfBlink":
-            canvas.line(ox + left, oy + bottom, ox + right, oy + bottom, SKIN_SHADOW)
-        else:
-            pupil_x = center_x + pupil_shift + (1 if expression == "Watchful" else 0)
-            if expression == "Glazed":
-                # The eyes wander apart: each pupil drifts outward.
-                pupil_x += -1 if eye_index == 0 else 1
-            canvas.rect(ox + pupil_x - 1, oy + top + 1, ox + pupil_x + 2, oy + bottom + 1, HAIR)
-        canvas.line(ox + left + 1, oy + bottom + 2, ox + right - 1, oy + bottom + 3, UNDER_EYE)
-
-    inspection = expression in ("TeethInspectHalf", "TeethInspect")
-    if soiled and inspection:
-        # These lips open below the old soil band's y=50 edge. Paint the
-        # surrounding chin/cheek traces first so neither row nor the gap is
-        # mistaken for grime on the teeth. Older cells retain their pixels.
-        draw_mouth_soil(canvas, ox, oy, column)
-    mouth_y = 47
-    if expression == "Tense":
-        canvas.line(ox + 23, oy + mouth_y, ox + 41, oy + mouth_y, LIP, 2)
-    elif expression == "Grimace":
-        # The corners pulled down, the middle up: a wince.
-        canvas.line(ox + 22, oy + mouth_y + 2, ox + 32, oy + mouth_y - 1, LIP, 2)
-        canvas.line(ox + 32, oy + mouth_y - 1, ox + 42, oy + mouth_y + 2, LIP, 2)
-    elif expression == "Slack":
-        # The jaw hangs: a dark slit of open mouth under the lip.
-        canvas.line(ox + 22, oy + mouth_y - 1, ox + 42, oy + mouth_y - 1, LIP)
-        canvas.rect(ox + 25, oy + mouth_y, ox + 40, oy + mouth_y + 3, SKIN_DARK)
-        canvas.line(ox + 25, oy + mouth_y + 3, ox + 40, oy + mouth_y + 3, LIP)
-    elif expression == "Drowsy":
-        # The mouth has let go at the corners.
-        canvas.line(ox + 22, oy + mouth_y + 1, ox + 28, oy + mouth_y, LIP)
-        canvas.line(ox + 28, oy + mouth_y, ox + 37, oy + mouth_y, LIP)
-        canvas.line(ox + 37, oy + mouth_y, ox + 43, oy + mouth_y + 1, LIP)
-        canvas.line(ox + 25, oy + mouth_y + 2, ox + 40, oy + mouth_y + 2, SKIN_SHADOW)
-    elif expression == "TeethDisplay":
-        # Straight, slightly parted lips. The eyes and brows stay weary:
-        # inspecting the teeth is a small physical gesture, not a smile.
-        canvas.line(ox + 22, oy + mouth_y - 2, ox + 42, oy + mouth_y - 2, LIP)
-        canvas.rect(ox + 22, oy + mouth_y - 1, ox + 43, oy + mouth_y + 4, SKIN_DARK)
-        canvas.rect(ox + 24, oy + mouth_y - 1, ox + 41, oy + mouth_y + 2, TEETH)
-        canvas.line(ox + 24, oy + mouth_y + 2, ox + 40, oy + mouth_y + 2, TEETH_SHADOW)
-        for x in (28, 32, 36):
-            canvas.put(ox + x, oy + mouth_y + 1, TEETH_SHADOW)
-        canvas.line(ox + 24, oy + mouth_y + 4, ox + 40, oy + mouth_y + 4, LIP)
-    elif expression == "Spit":
-        # A compact opening at the same mouth centre, no grimacing eyes.
-        canvas.ellipse(ox + 32, oy + mouth_y + 1, 5, 3, LIP)
-        canvas.ellipse(ox + 32, oy + mouth_y + 1, 3, 2, SKIN_DARK)
-        canvas.line(ox + 24, oy + mouth_y, ox + 26, oy + mouth_y + 1, SKIN_SHADOW)
-        canvas.line(ox + 38, oy + mouth_y + 1, ox + 41, oy + mouth_y, SKIN_SHADOW)
-    elif expression in ("TeethInspectHalf", "TeethInspect"):
-        # Pull the lips apart vertically, leaving their corners level. Two
-        # broad ivory rows and a dark gap survive the small PS1 mirror image;
-        # the unchanged upper face keeps this an inspection, not a smile.
-        full = expression == "TeethInspect"
-        left, right = (18, 47) if full else (21, 44)
-        bottom = 58 if full else 55
-        canvas.rect(ox + left, oy + 44, ox + right, oy + bottom, SKIN_DARK)
-        canvas.line(ox + left + 2, oy + 44, ox + right - 3, oy + 44, LIP)
-        canvas.line(ox + left + 2, oy + bottom, ox + right - 3, oy + bottom, LIP)
-        upper_left, upper_right = (20, 45) if full else (23, 42)
-        upper_bottom = 50 if full else 49
-        lower_top, lower_bottom = (53, 57) if full else (51, 54)
-        canvas.rect(ox + upper_left, oy + 45, ox + upper_right, oy + upper_bottom, INSPECTION_TEETH)
-        canvas.rect(ox + upper_left + 2, oy + lower_top,
-                    ox + upper_right - 2, oy + lower_bottom, INSPECTION_TEETH)
-        canvas.line(ox + upper_left, oy + upper_bottom - 1,
-                    ox + upper_right - 1, oy + upper_bottom - 1, TEETH_SHADOW)
-        canvas.line(ox + upper_left + 2, oy + lower_top,
-                    ox + upper_right - 3, oy + lower_top, TEETH_SHADOW)
-        for x in (26, 32, 38):
-            canvas.line(ox + x, oy + 47, ox + x, oy + upper_bottom - 1, TEETH_SHADOW)
-            canvas.put(ox + x, oy + lower_bottom - 1, TEETH_SHADOW)
-    else:
-        canvas.line(ox + 22, oy + mouth_y, ox + 35, oy + mouth_y, LIP)
-        canvas.line(ox + 35, oy + mouth_y, ox + 43, oy + mouth_y + 1, LIP)
-        canvas.line(ox + 25, oy + mouth_y + 2, ox + 40, oy + mouth_y + 2, SKIN_SHADOW)
-    canvas.put(ox + 21, oy + mouth_y, SKIN_SHADOW)
-    canvas.put(ox + 44, oy + mouth_y + 1, SKIN_SHADOW)
-
-    if soiled and not inspection:
-        draw_mouth_soil(canvas, ox, oy, column)
+draw_face_tile = player_face_paint.draw_face_tile
 
 
-def draw_mouth_soil(canvas: PixelCanvas, ox: int, oy: int, column: int) -> None:
-    """The soiled twin of a face: the same expression with the drink on it.
-
-    Painted after the mouth so the lips (y=47-48) and Slack's open slit stay
-    readable above the band; the soil begins at y=50 and runs down the chin.
-    The eyes are never touched - the expression still has to carry.
-    """
-    canvas.rect(ox + 24, oy + 50, ox + 43, oy + 54, SOIL)
-    canvas.rect(ox + 27, oy + 54, ox + 40, oy + 56, SOIL)
-    # Where it ran: two drips of unequal length below the band.
-    canvas.rect(ox + 30, oy + 56, ox + 32, oy + 59, SOIL_DARK)
-    canvas.rect(ox + 37, oy + 56, ox + 38, oy + 58, SOIL_DARK)
-    # Smears at the corners of the mouth where the back of a hand went.
-    canvas.line(ox + 20, oy + 48, ox + 23, oy + 50, SOIL_DARK, 1)
-    canvas.line(ox + 43, oy + 49, ox + 47, oy + 51, SOIL_DARK, 1)
-    # Specks across the chin and lower cheeks; the column salts the hash so
-    # no two twins carry the same spatter.
-    for y in range(46, 59):
-        for x in range(17, 49):
-            selector = x * 7 + y * 13 + column * 3
-            if selector % 17 == 0:
-                canvas.put(ox + x, oy + y, SOIL_DARK)
-            elif selector % 23 == 0:
-                canvas.put(ox + x, oy + y, SOIL_PALE)
 
 
 # The atlas cells, in python's top-left rows: the five sober faces the
@@ -897,6 +719,7 @@ def build_clothing_atlas(path: Path) -> str:
             atlas_line_bottom_left(canvas, front + 23, fy + lace_y, front + 9, fy + lace_y + 4, boot_edge)
         atlas_line_bottom_left(canvas, front + 3, fy + 13, front + 29, fy + 13, boot_edge, 2)
 
+    player_detailed_model.repaint_clothing(canvas, sys.modules[__name__])
     canvas.write_png(path)
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -1449,8 +1272,10 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         super().__init__(config)
         self.face_atlas_path = face_atlas_path
         self.clothing_atlas_path = clothing_atlas_path
+        self.preview_only = False
 
     def build(self) -> common.BuildResult:
+        print("Hero geometry: building preserved body rig and authored surfaces", flush=True)
         self.reset_scene()
         collections = self.create_collections()
         materials = {
@@ -1475,7 +1300,15 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         self.build_core_anatomy()
         self.build_clothing()
         self.build_face_and_hair()
+        player_detailed_model.refine(self, sys.modules[__name__], common)
+        appearance_errors = []
+        validate_appearance_contracts(self.config, self.result, appearance_errors)
+        if appearance_errors:
+            raise RuntimeError("Hero appearance preflight failed:\n" + "\n".join(appearance_errors))
+        print("Hero geometry complete: " + json.dumps(player_detailed_model.manifest(self.result)["quality"]), flush=True)
+        print("Hero actions: " + ("Relaxed source review only" if self.preview_only else "authoring complete production bank"), flush=True)
         self.build_actions()
+        print("Hero actions complete", flush=True)
         self.build_presentation()
         self.configure_scene_metadata()
         return self.result
@@ -1489,6 +1322,11 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         seated/bed contacts shared with the environment.
         """
 
+        if self.preview_only:
+            relaxed = self.relaxed_pose()
+            self._create_action("Relaxed", "locomotion", 1. / common.ANIMATION_FPS,
+                                False, 1, 24, ((0., relaxed), (1., relaxed)))
+            return
         super().build_actions()
         if self.result is None:
             raise RuntimeError("BuildResult has not been initialized")
@@ -1868,7 +1706,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
                 B("SOCKET_Mouth", self.v(0.002, -0.141, 1.538), self.v(0.002, -0.201, 1.538), "head", deform=False),
             )
         )
-        return specs
+        return specs + player_detailed_model.hair_specs(self, common)
 
     def build_core_anatomy(self) -> None:
         p = self.points
@@ -1884,7 +1722,7 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
                 (1.6230, 0.088, 0.081, -0.013),
                 (1.6720, 0.084, 0.079, -0.007),
                 (1.7090, 0.060, 0.056, -0.003),
-                (1.7215, 0.016, 0.016, 0.000),
+                (1.7216, 0.016, 0.016, 0.000),
             )
         )
         self.add_part(
@@ -2192,11 +2030,19 @@ class HeroV2Builder(common.ProductionPlayerBuilderBase):
         preview_uv_layer = face.data.uv_layers.new(name="UVNeutral")
         for loop in face.data.loops:
             u, v = uv_by_vertex[loop.vertex_index]
-            preview_uv_layer.data[loop.index].uv = (u * 0.25, v * 0.25 + 0.75)
+            preview_uv_layer.data[loop.index].uv = (
+                u / ATLAS_COLUMNS,
+                v / ATLAS_ROWS + (ATLAS_ROWS - 1) / ATLAS_ROWS,
+            )
         face.data.uv_layers.active = uv_layer
         uv_layer.active_render = True
         face["bp_face_atlas_renderer"] = True
         face["bp_uv_contract"] = "local_0_1_runtime_cell_scale_offset"
+        for uv, preview in zip(uv_layer.data, preview_uv_layer.data):
+            expected = Vector((uv.uv.x / ATLAS_COLUMNS,
+                               uv.uv.y / ATLAS_ROWS + (ATLAS_ROWS - 1) / ATLAS_ROWS))
+            if (preview.uv - expected).length > 1e-6:
+                raise RuntimeError("UVNeutral must address exactly one neutral face cell")
         validate_mouth_skull_clearance(face, bpy.data.objects["GEO_Head"], self.scale)
 
     def build_face_and_hair(self) -> None:
@@ -2331,19 +2177,66 @@ def count_region_color(
     )
 
 
-def mesh_distance_signature(obj) -> list[float]:
-    """Sorted pairwise vertex distances: equal iff the shells are congruent.
+def mirrored_forearm_surface_gap(result: common.BuildResult) -> float:
+    """Compare surfaces in their authored segment frames, independent of hull indexing.
 
-    Rigid placement, and the ring frame's own rotation, drop out; a radius
-    that differs by a millimetre does not.
+    Convexification removes redundant collinear points independently on each
+    arm. Their vertex-distance multisets can differ while the actual surfaces
+    coincide. Bidirectional nearest-surface distances compare that surface.
     """
+    surfaces = {}
+    for side in ("L", "R"):
+        obj = next(part.obj for part in result.parts if part.obj.name == f"CLO_JacketForearm.{side}")
+        bone = result.rig.data.bones[f"forearm.{side}"]
+        start = result.rig.matrix_world @ bone.head_local
+        end = result.rig.matrix_world @ bone.tail_local
+        axes = common.segment_basis(start, end)
+        points = [Vector(tuple((obj.matrix_world @ vertex.co - start).dot(axis) for axis in axes))
+                  for vertex in obj.data.vertices]
+        obj.data.calc_loop_triangles()
+        faces = [tuple(triangle.vertices) for triangle in obj.data.loop_triangles]
+        samples = points + [(points[a] + points[b] + points[c]) / 3 for a, b, c in faces]
+        surfaces[side] = (samples, BVHTree.FromPolygons(points, faces, all_triangles=True))
+    return max(surfaces[opposite][1].find_nearest(point)[3]
+               for side, opposite in (("L", "R"), ("R", "L"))
+               for point in surfaces[side][0])
 
-    points = [obj.matrix_world @ vertex.co for vertex in obj.data.vertices]
-    return sorted(
-        (points[first] - points[second]).length
-        for first in range(len(points))
-        for second in range(first + 1, len(points))
-    )
+
+def validate_appearance_contracts(config: common.BuildConfig, result: common.BuildResult,
+                                  errors: list[str]) -> None:
+    """Cheap shape prerequisites run before authoring any production action."""
+    records = {part.obj.name: part for part in result.parts}
+    bounds = [common.mesh_bounds_world(part.obj) for part in result.parts]
+    height = max(row[1].z for row in bounds) - min(row[0].z for row in bounds)
+    head_min, head_max = common.mesh_bounds_world(records["GEO_Head"].obj)
+    ratio = height / (head_max.z - head_min.z)
+    if not 7.0 <= ratio <= 7.5:
+        errors.append(f"Adult head ratio must be 7.0-7.5, got {ratio:.6f}")
+    gap = mirrored_forearm_surface_gap(result)
+    if gap > 1e-6:
+        errors.append(f"Mirrored jacket forearm surfaces differ by {gap * 1000:.6f} mm")
+    for side in ("L", "R"):
+        foot = result.rig.data.bones[f"foot.{side}"]
+        reference, _ = make_adult_boot_geometry(foot.head_local.x, foot.head_local.y,
+                                                foot.tail_local.y, config.height / 1.75)
+        reference = [result.rig.matrix_world @ point for point in reference]
+        # All rigid-pose floor supports are determined by this convex envelope.
+        # Keeping its original vertices guarantees the original action contacts.
+        hull, faces = player_detailed_model.player_hand_frames.convex_hull_geometry(reference)
+        planes = [(hull[face[0]], (hull[face[1]] - hull[face[0]]).cross(
+                   hull[face[2]] - hull[face[0]]).normalized()) for face in faces]
+        boot = records[f"CLO_Boot.{side}"].obj
+        points = [boot.matrix_world @ vertex.co for vertex in boot.data.vertices]
+        missing = max(min((source - point).length for point in points) for source in reference)
+        if missing > 1e-6:
+            errors.append(f"CLO_Boot.{side} lost original support vertices by {missing * 1000:.6f} mm")
+        for name in (f"CLO_Boot.{side}", f"CLO_BootSole.{side}"):
+            obj = records[name].obj
+            excess = max(normal.dot(obj.matrix_world @ vertex.co - origin)
+                         for origin, normal in planes for vertex in obj.data.vertices)
+            if excess > 1e-6:
+                errors.append(f"{name} exceeds the original rigid boot envelope by {excess * 1000:.6f} mm")
+    print(f"Hero appearance preflight: head {ratio:.4f} heads; mirrored forearms {gap * 1000:.6f} mm; original boot supports checked", flush=True)
 
 
 def read_region_pixels(
@@ -2543,19 +2436,10 @@ def validate_v2_result(
     for required in (*common.REQUIRED_BODY_OBJECTS, "GEO_FaceSurface"):
         if required not in records:
             errors.append(f"Missing required Hero V2 part {required}")
-    forbidden_exact = {
-        "CLO_ShirtFront", "CLO_ShoulderCap.L", "CLO_ShoulderCap.R",
-        "CLO_JacketCuff.L", "CLO_JacketCuff.R", "CLO_JacketPanel.L",
-        "CLO_JacketPanel.R", "ACC_JacketPocket.L", "ACC_JacketPocket.R",
-        "ACC_JacketPocketFlap.L", "ACC_JacketPocketFlap.R",
-        "ACC_JeansCuff.L", "ACC_JeansCuff.R", "ACC_BootSole.L",
-        "ACC_BootSole.R", "CLO_Lapel.L", "CLO_Lapel.R",
-        "CLO_CollarBack", "CLO_CollarFront.L", "CLO_CollarFront.R",
-        "ACC_ShoulderPatch.R",
-    }
+    forbidden_exact = {"ACC_BandageWrap", "CLO_Bandage", "ACC_ShoulderPatch.L"}
     forbidden_found = sorted(forbidden_exact.intersection(records))
     if forbidden_found:
-        errors.append(f"Decorative clothing geometry must be atlas-painted, found {forbidden_found}")
+        errors.append(f"Removed bandage/unauthorized mirrored patch returned: {forbidden_found}")
 
     # The left forearm wore a bandage until 2026-09-08. It was removed
     # outright rather than hidden, so no mesh, wrap or material may bring
@@ -2570,22 +2454,23 @@ def validate_v2_result(
         "CLO_JacketSleeve.R": "MAT_JacketAtlas",
         "CLO_JacketForearm.L": "MAT_JacketAtlas",
         "CLO_JacketForearm.R": "MAT_JacketAtlas",
-        "GEO_Pelvis": "MAT_JeansAtlas",
-        "GEO_Thigh.L": "MAT_JeansAtlas",
-        "GEO_Thigh.R": "MAT_JeansAtlas",
-        "GEO_Shin.L": "MAT_JeansAtlas",
-        "GEO_Shin.R": "MAT_JeansAtlas",
-        "GEO_Foot.L": "MAT_JeansAtlas",
-        "GEO_Foot.R": "MAT_JeansAtlas",
+        "CLO_TrousersPelvis": "MAT_JeansAtlas",
+        "CLO_TrousersThigh.L": "MAT_JeansAtlas",
+        "CLO_TrousersThigh.R": "MAT_JeansAtlas",
+        "CLO_TrousersShin.L": "MAT_JeansAtlas",
+        "CLO_TrousersShin.R": "MAT_JeansAtlas",
+        "CLO_Boot.L": "MAT_JeansAtlas",
+        "CLO_Boot.R": "MAT_JeansAtlas",
     }
     if set(CLOTHING_RENDERER_REGIONS) != set(expected_atlas_material):
         errors.append("Clothing region table does not match the exact atlas renderer contract")
 
-    expected_bones = set((*common.REQUIRED_BONES, *common.REQUIRED_FACE_BONES, *common.REQUIRED_SOCKET_BONES))
+    expected_bones = set((*common.REQUIRED_BONES, *common.REQUIRED_FACE_BONES,
+                          *common.REQUIRED_SOCKET_BONES, *player_detailed_model.HAIR_BONES))
     actual_bones = {bone.name for bone in result.rig.data.bones}
     if actual_bones != expected_bones:
         errors.append(
-            f"Hero V2 bones differ from 31-bone contract: missing={sorted(expected_bones-actual_bones)}, extra={sorted(actual_bones-expected_bones)}"
+            f"Hero V2 bones differ from 31 body + 12 optional hair contract: missing={sorted(expected_bones-actual_bones)}, extra={sorted(actual_bones-expected_bones)}"
         )
     if set(result.actions) != set(V2_REQUIRED_ACTIONS):
         missing_actions = sorted(set(V2_REQUIRED_ACTIONS) - set(result.actions))
@@ -2741,6 +2626,10 @@ def validate_v2_result(
                 blended += len(actual) == 2
             if used != set(TORSO_SKIN_BONES) or blended < 20:
                 errors.append(f"{obj.name} must articulate all three torso regions with blended rings")
+        elif obj.get("bp_secondary_hair") or obj.get("bp_torso_weights"):
+            # Added strands and narrow garment seams use normalized shared
+            # chains; their exact fields are checked in the detailed builder.
+            pass
         elif group is None:
             errors.append(f"{obj.name} has no rigid {record.bone} group")
         else:
@@ -2760,8 +2649,9 @@ def validate_v2_result(
         all_minima.append(minimum)
         all_maxima.append(maximum)
 
-    if triangle_count > common.MAX_TRIANGLES:
-        errors.append(f"Triangle budget exceeded: {triangle_count} > {common.MAX_TRIANGLES}")
+    if triangle_count > 11000:
+        errors.append(f"Complete model including hidden anatomy exceeds 11000 triangles: {triangle_count}")
+    player_detailed_model.validate(result, errors)
     bounds_min = Vector((min(v.x for v in all_minima), min(v.y for v in all_minima), min(v.z for v in all_minima)))
     bounds_max = Vector((max(v.x for v in all_maxima), max(v.y for v in all_maxima), max(v.z for v in all_maxima)))
     measured_height = bounds_max.z - bounds_min.z
@@ -2828,10 +2718,10 @@ def validate_v2_result(
         errors.append(f"Shoulder-to-hip torso length must be 0.535-0.550 m, got {torso_length:.3f}")
     if not 0.180 <= hip_joint_span <= 0.190:
         errors.append(f"Pelvis joint span must be 0.180-0.190 m, got {hip_joint_span:.3f}")
-    if not 0.165 <= torso_obj.get("bp_waist_half_width_m", 0.0) <= 0.172:
-        errors.append("Underlying torso waist half-width must be 0.165-0.172 m")
-    if not 0.180 <= torso_obj.get("bp_chest_half_width_m", 0.0) <= 0.190:
-        errors.append("Underlying ribcage half-width must be 0.180-0.190 m")
+    if not 0.130 <= torso_obj.get("bp_waist_half_width_m", 0.0) <= 0.138:
+        errors.append("Independent slim torso waist half-width must be 0.130-0.138 m")
+    if not 0.145 <= torso_obj.get("bp_chest_half_width_m", 0.0) <= 0.154:
+        errors.append("Independent slim ribcage half-width must be 0.145-0.154 m")
 
     relaxed_landmarks = measure_relaxed_arm_landmarks(result)
     for side in ("l", "r"):
@@ -2847,11 +2737,11 @@ def validate_v2_result(
     hair_records = [record for name, record in records.items() if name.startswith("GEO_Hair")]
     hair_min_x = min(common.mesh_bounds_world(record.obj)[0].x for record in hair_records)
     hair_max_x = max(common.mesh_bounds_world(record.obj)[1].x for record in hair_records)
-    if hair_max_x - hair_min_x > head_width + 0.012:
-        errors.append("Hair silhouette expands beyond the adult skull envelope")
+    if hair_max_x - hair_min_x > head_width + 0.080:
+        errors.append("Collar-length hair must stay close to the lean adult head and neck")
 
     for side in ("L", "R"):
-        foot_min, foot_max = common.mesh_bounds_world(records[f"GEO_Foot.{side}"].obj)
+        foot_min, foot_max = common.mesh_bounds_world(records[f"CLO_Boot.{side}"].obj)
         foot_length = foot_max.y - foot_min.y
         foot_width = foot_max.x - foot_min.x
         if abs(foot_min.z) > 1e-6:
@@ -2869,13 +2759,13 @@ def validate_v2_result(
         )
         calf_width = measure_ring_width(shin_obj, 8, 2)
         ankle_width = measure_ring_width(shin_obj, 8, 4)
-        if not 0.155 <= upper_thigh_width <= 0.175:
+        if not 0.137 <= upper_thigh_width <= 0.160:
             errors.append(f"GEO_Thigh.{side} upper width is implausible: {upper_thigh_width:.3f} m")
-        if not 0.100 <= knee_width <= 0.115:
+        if not 0.089 <= knee_width <= 0.103:
             errors.append(f"GEO_{side} knee width must remain narrow: {knee_width:.3f} m")
-        if not 0.125 <= calf_width <= 0.140:
+        if not 0.110 <= calf_width <= 0.126:
             errors.append(f"GEO_Shin.{side} calf width is implausible: {calf_width:.3f} m")
-        if not 0.075 <= ankle_width <= 0.090:
+        if not 0.065 <= ankle_width <= 0.081:
             errors.append(f"GEO_Shin.{side} ankle width is implausible: {ankle_width:.3f} m")
         if calf_width <= ankle_width * 1.45:
             errors.append(f"GEO_Shin.{side} must widen through the calf before tapering")
@@ -2902,13 +2792,8 @@ def validate_v2_result(
             errors.append(f"{sleeve_name} must overlap the anatomical shoulder seam")
 
     # Since 2026-09-08 the two forearms are one shell built twice. The
-    # authored A-pose makes the left forearm segment an exact mirror of the
-    # right, offset by a rigid 7.5 mm, so "identical" is literally true and
-    # is checked as congruence, not as a family resemblance: the sorted
-    # multiset of all pairwise vertex distances is invariant under the
-    # rotation that carries one shell onto the other, and it separates the
-    # shells by radius. The bandage shared this mesh's vertex and polygon
-    # counts, so counting alone would have let it back in.
+    # surfaces are checked in equal segment frames. Convex hulls may remove
+    # different redundant points without changing the physical surface.
     forearms = {}
     for side, sign, where in (("L", 1.0, "physical left (+X)"),
                               ("R", -1.0, "physical right (-X)")):
@@ -2924,27 +2809,10 @@ def validate_v2_result(
         if common.object_center_world(forearm).x * sign <= 0:
             errors.append(f"CLO_JacketForearm.{side} must stay on {where}")
     if len(forearms) == 2:
-        signatures = {
-            side: mesh_distance_signature(forearm)
-            for side, forearm in forearms.items()
-        }
-        if len(signatures["L"]) != len(signatures["R"]):
-            errors.append(
-                "Both jacket forearms must be the same shell, got "
-                f"{len(forearms['L'].data.vertices)} and "
-                f"{len(forearms['R'].data.vertices)} vertices"
-            )
-        else:
-            worst = max(
-                (abs(left - right)
-                 for left, right in zip(signatures["L"], signatures["R"])),
-                default=0.0,
-            )
-            if worst > 1e-6:
-                errors.append(
-                    "CLO_JacketForearm.L must be the right forearm's shell "
-                    f"exactly; the two differ by {worst * 1000.0:.4f} mm"
-                )
+        worst = mirrored_forearm_surface_gap(result)
+        if worst > 1e-6:
+            errors.append("CLO_JacketForearm.L must be the right forearm's shell "
+                          f"exactly; the surfaces differ by {worst * 1000.0:.6f} mm")
     if not face_atlas_path.is_file() or face_atlas_path.stat().st_size < 256:
         errors.append("Hero V2 face atlas was not generated")
     if not clothing_atlas_path.is_file() or clothing_atlas_path.stat().st_size < 256:
@@ -2963,7 +2831,7 @@ def validate_v2_result(
             if count_region_color(pixels, width, height, "JacketSleeveLeft", {patch_color}) != 0:
                 errors.append("Ochre patch pixels leaked onto physical-left sleeve region")
             for forearm_region in ("JacketForearmLeft", "JacketForearmRight"):
-                if count_region_color(pixels, width, height, forearm_region, {jacket_dark}) < 150:
+                if count_region_color(pixels, width, height, forearm_region, {jacket_dark}) < 80:
                     errors.append(f"{forearm_region} needs painted cuff and fold pixels")
             if (read_region_pixels(pixels, width, height, "JacketForearmLeft")
                     != read_region_pixels(pixels, width, height, "JacketForearmRight")):
@@ -2971,8 +2839,8 @@ def validate_v2_result(
                     "Both forearm cells must be painted identically: the left "
                     "sleeve is the right one, not a bandage"
                 )
-            if count_region_color(pixels, width, height, "JacketBody", {shirt_color}) < 500:
-                errors.append("Open jacket front must reveal a readable charcoal shirt")
+            if not records["CLO_JacketBody"].obj.get("bp_real_front_opening") or "CLO_ShirtBody" not in records:
+                errors.append("The open jacket must reveal its independent charcoal shirt")
             for shin_region in ("JeansShinLeft", "JeansShinRight"):
                 if count_region_color(pixels, width, height, shin_region, {boot_color}) < 650:
                     errors.append(f"{shin_region} needs a painted military boot shaft at the ankle")
@@ -3140,6 +3008,7 @@ def content_signature(
         "clothing_atlas_sha256": clothing_atlas_sha256,
         "bare_skin_atlas_sha256": bare_skin_atlas_sha256,
         "palette": dict(sorted(V2_PALETTE_HEX.items())),
+        "detailed_model": player_detailed_model.manifest(result),
         "parts": part_records,
         "bones": bone_records,
         "actions": action_records,
@@ -3224,7 +3093,7 @@ def write_v2_manifest(
     relaxed_landmarks = measure_relaxed_arm_landmarks(result)
     lower_body_metrics: dict[str, float] = {}
     for side, label in (("L", "left"), ("R", "right")):
-        foot_min, foot_max = common.mesh_bounds_world(records[f"GEO_Foot.{side}"].obj)
+        foot_min, foot_max = common.mesh_bounds_world(records[f"CLO_Boot.{side}"].obj)
         thigh_obj = records[f"GEO_Thigh.{side}"].obj
         shin_obj = records[f"GEO_Shin.{side}"].obj
         lower_body_metrics.update(
@@ -3250,6 +3119,12 @@ def write_v2_manifest(
             "design_version": "HeroV2",
             "cold_authoring_sha256": hashlib.sha256(
                 Path(player_cold_actions.__file__).read_bytes()).hexdigest(),
+            "detail_authoring_sha256": hashlib.sha256(
+                Path(player_detailed_model.__file__).read_bytes()).hexdigest(),
+            "face_paint_sha256": hashlib.sha256(
+                Path(player_face_paint.__file__).read_bytes()).hexdigest(),
+            "hand_frames_sha256": hashlib.sha256(
+                Path(player_detailed_model.player_hand_frames.__file__).read_bytes()).hexdigest(),
             "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
             "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
             "runtime_integrated": True,
@@ -3369,13 +3244,14 @@ def write_v2_manifest(
             },
             "geometry_simplification": {
                 "painted_not_modeled": [
-                    "lapels", "collar", "placket", "four pocket panels and flaps",
-                    "right shoulder patch", "jacket cuffs",
+                    "right shoulder patch",
                     "jeans seams and cuffs", "boot shaft panels",
-                    "laces", "eyelets", "toe cap", "sole edge",
+                    "laces", "eyelets", "toe cap seam",
                 ],
+                "modeled_construction": ["open jacket shell", "folded collar", "plackets",
+                    "four pockets and flaps", "sleeve cuffs", "boot bevels and soles"],
                 "forbidden_detail_mesh_names": ["ACC_BandageWrap", "CLO_Bandage"],
-                "foot_meshes": ["GEO_Foot.L", "GEO_Foot.R"],
+                "foot_meshes": ["CLO_Boot.L", "CLO_Boot.R"],
             },
             "design_metrics": {
                 "height_m": config.height,
@@ -3409,6 +3285,12 @@ def write_v2_manifest(
             },
         }
     )
+    payload.update(player_detailed_model.manifest(result))
+    for part in payload["parts"]:
+        obj = records[part["name"]].obj
+        part["default_visible"] = bool(obj.get("bp_default_visible", True))
+        part["wardrobe_slot"] = str(obj.get("bp_wardrobe_slot", ""))
+        part["body_coverage_region"] = str(obj.get("bp_body_coverage", ""))
     for action in payload["actions"]:
         source_action = result.actions[action["name"]].action
         action["event_count"] = int(source_action.get("bp_event_count", 0))
@@ -3425,6 +3307,7 @@ def write_v2_manifest(
         keys = action_face_keys(action["name"])
         if keys:
             action["face_keys"] = keys
+    player_jacket_cloth.attach_metadata(payload)
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     os.replace(temporary, path)
@@ -3446,7 +3329,7 @@ def print_report(
     print(f"  Blender: {bpy.app.version_string}")
     print(f"  Export objects: {report.object_count}")
     print(f"  Separate mesh parts: {report.mesh_count}")
-    print(f"  Triangles: {report.triangle_count}/{common.MAX_TRIANGLES}")
+    print(f"  Complete triangles (including hidden body): {report.triangle_count}/11000")
     print(f"  Bones: {len(common.REQUIRED_BONES) + len(common.REQUIRED_FACE_BONES) + len(common.REQUIRED_SOCKET_BONES)}")
     print(f"  Actions: {report.action_count}")
     print(f"  Bounds min: {report.bounds_min}")
@@ -3551,7 +3434,9 @@ def main() -> None:
         head_three_quarter_path,
         lower_body_closeup_path,
         face_atlas_only,
+        preview_only,
     ) = parse_args()
+    print("Hero textures: painting deterministic source atlases", flush=True)
     face_atlas_sha256 = build_face_atlas(face_atlas_path, expression_sheet_path)
     if face_atlas_only:
         update_face_atlas_manifest(config.manifest, face_atlas_path, face_atlas_sha256)
@@ -3561,7 +3446,36 @@ def main() -> None:
     clothing_atlas_sha256 = build_clothing_atlas(clothing_atlas_path)
     bare_skin_atlas_sha256 = build_bare_skin_atlas(bare_skin_atlas_path)
     builder = HeroV2Builder(config, face_atlas_path, clothing_atlas_path)
+    builder.preview_only = preview_only
     result = builder.build()
+    if preview_only:
+        print("Hero review: validating authored geometry", flush=True)
+        errors = []
+        player_detailed_model.validate(result, errors)
+        for part in result.parts:
+            if part.obj.name != "GEO_FaceSurface":
+                try:
+                    common.validate_manifold(part.obj)
+                except RuntimeError as error:
+                    errors.append(str(error))
+        validate_bare_skin_atlas(result, bare_skin_atlas_path, errors)
+        if errors:
+            raise RuntimeError("Hero source geometry failed:\n" + "\n".join(errors))
+        review_dir = face_atlas_path.parent
+        print("Hero review: rendering relaxed body studies", flush=True)
+        render_relaxed_preview(config.preview, result)
+        for name, position in (("BodyFront", (0., -3.5, 1.03)),
+                               ("BodyProfile", (3.5, 0., 1.03)),
+                               ("BodyBack", (0., 3.5, 1.03))):
+            render_relaxed_study(review_dir / (name + ".png"), result,
+                                  Vector(position), Vector((0., 0., .9)), 54.)
+        print("Hero review: rendering face and clothing studies", flush=True)
+        render_relaxed_study(head_front_path, result, Vector((0., -1.28, 1.625)), Vector((0., -.020, 1.565)), 78.)
+        render_relaxed_study(head_three_quarter_path, result, Vector((.66, -1.22, 1.640)), Vector((0., -.015, 1.555)), 82.)
+        render_relaxed_study(lower_body_closeup_path, result, Vector((.52, -2.18, .58)), Vector((0., -.055, .39)), 68.)
+        print("Hero source review complete: " + json.dumps(player_detailed_model.manifest(result)["quality"]), flush=True)
+        return
+    print("Hero validation: production geometry and selected action contracts", flush=True)
     report = validate_v2_result(
         config, result, face_atlas_path, clothing_atlas_path, bare_skin_atlas_path
     )
@@ -3602,8 +3516,10 @@ def main() -> None:
     if config.glb is not None:
         common.export_glb(config.glb, result)
     if config.fbx is not None:
+        print("Hero export: model FBX", flush=True)
         common.export_fbx(config.fbx, result)
     if config.animation_fbx is not None:
+        print("Hero export: animation FBX", flush=True)
         common.export_animation_fbx(config.animation_fbx, result)
     if config.manifest is not None:
         write_v2_manifest(
@@ -3627,6 +3543,7 @@ def main() -> None:
             # as well, before the staged .blend moves away from those paths.
             authored_image.pack()
     common.save_blend(config.output)
+    print("Hero source and manifests published", flush=True)
     print_report(
         config,
         report,

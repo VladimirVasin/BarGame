@@ -43,6 +43,9 @@ namespace BarPromenade.Editor
                     StringComparison.OrdinalIgnoreCase))
             {
                 ConfigureShared(importer);
+                // The coat owns runtime mesh copies and reads source skin data
+                // in player builds as well as in the Editor.
+                importer.isReadable = true;
                 importer.importAnimation = false;
                 importer.avatarSetup =
                     ModelImporterAvatarSetup.CreateFromThisModel;

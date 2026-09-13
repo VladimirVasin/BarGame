@@ -16,6 +16,7 @@ import sys
 sys.dont_write_bytecode = True
 
 from atlas_kit import PixelCanvas, read_generated_png
+import player_face_paint
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "Assets/Resources/Dialogue/Faces"
@@ -46,6 +47,9 @@ def copy_tile(source, target, index):
 
 
 def upper_face(canvas, identity, state):
+    if identity == "Hero":
+        player_face_paint.draw_dialogue_upper_face(canvas, state)
+        return
     if state == "Rest":
         return
     hero = identity == "Hero"
@@ -89,7 +93,7 @@ def mouth(canvas, identity, shape, clean, soiled):
         return
     hero = identity == "Hero"
     skin = (174, 141, 123, 255) if hero else (248, 241, 232, 255)
-    lip = (88, 58, 58, 255) if hero else (104, 91, 76, 255)
+    lip = player_face_paint.LIP if hero else (104, 91, 76, 255)
     cavity = (45, 34, 34, 255) if hero else (48, 40, 33, 255)
     teeth = (175, 165, 143, 255) if hero else (230, 219, 184, 255)
     enamel_shadow = (128, 119, 105, 255) if hero else (177, 161, 129, 255)
@@ -98,7 +102,10 @@ def mouth(canvas, identity, shape, clean, soiled):
     opening_y = center_y + (1 if hero else 0)
     # Clear the previous line, retaining the jaw/stubble and dirt outside the
     # aperture. The latter stays fixed across all syllables instead of boiling.
-    canvas.rect(19, 44, 48, 56 if hero else 57, skin)
+    if hero:
+        player_face_paint.restore_mouth_background(canvas)
+    else:
+        canvas.rect(19, 44, 48, 57, skin)
     if soiled:
         for y in range(44, 56):
             for x in range(19, 48):

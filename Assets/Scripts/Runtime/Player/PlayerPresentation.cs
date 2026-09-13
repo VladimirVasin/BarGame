@@ -226,6 +226,7 @@ namespace BarPromenade
         private bool[] capturedShadowStates = Array.Empty<bool>();
         private int rendererLeaseCount;
         private int shadowLeaseCount;
+        private IDisposable wardrobeVisibilityLock;
 
         public PlayerPresentationVisibility(
             IRendererPresentation rendererPresentation,
@@ -319,6 +320,8 @@ namespace BarPromenade
 
         private void CaptureAndHideRenderers()
         {
+            if (presentation is Player3DCharacterPresentation hero && hero.Registry != null)
+                wardrobeVisibilityLock = hero.Registry.GetComponent<PlayerWardrobe>()?.LockVisibility();
             IReadOnlyList<Renderer> renderers = presentation.Renderers;
             int count = renderers?.Count ?? 0;
             capturedRenderers = new Renderer[count];
@@ -351,6 +354,8 @@ namespace BarPromenade
 
             capturedRenderers = Array.Empty<Renderer>();
             capturedRendererStates = Array.Empty<bool>();
+            wardrobeVisibilityLock?.Dispose();
+            wardrobeVisibilityLock = null;
         }
 
         private void CaptureAndHideShadows()

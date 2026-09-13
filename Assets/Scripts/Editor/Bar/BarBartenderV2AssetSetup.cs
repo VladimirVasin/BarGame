@@ -830,6 +830,9 @@ namespace BarPromenade.Editor
             for (int index = 0; index < floatBindings.Length; index++)
             {
                 EditorCurveBinding sourceBinding = floatBindings[index];
+                // The shared walk drives the original body rig. The hero's
+                // physical hair chains have no counterpart on the bartender.
+                if (IsHeroHairCurve(sourceBinding)) continue;
                 EditorCurveBinding targetBinding = sourceBinding;
                 targetBinding.path = RemapWalkPath(sourceBinding.path);
                 AnimationUtility.SetEditorCurve(
@@ -843,6 +846,7 @@ namespace BarPromenade.Editor
             for (int index = 0; index < objectBindings.Length; index++)
             {
                 EditorCurveBinding sourceBinding = objectBindings[index];
+                if (IsHeroHairCurve(sourceBinding)) continue;
                 EditorCurveBinding targetBinding = sourceBinding;
                 targetBinding.path = RemapWalkPath(sourceBinding.path);
                 AnimationUtility.SetObjectReferenceCurve(
@@ -867,6 +871,10 @@ namespace BarPromenade.Editor
             EditorUtility.SetDirty(target);
             AssetDatabase.SaveAssetIfDirty(target);
         }
+
+        private static bool IsHeroHairCurve(EditorCurveBinding binding) =>
+            binding.type == typeof(Transform) && Player3DHeadVisibility.IsHairGeometry(
+                binding.path.Substring(binding.path.LastIndexOf('/') + 1));
 
         private static string RemapWalkPath(string sourcePath)
         {

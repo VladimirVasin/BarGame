@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generator_version": "1.1.0",
-  "source_hero_sha256": "a54e879bed8a1e7af80b6c95546901d49e39cf96acf6d90b7d4500ce99696639",
+  "generator_version": "1.2.0",
+  "source_hero_sha256": "a8e469950a086b040c86b36574d947a2872173935c0b797416ffd09691208fa3",
   "coordinates": "Same FBX axis/unit/import contract as production Hero V2; stool localY up",
   "report": {
     "trousers_source_endpoints_exact": true,
     "lowered_shape_count": 5,
-    "triangles": 1602,
+    "triangles": 1986,
     "real_bones_only": true,
     "closed_positive_volumes": true,
     "bare_pelvis_watertight_components": 1,
@@ -39,7 +39,7 @@
     "GEO_Shin.L": "shin.L",
     "GEO_Shin.R": "shin.R"
   },
-  "geometry_sha256": "c44e3e6e374a87fcc4b58390c12346405a2fee27b77bf6ecf2d17419f4ca6e65",
+  "geometry_sha256": "96b475b90f83a2aae22806d20685857d1ce6d729d3f9b54ea76f041113755554",
   "trousers_contract": "Exact production source position/UV at Basis; Lowered shape gathers at knee via actual-bone presentation proxies",
   "stools": [
     {
@@ -53,5 +53,5 @@
       "diameter": 0.034
     }
   ],
-  "signature": "7dea13cf650b203dced047f6f07f69ba4e8d0924744baf7ee949ed0adec866e7"
+  "signature": "2c995f48703dc71f5e8698a449ce898d1076e73ed86ba66769ec5a35b94a0bff"
 }

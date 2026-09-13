@@ -22,6 +22,11 @@ namespace BarPromenade
             new List<Renderer>();
 
         private Player3DAssetRegistry registry;
+        private Player3DAssetRegistry sourceRegistry;
+        private readonly List<Player3DMeshBinding> armBindings = new List<Player3DMeshBinding>();
+        private readonly Dictionary<string, Player3DMeshBinding> sourceBindings =
+            new Dictionary<string, Player3DMeshBinding>(StringComparer.Ordinal);
+        private readonly MaterialPropertyBlock appearance = new MaterialPropertyBlock();
 
         private Player3DFirstPersonSubset()
         {
@@ -36,7 +41,8 @@ namespace BarPromenade
             Transform parent,
             Player3DFirstPersonSide side,
             int layer,
-            string instanceName)
+            string instanceName,
+            Player3DAssetRegistry source = null)
         {
             if (parent == null)
             {
@@ -49,6 +55,10 @@ namespace BarPromenade
             {
                 subset.registry = Player3DResources.Instantiate(parent);
                 subset.registry.gameObject.name = instanceName;
+                subset.sourceRegistry = source;
+                if (source != null)
+                    foreach (Player3DMeshBinding binding in source.MeshBindings)
+                        if (binding?.Renderer != null) subset.sourceBindings[binding.MeshName] = binding;
                 subset.Configure(side, layer);
                 subset.AlignGripAtParentOrigin();
                 return subset;
@@ -63,6 +73,9 @@ namespace BarPromenade
         public void Dispose()
         {
             visibleRenderers.Clear();
+            armBindings.Clear();
+            sourceBindings.Clear();
+            sourceRegistry = null;
             SourceGrip = null;
             SourceUpperArm = null;
             if (registry == null)
@@ -91,6 +104,8 @@ namespace BarPromenade
             root.localPosition = Vector3.zero;
             root.localRotation = Quaternion.identity;
             root.localScale = Vector3.one;
+            PlayerWardrobe wardrobe = registry.GetComponent<PlayerWardrobe>();
+            if (wardrobe != null) wardrobe.enabled = false;
 
             Animator animator = registry.Animator;
             if (animator != null)
@@ -139,6 +154,7 @@ namespace BarPromenade
                     skinnedRenderer.updateWhenOffscreen = true;
                 }
 
+                armBindings.Add(binding);
                 visibleRenderers.Add(renderer);
             }
 
@@ -188,6 +204,33 @@ namespace BarPromenade
             }
 
             registry.ApplyPalette();
+            RefreshAppearance();
+        }
+
+        /// <summary>Copy the live outfit, then restrict it to this authored arm.</summary>
+        public void RefreshAppearance(bool shown = true)
+        {
+            if (sourceRegistry != null && registry != null)
+                sourceRegistry.GetComponent<PlayerJacketCloth>()?.CopyPoseTo(registry.GetComponent<PlayerJacketCloth>());
+            PlayerWardrobe sourceWardrobe = sourceRegistry != null ? sourceRegistry.GetComponent<PlayerWardrobe>() : null;
+            PlayerWardrobe localWardrobe = registry != null ? registry.GetComponent<PlayerWardrobe>() : null;
+            visibleRenderers.Clear();
+            foreach (Player3DMeshBinding binding in armBindings)
+            {
+                Renderer target = binding.Renderer;
+                bool worn = localWardrobe == null || !localWardrobe.IsConfigured || localWardrobe.IsRendererWorn(target);
+                if (sourceBindings.TryGetValue(binding.MeshName, out Player3DMeshBinding source) && source.Renderer != null)
+                {
+                    worn = sourceWardrobe != null && sourceWardrobe.IsConfigured
+                        ? sourceWardrobe.IsRendererWorn(source.Renderer) : source.Renderer.enabled;
+                    target.sharedMaterials = source.Renderer.sharedMaterials;
+                    appearance.Clear();
+                    source.Renderer.GetPropertyBlock(appearance);
+                    target.SetPropertyBlock(appearance);
+                }
+                target.enabled = shown && worn;
+                if (worn) visibleRenderers.Add(target);
+            }
         }
 
         private void RequireVisiblePart(

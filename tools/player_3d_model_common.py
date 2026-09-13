@@ -4724,6 +4724,7 @@ def validate_bed_support_contract(
             part.bone not in head_bones
             and part.bone != "neck"
             and not part.obj.name.startswith("ACC_")
+            and not bool(part.obj.get("bp_secondary_hair", False))
         )
 
     def is_head(part: PartRecord) -> bool:
@@ -5687,6 +5688,11 @@ def validate_fall_recovery_dense(
         minimum = math.inf
         minimum_part = None
         for part in result.parts:
+            # Runtime-simulated strands do not have their final collision pose
+            # in a bone-only action. Rigid body/clothing still keep the floor
+            # guarantee; the strand solver owns the separate contact proof.
+            if bool(part.obj.get("bp_secondary_hair", False)):
+                continue
             evaluated = part.obj.evaluated_get(depsgraph)
             mesh = evaluated.to_mesh()
             try:

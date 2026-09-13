@@ -13,9 +13,11 @@ import numpy as np
 
 TOLERANCE_M = 0.002
 LEFT_PARTS = ("GEO_UpperArm.L", "GEO_Forearm.L", "GEO_Hand.L", "GEO_Thumb.L",
-              "CLO_JacketSleeve.L", "CLO_JacketForearm.L")
+              "CLO_JacketSleeve.L", "CLO_JacketForearm.L", "CLO_JacketCuff.L",
+              *(f"GEO_Finger{i}.L" for i in range(4)))
 RIGHT_PARTS = ("GEO_UpperArm.R", "GEO_Forearm.R", "GEO_Hand.R", "GEO_Thumb.R",
-               "CLO_JacketSleeve.R", "CLO_JacketForearm.R")
+               "CLO_JacketSleeve.R", "CLO_JacketForearm.R", "CLO_JacketCuff.R",
+               *(f"GEO_Finger{i}.R" for i in range(4)))
 
 
 def unique_axes(values):
@@ -110,9 +112,9 @@ def measure(rig, actions, names=("ColdHold", "ColdShoulderRub"), step=0.5, pose_
                             worst = dict(sample)
                             worst["joints"] = {bone: list(rig.pose.bones[bone].head) for bone in (
                                 "upper_arm.L", "forearm.L", "hand.L", "upper_arm.R", "forearm.R", "hand.R")}
-                        hand_upper_contact = (("Hand" in left or "Thumb" in left) and
+                        hand_upper_contact = (("Hand" in left or "Thumb" in left or "Finger" in left) and
                                               ("UpperArm" in right or "JacketSleeve" in right)) or (
-                                              ("Hand" in right or "Thumb" in right) and
+                                              ("Hand" in right or "Thumb" in right or "Finger" in right) and
                                               ("UpperArm" in left or "JacketSleeve" in left))
                         if not hand_upper_contact and clearance < worst_non_contact["clearance_m"]:
                             worst_non_contact = sample
@@ -166,7 +168,8 @@ if __name__ == "__main__":
         config = module.common.BuildConfig(output=args.source_blend, preview=None, portrait=None,
             manifest=None, glb=None, fbx=None, animation_fbx=None, height=1.75, seed=17301, pose="apose")
         builder = module.HeroV2Builder(config, module.DEFAULT_FACE_ATLAS, module.DEFAULT_CLOTHING_ATLAS)
-        builder.result = types.SimpleNamespace(rig=rig)
+        builder.result = types.SimpleNamespace(rig=rig, parts=[
+            types.SimpleNamespace(obj=obj) for obj in bpy.data.objects if obj.type == "MESH"])
         callback = lambda name, phase: module.player_cold_actions.cold_pose(
             builder, module.common, phase, name == "ColdShoulderRub")
     report = measure(rig, bpy.data.actions, step=args.sample_step, pose_callback=callback)

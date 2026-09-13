@@ -25,6 +25,8 @@ namespace BarPromenade
         private readonly Dictionary<Renderer, Renderer> sourceByReplacement = new Dictionary<Renderer, Renderer>();
         private HomeInteriorRoot home;
         private Player3DAssetRegistry registry;
+        private PlayerWardrobe wardrobe;
+        private PlayerWardrobe.AppearanceLease wardrobeLease;
         private GameObject module;
         private Transform pelvis;
         private Transform leftKnee;
@@ -52,6 +54,7 @@ namespace BarPromenade
             if (home == null || !(home.Player.Visual is Player3DCharacterPresentation visual) ||
                 visual.Registry == null || visual.Registry.ModelRoot == null) return false;
             registry = visual.Registry;
+            wardrobe = registry.GetComponent<PlayerWardrobe>();
             GameObject template = Resources.Load<GameObject>(ModelResourcePath);
             Texture2D skinAtlas = Player3DBathingAppearance.BareSkinAtlas;
             if (template == null || skinAtlas == null) return false;
@@ -111,6 +114,13 @@ namespace BarPromenade
                     source.Renderer.GetPropertyBlock(block);
                     if (isCloth)
                     {
+                        Player3DMeshBinding garmentSource = FindTrousersSource(source.BoneName);
+                        if (garmentSource != null)
+                        {
+                            source = garmentSource;
+                            block.Clear();
+                            source.Renderer.GetPropertyBlock(block);
+                        }
                         int shape = FindLoweredShape(replacement.sharedMesh);
                         if (shape < 0) throw new InvalidOperationException("Missing authored trousers Lowered shape.");
                         var proxyObject = new GameObject("Toilet Fabric " + source.BoneName);
@@ -174,19 +184,32 @@ namespace BarPromenade
         public bool Begin()
         {
             if (IsActive) return true;
-            if (active != null || Player3DBathingAppearance.IsActive || !Prepare()) return false;
+            if (active != null || Player3DBathingAppearance.IsActive || !Prepare() ||
+                wardrobe != null && (wardrobe.HasAppearanceLease || wardrobe.IsVisibilityLocked)) return false;
+            if (wardrobe != null && wardrobe.IsConfigured) wardrobeLease = wardrobe.CaptureAppearance();
             // Preparation may precede the walk to the fixture. Borrow the
             // current costume at the actual capture, preserving hidden parts.
             foreach (KeyValuePair<Renderer, Renderer> pair in sourceByReplacement)
             {
-                pair.Key.enabled = pair.Value.enabled;
+                bool isCloth = pair.Key.name.StartsWith("Trousers_", StringComparison.Ordinal);
+                Renderer currentSource = pair.Value;
+                string bodyName = "GEO_" + pair.Key.name.Substring(isCloth ? "Trousers_".Length : "Bare_".Length);
+                Player3DMeshBinding bodySource = FindBodySource(bodyName);
+                Player3DMeshBinding trousers = bodySource != null ? FindTrousersSource(bodySource.BoneName) : null;
+                if (isCloth && trousers != null) currentSource = trousers.Renderer;
+                pair.Key.enabled = isCloth ? currentSource.enabled :
+                    currentSource.enabled || trousers != null && trousers.Renderer.enabled;
                 pair.Key.renderingLayerMask = pair.Value.renderingLayerMask;
-                if (!pair.Key.name.StartsWith("Trousers_", StringComparison.Ordinal)) continue;
+                if (!isCloth) continue;
                 var currentBlock = new MaterialPropertyBlock();
-                pair.Value.GetPropertyBlock(currentBlock);
-                pair.Key.sharedMaterials = pair.Value.sharedMaterials;
+                currentSource.GetPropertyBlock(currentBlock);
+                pair.Key.sharedMaterials = currentSource.sharedMaterials;
                 pair.Key.SetPropertyBlock(currentBlock);
             }
+            if (wardrobe != null && wardrobe.IsConfigured)
+                foreach (PlayerWardrobe.GarmentBinding garment in wardrobe.Garments)
+                    if (garment.Slot == "trousers")
+                        foreach (Renderer renderer in garment.Renderers) renderer.enabled = false;
             foreach (Player3DMeshBinding binding in registry.MeshBindings)
             {
                 if (binding?.Renderer == null || Array.IndexOf(SourceNames, binding.MeshName) < 0) continue;
@@ -231,6 +254,8 @@ namespace BarPromenade
             if (module != null) module.SetActive(false);
             foreach (Snapshot snapshot in snapshots) snapshot.Restore();
             snapshots.Clear();
+            wardrobeLease?.Dispose();
+            wardrobeLease = null;
             IsActive = false;
             TrousersDown = 0;
             if (ReferenceEquals(active, this)) active = null;
@@ -252,6 +277,30 @@ namespace BarPromenade
             for (int i = 0; i < mesh.blendShapeCount; i++)
                 if (mesh.GetBlendShapeName(i).EndsWith("Lowered", StringComparison.Ordinal)) return i;
             return -1;
+        }
+
+        private Player3DMeshBinding FindBodySource(string name)
+        {
+            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+                if (binding != null && binding.MeshName == name) return binding;
+            return null;
+        }
+
+        private Player3DMeshBinding FindTrousersSource(string boneName)
+        {
+            if (wardrobe == null || !wardrobe.IsConfigured) return null;
+            string selected = wardrobe.GetEquippedItem("trousers");
+            foreach (PlayerWardrobe.GarmentBinding garment in wardrobe.Garments)
+            {
+                if (garment.Slot != "trousers" || selected != null && garment.Id != selected) continue;
+                foreach (Player3DMeshBinding binding in registry.MeshBindings)
+                {
+                    if (binding?.Renderer == null || binding.BoneName != boneName) continue;
+                    foreach (Renderer renderer in garment.Renderers)
+                        if (binding.Renderer == renderer) return binding;
+                }
+            }
+            return null;
         }
 
         private readonly struct ClothPart

@@ -26,10 +26,10 @@
 | 10 | `AlpineVillage` | Gameplay |
 | 11 | `MothersHouseInterior` | Gameplay |
 
-All nine gameplay roots instantiate `Resources/Player/Player3DV2.prefab`
-through `PlayerFactory`. Scenes are near-empty containers; plans own world
-layout and runtime builders own placement/collision. New authored geometry
-follows the Blender and world-canon rules in [../AI.md](../AI.md).
+All nine gameplay roots use `PlayerFactory`/`Resources/Player/Player3DV2.prefab`:
+one rig, `PlayerWardrobe` slots/coverage and bounded hair/jacket physics.
+Near-empty scenes compose validated plans at runtime. Authored geometry follows
+the Blender and world-canon rules in [../AI.md](../AI.md).
 
 ## Technical ownership
 

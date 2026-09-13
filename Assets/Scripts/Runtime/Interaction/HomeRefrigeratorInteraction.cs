@@ -126,7 +126,8 @@ namespace BarPromenade
 
             firstPersonHand.Initialize(
                 targetCamera,
-                view.HandlePivot);
+                view.HandlePivot,
+                (home.Player.Visual as Player3DCharacterPresentation)?.Registry);
             itemInspection =
                 GetComponent<
                     HomeRefrigeratorItemInspectionController>();

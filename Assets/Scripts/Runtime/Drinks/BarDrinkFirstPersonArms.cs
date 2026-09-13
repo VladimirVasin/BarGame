@@ -46,6 +46,7 @@ namespace BarPromenade
         private Transform leftVesselGripAnchor;
         private Player3DFirstPersonSubset rightArmSubset;
         private Player3DFirstPersonSubset leftArmSubset;
+        private Player3DAssetRegistry sourceRegistry;
         private float poseVisibilityAmount;
 
         public bool IsInitialized { get; private set; }
@@ -71,7 +72,7 @@ namespace BarPromenade
         public Player3DAssetRegistry LeftModelRegistry =>
             leftArmSubset?.Registry;
 
-        public void Initialize(Camera camera)
+        public void Initialize(Camera camera, Player3DAssetRegistry source = null)
         {
             if (camera == null)
             {
@@ -80,6 +81,7 @@ namespace BarPromenade
 
             ReleasePresentation();
             targetCamera = camera;
+            sourceRegistry = source;
             try
             {
                 BuildPresentation();
@@ -205,12 +207,12 @@ namespace BarPromenade
                 rightModelMount,
                 Player3DFirstPersonSide.Right,
                 targetCamera.gameObject.layer,
-                "Player3D Right Arm Subset");
+                "Player3D Right Arm Subset", sourceRegistry);
             leftArmSubset = Player3DFirstPersonSubset.Create(
                 leftModelMount,
                 Player3DFirstPersonSide.Left,
                 targetCamera.gameObject.layer,
-                "Player3D Left Arm Subset");
+                "Player3D Left Arm Subset", sourceRegistry);
 
             rightBottleGripAnchor = rightArmSubset.SourceGrip;
             leftVesselGripAnchor = leftArmSubset.SourceGrip;
@@ -296,13 +298,7 @@ namespace BarPromenade
                 return;
             }
 
-            foreach (Renderer renderer in subset.VisibleRenderers)
-            {
-                if (renderer != null)
-                {
-                    renderer.enabled = enabled;
-                }
-            }
+            subset.RefreshAppearance(enabled);
         }
 
         private void ReleasePresentation()

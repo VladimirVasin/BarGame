@@ -151,19 +151,21 @@ The native command `tools/audio-vhs/build.ps1` validates the staged DLL before
 publishing it. `-Validate` remains compatible; `-CompileOnly` leaves its output
 in `Captures` and does not publish. See [audio-vhs/README.md](audio-vhs/README.md).
 
-To refresh only the hero's two cold actions from the existing production
-source, without rebuilding its geometry, atlases or other 45 actions:
+`build-player-3d-model-v2.py`/`player_detailed_model.py`: M-65, outfit/skin,
+curtains; validates 31 body/12 hair bones, dressed/hidden geometry and slots:
 
 ```powershell
-python tools/run-blender.py tools/player_cold_actions.py --expect Captures/Tooling/cold-actions/PlayerCharacter3DV2Animations.fbx --expect Captures/Tooling/cold-actions/PlayerCharacter3DV2.json --expect Captures/Tooling/cold-actions/PlayerCharacter3DV2.blend -- --refresh-actions --stage-dir Captures/Tooling/cold-actions
+python tools/run-blender.py tools/build-player-3d-model-v2.py --expect Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx --expect Assets/Player3D/V2/Models/PlayerCharacter3DV2.json
 ```
 
-This writes staging files only. It checks the source manifest, fixed lower
-body, shared endpoints, continuous hand travel, evaluated arm separation and
-exact cold-curve determinism, and verifies that the rig, meshes, weights and
-other actions remain unchanged. Publish the staged animation bank, manifest
-and Blender source together with Unity closed, preserving their `.meta` files;
-then refresh `Player3DV2` through its existing asset setup.
+`player_jacket_cloth.py --write` derives hem/cuff metadata only; `--check` verifies it.
+Refresh `Player3DV2` through its asset setup. Lower-body changes also require
+`build-home-toilet-seated-3d-model.py`: trousers supply fabric, anatomy skin.
+`player_cold_actions.py --refresh-actions --stage-dir
+Captures/Tooling/cold-actions` stages an isolated cold refresh through the same
+launcher. It checks endpoints, fixed lower body, hand travel, arm clearance and
+determinism. Publish bank/manifest/Blender source with Unity closed; preserve
+`.meta` files and refresh `Player3DV2`.
 
 Pipeline failure/rollback regressions use synthetic files and a mocked Blender
 process, without generating art or compiling native code:

@@ -3011,6 +3011,7 @@ namespace BarPromenade
 
         private void ConfigureWorldRenderers()
         {
+            PlayerWardrobe wardrobe = registry.GetComponent<PlayerWardrobe>();
             IReadOnlyList<Renderer> renderers = registry.Renderers;
             for (int index = 0; index < renderers.Count; index++)
             {
@@ -3020,7 +3021,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                renderer.enabled = true;
+                renderer.enabled = wardrobe == null || !wardrobe.IsConfigured || wardrobe.IsRendererWorn(renderer);
                 renderer.shadowCastingMode = ShadowCastingMode.On;
                 renderer.receiveShadows = true;
                 if (renderer is SkinnedMeshRenderer skinnedRenderer)

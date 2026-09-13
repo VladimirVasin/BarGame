@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model-v2.py",
-  "generator_version": "1.7.0",
+  "generator_version": "2.0.0",
   "blender_version": "5.0.1",
   "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
   "runtime_integrated": true,
@@ -9,20 +9,20 @@
   "seed": 17301,
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "object_count": 36,
-  "mesh_count": 34,
-  "triangle_count": 2384,
+  "object_count": 85,
+  "mesh_count": 83,
+  "triangle_count": 8856,
   "action_count": 48,
   "socket_count": 6,
   "bounds_min": [
-    -0.778674,
+    -0.759514,
     -0.212,
     0.0
   ],
   "bounds_max": [
-    0.780036,
+    0.76173,
     0.124,
-    1.75
+    1.751787
   ],
   "sprite_parts": [
     "Body",
@@ -48,6 +48,18 @@
     "face.brow.R",
     "face.mouth",
     "SOCKET_Mouth",
+    "HairBack.00",
+    "HairBack.01",
+    "HairBack.02",
+    "HairBack.Tip",
+    "HairLeft.00",
+    "HairLeft.01",
+    "HairLeft.02",
+    "HairLeft.Tip",
+    "HairRight.00",
+    "HairRight.01",
+    "HairRight.02",
+    "HairRight.Tip",
     "clavicle.L",
     "upper_arm.L",
     "forearm.L",
@@ -1004,14 +1016,173 @@
   ],
   "parts": [
     {
+      "name": "CLO_Boot.L",
+      "role": "clothing",
+      "bone": "foot.L",
+      "sprite_part": "LeftLowerLeg",
+      "side": "Left",
+      "material": "MAT_JeansAtlas",
+      "vertices": 48,
+      "triangles": 92,
+      "default_visible": true,
+      "wardrobe_slot": "boots",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_Boot.R",
+      "role": "clothing",
+      "bone": "foot.R",
+      "sprite_part": "RightLowerLeg",
+      "side": "Right",
+      "material": "MAT_JeansAtlas",
+      "vertices": 48,
+      "triangles": 92,
+      "default_visible": true,
+      "wardrobe_slot": "boots",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_BootSole.L",
+      "role": "clothing",
+      "bone": "foot.L",
+      "sprite_part": "LeftLowerLeg",
+      "side": "Left",
+      "material": "MAT_BootSole",
+      "vertices": 24,
+      "triangles": 44,
+      "default_visible": true,
+      "wardrobe_slot": "boots",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_BootSole.R",
+      "role": "clothing",
+      "bone": "foot.R",
+      "sprite_part": "RightLowerLeg",
+      "side": "Right",
+      "material": "MAT_BootSole",
+      "vertices": 24,
+      "triangles": 44,
+      "default_visible": true,
+      "wardrobe_slot": "boots",
+      "body_coverage_region": ""
+    },
+    {
       "name": "CLO_JacketBody",
       "role": "clothing",
       "bone": "chest",
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_JacketAtlas",
-      "vertices": 216,
-      "triangles": 428
+      "vertices": 900,
+      "triangles": 1796,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketCollar.L",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Jacket",
+      "vertices": 10,
+      "triangles": 16,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketCollar.R",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Jacket",
+      "vertices": 10,
+      "triangles": 16,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketCuff.L",
+      "role": "clothing",
+      "bone": "forearm.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_Jacket",
+      "vertices": 48,
+      "triangles": 92,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketCuff.R",
+      "role": "clothing",
+      "bone": "forearm.R",
+      "sprite_part": "RightLowerArm",
+      "side": "Right",
+      "material": "MAT_Jacket",
+      "vertices": 48,
+      "triangles": 92,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketFlapChest.L",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JacketEdge",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketFlapChest.R",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JacketEdge",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketFlapHip.L",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JacketEdge",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketFlapHip.R",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JacketEdge",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
     },
     {
       "name": "CLO_JacketForearm.L",
@@ -1020,8 +1191,11 @@
       "sprite_part": "LeftLowerArm",
       "side": "Left",
       "material": "MAT_JacketAtlas",
-      "vertices": 30,
-      "triangles": 56
+      "vertices": 51,
+      "triangles": 98,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
     },
     {
       "name": "CLO_JacketForearm.R",
@@ -1030,8 +1204,89 @@
       "sprite_part": "RightLowerArm",
       "side": "Right",
       "material": "MAT_JacketAtlas",
-      "vertices": 30,
-      "triangles": 56
+      "vertices": 49,
+      "triangles": 94,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketPlacket.L",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JacketDark",
+      "vertices": 72,
+      "triangles": 140,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketPlacket.R",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JacketDark",
+      "vertices": 72,
+      "triangles": 140,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketPocketChest.L",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Jacket",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketPocketChest.R",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Jacket",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketPocketHip.L",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Jacket",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_JacketPocketHip.R",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Jacket",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
     },
     {
       "name": "CLO_JacketSleeve.L",
@@ -1040,8 +1295,11 @@
       "sprite_part": "LeftUpperArm",
       "side": "Left",
       "material": "MAT_JacketAtlas",
-      "vertices": 50,
-      "triangles": 96
+      "vertices": 78,
+      "triangles": 152,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
     },
     {
       "name": "CLO_JacketSleeve.R",
@@ -1050,8 +1308,89 @@
       "sprite_part": "RightUpperArm",
       "side": "Right",
       "material": "MAT_JacketAtlas",
-      "vertices": 50,
-      "triangles": 96
+      "vertices": 78,
+      "triangles": 152,
+      "default_visible": true,
+      "wardrobe_slot": "jacket",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_ShirtBody",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Shirt",
+      "vertices": 142,
+      "triangles": 280,
+      "default_visible": true,
+      "wardrobe_slot": "shirt",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_TrousersPelvis",
+      "role": "clothing",
+      "bone": "pelvis",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JeansAtlas",
+      "vertices": 52,
+      "triangles": 100,
+      "default_visible": true,
+      "wardrobe_slot": "trousers",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_TrousersShin.L",
+      "role": "clothing",
+      "bone": "shin.L",
+      "sprite_part": "LeftLowerLeg",
+      "side": "Left",
+      "material": "MAT_JeansAtlas",
+      "vertices": 84,
+      "triangles": 164,
+      "default_visible": true,
+      "wardrobe_slot": "trousers",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_TrousersShin.R",
+      "role": "clothing",
+      "bone": "shin.R",
+      "sprite_part": "RightLowerLeg",
+      "side": "Right",
+      "material": "MAT_JeansAtlas",
+      "vertices": 84,
+      "triangles": 164,
+      "default_visible": true,
+      "wardrobe_slot": "trousers",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_TrousersThigh.L",
+      "role": "clothing",
+      "bone": "thigh.L",
+      "sprite_part": "LeftUpperLeg",
+      "side": "Left",
+      "material": "MAT_JeansAtlas",
+      "vertices": 84,
+      "triangles": 164,
+      "default_visible": true,
+      "wardrobe_slot": "trousers",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "CLO_TrousersThigh.R",
+      "role": "clothing",
+      "bone": "thigh.R",
+      "sprite_part": "RightUpperLeg",
+      "side": "Right",
+      "material": "MAT_JeansAtlas",
+      "vertices": 84,
+      "triangles": 164,
+      "default_visible": true,
+      "wardrobe_slot": "trousers",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Ear.L",
@@ -1061,7 +1400,10 @@
       "side": "Left",
       "material": "MAT_SkinShadow",
       "vertices": 14,
-      "triangles": 24
+      "triangles": 24,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Ear.R",
@@ -1071,7 +1413,10 @@
       "side": "Right",
       "material": "MAT_SkinShadow",
       "vertices": 14,
-      "triangles": 24
+      "triangles": 24,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_FaceSurface",
@@ -1081,7 +1426,114 @@
       "side": "Center",
       "material": "MAT_FaceAtlas",
       "vertices": 49,
-      "triangles": 72
+      "triangles": 72,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_Finger0.L",
+      "role": "body_detail",
+      "bone": "hand.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_Skin",
+      "vertices": 28,
+      "triangles": 52,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_Finger0.R",
+      "role": "body_detail",
+      "bone": "hand.R",
+      "sprite_part": "RightLowerArm",
+      "side": "Right",
+      "material": "MAT_Skin",
+      "vertices": 28,
+      "triangles": 52,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_Finger1.L",
+      "role": "body_detail",
+      "bone": "hand.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_Skin",
+      "vertices": 28,
+      "triangles": 52,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_Finger1.R",
+      "role": "body_detail",
+      "bone": "hand.R",
+      "sprite_part": "RightLowerArm",
+      "side": "Right",
+      "material": "MAT_Skin",
+      "vertices": 28,
+      "triangles": 52,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_Finger2.L",
+      "role": "body_detail",
+      "bone": "hand.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_Skin",
+      "vertices": 28,
+      "triangles": 52,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_Finger2.R",
+      "role": "body_detail",
+      "bone": "hand.R",
+      "sprite_part": "RightLowerArm",
+      "side": "Right",
+      "material": "MAT_Skin",
+      "vertices": 28,
+      "triangles": 52,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_Finger3.L",
+      "role": "body_detail",
+      "bone": "hand.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_Skin",
+      "vertices": 28,
+      "triangles": 52,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_Finger3.R",
+      "role": "body_detail",
+      "bone": "hand.R",
+      "sprite_part": "RightLowerArm",
+      "side": "Right",
+      "material": "MAT_Skin",
+      "vertices": 28,
+      "triangles": 52,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Foot.L",
@@ -1089,9 +1541,12 @@
       "bone": "foot.L",
       "sprite_part": "LeftLowerLeg",
       "side": "Left",
-      "material": "MAT_JeansAtlas",
+      "material": "MAT_Skin",
       "vertices": 24,
-      "triangles": 44
+      "triangles": 44,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "boots"
     },
     {
       "name": "GEO_Foot.R",
@@ -1099,9 +1554,12 @@
       "bone": "foot.R",
       "sprite_part": "RightLowerLeg",
       "side": "Right",
-      "material": "MAT_JeansAtlas",
+      "material": "MAT_Skin",
       "vertices": 24,
-      "triangles": 44
+      "triangles": 44,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "boots"
     },
     {
       "name": "GEO_Forearm.L",
@@ -1111,7 +1569,10 @@
       "side": "Left",
       "material": "MAT_Skin",
       "vertices": 16,
-      "triangles": 28
+      "triangles": 28,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "jacket"
     },
     {
       "name": "GEO_Forearm.R",
@@ -1121,7 +1582,10 @@
       "side": "Right",
       "material": "MAT_Skin",
       "vertices": 16,
-      "triangles": 28
+      "triangles": 28,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "jacket"
     },
     {
       "name": "GEO_HairBack",
@@ -1131,7 +1595,62 @@
       "side": "Center",
       "material": "MAT_Hair",
       "vertices": 32,
-      "triangles": 60
+      "triangles": 60,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairBackLength",
+      "role": "hair",
+      "bone": "HairBack.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 140,
+      "triangles": 276,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairBackStrand0",
+      "role": "hair",
+      "bone": "HairBack.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairBackStrand1",
+      "role": "hair",
+      "bone": "HairBack.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairBackStrand2",
+      "role": "hair",
+      "bone": "HairBack.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_HairCap",
@@ -1141,7 +1660,205 @@
       "side": "Center",
       "material": "MAT_Hair",
       "vertices": 62,
-      "triangles": 120
+      "triangles": 120,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairCrownStrand0.L",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 24,
+      "triangles": 44,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairCrownStrand0.R",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 24,
+      "triangles": 44,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairCrownStrand1.L",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 24,
+      "triangles": 44,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairCrownStrand1.R",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 24,
+      "triangles": 44,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairCurtain.L",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 72,
+      "triangles": 140,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairCurtain.R",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 72,
+      "triangles": 140,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairLeftLength",
+      "role": "hair",
+      "bone": "HairLeft.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 182,
+      "triangles": 360,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairLeftStrand0",
+      "role": "hair",
+      "bone": "HairLeft.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairLeftStrand1",
+      "role": "hair",
+      "bone": "HairLeft.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairLeftStrand2",
+      "role": "hair",
+      "bone": "HairLeft.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairNape",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 250,
+      "triangles": 496,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairRightLength",
+      "role": "hair",
+      "bone": "HairRight.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 182,
+      "triangles": 360,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairRightStrand0",
+      "role": "hair",
+      "bone": "HairRight.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairRightStrand1",
+      "role": "hair",
+      "bone": "HairRight.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
+    },
+    {
+      "name": "GEO_HairRightStrand2",
+      "role": "hair",
+      "bone": "HairRight.00",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 16,
+      "triangles": 28,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_HairTemple.L",
@@ -1151,7 +1868,10 @@
       "side": "Left",
       "material": "MAT_Hair",
       "vertices": 18,
-      "triangles": 32
+      "triangles": 32,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_HairTemple.R",
@@ -1161,47 +1881,10 @@
       "side": "Right",
       "material": "MAT_Hair",
       "vertices": 18,
-      "triangles": 32
-    },
-    {
-      "name": "GEO_HairTuft.01",
-      "role": "hair",
-      "bone": "head",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_Hair",
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "GEO_HairTuft.02",
-      "role": "hair",
-      "bone": "head",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_HairHighlight",
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "GEO_HairTuft.03",
-      "role": "hair",
-      "bone": "head",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_Hair",
-      "vertices": 12,
-      "triangles": 20
-    },
-    {
-      "name": "GEO_HairTuft.04",
-      "role": "hair",
-      "bone": "head",
-      "sprite_part": "Body",
-      "side": "Center",
-      "material": "MAT_Hair",
-      "vertices": 12,
-      "triangles": 20
+      "triangles": 32,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Hand.L",
@@ -1210,8 +1893,11 @@
       "sprite_part": "LeftLowerArm",
       "side": "Left",
       "material": "MAT_Skin",
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 40,
+      "triangles": 76,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Hand.R",
@@ -1220,8 +1906,11 @@
       "sprite_part": "RightLowerArm",
       "side": "Right",
       "material": "MAT_Skin",
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 40,
+      "triangles": 76,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Head",
@@ -1231,7 +1920,10 @@
       "side": "Center",
       "material": "MAT_Skin",
       "vertices": 98,
-      "triangles": 192
+      "triangles": 192,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Neck",
@@ -1240,8 +1932,11 @@
       "sprite_part": "Body",
       "side": "Center",
       "material": "MAT_SkinShadow",
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 24,
+      "triangles": 44,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Pelvis",
@@ -1249,9 +1944,12 @@
       "bone": "pelvis",
       "sprite_part": "Body",
       "side": "Center",
-      "material": "MAT_JeansAtlas",
+      "material": "MAT_Skin",
       "vertices": 52,
-      "triangles": 100
+      "triangles": 100,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "trousers"
     },
     {
       "name": "GEO_Shin.L",
@@ -1259,9 +1957,12 @@
       "bone": "shin.L",
       "sprite_part": "LeftLowerLeg",
       "side": "Left",
-      "material": "MAT_JeansAtlas",
+      "material": "MAT_Skin",
       "vertices": 40,
-      "triangles": 76
+      "triangles": 76,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "trousers"
     },
     {
       "name": "GEO_Shin.R",
@@ -1269,9 +1970,38 @@
       "bone": "shin.R",
       "sprite_part": "RightLowerLeg",
       "side": "Right",
-      "material": "MAT_JeansAtlas",
+      "material": "MAT_Skin",
       "vertices": 40,
-      "triangles": 76
+      "triangles": 76,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "trousers"
+    },
+    {
+      "name": "GEO_Shoulder.L",
+      "role": "body_part",
+      "bone": "upper_arm.L",
+      "sprite_part": "LeftUpperArm",
+      "side": "Left",
+      "material": "MAT_Skin",
+      "vertices": 62,
+      "triangles": 120,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "jacket"
+    },
+    {
+      "name": "GEO_Shoulder.R",
+      "role": "body_part",
+      "bone": "upper_arm.R",
+      "sprite_part": "RightUpperArm",
+      "side": "Right",
+      "material": "MAT_Skin",
+      "vertices": 62,
+      "triangles": 120,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "jacket"
     },
     {
       "name": "GEO_Thigh.L",
@@ -1279,9 +2009,12 @@
       "bone": "thigh.L",
       "sprite_part": "LeftUpperLeg",
       "side": "Left",
-      "material": "MAT_JeansAtlas",
+      "material": "MAT_Skin",
       "vertices": 32,
-      "triangles": 60
+      "triangles": 60,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "trousers"
     },
     {
       "name": "GEO_Thigh.R",
@@ -1289,9 +2022,12 @@
       "bone": "thigh.R",
       "sprite_part": "RightUpperLeg",
       "side": "Right",
-      "material": "MAT_JeansAtlas",
+      "material": "MAT_Skin",
       "vertices": 32,
-      "triangles": 60
+      "triangles": 60,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "trousers"
     },
     {
       "name": "GEO_Thumb.L",
@@ -1300,8 +2036,11 @@
       "sprite_part": "LeftLowerArm",
       "side": "Left",
       "material": "MAT_SkinShadow",
-      "vertices": 12,
-      "triangles": 20
+      "vertices": 21,
+      "triangles": 38,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Thumb.R",
@@ -1310,8 +2049,11 @@
       "sprite_part": "RightLowerArm",
       "side": "Right",
       "material": "MAT_SkinShadow",
-      "vertices": 12,
-      "triangles": 20
+      "vertices": 21,
+      "triangles": 38,
+      "default_visible": true,
+      "wardrobe_slot": "",
+      "body_coverage_region": ""
     },
     {
       "name": "GEO_Torso",
@@ -1319,9 +2061,12 @@
       "bone": "chest",
       "sprite_part": "Body",
       "side": "Center",
-      "material": "MAT_Shirt",
+      "material": "MAT_Skin",
       "vertices": 142,
-      "triangles": 280
+      "triangles": 280,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "shirt"
     },
     {
       "name": "GEO_UpperArm.L",
@@ -1331,7 +2076,10 @@
       "side": "Left",
       "material": "MAT_SkinShadow",
       "vertices": 16,
-      "triangles": 28
+      "triangles": 28,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "jacket"
     },
     {
       "name": "GEO_UpperArm.R",
@@ -1341,16 +2089,23 @@
       "side": "Right",
       "material": "MAT_SkinShadow",
       "vertices": 16,
-      "triangles": 28
+      "triangles": 28,
+      "default_visible": false,
+      "wardrobe_slot": "",
+      "body_coverage_region": "jacket"
     }
   ],
   "design_version": "HeroV2",
-  "cold_authoring_sha256": "706426832d41b83ebebbccde7ed613a639381a856583d97477883a268683a2fc",
+  "cold_authoring_sha256": "7028b5689b681d88478d99567dca6c01e0b20175b7b96fc5cb8523069fd137d8",
+  "detail_authoring_sha256": "9ba325ef0137b34d688330bba27d32f73599fdbc010a14a2ea419e3c1cdc8837",
+  "face_paint_sha256": "3b74355582ac1095a8a6ed0a30840e53d4bd45d78e6087b7e67d4b5331189970",
+  "hand_frames_sha256": "0a527fa0da29d22421d0af3d37b2825fc956f0a64f667e939eb9bb8d52b24e82",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
   "torso_skin": {
     "contract": "pelvis_spine_chest_v1",
     "meshes": [
       "GEO_Torso",
+      "CLO_ShirtBody",
       "CLO_JacketBody"
     ],
     "bones": [
@@ -1373,7 +2128,7 @@
     "action_count": 48,
     "preserves_authored_contacts": true
   },
-  "content_signature_sha256": "611cfcfcd01c8510df9b37459da72b2ddb2366ccb98789c4651b364173ac0b0c",
+  "content_signature_sha256": "3c12481ab13b4376d8a7e29653ee5e1890ebb2ff5b1b4aa20345de5b1223f28b",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",
     "MAT_JacketAtlas": "FFFFFF",
@@ -1397,7 +2152,7 @@
     "cell_size_px": 64,
     "uv_origin": "bottom_left",
     "filter_mode": "Point",
-    "sha256": "91aea0e3956334283dcf7dba0374b41b33c7f756827d9eb379869e0ad8a0b799",
+    "sha256": "308ae66a0a2f01bb8705ce3dcd66e25e393b4a4c041b27ecaaaa6f6484f15bc0",
     "cells": [
       {
         "expression": "Neutral",
@@ -1576,7 +2331,7 @@
       "uv_origin": "bottom_left",
       "uv_safe_inset_px": 1,
       "material_tint_hex": "FFFFFF",
-      "sha256": "88eb4765f615c2bb5e20216a00920c4635a881cb7cc4fe3b585e3a65d7cc91ee",
+      "sha256": "57a15642260b1fcd34e639976a9a0303e7d5faff1b0c071b883c586e7cba2c6a",
       "regions": [
         {
           "name": "JacketBody",
@@ -1612,7 +2367,7 @@
         },
         {
           "name": "JeansPelvis",
-          "renderer": "GEO_Pelvis",
+          "renderer": "CLO_TrousersPelvis",
           "x_px": 192,
           "y_px": 128,
           "width_px": 64,
@@ -1620,7 +2375,7 @@
         },
         {
           "name": "JeansThighLeft",
-          "renderer": "GEO_Thigh.L",
+          "renderer": "CLO_TrousersThigh.L",
           "x_px": 0,
           "y_px": 64,
           "width_px": 64,
@@ -1628,7 +2383,7 @@
         },
         {
           "name": "JeansThighRight",
-          "renderer": "GEO_Thigh.R",
+          "renderer": "CLO_TrousersThigh.R",
           "x_px": 64,
           "y_px": 64,
           "width_px": 64,
@@ -1636,7 +2391,7 @@
         },
         {
           "name": "JeansShinLeft",
-          "renderer": "GEO_Shin.L",
+          "renderer": "CLO_TrousersShin.L",
           "x_px": 128,
           "y_px": 64,
           "width_px": 64,
@@ -1644,7 +2399,7 @@
         },
         {
           "name": "JeansShinRight",
-          "renderer": "GEO_Shin.R",
+          "renderer": "CLO_TrousersShin.R",
           "x_px": 192,
           "y_px": 64,
           "width_px": 64,
@@ -1652,7 +2407,7 @@
         },
         {
           "name": "BootLeft",
-          "renderer": "GEO_Foot.L",
+          "renderer": "CLO_Boot.L",
           "x_px": 0,
           "y_px": 0,
           "width_px": 64,
@@ -1660,7 +2415,7 @@
         },
         {
           "name": "BootRight",
-          "renderer": "GEO_Foot.R",
+          "renderer": "CLO_Boot.R",
           "x_px": 64,
           "y_px": 0,
           "width_px": 64,
@@ -1711,7 +2466,7 @@
         "y_px": 128,
         "width_px": 64,
         "height_px": 64,
-        "shared_with_clothing_atlas": true
+        "shared_with_clothing_atlas": false
       },
       {
         "name": "BareThighLeft",
@@ -1720,7 +2475,7 @@
         "y_px": 64,
         "width_px": 64,
         "height_px": 64,
-        "shared_with_clothing_atlas": true
+        "shared_with_clothing_atlas": false
       },
       {
         "name": "BareThighRight",
@@ -1729,7 +2484,7 @@
         "y_px": 64,
         "width_px": 64,
         "height_px": 64,
-        "shared_with_clothing_atlas": true
+        "shared_with_clothing_atlas": false
       },
       {
         "name": "BareShinLeft",
@@ -1738,7 +2493,7 @@
         "y_px": 64,
         "width_px": 64,
         "height_px": 64,
-        "shared_with_clothing_atlas": true
+        "shared_with_clothing_atlas": false
       },
       {
         "name": "BareShinRight",
@@ -1747,7 +2502,7 @@
         "y_px": 64,
         "width_px": 64,
         "height_px": 64,
-        "shared_with_clothing_atlas": true
+        "shared_with_clothing_atlas": false
       },
       {
         "name": "BareFootLeft",
@@ -1756,7 +2511,7 @@
         "y_px": 0,
         "width_px": 64,
         "height_px": 64,
-        "shared_with_clothing_atlas": true
+        "shared_with_clothing_atlas": false
       },
       {
         "name": "BareFootRight",
@@ -1765,14 +2520,14 @@
         "y_px": 0,
         "width_px": 64,
         "height_px": 64,
-        "shared_with_clothing_atlas": true
+        "shared_with_clothing_atlas": false
       }
     ]
   },
   "body_contract": {
     "canonical_height_m": 1.75,
-    "head_crown_to_chin_m": 0.2335,
-    "heads_tall": 7.4946,
+    "head_crown_to_chin_m": 0.2336,
+    "heads_tall": 7.4914,
     "silhouette": "lean weary adult",
     "shoulder_patch_side": "Right",
     "jacket": "faded dark olive-drab field jacket; original ochre patch; no copied insignia",
@@ -1780,33 +2535,35 @@
   },
   "geometry_simplification": {
     "painted_not_modeled": [
-      "lapels",
-      "collar",
-      "placket",
-      "four pocket panels and flaps",
       "right shoulder patch",
-      "jacket cuffs",
       "jeans seams and cuffs",
       "boot shaft panels",
       "laces",
       "eyelets",
-      "toe cap",
-      "sole edge"
+      "toe cap seam"
+    ],
+    "modeled_construction": [
+      "open jacket shell",
+      "folded collar",
+      "plackets",
+      "four pockets and flaps",
+      "sleeve cuffs",
+      "boot bevels and soles"
     ],
     "forbidden_detail_mesh_names": [
       "ACC_BandageWrap",
       "CLO_Bandage"
     ],
     "foot_meshes": [
-      "GEO_Foot.L",
-      "GEO_Foot.R"
+      "CLO_Boot.L",
+      "CLO_Boot.R"
     ]
   },
   "design_metrics": {
     "height_m": 1.75,
-    "head_height_m": 0.2335,
+    "head_height_m": 0.2336,
     "head_width_m": 0.176,
-    "heads_tall": 7.4946,
+    "heads_tall": 7.4914,
     "shoulder_width_m": 0.41814,
     "shoulder_joint_span_m": 0.41814,
     "visible_neck_height_m": 0.045429,
@@ -1820,8 +2577,8 @@
     "pelvis_height_m": 0.835,
     "pelvis_joint_span_m": 0.184532,
     "torso_length_m": 0.543,
-    "torso_waist_half_width_m": 0.166,
-    "torso_chest_half_width_m": 0.187,
+    "torso_waist_half_width_m": 0.132933,
+    "torso_chest_half_width_m": 0.14975,
     "jacket_hem_half_width_m": 0.168,
     "jacket_waist_half_width_m": 0.169,
     "jacket_chest_half_width_m": 0.19,
@@ -1832,24 +2589,404 @@
     "relaxed_right_fingertip_z_m": 0.741906,
     "left_foot_length_m": 0.263,
     "left_foot_width_m": 0.13,
-    "left_upper_thigh_width_m": 0.16448,
-    "left_knee_width_m": 0.107163,
-    "left_calf_width_m": 0.133031,
-    "left_ankle_width_m": 0.081296,
+    "left_upper_thigh_width_m": 0.146387,
+    "left_knee_width_m": 0.095375,
+    "left_calf_width_m": 0.118398,
+    "left_ankle_width_m": 0.072353,
     "right_foot_length_m": 0.267,
     "right_foot_width_m": 0.13,
-    "right_upper_thigh_width_m": 0.164464,
-    "right_knee_width_m": 0.107155,
-    "right_calf_width_m": 0.133021,
-    "right_ankle_width_m": 0.08129
+    "right_upper_thigh_width_m": 0.146373,
+    "right_knee_width_m": 0.095368,
+    "right_calf_width_m": 0.118389,
+    "right_ankle_width_m": 0.072348
   },
-  "cold_motion": {
-    "hold_minimum_sleeve_travel_m": 0.012,
-    "rub_sleeve_stroke_m": 0.06,
-    "rub_strokes": 3,
-    "continuous_hold": true,
-    "shared_endpoints": true,
-    "shiver_seconds": 1.0,
-    "shiver_contractions": 5.5
-  }
+  "wardrobe": {
+    "contract": "hero_outfit_v1",
+    "default_outfit_id": "hero_field_workwear",
+    "items": [
+      {
+        "id": "hero_shirt",
+        "slot": "shirt",
+        "renderers": [
+          "CLO_ShirtBody"
+        ],
+        "covered_body_renderers": [
+          "GEO_Torso"
+        ]
+      },
+      {
+        "id": "hero_jacket",
+        "slot": "jacket",
+        "renderers": [
+          "CLO_JacketBody",
+          "CLO_JacketSleeve.L",
+          "CLO_JacketSleeve.R",
+          "CLO_JacketForearm.L",
+          "CLO_JacketForearm.R",
+          "CLO_JacketPocketChest.L",
+          "CLO_JacketFlapChest.L",
+          "CLO_JacketPocketHip.L",
+          "CLO_JacketFlapHip.L",
+          "CLO_JacketCollar.L",
+          "CLO_JacketPlacket.L",
+          "CLO_JacketPocketChest.R",
+          "CLO_JacketFlapChest.R",
+          "CLO_JacketPocketHip.R",
+          "CLO_JacketFlapHip.R",
+          "CLO_JacketCollar.R",
+          "CLO_JacketPlacket.R",
+          "CLO_JacketCuff.L",
+          "CLO_JacketCuff.R"
+        ],
+        "covered_body_renderers": [
+          "GEO_UpperArm.L",
+          "GEO_UpperArm.R",
+          "GEO_Forearm.L",
+          "GEO_Forearm.R",
+          "GEO_Shoulder.L",
+          "GEO_Shoulder.R"
+        ]
+      },
+      {
+        "id": "hero_trousers",
+        "slot": "trousers",
+        "renderers": [
+          "CLO_TrousersPelvis",
+          "CLO_TrousersThigh.L",
+          "CLO_TrousersThigh.R",
+          "CLO_TrousersShin.L",
+          "CLO_TrousersShin.R"
+        ],
+        "covered_body_renderers": [
+          "GEO_Pelvis",
+          "GEO_Thigh.L",
+          "GEO_Thigh.R",
+          "GEO_Shin.L",
+          "GEO_Shin.R"
+        ]
+      },
+      {
+        "id": "hero_boots",
+        "slot": "boots",
+        "renderers": [
+          "CLO_Boot.L",
+          "CLO_Boot.R",
+          "CLO_BootSole.L",
+          "CLO_BootSole.R"
+        ],
+        "covered_body_renderers": [
+          "GEO_Foot.L",
+          "GEO_Foot.R"
+        ]
+      }
+    ]
+  },
+  "body_bone_count": 31,
+  "hair_bone_count": 12,
+  "hair": {
+    "contract": "hero_collar_hair_v1",
+    "chains": [
+      {
+        "name": "HairBack",
+        "bones": [
+          "HairBack.00",
+          "HairBack.01",
+          "HairBack.02",
+          "HairBack.Tip"
+        ],
+        "points_blender": [
+          [
+            0,
+            0.071,
+            1.65
+          ],
+          [
+            0,
+            0.074,
+            1.609
+          ],
+          [
+            0.002,
+            0.073,
+            1.565
+          ],
+          [
+            0.004,
+            0.069,
+            1.522
+          ]
+        ],
+        "renderers": [
+          "GEO_HairBackLength",
+          "GEO_HairBackStrand0",
+          "GEO_HairBackStrand1",
+          "GEO_HairBackStrand2"
+        ],
+        "contact_radius_m": 0.012
+      },
+      {
+        "name": "HairLeft",
+        "bones": [
+          "HairLeft.00",
+          "HairLeft.01",
+          "HairLeft.02",
+          "HairLeft.Tip"
+        ],
+        "points_blender": [
+          [
+            0.088,
+            -0.008,
+            1.668
+          ],
+          [
+            0.095,
+            -0.006,
+            1.618
+          ],
+          [
+            0.099,
+            0.004,
+            1.566
+          ],
+          [
+            0.096,
+            0.014,
+            1.52
+          ]
+        ],
+        "renderers": [
+          "GEO_HairLeftLength",
+          "GEO_HairLeftStrand0",
+          "GEO_HairLeftStrand1",
+          "GEO_HairLeftStrand2"
+        ],
+        "contact_radius_m": 0.012
+      },
+      {
+        "name": "HairRight",
+        "bones": [
+          "HairRight.00",
+          "HairRight.01",
+          "HairRight.02",
+          "HairRight.Tip"
+        ],
+        "points_blender": [
+          [
+            -0.088,
+            -0.005,
+            1.666
+          ],
+          [
+            -0.095,
+            -0.003,
+            1.618
+          ],
+          [
+            -0.099,
+            0.007,
+            1.568
+          ],
+          [
+            -0.096,
+            0.017,
+            1.522
+          ]
+        ],
+        "renderers": [
+          "GEO_HairRightLength",
+          "GEO_HairRightStrand0",
+          "GEO_HairRightStrand1",
+          "GEO_HairRightStrand2"
+        ],
+        "contact_radius_m": 0.012
+      }
+    ]
+  },
+  "quality": {
+    "worn_triangle_count": 7764,
+    "hidden_body_triangle_count": 1092,
+    "complete_triangle_count": 8856,
+    "worn_triangle_budget": [
+      0,
+      8000
+    ]
+  },
+  "fit": {
+    "body_torso_width_factor": 0.88,
+    "shirt_torso_width_factor": 0.88,
+    "torso_depth_factor": 0.87,
+    "upper_sleeve_max_radius_m": 0.05,
+    "shoulder_shell_half_width_m": 0.188,
+    "jacket": "narrow shoulders and upper sleeves; loose body, hem and long cuffs"
+  },
+  "body_coverage": [
+    {
+      "renderer": "GEO_Torso",
+      "region": "shirt"
+    },
+    {
+      "renderer": "GEO_UpperArm.L",
+      "region": "jacket"
+    },
+    {
+      "renderer": "GEO_UpperArm.R",
+      "region": "jacket"
+    },
+    {
+      "renderer": "GEO_Forearm.L",
+      "region": "jacket"
+    },
+    {
+      "renderer": "GEO_Forearm.R",
+      "region": "jacket"
+    },
+    {
+      "renderer": "GEO_Shoulder.L",
+      "region": "jacket"
+    },
+    {
+      "renderer": "GEO_Shoulder.R",
+      "region": "jacket"
+    },
+    {
+      "renderer": "GEO_Pelvis",
+      "region": "trousers"
+    },
+    {
+      "renderer": "GEO_Thigh.L",
+      "region": "trousers"
+    },
+    {
+      "renderer": "GEO_Thigh.R",
+      "region": "trousers"
+    },
+    {
+      "renderer": "GEO_Shin.L",
+      "region": "trousers"
+    },
+    {
+      "renderer": "GEO_Shin.R",
+      "region": "trousers"
+    },
+    {
+      "renderer": "GEO_Foot.L",
+      "region": "boots"
+    },
+    {
+      "renderer": "GEO_Foot.R",
+      "region": "boots"
+    }
+  ],
+  "jacket_cloth": {
+    "contract": "hero_jacket_cloth_v1",
+    "source_space": "blender_z_up_minus_y_forward",
+    "deformation": "skinned_mesh_bind_delta",
+    "mask_curve": "smoothstep",
+    "wardrobe_item_id": "hero_jacket",
+    "hem": {
+      "renderers": [
+        "CLO_JacketBody",
+        "CLO_JacketPlacket.L",
+        "CLO_JacketPlacket.R",
+        "CLO_JacketPocketHip.L",
+        "CLO_JacketPocketHip.R",
+        "CLO_JacketFlapHip.L",
+        "CLO_JacketFlapHip.R"
+      ],
+      "nodes_blender": [
+        {
+          "x": 0.039934,
+          "y": -0.084019,
+          "z": 0.805
+        },
+        {
+          "x": 0.147291,
+          "y": -0.033022,
+          "z": 0.805
+        },
+        {
+          "x": 0.159084,
+          "y": 0.05043,
+          "z": 0.805
+        },
+        {
+          "x": 0.067661,
+          "y": 0.112192,
+          "z": 0.805
+        },
+        {
+          "x": -0.067661,
+          "y": 0.112192,
+          "z": 0.805
+        },
+        {
+          "x": -0.159084,
+          "y": 0.05043,
+          "z": 0.805
+        },
+        {
+          "x": -0.147291,
+          "y": -0.033022,
+          "z": 0.805
+        },
+        {
+          "x": -0.039934,
+          "y": -0.084019,
+          "z": 0.805
+        }
+      ],
+      "node_edges": [
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        4,
+        4,
+        5,
+        5,
+        6,
+        6,
+        7
+      ],
+      "closed": false,
+      "pin_z_m": 1.115,
+      "free_z_m": 0.805
+    },
+    "cuffs": [
+      {
+        "bone": "forearm.L",
+        "renderers": [
+          "CLO_JacketForearm.L",
+          "CLO_JacketCuff.L"
+        ],
+        "node_count": 4,
+        "pin_axis_fraction": 0.52,
+        "free_tip_offset_m": 0.004
+      },
+      {
+        "bone": "forearm.R",
+        "renderers": [
+          "CLO_JacketForearm.R",
+          "CLO_JacketCuff.R"
+        ],
+        "node_count": 4,
+        "pin_axis_fraction": 0.52,
+        "free_tip_offset_m": 0.004
+      }
+    ],
+    "pinned_renderers": [
+      "CLO_JacketCollar.L",
+      "CLO_JacketCollar.R",
+      "CLO_JacketFlapChest.L",
+      "CLO_JacketFlapChest.R",
+      "CLO_JacketPocketChest.L",
+      "CLO_JacketPocketChest.R",
+      "CLO_JacketSleeve.L",
+      "CLO_JacketSleeve.R"
+    ]
+  },
+  "jacket_cloth_authoring_sha256": "c58ae8cd1d82ca1c091c56c0032e331f1db478a39d2e16567c7c6000b288ec5b"
 }

@@ -23,9 +23,9 @@ namespace BarPromenade.Editor
         public const int UvSafeInsetPixels = 1;
 
         /// <summary>
-        /// The generator's bare-skin atlas: the shower loads it by name and
-        /// binds it through a property block on the hero's own skin
-        /// material, so it lives under Resources and owns no material.
+        /// The generator's bare-skin atlas is registered on the independent
+        /// body and also used by the seated lower-body module. Both reuse
+        /// the hero's existing skin material through property blocks.
         /// </summary>
         public const string BareSkinAtlasAssetPath =
             "Assets/Resources/Player/PlayerBareSkinAtlas.png";
@@ -61,34 +61,16 @@ namespace BarPromenade.Editor
                         "MAT_JeansAtlas",
                         new HashSet<string>(StringComparer.Ordinal)
                         {
-                            "GEO_Pelvis",
-                            "GEO_Thigh.L",
-                            "GEO_Shin.L",
-                            "GEO_Foot.L",
-                            "GEO_Thigh.R",
-                            "GEO_Shin.R",
-                            "GEO_Foot.R"
+                            "CLO_TrousersPelvis",
+                            "CLO_TrousersThigh.L",
+                            "CLO_TrousersShin.L",
+                            "CLO_Boot.L",
+                            "CLO_TrousersThigh.R",
+                            "CLO_TrousersShin.R",
+                            "CLO_Boot.R"
                         }
                     }
                 };
-
-        private static readonly ISet<string> ForbiddenDetailMeshes =
-            new HashSet<string>(StringComparer.Ordinal)
-            {
-                "CLO_ShirtFront",
-                "CLO_ShoulderCap.L", "CLO_ShoulderCap.R",
-                "CLO_JacketCuff.L", "CLO_JacketCuff.R",
-                "CLO_JacketPanel.L", "CLO_JacketPanel.R",
-                "ACC_JacketPocket.L", "ACC_JacketPocket.R",
-                "ACC_JacketPocketFlap.L", "ACC_JacketPocketFlap.R",
-                "ACC_JeansCuff.L", "ACC_JeansCuff.R",
-                "ACC_BootSole.L", "ACC_BootSole.R",
-                "CLO_Lapel.L", "CLO_Lapel.R",
-                "CLO_CollarBack", "CLO_CollarFront.L", "CLO_CollarFront.R",
-                "ACC_ShoulderPatch.R",
-                "ACC_StrapFront", "ACC_StrapBack", "ACC_StrapShoulder",
-                "ACC_StrapBuckle"
-            };
 
         public static bool UsesClothingAtlas(string materialName)
         {
@@ -136,8 +118,8 @@ namespace BarPromenade.Editor
         /// <summary>
         /// The bare-skin atlas against the clothing binding: the same
         /// import contract, its hash, a torso strip of its own, and every
-        /// other region byte-identical to the clothing rect of the same
-        /// renderer — those meshes bake one UV0 for both atlases.
+        /// other region matching its corresponding garment's authored rect.
+        /// Skin and clothing now have independent meshes.
         /// </summary>
         public static void ValidateBareSkinAtlasManifest(
             Player3DV2ManifestBareSkinAtlas atlas,
@@ -146,7 +128,7 @@ namespace BarPromenade.Editor
             if (atlas == null)
             {
                 throw new InvalidOperationException(
-                    "Hero V2 must declare the bare_skin_atlas the shower dresses him in.");
+                    "Hero V2 must declare the independent body's bare_skin_atlas.");
             }
 
             if (atlas.texture_asset != BareSkinAtlasAssetPath ||
@@ -206,7 +188,7 @@ namespace BarPromenade.Editor
                 Player3DV2ManifestTextureRegion shared = null;
                 for (int other = 0; other < clothing.regions.Length; other++)
                 {
-                    if (clothing.regions[other]?.renderer == region.renderer)
+                    if (clothing.regions[other]?.renderer == ClothingRendererForBody(region.renderer))
                     {
                         shared = clothing.regions[other];
                         break;
@@ -496,25 +478,26 @@ namespace BarPromenade.Editor
                     }
                 }
 
-                if (!actual.SetEquals(expected.Value))
+                if (!actual.IsSupersetOf(expected.Value))
                 {
                     throw new InvalidOperationException(
                         $"Hero V2 renderers using {expected.Key} differ from " +
-                        "the canonical texture-authored silhouette contract.");
+                        "the independent garment contract.");
                 }
             }
 
             foreach (string partName in partMaterials.Keys)
             {
-                if (ForbiddenDetailMeshes.Contains(partName) ||
-                    partName.IndexOf("Bandage", StringComparison.Ordinal) >= 0 ||
+                if (partName.IndexOf("Bandage", StringComparison.Ordinal) >= 0 ||
                     partName.StartsWith("ACC_Strap", StringComparison.Ordinal) ||
                     partName.IndexOf("Buckle", StringComparison.Ordinal) >= 0)
                 {
                     throw new InvalidOperationException(
-                        $"Hero V2 obsolete detail mesh '{partName}' must be " +
-                        "painted into the clothing atlas.");
+                        $"Hero V2 part '{partName}' restores a retired garment detail.");
                 }
+                if (UsesClothingAtlas(partMaterials[partName]) &&
+                    !partName.StartsWith("CLO_", StringComparison.Ordinal))
+                    throw new InvalidOperationException($"Clothing texture on body part '{partName}': garments must be independent.");
             }
         }
 
@@ -573,7 +556,9 @@ namespace BarPromenade.Editor
                         previous.x_px < region.x_px + region.width_px &&
                         region.y_px < previous.y_px + previous.height_px &&
                         previous.y_px < region.y_px + region.height_px;
-                    if (overlaps)
+                    bool sharedRect = region.x_px == previous.x_px && region.y_px == previous.y_px &&
+                        region.width_px == previous.width_px && region.height_px == previous.height_px;
+                    if (overlaps && !sharedRect)
                     {
                         throw new InvalidOperationException(
                             $"Clothing atlas regions '{previous.name}' and " +
@@ -591,6 +576,15 @@ namespace BarPromenade.Editor
                         $"Textured part '{part.Key}' has no clothing atlas region.");
                 }
             }
+        }
+
+        private static string ClothingRendererForBody(string body)
+        {
+            if (body == "GEO_Pelvis") return "CLO_TrousersPelvis";
+            if (body.StartsWith("GEO_Thigh", StringComparison.Ordinal)) return body.Replace("GEO_Thigh", "CLO_TrousersThigh");
+            if (body.StartsWith("GEO_Shin", StringComparison.Ordinal)) return body.Replace("GEO_Shin", "CLO_TrousersShin");
+            if (body.StartsWith("GEO_Foot", StringComparison.Ordinal)) return body.Replace("GEO_Foot", "CLO_Boot");
+            return body;
         }
 
         private static Mesh GetRendererMesh(Renderer renderer)

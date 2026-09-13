@@ -26,6 +26,7 @@ namespace BarPromenade
         private Transform presentationRoot;
         private Transform handModelRoot;
         private Player3DFirstPersonSubset armSubset;
+        private Player3DAssetRegistry sourceRegistry;
 
         public bool IsInitialized { get; private set; }
         public bool IsVisible =>
@@ -40,7 +41,8 @@ namespace BarPromenade
 
         public void Initialize(
             Camera camera,
-            Transform newHandleTarget)
+            Transform newHandleTarget,
+            Player3DAssetRegistry source = null)
         {
             if (camera == null)
             {
@@ -55,6 +57,7 @@ namespace BarPromenade
             ReleasePresentation();
             targetCamera = camera;
             handleTarget = newHandleTarget;
+            sourceRegistry = source;
             try
             {
                 BuildPresentation();
@@ -176,11 +179,13 @@ namespace BarPromenade
                 handModelRoot,
                 Player3DFirstPersonSide.Right,
                 targetCamera.gameObject.layer,
-                "Player3D Refrigerator Right Arm Subset");
+                "Player3D Refrigerator Right Arm Subset",
+                sourceRegistry);
         }
 
         private void RefreshPose()
         {
+            armSubset?.RefreshAppearance();
             float easedReach = SmootherStep(ReachAmount);
             Transform cameraTransform = targetCamera.transform;
 

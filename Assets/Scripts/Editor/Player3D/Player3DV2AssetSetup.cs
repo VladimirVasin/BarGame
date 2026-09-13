@@ -13,7 +13,7 @@ namespace BarPromenade.Editor
     /// Packages the production Hero V2 model, animation bank and prefab.
     /// </summary>
     [InitializeOnLoad]
-    public static class Player3DV2AssetSetup
+    public static partial class Player3DV2AssetSetup
     {
         public const string ModelPath =
             "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
@@ -36,7 +36,7 @@ namespace BarPromenade.Editor
         public const string PrefabPath =
             "Assets/Resources/Player/Player3DV2.prefab";
 
-        private const int BuildSchemaVersion = 5;
+        private const int BuildSchemaVersion = 7;
         private const string ExpectedDesignVersion = "HeroV2";
         private const string ExpectedAtlasRenderer = "GEO_FaceSurface";
         private const string ExpectedAtlasOrigin = "bottom_left";
@@ -54,7 +54,7 @@ namespace BarPromenade.Editor
             "Assets/Scripts/Runtime/Player3D/Player3DAssetRegistry.cs";
         private const string ColdAuthoringPath = "tools/player_cold_actions.py";
         private const float ExpectedHeight = 1.75f;
-        private const int MaximumTriangleCount = 4500;
+        private const int MaximumTriangleCount = 11000;
         // Eight columns: the expressions on the left, their soiled twins four
         // columns to the right, so the atlas imports at 512x256.
         private const int ExpectedAtlasColumns = 8;
@@ -76,7 +76,11 @@ namespace BarPromenade.Editor
                 { "MAT_Hair", "08080B" },
                 { "MAT_HairHighlight", "202129" },
                 { "MAT_Shirt", "2A2D30" },
-                { "MAT_Patch", "99743A" },
+                { "MAT_Patch", "876C3C" },
+                { "MAT_Jacket", "4A4B37" },
+                { "MAT_JacketDark", "2F3025" },
+                { "MAT_JacketEdge", "62634A" },
+                { "MAT_BootSole", "09090A" },
                 { "MAT_EyeWhite", "8F8780" },
                 { "MAT_Eye", "141317" },
                 { "MAT_Metal", "58514A" },
@@ -290,6 +294,7 @@ namespace BarPromenade.Editor
                 ImportSource(AnimationPath);
                 ImportSource(AtlasPath);
                 ImportSource(ClothingAtlasPath);
+                ImportSource(BareSkinAtlasPath);
                 ImportSource(PortraitPath);
 
                 Player3DV2Manifest manifest = LoadAndValidateManifest();
@@ -491,6 +496,7 @@ namespace BarPromenade.Editor
             }
 
             ValidateParts(manifest);
+            ValidateAppearanceManifest(manifest);
             Player3DV2StaticTextureContract.ValidateManifest(
                 manifest.texture_bindings,
                 manifest.parts.ToDictionary(
@@ -527,20 +533,16 @@ namespace BarPromenade.Editor
                         $"Hero V2 contains duplicate part '{part.name}'.");
                 }
 
-                if (part.material == "MAT_Jacket" ||
-                    part.material == "MAT_JacketDark" ||
-                    part.material == "MAT_JacketEdge" ||
-                    part.material == "MAT_Jeans" ||
+                if (part.material == "MAT_Jeans" ||
                     part.material == "MAT_JeansEdge" ||
                     part.material == "MAT_BootLeather" ||
-                    part.material == "MAT_BootSole" ||
                     part.material == "MAT_Bandage" ||
                     part.material == "MAT_BandageDark")
                 {
                     throw new InvalidOperationException(
                         $"Hero V2 part '{part.name}' still uses obsolete " +
                         $"solid-colour material '{part.material}'; jacket, " +
-                        "trousers and boots must use the full-colour atlas.");
+                        "trousers and boot uppers must use the full-colour atlas.");
                 }
 
                 // The left forearm wore a bandage until 2026-09-08. It was
@@ -559,24 +561,6 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException(
                         $"Part '{part.name}' uses unknown palette material " +
                         $"'{part.material}'.");
-                }
-
-                if (part.name.IndexOf("Boot", StringComparison.Ordinal) >= 0 ||
-                    ((part.bone == "foot.L" || part.bone == "foot.R") &&
-                     part.name != "GEO_Foot.L" &&
-                     part.name != "GEO_Foot.R"))
-                {
-                    throw new InvalidOperationException(
-                        $"Hero V2 part '{part.name}' is an extra foot-bound " +
-                        "mesh; boot laces, eyelets, seams, toe and sole edge " +
-                        "must be painted into the GEO_Foot atlas regions.");
-                }
-
-                if (part.role == "clothing_detail")
-                {
-                    throw new InvalidOperationException(
-                        $"Hero V2 part '{part.name}' is obsolete protruding " +
-                        "clothing detail; paint it into the shared atlas.");
                 }
 
                 if (part.name == ExpectedAtlasRenderer)
@@ -1190,6 +1174,7 @@ namespace BarPromenade.Editor
                     CalculateBuildSignature(),
                     faceAtlas);
                 registry.ApplyPalette();
+                ConfigureAppearance(prefabRoot, registry, manifest, renderersByName, transformsByName);
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
@@ -1200,6 +1185,11 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException(
                         $"Could not save Hero V2 prefab at '{PrefabPath}'.");
                 }
+                // Unity emits spaces after empty YAML scalars; keep generated
+                // source clean and reimport the exact text used by the player.
+                File.WriteAllText(PrefabPath, string.Join("\n",
+                    File.ReadAllLines(PrefabPath).Select(line => line.TrimEnd())) + "\n");
+                AssetDatabase.ImportAsset(PrefabPath, ImportAssetOptions.ForceSynchronousImport);
             }
             finally
             {
@@ -1418,10 +1408,14 @@ namespace BarPromenade.Editor
                 DependencyStamp(PortraitPath),
                 DependencyStamp(MaterialPath),
                 DependencyStamp(SetupScriptPath),
+                DependencyStamp("Assets/Scripts/Editor/Player3D/Player3DV2AssetSetup.Appearance.cs"),
                 DependencyStamp(ModelImporterScriptPath),
                 DependencyStamp(TextureImporterScriptPath),
                 DependencyStamp(StaticTextureContractScriptPath),
                 DependencyStamp(RegistryScriptPath),
+                DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerWardrobe.cs"),
+                DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerHair.cs"),
+                DependencyStamp("Assets/Scripts/Runtime/Player3D/PlayerJacketCloth.cs"),
                 ColdAuthoringSignature()
             };
             return Hash128.Compute(string.Join("|", inputs)).ToString();
@@ -1653,6 +1647,12 @@ namespace BarPromenade.Editor
             public int mesh_count;
             public int triangle_count;
             public int action_count;
+            public int body_bone_count;
+            public int hair_bone_count;
+            public PlayerAppearanceQuality quality;
+            public PlayerWardrobeManifest wardrobe;
+            public PlayerHairManifest hair;
+            public PlayerJacketClothManifest jacket_cloth;
             public Player3DV2ManifestPart[] parts;
             public Player3DV2ManifestAction[] actions;
             public Player3DV2ManifestFaceAtlas face_atlas;

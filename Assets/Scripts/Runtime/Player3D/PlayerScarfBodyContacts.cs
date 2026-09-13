@@ -6,7 +6,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// Bounded, approximate cloth contacts with the hero alone. Installation
-    /// measures the registered anatomy once; animation only moves ellipsoids.
+    /// measures bare anatomy and primary garment shells once; animation only
+    /// moves the currently worn alternative of each anatomical ellipsoid.
     /// No scene geometry, physics queries or per-frame body baking is involved.
     /// </summary>
     public sealed class PlayerScarfBodyContacts
@@ -15,27 +16,83 @@ namespace BarPromenade
         private const float SurfacePadding = .003f;
         private const float SplitOverlap = .015f;
         private readonly Proxy[] proxies;
+        private readonly PlayerWardrobe wardrobe;
+
+        // These are primary shells in the production registry. Jacket coverage
+        // deliberately does not hide the torso: the shirt shows through its open
+        // front, but the jacket still owns the outer physical envelope.
+        private static readonly Dictionary<Player3DAnatomicalPart, string[]> PrimaryGarments =
+            new Dictionary<Player3DAnatomicalPart, string[]>
+            {
+                { Player3DAnatomicalPart.Torso, new[] { "CLO_JacketBody", "CLO_ShirtBody" } },
+                { Player3DAnatomicalPart.LowerTorso, new[] { "CLO_JacketBody", "CLO_ShirtBody" } },
+                { Player3DAnatomicalPart.Pelvis, new[] { "CLO_TrousersPelvis" } },
+                { Player3DAnatomicalPart.LeftUpperArm, new[] { "CLO_JacketSleeve.L" } },
+                { Player3DAnatomicalPart.RightUpperArm, new[] { "CLO_JacketSleeve.R" } },
+                { Player3DAnatomicalPart.LeftForearm, new[] { "CLO_JacketForearm.L" } },
+                { Player3DAnatomicalPart.RightForearm, new[] { "CLO_JacketForearm.R" } },
+                { Player3DAnatomicalPart.LeftThigh, new[] { "CLO_TrousersThigh.L" } },
+                { Player3DAnatomicalPart.RightThigh, new[] { "CLO_TrousersThigh.R" } },
+                { Player3DAnatomicalPart.LeftShin, new[] { "CLO_TrousersShin.L" } },
+                { Player3DAnatomicalPart.RightShin, new[] { "CLO_TrousersShin.R" } },
+                { Player3DAnatomicalPart.LeftFoot, new[] { "CLO_Boot.L" } },
+                { Player3DAnatomicalPart.RightFoot, new[] { "CLO_Boot.R" } }
+            };
+
+        private sealed class Envelope
+        {
+            public Renderer Renderer;
+            public string GarmentId;
+            public Matrix4x4 UnitToBone;
+            public Matrix4x4 BoneToUnit;
+            public Vector3[] SupportNormals;
+            public float[] SupportOffsets;
+        }
 
         private sealed class Proxy
         {
+            public Player3DAnatomicalPart Part;
             public Transform Bone;
-            public Matrix4x4 UnitToBone;
-            public Matrix4x4 BoneToUnit;
+            public Envelope Bare;
+            public Envelope[] Clothing;
+            public Envelope Selected;
             public Matrix4x4 UnitToWorld;
             public Matrix4x4 WorldToUnit;
             public Bounds WorldBounds;
             public Vector3 CenterEscape;
             public float MinimumWorldRadius;
             public bool Active;
+            public Plane[] WorldPlanes;
         }
 
         public int Count => proxies.Length;
         /// <summary>Number of vertices corrected by the most recent Resolve.</summary>
         public int LastContactCount { get; private set; }
 
-        public PlayerScarfBodyContacts(Player3DAssetRegistry registry)
+        /// <summary>The measured shell currently supplying one anatomy's contact envelope.</summary>
+        public Renderer EnvelopeRenderer(Player3DAnatomicalPart part)
+        {
+            foreach (Proxy proxy in proxies)
+                if (proxy.Part == part) return proxy.Selected?.Renderer;
+            return null;
+        }
+
+        public PlayerScarfBodyContacts(Player3DAssetRegistry registry, string excludedGarmentSlot = null, bool useMeshSupportPlanes = false)
         {
             if (registry == null) throw new ArgumentNullException(nameof(registry));
+            wardrobe = registry.GetComponent<PlayerWardrobe>();
+            var garmentIds = new Dictionary<Renderer, string>();
+            if (wardrobe != null && wardrobe.IsConfigured)
+                foreach (PlayerWardrobe.GarmentBinding garment in wardrobe.Garments)
+                {
+                    if (garment.Slot == excludedGarmentSlot) continue;
+                    foreach (Renderer renderer in garment.Renderers)
+                        if (renderer != null) garmentIds[renderer] = garment.Id;
+                }
+            var meshBindings = new Dictionary<string, Renderer>(StringComparer.Ordinal);
+            foreach (Player3DMeshBinding binding in registry.MeshBindings)
+                if (binding != null && binding.Renderer != null && !string.IsNullOrEmpty(binding.MeshName))
+                    meshBindings[binding.MeshName] = binding.Renderer;
             var parts = new List<Player3DAnatomicalPartBinding>(MaximumParts);
             var seenParts = new HashSet<Player3DAnatomicalPart>();
             foreach (Player3DAnatomicalPartBinding part in registry.AnatomicalParts)
@@ -66,15 +123,32 @@ namespace BarPromenade
             var scratch = new Mesh { name = "Scarf Body Measurement", hideFlags = HideFlags.HideAndDontSave };
             try
             {
+                Vector3[] MeasureOnce(Renderer renderer)
+                {
+                    if (!measured.TryGetValue(renderer, out Vector3[] vertices))
+                    {
+                        vertices = MeasureWorldVertices(renderer, scratch);
+                        measured.Add(renderer, vertices);
+                    }
+                    return vertices;
+                }
                 foreach (Player3DAnatomicalPartBinding part in parts)
                 {
-                    if (!measured.TryGetValue(part.Renderer, out Vector3[] worldVertices))
+                    Envelope bare = BuildEnvelope(part, parts, part.Renderer, MeasureOnce(part.Renderer), useMeshSupportPlanes);
+                    if (bare == null) continue;
+                    var clothing = new List<Envelope>(2);
+                    if (wardrobe != null && wardrobe.IsConfigured &&
+                        PrimaryGarments.TryGetValue(part.Part, out string[] candidates))
                     {
-                        worldVertices = MeasureWorldVertices(part.Renderer, scratch);
-                        measured.Add(part.Renderer, worldVertices);
+                        foreach (string name in candidates)
+                        {
+                            if (!meshBindings.TryGetValue(name, out Renderer renderer) ||
+                                !garmentIds.TryGetValue(renderer, out string garmentId)) continue;
+                            Envelope envelope = BuildEnvelope(part, parts, renderer, MeasureOnce(renderer), useMeshSupportPlanes);
+                            if (envelope != null) { envelope.GarmentId = garmentId; clothing.Add(envelope); }
+                        }
                     }
-                    Proxy proxy = BuildProxy(part, parts, worldVertices);
-                    if (proxy != null) built.Add(proxy);
+                    built.Add(new Proxy { Part = part.Part, Bone = part.Bone, Bare = bare, Clothing = clothing.ToArray() });
                 }
             }
             finally
@@ -91,8 +165,19 @@ namespace BarPromenade
             {
                 proxy.Active = proxy.Bone != null;
                 if (!proxy.Active) continue;
-                proxy.UnitToWorld = proxy.Bone.localToWorldMatrix * proxy.UnitToBone;
-                proxy.WorldToUnit = proxy.BoneToUnit * proxy.Bone.worldToLocalMatrix;
+                proxy.Selected = proxy.Bare;
+                if (wardrobe != null)
+                    foreach (Envelope envelope in proxy.Clothing)
+                    {
+                        if (envelope.Renderer == null || !wardrobe.IsEquipped(envelope.GarmentId)) continue;
+                        // A camera can hide dressed geometry without removing it.
+                        // An owned appearance may temporarily undress the same selection.
+                        if (wardrobe.HasAppearanceLease && !envelope.Renderer.enabled) continue;
+                        proxy.Selected = envelope;
+                        break;
+                    }
+                proxy.UnitToWorld = proxy.Bone.localToWorldMatrix * proxy.Selected.UnitToBone;
+                proxy.WorldToUnit = proxy.Selected.BoneToUnit * proxy.Bone.worldToLocalMatrix;
                 Matrix4x4 matrix = proxy.UnitToWorld;
                 // The row lengths are the exact AABB extents of a transformed
                 // unit sphere, including rotated/non-uniform imported scales.
@@ -106,6 +191,19 @@ namespace BarPromenade
                 float z = matrix.MultiplyVector(Vector3.forward).magnitude;
                 proxy.MinimumWorldRadius = Mathf.Max(.00001f, Mathf.Min(x, Mathf.Min(y, z)));
                 proxy.CenterEscape = x <= y && x <= z ? Vector3.right : y <= z ? Vector3.up : Vector3.forward;
+                if (proxy.Selected.SupportNormals != null)
+                {
+                    int count = proxy.Selected.SupportNormals.Length;
+                    if (proxy.WorldPlanes == null || proxy.WorldPlanes.Length != count) proxy.WorldPlanes = new Plane[count];
+                    Matrix4x4 normalMatrix = proxy.Bone.worldToLocalMatrix.transpose;
+                    for (int i = 0; i < count; i++)
+                    {
+                        Vector3 normal = normalMatrix.MultiplyVector(proxy.Selected.SupportNormals[i]).normalized;
+                        Vector3 support = proxy.Bone.TransformPoint(proxy.Selected.SupportNormals[i] * proxy.Selected.SupportOffsets[i]);
+                        proxy.WorldPlanes[i] = new Plane(normal, support + normal * SurfacePadding);
+                    }
+                }
+                else proxy.WorldPlanes = null;
             }
         }
 
@@ -126,6 +224,21 @@ namespace BarPromenade
                     foreach (Proxy proxy in proxies)
                     {
                         if (!proxy.Active || !proxy.WorldBounds.Contains(point)) continue;
+                        if (proxy.WorldPlanes != null)
+                        {
+                            float escape = float.PositiveInfinity;
+                            Vector3 normal = Vector3.zero;
+                            foreach (Plane plane in proxy.WorldPlanes)
+                            {
+                                float distance = plane.GetDistanceToPoint(point);
+                                if (distance >= 0f) { escape = 0f; break; }
+                                if (-distance < escape) { escape = -distance; normal = plane.normal; }
+                            }
+                            if (escape <= 0f) continue;
+                            point += normal * (escape + .0001f);
+                            moved = corrected = true;
+                            continue;
+                        }
                         Vector3 unit = proxy.WorldToUnit.MultiplyPoint3x4(point);
                         float square = unit.sqrMagnitude;
                         if (square >= 1f) continue;
@@ -150,6 +263,14 @@ namespace BarPromenade
             foreach (Proxy proxy in proxies)
             {
                 if (!proxy.Active || !proxy.WorldBounds.Contains(worldPoint)) continue;
+                if (proxy.WorldPlanes != null)
+                {
+                    bool inside = true;
+                    foreach (Plane plane in proxy.WorldPlanes)
+                        if (plane.GetDistanceToPoint(worldPoint) >= -Mathf.Max(0f, tolerance)) { inside = false; break; }
+                    if (inside) return true;
+                    continue;
+                }
                 float limit = Mathf.Max(0f, 1f - Mathf.Max(0f, tolerance) / proxy.MinimumWorldRadius);
                 if (proxy.WorldToUnit.MultiplyPoint3x4(worldPoint).sqrMagnitude < limit * limit) return true;
             }
@@ -177,10 +298,11 @@ namespace BarPromenade
             return vertices;
         }
 
-        private static Proxy BuildProxy(
+        private static Envelope BuildEnvelope(
             Player3DAnatomicalPartBinding part,
             List<Player3DAnatomicalPartBinding> parts,
-            Vector3[] worldVertices)
+            Renderer renderer,
+            Vector3[] worldVertices, bool useMeshSupportPlanes)
         {
             Matrix4x4 toBone = part.Bone.worldToLocalMatrix;
             var localVertices = new List<Vector3>(worldVertices.Length);
@@ -220,12 +342,48 @@ namespace BarPromenade
             }
             radii *= expansion;
             Matrix4x4 unitToBone = Matrix4x4.TRS(bounds.center, Quaternion.identity, radii);
-            return new Proxy
+            var envelope = new Envelope
             {
-                Bone = part.Bone,
+                Renderer = renderer,
                 UnitToBone = unitToBone,
                 BoneToUnit = unitToBone.inverse
             };
+            if (useMeshSupportPlanes) BuildSupportPlanes(envelope, renderer, toBone, worldVertices, localVertices);
+            return envelope;
+        }
+
+        private static void BuildSupportPlanes(Envelope envelope, Renderer renderer, Matrix4x4 toBone,
+            Vector3[] worldVertices, List<Vector3> ownedVertices)
+        {
+            Mesh mesh = renderer is SkinnedMeshRenderer skin ? skin.sharedMesh : renderer.GetComponent<MeshFilter>()?.sharedMesh;
+            if (mesh == null || !mesh.isReadable) return;
+            int[] triangles = mesh.triangles;
+            var normals = new List<Vector3> { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
+            for (int i = 0; i + 2 < triangles.Length; i += 3)
+            {
+                Vector3 a = toBone.MultiplyPoint3x4(worldVertices[triangles[i]]);
+                Vector3 b = toBone.MultiplyPoint3x4(worldVertices[triangles[i + 1]]);
+                Vector3 c = toBone.MultiplyPoint3x4(worldVertices[triangles[i + 2]]);
+                Vector3 normal = Vector3.Cross(b - a, c - a);
+                float length = normal.magnitude;
+                if (length < 1e-16f) continue;
+                normal /= length; // Imported bone coordinates can be much smaller than Vector3.Normalize's epsilon.
+                bool duplicate = false;
+                foreach (Vector3 previous in normals)
+                    if (Vector3.Dot(normal, previous) > .9999f) { duplicate = true; break; }
+                if (!duplicate) normals.Add(normal);
+            }
+            var offsets = new float[normals.Count];
+            for (int i = 0; i < normals.Count; i++)
+            {
+                float maximum = float.NegativeInfinity;
+                foreach (Vector3 vertex in ownedVertices) maximum = Mathf.Max(maximum, Vector3.Dot(normals[i], vertex));
+                offsets[i] = maximum;
+            }
+            // Each half-space supports the real vertex cloud, including mildly
+            // non-planar authored quads. This keeps every source point enclosed
+            // without the empty corner volume of an expanded ellipsoid.
+            envelope.SupportNormals = normals.ToArray(); envelope.SupportOffsets = offsets;
         }
     }
 }

@@ -12,8 +12,8 @@ namespace BarPromenade.Tests.EditMode
     /// parts called Head and Neck and left the player looking at the
     /// inside of the separately bound face and hair meshes. What is pinned
     /// here is that the rule is stated against the bones — anything on
-    /// `head`, `neck` or a `face.*` bone — and that on the production V2
-    /// prefab it catches every one of them and nothing below the collar.
+    /// `head`, `neck`, a `face.*` bone or an authored hair chain — and on the
+    /// production V2 prefab it catches all of them and nothing below the collar.
     /// </summary>
     public sealed class Player3DHeadVisibilityTests
     {
@@ -28,8 +28,12 @@ namespace BarPromenade.Tests.EditMode
             "GEO_HairBack",
             "GEO_HairTemple.L",
             "GEO_HairTemple.R",
-            "GEO_HairTuft.01",
-            "GEO_HairTuft.04",
+            "GEO_HairCurtain.L",
+            "GEO_HairCurtain.R",
+            "GEO_HairNape",
+            "GEO_HairBackLength",
+            "GEO_HairLeftLength",
+            "GEO_HairRightLength",
             "GEO_Ear.L",
             "GEO_Ear.R"
         };
@@ -52,6 +56,11 @@ namespace BarPromenade.Tests.EditMode
         [TestCase("face.eye.L", true)]
         [TestCase("face.brow.R", true)]
         [TestCase("face.mouth", true)]
+        [TestCase("HairBack.00", true)]
+        [TestCase("HairLeft.01", true)]
+        [TestCase("HairRight.02", true)]
+        [TestCase("hairright.Tip", true)]
+        [TestCase("HairBackpack", false)]
         [TestCase("chest", false)]
         [TestCase("hand.L", false)]
         [TestCase("upper_arm.R", false)]

@@ -100,7 +100,8 @@ namespace BarPromenade
         public bool IsInitialized => registry != null && actor != null;
         public bool IsCaptured => captured;
         public bool BridgesShown { get; private set; }
-        public bool HasBridges => yoke != null && deltoidLeft != null && deltoidRight != null;
+        private bool modularBareBody;
+        public bool HasBridges => modularBareBody || yoke != null && deltoidLeft != null && deltoidRight != null;
         public bool HasAnatomy => anatomyRoot != null && scrotumLeft != null && scrotumRight != null;
         public Transform AnatomyRoot => anatomyRoot;
 
@@ -177,6 +178,8 @@ namespace BarPromenade
             }
 
             registry = visual.Registry;
+            PlayerWardrobe wardrobe = registry.GetComponent<PlayerWardrobe>();
+            modularBareBody = wardrobe != null && wardrobe.IsConfigured;
             actor = home.Player.GameObject.transform;
             room = home.Room != null ? home.Room : home.transform;
             hotValve = room.Find(HomeShowerInteraction.HotHandleName);
@@ -195,7 +198,7 @@ namespace BarPromenade
                 return false;
             }
 
-            if (!TryCreateBridges(home.transform))
+            if (!modularBareBody && !TryCreateBridges(home.transform))
             {
                 Release();
                 return false;
@@ -419,6 +422,12 @@ namespace BarPromenade
                 return;
             }
 
+            if (modularBareBody)
+            {
+                PlaceAnatomy();
+                return;
+            }
+
             Vector3 leftShoulder = left.Upper.position;
             Vector3 rightShoulder = right.Upper.position;
             Vector3 across = rightShoulder - leftShoulder;
@@ -478,6 +487,7 @@ namespace BarPromenade
             hotValve = null;
             coldValve = null;
             registry = null;
+            modularBareBody = false;
             actor = null;
         }
 

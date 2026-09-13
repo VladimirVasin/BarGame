@@ -17,14 +17,18 @@ RESOURCES = ROOT / "Assets/Resources/HomeToiletSeated"
 HERO_SOURCE = ROOT / "ArtSource/PlayerV2/Blender/PlayerCharacter3DV2.blend"
 PARTS = {"GEO_Pelvis": "pelvis", "GEO_Thigh.L": "thigh.L", "GEO_Thigh.R": "thigh.R",
          "GEO_Shin.L": "shin.L", "GEO_Shin.R": "shin.R"}
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 OUTLET_SOURCE = (0, .033, .790)
 BARE_SUPPORT_SOURCE_Z = .775170
 SKIN_PATH = ROOT / "Assets/Resources/Player/PlayerBareSkinAtlas.png"
 
+def garment_name(body_name):
+    return body_name.replace("GEO_", "CLO_Trousers", 1)
+
 def load_hero():
     with bpy.data.libraries.load(str(HERO_SOURCE), link=False) as (data_from, data_to):
-        data_to.objects = [name for name in data_from.objects if name in PARTS or "Armature" in name or name == "PlayerRig"]
+        requested = set(PARTS) | {garment_name(name) for name in PARTS}
+        data_to.objects = [name for name in data_from.objects if name in requested or "Armature" in name or name == "PlayerRig"]
     for obj in data_to.objects:
         if obj is not None:
             bpy.context.scene.collection.objects.link(obj)
@@ -217,7 +221,7 @@ def make_module(rig, originals):
     models=[]
     for name,bone in PARTS.items():
         original=originals[name]
-        trousers=make_copy(original,"Trousers_"+name[4:],rig)
+        trousers=make_copy(originals[garment_name(name)],"Trousers_"+name[4:],rig)
         lower_shape(trousers,rig,bone)
         bare=make_copy(original,"Bare_"+name[4:],rig)
         if bone=="pelvis": add_cheeks(bare,rig)
@@ -281,7 +285,7 @@ def validate(rig,originals,models):
             assert (b-a).cross(c-a).length>1e-10,(obj.name,"degenerate")
         report["triangles"]+=len(mesh.loop_triangles)
         if obj.name.startswith("Trousers_"):
-            original=originals["GEO_"+obj.name[len("Trousers_"):]]
+            original=originals[garment_name("GEO_"+obj.name[len("Trousers_"):])]
             assert len(mesh.vertices)==len(original.data.vertices)
             assert all((a.co-b.co).length<1e-9 for a,b in zip(mesh.vertices,original.data.vertices)),obj.name
             assert (obj.matrix_world.translation-original.matrix_world.translation).length<1e-8
@@ -438,7 +442,7 @@ def main():
         "parts": {name: {"location": list(obj.location), "vertices": len(obj.data.vertices),
             "bounds": [[min((obj.matrix_world @ v.co)[axis] for v in obj.data.vertices) for axis in range(3)],
                        [max((obj.matrix_world @ v.co)[axis] for v in obj.data.vertices) for axis in range(3)]],
-            "bone_matrix": [list(row) for row in rig.data.bones[PARTS[name]].matrix_local]}
+            "bone_matrix": [list(row) for row in rig.data.bones[PARTS[name] if name in PARTS else PARTS[name.replace("CLO_Trousers", "GEO_")]].matrix_local]}
             for name,obj in meshes.items()}}), flush=True)
         return
     root,models,outlet=make_module(rig,meshes)

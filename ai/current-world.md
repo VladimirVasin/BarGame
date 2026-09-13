@@ -818,8 +818,7 @@ The vertical slice contains:
   retained inactive Watcher cashiers, and the bus driver. The active humanoid
   cast does not grow because both ordinary replacements are one-for-one. Every
   rigged design uses
-  `NpcHumanV2`, the exact Hero V2
-  31-bone A-pose hierarchy and Avatar copied from
+  `NpcHumanV2`, the Hero V2 31-bone body core and compatible A-pose Avatar from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
   `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
   manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
@@ -1676,21 +1675,17 @@ The vertical slice contains:
 
 ### The hero
 
-- the sole production `Resources/Player/Player3DV2` prefab selected by all nine
-  gameplay roots, a visible prefab-derived refrigerator arm, nested full-body
-  seated bar-drinking actions with a right-hand mug-handle grip and a
-  patron-aligned rim-to-mouth pose, and the inventory portrait. It keeps the
-  `1.75 m`,
-  31-bone contract with 48 bone-only Actions
-  in 34 mesh parts and 2,384 triangles, but uses adult `7.4946`-head
-  proportions, an atlas-driven
-  five-state face and a full-colour point-filtered clothing atlas. Its open
-  olive field jacket has long sleeves and no strap; painted garment and boot
-  construction replace protruding detail meshes. The continuous shirt and
-  jacket bend over pelvis, lower spine and chest through horizontal mesh rings
-  and at most two adjacent bone weights per vertex; the original `41` actions
-  plus four seated-recovery and three cold additions use that shared 31-bone hierarchy. Runtime
-  torso lean is split `40/60` between spine and chest with complete pose reset;
+- sole `Resources/Player/Player3DV2` in nine roots, derived
+  refrigerator/bar arms and portrait. Lean `1.75 m` hero: 31 body bones/48
+  actions, narrow shoulders/upper arms, refined hands/boots, oversized M-65
+  with slim upper sleeves and right repair patch.
+  `PlayerWardrobe`: shirt/jacket/trousers/boots, bare coverage, atomic slots
+  and appearance/visibility leases. `hero_field_workwear` only; other outfits/UI/save
+  Deferred. Medium curtains: 12 auxiliary bones; jacket
+  hem/cuffs use 16 nodes on owned meshes with pinned shoulders/chest.
+  Both have bounded inertia/wind, cached surface contacts, pause/reset
+  and passive mirror copies; arm subsets copy worn cloth. Hair also contacts
+  the scarf; jacket excludes itself. Lean `40/60`; `ai/player-art-spec.md`;
 - one manual PlayableGraph presentation that damp-blends the in-place
   four-second `Idle`, one-second `Walk` and `0.75 s`/18-frame `Run` actions
   from actual constrained planar speed.
@@ -2543,8 +2538,9 @@ The vertical slice contains:
   each opening contributes half the final flow.
   Valve turns sound at the grip, running water at the actual stream impact,
   and final drops sound only when they land in the tray.
-  He washes naked (a bare-skin atlas on the same prefab,
-  the toilet's anatomy with passive motion) under the gravity-fed stream.
+  He washes with the current wardrobe removed: actual bare body/skin atlas,
+  no repaint or shoulder overlays, the toilet's passive anatomy. Restoration
+  returns the selected outfit and preserves the first-person head lease.
   Until the soap is held, `E` takes it from the shelf regardless of cursor
   position or viewing direction. A localized prompt, yellow outline and
   connecting line appear beside the soap when it is visible; they do not
@@ -2664,7 +2660,9 @@ The vertical slice contains:
   `HomeToiletActorPresentation` samples nine independent Hero V2 clips;
   `HomeToiletSeatedAppearance` owns ten skinned lower-body/garment renderers
   and five `Lowered` shapes, using the production bones and garment proxies
-  that follow those bones. Original garment endpoints and materials restore.
+  that follow those bones. Bare pieces derive from anatomy, fabric pieces from
+  the separate trousers; the selected trousers supply their shared appearance.
+  Original garment endpoints, outfit and renderer flags restore.
   `HomeToiletBowelEffect` starts visible emission at seated `0.5 s`, releases
   at `1.05 s`, falls ballistically through air and slows under water. One
   contact produces a ripple, splash, bubbles and sound. The solid approaches

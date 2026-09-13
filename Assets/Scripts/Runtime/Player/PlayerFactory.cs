@@ -182,6 +182,8 @@ namespace BarPromenade
             }
 
             PlayerScarfController.Install(runtime);
+            registry.GetComponent<PlayerJacketCloth>()?.BindRuntime(runtime);
+            registry.GetComponent<PlayerHair>()?.BindRuntime(runtime);
             return runtime;
         }
     }

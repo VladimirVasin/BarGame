@@ -6,48 +6,47 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-13 — Cannery cast
+## 2026-09-13 — Hero and cannery cast
 
-- Receiver slot `0`: athletic `1.96 m`, 3D glasses/fitted orange ski hat,
-  painted face/four faded arm tattoos, five own clips/hands +18%, longer trouser rise.
-  Both NPCs' thumb/finger anatomy fixed; geometry drives hand frames.
-  Larger hands needed delayed release from scales; fitted routes/ramp soles,
-  carton-edge hands/glasses fingertip contact. Wait reserves gesture against
-  speech/entry. `NpcWardrobe` keeps body/garments separate; one outfit each,
-  old woman bindings retained. Model/hand anatomy:
-  `build-cannery-receiver-3d-model.py --validate-only`. Integration/portraits:
+- Existing hero refined: lean torso/upper arms and narrow shoulders inside
+  oversized open M-65 with slimmer upper sleeves, constructed
+  pockets/cuffs, even medium curtains, corrected hands/neutral-face UV.
+  Separate body/outfit and atomic wardrobe restore current clothes through
+  shower/toilet/head leases. Hair and anchored hem/cuffs use bounded
+  inertia/wind/body contacts; pause/reset and passive mirror/arm copies keep
+  one rig. Old clothed anatomy had blocked real undressing and contacts.
+  Checks: `build-player-3d-model-v2.py`, `build-home-toilet-seated-3d-model.py`,
+  `AreaCaptureFixture.HeroAppearance`.
+- Receiver slot 0: athletic 1.96 m, 3D glasses/fitted orange hat, painted face/
+  four tattoos, five own clips, hands +18%, longer trouser rise. Both NPC hands
+  fixed from anatomy; larger hands required delayed scale release. Fitted
+  routes/ramp soles, carton/glasses fingertip contacts, reserved waiting
+  gesture. `NpcWardrobe`: separate body/clothes,
+  one outfit each, old woman bindings retained. Checks:
+  `build-cannery-receiver-3d-model.py --validate-only`,
   `AreaCaptureFixture.CityCanneryInspection`.
-
-- Seamer: authored `1.63 m`/`8000`-triangle woman, painted blink/speech and rare
-  colleague smile; five own clips/factory contacts, sixteen RU/EN lines/shared
-  bubbles, palette/wardrobe restored on range re-enable. Hair skin/sleeve/arm/
-  strand contacts, fixed nape, `20°/30°/40°` bend caps; pause freeze/seek reset.
-  Model/hand/garment/hair/clip contacts:
-  `build-cannery-woman-3d-model.py --validate-only`.
-- Hair CPU: body/pose skin caches, conservative groups/pose-checked planes,
-  lazy diagnostics, idle once; contacts/bends retained. CPU/GC/contacts:
+- Seamer: 1.63 m/8000 triangles, painted blink/speech/rare colleague smile,
+  five own clips/contacts, sixteen RU/EN lines/shared bubbles; range re-enable
+  restores palette/outfit. Hair skin/sleeve/arm/strand contacts, fixed nape,
+  20°/30°/40° bend caps, pause/seek reset; cached poses/groups/planes, lazy diagnostics
+  and idle-once reduce CPU/GC. Checks:
+  `build-cannery-woman-3d-model.py --validate-only`,
   `AreaCaptureFixture.CityCanneryWomanPerformance`,
   `AreaCaptureFixture.CityCanneryWomanContacts`.
-- Approved same-woman decision: story §6/§11/§16.10, art §8.
-  Crime outcome stays; chronology open in §25, romance undeveloped.
-  Documentation: `python tools/check-docs.py`, `git diff --check`.
-- Fixed two runtime defects behind old red fixtures: village map arrival now
-  uses the spring path's brook approach (`CityMapTeleportGrounds.RouteEnd`),
-  and a grade cone holds the brook bank below the hero's slope limit
-  (`AlpineVillageTerrainSampler`). Stale expectations now follow house shell
-  collision, walkable rects/continuations, port perches, per-owner audio and
-  beach slope; corrected array `Has.Count`. Bar smoke browses/rests the menu,
-  committed cancel belongs to the physical shop test. Checks: EditMode
-  `AlpineVillage*|VillageAsset|CityChurchPlanning|CityTerrainSurfaceWorldBuilder|RavenRoostPlan|CityFishSupplyCycle|CityMiscAsset|CityStreetSurfacePlanner|CityWetSurface|BarSurfaceAppearance`,
+  Same woman accepted: story §6/§11/§16.10, art §8; crime stays, chronology
+  open in §25, romance undeveloped.
+- Fixed brook approach (`CityMapTeleportGrounds.RouteEnd`) and bank slope
+  (`AlpineVillageTerrainSampler`). Stale fixtures now follow
+  house collision/walkable routes, port perches, owned audio, beach slope,
+  array `Has.Count` and bar menu-rest versus committed shop cancellation. Checks:
+  EditMode `AlpineVillage*|VillageAsset|CityChurchPlanning|CityTerrainSurfaceWorldBuilder|RavenRoostPlan|CityFishSupplyCycle|CityMiscAsset|CityStreetSurfacePlanner|CityWetSurface|BarSurfaceAppearance`;
   PlayMode `SceneFlowSmoke|HomeOpening|MothersHouseInterior|BarDrinkPhysicalShop|StairwellInteriorPresentation`.
-- Footsteps per ground: eight cues before `Count`, rows at the END of the
-  table; `FootstepGround` on collision roots, overlays for rugs, tiles,
-  paving and the puddle film (shader formula, mean noise);
-  `HeroFootstepGround` between claimant and plain step; three seeded
-  variants, hashed so a walk cannot alternate two of three. NPC rigs
-  register roots; the hero-side director steps them on known ground only, so
-  riders stay silent; the cafe gets a `4 mm` linoleum slab. Checks: EditMode
+- Ground footsteps: eight cues before `Count`, appended table rows; collision
+  tags and rug/tile/paving/shader-matched puddle overlays. `HeroFootstepGround`
+  sits between claimant/plain step; hashed three-variant steps avoid two-cue
+  alternation. Known-ground NPC roots exclude riders; cafe has 4 mm linoleum. Checks:
   `RetroSfxLibraryTests|HeroFootstepGroundTests|NpcFootstepsTests|MountainRoadCafeCollision*`.
+- Documentation: `python tools/check-docs.py`, `git diff --check`.
 
 ## 2026-09-12 — Glovebox prompt and cannery driver's lunch
 

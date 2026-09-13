@@ -6,9 +6,13 @@ angles. This module deliberately adds nothing to the shared pedestrian bank.
 from __future__ import annotations
 
 import math
+import sys
+from pathlib import Path
 
 import bpy
 from mathutils import Vector
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import player_hand_frames
 
 HOLD_NAME = "ColdHold"
 RUB_NAME = "ColdShoulderRub"
@@ -144,10 +148,36 @@ def cold_pose(builder, common, phase: float, rubbing: bool, shivering: bool = Fa
         pose.update(updates)
         builder._reset_pose()
         builder._apply_pose(pose)
+    # A wrist-to-fingers direction leaves one free roll axis. The palm must
+    # face the sleeve rather than presenting the thumb edge at the contact.
+    for side in ("L", "R"):
+        opposite = rig.pose.bones[f"upper_arm.{'R' if side == 'L' else 'L'}"]
+        axis = (opposite.tail - opposite.head).normalized()
+        contact, _ = sleeve_contact(rig, side, HOLD_CONTACT_M[side] if shivering else
+                                    contact_distance(side, phase, rubbing), builder.scale)
+        outward = contact - opposite.head
+        outward -= axis * outward.dot(axis)
+        player_hand_frames.face_surface(builder, pose, side, -outward.normalized())
     return pose
 
 
 def build_cold_actions(builder, common, generator_version: str, names=None) -> None:
+    # IK here reads raw bind vertices and pose bones only. Keep the heavier
+    # skinned surfaces out of every bone update; restore them before mesh SAT.
+    modifiers = [(modifier, modifier.show_viewport)
+                 for part in builder.result.parts for modifier in part.obj.modifiers
+                 if modifier.type == "ARMATURE" and modifier.object == builder.result.rig]
+    try:
+        for modifier, _ in modifiers:
+            modifier.show_viewport = False
+        _build_cold_action_keys(builder, common, generator_version, names)
+    finally:
+        for modifier, visible in modifiers:
+            modifier.show_viewport = visible
+        bpy.context.view_layer.update()
+
+
+def _build_cold_action_keys(builder, common, generator_version: str, names=None) -> None:
     for name, duration, loop in COLD_TIMING:
         if names is not None and name not in names:
             continue
@@ -171,6 +201,7 @@ def validate_cold_actions(result, common, errors: list[str], names=None) -> None
     previous = animation.action
     previous_frame = bpy.context.scene.frame_current
     snapshots = []
+    hand_frames = {side: player_hand_frames.bind_frame(result, side) for side in ("L", "R")}
     try:
         # A targeted new-action check still compares its endpoints with the
         # existing Hold, without rerunning its already accepted mesh sweep.
@@ -193,6 +224,7 @@ def validate_cold_actions(result, common, errors: list[str], names=None) -> None
             animation.action = record.action
             end = round(record.action.frame_end)
             maximum_error = 0.0
+            minimum_palm_alignment = 1.0
             contact_tracks = {side: [] for side in ("L", "R")}
             shoulder_track = []
             for half_frame in range(end * 2 + 1):
@@ -207,6 +239,13 @@ def validate_cold_actions(result, common, errors: list[str], names=None) -> None
                         contact_distance(side, phase, name == RUB_NAME), scale)
                     palm = (hand.head + hand.tail) * 0.5
                     opposite = rig.pose.bones[f"upper_arm.{'R' if side == 'L' else 'L'}"]
+                    sleeve_axis = (opposite.tail - opposite.head).normalized()
+                    normal = expected - opposite.head
+                    normal -= sleeve_axis * normal.dot(sleeve_axis)
+                    fingers, _, palmar = player_hand_frames.posed_frame(result, side, hand_frames[side])
+                    inward = -normal.normalized()
+                    inward -= fingers * inward.dot(fingers)
+                    minimum_palm_alignment = min(minimum_palm_alignment, palmar.dot(inward.normalized()))
                     along_sleeve = (palm - opposite.head).dot((opposite.tail - opposite.head).normalized()) / scale
                     contact_tracks[side].append(along_sleeve)
                     maximum_error = max(maximum_error, (palm - expected).length)
@@ -226,6 +265,8 @@ def validate_cold_actions(result, common, errors: list[str], names=None) -> None
                         break
             if maximum_error > 0.014:
                 errors.append(f"{name} palm leaves its opposite sleeve by {maximum_error:.4f} m")
+            if minimum_palm_alignment < .92:
+                errors.append(f"{name} must contact the sleeve with its measured palm, alignment {minimum_palm_alignment:.4f}")
             for side, track in contact_tracks.items():
                 span = max(track) - min(track)
                 minimum = .012 if looping else .052 if name == RUB_NAME else 0.0
@@ -407,16 +448,10 @@ if __name__ == "__main__":
         print(f"Cold refresh validated: deterministic curves; original rig, meshes, skin weights and {len(others)} other actions unchanged.")
         print("Content signature:", manifest["content_signature_sha256"])
         raise SystemExit(0)
-    builder.reset_scene()
-    collections = builder.create_collections()
-    builder.points = builder.create_pose_points()
-    export_root = builder.create_root(collections["export"])
-    bones = builder.create_bone_specs()
-    rig = builder.create_armature(collections["rig"], export_root, bones)
-    builder.bone_heads = {bone.name: bone.head for bone in bones}
-    builder.bone_specs = {bone.name: bone for bone in bones}
-    builder.result = module.common.BuildResult(
-        root=export_root, rig=rig, collections=collections, materials={})
+    # Palm orientation and sleeve clearance are geometry contracts. Build the
+    # current source surfaces and neutral pose without the unrelated action bank.
+    builder.preview_only = True
+    builder.build()
     build_cold_actions(builder, module.common, module.V2_GENERATOR_VERSION)
     failures = []
     validate_cold_actions(builder.result, module.common, failures)

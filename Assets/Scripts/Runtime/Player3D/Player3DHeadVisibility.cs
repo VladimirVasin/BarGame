@@ -8,17 +8,13 @@ namespace BarPromenade
     /// Takes the hero's own head off while a camera is sitting inside
     /// it, and puts it back afterwards.
     ///
-    /// This exists because the head is not a mesh. On this rig it is
-    /// twenty-two of them — the skull, the neck, a hair cap and
-    /// fourteen tufts, two ears, a nose, stubble, two under-eye
-    /// shadows, and then the face parts on their own little bones:
-    /// eyes, pupils, brows and a mouth. Hiding "the head renderer"
-    /// hides the skull and leaves the player looking at the inside of
-    /// his own hair.
+    /// The skull, neck, face, fixed hair cap and moving hair locks are
+    /// independently drawn. Hiding only the skull would leave the
+    /// player looking at the inside of his own hair.
     ///
     /// So the rule is stated against the rig rather than against a
-    /// list of meshes: anything weighted to `head`, to `neck` or to any
-    /// `face.*` bone is head geometry and comes off together. A part
+    /// list of meshes: anything weighted to `head`, to `neck`, to any
+    /// `face.*` bone or an authored hair chain comes off together. A part
     /// added to the model later lands on one of those bones or it does
     /// not, and either way this keeps being right.
     ///
@@ -62,8 +58,15 @@ namespace BarPromenade
                        StringComparison.OrdinalIgnoreCase) ||
                    boneName.StartsWith(
                        FaceBonePrefix,
-                       StringComparison.OrdinalIgnoreCase);
+                       StringComparison.OrdinalIgnoreCase) ||
+                   IsHairGeometry(boneName);
         }
+
+        public static bool IsHairGeometry(string boneName) =>
+            !string.IsNullOrEmpty(boneName) &&
+            (boneName.StartsWith("HairBack.", StringComparison.OrdinalIgnoreCase) ||
+             boneName.StartsWith("HairLeft.", StringComparison.OrdinalIgnoreCase) ||
+             boneName.StartsWith("HairRight.", StringComparison.OrdinalIgnoreCase));
 
         /// <summary>
         /// Whether the hero's head is currently on screen at all. Every

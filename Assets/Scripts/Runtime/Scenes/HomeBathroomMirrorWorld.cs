@@ -463,12 +463,20 @@ namespace BarPromenade
         private readonly MaterialPropertyBlock scratch = new MaterialPropertyBlock();
         private readonly PlayerScarfPresentation sourceScarf;
         private readonly PlayerScarfPresentation mirrorScarf;
+        private readonly PlayerHair sourceHair;
+        private readonly PlayerHair mirrorHair;
+        private readonly PlayerJacketCloth sourceJacket;
+        private readonly PlayerJacketCloth mirrorJacket;
 
         private HomeMirrorHeroTwin(Player3DAssetRegistry hero, Player3DAssetRegistry twin, Transform homeFrame)
         {
             Registry = twin;
             heroRoot = hero.transform;
             this.homeFrame = homeFrame;
+            sourceHair = hero.GetComponent<PlayerHair>();
+            mirrorHair = twin.GetComponent<PlayerHair>();
+            sourceJacket = hero.GetComponent<PlayerJacketCloth>();
+            mirrorJacket = twin.GetComponent<PlayerJacketCloth>();
             Pair(hero, twin);
             sourceScarf = hero.GetComponentInChildren<PlayerScarfPresentation>(true);
             if (sourceScarf != null)
@@ -697,6 +705,9 @@ namespace BarPromenade
                 bone.localRotation = source.localRotation;
                 bone.localScale = source.localScale;
             }
+
+            if (sourceJacket != null && mirrorJacket != null) sourceJacket.CopyPoseTo(mirrorJacket);
+            if (sourceHair != null && mirrorHair != null) sourceHair.CopyPoseTo(mirrorHair);
 
             bool anyBody = false;
             for (int index = 0; index < sourceRenderers.Count; index++)
