@@ -30,9 +30,7 @@ namespace BarPromenade
         {
             SetRoute(0, new[] {
                 Local(2.75f, -1.2f, true), Local(2.75f, -5.5f, true),
-                Local(-1.1f, -5.5f),
-                Local(-2.55f, -5.5f), Local(-2.55f, -6.55f),
-                Local(-3.4f, -6.55f), Anchor("Receiver") });
+                Local(-1.1f, -5.5f), Local(-3.4f, -5.5f), Anchor("Receiver") });
             SetRoute(1, new[] {
                 Local(2.75f, -2.3f, true), Local(2.75f, 8.1f, true),
                 Local(-8.55f, 8.1f, true), Local(-8.55f, 2.65f, true),
@@ -109,6 +107,7 @@ namespace BarPromenade
                 ground = Mathf.Lerp(CityCanneryPlan.FloorTop, CityCanneryPlan.YardTop, local.x / 1.5f);
             point.y = Plan.Origin.y + ground;
             workers[role].transform.position = point;
+            if (role == CanneryReceiverPresentation.WorkerSlot) FitReceiverGoodsRampFeet(workers[role]);
             return true;
         }
 
@@ -134,6 +133,7 @@ namespace BarPromenade
                 actor.transform.up) * workerSpines[role].rotation;
             actor.Head.rotation = Quaternion.AngleAxis(glance * .84f, actor.transform.up) *
                 Quaternion.AngleAxis(2f * Wave(.43d) * lookWeight, actor.transform.right) * actor.Head.rotation;
+            if (role == CanneryReceiverPresentation.WorkerSlot) ApplyReceiverOutsideRest();
         }
 
         private double FactoryShiftBoundaryDistance(int role, bool futureOnly)

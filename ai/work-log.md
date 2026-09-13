@@ -6,36 +6,38 @@ Older whole dates move to `ai/archive/` when the byte budget is reached;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-08.md`](archive/work-log-2026-08.md).
 
-## 2026-09-13 — Cannery woman
+## 2026-09-13 — Cannery cast
 
-- Replaced the seamer with an authored `1.63 m`/`8000`-triangle woman (art §8).
-  Hero-style face blinks/articulates; rare smile belongs to colleagues.
-  Own idle/walk/work/listen/break retain factory contacts; sixteen RU/EN lines
-  share bubbles; palette/wardrobe survive range re-enable.
-- Hair has skin/sleeve/arm/strand contacts, a fixed nape and `20°/30°/40°` bend
-  caps; pause freezes, seek/range reset. Model/garment/hair/clip contacts:
+- Receiver slot `0`: athletic `1.96 m`, 3D glasses/fitted orange ski hat,
+  painted face/four faded arm tattoos, five own clips/hands +18%, longer trouser rise.
+  Both NPCs' thumb/finger anatomy fixed; geometry drives hand frames.
+  Larger hands needed delayed release from scales; fitted routes/ramp soles,
+  carton-edge hands/glasses fingertip contact. Wait reserves gesture against
+  speech/entry. `NpcWardrobe` keeps body/garments separate; one outfit each,
+  old woman bindings retained. Model/hand anatomy:
+  `build-cannery-receiver-3d-model.py --validate-only`. Integration/portraits:
+  `AreaCaptureFixture.CityCanneryInspection`.
+
+- Seamer: authored `1.63 m`/`8000`-triangle woman, painted blink/speech and rare
+  colleague smile; five own clips/factory contacts, sixteen RU/EN lines/shared
+  bubbles, palette/wardrobe restored on range re-enable. Hair skin/sleeve/arm/
+  strand contacts, fixed nape, `20°/30°/40°` bend caps; pause freeze/seek reset.
+  Model/hand/garment/hair/clip contacts:
   `build-cannery-woman-3d-model.py --validate-only`.
-- Hair CPU reduced: body/pose skin caches, conservative groups and pose-checked
-  plane hints; diagnostics on demand, idle sampled once. Full contacts/bends kept.
-  CPU/GC and contact verification:
+- Hair CPU: body/pose skin caches, conservative groups/pose-checked planes,
+  lazy diagnostics, idle once; contacts/bends retained. CPU/GC/contacts:
   `AreaCaptureFixture.CityCanneryWomanPerformance`,
   `AreaCaptureFixture.CityCanneryWomanContacts`.
 - Approved same-woman decision: story §6/§11/§16.10, art §8.
   Crime outcome stays; chronology open in §25, romance undeveloped.
   Documentation: `python tools/check-docs.py`, `git diff --check`.
-- Triaged the fixtures that had been red for weeks rather than leaving them.
-  Two were real defects, fixed in the runtime: the chart's village arrival at
-  the spring put the hero on the dock with no room to walk out, because the
-  spring's path has ended on the brook's approach since the water was traced
-  (`CityMapTeleportGrounds.RouteEnd`); and the brook bank stood past the
-  hero's slope limit where the trace crosses a crest, now held by a grade
-  cone opening from the cut (`AlpineVillageTerrainSampler`). The rest were
-  expectations outrun by decided changes and were re-pinned to the plan:
-  shell collision on the inhabited houses, walkable rects plus declared
-  continuations, port perches, a per-owner audio-source contract in place of
-  a total, the beach held to the hero's limit. `Has.Count` on an array never
-  worked. The seated bar smoke browses and rests the menu; the committed-
-  cancel contract moved to the physical shop test. Checks: EditMode
+- Fixed two runtime defects behind old red fixtures: village map arrival now
+  uses the spring path's brook approach (`CityMapTeleportGrounds.RouteEnd`),
+  and a grade cone holds the brook bank below the hero's slope limit
+  (`AlpineVillageTerrainSampler`). Stale expectations now follow house shell
+  collision, walkable rects/continuations, port perches, per-owner audio and
+  beach slope; corrected array `Has.Count`. Bar smoke browses/rests the menu,
+  committed cancel belongs to the physical shop test. Checks: EditMode
   `AlpineVillage*|VillageAsset|CityChurchPlanning|CityTerrainSurfaceWorldBuilder|RavenRoostPlan|CityFishSupplyCycle|CityMiscAsset|CityStreetSurfacePlanner|CityWetSurface|BarSurfaceAppearance`,
   PlayMode `SceneFlowSmoke|HomeOpening|MothersHouseInterior|BarDrinkPhysicalShop|StairwellInteriorPresentation`.
 - Footsteps per ground: eight cues before `Count`, rows at the END of the

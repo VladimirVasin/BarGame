@@ -478,14 +478,14 @@ class WomanBuilder(base.PedestrianBuilder):
         scale=1.10
         def world(p):return tuple(start+q@(Vector(p)*.92*scale))
         self.add("GEO_Palm."+side,base.make_ellipsoid(world((0,0,.035)),tuple(v*scale for v in (.030,.018,.044)),12,7,orientation=q),bone,"skin","body")
-        # Four tapered digits with knuckle bends, thumb opposed around the
-        # canonical grip. They share the hand bone (31-bone runtime contract).
+        # Index, middle, ring and little retain the same identity on both
+        # hands. In the hanging rig -sign*X is the forward thumb edge.
         for i in range(4):
-            x=(i-1.5)*.014
+            x=sign*(i-1.5)*.014
             length=(.042,.053,.049,.037)[i]
             pts=[world((x,0,.058)),world((x,-.002,.073)),world((x,-.011,.073+length*.52)),world((x,-.019,.063+length))]
             self.add("GEO_Finger"+str(i)+"."+side,self.tube_path(pts,tuple(v*scale for v in (.0082,.0081,.007,.0058)),6),bone,"skin","body_detail")
-        thumb=[world((sign*.025,-.002,.017)),world((sign*.043,-.008,.032)),world((sign*.044,-.018,.052)),world((sign*.035,-.023,.065))]
+        thumb=[world((-sign*.025,-.002,.017)),world((-sign*.043,-.008,.032)),world((-sign*.044,-.018,.052)),world((-sign*.035,-.023,.065))]
         self.add("GEO_Thumb."+side,self.tube_path(thumb,tuple(v*scale for v in (.011,.010,.009,.007)),8),bone,"skin","body_detail")
 
     def jeans(self):
@@ -895,7 +895,7 @@ def manifest(result,wardrobe_hash,face_hash):
     return payload
 
 
-def previews(result,sources,wardrobe,faces,pose_only=False):
+def previews(result,sources,wardrobe,faces,pose_only=False,names=None):
     scene=bpy.context.scene;scene.view_settings.view_transform="Standard"
     metrics=resident.measured(result);height_scale=1.63/(metrics["bounds_max"][2]-metrics["bounds_min"][2])
     result.root.scale=(height_scale,)*3;bpy.context.view_layer.update()
@@ -926,9 +926,17 @@ def previews(result,sources,wardrobe,faces,pose_only=False):
             ("NapeCoverage",(1.7,3.8,2.3),(0,.02,1.61),.59,"CanneryWomanIdle",0,0),
             ("Working",(2,-4,2.3),(0,-.1,1),1.98,"CanneryWomanWork",2,24),
             ("CuffCheck",(1.5,-4,2),(0,-.05,1.1),1.8,"CanneryWomanBreak",6,0)):
+        if names is not None and name not in names:continue
         if pose_only:
-            action_pose(result,clip,seconds/next(s for n,s,_ in CLIPS if n==clip))
+            phase=seconds/next(s for n,s,_ in CLIPS if n==clip)
+            action_pose(result,clip,phase)
             if clip=="CanneryWomanWork":resident.solve_grips(result.rig,{side:(sign*.17,-.54,1.02) for side,sign in (("L",1),("R",-1))})
+            elif clip=="CanneryWomanBreak":
+                blend=math.sin(math.pi*max(0,min(1,(phase-.36)/.38)))**2 if .36<phase<.74 else 0
+                if blend:
+                    targets={"L":(.115,-.215,1.03),"R":(.100,-.231,1.088)}
+                    targets={side:result.rig.pose.bones["SOCKET_Grip."+side].head.lerp(Vector(point),blend) for side,point in targets.items()}
+                    resident.solve_grips(result.rig,targets,blend>=.9999)
         else:
             result.rig.animation_data.action=bpy.data.actions[clip];scene.frame_set(round(seconds*FPS));bpy.context.view_layer.update()
         if name=="NapeCoverage":
@@ -955,7 +963,9 @@ def main():
     parser.add_argument("--source-dir",type=Path,default=ROOT/"ArtSource/City/CanneryWoman")
     parser.add_argument("--validate-only",action="store_true");parser.add_argument("--no-preview",action="store_true")
     parser.add_argument("--preview-only",action="store_true",help="Review changed geometry immediately, without republishing FBX/action banks.")
+    parser.add_argument("--preview-names",nargs="+",help="Render only these existing named source views with --preview-only.")
     args=parser.parse_args(sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else [])
+    if args.preview_names and not args.preview_only:parser.error("--preview-names requires --preview-only")
     wardrobe=args.model_dir/"CanneryWomanAtlas.png";faces=args.model_dir/"CanneryWomanFaceAtlas.png"
     # Preview textures belong to the editable source package, so art review
     # can run without rewriting any files Unity may currently be importing.
@@ -973,7 +983,7 @@ def main():
                 data=mesh_clearance(result)
                 if min(data.values())<.001:print("Layer clearance concern",name,sample/8,json.dumps(data),flush=True)
         base.reset_pose(result.rig)
-        previews(result,args.source_dir,wardrobe,faces,pose_only=True)
+        previews(result,args.source_dir,wardrobe,faces,pose_only=True,names=args.preview_names)
         return
     if not args.validate_only:base.export_fbx(args.model_dir/"CanneryWoman.fbx",result)
     actions=make_actions(result)

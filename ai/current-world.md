@@ -1263,34 +1263,35 @@ The vertical slice contains:
   echo `780 ms`/reverb `6.2 s`. Pause/teardown own people/audio/wake.
   Small blueprints without room retain the nonoperational mol;
 - Cannery: `8 x 14 m` hall/`18 x 18 m` lot/bay/public bypass.
-  Side/public + west/staff openings admit hero; machines/glass stay.
+  Side/public + west/staff openings; machines/glass stay.
   `CityCanneryPlan`: ten Blender parts/five maps/port surfaces, fifteen cans/
-  three continuous cartons/four workers/driver. Receiver: unload→two-hand carry→
-  outdoor scales→release/settle/nod→approved support; empty zeroes.
+  three cartons/four workers/driver. `CanneryReceiverActor`: athletic `1.96 m`,
+  Hat/3D glasses/painted face/arm ink/5 clips; free-hand adjustment.
+  Unload→two-hand carry→outdoor scales→release/settle/nod→support; empty=0.
   Three approvals/put-aways/clearance gate loading.
-  Four wait at bench. Driver: cart→bench/personal bread→
-  stow/stand→load; `DriverRest`/`DriverLunch`: shared seat/food/snapshot pause/seek/
-  range/debug/actor/custody. `LifeSeconds` pauses; work time owns walks.
-  Prep wipes/returns cloth; seamer cuff, retort wrist; receiver hands inspection-owned.
-  `CanneryWomanActor`: one outfit, 5 clips/shared contacts;
-  pelvis hem; nape/bend/inertia/wind, skin/sleeve/arm/strand contacts.
-  Body/pose skin cached; conservative groups/pose-checked plane hints, lazy diagnostics.
-  Idle samples once; pause freezes, seek/range reset, palette kept.
-  Hero-face atlas; 16 RU/EN lines, smile `wait.07.b`/`wait.10.b`.
+  `NpcWardrobe`: one outfit each; body/ink/face/hair/glasses kept, UI/save Deferred.
+  Four wait at bench. Snapshot-owned `DriverRest`/`DriverLunch`:
+  cart→bench/bread→stow/stand→load; shared seat/food/pause/seek/range/debug/custody.
+  `LifeSeconds` pauses; work time owns walks.
+  Prep wipes/returns cloth; seamer cuff, retort wrist; inspection owns receiver hands.
+  `CanneryWomanActor`: one outfit/5 clips/shared contacts; pelvis hem,
+  nape/bend/inertia/wind, skin/sleeve/arm/strand contacts; body/pose caches, idle once.
+  Pause freezes, seek/range reset, palette kept. Hero-face atlas/16 RU/EN lines;
+  smile `wait.07.b`/`wait.10.b`.
   `CityCanneryConversationDeck`: `8/10/4` pairs/shared bubbles/free hands/no-repeat;
-  no hero/job/romance, driver↔docker. Fittings/routes clear; fan/tin/crate/latch/
-  pressure follow action/pause/distance/seek.
+  no hero/job/romance, driver↔docker. Fittings/routes clear;
+  local sounds follow action/pause/distance/seek.
   `CityFishSupplyCycle`: FIFO `2x`/inspection/`276 s` transfers, pause/obstacle holds;
   fixed stock, tare Deferred. Truck `6.481 x 2.4 x 3.2 m`, full cab/guided lift
   above ground; central exit→right lane/parking, clear turns, streets `8/6 m`.
-  Six-second access yields to entering/unbrakeable bus through release.
-  Dock-latched unseen truck/driver `3 m/s`, first-crate parking `156 s`, later
-  factory trips. Two soft horns, reverse beeper/ajar door/look-back steering.
-  Cranes never wait/reserve access. First arrival owns store doorway: driver
-  takes accepted stock, docker first makes him wait ("Жду тебя, дружище"); later
-  docker holds north threshold. Only work shifts; idle/speech/waves live,
-  event time restores custody. Signed cart push/pull/turns clear; canopy/north
-  approach clears tare/rear grips, east aisle free. Doors→unfold→lower;
+  Six-second access yields to entering/unbrakeable bus until release.
+  Dock-latched unseen truck/driver `3 m/s`, parking `156 s` with first crate,
+  then factory trips; two soft horns, reverse beeper/ajar door/look-back steering.
+  Cranes never wait/reserve access. First arrival owns store doorway; driver
+  takes accepted stock or waits for docker ("Жду тебя, дружище"); later docker
+  holds north threshold. Only work shifts; idle/speech/waves live,
+  event time restores custody. Cart/canopy/north approach clears tare/rear grips;
+  east aisle free. Doors→unfold→lower;
   cart return reverses. `80/96 m` mesh/light gates retain custody/collision/traffic,
   restore on approach even paused;
 - up to two decorative old fishing vessels spawn only near the actual hero

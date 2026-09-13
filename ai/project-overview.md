@@ -97,12 +97,12 @@ contracts are documented in [../tools/README.md](../tools/README.md).
   Paired city/weather complaints shuffle without repeats; shore breaks use the
   existing canopy. Driver talks only to docker; idle is pause-aware.
   Moving grips, vessel horn/echo and warm shadowed searchlight share the scene.
-  First received crate starts FIFO production at twice authored speed; same cans
-  enter three continuous cartons. Receiver weighs each outside shipping,
-  nods/stores before loading. Seamer: chestnut-haired woman/painted face.
-  Four wait/talk outside, queue through doors. Side doors reach
-  the public aisle, a west staff opening the work aisle. Grips win; pause freezes life. Service fittings/light and local
-  fan/contact/pressure sounds follow activity. Distant meshes sleep while
+  First crate starts FIFO at twice authored speed; same cans fill three cartons.
+  The athletic `1.96 m` receiver wears 3D glasses; he weighs/nods/stores before
+  loading. He and the chestnut-haired seamer have painted faces/own actions.
+  Four wait/talk outside, queue through doors; side doors reach the public aisle,
+  west staff opening the work aisle. Grips win; pause freezes life. Fittings/light
+  and fan/contact/pressure sounds follow activity. Distant meshes sleep while
   production/collision/traffic continue; approach restores without replay.
   Hero observes; shop stock stays. Anchored port/factory voices use local reverb via
   `CityWorkAudio`; the shared Music bus is reduced by `6 dB`.

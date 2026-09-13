@@ -1,15 +1,16 @@
 # Art and native tool entry points
 
-`build-city-cannery-3d-model.py`: ten metre FBXs/manifest in `Assets/Resources/City/Cannery`,
-source `ArtSource/City/Cannery`; port maps, outdoor scales, articulated `CartonStack`.
-Validator: contacts/scale/truck/`.29 m` crew clearance/UVs/determinism.
-`build-cannery-woman-3d-model.py`: `Woman/CanneryWoman{,Actions}.fbx`/JSONs,
-wardrobe/painted-face PNGs; source/review views `ArtSource/City/CanneryWoman`.
-Five clips, hero rig, mesh/atlas hashes, garment/hair clearance across phases:
+`build-city-cannery-3d-model.py`: ten metre FBXs/JSON in `Assets/Resources/City/Cannery`,
+source `ArtSource/City/Cannery`; port maps/outdoor scales/`CartonStack`;
+contacts/scale/truck/`.29 m` ordinary crew clearance/UVs/determinism.
+`build-cannery-{woman,receiver}-3d-model.py`: `Woman/CanneryWoman{,Actions}` and
+`Receiver/CanneryReceiver{,Actions}` FBX/JSONs, wardrobe/painted-face PNGs;
+source/reviews `ArtSource/City/Cannery{Woman,Receiver}`. Five clips/shared rig,
+mesh/atlas hashes, layered clothes; woman hair/receiver glasses contacts.
+Use the same validator call for each generator:
 
 ```powershell
-python tools/run-blender.py tools/build-city-cannery-3d-model.py --validate-only -- --validate-only
-python tools/run-blender.py tools/build-cannery-woman-3d-model.py --validate-only -- --validate-only
+python tools/run-blender.py tools/build-cannery-receiver-3d-model.py --validate-only -- --validate-only
 ```
 
 `build-city-port-3d-model.py`: same launcher/`--validate-only`, nine FBXs/`CityPort3D.json` in

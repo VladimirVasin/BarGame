@@ -40,8 +40,8 @@ namespace BarPromenade
             workerFabricTexture = fabric.GetTexture("_BaseMap");
             for (int i = 0; i < workers.Length; i++)
             {
-                // Her authored coloured atlas survives enable/disable untouched.
-                if (i == CanneryWomanPresentation.WorkerSlot)
+                // Authored outfits retain their own atlas across distance disable/enable.
+                if (i == CanneryWomanPresentation.WorkerSlot || i == CanneryReceiverPresentation.WorkerSlot)
                 {
                     workerClothes[i] = Array.Empty<Renderer>();
                     workerClothingColors[i] = Array.Empty<Color>();

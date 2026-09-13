@@ -2,7 +2,7 @@ using System;
 
 namespace BarPromenade
 {
-    public enum SpeechFaceProfile { Hero, Foreman, CanneryWoman }
+    public enum SpeechFaceProfile { Hero, Foreman, CanneryWoman, CanneryReceiver }
     public enum SpeechMouthPose { Closed = 0, Narrow = 1, Open = 2, Round = 3, Wide = 4, Teeth = 5 }
     public enum SpeechFaceExpression { Rest = 0, HalfBlink = 1, Blink = 2, Emphasis = 3, Skeptical = 4 }
 
@@ -119,6 +119,9 @@ namespace BarPromenade
             if (profile == SpeechFaceProfile.CanneryWoman)
                 return Phase(sample.ElapsedSeconds, 2.3d) < .48d
                     ? SpeechFaceExpression.Emphasis : SpeechFaceExpression.Rest;
+            if (profile == SpeechFaceProfile.CanneryReceiver)
+                return Phase(sample.ElapsedSeconds, 2.6d) < .8d
+                    ? SpeechFaceExpression.Skeptical : SpeechFaceExpression.Rest;
             int current = sample.RevealedCharacters - 1;
             int phrase = 0;
             for (int index = 0; index < current; index++)
@@ -148,7 +151,8 @@ namespace BarPromenade
         private static SpeechFaceExpression ResolveBlink(SpeechFaceProfile profile, double seconds)
         {
             double phase = Phase(seconds + (profile == SpeechFaceProfile.Hero ? .43d : 1.27d),
-                profile == SpeechFaceProfile.CanneryWoman ? 4.65d : profile == SpeechFaceProfile.Hero ? 4.1d : 3.55d);
+                profile == SpeechFaceProfile.CanneryWoman ? 4.65d : profile == SpeechFaceProfile.CanneryReceiver ? 5.2d :
+                profile == SpeechFaceProfile.Hero ? 4.1d : 3.55d);
             if (phase < .055d || phase >= .14d && phase < .205d) return SpeechFaceExpression.HalfBlink;
             return phase < .14d ? SpeechFaceExpression.Blink : SpeechFaceExpression.Rest;
         }

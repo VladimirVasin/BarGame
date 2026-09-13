@@ -19,10 +19,13 @@ namespace BarPromenade
         private Transform receivingNeedle, preparationCloth;
         private Quaternion receivingNeedleRest, preparationClothRest;
         private Vector3 preparationClothDock;
+        private readonly Quaternion[] receiverHandFrames = new Quaternion[2];
+        private Transform receiverGlassesFinger;
         public double LifeSeconds { get; private set; }
         public CityCanneryConversationController FactoryConversation { get; private set; }
         public float ReceivingScaleWeight => ShippingScaleWeight;
         public bool PreparationClothInContact { get; private set; }
+        public Vector3 ReceiverGlassesHandContact => receiverGlassesFinger != null ? receiverGlassesFinger.position : Vector3.zero;
 
         public VillageResidentPresentation GetFactoryWorker(int index) =>
             index >= 0 && index < 4 && workers != null ? workers[index] : null;
@@ -43,13 +46,12 @@ namespace BarPromenade
             if (factorySecondaryWeight[index] > .001f) return 0d;
             if (factoryWaitingOutside[index])
             {
-                double nextEntry = FactoryShiftEntryTime(index);
-                if (WorkingSeconds >= nextEntry)
-                    nextEntry = Cycle.StageStart(CityFishSupplyStage.UnloadFish, Snapshot.Batch + 1) + EntryDelay(index);
-                return Math.Max(0d, nextEntry - WorkingSeconds);
+                double untilEntry = FactoryNextEntryTime(index) - WorkingSeconds;
+                if (index == CanneryReceiverPresentation.WorkerSlot)
+                    untilEntry = Math.Min(untilEntry, SecondsUntilLifeAction(index));
+                return Math.Max(0d, untilEntry);
             }
-            float phase = LifePhase(index);
-            double untilAction = phase >= 9f ? LifePeriods[index] - phase : 0d;
+            double untilAction = SecondsUntilLifeAction(index);
             return Math.Max(0d, Math.Min(untilAction, FactoryDutyDistance(index, futureOnly: true) - 2d));
         }
 
@@ -68,6 +70,19 @@ namespace BarPromenade
             for (int role = 0; role < 4; role++)
                 for (int bone = 0; bone < WorkPoseBones.Length; bone++)
                     factoryPoseBones[role, bone] = Require(workers[role].ModelRoot, WorkPoseBones[bone]);
+            receiverGlassesFinger = Require(workers[0].ModelRoot, "ANCHOR_GlassesFinger");
+            for (int side = 0; side < 2; side++)
+            {
+                Transform hand = factoryPoseBones[0, side == 0 ? 10 : 7];
+                string suffix = side == 0 ? ".R" : ".L";
+                // Read the authored hand anatomy. The actor's facing does not
+                // describe the palm normal, even in the relaxed pose.
+                Transform fingerAxis = Require(workers[0].ModelRoot, "ANCHOR_HandFingers" + suffix);
+                Transform palmAxis = Require(workers[0].ModelRoot, "ANCHOR_HandPalm" + suffix);
+                Vector3 fingers = hand.InverseTransformDirection(fingerAxis.position - hand.position).normalized;
+                Vector3 palm = Vector3.ProjectOnPlane(hand.InverseTransformDirection(palmAxis.position - hand.position), fingers).normalized;
+                receiverHandFrames[side] = Quaternion.LookRotation(fingers, palm);
+            }
             factoryRestDocks[0] = Anchor("ReceiverRestWorker");
             factoryRestDocks[1] = Anchor("PreparationTidyWorker");
             factoryRestDocks[2] = Anchor("SeamerRestWorker");
@@ -92,6 +107,67 @@ namespace BarPromenade
         }
 
         private float LifePhase(int index) => (float)((LifeSeconds + LifeOffsets[index]) % LifePeriods[index]);
+
+        private double FactoryNextEntryTime(int role)
+        {
+            double next = FactoryShiftEntryTime(role);
+            return WorkingSeconds < next ? next :
+                Cycle.StageStart(CityFishSupplyStage.UnloadFish, Snapshot.Batch + 1) + EntryDelay(role);
+        }
+
+        private double SecondsUntilLifeAction(int role)
+        {
+            float phase = LifePhase(role);
+            return phase >= 9f ? LifePeriods[role] - phase : 0d;
+        }
+
+        private void ApplyReceiverOutsideRest()
+        {
+            const int role = CanneryReceiverPresentation.WorkerSlot;
+            float available = Ease((float)(FactoryNextEntryTime(role) - WorkingSeconds) / 2f);
+            float phase = LifePhase(role);
+            factorySecondaryWeight[role] = CrewWorkWindow(phase, 0f, 9f, 1.7f) * available;
+            ApplyReceiverGlassesTask(workers[role], CrewWorkWindow(phase, 2.3f, 6.7f, .9f) * available);
+        }
+
+        private void ApplyReceiverGlassesTask(VillageResidentPresentation actor, float weight)
+        {
+            if (Receiver == null || weight <= 0f) return;
+            // Sample after the head turn. The existing life window reserves
+            // approach/contact/return against speech and the next shift entry.
+            Vector3 bridge = Receiver.GlassesRoot.position + actor.transform.forward * .012f;
+            Transform upper = factoryPoseBones[0, 8], forearm = factoryPoseBones[0, 9], hand = factoryPoseBones[0, 10];
+            Quaternion grasp = Quaternion.LookRotation(actor.transform.up - actor.transform.right * .15f,
+                -actor.transform.forward) * Quaternion.Inverse(receiverHandFrames[0]);
+            Vector3 fingertip = Quaternion.Inverse(hand.rotation) * (receiverGlassesFinger.position - hand.position);
+            Vector3 wrist = bridge - grasp * fingertip;
+            // The load-carrying pole spreads elbows sideways. A face touch
+            // keeps this elbow below the wrist and uses the actual fingertip.
+            Vector3 elbow = upper.position + actor.transform.right * .18f - actor.transform.up * .48f + actor.transform.forward * .10f;
+            LimbTwoBoneIk.Solve(upper, forearm, hand, wrist, grasp, elbow, weight, .995f, true);
+            if (weight >= .999f && Vector3.Distance(receiverGlassesFinger.position, bridge) > .015f)
+            {
+                WorkerHandsMatch = false;
+                LastCrewContactFailure = actor.name + ": glasses fingertip missed frame.";
+            }
+        }
+
+        private void OrientReceiverCartonHands(float weight)
+        {
+            // Fingers follow the carton edge instead of hanging into the
+            // packing table; the ordinary shared solver still owns both grips.
+            // Keep the larger fingers level until the withdrawing hands clear
+            // the scale platform, then relax the wrists near the body.
+            float turn = Ease(weight * 2f);
+            Transform actor = workers[0].transform;
+            for (int side = 0; side < 2; side++)
+            {
+                Transform hand = factoryPoseBones[0, side == 0 ? 10 : 7];
+                Quaternion grasp = Quaternion.LookRotation(actor.forward, actor.right * (side == 0 ? -1f : 1f)) *
+                    Quaternion.Inverse(receiverHandFrames[side]);
+                hand.rotation = Quaternion.Slerp(hand.rotation, grasp, turn);
+            }
+        }
 
         private double FactoryDutyDistance(int role, bool futureOnly = false)
         {
@@ -221,6 +297,7 @@ namespace BarPromenade
                 look = Vector3.Lerp(look, left, task);
             }
             ApplyCrewLook(actor, look, .55f + .25f * task);
+            if (role == CanneryReceiverPresentation.WorkerSlot) ApplyReceiverGlassesTask(actor, task);
         }
 
         private void BlendFactoryWorkPose(int role, float weight)

@@ -9,7 +9,7 @@
   "mesh_count": 55,
   "triangle_count": 8000,
   "bounds_min": [
-    -0.717035,
+    -0.716296,
     -0.204,
     0.0
   ],
@@ -1538,7 +1538,7 @@
       "triangles": 44
     }
   ],
-  "geometry_signature": "396660b150b672152e3ad7e0850a835182cf7acb0c766cfc9f037550302ac93d",
+  "geometry_signature": "777d15b4ad8019fed1bcc080ad4468d269079bb7bfbdcf66d79648249fc8a8a3",
   "outfit": {
     "id": "cannery_workwear",
     "atlas": "CanneryWomanAtlas.png",
@@ -1630,5 +1630,5 @@
       }
     ]
   },
-  "signature": "194617cb1d8adfaaa31b434f5ccbd95723b4b1c3239af69aff8157e0d49470ae"
+  "signature": "cfe93e80f11247f7768b5fa02fb4acea5a88798578a64390c3f91c73b12e1480"
 }

@@ -47,6 +47,7 @@ namespace BarPromenade.Editor
             RegisterGenerated("City buildings", CityBuildingAssetSetup.ValidateOrThrow, "CityBuildingAssetSetup");
             RegisterGenerated("City misc", CityMiscAssetSetup.ValidateOrThrow, "CityMiscAssetSetup");
             RegisterGenerated("Cannery woman", CanneryWomanAssetSetup.ValidateOrThrow, "CanneryWomanAssetSetup");
+            RegisterGenerated("Cannery receiver", CanneryReceiverAssetSetup.ValidateOrThrow, "CanneryReceiverAssetSetup");
             Register("Working fishing port", CityPortAssetSetup.ValidateOrThrow,
                 "Run tools/build-city-port-3d-model.py through tools/run-blender.py, then import Assets/Resources/City/Port.");
             RegisterGenerated("Church", ChurchAssetSetup.ValidateOrThrow, "ChurchAssetSetup");

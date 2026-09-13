@@ -4,10 +4,25 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
+- **Accepted — 2026-09-13, cannery receiver:**
+  Slot `0`, art §8/story §18: own rig/Avatar/five clips, painted face/3D glasses;
+  shared motion/speech/lifecycle. `work.06.b`/`wait.06.b` cause a smirk;
+  wait/rest reserve the free hand against speech/entry for glasses adjustment.
+  Direct goods-door paths; `LimbTwoBoneIk` fits glasses fingertip/ramp soles.
+  Both NPCs' hands corrected; finger/palm geometry drives hand frames
+  to carton edges before contact stance.
+  Role/logistics/channel and factory geometry/collision stay.
+
+- **Accepted — 2026-09-13, shared NPC wardrobe:**
+  `NpcWardrobe.Configure` validates before garment replacement; invalid input
+  preserves the outfit. Thin `CanneryWomanWardrobe` keeps serialized bindings.
+  Body/skin ink/face/hair/glasses independent; one outfit each. Receiver's
+  `cannery_receiver_workwear` includes headwear; extra outfits/UI/save Deferred.
+
 - **Accepted architecture exception — 2026-09-13, seamer:**
   User: SAME §11 woman alive (§6/§16.10); §3 outcome stays, §25 open.
   No romance/hero interaction. Art §8; hero-style sprite face. `cannery_workwear`:
-  garment slots; identity kept. Extra outfits/switch/story/save Deferred.
+  garment slots; identity kept. Extra outfits/UI/story/save Deferred.
 
 - **Accepted — 2026-09-12, cannery driver's lunch:**
   `DriverRest`/`DriverLunch`: same driver/yard bench.
@@ -1445,12 +1460,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   emitted only by designs that declare them, so the other thirteen city
   signatures are byte-identical.
 - **Accepted — NpcHumanV2 is the common adult anatomical substrate:** all
-  `27` rigged humanoid NPC model designs on disk copy the production Hero V2
-  31-bone A-pose Avatar and use its `0.835 m` rest pelvis. The active humanoid
+  `27` registry humanoid designs copy the Hero V2 31-bone A-pose Avatar/
+  `0.835 m` rest pelvis; cannery woman/receiver retain body
+  bone/socket names with their own measured rest anatomy/Generic Avatar. The active humanoid
   cast does not grow: the ordinary bartender and cashier each replace a
   retained inactive predecessor one for one. Ordinary silhouettes target
-  roughly `7–7.5` heads and `2.3–2.5` head-width shoulders without increasing
-  polygon density. The Long-Arm figure, kettle head and hopper feet remain
+  roughly `7–7.5` heads and `2.3–2.5` head-width shoulders. The Long-Arm figure, kettle head and hopper feet remain
   authored overlays on that substrate; six bartender arms and the Watcher's
   long neck are retained asset history, not active-world overlays.
   Amended 2026-08-31 by explicit user request: the three arch-shelter residents
@@ -1465,31 +1480,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   breathing blanket replaces it. The
   legacy static residents remain in the City-misc catalog only for
   compatibility and are never instantiated.
-  Amended 2026-09-04 by explicit user request, which overturns the
-  "without increasing polygon density" clause above for seven designs: the
-  measured standard for an ordinary adult is now Hero V2's anatomy, not its
-  bone list alone. At that decision the hero had `1,984` triangles and the mountain-cafe four
-  were the only NPCs built to the same body; the rest carried a
-  twelve-triangle tapered box for the whole trunk, another for the pelvis
-  and a third for each hand, with no ears and no separately drawn thigh.
-  The six designs that actually roam the city (`pool_eligible=True`) were
-  the six lowest-density humanoids in the project at `928–1,260`. So a
-  shared `PedestrianBuilder.build_ordinary_adult_body` now draws the
-  shelled chest/waist/seat, ellipsoid hands with a thumb, ears, profiled
-  limbs and an angular boot for `yard_babushka`, `weigh_attendant`,
+  User decision `2026-09-04`: ordinary adults match Hero V2 anatomy, beyond
+  bone names. `PedestrianBuilder.build_ordinary_adult_body` supplies shelled
+  chest/waist/seat, ellipsoid hands/thumb, ears, profiled limbs/angular boots
+  for `yard_babushka`, `weigh_attendant`,
   `cemetery_mourner`, `cemetery_watchman`, `park_chess_player`,
   `park_checkers_player` and `last_route_ferryman`, taking them to
-  `1,836–2,384`. Their `triangle_budget` floors rise from `900` to `1,800`
-  in both `ARCHETYPES` and the seven `PedestrianDescriptor`s, which is what
-  makes the density a contract rather than a one-time pass: a return to box
-  torsos now fails the Blender build and the Unity import alike. The
-  substrate deliberately does not draw footwear contact, headwear, faces or
-  props, and does not add `GEO_FaceSurface`, because that part is an atlas
-  carrier and none of the seven declares a `texture_atlas`; their faces stay
-  the authored `ACC_` features. Two companion helpers exist because a detail
-  authored flush on a flat box front stands off a round trunk like a shelf:
-  `make_trunk_band` rings the shell for quilt seams and hems, and
-  `make_trunk_patch` curves pockets, lapels, aprons and scarf tails onto it.
+  `1,836–2,384`. Their `triangle_budget` floors are `1,800` in `ARCHETYPES` and
+  all seven `PedestrianDescriptor`s; box torsos fail Blender and Unity alike. The
+  substrate excludes footwear contact/headwear/faces/props and `GEO_FaceSurface`:
+  none of these seven declares `texture_atlas`, so authored `ACC_` faces stay.
+  `make_trunk_band` rings the shell for quilt seams/hems; `make_trunk_patch`
+  curves pockets/lapels/aprons/scarf tails to the trunk instead of floating
+  flat details above it.
   `GENERATOR_VERSION` deliberately stayed `4.5.2`, so the fifteen untouched
   city signatures are byte-identical. Cost on the street is roughly
   `+7,000` triangles across the whole roaming pool. The Lake Fisherman is

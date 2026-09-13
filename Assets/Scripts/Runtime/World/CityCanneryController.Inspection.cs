@@ -15,8 +15,11 @@ namespace BarPromenade
         private readonly Vector3[][] inspectionReadyRoutes = new Vector3[CityFishSupplyCycle.HandlingUnits][];
         private readonly Vector3[][] inspectionClearRoutes = new Vector3[CityFishSupplyCycle.HandlingUnits][];
         private const float ShippingPalletHeight = .172f;
-        private const float InspectionCarryHeight = 1.08f;
-        private const float InspectionCarryReach = .40f;
+        private const float InspectionCarryHeight = 1.14f;
+        private const float InspectionCarryReach = .49f;
+        // The longer planted stance keeps a crouched knee beyond the real
+        // platform edge (x=1.645), while the shared solver reaches its carton.
+        private Vector3 InspectionScaleWorker => Anchor("WeighingWorker") + Plan.Right * .28f;
 
         public Transform FinishedBox(int index) => cases[index];
         public Vector3 ShippingScaleLoadPosition => Anchor("WeighingLoad");
@@ -33,17 +36,19 @@ namespace BarPromenade
             Vector3 west = P(-7.18f, 5f), north = P(-7.18f, 5.95f);
             Vector3 aisle = P(-2.8f, 5.95f), bend = P(-2.8f, 5f);
             Vector3 door = Anchor("FinishedDoor"), outsideDoor = P(2f, 5f, true);
-            inspectionInitialRoute = new[] { Anchor("Receiver"), P(-3.4f, -6.55f),
-                P(-2.55f, -6.55f), P(-2.55f, -5.5f), Anchor("RawDoor"),
+            // The former indoor scale no longer occupies this receiving bay.
+            // Cross the open partition gate before turning, instead of
+            // squeezing broad shoulders along the south wall and its return.
+            inspectionInitialRoute = new[] { Anchor("Receiver"), P(-3.4f, -5.5f), Anchor("RawDoor"),
                 P(2f, -5.5f, true), outsideDoor, door, bend, aisle, north, west, pickup };
             inspectionRepeatRoute = new[] { rest, outsideDoor, door, bend, aisle, north, west, pickup };
-            inspectionScaleRoute = new[] { pickup, west, north, aisle, bend, door, outsideDoor, Anchor("WeighingWorker") };
+            inspectionScaleRoute = new[] { pickup, west, north, aisle, bend, door, outsideDoor, InspectionScaleWorker };
             double readyDuration = 0d, clearDuration = 0d;
             for (int i = 0; i < cases.Length; i++)
             {
                 Vector3 target = Anchor("ApprovedWorker" + i);
                 Vector3 along = P(2f, Plan.Local(target).z, true);
-                inspectionReadyRoutes[i] = new[] { Anchor("WeighingWorker"), outsideDoor, along, target };
+                inspectionReadyRoutes[i] = new[] { InspectionScaleWorker, outsideDoor, along, target };
                 inspectionClearRoutes[i] = new[] { target, along, rest };
                 readyDuration = Math.Max(readyDuration, InspectionWalkDuration(inspectionReadyRoutes[i]));
                 clearDuration = Math.Max(clearDuration, InspectionWalkDuration(inspectionClearRoutes[i]));
@@ -117,11 +122,12 @@ namespace BarPromenade
                 Vector3 point = actor.transform.position;
                 point.y = InspectionGroundHeight(point);
                 actor.transform.position = point;
+                FitReceiverGoodsRampFeet(actor);
             }
             else
             {
                 Vector3 point = stage == CityCanneryInspectionStage.Pickup ? Anchor("BoxPickupWorker")
-                    : stage == CityCanneryInspectionStage.PutAway ? Anchor("ApprovedWorker" + unit) : Anchor("WeighingWorker");
+                    : stage == CityCanneryInspectionStage.PutAway ? Anchor("ApprovedWorker" + unit) : InspectionScaleWorker;
                 StandWorker(actor, point, stage == CityCanneryInspectionStage.Pickup ? Plan.Right : -Plan.Right,
                     stage == CityCanneryInspectionStage.Pickup ? Anchor("PackingBox") : Anchor("WeighingDial"));
             }
@@ -167,6 +173,7 @@ namespace BarPromenade
             // solver owns the actual contacts, just as it does at the machines.
             if (hands > 0f)
             {
+                if (!walk) BlendFactoryWorkPose(CanneryReceiverPresentation.WorkerSlot, hands);
                 workerSpines[0].rotation = Quaternion.AngleAxis(lean, actor.transform.right) * workerSpines[0].rotation;
                 InspectionRightHandTarget = cartonRightGrips[unit].position;
                 InspectionLeftHandTarget = cartonLeftGrips[unit].position;
@@ -178,6 +185,7 @@ namespace BarPromenade
                     InspectionRightHandTarget = InspectionLeftHandTarget;
                     InspectionLeftHandTarget = swap;
                 }
+                OrientReceiverCartonHands(hands);
                 FitCrewContactStance(actor, 0, InspectionRightHandTarget, InspectionLeftHandTarget, hands);
                 ApplyCrewContacts(actor, InspectionRightHandTarget, InspectionLeftHandTarget, hands);
                 InspectionBoxInHands = hands >= .999f;
@@ -219,6 +227,34 @@ namespace BarPromenade
                 return Plan.Origin.y + Mathf.Lerp(CityCanneryPlan.FloorTop, CityCanneryPlan.YardTop,
                     Mathf.Clamp01(local.x / 1.5f));
             return HandlingGroundHeight(point);
+        }
+
+        private void FitReceiverGoodsRampFeet(VillageResidentPresentation actor)
+        {
+            // Route segments carry endpoint elevations; their chord must not
+            // pitch the whole person. The two soles fit the actual 1:15 plane
+            // independently, preserving the authored swing height and stride.
+            Vector3 heading = Vector3.ProjectOnPlane(actor.transform.forward, Vector3.up);
+            if (heading.sqrMagnitude > .0001f) actor.transform.rotation = Quaternion.LookRotation(heading, Vector3.up);
+            Vector3 local = Plan.Local(actor.transform.position);
+            if (local.x < -.5f || local.x > 2f ||
+                Mathf.Abs(local.z + 5.5f) > 1.2f && Mathf.Abs(local.z - 5f) > 1.3f) return;
+            for (int side = 0; side < 2; side++)
+            {
+                Transform thigh = factoryPoseBones[0, 11 + side * 3];
+                Transform shin = factoryPoseBones[0, 12 + side * 3];
+                Transform foot = factoryPoseBones[0, 13 + side * 3];
+                Vector3 groundPoint = new Vector3(foot.position.x, actor.transform.position.y, foot.position.z);
+                Vector3 footLocal = Plan.Local(groundPoint);
+                float slope = Ease((footLocal.x + .3f) / .3f) * Ease((1.8f - footLocal.x) / .3f);
+                if (slope <= 0f) continue;
+                Quaternion tilt = Quaternion.FromToRotation(Vector3.up, (Vector3.up + Plan.Right * (slope / 15f)).normalized);
+                Vector3 ankleAboveGround = foot.position - groundPoint;
+                groundPoint.y = InspectionGroundHeight(groundPoint) + .0015f * slope;
+                Vector3 target = groundPoint + tilt * ankleAboveGround;
+                LimbTwoBoneIk.Solve(thigh, shin, foot, target, tilt * foot.rotation,
+                    shin.position + actor.transform.forward * .05f, 1f, 1f, true);
+            }
         }
     }
 }

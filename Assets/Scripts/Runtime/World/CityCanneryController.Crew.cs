@@ -7,6 +7,7 @@ namespace BarPromenade
     {
         private VillageResidentPresentation[] workers;
         public CanneryWomanPresentation Woman { get; private set; }
+        public CanneryReceiverPresentation Receiver { get; private set; }
         private Transform driverPelvis, driverSeat, driverLeftHand, driverRightHand, driverFoot;
         private Transform driverDoor, driverExit, driverRearWalk, trolleyLeftHand, trolleyRightHand;
         private Transform driverSteeringShoulder, driverMouth;
@@ -36,12 +37,14 @@ namespace BarPromenade
             for (int i = 0; i < workers.Length; i++)
             {
                 workers[i] = i == CanneryWomanPresentation.WorkerSlot ? CanneryWomanAssetProvider.Create(transform) :
+                    i == CanneryReceiverPresentation.WorkerSlot ? CanneryReceiverAssetProvider.Create(transform) :
                     library.Create(VillageResidentRole.StationWorker, transform);
                 workers[i].name = names[i];
                 if (i == 4) CityPortCrew.AlignWorkerModelWithPlacement(workers[i]);
                 workerSpines[i] = Require(workers[i].ModelRoot, "spine");
             }
             Woman = workers[CanneryWomanPresentation.WorkerSlot].GetComponent<CanneryWomanPresentation>();
+            Receiver = workers[CanneryReceiverPresentation.WorkerSlot].GetComponent<CanneryReceiverPresentation>();
             driverPelvis = Require(workers[4].ModelRoot, "pelvis");
             driverSteeringShoulder = Require(workers[4].ModelRoot, "upper_arm.R");
             driverMouth = Require(workers[4].ModelRoot, CityPedestrianHandProps.MouthSocketName);
@@ -127,6 +130,8 @@ namespace BarPromenade
                 if (workers[i].gameObject.activeSelf && workerAppearanceDirty[i]) ApplyCrewAppearance(i);
             ApplyDriverConversation();
             FactoryConversation?.ApplyCrewPose();
+            if (Receiver != null && Receiver.gameObject.activeInHierarchy)
+                Receiver.ApplyFaceAt(LifeSeconds, FactoryConversation?.Bubbles);
             if (Woman != null && Woman.gameObject.activeInHierarchy)
             {
                 Woman.ApplyFaceAt(LifeSeconds, FactoryConversation?.Bubbles);
@@ -460,7 +465,7 @@ namespace BarPromenade
         {
             actor.transform.SetPositionAndRotation(point, Quaternion.LookRotation(forward, Vector3.up));
             int role = Array.IndexOf(workers, actor);
-            if (role == CanneryWomanPresentation.WorkerSlot)
+            if (role == CanneryWomanPresentation.WorkerSlot || role == CanneryReceiverPresentation.WorkerSlot)
                 actor.ApplyIdleVariation((float)(LifeSeconds % 120d), factoryWaitingOutside[role],
                     FactoryConversation != null ? 1f - FactoryConversation.WaitingLookWeight(role) : 0f);
             else actor.Apply(VillageResidentAction.Idle, (float)((LifeSeconds + role * 7.37d) % 120d));

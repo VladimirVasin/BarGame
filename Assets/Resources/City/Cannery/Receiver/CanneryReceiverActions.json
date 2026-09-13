@@ -1,0 +1,52 @@
+{
+  "generator": "build-cannery-receiver-3d-model.py",
+  "version": "1.1.0",
+  "bone_count": 31,
+  "fps": 24,
+  "root_motion": false,
+  "clips": [
+    {
+      "name": "CanneryReceiverIdle",
+      "duration_seconds": 8.0,
+      "loop": true
+    },
+    {
+      "name": "CanneryReceiverWalk",
+      "duration_seconds": 1.5,
+      "loop": true
+    },
+    {
+      "name": "CanneryReceiverWork",
+      "duration_seconds": 6.0,
+      "loop": true
+    },
+    {
+      "name": "CanneryReceiverListen",
+      "duration_seconds": 5.0,
+      "loop": true
+    },
+    {
+      "name": "CanneryReceiverBreak",
+      "duration_seconds": 11.0,
+      "loop": true
+    }
+  ],
+  "work_grips_unity": {
+    "L": [
+      0.23,
+      1.15,
+      0.56
+    ],
+    "R": [
+      -0.23,
+      1.15,
+      0.56
+    ]
+  },
+  "validation": {
+    "max_ground_error_m": 3e-07,
+    "max_grip_error_m": 3e-07,
+    "max_loop_endpoint_error": 0.0,
+    "curve_signature": "29bfd1fce2f90f226457fa085c82f46c960cb8e2f41c0c400d3cd1f71b69860a"
+  }
+}

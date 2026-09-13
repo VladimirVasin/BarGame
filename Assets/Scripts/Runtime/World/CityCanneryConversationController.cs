@@ -186,6 +186,7 @@ namespace BarPromenade
             activeRole = LastSpeakerRole = role;
             LastLineKey = key;
             factory.Woman?.ObserveReply(key, now, LineDuration(key));
+            factory.Receiver?.ObserveReply(role, key, now, LineDuration(key));
             return true;
         }
 
@@ -219,7 +220,8 @@ namespace BarPromenade
                     Vector3 direction = Vector3.ProjectOnPlane(workers[partner].Head.position - actor.Head.position, actor.transform.up);
                     desired = Mathf.Clamp(Vector3.SignedAngle(actor.transform.forward, direction, actor.transform.up), -55f, 55f);
                 }
-                bodyYaw[role] = Mathf.MoveTowards(bodyYaw[role], free ? desired * .45f : 0f, dt * 40f);
+                bool receiver = role == CanneryReceiverPresentation.WorkerSlot;
+                bodyYaw[role] = Mathf.MoveTowards(bodyYaw[role], free ? desired * .45f : 0f, dt * (receiver ? 23f : 40f));
                 // A newly needed tool wins immediately; only a free worker turns his shoulders.
                 if (free && spines[role] != null)
                     spines[role].rotation = Quaternion.AngleAxis(bodyYaw[role], actor.transform.up) * spines[role].rotation;
@@ -229,10 +231,10 @@ namespace BarPromenade
                 gesture[role] = Mathf.MoveTowards(gesture[role], free && speaking ? 1f : 0f, dt * 3f);
                 if (!free || gesture[role] <= 0f) continue;
                 float time = (float)(now % 60d) + role;
-                Vector3 target = actor.transform.position + actor.transform.up * (1.06f + .03f * Mathf.Sin(time * 2.4f)) +
-                    actor.transform.right * (.25f + .035f * Mathf.Sin(time * 1.7f)) + actor.transform.forward * .22f;
+                Vector3 target = actor.transform.position + actor.transform.up * ((receiver ? 1.27f : 1.06f) + .03f * Mathf.Sin(time * 2.4f)) +
+                    actor.transform.right * ((receiver ? .34f : .25f) + .035f * Mathf.Sin(time * 1.7f)) + actor.transform.forward * (receiver ? .35f : .22f);
                 actor.ApplyHandContacts(target, null, gesture[role] *
-                    (role == CanneryWomanPresentation.WorkerSlot ? .34f : .7f));
+                    (role == CanneryWomanPresentation.WorkerSlot ? .34f : receiver ? .5f : .7f));
             }
         }
 
@@ -240,6 +242,7 @@ namespace BarPromenade
         {
             bubbles?.DismissAll();
             factory?.Woman?.ResetSocialFace();
+            factory?.Receiver?.ResetSocialFace();
             hasExchange = replyPending = replyStarted = false;
             activeRole = -1;
         }
@@ -250,6 +253,7 @@ namespace BarPromenade
             Array.Clear(bodyYaw, 0, bodyYaw.Length);
             Array.Clear(gesture, 0, gesture.Length);
             factory?.Woman?.ResetSocialFace();
+            factory?.Receiver?.ResetSocialFace();
         }
 
         private void ResetContinuity()

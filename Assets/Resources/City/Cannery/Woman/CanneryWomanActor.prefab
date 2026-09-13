@@ -129403,7 +129403,7 @@ MonoBehaviour:
     Radius: 0.05856244
   - From: {fileID: 81308766780512446}
     To: {fileID: 4259544023210759489}
-    Radius: 0.058562655
+    Radius: 0.058562644
   head: {fileID: 6499850065277403072}
   joints:
   - {fileID: 54944662099672738}
