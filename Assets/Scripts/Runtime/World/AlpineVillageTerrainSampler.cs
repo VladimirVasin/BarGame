@@ -551,16 +551,17 @@ namespace BarPromenade
             }
 
             // The swale cannot reach past `support`, and `support` cannot be
-            // more than the widest half-width plus its two constants, so a
-            // point farther than that from every segment comes back with
-            // `height` untouched - the `nearestDistance >= support` return
-            // below, taken before the scan instead of after it. This is the
-            // whole village's ground except the strip along the water.
+            // more than the widest half-width plus the cut cell and the
+            // widest bank, so a point farther than that from every segment
+            // comes back with `height` untouched - the `nearestDistance >=
+            // support` return below, taken before the scan instead of after
+            // it. This is the whole village's ground except the strip along
+            // the water.
             AlpineVillagePolylineIndex index = brook.NearestIndex;
             if (index.FartherThan(
                     point,
                     brook.MaximumHalfWidth + BrookTerrainCell +
-                    BrookBankBlendWidth + BrookReachMargin))
+                    BrookBankMaximumBlendWidth + BrookReachMargin))
             {
                 return height;
             }
@@ -641,8 +642,7 @@ namespace BarPromenade
             // One refined cell keeps interpolation at the water
             // edge below the bed skin instead of borrowing dry bank height.
             float cutEdge = halfWidth + BrookTerrainCell;
-            float support = cutEdge + BrookBankBlendWidth;
-            if (nearestDistance >= support)
+            if (nearestDistance >= cutEdge + BrookBankMaximumBlendWidth)
             {
                 return height;
             }
@@ -653,12 +653,56 @@ namespace BarPromenade
                 SmoothRange(0f, halfWidth, nearestDistance));
             float ceiling = surface - depth - SampleRidgeRise(plan, point);
             float weight = 1f - SmoothRange(
-                cutEdge, support, nearestDistance);
-            return Mathf.Lerp(height, Mathf.Min(height, ceiling), weight);
+                cutEdge, cutEdge + BrookBankBlendWidth, nearestDistance);
+            float banked = Mathf.Lerp(
+                height, Mathf.Min(height, ceiling), weight);
+
+            // THE BANK IS A SLOPE HE CAN CLIMB, however high the dry ground
+            // stands over the water. The surface is a running minimum of the
+            // ground along the trace and the macro ground undulates, so
+            // where the trace crosses a crest the blend above owes more than
+            // its 0.35 m can return under the hero's slope limit: 0.30 m
+            // over 0.35 m is a 47 degree wall he slides back down. So the
+            // ground may not rise out of the cut faster than
+            // `BrookBankMaximumGrade`: a cone opening from the cut's ceiling
+            // caps whatever the blend returns until the ground itself falls
+            // under it. A minimum never steepens anything - a span of it
+            // rises at most as fast as the steeper of the two surfaces it
+            // picks from - and where the blend was already gentle (a climb
+            // under 0.175 m) it lies under the cone everywhere, so the
+            // ground there is bit for bit what it was. Widening the blend itself
+            // was tried first and made the bank steeper: a width that varies
+            // with the climb at each point is no longer one smooth step.
+            float cone = ceiling + BrookBankMaximumGrade *
+                Mathf.Max(0f, nearestDistance - cutEdge);
+            return Mathf.Min(banked, cone);
         }
 
         private const float BrookBedDepth = 0.19f;
         private const float BrookBankBlendWidth = 0.35f;
+
+        /// <summary>
+        /// The steepest the ground may rise out of the cut, in metres per
+        /// metre: `0.75` is 37 degrees against the hero's 45, the rest of
+        /// the margin left for the natural cross-slope the bank returns
+        /// onto.
+        /// </summary>
+        private const float BrookBankMaximumGrade = 0.75f;
+
+        /// <summary>
+        /// How far from the cut the grade cap still applies, and the widest
+        /// a bank may therefore spread. It has to stay inside the ground
+        /// grid's refined band along the water
+        /// (<c>AlpineVillageTerrainGrid</c> refines a half-width plus two
+        /// metres either side, and the cut takes one cell of that) so the
+        /// coarse triangles never bridge it, and it is what the swale's
+        /// reach test above counts. At the maximum grade it carries a climb
+        /// of `1.3 m`, which covers the trench the trace cuts through the
+        /// crest at 84 m; a bank taller than that would end in a step at
+        /// this line, and the brook test's walk out of the channel is what
+        /// would say so.
+        /// </summary>
+        private const float BrookBankMaximumBlendWidth = 1.75f;
 
         /// <summary>
         /// Added to the swale's reach before a point is declared out of it,

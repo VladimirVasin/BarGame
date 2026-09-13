@@ -803,9 +803,17 @@ namespace BarPromenade.Tests.PlayMode
 
             int blockingFixtureCount = interior.Layout.Fixtures.Count(
                 fixture => fixture.BlocksMovement);
+            // 29 architecture colliders: floor and three room walls; the
+            // wing's three slabs and three walls; the two south wall
+            // segments and their lintel; three upper slabs; the stair's
+            // closure and ramp; the upper partition's three segments, two
+            // lintels and divider; the bathroom's two wall segments and
+            // lintel; the east stair guard; the ceiling. The wing and the
+            // bathroom partition arrived with c9edef93, which also retired
+            // the north stair guard the bathroom wall replaces.
             Assert.That(
                 interior.World.GameplayColliders,
-                Has.Count.EqualTo(21 + blockingFixtureCount));
+                Has.Count.EqualTo(29 + blockingFixtureCount));
             Assert.That(
                 interior.World.GameplayColliders.All(
                     collider =>
@@ -905,7 +913,11 @@ namespace BarPromenade.Tests.PlayMode
                 "Stair Walkable Ramp",
                 "Upper Partition Between Doors",
                 "Upper Room Divider",
-                "Upper Stair East Guard"
+                "Upper Stair East Guard",
+                "Wing Rear Wall",
+                "Bathroom South Wall West",
+                "Bathroom South Wall East",
+                "Bathroom Door Lintel"
             };
             for (int index = 0;
                  index < requiredWallColliders.Length;

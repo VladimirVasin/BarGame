@@ -525,39 +525,86 @@ namespace BarPromenade.Tests.EditMode
                     out RavenRoostDescriptor molRoost))
             {
                 CitySeacoastPlan coast = cityWorld.SeacoastPlan;
-                Assert.That(
-                    TrySelectPartByWaterline(
-                        coast,
-                        CitySeacoastPartKind.MolParapet,
-                        true,
-                        out CitySeacoastPartDescriptor parapet),
-                    Is.True);
-                Assert.That(
-                    molRoost.PerchA.Position.y,
-                    Is.EqualTo(
-                        parapet.Center.y + parapet.Size.y * 0.5f)
-                        .Within(Tolerance),
-                    "The mol anchor bird stands on the head " +
-                    "parapet's own coping top.");
-                Assert.That(
-                    XZ(molRoost.PerchA.Position),
-                    Is.EqualTo(XZ(parapet.Center)),
-                    "The mol anchor sits on the head parapet's " +
-                    "centre line.");
-                Assert.That(
-                    TrySelectPartByWaterline(
-                        coast,
-                        CitySeacoastPartKind.MolDeck,
-                        true,
-                        out CitySeacoastPartDescriptor headDeck),
-                    Is.True);
-                Assert.That(
-                    molRoost.PerchB.Position.y,
-                    Is.EqualTo(
-                        headDeck.Center.y + headDeck.Size.y * 0.5f)
-                        .Within(Tolerance),
-                    "The mol companion stands on the head deck's " +
-                    "own top.");
+                if (coast.Port != null)
+                {
+                    // a6e54e50: the default coast always builds the
+                    // working port, which replaces the dead mol, its
+                    // derrick and the ruins. The roost keeps its id,
+                    // and both birds stand on the port plan's own
+                    // authored datums at the quay top: the anchor on
+                    // the breakwater head, the companion back along
+                    // the breakwater arm.
+                    CityPortPlan port = coast.Port;
+                    Assert.That(
+                        molRoost.PerchA.Position,
+                        Is.EqualTo(port.RavenPerch),
+                        "The port anchor bird stands on the plan's " +
+                        "own RavenPerch datum, never on a resolver's " +
+                        "guess.");
+                    Assert.That(
+                        molRoost.PerchB.Position,
+                        Is.EqualTo(port.RavenCompanion),
+                        "The port companion stands on the plan's own " +
+                        "RavenCompanion datum.");
+                    Assert.That(
+                        molRoost.PerchA.Position.y,
+                        Is.EqualTo(port.QuayTopY).Within(Tolerance),
+                        "The port anchor stands at the quay top.");
+                    Assert.That(
+                        molRoost.PerchB.Position.y,
+                        Is.EqualTo(port.QuayTopY).Within(Tolerance),
+                        "The port companion shares the quay top.");
+                    Assert.That(
+                        ContainsInclusive(
+                            port.BreakwaterHeadBounds,
+                            XZ(molRoost.PerchA.Position)),
+                        Is.True,
+                        "The port anchor stands on the breakwater " +
+                        "head.");
+                    Assert.That(
+                        ContainsInclusive(
+                            port.BreakwaterBounds,
+                            XZ(molRoost.PerchB.Position)),
+                        Is.True,
+                        "The port companion stands on the breakwater " +
+                        "arm.");
+                }
+                else
+                {
+                    Assert.That(
+                        TrySelectPartByWaterline(
+                            coast,
+                            CitySeacoastPartKind.MolParapet,
+                            true,
+                            out CitySeacoastPartDescriptor parapet),
+                        Is.True);
+                    Assert.That(
+                        molRoost.PerchA.Position.y,
+                        Is.EqualTo(
+                            parapet.Center.y + parapet.Size.y * 0.5f)
+                            .Within(Tolerance),
+                        "The mol anchor bird stands on the head " +
+                        "parapet's own coping top.");
+                    Assert.That(
+                        XZ(molRoost.PerchA.Position),
+                        Is.EqualTo(XZ(parapet.Center)),
+                        "The mol anchor sits on the head parapet's " +
+                        "centre line.");
+                    Assert.That(
+                        TrySelectPartByWaterline(
+                            coast,
+                            CitySeacoastPartKind.MolDeck,
+                            true,
+                            out CitySeacoastPartDescriptor headDeck),
+                        Is.True);
+                    Assert.That(
+                        molRoost.PerchB.Position.y,
+                        Is.EqualTo(
+                            headDeck.Center.y + headDeck.Size.y * 0.5f)
+                            .Within(Tolerance),
+                        "The mol companion stands on the head deck's " +
+                        "own top.");
+                }
             }
 
             if (TryFind(

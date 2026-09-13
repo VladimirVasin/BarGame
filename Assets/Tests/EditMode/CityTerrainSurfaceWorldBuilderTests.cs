@@ -14,6 +14,12 @@ namespace BarPromenade.Tests.EditMode
         // default city sits at 3.2 cm regardless of the collider pitch (the same
         // point at 1.0 m and 0.8 m), so it is a fold of the plan, not a chord.
         private const float BeachFootTolerance = 0.04f;
+        // cos 20 degrees: the ceiling the plan's own bilinear cells and
+        // pedestrian-graded terraces never approach.
+        private const float GentleNormalY = 0.94f;
+        // The plan's normal is a central difference with 0.1 m taps, so a
+        // vertex that far outside a deliberate bank still sees its slope.
+        private const float NormalTapReach = 0.1f;
 
         [Test]
         [Category("CityTraversal")]
@@ -270,6 +276,88 @@ namespace BarPromenade.Tests.EditMode
             return result;
         }
 
+        /// <summary>
+        /// Whether the plan banks the ground here on purpose: the whole of
+        /// the sand, which the plan grades from the landward datum down to
+        /// the waterline across the cell and ripples on top (the beach
+        /// branch of <c>CityTerrainSurfacePlan.SampleDatum</c>, with the
+        /// port's earthwork cut into it), or the blend ring around a
+        /// district point's pad on buildable ground. Everywhere else the
+        /// continuous terrain is only bilinear between its cell corners.
+        /// </summary>
+        private static bool IsDeliberateBank(
+            CityLayout layout,
+            CitySurfaceKind kind,
+            Vector2 worldXZ)
+        {
+            if (kind == CitySurfaceKind.Beach)
+            {
+                return true;
+            }
+
+            if (kind != CitySurfaceKind.BuildableGround)
+            {
+                return false;
+            }
+
+            float reach = CityTerrainSurfacePlan.DistrictPointBlendDistance +
+                          NormalTapReach;
+            for (int index = 0;
+                 index < layout.DistrictPointsOfInterest.Count;
+                 index++)
+            {
+                if (DistanceOutside(
+                        layout.DistrictPointsOfInterest[index].PublicBounds,
+                        worldXZ) <= reach)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Inside the port's graded box the sand is not a bank but the
+        /// port's own fillet: <c>CityPortAccessPlan.ApplyGroundTop</c>
+        /// smooth-steps from the paved top down to the natural sand over
+        /// two metres, so its grade is whatever drop it bridges, and the
+        /// hero reaches the yards from the street, never up this face.
+        /// </summary>
+        private static bool IsPortEarthwork(
+            CitySurfaceKind kind,
+            Vector2 worldXZ,
+            CityPortAccessPlan portAccess)
+        {
+            if (kind != CitySurfaceKind.Beach || portAccess == null)
+            {
+                return false;
+            }
+
+            Rect graded = portAccess.GradedBounds;
+            return Rect.MinMaxRect(
+                    graded.xMin - NormalTapReach,
+                    graded.yMin - NormalTapReach,
+                    graded.xMax + NormalTapReach,
+                    graded.yMax + NormalTapReach)
+                .Contains(worldXZ);
+        }
+
+        private static float DistanceOutside(Rect bounds, Vector2 point)
+        {
+            float xDistance = point.x < bounds.xMin
+                ? bounds.xMin - point.x
+                : point.x > bounds.xMax
+                    ? point.x - bounds.xMax
+                    : 0f;
+            float zDistance = point.y < bounds.yMin
+                ? bounds.yMin - point.y
+                : point.y > bounds.yMax
+                    ? point.y - bounds.yMax
+                    : 0f;
+            return Mathf.Max(xDistance, zDistance);
+        }
+
         private static void AssertContinuousMesh(
             CityLayout layout,
             GameObject surfaceObject,
@@ -311,6 +399,20 @@ namespace BarPromenade.Tests.EditMode
                 .ToArray();
             Assert.That(sourceSurfaces, Is.Not.Empty);
 
+            // The continuous plan keeps its own ground gentle: cells are
+            // bilinear between terraces the elevation plan grades for
+            // pedestrians. It also banks on purpose in two places, and
+            // there the ground may stand as steep as the hero's own slope
+            // limit - the only slope any code holds him to: the blend
+            // around a district point's pad (0a7fd2f6 levelled the
+            // cannery's pad to its yard's origin) and the sand, graded from
+            // the town's datum down to the waterline (a6e54e50 cut the
+            // port's yards into it).
+            float walkableNormalY = Mathf.Cos(
+                PlayerFactory.SlopeLimitDegrees * Mathf.Deg2Rad);
+            CityPortAccessPlan portAccess = kind == CitySurfaceKind.Beach
+                ? CityPortAccessPlan.ForLayout(layout)
+                : null;
             float minimumY = float.PositiveInfinity;
             float maximumY = float.NegativeInfinity;
             for (int vertexIndex = 0;
@@ -320,11 +422,28 @@ namespace BarPromenade.Tests.EditMode
                 Vector3 vertex = vertices[vertexIndex];
                 minimumY = Mathf.Min(minimumY, vertex.y);
                 maximumY = Mathf.Max(maximumY, vertex.y);
+                var worldXZ = new Vector2(vertex.x, vertex.z);
+                if (IsPortEarthwork(kind, worldXZ, portAccess))
+                {
+                    Assert.That(
+                        normals[vertexIndex].y,
+                        Is.GreaterThan(0f),
+                        $"upward port fillet normal at vertex {vertexIndex}");
+                    continue;
+                }
+
+                bool deliberateBank = IsDeliberateBank(
+                    layout,
+                    kind,
+                    worldXZ);
                 Assert.That(
                     normals[vertexIndex].y,
-                    Is.GreaterThan(0.94f),
-                    $"gently walkable upward terrain normal at vertex " +
-                    vertexIndex);
+                    Is.GreaterThan(
+                        deliberateBank ? walkableNormalY : GentleNormalY),
+                    (deliberateBank
+                        ? "walkable bank normal at vertex "
+                        : "gently walkable upward terrain normal at vertex ") +
+                    $"{vertexIndex} ({kind} {vertex})");
                 Assert.That(
                     uvs[vertexIndex].x,
                     Is.EqualTo(
@@ -338,7 +457,6 @@ namespace BarPromenade.Tests.EditMode
                         CityExteriorAppearance.GroundTextureTileSize)
                         .Within(Tolerance));
 
-                var worldXZ = new Vector2(vertex.x, vertex.z);
                 bool matchesPlan = sourceSurfaces.Any(surface =>
                     Contains(surface.WorldBounds, worldXZ) &&
                     Mathf.Abs(

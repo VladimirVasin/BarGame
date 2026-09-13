@@ -221,10 +221,13 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(player.Motor.InputEnabled, Is.True);
             Assert.That(player.Interactor.InputEnabled, Is.True);
             AssertPlayerVisualRestored();
+            // Bit-equal only while the controller has not moved him; a
+            // physics frame settles the capsule by less than a centimetre.
             Assert.That(
                 player.GameObject.transform.position,
                 Is.EqualTo(seatPlan.ExitPose.RootPosition)
-                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+                    .Using(new UnityEngine.TestTools.Utils
+                        .Vector3EqualityComparer(0.01f)));
         }
 
         [UnityTest]
@@ -293,6 +296,21 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.IntoxicationLevel,
                 Is.EqualTo(intoxicationBefore));
             Assert.That(GameSessionState.DrinksConsumed, Is.EqualTo(drinksBefore));
+
+            // An ordinary cancel with the bartender already on his way
+            // rests the menu and nothing else: the order stands and stays
+            // paid for. (Moved from SceneFlowSmokeTests, whose seated
+            // section no longer commits an order.)
+            controller.Cancel();
+            Assert.That(
+                controller.Phase,
+                Is.EqualTo(BarDrinkServicePhase.BeerWalkToTap),
+                "Ordinary cancel must not interrupt committed service.");
+            Assert.That(controller.IsServing, Is.True);
+            Assert.That(controller.PurchaseCommitted, Is.True);
+            Assert.That(
+                GameSessionState.CashBalance,
+                Is.EqualTo(cashBefore - controller.SelectedOffer.Price));
 
             Assert.That(controller.ReportBeerServerAtTap(true), Is.True);
             controller.AdvancePresentation(

@@ -87,13 +87,36 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 cityRoot.GetComponentsInChildren<HomeEntrance>(true),
                 Has.Length.EqualTo(1));
+            // The City grocery has been the authored exterior model since
+            // 3713d2d0; the primitive blade sign and glyph boxes survive
+            // only in the clipped Home-boundary fallback. The vertical sign
+            // and the lettering are parts of that model now.
+            Transform supermarket =
+                cityRoot.World.Root.transform.Find("Supermarket");
+            Assert.That(supermarket, Is.Not.Null);
+            Transform supermarketExterior =
+                supermarket.Find("Supermarket Exterior");
             Assert.That(
-                GameObject.Find("Supermarket Blade Sign Housing"),
+                supermarketExterior,
                 Is.Not.Null,
+                "The grocery must stand as its authored exterior.");
+            SupermarketExteriorAssetRegistry supermarketRegistry =
+                supermarketExterior
+                    .GetComponent<SupermarketExteriorAssetRegistry>();
+            Assert.That(supermarketRegistry, Is.Not.Null);
+            Assert.That(
+                HasSupermarketExteriorPart(
+                    supermarketRegistry,
+                    "Two Sided Blade Sign Housing"),
+                Is.True,
                 "The grocery must hang its vertical street sign.");
             Assert.That(
-                GameObject.Find("Supermarket Sign Letter"),
-                Is.Not.Null,
+                HasSupermarketExteriorPart(
+                    supermarketRegistry,
+                    "Authored " +
+                    CitySupermarketFacadeWorldBuilder.SignWord +
+                    " Lettering"),
+                Is.True,
                 "The grocery sign must carry real lettering.");
             Assert.That(
                 GameObject.Find("Home Roof Beacon"),
@@ -857,9 +880,24 @@ namespace BarPromenade.Tests.PlayMode
             Transform playerHome =
                 cityRoot.World.Root.transform.Find("Player Home");
             Assert.That(playerHome, Is.Not.Null);
+            // The door has been a part of the authored exterior model since
+            // the home stopped being primitives (3713d2d0); the mailbox is
+            // still the lot's own.
+            Transform homeExterior = playerHome.Find(
+                CityPlayerHomeExteriorWorldBuilder.CityObjectName);
             Assert.That(
-                playerHome.Find("Home Door"),
-                Is.Not.Null);
+                homeExterior,
+                Is.Not.Null,
+                "The hero's home must stand as its authored exterior.");
+            PlayerHomeExteriorAssetRegistry homeRegistry =
+                homeExterior.GetComponent<PlayerHomeExteriorAssetRegistry>();
+            Assert.That(homeRegistry, Is.Not.Null);
+            Assert.That(
+                HasPlayerHomeExteriorPart(
+                    homeRegistry,
+                    "Player Home Entrance Door"),
+                Is.True,
+                "The authored home exterior must carry its entrance door.");
             Assert.That(
                 playerHome.Find("Home Mailbox"),
                 Is.Not.Null);
@@ -1286,10 +1324,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 jukeboxInteraction.MusicPlayer,
                 Is.SameAs(interiorRoot.Music));
+            // `LightRenderers` is an array behind `IReadOnlyList`, and this
+            // NUnit's `Has.Count` reflects for a public `Count` property an
+            // array does not have. Ask the interface for its count instead.
             Assert.That(
-                jukeboxInteraction.LightRenderers,
-                Has.Count.EqualTo(
-                    BarJukeboxInteraction.LightChannelCount));
+                jukeboxInteraction.LightRenderers.Count,
+                Is.EqualTo(BarJukeboxInteraction.LightChannelCount));
             Assert.That(
                 jukebox.GetComponentsInChildren<Light>(true),
                 Is.Empty);
@@ -1399,37 +1439,24 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interiorRoot.DrinkShop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.Browsing));
-            BarDrinkOffer selectedOffer =
-                interiorRoot.DrinkShop.SelectedOffer;
-            Assert.That(
-                interiorRoot.DrinkShop.ConfirmSelection(),
-                Is.True);
-            Assert.That(interiorRoot.DrinkShop.IsOpen, Is.True);
-            Assert.That(interiorRoot.DrinkShop.IsServing, Is.True);
-            Assert.That(
-                drinkOrderSignRenderer == null ||
-                !drinkOrderSignRenderer.enabled,
-                Is.True);
-            Assert.That(
-                interiorRoot.DrinkShop.PurchaseCommitted,
-                Is.True);
+            // The seated service itself - a mug drawn at the tap, carried
+            // over and drunk from the hero's own hand - has no fixed
+            // duration to skip (8ac6074d), and its whole run, including
+            // that an ordinary cancel does not interrupt a committed
+            // order, is BarDrinkPhysicalShopPlayModeTests' contract. What
+            // the smoke owns is the seat's lifecycle around the menu: a
+            // cancel while browsing only rests the menu on the counter,
+            // buys nothing, and leaves the hero seated with his hands out
+            // of the frame.
             interiorRoot.DrinkShop.Cancel();
-            Assert.That(
-                interiorRoot.DrinkShop.Phase,
-                Is.EqualTo(BarDrinkServicePhase.BottlePickup),
-                "Ordinary cancel must not interrupt committed service.");
-            interiorRoot.DrinkShop.AdvancePresentation(
-                BarDrinkServiceTimeline.ConfirmedPresentationDurationSeconds +
-                0.01f);
+            yield return WaitUntil(
+                () => interiorRoot.DrinkShop.MenuState ==
+                    BarPromenade.Runtime.World.CounterMenuState.Resting,
+                "The browsing cancel did not rest the menu on the counter.");
             Assert.That(interiorRoot.DrinkShop.IsOpen, Is.True);
             Assert.That(
                 interiorRoot.DrinkShop.Phase,
                 Is.EqualTo(BarDrinkServicePhase.Browsing));
-            Assert.That(interiorRoot.DrinkShop.IsBrowsing, Is.False);
-            Assert.That(
-                interiorRoot.DrinkShop.MenuState,
-                Is.EqualTo(
-                    BarPromenade.Runtime.World.CounterMenuState.Resting));
             Assert.That(interiorRoot.DrinkShop.IsServing, Is.False);
             Assert.That(
                 interiorRoot.DrinkShop.PurchaseCommitted,
@@ -1448,15 +1475,20 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(
                 GameSessionState.CashBalance,
-                Is.EqualTo(cashBefore - selectedOffer.Price));
+                Is.EqualTo(cashBefore),
+                "Nothing was bought.");
             Assert.That(
                 GameSessionState.DrinksConsumed,
-                Is.EqualTo(drinksBefore + 1));
+                Is.EqualTo(drinksBefore));
             Assert.That(interiorRoot.Player.Motor.InputEnabled, Is.False);
             Assert.That(
                 interiorRoot.Player.Interactor.InputEnabled,
                 Is.True);
-            Assert.That(follow.OrbitInputEnabled, Is.False);
+            Assert.That(
+                follow.OrbitInputEnabled,
+                Is.True,
+                "With the menu rested the seated hero looks around - and " +
+                "at the menu, which is how it reopens.");
 
             Assert.That(interiorRoot.CounterStation.Seat.RequestExit(), Is.True);
             Assert.That(
@@ -1874,23 +1906,12 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.AlarmClock, Is.Not.Null);
             Assert.That(home.AlarmClock.IsInitialized, Is.True);
             Assert.That(home.AlarmClock.IsRinging, Is.False);
-            Assert.That(
-                home.Soundscape.GetComponentsInChildren<
-                    AudioSource>(true),
-                Has.Length.EqualTo(
-                    HomeSoundscape.OwnedSourceCount));
-            Assert.That(
-                home.GetComponentsInChildren<AudioSource>(true),
-                Has.Length.EqualTo(
-                    3 +
-                    HomeSoundscape.OwnedSourceCount +
-                    HomeAlarmClock.OwnedSourceCount +
-                    HomeBalconyExteriorAtmosphere.OwnedSourceCount),
-                "Home audio must remain one base ambience " +
-                "source, one optional background-music source, " +
-                "one optional smoking-music source, the " +
-                "soundscape's own sources, one diegetic alarm " +
-                "source and the weather behind the window.");
+            // One base ambience source, one background-music source, one
+            // smoking-music source, the soundscape's own, the alarm's own
+            // and the weather behind the window - each asked of its owner,
+            // so a fixture gaining an on-demand voice moves no total.
+            HomeAudioSourceContract.AssertSourcesAreDeclaredOrOnDemand(
+                home);
             Assert.That(
                 home.Atmosphere,
                 Is.Not.Null);
@@ -1974,12 +1995,24 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 exitingStairwell.Arrival,
                 Is.EqualTo(StairwellArrivalKind.ApartmentDoor));
+            // The spawn stands the hero 0.14 m over the landing and the
+            // first physics frame settles him onto it, his 0.04 m of skin
+            // above the floor; behind a door there have been such frames.
+            Vector3 arrived = exitingStairwell.Player.GameObject
+                .transform.position;
+            Vector3 apartmentSpawn =
+                exitingStairwell.Layout.ApartmentSpawn;
             Assert.That(
-                Vector3.Distance(
-                    exitingStairwell.Player.GameObject
-                        .transform.position,
-                    exitingStairwell.Layout.ApartmentSpawn),
+                Vector2.Distance(
+                    new Vector2(arrived.x, arrived.z),
+                    new Vector2(apartmentSpawn.x, apartmentSpawn.z)),
                 Is.LessThan(0.05f));
+            Assert.That(
+                arrived.y,
+                Is.InRange(
+                    exitingStairwell.Layout.ApartmentElevation +
+                    PlayerFactory.GroundedRootOffset - 0.01f,
+                    apartmentSpawn.y + 0.01f));
             Assert.That(
                 GameSessionState.ReturnKind,
                 Is.EqualTo(CityReturnKind.None));
@@ -2479,6 +2512,48 @@ namespace BarPromenade.Tests.PlayMode
         private static void ResetSessionState()
         {
             GameSessionState.BeginNewGame();
+        }
+
+        private static bool HasPlayerHomeExteriorPart(
+            PlayerHomeExteriorAssetRegistry registry,
+            string sourceName)
+        {
+            for (int index = 0; index < registry.Parts.Count; index++)
+            {
+                PlayerHomeExteriorPartBinding part = registry.Parts[index];
+                if (part != null &&
+                    part.Renderer != null &&
+                    string.Equals(
+                        part.SourceName,
+                        sourceName,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasSupermarketExteriorPart(
+            SupermarketExteriorAssetRegistry registry,
+            string sourceName)
+        {
+            for (int index = 0; index < registry.Parts.Count; index++)
+            {
+                SupermarketExteriorPartBinding part = registry.Parts[index];
+                if (part != null &&
+                    part.Renderer != null &&
+                    string.Equals(
+                        part.SourceName,
+                        sourceName,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

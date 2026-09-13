@@ -253,16 +253,53 @@ namespace BarPromenade.Tests.EditMode
                         .Within(Tolerance));
             }
 
+            // Every kerb contributes its own footprint to the walkable
+            // list, and the plan carries two pedestrian continuations
+            // that have no kerb of their own: the cannery's vehicle
+            // apron across its street opening (0a7fd2f6), where the
+            // pavement is interrupted and the imported apron supplies
+            // the dropped surface, and each signature stair's own
+            // footprint between its two approaches.
+            var continuations = new List<Rect>();
+            CityCanneryPlan cannery = CityCanneryPlan.Create(layout);
+            if (cannery != null)
+            {
+                continuations.Add(cannery.StreetOpening);
+            }
+
+            foreach (RoadEdge edge in streetEdges)
+            {
+                if (layout.ElevationPlan.TryGetSignatureStair(
+                        edge,
+                        out CityElevationStairDescriptor stair))
+                {
+                    continuations.Add(
+                        CityElevationStairPlacementPlanner.Create(
+                            layout,
+                            stair).Footprint);
+                }
+            }
+
             Assert.That(
                 plan.Sidewalks.Count,
                 Is.GreaterThanOrEqualTo(streetEdges.Length * 2));
             Assert.That(
                 plan.SidewalkWalkableRectangles,
-                Has.Count.EqualTo(plan.Sidewalks.Count));
+                Has.Count.EqualTo(
+                    plan.Sidewalks.Count + continuations.Count));
+            foreach (Rect continuation in continuations)
+            {
+                Assert.That(
+                    plan.SidewalkWalkableRectangles.Contains(continuation),
+                    Is.True,
+                    $"Continuation {continuation} must stay walkable " +
+                    "without a kerb of its own.");
+            }
+
             for (int index = 0; index < plan.Sidewalks.Count; index++)
             {
                 Bounds sidewalk = plan.Sidewalks[index];
-                Rect walkable = plan.SidewalkWalkableRectangles[index];
+                Rect walkable = CreateRect(sidewalk);
                 Assert.That(
                     sidewalk.min.y,
                     Is.EqualTo(CityStreetSurfacePlanner.RoadTop)
@@ -272,8 +309,10 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(CityStreetSurfacePlanner.SidewalkTop)
                         .Within(Tolerance));
                 Assert.That(
-                    walkable,
-                    Is.EqualTo(CreateRect(sidewalk)));
+                    plan.SidewalkWalkableRectangles.Contains(walkable),
+                    Is.True,
+                    $"Sidewalk {walkable} must be walkable exactly on " +
+                    "its own footprint.");
                 Assert.That(
                     streetCorridors.Any(corridor =>
                         Contains(corridor, walkable)) ||

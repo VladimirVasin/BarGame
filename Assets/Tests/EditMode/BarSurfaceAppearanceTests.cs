@@ -423,9 +423,12 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     interaction.PromptKey,
                     Is.EqualTo(BarJukeboxInteraction.PromptKeyName));
+                // `LightRenderers` is an array behind the interface, and
+                // NUnit's `Has.Count` reflects a `Count` property an array
+                // has not got.
                 Assert.That(
-                    interaction.LightRenderers,
-                    Has.Count.EqualTo(
+                    interaction.LightRenderers.Count,
+                    Is.EqualTo(
                         BarJukeboxInteraction.LightChannelCount));
                 Assert.That(
                     interaction.LightRenderers[0].name,

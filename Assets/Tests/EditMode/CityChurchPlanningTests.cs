@@ -389,34 +389,119 @@ namespace BarPromenade.Tests.EditMode
             {
                 GameObject built = CityChurchGroundWorldBuilder.Build(
                     owner.transform, layout);
-                Mesh mesh = built.GetComponent<MeshFilter>().sharedMesh;
-                Assert.That(built.GetComponent<MeshCollider>().sharedMesh,
-                    Is.SameAs(mesh));
-                Vector3[] vertices = mesh.vertices;
-                Vector3[] normals = mesh.normals;
-                for (int index = 0; index < vertices.Length; index++)
+                // ab602774: the drawn grass is cut out under the
+                // courtyard paving while the collider keeps the whole
+                // continuous terrain, so the two are different meshes
+                // that follow the same sampled grade.
+                Mesh skin = built.GetComponent<MeshFilter>().sharedMesh;
+                Mesh collision =
+                    built.GetComponent<MeshCollider>().sharedMesh;
+                Assert.That(collision, Is.Not.Null);
+                AssertFollowsSampledGrade(layout, grounds, skin, "drawn skin");
+                AssertFollowsSampledGrade(layout, grounds, collision,
+                    "collider");
+
+                CityChurchCourtyardPlan courtyard =
+                    CityChurchCourtyardPlanner.Create(layout, church,
+                        CityChurchCemeteryPassagePlanner.Create(layout, church));
+                int pavingCuts = 0;
+                foreach (CityChurchCourtyardSurfaceDescriptor surface in
+                    courtyard.Surfaces)
                 {
-                    if (normals[index].y <= 0f)
+                    Vector2 center = surface.Bounds.center;
+                    if (surface.Kind == CityChurchCourtyardSurfaceKind.Lawn ||
+                        !church.Grounds.Contains(center))
                     {
                         continue;
                     }
 
-                    Vector3 point = vertices[index];
-                    CitySurfaceDescriptor source = grounds.First(surface =>
-                        point.x >= surface.WorldBounds.xMin - Tolerance &&
-                        point.x <= surface.WorldBounds.xMax + Tolerance &&
-                        point.z >= surface.WorldBounds.yMin - Tolerance &&
-                        point.z <= surface.WorldBounds.yMax + Tolerance);
-                    float top = CityTerrainSurfacePlan.SampleTop(layout,
-                        source, new Vector2(point.x, point.z));
-                    Assert.That(point.y, Is.EqualTo(top).Within(Tolerance),
-                        "Rendered and collider terrain use the sampled grade.");
+                    pavingCuts++;
+                    Assert.That(CoversFromAbove(collision, center), Is.True,
+                        "The collider keeps continuous terrain under the " +
+                        $"paving at {center}.");
+                    Assert.That(CoversFromAbove(skin, center), Is.False,
+                        $"The drawn grass is cut out under the paving at " +
+                        $"{center}.");
                 }
+
+                Assert.That(pavingCuts, Is.GreaterThan(0),
+                    "The courtyard pays for the split skin with real paving.");
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(owner);
             }
+        }
+
+        private static void AssertFollowsSampledGrade(
+            CityLayout layout,
+            CitySurfaceDescriptor[] grounds,
+            Mesh mesh,
+            string label)
+        {
+            Vector3[] vertices = mesh.vertices;
+            Vector3[] normals = mesh.normals;
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                if (normals[index].y <= 0f)
+                {
+                    // The skirt closes the garden's edges downward.
+                    continue;
+                }
+
+                Vector3 point = vertices[index];
+                CitySurfaceDescriptor source = grounds.First(surface =>
+                    point.x >= surface.WorldBounds.xMin - Tolerance &&
+                    point.x <= surface.WorldBounds.xMax + Tolerance &&
+                    point.z >= surface.WorldBounds.yMin - Tolerance &&
+                    point.z <= surface.WorldBounds.yMax + Tolerance);
+                float top = CityTerrainSurfacePlan.SampleTop(layout,
+                    source, new Vector2(point.x, point.z));
+                Assert.That(point.y, Is.EqualTo(top).Within(Tolerance),
+                    $"The {label} uses the sampled grade at {point}.");
+            }
+        }
+
+        /// <summary>
+        /// Whether an upward-facing triangle of the mesh covers the XZ
+        /// point: the skirt's vertical faces do not count.
+        /// </summary>
+        private static bool CoversFromAbove(Mesh mesh, Vector2 point)
+        {
+            Vector3[] vertices = mesh.vertices;
+            Vector3[] normals = mesh.normals;
+            int[] triangles = mesh.triangles;
+            for (int index = 0; index < triangles.Length; index += 3)
+            {
+                int a = triangles[index];
+                int b = triangles[index + 1];
+                int c = triangles[index + 2];
+                if (normals[a].y <= 0f || normals[b].y <= 0f ||
+                    normals[c].y <= 0f)
+                {
+                    continue;
+                }
+
+                float first = EdgeSideXZ(vertices[a], vertices[b], point);
+                float second = EdgeSideXZ(vertices[b], vertices[c], point);
+                float third = EdgeSideXZ(vertices[c], vertices[a], point);
+                bool negative = first < -Tolerance || second < -Tolerance ||
+                    third < -Tolerance;
+                bool positive = first > Tolerance || second > Tolerance ||
+                    third > Tolerance;
+                if (!(negative && positive))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static float EdgeSideXZ(Vector3 from, Vector3 to, Vector2 point)
+        {
+            return (to.x - from.x) * (point.y - from.z) -
+                (to.z - from.z) * (point.x - from.x);
         }
 
         [Test]

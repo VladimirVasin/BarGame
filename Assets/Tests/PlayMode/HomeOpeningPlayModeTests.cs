@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -311,13 +312,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.AlarmClock.Source.outputAudioMixerGroup,
                 Is.SameAs(gameplayGroup));
-            Assert.That(
-                home.GetComponentsInChildren<AudioSource>(true),
-                Has.Length.EqualTo(
-                    3 +
-                    HomeSoundscape.OwnedSourceCount +
-                    HomeAlarmClock.OwnedSourceCount +
-                    HomeBalconyExteriorAtmosphere.OwnedSourceCount));
+            HomeAudioSourceContract.AssertSourcesAreDeclaredOrOnDemand(
+                home);
             Assert.That(home.CameraFollow.FixedPoseActive, Is.True);
             Assert.That(
                 Object.FindObjectsByType<Camera>(
@@ -403,7 +399,9 @@ namespace BarPromenade.Tests.PlayMode
                 Is.LessThan(0.001f));
             Assert.That(home.Opening.IsCameraTransitioning, Is.False);
 
-            GameSessionState.AdvanceGameTime(1f);
+            // One game minute, however many real seconds the day makes it.
+            GameSessionState.AdvanceGameTime(
+                (float)(1f / GameTimeState.GameMinutesPerRealSecond));
             yield return null;
             Assert.That(
                 home.Opening.Phase,
@@ -1173,21 +1171,62 @@ namespace BarPromenade.Tests.PlayMode
         private static void AssertWorldPresentationEnabled(
             PlayerRuntime player)
         {
+            // Session equipment rides `Visual.Renderers` (the scarf, since
+            // 4ff4f116) but draws only while it is worn: its visibility
+            // answers to the inventory, not to the wake. The world
+            // contract here is the hero's own body.
+            PlayerScarfController scarf =
+                player.GameObject.GetComponent<PlayerScarfController>();
+            IReadOnlyList<Renderer> equipment =
+                scarf != null && scarf.Presentation != null
+                    ? scarf.Presentation.Renderers
+                    : System.Array.Empty<Renderer>();
             Assert.That(player.Visual.Renderers, Is.Not.Empty);
+            int bodyRendererCount = 0;
             for (int index = 0;
                  index < player.Visual.Renderers.Count;
                  index++)
             {
+                Renderer renderer = player.Visual.Renderers[index];
+                if (IsEquipmentRenderer(equipment, renderer))
+                {
+                    Assert.That(
+                        renderer.enabled || !scarf.Presentation.IsEquipped,
+                        Is.True,
+                        $"Worn equipment renderer {index} was hidden.");
+                    continue;
+                }
+
+                bodyRendererCount++;
                 Assert.That(
-                    player.Visual.Renderers[index].enabled,
+                    renderer.enabled,
                     Is.True,
                     $"World player renderer {index} was hidden.");
             }
 
+            Assert.That(
+                bodyRendererCount,
+                Is.GreaterThan(0),
+                "The hero's body must have renderers of its own.");
             Assert.That(player.ContactShadow.enabled, Is.True);
             Assert.That(
                 player.PresentationVisibility.IsHidden,
                 Is.False);
+        }
+
+        private static bool IsEquipmentRenderer(
+            IReadOnlyList<Renderer> equipment,
+            Renderer renderer)
+        {
+            for (int index = 0; index < equipment.Count; index++)
+            {
+                if (ReferenceEquals(equipment[index], renderer))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static IEnumerator WaitUntil(

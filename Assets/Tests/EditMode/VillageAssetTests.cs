@@ -294,6 +294,64 @@ namespace BarPromenade.Tests.EditMode
                         AssertMass("Stone Wing",
                             AlpineVillagePlanner.MothersHouseWingCollisionBounds);
                     }
+                    else if (VillageResidentDoorPlan.IsResidentHouse(
+                                 plot.StableId))
+                    {
+                        // An inhabited house is entered through a doorway
+                        // cut into a shell fitted to this plot's measured
+                        // envelope, so no box on the footprint can stand
+                        // for it: by the accepted decision (architecture
+                        // notes, 2026-09-08, second part of village
+                        // household life) the fitted shell's own colliders
+                        // own the collision. The plan-derived shell carries
+                        // nothing, and each solid mass collides with exactly
+                        // the mesh it renders, in the renderer's own frame -
+                        // the one arrangement the slab-on-its-side failure
+                        // cannot reach.
+                        Assert.That(
+                            shell.GetComponentsInChildren<Collider>(true),
+                            Is.Empty,
+                            $"'{plot.StableId}' boxes its own doorway.");
+                        foreach (VillageMeshRole role in new[]
+                                 {
+                                     VillageMeshRole.Walls,
+                                     VillageMeshRole.Plinth,
+                                     VillageMeshRole.Timber
+                                 })
+                        {
+                            Assert.That(
+                                VillageResidentDoorAssets.TryGetShellPart(
+                                    plot.StableId,
+                                    role,
+                                    out MeshFilter authored),
+                                Is.True,
+                                $"'{plot.StableId}' has no fitted {role}.");
+                            MeshFilter[] masses = root
+                                .GetComponentsInChildren<MeshFilter>(true)
+                                .Where(filter =>
+                                    filter.sharedMesh == authored.sharedMesh)
+                                .ToArray();
+                            Assert.That(
+                                masses,
+                                Is.Not.Empty,
+                                $"'{plot.StableId}' never placed its " +
+                                $"fitted {role}.");
+                            foreach (MeshFilter mass in masses)
+                            {
+                                var solid = mass.GetComponent<MeshCollider>();
+                                Assert.That(
+                                    solid,
+                                    Is.Not.Null,
+                                    $"'{plot.StableId}' renders a {role} " +
+                                    "the hero walks through.");
+                                Assert.That(
+                                    solid.sharedMesh,
+                                    Is.SameAs(mass.sharedMesh),
+                                    $"'{plot.StableId}' collides with a " +
+                                    $"{role} other than the one it shows.");
+                            }
+                        }
+                    }
                     else
                     {
                         Assert.That(shell.GetComponentsInChildren<BoxCollider>(true),
@@ -444,8 +502,14 @@ namespace BarPromenade.Tests.EditMode
                         continue;
                     }
 
+                    // An inhabited house hangs an authored leaf on a real
+                    // hinge instead of drawing one on the wall; it is built
+                    // closed, so it measures like every other.
                     Transform leaf =
-                        world.SemanticObjects[plot.StableId].Find("Door Leaf");
+                        VillageResidentDoorPlan.IsResidentHouse(plot.StableId)
+                            ? world.ResidentDoors[plot.StableId].Leaf
+                            : world.SemanticObjects[plot.StableId]
+                                .Find("Door Leaf");
                     Assert.That(leaf, Is.Not.Null, plot.StableId);
                     Assert.That(
                         leaf.GetComponent<Renderer>().bounds.size.y,
@@ -464,8 +528,12 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// Every house on the lane but the mother's is a door the hero can
-        /// try, and every one of them is shut.
+        /// Every uninhabited house on the lane is a door the hero can try,
+        /// and every one of them is shut. The three inhabited houses are
+        /// the exception by decision (architecture notes, 2026-09-08,
+        /// second part of village household life): each has a real
+        /// entrance on a hinge, hung on the same plan-owned door line and
+        /// reached from the same plan-owned dock.
         ///
         /// What this actually pins is the four numbers agreeing. The leaf,
         /// the trigger, the dock the gesture walks him to and the trodden
@@ -487,11 +555,19 @@ namespace BarPromenade.Tests.EditMode
                     AlpineVillageWorldBuilder.Build(host.transform, plan);
                 int houses = plan.Plots.Count(
                     plot => plot.Kind == AlpineVillagePlotKind.House);
+                int inhabited = plan.Plots.Count(
+                    plot => plot.Kind == AlpineVillagePlotKind.House &&
+                            VillageResidentDoorPlan.IsResidentHouse(
+                                plot.StableId));
+                Assert.That(houses, Is.EqualTo(AlpineVillagePlanner.HouseCount));
                 Assert.That(
                     world.HouseDoors.Count,
-                    Is.EqualTo(houses),
-                    "One shut door per house on the lane.");
-                Assert.That(houses, Is.EqualTo(AlpineVillagePlanner.HouseCount));
+                    Is.EqualTo(houses - inhabited),
+                    "One shut door per uninhabited house on the lane.");
+                Assert.That(
+                    world.ResidentDoors.Count,
+                    Is.EqualTo(inhabited),
+                    "One real entrance per inhabited house.");
 
                 foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
                 {
@@ -504,6 +580,97 @@ namespace BarPromenade.Tests.EditMode
                             doorRoot,
                             Is.Null,
                             $"'{plot.StableId}' is not a house on the lane.");
+                        continue;
+                    }
+
+                    // The dock stands on the plot's own flattened shelf, and
+                    // the gesture only ever starts because it does.
+                    float dockGround =
+                        AlpineVillageTerrainSampler.SampleHeight(
+                            plan,
+                            new Vector2(
+                                plot.DoorDockPosition.x,
+                                plot.DoorDockPosition.z));
+                    Assert.That(
+                        Mathf.Abs(plot.DoorDockPosition.y - dockGround),
+                        Is.LessThan(PlayerMotor.InteractionVerticalTolerance),
+                        $"'{plot.StableId}' docks off its own ground.");
+
+                    if (VillageResidentDoorPlan.IsResidentHouse(plot.StableId))
+                    {
+                        // Not shut: the entrance is a leaf on a hinge. It is
+                        // reached from the plan's dock, its threshold stands
+                        // on the plan's door line inside the front of the
+                        // footprint, and the closed leaf is centred on that
+                        // line.
+                        Assert.That(
+                            doorRoot,
+                            Is.Null,
+                            $"'{plot.StableId}' is shut to the people " +
+                            "who live in it.");
+                        Assert.That(
+                            plotRoot
+                                .GetComponentInChildren<LockedDoorInteraction>(),
+                            Is.Null,
+                            plot.StableId);
+                        Assert.That(
+                            world.ResidentDoors.TryGetValue(
+                                plot.StableId,
+                                out VillageResidentDoor entrance),
+                            Is.True,
+                            $"'{plot.StableId}' has no entrance.");
+                        Assert.That(
+                            entrance.ExteriorDock,
+                            Is.EqualTo(plot.DoorDockPosition),
+                            $"'{plot.StableId}' does not use the planned dock.");
+                        Vector3 threshold = plotRoot.InverseTransformPoint(
+                            entrance.ThresholdDock);
+                        Assert.That(
+                            Mathf.Abs(threshold.x - plot.DoorAcrossOffset),
+                            Is.LessThan(0.001f),
+                            $"'{plot.StableId}' steps in beside its own " +
+                            "door line.");
+                        Assert.That(
+                            threshold.z,
+                            Is.GreaterThan(0f)
+                                .And.LessThan(plot.FootprintSize.y * 0.5f),
+                            $"'{plot.StableId}' has its threshold off the " +
+                            "front of the house.");
+                        Assert.That(
+                            entrance.Leaf,
+                            Is.Not.Null,
+                            $"'{plot.StableId}' has no leaf to open.");
+                        Assert.That(
+                            entrance.Handle,
+                            Is.Not.Null,
+                            $"'{plot.StableId}' has nothing to take hold of.");
+                        Bounds leafBounds = entrance.Leaf
+                            .GetComponent<MeshFilter>().sharedMesh.bounds;
+                        float nearAcross = float.PositiveInfinity;
+                        float farAcross = float.NegativeInfinity;
+                        for (int corner = 0; corner < 8; corner++)
+                        {
+                            var local = new Vector3(
+                                (corner & 1) == 0
+                                    ? leafBounds.min.x
+                                    : leafBounds.max.x,
+                                (corner & 2) == 0
+                                    ? leafBounds.min.y
+                                    : leafBounds.max.y,
+                                (corner & 4) == 0
+                                    ? leafBounds.min.z
+                                    : leafBounds.max.z);
+                            float across = plotRoot.InverseTransformPoint(
+                                entrance.Leaf.TransformPoint(local)).x;
+                            nearAcross = Mathf.Min(nearAcross, across);
+                            farAcross = Mathf.Max(farAcross, across);
+                        }
+
+                        Assert.That(
+                            (nearAcross + farAcross) * 0.5f,
+                            Is.EqualTo(plot.DoorAcrossOffset).Within(0.01f),
+                            $"'{plot.StableId}' hangs its leaf off the " +
+                            "plan's door line.");
                         continue;
                     }
 
@@ -545,19 +712,6 @@ namespace BarPromenade.Tests.EditMode
                             plot.Facing),
                         Is.LessThan(-0.999f),
                         $"'{plot.StableId}' turns the hero away from itself.");
-
-                    // The dock stands on the plot's own flattened shelf, and
-                    // the gesture only ever starts because it does.
-                    float dockGround =
-                        AlpineVillageTerrainSampler.SampleHeight(
-                            plan,
-                            new Vector2(
-                                plot.DoorDockPosition.x,
-                                plot.DoorDockPosition.z));
-                    Assert.That(
-                        Mathf.Abs(plot.DoorDockPosition.y - dockGround),
-                        Is.LessThan(PlayerMotor.InteractionVerticalTolerance),
-                        $"'{plot.StableId}' docks off its own ground.");
 
                     // The trigger stands over the leaf the hero reaches for,
                     // not over the middle of a wall the plan never used.

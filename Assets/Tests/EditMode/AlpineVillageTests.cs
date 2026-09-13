@@ -994,10 +994,39 @@ namespace BarPromenade.Tests.EditMode
             return (grid.FindRow(centroid.z), grid.FindColumn(centroid.x));
         }
 
+        /// <summary>
+        /// The rhythm is a property of the lane and the plots alone, so it
+        /// is judged on the seeded LAYOUT rather than on a finished plan:
+        /// the water, the trees and the validation a full plan adds cannot
+        /// move a footprint and cost most of a plan each, and 263 full plans
+        /// ran past the runner's limit. The one full plan built here pins
+        /// the layout to the plots the plan actually carries.
+        /// </summary>
         [Test]
         [Category("AlpineVillage")]
         public void SeededHouseRhythm_NeverOverlapsRotatedFootprints()
         {
+            AlpineVillagePlan plan = CreatePlan();
+            AlpineVillagePlanner.CreateLayout(
+                plan.Seed,
+                out List<AlpineVillagePlotDescriptor> layout);
+            Assert.That(layout.Count, Is.EqualTo(plan.Plots.Count));
+            for (int index = 0; index < layout.Count; index++)
+            {
+                Assert.That(
+                    layout[index].StableId,
+                    Is.EqualTo(plan.Plots[index].StableId));
+                Assert.That(
+                    layout[index].GroundCenter,
+                    Is.EqualTo(plan.Plots[index].GroundCenter));
+                Assert.That(
+                    layout[index].Facing,
+                    Is.EqualTo(plan.Plots[index].Facing));
+                Assert.That(
+                    layout[index].FootprintSize,
+                    Is.EqualTo(plan.Plots[index].FootprintSize));
+            }
+
             for (int seed = -128; seed <= 128; seed++)
             {
                 AssertSeededHouseRhythm(seed);
@@ -1018,15 +1047,17 @@ namespace BarPromenade.Tests.EditMode
 
         private static void AssertSeededHouseRhythm(int seed)
         {
-            AlpineVillagePlan plan = AlpineVillagePlanner.Create(seed);
-            for (int first = 0; first < plan.Plots.Count; first++)
+            AlpineVillageLanePlan lane = AlpineVillagePlanner.CreateLayout(
+                seed,
+                out List<AlpineVillagePlotDescriptor> plots);
+            for (int first = 0; first < plots.Count; first++)
             {
-                AlpineVillagePlotDescriptor plot = plan.Plots[first];
+                AlpineVillagePlotDescriptor plot = plots[first];
                 if (plot.Kind != AlpineVillagePlotKind.MothersHouse)
                 {
                     Assert.That(
                         AlpineVillageValidator.MeasureLaneClearance(
-                            plan.Lane,
+                            lane,
                             plot),
                         Is.GreaterThanOrEqualTo(
                             AlpineVillageValidator.LaneKeepClear - 0.001f),
@@ -1034,16 +1065,16 @@ namespace BarPromenade.Tests.EditMode
                 }
 
                 for (int second = first + 1;
-                     second < plan.Plots.Count;
+                     second < plots.Count;
                      second++)
                 {
                     Assert.That(
                         AlpineVillageValidator.FootprintsOverlap(
-                            plan.Plots[first],
-                            plan.Plots[second]),
+                            plots[first],
+                            plots[second]),
                         Is.False,
-                        $"seed {seed}: {plan.Plots[first].StableId} / " +
-                        plan.Plots[second].StableId);
+                        $"seed {seed}: {plots[first].StableId} / " +
+                        plots[second].StableId);
                 }
             }
         }
@@ -1714,6 +1745,40 @@ namespace BarPromenade.Tests.EditMode
             for (int index = 0; index < plan.Plots.Count; index++)
             {
                 AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                if (VillageResidentDoorPlan.IsResidentHouse(plot.StableId))
+                {
+                    // The three inhabited houses carry a real doorway cut
+                    // through a fitted shell, and by the accepted decision
+                    // (architecture notes, 2026-09-08, second part of
+                    // village household life) that shell's own colliders
+                    // replaced the footprint mask: a mask on the footprint
+                    // would stand an invisible wall across the open door.
+                    // So the mask must leave the threshold walkable ...
+                    Assert.That(
+                        area.Contains(plot.DoorGroundPosition),
+                        Is.True,
+                        $"'{plot.StableId}' has its own doorway masked.");
+                    if (plot.StableId != VillageWorkroomPlan.HouseId)
+                    {
+                        continue;
+                    }
+
+                    // ... and the one house the hero may walk into still
+                    // refuses the solid mass around its room, at the plan's
+                    // own wall footprints.
+                    var room = new VillageWorkroomPlan(plot);
+                    foreach (Bounds wall in room.SolidWallFootprints())
+                    {
+                        Assert.That(
+                            area.Contains(room.World(wall.center)),
+                            Is.False,
+                            $"'{plot.StableId}' lets him through a wall " +
+                            $"of its workroom at {wall.center}.");
+                    }
+
+                    continue;
+                }
+
                 bool solid = plot.Kind != AlpineVillagePlotKind.Spring;
                 Assert.That(
                     area.Contains(plot.GroundCenter),

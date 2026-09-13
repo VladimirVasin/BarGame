@@ -182,17 +182,16 @@ namespace BarPromenade
             Vector3 uphill = Uphill.normalized;
             Vector3 right = Vector3.Cross(Vector3.up, uphill).normalized;
 
-            AlpineVillageLanePlan lane = CreateLane(uphill, right);
-            var plots = new List<AlpineVillagePlotDescriptor>();
-            AlpineVillagePlotDescriptor mothersHouse =
-                CreateMothersHouse(lane, uphill);
+            AlpineVillageLanePlan lane = CreateLayout(
+                seed,
+                uphill,
+                right,
+                out List<AlpineVillagePlotDescriptor> plots);
+            AlpineVillagePlotDescriptor mothersHouse = plots[0];
             Vector3 mothersHouseReturn =
                 mothersHouse.DoorGroundPosition +
                 mothersHouse.Facing * MothersHouseReturnStandoff;
             mothersHouseReturn.y = mothersHouse.GroundCenter.y;
-            plots.Add(mothersHouse);
-            AppendHouses(seed, lane, plots);
-            AppendSpurs(lane, right, plots);
 
             AlpineVillageStationPlan station = CreateStation(
                 lane,
@@ -242,6 +241,44 @@ namespace BarPromenade
             plan.AttachTrees(AlpineVillageTreePlanner.Create(plan));
             plan.ValidateOrThrow();
             return plan;
+        }
+
+        /// <summary>
+        /// The lane and every plot on it: the seeded layout, before the
+        /// ground under it is finished.
+        ///
+        /// This is the first half of <see cref="Create"/> and nothing more.
+        /// What follows it - the water traced on the finished ground, the
+        /// trees placed against the trodden network, the validation - costs
+        /// most of a plan, and none of it can move a footprint. A check that
+        /// is about the layout alone, such as whether two seeded footprints
+        /// overlap or one enters the carriageway, gets exactly the plots the
+        /// full plan would carry, because the full plan starts here. The
+        /// mother's house is the first plot.
+        /// </summary>
+        internal static AlpineVillageLanePlan CreateLayout(
+            int seed,
+            out List<AlpineVillagePlotDescriptor> plots)
+        {
+            Vector3 uphill = Uphill.normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, uphill).normalized;
+            return CreateLayout(seed, uphill, right, out plots);
+        }
+
+        private static AlpineVillageLanePlan CreateLayout(
+            int seed,
+            Vector3 uphill,
+            Vector3 right,
+            out List<AlpineVillagePlotDescriptor> plots)
+        {
+            AlpineVillageLanePlan lane = CreateLane(uphill, right);
+            plots = new List<AlpineVillagePlotDescriptor>
+            {
+                CreateMothersHouse(lane, uphill)
+            };
+            AppendHouses(seed, lane, plots);
+            AppendSpurs(lane, right, plots);
+            return lane;
         }
 
         /// <summary>

@@ -31,7 +31,11 @@ namespace BarPromenade
     ///   leaving the work to it: contact is read back as achieved movement, so
     ///   a graze against a wall reads as a crawl, and sliding in the mask
     ///   keeps the hero's speed. The burial ground is the one plot with no
-    ///   shell and is deliberately not here - a graveyard is ground.
+    ///   shell and is deliberately not here - a graveyard is ground. The
+    ///   three inhabited houses are the exception by decision: a real
+    ///   doorway is cut through their fitted shells, a footprint here would
+    ///   stand across it, so their own colliders hold their walls - and the
+    ///   workroom's house masks only the solid walls around its room.
     /// - THE CABLEWAY BRINK, the one hole in the bowl. The cut falls at
     ///   `7-28°`, well under the slope limit, so it is the only place a hero
     ///   could actually walk out of the village; the mask closes it at the

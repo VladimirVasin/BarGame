@@ -238,7 +238,11 @@ namespace BarPromenade.Tests.EditMode
                 for (int unit = 0; unit < CityFishSupplyCycle.HandlingUnits; unit++)
                 {
                     double begin = cycle.InspectionStart(unit, batch);
-                    Assert.That(begin, Is.GreaterThanOrEqualTo(receiverAvailable),
+                    // The cycle sums a box's phases once (UnitDuration) while
+                    // this walk re-adds them one phase at a time; at ~1000 s
+                    // the two orders differ by an ULP. The contract is the
+                    // sequence, held to the same 1e-8 s as the rest of the file.
+                    Assert.That(begin, Is.GreaterThanOrEqualTo(receiverAvailable - 1e-8d),
                         "One receiver cannot overlap incoming work or the previous box.");
                     Assert.That(cycle.Sample(begin).Production.CompletedUnits, Is.GreaterThan(unit),
                         "The receiver cannot fetch an unfinished box.");

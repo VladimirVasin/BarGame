@@ -903,26 +903,38 @@ namespace BarPromenade.Tests.EditMode
                         layout);
                 Renderer[] poiRenderers = pointsOfInterest
                     .GetComponentsInChildren<Renderer>(true);
+                // 0a7fd2f6: the industrial district's point of interest
+                // is the working cannery, whose shell the cannery plan
+                // builds itself, so the weighbridge recipe no longer
+                // imports. The three static shells that remain use every
+                // authored role mesh of their catalog entries.
+                Assert.That(
+                    CityCanneryPlan.Create(layout),
+                    Is.Not.Null,
+                    "The default city runs its cannery as a working " +
+                    "building, not as a static shell.");
+                int expectedImportedPoiParts =
+                    CityMiscAssetProvider.GetPartCount(
+                        CityMiscKind.PoiOldTownWaterworksShell) +
+                    CityMiscAssetProvider.GetPartCount(
+                        CityMiscKind.PoiResidentialDryingYardShell) +
+                    CityMiscAssetProvider.GetPartCount(
+                        CityMiscKind.PoiNightlifeLastRouteIslandShell);
                 Assert.That(
                     poiRenderers.Count(renderer =>
                         renderer.name.StartsWith(
                             "Imported ",
                             StringComparison.Ordinal)),
-                    Is.EqualTo(10),
-                    "All four static POI shells use the ten authored " +
-                    "role meshes.");
+                    Is.EqualTo(expectedImportedPoiParts),
+                    "The three static POI shells use every authored " +
+                    "role mesh of their catalog entries.");
                 Assert.That(
                     poiRenderers.Any(renderer =>
                         renderer.name == "Dark Water"),
                     Is.True);
-                Assert.That(
-                    poiRenderers.Any(renderer =>
-                        renderer.name == "Scale Needle"),
-                    Is.True);
-                Assert.That(
-                    poiRenderers.Any(renderer =>
-                        renderer.name == "Cold Service Lamp"),
-                    Is.True);
+                // The weighbridge's needle and service lamp went with its
+                // shell (0a7fd2f6): the industrial site is the cannery,
+                // whose parts CityCanneryController owns and tests.
                 Assert.That(
                     pointsOfInterest.GetComponentsInChildren<Cloth>(true),
                     Is.Not.Empty,

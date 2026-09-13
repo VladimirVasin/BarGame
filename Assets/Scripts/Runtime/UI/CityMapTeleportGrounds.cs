@@ -542,14 +542,12 @@ namespace BarPromenade
             }
 
             paths ??= AlpineVillagePathPlanner.Create(plan);
-            var dock = new Vector2(
-                place.DoorDockPosition.x,
-                place.DoorDockPosition.z);
+            Vector2 routeEnd = RouteEnd(place);
             for (int index = 0; index < paths.Count; index++)
             {
                 AlpineVillagePathDescriptor path = paths[index];
                 var end = new Vector2(path.End.x, path.End.z);
-                if (Vector2.Distance(end, dock) > ChartedDockTolerance)
+                if (Vector2.Distance(end, routeEnd) > ChartedDockTolerance)
                 {
                     continue;
                 }
@@ -571,6 +569,29 @@ namespace BarPromenade
             }
 
             return worldXZ;
+        }
+
+        /// <summary>
+        /// Where the route to a charted place actually arrives.
+        ///
+        /// For every building that is the plan's door dock - the same point
+        /// the chart carries - because that is where its trodden path ends.
+        /// The spring is the exception: its plot carries a generic dock in
+        /// front of a footprint nobody walks up to, and since the water was
+        /// traced its spur has ended on the brook's own approach, the clear
+        /// ground in front of the stone catch. Matching the generic dock
+        /// against the path ends found no route at all, and an arrival
+        /// with no route was put down on the dock itself, with no room to
+        /// walk out of - the very thing the standoff exists to prevent.
+        /// </summary>
+        private Vector2 RouteEnd(AlpineVillagePlotDescriptor place)
+        {
+            Vector3 end =
+                place.Kind == AlpineVillagePlotKind.Spring &&
+                plan.Brook != null
+                    ? plan.Brook.ApproachPosition
+                    : place.DoorDockPosition;
+            return new Vector2(end.x, end.z);
         }
 
         private AlpineVillagePlotDescriptor FindChartedPlace(Vector2 worldXZ)
